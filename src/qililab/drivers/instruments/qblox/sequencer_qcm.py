@@ -86,6 +86,16 @@ class SequencerQCM(Sequencer, AWG):
         self.parent.arm_sequencer(sequencer=self.seq_idx)
         self.parent.start_sequencer(sequencer=self.seq_idx)
 
+    def execute_qpysequence(self, sequence: QpySequence):
+        """Execute a qpysequence on the instrument.
+
+        Args:
+            sequence: The qpysequence to execute.
+        """
+        self.set("sequence", sequence.todict())
+        self.parent.arm_sequencer(sequencer=self.seq_idx)
+        self.parent.start_sequencer(sequencer=self.seq_idx)
+
     def _translate_pulse_bus_schedule(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
     ):

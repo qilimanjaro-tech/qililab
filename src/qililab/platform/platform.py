@@ -9,6 +9,7 @@ from qililab.config import logger
 from qililab.constants import GATE_ALIAS_REGEX, RUNCARD
 from qililab.platform.components import Bus, Schema
 from qililab.platform.components.bus_element import dict_factory
+from qililab.qprogram import QBloxCompiler, QProgram, Settings
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import Category, Line, Parameter
 from qililab.typings.yaml_type import yaml
@@ -74,6 +75,25 @@ class Platform:  # pylint: disable=too-many-public-methods
         self.instrument_controllers.disconnect()
         self._connected_to_instruments = False
         logger.info("Disconnected from instruments")
+
+    def execute_qprogram(self, qprogram: QProgram):
+        """Compile and execute a qprogram on the buses of the platform.
+
+        NOTE: this method might give trouble when the platform is used with the old buses, because they don't
+        have the 'execute_qpysequence' method (actually not even the 'execute' method). This should be handled
+        somehow, to maintain backwards compatibility.
+
+        Args:
+            qprogram (QProgram): The qprogram to execute.
+        """
+        compiler = QBloxCompiler(settings=Settings())
+        compiled_results = compiler.compile(qprogram)
+
+        for bus in self.buses:
+            sequence = compiled_results[bus.alias]
+            bus.execute_qpysequence(sequence)
+
+        return bus.get_results()
 
     def get_element(self, alias: str):
         """Get platform element.

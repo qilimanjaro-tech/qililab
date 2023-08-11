@@ -1,5 +1,7 @@
 from abc import abstractmethod
 
+from qpysequence.sequence import Sequence as QpySequence
+
 from qililab.pulse import PulseBusSchedule
 
 from .base_instrument import BaseInstrument
@@ -21,4 +23,12 @@ class AWG(BaseInstrument):
             nshots (int): number of shots
             repetition_duration (int): repetition duration.
             num_bins (int): number of bins
+        """
+
+    @abstractmethod
+    def execute_qpysequence(self, qpysequence: QpySequence) -> None:
+        """Runs a qpysequence on the instrument.
+
+        Args:
+            qpysequence (Sequence): The sequence to execute.
         """

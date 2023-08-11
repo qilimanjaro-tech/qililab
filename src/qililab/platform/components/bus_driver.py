@@ -2,6 +2,8 @@
 from abc import ABC
 from typing import Any
 
+from qpysequence.sequence import Sequence as QpySequence
+
 from qililab.drivers.interfaces import BaseInstrument
 from qililab.drivers.interfaces.awg import AWG
 from qililab.pulse import PulseBusSchedule, PulseDistortion
@@ -49,6 +51,14 @@ class BusDriver(ABC):
                 repetition_duration=repetition_duration,
                 num_bins=num_bins,
             )
+
+    def execute_qpysequence(self, qpysequence: QpySequence) -> None:
+        """Execute a qpysequence through the AWG Instrument.
+
+        Args:
+            qpysequence: The qpysequence to execute.
+        """
+        self._awg.execute_qpysequence(qpysequence=qpysequence)
 
     def set(self, param_name: str, value: Any) -> None:
         """Set parameter on the bus' instruments.
