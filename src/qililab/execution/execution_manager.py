@@ -1,13 +1,9 @@
 """ExecutionManager class."""
 from dataclasses import dataclass, field
-from queue import Queue
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-from qililab.config import logger
-from qililab.platform import Platform
-from qililab.result import Result
 from qililab.system_control import ReadoutSystemControl
 from qililab.utils import Waveforms
 
@@ -43,7 +39,7 @@ class ExecutionManager:
         Returns:
             dict[int, Waveforms]: Dictionary containing a list of the I/Q amplitudes of the pulses applied on each bus.
         """
-        return {bus.id_: bus.waveforms(modulation=modulation, resolution=resolution, idx=idx) for bus in self.buses}
+        return {bus.alias: bus.waveforms(modulation=modulation, resolution=resolution, idx=idx) for bus in self.buses}
 
     def draw(  # pylint: disable=too-many-locals
         self,
@@ -95,7 +91,8 @@ class ExecutionManager:
                 axes[axis_idx].plot(time, waveform_abs, linestyle, label="abs", color="green")
 
             bus = self.buses[axis_idx]
-            self._plot_acquire_time(bus=bus, sequence_idx=idx)
+            if isinstance(bus.system_control, ReadoutSystemControl):
+                plt.axvline(x=bus.acquire_time(idx=idx), color="red", label="Acquire time")
             axes[axis_idx].minorticks_on()
             axes[axis_idx].grid(which="both")
 
@@ -103,19 +100,6 @@ class ExecutionManager:
         plt.legend(loc="upper right")
         plt.tight_layout()
         return figure
-
-    def _plot_acquire_time(self, bus: BusExecution, sequence_idx: int):
-        """Return acquire time of bus. Return None if bus is of subcategory control.
-
-        Args:
-            bus (BusExecution): Bus execution object.
-            sequence_idx (int): Pulse sequence index.
-
-        Returns:
-            int | None: Acquire time. None if bus is of subcategory control.
-        """
-        if isinstance(bus.system_control, ReadoutSystemControl):
-            plt.axvline(x=bus.acquire_time(idx=sequence_idx), color="red", label="Acquire time")
 
     def __iter__(self):
         """Redirect __iter__ magic method to buses."""

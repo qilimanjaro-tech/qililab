@@ -160,8 +160,8 @@ class Experiment(BaseExperiment):
         if not hasattr(self, "execution_manager"):
             raise ValueError("Please build the execution_manager before compilation.")
         return [
-            self.platform.compile(schedule_idx, self.hardware_average, self.repetition_duration, self.num_bins)
-            for schedule_idx in range(len(self.pulse_schedules))
+            self.platform.compile(schedule, self.hardware_average, self.repetition_duration, self.num_bins)
+            for schedule in self.pulse_schedules
         ]
 
     def draw(

@@ -12,6 +12,7 @@ from qililab.drivers.instruments.qblox.sequencer_qrm import SequencerQRM
 from qililab.pulse import Pulse, PulseBusSchedule, Rectangular
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.result.qblox_results import QbloxResult
+from qililab.result.qblox_results.qblox_acquisitions_builder import QbloxAcquisitionsBuilder
 
 PULSE_SIGMAS = 4
 PULSE_AMPLITUDE = 1
@@ -78,9 +79,9 @@ class TestSequencerQRM:
         sequencer.set("acquisition_timeout", acquisition_timeout)
 
         # Get results
-        with patch.object(QbloxResult, "__post_init__") as post_init:
+        with patch.object(QbloxAcquisitionsBuilder, "get_bins") as get_bins:
             results = sequencer.get_results()
-            post_init.assert_called_once_with()
+            get_bins.assert_called_once()
 
         # Assert calls and results
         parent.get_sequencer_state.assert_called_once_with(sequencer=seq_idx, timeout=sequence_timeout)
@@ -101,9 +102,9 @@ class TestSequencerQRM:
         sequencer.set("weighed_acq_enabled", True)
 
         # Get results
-        with patch.object(QbloxResult, "__post_init__") as post_init:
+        with patch.object(QbloxAcquisitionsBuilder, "get_bins") as get_bins:
             results = sequencer.get_results()
-            post_init.assert_called_once_with()
+            get_bins.assert_called_once()
 
         # Asserts
         assert results.integration_lengths == [len(sequencer.get("weights_i"))]
@@ -115,10 +116,10 @@ class TestSequencerQRM:
         parent.get.return_value = seq_idx
         sequencer = SequencerQRM(parent=parent, name="test", seq_idx=seq_idx)
 
-        # Execute and get results
-        with patch.object(QbloxResult, "__post_init__") as post_init:
+        # Get results
+        with patch.object(QbloxAcquisitionsBuilder, "get_bins") as get_bins:
             _ = sequencer.get_results()
-            post_init.assert_called_once_with()
+            get_bins.assert_called_once()
 
         # Asserts
         parent.store_scope_acquisition.assert_called_once_with(sequencer=seq_idx, name="default")

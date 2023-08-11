@@ -190,21 +190,21 @@ class Bus:
         """
         return self.system_control.compile(pulse_bus_schedule, nshots, repetition_duration, num_bins)
 
-    def upload(self, port: int):
+    def upload(self):
         """Uploads any previously compiled program into the instrument."""
-        self.system_control.upload(port)
+        self.system_control.upload(port=self.port)
 
-    def run(self, port: int) -> None:
+    def run(self) -> None:
         """Runs any previously uploaded program into the instrument."""
-        self.system_control.run(port)
+        self.system_control.run(port=self.port)
 
-    def acquire_result(self, port: int) -> Result:
+    def acquire_result(self) -> Result:
         """Read the result from the vector network analyzer instrument
 
         Returns:
             Result: Acquired result
         """
         if isinstance(self.system_control, ReadoutSystemControl):
-            return self.system_control.acquire_result(port)
+            return self.system_control.acquire_result(port=self.port)
 
         raise AttributeError("A bus without a readout system control cannot return results.")

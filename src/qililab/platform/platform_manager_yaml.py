@@ -4,7 +4,8 @@ import os
 import yaml
 
 from qililab.constants import RUNCARDS
-from qililab.platform.platform_manager import PlatformManager
+
+from .platform_manager import PlatformManager
 
 
 class PlatformManagerYAML(PlatformManager):

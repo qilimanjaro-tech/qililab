@@ -6,13 +6,14 @@ import pandas as pd
 
 from qililab.constants import QBLOXRESULT, RUNCARD
 from qililab.exceptions import DataUnavailable
-from qililab.instruments.qblox.constants import SCOPE_ACQ_MAX_DURATION
 from qililab.result.counts import Counts
-from qililab.result.qblox_results.qblox_acquisitions_builder import QbloxAcquisitionsBuilder
-from qililab.result.qblox_results.qblox_scope_acquisitions import QbloxScopeAcquisitions
 from qililab.result.result import Result
 from qililab.typings.enums import ResultName
 from qililab.utils.factory import Factory
+
+from .constants import SCOPE_ACQ_MAX_DURATION
+from .qblox_acquisitions_builder import QbloxAcquisitionsBuilder
+from .qblox_scope_acquisitions import QbloxScopeAcquisitions
 
 
 @Factory.register
@@ -44,22 +45,6 @@ class QbloxResult(Result):
         )
         self._qblox_scope_acquisition_copy = deepcopy(self.qblox_scope_acquisitions)
         self.data_dataframe_indices = self.qblox_bins_acquisitions.data_dataframe_indices
-
-        # Save array data
-        if self.qblox_scope_acquisitions is not None:
-            # The dimensions of the array are: (N, 2) where N is the length of the scope.
-            path0 = self.qblox_scope_acquisitions.scope.path0.data
-            path1 = self.qblox_scope_acquisitions.scope.path1.data
-            self.array = np.array([path0, path1])
-        else:
-            # The dimensions of the array are the following: (#sequencers, #bins, 2)
-            # Where the 2 corresponds to path0 (I) and path1 (Q) of the sequencer
-            self.array = np.array(
-                [
-                    np.transpose([sequencer.integration.path0, sequencer.integration.path1])
-                    for sequencer in self.qblox_bins_acquisitions.bins
-                ]
-            )
 
     def _demodulated_scope(self, frequency: float, phase_offset: float = 0.0) -> QbloxScopeAcquisitions:
         """Returns the scope acquisitions demodulated in the given frequency with the given phase offset.
@@ -140,6 +125,23 @@ class QbloxResult(Result):
             Counts: Counts object containing the counts of each state.
         """
         return self.qblox_bins_acquisitions.counts()
+
+    @property
+    def array(self) -> np.ndarray:
+        # Save array data
+        if self.qblox_scope_acquisitions is not None:
+            # The dimensions of the array are: (N, 2) where N is the length of the scope.
+            path0 = self.qblox_scope_acquisitions.scope.path0.data
+            path1 = self.qblox_scope_acquisitions.scope.path1.data
+            return np.array([path0, path1])
+        # The dimensions of the array are the following: (#sequencers, #bins, 2)
+        # Where the 2 corresponds to path0 (I) and path1 (Q) of the sequencer
+        bins = [
+            np.transpose([sequencer.integration.path0, sequencer.integration.path1])
+            for sequencer in self.qblox_bins_acquisitions.bins
+        ]
+
+        return np.concatenate(bins)
 
     @property
     def shape(self) -> list[int]:

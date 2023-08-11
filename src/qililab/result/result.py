@@ -1,5 +1,5 @@
 """Result class."""
-from abc import ABC
+from abc import ABC, abstractmethod
 
 import numpy as np
 import pandas as pd
@@ -15,7 +15,6 @@ class Result(FactoryElement, ABC):
 
     name: ResultName
     data_dataframe_indices: set[str]
-    array: np.ndarray
 
     def probabilities(self) -> dict[str, float]:
         """Return probabilities of being in the ground and excited state.
@@ -50,3 +49,12 @@ class Result(FactoryElement, ABC):
         """
 
         return nested_dict_to_pandas_dataframe(self.to_dict())
+
+    @property
+    @abstractmethod
+    def array(self) -> np.ndarray:
+        """Returns the results in a numpy array format.
+
+        Returns:
+            np.ndarray: Numpy array containing the results.
+        """

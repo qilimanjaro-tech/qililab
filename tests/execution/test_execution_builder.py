@@ -71,10 +71,10 @@ class TestExecutionBuilder:
         """Test build method."""
         platform_bus_executions = []
         for pulse_bus_schedule in pulse_schedule.elements:
-            _, bus = platform.get_bus(pulse_bus_schedule.port)
+            bus = platform.buses.get(pulse_bus_schedule.port)
             platform_bus_executions.append(BusExecution(bus=bus, pulse_bus_schedules=[pulse_bus_schedule]))
 
-        expected = ExecutionManager(buses=platform_bus_executions, num_schedules=1, platform=platform)
+        expected = ExecutionManager(buses=platform_bus_executions, num_schedules=1)
         execution_manager = EXECUTION_BUILDER.build(platform=platform, pulse_schedules=[pulse_schedule])
 
         assert execution_manager == expected
@@ -86,7 +86,10 @@ class TestExecutionBuilder:
         test_port = 1234
         delay = 0
         pulse_schedule.add_event(pulse_event=pulse_event, port=test_port, port_delay=delay)
-        with pytest.raises(ValueError, match=f"There is no bus connected to port {test_port}."):
+        with pytest.raises(
+            ValueError,
+            match=f"There can only be one bus connected to a port. There are 0 buses connected to port {test_port}.",
+        ):
             EXECUTION_BUILDER.build(platform=platform, pulse_schedules=[pulse_schedule])
 
     def test_build_from_loops_method(self, platform: Platform, loops: list[Loop]):
@@ -95,7 +98,7 @@ class TestExecutionBuilder:
         platform_bus_executions = [
             BusExecution(bus=bus, pulse_bus_schedules=[]) for bus in platform.buses if bus.alias in loops_alias
         ]
-        expected = ExecutionManager(buses=platform_bus_executions, num_schedules=0, platform=platform)
+        expected = ExecutionManager(buses=platform_bus_executions, num_schedules=0)
 
         with catch_warnings(record=True) as w:
             execution_manager = EXECUTION_BUILDER.build_from_loops(platform=platform, loops=loops)
@@ -111,7 +114,7 @@ class TestExecutionBuilder:
         platform_bus_executions = [
             BusExecution(bus=bus, pulse_bus_schedules=[]) for bus in platform.buses if bus.alias in loops_alias
         ]
-        expected = ExecutionManager(buses=platform_bus_executions, num_schedules=0, platform=platform)
+        expected = ExecutionManager(buses=platform_bus_executions, num_schedules=0)
 
         with catch_warnings(record=True) as w:
             execution_manager = EXECUTION_BUILDER.build_from_loops(platform=platform, loops=nested_loops)
@@ -124,7 +127,7 @@ class TestExecutionBuilder:
         platform_bus_executions = [
             BusExecution(bus=bus, pulse_bus_schedules=[]) for bus in platform.buses if bus.alias in loops_alias
         ]
-        expected = ExecutionManager(buses=platform_bus_executions, num_schedules=0, platform=platform)
+        expected = ExecutionManager(buses=platform_bus_executions, num_schedules=0)
 
         loops.append(loops[-1])  # Repeat last alias to check for warning
         with catch_warnings(record=True) as w:

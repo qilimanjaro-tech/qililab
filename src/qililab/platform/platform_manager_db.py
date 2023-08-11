@@ -1,5 +1,5 @@
 """PlatformManagerDB class."""
-from qililab.platform.platform_manager import PlatformManager
+from .platform_manager import PlatformManager
 
 
 class PlatformManagerDB(PlatformManager):

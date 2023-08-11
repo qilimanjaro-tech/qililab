@@ -3,8 +3,7 @@ from dataclasses import dataclass, field
 
 from qililab.platform import Bus
 from qililab.pulse import PulseBusSchedule
-from qililab.result.result import Result
-from qililab.system_control import ReadoutSystemControl, SimulatedSystemControl, SystemControl
+from qililab.system_control import ReadoutSystemControl, SystemControl
 from qililab.utils import Waveforms
 
 
@@ -16,33 +15,6 @@ class BusExecution:
     bus: Bus
     pulse_bus_schedules: list[PulseBusSchedule] = field(default_factory=list)
 
-    def compile(self, idx: int, nshots: int, repetition_duration: int, num_bins: int) -> list:
-        """Compiles the pulse schedule at index ``idx`` into an assembly program.
-
-        Args:
-            idx (int): index of the circuit to compile and upload
-            nshots (int): number of shots / hardware average
-            repetition_duration (int): maximum window for the duration of one hardware repetition
-            num_bins (int): number of bins.
-
-        Returns:
-            list: list of compiled assembly programs
-        """
-        return self.system_control.compile(
-            pulse_bus_schedule=self.pulse_bus_schedules[idx],
-            nshots=nshots,
-            repetition_duration=repetition_duration,
-            num_bins=num_bins,
-        )
-
-    def upload(self):
-        """Uploads any previously compiled program into the instrument."""
-        self.system_control.upload(port=self.port)
-
-    def run(self):
-        """Run the given pulse sequence."""
-        return self.system_control.run(port=self.port)
-
     def add_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule):
         """Add pulse to the BusPulseSequence given by idx.
 
@@ -51,19 +23,6 @@ class BusExecution:
             idx (int): Index of the BusPulseSequence to add the pulse.
         """
         self.pulse_bus_schedules.append(pulse_bus_schedule)
-
-    def acquire_result(self) -> Result:
-        """Read the result from the AWG instrument
-
-        Returns:
-            Result: Acquired result
-        """
-        if not isinstance(self.system_control, (ReadoutSystemControl, SimulatedSystemControl)):
-            raise ValueError(
-                f"The bus {self.bus.alias} needs a readout system control to acquire the results. This bus "
-                f"has a {self.system_control.name} instead."
-            )
-        return self.system_control.acquire_result(port=self.port)  # type: ignore  # pylint: disable=no-member
 
     def acquire_time(self, idx: int = 0) -> int:
         """BusExecution 'acquire_time' property.
@@ -96,15 +55,6 @@ class BusExecution:
         return self.pulse_bus_schedules[idx].waveforms(modulation=modulation, resolution=resolution)
 
     @property
-    def port(self):
-        """BusExecution 'port' property
-
-        Returns:
-            int: Port where the bus is connected.
-        """
-        return self.bus.port
-
-    @property
     def system_control(self) -> SystemControl:
         """BusExecution 'system_control' property.
 
@@ -112,15 +62,6 @@ class BusExecution:
             SystemControl: bus.system_control
         """
         return self.bus.system_control
-
-    @property
-    def id_(self):
-        """BusExecution 'id_' property.
-
-        Returns:
-            int: bus.id_
-        """
-        return self.bus.id_
 
     @property
     def alias(self):

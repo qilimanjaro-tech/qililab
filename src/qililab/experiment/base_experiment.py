@@ -40,14 +40,6 @@ class BaseExperiment(ABC):
         self.platform = platform
         self.options = options
 
-    def connect(self, manual_override=False):
-        """Connects to the instruments and blocks the device."""
-        self.platform.connect(manual_override=manual_override)
-
-    def initial_setup(self):
-        """Configure each instrument with the values defined in the runcard."""
-        self.platform.initial_setup()
-
     def build_execution(self):
         """Creates the ``ExecutionManager`` class from loops."""
         # Build ``ExecutionManager`` class
@@ -142,8 +134,8 @@ class BaseExperiment(ABC):
         Returns:
             Results: execution results
         """
-        self.connect()
-        self.initial_setup()
+        self.platform.connect()
+        self.platform.initial_setup()
         self.build_execution()
         self.platform.turn_on_instruments()
         results = self.run(save_experiment=save_experiment, save_results=save_results)
@@ -280,8 +272,8 @@ class BaseExperiment(ABC):
             EXPERIMENT.OPTIONS: self.options.to_dict(),
         }
 
-    @abstractmethod
     @classmethod
+    @abstractmethod
     def from_dict(cls, dictionary: dict):
         """Load BaseExperiment from dictionary.
 

@@ -9,14 +9,15 @@ from qiboconnection.api import API
 
 from qililab.config import logger
 from qililab.constants import GATE_ALIAS_REGEX, RUNCARD
-from qililab.platform.components import Bus, Schema
-from qililab.platform.components.bus_element import dict_factory
-from qililab.pulse import CircuitToPulses, PulseSchedule
+from qililab.pulse import PulseSchedule
 from qililab.result import Result
 from qililab.settings import RuncardSchema
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import Category, Line, Parameter
 from qililab.typings.yaml_type import yaml
+
+from .components import Bus, Schema
+from .components.bus_element import dict_factory
 
 
 class Platform:  # pylint: disable=too-many-public-methods
@@ -314,7 +315,7 @@ class Platform:  # pylint: disable=too-many-public-methods
         if len(results) > 1:
             logger.error("Only One Readout Bus allowed. Reading only from the first one.")
         if not results:
-            raise ValueError("No Results acquired")
+            raise ValueError("There are no readout buses in the platform.")
 
         return results[0]
 
@@ -330,6 +331,11 @@ class Platform:  # pylint: disable=too-many-public-methods
         Returns:
             dict: Dictionary of compiled assembly programs.
         """
+        # We have a circular import because Platform uses CircuitToPulses and vice versa
+        from qililab.pulse.circuit_to_pulses import (  # pylint: disable=import-outside-toplevel, cyclic-import
+            CircuitToPulses,
+        )
+
         if isinstance(program, Circuit):
             translator = CircuitToPulses(platform=self)
             pulse_schedule = translator.translate(circuits=[program])[0]
@@ -337,7 +343,7 @@ class Platform:  # pylint: disable=too-many-public-methods
             pulse_schedule = program
 
         programs = {}
-        for pulse_bus_schedule in pulse_schedule:
+        for pulse_bus_schedule in pulse_schedule.elements:
             bus = self.buses.get(port=pulse_bus_schedule.port)
             bus_programs = bus.compile(pulse_bus_schedule, num_avg, repetition_duration, num_bins)
             programs[bus.alias] = bus_programs

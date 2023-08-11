@@ -245,7 +245,7 @@ class TestExecutionManagerPlatform:
         results_2 = nested_experiment.execute()
         mock_urllib.request.Request.assert_called()
         mock_urllib.request.urlopen.assert_called()
-        assert results == results_2
+        assert results.to_dict() == results_2.to_dict()
         mock_rs.assert_called()
         mock_pulsar.assert_called()
         assert isinstance(results, Results)
@@ -313,49 +313,3 @@ def fixture_mocked_execution_manager(execution_manager: ExecutionManager):
         awg.device.sequencers = [MagicMock(), MagicMock()]
         awg.device.get_acquisitions.return_value = qblox_acquisition
     return execution_manager
-
-
-class TestWorkflow:
-    """Unit tests for the methods used in the workflow of an `ExecutionManager` class."""
-
-    def test_compile(self, execution_manager: ExecutionManager):
-        """Test the compile method of the ``ExecutionManager`` class."""
-        sequences = execution_manager.compile(idx=0, nshots=1000, repetition_duration=2000, num_bins=1)
-        assert isinstance(sequences, dict)
-        assert len(sequences) == len(execution_manager.buses)
-        for alias, sequences in sequences.items():
-            assert alias in {bus.alias for bus in execution_manager.buses}
-            assert isinstance(sequences, list)
-            assert len(sequences) == 1
-            assert isinstance(sequences[0], Sequence)
-            assert sequences[0]._program.duration == 2000 * 1000 + 4  # additional 4ns for the initial wait_sync
-
-    def test_upload(self, mocked_execution_manager: ExecutionManager):
-        """Test upload method."""
-        _ = mocked_execution_manager.compile(idx=0, nshots=1000, repetition_duration=2000, num_bins=1)
-        mocked_execution_manager.upload()
-
-        awgs = [bus.system_control.instruments[0] for bus in mocked_execution_manager.buses]
-
-        for awg in awgs:
-            for seq_idx in range(awg.num_sequencers):  # type: ignore
-                if isinstance(awg, QbloxQRM) and seq_idx == 1:
-                    assert awg.device.sequencers[seq_idx].sequence.call_count == 0  # type: ignore
-                    continue
-                assert awg.device.sequencers[seq_idx].sequence.call_count == 1  # type: ignore
-
-    def test_run_multiple_readout_buses_raises_error(self, mocked_execution_manager: ExecutionManager):
-        """Test that an error is raised when calling ``run`` with multiple readout buses."""
-        readout_bus = mocked_execution_manager.readout_buses[0]
-        mocked_execution_manager.buses += [readout_bus]  # add extra readout bus
-        with patch("qililab.execution.execution_manager.logger") as mocked_logger:
-            mocked_execution_manager.run(queue=Queue())
-            mocked_logger.error.assert_called_once_with(
-                "Only One Readout Bus allowed. Reading only from the first one."
-            )
-
-    def test_run_no_readout_buses_raises_error(self, mocked_execution_manager: ExecutionManager):
-        """Test that an error is raised when calling ``run`` with no readout buses."""
-        mocked_execution_manager.buses = []
-        with pytest.raises(ValueError, match="No Results acquired"):
-            mocked_execution_manager.run(queue=Queue())
