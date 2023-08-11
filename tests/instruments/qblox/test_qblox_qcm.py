@@ -12,7 +12,7 @@ from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
 from qililab.typings import InstrumentName
 from qililab.typings.enums import Parameter
 from tests.data import Galadriel
-from tests.test_utils import platform_db
+from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="pulse_bus_schedule")
@@ -27,7 +27,7 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
 @pytest.fixture(name="pulsar_controller_qcm")
 def fixture_pulsar_controller_qcm():
     """Return an instance of QbloxPulsarController class"""
-    platform = platform_db(runcard=Galadriel.runcard)
+    platform = build_platform(runcard=Galadriel.runcard)
     settings = copy.deepcopy(Galadriel.pulsar_controller_qcm_0)
     settings.pop("name")
     return QbloxPulsarController(settings=settings, loaded_instruments=platform.instruments)

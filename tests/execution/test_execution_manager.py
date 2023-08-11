@@ -8,7 +8,6 @@ import pandas as pd
 import pytest
 from qpysequence import Sequence
 
-from qililab import build_platform
 from qililab.constants import RESULTSDATAFRAME
 from qililab.execution import ExecutionManager
 from qililab.experiment.experiment import Experiment
@@ -19,7 +18,7 @@ from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils import Loop
 from tests.data import experiment_params
-from tests.test_utils import mock_instruments
+from tests.test_utils import build_platform, mock_instruments
 
 
 @pytest.fixture(name="execution_manager")
@@ -37,11 +36,7 @@ def fixture_execution_manager(experiment: Experiment) -> ExecutionManager:
 def fixture_nested_experiment(request: pytest.FixtureRequest):
     """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="sauron")
-            mock_load.assert_called()
-            mock_open.assert_called()
+    platform = build_platform(runcard)
     loop2 = Loop(
         alias="platform",
         parameter=Parameter.DELAY_BEFORE_READOUT,
@@ -64,11 +59,7 @@ def fixture_nested_experiment(request: pytest.FixtureRequest):
 def fixture_experiment(request: pytest.FixtureRequest):
     """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="sauron")
-            mock_load.assert_called()
-            mock_open.assert_called()
+    platform = build_platform(runcard)
     loop = Loop(
         alias="X(0)",
         parameter=Parameter.DURATION,

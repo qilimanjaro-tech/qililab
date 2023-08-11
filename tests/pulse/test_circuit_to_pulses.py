@@ -20,7 +20,7 @@ from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.transpiler import Drag
 from qililab.utils import Wait
 from tests.data import Galadriel
-from tests.test_utils import platform_db
+from tests.test_utils import build_platform
 
 platform_gates = {
     "M(0)": [
@@ -525,7 +525,7 @@ def fixture_platform(chip: Chip) -> Platform:
     ]
 
     gate_settings = Runcard.GateSettings(**settings)  # type: ignore  # pylint: disable=unexpected-keyword-arg
-    platform = platform_db(runcard=Galadriel.runcard)
+    platform = build_platform(runcard=Galadriel.runcard)
     platform.gate_settings = gate_settings  # type: ignore
     platform.chip = chip
     buses = Buses(

@@ -5,10 +5,10 @@ import numpy as np
 import pytest
 from qibo.gates import RX, M, X
 
-from qililab import build_platform
 from qililab.experiment import FlippingSequence
 from qililab.system_control import ReadoutSystemControl
 from tests.data import Galadriel
+from tests.test_utils import build_platform
 
 START = 1
 STOP = 1000
@@ -21,11 +21,7 @@ q_data = 9 * np.sin(0.01 * x)
 @pytest.fixture(name="flipping_sequence")
 def fixture_flipping_sequence():
     """Return Experiment object."""
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=Galadriel.runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="flux_qubit")
-            mock_load.assert_called()
-            mock_open.assert_called()
+    platform = build_platform(Galadriel.runcard)
     analysis = FlippingSequence(platform=platform, qubit=0, loop_values=np.arange(start=START, stop=STOP, step=STEP))
     analysis.results = MagicMock()
     analysis.results.acquisitions.return_value = {

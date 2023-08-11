@@ -1,5 +1,6 @@
 """Unit tests for the Runcard class."""
 import ast
+import copy
 import re
 from dataclasses import asdict
 
@@ -12,14 +13,22 @@ from qililab.typings import Parameter
 from tests.data import Galadriel
 
 
-@pytest.mark.parametrize("runcard_dict", [Galadriel.runcard])
+@pytest.fixture(name="runcard")
+def fixture_runcard():
+    return Runcard(**copy.deepcopy(Galadriel.runcard))
+
+
+@pytest.fixture(name="gate_settings")
+def fixture_gate_settings(runcard: Runcard):
+    return runcard.gate_settings
+
+
 class TestRuncard:
     """Unit tests for the Runcard dataclass initialization."""
 
-    def test_attributes(self, runcard_dict):
+    def test_attributes(self, runcard):
         """Test that the attributes of the Runcard are casted into dataclasses, and that
         the values they contain are the same as the input dictionaries."""
-        runcard = Runcard(**runcard_dict)
 
         assert isinstance(runcard.gate_settings, runcard.GateSettings)
         assert asdict(runcard.gate_settings) == Galadriel.platform
@@ -43,7 +52,6 @@ class TestRuncard:
             assert instrument_controller == Galadriel.instrument_controllers[index]
 
 
-@pytest.mark.parametrize("gate_settings", [Runcard(**Galadriel.runcard).gate_settings])
 class TestGateSettings:
     """Unit tests for the Runcard.GateSettings class."""
 

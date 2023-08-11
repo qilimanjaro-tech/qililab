@@ -1,26 +1,23 @@
 """Tests for the BaseExperiment class."""
 import copy
 import os
-from contextlib import ExitStack
 from queue import Queue
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 
-from qililab import build_platform
+import qililab as ql
 from qililab.constants import DATA, RUNCARD
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment.base_experiment import BaseExperiment
 from qililab.platform import Platform
-from qililab.result.results import Results
-from qililab.result.vna_result import VNAResult
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils import Loop
 from tests.data import Galadriel, SauronVNA, experiment_params
-from tests.test_utils import mock_instruments, platform_db
+from tests.test_utils import build_platform, mock_instruments
 
 
 class MockExperiment(BaseExperiment):
@@ -80,24 +77,20 @@ def fixture_connected_nested_experiment(
 @pytest.fixture(name="platform")
 def fixture_platform() -> Platform:
     """Return Platform object."""
-    return platform_db(runcard=Galadriel.runcard)
+    return build_platform(runcard=Galadriel.runcard)
 
 
 @pytest.fixture(name="sauron_platform")
 def fixture_sauron_platform() -> Platform:
     """Return Platform object."""
-    return platform_db(runcard=SauronVNA.runcard)
+    return build_platform(runcard=SauronVNA.runcard)
 
 
 @pytest.fixture(name="nested_experiment", params=experiment_params)
 def fixture_nested_experiment(request: pytest.FixtureRequest):
     """Return BaseExperiment object."""
     runcard, _ = request.param  # type: ignore
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="galdriel")
-            mock_load.assert_called()
-            mock_open.assert_called()
+    platform = build_platform(runcard)
     loop2 = Loop(
         alias="platform",
         parameter=Parameter.DELAY_BEFORE_READOUT,
@@ -118,11 +111,7 @@ def fixture_nested_experiment(request: pytest.FixtureRequest):
 def fixture_experiment_all_platforms(request: pytest.FixtureRequest):
     """Return BaseExperiment object."""
     runcard, _ = request.param  # type: ignore
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="galadriel")
-            mock_load.assert_called()
-            mock_open.assert_called()
+    platform = build_platform(runcard)
     # Build loop from an existing alias on the testing platform Galadriel
     loop = Loop(
         alias=Galadriel.buses[0][RUNCARD.ALIAS],  # type: ignore
@@ -131,7 +120,6 @@ def fixture_experiment_all_platforms(request: pytest.FixtureRequest):
     )
     options = ExperimentOptions(loops=[loop])
     experiment = MockExperiment(platform=platform, options=options)
-    mock_load.assert_called()
     return experiment
 
 
@@ -143,7 +131,7 @@ def fixture_experiment_reset(request: pytest.FixtureRequest):
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
             mock_load.return_value[RUNCARD.INSTRUMENT_CONTROLLERS][0] |= {"reset": False}
-            platform = build_platform(name="sauron")
+            platform = ql.build_platform(name="sauron")
             mock_load.assert_called()
             mock_open.assert_called()
     loop = Loop(
@@ -161,11 +149,7 @@ def fixture_experiment_reset(request: pytest.FixtureRequest):
 def fixture_exp(request: pytest.FixtureRequest):
     """Return BaseExperiment object."""
     runcard, _ = request.param  # type: ignore
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="galadriel")
-            mock_load.assert_called()
-            mock_open.assert_called()
+    platform = build_platform(runcard)
     loop = Loop(
         alias=Galadriel.buses[0][RUNCARD.ALIAS],  # type: ignore
         parameter=Parameter.DURATION,

@@ -7,7 +7,6 @@ import pytest
 
 from qililab.circuit import Circuit
 from qililab.circuit.circuit_transpiler import CircuitTranspiler
-from qililab.circuit.nodes.entry_node import EntryNode
 from qililab.circuit.nodes.operation_node import OperationNode
 from qililab.circuit.operations import Barrier, Measure, Reset, SquarePulse, Wait, X
 from qililab.circuit.operations.operation import Operation
@@ -18,7 +17,7 @@ from qililab.settings.runcard import Runcard
 from qililab.typings.enums import OperationName, OperationTimingsCalculationMethod, Qubits
 from qililab.utils import classproperty
 from tests.data import Galadriel
-from tests.test_utils import platform_db
+from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="simple_circuit")
@@ -39,7 +38,7 @@ def fixture_simple_circuit() -> Circuit:
 @pytest.fixture(name="platform")
 def fixture_platform() -> Platform:
     """Return Platform object."""
-    return platform_db(runcard=Galadriel.runcard)
+    return build_platform(runcard=Galadriel.runcard)
 
 
 @pytest.fixture(name="empty_circuit")

@@ -1,19 +1,17 @@
 """Tests for the BusExecution class."""
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import numpy as np
 import pytest
-from qpysequence import Sequence
 
-from qililab import build_platform
 from qililab.execution import BusExecution, ExecutionManager
 from qililab.experiment.experiment import Experiment
-from qililab.instruments import AWG
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
 from qililab.typings import Parameter
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils import Loop
 from tests.data import experiment_params
+from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="pulse_event")
@@ -43,11 +41,7 @@ def fixture_execution_manager(experiment: Experiment) -> ExecutionManager:
 def fixture_experiment(request: pytest.FixtureRequest):
     """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="sauron")
-            mock_load.assert_called()
-            mock_open.assert_called()
+    platform = build_platform(runcard)
     loop = Loop(
         alias="X(0)",
         parameter=Parameter.DURATION,
