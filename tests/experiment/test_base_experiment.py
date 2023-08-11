@@ -21,7 +21,8 @@ from tests.test_utils import build_platform, mock_instruments
 
 
 class MockExperiment(BaseExperiment):
-    def from_dict(self, dictionary):
+    @classmethod
+    def from_dict(cls, dictionary: dict):
         pass
 
     def _execute_recursive_loops(self, loops: list[Loop] | None, queue: Queue, depth=0):
@@ -112,7 +113,7 @@ def fixture_experiment_all_platforms(request: pytest.FixtureRequest):
     """Return BaseExperiment object."""
     runcard, _ = request.param  # type: ignore
     platform = build_platform(runcard)
-    # Build loop from an existing alias on the testing platform Galadriel
+    # Build loop from an existing alias on the testing platform
     loop = Loop(
         alias=Galadriel.buses[0][RUNCARD.ALIAS],  # type: ignore
         parameter=Parameter.LO_FREQUENCY,

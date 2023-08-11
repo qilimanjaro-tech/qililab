@@ -1,5 +1,5 @@
 """Unit tests for the ``ExperimentAnalysis`` class."""
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest

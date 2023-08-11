@@ -1,4 +1,5 @@
 """Tests for the ExecutionBuilder class."""
+import copy
 from warnings import catch_warnings
 
 import numpy as np
@@ -45,7 +46,7 @@ def fixture_loop() -> list[Loop]:
     """Return list of loops with alias equal to the alias in the Galadriel object specifyied in the data.py file"""
     return [
         Loop(alias=bus[RUNCARD.ALIAS], parameter=Parameter.CURRENT, values=np.linspace(0, 10, 10))
-        for bus in Galadriel.buses
+        for bus in copy.deepcopy(Galadriel.buses)
     ]
 
 
@@ -54,7 +55,7 @@ def fixture_nested_loop() -> list[Loop]:
     """Return list of a loop that contain nested loops with alias equal to the alias in the Galadriel object specifyied in the data.py file"""
     loops = [
         Loop(alias=bus[RUNCARD.ALIAS], parameter=Parameter.CURRENT, values=np.linspace(0, 10, 10))
-        for bus in Galadriel.buses
+        for bus in copy.deepcopy(Galadriel.buses)
     ]
     nested_loops = None
     for loop in reversed(loops):

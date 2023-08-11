@@ -70,8 +70,8 @@ class TestPlatform:
 
     def test_get_element_with_gate(self, platform: Platform):
         """Test the get_element method with a gate alias."""
-        gates = platform.gate_settings.gates.keys()
-        all(isinstance(event, GateEventSettings) for gate in gates for event in platform.get_element(alias=gate))
+        p_gates = platform.gate_settings.gates.keys()
+        all(isinstance(event, GateEventSettings) for gate in p_gates for event in platform.get_element(alias=gate))
 
     def test_str_magic_method(self, platform: Platform):
         """Test __str__ magic method."""
@@ -248,7 +248,11 @@ class TestMethods:
     def test_execute_raises_error_if_more_than_one_readout_bus_present(self, platform: Platform):
         """Test that `Platform.execute` raises an error when the platform contains more than one readout bus."""
         platform.buses.add(
-            Bus(settings=Galadriel.buses[1], platform_instruments=platform.instruments, chip=platform.chip)
+            Bus(
+                settings=copy.deepcopy(Galadriel.buses[1]),
+                platform_instruments=platform.instruments,
+                chip=platform.chip,
+            )
         )
         with patch.object(Bus, "upload"):
             with patch.object(Bus, "run"):

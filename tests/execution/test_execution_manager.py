@@ -1,17 +1,15 @@
 """Tests for the ExecutionManager class."""
-from queue import Queue
 from unittest.mock import MagicMock, patch
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
-from qpysequence import Sequence
 
 from qililab.constants import RESULTSDATAFRAME
 from qililab.execution import ExecutionManager
 from qililab.experiment.experiment import Experiment
-from qililab.instruments import AWG, QbloxQRM
+from qililab.instruments import AWG
 from qililab.result.results import Results
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
