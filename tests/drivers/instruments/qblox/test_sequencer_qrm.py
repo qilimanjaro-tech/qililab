@@ -11,7 +11,6 @@ from qpysequence.weights import Weights
 from qililab.drivers.instruments.qblox.sequencer_qrm import SequencerQRM
 from qililab.pulse import Pulse, PulseBusSchedule, Rectangular
 from qililab.pulse.pulse_event import PulseEvent
-from qililab.result.qblox_results import QbloxResult
 from qililab.result.qblox_results.qblox_acquisitions_builder import QbloxAcquisitionsBuilder
 
 PULSE_SIGMAS = 4
