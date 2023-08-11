@@ -28,7 +28,7 @@ class TestPlatformInitialization:
         platform = Platform(runcard=runcard)
 
         assert platform.gates == runcard.gates
-        assert isinstance(platform.gates, Runcard.GateSettings)
+        assert isinstance(platform.gates, Runcard.Gates)
         assert isinstance(platform.instruments, Instruments)
         assert isinstance(platform.instrument_controllers, InstrumentControllers)
         assert isinstance(platform.chip, Chip)
@@ -77,7 +77,7 @@ class TestPlatform:
 
     def test_gates_settings_instance(self, platform: Platform):
         """Test settings instance."""
-        assert isinstance(platform.gates, Runcard.GateSettings)
+        assert isinstance(platform.gates, Runcard.Gates)
 
     def test_buses_instance(self, platform: Platform):
         """Test buses instance."""

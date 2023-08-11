@@ -54,7 +54,7 @@ class TestCircuitTranspiler:
 
     def test_properties_after_init(self, platform: Platform):
         transpiler = CircuitTranspiler(settings=platform.gates)
-        assert isinstance(transpiler.settings, Runcard.GateSettings)
+        assert isinstance(transpiler.settings, Runcard.Gates)
 
     @pytest.mark.parametrize(
         "circuit_fixture",

@@ -338,7 +338,7 @@ def fixture_chip():
 
 @pytest.fixture(name="platform")
 def fixture_platform(chip: Chip) -> Platform:
-    """Fixture that returns an instance of a ``Runcard.GateSettings`` class."""
+    """Fixture that returns an instance of a ``Runcard.Gates`` class."""
     settings = {
         "id_": 0,
         "category": "platform",
@@ -524,7 +524,7 @@ def fixture_platform(chip: Chip) -> Platform:
         },
     ]
 
-    gates = Runcard.GateSettings(**settings)  # type: ignore  # pylint: disable=unexpected-keyword-arg
+    gates = Runcard.Gates(**settings)  # type: ignore  # pylint: disable=unexpected-keyword-arg
     platform = platform_db(runcard=Galadriel.runcard)
     platform.gates = gates  # type: ignore
     platform.chip = chip

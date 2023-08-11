@@ -47,7 +47,7 @@ This document contains the changes of the current release.
       ...
   ```
 
-  Notice also how `settings` (and his respective class `PlatformSettings`) has changed to `gates` (and the class to `GateSettings` having the runcard string and the class the same name now, before they didn't).
+  Notice also how `settings` (and his respective class `PlatformSettings`) has changed to `gates` (and the class to `Gates` having the runcard string and the class the same name now, before they didn't).
 
   [#475](https://github.com/qilimanjaro-tech/qililab/pull/475)
 
@@ -105,7 +105,7 @@ This document contains the changes of the current release.
   Experiments can access `GateEvent` items by using the gate and qubit `alias` like previously
   and adding `_item` to access a `GateEvent` that is not the first event of the gate.
   For example, `set_parameter(parameter='amplitude', value=0.8, alias='X(0)')` will set the amplitude
-  in the gates setting above from 0.5 to 0.8. This is equivalent to `alias='X(0)_0'`. However
+  in the gate setting above from 0.5 to 0.8. This is equivalent to `alias='X(0)_0'`. However
   `alias='X(0)_1'` sets instead the amplitude of the second event (`bus=flux_line_q0_bus`) from
   1.0 to 0.8
   [#472](https://github.com/qilimanjaro-tech/qililab/pull/472)

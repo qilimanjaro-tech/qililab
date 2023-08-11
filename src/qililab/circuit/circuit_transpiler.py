@@ -15,7 +15,7 @@ from .operations import Barrier, Measure, PulseOperation, Reset, SpecialOperatio
 class CircuitTranspiler:
     """CircuitTranspiler class."""
 
-    settings: Runcard.GateSettings
+    settings: Runcard.Gates
 
     def calculate_timings(self, circuit: Circuit) -> Circuit:
         """Calculates the timings of all operations in a given quantum circuit and annotates the operation nodes with timing information.
