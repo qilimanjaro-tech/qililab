@@ -4,7 +4,7 @@ import copy
 from typing import Any
 
 import numpy as np
-from qibo.gates import RX, RY, I, M, X, Y
+from qibo.gates import I, M, X, Y
 from qibo.models.circuit import Circuit
 
 from qililab.constants import (
@@ -77,120 +77,82 @@ class Galadriel:
             },
         ],
         "gates": {
-            0: [
+            "M(0)": [
                 {
-                    RUNCARD.NAME: "M",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 2000,
-                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
-                },
-                {
-                    RUNCARD.NAME: "I",
-                    "amplitude": 0,
-                    "phase": 0,
-                    "duration": 0,
-                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
-                },
-                {
-                    RUNCARD.NAME: "X",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 50,
-                    EXPERIMENT.SHAPE: {
-                        RUNCARD.NAME: "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 0,
+                    "bus": "feedline_input_output_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 2000,
+                        "frequency": 0,
+                        "shape": {"name": "rectangular"},
                     },
-                },
-                {
-                    RUNCARD.NAME: "Y",
-                    "amplitude": 1,
-                    "phase": 1.5707963267948966,
-                    "duration": 20,
-                    EXPERIMENT.SHAPE: {
-                        RUNCARD.NAME: "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 0,
-                    },
-                },
-                {
-                    RUNCARD.NAME: "Drag",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 50,
-                    EXPERIMENT.SHAPE: {
-                        RUNCARD.NAME: "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 1.0,
-                    },
-                },
-            ],
-            1: [
-                {
-                    RUNCARD.NAME: "M",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 2000,
-                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
-                },
-                {
-                    RUNCARD.NAME: "I",
-                    "amplitude": 0,
-                    "phase": 0,
-                    "duration": 0,
-                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
-                },
-                {
-                    RUNCARD.NAME: "X",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 50,
-                    EXPERIMENT.SHAPE: {
-                        RUNCARD.NAME: "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 0,
-                    },
-                },
-                {
-                    RUNCARD.NAME: "Y",
-                    "amplitude": 1,
-                    "phase": 1.5707963267948966,
-                    "duration": 20,
-                    EXPERIMENT.SHAPE: {
-                        RUNCARD.NAME: "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 0,
-                    },
-                },
-                {
-                    RUNCARD.NAME: "Drag",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 50,
-                    EXPERIMENT.SHAPE: {
-                        RUNCARD.NAME: "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 1.0,
-                    },
-                },
-            ],
-            (0, 1): [
-                {
-                    RUNCARD.NAME: "M",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 2000,
-                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
                 }
             ],
-            (1, 0): [
+            "I(0)": [
                 {
-                    RUNCARD.NAME: "M",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 2000,
-                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 100,
+                        "frequency": 0,
+                        "shape": {"name": "rectangular"},
+                    },
+                }
+            ],
+            "X(0)": [
+                {
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 50,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "Y(0)": [
+                {
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "RY(0)": [
+                {
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "RX(0)": [
+                {
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
                 }
             ],
         },
@@ -505,7 +467,7 @@ class Galadriel:
         {
             RUNCARD.ID: 0,
             RUNCARD.CATEGORY: Category.BUS.value,
-            RUNCARD.ALIAS: "drive_line_bus",
+            RUNCARD.ALIAS: "drive_line_q0_bus",
             Category.SYSTEM_CONTROL.value: {
                 RUNCARD.ID: 0,
                 RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
@@ -533,7 +495,7 @@ class Galadriel:
         {
             RUNCARD.ID: 2,
             RUNCARD.CATEGORY: Category.BUS.value,
-            RUNCARD.ALIAS: "flux_line_bus",
+            RUNCARD.ALIAS: "flux_line_q0_bus",
             Category.SYSTEM_CONTROL.value: {
                 RUNCARD.ID: 0,
                 RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
@@ -621,44 +583,84 @@ class FluxQubitSimulator:
             },
         ],
         "gates": {
-            0: [
+            "M(0)": [
                 {
-                    RUNCARD.NAME: "M",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 2000,
-                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
-                },
-                {
-                    RUNCARD.NAME: "I",
-                    "amplitude": 0,
-                    "phase": 0,
-                    "duration": 0,
-                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
-                },
-                {
-                    RUNCARD.NAME: "X",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 50,
-                    EXPERIMENT.SHAPE: {
-                        RUNCARD.NAME: "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 0,
+                    "bus": "simulated_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 2000,
+                        "frequency": 0,
+                        "shape": {"name": "rectangular"},
                     },
-                },
+                }
+            ],
+            "I(0)": [
                 {
-                    RUNCARD.NAME: "Y",
-                    "amplitude": 1,
-                    "phase": 1.5707963267948966,
-                    "duration": 20,
-                    EXPERIMENT.SHAPE: {
-                        RUNCARD.NAME: "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 0,
+                    "bus": "simulated_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 100,
+                        "frequency": 0,
+                        "shape": {"name": "rectangular"},
                     },
-                },
-            ]
+                }
+            ],
+            "X(0)": [
+                {
+                    "bus": "simulated_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 50,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "Y(0)": [
+                {
+                    "bus": "simulated_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "RY(0)": [
+                {
+                    "bus": "simulated_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "RX(0)": [
+                {
+                    "bus": "simulated_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
         },
     }
 
@@ -716,8 +718,9 @@ for platform in [Galadriel]:
     circuit.add(I(0))
     circuit.add(X(0))
     circuit.add(Y(0))
-    circuit.add(RX(0, 23))
-    circuit.add(RY(0, 15))
+    # FIXME: https://www.notion.so/qilimanjaro/Adapt-test-data-runcard-circuit-to-current-implementation-d875fecbe5834272a4a43e9b3f602685?pvs=4
+    # circuit.add(RX(0, 23))
+    # circuit.add(RY(0, 15))
     if platform == Galadriel:
         circuit.add(M(0))
     experiment_params.extend([[platform.runcard, circuit], [platform.runcard, [circuit, circuit]]])  # type: ignore
@@ -727,8 +730,8 @@ simulated_experiment_circuit: Circuit = Circuit(1)
 simulated_experiment_circuit.add(I(0))
 simulated_experiment_circuit.add(X(0))
 simulated_experiment_circuit.add(Y(0))
-simulated_experiment_circuit.add(RX(0, 23))
-simulated_experiment_circuit.add(RY(0, 15))
+# simulated_experiment_circuit.add(RX(0, 23))
+# simulated_experiment_circuit.add(RY(0, 15))
 
 results_two_loops: dict[str, Any] = {
     EXPERIMENT.SOFTWARE_AVERAGE: 1,

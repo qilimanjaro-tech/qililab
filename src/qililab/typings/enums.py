@@ -326,6 +326,7 @@ class Parameter(str, Enum):
     DURATION = "duration"
     AMPLITUDE = "amplitude"
     PHASE = "phase"
+    WAIT_TIME = "wait_time"
     DELAY_BETWEEN_PULSES = "delay_between_pulses"
     DELAY_BEFORE_READOUT = "delay_before_readout"
     GATE_DURATION = "gate_duration"

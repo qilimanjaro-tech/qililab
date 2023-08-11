@@ -1,12 +1,12 @@
 from dataclasses import dataclass
 
-import numpy as np
-
 from qililab.qprogram.blocks.block import Block
 from qililab.qprogram.variable import Variable
 
 
 @dataclass(frozen=True)
-class Loop(Block):  # pylint: disable=missing-class-docstring
+class ForLoop(Block):  # pylint: disable=missing-class-docstring
     variable: Variable
-    values: np.ndarray
+    start: int | float
+    stop: int | float
+    step: int | float

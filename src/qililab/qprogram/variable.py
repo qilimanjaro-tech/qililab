@@ -1,17 +1,25 @@
 """This file contains all the variables used inside a QProgram."""
 import math
+from uuid import UUID, uuid4
 
 
 class Variable:
     """Variable class used to define variables inside a QProgram."""
 
+    _uuid: UUID
     value: int | float
+
+    def __init__(self):
+        self._uuid = uuid4()
 
     def __str__(self):
         return str(self.value)
 
     def __repr__(self):
         return repr(self.value)
+
+    def __hash__(self):
+        return hash(self._uuid)
 
     def __format__(self, formatstr):
         return self.value.__format__(formatstr)
