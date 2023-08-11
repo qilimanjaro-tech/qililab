@@ -34,7 +34,61 @@ platform.turn_on_instruments()
 platform.initial_setup()
   
 ##################################### EXPERIMENTS ##################################################
-""" Define the QPrograms, i.e. the experiments that will be the nodes of the calibration graph """
+""" 
+Define the QPrograms, i.e. the experiments that will be the nodes of the calibration graph 
+
+Examples:
+
+    Here's an example of the sweep_values dictionary. 'sweep_values' represents the set of all the values between 'start' and 'end'
+    separated by the distance 'step'. 'start' is included in the interval, 'end' is excluded. 
+    The following represents the set of values [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        
+    sweep_values = {"start": 0,
+                    "stop": 10,
+                    "step": 1
+                    }
+                
+                
+    Here's a general example of a function defining a QProgram:
+
+    def name_of_the_experiment(drive_bus: str, readout_bus: str, sweep_values: dict):
+
+        '''Define the qprogram and a variable to iterate over. There can be more than one variable'''
+        qp = ql.QProgram()
+        some_parameter = qp.variable(type_of_the_parameter)
+        
+        '''The user should adjust the arguments of DragPulse based on the runcard.
+        The 'amplitude' argument is computed as amplitude = theta*pi_pulse_amplitude/pi,
+        where 'theta' is the argument of the Drag gate constructor and 'pi_pulse_amplitude'
+        is the amplitude of the Drag gate written in the runcard, where all the circuit and
+        gate parameters are specified.'''
+        drag_pair = DragPulse(amplitude=1.0, duration=20, num_sigmas=4, drag_coefficient=0.0)
+
+        '''These are the pulses played by the readout_bus before performing the measurement, as can be seen in the loop below.'''
+        ones_wf = Square(amplitude=1.0, duration=1000)
+        zeros_wf = Square(amplitude=0.0, duration=1000)
+
+        '''Here the loops are executed. 'for_loop' is the loop that iterates over all the values defined by 'sweep_values'. 
+        Each time 'acquire' is called, a new bin is created and the value measured after the experiment is stored there (see QBlox docs for more details on what a bin is).
+        This way, usually each value in 'sweep_values' is associated with one bin. 
+        We want to perform the experiment multiple times for each of the values in 'sweep_values' in order to get more accurate results. This is handled by 'acquire_loop':
+        everything inside this loop is run as many times as the 'iterations' argument of 'acquire_loop'. If there is an 'acquire' inside this loop, it will be executed 
+        'iterations' times for each bin, and then for each bin the results of 'acquire' will be averaged.
+        '''
+        with qp.acquire_loop(iterations=1000):
+            with qp.for_loop(variable=some_parameter, start = sweep_values["start"], stop = sweep_values["stop"], step = sweep_values["step"]):
+                qp.set_gain(bus=drive_bus, gain_path0=gain, gain_path1=gain)
+                qp.play(bus=drive_bus, waveform=drag_pair)
+                qp.sync()
+                qp.play(bus=readout_bus, waveform=IQPair(I=ones_wf, Q=zeros_wf))
+                qp.acquire(bus=readout_bus)
+
+        '''An instance of the QProgram class is returned, so that this qprogram can be compiled by the QProgram compiler and then run.'''
+        return qp
+    
+The following contains specific implementations of this general example, for experiment like Rabi, Ramsey, the Flipping Experiment, etc.
+
+"""
 
 
 # Rabi experiment 
@@ -53,6 +107,7 @@ def rabi(drive_bus: str, readout_bus: str, sweep_values: dict):
     Args:
         drive_bus (str): Name of the drive bus
         readout_bus (str): Name of the readout bus
+        sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the qprogram iterate
 
     Returns:
         qp (QProgram): The QProgram describing the experiment. It will need to be compiled to be run on the qblox cluster.
@@ -90,6 +145,7 @@ def ramsey(drive_bus: str, readout_bus: str):
     Args:
         drive_bus (str): Name of the drive bus
         readout_bus (str): Name of the readout bus
+        sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the qprogram iterate
 
     Returns:
         qp (QProgram): The QProgram describing the experiment. It will need to be compiled to be run on the qblox cluster.
@@ -128,6 +184,7 @@ def drag_coefficient_calibration(drive_bus: str, readout_bus: str, sweep_values:
     Args:
         drive_bus (str): Name of the drive bus
         readout_bus (str): Name of the readout bus
+        sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the qprogram iterate
 
     Returns:
         qp (QProgram): The QProgram describing the experiment. It will need to be compiled to be run on the qblox cluster.
@@ -184,6 +241,7 @@ def flipping(drive_bus: str, readout_bus: str, sweep_values: list[int]):
     Args:
         drive_bus (str): Name of the drive bus
         readout_bus (str): Name of the readout bus
+        sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the qprogram iterate
 
     Returns:
         qp (QProgram): The QProgram describing the experiment. It will need to be compiled to be run on the qblox cluster.
@@ -311,7 +369,8 @@ Define the analysis functions and plotting functions.
         than one experiment.
     - Plotting functions plot the fitted data.
 NOTE: For now, each experiment has it own custom function that handled both analysis (=processing and fitting the data) and plotting. 
-        This will be made less hardcoded in the future by another intern.
+        This will be made less hardcoded in the future by another intern, possibly using a generic function called analyze_experiment()
+        that takes as arguments the dimensions of the plot (2D or 3D), plot labels, parameters, and all the experiment-specific stuff.
 """
 
 def analyze_rabi(datapath, fit_quadrature="i", label=""):
