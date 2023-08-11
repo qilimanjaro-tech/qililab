@@ -41,7 +41,7 @@ class ExperimentOptions:
         """
         return {
             EXPERIMENT.LOOPS: [loop.to_dict() for loop in self.loops] if self.loops is not None else None,
-            RUNCARD.GATE_SETTINGS: asdict(self.settings),
+            RUNCARD.GATES: asdict(self.settings),
             RUNCARD.NAME: self.name,
             EXPERIMENT.REMOTE_SAVE: self.remote_save,
             EXPERIMENT.DESCRIPTION: self.description,
@@ -59,8 +59,8 @@ class ExperimentOptions:
 
         return ExperimentOptions(
             loops=loops,
-            settings=ExperimentSettings(**dictionary[RUNCARD.GATE_SETTINGS])
-            if RUNCARD.GATE_SETTINGS in dictionary
+            settings=ExperimentSettings(**dictionary[RUNCARD.GATES])
+            if RUNCARD.GATES in dictionary
             else ExperimentSettings(),
             name=dictionary[RUNCARD.NAME] if RUNCARD.NAME in dictionary else DEFAULT_EXPERIMENT_NAME,
             remote_save=dictionary.get(EXPERIMENT.REMOTE_SAVE, True),

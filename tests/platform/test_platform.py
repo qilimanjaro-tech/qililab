@@ -27,8 +27,8 @@ class TestPlatformInitialization:
         """Test initialization of the class"""
         platform = Platform(runcard=runcard)
 
-        assert platform.gate_settings == runcard.gate_settings
-        assert isinstance(platform.gate_settings, Runcard.GateSettings)
+        assert platform.gates == runcard.gates
+        assert isinstance(platform.gates, Runcard.GateSettings)
         assert isinstance(platform.instruments, Instruments)
         assert isinstance(platform.instrument_controllers, InstrumentControllers)
         assert isinstance(platform.chip, Chip)
@@ -43,15 +43,15 @@ class TestPlatform:
 
     def test_id_property(self, platform: Platform):
         """Test id property."""
-        assert platform.id_ == platform.gate_settings.id_
+        assert platform.id_ == platform.gates.id_
 
     def test_name_property(self, platform: Platform):
         """Test name property."""
-        assert platform.name == platform.gate_settings.name
+        assert platform.name == platform.gates.name
 
     def test_category_property(self, platform: Platform):
         """Test category property."""
-        assert platform.category == platform.gate_settings.category
+        assert platform.category == platform.gates.category
 
     def test_num_qubits_property(self, platform: Platform):
         """Test num_qubits property."""
@@ -68,16 +68,16 @@ class TestPlatform:
 
     def test_get_element_with_gate(self, platform: Platform):
         """Test the get_element method with a gate alias."""
-        gates = platform.gate_settings.gates.keys()
+        gates = platform.gates.gates.keys()
         all(isinstance(event, GateEventSettings) for gate in gates for event in platform.get_element(alias=gate))
 
     def test_str_magic_method(self, platform: Platform):
         """Test __str__ magic method."""
         str(platform)
 
-    def test_gate_settings_instance(self, platform: Platform):
+    def test_gates_settings_instance(self, platform: Platform):
         """Test settings instance."""
-        assert isinstance(platform.gate_settings, Runcard.GateSettings)
+        assert isinstance(platform.gates, Runcard.GateSettings)
 
     def test_buses_instance(self, platform: Platform):
         """Test buses instance."""

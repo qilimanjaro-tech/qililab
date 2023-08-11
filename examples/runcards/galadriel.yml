@@ -1,4 +1,4 @@
-gate_settings:
+gates:
   id_: 0
   category: platform
   name: galadriel_soprano_master

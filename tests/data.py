@@ -45,7 +45,7 @@ class Galadriel:
 
     name = "galadriel"
 
-    platform: dict[str, Any] = {
+    gates: dict[str, Any] = {
         RUNCARD.ID: 0,
         RUNCARD.NAME: "galadriel",
         PLATFORM.DEVICE_ID: 9,
@@ -508,7 +508,7 @@ class Galadriel:
     ]
 
     runcard: dict[str, Any] = {
-        RUNCARD.GATE_SETTINGS: platform,
+        RUNCARD.GATES: gates,
         RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,
         RUNCARD.INSTRUMENTS: instruments,
@@ -552,7 +552,7 @@ class FluxQubitSimulator:
 
     name = "flux_qubit"
 
-    platform: dict[str, Any] = {
+    gates: dict[str, Any] = {
         RUNCARD.ID: 0,
         RUNCARD.NAME: "flux_qubit",
         PLATFORM.DEVICE_ID: 9,
@@ -675,7 +675,7 @@ class FluxQubitSimulator:
     }
 
     runcard: dict[str, Any] = {
-        RUNCARD.GATE_SETTINGS: platform,
+        RUNCARD.GATES: gates,
         RUNCARD.INSTRUMENTS: [],
         RUNCARD.INSTRUMENT_CONTROLLERS: [],
         RUNCARD.CHIP: chip,
@@ -870,7 +870,7 @@ experiment: dict[str, Any] = {
             }
         ],
         RUNCARD.NAME: "punchout",
-        RUNCARD.GATE_SETTINGS: {
+        RUNCARD.GATES: {
             EXPERIMENT.HARDWARE_AVERAGE: 1024,
             EXPERIMENT.SOFTWARE_AVERAGE: 1,
             EXPERIMENT.REPETITION_DURATION: 200000,
@@ -905,7 +905,7 @@ class SauronVNA:
 
     name = "sauron_vna"
 
-    platform: dict[str, Any] = {
+    gates: dict[str, Any] = {
         RUNCARD.ID: 0,
         RUNCARD.NAME: "sauron_vna",
         PLATFORM.DEVICE_ID: 9,
@@ -1035,7 +1035,7 @@ class SauronVNA:
     ]
 
     runcard: dict[str, Any] = {
-        RUNCARD.GATE_SETTINGS: platform,
+        RUNCARD.GATES: gates,
         RUNCARD.INSTRUMENTS: instruments,
         RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,

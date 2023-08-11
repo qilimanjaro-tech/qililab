@@ -40,8 +40,8 @@ class Platform:  # pylint: disable=too-many-public-methods
     def __init__(self, runcard: Runcard, connection: API | None = None):
         """instantiates the platform"""
 
-        self.gate_settings = runcard.gate_settings
-        """Exactly the gate_settings in the Runcard class"""
+        self.gates = runcard.gates
+        """Exactly the gates in the Runcard class"""
 
         self.instruments = Instruments(elements=self._load_instruments(instruments_dict=runcard.instruments))
         """Instruments corresponding classes, instantiated given the instruments list[dict] of the Runcard class"""
@@ -125,14 +125,14 @@ class Platform:  # pylint: disable=too-many-public-methods
         """
         if alias is not None:
             if alias == Category.PLATFORM.value:
-                return self.gate_settings
+                return self.gates
             regex_match = re.search(GATE_ALIAS_REGEX, alias.split("_")[0])
             if regex_match is not None:
                 name = regex_match["gate"]
                 qubits_str = regex_match["qubits"]
                 qubits = ast.literal_eval(qubits_str)
                 if f"{name}({qubits_str})" in self.gate_names:
-                    return self.gate_settings.get_gate(name=name, qubits=qubits)
+                    return self.gates.get_gate(name=name, qubits=qubits)
 
         element = self.instruments.get_instrument(alias=alias)
         if element is None:
@@ -200,7 +200,7 @@ class Platform:  # pylint: disable=too-many-public-methods
         """
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
         if alias == Category.PLATFORM.value or regex_match is not None:
-            self.gate_settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
+            self.gates.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             return
         element = self.get_element(alias=alias)
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
@@ -247,7 +247,7 @@ class Platform:  # pylint: disable=too-many-public-methods
         Returns:
             int: settings.id_.
         """
-        return self.gate_settings.id_
+        return self.gates.id_
 
     @property
     def name(self):
@@ -256,7 +256,7 @@ class Platform:  # pylint: disable=too-many-public-methods
         Returns:
             str: settings.name.
         """
-        return self.gate_settings.name
+        return self.gates.name
 
     @property
     def category(self):
@@ -265,7 +265,7 @@ class Platform:  # pylint: disable=too-many-public-methods
         Returns:
             str: settings.category.
         """
-        return self.gate_settings.category
+        return self.gates.category
 
     @property
     def num_qubits(self):
@@ -283,7 +283,7 @@ class Platform:  # pylint: disable=too-many-public-methods
         Returns:
             list[str]: List of the names of all the defined gates.
         """
-        return self.gate_settings.gate_names
+        return self.gates.gate_names
 
     @property
     def device_id(self):
@@ -292,11 +292,11 @@ class Platform:  # pylint: disable=too-many-public-methods
         Returns:
             int: id of the platform device
         """
-        return self.gate_settings.device_id
+        return self.gates.device_id
 
     def to_dict(self):
         """Return all platform information as a dictionary."""
-        gate_settings_dict = {RUNCARD.GATE_SETTINGS: asdict(self.gate_settings, dict_factory=dict_factory)}
+        gates_dict = {RUNCARD.GATES: asdict(self.gates, dict_factory=dict_factory)}
         chip_dict = {RUNCARD.CHIP: self.chip.to_dict() if self.chip is not None else None}
         buses_dict = {RUNCARD.BUSES: self.buses.to_dict() if self.buses is not None else None}
         instrument_dict = {RUNCARD.INSTRUMENTS: self.instruments.to_dict() if self.instruments is not None else None}
@@ -306,7 +306,7 @@ class Platform:  # pylint: disable=too-many-public-methods
             else None,
         }
 
-        return gate_settings_dict | chip_dict | buses_dict | instrument_dict | instrument_controllers_dict
+        return gates_dict | chip_dict | buses_dict | instrument_dict | instrument_controllers_dict
 
     def __str__(self) -> str:
         """String representation of the platform
