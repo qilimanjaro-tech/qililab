@@ -6,7 +6,7 @@ from typing import Literal
 
 from qililab.constants import GATE_ALIAS_REGEX
 from qililab.settings.ddbb_element import DDBBElement
-from qililab.settings.gate_settings import GateEventSettings
+from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.typings.enums import Category, OperationTimingsCalculationMethod, Parameter, ResetMethod
 from qililab.utils import nested_dataclass
 
@@ -18,20 +18,20 @@ class Runcard:
     """Runcard class. Casts the platform dictionary into a class.
 
     The input to the constructor should be a dictionary of the desired runcard with the following structure:
-    - transpilation_settings:
+    - gate_settings:
     - chip:
     - buses:
     - instruments: List of "instruments" dictionaries
     - instrument_controllers: List of "instrument_controllers" dictionaries
 
-    The transpilation_settings, chip and bus dictionaries will be passed to their corresponding TranpilationSettings,
+    The gate_settings, chip and bus dictionaries will be passed to their corresponding TranpilationSettings,
     ChipSettings or BusSettings here, meanwhile the instruments and instrument_controllers will remain dictionaries.
 
     Then this full class gets passed to the Platform who will instantiate the actual qililab Chip, Buses/Bus and the
     corresponding Instrument classes with the settings attributes of this class.
 
     Args:
-        transpilation_settings (dict): TranspilationSettings dictionary -> TranspilationSettings inner dataclass
+        gate_settings (dict): GateSettings dictionary -> GateSettings inner dataclass
         chip (dict): ChipSettings dictionary -> ChipSettings inner dataclass
         buses (list[dict]): List of BusSettings dictionaries -> list[BusSettings] inner dataclass
         instruments (list[dict]): List of dictionaries containing the "instruments" information (does not transform)
@@ -62,8 +62,8 @@ class Runcard:
         alias: str | None = None
 
     @nested_dataclass
-    class TranspilationSettings(DDBBElement):
-        """TranspilationSettings class."""
+    class GateSettings(DDBBElement):
+        """GateSettings class."""
 
         @nested_dataclass
         class OperationSettings:
@@ -115,10 +115,10 @@ class Runcard:
             for operation in self.operations:
                 # TODO: Fix bug that parses settings as dict instead of defined classes
                 if isinstance(operation, dict):
-                    operation = Runcard.TranspilationSettings.OperationSettings(**operation)
+                    operation = Runcard.GateSettings.OperationSettings(**operation)
                 if operation.name == name:
                     return operation
-            raise ValueError(f"Operation {name} not found in platform settings.")
+            raise ValueError(f"Operation {name} not found in gate settings.")
 
         def get_gate(self, name: str, qubits: int | tuple[int, int] | tuple[int]):
             """Get gate settings from runcard for a given gate name and qubits.
@@ -148,7 +148,7 @@ class Runcard:
 
         @property
         def gate_names(self) -> list[str]:
-            """PlatformSettings 'gate_names' property.
+            """GateSettings 'gate_names' property.
 
             Returns:
                 list[str]: List of the names of all the defined gates.
@@ -181,7 +181,7 @@ class Runcard:
     buses: list[BusSettings]  # This actually is a list[dict] until the post_init is called
     instruments: list[dict]
     instrument_controllers: list[dict]
-    transpilation_settings: TranspilationSettings
+    gate_settings: GateSettings
 
     def __post_init__(self):
         self.buses = [self.BusSettings(**bus) for bus in self.buses] if self.buses is not None else None

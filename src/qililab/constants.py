@@ -30,7 +30,7 @@ class RUNCARD:
     INSTRUMENTS = "instruments"
     ELEMENTS = "elements"
     READOUT = "readout"
-    TRANSPILATION_SETTINGS = "transpilation_settings"
+    GATE_SETTINGS = "gate_settings"
     PLATFORM = "platform"
     BUSES = "buses"
     CHIP = "chip"

@@ -508,7 +508,7 @@ class Galadriel:
     ]
 
     runcard: dict[str, Any] = {
-        RUNCARD.TRANSPILATION_SETTINGS: platform,
+        RUNCARD.GATE_SETTINGS: platform,
         RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,
         RUNCARD.INSTRUMENTS: instruments,
@@ -675,7 +675,7 @@ class FluxQubitSimulator:
     }
 
     runcard: dict[str, Any] = {
-        RUNCARD.TRANSPILATION_SETTINGS: platform,
+        RUNCARD.GATE_SETTINGS: platform,
         RUNCARD.INSTRUMENTS: [],
         RUNCARD.INSTRUMENT_CONTROLLERS: [],
         RUNCARD.CHIP: chip,
@@ -870,7 +870,7 @@ experiment: dict[str, Any] = {
             }
         ],
         RUNCARD.NAME: "punchout",
-        RUNCARD.TRANSPILATION_SETTINGS: {
+        RUNCARD.GATE_SETTINGS: {
             EXPERIMENT.HARDWARE_AVERAGE: 1024,
             EXPERIMENT.SOFTWARE_AVERAGE: 1,
             EXPERIMENT.REPETITION_DURATION: 200000,
@@ -1035,7 +1035,7 @@ class SauronVNA:
     ]
 
     runcard: dict[str, Any] = {
-        RUNCARD.TRANSPILATION_SETTINGS: platform,
+        RUNCARD.GATE_SETTINGS: platform,
         RUNCARD.INSTRUMENTS: instruments,
         RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,

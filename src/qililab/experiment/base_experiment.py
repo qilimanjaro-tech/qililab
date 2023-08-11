@@ -16,7 +16,7 @@ from qililab.execution import EXECUTION_BUILDER, ExecutionManager
 from qililab.platform.platform import Platform
 from qililab.result.results import Results
 from qililab.settings import Runcard
-from qililab.settings.gate_settings import GateEventSettings
+from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.typings.enums import Instrument, Parameter
 from qililab.typings.experiment import ExperimentOptions
 from qililab.typings.yaml_type import yaml
@@ -265,7 +265,7 @@ class BaseExperiment:
         parameter: Parameter,
         value: float | str | bool,
         alias: str,
-        element: Runcard.TranspilationSettings | Node | Instrument | None = None,
+        element: Runcard.GateSettings | Node | Instrument | None = None,
         channel_id: int | None = None,
     ):
         """Set parameter of a platform element.
@@ -278,7 +278,7 @@ class BaseExperiment:
         """
         if element is None:
             self.platform.set_parameter(alias=alias, parameter=Parameter(parameter), value=value, channel_id=channel_id)
-        elif isinstance(element, Runcard.TranspilationSettings):
+        elif isinstance(element, Runcard.GateSettings):
             element.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             self.build_execution()
         elif isinstance(element, list):  # if element is a list of GateEventSettings

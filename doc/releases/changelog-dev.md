@@ -11,7 +11,7 @@ This document contains the changes of the current release.
   This PR brings importants simplifications to the full qililab structure, now the runcard will have the following structure:
 
   ```yaml
-  transpilation_settings:
+  gate_settings:
     ...
 
   chip:
@@ -47,7 +47,7 @@ This document contains the changes of the current release.
       ...
   ```
 
-  Notice also how `settings` (and his respective class `PlatformSettings`) has changed to `tranpilation_settings` (and the class to `TranspilationSettings` having the runcard string and the class the same name now, before they didn't).
+  Notice also how `settings` (and his respective class `PlatformSettings`) has changed to `gate_settings` (and the class to `GateSettings` having the runcard string and the class the same name now, before they didn't).
 
   [#475](https://github.com/qilimanjaro-tech/qililab/pull/475)
 
