@@ -284,3 +284,8 @@ class TestsQbloxResult:
         """
         with pytest.raises(IndexError, match="All sequencers must have the same number of bins to return an array"):
             _ = qblox_asymmetric_bins_result.array
+
+    def test_to_dataframe(self, qblox_result_noscope: QbloxResult):
+        """Test the to_dataframe method."""
+        dataframe = qblox_result_noscope.to_dataframe()
+        assert isinstance(dataframe, pd.DataFrame)

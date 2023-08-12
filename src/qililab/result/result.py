@@ -35,12 +35,12 @@ class Result(FactoryElement, ABC):
         """
         raise NotImplementedError
 
+    @abstractmethod
     def to_dict(self) -> dict:
         """
         Returns:
             dict: Dictionary containing all the class information.
         """
-        return {"name": self.name.value, "data_dataframe_indices": self.data_dataframe_indices}
 
     def to_dataframe(self) -> pd.DataFrame:
         """
