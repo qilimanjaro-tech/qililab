@@ -242,6 +242,7 @@ class TestE5071B:
         output = e5071b.acquire_result()
         assert isinstance(output, VNAResult)
         assert np.allclose(output.array, [])
+        assert output.to_dict() == {}
 
     @pytest.mark.parametrize("continuous", [True, False])
     def test_continuous_method(self, continuous, e5071b: E5071B):
