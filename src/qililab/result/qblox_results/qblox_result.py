@@ -130,14 +130,14 @@ class QbloxResult(Result):
     def array(self) -> np.ndarray:
         # Save array data
         if self.qblox_scope_acquisitions is not None:
-            # The dimensions of the array are: (N, 2) where N is the length of the scope.
+            # The dimensions of the array are: (2, N) where N is the length of the scope.
             path0 = self.qblox_scope_acquisitions.scope.path0.data
             path1 = self.qblox_scope_acquisitions.scope.path1.data
             return np.array([path0, path1])
-        # The dimensions of the array are the following: (#sequencers, #bins, 2)
+        # The dimensions of the array are the following: (#sequencers, 2, #bins)
         # Where the 2 corresponds to path0 (I) and path1 (Q) of the sequencer
         bins = [
-            np.transpose([sequencer.integration.path0, sequencer.integration.path1])
+            [sequencer.integration.path0, sequencer.integration.path1]
             for sequencer in self.qblox_bins_acquisitions.bins
         ]
 
