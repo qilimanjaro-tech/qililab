@@ -121,23 +121,6 @@ class Chip:
                 return node
         return None
 
-    def get_qubit_idx_from_node(self, node: Node) -> int:
-        """Get qubit index from given node.
-
-        Args:
-            node (Node): Node class.
-
-        Returns:
-            int: Qubit index.
-        """
-        adj_nodes = self._get_adjacent_nodes(node=node)
-        for adj_node in adj_nodes:
-            if isinstance(adj_node, Qubit):
-                return adj_node.qubit_index
-            if isinstance(adj_node, Resonator):
-                return self.get_qubit_idx_from_node(node=adj_node)
-        raise ValueError(f"Could not find qubit connected to node with alias {node.alias}")
-
     def to_dict(self):
         """Return a dict representation of the Chip class."""
         return {
