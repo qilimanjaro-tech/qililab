@@ -63,7 +63,7 @@ class Settings:
     integration_length: int = 1000
 
 
-class QBloxCompiler:  # pylint: disable=too-few-public-methods
+class QbloxCompiler:  # pylint: disable=too-few-public-methods
     """A class for compiling QProgram to QBlox hardware."""
 
     minimum_wait_duration: int = 4
@@ -161,7 +161,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
         """
 
         def handle_waveform(waveform: Waveform | None, default_length: int = 0):
-            _hash = QBloxCompiler._hash(waveform) if waveform else f"zeros {default_length}"
+            _hash = QbloxCompiler._hash(waveform) if waveform else f"zeros {default_length}"
 
             if _hash in self._buses[bus].waveform_to_index:
                 index = self._buses[bus].waveform_to_index[_hash]
@@ -185,7 +185,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
 
     def _append_to_weights_of_bus(self, bus: str, weights: IQPair):
         def handle_waveform(waveform: Waveform):
-            _hash = QBloxCompiler._hash(waveform)
+            _hash = QbloxCompiler._hash(waveform)
 
             if _hash in self._buses[bus].weight_to_index:
                 index = self._buses[bus].weight_to_index[_hash]
@@ -217,10 +217,10 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
             iterations = int((element.loops[0].stop - element.loops[0].start) / element.loops[0].step)
             qpy_loop = QPyProgram.Loop(name=f"loop_{self._buses[bus].loop_counter}", begin=iterations)
             for loop in element.loops:
-                operation = QBloxCompiler._get_reference_operation_of_loop(loop=loop, starting_block=element)
+                operation = QbloxCompiler._get_reference_operation_of_loop(loop=loop, starting_block=element)
                 if not operation:
                     raise NotImplementedError("Variables referenced in loops should be used in at least one operation.")
-                begin, _, step = QBloxCompiler._convert_for_loop_values(loop, operation)
+                begin, _, step = QbloxCompiler._convert_for_loop_values(loop, operation)
                 loop_register = QPyProgram.Register()
                 self._buses[bus].qpy_block_stack[-1].append_component(
                     component=QPyInstructions.Move(var=begin, register=loop_register)
@@ -242,7 +242,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
         for bus in self._buses:
             qpy_loop = QPyProgram.Loop(name=f"avg_{self._buses[bus].average_counter}", begin=element.shots)
             qpy_loop.append_component(
-                component=QPyInstructions.WaitSync(wait_time=QBloxCompiler.minimum_wait_duration),
+                component=QPyInstructions.WaitSync(wait_time=QbloxCompiler.minimum_wait_duration),
                 bot_position=len(qpy_loop.components),
             )
             self._buses[bus].qpy_block_stack[-1].append_component(qpy_loop)
@@ -251,14 +251,14 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
         return True
 
     def _handle_for_loop(self, element: ForLoop):
-        operation = QBloxCompiler._get_reference_operation_of_loop(element)
+        operation = QbloxCompiler._get_reference_operation_of_loop(element)
         if not operation:
             raise NotImplementedError("Variables referenced in loops should be used in at least one operation.")
-        begin, end, step = QBloxCompiler._convert_for_loop_values(element, operation)
+        begin, end, step = QbloxCompiler._convert_for_loop_values(element, operation)
         for bus in self._buses:
             qpy_loop = QPyProgram.Loop(name=f"loop_{self._buses[bus].loop_counter}", begin=begin, end=end, step=step)
             qpy_loop.append_component(
-                component=QPyInstructions.WaitSync(wait_time=QBloxCompiler.minimum_wait_duration),
+                component=QPyInstructions.WaitSync(wait_time=QbloxCompiler.minimum_wait_duration),
                 bot_position=len(qpy_loop.components),
             )
             self._buses[bus].qpy_block_stack[-1].append_component(qpy_loop)
@@ -271,7 +271,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
         raise NotImplementedError("Loops with arbitrary numpy arrays are not currently supported for QBlox.")
 
     def _handle_set_frequency(self, element: SetFrequency):
-        convert = QBloxCompiler._convert_value(element)
+        convert = QbloxCompiler._convert_value(element)
         frequency = (
             self._buses[element.bus].variable_to_register[element.frequency]
             if isinstance(element.frequency, Variable)
@@ -282,7 +282,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
         )
 
     def _handle_set_phase(self, element: SetPhase):
-        convert = QBloxCompiler._convert_value(element)
+        convert = QbloxCompiler._convert_value(element)
         phase = (
             self._buses[element.bus].variable_to_register[element.phase]
             if isinstance(element.phase, Variable)
@@ -294,7 +294,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
         self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.ResetPh())
 
     def _handle_set_gain(self, element: SetGain):
-        convert = QBloxCompiler._convert_value(element)
+        convert = QbloxCompiler._convert_value(element)
         gain_0 = (
             self._buses[element.bus].variable_to_register[element.gain_path0]
             if isinstance(element.gain_path0, Variable)
@@ -310,7 +310,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
         )
 
     def _handle_set_offset(self, element: SetOffset):
-        convert = QBloxCompiler._convert_value(element)
+        convert = QbloxCompiler._convert_value(element)
         offset_0 = (
             self._buses[element.bus].variable_to_register[element.offset_path0]
             if isinstance(element.offset_path0, Variable)
@@ -326,7 +326,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
         )
 
     def _handle_wait(self, element: Wait):
-        convert = QBloxCompiler._convert_value(element)
+        convert = QbloxCompiler._convert_value(element)
         time = (
             self._buses[element.bus].variable_to_register[element.time]
             if isinstance(element.time, Variable)
@@ -339,7 +339,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
         # buses = element.buses if element.buses is not None else self._buses.keys()
         for bus in self._buses:
             self._buses[bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.WaitSync(wait_time=QBloxCompiler.minimum_wait_duration)
+                component=QPyInstructions.WaitSync(wait_time=QbloxCompiler.minimum_wait_duration)
             )
 
     def _handle_acquire(self, element: Acquire):
@@ -455,7 +455,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
 
     @staticmethod
     def _convert_for_loop_values(for_loop: ForLoop, operation: Operation):
-        convert = QBloxCompiler._convert_value(operation)
+        convert = QbloxCompiler._convert_value(operation)
         return tuple(convert(value) for value in (for_loop.start, for_loop.stop, for_loop.step))
 
     @staticmethod
@@ -465,7 +465,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
             SetPhase: lambda x: int(x * 1e9 / 360),
             SetGain: lambda x: int(x * 32_767),
             SetOffset: lambda x: int(x * 32_767),
-            Wait: lambda x: max(x, QBloxCompiler.minimum_wait_duration),
+            Wait: lambda x: max(x, QbloxCompiler.minimum_wait_duration),
         }
         return conversion_map.get(type(operation), lambda x: x)
 

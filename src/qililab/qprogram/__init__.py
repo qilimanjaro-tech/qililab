@@ -13,10 +13,12 @@ QProgram Class
 Compilers
 ~~~~~~~~~
 
+.. currentmodule:: qililab.qprogram
+
 .. autosummary::
     :toctree: api
 
     ~QbloxCompiler
 """
-from .qblox_compiler import QBloxCompiler
+from .qblox_compiler import QbloxCompiler, Settings
 from .qprogram import QProgram
