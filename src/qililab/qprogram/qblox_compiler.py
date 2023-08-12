@@ -56,21 +56,14 @@ class BusInfo:  # pylint: disable=too-many-instance-attributes, too-few-public-m
         self.average_counter = 0
 
 
-@dataclass
-class Settings:
-    """External settings used by QBloxCompiler."""
-
-    integration_length: int = 1000
-
-
 class QBloxCompiler:  # pylint: disable=too-few-public-methods
     """A class for compiling QProgram to QBlox hardware."""
 
     minimum_wait_duration: int = 4
 
-    def __init__(self, settings: Settings):
+    def __init__(self, integration_length: int = 1000):
         # External settings
-        self._settings = settings
+        self._integration_length = integration_length
 
         # Handlers to map each operation to a corresponding handler function
         self._handlers: dict[type, Callable] = {
@@ -394,7 +387,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
                     component=QPyInstructions.Acquire(
                         acq_index=self._buses[element.bus].next_acquisition_index,
                         bin_index=bin_register,
-                        wait_time=self._settings.integration_length,
+                        wait_time=self._integration_length,
                     )
                 )
             self._buses[element.bus].qpy_block_stack[block_index_for_add_instruction].append_component(
@@ -415,7 +408,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
                 component=QPyInstructions.Acquire(
                     acq_index=self._buses[element.bus].next_acquisition_index,
                     bin_index=self._buses[element.bus].next_bin_index,
-                    wait_time=self._settings.integration_length,
+                    wait_time=self._integration_length,
                 )
             )
         self._buses[element.bus].next_bin_index += num_bins
