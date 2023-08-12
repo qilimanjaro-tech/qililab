@@ -1,7 +1,6 @@
 # pylint: disable=protected-access
 import math
 from collections import deque
-from dataclasses import dataclass
 from typing import Callable
 
 import numpy as np
