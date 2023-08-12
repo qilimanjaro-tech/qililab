@@ -72,3 +72,14 @@ class TestChip:
                 gotten_string += "--\n"
 
         assert str(chip) == gotten_string
+
+    def test_get_qubit_raises_error(self, chip: Chip):
+        """Test that the `_get_qubit` method raises an error if qubit is not in chip."""
+        with pytest.raises(ValueError, match="Could not find qubit with idx 10."):
+            chip._get_qubit(idx=10)
+
+    def test_get_node_from_qubit_idx_raises_error(self, chip: Chip):
+        """Test that the `get_node_from_qubit_idx` method raises an error if qubit is not connected to a readout line."""
+        chip.nodes.append(Qubit(frequency=1, qubit_index=10, alias="", nodes=[]))
+        with pytest.raises(ValueError, match="Qubit with index 10 doesn't have a readout line."):
+            chip.get_node_from_qubit_idx(idx=10, readout=True)
