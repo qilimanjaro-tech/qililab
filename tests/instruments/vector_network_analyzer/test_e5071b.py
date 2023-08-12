@@ -2,6 +2,7 @@
 import copy
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 
 from qililab.instrument_controllers.vector_network_analyzer.agilent_E5071B_vna_controller import E5071BController
@@ -240,6 +241,7 @@ class TestE5071B:
         mock_frombuffer.return_value = mock_buffer
         output = e5071b.acquire_result()
         assert isinstance(output, VNAResult)
+        assert np.allclose(output.array, [])
 
     @pytest.mark.parametrize("continuous", [True, False])
     def test_continuous_method(self, continuous, e5071b: E5071B):

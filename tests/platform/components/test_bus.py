@@ -6,7 +6,7 @@ import pytest
 
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.platform import Bus
-from qililab.system_control import SystemControl
+from qililab.system_control import ReadoutSystemControl, SystemControl
 from qililab.typings import Parameter
 
 from .aux_methods import buses as load_buses
@@ -45,3 +45,17 @@ class TestBus:
             ParameterNotFound, match=f"No parameter with name duration was found in the bus with alias {bus.alias}"
         ):
             bus.set_parameter(parameter=Parameter.DURATION, value=0.5, channel_id=1)
+
+
+class TestErrors:
+    """Unit tests for the errors raised by the Bus class."""
+
+    def test_control_bus_raises_error_when_acquiring_results(self):
+        """Test that an error is raised when calling acquire_result with a drive bus."""
+        buses = load_buses()
+        control_bus = [bus for bus in buses if not isinstance(bus.system_control, ReadoutSystemControl)][0]
+        with pytest.raises(
+            AttributeError,
+            match=f"The bus {control_bus.alias} cannot acquire results because it doesn't have a readout system control",
+        ):
+            control_bus.acquire_result()

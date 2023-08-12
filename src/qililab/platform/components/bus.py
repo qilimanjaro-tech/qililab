@@ -207,4 +207,6 @@ class Bus:
         if isinstance(self.system_control, ReadoutSystemControl):
             return self.system_control.acquire_result(port=self.port)
 
-        raise AttributeError("A bus without a readout system control cannot return results.")
+        raise AttributeError(
+            f"The bus {self.alias} cannot acquire results because it doesn't have a readout system control."
+        )
