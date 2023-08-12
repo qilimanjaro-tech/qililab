@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from qililab import build_platform
-from qililab.constants import DATA, RUNCARD, SCHEMA
+from qililab.constants import DATA, RUNCARD
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment.base_experiment import BaseExperiment
 from qililab.platform import Platform
@@ -116,7 +116,7 @@ def fixture_experiment_all_platforms(request: pytest.FixtureRequest):
             mock_open.assert_called()
     # Build loop from an existing alias on the testing platform Galadriel
     loop = Loop(
-        alias=Galadriel.buses[0][RUNCARD.ALIAS],
+        alias=Galadriel.buses[0][RUNCARD.ALIAS],  # type: ignore
         parameter=Parameter.LO_FREQUENCY,
         values=np.linspace(start=3544000000, stop=3744000000, num=2),
     )
@@ -133,7 +133,7 @@ def fixture_experiment_reset(request: pytest.FixtureRequest):
     runcard = copy.deepcopy(runcard)
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            mock_load.return_value[RUNCARD.SCHEMA][SCHEMA.INSTRUMENT_CONTROLLERS][0] |= {"reset": False}
+            mock_load.return_value[RUNCARD.INSTRUMENT_CONTROLLERS][0] |= {"reset": False}
             platform = build_platform(name="sauron")
             mock_load.assert_called()
             mock_open.assert_called()
@@ -158,7 +158,7 @@ def fixture_exp(request: pytest.FixtureRequest):
             mock_load.assert_called()
             mock_open.assert_called()
     loop = Loop(
-        alias=Galadriel.buses[0][RUNCARD.ALIAS],
+        alias=Galadriel.buses[0][RUNCARD.ALIAS],  # type: ignore
         parameter=Parameter.DURATION,
         values=np.arange(start=4, stop=1000, step=40),
     )
@@ -180,7 +180,7 @@ def fixture_vna_experiment(
 ):  # pylint: disable=W0613
     """Return a connected experiment with the VNA instrument"""
     loop = Loop(
-        alias=SauronVNA.buses[0][RUNCARD.ALIAS],
+        alias=SauronVNA.buses[0][RUNCARD.ALIAS],  # type: ignore
         parameter=Parameter.POWER,
         values=np.linspace(0, 10, 10),
     )
@@ -398,7 +398,8 @@ class TestMethods:
     def test_loop_num_loops_property(self, experiment_all_platforms: BaseExperiment):
         """Test loop's num_loops property."""
         if experiment_all_platforms.options.loops is not None:
-            print(experiment_all_platforms.options.loops[0].num_loops)
+            assert isinstance(experiment_all_platforms.options.loops[0].num_loops, int)
+            assert isinstance(str(experiment_all_platforms.options.loops[0].num_loops), str)
 
     def test_str_method(self, experiment_all_platforms: BaseExperiment):
         """Test __str__ method."""
@@ -420,7 +421,7 @@ class TestMethods:
         test_value = (1.5,)
         test_loop = [
             Loop(
-                alias=Galadriel.buses[0][RUNCARD.ALIAS],
+                alias=Galadriel.buses[0][RUNCARD.ALIAS],  # type: ignore
                 parameter=Parameter.EXTERNAL,
                 values=np.linspace(start=0, stop=10, num=1),
             )
@@ -464,10 +465,10 @@ class TestSetParameter:
         mock_urllib.request.urlopen.assert_called()
         exp.set_parameter(alias=InstrumentName.QBLOX_QCM.value, parameter=Parameter.IF, value=1e9, channel_id=0)
 
-    def test_set_parameter_method_with_platform_settings(self, exp: BaseExperiment):
-        """Test set_parameter method with platform settings."""
-        exp.set_parameter(alias="M(0)", parameter=Parameter.AMPLITUDE, value=0.3)
-        assert exp.platform.settings.get_gate(name="M", qubits=0).amplitude == 0.3
+    def test_set_parameter_method_with_platform_gate_settings(self, exp: BaseExperiment):
+        """Test set_parameter method with platform gate settings."""
+        exp.set_parameter(alias="M(0)_0", parameter=Parameter.AMPLITUDE, value=0.3)
+        assert exp.platform.gate_settings.get_gate(name="M", qubits=0)[0].pulse.amplitude == 0.3
 
     def test_set_parameter_method_with_instrument_controller_reset(self, exp: BaseExperiment):
         """Test set_parameter method with instrument controller reset."""
@@ -484,9 +485,9 @@ class TestSetParameter:
         bus_delay = 0
         exp.build_execution = MagicMock()  # type: ignore
         alias = Galadriel.buses[0][RUNCARD.ALIAS]
-        element = exp.platform.get_element(alias)
-        exp.set_parameter(element=element, alias=alias, parameter=Parameter.DELAY, value=bus_delay)
-        assert exp.platform.get_bus_by_alias(alias).delay == bus_delay
+        element = exp.platform.get_element(alias)  # type: ignore
+        exp.set_parameter(element=element, alias=alias, parameter=Parameter.DELAY, value=bus_delay)  # type: ignore
+        assert exp.platform.get_bus_by_alias(alias).delay == bus_delay  # type: ignore
         exp.build_execution.assert_called_once_with()
 
 

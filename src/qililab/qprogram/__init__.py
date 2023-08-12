@@ -9,5 +9,14 @@ QProgram Class
     :toctree: api
 
     ~QProgram
+
+Compilers
+~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~QbloxCompiler
 """
+from .qblox_compiler import QBloxCompiler
 from .qprogram import QProgram

@@ -193,7 +193,8 @@ class TestSequencer:
         sequencer.set("path0", path0)
         waveforms = sequencer._generate_waveforms(pulse_bus_schedule_negative_amplitude).to_dict()
 
-        print("waveforms: ", waveforms)
+        assert isinstance(waveforms, dict)
+        assert isinstance(str(waveforms), str)
         assert len(waveforms) == 2
 
     @patch("qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM._generate_waveforms")

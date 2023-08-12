@@ -34,7 +34,7 @@ Platform Components
 """
 from qiboconnection.api import API
 
-from .components import Bus, BusElement, Buses, Schema
+from .components import Bus, BusElement, Buses
 from .platform import Platform
 from .platform_manager_db import PlatformManagerDB
 from .platform_manager_yaml import PlatformManagerYAML

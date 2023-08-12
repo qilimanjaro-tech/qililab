@@ -15,7 +15,8 @@ from qililab.constants import DATA, EXPERIMENT, EXPERIMENT_FILENAME, RESULTS_FIL
 from qililab.execution import EXECUTION_BUILDER, ExecutionManager
 from qililab.platform.platform import Platform
 from qililab.result.results import Results
-from qililab.settings import RuncardSchema
+from qililab.settings import Runcard
+from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.typings.enums import Instrument, Parameter
 from qililab.typings.experiment import ExperimentOptions
 from qililab.typings.yaml_type import yaml
@@ -264,7 +265,7 @@ class BaseExperiment:
         parameter: Parameter,
         value: float | str | bool,
         alias: str,
-        element: RuncardSchema.PlatformSettings | Node | Instrument | None = None,
+        element: Runcard.GateSettings | Node | Instrument | None = None,
         channel_id: int | None = None,
     ):
         """Set parameter of a platform element.
@@ -277,12 +278,13 @@ class BaseExperiment:
         """
         if element is None:
             self.platform.set_parameter(alias=alias, parameter=Parameter(parameter), value=value, channel_id=channel_id)
-        elif isinstance(element, RuncardSchema.PlatformSettings):
+        elif isinstance(element, Runcard.GateSettings):
             element.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             self.build_execution()
-        elif isinstance(element, RuncardSchema.PlatformSettings.GateSettings):
-            element.set_parameter(parameter=parameter, value=value)
-            self.build_execution()
+        elif isinstance(element, list):  # if element is a list of GateEventSettings
+            if all(isinstance(element_event, GateEventSettings) for element_event in element):  # type: ignore
+                self.platform.set_parameter(alias=alias, parameter=Parameter(parameter), value=value)
+                self.build_execution()
         else:
             element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)  # type: ignore
             if parameter == Parameter.DELAY:
@@ -307,7 +309,7 @@ class BaseExperiment:
             dictionary (dict): Dictionary description of an BaseExperiment.
         """
 
-        platform = Platform(runcard_schema=RuncardSchema(**dictionary[RUNCARD.PLATFORM]))
+        platform = Platform(runcard=Runcard(**dictionary[RUNCARD.PLATFORM]))
 
         experiment_options = ExperimentOptions.from_dict(dictionary[EXPERIMENT.OPTIONS])
         return BaseExperiment(

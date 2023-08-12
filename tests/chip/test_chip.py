@@ -57,3 +57,16 @@ class TestChip:
         for line in [Line.FLUX, Line.DRIVE, Line.FEEDLINE_INPUT, Line.FEEDLINE_OUTPUT]:
             with pytest.raises(ValueError, match=f"Qubit with index {0} doesn't have a {line} line."):
                 chip.get_port_from_qubit_idx(idx=0, line=line)
+
+    def test_print_chip(self, chip: Chip):
+        """Test print chip."""
+        gotten_string = f"Chip {chip.alias} with {chip.num_qubits} qubits and {chip.num_ports} ports: \n\n"
+        for node in chip.nodes:
+            if isinstance(node, Port):
+                adj_nodes = chip._get_adjacent_nodes(node=node)
+                gotten_string += f" * Port {node.id_} ({node.line.value}): ----"
+                for adj_node in adj_nodes:
+                    gotten_string += f"|{adj_node}|--"
+                gotten_string += "--\n"
+
+        assert str(chip) == gotten_string

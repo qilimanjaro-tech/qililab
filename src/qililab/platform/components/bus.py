@@ -150,12 +150,12 @@ class Bus:
         return iter(self.system_control)
 
     def to_dict(self):
-        """Return a dict representation of the SchemaSettings class."""
+        """Return a dict representation of the Bus class."""
         return {
             RUNCARD.ID: self.id_,
             RUNCARD.CATEGORY: self.category.value,
-            RUNCARD.SYSTEM_CONTROL: self.system_control.to_dict(),
             RUNCARD.ALIAS: self.alias,
+            RUNCARD.SYSTEM_CONTROL: self.system_control.to_dict(),
             BUS.PORT: self.port,
             RUNCARD.DISTORTIONS: [distortion.to_dict() for distortion in self.distortions],
             RUNCARD.DELAY: self.delay,

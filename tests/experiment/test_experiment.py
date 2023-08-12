@@ -12,7 +12,7 @@ from qibo.models.circuit import Circuit
 from qpysequence import Sequence
 
 from qililab import build_platform
-from qililab.constants import RUNCARD, SCHEMA
+from qililab.constants import RUNCARD
 from qililab.execution import ExecutionManager
 from qililab.experiment.experiment import Experiment
 from qililab.platform import Platform
@@ -80,7 +80,7 @@ def fixture_experiment(request: pytest.FixtureRequest):
     runcard, circuits = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="galadriel")
+            platform = build_platform(name="_")
             mock_load.assert_called()
             mock_open.assert_called()
     loop = Loop(
@@ -144,7 +144,7 @@ def fixture_experiment_reset(request: pytest.FixtureRequest):
     runcard = copy.deepcopy(runcard)
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            mock_load.return_value[RUNCARD.SCHEMA][SCHEMA.INSTRUMENT_CONTROLLERS][0] |= {"reset": False}
+            mock_load.return_value[RUNCARD.INSTRUMENT_CONTROLLERS][0] |= {"reset": False}
             platform = build_platform(name="galadriel")
             mock_load.assert_called()
             mock_open.assert_called()
@@ -279,7 +279,7 @@ class TestMethods:
     def test_set_parameter_method_with_gate_value(self, experiment: Experiment):
         """Test the ``set_parameter`` method with a parameter of a gate."""
         experiment.set_parameter(alias="X(0)", parameter=Parameter.DURATION, value=123)
-        assert experiment.platform.settings.get_gate(name="X", qubits=0).duration == 123
+        assert experiment.platform.gate_settings.get_gate(name="X", qubits=0)[0].pulse.duration == 123
 
     def test_set_parameter_method_with_gate_parameter_in_circuit(self, experiment: Experiment):
         """Test the ``set_parameter`` method with a parameter of a gate in circuit."""
