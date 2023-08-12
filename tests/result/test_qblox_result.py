@@ -275,3 +275,12 @@ class TestsQbloxResult:
         assert np.shape(array) == (2, 1)  # (1 sequencer, I/Q, 1 bin)
         path0, path1 = dummy_qrm._dummy_sequencers[0].demodulate(dummy_qrm._input_path0, dummy_qrm._input_path1)
         assert np.allclose(array, np.array([[sum(path0[:1000])], [sum(path1[:1000])]]))
+
+    def test_array_property_asymmetric_bins_raise_error(self, qblox_asymmetric_bins_result: QbloxResult):
+        """Tests if IndexError exception is raised when sequencers have different number of bins.
+
+        Args:
+            qblox_asymmetric_bins_result (QbloxResult): QbloxResult instance with different number of bins on each sequencer.
+        """
+        with pytest.raises(IndexError, match="All sequencers must have the same number of bins to return an array"):
+            _ = qblox_asymmetric_bins_result.array

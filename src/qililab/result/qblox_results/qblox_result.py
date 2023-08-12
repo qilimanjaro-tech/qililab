@@ -134,6 +134,14 @@ class QbloxResult(Result):
             path0 = self.qblox_scope_acquisitions.scope.path0.data
             path1 = self.qblox_scope_acquisitions.scope.path1.data
             return np.array([path0, path1])
+
+        bins_len = [len(bins) for bins in self.qblox_bins_acquisitions.bins]
+        # Check that all sequencers have the same number of bins.
+        if len(set(bins_len)) != 1:
+            raise IndexError(
+                f"All sequencers must have the same number of bins to return an array. Obtained {len(bins_len)} "
+                f"sequencers with {bins_len} bins respectively."
+            )
         # The dimensions of the array are the following: (#sequencers, 2, #bins)
         # Where the 2 corresponds to path0 (I) and path1 (Q) of the sequencer
         bins = [
