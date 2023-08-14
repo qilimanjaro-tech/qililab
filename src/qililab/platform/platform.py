@@ -47,7 +47,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """Dataclass with all the settings and gates definitions needed to decompose gates into pulses."""
 
         self.instruments = Instruments(elements=self._load_instruments(instruments_dict=runcard.instruments))
-        """All the instruments and of the platform and their needed settings, contained as elements (`list[Instrument]`) inside an `Instruments` class."""
+        """All the instruments of the platform and their needed settings, contained as elements (`list[Instrument]`) inside an `Instruments` class."""
 
         self.instrument_controllers = InstrumentControllers(
             elements=self._load_instrument_controllers(instrument_controllers_dict=runcard.instrument_controllers)
