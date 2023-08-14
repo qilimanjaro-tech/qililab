@@ -13,7 +13,7 @@ This document contains the changes of the current release.
   ```yaml
   name: "str: name of platform"
 
-  device_id: "in: device id of platform"
+  device_id: "int: device id of platform"
 
   gates_settings:   # Old `settings`` without name & device_id
     ...
