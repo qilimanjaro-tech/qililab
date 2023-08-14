@@ -25,7 +25,7 @@ class Runcard:
     - instrument_controllers: List of "instrument_controllers" dictionaries
 
     The gates_settings, chip and bus dictionaries will be passed to their corresponding Runcard.GatesSettings,
-    Runcard.Chip or Runcard.Bus here, meanwhile the instruments and instrument_controllers will remain dictionaries.
+    Runcard.Chip or Runcard.Bus classes here, meanwhile the instruments and instrument_controllers will remain dictionaries.
 
     Then this full class gets passed to the Platform who will instantiate the actual qililab Chip, Buses/Bus and the
     corresponding Instrument classes with the settings attributes of this class.
@@ -116,10 +116,10 @@ class Runcard:
                     operation = Runcard.GatesSettings.OperationSettings(**operation)
                 if operation.name == name:
                     return operation
-            raise ValueError(f"Operation {name} not found in gate settings.")
+            raise ValueError(f"Operation {name} not found in gates settings.")
 
         def get_gate(self, name: str, qubits: int | tuple[int, int] | tuple[int]):
-            """Get gate settings from runcard for a given gate name and qubits.
+            """Get gates settings from runcard for a given gate name and qubits.
 
             Args:
                 name (str): Name of the gate.

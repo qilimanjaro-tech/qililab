@@ -24,8 +24,8 @@ from qililab.typings.yaml_type import yaml
 class Platform:  # pylint: disable=too-many-public-methods
     """Platform object that describes setup used to control quantum devices.
 
-    The class will receive the Runcard class, with all the GatesSettings, Chip, Bus that the Runcard class has created from
-    the dictionaries, together with the instrument dictionaries that the Runcard class has not transform into classes yet.
+    The class will receive the Runcard class, with all the inner GatesSettings, Chip, Bus classes that the Runcard class has created
+    from the dictionaries, together with the instrument dictionaries that the Runcard class has not transform into classes yet.
 
     And with all that information instantiates the actual qililab Chip, Buses/Bus and corresponding Instrument classes.
 

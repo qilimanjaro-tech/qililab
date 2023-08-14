@@ -20,10 +20,10 @@ from qililab.utils import Factory, qibo_gates
 
 class CircuitToPulses:  # pylint: disable=too-few-public-methods
     """Translates a list of circuits into a list of pulse sequences (each circuit to an independent pulse sequence)
-    For each circuit gate we look up for its corresponding gate settings in the runcard (the name of the class of the circuit
+    For each circuit gate we look up for its corresponding gates settings in the runcard (the name of the class of the circuit
     gate and the name of the gate in the runcard should match) and load its schedule of GateEvents.
     Each gate event corresponds to a concrete pulse applied at a certain time w.r.t the gate's start time and through a specific bus
-    (see gate settings docstrings for more details).
+    (see gates settings docstrings for more details).
 
     Measurement gates are handled in a slightly different manner. For a circuit gate M(0,1,2) the settings for each M(0), M(1), M(2)
     will be looked up and will be applied in sync. Note that thus a circuit gate for M(0,1,2) is different from the circuit sequence
