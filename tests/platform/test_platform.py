@@ -45,6 +45,14 @@ class TestPlatformInitialization:
 class TestPlatform:
     """Unit tests checking the Platform class."""
 
+    def test_id_property(self, platform: Platform):
+        """Test id property."""
+        assert platform.id_ == platform.gates_settings.id_
+
+    def test_category_property(self, platform: Platform):
+        """Test category property."""
+        assert platform.category == platform.gates_settings.category
+
     def test_num_qubits_property(self, platform: Platform):
         """Test num_qubits property."""
         assert platform.num_qubits == platform.chip.num_qubits
