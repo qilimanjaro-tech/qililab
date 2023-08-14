@@ -43,7 +43,7 @@ class Platform:  # pylint: disable=too-many-public-methods
         """Name of the platform."""
 
         self.device_id = runcard.device_id
-        """Exactly the device_id in the Runcard"""
+        """Device id of the platform. This attribute is needed for `qiboconnection` to save results remotely."""
 
         self.gates_settings = runcard.gates_settings
         """Exactly the gates_settings in the Runcard class"""
