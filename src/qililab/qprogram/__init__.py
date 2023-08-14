@@ -20,5 +20,5 @@ Compilers
 
     ~QbloxCompiler
 """
-from .qblox_compiler import QbloxCompiler, Settings
+from .qblox_compiler import QbloxCompiler
 from .qprogram import QProgram
