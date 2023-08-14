@@ -11,7 +11,11 @@ This document contains the changes of the current release.
   This PR brings importants simplifications to the full qililab structure, now the runcard will have the following structure:
 
   ```yaml
-  gates_settings:
+  name: "str: name of platform"
+
+  device_id: "in: device id of platform"
+
+  gates_settings:   # Old `settings`` without name & device_id
     ...
 
   chip:
@@ -31,9 +35,11 @@ This document contains the changes of the current release.
 
   ```yaml
   settings:
+    name: "str: name of platform"
+    device_id: "int: device id of platform "
     ...
 
-  schema:
+  schema:   # Schema disappears from the platform.
     chip:
       ...
 
@@ -50,6 +56,7 @@ This document contains the changes of the current release.
   Notice also how `settings` (and his respective class `PlatformSettings`) has changed to `gates_settings` (and the class to `GatesSettings` having the runcard string and the class the same name now, before they didn't).
 
   [#475](https://github.com/qilimanjaro-tech/qililab/pull/475)
+  [#505](https://github.com/qilimanjaro-tech/qililab/pull/505)
 
 - Simplify circuit gate to pulse transpilation.
   Previous hardware gates are removed. Now gates can be defined in the runcard as a list of
