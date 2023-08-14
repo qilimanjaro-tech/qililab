@@ -80,7 +80,7 @@ class TestGatesSettings:
     def test_get_operation_settings_raises_error_when_operation_does_not_exist(self, gates_settings):
         """Test the ``get_gate`` method of the Runcard.GatesSettings class."""
         name = "unkown_operation"
-        with pytest.raises(ValueError, match=f"Operation {name} not found in gate settings."):
+        with pytest.raises(ValueError, match=f"Operation {name} not found in gates settings."):
             gates_settings.get_operation_settings(name)
 
     def test_get_gate(self, gates_settings):
