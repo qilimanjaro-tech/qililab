@@ -18,22 +18,22 @@ class Runcard:
     """Runcard class. Casts the platform dictionary into a class.
 
     The input to the constructor should be a dictionary of the desired runcard with the following structure:
-    - gate_settings:
+    - gates_settings:
     - chip:
     - buses:
     - instruments: List of "instruments" dictionaries
     - instrument_controllers: List of "instrument_controllers" dictionaries
 
-    The gate_settings, chip and bus dictionaries will be passed to their corresponding TranpilationSettings,
-    ChipSettings or BusSettings here, meanwhile the instruments and instrument_controllers will remain dictionaries.
+    The gates_settings, chip and bus dictionaries will be passed to their corresponding Runcard.GatesSettings,
+    Runcard.Chip or Runcard.Bus classes here, meanwhile the instruments and instrument_controllers will remain dictionaries.
 
     Then this full class gets passed to the Platform who will instantiate the actual qililab Chip, Buses/Bus and the
     corresponding Instrument classes with the settings attributes of this class.
 
     Args:
-        gate_settings (dict): GateSettings dictionary -> GateSettings inner dataclass
-        chip (dict): ChipSettings dictionary -> ChipSettings inner dataclass
-        buses (list[dict]): List of BusSettings dictionaries -> list[BusSettings] inner dataclass
+        gates_settings (dict): Gates settings dictionary -> Runcard.GatesSettings inner dataclass
+        chip (dict): Chip settings dictionary -> Runcard.Chip settings inner dataclass
+        buses (list[dict]): List of Bus settings dictionaries -> list[Runcard.Bus] settings inner dataclass
         instruments (list[dict]): List of dictionaries containing the "instruments" information (does not transform)
         instruments_controllers (list[dict]): List of dictionaries containing the "instrument_controllers" information
             (does not transform)
@@ -41,8 +41,8 @@ class Runcard:
 
     # Inner dataclasses definition
     @dataclass
-    class BusSettings:
-        """Bus settings class."""
+    class Bus:
+        """Dataclass with all the settings the buses of the platform need."""
 
         id_: int
         category: str
@@ -53,8 +53,8 @@ class Runcard:
         delay: int = 0
 
     @dataclass
-    class ChipSettings:
-        """Chip settings class."""
+    class Chip:
+        """Dataclass with all the settings/nodes the chip of the platform needs."""
 
         id_: int
         category: str
@@ -62,16 +62,16 @@ class Runcard:
         alias: str | None = None
 
     @nested_dataclass
-    class GateSettings(DDBBElement):
-        """GateSettings class."""
+    class GatesSettings(DDBBElement):
+        """Dataclass with all the settings and gates definitions needed to decompose gates into pulses."""
 
         @nested_dataclass
         class OperationSettings:
-            """OperationSettings class"""
+            """Dataclass with all the settings an operation needs."""
 
             @dataclass
             class PulseSettings:
-                """PulseSettings class"""
+                """Dataclass with all the settings a pulse needs."""
 
                 name: str
                 amplitude: float
@@ -81,8 +81,6 @@ class Runcard:
             name: str
             pulse: PulseSettings
 
-        name: str
-        device_id: int
         minimum_clock_time: int
         delay_between_pulses: int
         delay_before_readout: int
@@ -95,13 +93,13 @@ class Runcard:
         gates: dict[str, list[GateEventSettings]]
 
         def __post_init__(self):
-            """build the Gate Settings based on the master settings"""
+            """Build the Gates Settings based on the master settings."""
             self.gates = {
                 gate: [GateEventSettings(**event) for event in schedule] for gate, schedule in self.gates.items()
             }
 
         def get_operation_settings(self, name: str) -> OperationSettings:
-            """Get OperationSettings by operation's name
+            """Get OperationSettings by operation's name.
 
             Args:
                 name (str): Name of the operation
@@ -115,13 +113,13 @@ class Runcard:
             for operation in self.operations:
                 # TODO: Fix bug that parses settings as dict instead of defined classes
                 if isinstance(operation, dict):
-                    operation = Runcard.GateSettings.OperationSettings(**operation)
+                    operation = Runcard.GatesSettings.OperationSettings(**operation)
                 if operation.name == name:
                     return operation
-            raise ValueError(f"Operation {name} not found in gate settings.")
+            raise ValueError(f"Operation {name} not found in gates settings.")
 
         def get_gate(self, name: str, qubits: int | tuple[int, int] | tuple[int]):
-            """Get gate settings from runcard for a given gate name and qubits.
+            """Get gates settings from runcard for a given gate name and qubits.
 
             Args:
                 name (str): Name of the gate.
@@ -131,7 +129,7 @@ class Runcard:
                 ValueError: If no gate is found.
 
             Returns:
-                GateSettings: gate settings.
+                GatesSettings: gate settings.
             """
 
             gate_qubits = (
@@ -148,7 +146,7 @@ class Runcard:
 
         @property
         def gate_names(self) -> list[str]:
-            """GateSettings 'gate_names' property.
+            """GatesSettings 'gate_names' property.
 
             Returns:
                 list[str]: List of the names of all the defined gates.
@@ -172,16 +170,18 @@ class Runcard:
             name = regex_match["gate"]
             qubits_str = regex_match["qubits"]
             qubits = ast.literal_eval(qubits_str)
-            gate_settings = self.get_gate(name=name, qubits=qubits)
+            gates_settings = self.get_gate(name=name, qubits=qubits)
             schedule_element = 0 if len(alias.split("_")) == 1 else int(alias.split("_")[1])
-            gate_settings[schedule_element].set_parameter(parameter, value)
+            gates_settings[schedule_element].set_parameter(parameter, value)
 
     # Runcard class actual initialization
-    chip: ChipSettings
-    buses: list[BusSettings]  # This actually is a list[dict] until the post_init is called
+    name: str
+    device_id: int
+    chip: Chip
+    buses: list[Bus]  # This actually is a list[dict] until the post_init is called
     instruments: list[dict]
     instrument_controllers: list[dict]
-    gate_settings: GateSettings
+    gates_settings: GatesSettings
 
     def __post_init__(self):
-        self.buses = [self.BusSettings(**bus) for bus in self.buses] if self.buses is not None else None
+        self.buses = [self.Bus(**bus) for bus in self.buses] if self.buses is not None else None
