@@ -1,7 +1,12 @@
 """
 This file contains an example of use of the automatic calibration algorithm. 
 
-TODO: elaborate 
+TODO: elaborate
+
+Notes:
+* The ultimate goal for the analysis functions is to generalize all of them into a single universal analysis function which can 
+be used to analyze the data of any kind of experiment. That is why there is a lot of repetition when defining the different 
+analysis functions here: I made them already as similar as possible in order to facilitate this generalization.
 """
 
 import os
@@ -165,7 +170,7 @@ def ramsey(drive_bus: str, readout_bus: str):
             qp.sync()  # this ok?
             qp.play(
                 bus=readout_bus, waveform=IQPair(I=ones_wf, Q=zeros_wf)
-            )  # not sure about this: is the waveform right?
+            )
             qp.acquire(bus=readout_bus)
 
     return qp
@@ -177,7 +182,8 @@ drag_values = {"start": -3,
                "step": 0.15
                }
 
-
+# NOTE: This experiment cannot be done with a qprogram yet: it requires to iterate over the drag coefficient, which would mean changing the waveform. That is not supported yet.
+# See HardwareDataTools/src/hwdatatools/experiment_portfolio/drag_coefficient.py for more details on this iteration.
 def drag_coefficient_calibration(drive_bus: str, readout_bus: str, sweep_values: dict):
     """The drag coefficient calibration experiment written as a QProgram.
 
@@ -371,29 +377,40 @@ Define the analysis functions and plotting functions.
 NOTE: For now, each experiment has it own custom function that handled both analysis (=processing and fitting the data) and plotting. 
         This will be made less hardcoded in the future by another intern, possibly using a generic function called analyze_experiment()
         that takes as arguments the dimensions of the plot (2D or 3D), plot labels, parameters, and all the experiment-specific stuff.
+        For now, there is a lot of repetition from one analysis function to another, because I'm trying to make them already as similar
+        as possible to each other.
 """
 
-def analyze_rabi(datapath, fit_quadrature="i", label=""):
+def analyze_rabi(results, fit_quadrature="i", label=""):
     """
     Analyzes the Rabi experiment data.
 
     Args:
-        datapath: Where the data experimental is stored. If it's a string, it represents the path of a file. Otherwise it's something else, a python object (like a list).
+        results: Where the data experimental is stored. If it's a string, it represents the path of the yml file where the data is. 
+                 Otherwise it's a list with only 1 element. This element is a dictionary containing the data.
+                 For now this only supports experiment run on QBlox hardware. The dictionary is a standard structure in which the data 
+                 is stored by the QBlox hardware. For more details see this documentation: 
+                 https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/pulsar.html#qblox_instruments.native.Pulsar.get_acquisitions
+                 The list only has 1 element because each element represents the acquisitions dictionary of one readout bus, 
+                 and for the moment multiple readout buses are not supported.
+
 
     Returns:
         fitted_pi_pulse_amplitude (int)
     """
 
     # Get the path of the experimental data file
-    # TODO: this will not work with my implementation, there always needs to be a datapath or a unique way to
-    # identify the right file.
-    timestamp = get_last_timestamp()
-    if datapath is None:
-        datapath = get_last_results()
-    parent_directory = os.path.dirname(datapath)
-    figure_filepath = os.path.join(parent_directory, "Rabi.PNG")
-    # get data
-    data_raw = calibration_utils.get_raw_data(datapath)
+    if isinstance(results, str):
+        # The 'results' argument is the path to the file where the results are stored.
+        parent_directory = os.path.dirname(results)
+        figure_filepath = os.path.join(parent_directory, "Rabi.PNG")
+        data_raw = calibration_utils.get_raw_data(results)
+    elif isinstance(results, list):
+        # The 'results' argument is list where the elements are dictionaries storing the raw results.
+        # FIXME: This implementation will have to change when multiple readout buses are supported, because then the results list 
+        # will contain more than one element. See the 'run' method src/qililab/execution/execution_manager.py for more details.
+        data_raw = results[0]
+    
 
     amplitude_loop_values = np.array(data_raw["loops"][0]["values"])
     swept_variable = data_raw["loops"][0]["parameter"]
@@ -441,27 +458,34 @@ def analyze_rabi(datapath, fit_quadrature="i", label=""):
     return fitted_pi_pulse_amplitude
 
 
-def analyze_ramsey(datapath, fit_quadrature="i", label="", prominence_peaks=20, analyze=True):
+def analyze_ramsey(results, fit_quadrature="i", label="", prominence_peaks=20, analyze=True):
     """
     Analyzes the ramsey experiment data.
 
     Args:
-        datapath: Where the data experimental is stored. If it's a string, it represents the path of a file. Otherwise it's something else, a python object (like a list).
+        results: Where the data experimental is stored. If it's a string, it represents the path of the yml file where the data is. 
+                 Otherwise it's a list with only 1 element. This element is a dictionary containing the data.
+                 For now this only supports experiment run on QBlox hardware. The dictionary is a standard structure in which the data 
+                 is stored by the QBlox hardware. For more details see this documentation: 
+                 https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/pulsar.html#qblox_instruments.native.Pulsar.get_acquisitions
+                 The list only has 1 element because each element represents the acquisitions dictionary of one readout bus, 
+                 and for the moment multiple readout buses are not supported.
 
     Returns:
         The optimal frequency found with the Ramsey experiment.
     """
     # Get the path of the experimental data file
-    # TODO: this will not work with my implementation, there always needs to be a datapath or a unique way to
-    # identify the right file.
-    timestamp = get_last_timestamp()
-    if datapath == None:
-        datapath = get_last_results()
-    parent_directory = os.path.dirname(datapath)
-    figure_filepath = os.path.join(parent_directory, f"RamseyFreq.PNG")
-    # get data
-    data_raw = get_raw_data(datapath)
-
+    if isinstance(results, str):
+        # The 'results' argument is the path to the file where the results are stored.
+        parent_directory = os.path.dirname(results)
+        figure_filepath = os.path.join(parent_directory, "Rabi.PNG")
+        data_raw = calibration_utils.get_raw_data(results)
+    elif isinstance(results, list):
+        # The 'results' argument is list where the elements are dictionaries storing the raw results.
+        # FIXME: This implementation will have to change when multiple readout buses are supported, because then the results list 
+        # will contain more than one element. See the 'run' method src/qililab/execution/execution_manager.py for more details.
+        data_raw = results[0]
+        
     # This is experiment specific and will go differently for every scheme of sweeps for tune-up
     freq_loop_values = np.array(data_raw["loops"][0]["values"])
     freq_label = data_raw["loops"][0]["parameter"]
@@ -556,12 +580,18 @@ def analyze_ramsey(datapath, fit_quadrature="i", label="", prominence_peaks=20, 
     return fit_res.best_values["xc"] if analyze else None
 
 
-def analyze_drag_coefficient(datapath, fit_quadrature="i", label=""):
+def analyze_drag_coefficient(results, fit_quadrature="i", label=""):
     """
     Analyzes the drag coefficient calibration experiment data.
 
     Args:
-        datapath: Where the data experimental is stored. If it's a string, it represents the path of a file. Otherwise it's something else, a python object (like a list).
+        results: Where the data experimental is stored. If it's a string, it represents the path of the yml file where the data is. 
+                 Otherwise it's a list with only 1 element. This element is a dictionary containing the data.
+                 For now this only supports experiment run on QBlox hardware. The dictionary is a standard structure in which the data 
+                 is stored by the QBlox hardware. For more details see this documentation: 
+                 https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/pulsar.html#qblox_instruments.native.Pulsar.get_acquisitions
+                 The list only has 1 element because each element represents the acquisitions dictionary of one readout bus, 
+                 and for the moment multiple readout buses are not supported.
 
     Returns:
         fitted_drag_coeff (int): The optimal drag coefficient.
@@ -570,13 +600,17 @@ def analyze_drag_coefficient(datapath, fit_quadrature="i", label=""):
     # Get path of the experimental data file
     # TODO: this will not work with my implementation, there always needs to be a datapath or a unique way to
     # identify the right file.
-    timestamp = get_last_timestamp()
-    if datapath == None:
-        datapath = get_last_results()
-    parent_directory = os.path.dirname(datapath)
-    figure_filepath = os.path.join(parent_directory, f"Drag.PNG")
-    # get data
-    data_raw = calibration_utils.get_raw_data(datapath)
+    # Get the path of the experimental data file
+    if isinstance(results, str):
+        # The 'results' argument is the path to the file where the results are stored.
+        parent_directory = os.path.dirname(results)
+        figure_filepath = os.path.join(parent_directory, "Rabi.PNG")
+        data_raw = calibration_utils.get_raw_data(results)
+    elif isinstance(results, list):
+        # The 'results' argument is list where the elements are dictionaries storing the raw results.
+        # FIXME: This implementation will have to change when multiple readout buses are supported, because then the results list 
+        # will contain more than one element. See the 'run' method src/qililab/execution/execution_manager.py for more details.
+        data_raw = results[0]
 
     parameter = data_raw["loops"][0]["parameter"]
     drag_values = data_raw["loops"][0]["values"]
@@ -644,25 +678,32 @@ def analyze_drag_coefficient(datapath, fit_quadrature="i", label=""):
     return fitted_drag_coeff
 
 
-def analyze_flipping(datapath, flips_values, fit_quadrature="i", label=""):
+def analyze_flipping(results, flips_values, fit_quadrature="i", label=""):
     """
     Analyzes the flipping experiment data.
 
     Args:
-        datapath: Where the data experimental is stored. If it's a string, it represents the path of a file. Otherwise it's something else, a python object (like a list).
+        results: Where the data experimental is stored. If it's a string, it represents the path of the yml file where the data is. 
+                 Otherwise it's a list with only 1 element. This element is a dictionary containing the data.
+                 For now this only supports experiment run on QBlox hardware. The dictionary is a standard structure in which the data 
+                 is stored by the QBlox hardware. For more details see this documentation: 
+                 https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/pulsar.html#qblox_instruments.native.Pulsar.get_acquisitions
+                 The list only has 1 element because each element represents the acquisitions dictionary of one readout bus, 
+                 and for the moment multiple readout buses are not supported.
 
     """
 
-    # Get path of the experimental data file
-    # TODO: this will not work with my implementation, there always needs to be a datapath or a unique way to
-    # identify the right file.
-    timestamp = get_last_timestamp()
-    if datapath == None:
-        datapath = get_last_results()
-    parent_directory = os.path.dirname(datapath)
-    figure_filepath = os.path.join(parent_directory, f"Flipping.PNG")
-    # get data
-    data_raw = get_raw_data(datapath)
+    # Get the path of the experimental data file
+    if isinstance(results, str):
+        # The 'results' argument is the path to the file where the results are stored.
+        parent_directory = os.path.dirname(results)
+        figure_filepath = os.path.join(parent_directory, "Rabi.PNG")
+        data_raw = calibration_utils.get_raw_data(results)
+    elif isinstance(results, list):
+        # The 'results' argument is list where the elements are dictionaries storing the raw results.
+        # FIXME: This implementation will have to change when multiple readout buses are supported, because then the results list 
+        # will contain more than one element. See the 'run' method src/qililab/execution/execution_manager.py for more details.
+        data_raw = results[0]
 
     # Get flattened data and shape it
     i, q = calibration_utils.get_iq_from_raw(data_raw)
@@ -751,27 +792,35 @@ def analyze_flipping(datapath, flips_values, fit_quadrature="i", label=""):
 
     return epsilon_coef if reduced_chi < reduced_chi2 else epsilon_coef2
 
-def analyze_all_xy(datapath, label=""):
+
+def analyze_all_xy(results, label=""):
     """
     Analyzes the AllXY experiment data.
 
     Args:
-        datapath: Where the data experimental is stored. If it's a string, it represents the path of a file. Otherwise it's something else, a python object (like a list).
+        results: Where the data experimental is stored. If it's a string, it represents the path of the yml file where the data is. 
+                 Otherwise it's a list with only 1 element. This element is a dictionary containing the data.
+                 For now this only supports experiment run on QBlox hardware. The dictionary is a standard structure in which the data 
+                 is stored by the QBlox hardware. For more details see this documentation: 
+                 https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/pulsar.html#qblox_instruments.native.Pulsar.get_acquisitions
+                 The list only has 1 element because each element represents the acquisitions dictionary of one readout bus, 
+                 and for the moment multiple readout buses are not supported.
 
     Returns:
         The plot of the AllXY experiment data
     """
 
     # Get the path of the experimental data file
-    # TODO: this will not work with my implementation, there always needs to be a datapath or a unique way to
-    # identify the right file.
-    timestamp = get_last_timestamp()
-    if datapath is None:
-        datapath = get_last_results()
-    parent_directory = os.path.dirname(datapath)
-    figure_filepath = os.path.join(parent_directory, "Rabi.PNG")
-    # get data
-    data_raw = calibration_utils.get_raw_data(datapath)
+    if isinstance(results, str):
+        # The 'results' argument is the path to the file where the results are stored.
+        parent_directory = os.path.dirname(results)
+        figure_filepath = os.path.join(parent_directory, "Rabi.PNG")
+        data_raw = calibration_utils.get_raw_data(results)
+    elif isinstance(results, list):
+        # The 'results' argument is list where the elements are dictionaries storing the raw results.
+        # FIXME: This implementation will have to change when multiple readout buses are supported, because then the results list 
+        # will contain more than one element. See the 'run' method src/qililab/execution/execution_manager.py for more details.
+        data_raw = results[0]
 
     amplitude_loop_values = np.array(data_raw["loops"][0]["values"])
     swept_variable = data_raw["loops"][0]["parameter"]
