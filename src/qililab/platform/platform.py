@@ -46,7 +46,7 @@ class Platform:  # pylint: disable=too-many-public-methods
         """Device id of the platform. This attribute is needed for `qiboconnection` to save results remotely."""
 
         self.gates_settings = runcard.gates_settings
-        """Exactly the gates_settings in the Runcard class"""
+        """This attribute contains a dataclass with all the settings needed to decompose gates into pulses."""
 
         self.instruments = Instruments(elements=self._load_instruments(instruments_dict=runcard.instruments))
         """Corresponding Instruments classes, instantiated given the instruments list[dict] of the Runcard class"""
