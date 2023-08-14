@@ -23,6 +23,7 @@ class RUNCARD:
 
     ID = "id_"
     NAME = "name"
+    DEVICE_ID = "device_id"
     ALIAS = "alias"
     CATEGORY = "category"
     SUBCATEGORY = "subcategory"
@@ -30,7 +31,7 @@ class RUNCARD:
     INSTRUMENTS = "instruments"
     ELEMENTS = "elements"
     READOUT = "readout"
-    GATE_SETTINGS = "gate_settings"
+    GATES_SETTINGS = "gates_settings"
     PLATFORM = "platform"
     BUSES = "buses"
     CHIP = "chip"

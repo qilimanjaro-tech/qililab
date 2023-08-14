@@ -246,7 +246,7 @@ class Experiment(BaseExperiment):
         parameter: Parameter,
         value: float | str | bool,
         alias: str,
-        element: Runcard.GateSettings | Node | Instrument | None = None,
+        element: Runcard.GatesSettings | Node | Instrument | None = None,
         channel_id: int | None = None,
     ):
         """Set parameter of a platform element.

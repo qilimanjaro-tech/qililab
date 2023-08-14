@@ -45,12 +45,12 @@ class Galadriel:
 
     name = "galadriel"
 
-    platform: dict[str, Any] = {
-        RUNCARD.ID: 0,
-        RUNCARD.NAME: "galadriel",
-        PLATFORM.DEVICE_ID: 9,
+    device_id = 9
+
+    gates_settings: dict[str, Any] = {
+        RUNCARD.ID: 0,  # This will get removed in Albert PR
         RUNCARD.ALIAS: None,
-        RUNCARD.CATEGORY: RUNCARD.PLATFORM,
+        RUNCARD.CATEGORY: RUNCARD.PLATFORM,  # This too, se we don't care it should be moved in this PR
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
         PLATFORM.DELAY_BEFORE_READOUT: 0,
@@ -508,7 +508,9 @@ class Galadriel:
     ]
 
     runcard: dict[str, Any] = {
-        RUNCARD.GATE_SETTINGS: platform,
+        RUNCARD.NAME: name,
+        RUNCARD.DEVICE_ID: device_id,
+        RUNCARD.GATES_SETTINGS: gates_settings,
         RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,
         RUNCARD.INSTRUMENTS: instruments,
@@ -552,10 +554,10 @@ class FluxQubitSimulator:
 
     name = "flux_qubit"
 
-    platform: dict[str, Any] = {
+    device_id = 9
+
+    gates_settings: dict[str, Any] = {
         RUNCARD.ID: 0,
-        RUNCARD.NAME: "flux_qubit",
-        PLATFORM.DEVICE_ID: 9,
         RUNCARD.CATEGORY: RUNCARD.PLATFORM,
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
@@ -675,7 +677,9 @@ class FluxQubitSimulator:
     }
 
     runcard: dict[str, Any] = {
-        RUNCARD.GATE_SETTINGS: platform,
+        RUNCARD.NAME: name,
+        RUNCARD.DEVICE_ID: device_id,
+        RUNCARD.GATES_SETTINGS: gates_settings,
         RUNCARD.INSTRUMENTS: [],
         RUNCARD.INSTRUMENT_CONTROLLERS: [],
         RUNCARD.CHIP: chip,
@@ -870,7 +874,7 @@ experiment: dict[str, Any] = {
             }
         ],
         RUNCARD.NAME: "punchout",
-        RUNCARD.GATE_SETTINGS: {
+        RUNCARD.GATES_SETTINGS: {
             EXPERIMENT.HARDWARE_AVERAGE: 1024,
             EXPERIMENT.SOFTWARE_AVERAGE: 1,
             EXPERIMENT.REPETITION_DURATION: 200000,
@@ -905,10 +909,10 @@ class SauronVNA:
 
     name = "sauron_vna"
 
-    platform: dict[str, Any] = {
+    device_id = 9
+
+    gates_settings: dict[str, Any] = {
         RUNCARD.ID: 0,
-        RUNCARD.NAME: "sauron_vna",
-        PLATFORM.DEVICE_ID: 9,
         RUNCARD.ALIAS: None,
         RUNCARD.CATEGORY: RUNCARD.PLATFORM,
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
@@ -1035,7 +1039,9 @@ class SauronVNA:
     ]
 
     runcard: dict[str, Any] = {
-        RUNCARD.GATE_SETTINGS: platform,
+        RUNCARD.NAME: name,
+        RUNCARD.DEVICE_ID: device_id,
+        RUNCARD.GATES_SETTINGS: gates_settings,
         RUNCARD.INSTRUMENTS: instruments,
         RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,

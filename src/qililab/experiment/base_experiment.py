@@ -265,7 +265,7 @@ class BaseExperiment:
         parameter: Parameter,
         value: float | str | bool,
         alias: str,
-        element: Runcard.GateSettings | Node | Instrument | None = None,
+        element: Runcard.GatesSettings | Node | Instrument | None = None,
         channel_id: int | None = None,
     ):
         """Set parameter of a platform element.
@@ -278,7 +278,7 @@ class BaseExperiment:
         """
         if element is None:
             self.platform.set_parameter(alias=alias, parameter=Parameter(parameter), value=value, channel_id=channel_id)
-        elif isinstance(element, Runcard.GateSettings):
+        elif isinstance(element, Runcard.GatesSettings):
             element.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             self.build_execution()
         elif isinstance(element, list):  # if element is a list of GateEventSettings

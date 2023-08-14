@@ -128,7 +128,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
             list[GateEventSettings]: schedule list with each of the pulses settings
         """
 
-        gate_schedule = self.platform.gate_settings.get_gate(name=gate.__class__.__name__, qubits=gate.qubits)
+        gate_schedule = self.platform.gates_settings.get_gate(name=gate.__class__.__name__, qubits=gate.qubits)
 
         if not isinstance(gate, Drag):
             return gate_schedule
@@ -239,7 +239,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
                 frequency=pulse.frequency,
                 pulse_shape=pulse_shape,
             ),
-            start_time=time + gate_event.wait_time + self.platform.gate_settings.delay_before_readout,
+            start_time=time + gate_event.wait_time + self.platform.gates_settings.delay_before_readout,
             pulse_distortions=bus.distortions,
             qubit=qubit,
         )
@@ -257,7 +257,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
         """
         cz_qubits = cz.qubits
         try:
-            self.platform.gate_settings.get_gate(name=cz.__class__.__name__, qubits=cz_qubits)
+            self.platform.gates_settings.get_gate(name=cz.__class__.__name__, qubits=cz_qubits)
             return cz
         except KeyError:
             return CZ(cz_qubits[1], cz_qubits[0])
@@ -273,9 +273,9 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
         if qubit not in time:
             time[qubit] = 0
         old_time = time[qubit]
-        residue = (gate_time) % self.platform.gate_settings.minimum_clock_time
+        residue = (gate_time) % self.platform.gates_settings.minimum_clock_time
         if residue != 0:
-            gate_time += self.platform.gate_settings.minimum_clock_time - residue
+            gate_time += self.platform.gates_settings.minimum_clock_time - residue
         time[qubit] += gate_time
         return old_time
 
