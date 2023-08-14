@@ -37,8 +37,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
     """
 
     def __init__(self, runcard: Runcard, connection: API | None = None):
-        """Instantiates the platform."""
-
         self.name = runcard.name
         """Name of the platform (str) """
 
