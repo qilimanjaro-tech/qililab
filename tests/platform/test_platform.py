@@ -142,9 +142,11 @@ class TestPlatform:
         runcard_dict = platform.to_dict()
         assert isinstance(runcard_dict, dict)
 
-        new_platform = Platform(runcard=Runcard(**Galadriel.runcard))
+        new_platform = Platform(runcard=Runcard(**runcard_dict))
         assert isinstance(new_platform, Platform)
         assert str(new_platform) == str(platform)
+        assert str(new_platform.name) == str(platform.name)
+        assert str(new_platform.device_id) == str(platform.device_id)
         assert str(new_platform.buses) == str(platform.buses)
         assert str(new_platform.chip) == str(platform.chip)
         assert str(new_platform.instruments) == str(platform.instruments)
@@ -154,9 +156,11 @@ class TestPlatform:
         assert isinstance(new_runcard_dict, dict)
         assert new_runcard_dict == runcard_dict
 
-        newest_platform = Platform(runcard=Runcard(**Galadriel.runcard))
+        newest_platform = Platform(runcard=Runcard(**new_runcard_dict))
         assert isinstance(newest_platform, Platform)
         assert str(newest_platform) == str(new_platform)
+        assert str(newest_platform.name) == str(new_platform.name)
+        assert str(newest_platform.device_id) == str(new_platform.device_id)
         assert str(newest_platform.buses) == str(new_platform.buses)
         assert str(newest_platform.chip) == str(new_platform.chip)
         assert str(newest_platform.instruments) == str(new_platform.instruments)

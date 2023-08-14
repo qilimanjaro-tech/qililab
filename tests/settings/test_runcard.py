@@ -16,7 +16,7 @@ from tests.data import Galadriel
 class TestRuncard:
     """Unit tests for the Runcard dataclass initialization."""
 
-    def test_attributes(self, runcard_dict):
+    def test_attributes(self, runcard_dict: dict):
         """Test that the attributes of the Runcard are casted into dataclasses, and that
         the values they contain are the same as the input dictionaries."""
         runcard = Runcard(**runcard_dict)
@@ -47,6 +47,31 @@ class TestRuncard:
         assert isinstance(runcard.instrument_controllers[0], dict)
         for index, instrument_controller in enumerate(runcard.instrument_controllers):
             assert instrument_controller == Galadriel.runcard["instrument_controllers"][index]
+
+    def test_serialization(self, runcard_dict: dict):
+        """Test that a serialization of the Platform is possible"""
+        assert isinstance(runcard_dict, dict)
+
+        runcard = Runcard(**runcard_dict)
+        assert isinstance(runcard, Runcard)
+
+        new_runcard_dict = asdict(runcard)
+        assert isinstance(new_runcard_dict, dict)
+        assert new_runcard_dict == runcard_dict
+
+        new_runcard = Runcard(**new_runcard_dict)
+        assert isinstance(new_runcard, Runcard)
+        assert str(new_runcard) == str(runcard)
+        assert str(new_runcard.name) == str(runcard.name)
+        assert str(new_runcard.device_id) == str(runcard.device_id)
+        assert str(new_runcard.buses) == str(runcard.buses)
+        assert str(new_runcard.chip) == str(runcard.chip)
+        assert str(new_runcard.instruments) == str(runcard.instruments)
+        assert str(new_runcard.instrument_controllers) == str(runcard.instrument_controllers)
+
+        newest_runcard_dict = asdict(new_runcard)
+        assert isinstance(newest_runcard_dict, dict)
+        assert newest_runcard_dict == runcard_dict
 
 
 @pytest.mark.parametrize("gates_settings", [Runcard(**Galadriel.runcard).gates_settings])
