@@ -161,7 +161,7 @@ class LivePlot:  # pylint: disable=too-many-instance-attributes
         """Return plot label from loop object.
 
         Args:
-            loop (Loop): Loop class.
+            loop (~utils.loop.Loop): Loop class.
 
         Returns:
             str: Plot label.

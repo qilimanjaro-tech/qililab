@@ -5,7 +5,7 @@
 ### New features since last release
 
 - Added hotfixes for several issues encountered during the hackathon:
-  <https://github.com/qilimanjaro-tech/qililab/pull/413>
+  [#413](https://github.com/qilimanjaro-tech/qililab/pull/413)
 
   - Save experiments flag for experiments execute method
 
