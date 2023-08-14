@@ -8,11 +8,12 @@ from dataclasses import dataclass
 import numpy as np
 import numpy.typing as npt
 
-from qililab.instruments.qblox.constants import SCOPE_ACQ_MAX_DURATION
 from qililab.result.acquisition import Acquisition
 from qililab.result.acquisitions import Acquisitions
 from qililab.result.qblox_results.scope_data import ScopeData
 from qililab.utils.signal_processing import demodulate
+
+from .constants import SCOPE_ACQ_MAX_DURATION
 
 
 @dataclass

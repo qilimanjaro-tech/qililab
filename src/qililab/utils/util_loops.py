@@ -1,4 +1,4 @@
-""" Utilities for Loops """
+""" Utilities for Loops."""
 import numpy as np
 
 from qililab.utils.loop import Loop
