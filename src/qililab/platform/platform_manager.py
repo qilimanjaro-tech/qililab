@@ -23,11 +23,8 @@ class PlatformManager(ABC, metaclass=SingletonABC):
         """
         logger.info("Building platform")
 
-        if new_drivers:
-            pass
-
         runcard = Runcard(**self._load_platform_settings(platform_name=platform_name))
-        return Platform(runcard=runcard, connection=connection)
+        return Platform(runcard=runcard, connection=connection, new_drivers=new_drivers)
 
     def dump(self, platform: Platform):
         """Dump all platform information into a YAML file.

@@ -9,6 +9,7 @@ from qiboconnection.api import API
 from qililab.chip import Chip
 from qililab.config import logger
 from qililab.constants import GATE_ALIAS_REGEX, RUNCARD
+from qililab.drivers import BaseInstrument, InstrumentDriverFactory
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
 from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
@@ -37,30 +38,43 @@ class Platform:  # pylint: disable=too-many-public-methods
         connection (API | None = None): Connection of the platform.
     """
 
-    def __init__(self, runcard: Runcard, connection: API | None = None):
+    def __init__(self, runcard: Runcard, connection: API | None = None, new_drivers: bool = False):
         """instantiates the platform"""
 
         self.gate_settings = runcard.gate_settings
         """Exactly the gate_settings in the Runcard class"""
 
-        self.instruments = Instruments(elements=self._load_instruments(instruments_dict=runcard.instruments))
-        """Instruments corresponding classes, instantiated given the instruments list[dict] of the Runcard class"""
-
-        self.instrument_controllers = InstrumentControllers(
-            elements=self._load_instrument_controllers(instrument_controllers_dict=runcard.instrument_controllers)
-        )
-        """InstrumentControllers corresponding classes, instantiated given the instrument_controllers list[dict] of the Runcard class"""
-
         self.chip = Chip(**asdict(runcard.chip))
         """Chip class, instantiated given the ChipSettings class of the Runcard class"""
 
-        self.buses = Buses(
-            elements=[
-                Bus(settings=asdict(bus), platform_instruments=self.instruments, chip=self.chip)
-                for bus in runcard.buses
-            ]
-        )
-        """Buses class, instantiated given the list[BusSettings] classes of the Runcard class"""
+        if new_drivers:
+            # uses the new drivers and buses
+            self.instruments = Instruments(elements=self._load_new_instruments(instruments_dict=runcard.instruments))
+            """Instruments corresponding classes, instantiated given the instruments list[dict] of the Runcard class"""
+
+            self.buses = Buses(
+                elements=[
+                    Bus(settings=asdict(bus), platform_instruments=self.instruments, chip=self.chip)
+                    for bus in runcard.buses
+                ]
+            )
+            """Buses class, instantiated given the list[BusSettings] classes of the Runcard class"""
+        else:
+            self.instruments = Instruments(elements=self._load_instruments(instruments_dict=runcard.instruments))
+            """Instruments corresponding classes, instantiated given the instruments list[dict] of the Runcard class"""
+
+            self.instrument_controllers = InstrumentControllers(
+                elements=self._load_instrument_controllers(instrument_controllers_dict=runcard.instrument_controllers)
+            )
+            """InstrumentControllers corresponding classes, instantiated given the instrument_controllers list[dict] of the Runcard class"""
+
+            self.buses = Buses(
+                elements=[
+                    Bus(settings=asdict(bus), platform_instruments=self.instruments, chip=self.chip)
+                    for bus in runcard.buses
+                ]
+            )
+            """Buses class, instantiated given the list[BusSettings] classes of the Runcard class"""
 
         self.connection = connection
         """Connection of the platform. Same as the argument"""
@@ -204,6 +218,24 @@ class Platform:  # pylint: disable=too-many-public-methods
             return
         element = self.get_element(alias=alias)
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+
+    def _load_new_instruments(self, instruments_dict: list[dict]) -> list[BaseInstrument]:
+        """Instantiate all instrument classes from their respective dictionaries.
+
+        Args:
+            instruments_dict (list[dict]): List of dictionaries containing the settings of each instrument.
+
+        Returns:
+            list[BaseInstrument]: List of instantiated instrument classes.
+        """
+        instruments = []
+        for instrument in instruments_dict:
+            local_dict = deepcopy(instrument)
+            # create instrument instance
+            instrument_instance = InstrumentDriverFactory.get(local_dict.pop(RUNCARD.NAME))
+            # TODO: set parameters for instrument
+            instruments.append(instrument_instance)
+        return instruments
 
     def _load_instruments(self, instruments_dict: list[dict]) -> list[Instrument]:
         """Instantiate all instrument classes from their respective dictionaries.
