@@ -40,7 +40,7 @@ class Platform:  # pylint: disable=too-many-public-methods
         """instantiates the platform"""
 
         self.name = runcard.name
-        """Exactly the name in the Runcard"""
+        """Name of the platform."""
 
         self.device_id = runcard.device_id
         """Exactly the device_id in the Runcard"""
