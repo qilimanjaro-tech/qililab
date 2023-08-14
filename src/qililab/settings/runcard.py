@@ -42,7 +42,7 @@ class Runcard:
     # Inner dataclasses definition
     @dataclass
     class Bus:
-        """Bus settings class."""
+        """Dataclass with all the settings the buses of the platform need."""
 
         id_: int
         category: str
@@ -54,7 +54,7 @@ class Runcard:
 
     @dataclass
     class Chip:
-        """Chip settings class."""
+        """Dataclass with all the settings/nodes the chip of the platform needs."""
 
         id_: int
         category: str
@@ -63,15 +63,15 @@ class Runcard:
 
     @nested_dataclass
     class GatesSettings(DDBBElement):
-        """GatesSettings class."""
+        """Dataclass with all the settings and gates definitions needed to decompose gates into pulses."""
 
         @nested_dataclass
         class OperationSettings:
-            """OperationSettings class"""
+            """Dataclass with all the settings an operation needs."""
 
             @dataclass
             class PulseSettings:
-                """PulseSettings class"""
+                """Dataclass with all the settings a pulse needs."""
 
                 name: str
                 amplitude: float
@@ -93,13 +93,13 @@ class Runcard:
         gates: dict[str, list[GateEventSettings]]
 
         def __post_init__(self):
-            """build the Gates Settings based on the master settings"""
+            """Build the Gates Settings based on the master settings."""
             self.gates = {
                 gate: [GateEventSettings(**event) for event in schedule] for gate, schedule in self.gates.items()
             }
 
         def get_operation_settings(self, name: str) -> OperationSettings:
-            """Get OperationSettings by operation's name
+            """Get OperationSettings by operation's name.
 
             Args:
                 name (str): Name of the operation

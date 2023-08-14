@@ -21,7 +21,7 @@ from qililab.typings.enums import Category, Line, Parameter
 from qililab.typings.yaml_type import yaml
 
 
-class Platform:  # pylint: disable=too-many-public-methods
+class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-attributes
     """Platform object that describes setup used to control quantum devices.
 
     The class will receive the Runcard class, with all the inner GatesSettings, Chip, Bus classes that the Runcard class has created
@@ -37,27 +37,27 @@ class Platform:  # pylint: disable=too-many-public-methods
     """
 
     def __init__(self, runcard: Runcard, connection: API | None = None):
-        """instantiates the platform"""
+        """Instantiates the platform."""
 
         self.name = runcard.name
-        """Name of the platform."""
+        """Name of the platform (str) """
 
         self.device_id = runcard.device_id
-        """Device id of the platform. This attribute is needed for `qiboconnection` to save results remotely."""
+        """Device id of the platform (int). This attribute is needed for `qiboconnection` to save results remotely."""
 
         self.gates_settings = runcard.gates_settings
-        """This attribute contains a dataclass with all the settings needed to decompose gates into pulses."""
+        """Dataclass with all the settings and gates definitions needed to decompose gates into pulses."""
 
         self.instruments = Instruments(elements=self._load_instruments(instruments_dict=runcard.instruments))
-        """Corresponding Instruments classes, instantiated given the instruments list[dict] of the Runcard class"""
+        """All the instruments and of the platform and their needed settings, contained as elements (`list[Instrument]`) inside an `Instruments` class."""
 
         self.instrument_controllers = InstrumentControllers(
             elements=self._load_instrument_controllers(instrument_controllers_dict=runcard.instrument_controllers)
         )
-        """Corresponding InstrumentControllers classes, instantiated given the instrument_controllers list[dict] of the Runcard class"""
+        """All the instrument controllers of the platform and their needed settings, contained as elements (`list[InstrumentController]`) inside an `InstrumentControllers` class."""
 
         self.chip = Chip(**asdict(runcard.chip))
-        """Chip class, instantiated given the Runcard.Chip settings class of the Runcard class"""
+        """All the chip nodes (`list[Nodes]`) of the platform, contained inside a `Chip` class"""
 
         self.buses = Buses(
             elements=[
@@ -65,13 +65,13 @@ class Platform:  # pylint: disable=too-many-public-methods
                 for bus in runcard.buses
             ]
         )
-        """Buses class, instantiated given the list[Runcard.Bus] settings classes of the Runcard class"""
+        """All the buses of the platform and their needed settings, contained as elements (`list[Bus]`) inside a `Buses` class"""
 
         self.connection = connection
-        """Connection of the platform. Same as the argument"""
+        """API connection of the platform. Same as the passed argument. Defaults to None."""
 
         self._connected_to_instruments: bool = False
-        """Boolean describing the connection to instruments. Defaults to False (not connected)"""
+        """Boolean describing the connection to the instruments. Defaults to False (not connected)."""
 
     def connect(self, manual_override=False):
         """Blocks the given device and connects to the instruments.
