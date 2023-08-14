@@ -11,11 +11,11 @@ This document contains the changes of the current release.
   This PR brings importants simplifications to the full qililab structure, now the runcard will have the following structure:
 
   ```yaml
-  name: "str: name of platform"
+  name: ...
 
-  device_id: "int: device id of platform"
+  device_id: ...
 
-  gates_settings:   # Old `settings`` without name & device_id
+  gates_settings:   # Old `settings` without name & device_id
     ...
 
   chip:
@@ -35,8 +35,8 @@ This document contains the changes of the current release.
 
   ```yaml
   settings:
-    name: "str: name of platform"
-    device_id: "int: device id of platform "
+    name: ...
+    device_id: ...
     ...
 
   schema:   # Schema disappears from the platform.
