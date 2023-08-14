@@ -24,9 +24,8 @@ from qililab.typings.yaml_type import yaml
 class Platform:  # pylint: disable=too-many-public-methods
     """Platform object that describes setup used to control quantum devices.
 
-    The class will receive the Runcard class, with all the GateSettings, ChipSettings, BusSettings that the
-    Runcard class has created from the dictionaries, together with the instrument dictionaries that the Runcard class
-    has not transform into classes yet.
+    The class will receive the Runcard class, with all the GatesSettings, Chip, Bus that the Runcard class has created from
+    the dictionaries, together with the instrument dictionaries that the Runcard class has not transform into classes yet.
 
     And with all that information instantiates the actual qililab Chip, Buses/Bus and corresponding Instrument classes.
 
@@ -50,15 +49,15 @@ class Platform:  # pylint: disable=too-many-public-methods
         """Exactly the gates_settings in the Runcard class"""
 
         self.instruments = Instruments(elements=self._load_instruments(instruments_dict=runcard.instruments))
-        """Instruments corresponding classes, instantiated given the instruments list[dict] of the Runcard class"""
+        """Corresponding Instruments classes, instantiated given the instruments list[dict] of the Runcard class"""
 
         self.instrument_controllers = InstrumentControllers(
             elements=self._load_instrument_controllers(instrument_controllers_dict=runcard.instrument_controllers)
         )
-        """InstrumentControllers corresponding classes, instantiated given the instrument_controllers list[dict] of the Runcard class"""
+        """Corresponding InstrumentControllers classes, instantiated given the instrument_controllers list[dict] of the Runcard class"""
 
         self.chip = Chip(**asdict(runcard.chip))
-        """Chip class, instantiated given the ChipSettings class of the Runcard class"""
+        """Chip class, instantiated given the Runcard.Chip settings class of the Runcard class"""
 
         self.buses = Buses(
             elements=[
@@ -66,7 +65,7 @@ class Platform:  # pylint: disable=too-many-public-methods
                 for bus in runcard.buses
             ]
         )
-        """Buses class, instantiated given the list[BusSettings] classes of the Runcard class"""
+        """Buses class, instantiated given the list[Runcard.Bus] settings classes of the Runcard class"""
 
         self.connection = connection
         """Connection of the platform. Same as the argument"""

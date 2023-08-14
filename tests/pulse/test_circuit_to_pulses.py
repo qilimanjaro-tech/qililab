@@ -338,7 +338,7 @@ def fixture_chip():
 
 @pytest.fixture(name="platform")
 def fixture_platform(chip: Chip) -> Platform:
-    """Fixture that returns an instance of a ``Runcard.GateSettings`` class."""
+    """Fixture that returns an instance of a ``Runcard.GatesSettings`` class."""
     name = "dummy"
 
     device_id = 9

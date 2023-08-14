@@ -30,11 +30,11 @@ class TestRuncard:
         assert isinstance(runcard.gates_settings, runcard.GatesSettings)
         assert asdict(runcard.gates_settings) == Galadriel.runcard["gates_settings"]
 
-        assert isinstance(runcard.chip, runcard.ChipSettings)
+        assert isinstance(runcard.chip, runcard.Chip)
         assert asdict(runcard.chip) == Galadriel.runcard["chip"]
 
         assert isinstance(runcard.buses, list)
-        assert isinstance(runcard.buses[0], runcard.BusSettings)
+        assert isinstance(runcard.buses[0], runcard.Bus)
         for index, bus in enumerate(runcard.buses):
             assert asdict(bus) == Galadriel.runcard["buses"][index]
 
@@ -50,11 +50,11 @@ class TestRuncard:
 
 
 @pytest.mark.parametrize("gates_settings", [Runcard(**Galadriel.runcard).gates_settings])
-class TestGateSettings:
-    """Unit tests for the Runcard.GateSettings class."""
+class TestGatesSettings:
+    """Unit tests for the Runcard.GatesSettings class."""
 
     def test_attributes(self, gates_settings):
-        """Test that the Runcard.GateSettings dataclass contains the right attributes."""
+        """Test that the Runcard.GatesSettings dataclass contains the right attributes."""
         assert isinstance(gates_settings.delay_between_pulses, int)
         assert isinstance(gates_settings.delay_before_readout, int)
         assert isinstance(gates_settings.gates, dict)
@@ -68,7 +68,7 @@ class TestGateSettings:
         assert isinstance(gates_settings.operations, list)
 
     def test_get_operation_settings(self, gates_settings):
-        """Test the ``get_operation_settings`` method of the GateSettings class."""
+        """Test the ``get_operation_settings`` method of the Runcard.GatesSettings class."""
         for operation in gates_settings.operations:
             if isinstance(operation, dict):
                 operation = Runcard.GatesSettings.OperationSettings(**operation)
@@ -78,13 +78,13 @@ class TestGateSettings:
             )
 
     def test_get_operation_settings_raises_error_when_operation_does_not_exist(self, gates_settings):
-        """Test the ``get_gate`` method of the GateSettings class."""
+        """Test the ``get_gate`` method of the Runcard.GatesSettings class."""
         name = "unkown_operation"
         with pytest.raises(ValueError, match=f"Operation {name} not found in gate settings."):
             gates_settings.get_operation_settings(name)
 
     def test_get_gate(self, gates_settings):
-        """Test the ``get_gate`` method of the GateSettings class."""
+        """Test the ``get_gate`` method of the Runcard.GatesSettings class."""
         gates_qubits = [
             (re.search(GATE_ALIAS_REGEX, alias)["gate"], re.search(GATE_ALIAS_REGEX, alias)["qubits"])
             for alias in gates_settings.gates.keys()
@@ -107,7 +107,7 @@ class TestGateSettings:
             gates_settings.get_gate(name, qubits=qubits)
 
     def test_gate_names(self, gates_settings):
-        """Test the ``gate_names`` method of the GateSettings class."""
+        """Test the ``gate_names`` method of the Runcard.GatesSettings class."""
         expected_names = list(gates_settings.gates.keys())
         assert gates_settings.gate_names == expected_names
 

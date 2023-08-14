@@ -24,16 +24,16 @@ class Runcard:
     - instruments: List of "instruments" dictionaries
     - instrument_controllers: List of "instrument_controllers" dictionaries
 
-    The gates_settings, chip and bus dictionaries will be passed to their corresponding TranpilationSettings,
-    ChipSettings or BusSettings here, meanwhile the instruments and instrument_controllers will remain dictionaries.
+    The gates_settings, chip and bus dictionaries will be passed to their corresponding Runcard.GatesSettings,
+    Runcard.Chip or Runcard.Bus here, meanwhile the instruments and instrument_controllers will remain dictionaries.
 
     Then this full class gets passed to the Platform who will instantiate the actual qililab Chip, Buses/Bus and the
     corresponding Instrument classes with the settings attributes of this class.
 
     Args:
-        gates_settings (dict): GateSettings dictionary -> GateSettings inner dataclass
-        chip (dict): ChipSettings dictionary -> ChipSettings inner dataclass
-        buses (list[dict]): List of BusSettings dictionaries -> list[BusSettings] inner dataclass
+        gates_settings (dict): Gates settings dictionary -> Runcard.GatesSettings inner dataclass
+        chip (dict): Chip settings dictionary -> Runcard.Chip settings inner dataclass
+        buses (list[dict]): List of Bus settings dictionaries -> list[Runcard.Bus] settings inner dataclass
         instruments (list[dict]): List of dictionaries containing the "instruments" information (does not transform)
         instruments_controllers (list[dict]): List of dictionaries containing the "instrument_controllers" information
             (does not transform)
@@ -41,7 +41,7 @@ class Runcard:
 
     # Inner dataclasses definition
     @dataclass
-    class BusSettings:
+    class Bus:
         """Bus settings class."""
 
         id_: int
@@ -53,7 +53,7 @@ class Runcard:
         delay: int = 0
 
     @dataclass
-    class ChipSettings:
+    class Chip:
         """Chip settings class."""
 
         id_: int
@@ -63,7 +63,7 @@ class Runcard:
 
     @nested_dataclass
     class GatesSettings(DDBBElement):
-        """GateSettings class."""
+        """GatesSettings class."""
 
         @nested_dataclass
         class OperationSettings:
@@ -129,7 +129,7 @@ class Runcard:
                 ValueError: If no gate is found.
 
             Returns:
-                GateSettings: gate settings.
+                GatesSettings: gate settings.
             """
 
             gate_qubits = (
@@ -146,7 +146,7 @@ class Runcard:
 
         @property
         def gate_names(self) -> list[str]:
-            """GateSettings 'gate_names' property.
+            """GatesSettings 'gate_names' property.
 
             Returns:
                 list[str]: List of the names of all the defined gates.
@@ -177,11 +177,11 @@ class Runcard:
     # Runcard class actual initialization
     name: str
     device_id: int
-    chip: ChipSettings
-    buses: list[BusSettings]  # This actually is a list[dict] until the post_init is called
+    chip: Chip
+    buses: list[Bus]  # This actually is a list[dict] until the post_init is called
     instruments: list[dict]
     instrument_controllers: list[dict]
     gates_settings: GatesSettings
 
     def __post_init__(self):
-        self.buses = [self.BusSettings(**bus) for bus in self.buses] if self.buses is not None else None
+        self.buses = [self.Bus(**bus) for bus in self.buses] if self.buses is not None else None
