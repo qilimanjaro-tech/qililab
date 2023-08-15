@@ -1,5 +1,5 @@
-Development guide
-=================
+Contributing to Qililab
+=======================
 
 The Development guide contains information regarding how to contribute to the
 `qililab` codebase.
