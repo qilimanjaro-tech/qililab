@@ -27,7 +27,7 @@ Qililab Documentation
 
 .. grid:: 2
 
-   .. grid-item-card:: Developer guide
+   .. grid-item-card:: Developers
       :link: development/guide.html
       :text-align: center
 
