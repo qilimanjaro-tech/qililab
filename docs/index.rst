@@ -17,7 +17,7 @@ Qililab Documentation
       :link: getting_started/what_is_qililab.html
       :text-align: center
 
-      A guided tour of the core features of Qililab
+      Everything you need to start using Qililab in your lab
 
    .. grid-item-card:: Fundamentals and usage
       :link: fundamentals/platform.html
