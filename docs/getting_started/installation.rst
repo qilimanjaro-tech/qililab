@@ -3,4 +3,4 @@ Installation
 
 .. warning::
 
-    Fill with instructions to install qililab.
+    Fill with instructions to install `Qililab`.
