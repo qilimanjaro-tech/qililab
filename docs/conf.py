@@ -55,6 +55,7 @@ html_permalinks_icon = Icons.permalinks_icon
 html_favicon = "_static/q_light.jpeg"
 html_baseurl = "https://qililab.com/"
 html_theme = "sphinxawesome_theme"
+html_sidebars = {"**": ["sidebar_main_nav_links.html", "sidebar_toc.html"]}
 html_theme_options = {
     "logo_light": "_static/q_light.jpeg",
     "logo_dark": "_static/q_dark.jpeg",
