@@ -139,3 +139,10 @@ class TestKeithley2600Channel:
         channel_smub = Keithley2600Channel(parent=MagicMock(), name="test_channel_smub", channel="smub")
         assert channel_smua.params == channel_smua.parameters
         assert channel_smub.params == channel_smub.parameters
+
+    def test_alias(self):
+        """Unittest to test the alias property."""
+        channel_smua = Keithley2600Channel(parent=MagicMock(), name="test_channel_smua", channel="smua")
+        channel_smub = Keithley2600Channel(parent=MagicMock(), name="test_channel_smub", channel="smub")
+        assert channel_smua.alias == channel_smua.name
+        assert channel_smub.alias == channel_smub.name

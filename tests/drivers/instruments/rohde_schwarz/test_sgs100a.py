@@ -56,3 +56,8 @@ class TestRhodeSchwarzSGS100A:
         """Unittest to test the params property."""
         rs = RhodeSchwarzSGS100A(name="dummy_SGS100A", address="none")
         assert rs.params == rs.parameters
+
+    def test_alias(self):
+        """Unittest to test the alias property."""
+        rs = RhodeSchwarzSGS100A(name="dummy_SGS100A", address="none")
+        assert rs.alias == rs.name

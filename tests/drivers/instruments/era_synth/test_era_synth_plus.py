@@ -56,3 +56,8 @@ class TestERASynthPlus:
         """Unittest to test the params property."""
         es = ERASynthPlus(name="dummy_ERASynthPlus", address="none")
         assert es.params == es.parameters
+
+    def test_alias(self):
+        """Unittest to test the alias property."""
+        es = ERASynthPlus(name="dummy_ERASynthPlus", address="none")
+        assert es.alias == es.name

@@ -30,3 +30,8 @@ class Pulsar(QcodesPulsar):  # pylint: disable=abstract-method
         for seq_idx in range(6):
             seq = sequencer_class(parent=self, name=f"sequencer{seq_idx}", seq_idx=seq_idx)  # type: ignore
             self.add_submodule(f"sequencer{seq_idx}", seq)
+
+    @property
+    def alias(self):
+        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
+        return self.name
