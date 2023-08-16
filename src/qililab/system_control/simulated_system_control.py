@@ -71,15 +71,21 @@ class SimulatedSystemControl(ReadoutSystemControl):
         return "--"
 
     def run(self, port: str) -> None:
-        """Run the program"""
+        """Run the program.
+
+        Args:
+            port (str): Port of the chip.
+        """
         self._evo.set_pulse_sequence(pulse_sequence=self.sequence, resolution=self.settings.resolution * 1e-9)
         self._evo.evolve()
 
     def acquire_result(self, port: str) -> SimulatorResult:
         """Read the result from the AWG instrument
+        Args:
+            port (str): Port of the chip.
 
         Returns:
-            Result: Acquired result
+            SimulatorResult: Acquired result.
         """
         return SimulatorResult(psi0=self._evo.psi0, states=self._evo.states, times=self._evo.times)
 
@@ -100,9 +106,10 @@ class SimulatedSystemControl(ReadoutSystemControl):
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             nshots (int): number of shots / hardware average
             repetition_duration (int): maximum window for the duration of one hardware repetition
+            num_bins (int, optional): Number of bins used. Defaults to 1.
 
         Returns:
-            list: empty list
+            list: Empty list.
         """
         # TODO: get pulses -> check
         waveforms = pulse_bus_schedule.waveforms(resolution=self.settings.resolution)
@@ -111,4 +118,11 @@ class SimulatedSystemControl(ReadoutSystemControl):
         return []
 
     def upload(self, port: str):
+        """Upload sequence.
+
+        This method is added just for compatibility with qililab's workflow.
+
+        Args:
+            port (str): Port of the chip.
+        """
         pass
