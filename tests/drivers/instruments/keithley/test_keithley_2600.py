@@ -92,6 +92,8 @@ class TestKeithley2600:
         assert all(isinstance(submodules[name], Keithley2600Channel) for name in channels_names)
         assert all(isinstance(instrument_modules[name], Keithley2600Channel) for name in channels_names)
         assert keithley_2600.channels == [submodules["smua"], submodules["smub"]]
+        assert keithley_2600.params == keithley_2600.parameters
+        assert keithley_2600.alias == keithley_2600.name
 
 
 class TestKeithley2600Channel:
