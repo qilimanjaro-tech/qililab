@@ -14,10 +14,7 @@ class Instruments:
 
     def get_instrument(self, alias: str | None = None):
         """Get element given an alias."""
-        for element in self.elements:
-            if element.alias == alias:
-                return element
-        return None
+        return next((element for element in self.elements if element.alias == alias), None)
 
     def to_dict(self):
         """Return a dict representation of the Instruments class."""

@@ -39,9 +39,10 @@ class Galadriel:
 
     name = "galadriel"
 
-    platform: dict[str, Any] = {
-        RUNCARD.NAME: "galadriel",
-        PLATFORM.DEVICE_ID: 9,
+    device_id = 9
+
+    gates_settings: dict[str, Any] = {
+        RUNCARD.ALIAS: None,
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
         PLATFORM.DELAY_BEFORE_READOUT: 0,
@@ -452,7 +453,9 @@ class Galadriel:
     ]
 
     runcard: dict[str, Any] = {
-        RUNCARD.GATE_SETTINGS: platform,
+        RUNCARD.NAME: name,
+        RUNCARD.DEVICE_ID: device_id,
+        RUNCARD.GATES_SETTINGS: gates_settings,
         RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,
         RUNCARD.INSTRUMENTS: instruments,
@@ -490,9 +493,9 @@ class FluxQubitSimulator:
 
     name = "flux_qubit"
 
-    platform: dict[str, Any] = {
-        "name": "flux_qubit",
-        PLATFORM.DEVICE_ID: 9,
+    device_id = 9
+
+    gates_settings: dict[str, Any] = {
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
         PLATFORM.DELAY_BEFORE_READOUT: 40,
@@ -603,7 +606,9 @@ class FluxQubitSimulator:
     }
 
     runcard: dict[str, Any] = {
-        RUNCARD.GATE_SETTINGS: platform,
+        RUNCARD.NAME: name,
+        RUNCARD.DEVICE_ID: device_id,
+        RUNCARD.GATES_SETTINGS: gates_settings,
         RUNCARD.INSTRUMENTS: [],
         RUNCARD.INSTRUMENT_CONTROLLERS: [],
         RUNCARD.CHIP: chip,
@@ -793,7 +798,7 @@ experiment: dict[str, Any] = {
             }
         ],
         RUNCARD.NAME: "punchout",
-        RUNCARD.GATE_SETTINGS: {
+        RUNCARD.GATES_SETTINGS: {
             EXPERIMENT.HARDWARE_AVERAGE: 1024,
             EXPERIMENT.SOFTWARE_AVERAGE: 1,
             EXPERIMENT.REPETITION_DURATION: 200000,
@@ -828,9 +833,10 @@ class SauronVNA:
 
     name = "sauron_vna"
 
-    platform: dict[str, Any] = {
-        "name": "sauron_vna",
-        PLATFORM.DEVICE_ID: 9,
+    device_id = 9
+
+    gates_settings: dict[str, Any] = {
+        RUNCARD.ALIAS: None,
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
         PLATFORM.DELAY_BEFORE_READOUT: 40,
@@ -927,7 +933,9 @@ class SauronVNA:
     ]
 
     runcard: dict[str, Any] = {
-        RUNCARD.GATE_SETTINGS: platform,
+        RUNCARD.NAME: name,
+        RUNCARD.DEVICE_ID: device_id,
+        RUNCARD.GATES_SETTINGS: gates_settings,
         RUNCARD.INSTRUMENTS: instruments,
         RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,

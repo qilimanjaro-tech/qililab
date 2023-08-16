@@ -5,7 +5,7 @@ import pytest
 from qblox_instruments.qcodes_drivers.cluster import Cluster
 from qblox_instruments.types import ClusterType
 
-from qililab.instruments import QbloxQRMRF
+from qililab.instruments.qblox import QbloxQRMRF
 from qililab.typings import Parameter
 
 

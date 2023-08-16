@@ -21,6 +21,7 @@ from qililab.utils import Factory
 @dataclass(kw_only=True)
 class InstrumentControllerSettings(Settings):
     """Contains the settings of a specific Instrument Controller.
+
     Args:
         connection (Connection): Connection class that represents the connection type of the Instrument Controller.
         modules: (list[InstrumentReference]): List of the Instrument References that links to the actual Instruments

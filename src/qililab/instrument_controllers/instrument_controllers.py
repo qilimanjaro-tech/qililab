@@ -13,11 +13,8 @@ class InstrumentControllers:
     elements: list[InstrumentController]
 
     def get_instrument_controller(self, alias: str | None = None):
-        """Get instrument controller given an alias."""
-        for instrument in self.elements:
-            if instrument.alias == alias:
-                return instrument
-        return None
+        """Get instrument controller given an id and category"""
+        return next((instrument for instrument in self.elements if instrument.alias == alias), None)
 
     def connect(self):
         """Connect to all instrument controllers."""
