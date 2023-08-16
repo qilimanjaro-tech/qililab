@@ -414,7 +414,7 @@ instruments:
     out_offsets: [0, 0]
     awg_sequencers:
       - identifier: 0
-        chip_port_id: 100
+        chip_port_id: feedline_input
         qubit: 0
         output_i: 0
         output_q: 1
@@ -442,7 +442,7 @@ instruments:
         hardware_demodulation: true
         scope_store_enabled: false
       - identifier: 1
-        chip_port_id: 100
+        chip_port_id: feedline_input
         qubit: 1
         output_i: 0
         output_q: 1
@@ -470,7 +470,7 @@ instruments:
         hardware_demodulation: true
         scope_store_enabled: false
       - identifier: 2
-        chip_port_id: 100
+        chip_port_id: feedline_input
         qubit: 2
         output_i: 0
         output_q: 1
@@ -498,7 +498,7 @@ instruments:
         hardware_demodulation: true
         scope_store_enabled: false
       - identifier: 3
-        chip_port_id: 100
+        chip_port_id: feedline_input
         qubit: 3
         output_i: 0
         output_q: 1
@@ -526,7 +526,7 @@ instruments:
         hardware_demodulation: true
         scope_store_enabled: false
       - identifier: 4
-        chip_port_id: 100
+        chip_port_id: feedline_input
         qubit: 4
         output_i: 0
         output_q: 1
@@ -569,7 +569,7 @@ instruments:
     out1_offset_path1: 0.
     awg_sequencers:
       - identifier: 0
-        chip_port_id: 20 #q0 drive
+        chip_port_id: drive_line_q0
         output_i: 0
         output_q: 1
         gain_i: 0.1
@@ -582,7 +582,7 @@ instruments:
         phase_imbalance: 14.482
         hardware_modulation: true
       - identifier: 1
-        chip_port_id: 21 #q1 drive
+        chip_port_id: drive_line_q1
         output_i: 2
         output_q: 3
         gain_i: 1
@@ -610,7 +610,7 @@ instruments:
     out1_offset_path1: 0.
     awg_sequencers:
       - identifier: 0
-        chip_port_id: 22 #q2 drive
+        chip_port_id: drive_line_q2
         output_i: 0
         output_q: 1
         gain_i: 0.1
@@ -638,7 +638,7 @@ instruments:
     out1_offset_path1: 0.
     awg_sequencers:
       - identifier: 0
-        chip_port_id: 23 #q3 drive
+        chip_port_id: drive_line_q3
         output_i: 0
         output_q: 1
         gain_i: 0.1
@@ -651,7 +651,7 @@ instruments:
         phase_imbalance: 0.
         hardware_modulation: true
       - identifier: 1
-        chip_port_id: 24 #q4 drive
+        chip_port_id: drive_line_q4
         output_i: 2
         output_q: 3
         gain_i: 1
@@ -670,7 +670,7 @@ instruments:
     out_offsets: [0.0, 0.0, 0.0, 0.0]
     awg_sequencers:
       - identifier: 0
-        chip_port_id: 30 #q0 flux
+        chip_port_id: flux_line_q0
         output_i: 0
         output_q: 1
         gain_i: 0.1
@@ -683,7 +683,7 @@ instruments:
         phase_imbalance: 0.
         hardware_modulation: true
       - identifier: 1
-        chip_port_id: 31 #q1 flux
+        chip_port_id: flux_line_q1
         output_i: 1
         output_q: 0
         gain_i: 1
@@ -696,7 +696,7 @@ instruments:
         phase_imbalance: 0
         hardware_modulation: true
       - identifier: 2
-        chip_port_id: 33 #q3 flux
+        chip_port_id: flux_line_q3
         output_i: 2
         output_q: 3
         gain_i: 1
@@ -709,7 +709,7 @@ instruments:
         phase_imbalance: 0
         hardware_modulation: true
       - identifier: 3
-        chip_port_id: 34 #q4 flux
+        chip_port_id: flux_line_q4
         output_i: 3
         output_q: 2
         gain_i: 1
@@ -728,7 +728,7 @@ instruments:
     out_offsets: [0.0, 0.0, 0.0, 0.0]
     awg_sequencers:
       - identifier: 0
-        chip_port_id: 32 #q2 flux
+        chip_port_id: flux_line_q2
         output_i: 0
         output_q: 1
         gain_i: 1.
@@ -754,23 +754,22 @@ instruments:
 instrument_controllers:
   - name: qblox_cluster
     alias: cluster_controller_0
-    subcategory: multiple_instruments
     reference_clock: internal
     connection:
       name: tcp_ip
       address: 192.168.1.20
     modules:
-      - awg: QRM1
+      - alias: QRM1
         slot_id: 12
-      - awg: QCM-RF1
+      - alias: QCM-RF1
         slot_id: 6
-      - awg: QCM-RF3
+      - alias: QCM-RF3
         slot_id: 8
-      - awg: QCM-RF2
+      - alias: QCM-RF2
         slot_id: 14
-      - awg: QCM1
+      - alias: QCM1
         slot_id: 14
-      - awg: QCM2
+      - alias: QCM2
         slot_id: 14
   - name: rohde_schwarz
     alias: rohde_schwarz_controller_0
@@ -779,7 +778,7 @@ instrument_controllers:
       name: tcp_ip
       address: 192.168.1.11
     modules:
-      - signal_generator: rs_1
+      - alias: rs_1
         slot_id: 0
   - name: mini_circuits
     alias: attenuator_controller_0
@@ -787,5 +786,5 @@ instrument_controllers:
       name: tcp_ip
       address: 192.168.1.69
     modules:
-      - attenuator: attenuator
+      - alias: attenuator
         slot_id: 0
