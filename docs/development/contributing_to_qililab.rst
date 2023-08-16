@@ -10,14 +10,8 @@ of `Qililab`.
 
 .. grid:: 2
 
-   .. grid-item-card:: Installation
-      :link: installation.html
+   .. grid-item-card:: Development Installation
+      :link: dev_installation.html
       :text-align: center
 
       Installation of Qililab's source code using development mode.
-
-
-.. toctree::
-    :hidden:
-
-    installation

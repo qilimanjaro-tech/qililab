@@ -1,5 +1,5 @@
-Installation
-============
+Development Installation
+========================
 
 To install Qililab in development mode, please run:
 
@@ -9,7 +9,7 @@ To install Qililab in development mode, please run:
     $ cd qililab
     $ pip install -e .
 
-The `-e`` flag ensures that edits to the source code will be reflected when importing Qililab in Python.
+The `-e` flag ensures that edits to the source code will be reflected when importing Qililab in Python.
 
 Development Requirements
 ~~~~~~~~~~~~~~~~~~~~~~~~~

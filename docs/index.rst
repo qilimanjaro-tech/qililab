@@ -72,6 +72,7 @@ Qililab Documentation
    :hidden:
 
    development/contributing_to_qililab
+   development/dev_installation
 
 .. toctree::
    :caption: API Reference
