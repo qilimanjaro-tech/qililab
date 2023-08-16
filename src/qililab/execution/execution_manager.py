@@ -87,14 +87,14 @@ class ExecutionManager:
             raise ValueError("No Results acquired")
         return results[0]
 
-    def waveforms_dict(self, modulation: bool = True, resolution: float = 1.0, idx: int = 0) -> dict[int, Waveforms]:
+    def waveforms_dict(self, modulation: bool = True, resolution: float = 1.0, idx: int = 0) -> dict[str, Waveforms]:
         """Get pulses of each bus.
 
         Args:
             resolution (float): The resolution of the pulses in ns.
 
         Returns:
-            dict[int, Waveforms]: Dictionary containing a list of the I/Q amplitudes of the pulses applied on each bus.
+            dict[str, Waveforms]: Dictionary containing a list of the I/Q amplitudes of the pulses applied on each bus.
         """
         return {bus.alias: bus.waveforms(modulation=modulation, resolution=resolution, idx=idx) for bus in self.buses}
 

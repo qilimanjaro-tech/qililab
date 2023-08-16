@@ -42,7 +42,7 @@ class Chip:
             node (Node): Node object.
 
         Returns:
-            list[Node]: List containing all adjacent nodes.
+            list[Node | None]: List containing all adjacent nodes.
         """
         return [self.get_node_from_alias(alias=alias) for alias in node.nodes]
 
