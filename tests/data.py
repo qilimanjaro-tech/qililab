@@ -42,7 +42,6 @@ class Galadriel:
     device_id = 9
 
     gates_settings: dict[str, Any] = {
-        RUNCARD.ALIAS: None,
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
         PLATFORM.DELAY_BEFORE_READOUT: 0,
@@ -836,7 +835,6 @@ class SauronVNA:
     device_id = 9
 
     gates_settings: dict[str, Any] = {
-        RUNCARD.ALIAS: None,
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
         PLATFORM.DELAY_BEFORE_READOUT: 40,
