@@ -17,19 +17,16 @@ import networkx as nx
 import numpy as np
 from scipy.signal import find_peaks
 
+from calibration_utils.calibration_utils import get_raw_data, get_iq_from_raw, plot_iq, plot_fit
 import qililab as ql
-import qililab.automatic_calibration.calibration_utils.calibration_utils as calibration_utils
-from qililab import qprogram
-from qililab.automatic_calibration.calibration_node import CalibrationNode
-from qililab.automatic_calibration.controller import Controller
-from qililab.platform.platform import Platform
+from automatic_calibration import CalibrationNode, Controller
 from qililab.waveforms import DragPulse, IQPair, Square
 
 #################################################################################################
 """ Define the platform and connect to the instruments """
 
 os.environ["RUNCARDS"] = "../runcards"
-os.environ["DATA"] = f"../data"
+os.environ["DATA"] = "../data"
 platform_name = "soprano_master_galadriel"
 platform = ql.build_platform(name=platform_name)
 platform.filepath = os.path.join(os.environ["RUNCARDS"], f"{platform_name}.yml")
@@ -404,7 +401,7 @@ def analyze_rabi(results, fit_quadrature="i", label=""):
         # The 'results' argument is the path to the file where the results are stored.
         parent_directory = os.path.dirname(results)
         figure_filepath = os.path.join(parent_directory, "Rabi.PNG")
-        data_raw = calibration_utils.get_raw_data(results)
+        data_raw = get_raw_data(results)
     elif isinstance(results, list):
         # The 'results' argument is list where the elements are dictionaries storing the raw results.
         # FIXME: This implementation will have to change when multiple readout buses are supported, because then the results list 
@@ -417,7 +414,7 @@ def analyze_rabi(results, fit_quadrature="i", label=""):
     this_shape = len(amplitude_loop_values)
 
     # Get flattened data and shape it
-    i, q = calibration_utils.get_iq_from_raw(data_raw)
+    i, q = get_iq_from_raw(data_raw)
     i = i.reshape(this_shape)
     q = q.reshape(this_shape)
 
@@ -449,9 +446,9 @@ def analyze_rabi(results, fit_quadrature="i", label=""):
     fitted_pi_pulse_amplitude = np.abs(1 / (2 * optimal_parameters[1]))
 
     # Plot
-    title_label = f"{timestamp} {label}"
-    fig, axes = calibration_utils.plot_iq(amplitude_loop_values, i, q, title_label, swept_variable)
-    calibration_utils.plot_fit(
+    title_label = f"{label}"
+    fig, axes = plot_iq(amplitude_loop_values, i, q, title_label, swept_variable)
+    plot_fit(
         amplitude_loop_values, optimal_parameters, axes[fit_signal_idx], fitted_pi_pulse_amplitude
     )
     fig.savefig(figure_filepath, format="PNG")
@@ -479,7 +476,7 @@ def analyze_ramsey(results, fit_quadrature="i", label="", prominence_peaks=20, a
         # The 'results' argument is the path to the file where the results are stored.
         parent_directory = os.path.dirname(results)
         figure_filepath = os.path.join(parent_directory, "Rabi.PNG")
-        data_raw = calibration_utils.get_raw_data(results)
+        data_raw = get_raw_data(results)
     elif isinstance(results, list):
         # The 'results' argument is list where the elements are dictionaries storing the raw results.
         # FIXME: This implementation will have to change when multiple readout buses are supported, because then the results list 
@@ -495,7 +492,7 @@ def analyze_ramsey(results, fit_quadrature="i", label="", prominence_peaks=20, a
     this_shape = (len(freq_loop_values), len(wait_loop_values))
 
     # get flattened data and shape it
-    i, q = calibration_utils.get_iq_from_raw(data_raw)
+    i, q = get_iq_from_raw(data_raw)
     i = i.reshape(this_shape)
     q = q.reshape(this_shape)
 
@@ -559,7 +556,7 @@ def analyze_ramsey(results, fit_quadrature="i", label="", prominence_peaks=20, a
             z_axis.append(fft_y_sorted)
 
     # Plot
-    title_label = f"{timestamp} {label}"
+    title_label = f"{label}"
     fig, ax = plt.subplots()
     plt.pcolormesh(x_axis, y_axis, np.abs(z_axis), label="FFT Data")
     if analyze:
@@ -605,7 +602,7 @@ def analyze_drag_coefficient(results, fit_quadrature="i", label=""):
         # The 'results' argument is the path to the file where the results are stored.
         parent_directory = os.path.dirname(results)
         figure_filepath = os.path.join(parent_directory, "Rabi.PNG")
-        data_raw = calibration_utils.get_raw_data(results)
+        data_raw = get_raw_data(results)
     elif isinstance(results, list):
         # The 'results' argument is list where the elements are dictionaries storing the raw results.
         # FIXME: This implementation will have to change when multiple readout buses are supported, because then the results list 
@@ -622,7 +619,7 @@ def analyze_drag_coefficient(results, fit_quadrature="i", label=""):
     )
 
     # Get flattened data and shape it
-    i, q = calibration_utils.get_iq_from_raw(data_raw)
+    i, q = get_iq_from_raw(data_raw)
     i = i.reshape(this_shape)
     q = q.reshape(this_shape)
 
@@ -658,7 +655,7 @@ def analyze_drag_coefficient(results, fit_quadrature="i", label=""):
     ) / optimal_parameters[1]
 
     # Plot
-    title_label = f"{timestamp} {label}"
+    title_label = f"{label}"
     label = ["X/2 - Y", "Y/2 - X"]
     fig, axs = plt.subplots(1, 2)
     ax = axs[0]
@@ -698,7 +695,7 @@ def analyze_flipping(results, flips_values, fit_quadrature="i", label=""):
         # The 'results' argument is the path to the file where the results are stored.
         parent_directory = os.path.dirname(results)
         figure_filepath = os.path.join(parent_directory, "Rabi.PNG")
-        data_raw = calibration_utils.get_raw_data(results)
+        data_raw = get_raw_data(results)
     elif isinstance(results, list):
         # The 'results' argument is list where the elements are dictionaries storing the raw results.
         # FIXME: This implementation will have to change when multiple readout buses are supported, because then the results list 
@@ -706,7 +703,7 @@ def analyze_flipping(results, flips_values, fit_quadrature="i", label=""):
         data_raw = results[0]
 
     # Get flattened data and shape it
-    i, q = calibration_utils.get_iq_from_raw(data_raw)
+    i, q = get_iq_from_raw(data_raw)
     i = np.array(i).flatten()
     q = np.array(q).flatten()
 
@@ -764,7 +761,7 @@ def analyze_flipping(results, flips_values, fit_quadrature="i", label=""):
     reduced_chi2 = fit2.redchi
 
     # Plot
-    title_label = f"{timestamp} {label}"
+    title_label = f"{label}"
     fig, axs = plt.subplots(1, 2)
     ax = axs[0]
     ax.plot(flips_values, scaled_data, "--o", label="data")
@@ -815,7 +812,7 @@ def analyze_all_xy(results, label=""):
         # The 'results' argument is the path to the file where the results are stored.
         parent_directory = os.path.dirname(results)
         figure_filepath = os.path.join(parent_directory, "Rabi.PNG")
-        data_raw = calibration_utils.get_raw_data(results)
+        data_raw = get_raw_data(results)
     elif isinstance(results, list):
         # The 'results' argument is list where the elements are dictionaries storing the raw results.
         # FIXME: This implementation will have to change when multiple readout buses are supported, because then the results list 
@@ -827,7 +824,7 @@ def analyze_all_xy(results, label=""):
     this_shape = len(amplitude_loop_values)
 
     # Get flattened data and shape it
-    i, q = calibration_utils.get_iq_from_raw(data_raw)
+    i, q = get_iq_from_raw(data_raw)
     i = i.reshape(this_shape)
     q = q.reshape(this_shape)
 
@@ -835,7 +832,7 @@ def analyze_all_xy(results, label=""):
     plt.figure()
     plt.plot(i, "-o")
     ax = plt.gca()
-    ax.set_title( "tbd" + ax.get_title()) #TODO: add timestamp in title?
+    ax.set_title(ax.get_title()) 
     #TODO: save figure with appropriate path
     #TODO: print figure to show user
     

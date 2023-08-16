@@ -22,7 +22,7 @@ from .circuit import (
 from .config import __version__, logger
 from .execute import execute
 from .experiment import Experiment
-from .platform import build_platform, save_platform
+from .platform import build_platform, save_platform, Platform
 from .qprogram import QProgram
 from .result import Results
 from .transpiler import Drag, Park, translate_circuit

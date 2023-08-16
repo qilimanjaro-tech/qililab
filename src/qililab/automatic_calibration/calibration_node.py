@@ -1,18 +1,6 @@
-from abc import ABC, abstractmethod
-
-import calibration_utils.calibration_utils as cal_utils
 import numpy as np
 
-from qililab.qprogram.qprogram import QProgram
-
-"""
-TODO: decide how fitting and plotting functions for each calibration node are determined. There are 2 options:
- 1. Define custom plotting and fitting functions for each experiments and pass them as arguments to
-    the constructor of the CalibrationNode.
- 2. Define general fitting and plotting functions that receive model and labels respectively as arguments.
-    Then the CalibrationNode constructor will receive model and labels as arguments and pass them as arguments to the
-    fitting and plotting functions.
- """
+from qililab import QProgram
 
 
 class CalibrationNode:
@@ -39,16 +27,18 @@ class CalibrationNode:
         _plotting_labels (dict): Labels used in the plot of the fitted experimental data. The keys of the dictionary indicate the axis,
                                     the values indicate the corresponding label.
         _qubit (int): The qubit that is being calibrated by the calibration graph to which the node belongs.
-        _parameters (dict): A dictionary where keys are parameter names (str) and values are:
-                                - timeouts durations in seconds (float), representing an estimate of how long it takes for the parameters to drift.
-                                - default sweep interval for the experiment (list(float))
+        _parameter (str): The parameter that this node will tune.
+        _drift_timeout (float): A durations in seconds, representing an estimate of how long it takes for the parameter to drift.
         _data_validation_threshold (float): The threshold used by the check_data() method to validate the data fittings.
         _timestamps (dict): A dictionary where keys are timestamps and values are the operations that generated the timestamp.
                            This operation can be either a function call of check_data() or of calibrate()
         _number_of_random_datapoints (int) : The number of points, chosen randomly within the sweep interval, where we check if the experiment
                                             gets the same outcome as during the last calibration that was run. Default value is 10.
-        _experiment_results: The results of the calibration experiment. TODO: Albert M. is implementing how a qprogram is run after being compiled. That will determine
-                                what these results look like (array, instance of Result class).
+        _experiment_results: The results of the calibration experiment represented as a dictionary. For now this only supports experiment run on QBlox hardware. 
+                             The dictionary is a standard structure in which the data is stored by the QBlox hardware. For more details see this documentation: 
+                             https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/pulsar.html#qblox_instruments.native.Pulsar.get_acquisitions
+        _manual_check (bool): If True, the user is shown the plot for the experiment assigned to this node. The user must approve or reject the plot. If the user rejects
+                              the plot, the experiment is run again.
     """
 
     def __init__(
@@ -61,125 +51,98 @@ class CalibrationNode:
         fitting_model: function = None,
         plotting_labels: dict = None,
         qubit: int = None,
-        parameters: dict = None,
+        parameter: str = None,
+        drift_timeout: float = 0,
         data_validation_threshold: float = 1,
         number_of_random_datapoints: int = 10,
+        manual_check: bool = False
     ):
         self._node_id = node_id
         self._qprogram = qprogram
         self._sweep_interval = sweep_interval
         self._is_refinement = is_refinement
-        self._analysis_function = self.analyze if analysis_function is None else analysis_function
+        self._analysis_function = self.analysis if analysis_function is None else analysis_function
         self._fitting_model = fitting_model
         self._plotting_labels = plotting_labels
         self._qubit = qubit
-        self._parameters = parameters
+        self._parameter = parameter
+        self._drift_timeout = drift_timeout,
         self._data_validation_threshold = data_validation_threshold
         self._number_of_random_datapoints = number_of_random_datapoints
-        self._timestamps = {}
+        self._manual_check = manual_check
         
     def _hash_(self) -> int:
         """
-        Make the CalibrationNode object hashable by using its unique identifier _node_id.
+        Make the CalibrationNode object hashable by hashing its unique identifier _node_id.
         This is necessary because to be a node in a NetworkX graph, an object must be hashable.
 
         Returns:
             int: The hash value of the object.
         """        
         return hash(self.node_id)
-
-    def check_state(self):
+    
+    def analysis(self) -> int|float:
         """
-        Check if the node's parameters drift timeouts have passed since the last calibration or data validation (a call of check_data).
-        These timeouts represent how long it usually takes for the parameters to drift.
-
-        Args:
-            CalibrationNode: The node whose parameters need to be checked.
+        The default analysis function used to analyze experimental data to obtain the optimal parameter values.
+        To be implemented by a future intern.
 
         Returns:
-            bool: True if the parameters are in spec, False otherwise.
-        """
-
-        # Check if any of the parameters' timeouts have expired.
-        for parameter, timeout in self._parameters.items():
-            if cal_utils.is_timeout_expired(self.timestamps[-1], timeout):
-                return False
-
-    def check_data(self):
-        """
-        Check if the parameters found in the last calibration are still valid. This removes the need to redo the entire calibration procedure,
-        which is much more time-expensive than just calling this method.
-        """
-
-        # Choose random datapoints within the sweep interval.
-        try:
-            random_values = cal_utils.get_random_values(self._parameters.sweepInterval)
-        except ValueError as e:
-            print(e)
-
-        for value in random_values:
-            self.run_experiment(analyze=True, sweep_interval=[value])
-
-        # Check if data obtained now is similar to the one obtained in the last calibration.
-        # return in_spec, out_of_spec or bad_data
-
-        # Add timestamp to the timestamps dictionary.
-        self.timestamps[cal_utils.get_timestamp()] = "check_data"
-
-    def calibrate(self):
-        """
-        Run the calibration experiment on its default interval of sweep values.
-        """
-
-        self.run_experiment(analyze=True)
-
-        # TODO: where can we set manual_check to True?
-
-        # Add timestamp to the timestamps dictionary.
-        self._timestamps[cal_utils.get_timestamp()] = "calibrate"
-
-    def run_experiment(self, analyze: bool = True, manual_check: bool = False) -> None:
-        """
-        Run the experiment, fit and plot data.
-
-        Args:
-            analyze (bool): If set to true the analysis function is run, otherwise it's not. Default value is True.
-            manual_check (bool): If set to true, the user will be shown and asked to approve or reject the result of the fitting done by the analysis function. Default value is False.
-        """
-
-        if self._is_refinement:
-            # TODO: fetch data from previous experiment to determine sweep interval for current experiment
-            previous_experiment_data = None
-            self._sweep_interval = self._sweep_interval + previous_experiment_data
-            """
-            Note: I'm not sure this can always be handled like this: I'm taking the example from
-            LabScripts/QuantumPainHackathon/calibrations/single_qb_full_cal.py as universal which I
-            already know I'm gonna regret
-            """
-
-        """
-        Here this happens:
-            1.Experiment is run
-            2.Analysis function is called to fit data
-            3.Data is plotted
-            4.User is asked to approve plot
-                if user approves: return
-                else: go back to 1.
-        """
-        user_approves_plot = "n"
-        while user_approves_plot == "n":
-            # Compile and run the QProgram. TODO: add this once qprogram compiler is in main.
-
-            if analyze:
-                # Call the general analysis function with the appropriate model, or the custom one (no need to specify the model there, it will already be hardcoded).
-                self.analyze()
-
-            # Plot the results.
-            # Show the plot.
-            if manual_check:
-                user_approves_plot = input("Do you want to repeat the experiment? (y/n): ").lower()
-            else:
-                user_approves_plot = "y"
-
-    def analyze():
+            int|float: The optimal parameter value.
+        """        
         pass
+
+    @property
+    def node_id(self):
+        return self._node_id
+    
+    @property
+    def qprogram(self):
+        return self._qprogram
+    
+    @property
+    def sweep_interval(self):
+        return self._sweep_interval
+    
+    @sweep_interval.setter
+    def sweep_interval(self, value):
+        self._sweep_interval = value
+    
+    @property
+    def is_refinement(self):
+        return self._is_refinement
+    
+    @property
+    def analysis_function(self):
+        return self._analysis_function
+    
+    @property
+    def parameter(self):
+        return self._parameter
+    
+    @property
+    def drift_timeout(self):
+        return self._drift_timeout
+    
+    @property
+    def timestamps(self):
+        return self._timestamps
+    
+    def add_timestamp(self, timestamp: int, type_of_timestamp: str):
+        self._timestamps[timestamp] = type_of_timestamp
+        
+    @property
+    def experiment_results(self):
+        return self._experiment_results
+    
+    @experiment_results.setter
+    def experiment_results(self, experiment_results):
+     property
+    
+    @property
+    def manual_check(self):
+        return self._manual_check
+    
+    @manual_check.setter
+    def manual_check(self, manual_check: bool):
+        self._manual_check = manual_check
+        

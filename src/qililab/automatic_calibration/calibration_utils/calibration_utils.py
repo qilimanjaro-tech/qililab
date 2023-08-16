@@ -10,7 +10,7 @@ import numpy as np
 import yaml
 
 
-def get_timestamp():
+def get_timestamp() -> int:
     """Generate a UNIX timestamp.
 
     Returns:
@@ -29,7 +29,7 @@ def is_timeout_expired(timestamp, timeout):
         timeout (int): The timeout duration in seconds.
 
     Returns:
-        bool: True if the time passed, False otherwise.
+        bool: True if the timeout has expired, False otherwise.
     """
     # Convert the timestamp and timeout to datetime objects
     timestamp_dt = datetime.fromtimestamp(timestamp)
