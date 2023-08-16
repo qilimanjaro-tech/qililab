@@ -79,7 +79,7 @@ class SimulatedSystemControl(ReadoutSystemControl):
         self._evo.set_pulse_sequence(pulse_sequence=self.sequence, resolution=self.settings.resolution * 1e-9)
         self._evo.evolve()
 
-    def acquire_result(self, port: str) -> SimulatorResult:
+    def acquire_result(self) -> SimulatorResult:
         """Read the result from the AWG instrument
         Args:
             port (str): Port of the chip.
