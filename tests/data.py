@@ -1,9 +1,10 @@
 """ Data to use alongside the test suite. """
 # pylint: disable=too-many-lines
 import copy
+from typing import Any
 
 import numpy as np
-from qibo.gates import RX, RY, I, M, X, Y
+from qibo.gates import I, M, X, Y
 from qibo.models.circuit import Circuit
 
 from qililab.constants import (
@@ -19,7 +20,6 @@ from qililab.constants import (
     PULSEEVENT,
     PULSESCHEDULES,
     RUNCARD,
-    SCHEMA,
 )
 from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.typings.enums import (
@@ -45,12 +45,12 @@ class Galadriel:
 
     name = "galadriel"
 
-    platform = {
-        RUNCARD.ID: 0,
-        RUNCARD.NAME: "galadriel",
-        PLATFORM.DEVICE_ID: 9,
+    device_id = 9
+
+    gates_settings: dict[str, Any] = {
+        RUNCARD.ID: 0,  # This will get removed in Albert PR
         RUNCARD.ALIAS: None,
-        RUNCARD.CATEGORY: RUNCARD.PLATFORM,
+        RUNCARD.CATEGORY: RUNCARD.PLATFORM,  # This too, se we don't care it should be moved in this PR
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
         PLATFORM.DELAY_BEFORE_READOUT: 0,
@@ -76,126 +76,88 @@ class Galadriel:
             },
         ],
         "gates": {
-            0: [
+            "M(0)": [
                 {
-                    RUNCARD.NAME: "M",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 2000,
-                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
-                },
-                {
-                    RUNCARD.NAME: "I",
-                    "amplitude": 0,
-                    "phase": 0,
-                    "duration": 0,
-                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
-                },
-                {
-                    RUNCARD.NAME: "X",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 50,
-                    EXPERIMENT.SHAPE: {
-                        RUNCARD.NAME: "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 0,
+                    "bus": "feedline_input_output_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 2000,
+                        "frequency": 0,
+                        "shape": {"name": "rectangular"},
                     },
-                },
-                {
-                    RUNCARD.NAME: "Y",
-                    "amplitude": 1,
-                    "phase": 1.5707963267948966,
-                    "duration": 20,
-                    EXPERIMENT.SHAPE: {
-                        RUNCARD.NAME: "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 0,
-                    },
-                },
-                {
-                    RUNCARD.NAME: "Drag",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 50,
-                    EXPERIMENT.SHAPE: {
-                        RUNCARD.NAME: "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 1.0,
-                    },
-                },
-            ],
-            1: [
-                {
-                    RUNCARD.NAME: "M",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 2000,
-                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
-                },
-                {
-                    RUNCARD.NAME: "I",
-                    "amplitude": 0,
-                    "phase": 0,
-                    "duration": 0,
-                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
-                },
-                {
-                    RUNCARD.NAME: "X",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 50,
-                    EXPERIMENT.SHAPE: {
-                        RUNCARD.NAME: "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 0,
-                    },
-                },
-                {
-                    RUNCARD.NAME: "Y",
-                    "amplitude": 1,
-                    "phase": 1.5707963267948966,
-                    "duration": 20,
-                    EXPERIMENT.SHAPE: {
-                        RUNCARD.NAME: "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 0,
-                    },
-                },
-                {
-                    RUNCARD.NAME: "Drag",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 50,
-                    EXPERIMENT.SHAPE: {
-                        RUNCARD.NAME: "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 1.0,
-                    },
-                },
-            ],
-            (0, 1): [
-                {
-                    RUNCARD.NAME: "M",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 2000,
-                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
                 }
             ],
-            (1, 0): [
+            "I(0)": [
                 {
-                    RUNCARD.NAME: "M",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 2000,
-                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 100,
+                        "frequency": 0,
+                        "shape": {"name": "rectangular"},
+                    },
+                }
+            ],
+            "X(0)": [
+                {
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 50,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "Y(0)": [
+                {
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "RY(0)": [
+                {
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "RX(0)": [
+                {
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
                 }
             ],
         },
     }
 
-    pulsar_controller_qcm_0 = {
+    pulsar_controller_qcm_0: dict[str, Any] = {
         RUNCARD.ID: 0,
         RUNCARD.NAME: InstrumentControllerName.QBLOX_PULSAR,
         RUNCARD.ALIAS: "pulsar_controller_qcm_0",
@@ -214,7 +176,7 @@ class Galadriel:
         ],
     }
 
-    qblox_qcm_0 = {
+    qblox_qcm_0: dict[str, Any] = {
         RUNCARD.ID: 0,
         RUNCARD.NAME: InstrumentName.QBLOX_QCM,
         RUNCARD.ALIAS: InstrumentName.QBLOX_QCM.value,
@@ -256,7 +218,7 @@ class Galadriel:
         ],
     }
 
-    pulsar_controller_qrm_0 = {
+    pulsar_controller_qrm_0: dict[str, Any] = {
         RUNCARD.ID: 1,
         RUNCARD.NAME: InstrumentControllerName.QBLOX_PULSAR,
         RUNCARD.ALIAS: "pulsar_controller_qrm_0",
@@ -275,7 +237,7 @@ class Galadriel:
         ],
     }
 
-    qblox_qrm_0 = {
+    qblox_qrm_0: dict[str, Any] = {
         RUNCARD.ID: 1,
         RUNCARD.NAME: InstrumentName.QBLOX_QRM,
         RUNCARD.ALIAS: InstrumentName.QBLOX_QRM.value,
@@ -348,7 +310,7 @@ class Galadriel:
         ],
     }
 
-    rohde_schwarz_controller_0 = {
+    rohde_schwarz_controller_0: dict[str, Any] = {
         RUNCARD.ID: 2,
         RUNCARD.NAME: InstrumentControllerName.ROHDE_SCHWARZ,
         RUNCARD.ALIAS: "rohde_schwarz_controller_0",
@@ -367,7 +329,7 @@ class Galadriel:
         ],
     }
 
-    rohde_schwarz_0 = {
+    rohde_schwarz_0: dict[str, Any] = {
         RUNCARD.ID: 0,
         RUNCARD.NAME: InstrumentName.ROHDE_SCHWARZ,
         RUNCARD.ALIAS: "rs_0",
@@ -378,7 +340,7 @@ class Galadriel:
         Parameter.RF_ON.value: True,
     }
 
-    rohde_schwarz_controller_1 = {
+    rohde_schwarz_controller_1: dict[str, Any] = {
         RUNCARD.ID: 3,
         RUNCARD.NAME: InstrumentControllerName.ROHDE_SCHWARZ,
         RUNCARD.ALIAS: "rohde_schwarz_controller_1",
@@ -397,7 +359,7 @@ class Galadriel:
         ],
     }
 
-    rohde_schwarz_1 = {
+    rohde_schwarz_1: dict[str, Any] = {
         RUNCARD.ID: 1,
         RUNCARD.NAME: InstrumentName.ROHDE_SCHWARZ,
         RUNCARD.ALIAS: "rs_1",
@@ -408,7 +370,7 @@ class Galadriel:
         Parameter.RF_ON.value: True,
     }
 
-    attenuator_controller_0 = {
+    attenuator_controller_0: dict[str, Any] = {
         RUNCARD.ID: 4,
         RUNCARD.NAME: InstrumentControllerName.MINI_CIRCUITS,
         RUNCARD.ALIAS: "attenuator_controller_0",
@@ -426,7 +388,7 @@ class Galadriel:
         ],
     }
 
-    attenuator = {
+    attenuator: dict[str, Any] = {
         RUNCARD.ID: 1,
         RUNCARD.NAME: InstrumentName.MINI_CIRCUITS,
         RUNCARD.ALIAS: "attenuator",
@@ -435,7 +397,7 @@ class Galadriel:
         RUNCARD.FIRMWARE: None,
     }
 
-    keithley_2600_controller_0 = {
+    keithley_2600_controller_0: dict[str, Any] = {
         RUNCARD.ID: 5,
         RUNCARD.NAME: InstrumentControllerName.KEITHLEY2600,
         RUNCARD.ALIAS: "keithley_2600_controller_0",
@@ -453,7 +415,7 @@ class Galadriel:
         ],
     }
 
-    keithley_2600 = {
+    keithley_2600: dict[str, Any] = {
         RUNCARD.ID: 1,
         RUNCARD.NAME: InstrumentName.KEITHLEY2600,
         RUNCARD.ALIAS: InstrumentControllerName.KEITHLEY2600.value,
@@ -463,8 +425,8 @@ class Galadriel:
         Parameter.MAX_VOLTAGE.value: 20.0,
     }
 
-    instruments = [qblox_qcm_0, qblox_qrm_0, rohde_schwarz_0, rohde_schwarz_1, attenuator, keithley_2600]
-    instrument_controllers = [
+    instruments: list[dict] = [qblox_qcm_0, qblox_qrm_0, rohde_schwarz_0, rohde_schwarz_1, attenuator, keithley_2600]
+    instrument_controllers: list[dict] = [
         pulsar_controller_qcm_0,
         pulsar_controller_qrm_0,
         rohde_schwarz_controller_0,
@@ -473,7 +435,7 @@ class Galadriel:
         keithley_2600_controller_0,
     ]
 
-    chip = {
+    chip: dict[str, Any] = {
         RUNCARD.ID: 0,
         RUNCARD.ALIAS: None,
         RUNCARD.CATEGORY: Category.CHIP.value,
@@ -500,11 +462,11 @@ class Galadriel:
         ],
     }
 
-    buses = [
+    buses: list[dict[str, Any]] = [
         {
             RUNCARD.ID: 0,
             RUNCARD.CATEGORY: Category.BUS.value,
-            RUNCARD.ALIAS: "drive_line_bus",
+            RUNCARD.ALIAS: "drive_line_q0_bus",
             Category.SYSTEM_CONTROL.value: {
                 RUNCARD.ID: 0,
                 RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
@@ -532,7 +494,7 @@ class Galadriel:
         {
             RUNCARD.ID: 2,
             RUNCARD.CATEGORY: Category.BUS.value,
-            RUNCARD.ALIAS: "flux_line_bus",
+            RUNCARD.ALIAS: "flux_line_q0_bus",
             Category.SYSTEM_CONTROL.value: {
                 RUNCARD.ID: 0,
                 RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
@@ -545,19 +507,17 @@ class Galadriel:
         },
     ]
 
-    schema = {
-        SCHEMA.INSTRUMENTS: instruments,
-        SCHEMA.CHIP: chip,
-        SCHEMA.BUSES: buses,
-        SCHEMA.INSTRUMENT_CONTROLLERS: instrument_controllers,
+    runcard: dict[str, Any] = {
+        RUNCARD.NAME: name,
+        RUNCARD.DEVICE_ID: device_id,
+        RUNCARD.GATES_SETTINGS: gates_settings,
+        RUNCARD.CHIP: chip,
+        RUNCARD.BUSES: buses,
+        RUNCARD.INSTRUMENTS: instruments,
+        RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
     }
 
-    runcard = {
-        RUNCARD.SETTINGS: platform,
-        RUNCARD.SCHEMA: schema,
-    }
-
-    qubit_0: dict = {
+    qubit_0: dict[str, Any] = {
         RUNCARD.ID: 0,
         RUNCARD.NAME: NodeName.QUBIT,
         RUNCARD.CATEGORY: NodeName.QUBIT.value,
@@ -570,7 +530,7 @@ class Galadriel:
         "max_voltage": 1775,
     }
 
-    resonator_0 = {
+    resonator_0: dict[str, Any] = {
         RUNCARD.ID: 0,
         RUNCARD.NAME: NodeName.RESONATOR,
         RUNCARD.CATEGORY: NodeName.RESONATOR.value,
@@ -594,10 +554,10 @@ class FluxQubitSimulator:
 
     name = "flux_qubit"
 
-    platform = {
+    device_id = 9
+
+    gates_settings: dict[str, Any] = {
         RUNCARD.ID: 0,
-        RUNCARD.NAME: "flux_qubit",
-        PLATFORM.DEVICE_ID: 9,
         RUNCARD.CATEGORY: RUNCARD.PLATFORM,
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
@@ -620,48 +580,88 @@ class FluxQubitSimulator:
             },
         ],
         "gates": {
-            0: [
+            "M(0)": [
                 {
-                    RUNCARD.NAME: "M",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 2000,
-                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
-                },
-                {
-                    RUNCARD.NAME: "I",
-                    "amplitude": 0,
-                    "phase": 0,
-                    "duration": 0,
-                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
-                },
-                {
-                    RUNCARD.NAME: "X",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 50,
-                    EXPERIMENT.SHAPE: {
-                        RUNCARD.NAME: "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 0,
+                    "bus": "simulated_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 2000,
+                        "frequency": 0,
+                        "shape": {"name": "rectangular"},
                     },
-                },
+                }
+            ],
+            "I(0)": [
                 {
-                    RUNCARD.NAME: "Y",
-                    "amplitude": 1,
-                    "phase": 1.5707963267948966,
-                    "duration": 20,
-                    EXPERIMENT.SHAPE: {
-                        RUNCARD.NAME: "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 0,
+                    "bus": "simulated_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 100,
+                        "frequency": 0,
+                        "shape": {"name": "rectangular"},
                     },
-                },
-            ]
+                }
+            ],
+            "X(0)": [
+                {
+                    "bus": "simulated_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 50,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "Y(0)": [
+                {
+                    "bus": "simulated_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "RY(0)": [
+                {
+                    "bus": "simulated_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "RX(0)": [
+                {
+                    "bus": "simulated_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
         },
     }
 
-    chip = {
+    chip: dict[str, Any] = {
         RUNCARD.ID: 0,
         RUNCARD.CATEGORY: Category.CHIP.value,
         NODE.NODES: [
@@ -676,11 +676,14 @@ class FluxQubitSimulator:
         ],
     }
 
-    schema = {
-        SCHEMA.INSTRUMENTS: [],
-        SCHEMA.INSTRUMENT_CONTROLLERS: [],
-        SCHEMA.CHIP: chip,
-        SCHEMA.BUSES: [
+    runcard: dict[str, Any] = {
+        RUNCARD.NAME: name,
+        RUNCARD.DEVICE_ID: device_id,
+        RUNCARD.GATES_SETTINGS: gates_settings,
+        RUNCARD.INSTRUMENTS: [],
+        RUNCARD.INSTRUMENT_CONTROLLERS: [],
+        RUNCARD.CHIP: chip,
+        RUNCARD.BUSES: [
             {
                 RUNCARD.ID: 0,
                 RUNCARD.CATEGORY: Category.BUS.value,
@@ -703,11 +706,6 @@ class FluxQubitSimulator:
         ],
     }
 
-    runcard = {
-        RUNCARD.SETTINGS: platform,
-        RUNCARD.SCHEMA: schema,
-    }
-
 
 experiment_params: list[list[str | Circuit | list[Circuit]]] = []
 for platform in [Galadriel]:
@@ -715,8 +713,9 @@ for platform in [Galadriel]:
     circuit.add(I(0))
     circuit.add(X(0))
     circuit.add(Y(0))
-    circuit.add(RX(0, 23))
-    circuit.add(RY(0, 15))
+    # FIXME: https://www.notion.so/qilimanjaro/Adapt-test-data-runcard-circuit-to-current-implementation-d875fecbe5834272a4a43e9b3f602685?pvs=4
+    # circuit.add(RX(0, 23))
+    # circuit.add(RY(0, 15))
     if platform == Galadriel:
         circuit.add(M(0))
     experiment_params.extend([[platform.runcard, circuit], [platform.runcard, [circuit, circuit]]])  # type: ignore
@@ -726,10 +725,10 @@ simulated_experiment_circuit: Circuit = Circuit(1)
 simulated_experiment_circuit.add(I(0))
 simulated_experiment_circuit.add(X(0))
 simulated_experiment_circuit.add(Y(0))
-simulated_experiment_circuit.add(RX(0, 23))
-simulated_experiment_circuit.add(RY(0, 15))
+# simulated_experiment_circuit.add(RX(0, 23))
+# simulated_experiment_circuit.add(RY(0, 15))
 
-results_two_loops = {
+results_two_loops: dict[str, Any] = {
     EXPERIMENT.SOFTWARE_AVERAGE: 1,
     EXPERIMENT.NUM_SCHEDULES: 1,
     EXPERIMENT.SHAPE: [75, 100],
@@ -786,7 +785,7 @@ results_two_loops = {
     ],
 }
 
-results_one_loops = {
+results_one_loops: dict[str, Any] = {
     EXPERIMENT.SOFTWARE_AVERAGE: 1,
     EXPERIMENT.NUM_SCHEDULES: 1,
     EXPERIMENT.SHAPE: [100],
@@ -837,7 +836,7 @@ results_one_loops = {
     ],
 }
 
-results_one_loops_empty = {
+results_one_loops_empty: dict[str, Any] = {
     EXPERIMENT.SOFTWARE_AVERAGE: 1,
     EXPERIMENT.NUM_SCHEDULES: 1,
     EXPERIMENT.SHAPE: [100],
@@ -852,7 +851,7 @@ results_one_loops_empty = {
     EXPERIMENT.RESULTS: [],
 }
 
-experiment = {
+experiment: dict[str, Any] = {
     RUNCARD.PLATFORM: Galadriel.runcard,
     EXPERIMENT.OPTIONS: {
         EXPERIMENT.LOOPS: [
@@ -875,7 +874,7 @@ experiment = {
             }
         ],
         RUNCARD.NAME: "punchout",
-        RUNCARD.SETTINGS: {
+        RUNCARD.GATES_SETTINGS: {
             EXPERIMENT.HARDWARE_AVERAGE: 1024,
             EXPERIMENT.SOFTWARE_AVERAGE: 1,
             EXPERIMENT.REPETITION_DURATION: 200000,
@@ -910,10 +909,10 @@ class SauronVNA:
 
     name = "sauron_vna"
 
-    platform = {
+    device_id = 9
+
+    gates_settings: dict[str, Any] = {
         RUNCARD.ID: 0,
-        RUNCARD.NAME: "sauron_vna",
-        PLATFORM.DEVICE_ID: 9,
         RUNCARD.ALIAS: None,
         RUNCARD.CATEGORY: RUNCARD.PLATFORM,
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
@@ -926,7 +925,7 @@ class SauronVNA:
         "operations": [],
     }
 
-    keysight_e5080b_controller = {
+    keysight_e5080b_controller: dict[str, Any] = {
         RUNCARD.ID: 0,
         RUNCARD.NAME: InstrumentControllerName.KEYSIGHT_E5080B,
         RUNCARD.ALIAS: InstrumentControllerName.KEYSIGHT_E5080B.value,
@@ -945,7 +944,7 @@ class SauronVNA:
         ],
     }
 
-    keysight_e5080b = {
+    keysight_e5080b: dict[str, Any] = {
         RUNCARD.ID: 0,
         RUNCARD.NAME: InstrumentName.KEYSIGHT_E5080B,
         RUNCARD.ALIAS: InstrumentName.KEYSIGHT_E5080B.value,
@@ -954,7 +953,7 @@ class SauronVNA:
         Parameter.POWER.value: -60.0,
     }
 
-    agilent_e5071b_controller = {
+    agilent_e5071b_controller: dict[str, Any] = {
         RUNCARD.ID: 1,
         RUNCARD.NAME: InstrumentControllerName.AGILENT_E5071B,
         RUNCARD.ALIAS: InstrumentControllerName.AGILENT_E5071B.value,
@@ -973,7 +972,7 @@ class SauronVNA:
         ],
     }
 
-    agilent_e5071b = {
+    agilent_e5071b: dict[str, Any] = {
         RUNCARD.ID: 0,
         RUNCARD.NAME: InstrumentName.AGILENT_E5071B,
         RUNCARD.ALIAS: InstrumentName.AGILENT_E5071B.value,
@@ -982,10 +981,10 @@ class SauronVNA:
         Parameter.POWER.value: -60.0,
     }
 
-    instruments = [keysight_e5080b, agilent_e5071b]
-    instrument_controllers = [keysight_e5080b_controller, agilent_e5071b_controller]
+    instruments: list[dict] = [keysight_e5080b, agilent_e5071b]
+    instrument_controllers: list[dict] = [keysight_e5080b_controller, agilent_e5071b_controller]
 
-    chip = {
+    chip: dict[str, Any] = {
         RUNCARD.ID: 0,
         RUNCARD.ALIAS: None,
         RUNCARD.CATEGORY: Category.CHIP.value,
@@ -1010,7 +1009,7 @@ class SauronVNA:
         ],
     }
 
-    buses = [
+    buses: list[dict[str, Any]] = [
         {
             RUNCARD.ID: 0,
             RUNCARD.CATEGORY: Category.BUS.value,
@@ -1039,16 +1038,14 @@ class SauronVNA:
         },
     ]
 
-    schema = {
-        SCHEMA.INSTRUMENTS: instruments,
-        SCHEMA.CHIP: chip,
-        SCHEMA.BUSES: buses,
-        SCHEMA.INSTRUMENT_CONTROLLERS: instrument_controllers,
-    }
-
-    runcard = {
-        RUNCARD.SETTINGS: platform,
-        RUNCARD.SCHEMA: schema,
+    runcard: dict[str, Any] = {
+        RUNCARD.NAME: name,
+        RUNCARD.DEVICE_ID: device_id,
+        RUNCARD.GATES_SETTINGS: gates_settings,
+        RUNCARD.INSTRUMENTS: instruments,
+        RUNCARD.CHIP: chip,
+        RUNCARD.BUSES: buses,
+        RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
     }
 
 

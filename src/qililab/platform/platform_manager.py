@@ -7,7 +7,7 @@ from qiboconnection.api import API
 from qililab.config import logger
 from qililab.constants import RUNCARDS
 from qililab.platform.platform import Platform
-from qililab.settings import RuncardSchema
+from qililab.settings import Runcard
 from qililab.typings import yaml
 from qililab.utils import SingletonABC
 
@@ -15,15 +15,19 @@ from qililab.utils import SingletonABC
 class PlatformManager(ABC, metaclass=SingletonABC):
     """Manager of platform objects."""
 
-    def build(self, platform_name: str, connection: API | None = None) -> Platform:
+    def build(self, platform_name: str, new_drivers: bool = False, connection: API | None = None) -> Platform:
         """Build platform.
 
         Returns:
             Platform: Platform object describing the setup used.
         """
         logger.info("Building platform")
-        platform_schema = RuncardSchema(**self._load_platform_settings(platform_name=platform_name))
-        return Platform(runcard_schema=platform_schema, connection=connection)
+
+        if new_drivers:
+            pass
+
+        runcard = Runcard(**self._load_platform_settings(platform_name=platform_name))
+        return Platform(runcard=runcard, connection=connection)
 
     def dump(self, platform: Platform):
         """Dump all platform information into a YAML file.
@@ -40,11 +44,11 @@ class PlatformManager(ABC, metaclass=SingletonABC):
 
     @abstractmethod
     def _load_platform_settings(self, platform_name: str) -> dict:
-        """Load platform and schema settings.
+        """Load platform settings.
 
         Args:
             platform_name (str): The name of the platform.
 
         Returns:
-            dict: Dictionary with platform and schema settings.
+            dict: Dictionary with platform settings.
         """

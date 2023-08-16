@@ -21,6 +21,7 @@ from qililab.utils import Factory
 @dataclass(kw_only=True)
 class InstrumentControllerSettings(DDBBElement):
     """Contains the settings of a specific Instrument Controller.
+
     Args:
         subcategory (InstrumentControllerSubCategory): Subcategory type of the Instrument Controller.
         connection (Connection): Connection class that represents the connection type of the Instrument Controller.
@@ -86,7 +87,7 @@ class InstrumentController(BusElement, ABC):
             return self._method(ref, *args, **kwargs)
 
     def __init__(self, settings: dict, loaded_instruments: Instruments):
-        settings_class: type[InstrumentControllerSettings] = get_type_hints(self).get(RUNCARD.SETTINGS)  # type: ignore
+        settings_class: type[InstrumentControllerSettings] = get_type_hints(self).get("settings")  # type: ignore
         self.settings = settings_class(**settings)
         self.modules = Loader().replace_modules_from_settings_with_instrument_objects(
             instruments=loaded_instruments,
@@ -199,10 +200,10 @@ class InstrumentController(BusElement, ABC):
 
     @property
     def id_(self):
-        """Instrument Controller 'id_' property.
+        """ID of the instrument controller.
 
         Returns:
-            int: settings.id_.
+            int: ID of the instrument controller.
         """
         return self.settings.id_
 

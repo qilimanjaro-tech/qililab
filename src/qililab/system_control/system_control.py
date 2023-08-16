@@ -104,10 +104,10 @@ class SystemControl(BusElement, ABC):
 
     @property
     def id_(self):
-        """SystemControl 'id' property.
+        """ID of the system control.
 
         Returns:
-            int: settings.id_.
+            int: ID of the system control.
         """
         return self.settings.id_
 

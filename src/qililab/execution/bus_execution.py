@@ -115,10 +115,10 @@ class BusExecution:
 
     @property
     def id_(self):
-        """BusExecution 'id_' property.
+        """BusExecution id property.
 
         Returns:
-            int: bus.id_
+            int: The id of the bus.
         """
         return self.bus.id_
 

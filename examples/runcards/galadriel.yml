@@ -1,8 +1,10 @@
-settings:
-  id_: 0
-  category: platform
-  name: galadriel_soprano_master
-  device_id: 9
+name: galadriel_soprano_master
+
+device_id: 9
+
+gates_settings:
+  id_: 0 # This will get removed after Alert mitjans PR
+  category: platform # This too, so we don't care if it should be moved in this PR
   delay_between_pulses: 0
   delay_before_readout: 4
   timings_calculation_method: as_soon_as_possible
@@ -11,823 +13,874 @@ settings:
   minimum_clock_time: 4
   operations: []
   gates:
-    0:
-      - name: M
-        amplitude: 1.0
-        phase: 0
-        duration: 2000
-        shape:
-          name: rectangular
-      - name: Drag
-        amplitude: 1
-        phase: 0
-        duration: 20
-        shape:
-          name: drag
-          num_sigmas: 4
-          drag_coefficient: 0.0
-      - name: Park
-        amplitude: 1.0
-        phase: 0
-        duration: 103
-        shape:
-          name: rectangular
-    1:
-      - name: M
-        amplitude: 1.0
-        phase: 0
-        duration: 6000
-        shape:
-          name: rectangular
-      - name: Drag
-        amplitude: 1
-        phase: 0
-        duration: 20
-        shape:
-          name: drag
-          num_sigmas: 4
-          drag_coefficient: 0.0
-      - name: Park # pad time added before and after snz pulse is (park_duration - cz_duration) / 2
-        amplitude: 1.0
-        phase: 0
-        duration: 103
-        shape:
-          name: rectangular
-    2:
-      - name: M
-        amplitude: 1.0
-        phase: 0
-        duration: 6000
-        shape:
-          name: rectangular
-      - name: Drag
-        amplitude: 1
-        phase: 0
-        duration: 20
-        shape:
-          name: drag
-          num_sigmas: 4
-          drag_coefficient: 0.0
-    3:
-      - name: M
-        amplitude: 1.0
-        phase: 0
-        duration: 6000
-        shape:
-          name: rectangular
-      - name: Drag
-        amplitude: 1
-        phase: 0
-        duration: 20
-        shape:
-          name: drag
-          num_sigmas: 4
-          drag_coefficient: 0.0
-    4:
-      - name: M
-        amplitude: 1.0
-        phase: 0
-        duration: 6000
-        shape:
-          name: rectangular
-      - name: Drag
-        amplitude: 1
-        phase: 0
-        duration: 20
-        shape:
-          name: drag
-          num_sigmas: 4
-          drag_coefficient: 0.0
-    (0,2): # CZ is always CZ(control,target) - SNZ is applied on target
-      - name: CZ
-        amplitude: 1.0
-        phase: 0
-        duration: 40 # duration is the halfpulse duration of the SNZ - total duration is 2*duration+2+t_phi
-        shape:
-          name: snz
-          b: 0.5
-          t_phi: 1
-    (1,2):
-      - name: CZ
-        amplitude: 1.0
-        phase: 0
-        duration: 40
-        shape:
-          name: snz
-          b: 0.5
-          t_phi: 1
-    (2,3):
-      - name: CZ
-        amplitude: 1.0
-        phase: 0
-        duration: 40
-        shape:
-          name: snz
-          b: 0.5
-          t_phi: 1
-    (2,4):
-      - name: CZ
-        amplitude: 1.0
-        phase: 0
-        duration: 40
-        shape:
-          name: snz
-          b: 0.5
-          t_phi: 1
-schema:
-  chip:
-    id_: 0
-    category: chip
-    nodes:
-      - name: qubit
-        alias: qubit_0
-        id_: 0
-        qubit_index: 0
-        frequency: 4.92e+09
-        nodes: [2, 10, 20, 30]
-      - name: qubit
-        alias: qubit_1
-        id_: 1
-        qubit_index: 1
-        frequency: 5.0e+09
-        nodes: [2, 11, 21, 31]
-      - name: qubit
-        alias: qubit_2
-        id_: 2
-        qubit_index: 2
-        frequency: 5.6e+09
-        nodes: [0, 1, 3, 4, 12, 22, 32]
-      - name: qubit
-        alias: qubit_3
-        id_: 3
-        qubit_index: 3
-        frequency: 6.7e+09
-        nodes: [2, 13, 23, 33]
-      - name: qubit
-        alias: qubit_4
-        id_: 4
-        qubit_index: 4
-        frequency: 6.5e+09
-        nodes: [2, 14, 24, 34]
-      - name: resonator
-        alias: resonator_q0
-        id_: 10
-        frequency: 7.1e+09
-        nodes: [0, 100, 101]
-      - name: resonator
-        alias: resonator_q1
-        id_: 11
-        frequency: 7.2e+09
-        nodes: [1, 100, 101]
-      - name: resonator
-        alias: resonator_q2
-        id_: 12
-        frequency: 7.3e+09
-        nodes: [2, 100, 101]
-      - name: resonator
-        alias: resonator_q3
-        id_: 13
-        frequency: 7.4e+09
-        nodes: [3, 100, 101]
-      - name: resonator
-        alias: resonator_q4
-        id_: 14
-        frequency: 7.5e+09
-        nodes: [4, 100, 101]
-      - name: port
-        id_: 20
-        alias: drive_line_q0
-        nodes: [0]
-        line: drive
-      - name: port
-        id_: 21
-        alias: drive_line_q1
-        nodes: [1]
-        line: drive
-      - name: port
-        id_: 22
-        alias: drive_line_q2
-        nodes: [2]
-        line: drive
-      - name: port
-        id_: 23
-        alias: drive_line_q3
-        nodes: [3]
-        line: drive
-      - name: port
-        id_: 24
-        alias: drive_line_q4
-        nodes: [4]
-        line: drive
-      - name: port
-        id_: 30
-        alias: flux_line_q0
-        nodes: [0]
-        line: flux
-      - name: port
-        id_: 31
-        alias: flux_line_q1
-        nodes: [1]
-        line: flux
-      - name: port
-        id_: 32
-        alias: flux_line_q2
-        nodes: [2]
-        line: flux
-      - name: port
-        id_: 33
-        alias: flux_line_q3
-        nodes: [3]
-        line: flux
-      - name: port
-        id_: 34
-        alias: flux_line_q4
-        nodes: [4]
-        line: flux
-      - name: port
-        id_: 100
-        alias: feedline_input
-        nodes: [10, 11, 12, 13, 14]
-        line: feedline_input
-      - name: port
-        id_: 101
-        alias: feedline_output
-        nodes: [10, 11, 12, 13, 14]
-        line: feedline_output
 
-  instruments:
-    - name: QRM
-      alias: QRM1
+    M(0):
+      - bus: feedline_bus  # alias of the bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 2000
+          frequency: 0
+          shape:
+            name: rectangular
+    Drag(0):
+      - bus: drive_line_q0_bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 20
+          frequency: 0
+          shape:
+            name: drag
+            num_sigmas: 4
+            drag_coefficient: 0.0
+
+    M(1):
+      - bus: feedline_bus  # alias of the bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 2000
+          frequency: 0
+          shape:
+            name: rectangular
+    Drag(1):
+      - bus: drive_line_q1_bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 20
+          frequency: 0
+          shape:
+            name: drag
+            num_sigmas: 4
+            drag_coefficient: 0.0
+
+    M(2):
+      - bus: feedline_bus  # alias of the bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 2000
+          frequency: 0
+          shape:
+            name: rectangular
+    Drag(2):
+      - bus: drive_line_q2_bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 20
+          frequency: 0
+          shape:
+            name: drag
+            num_sigmas: 4
+            drag_coefficient: 0.0
+
+    M(3):
+      - bus: feedline_bus  # alias of the bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 2000
+          frequency: 0
+          shape:
+            name: rectangular
+    Drag(3):
+      - bus: drive_line_q3_bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 20
+          frequency: 0
+          shape:
+            name: drag
+            num_sigmas: 4
+            drag_coefficient: 0.0
+
+    M(4):
+      - bus: feedline_bus  # alias of the bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 2000
+          frequency: 0
+          shape:
+            name: rectangular
+
+    Drag(4):
+      - bus: drive_line_q4_bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 20
+          frequency: 0
+          shape:
+            name: drag
+            num_sigmas: 4
+            drag_coefficient: 0.0
+
+    CZ(0,2):
+      - bus: flux_line_q2_bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 101
+          frequency: 0
+          shape:
+            name: snz
+            t_phi: 1
+            b: 0.5
+      - bus: flux_line_q1_bus # park pulse
+        wait_time: 20
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 121
+          frequency: 0
+          shape:
+            name: rectangular
+
+    CZ(1,2):
+      - bus: flux_line_q2_bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 101
+          frequency: 0
+          shape:
+            name: snz
+            t_phi: 1
+            b: 0.5
+      - bus: flux_line_q0_bus # park pulse
+        wait_time: 20
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 121
+          frequency: 0
+          shape:
+            name: rectangular
+
+    CZ(4,2):
+      - bus: flux_line_q4_bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 101
+          frequency: 0
+          shape:
+            name: snz
+            t_phi: 1
+            b: 0.5
+
+    CZ(3,2):
+      - bus: flux_line_q3_bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 101
+          frequency: 0
+          shape:
+            name: snz
+            t_phi: 1
+            b: 0.5
+
+chip:
+  id_: 0
+  category: chip
+  nodes:
+    - name: qubit
+      alias: qubit_0
       id_: 0
-      category: awg
-      firmware: 0.7.0
-      num_sequencers: 5
-      acquisition_delay_time: 100
-      out_offsets: [0, 0]
-      awg_sequencers:
-        - identifier: 0
-          chip_port_id: 100
-          qubit: 0
-          output_i: 0
-          output_q: 1
-          gain_i: .5
-          gain_q: .5
-          offset_i: 0
-          offset_q: 0
-          weights_i: [1., 1., 1., 1., 1.] # to calibrate
-          weights_q: [1., 1., 1., 1., 1.] # to calibrate
-          weighed_acq_enabled: False
-          threshold: 0.5
-          threshold_rotation: 0.0
-          num_bins: 1
-          intermediate_frequency: 10.e+06
-          gain_imbalance: 1.
-          phase_imbalance: 0
-          hardware_modulation: true
-          scope_acquire_trigger_mode: sequencer
-          scope_hardware_averaging: true
-          sampling_rate: 1.e+09
-          integration_length: 2000
-          integration_mode: ssb
-          sequence_timeout: 1
-          acquisition_timeout: 1
-          hardware_demodulation: true
-          scope_store_enabled: false
-        - identifier: 1
-          chip_port_id: 100
-          qubit: 1
-          output_i: 0
-          output_q: 1
-          gain_i: .5
-          gain_q: .5
-          offset_i: 0
-          offset_q: 0
-          weights_i: [1., 1., 1., 1., 1.] # to calibrate
-          weights_q: [1., 1., 1., 1., 1.] # to calibrate
-          weighed_acq_enabled: False
-          threshold: 0.5
-          threshold_rotation: 0.0
-          num_bins: 1
-          intermediate_frequency: 20.e+06
-          gain_imbalance: 1.
-          phase_imbalance: 0
-          hardware_modulation: true
-          scope_acquire_trigger_mode: sequencer
-          scope_hardware_averaging: true
-          sampling_rate: 1.e+09
-          integration_length: 2000
-          integration_mode: ssb
-          sequence_timeout: 1
-          acquisition_timeout: 1
-          hardware_demodulation: true
-          scope_store_enabled: false
-        - identifier: 2
-          chip_port_id: 100
-          qubit: 2
-          output_i: 0
-          output_q: 1
-          gain_i: .5
-          gain_q: .5
-          offset_i: 0
-          offset_q: 0
-          weights_i: [1., 1., 1., 1., 1.] # to calibrate
-          weights_q: [1., 1., 1., 1., 1.] # to calibrate
-          weighed_acq_enabled: False
-          threshold: 0.5
-          threshold_rotation: 0.0
-          num_bins: 1
-          intermediate_frequency: 30.e+06
-          gain_imbalance: 1.
-          phase_imbalance: 0
-          hardware_modulation: true
-          scope_acquire_trigger_mode: sequencer
-          scope_hardware_averaging: true
-          sampling_rate: 1.e+09
-          integration_length: 2000
-          integration_mode: ssb
-          sequence_timeout: 1
-          acquisition_timeout: 1
-          hardware_demodulation: true
-          scope_store_enabled: false
-        - identifier: 3
-          chip_port_id: 100
-          qubit: 3
-          output_i: 0
-          output_q: 1
-          gain_i: .5
-          gain_q: .5
-          offset_i: 0
-          offset_q: 0
-          weights_i: [1., 1., 1., 1., 1.] # to calibrate
-          weights_q: [1., 1., 1., 1., 1.] # to calibrate
-          weighed_acq_enabled: False
-          threshold: 0.5
-          threshold_rotation: 0.0
-          num_bins: 1
-          intermediate_frequency: 40.e+06
-          gain_imbalance: 1.
-          phase_imbalance: 0
-          hardware_modulation: true
-          scope_acquire_trigger_mode: sequencer
-          scope_hardware_averaging: true
-          sampling_rate: 1.e+09
-          integration_length: 2000
-          integration_mode: ssb
-          sequence_timeout: 1
-          acquisition_timeout: 1
-          hardware_demodulation: true
-          scope_store_enabled: false
-        - identifier: 4
-          chip_port_id: 100
-          qubit: 4
-          output_i: 0
-          output_q: 1
-          gain_i: .5
-          gain_q: .5
-          offset_i: 0
-          offset_q: 0
-          weights_i: [1., 1., 1., 1., 1.] # to calibrate
-          weights_q: [1., 1., 1., 1., 1.] # to calibrate
-          weighed_acq_enabled: False
-          threshold: 0.5
-          threshold_rotation: 0.0
-          num_bins: 1
-          intermediate_frequency: 50.e+06
-          gain_imbalance: 1.
-          phase_imbalance: 0
-          hardware_modulation: true
-          scope_acquire_trigger_mode: sequencer
-          scope_hardware_averaging: true
-          sampling_rate: 1.e+09
-          integration_length: 2000
-          integration_mode: ssb
-          sequence_timeout: 1
-          acquisition_timeout: 1
-          hardware_demodulation: true
-          scope_store_enabled: false
-    - name: QCM-RF
-      alias: QCM-RF1
+      qubit_index: 0
+      frequency: 4.92e+09
+      nodes: [2, 10, 20, 30]
+    - name: qubit
+      alias: qubit_1
       id_: 1
-      category: awg
-      firmware: 0.7.0
-      num_sequencers: 2
-      out0_lo_freq: 6.5e+09
-      out0_lo_en: true
-      out0_att: 0
-      out0_offset_path0: 0.
-      out0_offset_path1: 0.0
-      out1_lo_freq: 6.7e+09
-      out1_lo_en: true
-      out1_att: 0
-      out1_offset_path0: 0.
-      out1_offset_path1: 0.
-      awg_sequencers:
-        - identifier: 0
-          chip_port_id: 20 #q0 drive
-          output_i: 0
-          output_q: 1
-          gain_i: 0.1
-          gain_q: 0.1
-          offset_i: 0. # -0.012
-          offset_q: 0.
-          num_bins: 1
-          intermediate_frequency: 10.e+06
-          gain_imbalance: 0.940
-          phase_imbalance: 14.482
-          hardware_modulation: true
-        - identifier: 1
-          chip_port_id: 21 #q1 drive
-          output_i: 2
-          output_q: 3
-          gain_i: 1
-          gain_q: 1
-          offset_i: 0
-          offset_q: 0
-          num_bins: 1
-          intermediate_frequency: 20.e+06
-          gain_imbalance: 0.5
-          phase_imbalance: 0
-          hardware_modulation: true
-    - name: QCM-RF
-      alias: QCM-RF2
+      qubit_index: 1
+      frequency: 5.0e+09
+      nodes: [2, 11, 21, 31]
+    - name: qubit
+      alias: qubit_2
+      id_: 2
+      qubit_index: 2
+      frequency: 5.6e+09
+      nodes: [0, 1, 3, 4, 12, 22, 32]
+    - name: qubit
+      alias: qubit_3
       id_: 3
-      category: awg
-      firmware: 0.7.0
-      num_sequencers: 1
-      out0_lo_freq: 6.5e+09
-      out0_lo_en: true
-      out0_att: 0
-      out0_offset_path0: 0.
-      out0_offset_path1: 0.0
-      out1_lo_freq: 6.7e+09
-      out1_lo_en: true
-      out1_att: 0
-      out1_offset_path0: 0.
-      out1_offset_path1: 0.
-      awg_sequencers:
-        - identifier: 0
-          chip_port_id: 22 #q2 drive
-          output_i: 0
-          output_q: 1
-          gain_i: 0.1
-          gain_q: 0.1
-          offset_i: 0.
-          offset_q: 0.
-          num_bins: 1
-          intermediate_frequency: 10.e+06
-          gain_imbalance: .5
-          phase_imbalance: 0.
-          hardware_modulation: true
-    - name: QCM-RF
-      alias: QCM-RF3
-      id_: 2
-      category: awg
-      firmware: 0.7.0
-      num_sequencers: 2
-      out0_lo_freq: 5.e+09
-      out0_lo_en: true
-      out0_att: 0
-      out0_offset_path0: 0.
-      out0_offset_path1: 0.0
-      out1_lo_freq: 5.2e+09
-      out1_lo_en: true
-      out1_att: 0
-      out1_offset_path0: 0.
-      out1_offset_path1: 0.
-      awg_sequencers:
-        - identifier: 0
-          chip_port_id: 23 #q3 drive
-          output_i: 0
-          output_q: 1
-          gain_i: 0.1
-          gain_q: 0.1
-          offset_i: 0.
-          offset_q: 0.
-          num_bins: 1
-          intermediate_frequency: 10.e+06
-          gain_imbalance: .5
-          phase_imbalance: 0.
-          hardware_modulation: true
-        - identifier: 1
-          chip_port_id: 24 #q4 drive
-          output_i: 2
-          output_q: 3
-          gain_i: 1
-          gain_q: 1
-          offset_i: 0
-          offset_q: 0
-          num_bins: 1
-          intermediate_frequency: 20.e+06
-          gain_imbalance: 0.5
-          phase_imbalance: 0
-          hardware_modulation: true
-    - name: QCM
-      alias: QCM1
+      qubit_index: 3
+      frequency: 6.7e+09
+      nodes: [2, 13, 23, 33]
+    - name: qubit
+      alias: qubit_4
       id_: 4
-      category: awg
-      firmware: 0.7.0
-      num_sequencers: 4
-      out_offsets: [0.0, 0.0, 0.0, 0.0]
-      awg_sequencers:
-        - identifier: 0
-          chip_port_id: 30 #q0 flux
-          output_i: 0
-          output_q: 1
-          gain_i: 0.1
-          gain_q: 0.1
-          offset_i: 0.
-          offset_q: 0.
-          num_bins: 1
-          intermediate_frequency: 10.e+06
-          gain_imbalance: .5
-          phase_imbalance: 0.
-          hardware_modulation: true
-        - identifier: 1
-          chip_port_id: 31 #q1 flux
-          output_i: 1
-          output_q: 0
-          gain_i: 1
-          gain_q: 1
-          offset_i: 0
-          offset_q: 0
-          num_bins: 1
-          intermediate_frequency: 0.
-          gain_imbalance: 0.5
-          phase_imbalance: 0
-          hardware_modulation: true
-        - identifier: 2
-          chip_port_id: 33 #q3 flux
-          output_i: 2
-          output_q: 3
-          gain_i: 1
-          gain_q: 1
-          offset_i: 0
-          offset_q: 0
-          num_bins: 1
-          intermediate_frequency: 0.
-          gain_imbalance: 0.5
-          phase_imbalance: 0
-          hardware_modulation: true
-        - identifier: 3
-          chip_port_id: 34 #q4 flux
-          output_i: 3
-          output_q: 2
-          gain_i: 1
-          gain_q: 1
-          offset_i: 0
-          offset_q: 0
-          num_bins: 1
-          intermediate_frequency: 0.
-          gain_imbalance: 0.5
-          phase_imbalance: 0
-          hardware_modulation: true
-    - name: QCM
-      alias: QCM2
-      id_: 5
-      category: awg
-      firmware: 0.7.0
-      num_sequencers: 1
-      out_offsets: [0.0, 0.0, 0.0, 0.0]
-      awg_sequencers:
-        - identifier: 0
-          chip_port_id: 32 #q2 flux
-          output_i: 0
-          output_q: 1
-          gain_i: 1.
-          gain_q: 1.
-          offset_i: 0.
-          offset_q: 0.
-          num_bins: 1
-          intermediate_frequency: 10.e+06
-          gain_imbalance: .5
-          phase_imbalance: 0.
-          hardware_modulation: true
-    - name: rohde_schwarz
-      alias: rs_1
+      qubit_index: 4
+      frequency: 6.5e+09
+      nodes: [2, 14, 24, 34]
+    - name: resonator
+      alias: resonator_q0
+      id_: 10
+      frequency: 7.1e+09
+      nodes: [0, 100, 101]
+    - name: resonator
+      alias: resonator_q1
+      id_: 11
+      frequency: 7.2e+09
+      nodes: [1, 100, 101]
+    - name: resonator
+      alias: resonator_q2
+      id_: 12
+      frequency: 7.3e+09
+      nodes: [2, 100, 101]
+    - name: resonator
+      alias: resonator_q3
+      id_: 13
+      frequency: 7.4e+09
+      nodes: [3, 100, 101]
+    - name: resonator
+      alias: resonator_q4
+      id_: 14
+      frequency: 7.5e+09
+      nodes: [4, 100, 101]
+    - name: port
+      id_: 20
+      alias: drive_line_q0
+      nodes: [0]
+      line: drive
+    - name: port
+      id_: 21
+      alias: drive_line_q1
+      nodes: [1]
+      line: drive
+    - name: port
+      id_: 22
+      alias: drive_line_q2
+      nodes: [2]
+      line: drive
+    - name: port
+      id_: 23
+      alias: drive_line_q3
+      nodes: [3]
+      line: drive
+    - name: port
+      id_: 24
+      alias: drive_line_q4
+      nodes: [4]
+      line: drive
+    - name: port
+      id_: 30
+      alias: flux_line_q0
+      nodes: [0]
+      line: flux
+    - name: port
+      id_: 31
+      alias: flux_line_q1
+      nodes: [1]
+      line: flux
+    - name: port
+      id_: 32
+      alias: flux_line_q2
+      nodes: [2]
+      line: flux
+    - name: port
+      id_: 33
+      alias: flux_line_q3
+      nodes: [3]
+      line: flux
+    - name: port
+      id_: 34
+      alias: flux_line_q4
+      nodes: [4]
+      line: flux
+    - name: port
+      id_: 100
+      alias: feedline_input
+      nodes: [10, 11, 12, 13, 14]
+      line: feedline_input
+    - name: port
+      id_: 101
+      alias: feedline_output
+      nodes: [10, 11, 12, 13, 14]
+      line: feedline_output
+
+buses:
+  - id_: 0
+    category: bus
+    alias: feedline_bus
+    system_control:
       id_: 0
-      category: signal_generator
-      firmware: 4.2.76.0-4.30.046.295
-      power: 16
-      frequency: 8.0726e+09
-      rf_on: true
-    - name: mini_circuits
-      alias: attenuator
-      id_: 1
-      category: attenuator
-      firmware: None
-      attenuation: 32
-  buses:
-    - id_: 0
-      category: bus
-      alias: feedline_bus
-      system_control:
-        id_: 0
-        name: readout_system_control
-        category: system_control
-        instruments: [QRM1, rs_1]
-      port: 100
-      distortions: []
-    - id_: 20
-      category: bus
-      alias: drive_line_q0_bus
-      system_control:
-        id_: 20
-        name: system_control
-        category: system_control
-        instruments: [QCM-RF1]
-      port: 20
-      distortions: []
-    - id_: 30
-      category: bus
-      alias: flux_line_q0_bus
-      system_control:
-        id_: 30
-        name: system_control
-        category: system_control
-        instruments: [QCM1]
-      port: 30
-      distortions: []
-    - id_: 21
-      category: bus
-      alias: drive_line_q1_bus
-      system_control:
-        id_: 21
-        name: system_control
-        category: system_control
-        instruments: [QCM-RF1]
-      port: 21
-      distortions: []
-    - id_: 31
-      category: bus
-      alias: flux_line_q1_bus
-      system_control:
-        id_: 31
-        name: system_control
-        category: system_control
-        instruments: [QCM1]
-      port: 31
-      distortions:
-        - name: bias_tee
-          tau_bias_tee: 11000
-        - name: lfilter
-          a:
-            [
-              4.46297950e-01,
-              -4.74695321e-02,
-              -6.35339660e-02,
-              6.90858657e-03,
-              7.21417336e-03,
-              1.34171108e-02,
-              1.54624140e-02,
-              4.44887896e-03,
-              1.76451157e-03,
-              -2.18655651e-04,
-              1.26421111e-03,
-              7.46639107e-03,
-              8.73383280e-04,
-              -1.02437299e-02,
-              -1.98913205e-02,
-              -2.94920516e-02,
-              -2.68926933e-03,
-              1.12518838e-02,
-              8.49538664e-04,
-              -5.64832645e-03,
-              -1.50532773e-02,
-              7.80205124e-04,
-              1.65796141e-02,
-              6.89980673e-04,
-              -7.25549782e-03,
-              3.32391693e-03,
-              9.97813872e-03,
-              -8.12679733e-03,
-              -1.00578281e-02,
-              6.97338810e-03,
-              2.05574979e-02,
-              -4.22533696e-04,
-              -5.30573522e-03,
-              -5.63574725e-03,
-              -7.72052668e-03,
-              1.53987162e-02,
-              7.62955256e-03,
-              -8.98278390e-03,
-              -7.90292832e-04,
-              -1.11828133e-03,
-              -6.62307356e-03,
-              8.23195094e-03,
-              1.10523437e-02,
-              -6.44999221e-03,
-              -7.18305957e-03,
-              1.52176963e-03,
-              -9.89509796e-03,
-              3.00056075e-03,
-              1.01091160e-02,
-              -3.77361876e-03,
-            ]
-          b: [1.]
-          norm_factor: 1.
-    - id_: 22
-      category: bus
-      alias: drive_line_q2_bus
-      system_control:
-        id_: 22
-        name: system_control
-        category: system_control
-        instruments: [QCM-RF2]
-      port: 22
-      distortions: []
-    - id_: 32
-      category: bus
-      alias: flux_line_q2_bus
-      system_control:
-        id_: 32
-        name: system_control
-        category: system_control
-        instruments: [QCM2]
-      port: 32
-      distortions: []
-    - id_: 23
-      category: bus
-      alias: drive_line_q3_bus
-      system_control:
-        id_: 23
-        name: system_control
-        category: system_control
-        instruments: [QCM-RF3]
-      port: 23
-      distortions: []
-    - id_: 33
-      category: bus
-      alias: flux_line_q3_bus
-      system_control:
-        id_: 33
-        name: system_control
-        category: system_control
-        instruments: [QCM1]
-      port: 33
-      distortions: []
-    - id_: 24
-      category: bus
-      alias: drive_line_q4_bus
-      system_control:
-        id_: 24
-        name: system_control
-        category: system_control
-        instruments: [QCM-RF3]
-      port: 24
-      distortions: []
-    - id_: 34
-      category: bus
-      alias: flux_line_q4_bus
-      system_control:
-        id_: 34
-        name: system_control
-        category: system_control
-        instruments: [QCM1]
-      port: 34
-      distortions: []
-  instrument_controllers:
-    - name: qblox_cluster
-      id_: 1
-      alias: cluster_controller_0
-      category: instrument_controller
-      subcategory: multiple_instruments
-      reference_clock: internal
-      connection:
-        name: tcp_ip
-        address: 192.168.1.20
-      modules:
-        - awg: QRM1
-          slot_id: 12
-        - awg: QCM-RF1
-          slot_id: 6
-        - awg: QCM-RF3
-          slot_id: 8
-        - awg: QCM-RF2
-          slot_id: 14
-        - awg: QCM1
-          slot_id: 14
-        - awg: QCM2
-          slot_id: 14
-    - name: rohde_schwarz
-      id_: 2
-      alias: rohde_schwarz_controller_0
-      category: instrument_controller
-      subcategory: single_instrument
-      reference_clock: internal
-      connection:
-        name: tcp_ip
-        address: 192.168.1.11
-      modules:
-        - signal_generator: rs_1
-          slot_id: 0
-    - name: mini_circuits
-      id_: 5
-      alias: attenuator_controller_0
-      category: instrument_controller
-      subcategory: single_instrument
-      connection:
-        name: tcp_ip
-        address: 192.168.1.69
-      modules:
-        - attenuator: attenuator
-          slot_id: 0
+      name: readout_system_control
+      category: system_control
+      instruments: [QRM1, rs_1]
+    port: 100
+    distortions: []
+  - id_: 20
+    category: bus
+    alias: drive_line_q0_bus
+    system_control:
+      id_: 20
+      name: system_control
+      category: system_control
+      instruments: [QCM-RF1]
+    port: 20
+    distortions: []
+  - id_: 30
+    category: bus
+    alias: flux_line_q0_bus
+    system_control:
+      id_: 30
+      name: system_control
+      category: system_control
+      instruments: [QCM1]
+    port: 30
+    distortions: []
+  - id_: 21
+    category: bus
+    alias: drive_line_q1_bus
+    system_control:
+      id_: 21
+      name: system_control
+      category: system_control
+      instruments: [QCM-RF1]
+    port: 21
+    distortions: []
+  - id_: 31
+    category: bus
+    alias: flux_line_q1_bus
+    system_control:
+      id_: 31
+      name: system_control
+      category: system_control
+      instruments: [QCM1]
+    port: 31
+    distortions:
+      - name: bias_tee
+        tau_bias_tee: 11000
+      - name: lfilter
+        a:
+          [
+            4.46297950e-01,
+            -4.74695321e-02,
+            -6.35339660e-02,
+            6.90858657e-03,
+            7.21417336e-03,
+            1.34171108e-02,
+            1.54624140e-02,
+            4.44887896e-03,
+            1.76451157e-03,
+            -2.18655651e-04,
+            1.26421111e-03,
+            7.46639107e-03,
+            8.73383280e-04,
+            -1.02437299e-02,
+            -1.98913205e-02,
+            -2.94920516e-02,
+            -2.68926933e-03,
+            1.12518838e-02,
+            8.49538664e-04,
+            -5.64832645e-03,
+            -1.50532773e-02,
+            7.80205124e-04,
+            1.65796141e-02,
+            6.89980673e-04,
+            -7.25549782e-03,
+            3.32391693e-03,
+            9.97813872e-03,
+            -8.12679733e-03,
+            -1.00578281e-02,
+            6.97338810e-03,
+            2.05574979e-02,
+            -4.22533696e-04,
+            -5.30573522e-03,
+            -5.63574725e-03,
+            -7.72052668e-03,
+            1.53987162e-02,
+            7.62955256e-03,
+            -8.98278390e-03,
+            -7.90292832e-04,
+            -1.11828133e-03,
+            -6.62307356e-03,
+            8.23195094e-03,
+            1.10523437e-02,
+            -6.44999221e-03,
+            -7.18305957e-03,
+            1.52176963e-03,
+            -9.89509796e-03,
+            3.00056075e-03,
+            1.01091160e-02,
+            -3.77361876e-03,
+          ]
+        b: [1.]
+        norm_factor: 1.
+  - id_: 22
+    category: bus
+    alias: drive_line_q2_bus
+    system_control:
+      id_: 22
+      name: system_control
+      category: system_control
+      instruments: [QCM-RF2]
+    port: 22
+    distortions: []
+  - id_: 32
+    category: bus
+    alias: flux_line_q2_bus
+    system_control:
+      id_: 32
+      name: system_control
+      category: system_control
+      instruments: [QCM2]
+    port: 32
+    distortions: []
+  - id_: 23
+    category: bus
+    alias: drive_line_q3_bus
+    system_control:
+      id_: 23
+      name: system_control
+      category: system_control
+      instruments: [QCM-RF3]
+    port: 23
+    distortions: []
+  - id_: 33
+    category: bus
+    alias: flux_line_q3_bus
+    system_control:
+      id_: 33
+      name: system_control
+      category: system_control
+      instruments: [QCM1]
+    port: 33
+    distortions: []
+  - id_: 24
+    category: bus
+    alias: drive_line_q4_bus
+    system_control:
+      id_: 24
+      name: system_control
+      category: system_control
+      instruments: [QCM-RF3]
+    port: 24
+    distortions: []
+  - id_: 34
+    category: bus
+    alias: flux_line_q4_bus
+    system_control:
+      id_: 34
+      name: system_control
+      category: system_control
+      instruments: [QCM1]
+    port: 34
+    distortions: []
+
+instruments:
+  - name: QRM
+    alias: QRM1
+    id_: 0
+    category: awg
+    firmware: 0.7.0
+    num_sequencers: 5
+    acquisition_delay_time: 100
+    out_offsets: [0, 0]
+    awg_sequencers:
+      - identifier: 0
+        chip_port_id: 100
+        qubit: 0
+        output_i: 0
+        output_q: 1
+        gain_i: .5
+        gain_q: .5
+        offset_i: 0
+        offset_q: 0
+        weights_i: [1., 1., 1., 1., 1.] # to calibrate
+        weights_q: [1., 1., 1., 1., 1.] # to calibrate
+        weighed_acq_enabled: False
+        threshold: 0.5
+        threshold_rotation: 0.0
+        num_bins: 1
+        intermediate_frequency: 10.e+06
+        gain_imbalance: 1.
+        phase_imbalance: 0
+        hardware_modulation: true
+        scope_acquire_trigger_mode: sequencer
+        scope_hardware_averaging: true
+        sampling_rate: 1.e+09
+        integration_length: 2000
+        integration_mode: ssb
+        sequence_timeout: 1
+        acquisition_timeout: 1
+        hardware_demodulation: true
+        scope_store_enabled: false
+      - identifier: 1
+        chip_port_id: 100
+        qubit: 1
+        output_i: 0
+        output_q: 1
+        gain_i: .5
+        gain_q: .5
+        offset_i: 0
+        offset_q: 0
+        weights_i: [1., 1., 1., 1., 1.] # to calibrate
+        weights_q: [1., 1., 1., 1., 1.] # to calibrate
+        weighed_acq_enabled: False
+        threshold: 0.5
+        threshold_rotation: 0.0
+        num_bins: 1
+        intermediate_frequency: 20.e+06
+        gain_imbalance: 1.
+        phase_imbalance: 0
+        hardware_modulation: true
+        scope_acquire_trigger_mode: sequencer
+        scope_hardware_averaging: true
+        sampling_rate: 1.e+09
+        integration_length: 2000
+        integration_mode: ssb
+        sequence_timeout: 1
+        acquisition_timeout: 1
+        hardware_demodulation: true
+        scope_store_enabled: false
+      - identifier: 2
+        chip_port_id: 100
+        qubit: 2
+        output_i: 0
+        output_q: 1
+        gain_i: .5
+        gain_q: .5
+        offset_i: 0
+        offset_q: 0
+        weights_i: [1., 1., 1., 1., 1.] # to calibrate
+        weights_q: [1., 1., 1., 1., 1.] # to calibrate
+        weighed_acq_enabled: False
+        threshold: 0.5
+        threshold_rotation: 0.0
+        num_bins: 1
+        intermediate_frequency: 30.e+06
+        gain_imbalance: 1.
+        phase_imbalance: 0
+        hardware_modulation: true
+        scope_acquire_trigger_mode: sequencer
+        scope_hardware_averaging: true
+        sampling_rate: 1.e+09
+        integration_length: 2000
+        integration_mode: ssb
+        sequence_timeout: 1
+        acquisition_timeout: 1
+        hardware_demodulation: true
+        scope_store_enabled: false
+      - identifier: 3
+        chip_port_id: 100
+        qubit: 3
+        output_i: 0
+        output_q: 1
+        gain_i: .5
+        gain_q: .5
+        offset_i: 0
+        offset_q: 0
+        weights_i: [1., 1., 1., 1., 1.] # to calibrate
+        weights_q: [1., 1., 1., 1., 1.] # to calibrate
+        weighed_acq_enabled: False
+        threshold: 0.5
+        threshold_rotation: 0.0
+        num_bins: 1
+        intermediate_frequency: 40.e+06
+        gain_imbalance: 1.
+        phase_imbalance: 0
+        hardware_modulation: true
+        scope_acquire_trigger_mode: sequencer
+        scope_hardware_averaging: true
+        sampling_rate: 1.e+09
+        integration_length: 2000
+        integration_mode: ssb
+        sequence_timeout: 1
+        acquisition_timeout: 1
+        hardware_demodulation: true
+        scope_store_enabled: false
+      - identifier: 4
+        chip_port_id: 100
+        qubit: 4
+        output_i: 0
+        output_q: 1
+        gain_i: .5
+        gain_q: .5
+        offset_i: 0
+        offset_q: 0
+        weights_i: [1., 1., 1., 1., 1.] # to calibrate
+        weights_q: [1., 1., 1., 1., 1.] # to calibrate
+        weighed_acq_enabled: False
+        threshold: 0.5
+        threshold_rotation: 0.0
+        num_bins: 1
+        intermediate_frequency: 50.e+06
+        gain_imbalance: 1.
+        phase_imbalance: 0
+        hardware_modulation: true
+        scope_acquire_trigger_mode: sequencer
+        scope_hardware_averaging: true
+        sampling_rate: 1.e+09
+        integration_length: 2000
+        integration_mode: ssb
+        sequence_timeout: 1
+        acquisition_timeout: 1
+        hardware_demodulation: true
+        scope_store_enabled: false
+  - name: QCM-RF
+    alias: QCM-RF1
+    id_: 1
+    category: awg
+    firmware: 0.7.0
+    num_sequencers: 2
+    out0_lo_freq: 6.5e+09
+    out0_lo_en: true
+    out0_att: 0
+    out0_offset_path0: 0.
+    out0_offset_path1: 0.0
+    out1_lo_freq: 6.7e+09
+    out1_lo_en: true
+    out1_att: 0
+    out1_offset_path0: 0.
+    out1_offset_path1: 0.
+    awg_sequencers:
+      - identifier: 0
+        chip_port_id: 20 #q0 drive
+        output_i: 0
+        output_q: 1
+        gain_i: 0.1
+        gain_q: 0.1
+        offset_i: 0. # -0.012
+        offset_q: 0.
+        num_bins: 1
+        intermediate_frequency: 10.e+06
+        gain_imbalance: 0.940
+        phase_imbalance: 14.482
+        hardware_modulation: true
+      - identifier: 1
+        chip_port_id: 21 #q1 drive
+        output_i: 2
+        output_q: 3
+        gain_i: 1
+        gain_q: 1
+        offset_i: 0
+        offset_q: 0
+        num_bins: 1
+        intermediate_frequency: 20.e+06
+        gain_imbalance: 0.5
+        phase_imbalance: 0
+        hardware_modulation: true
+  - name: QCM-RF
+    alias: QCM-RF2
+    id_: 3
+    category: awg
+    firmware: 0.7.0
+    num_sequencers: 1
+    out0_lo_freq: 6.5e+09
+    out0_lo_en: true
+    out0_att: 0
+    out0_offset_path0: 0.
+    out0_offset_path1: 0.0
+    out1_lo_freq: 6.7e+09
+    out1_lo_en: true
+    out1_att: 0
+    out1_offset_path0: 0.
+    out1_offset_path1: 0.
+    awg_sequencers:
+      - identifier: 0
+        chip_port_id: 22 #q2 drive
+        output_i: 0
+        output_q: 1
+        gain_i: 0.1
+        gain_q: 0.1
+        offset_i: 0.
+        offset_q: 0.
+        num_bins: 1
+        intermediate_frequency: 10.e+06
+        gain_imbalance: .5
+        phase_imbalance: 0.
+        hardware_modulation: true
+  - name: QCM-RF
+    alias: QCM-RF3
+    id_: 2
+    category: awg
+    firmware: 0.7.0
+    num_sequencers: 2
+    out0_lo_freq: 5.e+09
+    out0_lo_en: true
+    out0_att: 0
+    out0_offset_path0: 0.
+    out0_offset_path1: 0.0
+    out1_lo_freq: 5.2e+09
+    out1_lo_en: true
+    out1_att: 0
+    out1_offset_path0: 0.
+    out1_offset_path1: 0.
+    awg_sequencers:
+      - identifier: 0
+        chip_port_id: 23 #q3 drive
+        output_i: 0
+        output_q: 1
+        gain_i: 0.1
+        gain_q: 0.1
+        offset_i: 0.
+        offset_q: 0.
+        num_bins: 1
+        intermediate_frequency: 10.e+06
+        gain_imbalance: .5
+        phase_imbalance: 0.
+        hardware_modulation: true
+      - identifier: 1
+        chip_port_id: 24 #q4 drive
+        output_i: 2
+        output_q: 3
+        gain_i: 1
+        gain_q: 1
+        offset_i: 0
+        offset_q: 0
+        num_bins: 1
+        intermediate_frequency: 20.e+06
+        gain_imbalance: 0.5
+        phase_imbalance: 0
+        hardware_modulation: true
+  - name: QCM
+    alias: QCM1
+    id_: 4
+    category: awg
+    firmware: 0.7.0
+    num_sequencers: 4
+    out_offsets: [0.0, 0.0, 0.0, 0.0]
+    awg_sequencers:
+      - identifier: 0
+        chip_port_id: 30 #q0 flux
+        output_i: 0
+        output_q: 1
+        gain_i: 0.1
+        gain_q: 0.1
+        offset_i: 0.
+        offset_q: 0.
+        num_bins: 1
+        intermediate_frequency: 10.e+06
+        gain_imbalance: .5
+        phase_imbalance: 0.
+        hardware_modulation: true
+      - identifier: 1
+        chip_port_id: 31 #q1 flux
+        output_i: 1
+        output_q: 0
+        gain_i: 1
+        gain_q: 1
+        offset_i: 0
+        offset_q: 0
+        num_bins: 1
+        intermediate_frequency: 0.
+        gain_imbalance: 0.5
+        phase_imbalance: 0
+        hardware_modulation: true
+      - identifier: 2
+        chip_port_id: 33 #q3 flux
+        output_i: 2
+        output_q: 3
+        gain_i: 1
+        gain_q: 1
+        offset_i: 0
+        offset_q: 0
+        num_bins: 1
+        intermediate_frequency: 0.
+        gain_imbalance: 0.5
+        phase_imbalance: 0
+        hardware_modulation: true
+      - identifier: 3
+        chip_port_id: 34 #q4 flux
+        output_i: 3
+        output_q: 2
+        gain_i: 1
+        gain_q: 1
+        offset_i: 0
+        offset_q: 0
+        num_bins: 1
+        intermediate_frequency: 0.
+        gain_imbalance: 0.5
+        phase_imbalance: 0
+        hardware_modulation: true
+  - name: QCM
+    alias: QCM2
+    id_: 5
+    category: awg
+    firmware: 0.7.0
+    num_sequencers: 1
+    out_offsets: [0.0, 0.0, 0.0, 0.0]
+    awg_sequencers:
+      - identifier: 0
+        chip_port_id: 32 #q2 flux
+        output_i: 0
+        output_q: 1
+        gain_i: 1.
+        gain_q: 1.
+        offset_i: 0.
+        offset_q: 0.
+        num_bins: 1
+        intermediate_frequency: 10.e+06
+        gain_imbalance: .5
+        phase_imbalance: 0.
+        hardware_modulation: true
+  - name: rohde_schwarz
+    alias: rs_1
+    id_: 0
+    category: signal_generator
+    firmware: 4.2.76.0-4.30.046.295
+    power: 16
+    frequency: 8.0726e+09
+    rf_on: true
+  - name: mini_circuits
+    alias: attenuator
+    id_: 1
+    category: attenuator
+    firmware: None
+    attenuation: 32
+
+instrument_controllers:
+  - name: qblox_cluster
+    id_: 1
+    alias: cluster_controller_0
+    category: instrument_controller
+    subcategory: multiple_instruments
+    reference_clock: internal
+    connection:
+      name: tcp_ip
+      address: 192.168.1.20
+    modules:
+      - awg: QRM1
+        slot_id: 12
+      - awg: QCM-RF1
+        slot_id: 6
+      - awg: QCM-RF3
+        slot_id: 8
+      - awg: QCM-RF2
+        slot_id: 14
+      - awg: QCM1
+        slot_id: 14
+      - awg: QCM2
+        slot_id: 14
+  - name: rohde_schwarz
+    id_: 2
+    alias: rohde_schwarz_controller_0
+    category: instrument_controller
+    subcategory: single_instrument
+    reference_clock: internal
+    connection:
+      name: tcp_ip
+      address: 192.168.1.11
+    modules:
+      - signal_generator: rs_1
+        slot_id: 0
+  - name: mini_circuits
+    id_: 5
+    alias: attenuator_controller_0
+    category: instrument_controller
+    subcategory: single_instrument
+    connection:
+      name: tcp_ip
+      address: 192.168.1.69
+    modules:
+      - attenuator: attenuator
+        slot_id: 0

@@ -1,4 +1,7 @@
-"""__init__.py"""
+"""
+This is the top level module from which all basic functions and classes of
+Qililab can be directly imported.
+"""
 
 from .circuit import (
     R180,
@@ -6,7 +9,7 @@ from .circuit import (
     Circuit,
     CircuitTranspiler,
     CPhase,
-    DRAGPulse,
+    DragPulse,
     GaussianPulse,
     Measure,
     QiliQasmConverter,
@@ -21,9 +24,9 @@ from .execute import execute
 from .experiment import Experiment
 from .platform import build_platform, save_platform
 from .qprogram import QProgram
-from .result.results import Results
+from .result import Results
 from .transpiler import Drag, Park, translate_circuit
 from .typings import ExperimentOptions, ExperimentSettings, Parameter
 from .utils import Loop
 from .utils.load_data import load
-from .waveforms import Arbitrary, DragPulse, Gaussian, Square, Waveform
+from .waveforms import *

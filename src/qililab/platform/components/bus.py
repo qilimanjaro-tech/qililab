@@ -12,7 +12,9 @@ from qililab.utils import Factory
 
 
 class Bus:
-    """Bus class. Ideally a bus should contain a qubit control/readout and a signal generator, which are connected
+    """Bus class.
+
+    Ideally a bus should contain a qubit control/readout and a signal generator, which are connected
     through a mixer for up- or down-conversion. At the end of the bus there should be a qubit or a resonator object,
     which is connected to one or multiple qubits.
 
@@ -61,9 +63,10 @@ class Bus:
 
     @property
     def id_(self):
-        """Bus 'id_' property.
+        """ID of the Bus.
+
         Returns:
-            int: settings.id_.
+            int: ID of the Bus.
         """
         return self.settings.id_
 
@@ -147,12 +150,12 @@ class Bus:
         return iter(self.system_control)
 
     def to_dict(self):
-        """Return a dict representation of the SchemaSettings class."""
+        """Return a dict representation of the Bus class."""
         return {
             RUNCARD.ID: self.id_,
             RUNCARD.CATEGORY: self.category.value,
-            RUNCARD.SYSTEM_CONTROL: self.system_control.to_dict(),
             RUNCARD.ALIAS: self.alias,
+            RUNCARD.SYSTEM_CONTROL: self.system_control.to_dict(),
             BUS.PORT: self.port,
             RUNCARD.DISTORTIONS: [distortion.to_dict() for distortion in self.distortions],
             RUNCARD.DELAY: self.delay,
