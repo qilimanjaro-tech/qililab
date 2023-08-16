@@ -114,7 +114,7 @@ class Chip:
             ValueError: If no node is found.
 
         Returns:
-            Node: Node class.
+            Node | None: Node class.
         """
         for node in self.nodes:
             if node.alias == alias:

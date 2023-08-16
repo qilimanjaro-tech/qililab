@@ -150,7 +150,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """Find bus associated with the specified port.
 
         Args:
-            port (str): port index of the chip
+            port (str): The alias of the port defined in the chip.
 
         Returns:
             Bus | None: Returns a Bus object or None if none is found.
@@ -196,8 +196,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """Set parameter of a platform element.
 
         Args:
-            parameter (str): Name of the parameter to change.
-            value (float): New value.
+            parameter (Parameter): Name of the parameter to change.
+            value (float | str | bool): New value to set.
+            alias (str): Alias of the bus where the parameter is set.
+            channel_id (int, optional): ID of the channel we want to use to set the parameter. Defaults to None.
         """
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
         if alias == "platform" or regex_match is not None:

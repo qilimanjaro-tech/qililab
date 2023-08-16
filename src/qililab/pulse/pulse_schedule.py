@@ -20,7 +20,9 @@ class PulseSchedule:
         """Add pulse event.
 
         Args:
-            pulse (PulseEvent): PulseEvent object.
+            pulse_event (PulseEvent): PulseEvent object.
+            port (str): Alias of the port of the chip targeted by the pulse event.
+            port_delay (int): Delay (in ns) of the pulse event. This delay is added at the beginning of the pulse event.
         """
         pulse_event.start_time += port_delay
         for pulse_sequence in self.elements:

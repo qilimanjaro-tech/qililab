@@ -82,7 +82,7 @@ class TestPlatform:
         assert isinstance(element, SignalGenerator)
 
     def test_qubit_0_instance(self, platform: Platform):
-        """Test qubit 1 instance."""
+        """Test qubit 0 instance."""
         element = platform.get_element(alias="q0")
         assert isinstance(element, Qubit)
 

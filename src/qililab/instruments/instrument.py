@@ -27,8 +27,8 @@ class Instrument(BusElement, ABC):
         """Contains the settings of an instrument.
 
         Args:
+            alias (str): Alias of the instrument.
             firmware (str): Firmware version installed on the instrument.
-            channels (int | None): Number of channels supported or None otherwise.
         """
 
         alias: str

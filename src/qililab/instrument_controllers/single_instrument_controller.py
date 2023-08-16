@@ -6,7 +6,6 @@ class SingleInstrumentController(InstrumentController):
     """Controller device that only controls one single instrument.
 
     Args:
-        settings (SingleInstrumentControllerSettings): Settings of the single instrument controller.
         number_available_modules (int): Number of modules available in the Instrument Controller.
                                         In this case, there is only one instrument available.
     """

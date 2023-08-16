@@ -26,6 +26,7 @@ class InstrumentControllerSettings(Settings):
         connection (Connection): Connection class that represents the connection type of the Instrument Controller.
         modules: (list[InstrumentReference]): List of the Instrument References that links to the actual Instruments
                                                 to be managed by the Instrument Controller.
+        reset (bool, optional): Whether or not to reset the instrument after connecting to it. Defaults to True.
     """
 
     alias: str
