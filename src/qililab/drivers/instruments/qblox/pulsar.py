@@ -1,15 +1,17 @@
 """Driver for the Qblox Pulsar class."""
+from typing import Any
 from qblox_instruments.qcodes_drivers import Pulsar as QcodesPulsar
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 
 from qililab.drivers.instruments.instrument_factory import InstrumentDriverFactory
+from qililab.drivers.interfaces.base_instrument import BaseInstrument
 
 from .sequencer_qcm import SequencerQCM
 from .sequencer_qrm import SequencerQRM
 
 
 @InstrumentDriverFactory.register
-class Pulsar(QcodesPulsar):  # pylint: disable=abstract-method
+class Pulsar(QcodesPulsar, BaseInstrument):  # pylint: disable=abstract-method
     """Qililab's driver for QBlox-instruments Pulsar"""
 
     def __init__(self, name: str, address: str | None = None, **kwargs):
@@ -30,6 +32,11 @@ class Pulsar(QcodesPulsar):  # pylint: disable=abstract-method
         for seq_idx in range(6):
             seq = sequencer_class(parent=self, name=f"sequencer{seq_idx}", seq_idx=seq_idx)  # type: ignore
             self.add_submodule(f"sequencer{seq_idx}", seq)
+
+    @property
+    def params(self):
+        """return the parameters of the instrument"""
+        return self.parameters
 
     @property
     def alias(self):

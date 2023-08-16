@@ -4,11 +4,11 @@ from qcodes.instrument_drivers.Keithley._Keithley_2600 import Keithley2600 as QC
 from qcodes.instrument_drivers.Keithley._Keithley_2600 import Keithley2600Channel as QCodesKeithley2600Channel
 
 from qililab.drivers.instruments.instrument_factory import InstrumentDriverFactory
-from qililab.drivers.interfaces import CurrentSource, VoltageSource
+from qililab.drivers.interfaces import BaseInstrument, CurrentSource, VoltageSource
 
 
 @InstrumentDriverFactory.register
-class Keithley2600(QCodesKeithley2600):
+class Keithley2600(QCodesKeithley2600, BaseInstrument):
     """
     This is the driver for the Keithley_2600 Source-Meter series,tested with Keithley_2614B
 
@@ -30,6 +30,16 @@ class Keithley2600(QCodesKeithley2600):
             channel = Keithley2600Channel(self, name=ch_name, channel=ch_name)
             self.add_submodule(ch_name, channel)
             self.channels.append(channel)
+
+    @property
+    def params(self):
+        """return the parameters of the instrument"""
+        return self.parameters
+
+    @property
+    def alias(self):
+        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
+        return self.name
 
 
 class Keithley2600Channel(QCodesKeithley2600Channel, VoltageSource, CurrentSource):
