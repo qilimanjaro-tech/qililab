@@ -71,23 +71,10 @@ class LFilterCorrection(PulseDistortion):
         Returns:
             numpy.ndarray: Amplitude of the envelope for each time step.
         """
-        # Filtered signal, normalized with envelopes max heights (of the real parts)
-        # norm = np.amax(np.real(envelope)) * self.norm_factor
-        # corr_envelope = signal.lfilter(b=self.b, a=self.a, x=envelope)
-        # corr_norm = np.max(np.real(corr_envelope))
-
-        ### FIRST 'ANDREA's TRY FOR WORKING WITH NEGATIVES
         corr_envelope = signal.lfilter(b=self.b, a=self.a, x=envelope)
-        
-        if np.median(envelope) >0:
-            norm = np.max(np.real(envelope)) * self.norm_factor
-            corr_norm = np.max(np.real(corr_envelope))
-        if np.median(envelope) < 0:
-            norm = np.min(np.real(envelope)) * self.norm_factor
-            corr_norm = np.min(np.real(corr_envelope))
-        else:
-            norm = np.max(np.real(envelope)) * (self.norm_factor - 0.05) 
-            corr_norm = np.max(np.real(corr_envelope))
+
+        norm = np.max(np.abs(np.real(envelope)))
+        corr_norm = np.max(np.abs(np.real(corr_envelope)))
 
         return corr_envelope * norm / corr_norm
 
