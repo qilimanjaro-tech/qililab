@@ -4,7 +4,6 @@ import pytest
 from qililab.instruments import AWG
 from qililab.instruments.awg_settings import AWGSequencer
 from qililab.pulse import PulseBusSchedule
-from qililab.typings import Category
 
 
 class DummyAWG(AWG):
@@ -19,7 +18,7 @@ class DummyAWG(AWG):
     def run(self):  # pylint: disable=arguments-differ
         pass
 
-    def upload(self, port: int):
+    def upload(self, port: str):
         pass
 
 
@@ -28,14 +27,12 @@ def fixture_awg():
     """Fixture that returns an instance of a dummy AWG."""
     settings = {
         "alias": "QRM",
-        "id_": 0,
-        "category": "awg",
         "firmware": "0.7.0",
         "num_sequencers": 2,
         "awg_sequencers": [
             {
                 "identifier": 0,
-                "chip_port_id": 100,
+                "chip_port_id": "feedline_input",
                 "output_i": 0,
                 "output_q": 1,
                 "intermediate_frequency": 20000000,
@@ -49,7 +46,7 @@ def fixture_awg():
             },
             {
                 "identifier": 1,
-                "chip_port_id": 101,
+                "chip_port_id": "feedline_output",
                 "output_i": 2,
                 "output_q": 3,
                 "intermediate_frequency": 20000000,
@@ -73,15 +70,12 @@ class TestInitialization:
         """Test the initialization of the AWG class."""
         assert isinstance(awg.settings, AWG.AWGSettings)
         assert awg.settings.alias == "QRM"
-        assert awg.settings.id_ == 0
-        assert isinstance(awg.settings.category, Category)
-        assert awg.settings.category == Category.AWG
         assert awg.settings.firmware == "0.7.0"
         assert awg.settings.num_sequencers == 2
         for idx, sequencer in enumerate(awg.settings.awg_sequencers):
             assert isinstance(sequencer, AWGSequencer)
             assert sequencer.identifier == idx
-            assert sequencer.chip_port_id == 100 + idx
+            assert sequencer.chip_port_id in {"feedline_input", "feedline_output"}
             assert sequencer.output_i == 0 + 2 * idx
             assert sequencer.output_q == 1 + 2 * idx
             assert sequencer.intermediate_frequency == 20000000

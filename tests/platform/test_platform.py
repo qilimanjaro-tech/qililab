@@ -91,8 +91,8 @@ class TestPlatform:
         assert isinstance(element, SignalGenerator)
 
     def test_qubit_0_instance(self, platform: Platform):
-        """Test qubit 1 instance."""
-        element = platform.get_element(alias="qubit")
+        """Test qubit 0 instance."""
+        element = platform.get_element(alias="q0")
         assert isinstance(element, Qubit)
 
     def test_bus_0_awg_instance(self, platform: Platform):
@@ -198,8 +198,8 @@ class TestMethods:
             amplitude=1, phase=0.5, duration=200, frequency=1e9, pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
         )
         readout_pulse = Pulse(amplitude=1, phase=0.5, duration=1500, frequency=1e9, pulse_shape=Rectangular())
-        pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), port=0, port_delay=0)
-        pulse_schedule.add_event(PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), port=1, port_delay=0)
+        pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), port="q0", port_delay=0)
+        pulse_schedule.add_event(PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), port="q0", port_delay=0)
 
         self._compile_and_assert(platform, pulse_schedule, 2)
 

@@ -20,7 +20,7 @@ from qililab.pulse import PulseSchedule
 from qililab.result import Result
 from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
-from qililab.typings.enums import Category, Line, Parameter
+from qililab.typings.enums import Line, Parameter
 from qililab.typings.yaml_type import yaml
 
 from .components import Bus, Buses
@@ -196,7 +196,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             tuple[object, list | None]: Element class together with the index of the bus where the element is located.
         """
         if alias is not None:
-            if alias == Category.PLATFORM.value:
+            if alias == "platform":
                 return self.gates_settings
             regex_match = re.search(GATE_ALIAS_REGEX, alias.split("_")[0])
             if regex_match is not None:
@@ -238,7 +238,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         return flux_bus, control_bus, readout_bus
 
     def get_bus_by_alias(self, alias: str | None = None):
-        """Get bus given an alias or id and category"""
+        """Get bus given an alias."""
         return next((bus for bus in self.buses if bus.alias == alias), None)
 
     def set_parameter(
@@ -251,13 +251,13 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """Set parameter of a platform element.
 
         Args:
-            category (str): Category of the element.
-            id (int): ID of the element.
-            parameter (str): Name of the parameter to change.
-            value (float): New value.
+            parameter (Parameter): Name of the parameter to change.
+            value (float | str | bool): New value to set.
+            alias (str): Alias of the bus where the parameter is set.
+            channel_id (int, optional): ID of the channel we want to use to set the parameter. Defaults to None.
         """
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
-        if alias == Category.PLATFORM.value or regex_match is not None:
+        if alias == "platform" or regex_match is not None:
             self.gates_settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             return
         element = self.get_element(alias=alias)

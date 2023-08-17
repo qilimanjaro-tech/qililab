@@ -37,7 +37,7 @@ platform_gates = {
     ],
     "Drag(0)": [
         {
-            "bus": "drive_line_q0_bus",
+            "bus": "drive_q0_bus",
             "pulse": {
                 "amplitude": 0.8,
                 "phase": 0,
@@ -50,7 +50,7 @@ platform_gates = {
     # random X schedule
     "X(0)": [
         {
-            "bus": "drive_line_q0_bus",
+            "bus": "drive_q0_bus",
             "pulse": {
                 "amplitude": 0.8,
                 "phase": 0,
@@ -60,7 +60,7 @@ platform_gates = {
             },
         },
         {
-            "bus": "flux_line_q0_bus",
+            "bus": "flux_q0_bus",
             "wait_time": 30,
             "pulse": {
                 "amplitude": 0.8,
@@ -71,7 +71,7 @@ platform_gates = {
             },
         },
         {
-            "bus": "drive_line_q0_bus",
+            "bus": "drive_q0_bus",
             "pulse": {
                 "amplitude": 0.8,
                 "phase": 0,
@@ -81,7 +81,7 @@ platform_gates = {
             },
         },
         {
-            "bus": "drive_line_q4_bus",
+            "bus": "drive_q4_bus",
             "pulse": {
                 "amplitude": 0.8,
                 "phase": 0,
@@ -141,7 +141,7 @@ platform_gates = {
     ],
     "CZ(2,3)": [
         {
-            "bus": "flux_line_q2_bus",
+            "bus": "flux_q2_bus",
             "wait_time": 10,
             "pulse": {
                 "amplitude": 0.7,
@@ -153,7 +153,7 @@ platform_gates = {
         },
         # park pulse
         {
-            "bus": "flux_line_q0_bus",
+            "bus": "flux_q0_bus",
             "pulse": {
                 "amplitude": 0.7,
                 "phase": 0,
@@ -166,7 +166,7 @@ platform_gates = {
     # test couplers
     "CZ(4, 0)": [
         {
-            "bus": "flux_line_c2_bus",
+            "bus": "flux_c2_bus",
             "wait_time": 10,
             "pulse": {
                 "amplitude": 0.7,
@@ -177,7 +177,7 @@ platform_gates = {
             },
         },
         {
-            "bus": "flux_line_q0_bus",
+            "bus": "flux_q0_bus",
             "pulse": {
                 "amplitude": 0.7,
                 "phase": 0,
@@ -204,133 +204,65 @@ def fixture_chip():
    0,6,3 1,3,6
     """
     settings = {
-        "id_": 0,
-        "category": "chip",
         "nodes": [
-            {"name": "port", "line": "feedline_input", "id_": 0, "nodes": [18, 19, 20, 21, 22]},
+            {
+                "name": "port",
+                "alias": "feedline_input",
+                "line": "feedline_input",
+                "nodes": ["resonator_q0", "resonator_q1", "resonator_q2", "resonator_q3", "resonator_q4"],
+            },
             {
                 "name": "qubit",
-                "alias": "qubit",
-                "id_": 3,
+                "alias": "q0",
                 "qubit_index": 0,
                 "frequency": 6e9,
-                "nodes": [4, 13, 8, 18],
+                "nodes": ["q2", "drive_q0", "flux_q0", "resonator_q0"],
             },
             {
                 "name": "qubit",
-                "alias": "qubit",
-                "id_": 4,
+                "alias": "q2",
                 "qubit_index": 2,
                 "frequency": 5e9,
-                "nodes": [3, 5, 6, 7, 15, 10, 20],
+                "nodes": ["q0", "q1", "q3", "q4", "drive_q2", "flux_q2", "resonator_q2"],
             },
             {
                 "name": "qubit",
-                "alias": "qubit",
-                "id_": 5,
-                "qubit_index": 3,
-                "frequency": 4e9,
-                "nodes": [4, 16, 11, 21],
-            },
-            {
-                "name": "qubit",
-                "alias": "qubit",
-                "id_": 6,
+                "alias": "q1",
                 "qubit_index": 1,
-                "frequency": 3e9,
-                "nodes": [4, 14, 9, 19],
+                "frequency": 4e9,
+                "nodes": ["q2", "drive_q1", "flux_q1", "resonator_q1"],
             },
             {
                 "name": "qubit",
-                "alias": "qubit",
-                "id_": 7,
+                "alias": "q3",
+                "qubit_index": 3,
+                "frequency": 3e9,
+                "nodes": ["q2", "drive_q3", "flux_q3", "resonator_q3"],
+            },
+            {
+                "name": "qubit",
+                "alias": "q4",
                 "qubit_index": 4,
                 "frequency": 4e9,
-                "nodes": [4, 17, 12, 22],
+                "nodes": ["q2", "drive_q4", "flux_q4", "resonator_q4"],
             },
-            {
-                "name": "port",
-                "line": "drive",
-                "id_": 8,
-                "alias": "drive_line_q0",
-                "nodes": [3],
-            },
-            {
-                "name": "port",
-                "line": "drive",
-                "id_": 9,
-                "alias": "drive_line_q1",
-                "nodes": [6],
-            },
-            {
-                "name": "port",
-                "line": "drive",
-                "id_": 10,
-                "alias": "drive_line_q2",
-                "nodes": [4],
-            },
-            {
-                "name": "port",
-                "line": "drive",
-                "id_": 11,
-                "alias": "drive_line_q3",
-                "nodes": [5],
-            },
-            {
-                "name": "port",
-                "line": "drive",
-                "id_": 12,
-                "alias": "drive_line_q4",
-                "nodes": [7],
-            },
-            {
-                "name": "port",
-                "line": "flux",
-                "id_": 13,
-                "alias": "flux_line_q0",
-                "nodes": [3],
-            },
-            {
-                "name": "port",
-                "line": "flux",
-                "id_": 14,
-                "alias": "flux_line_q1",
-                "nodes": [6],
-            },
-            {
-                "name": "port",
-                "line": "flux",
-                "id_": 15,
-                "alias": "flux_line_q2",
-                "nodes": [4],
-            },
-            {
-                "name": "port",
-                "line": "flux",
-                "id_": 16,
-                "alias": "flux_line_q3",
-                "nodes": [5],
-            },
-            {
-                "name": "port",
-                "line": "flux",
-                "id_": 17,
-                "alias": "flux_line_q4",
-                "nodes": [7],
-            },
-            {"name": "port", "line": "flux", "id_": 43, "alias": "flux_line_c2", "nodes": [44]},
-            {
-                "name": "coupler",
-                "alias": "coupler",
-                "id_": 44,
-                "frequency": 6e9,
-                "nodes": [43],
-            },
-            {"name": "resonator", "alias": "resonator", "id_": 18, "frequency": 8072600000, "nodes": [3, 0]},
-            {"name": "resonator", "alias": "resonator", "id_": 19, "frequency": 8072600000, "nodes": [4, 0]},
-            {"name": "resonator", "alias": "resonator", "id_": 20, "frequency": 8072600000, "nodes": [5, 0]},
-            {"name": "resonator", "alias": "resonator", "id_": 21, "frequency": 8072600000, "nodes": [6, 0]},
-            {"name": "resonator", "alias": "resonator", "id_": 22, "frequency": 8072600000, "nodes": [7, 0]},
+            {"name": "port", "line": "drive", "alias": "drive_q0", "nodes": ["q0"]},
+            {"name": "port", "line": "drive", "alias": "drive_q1", "nodes": ["q1"]},
+            {"name": "port", "line": "drive", "alias": "drive_q2", "nodes": ["q2"]},
+            {"name": "port", "line": "drive", "alias": "drive_q3", "nodes": ["q3"]},
+            {"name": "port", "line": "drive", "alias": "drive_q4", "nodes": ["q4"]},
+            {"name": "port", "line": "flux", "alias": "flux_q0", "nodes": ["q0"]},
+            {"name": "port", "line": "flux", "alias": "flux_q1", "nodes": ["q1"]},
+            {"name": "port", "line": "flux", "alias": "flux_q2", "nodes": ["q2"]},
+            {"name": "port", "line": "flux", "alias": "flux_q3", "nodes": ["q3"]},
+            {"name": "port", "line": "flux", "alias": "flux_q4", "nodes": ["q4"]},
+            {"name": "resonator", "alias": "resonator_q0", "frequency": 8072600000, "nodes": ["feedline_input", "q0"]},
+            {"name": "resonator", "alias": "resonator_q1", "frequency": 8072600000, "nodes": ["feedline_input", "q1"]},
+            {"name": "resonator", "alias": "resonator_q2", "frequency": 8072600000, "nodes": ["feedline_input", "q2"]},
+            {"name": "resonator", "alias": "resonator_q3", "frequency": 8072600000, "nodes": ["feedline_input", "q3"]},
+            {"name": "resonator", "alias": "resonator_q4", "frequency": 8072600000, "nodes": ["feedline_input", "q4"]},
+            {"name": "port", "alias": "flux_c2", "line": "flux", "nodes": ["coupler"]},
+            {"name": "coupler", "alias": "coupler", "frequency": 6e9, "nodes": ["flux_c2"]},
         ],
     }
     return Chip(**settings)
@@ -340,8 +272,6 @@ def fixture_chip():
 def fixture_platform(chip: Chip) -> Platform:
     """Fixture that returns an instance of a ``Runcard.GatesSettings`` class."""
     gates_settings = {
-        "id_": 0,
-        "category": "platform",
         "minimum_clock_time": 5,
         "delay_between_pulses": 0,
         "delay_before_readout": 0,
@@ -353,170 +283,122 @@ def fixture_platform(chip: Chip) -> Platform:
     }
     bus_settings = [
         {
-            "id_": 0,
-            "category": "bus",
             "alias": "feedline_bus",
             "system_control": {
-                "id_": 0,
                 "name": "readout_system_control",
-                "category": "system_control",
                 "instruments": ["QRM1", "rs_1"],
             },
-            "port": 0,
+            "port": "feedline_input",
             "distortions": [],
             "delay": 0,
         },
         {
-            "id_": 20,
-            "category": "bus",
-            "alias": "drive_line_q0_bus",
+            "alias": "drive_q0_bus",
             "system_control": {
-                "id_": 20,
                 "name": "system_control",
-                "category": "system_control",
                 "instruments": ["QCM-RF1"],
             },
-            "port": 8,
+            "port": "drive_q0",
             "distortions": [],
             "delay": 0,
         },
         {
-            "id_": 30,
-            "category": "bus",
-            "alias": "flux_line_q0_bus",
+            "alias": "flux_q0_bus",
             "system_control": {
-                "id_": 30,
                 "name": "system_control",
-                "category": "system_control",
                 "instruments": ["QCM1"],
             },
-            "port": 13,
+            "port": "flux_q0",
             "distortions": [],
             "delay": 0,
         },
         {
-            "id_": 21,
-            "category": "bus",
-            "alias": "drive_line_q1_bus",
+            "alias": "drive_q1_bus",
             "system_control": {
-                "id_": 21,
                 "name": "system_control",
-                "category": "system_control",
                 "instruments": ["QCM-RF1"],
             },
-            "port": 9,
+            "port": "drive_q1",
             "distortions": [],
             "delay": 0,
         },
         {
-            "id_": 31,
-            "category": "bus",
-            "alias": "flux_line_q1_bus",
+            "alias": "flux_q1_bus",
             "system_control": {
-                "id_": 31,
                 "name": "system_control",
-                "category": "system_control",
                 "instruments": ["QCM1"],
             },
-            "port": 14,
+            "port": "flux_q1",
             "distortions": [],
             "delay": 0,
         },
         {
-            "id_": 22,
-            "category": "bus",
-            "alias": "drive_line_q2_bus",
+            "alias": "drive_q2_bus",
             "system_control": {
-                "id_": 22,
                 "name": "system_control",
-                "category": "system_control",
                 "instruments": ["QCM-RF2"],
             },
-            "port": 10,
+            "port": "drive_q2",
             "distortions": [],
             "delay": 0,
         },
         {
-            "id_": 32,
-            "category": "bus",
-            "alias": "flux_line_q2_bus",
+            "alias": "flux_q2_bus",
             "system_control": {
-                "id_": 32,
                 "name": "system_control",
-                "category": "system_control",
                 "instruments": ["QCM2"],
             },
-            "port": 15,
+            "port": "flux_q2",
             "distortions": [],
             "delay": 0,
         },
         {
-            "id_": 42,
-            "category": "bus",
-            "alias": "flux_line_c2_bus",  # c2 coupler
+            "alias": "flux_c2_bus",  # c2 coupler
             "system_control": {
-                "id_": 42,
                 "name": "system_control",
-                "category": "system_control",
                 "instruments": ["QCM1"],
             },
-            "port": 43,
+            "port": "flux_c2",
             "distortions": [],
             "delay": 0,
         },
         {
-            "id_": 23,
-            "category": "bus",
-            "alias": "drive_line_q3_bus",
+            "alias": "drive_q3_bus",
             "system_control": {
-                "id_": 23,
                 "name": "system_control",
-                "category": "system_control",
                 "instruments": ["QCM-RF3"],
             },
-            "port": 11,
+            "port": "drive_q3",
             "distortions": [],
             "delay": 0,
         },
         {
-            "id_": 33,
-            "category": "bus",
-            "alias": "flux_line_q3_bus",
+            "alias": "flux_q3_bus",
             "system_control": {
-                "id_": 33,
                 "name": "system_control",
-                "category": "system_control",
                 "instruments": ["QCM1"],
             },
-            "port": 16,
+            "port": "flux_q3",
             "distortions": [],
             "delay": 0,
         },
         {
-            "id_": 24,
-            "category": "bus",
-            "alias": "drive_line_q4_bus",
+            "alias": "drive_q4_bus",
             "system_control": {
-                "id_": 24,
                 "name": "system_control",
-                "category": "system_control",
                 "instruments": ["QCM-RF3"],
             },
-            "port": 12,
+            "port": "drive_q4",
             "distortions": [],
             "delay": 0,
         },
         {
-            "id_": 34,
-            "category": "bus",
-            "alias": "flux_line_q4_bus",
+            "alias": "flux_q4_bus",
             "system_control": {
-                "id_": 34,
                 "name": "system_control",
-                "category": "system_control",
                 "instruments": ["QCM1"],
             },
-            "port": 17,
+            "port": "flux_q4",
             "distortions": [],
             "delay": 0,
         },
@@ -563,7 +445,7 @@ class TestTranslation:
             qubit=qubit,
         )
 
-    def get_bus_schedule(self, pulse_bus_schedule: dict, port: int) -> list[dict]:
+    def get_bus_schedule(self, pulse_bus_schedule: dict, port: str) -> list[dict]:
         """Helper function for bus schedule data"""
 
         return [
@@ -605,7 +487,7 @@ class TestTranslation:
         pulse_bus_schedule = {
             pulse_bus_schedule.port: pulse_bus_schedule.timeline for pulse_bus_schedule in pulse_schedule
         }
-        m_schedule = pulse_bus_schedule[0]  # port 0 is the readout
+        m_schedule = pulse_bus_schedule["feedline_input"]
 
         # check measurement gates
         assert len(m_schedule) == 5
@@ -630,7 +512,7 @@ class TestTranslation:
         assert m_schedule[-1] == m_pulse1
 
         # assert wait gate delayed drive pulse at port 8 for 10ns (time should be 930+200+10=1140)
-        assert pulse_bus_schedule[8][-1].start_time == 1140
+        assert pulse_bus_schedule["drive_q0"][-1].start_time == 1140
 
         # test actions for control gates
 
@@ -758,28 +640,30 @@ class TestTranslation:
             }
         ]
 
-        # port 8 (drive q0)
-        port_8 = self.get_bus_schedule(pulse_bus_schedule, 8)
-        assert len(port_8) == len(drive_q0)
-        assert all(i == k for i, k in zip(port_8, drive_q0))
-        # port 13 (flux q0)
-        port_13 = self.get_bus_schedule(pulse_bus_schedule, 13)
-        assert len(port_13) == len(flux_q0)
-        assert all(i == k for i, k in zip(port_13, flux_q0))
-        # port 12 (drive 14)
-        port_12 = self.get_bus_schedule(pulse_bus_schedule, 12)
-        assert len(port_12) == len(drive_q4)
-        assert all(i == k for i, k in zip(port_12, drive_q4))
+        # drive q0
+        transpiled_drive_q0 = self.get_bus_schedule(pulse_bus_schedule, "drive_q0")
+        assert len(transpiled_drive_q0) == len(drive_q0)
+        assert all(i == k for i, k in zip(transpiled_drive_q0, drive_q0))
 
-        # port 15 (flux q2)
-        port_15 = self.get_bus_schedule(pulse_bus_schedule, 15)
-        assert len(port_15) == len(flux_q2)
-        assert all(i == k for i, k in zip(port_15, flux_q2))
+        # flux q0
+        transpiled_flux_q0 = self.get_bus_schedule(pulse_bus_schedule, "flux_q0")
+        assert len(transpiled_flux_q0) == len(flux_q0)
+        assert all(i == k for i, k in zip(transpiled_flux_q0, flux_q0))
 
-        # port 43 (flux c2)
-        port_43 = self.get_bus_schedule(pulse_bus_schedule, 43)
-        assert len(port_43) == len(flux_c2)
-        assert all(i == k for i, k in zip(port_43, flux_c2))
+        # drive q4
+        transpiled_drive_q4 = self.get_bus_schedule(pulse_bus_schedule, "drive_q4")
+        assert len(transpiled_drive_q4) == len(drive_q4)
+        assert all(i == k for i, k in zip(transpiled_drive_q4, drive_q4))
+
+        # flux q2
+        transpiled_flux_q2 = self.get_bus_schedule(pulse_bus_schedule, "flux_q2")
+        assert len(transpiled_flux_q2) == len(flux_q2)
+        assert all(i == k for i, k in zip(transpiled_flux_q2, flux_q2))
+
+        # flux c2
+        transpiled_flux_c2 = self.get_bus_schedule(pulse_bus_schedule, "flux_c2")
+        assert len(transpiled_flux_c2) == len(flux_c2)
+        assert all(i == k for i, k in zip(transpiled_flux_c2, flux_c2))
 
     def test_normalize_angle(self, platform):
         """Test that the angle is normalized properly for drag pulses"""

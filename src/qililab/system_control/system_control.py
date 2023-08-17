@@ -8,21 +8,21 @@ from typing import get_type_hints
 from qililab.constants import RUNCARD
 from qililab.instruments import AWG, Instrument, Instruments
 from qililab.instruments.instrument import ParameterNotFound
-from qililab.platform.components.bus_element import BusElement
 from qililab.pulse import PulseBusSchedule
-from qililab.settings import DDBBElement
+from qililab.settings import Settings
+from qililab.typings import FactoryElement
 from qililab.typings.enums import Parameter, SystemControlName
 from qililab.utils import Factory
 
 
 @Factory.register
-class SystemControl(BusElement, ABC):
+class SystemControl(FactoryElement, ABC):
     """SystemControl class."""
 
     name = SystemControlName.SYSTEM_CONTROL
 
     @dataclass(kw_only=True)
-    class SystemControlSettings(DDBBElement):
+    class SystemControlSettings(Settings):
         """SystemControlSettings class."""
 
         instruments: list[Instrument]
@@ -58,32 +58,25 @@ class SystemControl(BusElement, ABC):
                     repetition_duration=repetition_duration,
                     num_bins=num_bins,
                 )
-        raise AttributeError(
-            f"The system control with alias {self.settings.alias} doesn't have any AWG to compile the given pulse "
-            "sequence."
-        )
+        raise AttributeError("The system control doesn't have any AWG to compile the given pulse sequence.")
 
-    def upload(self, port: int):
+    def upload(self, port: str):
         """Uploads any previously compiled program into the instrument."""
         for instrument in self.instruments:
             if isinstance(instrument, AWG):
                 instrument.upload(port=port)
                 return
 
-        raise AttributeError(
-            f"The system control with alias {self.settings.alias} doesn't have any AWG to upload a program."
-        )
+        raise AttributeError("The system control doesn't have any AWG to upload a program.")
 
-    def run(self, port: int) -> None:
+    def run(self, port: str) -> None:
         """Runs any previously uploaded program into the instrument."""
         for instrument in self.instruments:
             if isinstance(instrument, AWG):
                 instrument.run(port=port)
                 return
 
-        raise AttributeError(
-            f"The system control with alias {self.settings.alias} doesn't have any AWG to run a program."
-        )
+        raise AttributeError("The system control doesn't have any AWG to run a program.")
 
     def __str__(self):
         """String representation of a SystemControl class."""
@@ -95,30 +88,7 @@ class SystemControl(BusElement, ABC):
 
     def to_dict(self):
         """Return a dict representation of a SystemControl class."""
-        return {
-            RUNCARD.ID: self.id_,
-            RUNCARD.NAME: self.name.value,
-            RUNCARD.CATEGORY: self.settings.category.value,
-            RUNCARD.INSTRUMENTS: [inst.alias for inst in self.instruments],
-        }
-
-    @property
-    def id_(self):
-        """ID of the system control.
-
-        Returns:
-            int: ID of the system control.
-        """
-        return self.settings.id_
-
-    @property
-    def category(self):
-        """SystemControl 'category' property.
-
-        Returns:
-            str: settings.category.
-        """
-        return self.settings.category
+        return {RUNCARD.NAME: self.name.value, RUNCARD.INSTRUMENTS: [inst.alias for inst in self.instruments]}
 
     @property
     def instruments(self) -> list[Instrument]:

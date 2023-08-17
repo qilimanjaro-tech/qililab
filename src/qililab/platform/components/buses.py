@@ -22,7 +22,7 @@ class Buses:
             bus (Bus): Bus object to append."""
         self.elements.append(bus)
 
-    def get(self, port: int):
+    def get(self, port: str):
         """Get bus connected to the specified port.
 
         Args:

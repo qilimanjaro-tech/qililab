@@ -3,24 +3,13 @@ from dataclasses import dataclass
 from types import NoneType
 from typing import Any
 
-from qililab.typings import Category, Parameter
+from qililab.typings import Parameter
 from qililab.utils.castings import cast_enum_fields
 
 
 @dataclass(kw_only=True)
-class DDBBElement:
-    """Settings class.
-
-    Args:
-        id_ (str): ID of the settings.
-        category (str): General name of the settings category. Options are "platform", "awg",
-        "signal_generator", "qubit", "resonator", "mixer" and "bus".
-        alias (str): Unique name identifying the element.
-    """
-
-    id_: int
-    category: Category
-    alias: str | None = None
+class Settings:
+    """Settings class."""
 
     def __post_init__(self):
         """Cast all enum attributes to its corresponding Enum class."""
