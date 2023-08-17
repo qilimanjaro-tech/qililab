@@ -75,16 +75,16 @@ class TestExecutionBuilder:
             bus = platform.buses.get(pulse_bus_schedule.port)
             platform_bus_executions.append(BusExecution(bus=bus, pulse_bus_schedules=[pulse_bus_schedule]))
 
-        expected = ExecutionManager(buses=platform_bus_executions, num_schedules=1)
         execution_manager = EXECUTION_BUILDER.build(platform=platform, pulse_schedules=[pulse_schedule])
 
-        assert execution_manager == expected
+        assert execution_manager.num_schedules == 1
+        assert execution_manager.buses == platform_bus_executions
 
     def test_build_method_with_wrong_pulse_bus_schedule(
         self, platform: Platform, pulse_schedule: PulseSchedule, pulse_event: PulseEvent
     ):
         """Test build method with wrong pulse sequence."""
-        test_port = 1234
+        test_port = "qubit_1000"
         delay = 0
         pulse_schedule.add_event(pulse_event=pulse_event, port=test_port, port_delay=delay)
         with pytest.raises(
@@ -99,12 +99,12 @@ class TestExecutionBuilder:
         platform_bus_executions = [
             BusExecution(bus=bus, pulse_bus_schedules=[]) for bus in platform.buses if bus.alias in loops_alias
         ]
-        expected = ExecutionManager(buses=platform_bus_executions, num_schedules=0)
 
         with catch_warnings(record=True) as w:
             execution_manager = EXECUTION_BUILDER.build_from_loops(platform=platform, loops=loops)
             assert len(w) == 1  # One warning is always thrown at the begining
-            assert execution_manager == expected
+            assert execution_manager.num_schedules == 0
+            assert execution_manager.buses == platform_bus_executions
 
     def test_build_from_loops_method_nested_loops(self, platform: Platform, nested_loops: list[Loop]):
         """Test build_from_loops method"""
@@ -115,12 +115,12 @@ class TestExecutionBuilder:
         platform_bus_executions = [
             BusExecution(bus=bus, pulse_bus_schedules=[]) for bus in platform.buses if bus.alias in loops_alias
         ]
-        expected = ExecutionManager(buses=platform_bus_executions, num_schedules=0)
 
         with catch_warnings(record=True) as w:
             execution_manager = EXECUTION_BUILDER.build_from_loops(platform=platform, loops=nested_loops)
             assert len(w) == 1  # One warning is always thrown at the begining
-            assert execution_manager == expected
+            assert execution_manager.num_schedules == 0
+            assert execution_manager.buses == platform_bus_executions
 
     def test_build_from_loops_method_repeated_alias(self, platform: Platform, loops: list[Loop]):
         """Test build_from_loops method when two loops have the same alias"""
@@ -128,13 +128,13 @@ class TestExecutionBuilder:
         platform_bus_executions = [
             BusExecution(bus=bus, pulse_bus_schedules=[]) for bus in platform.buses if bus.alias in loops_alias
         ]
-        expected = ExecutionManager(buses=platform_bus_executions, num_schedules=0)
 
         loops.append(loops[-1])  # Repeat last alias to check for warning
         with catch_warnings(record=True) as w:
             execution_manager = EXECUTION_BUILDER.build_from_loops(platform=platform, loops=loops)
             assert len(w) == 2  # Two warnings should be thrown: Beggining and repeated alias
-            assert execution_manager == expected
+            assert execution_manager.num_schedules == 0
+            assert execution_manager.buses == platform_bus_executions
 
     def test_build_method_from_loops_with_wrong_loop_alias(self, platform: Platform, loops: list[Loop]):
         """Test build_from_loops method raises an exception with a loop whose alias does not match any bus alias"""
