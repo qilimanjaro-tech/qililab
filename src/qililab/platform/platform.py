@@ -17,7 +17,7 @@ from qililab.instruments.utils import InstrumentFactory
 from qililab.platform.components import Bus, Buses
 from qililab.platform.components.bus_element import dict_factory
 from qililab.settings import Runcard
-from qililab.typings.enums import Category, Line, Parameter
+from qililab.typings.enums import Line, Parameter
 from qililab.typings.yaml_type import yaml
 
 
@@ -127,14 +127,14 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             tuple[object, list | None]: Element class together with the index of the bus where the element is located.
         """
         if alias is not None:
-            if alias == Category.PLATFORM.value:
+            if alias == "platform":
                 return self.gates_settings
             regex_match = re.search(GATE_ALIAS_REGEX, alias.split("_")[0])
             if regex_match is not None:
                 name = regex_match["gate"]
                 qubits_str = regex_match["qubits"]
                 qubits = ast.literal_eval(qubits_str)
-                if f"{name}({qubits_str})" in self.gate_names:
+                if f"{name}({qubits_str})" in self.gates_settings.gate_names:
                     return self.gates_settings.get_gate(name=name, qubits=qubits)
 
         element = self.instruments.get_instrument(alias=alias)
@@ -146,11 +146,11 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             element = self.chip.get_node_from_alias(alias=alias)
         return element
 
-    def get_bus(self, port: int) -> tuple[int, Bus] | tuple[list, None]:
+    def get_bus(self, port: str) -> tuple[int, Bus] | tuple[list, None]:
         """Find bus associated with the specified port.
 
         Args:
-            port (int): port index of the chip
+            port (str): The alias of the port defined in the chip.
 
         Returns:
             Bus | None: Returns a Bus object or None if none is found.
@@ -183,7 +183,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         return flux_bus, control_bus, readout_bus
 
     def get_bus_by_alias(self, alias: str | None = None):
-        """Get bus given an alias or id and category"""
+        """Get bus given an alias."""
         return next((bus for bus in self.buses if bus.alias == alias), None)
 
     def set_parameter(
@@ -196,13 +196,13 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """Set parameter of a platform element.
 
         Args:
-            category (str): Category of the element.
-            id (int): ID of the element.
-            parameter (str): Name of the parameter to change.
-            value (float): New value.
+            parameter (Parameter): Name of the parameter to change.
+            value (float | str | bool): New value to set.
+            alias (str): Alias of the bus where the parameter is set.
+            channel_id (int, optional): ID of the channel we want to use to set the parameter. Defaults to None.
         """
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
-        if alias == Category.PLATFORM.value or regex_match is not None:
+        if alias == "platform" or regex_match is not None:
             self.gates_settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             return
         element = self.get_element(alias=alias)
@@ -242,42 +242,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 )
             )
         return instrument_controllers
-
-    @property
-    def id_(self):
-        """ID of the Platform.
-
-        Returns:
-            int: ID of the Platform.
-        """
-        return self.gates_settings.id_
-
-    @property
-    def category(self):
-        """Platform 'category' property.
-
-        Returns:
-            str: settings.category.
-        """
-        return self.gates_settings.category
-
-    @property
-    def num_qubits(self):
-        """Platform 'num_qubits' property.
-
-        Returns:
-            int: Number of different qubits that the platform contains.
-        """
-        return self.chip.num_qubits
-
-    @property
-    def gate_names(self):
-        """Platform 'gate_names' property.
-
-        Returns:
-            list[str]: List of the names of all the defined gates.
-        """
-        return self.gates_settings.gate_names
 
     def to_dict(self):
         """Return all platform information as a dictionary."""

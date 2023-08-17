@@ -7,7 +7,7 @@ from typing import Callable, get_type_hints
 from qililab.config import logger
 from qililab.platform.components.bus_element import BusElement
 from qililab.result import Result
-from qililab.settings import DDBBElement
+from qililab.settings import Settings
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.typings.instruments.device import Device
 
@@ -23,14 +23,15 @@ class Instrument(BusElement, ABC):
     name: InstrumentName
 
     @dataclass
-    class InstrumentSettings(DDBBElement):
+    class InstrumentSettings(Settings):
         """Contains the settings of an instrument.
 
         Args:
+            alias (str): Alias of the instrument.
             firmware (str): Firmware version installed on the instrument.
-            channels (int | None): Number of channels supported or None otherwise.
         """
 
+        alias: str
         firmware: str
 
     settings: InstrumentSettings  # a subtype of settings must be specified by the subclass
@@ -178,15 +179,6 @@ class Instrument(BusElement, ABC):
         """Turn off an instrument."""
 
     @property
-    def id_(self):
-        """ID of the instrument.
-
-        Returns:
-            int: ID of the instrument.
-        """
-        return self.settings.id_
-
-    @property
     def alias(self):
         """Instrument 'alias' property.
 
@@ -194,15 +186,6 @@ class Instrument(BusElement, ABC):
             str: settings.alias.
         """
         return self.settings.alias
-
-    @property
-    def category(self):
-        """Instrument 'category' property.
-
-        Returns:
-            Category: settings.category.
-        """
-        return self.settings.category
 
     @property
     def firmware(self):
@@ -215,7 +198,7 @@ class Instrument(BusElement, ABC):
 
     def __str__(self):
         """String representation of an instrument."""
-        return f"{self.alias}" if self.alias is not None else f"{self.category}_{self.id_}"
+        return f"{self.alias}"
 
     def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Sets the parameter of a specific instrument.

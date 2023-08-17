@@ -1,4 +1,5 @@
 """Tests for the Platform class."""
+import copy
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -16,7 +17,7 @@ from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName
 from qililab.typings.yaml_type import yaml
 from tests.data import Galadriel
-from tests.test_utils import platform_db, platform_yaml
+from tests.test_utils import platform_db
 
 
 @pytest.mark.parametrize("runcard", [Runcard(**Galadriel.runcard)])
@@ -41,21 +42,13 @@ class TestPlatformInitialization:
         assert platform._connected_to_instruments is False
 
 
-@pytest.mark.parametrize("platform", [platform_db(runcard=Galadriel.runcard), platform_yaml(runcard=Galadriel.runcard)])
+@pytest.fixture(name="platform")
+def fixture_platform():
+    return copy.deepcopy(platform_db(Galadriel.runcard))
+
+
 class TestPlatform:
     """Unit tests checking the Platform class."""
-
-    def test_id_property(self, platform: Platform):
-        """Test id property."""
-        assert platform.id_ == platform.gates_settings.id_
-
-    def test_category_property(self, platform: Platform):
-        """Test category property."""
-        assert platform.category == platform.gates_settings.category
-
-    def test_num_qubits_property(self, platform: Platform):
-        """Test num_qubits property."""
-        assert platform.num_qubits == platform.chip.num_qubits
 
     def test_platform_name(self, platform: Platform):
         """Test platform name."""
@@ -89,8 +82,8 @@ class TestPlatform:
         assert isinstance(element, SignalGenerator)
 
     def test_qubit_0_instance(self, platform: Platform):
-        """Test qubit 1 instance."""
-        element = platform.get_element(alias="qubit")
+        """Test qubit 0 instance."""
+        element = platform.get_element(alias="q0")
         assert isinstance(element, Qubit)
 
     def test_bus_0_awg_instance(self, platform: Platform):

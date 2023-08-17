@@ -21,9 +21,7 @@ class QbloxPulsarController(SingleInstrumentController, QbloxController):
     device: Pulsar
 
     @dataclass
-    class QbloxPulsarControllerSettings(
-        SingleInstrumentController.SingleInstrumentControllerSettings, QbloxController.QbloxControllerSettings
-    ):
+    class QbloxPulsarControllerSettings(QbloxController.QbloxControllerSettings):
         """Contains the settings of a specific Qblox Pulsar Controller."""
 
         def __post_init__(self):
@@ -34,7 +32,7 @@ class QbloxPulsarController(SingleInstrumentController, QbloxController):
 
     def _initialize_device(self):
         """Initialize device controller."""
-        self.device = Pulsar(name=f"{self.name.value}_{self.id_}", identifier=self.address)
+        self.device = Pulsar(name=f"{self.name.value}_{self.alias}", identifier=self.address)
 
     @QbloxController.CheckConnected
     def _set_reference_source(self):

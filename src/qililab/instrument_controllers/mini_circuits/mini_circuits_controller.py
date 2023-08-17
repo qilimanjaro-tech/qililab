@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from typing import Sequence
 
+from qililab.instrument_controllers.instrument_controller import InstrumentControllerSettings
 from qililab.instrument_controllers.single_instrument_controller import SingleInstrumentController
 from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instruments.mini_circuits.attenuator import Attenuator
@@ -24,7 +25,7 @@ class MiniCircuitsController(SingleInstrumentController):
     modules: Sequence[Attenuator]
 
     @dataclass
-    class MiniCircuitsControllerSettings(SingleInstrumentController.SingleInstrumentControllerSettings):
+    class MiniCircuitsControllerSettings(InstrumentControllerSettings):
         """Contains the settings of a specific MiniCircuits Controller."""
 
         def __post_init__(self):
@@ -36,7 +37,7 @@ class MiniCircuitsController(SingleInstrumentController):
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
         self.device = MiniCircuitsDriver(
-            name=f"{self.name.value}_{self.id_}",
+            name=f"{self.name.value}_{self.alias}",
             address=self.address,
         )
 

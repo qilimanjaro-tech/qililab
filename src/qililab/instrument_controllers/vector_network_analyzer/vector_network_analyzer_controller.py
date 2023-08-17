@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 
 from qililab.constants import DEFAULT_TIMEOUT
+from qililab.instrument_controllers.instrument_controller import InstrumentControllerSettings
 from qililab.instrument_controllers.single_instrument_controller import SingleInstrumentController
 from qililab.typings.enums import ConnectionName
 from qililab.typings.instruments.vector_network_analyzer import VectorNetworkAnalyzerDriver
@@ -15,7 +16,7 @@ class VectorNetworkAnalyzerController(SingleInstrumentController):
     """
 
     @dataclass
-    class VectorNetworkAnalyzerControllerSettings(SingleInstrumentController.SingleInstrumentControllerSettings):
+    class VectorNetworkAnalyzerControllerSettings(InstrumentControllerSettings):
         """Contains the settings of a specific VectorNetworkAnalyzer Controller."""
 
         timeout: float = DEFAULT_TIMEOUT

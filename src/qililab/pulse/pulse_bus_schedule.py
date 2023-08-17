@@ -16,7 +16,7 @@ from qililab.utils import Waveforms
 class PulseBusSchedule:
     """Container of Pulse objects addressed to the same bus."""
 
-    port: int  # FIXME: we may have one port being used by more than one bus. Use virtual ports instead
+    port: str  # FIXME: we may have one port being used by more than one bus. Use virtual ports instead
     timeline: list[PulseEvent] = field(default_factory=list)
     _pulses: set[Pulse] = field(init=False, default_factory=set)
 

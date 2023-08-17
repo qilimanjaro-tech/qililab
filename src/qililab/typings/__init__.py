@@ -2,7 +2,6 @@
 from .enums import (
     AcquireTriggerMode,
     AcquisitionName,
-    Category,
     ConnectionName,
     GateName,
     Instrument,
