@@ -41,6 +41,11 @@ class SequencerQCM(Sequencer, AWG):
         """return the parameters of the instrument"""
         return self.parameters
 
+    @property
+    def alias(self):
+        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
+        return self.name
+
     def set(self, param_name: str, value: Any):
         """Sets a parameter value checking if is an output mapping.
 
