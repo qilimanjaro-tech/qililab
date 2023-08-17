@@ -21,10 +21,12 @@ class MockInstrument(DummyInstrument):  # pylint: disable=abstract-method
             vals=vals.Numbers(0, 20e9),
         )
 
+
 @pytest.fixture(name="era_synth_plus")
 def fixture_era_synth_plus() -> ERASynthPlus:
     """Return ERASynthPlus instance."""
     return ERASynthPlus(name="dummy_ERASynthPlus", address="none")
+
 
 class TestERASynthPlus:
     """Unit tests for the ERASynthPlus driver. These tests mock the qcodes class to be able to instantiate the
