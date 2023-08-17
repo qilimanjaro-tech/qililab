@@ -294,7 +294,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 - Scope acquisition is enabled: An array with dimension `(N, 2)` which contain the scope data for
                     path0 (I) and path1 (Q). N corresponds to the length of the scope measured.
 
-                - Scope acquisition disabled: An array with dimension `(#sequencers, #bins, 2)
+                - Scope acquisition disabled: An array with dimension `(#sequencers, #bins, 2)`.
         """
         # Compile pulse schedule
         self.compile(program, num_avg, repetition_duration, num_bins)
