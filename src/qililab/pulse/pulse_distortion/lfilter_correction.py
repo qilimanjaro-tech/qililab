@@ -72,12 +72,43 @@ class LFilterCorrection(PulseDistortion):
             numpy.ndarray: Amplitude of the envelope for each time step.
         """
         # Filtered signal, normalized with envelopes max heights (of the real parts)
-        norm = np.amax(np.real(envelope)) * self.norm_factor
         corr_envelope = signal.lfilter(b=self.b, a=self.a, x=envelope)
-        corr_norm = np.max(np.real(corr_envelope))
-        corr_envelope = corr_envelope * norm / corr_norm
 
-        return corr_envelope
+        #### 0th try, first implementation:
+        # norm = np.amax(np.real(envelope)) * self.norm_factor
+        # corr_norm = np.max(np.real(corr_envelope))
+
+        #### FIRST 'ANDREA's TRY FOR WORKING WITH NEGATIVES
+        # if np.median(envelope) > 0:
+        #     norm = np.max(np.real(envelope)) * self.norm_factor
+        #     corr_norm = np.max(np.real(corr_envelope))
+        # if np.median(envelope) < 0:
+        #     norm = np.min(np.real(envelope)) * self.norm_factor
+        #     corr_norm = np.min(np.real(corr_envelope))
+        # else:
+        #     norm = np.max(np.real(envelope)) * (self.norm_factor - 0.05)
+        #     corr_norm = np.max(np.real(corr_envelope))
+
+        #### SECOND TRY
+        # if np.max(np.real(envelope)) > 0 and np.min(np.real(envelope)) >= 0:
+        #     norm = np.abs(np.max(np.real(envelope))) * self.norm_factor
+        #     corr_norm = np.abs(np.max(np.real(corr_envelope)))
+        # elif np.max(np.real(envelope)) <= 0 and np.min(np.real(envelope)) < 0:
+        #     norm = np.abs(np.min(np.real(envelope))) * self.norm_factor
+        #     corr_norm = np.abs(np.min(np.real(corr_envelope)))
+        # else:
+        #     if np.abs(np.max(np.real(envelope))) > np.abs(np.min(np.real(envelope))):
+        #         norm = np.abs(np.max(np.real(envelope))) * self.norm_factor
+        #         corr_norm = np.abs(np.max(np.real(corr_envelope)))
+        #     elif np.abs(np.max(np.real(envelope))) < np.abs(np.min(np.real(envelope))):
+        #         norm = np.abs(np.min(np.real(envelope))) * self.norm_factor
+        #         corr_norm = np.abs(np.min(np.real(corr_envelope)))
+
+        ### THIRD TRY
+        norm = np.max([np.abs(np.max(np.real(envelope))), np.abs(np.min(np.real(envelope)))])
+        corr_norm = np.max([np.abs(np.max(np.real(corr_envelope))), np.abs(np.min(np.real(corr_envelope)))])
+
+        return corr_envelope * (norm / corr_norm) * self.norm_factor
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "LFilterCorrection":
