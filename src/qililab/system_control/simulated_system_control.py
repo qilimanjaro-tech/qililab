@@ -125,4 +125,3 @@ class SimulatedSystemControl(ReadoutSystemControl):
         Args:
             port (str): Port of the chip.
         """
-        pass
