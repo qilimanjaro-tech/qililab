@@ -247,12 +247,43 @@ This document contains the changes of the current release.
 - Added support for `Parameter.Gate_Parameter` in `experiment.set_parameter()` method. In this case, alias is a, convertable to integer, string that denotes the index of the parameter to change, as returned by `circuit.get_parameters()` method.
   [#404](https://github.com/qilimanjaro-tech/qililab/pull/404)
 
+- The `Chip` class now uses the `alias` of each node to define node connections.
+  [#494](https://github.com/qilimanjaro-tech/qililab/pull/494)
+
+  Before:
+
+  ```yaml
+  chip:
+  nodes:
+    - name: qubit
+      alias: qubit_0
+      id_: 0
+      qubit_index: 0
+      frequency: 4.92e+09
+      nodes: [2, 10, 20, 30]
+  ```
+
+  Now:
+
+  ```yaml
+  chip:
+  nodes:
+    - name: qubit
+      alias: qubit_0
+      qubit_index: 0
+      frequency: 4.92e+09
+      nodes: [qubit_2, resonator_q0, drive_line_q0, flux_line_q0]
+  ```
+
 ### Breaking changes
 
 - Old scripts using `Experiment` with circuits should be changed and use `CircuitExperiment` instead.
   [#334](https://github.com/qilimanjaro-tech/qililab/pull/334)
 
 ### Deprecations / Removals
+
+- `id` and `category` attributes have been removed from `qililab`.
+  [#494](https://github.com/qilimanjaro-tech/qililab/pull/494)
 
 ### Documentation
 

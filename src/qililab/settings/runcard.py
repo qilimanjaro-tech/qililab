@@ -5,10 +5,11 @@ from dataclasses import dataclass
 from typing import Literal
 
 from qililab.constants import GATE_ALIAS_REGEX
-from qililab.settings.ddbb_element import DDBBElement
 from qililab.settings.gate_event_settings import GateEventSettings
-from qililab.typings.enums import Category, OperationTimingsCalculationMethod, Parameter, ResetMethod
+from qililab.typings.enums import OperationTimingsCalculationMethod, Parameter, ResetMethod
 from qililab.utils import nested_dataclass
+
+from .settings import Settings
 
 # pylint: disable=too-few-public-methods
 
@@ -42,27 +43,35 @@ class Runcard:
     # Inner dataclasses definition
     @dataclass
     class Bus:
-        """Dataclass with all the settings the buses of the platform need."""
+        """Dataclass with all the settings the buses of the platform need.
 
-        id_: int
-        category: str
+        Args:
+            alias (str): Alias of the bus.
+            system_control (dict): Dictionary containing the settings of the system control of the bus.
+            port (str): Alias of the port of the chip the bus is connected to.
+            distortions (list[dict]): List of dictionaries containing the settings of the distortions applied to each
+                bus.
+            delay (int, optional): Delay applied to all pulses sent in this bus. Defaults to 0.
+        """
+
+        alias: str
         system_control: dict
-        port: int
+        port: str
         distortions: list[dict]
-        alias: str | None = None
         delay: int = 0
 
     @dataclass
     class Chip:
-        """Dataclass with all the settings/nodes the chip of the platform needs."""
+        """Dataclass with all the settings/nodes the chip of the platform needs.
 
-        id_: int
-        category: str
+        Args:
+            nodes (list[dict]): List of dictionaries containing the settings of all the nodes of the chip.
+        """
+
         nodes: list[dict]
-        alias: str | None = None
 
     @nested_dataclass
-    class GatesSettings(DDBBElement):
+    class GatesSettings(Settings):
         """Dataclass with all the settings and gates definitions needed to decompose gates into pulses."""
 
         @nested_dataclass
@@ -161,7 +170,7 @@ class Runcard:
             alias: str | None = None,
         ):
             """Cast the new value to its corresponding type and set the new attribute."""
-            if alias is None or alias == Category.PLATFORM.value:
+            if alias is None or alias == "platform":
                 super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
                 return
             regex_match = re.search(GATE_ALIAS_REGEX, alias)

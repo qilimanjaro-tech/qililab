@@ -13,8 +13,6 @@ from qililab.typings import Parameter
 def fixture_settings():
     return {
         "alias": "test",
-        "id_": 0,
-        "category": "awg",
         "firmware": "0.7.0",
         "num_sequencers": 1,
         "out0_lo_freq": 3.7e9,
@@ -30,7 +28,7 @@ def fixture_settings():
         "awg_sequencers": [
             {
                 "identifier": 0,
-                "chip_port_id": 0,
+                "chip_port_id": "drive_q0",
                 "output_i": 0,
                 "output_q": 1,
                 "num_bins": 1,

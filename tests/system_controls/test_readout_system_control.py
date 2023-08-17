@@ -16,11 +16,7 @@ def fixture_platform() -> Platform:
 @pytest.fixture(name="system_control")
 def fixture_system_control(platform: Platform):
     """Fixture that returns an instance of a SystemControl class."""
-    settings = {
-        "id_": 1,
-        "category": "system_control",
-        "instruments": ["QCM", "rs_1"],
-    }
+    settings = {"instruments": ["QCM", "rs_1"]}
     return ReadoutSystemControl(settings=settings, platform_instruments=platform.instruments)
 
 

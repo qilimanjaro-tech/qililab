@@ -1,17 +1,17 @@
 """Node class"""
 from dataclasses import dataclass
 
-from qililab.settings import DDBBElement
-from qililab.typings import Category, FactoryElement
+from qililab.settings import Settings
+from qililab.typings import FactoryElement
 
 
 @dataclass(kw_only=True)
-class Node(DDBBElement, FactoryElement):
+class Node(Settings, FactoryElement):
     """Class representing a node of the chip's graph."""
 
-    category: Category = Category.NODE
-    nodes: list[int]
+    alias: str
+    nodes: list[str]
 
     def __str__(self):
         """String representation of a node."""
-        return f"{self.alias}" if self.alias is not None else f"{self.category}_{self.id_}"
+        return f"{self.alias}"

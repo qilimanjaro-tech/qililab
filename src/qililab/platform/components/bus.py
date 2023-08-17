@@ -5,7 +5,7 @@ from qililab.chip import Chip, Coil, Coupler, Qubit, Resonator
 from qililab.constants import BUS, NODE, RUNCARD
 from qililab.instruments import Instruments, ParameterNotFound
 from qililab.pulse import PulseDistortion
-from qililab.settings import DDBBElement
+from qililab.settings import Settings
 from qililab.system_control import SystemControl
 from qililab.typings import Parameter
 from qililab.utils import Factory
@@ -25,20 +25,20 @@ class Bus:
     targets: list[Qubit | Resonator | Coupler | Coil]  # port target (or targets in case of multiple resonators)
 
     @dataclass
-    class BusSettings(DDBBElement):
+    class BusSettings(Settings):
         """Bus settings.
 
         Args:
-            bus_category (BusCategory): Bus category.
-            bus_subcategory (BusSubCategory): Bus subcategory
+            alias (str): Alias of the bus.
             system_control (SystemControl): System control used to control and readout the qubits of the bus.
-            port (int): Chip's port where bus is connected.
+            port (str): Alias of the port where bus is connected.
             distortions (list[PulseDistotion]): List of the distortions to apply to the Bus.
             delay (int): Bus delay
         """
 
+        alias: str
         system_control: SystemControl
-        port: int
+        port: str
         platform_instruments: InitVar[Instruments]
         distortions: list[PulseDistortion]
         delay: int
@@ -59,16 +59,7 @@ class Bus:
 
     def __init__(self, settings: dict, platform_instruments: Instruments, chip: Chip):
         self.settings = self.BusSettings(**settings, platform_instruments=platform_instruments)  # type: ignore
-        self.targets = chip.get_port_nodes(port_id=self.port)
-
-    @property
-    def id_(self):
-        """ID of the Bus.
-
-        Returns:
-            int: ID of the Bus.
-        """
-        return self.settings.id_
+        self.targets = chip.get_port_nodes(alias=self.port)
 
     @property
     def alias(self):
@@ -115,18 +106,9 @@ class Bus:
         """
         return self.settings.delay
 
-    @property
-    def category(self):
-        """Bus 'category' property.
-
-        Returns:
-            str: settings.category.
-        """
-        return self.settings.category
-
     def __str__(self):
         """String representation of a bus. Prints a drawing of the bus elements."""
-        return f"Bus {self.id_}:  ----{self.system_control}---" + "".join(
+        return f"Bus {self.alias}:  ----{self.system_control}---" + "".join(
             f"--|{target}|----" for target in self.targets
         )
 
@@ -152,8 +134,6 @@ class Bus:
     def to_dict(self):
         """Return a dict representation of the Bus class."""
         return {
-            RUNCARD.ID: self.id_,
-            RUNCARD.CATEGORY: self.category.value,
             RUNCARD.ALIAS: self.alias,
             RUNCARD.SYSTEM_CONTROL: self.system_control.to_dict(),
             BUS.PORT: self.port,

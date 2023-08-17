@@ -16,11 +16,13 @@ class PulseSchedule:
 
     elements: list[PulseBusSchedule] = field(default_factory=list)
 
-    def add_event(self, pulse_event: PulseEvent, port: int, port_delay: int):
+    def add_event(self, pulse_event: PulseEvent, port: str, port_delay: int):
         """Add pulse event.
 
         Args:
-            pulse (PulseEvent): PulseEvent object.
+            pulse_event (PulseEvent): PulseEvent object.
+            port (str): Alias of the port of the chip targeted by the pulse event.
+            port_delay (int): Delay (in ns) of the pulse event. This delay is added at the beginning of the pulse event.
         """
         pulse_event.start_time += port_delay
         for pulse_sequence in self.elements:
@@ -29,7 +31,7 @@ class PulseSchedule:
                 return
         self.elements.append(PulseBusSchedule(timeline=[pulse_event], port=port))
 
-    def create_schedule(self, port: int):
+    def create_schedule(self, port: str):
         """Creates an empty `PulseBusSchedule` that targets the given port.
 
         If the schedule already exists, nothing is done.
