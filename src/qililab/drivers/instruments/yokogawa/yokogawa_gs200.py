@@ -5,10 +5,11 @@ from qcodes.instrument_drivers.yokogawa.GS200 import GS200_Monitor as QCodesGS20
 from qcodes.instrument_drivers.yokogawa.GS200 import GS200Program as QCodesGS200Program
 
 from qililab.drivers.instruments.instrument_factory import InstrumentDriverFactory
+from qililab.drivers.interfaces import BaseInstrument
 
 
 @InstrumentDriverFactory.register
-class GS200(QCodesGS200):
+class GS200(QCodesGS200, BaseInstrument):
     """
     Qililab's driver for the Yokogawa GS200 acting as VoltageSource and CurrentSource
 
@@ -33,3 +34,8 @@ class GS200(QCodesGS200):
     def params(self):
         """return the parameters of the instrument"""
         return self.parameters
+
+    @property
+    def alias(self):
+        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
+        return self.name

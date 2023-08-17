@@ -6,7 +6,7 @@ import pytest
 from qcodes.instrument_drivers.tektronix.Keithley_2600_channels import KeithleyChannel
 
 from qililab.instrument_controllers.keithley.keithley_2600_controller import Keithley2600Controller
-from qililab.instruments import Keithley2600
+from qililab.instruments.keithley import Keithley2600
 from qililab.platform import Platform
 from qililab.typings import Parameter
 from tests.data import Galadriel
@@ -49,14 +49,6 @@ def fixture_keithley_2600(mock_driver: MagicMock, keithley_2600_controller: Keit
 
 class TestKeithley2600:
     """Unit tests checking the Keithley2600 attributes and methods."""
-
-    def test_id_property(self, keithley_2600_no_device: Keithley2600):
-        """Test id property."""
-        assert keithley_2600_no_device.id_ == keithley_2600_no_device.settings.id_
-
-    def test_category_property(self, keithley_2600_no_device: Keithley2600):
-        """Test category property."""
-        assert keithley_2600_no_device.category == keithley_2600_no_device.settings.category
 
     @pytest.mark.parametrize("parameter, value", [(Parameter.MAX_CURRENT, 0.01), (Parameter.MAX_VOLTAGE, 19.0)])
     def test_setup_method_current_parameter(self, parameter: Parameter, value: float, keithley_2600: Keithley2600):

@@ -12,7 +12,8 @@ from qililab import build_platform
 from qililab.constants import RESULTSDATAFRAME
 from qililab.execution import ExecutionManager
 from qililab.experiment.experiment import Experiment
-from qililab.instruments import AWG, QbloxQRM
+from qililab.instruments import AWG
+from qililab.instruments.qblox import QbloxQRM
 from qililab.result.results import Results
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName

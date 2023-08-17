@@ -7,7 +7,7 @@ import pytest
 from qpysequence.sequence import Sequence
 
 from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
-from qililab.instruments import QbloxQCM
+from qililab.instruments.qblox import QbloxQCM
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
 from qililab.typings import InstrumentName
 from qililab.typings.enums import Parameter
@@ -21,7 +21,7 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     pulse_shape = Gaussian(num_sigmas=4)
     pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
     pulse_event = PulseEvent(pulse=pulse, start_time=0)
-    return PulseBusSchedule(timeline=[pulse_event], port=0)
+    return PulseBusSchedule(timeline=[pulse_event], port="drive_q0")
 
 
 @pytest.fixture(name="pulsar_controller_qcm")
@@ -110,7 +110,7 @@ def fixture_big_pulse_bus_schedule() -> PulseBusSchedule:
         )
         for n in range(10)
     ]
-    return PulseBusSchedule(timeline=timeline, port=0)
+    return PulseBusSchedule(timeline=timeline, port="drive_q0")
 
 
 class TestQbloxQCM:
@@ -132,7 +132,7 @@ class TestQbloxQCM:
 
     def test_start_sequencer_method(self, qcm: QbloxQCM):
         """Test start_sequencer method"""
-        qcm.start_sequencer(port=0)
+        qcm.start_sequencer(port="drive_q0")
         qcm.device.arm_sequencer.assert_not_called()
         qcm.device.start_sequencer.assert_not_called()
 
@@ -220,17 +220,9 @@ class TestQbloxQCM:
         qcm.device.sequencer0.sequence.assert_called_once()
         qcm.device.sequencer0.sync_en.assert_called_once_with(True)
 
-    def test_id_property(self, qcm_no_device: QbloxQCM):
-        """Test id property."""
-        assert qcm_no_device.id_ == qcm_no_device.settings.id_
-
     def test_name_property(self, qcm_no_device: QbloxQCM):
         """Test name property."""
         assert qcm_no_device.name == InstrumentName.QBLOX_QCM
-
-    def test_category_property(self, qcm_no_device: QbloxQCM):
-        """Test category property."""
-        assert qcm_no_device.category == qcm_no_device.settings.category
 
     def test_firmware_property(self, qcm_no_device: QbloxQCM):
         """Test firmware property."""
@@ -246,7 +238,7 @@ class TestQbloxQCM:
         new_qcm = QbloxQCM(settings=qcm_settings)
         # We create a pulse bus schedule
         pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=Gaussian(num_sigmas=4))
-        pulse_bus_schedule = PulseBusSchedule(timeline=[PulseEvent(pulse=pulse, start_time=0)], port=0)
+        pulse_bus_schedule = PulseBusSchedule(timeline=[PulseEvent(pulse=pulse, start_time=0)], port="drive_q0")
         sequences = new_qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000, num_bins=1)
         # We assert that the waveform of the first path is all zeros and the waveform of the second path is the gaussian
         waveforms = sequences[0]._waveforms._waveforms

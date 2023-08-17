@@ -21,16 +21,14 @@ GATE_ALIAS_REGEX = r"(?P<gate>[a-zA-Z]+)\((?P<qubits>\d+(?:,\s*\d+)*)\)"
 class RUNCARD:
     """YAML constants."""
 
-    ID = "id_"
     NAME = "name"
+    DEVICE_ID = "device_id"
     ALIAS = "alias"
-    CATEGORY = "category"
-    SUBCATEGORY = "subcategory"
     INSTRUMENT = "instrument"
     INSTRUMENTS = "instruments"
     ELEMENTS = "elements"
     READOUT = "readout"
-    GATE_SETTINGS = "gate_settings"
+    GATES_SETTINGS = "gates_settings"
     PLATFORM = "platform"
     BUSES = "buses"
     CHIP = "chip"
@@ -193,12 +191,6 @@ class CONNECTION:
     """Connection attribute names."""
 
     ADDRESS = "address"
-
-
-class INSTRUMENTREFERENCE:
-    """InstrumentReference attribute names."""
-
-    SLOT_ID = "slot_id"
 
 
 class QBLOXRESULT:

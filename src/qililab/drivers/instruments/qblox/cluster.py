@@ -6,23 +6,26 @@ from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 
 from qililab.drivers import parameters
 from qililab.drivers.instruments.instrument_factory import InstrumentDriverFactory
-from qililab.drivers.interfaces import Attenuator, LocalOscillator
+from qililab.drivers.interfaces import Attenuator, BaseInstrument, LocalOscillator
 
 from .sequencer_qcm import SequencerQCM
 from .sequencer_qrm import SequencerQRM
 
 
 @InstrumentDriverFactory.register
-class Cluster(QcodesCluster):  # pylint: disable=abstract-method
-    """Qililab's driver for QBlox-instruments Cluster"""
+class Cluster(QcodesCluster, BaseInstrument):  # pylint: disable=abstract-method
+    """Qililab's driver for QBlox-instruments Cluster.
+
+    Args:
+        name (str): The name/alias of the cluster.
+        address (str): The IP address of the cluster.
+
+    Keyword Args:
+        **kwargs: Any additional keyword arguments provided are passed to its `parent class
+            <https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/cluster.html>`_.
+    """
 
     def __init__(self, name: str, address: str | None = None, **kwargs):
-        """Initialise the instrument.
-
-        Args:
-            name (str): Sequencer name
-            address (str): Instrument address
-        """
         super().__init__(name, identifier=address, **kwargs)
 
         # registering only the slots specified in the dummy config if that is the case
@@ -48,8 +51,18 @@ class Cluster(QcodesCluster):  # pylint: disable=abstract-method
                 old_module = old_submodules[f"module{slot_idx}"]
                 self.add_submodule(f"module{slot_idx}", old_module)
 
+    @property
+    def params(self):
+        """return the parameters of the instrument"""
+        return self.parameters
 
-class QcmQrm(QcodesQcmQrm):
+    @property
+    def alias(self):
+        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
+        return self.name
+
+
+class QcmQrm(QcodesQcmQrm, BaseInstrument):
     """Qililab's driver for QBlox-instruments QcmQrm"""
 
     def __init__(self, parent: Instrument, name: str, slot_idx: int):
@@ -87,6 +100,16 @@ class QcmQrm(QcodesQcmQrm):
                 att = QcmQrmRfAtt(name=f"{name}_attenuator_{channel}", parent=self, channel=channel)
                 self.add_submodule(f"{name}_attenuator_{channel}", att)
 
+    @property
+    def params(self):
+        """return the parameters of the instrument"""
+        return self.parameters
+
+    @property
+    def alias(self):
+        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
+        return self.name
+
 
 class QcmQrmRfLo(InstrumentModule, LocalOscillator):
     """LO driver for the QCM / QRM - RF instrument
@@ -117,6 +140,11 @@ class QcmQrmRfLo(InstrumentModule, LocalOscillator):
         """return the parameters of the instrument"""
         return self.parameters
 
+    @property
+    def alias(self):
+        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
+        return self.name
+
     def on(self):
         self.set("status", True)
 
@@ -146,3 +174,8 @@ class QcmQrmRfAtt(InstrumentModule, Attenuator):
     def params(self):
         """return the parameters of the instrument"""
         return self.parameters
+
+    @property
+    def alias(self):
+        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
+        return self.name

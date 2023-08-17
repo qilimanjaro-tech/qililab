@@ -28,7 +28,7 @@ class Loader:
         Args:
             instruments (Instruments): Instruments loaded into the platform.
             instrument_references (list[InstrumentReference]): List of references to the instruments
-            with its category and alias to be retrieved from the Instrument Factory.
+            with its alias to be retrieved from the Instrument Factory.
 
         Returns:
             list[Instrument]: List of the Instruments that manages the Controller with its device driver assigned.
@@ -37,5 +37,5 @@ class Loader:
             self._get_instrument_or_raise_error_when_not_found_or_not_supported_type(
                 instruments=instruments, alias=alias[1]
             )
-            for _, alias, _ in instrument_references
+            for alias, _ in instrument_references
         ]

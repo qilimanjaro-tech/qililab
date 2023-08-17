@@ -58,12 +58,13 @@ class BusExecution:
         Returns:
             Result: Acquired result
         """
-        if not isinstance(self.system_control, (ReadoutSystemControl, SimulatedSystemControl)):
-            raise ValueError(
-                f"The bus {self.bus.alias} needs a readout system control to acquire the results. This bus "
-                f"has a {self.system_control.name} instead."
-            )
-        return self.system_control.acquire_result(port=self.port)  # type: ignore  # pylint: disable=no-member
+        if isinstance(self.system_control, (ReadoutSystemControl, SimulatedSystemControl)):
+            return self.system_control.acquire_result()
+
+        raise ValueError(
+            f"The bus {self.bus.alias} needs a readout system control to acquire the results. This bus "
+            f"has a {self.system_control.name} instead."
+        )
 
     def acquire_time(self, idx: int = 0) -> int:
         """BusExecution 'acquire_time' property.
@@ -112,15 +113,6 @@ class BusExecution:
             SystemControl: bus.system_control
         """
         return self.bus.system_control
-
-    @property
-    def id_(self):
-        """BusExecution 'id_' property.
-
-        Returns:
-            int: bus.id_
-        """
-        return self.bus.id_
 
     @property
     def alias(self):
