@@ -7,10 +7,14 @@ from qililab.system_control import ReadoutSystemControl, SystemControl
 from qililab.utils import Waveforms
 
 
+# TODO: Remove class once a Drawer class is implemented
 @dataclass
 class BusExecution:
     """This class contains the information of a specific bus in the platform together with a list of
-    pulse schedules that will be executed on this bus."""
+    pulse schedules that will be executed on this bus.
+
+    This class is a relic and should be removed once the drawing responsibilities are moved to its own class.
+    """
 
     bus: Bus
     pulse_bus_schedules: list[PulseBusSchedule] = field(default_factory=list)

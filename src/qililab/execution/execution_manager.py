@@ -1,6 +1,4 @@
 """ExecutionManager class."""
-from dataclasses import dataclass, field
-
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -10,36 +8,24 @@ from qililab.utils import Waveforms
 from .bus_execution import BusExecution
 
 
-@dataclass
+# TODO: Rename to Drawer and simplify class
 class ExecutionManager:
-    """ExecutionManager class."""
+    """ExecutionManager class.
 
-    num_schedules: int
-    buses: list[BusExecution] = field(default_factory=list)
+    This class only contains drawing capabilities. The `ExecutionManager` name is maintained for backwards
+    compatibility.
+    """
 
-    def __post_init__(self):
+    def __init__(self, num_schedules: int, buses: list[BusExecution] | None = None):
         """check that the number of schedules matches all the schedules for each bus"""
+        self.num_schedules = num_schedules
+        self.buses = buses if buses is not None else []
         for bus in self.buses:
-            self._check_schedules_matches(bus_num_schedules=len(bus.pulse_bus_schedules))
-
-    def _check_schedules_matches(self, bus_num_schedules: int):
-        """check that the number of schedules matches all the schedules for each bus"""
-        if bus_num_schedules != self.num_schedules:
-            raise ValueError(
-                f"Error: number of schedules: {self.num_schedules} does not match "
-                + f"the length of the schedules in a bus: {bus_num_schedules}"
-            )
-
-    def waveforms_dict(self, modulation: bool = True, resolution: float = 1.0, idx: int = 0) -> dict[str, Waveforms]:
-        """Get pulses of each bus.
-
-        Args:
-            resolution (float): The resolution of the pulses in ns.
-
-        Returns:
-            dict[str, Waveforms]: Dictionary containing a list of the I/Q amplitudes of the pulses applied on each bus.
-        """
-        return {bus.alias: bus.waveforms(modulation=modulation, resolution=resolution, idx=idx) for bus in self.buses}
+            if len(bus.pulse_bus_schedules) != self.num_schedules:
+                raise ValueError(
+                    f"Error: number of schedules: {self.num_schedules} does not match "
+                    + f"the length of the schedules in a bus: {bus.pulse_bus_schedules}"
+                )
 
     def draw(  # pylint: disable=too-many-locals
         self,
@@ -75,7 +61,7 @@ class ExecutionManager:
             axes = [axes]  # make axes subscriptable
 
         for axis_idx, (bus_alias, waveforms) in enumerate(
-            self.waveforms_dict(modulation=modulation, resolution=resolution, idx=idx).items()
+            self._waveforms_dict(modulation=modulation, resolution=resolution, idx=idx).items()
         ):
             time = np.arange(len(waveforms)) * resolution
             axes[axis_idx].set_title(f"Bus {bus_alias}", loc="right")
@@ -100,6 +86,17 @@ class ExecutionManager:
         plt.legend(loc="upper right")
         plt.tight_layout()
         return figure
+
+    def _waveforms_dict(self, modulation: bool = True, resolution: float = 1.0, idx: int = 0) -> dict[str, Waveforms]:
+        """Get pulses of each bus.
+
+        Args:
+            resolution (float): The resolution of the pulses in ns.
+
+        Returns:
+            dict[str, Waveforms]: Dictionary containing a list of the I/Q amplitudes of the pulses applied on each bus.
+        """
+        return {bus.alias: bus.waveforms(modulation=modulation, resolution=resolution, idx=idx) for bus in self.buses}
 
     def __iter__(self):
         """Redirect __iter__ magic method to buses."""
