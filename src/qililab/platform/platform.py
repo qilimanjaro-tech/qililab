@@ -39,7 +39,70 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
     Args:
         runcard (Runcard): Runcard class containing all the chip, buses & instruments information of the platform.
-        connection (API | None = None): Connection of the platform.
+        connection (API | None = None): Qiboconnection's API class used to block access to other users when connected
+            to the platform.
+
+    Examples:
+
+        .. note::
+
+            The following examples contain made up results. These will soon be updated with real results.
+
+
+        Imagine we want to run a Rabi sequence. To do so, we can first define a Qibo Circuit that contains a
+        pi pulse and a measurement gate:
+
+        .. code-block:: python3
+
+            from qibo.models import Circuit
+            from qibo import gates
+
+            circuit = Circuit(1)
+            circuit.add(gates.X(0))
+            circuit.add(gates.M(0))
+
+        For testing purposes, we can already execute this circuit using the platform:
+
+        >>> result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
+        >>> result.array
+        array([[5.],
+                [5.]])
+
+        When disabling scope acquisition mode, the array obtained has shape `(#sequencers, 2, #bins)`. In this case,
+        given that we are using only 1 sequencer to acquire the results, we obtain an array with shape `(2, #bins)`.
+
+        .. note::
+
+            Remember that the values obtained correspond to the integral of the I/Q signals received by the
+            digitiser.
+
+        Now let's run the Rabi sequence. We will run this sequence by looping over the gain of the AWG used to
+        create the pi pulse. To do so, we will use the `set_parameter` method with the alias of the bus used to
+        drive qubit 0.
+
+        .. code-block:: python3
+
+            import numpy as np
+
+            results = []
+
+            gain_values = np.arange(0, 1, step=0.1)
+            for gain in gain_values:
+                # We assume the bus used to drive qubit 0 is called "drive_q0"
+                platform.set_parameter(alias="drive_q0", parameter=ql.Parameter.GAIN, value=gain)
+                result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
+                results.append(result.array)
+
+        No we can use `np.hstack` to stack the obtained results horizontally. By doing this, we will obtain an
+        array with shape `(2, N)`, where N is the number of elements inside the loop:
+
+        >>> results = np.hstack(results)
+        >>> results
+        array([[5, 4, 3, 2, 1, 2, 3],
+                [5, 4, 3, 2, 1, 2, 3]])
+
+        We can see how the integrated I/Q values oscillated, meaning that qubit 0 oscillates between ground and
+        excited state!
     """
 
     def __init__(self, runcard: Runcard, connection: API | None = None):
@@ -295,68 +358,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                     path0 (I) and path1 (Q). N corresponds to the length of the scope measured.
 
                 - Scope acquisition disabled: An array with dimension `(#sequencers, 2, #bins)`.
-
-        Examples:
-
-            .. note::
-
-                The following examples contain made up results. These will soon be updated with real results.
-
-
-            Imagine we want to run a Rabi sequence. To do so, we can first define a Qibo Circuit that contains a
-            pi pulse and a measurement gate:
-
-            .. code-block:: python3
-
-                from qibo.models import Circuit
-                from qibo import gates
-
-                circuit = Circuit(1)
-                circuit.add(gates.X(0))
-                circuit.add(gates.M(0))
-
-            For testing purposes, we can already execute this circuit using the platform:
-
-            >>> result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
-            >>> result.array
-            array([[5.],
-                  [5.]])
-
-            When disabling scope acquisition mode, the array obtained has shape `(#sequencers, 2, #bins)`. In this case,
-            given that we are using only 1 sequencer to acquire the results, we obtain an array with shape `(2, #bins)`.
-
-            .. note::
-
-                Remember that the values obtained correspond to the integral of the I/Q signals received by the
-                digitiser.
-
-            Now let's run the Rabi sequence. We will run this sequence by looping over the gain of the AWG used to
-            create the pi pulse. To do so, we will use the `set_parameter` method with the alias of the bus used to
-            drive qubit 0.
-
-            .. code-block:: python3
-
-                import numpy as np
-
-                results = []
-
-                gain_values = np.arange(0, 1, step=0.1)
-                for gain in gain_values:
-                    # We assume the bus used to drive qubit 0 is called "drive_q0"
-                    platform.set_parameter(alias="drive_q0", parameter=ql.Parameter.GAIN, value=gain)
-                    result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
-                    results.append(result.array)
-
-            No we can use `np.hstack` to stack the obtained results horizontally. By doing this, we will obtain an
-            array with shape `(2, N)`, where N is the number of elements inside the loop:
-
-            >>> results = np.hstack(results)
-            >>> results
-            array([[5, 4, 3, 2, 1, 2, 3],
-                  [5, 4, 3, 2, 1, 2, 3]])
-
-            We can see how the integrated I/Q values oscillated, meaning that qubit 0 oscillates between ground and
-            excited state!
         """
         # Compile pulse schedule
         self.compile(program, num_avg, repetition_duration, num_bins)
