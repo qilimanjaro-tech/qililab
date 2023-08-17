@@ -647,29 +647,29 @@ class TestTranslation:
         ]
 
         # drive q0
-        port_8 = self.get_bus_schedule(pulse_bus_schedule, "drive_q0")
-        assert len(port_8) == len(drive_q0)
-        assert all(i == k for i, k in zip(port_8, drive_q0))
+        transpiled_drive_q0 = self.get_bus_schedule(pulse_bus_schedule, "drive_q0")
+        assert len(transpiled_drive_q0) == len(drive_q0)
+        assert all(i == k for i, k in zip(transpiled_drive_q0, drive_q0))
 
         # flux q0
-        port_13 = self.get_bus_schedule(pulse_bus_schedule, "flux_q0")
-        assert len(port_13) == len(flux_q0)
-        assert all(i == k for i, k in zip(port_13, flux_q0))
+        transpiled_flux_q0 = self.get_bus_schedule(pulse_bus_schedule, "flux_q0")
+        assert len(transpiled_flux_q0) == len(flux_q0)
+        assert all(i == k for i, k in zip(transpiled_flux_q0, flux_q0))
 
         # drive q4
-        port_12 = self.get_bus_schedule(pulse_bus_schedule, "drive_q4")
-        assert len(port_12) == len(drive_q4)
-        assert all(i == k for i, k in zip(port_12, drive_q4))
+        transpiled_drive_q4 = self.get_bus_schedule(pulse_bus_schedule, "drive_q4")
+        assert len(transpiled_drive_q4) == len(drive_q4)
+        assert all(i == k for i, k in zip(transpiled_drive_q4, drive_q4))
 
         # flux q2
-        port_15 = self.get_bus_schedule(pulse_bus_schedule, "flux_q2")
-        assert len(port_15) == len(flux_q2)
-        assert all(i == k for i, k in zip(port_15, flux_q2))
+        transpiled_flux_q2 = self.get_bus_schedule(pulse_bus_schedule, "flux_q2")
+        assert len(transpiled_flux_q2) == len(flux_q2)
+        assert all(i == k for i, k in zip(transpiled_flux_q2, flux_q2))
 
         # flux c2
-        port_43 = self.get_bus_schedule(pulse_bus_schedule, "flux_c2")
-        assert len(port_43) == len(flux_c2)
-        assert all(i == k for i, k in zip(port_43, flux_c2))
+        transpiled_flux_c2 = self.get_bus_schedule(pulse_bus_schedule, "flux_c2")
+        assert len(transpiled_flux_c2) == len(flux_c2)
+        assert all(i == k for i, k in zip(transpiled_flux_c2, flux_c2))
 
     def test_normalize_angle(self, platform):
         """Test that the angle is normalized properly for drag pulses"""
