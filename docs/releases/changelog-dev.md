@@ -12,7 +12,7 @@ This document contains the changes of the current release.
 
   And finally we also have added the option to skip the automatic normalization that we do, setting the parameter `auto_norm` to `False`, (defaults to `True`).
 
-  [#475](https://github.com/qilimanjaro-tech/qililab/pull/475)
+  [#512](https://github.com/qilimanjaro-tech/qililab/pull/512)
 
 - Delete `Schema` class from `Platform` and `RuncardSchema` classes (and from the rest of qililab).
 
