@@ -11,6 +11,11 @@ class BaseInstrument(ABC):
     def params(self):
         """parameters property."""
 
+    @property
+    @abstractmethod
+    def alias(self):
+        """alias property."""
+
     @abstractmethod
     def set(self, param_name: str, value: Any) -> None:
         """Set instrument parameter.

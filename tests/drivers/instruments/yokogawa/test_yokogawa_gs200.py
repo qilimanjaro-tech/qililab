@@ -82,6 +82,11 @@ class TestGS200:
         yokogawa_gs_200 = GS200(name="test_params", address="")
         assert yokogawa_gs_200.params == yokogawa_gs_200.parameters
 
+    def test_alias(self):
+        """Unittest to test the alias property."""
+        yokogawa_gs_200 = GS200(name="test_alias", address="")
+        assert yokogawa_gs_200.alias == yokogawa_gs_200.name
+
 
 class TestGS200Monitor:
     """Unit tests checking the qililab Yokogawa GS200 attributes and methods"""
