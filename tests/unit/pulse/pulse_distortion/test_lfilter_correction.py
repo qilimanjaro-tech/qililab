@@ -7,11 +7,11 @@ import pytest
 from qililab.constants import RUNCARD
 from qililab.pulse import Pulse
 from qililab.pulse.pulse_distortion import LFilterCorrection
-from qililab.pulse.pulse_shape import Cosine, Drag, Gaussian, Rectangular
+from qililab.pulse.pulse_shape import SNZ, Cosine, Drag, Gaussian, Rectangular
 from qililab.typings.enums import PulseDistortionSettingsName
 
 # Parameters for the LFilterCorrection.
-NORMALIZATION_FACTOR = [1.0, 2.0]
+NORMALIZATION_FACTOR = [1.0]
 A = [[0.7, 1.3], [0.8, 0.6]]
 B = [[0.5, 0.6], [0.8, 1.3]]
 
@@ -21,7 +21,7 @@ PHASE = [0, np.pi / 3, 2 * np.pi]
 DURATION = [47]
 FREQUENCY = [0.7e9]
 RESOLUTION = [1.1]
-SHAPE = [Rectangular(), Cosine(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]
+SHAPE = [Rectangular(), Cosine(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0), SNZ(b=0.1, t_phi=2)]
 
 
 @pytest.fixture(
@@ -57,7 +57,7 @@ class TestLFilterCorrection:
 
     def test_apply(self, pulse_distortion: LFilterCorrection, envelope: np.ndarray):
         """Test for the envelope method."""
-        norm_factors = [1.2, 2.3]
+        norm_factors = [0.85, 0.15]
         corr_envelopes = [pulse_distortion.apply(envelope=envelope)]
         corr_envelopes.append(
             LFilterCorrection(norm_factor=norm_factors[0], a=[0.7, 1.3], b=[0.5, 0.6]).apply(envelope=corr_envelopes[0])
@@ -71,11 +71,13 @@ class TestLFilterCorrection:
             assert isinstance(corr_envelope, np.ndarray)
             assert len(envelope) == len(corr_envelope)
             assert not np.array_equal(corr_envelope, envelope)
+            assert np.max((np.real(corr_envelopes))) <= 1
+            assert np.min((np.real(corr_envelopes))) >= -1
         assert (
-            round(np.max(np.real(corr_envelopes[0])), 14)
-            == round(np.max(np.real(corr_envelopes[1])) / norm_factors[0], 14)
-            == round(np.max(np.real(corr_envelopes[2])) / (norm_factors[0] * norm_factors[1]), 14)
-            == round(np.max(np.real(envelope)) * pulse_distortion.norm_factor, 14)
+            round(np.max(np.abs(np.real(corr_envelopes[0]))), 14)
+            == round(np.max(np.abs(np.real(corr_envelopes[1]))) / norm_factors[0], 14)
+            == round(np.max(np.abs(np.real(corr_envelopes[2]))) / (norm_factors[0] * norm_factors[1]), 14)
+            == round(np.max(np.abs(np.real(envelope))) * pulse_distortion.norm_factor, 14)
         )
 
     def test_from_dict(self, pulse_distortion: LFilterCorrection):

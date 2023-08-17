@@ -63,7 +63,11 @@ class LFilterCorrection(PulseDistortion):
         """Distorts envelopes (which normally get calibrated with square envelopes).
 
         Corrects an envelope applying the scipy.signal.lfilter.
-        And then normalizes the pulse to the same real amplitude as the initial one.
+
+        Then normalizes the resulting envelope to have the same max height than the starting one.
+        (the max height is the furthest number from 0, only checking the real axis/part)
+
+        Finally it applies the self.norm_factor to the result, reducing the full envelope by its magnitude.
 
         Args:
             envelope (numpy.ndarray): array representing the envelope of a pulse for each time step.
@@ -71,7 +75,6 @@ class LFilterCorrection(PulseDistortion):
         Returns:
             numpy.ndarray: Amplitude of the envelope for each time step.
         """
-        # Filtered signal, normalized with envelopes absolute max heights (of the real parts).
         corr_envelope = signal.lfilter(b=self.b, a=self.a, x=envelope)
 
         #### 0th try, first implementation:
@@ -105,8 +108,12 @@ class LFilterCorrection(PulseDistortion):
         #         corr_norm = np.abs(np.min(np.real(corr_envelope)))
 
         ### THIRD TRY
-        norm = np.max([np.abs(np.max(np.real(envelope))), np.abs(np.min(np.real(envelope)))])
-        corr_norm = np.max([np.abs(np.max(np.real(corr_envelope))), np.abs(np.min(np.real(corr_envelope)))])
+        # norm = np.max([np.abs(np.max(np.real(envelope))), np.abs(np.min(np.real(envelope)))])
+        # corr_norm = np.max([np.abs(np.max(np.real(corr_envelope))), np.abs(np.min(np.real(corr_envelope)))])
+
+        ### FORTH TRY
+        norm = np.max(np.abs(np.real(envelope)))
+        corr_norm = np.max(np.abs(np.real(corr_envelope)))
 
         return corr_envelope * (norm / corr_norm) * self.norm_factor
 
