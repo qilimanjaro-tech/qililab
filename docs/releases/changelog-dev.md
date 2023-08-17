@@ -4,6 +4,16 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Distorsions have been improved:
+
+  They now work for negative and snz envelopes (both positive and engatives)
+
+  It now also adds the `norm_factor` parameter for manual normalization to all the distortions (previously only in the lfilter distortion)
+
+  And finally we also have added the option to skip the automatic normalization that we do, setting the parameter `auto_norm` to `False`, (defaults to `True`).
+
+  [#475](https://github.com/qilimanjaro-tech/qililab/pull/475)
+
 - Delete `Schema` class from `Platform` and `RuncardSchema` classes (and from the rest of qililab).
 
   Also `RuncardSchema` is now called simply `Runcard` (since its the class that maps our runcard files).

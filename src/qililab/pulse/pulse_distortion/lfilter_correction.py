@@ -48,7 +48,9 @@ class LFilterCorrection(PulseDistortion):
     Args:
         a (list[float]): The denominator coefficient vector in a 1-D sequence.
         b (list[float]): The numerator coefficient vector in a 1-D sequence.
-        norm_factor (float): A coefficient to multiply the final result with, to scale it.
+        norm_factor (float): The manual normalization factor that multiplies the envelope in the apply() method. Defaults to 1 (no effect).
+        auto_norm (bool): Whether to automatically normalize the corrected envelope with the original max height in the apply() method.
+            (the max height is the furthest number from 0 in the envelope, only checking the real axis/part). Defaults to True.
 
     Returns:
         PulseDistortion: Distortion to apply to given envelopes in PulseEvent.
@@ -57,13 +59,16 @@ class LFilterCorrection(PulseDistortion):
     name = PulseDistortionName.LFILTER
     a: list[float]
     b: list[float]
-    norm_factor: float = 1.0
 
     def apply(self, envelope: np.ndarray) -> np.ndarray:
         """Distorts envelopes (which normally get calibrated with square envelopes).
 
         Corrects an envelope applying the scipy.signal.lfilter.
-        And then normalizes the pulse to the same real amplitude as the initial one.
+
+        If self.auto_norm is True (default) normalizes the resulting envelope to have the same max height than the starting one.
+        (the max height is the furthest number from 0 in the envelope, only checking the real axis/part)
+
+        Finally it applies the manual self.norm_factor to the result, reducing the full envelope by its magnitude.
 
         Args:
             envelope (numpy.ndarray): array representing the envelope of a pulse for each time step.
@@ -71,13 +76,9 @@ class LFilterCorrection(PulseDistortion):
         Returns:
             numpy.ndarray: Amplitude of the envelope for each time step.
         """
-        # Filtered signal, normalized with envelopes max heights (of the real parts)
-        norm = np.amax(np.real(envelope)) * self.norm_factor
+        # Filtered signal
         corr_envelope = signal.lfilter(b=self.b, a=self.a, x=envelope)
-        corr_norm = np.max(np.real(corr_envelope))
-        corr_envelope = corr_envelope * norm / corr_norm
-
-        return corr_envelope
+        return self.normalize_envelope(envelope=envelope, corr_envelope=corr_envelope)
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "LFilterCorrection":
@@ -101,7 +102,8 @@ class LFilterCorrection(PulseDistortion):
         """
         return {
             RUNCARD.NAME: self.name.value,
-            PulseDistortionSettingsName.NORM_FACTOR.value: self.norm_factor,
             PulseDistortionSettingsName.A.value: self.a,
             PulseDistortionSettingsName.B.value: self.b,
+            PulseDistortionSettingsName.NORM_FACTOR.value: self.norm_factor,
+            PulseDistortionSettingsName.AUTO_NORM.value: self.auto_norm,
         }

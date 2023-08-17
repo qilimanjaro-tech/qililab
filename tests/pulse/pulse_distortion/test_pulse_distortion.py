@@ -66,17 +66,41 @@ class TestPulseDistortion:
 
     def test_apply(self, pulse_distortion: PulseDistortion, envelope: np.ndarray):
         """Test for the apply method."""
+        norm_factors = [0.85, 0.15]
         corr_envelopes = [pulse_distortion.apply(envelope=envelope)]
-        corr_envelopes.append(ExponentialCorrection(tau_exponential=1.3, amp=2.0).apply(envelope=corr_envelopes[0]))
-        corr_envelopes.append(BiasTeeCorrection(tau_bias_tee=0.5).apply(envelope=corr_envelopes[1]))
-        corr_envelopes.append(ExponentialCorrection(tau_exponential=0.5, amp=-5.0).apply(envelope=corr_envelopes[1]))
+        corr_envelopes.append(
+            ExponentialCorrection(tau_exponential=1.3, amp=2.0, norm_factor=norm_factors[0]).apply(
+                envelope=corr_envelopes[0]
+            )
+        )
+        corr_envelopes.append(
+            BiasTeeCorrection(tau_bias_tee=0.5, norm_factor=norm_factors[1]).apply(envelope=corr_envelopes[1])
+        )
+        not_corr_envelopes = [
+            ExponentialCorrection(tau_exponential=0.5, amp=-5.0, auto_norm=False).apply(envelope=corr_envelopes[1])
+        ]
 
         for corr_envelope in corr_envelopes:
             assert corr_envelope is not None
             assert isinstance(corr_envelope, np.ndarray)
             assert len(envelope) == len(corr_envelope)
-            assert round(np.max(np.real(corr_envelope)), 14) == round(np.max(np.real(envelope)), 14)
             assert not np.array_equal(corr_envelope, envelope)
+            assert np.max((np.real(corr_envelope))) <= 1
+            assert np.min((np.real(corr_envelope))) >= -1
+
+        for not_corr_envelope in not_corr_envelopes:
+            assert not_corr_envelope is not None
+            assert isinstance(not_corr_envelope, np.ndarray)
+            assert len(envelope) == len(not_corr_envelope)
+            assert not np.array_equal(not_corr_envelope, envelope)
+
+        assert (
+            round(np.max(np.abs(np.real(corr_envelopes[0]))), 14)
+            == round(np.max(np.abs(np.real(corr_envelopes[1]))) / norm_factors[0], 14)
+            == round(np.max(np.abs(np.real(corr_envelopes[2]))) / (norm_factors[0] * norm_factors[1]), 14)
+            == round(np.max(np.abs(np.real(envelope))) * pulse_distortion.norm_factor, 14)
+            != round(np.max(np.abs(np.real(not_corr_envelopes[0]))) / (norm_factors[0] * norm_factors[1]), 14)
+        )
 
     def test_from_dict(self, pulse_distortion: PulseDistortion):
         """Test for the to_dict method."""
@@ -104,6 +128,8 @@ class TestPulseDistortion:
                 RUNCARD.NAME: pulse_distortion.name.value,
                 PulseDistortionSettingsName.TAU_BIAS_TEE.value: pulse_distortion.tau_bias_tee,
                 PulseDistortionSettingsName.SAMPLING_RATE.value: pulse_distortion.sampling_rate,
+                PulseDistortionSettingsName.NORM_FACTOR.value: pulse_distortion.norm_factor,
+                PulseDistortionSettingsName.AUTO_NORM.value: pulse_distortion.auto_norm,
             }
 
         if isinstance(pulse_distortion, ExponentialCorrection):
@@ -112,12 +138,15 @@ class TestPulseDistortion:
                 PulseDistortionSettingsName.TAU_EXPONENTIAL.value: pulse_distortion.tau_exponential,
                 PulseDistortionSettingsName.AMP.value: pulse_distortion.amp,
                 PulseDistortionSettingsName.SAMPLING_RATE.value: pulse_distortion.sampling_rate,
+                PulseDistortionSettingsName.NORM_FACTOR.value: pulse_distortion.norm_factor,
+                PulseDistortionSettingsName.AUTO_NORM.value: pulse_distortion.auto_norm,
             }
 
         if isinstance(pulse_distortion, LFilterCorrection):
             assert dictionary == {
                 RUNCARD.NAME: pulse_distortion.name.value,
-                PulseDistortionSettingsName.NORM_FACTOR.value: pulse_distortion.norm_factor,
                 PulseDistortionSettingsName.A.value: pulse_distortion.a,
                 PulseDistortionSettingsName.B.value: pulse_distortion.b,
+                PulseDistortionSettingsName.NORM_FACTOR.value: pulse_distortion.norm_factor,
+                PulseDistortionSettingsName.AUTO_NORM.value: pulse_distortion.auto_norm,
             }

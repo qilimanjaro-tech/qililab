@@ -16,12 +16,13 @@ from qililab.pulse import (
     PulseEvent,
     Rectangular,
 )
+from qililab.pulse.pulse_distortion.lfilter_correction import LFilterCorrection
 from qililab.utils import Waveforms
 
 # Parameters for the different Pulses
 AMPLITUDE = [0.9]
 PHASE = [0, np.pi / 3, 2 * np.pi]
-DURATION = [47]
+DURATION = [48]
 FREQUENCY = [0.7e9]
 SHAPE = [
     Rectangular(),
@@ -35,6 +36,7 @@ SHAPE = [
 TAU_BIAS_TEE = [1.3]
 TAU_EXPONENTIAL = [0.9]
 AMP = [-5.1, 0.8, 2.0]
+NORM_FACTOR = 0.8
 
 
 @pytest.fixture(
@@ -57,8 +59,8 @@ def fixture_pulses(request: pytest.FixtureRequest) -> Pulse:
         []
         + [
             ExponentialCorrection(tau_exponential=tau_exponential, amp=amp),
-            BiasTeeCorrection(tau_bias_tee=tau_bias_tee),
-            ExponentialCorrection(tau_exponential=tau_exponential, amp=amp),
+            BiasTeeCorrection(tau_bias_tee=tau_bias_tee, norm_factor=NORM_FACTOR),
+            LFilterCorrection(a=[0.7, 1.3], b=[0.5, 0.6]),
         ]
         for tau_exponential, amp, tau_bias_tee in itertools.product(TAU_EXPONENTIAL, AMP, TAU_BIAS_TEE)
     ],
@@ -111,17 +113,32 @@ class TestPulseEvent:
         # Test maximums
         if isinstance(pulse.pulse_shape, Cosine) and pulse.pulse_shape.lambda_2 > 0.0:
             # If lambda_2 > 0.0 the max amplitude is reduced
-            assert round(np.max(np.real(envelope)), 2 * int(np.sqrt(1 / 1.0))) < pulse.amplitude
-            assert round(np.max(np.real(envelope2)), int(np.sqrt(1 / resolution))) < pulse.amplitude
-            assert round(np.max(np.real(envelope3)), int(np.sqrt(1 / resolution))) < 2.0
+            assert round(np.max(np.abs(np.real(envelope))), 2 * int(np.sqrt(1 / 1.0))) < NORM_FACTOR * pulse.amplitude
+            assert (
+                round(np.max(np.abs(np.real(envelope2))), int(np.sqrt(1 / resolution))) < NORM_FACTOR * pulse.amplitude
+            )
+            assert round(np.max(np.abs(np.real(envelope3))), int(np.sqrt(1 / resolution))) < NORM_FACTOR * 2.0
             # If you check the form of this shape, the maximum never gets down 70% of the Amplitude for any lambda_2
-            assert round(np.max(np.real(envelope)), 2 * int(np.sqrt(1 / 1.0))) > 0.7 * pulse.amplitude
-            assert round(np.max(np.real(envelope2)), int(np.sqrt(1 / resolution))) > 0.7 * pulse.amplitude
-            assert round(np.max(np.real(envelope3)), int(np.sqrt(1 / resolution))) > 0.7 * 2.0
+            assert (
+                round(np.max(np.abs(np.real(envelope))), 2 * int(np.sqrt(1 / 1.0)))
+                > NORM_FACTOR * 0.7 * pulse.amplitude
+            )
+            assert (
+                round(np.max(np.abs(np.real(envelope2))), int(np.sqrt(1 / resolution)))
+                > NORM_FACTOR * 0.7 * pulse.amplitude
+            )
+            assert round(np.max(np.abs(np.real(envelope3))), int(np.sqrt(1 / resolution))) > NORM_FACTOR * 0.7 * 2.0
         else:
-            assert round(np.max(np.real(envelope)), 2 * int(np.sqrt(1 / 1.0))) == pulse.amplitude
-            assert round(np.max(np.real(envelope2)), int(np.sqrt(1 / resolution))) == pulse.amplitude
-            assert round(np.max(np.real(envelope3)), int(np.sqrt(1 / resolution))) == 2.0
+            # In the rest of pulse_shapes the maximum is the amplitude
+            assert round(np.max(np.abs(np.real(envelope))), 2 * int(np.sqrt(1 / 1.0))) == round(
+                NORM_FACTOR * pulse.amplitude, 5
+            )
+            assert round(np.max(np.abs(np.real(envelope2))), int(np.sqrt(1 / resolution))) == round(
+                NORM_FACTOR * pulse.amplitude, 5
+            )
+            assert round(np.max(np.abs(np.real(envelope3))), int(np.sqrt(1 / resolution))) == round(
+                NORM_FACTOR * 2.0, 5
+            )
 
         assert len(pulse.envelope()) == len(envelope)
         assert len(envelope) * 10 == len(envelope2) == len(envelope3)
