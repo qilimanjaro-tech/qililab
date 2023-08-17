@@ -300,10 +300,10 @@ class TestSetParameter:
         mock_urllib.request.urlopen.assert_called()
         exp.set_parameter(alias=InstrumentName.QBLOX_QCM.value, parameter=Parameter.IF, value=1e9, channel_id=0)
 
-    def test_set_parameter_method_with_platform_gate_settings(self, exp: BaseExperiment):
+    def test_set_parameter_method_with_platform_gates_settings(self, exp: BaseExperiment):
         """Test set_parameter method with platform gate settings."""
         exp.set_parameter(alias="M(0)_0", parameter=Parameter.AMPLITUDE, value=0.3)
-        assert exp.platform.gate_settings.get_gate(name="M", qubits=0)[0].pulse.amplitude == 0.3
+        assert exp.platform.gates_settings.get_gate(name="M", qubits=0)[0].pulse.amplitude == 0.3
 
     def test_set_parameter_method_with_instrument_controller_reset(self, exp: BaseExperiment):
         """Test set_parameter method with instrument controller reset."""

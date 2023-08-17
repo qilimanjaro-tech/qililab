@@ -261,7 +261,7 @@ class TestMethods:
     def test_set_parameter_method_with_gate_value(self, experiment: Experiment):
         """Test the ``set_parameter`` method with a parameter of a gate."""
         experiment.set_parameter(alias="X(0)", parameter=Parameter.DURATION, value=123)
-        assert experiment.platform.gate_settings.get_gate(name="X", qubits=0)[0].pulse.duration == 123
+        assert experiment.platform.gates_settings.get_gate(name="X", qubits=0)[0].pulse.duration == 123
 
     def test_set_parameter_method_with_gate_parameter_in_circuit(self, experiment: Experiment):
         """Test the ``set_parameter`` method with a parameter of a gate in circuit."""

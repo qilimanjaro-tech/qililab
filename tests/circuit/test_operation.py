@@ -4,7 +4,7 @@ import pytest
 from qililab.circuit.operations import (
     R180,
     Barrier,
-    DRAGPulse,
+    DragPulse,
     GaussianPulse,
     Measure,
     Operation,
@@ -29,7 +29,7 @@ from qililab.typings.enums import Qubits
         Barrier(),
         Measure(),
         Reset(),
-        DRAGPulse(amplitude=1.0, duration=40, sigma=1, delta=1),
+        DragPulse(amplitude=1.0, duration=40, sigma=1, delta=1),
         SquarePulse(amplitude=1.0, duration=40),
         GaussianPulse(amplitude=1.0, duration=40, sigma=1.0),
         CPhase(theta=90),

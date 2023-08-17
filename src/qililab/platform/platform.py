@@ -27,12 +27,11 @@ from .components import Bus, Buses
 from .components.bus_element import dict_factory
 
 
-class Platform:  # pylint: disable=too-many-public-methods
+class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-attributes
     """Platform object that describes setup used to control quantum devices.
 
-    The class will receive the Runcard class, with all the GateSettings, ChipSettings, BusSettings that the
-    Runcard class has created from the dictionaries, together with the instrument dictionaries that the Runcard class
-    has not transform into classes yet.
+    The class will receive the Runcard class, with all the inner GatesSettings, Chip, Bus classes that the Runcard class has created
+    from the dictionaries, together with the instrument dictionaries that the Runcard class has not transform into classes yet.
 
     And with all that information instantiates the actual qililab Chip, Buses/Bus and corresponding Instrument classes.
 
@@ -44,21 +43,25 @@ class Platform:  # pylint: disable=too-many-public-methods
     """
 
     def __init__(self, runcard: Runcard, connection: API | None = None):
-        """instantiates the platform"""
+        self.name = runcard.name
+        """Name of the platform (str) """
 
-        self.gate_settings = runcard.gate_settings
-        """Exactly the gate_settings in the Runcard class"""
+        self.device_id = runcard.device_id
+        """Device id of the platform (int). This attribute is needed for `qiboconnection` to save results remotely."""
+
+        self.gates_settings = runcard.gates_settings
+        """Dataclass with all the settings and gates definitions needed to decompose gates into pulses."""
 
         self.instruments = Instruments(elements=self._load_instruments(instruments_dict=runcard.instruments))
-        """Instruments corresponding classes, instantiated given the instruments list[dict] of the Runcard class"""
+        """All the instruments of the platform and their needed settings, contained as elements (`list[Instrument]`) inside an `Instruments` class."""
 
         self.instrument_controllers = InstrumentControllers(
             elements=self._load_instrument_controllers(instrument_controllers_dict=runcard.instrument_controllers)
         )
-        """InstrumentControllers corresponding classes, instantiated given the instrument_controllers list[dict] of the Runcard class"""
+        """All the instrument controllers of the platform and their needed settings, contained as elements (`list[InstrumentController]`) inside an `InstrumentControllers` class."""
 
         self.chip = Chip(**asdict(runcard.chip))
-        """Chip class, instantiated given the ChipSettings class of the Runcard class"""
+        """All the chip nodes (`list[Nodes]`) of the platform, contained inside a `Chip` class"""
 
         self.buses = Buses(
             elements=[
@@ -66,13 +69,13 @@ class Platform:  # pylint: disable=too-many-public-methods
                 for bus in runcard.buses
             ]
         )
-        """Buses class, instantiated given the list[BusSettings] classes of the Runcard class"""
+        """All the buses of the platform and their needed settings, contained as elements (`list[Bus]`) inside a `Buses` class"""
 
         self.connection = connection
-        """Connection of the platform. Same as the argument"""
+        """API connection of the platform. Same as the passed argument. Defaults to None."""
 
         self._connected_to_instruments: bool = False
-        """Boolean describing the connection to instruments. Defaults to False (not connected)"""
+        """Boolean describing the connection to the instruments. Defaults to False (not connected)."""
 
     def connect(self, manual_override=False):
         """Blocks the given device and connects to the instruments.
@@ -131,14 +134,14 @@ class Platform:  # pylint: disable=too-many-public-methods
         """
         if alias is not None:
             if alias == Category.PLATFORM.value:
-                return self.gate_settings
+                return self.gates_settings
             regex_match = re.search(GATE_ALIAS_REGEX, alias.split("_")[0])
             if regex_match is not None:
                 name = regex_match["gate"]
                 qubits_str = regex_match["qubits"]
                 qubits = ast.literal_eval(qubits_str)
-                if f"{name}({qubits_str})" in self.gate_settings.gate_names:
-                    return self.gate_settings.get_gate(name=name, qubits=qubits)
+                if f"{name}({qubits_str})" in self.gates_settings.gate_names:
+                    return self.gates_settings.get_gate(name=name, qubits=qubits)
 
         element = self.instruments.get_instrument(alias=alias)
         if element is None:
@@ -172,7 +175,7 @@ class Platform:  # pylint: disable=too-many-public-methods
         return flux_bus, control_bus, readout_bus
 
     def get_bus_by_alias(self, alias: str | None = None):
-        """Get bus given an alias or id_ and category"""
+        """Get bus given an alias or id and category"""
         return next((bus for bus in self.buses if bus.alias == alias), None)
 
     def set_parameter(
@@ -186,13 +189,13 @@ class Platform:  # pylint: disable=too-many-public-methods
 
         Args:
             category (str): Category of the element.
-            id_ (int): ID of the element.
+            id (int): ID of the element.
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
         if alias == Category.PLATFORM.value or regex_match is not None:
-            self.gate_settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
+            self.gates_settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             return
         element = self.get_element(alias=alias)
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
@@ -232,27 +235,11 @@ class Platform:  # pylint: disable=too-many-public-methods
             )
         return instrument_controllers
 
-    @property
-    def name(self):
-        """Platform 'name' property.
-
-        Returns:
-            str: settings.name.
-        """
-        return self.gate_settings.name
-
-    @property
-    def device_id(self):
-        """Returns the id of the platform device.
-
-        Returns:
-            int: id of the platform device
-        """
-        return self.gate_settings.device_id
-
     def to_dict(self):
         """Return all platform information as a dictionary."""
-        gate_settings_dict = {RUNCARD.GATE_SETTINGS: asdict(self.gate_settings, dict_factory=dict_factory)}
+        name_dict = {RUNCARD.NAME: self.name}
+        device_id = {RUNCARD.DEVICE_ID: self.device_id}
+        gates_settings_dict = {RUNCARD.GATES_SETTINGS: asdict(self.gates_settings, dict_factory=dict_factory)}
         chip_dict = {RUNCARD.CHIP: self.chip.to_dict() if self.chip is not None else None}
         buses_dict = {RUNCARD.BUSES: self.buses.to_dict() if self.buses is not None else None}
         instrument_dict = {RUNCARD.INSTRUMENTS: self.instruments.to_dict() if self.instruments is not None else None}
@@ -262,7 +249,15 @@ class Platform:  # pylint: disable=too-many-public-methods
             else None,
         }
 
-        return gate_settings_dict | chip_dict | buses_dict | instrument_dict | instrument_controllers_dict
+        return (
+            name_dict
+            | device_id
+            | gates_settings_dict
+            | chip_dict
+            | buses_dict
+            | instrument_dict
+            | instrument_controllers_dict
+        )
 
     def __str__(self) -> str:
         """String representation of the platform

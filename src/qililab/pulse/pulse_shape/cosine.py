@@ -15,12 +15,12 @@ from qililab.utils import Factory
 class Cosine(PulseShape):
     r"""Cosine pulse shape like A/2*(1-lambda_1*cos(phi)-lambda_2*cos(2phi)), giving a modified sinusoidal-gaussian.
 
-        - lambda_1 cosine A/2*(1-cos(x)): Starts at height 0 (phase=0), maximum height A (phase=pi)
-            and ends at height 0 (phase=2pi). Which is a sinusoidal like gaussian. Shaped like: _/\_
+    - lambda_1 cosine A/2*(1-cos(x)): Starts at height 0 (phase=0), maximum height A (phase=pi)
+        and ends at height 0 (phase=2pi). Which is a sinusoidal like gaussian. Shaped like: _/\_
 
-        - lambda_2 cosine A/2*(1-cos(2x)): Starts at height 0 (phase=0), maximum height A (phase=pi/2)
-            then another height 0 in the middle at phase=pi, then another maximum height A (phase=3/2pi)
-            and ends at height 0 (phase=2pi). Shaped like: _/v\_
+    - lambda_2 cosine A/2*(1-cos(2x)): Starts at height 0 (phase=0), maximum height A (phase=pi/2)
+        then another height 0 in the middle at phase=pi, then another maximum height A (phase=3/2pi)
+        and ends at height 0 (phase=2pi). Shaped like: _/v\_
 
     Total would be a sum of lambda_1 x _/\_ + lambda_2 _/v\_, giving a modified sinusoidal-gaussian.
     Check the following graph from Wolframalpha, where y is the lambda_2 parameter: [https://imgur.com/a/tjatZsg]
@@ -29,8 +29,8 @@ class Cosine(PulseShape):
     - Supplemental material B. "Flux pulse parametrization" at [https://arxiv.org/abs/1903.02492],
     - OPTIMAL SOLUTION: SMALL CHANGE IN θ at [https://arxiv.org/abs/1402.5467]
 
-    Atributes:
-    lambda_2 (float): Parameter for moving the function A/2*(1-cos(x)) into A/2*(1-lambda_1*cos(x)-lambda_2*cos(2x))
+    Args:
+        lambda_2 (float): Parameter for moving the function A/2*(1-cos(x)) into A/2*(1-lambda_1*cos(x)-lambda_2*cos(2x))
                     which fulfills the constrain: 1=lambda_1+lambda_2.
     """
 

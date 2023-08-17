@@ -6,7 +6,7 @@ import pytest
 from qcodes.instrument_drivers.tektronix.Keithley_2600_channels import KeithleyChannel
 
 from qililab.instrument_controllers.keithley.keithley_2600_controller import Keithley2600Controller
-from qililab.instruments import Keithley2600
+from qililab.instruments.keithley import Keithley2600
 from qililab.platform import Platform
 from qililab.typings import Parameter
 from tests.data import Galadriel

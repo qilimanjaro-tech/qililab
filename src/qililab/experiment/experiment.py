@@ -47,14 +47,23 @@ class Experiment(BaseExperiment):
 
     def run(self, save_experiment=True, save_results=True) -> Results:
         """This method is responsible for:
+
         * Creating the live plotting (if connection is provided).
+
         * Preparing the `Results` class and the `results.yml` file.
+
         * Looping over all the given circuits, loops and/or software averages. And for each loop:
+
             * Generating and uploading the program corresponding to the circuit.
+
             * Executing the circuit.
+
             * Saving the results to the ``results.yml`` file.
+
             * Sending the data to the live plotting (if asked to).
+
             * Save the results to the ``results`` attribute.
+
             * Save the results to the remote database (if asked to).
         """
         # Generate live plotting
@@ -245,7 +254,7 @@ class Experiment(BaseExperiment):
         parameter: Parameter,
         value: float | str | bool,
         alias: str,
-        element: Runcard.GateSettings | Node | Instrument | None = None,
+        element: Runcard.GatesSettings | Node | Instrument | None = None,
         channel_id: int | None = None,
     ):
         """Set parameter of a platform element.

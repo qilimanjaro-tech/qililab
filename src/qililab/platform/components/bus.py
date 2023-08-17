@@ -13,7 +13,9 @@ from qililab.utils import Factory
 
 
 class Bus:
-    """Bus class. Ideally a bus should contain a qubit control/readout and a signal generator, which are connected
+    """Bus class.
+
+    Ideally a bus should contain a qubit control/readout and a signal generator, which are connected
     through a mixer for up- or down-conversion. At the end of the bus there should be a qubit or a resonator object,
     which is connected to one or multiple qubits.
 
@@ -62,9 +64,10 @@ class Bus:
 
     @property
     def id_(self):
-        """Bus 'id_' property.
+        """ID of the Bus.
+
         Returns:
-            int: settings.id_.
+            int: ID of the Bus.
         """
         return self.settings.id_
 
