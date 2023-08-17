@@ -126,7 +126,8 @@ class TestPlatform:
         of the given qubit."""
         platform.buses[0].settings.port = 100
         with pytest.raises(
-            ValueError, match="There can only be one bus connected to a port. There are 0 buses connected to port 0"
+            ValueError,
+            match="There can only be one bus connected to a port. There are 0 buses connected to port drive_q0",
         ):
             platform.get_bus_by_qubit_index(0)
         platform.buses[0].settings.port = 0  # Setting it back to normal to not disrupt future tests
@@ -198,8 +199,10 @@ class TestMethods:
             amplitude=1, phase=0.5, duration=200, frequency=1e9, pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
         )
         readout_pulse = Pulse(amplitude=1, phase=0.5, duration=1500, frequency=1e9, pulse_shape=Rectangular())
-        pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), port="q0", port_delay=0)
-        pulse_schedule.add_event(PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), port="q0", port_delay=0)
+        pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), port="drive_q0", port_delay=0)
+        pulse_schedule.add_event(
+            PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), port="feedline_input", port_delay=0
+        )
 
         self._compile_and_assert(platform, pulse_schedule, 2)
 
