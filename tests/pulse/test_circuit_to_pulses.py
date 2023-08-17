@@ -29,7 +29,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.8,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 200,
                 "shape": {"name": "rectangular"},
             },
@@ -41,7 +40,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.8,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 198,  # try some non-multiple of clock time (4)
                 "shape": {"name": "drag", "drag_coefficient": 0.8, "num_sigmas": 2},
             },
@@ -54,7 +52,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.8,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 200,
                 "shape": {"name": "drag", "drag_coefficient": 0.8, "num_sigmas": 2},
             },
@@ -65,7 +62,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.8,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 200,
                 "shape": {"name": "drag", "drag_coefficient": 0.8, "num_sigmas": 2},
             },
@@ -75,7 +71,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.8,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 100,
                 "shape": {"name": "rectangular"},
             },
@@ -85,7 +80,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.8,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 100,
                 "shape": {"name": "gaussian", "num_sigmas": 4},
             },
@@ -97,7 +91,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.8,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 200,
                 "shape": {"name": "rectangular"},
             },
@@ -109,7 +102,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.8,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 200,
                 "shape": {"name": "rectangular"},
             },
@@ -121,7 +113,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.7,
                 "phase": 0.5,
-                "frequency": 2.0e6,
                 "duration": 100,
                 "shape": {"name": "gaussian", "num_sigmas": 2},
             },
@@ -133,7 +124,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.7,
                 "phase": 0.5,
-                "frequency": 2.0e6,
                 "duration": 100,
                 "shape": {"name": "gaussian", "num_sigmas": 2},
             },
@@ -146,7 +136,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.7,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 90,
                 "shape": {"name": "snz", "b": 0.5, "t_phi": 1},
             },
@@ -157,7 +146,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.7,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 100,
                 "shape": {"name": "rectangular"},
             },
@@ -171,7 +159,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.7,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 90,
                 "shape": {"name": "snz", "b": 0.5, "t_phi": 1},
             },
@@ -181,7 +168,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.7,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 100,
                 "shape": {"name": "rectangular"},
             },
@@ -521,7 +507,6 @@ class TestTranslation:
             {
                 "amplitude": 0.8,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 200,
                 "start_time": 0,
                 "qubit": 0,
@@ -530,7 +515,6 @@ class TestTranslation:
             {
                 "amplitude": 0.8,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 100,
                 "start_time": 0,
                 "qubit": 0,
@@ -539,7 +523,6 @@ class TestTranslation:
             {
                 "amplitude": 0.8 / np.pi,
                 "phase": 0.5,
-                "frequency": 3.0e6,
                 "duration": 198,
                 "start_time": 230,
                 "qubit": 0,
@@ -548,7 +531,6 @@ class TestTranslation:
             {
                 "amplitude": 2 * 0.8 / np.pi,
                 "phase": 0.5,
-                "frequency": 3.0e6,
                 "duration": 198,
                 "start_time": 1140,
                 "qubit": 0,
@@ -560,7 +542,6 @@ class TestTranslation:
             {
                 "amplitude": 0.8,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 100,
                 "start_time": 0,
                 "qubit": 4,
@@ -572,7 +553,6 @@ class TestTranslation:
             {
                 "amplitude": 0.8,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 200,
                 "start_time": 30,
                 "qubit": 0,
@@ -581,7 +561,6 @@ class TestTranslation:
             {
                 "amplitude": 0.7,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 100,
                 "start_time": 430,
                 "qubit": 0,
@@ -590,7 +569,6 @@ class TestTranslation:
             {
                 "amplitude": 0.7,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 100,
                 "start_time": 730,
                 "qubit": 0,
@@ -599,7 +577,6 @@ class TestTranslation:
             {
                 "amplitude": 0.7,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 100,
                 "start_time": 830,
                 "qubit": 0,
@@ -611,7 +588,6 @@ class TestTranslation:
             {
                 "amplitude": 0.7,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 90,
                 "start_time": 440,
                 "qubit": 2,
@@ -620,7 +596,6 @@ class TestTranslation:
             {
                 "amplitude": 0.7,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 90,
                 "start_time": 740,
                 "qubit": 2,
@@ -632,7 +607,6 @@ class TestTranslation:
             {
                 "amplitude": 0.7,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 90,
                 "start_time": 840,
                 "qubit": None,
