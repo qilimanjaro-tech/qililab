@@ -65,10 +65,11 @@ class PulseDistortion(FactoryElement):
 
         Finally it applies the manual self.norm_factor to the result, reducing the full envelope by its magnitude
         """
+        # Automatic and manual normalization
         if self.auto_norm:
             norm = np.max(np.abs(np.real(envelope)))
             corr_norm = np.max(np.abs(np.real(corr_envelope)))
             return corr_envelope * self.norm_factor * (norm / corr_norm)
 
-        else:
-            return corr_envelope * self.norm_factor
+        # Only manual normalization
+        return corr_envelope * self.norm_factor
