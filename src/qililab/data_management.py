@@ -24,14 +24,14 @@ def save_results(results: np.ndarray, path: str, name: str | None = None, platfo
     now = datetime.now()
 
     # Generate path to the daily folder
-    daily_path = Path(path) / f"{now.year}-{now.month:02d}-{now.day:02d}"  # type: ignore
+    daily_path = Path(path) / f"{now.year}{now.month:02d}{now.day:02d}"  # type: ignore
 
     # Check if folder exists, if not create one
     if not os.path.exists(daily_path):
         os.makedirs(daily_path)
 
     # Generate path to the results folder
-    now_path = daily_path / f"{now.hour:02d}-{now.minute:02d}-{now.second:02d}_{name}"  # type: ignore
+    now_path = daily_path / f"{now.hour:02d}{now.minute:02d}{now.second:02d}_{name}"  # type: ignore
 
     # Check if folder exists, if not create one
     if not os.path.exists(now_path):
