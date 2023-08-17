@@ -362,14 +362,16 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 - Scope acquisition disabled: An array with dimension `(#sequencers, 2, #bins)`.
         """
         # Compile pulse schedule
-        self.compile(program, num_avg, repetition_duration, num_bins)
+        programs = self.compile(program, num_avg, repetition_duration, num_bins)
 
         # Upload pulse schedule
-        for bus in self.buses:
+        for bus_alias in programs.keys():
+            bus = self.get_bus_by_alias(alias=bus_alias)
             bus.upload()
 
         # Execute pulse schedule
-        for bus in self.buses:
+        for bus_alias in programs.keys():
+            bus = self.get_bus_by_alias(alias=bus_alias)
             bus.run()
 
         # Acquire results
