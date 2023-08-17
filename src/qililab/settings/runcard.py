@@ -43,17 +43,30 @@ class Runcard:
     # Inner dataclasses definition
     @dataclass
     class Bus:
-        """Dataclass with all the settings the buses of the platform need."""
+        """Dataclass with all the settings the buses of the platform need.
 
+        Args:
+            alias (str): Alias of the bus.
+            system_control (dict): Dictionary containing the settings of the system control of the bus.
+            port (str): Alias of the port of the chip the bus is connected to.
+            distortions (list[dict]): List of dictionaries containing the settings of the distortions applied to each
+                bus.
+            delay (int, optional): Delay applied to all pulses sent in this bus. Defaults to 0.
+        """
+
+        alias: str
         system_control: dict
-        port: int
+        port: str
         distortions: list[dict]
-        alias: str | None = None
         delay: int = 0
 
     @dataclass
     class Chip:
-        """Dataclass with all the settings/nodes the chip of the platform needs."""
+        """Dataclass with all the settings/nodes the chip of the platform needs.
+
+        Args:
+            nodes (list[dict]): List of dictionaries containing the settings of all the nodes of the chip.
+        """
 
         nodes: list[dict]
 
