@@ -24,14 +24,12 @@ class GateEventSettings:
         Attributes:
             amplitude (float): amplitude of the pulse
             phase (float): phase of the pulse
-            frequency (float): target frequency
             duration (int): pulse duration
             shape (dict): pulse envelope
         """
 
         amplitude: float
         phase: float
-        frequency: float
         duration: int
         shape: dict
 

@@ -241,7 +241,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
                 amplitude=pulse.amplitude,
                 phase=pulse.phase,
                 duration=pulse.duration,
-                frequency=pulse.frequency,
+                frequency=qubit.frequency,
                 pulse_shape=pulse_shape,
             ),
             start_time=time + gate_event.wait_time + self.platform.gates_settings.delay_before_readout,
