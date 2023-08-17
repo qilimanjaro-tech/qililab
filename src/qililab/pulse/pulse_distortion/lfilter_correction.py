@@ -71,7 +71,7 @@ class LFilterCorrection(PulseDistortion):
         Returns:
             numpy.ndarray: Amplitude of the envelope for each time step.
         """
-        # Filtered signal, normalized with envelopes max heights (of the real parts)
+        # Filtered signal, normalized with envelopes absolute max heights (of the real parts).
         corr_envelope = signal.lfilter(b=self.b, a=self.a, x=envelope)
 
         #### 0th try, first implementation:
