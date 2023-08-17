@@ -61,8 +61,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             circuit.add(gates.X(0))
             circuit.add(gates.M(0))
 
-        For testing purposes, we can already execute this circuit using the platform:
+        For testing purposes, we can already execute this circuit using the platform. In order to execute a circuit or
+        a pulse schedule we first need to connect to the platform:
 
+        >>> platform.connect()
         >>> result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
         >>> result.array
         array([[5.],
