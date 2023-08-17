@@ -42,3 +42,5 @@ def save_results(results: np.ndarray, path: str, name: str | None = None, platfo
     if platform:
         with open(file=f"{now_path}/platform.yml", mode="w", encoding="utf-8") as platform_file:
             yaml.dump(stream=platform_file, data=platform.to_dict(), sort_keys=False)
+
+    return now_path
