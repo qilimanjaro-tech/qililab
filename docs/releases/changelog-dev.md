@@ -14,6 +14,9 @@ This document contains the changes of the current release.
 
   [#512](https://github.com/qilimanjaro-tech/qililab/pull/512)
 
+- Fixed bug which did not allow gaussian waveforms to have amplitude 0
+  [#471](https://github.com/qilimanjaro-tech/qililab/pull/471)
+
 - Delete `Schema` class from `Platform` and `RuncardSchema` classes (and from the rest of qililab).
 
   Also `RuncardSchema` is now called simply `Runcard` (since its the class that maps our runcard files).

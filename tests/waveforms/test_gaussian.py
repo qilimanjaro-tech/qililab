@@ -30,3 +30,7 @@ class TestGaussian:
         envelope = envelope * norm / corr_norm
 
         assert np.allclose(gaussian.envelope(resolution=2), envelope)
+
+    def test_amplitude_0(self, gaussian):
+        gaussian.amplitude = 0
+        assert np.allclose(gaussian.envelope(), np.zeros(10))
