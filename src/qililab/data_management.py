@@ -10,7 +10,7 @@ from .platform import Platform
 from .settings import Runcard
 
 
-def save_results(results: np.ndarray, loops: dict[str, np.ndarray], data_path: str, name: str | None = None):
+def save_results(results: np.ndarray, loops: dict[str, np.ndarray], data_path: str, name: str | None = None) -> str:
     """Save the given results and the platform.
 
     A timestamp is used to create a folder to save the data. The data will be saved within the folder located in:
@@ -22,6 +22,9 @@ def save_results(results: np.ndarray, loops: dict[str, np.ndarray], data_path: s
             loop and the values of the dictionary correspond to the values of the loop.
         data_path (str): Path to the main data directory.
         name (str | None, optional): Name of the experiment. If given, the name is added to the name of the folder.
+
+    Returns:
+        str: Path to folder where the results are saved.
 
     Examples:
 
@@ -54,7 +57,7 @@ def save_results(results: np.ndarray, loops: dict[str, np.ndarray], data_path: s
             This method will create 2 folders within the path you provided: one folder with the name `yearmonthday`
             (if not already present) and another one with the name `hourminutesecond`.
 
-            The results will be saved inside the last folder.
+            The results will be saved inside the last folder under the name `results.h5`.
     """
     now = datetime.now()
 
