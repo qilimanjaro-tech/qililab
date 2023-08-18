@@ -119,3 +119,13 @@ class BusDriver(ABC):
             + "".join(f"--|{instrument.name}|" for instrument in self.instruments.values())
             + f"--> port {self.port}"
         )
+
+    def to_dict(self, instruments):
+        """Generates a dict representation given the Buses and the instruments get_parms()"""
+        raise NotImplementedError
+
+    @classmethod
+    def from_dict(cls, dict):
+        """Generates the Buses classes and passes the instrument params info to be set with set_params(), given a dictionary"""
+        _ = dict
+        raise NotImplementedError
