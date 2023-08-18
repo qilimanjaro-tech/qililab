@@ -5,11 +5,21 @@ from unittest.mock import MagicMock
 import pytest
 
 from qililab.instruments.instrument import ParameterNotFound
-from qililab.platform import Bus
+from qililab.platform import Bus, Buses
 from qililab.system_control import ReadoutSystemControl, SystemControl
 from qililab.typings import Parameter
+from tests.data import Galadriel
+from tests.test_utils import build_platform
 
-from .aux_methods import buses as load_buses
+
+def load_buses() -> Buses:
+    """Load Buses.
+
+    Returns:
+        Buses: Instance of the Buses class.
+    """
+    platform = build_platform(Galadriel.runcard)
+    return platform.buses
 
 
 @pytest.mark.parametrize("bus", [load_buses().elements[0], load_buses().elements[1]])
