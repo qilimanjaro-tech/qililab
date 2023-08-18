@@ -37,7 +37,7 @@ class Gaussian(PulseShape):
         gaussian = gaussian - gaussian[0]  # Shift to avoid introducing noise at time 0
         corr_norm = np.amax(np.real(gaussian))
 
-        return gaussian * norm / corr_norm
+        return gaussian * norm / corr_norm if corr_norm != 0 else gaussian
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "Gaussian":

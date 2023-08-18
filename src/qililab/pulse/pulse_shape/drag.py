@@ -40,7 +40,7 @@ class Drag(PulseShape):
 
         drag_gaussian = (1 - 1j * self.drag_coefficient * (time - mu_) / sigma**2) * gaussian
 
-        return drag_gaussian * norm / corr_norm
+        return drag_gaussian * norm / corr_norm if corr_norm != 0 else drag_gaussian
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "Drag":

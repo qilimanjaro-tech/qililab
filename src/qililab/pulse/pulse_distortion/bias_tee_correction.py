@@ -27,6 +27,20 @@ class BiasTeeCorrection(PulseDistortion):
 
     Returns:
         PulseDistortion: Distortion to apply to given envelopes in PulseEvent.
+
+    Examples:
+
+        Imagine you want to distort a `Rectangular` envelope with an `BiasTeeCorrection`. You could do:
+
+        .. code-block:: python3
+
+            envelope = Rectangular().envelope(duration=..., amplitude=...)
+            distorted_envelope = BiasTeeCorrection(tau_bias_tee=1.3).apply(envelope)
+
+        which would return a distorted envelope with the same real max height as the initial.
+
+        .. note::
+            further examples in the PulseDistortion documentation.
     """
 
     name = PulseDistortionName.BIAS_TEE_CORRECTION
@@ -38,10 +52,13 @@ class BiasTeeCorrection(PulseDistortion):
 
         Corrects for a bias tee using a linear IIR filter with time constant tau.
 
-        If self.auto_norm is True (default) normalizes the resulting envelope to have the same max height than the starting one.
-        (the max height is the furthest number from 0 in the envelope, only checking the real axis/part)
+        If `self.auto_norm` is True (default) normalizes the resulting envelope to have the same real max height than the starting one.
+        (the max height is the furthest number from 0, only checking the real axis/part)
+        If the corrected envelope is zero everywhere or doesn't have a real part this process is skipped.
 
-        Finally it applies the manual self.norm_factor to the result, reducing the full envelope by its magnitude.
+        Finally it applies the manual `self.norm_factor` to the result, reducing the full envelope by its magnitude.
+
+        (For further details on the normalization implementation see the documentation on PulseDistortion base class)
 
         Args:
             envelope (numpy.ndarray): array representing the envelope of a pulse for each time step.

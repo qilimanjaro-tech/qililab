@@ -43,4 +43,4 @@ class Gaussian(Waveform):  # pylint: disable=too-few-public-methods
         gaussian = gaussian - gaussian[0]  # Shift to avoid introducing noise at time 0
         corr_norm = np.amax(np.real(gaussian))
 
-        return gaussian * norm / corr_norm
+        return gaussian * norm / corr_norm if corr_norm != 0 else gaussian
