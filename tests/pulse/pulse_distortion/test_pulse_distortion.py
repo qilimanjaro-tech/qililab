@@ -150,3 +150,9 @@ class TestPulseDistortion:
                 PulseDistortionSettingsName.NORM_FACTOR.value: pulse_distortion.norm_factor,
                 PulseDistortionSettingsName.AUTO_NORM.value: pulse_distortion.auto_norm,
             }
+
+    def test_envelope_with_amplitude_0(self, pulse_distortion):
+        """Testing that the corner case amplitude = 0 works properly."""
+        envelope = Rectangular().envelope(amplitude=0, duration=DURATION[0])
+        corr_envelope = pulse_distortion.apply(envelope)
+        assert np.allclose(corr_envelope, np.zeros(DURATION[0]))

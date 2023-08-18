@@ -162,3 +162,9 @@ class TestPulseShape:
                     PulseShapeSettingsName.T_PHI.value: pulse_shape.t_phi,
                 }
             )
+
+    def test_envelope_with_amplitude_0(self, pulse_shape):
+        """Testing that the corner case amplitude = 0 works properly."""
+        DURATION = 10
+        envelope = pulse_shape.envelope(amplitude=0, duration=DURATION)
+        assert np.allclose(envelope, np.zeros(DURATION))
