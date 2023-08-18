@@ -7,7 +7,6 @@ import pytest
 
 from qililab.constants import RUNCARD
 from qililab.execution import EXECUTION_BUILDER, BusExecution
-from qililab.execution.execution_manager import ExecutionManager
 from qililab.platform import Platform
 from qililab.pulse import Gaussian, Pulse, PulseEvent, PulseSchedule
 from qililab.pulse.circuit_to_pulses import CircuitToPulses
