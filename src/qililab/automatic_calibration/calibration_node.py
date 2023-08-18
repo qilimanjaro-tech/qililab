@@ -12,7 +12,7 @@ class CalibrationNode:
 
     Attributes:
         _node_id (str): A unique identifier for the node. It should describe what the node does in the calibration graph.
-        _qprogram (QProgram): The QProgram describing the experiment done in the node.
+        _qprogram (function): The function that generates the QProgram describing the experiment done in the node.
         _sweep_interval (dict): Dictionary with 3 keys describing the sweep values of the experiment. The keys are:
                                 *start
                                 *step
@@ -28,6 +28,7 @@ class CalibrationNode:
                                     the values indicate the corresponding label.
         _qubit (int): The qubit that is being calibrated by the calibration graph to which the node belongs.
         _parameter (str): The parameter that this node will tune.
+        _alias (str): The alias of the bus where the parameters is set #TODO: I think this is part of the old buses implementation: if possible, remove asap.
         _drift_timeout (float): A durations in seconds, representing an estimate of how long it takes for the parameter to drift.
         _data_validation_threshold (float): The threshold used by the check_data() method to validate the data fittings.
         _timestamps (dict): A dictionary where keys are timestamps and values are the operations that generated the timestamp.
@@ -44,14 +45,15 @@ class CalibrationNode:
     def __init__(
         self,
         node_id: str,
-        qprogram: QProgram,
+        qprogram,
         sweep_interval: dict = None,
         is_refinement: bool = False,
-        analysis_function: function = None,
-        fitting_model: function = None,
+        analysis_function = None,
+        fitting_model = None,
         plotting_labels: dict = None,
         qubit: int = None,
         parameter: str = None,
+        alias: str = None,
         drift_timeout: float = 0,
         data_validation_threshold: float = 1,
         number_of_random_datapoints: int = 10,
@@ -66,10 +68,13 @@ class CalibrationNode:
         self._plotting_labels = plotting_labels
         self._qubit = qubit
         self._parameter = parameter
-        self._drift_timeout = drift_timeout,
+        self._alias = alias
+        self._drift_timeout = drift_timeout
         self._data_validation_threshold = data_validation_threshold
         self._number_of_random_datapoints = number_of_random_datapoints
         self._manual_check = manual_check
+        self._timestamps = {}
+        self._experiment_results = None
         
     def _hash_(self) -> int:
         """
@@ -120,6 +125,10 @@ class CalibrationNode:
         return self._parameter
     
     @property
+    def alias(self):
+        return self._alias
+    
+    @property
     def drift_timeout(self):
         return self._drift_timeout
     
@@ -136,7 +145,7 @@ class CalibrationNode:
     
     @experiment_results.setter
     def experiment_results(self, experiment_results):
-     property
+        self._experiment_results = experiment_results
     
     @property
     def manual_check(self):

@@ -13,6 +13,7 @@ import os
 
 import lmfit
 import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 import networkx as nx
 import numpy as np
 from scipy.signal import find_peaks
@@ -378,7 +379,7 @@ NOTE: For now, each experiment has it own custom function that handled both anal
         as possible to each other.
 """
 
-def analyze_rabi(results, fit_quadrature="i", label=""):
+def analyze_rabi(results, show_plot: bool, fit_quadrature="i", label=""):
     """
     Analyzes the Rabi experiment data.
 
@@ -390,7 +391,7 @@ def analyze_rabi(results, fit_quadrature="i", label=""):
                  https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/pulsar.html#qblox_instruments.native.Pulsar.get_acquisitions
                  The list only has 1 element because each element represents the acquisitions dictionary of one readout bus, 
                  and for the moment multiple readout buses are not supported.
-
+        show_plot (bool): If true, the plot is saved and printed so the user can see it. If false, the plot is just saved.
 
     Returns:
         fitted_pi_pulse_amplitude (int)
@@ -452,10 +453,14 @@ def analyze_rabi(results, fit_quadrature="i", label=""):
         amplitude_loop_values, optimal_parameters, axes[fit_signal_idx], fitted_pi_pulse_amplitude
     )
     fig.savefig(figure_filepath, format="PNG")
+    if show_plot:
+        plot = mpimg.imread(figure_filepath)
+        plt.imshow(plot)
+        plt.show()
     return fitted_pi_pulse_amplitude
 
 
-def analyze_ramsey(results, fit_quadrature="i", label="", prominence_peaks=20, analyze=True):
+def analyze_ramsey(results, show_plot: bool, fit_quadrature="i", label="", prominence_peaks=20, analyze=True):
     """
     Analyzes the ramsey experiment data.
 
@@ -467,6 +472,8 @@ def analyze_ramsey(results, fit_quadrature="i", label="", prominence_peaks=20, a
                  https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/pulsar.html#qblox_instruments.native.Pulsar.get_acquisitions
                  The list only has 1 element because each element represents the acquisitions dictionary of one readout bus, 
                  and for the moment multiple readout buses are not supported.
+        show_plot (bool): If true, the plot is saved and printed so the user can see it. If false, the plot is just saved.
+
 
     Returns:
         The optimal frequency found with the Ramsey experiment.
@@ -574,10 +581,14 @@ def analyze_ramsey(results, fit_quadrature="i", label="", prominence_peaks=20, a
     ax.set_ylabel("Detuning")
     ax.set_title(title_label)
     fig.savefig(figure_filepath, format="PNG")
+    if show_plot:
+        plot = mpimg.imread(figure_filepath)
+        plt.imshow(plot)
+        plt.show()
     return fit_res.best_values["xc"] if analyze else None
 
 
-def analyze_drag_coefficient(results, fit_quadrature="i", label=""):
+def analyze_drag_coefficient(results,  show_plot: bool, fit_quadrature="i", label=""):
     """
     Analyzes the drag coefficient calibration experiment data.
 
@@ -589,6 +600,7 @@ def analyze_drag_coefficient(results, fit_quadrature="i", label=""):
                  https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/pulsar.html#qblox_instruments.native.Pulsar.get_acquisitions
                  The list only has 1 element because each element represents the acquisitions dictionary of one readout bus, 
                  and for the moment multiple readout buses are not supported.
+        show_plot (bool): If true, the plot is saved and printed so the user can see it. If false, the plot is just saved.
 
     Returns:
         fitted_drag_coeff (int): The optimal drag coefficient.
@@ -672,10 +684,14 @@ def analyze_drag_coefficient(results, fit_quadrature="i", label=""):
     ax.set_xlabel("Drag Coefficient")
     ax.legend()
     fig.savefig(figure_filepath, format="PNG")
+    if show_plot:
+        plot = mpimg.imread(figure_filepath)
+        plt.imshow(plot)
+        plt.show()
     return fitted_drag_coeff
 
 
-def analyze_flipping(results, flips_values, fit_quadrature="i", label=""):
+def analyze_flipping(results, flips_values, show_plot: bool, fit_quadrature="i", label=""):
     """
     Analyzes the flipping experiment data.
 
@@ -687,6 +703,8 @@ def analyze_flipping(results, flips_values, fit_quadrature="i", label=""):
                  https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/pulsar.html#qblox_instruments.native.Pulsar.get_acquisitions
                  The list only has 1 element because each element represents the acquisitions dictionary of one readout bus, 
                  and for the moment multiple readout buses are not supported.
+        show_plot (bool): If true, the plot is saved and printed so the user can see it. If false, the plot is just saved.
+
 
     """
 
@@ -786,11 +804,15 @@ def analyze_flipping(results, flips_values, fit_quadrature="i", label=""):
     ax.set_xlabel("Number of Flips")
     ax.legend()
     fig.savefig(figure_filepath, format="PNG")
+    if show_plot:
+        plot = mpimg.imread(figure_filepath)
+        plt.imshow(plot)
+        plt.show()
 
     return epsilon_coef if reduced_chi < reduced_chi2 else epsilon_coef2
 
 
-def analyze_all_xy(results, label=""):
+def analyze_all_xy(results, show_plot: bool, label=""):
     """
     Analyzes the AllXY experiment data.
 
@@ -802,6 +824,7 @@ def analyze_all_xy(results, label=""):
                  https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/pulsar.html#qblox_instruments.native.Pulsar.get_acquisitions
                  The list only has 1 element because each element represents the acquisitions dictionary of one readout bus, 
                  and for the moment multiple readout buses are not supported.
+        show_plot (bool): If true, the plot is saved and printed so the user can see it. If false, the plot is just saved.
 
     Returns:
         The plot of the AllXY experiment data
@@ -834,7 +857,10 @@ def analyze_all_xy(results, label=""):
     ax = plt.gca()
     ax.set_title(ax.get_title()) 
     #TODO: save figure with appropriate path
-    #TODO: print figure to show user
+    if show_plot:
+        plot = mpimg.imread(figure_filepath)
+        plt.imshow(plot)
+        plt.show()
     
 ######################################################################################################
 """

@@ -45,7 +45,7 @@ def is_timeout_expired(timestamp, timeout):
     return current_time > timeout_time
 
 
-def get_random_values(array: list(float), number_of_values: int):
+def get_random_values(array: list(), number_of_values: int):
     """
     Returns random values from an array.
 

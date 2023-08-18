@@ -1,6 +1,6 @@
 import networkx as nx
 
-from calibration_utils.calibration_utils import is_timeout_expired, get_timestamp, get_random_values
+from qililab.automatic_calibration.calibration_utils.calibration_utils import is_timeout_expired, get_timestamp, get_random_values, get_raw_data
 from qililab.automatic_calibration.calibration_node import CalibrationNode
 from qililab.platform.platform import Platform
 
@@ -45,6 +45,7 @@ class Controller:
         # check_state
         result = self.check_state(node)
         if result:
+            # check_state returned successful result
             return
 
         # check_data
@@ -58,7 +59,9 @@ class Controller:
         # calibrate
         result = self.calibrate(node)
 
+        #FIXME: this parameter update doesn't work.
         self.update_parameter(node = node, parameter_value = result)
+        print(f"Updated parameter \"{node.parameter}\" value.\n")
 
 
     def diagnose(self, node: CalibrationNode):
@@ -107,11 +110,17 @@ class Controller:
         if node is None:
             # Find highest level node in the calibration graph, the one that no other node depends on. If we call maintain from this node, 
             # 'maintain` will recursively call itself on all the lower level nodes.
-            node = (
+            # FIXME: this only works if there's only 1 highest level node.
+            highest_level_nodes = (
                 [node for node, in_degree in self._calibration_graph.in_degree() if in_degree == 0]
-            )  
+            )
+            node = highest_level_nodes[0]
 
         self.maintain(node)
+
+        print("####################################\n"
+              "Calibration completed successfully!\n"
+              "####################################")
 
     def check_state(self, node: CalibrationNode) -> bool:
         """
@@ -124,7 +133,7 @@ class Controller:
         Returns:
             bool: True if the parameter's drift timeout has not yet expired, False otherwise.
         """
-        
+        if node.timestamps is None or (not hasattr(node, 'timestamps')) or len(node.timestamps) == 0: return False
         return not is_timeout_expired(node.timestamps[-1], node.drift_timeout)
 
     def check_data(self, node: CalibrationNode) -> str:
@@ -138,21 +147,26 @@ class Controller:
         Returns:
             str: TODO: finish docstrings
         """
-
-        # Choose random datapoints within the sweep interval.
+        
+        # If there is no previous experimental data available for the node it means that this is the first time we're traversing it, 
+        # so we assume that the node's parameter is out of spec.
+        if (not hasattr(node, "experiment_results")) or node.experiment_results is None:
+            return "out_of_spec"
+        
+        # Choose random points within the sweep interval.
         try:
             random_values = get_random_values(node.sweep_interval)
         except ValueError as e:
             print(e)
-
+        
         for value in random_values:
-            self.run_experiment(analyze=True, experiment_point=value)
+            current_point_result = self.run_experiment(analyze=True, experiment_point=value)
+            # check if result matches old data
+            
+            # return in_spec, out_of_spec or bad_data
 
-        # #TODO: implement: Check if data obtained now is similar to the one obtained in the last calibration.
-        # return in_spec, out_of_spec or bad_data
-
-        # Add timestamp to the timestamps list of the node.
-        node.add_timestamp(timestamp=get_timestamp(), timestamp_type="check_data")
+        # Add timestamp to the timestamps list of the node when check_data returns a successful result.
+        node.add_timestamp(timestamp=get_timestamp(), type_of_timestamp="check_data")
 
     def calibrate(self, node: CalibrationNode) -> float | str | bool:
         """Run a node's calibration experiment on its default interval of sweep values.
@@ -162,12 +176,12 @@ class Controller:
 
         Returns:
             float | str | bool: The optimal parameter value found by the calibration experiment.
-        """        
+        """
 
         optimal_parameter_value = self.run_experiment(node)
 
         # Add timestamp to the timestamps list of the node.
-        node.add_timestamp(timestamp=get_timestamp, type_of_timestamp="calibration")
+        node.add_timestamp(timestamp=get_timestamp(), type_of_timestamp="calibrate")
         
         return optimal_parameter_value
 
@@ -184,6 +198,7 @@ class Controller:
         Returns:
             float | str | bool: The optimal parameter value found by the experiment.
         """
+        
         if node.is_refinement:
             # FIXME: the following doesn't allow for nodes to depend on multiple other nodes and it's awful, please fix.
             previous_experiment_data = list(self._calibration_graph.successors(node))[0].experiment_results
@@ -207,37 +222,45 @@ class Controller:
             user_approves_plot = "n"
             while user_approves_plot == "n":
                 # Compile and run the QProgram on the platform.
-                node.experiment_results = self._platform.execute_qprogram(node.qprogram(drive_bus = "drive_bus", readout_bus = "readout_bus", sweep_values = node.sweep_interval))
-
+                print(f"Running \"{node.qprogram.__name__}\" experiment\n")
+                #node.experiment_results = self._platform.execute_qprogram(node.qprogram(drive_bus = "drive_bus", readout_bus = "readout_bus", sweep_values = node.sweep_interval))
+                node.experiment_results = "./tests/automatic_calibration/rabi.yml"
+                
                 if analyze:
                     # Call the general analysis function with the appropriate model, or the custom one (no need to specify the model in this case, it will already be hardcoded).
-                    optimal_parameter_value = node.analysis_function(results = node.experiment_results)
+                    # If node.manual_check is True, the analysis function will also open the file containing the plot.
+                    print(f"Running the \"{node.analysis_function.__name__}\" analysis function\n")
+                    optimal_parameter_value = node.analysis_function(results = node.experiment_results, show_plot=node.manual_check)
 
                 # If the 'manual_check' option is activated for the node, show the plot and ask the user for approval.
                 if node.manual_check:
-                    #TODO: print plot
                     user_approves_plot = input("Do you want to repeat the experiment? (y/n): ").lower()
                 else:
                     user_approves_plot = "y"
-        
+
             return optimal_parameter_value
+
+        # Case when the experiment is started by 'check_data': the experiment is run only in 1 point. In this case we don't store the 
+        # experiment results in the node's 'experiment_results' attribute, because we don't want to overwrite the old results: 
+        # we need them to compare them with the new ones, which here we simply return.
+        # TODO: for now I just return the data of the experiment in the point, figure out the details when implementing check_data
+        # FIXME: uncomment the following when execute_qprogram is merged into main.
         
-        # Case when the experiment is started by 'check_data': the experiment is run only in 1 point.
-        #TODO: for now I just return the data of the experiment in the point, figure out the details when implementing check_data
-        return self._platform.execute_qprogram(node.qprogram(node.qprogram(drive_bus = "drive_bus", readout_bus = "readout_bus", sweep_values = list(experiment_point))))
+        #return self._platform.execute_qprogram(node.qprogram(node.qprogram(drive_bus = "drive_bus", readout_bus = "readout_bus", sweep_values = list(experiment_point))))
+        print("Trying to run qprogram experiment but failed because execute_qprogram is not yet implemented in main\n")
 
     def update_parameter(self, node: CalibrationNode, parameter_value: float | bool | str) -> None:
         """Update a parameter value in the platform. 
         If the node does not have an associated parameter, or the parameter attribute of the node is None,
-        this function does nothing. That is because some nodes, such as those associated with the AllXY 
+        this function does nothing. That is because some nodes, such as those associated with the AllXY
         experiment, don't compute the value of a parameter.
 
         Args:
             node (CalibrationNode): The node that contains the experiment that gives the optimal value of the parameter.
             parameter_value (float | bool | str): The optimal value of the parameter found by the experiment.
         """        
-        if hasattr(node, "parameter")  and node.parameter is not None:
-            self.platform.set_parameter(alias = node.parameter, value = parameter_value)
+        if hasattr(node, "parameter") and node.parameter is not None:
+            self._platform.set_parameter(parameter = node.parameter, alias = node.parameter, value = parameter_value)
         
     def dependents(self, node: CalibrationNode):
         """Find the nodes that a node depends on. 
@@ -249,16 +272,5 @@ class Controller:
         Returns:
             list: The nodes that the argument node depends on
         """        
-        return list(self._calibration_graph.successors(node))
-    
-    @property
-    def calibration_graph(self):
-        return self._calibration_graph
-
-    @calibration_graph.setter
-    def calibration_graph(self, new_calibration_graph):
-        self._calibration_graph = new_calibration_graph
+        return self._calibration_graph.successors(node)
         
-    @property
-    def platform(self):
-        return self._platform
