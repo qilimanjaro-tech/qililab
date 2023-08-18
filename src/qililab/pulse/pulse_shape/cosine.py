@@ -13,7 +13,7 @@ from qililab.utils import Factory
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class Cosine(PulseShape):
-    """Cosine pulse shape like A/2*(1-lambda_1*cos(phi)-lambda_2*cos(2phi)), giving a modified sinusoidal-gaussian.
+    r"""Cosine pulse shape like A/2*(1-lambda_1*cos(phi)-lambda_2*cos(2phi)), giving a modified sinusoidal-gaussian.
 
     - lambda_1 cosine A/2*(1-cos(x)): Starts at height 0 (phase=0), maximum height A (phase=pi) and ends at height 0 (phase=2pi). Which is a sinusoidal like gaussian. Shaped like: _/\_
 
