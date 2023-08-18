@@ -2,47 +2,6 @@
 from enum import Enum
 
 
-class Category(str, Enum):
-    """Category of settings.
-
-    Args:
-        enum (str): Available types of settings categories:
-        * platform
-        * qubit
-        * awg
-        * signal_generator
-        * buses
-        * bus
-        * schema
-        * resonator
-        * node
-        * instrument_controller
-        * voltage_source
-        * current_source
-        * digital_analog_converter
-    """
-
-    PLATFORM = "platform"
-    QUBIT = "qubit"
-    AWG = "awg"
-    SIGNAL_GENERATOR = "signal_generator"
-    SCHEMA = "schema"
-    RESONATOR = "resonator"
-    BUSES = "buses"
-    BUS = "bus"
-    SYSTEM_CONTROL = "system_control"
-    EXPERIMENT = "experiment"
-    ATTENUATOR = "attenuator"
-    DC_SOURCE = "dc_source"
-    VNA = "vna"
-    CHIP = "chip"
-    NODE = "node"
-    INSTRUMENT_CONTROLLER = "instrument_controller"
-    VOLTAGE_SOURCE = "voltage_source"
-    CURRENT_SOURCE = "current_source"
-    ADC = "adc"
-
-
 class Instrument(str, Enum):
     """Instrument.
 
@@ -62,19 +21,6 @@ class Instrument(str, Enum):
     ATTENUATOR = "attenuator"
     VOLTAGE_SOURCE = "voltage_source"
     CURRENT_SOURCE = "current_source"
-
-
-class InstrumentControllerSubCategory(str, Enum):
-    """Instrument Controller subcategory types.
-
-    Args:
-        enum (str): Available types of instrument controllers:
-        * single_instrument
-        * multiple_instruments
-    """
-
-    SINGLE = "single_instrument"
-    MULTI = "multiple_instruments"
 
 
 class ReferenceClock(str, Enum):
@@ -153,19 +99,6 @@ class AcquisitionName(str, Enum):
 
     SINGLE = "single"
     LARGE = "large"
-
-
-class SchemaDrawOptions(str, Enum):
-    """Schema draw options.
-
-    Args:
-        enum (str): Available types of schema draw options:
-        * print
-        * file
-    """
-
-    PRINT = "print"
-    FILE = "file"
 
 
 class PulseDistortionName(str, Enum):
@@ -326,6 +259,7 @@ class Parameter(str, Enum):
     DURATION = "duration"
     AMPLITUDE = "amplitude"
     PHASE = "phase"
+    WAIT_TIME = "wait_time"
     DELAY_BETWEEN_PULSES = "delay_between_pulses"
     DELAY_BEFORE_READOUT = "delay_before_readout"
     GATE_DURATION = "gate_duration"
@@ -532,7 +466,7 @@ class Line(str, Enum):
     FEEDLINE_OUTPUT = "feedline_output"
 
 
-class Qubits(str, Enum):
+class Qubits(str, Enum):  # pylint: disable=missing-class-docstring
     ANY = "any"
     ONE = "one"
     TWO = "two"
@@ -567,11 +501,11 @@ class OperationName(str, Enum):
     SQUARE = "Square"
 
 
-class OperationTimingsCalculationMethod(str, Enum):
+class OperationTimingsCalculationMethod(str, Enum):  # pylint: disable=missing-class-docstring
     AS_SOON_AS_POSSIBLE = "as_soon_as_possible"
     AS_LATE_AS_POSSIBLE = "as_late_as_possible"
 
 
-class ResetMethod(str, Enum):
+class ResetMethod(str, Enum):  # pylint: disable=missing-class-docstring
     PASSIVE = "passive"
     ACTIVE = "active"

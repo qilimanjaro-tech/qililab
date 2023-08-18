@@ -1,6 +1,5 @@
 """Nested dataclass decorator."""
 from dataclasses import dataclass, is_dataclass
-from enum import Enum
 from typing import get_type_hints
 
 
@@ -17,9 +16,6 @@ def nested_dataclass(*args, **kwargs):
                 field_type = get_type_hints(cls).get(name, None)
                 if is_dataclass(field_type):
                     new_obj = field_type(**value)
-                    kwargs[name] = new_obj
-                if isinstance(field_type, type) and issubclass(field_type, Enum):
-                    new_obj = field_type(value)
                     kwargs[name] = new_obj
             original_init(self, *args, **kwargs)
 

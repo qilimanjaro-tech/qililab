@@ -6,7 +6,7 @@ import numpy as np
 from qibo.models import Circuit
 from scipy.optimize import curve_fit
 
-from qililab.experiment.circuit_experiment import CircuitExperiment
+from qililab.experiment.experiment import Experiment
 from qililab.platform import Bus, Platform
 from qililab.typings import ExperimentOptions, Parameter
 from qililab.utils import Loop
@@ -14,7 +14,7 @@ from qililab.utils import Loop
 from .fitting_models import FittingModel
 
 
-class ExperimentAnalysis(CircuitExperiment, FittingModel):
+class ExperimentAnalysis(Experiment, FittingModel):
     """Class used to analyze the results of an experiment. The analysis of an experiment consist of the following steps:
 
     1. Acquire results: either by running an experiment or loading one.
@@ -28,7 +28,7 @@ class ExperimentAnalysis(CircuitExperiment, FittingModel):
         options (ExperimentOptions): options of the experiment
         control_bus (Bus, optional): control bus used in the experiment. Defaults to None.
         readout_bus (Bus, optional): readout bus used in the experiment. Defaults to None.
-        experiment_loop (Loop, optional): external loop used in the experiment. This argument can be used for
+        experiment_loop (.Loop, optional): external loop used in the experiment. This argument can be used for
             experiments that use a loop to define multiple circuits, such as the Flipping Sequence experiment.
             Defaults to None.
     """
@@ -36,7 +36,7 @@ class ExperimentAnalysis(CircuitExperiment, FittingModel):
     post_processed_results: np.ndarray
     popt: np.ndarray  # fitted parameters
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         platform: Platform,
         circuits: list[Circuit],
@@ -76,14 +76,14 @@ class ExperimentAnalysis(CircuitExperiment, FittingModel):
     def fit(self, p0: tuple | None = None):
         """Method used to fit the results of an experiment.
 
-        This method uses the scipy function ``curve_fit`` to fit the function ``self.func`` to the post-processed data.
+        This method uses the scipy function `curve_fit` to fit the function `self.func` to the post-processed data.
 
         Args:
             p0 (tuple, optional): Initial guess for the parameters. Defaults to None.
 
         Returns:
-            float: optimal values for the parameters so that the sum of the squared residuals of
-                ``f(xdata, *popt) - ydata is minimized.
+            float: Optimal values for the parameters so that the sum of the squared residuals of
+                `f(xdata, *popt) - ydata` is minimized.
         """
         if not hasattr(self, "post_processed_results"):
             raise AttributeError(

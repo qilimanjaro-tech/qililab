@@ -6,12 +6,12 @@ from qililab.utils.asdict_factory import dict_factory
 
 
 @dataclass
-class AWGSequencer:
+class AWGSequencer:  # pylint: disable=too-many-instance-attributes
     """AWG Sequencer
 
     Args:
         identifier (int): The identifier of the sequencer
-        chip_port_id (int | None): Port identifier of the chip where a specific sequencer is connected to.
+        chip_port_id (str | None): Port identifier of the chip where a specific sequencer is connected to.
                                     By default, using the first sequencer
         output_i (int): AWG output associated with the I channel of the sequencer
         output_q (int): AWG output associated with the Q channel of the sequencer
@@ -26,7 +26,7 @@ class AWGSequencer:
     """
 
     identifier: int
-    chip_port_id: int | None
+    chip_port_id: str | None
     output_i: int | None
     output_q: int | None
     intermediate_frequency: float

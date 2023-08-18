@@ -67,11 +67,11 @@ class AWG(Instrument):
         """
 
     @abstractmethod
-    def run(self, port: int):
+    def run(self, port: str):
         """Run the uploaded program"""
 
     @abstractmethod
-    def upload(self, port: int):
+    def upload(self, port: str):
         """Upload compiled program."""
 
     @property
@@ -97,11 +97,11 @@ class AWG(Instrument):
         """Return a dict representation of an AWG instrument."""
         return {RUNCARD.NAME: self.name.value} | self.settings.to_dict()
 
-    def get_sequencers_from_chip_port_id(self, chip_port_id: int):
+    def get_sequencers_from_chip_port_id(self, chip_port_id: str):
         """Get sequencer ids from the chip port identifier
 
         Args:
-            chip_port_id (int): chip port identifier
+            chip_port_id (str): chip port identifier
 
         Returns:
             list[AWGSequencer]: list of integers containing the indices of the sequencers connected to the chip port

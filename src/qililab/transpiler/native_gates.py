@@ -1,20 +1,29 @@
+"""File containing the supported native gates."""
 from qibo.gates.gates import _Un_
 
 
 class Drag(_Un_):
-    """Native drag pulse dummy class
+    r"""Native drag pulse dummy class.
     Inherits from qibo unitary gates class
 
     The native gate is a drag pulse
-    .. math:: R_{MW}(\theta, \phi) = Z_\phi X_\theta Z_{-\phi}
+    .. math::
 
-    Please note that the negative Z rotations is applied first! The circuit drawing of this gate looks like the following:
-    --|RZ(-phi)|--|RX(theta)|--|RZ(phi)|--
+        R_{MW}(\theta, \phi) = Z_\phi X_\theta Z_{-\phi}
+
+    Please note that the negative Z rotations is applied first! The circuit drawing of this gate looks like the
+    following:
+
+    .. math::
+
+        --|RZ(-phi)|--|RX(theta)|--|RZ(phi)|--
 
     Together with virtual Z gates, this allows us to perform any single-qubit gate, since any
     such gate can be expressed as a unitary
-    .. math:: U(\theta,\phi,\lambda) = Z_\phi X_\theta Z_\lambda    &= R_{MW}(\theta, \phi)Z_{\lambda+\phi} \\
-                                                                    &= Z_{\phi+\lambda}R_{MW}(\theta, -\lambda)
+    .. math::
+
+        U(\theta,\phi,\lambda) = Z_\phi X_\theta Z_\lambda &= R_{MW}(\theta, \phi)Z_{\lambda+\phi} &=
+        Z_{\phi+\lambda}R_{MW}(\theta, -\lambda)
     """
 
     def __init__(self, q: int, theta: float, phase: float, trainable: bool = True):

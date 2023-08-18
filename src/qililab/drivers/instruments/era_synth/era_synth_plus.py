@@ -15,9 +15,11 @@ from qcodes.instrument import DelegateParameter
 from qcodes_contrib_drivers.drivers.ERAInstruments import ERASynthPlus as QcdERASynthPlus
 
 from qililab.drivers import parameters
+from qililab.drivers.instruments.instrument_factory import InstrumentDriverFactory
 from qililab.drivers.interfaces import LocalOscillator
 
 
+@InstrumentDriverFactory.register
 class ERASynthPlus(QcdERASynthPlus, LocalOscillator):
     """Qililab's driver for the ERASynthPlus local oscillator
 
@@ -35,3 +37,13 @@ class ERASynthPlus(QcdERASynthPlus, LocalOscillator):
             source=self.parameters["frequency"],
             parameter_class=DelegateParameter,
         )
+
+    @property
+    def params(self):
+        """return the parameters of the instrument"""
+        return self.parameters
+
+    @property
+    def alias(self):
+        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
+        return self.name

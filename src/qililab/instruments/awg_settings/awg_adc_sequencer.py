@@ -9,7 +9,7 @@ from qililab.utils.castings import cast_enum_fields
 
 
 @dataclass
-class AWGADCSequencer(AWGSequencer):
+class AWGADCSequencer(AWGSequencer):  # pylint: disable=too-many-instance-attributes
     """AWG ADC Sequencer
 
     Args:

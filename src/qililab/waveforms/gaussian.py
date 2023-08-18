@@ -3,7 +3,7 @@ import numpy as np
 from .waveform import Waveform
 
 
-class Gaussian(Waveform):
+class Gaussian(Waveform):  # pylint: disable=too-few-public-methods
     """Gaussian waveform with peak at duration/2 and spanning for num_sigmas over the pule duration.
 
     The normal distribution's parameters mu (mean) and sigma (standard deviation) will be therefore
@@ -23,11 +23,6 @@ class Gaussian(Waveform):
         self.duration = duration
         self.num_sigmas = num_sigmas
 
-        # This allows to later modify these values to have different gaussian shapes
-        # eg. displace the peak of the gaussian from the center of duration
-        self.sigma = self.duration / self.num_sigmas
-        self.mu = self.duration / 2
-
     def envelope(self, resolution: float = 1):
         """Returns the pulse matrix
 
@@ -38,9 +33,11 @@ class Gaussian(Waveform):
             np.ndarray: pulse matrix
             resolution (int, optional): Pulse resolution. Defaults to 1.
         """
+        sigma = self.duration / self.num_sigmas
+        mu = self.duration / 2
         x = np.arange(self.duration / resolution) * resolution
 
-        gaussian = self.amplitude * np.exp(-0.5 * (x - self.mu) ** 2 / self.sigma**2)
+        gaussian = self.amplitude * np.exp(-0.5 * (x - mu) ** 2 / sigma**2)
         norm = np.amax(np.real(gaussian))
 
         gaussian = gaussian - gaussian[0]  # Shift to avoid introducing noise at time 0

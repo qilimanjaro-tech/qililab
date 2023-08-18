@@ -1,5 +1,4 @@
 """Results class."""
-from collections import Counter
 from copy import deepcopy
 from dataclasses import dataclass, field
 
@@ -7,14 +6,15 @@ import numpy as np
 import pandas as pd
 
 from qililab.constants import EXPERIMENT, RESULTSDATAFRAME, RUNCARD
-from qililab.result.counts import Counts
-from qililab.result.qblox_results.qblox_result import QbloxResult
-from qililab.result.result import Result
 from qililab.utils import coordinate_decompose
 from qililab.utils.dataframe_manipulation import concatenate_creating_new_name_index
 from qililab.utils.factory import Factory
 from qililab.utils.loop import Loop
 from qililab.utils.util_loops import compute_ranges_from_loops, compute_shapes_from_loops
+
+from .counts import Counts
+from .qblox_results import QbloxResult
+from .result import Result
 
 
 @dataclass

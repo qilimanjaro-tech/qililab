@@ -2,10 +2,9 @@ from collections import deque
 
 import numpy as np
 
-from qililab.qprogram.blocks import AcquireLoop, Block, Loop
+from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.operations import (
     Acquire,
-    Operation,
     Play,
     ResetPhase,
     SetFrequency,
@@ -70,45 +69,58 @@ class QProgram:
 
         Blocks need to open a scope.
 
+        Returns:
+            Block: The block.
+
         Examples:
 
             >>> with qp.block() as block:
             >>>    # operations that shall be executed in the block
-
-        Returns:
-            Block: The block.
         """
         return QProgram._BlockContext(qprogram=self)
 
-    def acquire_loop(self, iterations: int, bins: int = 1):
+    def parallel(self, loops: list[ForLoop]):
+        """Define a block for running multiple loops in parallel.
+
+        Blocks need to open a scope.
+
+        Examples:
+            >>> gain = qp.variable(float)
+            >>> frequency = qp.variable(float)
+            >>> with qp.parallel(loops=[ForLoop(variable=frequency, start=0, stop=100, step=10),
+                                        ForLoop(variable=gain, start=0.0, stop=1.0, step=0.1)]):
+            >>>    # operations that shall be executed in the block
+
+        Args:
+            loops (list[Loop  |  ForLoop]): The loops to run in parallel
+
+        Returns:
+            Parallel: The parallel block.
+        """
+        return QProgram._ParallelContext(qprogram=self, loops=loops)
+
+    def average(self, shots: int):
         """Define an acquire loop block with averaging in real time.
 
         Blocks need to open a scope.
+
+        Args:
+            iterations (int): The number of acquire iterations.
+
+        Returns:
+            AcquireLoop: The acquire_loop block.
 
         Examples:
 
             >>> with qp.acquire_loop(iterations=1000):
             >>>    # operations that shall be executed in the acquire_loop block
-
-        Args:
-            iterations (int): The number of acquire iterations.
-            bins (int, optional): The number of bins used for acquisition. Defaults to 1.
-
-        Returns:
-            AcquireLoop: The acquire_loop block.
         """
-        return QProgram._AcquireLoopContext(qprogram=self, iterations=iterations, bins=bins)
+        return QProgram._AverageContext(qprogram=self, iterations=shots)
 
     def loop(self, variable: Variable, values: np.ndarray):
         """Define a loop block to iterate values over a variable.
 
         Blocks need to open a scope.
-
-        Examples:
-
-            >>> variable = qp.variable(int)
-            >>> with qp.loop(variable=variable, values=np.array(range(100))):
-            >>>    # operations that shall be executed in the loop block
 
         Args:
             variable (Variable): The variable to be affected from the loop.
@@ -116,9 +128,38 @@ class QProgram:
 
         Returns:
             Loop: The loop block.
+
+        Examples:
+
+            >>> variable = qp.variable(int)
+            >>> with qp.loop(variable=variable, values=np.array(range(100))):
+            >>>    # operations that shall be executed in the loop block
         """
 
         return QProgram._LoopContext(qprogram=self, variable=variable, values=values)
+
+    def for_loop(self, variable: Variable, start: int | float, stop: int | float, step: int | float = 1):
+        """Define a for_loop block to iterate values over a variable.
+
+        Blocks need to open a scope.
+
+        Args:
+            variable (Variable): The variable to be affected from the loop.
+            start (int | float): The start value.
+            stop (int | float): The stop value.
+            step (int | float, optional): The step value. Defaults to 1.
+
+        Returns:
+            Loop: The loop block.
+
+        Examples:
+
+            >>> variable = qp.variable(int)
+            >>> with qp.for_loop(variable=variable, start=0, stop=100, step=5)):
+            >>>    # operations that shall be executed in the for_loop block
+        """
+
+        return QProgram._ForLoopContext(qprogram=self, variable=variable, start=start, stop=stop, step=step)
 
     def play(self, bus: str, waveform: Waveform | IQPair):
         """Play a single waveform or an I/Q pair of waveforms on the bus.
@@ -178,12 +219,12 @@ class QProgram:
         operation = SetPhase(bus=bus, phase=phase)
         self._active_block.append(operation)
 
-    def set_frequency(self, bus: str, frequency: int):
+    def set_frequency(self, bus: str, frequency: float):
         """Set the frequency of the NCO associated with bus.
 
         Args:
             bus (str): Unique identifier of the bus.
-            frequency (int): The new frequency of the NCO.
+            frequency (float): The new frequency of the NCO.
         """
         operation = SetFrequency(bus=bus, frequency=frequency)
         self._active_block.append(operation)
@@ -210,7 +251,7 @@ class QProgram:
         operation = SetOffset(bus=bus, offset_path0=offset_path0, offset_path1=offset_path1)
         self._active_block.append(operation)
 
-    def variable(self, type: int | float):
+    def variable(self, type: type[int | float]):  # pylint: disable=redefined-builtin
         """Declare a variable.
 
         Args:
@@ -235,10 +276,9 @@ class QProgram:
 
         if type == int:
             return _int_variable()
-        elif type == float:
+        if type == float:
             return _float_variable()
-        else:
-            raise NotImplementedError
+        raise NotImplementedError
 
     class _BlockContext:
         def __init__(self, qprogram: "QProgram"):
@@ -253,8 +293,19 @@ class QProgram:
             block = self.qprogram._pop_from_block_stack()
             self.qprogram._active_block.append(block)
 
-    class _LoopContext(_BlockContext):
-        def __init__(self, qprogram: "QProgram", variable: Variable, values: np.ndarray):
+    class _ParallelContext(_BlockContext):  # pylint: disable=too-few-public-methods
+        def __init__(self, qprogram: "QProgram", loops: list[ForLoop]):  # pylint: disable=super-init-not-called
+            self.qprogram = qprogram
+            self.block: Parallel = Parallel(loops=loops)
+
+        def __enter__(self) -> Parallel:
+            self.qprogram._append_to_block_stack(block=self.block)
+            return self.block
+
+    class _LoopContext(_BlockContext):  # pylint: disable=too-few-public-methods
+        def __init__(  # pylint: disable=super-init-not-called
+            self, qprogram: "QProgram", variable: Variable, values: np.ndarray
+        ):
             self.qprogram = qprogram
             self.block: Loop = Loop(variable=variable, values=values)
 
@@ -262,11 +313,22 @@ class QProgram:
             self.qprogram._append_to_block_stack(block=self.block)
             return self.block
 
-    class _AcquireLoopContext(_BlockContext):
-        def __init__(self, qprogram: "QProgram", iterations: int, bins: int):
+    class _ForLoopContext(_BlockContext):  # pylint: disable=too-few-public-methods
+        def __init__(  # pylint: disable=super-init-not-called
+            self, qprogram: "QProgram", variable: Variable, start: int | float, stop: int | float, step: int | float
+        ):
             self.qprogram = qprogram
-            self.block: AcquireLoop = AcquireLoop(iterations=iterations, bins=bins)
+            self.block: ForLoop = ForLoop(variable=variable, start=start, stop=stop, step=step)
 
-        def __enter__(self) -> AcquireLoop:
+        def __enter__(self) -> ForLoop:
+            self.qprogram._append_to_block_stack(block=self.block)
+            return self.block
+
+    class _AverageContext(_BlockContext):  # pylint: disable=too-few-public-methods
+        def __init__(self, qprogram: "QProgram", iterations: int):  # pylint: disable=super-init-not-called
+            self.qprogram = qprogram
+            self.block: Average = Average(shots=iterations)
+
+        def __enter__(self) -> Average:
             self.qprogram._append_to_block_stack(block=self.block)
             return self.block

@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 from typing import Sequence
 
-from qililab.instrument_controllers.multi_instrument_controller import MultiInstrumentController
+from qililab.instrument_controllers.instrument_controller import InstrumentController, InstrumentControllerSettings
 from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instruments.qblox.qblox_d5a import QbloxD5a
 from qililab.instruments.qblox.qblox_s4g import QbloxS4g
@@ -11,7 +11,7 @@ from qililab.typings.instruments.spi_rack import SPI_Rack
 
 
 @InstrumentControllerFactory.register
-class QbloxSPIRackController(MultiInstrumentController):
+class QbloxSPIRackController(InstrumentController):
     """Qblox SPI Rack Controller class.
 
     Args:
@@ -28,7 +28,7 @@ class QbloxSPIRackController(MultiInstrumentController):
     modules: Sequence[QbloxD5a | QbloxS4g]
 
     @dataclass
-    class QbloxSPIRackControllerSettings(MultiInstrumentController.MultiInstrumentControllerSettings):
+    class QbloxSPIRackControllerSettings(InstrumentControllerSettings):
         """Contains the settings of a specific Qblox Cluster Controller."""
 
         reset = False
@@ -41,7 +41,7 @@ class QbloxSPIRackController(MultiInstrumentController):
 
     def _initialize_device(self):
         """Initialize device controller."""
-        self.device = SPI_Rack(name=f"{self.name.value}_{self.id_}", address=self.address)
+        self.device = SPI_Rack(name=f"{self.name.value}_{self.alias}", address=self.address)
 
     def _set_device_to_all_modules(self):
         """Sets the initialized device to all attached modules,

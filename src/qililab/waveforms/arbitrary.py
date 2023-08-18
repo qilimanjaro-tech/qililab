@@ -1,11 +1,9 @@
 import numpy as np
 
-from qililab.config import logger
-
 from .waveform import Waveform
 
 
-class Arbitrary(Waveform):
+class Arbitrary(Waveform):  # pylint: disable=too-few-public-methods, disable=missing-class-docstring
     def __init__(self, envelope: np.ndarray):
         self.samples = envelope
 

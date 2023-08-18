@@ -17,6 +17,6 @@ def yaml_representer(dumper: yaml.Dumper, value: int | float):
     return dumper.represent_scalar(tag=f"tag:yaml.org,2002:{tag}", value=text)
 
 
-def null_representer(dumper: yaml.Dumper, value: None):
+def null_representer(dumper: yaml.Dumper, value: None):  # pylint: disable=unused-argument
     """Int or float representer used by YAML."""
     return dumper.represent_scalar(tag="tag:yaml.org,2002:null", value="")

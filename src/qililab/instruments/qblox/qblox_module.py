@@ -2,16 +2,15 @@
 import itertools
 from abc import abstractmethod
 from dataclasses import dataclass
-from lib2to3.pgen2.token import AMPER
 from typing import Sequence, cast
 
 import numpy as np
 from qpysequence import Acquisitions, Program
 from qpysequence import Sequence as QpySequence
 from qpysequence import Waveforms, Weights
-from qpysequence.library import long_wait, set_awg_gain_relative
+from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Register
-from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop, Wait
+from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop
 from qpysequence.utils.constants import AWG_MAX_GAIN
 
 from qililab.config import logger
@@ -162,7 +161,7 @@ class QbloxModule(AWG):
         self.sequences[sequencer.identifier] = (sequence, False)
         return sequence
 
-    def run(self, port: int):
+    def run(self, port: str):
         """Run the uploaded program"""
         self.start_sequencer(port=port)
 
@@ -184,7 +183,9 @@ class QbloxModule(AWG):
         weights = self._generate_weights(sequencer=sequencer)
         return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
 
-    def _generate_program(self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, sequencer: int):
+    def _generate_program(  # pylint: disable=too-many-locals
+        self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, sequencer: int
+    ):
         """Generate Q1ASM program
 
         Args:
@@ -268,7 +269,7 @@ class QbloxModule(AWG):
     ):
         """Append an acquire instruction to the loop."""
 
-    def start_sequencer(self, port: int):
+    def start_sequencer(self, port: str):
         """Start sequencer and execute the uploaded instructions."""
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
         for sequencer in sequencers:
@@ -277,7 +278,9 @@ class QbloxModule(AWG):
                 self.device.start_sequencer(sequencer=sequencer.identifier)
 
     @Instrument.CheckDeviceInitialized
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def setup(  # pylint: disable=too-many-branches, too-many-return-statements
+        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None
+    ):
         """Set Qblox instrument calibration settings."""
         if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
             output = int(parameter.value[-1])
@@ -495,7 +498,7 @@ class QbloxModule(AWG):
         self.clear_cache()
         self.device.reset()
 
-    def upload(self, port: int):
+    def upload(self, port: str):
         """Upload all the previously compiled programs to its corresponding sequencers.
 
         This method must be called after the method ``compile``."""
@@ -627,7 +630,7 @@ class QbloxModule(AWG):
         """Returns the offsets of each output of the qblox module."""
         return self.settings.out_offsets
 
-    def _get_sequencer_by_id(self, id: int):
+    def _get_sequencer_by_id(self, id: int):  # pylint: disable=redefined-builtin
         """Returns a sequencer with the given `id`."
 
         Args:

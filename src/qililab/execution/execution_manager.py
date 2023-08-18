@@ -6,11 +6,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from qililab.config import logger
-from qililab.execution import BusExecution
 from qililab.platform import Platform
 from qililab.result import Result
 from qililab.system_control import ReadoutSystemControl
 from qililab.utils import Waveforms
+
+from .bus_execution import BusExecution
 
 
 @dataclass
@@ -86,18 +87,18 @@ class ExecutionManager:
             raise ValueError("No Results acquired")
         return results[0]
 
-    def waveforms_dict(self, modulation: bool = True, resolution: float = 1.0, idx: int = 0) -> dict[int, Waveforms]:
+    def waveforms_dict(self, modulation: bool = True, resolution: float = 1.0, idx: int = 0) -> dict[str, Waveforms]:
         """Get pulses of each bus.
 
         Args:
             resolution (float): The resolution of the pulses in ns.
 
         Returns:
-            dict[int, Waveforms]: Dictionary containing a list of the I/Q amplitudes of the pulses applied on each bus.
+            dict[str, Waveforms]: Dictionary containing a list of the I/Q amplitudes of the pulses applied on each bus.
         """
-        return {bus.id_: bus.waveforms(modulation=modulation, resolution=resolution, idx=idx) for bus in self.buses}
+        return {bus.alias: bus.waveforms(modulation=modulation, resolution=resolution, idx=idx) for bus in self.buses}
 
-    def draw(
+    def draw(  # pylint: disable=too-many-locals
         self,
         real: bool = True,
         imag: bool = True,
@@ -130,11 +131,11 @@ class ExecutionManager:
         if len(self.buses) == 1:
             axes = [axes]  # make axes subscriptable
 
-        for axis_idx, (bus_idx, waveforms) in enumerate(
+        for axis_idx, (bus_alias, waveforms) in enumerate(
             self.waveforms_dict(modulation=modulation, resolution=resolution, idx=idx).items()
         ):
             time = np.arange(len(waveforms)) * resolution
-            axes[axis_idx].set_title(f"Bus {bus_idx}", loc="right")
+            axes[axis_idx].set_title(f"Bus {bus_alias}", loc="right")
 
             if imag:
                 axes[axis_idx].plot(time, waveforms.q, linestyle, label="imag", color="orange")
