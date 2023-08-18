@@ -12,7 +12,29 @@ from qililab.utils import Factory
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class Drag(PulseShape):
-    """Derivative Removal by Adiabatic Gate (DRAG) pulse shape."""
+    """Derivative Removal by Adiabatic Gate (DRAG) pulse shape. Standard Gaussian pulse with an additional Gaussian derivative component.
+
+    It is designed to reduce the frequency spectrum of a normal gaussian pulse near the :math:`|1> - |2>` transition, reducing the chance of leakage to the :math:`|2>` state:
+
+    .. math::
+
+        f(x) & = (1 + 1j * drag_coefficient * d/dx) * Gaussian(x) = \\\\
+             & = (1 + 1j * drag_coefficient * (x - mu) / sigma^2) * Gaussian(x)
+
+    where 'Gaussian' is:
+
+    .. math::
+
+        Gaussian(x) = amplitude * exp(-0.5 * (x - mu)^2 / sigma^2)
+
+    References:
+        - Analytic control methods for high-fidelity unitary operations in a weakly nonlinear oscillator: https://journals.aps.org/pra/abstract/10.1103/PhysRevA.83.012308
+        - Simple Pulses for Elimination of Leakage in Weakly Nonlinear Qubits: https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.103.110501
+
+    Args:
+        num_sigmas (float): Sigma number of the gaussian
+        drag_coefficient (float): Drag coefficient that give the DRAG its imaginary components.
+    """
 
     name = PulseShapeName.DRAG
     num_sigmas: float

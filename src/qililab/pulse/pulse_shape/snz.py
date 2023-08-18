@@ -14,7 +14,23 @@ from qililab.utils import Factory
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class SNZ(PulseShape):
-    """Sudden net zero pulse shape. See supplementary material I in https://arxiv.org/abs/2008.07411"""
+    """Sudden net zero pulse shape. It is composed of a half-duration positive rectangular pulse, followed
+    by three stops to cross height = 0, to then have another half-duration negative rectangular pulse.\
+
+    |   --------------                      <- half-duration positive rectangular pulse
+    |                 -                     <- instantaneous stop at height b
+    0                  ---                  <- t-phi duration at height = 0
+    |                     -                 <- instantaneous stop at height -b
+    |                      -------------    <- half-duration negative rectangular pulse
+
+    References:
+        High-fidelity controlled-Z gate with maximal intermediate leakage operating at the speed
+        limit in a superconducting quantum processor: https://arxiv.org/abs/2008.07411
+
+    Args:
+        b (float): instant stops height when going from the rectangular half-duration to height=0.
+        t_phi (int): time at height=0, in the middle of the positive and negative rectangular pulses.
+    """
 
     name = PulseShapeName.SNZ
     b: float

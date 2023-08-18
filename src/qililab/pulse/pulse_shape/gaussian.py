@@ -12,7 +12,15 @@ from qililab.utils import Factory
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class Gaussian(PulseShape):
-    """Gaussian pulse shape"""
+    """Standard Gaussian pulse shape:
+
+    .. math::
+
+        Gaussian(x) = amplitude * exp(-0.5 * (x - mu)^2 / sigma^2)
+
+    Args:
+        num_sigmas (float): sigma number of the gaussian.
+    """
 
     name = PulseShapeName.GAUSSIAN
     num_sigmas: float
