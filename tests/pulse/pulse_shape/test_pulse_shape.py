@@ -8,6 +8,22 @@ from qililab.typings.enums import PulseShapeSettingsName
 from qililab.utils import Factory
 
 
+def return_envelopes(pulse_shape: PulseShape) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Function that generates the envelopes for the tests."""
+    if isinstance(pulse_shape, SNZ):
+        # SNZ does not take resolution != 1 and duration is always even + 2 + t_phi
+        envelope = pulse_shape.envelope(duration=50, amplitude=1.0, resolution=1)
+        envelope2 = pulse_shape.envelope(duration=40, amplitude=-1.0, resolution=1)
+
+    else:
+        envelope = pulse_shape.envelope(duration=50, amplitude=1.0, resolution=0.1)
+        envelope2 = pulse_shape.envelope(duration=25, amplitude=-1.0, resolution=1)
+
+    envelope3 = pulse_shape.envelope(duration=500, amplitude=2.0, resolution=1)
+
+    return envelope, envelope2, envelope3
+
+
 @pytest.mark.parametrize(
     "pulse_shape",
     [
@@ -24,16 +40,7 @@ class TestPulseShape:
 
     def test_envelope_method(self, pulse_shape: PulseShape):
         """Test envelope method"""
-        if isinstance(pulse_shape, SNZ):
-            # SNZ does not take resolution != 1
-            # SNZ duration is always even + 2 + t_phi
-            envelope = pulse_shape.envelope(duration=50, amplitude=1.0, resolution=1)
-            envelope2 = pulse_shape.envelope(duration=40, amplitude=1.0, resolution=1)
-        else:
-            envelope = pulse_shape.envelope(duration=50, amplitude=1.0, resolution=0.1)
-            envelope2 = pulse_shape.envelope(duration=25, amplitude=1.0, resolution=1)
-
-        envelope3 = pulse_shape.envelope(duration=500, amplitude=2.0, resolution=1)
+        envelope, envelope2, envelope3 = return_envelopes(pulse_shape=pulse_shape)
 
         # Test not None and type
         for env in [envelope, envelope2, envelope3]:
@@ -44,15 +51,15 @@ class TestPulseShape:
         if isinstance(pulse_shape, Cosine) and pulse_shape.lambda_2 > 0.0:
             # If lambda_2 > 0.0 the max amplitude is reduced
             assert round(np.max(np.real(envelope)), int(np.sqrt(10))) < 1.0
-            assert round(np.max(np.real(envelope2)), int(np.sqrt(1))) < 1.0
+            assert round(np.min(np.real(envelope2)), int(np.sqrt(1))) > -1.0
             assert round(np.max(np.real(envelope3)), int(np.sqrt(1))) < 2.0
             # If you check the form of this shape, the maximum never gets down 70% of the Amplitude for any lambda_2
             assert round(np.max(np.real(envelope)), int(np.sqrt(10))) > 0.7 * 1.0
-            assert round(np.max(np.real(envelope2)), int(np.sqrt(1))) > 0.7 * 1.0
+            assert round(np.min(np.real(envelope2)), int(np.sqrt(1))) < -0.7 * 1.0
             assert round(np.max(np.real(envelope3)), int(np.sqrt(1))) > 0.7 * 2.0
         else:
             assert round(np.max(np.real(envelope)), int(np.sqrt(10))) == 1.0
-            assert round(np.max(np.real(envelope2)), int(np.sqrt(1))) == 1.0
+            assert round(np.min(np.real(envelope2)), int(np.sqrt(1))) == -1.0
             assert round(np.max(np.real(envelope3)), int(np.sqrt(1))) == 2.0
 
         # Tests lenghts
@@ -61,31 +68,64 @@ class TestPulseShape:
         else:
             assert len(envelope) == len(envelope2) * 20 == len(envelope3)
 
-        # Test shapes of the graphs for each child
-        if isinstance(pulse_shape, Rectangular):
-            assert np.max(envelope) == np.min(envelope)
+    def test_envelope_method_shapes(self, pulse_shape: PulseShape):
+        """Test shapes of the envelopes"""
+        envelope, envelope2, envelope3 = return_envelopes(pulse_shape=pulse_shape)
 
-        if isinstance(pulse_shape, SNZ):
-            assert np.max(envelope) == -np.min(envelope)
-            assert envelope[len(envelope) // 2] == 0
+        # positive ampltiude cases
+        for env in [envelope, envelope3]:
+            if isinstance(pulse_shape, Rectangular):
+                assert np.max(env) == np.min(env)
 
-        if isinstance(pulse_shape, Cosine) and pulse_shape.lambda_2 > 0.0:
-            assert np.max(envelope) != envelope[len(envelope) // 2]
-            assert np.min(envelope) == envelope[0]
+            if isinstance(pulse_shape, SNZ):
+                assert np.max(env) == -np.min(env)
+                assert env[len(env) // 2] == 0
 
-        if isinstance(pulse_shape, Cosine) and pulse_shape.lambda_2 <= 0.0:
-            assert np.max(envelope) == envelope[len(envelope) // 2]
-            assert np.min(envelope) == envelope[0]
+            if isinstance(pulse_shape, Cosine) and pulse_shape.lambda_2 > 0.0:
+                assert np.max(env) != env[len(env) // 2]
+                assert np.min(env) == env[0]
 
-        if isinstance(pulse_shape, Gaussian):
-            assert np.max(envelope) == envelope[len(envelope) // 2]
-            assert np.max(envelope) / 2 < envelope[len(envelope) // 4]
-            assert np.min(envelope) == envelope[0]
+            if isinstance(pulse_shape, Cosine) and pulse_shape.lambda_2 <= 0.0:
+                assert np.max(env) == env[len(env) // 2]
+                assert np.min(env) == env[0]
 
-        if isinstance(pulse_shape, Drag):
-            assert np.max(np.real(envelope)) == np.real(envelope[len(envelope) // 2])
-            assert np.max(np.real(envelope)) / 2 < np.real(envelope[len(envelope) // 4])
-            assert np.min(np.real(envelope)) == np.real(envelope[0])
+            if isinstance(pulse_shape, Gaussian):
+                assert np.max(env) == env[len(env) // 2]
+                assert np.max(env) / 2 < env[len(env) // 4]
+                assert np.min(env) == env[0]
+
+            if isinstance(pulse_shape, Drag):
+                assert np.max(np.real(env)) == np.real(env[len(env) // 2])
+                assert np.max(np.real(env)) / 2 < np.real(env[len(env) // 4])
+                assert np.min(np.real(env)) == np.real(env[0])
+
+        # negative ampltiude cases
+        for env in [envelope2]:
+            # Test shapes of the graphs for each child
+            if isinstance(pulse_shape, Rectangular):
+                assert np.max(env) == np.min(env)
+
+            if isinstance(pulse_shape, SNZ):
+                assert np.max(env) == -np.min(env)
+                assert env[len(env) // 2] == 0
+
+            if isinstance(pulse_shape, Cosine) and pulse_shape.lambda_2 > 0.0:
+                assert np.min(env) != env[len(env) // 2]
+                assert np.max(env) == env[0]
+
+            if isinstance(pulse_shape, Cosine) and pulse_shape.lambda_2 <= 0.0:
+                assert np.min(env) == env[len(env) // 2]
+                assert np.max(env) == env[0]
+
+            if isinstance(pulse_shape, Gaussian):
+                assert np.min(env) == env[len(env) // 2]
+                assert np.min(env) / 2 > env[len(env) // 4]
+                assert np.max(env) == env[0]
+
+            if isinstance(pulse_shape, Drag):
+                assert np.min(np.real(env)) == np.real(env[len(env) // 2])
+                assert np.min(np.real(env)) / 2 > np.real(env[len(env) // 4])
+                assert np.max(np.real(env)) == np.real(env[0])
 
     def test_from_dict(self, pulse_shape: PulseShape):
         """Test for the to_dict method."""
