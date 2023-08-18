@@ -16,22 +16,33 @@ class PulseDistortion(FactoryElement):
     The `apply` method will apply the distortion correction to the respective passed envelope, and then will call `normalize_envelope` method of this base class.
 
     Whenever you call a `PulseDistortion` interface child, apart than their respective arguments you can also pass the `norm_factor` & `auto_norm` arguments, to
-    modify how such normalization is done. Basically:
+    modify how such normalization is done.
 
     If `self.auto_norm` is True (default) normalizes the resulting envelope to have the same real max height than the starting one. (the max height is the furthest number
-    from 0, only checking the real axis/part). If the corrected envelope is zero everywhere or doesn't have a real part this process is skipped, since the factor would diverge:
+    from 0, only checking the real axis/part).
 
     .. code-block:: python3
+
         if self.auto_norm:
-            original_norm = np.max(np.abs(np.real(original_envelope)))
-            corrected_norm = np.max(np.abs(np.real(corrected_envelope)))
+            auto_norm_envelope = corrected_envelope * (original_norm / corrected_norm)
 
-            auto_norm_envelope = corrected_envelope * (original_norm / corrected_norm) if corrected_norm != 0 else corrected_envelope
-
-    And independently of the `auto_norm`, we will then always apply the manual `self.norm_factor` to the result, reducing the full envelope by its magnitude:
+    If the corrected envelope is zero everywhere or doesn't have a real part (`corrected_norm != 0`) this process is skipped, since the factor would diverge:
 
     .. code-block:: python3
-        final_envelope = envelope * self.norm_factor
+
+        if self.auto_norm:
+
+            if corrected_norm != 0:
+                auto_norm_envelope = corrected_envelope * (original_norm / corrected_norm)
+
+            else:
+                auto_norm_envelope = corrected_envelope
+
+    And finally, independently of the `auto_norm`, we will then always apply the manual `self.norm_factor` to the result, reducing the full envelope by its magnitude:
+
+    .. code-block:: python3
+
+        final_envelope = almost_final_envelope * self.norm_factor
 
     Args:
         norm_factor (float): The manual normalization factor that multiplies the envelope in the apply() method. Defaults to 1 (no effect).
