@@ -20,6 +20,7 @@ class PulseDistortion(FactoryElement):
 
     If `self.auto_norm` is True (default) normalizes the resulting envelope to have the same real max height than the starting one. (the max height is the furthest number
     from 0, only checking the real axis/part). If the corrected envelope is zero everywhere or doesn't have a real part this process is skipped, since the factor would diverge:
+
     .. code-block:: python3
         if self.auto_norm:
             original_norm = np.max(np.abs(np.real(original_envelope)))
@@ -28,6 +29,7 @@ class PulseDistortion(FactoryElement):
             auto_norm_envelope = corrected_envelope * (original_norm / corrected_norm) if corrected_norm != 0 else corrected_envelope
 
     And independently of the `auto_norm`, we will then always apply the manual `self.norm_factor` to the result, reducing the full envelope by its magnitude:
+
     .. code-block:: python3
         final_envelope = envelope * self.norm_factor
 
