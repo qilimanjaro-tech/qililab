@@ -2,16 +2,10 @@
 import pytest
 import yaml
 
-from qililab.constants import CONNECTION, INSTRUMENTCONTROLLER, INSTRUMENTREFERENCE, RUNCARD
+from qililab.constants import CONNECTION, INSTRUMENTCONTROLLER, RUNCARD
 from qililab.instrument_controllers.rohde_schwarz import SGS100AController
 from qililab.platform import Platform
-from qililab.typings.enums import (
-    Category,
-    ConnectionName,
-    InstrumentControllerName,
-    InstrumentControllerSubCategory,
-    Parameter,
-)
+from qililab.typings.enums import ConnectionName, InstrumentControllerName, Parameter
 from tests.data import Galadriel
 from tests.test_utils import platform_db
 
@@ -26,11 +20,8 @@ def fixture_platform() -> Platform:
 def fixture_rs_settings():
     """Fixture that returns an instance of a dummy RS."""
     return {
-        RUNCARD.ID: 2,
         RUNCARD.NAME: InstrumentControllerName.ROHDE_SCHWARZ,
         RUNCARD.ALIAS: "rohde_schwarz_controller_0",
-        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
-        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
         Parameter.REFERENCE_CLOCK.value: "EXT",
         INSTRUMENTCONTROLLER.CONNECTION: {
             RUNCARD.NAME: ConnectionName.TCP_IP.value,
@@ -38,8 +29,8 @@ def fixture_rs_settings():
         },
         INSTRUMENTCONTROLLER.MODULES: [
             {
-                Category.SIGNAL_GENERATOR.value: "rs_0",
-                INSTRUMENTREFERENCE.SLOT_ID: 0,
+                "alias": "rs_0",
+                "slot_id": 0,
             }
         ],
     }
@@ -68,12 +59,12 @@ class TestConnection:
         """
         rs_settings[INSTRUMENTCONTROLLER.MODULES] = [
             {
-                Category.SIGNAL_GENERATOR.value: "rs_0",
-                INSTRUMENTREFERENCE.SLOT_ID: 0,
+                "alias": "rs_0",
+                "slot_id": 0,
             },
             {
-                Category.SIGNAL_GENERATOR.value: "rs_1",
-                INSTRUMENTREFERENCE.SLOT_ID: 1,
+                "alias": "rs_1",
+                "slot_id": 1,
             },
         ]
         name = rs_settings.pop(RUNCARD.NAME)

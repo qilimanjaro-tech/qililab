@@ -34,7 +34,7 @@ class E5071BController(VectorNetworkAnalyzerController):
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
         self.device = VectorNetworkAnalyzerDriver(
-            name=f"{self.name.value}_{self.id_}", address=self.address, timeout=self.timeout
+            name=f"{self.name.value}_{self.alias}", address=self.address, timeout=self.timeout
         )
 
     def _check_supported_modules(self):

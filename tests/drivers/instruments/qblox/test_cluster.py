@@ -1,3 +1,4 @@
+"""Module to test cluster and QCM,QRM classes."""
 from unittest.mock import MagicMock
 
 import pytest
@@ -143,6 +144,12 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     return PulseBusSchedule(timeline=[pulse_event], port=0)
 
 
+@pytest.fixture(name="cluster")
+def fixture_cluster() -> Cluster:
+    """Return Cluster instance."""
+    return Cluster(name="test_cluster_dummy", dummy_cfg=DUMMY_CFG)
+
+
 class TestCluster:
     """Unit tests checking the Cluster attributes and methods. These tests mock the parent class of the `Cluster`,
     such that the code from `qcodes` is never executed."""
@@ -194,13 +201,10 @@ class TestClusterIntegration:
 
     def teardown_method(self):
         """Close all instruments after each test has been run"""
-
         Instrument.close_all()
 
-    def test_init_with_dummy_cfg(self):
+    def test_init_with_dummy_cfg(self, cluster):
         """Test init method with dummy configuration"""
-
-        cluster = Cluster(name="test_cluster_dummy", dummy_cfg=DUMMY_CFG)
         submodules = cluster.submodules
 
         expected_submodules_ids = [f"module{id}" for id in list(DUMMY_CFG.keys())]
@@ -208,6 +212,14 @@ class TestClusterIntegration:
         assert len(result_submodules_ids) == len(expected_submodules_ids)
         assert all(isinstance(submodules[id], QcmQrm) for id in result_submodules_ids)
         assert result_submodules_ids == expected_submodules_ids
+
+    def test_params(self, cluster):
+        """Unittest to test the params property."""
+        assert cluster.params == cluster.parameters
+
+    def test_alias(self, cluster):
+        """Unittest to test the alias property."""
+        assert cluster.alias == cluster.name
 
 
 class TestQcmQrm:
@@ -279,6 +291,16 @@ class TestQcmQrm:
 
         assert all((channel in qcm_qrm_rf.parameters for channel in channels))
 
+    def test_params(self):
+        """Unittest to test the params property."""
+        qcm_qrm_rf = QcmQrm(parent=MagicMock(), name="qcm_qrm_rf", slot_idx=0)
+        assert qcm_qrm_rf.params == qcm_qrm_rf.parameters
+
+    def test_alias(self):
+        """Unittest to test the alias property."""
+        qcm_qrm_rf = QcmQrm(parent=MagicMock(), name="qcm_qrm_rf", slot_idx=0)
+        assert qcm_qrm_rf.alias == qcm_qrm_rf.name
+
 
 class TestQcmQrmRFModules:
     def teardown_method(self):
@@ -312,6 +334,9 @@ class TestQcmQrmRFModules:
         assert lo_parent.get(f"{channel}_lo_en") is False
         assert lo.get("status") is False
 
+        assert lo.params == lo.parameters
+        assert lo.alias == lo.name
+
     @pytest.mark.parametrize(
         "channel",
         ["out0", "in0", "out1"],
@@ -330,3 +355,6 @@ class TestQcmQrmRFModules:
         att_parent.set(att_parameter, 2)
         assert att.get(attenuation) == 2
         assert att.attenuation.label == "Delegated parameter for attenuation"
+
+        assert att.params == att.parameters
+        assert att.alias == att.name

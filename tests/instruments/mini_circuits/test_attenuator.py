@@ -60,14 +60,6 @@ def fixture_attenuator(mock_urllib: MagicMock, attenuator_controller: MiniCircui
 class TestAttenuator:
     """Unit tests checking the Attenuator attributes and methods."""
 
-    def test_id_property(self, attenuator_no_device: Attenuator):
-        """Test id property."""
-        assert attenuator_no_device.id_ == attenuator_no_device.settings.id_
-
-    def test_category_property(self, attenuator_no_device: Attenuator):
-        """Test category property."""
-        assert attenuator_no_device.category == attenuator_no_device.settings.category
-
     def test_attenuation_property(self, attenuator: Attenuator):
         """Test attenuation property."""
         assert hasattr(attenuator, "attenuation")

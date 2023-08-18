@@ -27,7 +27,7 @@ class TestBus:
 
     def test_print_bus(self, bus: Bus):
         """Test print bus."""
-        assert str(bus) == f"Bus {bus.id_}:  ----{bus.system_control}---" + "".join(
+        assert str(bus) == f"Bus {bus.alias}:  ----{bus.system_control}---" + "".join(
             f"--|{target}|----" for target in bus.targets
         )
 
