@@ -13,8 +13,8 @@ from .settings import Runcard
 def save_results(results: np.ndarray, loops: dict[str, np.ndarray], data_path: str, name: str | None = None) -> str:
     """Save the given results and the platform.
 
-    A timestamp is used to create a folder to save the data. The data will be saved within the folder located in:
-    `path/year-month-day/hour-minute-second_name/`.
+    A timestamp is used to create a folder to save the data. The data will be saved within the file located in:
+    `path/yearmonthday/hourminutesecond_name/results.h5`.
 
     Args:
         results (np.ndarray): Array containing the results to be saved.
@@ -55,7 +55,7 @@ def save_results(results: np.ndarray, loops: dict[str, np.ndarray], data_path: s
         .. note::
 
             This method will create 2 folders within the path you provided: one folder with the name `yearmonthday`
-            (if not already present) and another one with the name `hourminutesecond`.
+            (if not already present) and another one with the name `hourminutesecond_name`.
 
             The results will be saved inside the last folder under the name `results.h5`.
     """
@@ -69,7 +69,10 @@ def save_results(results: np.ndarray, loops: dict[str, np.ndarray], data_path: s
         os.makedirs(daily_path)
 
     # Generate path to the results folder
-    now_path = f"{daily_path}/{now.hour:02d}{now.minute:02d}{now.second:02d}_{name}"
+    now_path = f"{daily_path}/{now.hour:02d}{now.minute:02d}{now.second:02d}"
+
+    if name is not None:
+        now_path = f"{now_path}_{name}"
 
     # Check if folder exists, if not create one
     if not os.path.exists(now_path):
