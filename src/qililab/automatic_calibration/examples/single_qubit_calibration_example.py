@@ -20,11 +20,11 @@ from scipy.signal import find_peaks
 from calibration_utils.calibration_utils import get_raw_data, get_iq_from_raw, plot_iq, plot_fit
 import qililab as ql
 from automatic_calibration import CalibrationNode, Controller
-from qililab.waveforms import DragPulse, IQPair, Square
+from qililab.waveforms import DragPair, IQPair, Square
 
 #################################################################################################
 """ Define the platform and connect to the instruments """
-
+#TODO: use new runcard when available.
 os.environ["RUNCARDS"] = "../runcards"
 os.environ["DATA"] = "../data"
 platform_name = "soprano_master_galadriel"
@@ -59,12 +59,12 @@ Examples:
         qp = ql.QProgram()
         some_parameter = qp.variable(type_of_the_parameter)
         
-        '''The user should adjust the arguments of DragPulse based on the runcard.
+        '''The user should adjust the arguments of DragPair based on the runcard.
         The 'amplitude' argument is computed as amplitude = theta*pi_pulse_amplitude/pi,
         where 'theta' is the argument of the Drag gate constructor and 'pi_pulse_amplitude'
         is the amplitude of the Drag gate written in the runcard, where all the circuit and
         gate parameters are specified.'''
-        drag_pair = DragPulse(amplitude=1.0, duration=20, num_sigmas=4, drag_coefficient=0.0)
+        drag_pair = DragPair(amplitude=1.0, duration=20, num_sigmas=4, drag_coefficient=0.0)
 
         '''These are the pulses played by the readout_bus before performing the measurement, as can be seen in the loop below.'''
         ones_wf = Square(amplitude=1.0, duration=1000)
@@ -73,11 +73,11 @@ Examples:
         '''Here the loops are executed. 'for_loop' is the loop that iterates over all the values defined by 'sweep_values'. 
         Each time 'acquire' is called, a new bin is created and the value measured after the experiment is stored there (see QBlox docs for more details on what a bin is).
         This way, usually each value in 'sweep_values' is associated with one bin. 
-        We want to perform the experiment multiple times for each of the values in 'sweep_values' in order to get more accurate results. This is handled by 'acquire_loop':
-        everything inside this loop is run as many times as the 'iterations' argument of 'acquire_loop'. If there is an 'acquire' inside this loop, it will be executed 
+        We want to perform the experiment multiple times for each of the values in 'sweep_values' in order to get more accurate results. This is handled by 'average':
+        everything inside this loop is run as many times as the 'iterations' argument of 'average'. If there is an 'acquire' inside this loop, it will be executed 
         'iterations' times for each bin, and then for each bin the results of 'acquire' will be averaged.
         '''
-        with qp.acquire_loop(iterations=1000):
+        with qp.average(iterations=1000):
             with qp.for_loop(variable=some_parameter, start = sweep_values["start"], stop = sweep_values["stop"], step = sweep_values["step"]):
                 qp.set_gain(bus=drive_bus, gain_path0=gain, gain_path1=gain)
                 qp.play(bus=drive_bus, waveform=drag_pair)
@@ -117,13 +117,13 @@ def rabi(drive_bus: str, readout_bus: str, sweep_values: dict):
     qp = ql.QProgram()
     gain = qp.variable(float)
 
-    # Adjust the arguments of DragPulse based on the runcard
-    drag_pair = DragPulse(amplitude=1.0, duration=20, num_sigmas=4, drag_coefficient=0.0)
+    # Adjust the arguments of DragPair based on the runcard
+    drag_pair = DragPair(amplitude=1.0, duration=20, num_sigmas=4, drag_coefficient=0.0)
 
     ones_wf = Square(amplitude=1.0, duration=1000)
     zeros_wf = Square(amplitude=0.0, duration=1000)
 
-    with qp.acquire_loop(iterations=1000):
+    with qp.average(iterations=1000):
         # We iterate over the gain instead of amplitude because it's equivalent and we can't iterate over amplitude.
         with qp.for_loop(variable=gain, start = sweep_values["start"], stop = sweep_values["stop"], step = sweep_values["step"]):
             qp.set_gain(bus=drive_bus, gain_path0=gain, gain_path1=gain)
@@ -155,11 +155,11 @@ def ramsey(drive_bus: str, readout_bus: str):
     qp = ql.QProgram()
     wait_time = qp.variable(int)
 
-    drag_pair = DragPulse(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    drag_pair = DragPair(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     ones_wf = Square(amplitude=1.0, duration=1000)
     zeros_wf = Square(amplitude=0.0, duration=1000)
 
-    with qp.acquire_loop(iterations=1000):
+    with qp.average(iterations=1000):
         with qp.for_loop(variable=wait_time, values=wait_values):
             qp.play(bus=drive_bus, waveform=drag_pair)
             qp.wait(bus=drive_bus, time=wait_time)
@@ -197,20 +197,20 @@ def drag_coefficient_calibration(drive_bus: str, readout_bus: str, sweep_values:
     drag_coefficient = qp.variable(float)
 
     """
-    NOTE: User should adjust the arguments of DragPulse based on the runcard.
+    NOTE: User should adjust the arguments of DragPair based on the runcard.
     The 'amplitude' argument is computed as amplitude = theta*pi_pulse_amplitude/pi,
     where theta is the argument of the Drag circuit constructor and pi_pulse_amplitude
     is the amplitude of the Drag circuit written in the runcard, where all the circuit
     parameters are specified.
     """
     # We use two different drag pulses with two different amplitudes.
-    drag_pair_1 = DragPulse(amplitude=0.5, duration=20, num_sigmas=4, drag_coefficient=0.0)
-    drag_pair_2 = DragPulse(amplitude=1.0, duration=20, num_sigmas=4, drag_coefficient=0.0)
+    drag_pair_1 = DragPair(amplitude=0.5, duration=20, num_sigmas=4, drag_coefficient=0.0)
+    drag_pair_2 = DragPair(amplitude=1.0, duration=20, num_sigmas=4, drag_coefficient=0.0)
 
     ones_wf = Square(amplitude=1.0, duration=1000)
     zeros_wf = Square(amplitude=0.0, duration=1000)
 
-    with qp.acquire_loop(iterations=1000):
+    with qp.average(iterations=1000):
         with qp.for_loop(variable=drag_coefficient, start = sweep_values["start"], stop = sweep_values["stop"], step = sweep_values["step"]):
             qp.set_phase(drive_bus, 0)
             qp.play(bus=drive_bus, waveform=drag_pair_1)
@@ -255,22 +255,22 @@ def flipping(drive_bus: str, readout_bus: str, sweep_values: list[int]):
     counter = qp.variable(int)
 
     """
-    NOTE: User should adjust the arguments of DragPulse based on the runcard.
+    NOTE: User should adjust the arguments of DragPair based on the runcard.
     The 'amplitude' argument is computed as amplitude = theta*pi_pulse_amplitude/pi,
     where theta is the argument of the Drag circuit constructor and pi_pulse_amplitude
     is the amplitude of the Drag circuit written in the runcard, where all the circuit
     parameters are specified.
     """
     # Drag pulses played once
-    drag_pair_1 = DragPulse(amplitude=0.5, duration=20, num_sigmas=4, drag_coefficient=0.0)
-    drag_pair_2 = DragPulse(amplitude=0.0, duration=20, num_sigmas=4, drag_coefficient=0.0)
-    drag_pair_3 = DragPulse(amplitude=1.0, duration=20, num_sigmas=4, drag_coefficient=0.0)
+    drag_pair_1 = DragPair(amplitude=0.5, duration=20, num_sigmas=4, drag_coefficient=0.0)
+    drag_pair_2 = DragPair(amplitude=0.0, duration=20, num_sigmas=4, drag_coefficient=0.0)
+    drag_pair_3 = DragPair(amplitude=1.0, duration=20, num_sigmas=4, drag_coefficient=0.0)
     # Drag pulse played repeatedly inside the loop
-    looped_drag_pair = DragPulse(amplitude=1.0, duration=20, num_sigmas=4, drag_coefficient=0.0)
+    looped_drag_pair = DragPair(amplitude=1.0, duration=20, num_sigmas=4, drag_coefficient=0.0)
     ones_wf = Square(amplitude=1.0, duration=1000)
     zeros_wf = Square(amplitude=0.0, duration=1000)
 
-    with qp.acquire_loop(iterations=1000):
+    with qp.average(iterations=1000):
         qp.play(bus=drive_bus, waveform=drag_pair_1)
         with qp.for_loop(variable=flip_values_array_element, start = sweep_values["start"], stop = sweep_values["stop"], step = sweep_values["step"]):
             with qp.for_loop(variable=counter, start = 0, stop = flip_values_array_element, step = 1):
@@ -307,8 +307,8 @@ def all_xy(drive_bus: str, readout_bus: str):
     """
     qp = ql.QProgram()
 
-    drag_pair = DragPulse(amplitude=1.0, duration=20, num_sigmas=4, drag_coefficient=0.0)
-    zero_amplitude_drag_pair = DragPulse(amplitude=0.0, duration=20, num_sigmas=4, drag_coefficient=0.0)
+    drag_pair = DragPair(amplitude=1.0, duration=20, num_sigmas=4, drag_coefficient=0.0)
+    zero_amplitude_drag_pair = DragPair(amplitude=0.0, duration=20, num_sigmas=4, drag_coefficient=0.0)
     ones_wf = Square(amplitude=1.0, duration=1000)
     zeros_wf = Square(amplitude=0.0, duration=1000)
 
@@ -341,7 +341,7 @@ def all_xy(drive_bus: str, readout_bus: str):
         gates = circuit_setting["gates"]
         gate_parameters = circuit_setting["params"]
         for gate, gate_parameter in zip(gates, gate_parameters):
-            with qp.acquire_loop(iterations=1000):
+            with qp.average(iterations=1000):
                 if gate == "RX":
                     rx_gain = gate_parameter
                     rx_phase = 0
@@ -851,7 +851,12 @@ all_xy_node_1 = CalibrationNode(
     qubit=0
 )
 rabi_1_node = CalibrationNode(
-    node_id="rabi_1", qprogram=rabi, sweep_interval=rabi_values, analysis_function=analyze_rabi, qubit=0
+    node_id="rabi_1", 
+    qprogram=rabi, 
+    sweep_interval=rabi_values, 
+    analysis_function=analyze_rabi, 
+    qubit=0,
+    parameter="amplitude"
 )
 ramsey_coarse_node = CalibrationNode(
     node_id="ramsey_coarse",
@@ -859,6 +864,7 @@ ramsey_coarse_node = CalibrationNode(
     sweep_intervals=wait_values,
     analysis_function=analyze_ramsey,
     qubit=0,
+    parameter="if"
 )
 ramsey_fine_node = CalibrationNode(
     node_id="ramsey_fine",
@@ -867,6 +873,7 @@ ramsey_fine_node = CalibrationNode(
     is_refinement=True,
     analysis_function=analyze_ramsey,
     qubit=0,
+    parameter="if"
 )
 drag_coefficient_node = CalibrationNode(
     node_id="drag",
@@ -874,6 +881,7 @@ drag_coefficient_node = CalibrationNode(
     sweep_interval=drag_values,
     analysis_function=analyze_drag_coefficient,
     qubit=0,
+    parameter="drag_coefficient"
 )
 rabi_2_coarse_node = CalibrationNode(
     node_id="rabi_2_coarse",
@@ -881,6 +889,7 @@ rabi_2_coarse_node = CalibrationNode(
     sweep_interval=rabi_values,
     analysis_function=analyze_rabi,
     qubit=0,
+    parameter="amplitude"
 )
 rabi_2_fine_node = CalibrationNode(
     node_id="rabi_2_fine",
@@ -889,12 +898,14 @@ rabi_2_fine_node = CalibrationNode(
     is_refinement=True,
     analysis_function=analyze_rabi,
     qubit=0,
+    parameter="amplitude"
 )
 flipping_node = CalibrationNode(
     node_id="flipping",
     qprogram=flipping,
     analysis_function=analyze_flipping,
     qubit=0,
+    parameter="amplitude"
 )
 all_xy_node_2 = CalibrationNode(
     node_id="all_xy_2", 

@@ -57,10 +57,9 @@ class Controller:
 
         # calibrate
         result = self.calibrate(node)
-        
-        #TODO: implement
-        node.update_parameters(result)
-        
+
+        self.update_parameter(node = node, parameter_value = result)
+
 
     def diagnose(self, node: CalibrationNode):
         """This is a method called by 'maintain' in the special case that its call of 'check_data' finds bad data.
@@ -92,13 +91,12 @@ class Controller:
 
         # calibrate
         result = self.calibrate(node)
-        
-        #TODO: implement
-        node.update_parameters(result)
+    
+        self.update_parameter(node = node, parameter_value = result)
         
         return True
 
-    def run_calibration(self, node: CalibrationNode = None):
+    def run_calibration(self, node: CalibrationNode = None) -> None:
         """Run the calibration procedure starting from the given node.
 
         Args:
@@ -115,7 +113,7 @@ class Controller:
 
         self.maintain(node)
 
-    def check_state(self, node: CalibrationNode):
+    def check_state(self, node: CalibrationNode) -> bool:
         """
         Check if the node's parameters drift timeouts have passed since the last calibration or data validation (a call of check_data).
         These timeouts represent how long it usually takes for the parameters to drift.
@@ -129,10 +127,16 @@ class Controller:
         
         return not is_timeout_expired(node.timestamps[-1], node.drift_timeout)
 
-    def check_data(self, node: CalibrationNode):
+    def check_data(self, node: CalibrationNode) -> str:
         """
         Check if the parameters found in the last calibration are still valid. This removes the need to redo the entire calibration procedure,
         which is much more time-expensive than just calling this method.
+        
+        Args:
+            node: The node whose parameters need to be checked.
+
+        Returns:
+            str: TODO: finish docstrings
         """
 
         # Choose random datapoints within the sweep interval.
@@ -150,14 +154,14 @@ class Controller:
         # Add timestamp to the timestamps list of the node.
         node.add_timestamp(timestamp=get_timestamp(), timestamp_type="check_data")
 
-    def calibrate(self, node: CalibrationNode) -> int|float:
+    def calibrate(self, node: CalibrationNode) -> float | str | bool:
         """Run a node's calibration experiment on its default interval of sweep values.
 
         Args:
             node (CalibrationNode): The node where the calibration experiment is run.
 
         Returns:
-            int|float: The optimal parameter value found by the calibration experiment.
+            float | str | bool: The optimal parameter value found by the calibration experiment.
         """        
 
         optimal_parameter_value = self.run_experiment(node)
@@ -167,7 +171,7 @@ class Controller:
         
         return optimal_parameter_value
 
-    def run_experiment(self, node: CalibrationNode, analyze: bool = True, experiment_point: float = None) -> int|float:
+    def run_experiment(self, node: CalibrationNode, analyze: bool = True, experiment_point: float = None) -> float | str | bool:
         """
         Run the experiment, fit and plot data.
 
@@ -178,7 +182,7 @@ class Controller:
                                     If not None, the experiment was started by the 'check_data' method, and will be run only in the point specified by this argument.
         
         Returns:
-            int or float: The optimal parameter value found by the experiment.
+            float | str | bool: The optimal parameter value found by the experiment.
         """
         if node.is_refinement:
             # FIXME: the following doesn't allow for nodes to depend on multiple other nodes and it's awful, please fix.
@@ -222,12 +226,25 @@ class Controller:
         #TODO: for now I just return the data of the experiment in the point, figure out the details when implementing check_data
         return self._platform.execute_qprogram(node.qprogram(node.qprogram(drive_bus = "drive_bus", readout_bus = "readout_bus", sweep_values = list(experiment_point))))
 
-    def dependents(self, node):
+    def update_parameter(self, node: CalibrationNode, parameter_value: float | bool | str) -> None:
+        """Update a parameter value in the platform. 
+        If the node does not have an associated parameter, or the parameter attribute of the node is None,
+        this function does nothing. That is because some nodes, such as those associated with the AllXY 
+        experiment, don't compute the value of a parameter.
+
+        Args:
+            node (CalibrationNode): The node that contains the experiment that gives the optimal value of the parameter.
+            parameter_value (float | bool | str): The optimal value of the parameter found by the experiment.
+        """        
+        if hasattr(node, "parameter")  and node.parameter is not None:
+            self.platform.set_parameter(alias = node.parameter, value = parameter_value)
+        
+    def dependents(self, node: CalibrationNode):
         """Find the nodes that a node depends on. 
         In this graph, if an edge goes from node A to node B, then node A depends on node B. Thus the nodes that A depends on are its successors.
             
         Args:
-            node (_type_): The nodes of which we need the dependencies
+            node (CalibrationNode): The nodes of which we need the dependencies
 
         Returns:
             list: The nodes that the argument node depends on
