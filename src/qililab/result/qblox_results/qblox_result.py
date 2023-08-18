@@ -30,7 +30,8 @@ class QbloxResult(Result):
     - avg_cnt: list of number of averages per bin.
 
     Args:
-        pulse_length (int): Duration (in ns) of the pulse.
+        qblox_raw_results (list[dict]): Raw results obtained from a Qblox digitiser.
+        integration_lengths (list[int]): Integration lengths used to get the given results.
     """
 
     name = ResultName.QBLOX
