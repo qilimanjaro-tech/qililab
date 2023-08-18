@@ -105,6 +105,32 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         We can see how the integrated I/Q values oscillated, meaning that qubit 0 oscillates between ground and
         excited state!
+
+        Given that we are looping over variables that are independent of the circuit (in this case the gain of the AWG),
+        we can speed up the experiment by translating the circuit into pulses only once, and then executing the obtained
+        pulses inside the loop:
+
+        .. code-block:: python3
+
+            from qililab.pulses.circuit_to_pulses import CircuitToPulses
+
+            pulse_schedule = CircuitToPulses(platform=platform).translate(circuits=[circuit])
+
+            results = []
+
+            gain_values = np.arange(0, 1, step=0.1)
+            for gain in gain_values:
+                # We assume the bus used to drive qubit 0 is called "drive_q0"
+                platform.set_parameter(alias="drive_q0", parameter=ql.Parameter.GAIN, value=gain)
+                result = platform.execute(program=pulse_schedule, num_avg=1000, repetition_duration=6000)
+                results.append(result.array)
+
+        If we stack and print the results, we see how we obtain similar results, but much faster!
+
+        >>> results = np.hstack(results)
+        >>> results
+        array([[5, 4, 3, 2, 1, 2, 3],
+                [5, 4, 3, 2, 1, 2, 3]])
     """
 
     def __init__(self, runcard: Runcard, connection: API | None = None):
