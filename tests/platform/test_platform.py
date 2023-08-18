@@ -105,13 +105,13 @@ class TestPlatform:
         element = platform.get_element(alias=InstrumentName.QBLOX_QRM.value)
         assert isinstance(element, AWGAnalogDigitalConverter)
 
-    @patch("qililab.platform.platform_manager.yaml.dump")
-    def test_platform_manager_dump_method(self, mock_dump: MagicMock, platform: Platform):
+    @patch("qililab.data_management.open")
+    @patch("qililab.data_management.yaml.dump")
+    def test_platform_manager_dump_method(self, mock_dump: MagicMock, mock_open: MagicMock, platform: Platform):
         """Test PlatformManager dump method."""
-        save_platform(platform=platform)
-        with pytest.raises(NotImplementedError):
-            save_platform(platform=platform, database=True)
-        mock_dump.assert_called()
+        save_platform(path="runcard.yml", platform=platform)
+        mock_open.assert_called_once_with(file="runcard.yml", mode="w", encoding="utf-8")
+        mock_dump.assert_called_once()
 
     def test_get_bus_by_qubit_index(self, platform: Platform):
         """Test get_bus_by_qubit_index method."""
@@ -219,16 +219,26 @@ class TestMethods:
 
     def test_execute(self, platform: Platform):
         """Test that the execute method calls the buses to run and return the results."""
+        # Define pulse schedule
+        pulse_schedule = PulseSchedule()
+        drag_pulse = Pulse(
+            amplitude=1, phase=0.5, duration=200, frequency=1e9, pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
+        )
+        readout_pulse = Pulse(amplitude=1, phase=0.5, duration=1500, frequency=1e9, pulse_shape=Rectangular())
+        pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), port="drive_q0", port_delay=0)
+        pulse_schedule.add_event(
+            PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), port="feedline_input", port_delay=0
+        )
         with patch.object(Bus, "upload") as upload:
             with patch.object(Bus, "run") as run:
                 with patch.object(Bus, "acquire_result") as acquire_result:
                     acquire_result.return_value = 123
                     result = platform.execute(
-                        program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1
+                        program=pulse_schedule, num_avg=1000, repetition_duration=2000, num_bins=1
                     )
 
-        assert upload.call_count == len(platform.buses)
-        assert run.call_count == len(platform.buses)
+        assert upload.call_count == len(pulse_schedule.elements)
+        assert run.call_count == len(pulse_schedule.elements)
         acquire_result.assert_called_once_with()
         assert result == 123
 
