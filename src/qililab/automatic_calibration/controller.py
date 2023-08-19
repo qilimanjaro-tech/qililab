@@ -59,8 +59,9 @@ class Controller:
         # calibrate
         result = self.calibrate(node)
 
-        #FIXME: this parameter update doesn't work.
-        self.update_parameter(node = node, parameter_value = result)
+        #FIXME: this parameter update doesn't work because the platform can't find an instrument with the alias that I'm giving
+        # as argument when initializing the node.
+        #self.update_parameter(node = node, parameter_value = result)
         print(f"Updated parameter \"{node.parameter}\" value.\n")
 
 
@@ -219,11 +220,15 @@ class Controller:
                     if user approves: return
                     else: go back to 1.
             """
-            user_approves_plot = "n"
-            while user_approves_plot == "n":
+            user_approves_plot = False
+            while not user_approves_plot:
                 # Compile and run the QProgram on the platform.
                 print(f"Running \"{node.qprogram.__name__}\" experiment\n")
+                
+                # Real version:
                 #node.experiment_results = self._platform.execute_qprogram(node.qprogram(drive_bus = "drive_bus", readout_bus = "readout_bus", sweep_values = node.sweep_interval))
+                
+                # Test version:  
                 node.experiment_results = "./tests/automatic_calibration/rabi.yml"
                 
                 if analyze:
@@ -234,9 +239,12 @@ class Controller:
 
                 # If the 'manual_check' option is activated for the node, show the plot and ask the user for approval.
                 if node.manual_check:
-                    user_approves_plot = input("Do you want to repeat the experiment? (y/n): ").lower()
+                    user_input = input("Do you want to repeat the experiment? (y/n): ").lower()
+                    if user_input != "y" and user_input != "n":
+                        raise ValueError("Invalid input! Please enter 'y' or 'n'.")
+                    if user_input == "n": user_approves_plot = True
                 else:
-                    user_approves_plot = "y"
+                    user_approves_plot = True
 
             return optimal_parameter_value
 
@@ -244,8 +252,8 @@ class Controller:
         # experiment results in the node's 'experiment_results' attribute, because we don't want to overwrite the old results: 
         # we need them to compare them with the new ones, which here we simply return.
         # TODO: for now I just return the data of the experiment in the point, figure out the details when implementing check_data
-        # FIXME: uncomment the following when execute_qprogram is merged into main.
         
+        # FIXME: uncomment the following when execute_qprogram is merged into main.        
         #return self._platform.execute_qprogram(node.qprogram(node.qprogram(drive_bus = "drive_bus", readout_bus = "readout_bus", sweep_values = list(experiment_point))))
         print("Trying to run qprogram experiment but failed because execute_qprogram is not yet implemented in main\n")
 

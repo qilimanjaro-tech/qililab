@@ -11,7 +11,6 @@ import qililab as ql
 from qililab.automatic_calibration import CalibrationNode, Controller
 from qililab.automatic_calibration.calibration_utils.calibration_utils import get_raw_data, get_iq_from_raw, plot_iq, plot_fit
 from qililab.waveforms import DragPair, IQPair, Square
-from qililab.platform.platform import Platform
 
 ##################################### PLATFORM ####################################################
 """ Define the platform and connect to the instruments """
@@ -22,9 +21,9 @@ platform_name = "galadriel"
 platform = ql.build_platform(name=platform_name)
 
 # Uncomment the following when working with an actual platform
-'''platform.connect()
-platform.turn_on_instruments()
-platform.initial_setup()'''
+#platform.connect()
+#platform.turn_on_instruments()
+#platform.initial_setup()
 
 ##################################### EXPERIMENTS ##################################################
 
@@ -145,13 +144,15 @@ def analyze_rabi(results, show_plot: bool, fit_quadrature="i", label=""):
     if show_plot:
         plot = mpimg.imread(figure_filepath)
         plt.imshow(plot)
-        plt.show()
+        plt.show(block=False)
     return fitted_pi_pulse_amplitude
 
 
 ##################################### GRAPH ##########################################################
 
-
+# TODO:
+# * I don't know if, in the new buses, we need both the parameter and alias arguments.
+# * The name given to alias here is not ok: the parameter update fails because the platform can't find an instrument with that alias: what's a good alias for this experiment?
 rabi_1_node = CalibrationNode(
     node_id="rabi_1",
     qprogram=rabi,
@@ -160,6 +161,7 @@ rabi_1_node = CalibrationNode(
     qubit=0,
     parameter='amplitude',
     alias="Drag(0)",
+    manual_check=True
 )
 
 calibration_graph = nx.DiGraph()
