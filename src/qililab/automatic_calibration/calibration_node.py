@@ -40,6 +40,7 @@ class CalibrationNode:
                              https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/pulsar.html#qblox_instruments.native.Pulsar.get_acquisitions
         _manual_check (bool): If True, the user is shown the plot for the experiment assigned to this node. The user must approve or reject the plot. If the user rejects
                               the plot, the experiment is run again.
+        _needs_recalibration (bool): Flag to indicate if the last calibration run on this node has been unsuccessful and thus shuold be done again.
     """
 
     def __init__(
@@ -75,7 +76,7 @@ class CalibrationNode:
         self._manual_check = manual_check
         self._timestamps = {}
         self._experiment_results = None
-        
+    
     def _hash_(self) -> int:
         """
         Make the CalibrationNode object hashable by hashing its unique identifier _node_id.
@@ -154,4 +155,12 @@ class CalibrationNode:
     @manual_check.setter
     def manual_check(self, manual_check: bool):
         self._manual_check = manual_check
+        
+    @property
+    def needs_recalibration(self): 
+        return self._needs_recalibration
+    
+    @needs_recalibration.setter
+    def needs_recalibration(self, value):
+        self._needs_recalibration = value
         

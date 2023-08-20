@@ -61,7 +61,7 @@ def get_random_values(array: list(), number_of_values: int):
     """
     if len(array) < number_of_values:
         raise ValueError("Array must contain at least num_of_values elements.")
-    return random.sample(array, number_of_values)
+    return random.sample(sorted(array), number_of_values)
 
 
 def get_raw_data(datapath):

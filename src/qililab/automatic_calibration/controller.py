@@ -1,4 +1,5 @@
 import networkx as nx
+import numpy as np
 
 from qililab.automatic_calibration.calibration_utils.calibration_utils import is_timeout_expired, get_timestamp, get_random_values, get_raw_data
 from qililab.automatic_calibration.calibration_node import CalibrationNode
@@ -13,15 +14,15 @@ class Controller:
         _platform (Platform): The platform where the experiments will be run. See the Platform class for more information.
     """
 
-    def __init__(self, platform: Platform, calibration_graph: nx.DiGraph = None, manual_check_all: bool = False):
+    def __init__(self, calibration_sequence_name: str, platform: Platform, calibration_graph: nx.DiGraph = None, manual_check_all: bool = False):
         if calibration_graph is None:
             self._calibration_graph = nx.DiGraph()
         else:
             self._calibration_graph = calibration_graph
-        # Note to future self: The calibration graph is initialized as an empty directed graph.
-        # In methods that add a new node, make a check to see if the graph is still a DAG
+            if not nx.is_directed_acyclic_graph(self._calibration_graph):
+                raise ValueError("The calibration graph must be a Directed Acyclic Graph (DAG).")
         self._platform = platform
-        
+        self._calibration_sequence_name = calibration_sequence_name
         if manual_check_all:
             for node in self._calibration_graph.nodes(): node.manual_check = True
 
@@ -108,17 +109,28 @@ class Controller:
                                          In that case we start from the highest level node in the calibration graph. 'maintain` will recursively
                                          calibrate all the lower level nodes.
         """
+        
+        # For each node, load data from the last run of the automatic calibration routine.
+        for n in self._calibration_graph.nodes():
+            #TODO: implement this after data saving is implemented.
+            #node.add_timestamp('''the last timestamp created during the previous run of the automatic calibration routine''')
+            #node.experiment_results = '''the content of the experiment_results attribute of this same node in the previous run of the automatic calibration routine'''
+            pass
+        
+        # Find highest level node(s) in the calibration graph, the one(s) that no other node depends on. If we call 'maintain' from this node(s), 
+        # 'maintain' will recursively call itself on all the lower level nodes.
         if node is None:
-            # Find highest level node in the calibration graph, the one that no other node depends on. If we call maintain from this node, 
-            # 'maintain` will recursively call itself on all the lower level nodes.
-            # FIXME: this only works if there's only 1 highest level node.
             highest_level_nodes = (
                 [node for node, in_degree in self._calibration_graph.in_degree() if in_degree == 0]
             )
-            node = highest_level_nodes[0]
+            for n in highest_level_nodes:
+                self.maintain(n)
+        else:
+            self.maintain(node)
 
-        self.maintain(node)
-
+        #TODO: implement saving of current data: for each node, the content of the 'experiment_results' attribute and the last item of the list
+        #      in the 'timestamps' attribute has to be saved in a YAML file.
+        
         print("####################################\n"
               "Calibration completed successfully!\n"
               "####################################")
@@ -134,8 +146,15 @@ class Controller:
         Returns:
             bool: True if the parameter's drift timeout has not yet expired, False otherwise.
         """
-        if node.timestamps is None or (not hasattr(node, 'timestamps')) or len(node.timestamps) == 0: return False
-        return not is_timeout_expired(node.timestamps[-1], node.drift_timeout)
+        
+        print(f"Checking state of node \"{node.node_id}\"\n")
+        
+        if node.timestamps is None or (not hasattr(node, 'timestamps')) or len(node.timestamps) == 0:
+            # This is the first time that this automatic calibration routine is run, so there is no previous data
+            # to use for the check, thus we assume the check would fail.
+            return False
+        
+        return not (node.needs_recalibration or is_timeout_expired(node.timestamps[-1], node.drift_timeout))
 
     def check_data(self, node: CalibrationNode) -> str:
         """
@@ -149,25 +168,28 @@ class Controller:
             str: TODO: finish docstrings
         """
         
+        print(f"Checking data of node \"{node.node_id}\"\n")
+        
         # If there is no previous experimental data available for the node it means that this is the first time we're traversing it, 
         # so we assume that the node's parameter is out of spec.
-        if (not hasattr(node, "experiment_results")) or node.experiment_results is None:
-            return "out_of_spec"
+        if (not hasattr(node, "experiment_results")) or node.experiment_results is None: return "out_of_spec"
         
         # Choose random points within the sweep interval.
-        try:
-            random_values = get_random_values(node.sweep_interval)
-        except ValueError as e:
-            print(e)
-        
+        random_values = get_random_values(array=np.arange(node.sweep_interval["start"], node.sweep_interval["stop"], node.sweep_interval["step"]), number_of_values=node._number_of_random_datapoints) 
+               
         for value in random_values:
-            current_point_result = self.run_experiment(analyze=True, experiment_point=value)
-            # check if result matches old data
-            
+            current_point_result = self.run_experiment(node = node, analyze=True, experiment_point=value)
+            # Check if result matches old data
             # return in_spec, out_of_spec or bad_data
+            # TODO: implement the above
 
-        # Add timestamp to the timestamps list of the node when check_data returns a successful result.
+        # dummy return value while method is not yet implemented:
+        return "in_spec"
+    
+        # Add timestamp to the timestamps list of the node when check_data returns "in_spec" result.
         node.add_timestamp(timestamp=get_timestamp(), type_of_timestamp="check_data")
+        return "in_spec"
+        
 
     def calibrate(self, node: CalibrationNode) -> float | str | bool:
         """Run a node's calibration experiment on its default interval of sweep values.
@@ -178,7 +200,7 @@ class Controller:
         Returns:
             float | str | bool: The optimal parameter value found by the calibration experiment.
         """
-
+        print(f"Calibrating node \"{node.node_id}\"\n")
         optimal_parameter_value = self.run_experiment(node)
 
         # Add timestamp to the timestamps list of the node.
@@ -201,14 +223,13 @@ class Controller:
         """
         
         if node.is_refinement:
-            # FIXME: the following doesn't allow for nodes to depend on multiple other nodes and it's awful, please fix.
+            # FIXME: this doesn't work if the node depends on more than one other node.
             previous_experiment_data = list(self._calibration_graph.successors(node))[0].experiment_results
             node.sweep_interval = node.sweep_interval + previous_experiment_data
-            """
-            Note: I'm not sure this can always be handled like this: I'm taking the example from
-            LabScripts/QuantumPainHackathon/calibrations/single_qb_full_cal.py as universal which I
-            already know I'm gonna regret
-            """
+            # NOTE: I'm not sure that the above can always be handled like this: I'm taking the example from
+            # LabScripts/QuantumPainHackathon/calibrations/single_qb_full_cal.py as universal which I
+            # already know I'm gonna regret
+            
         if experiment_point is None:
         # Case when the experiment is started by 'calibrate': the experiment is run on the entire default sweep interval
             """
@@ -220,31 +241,40 @@ class Controller:
                     if user approves: return
                     else: go back to 1.
             """
-            user_approves_plot = False
-            while not user_approves_plot:
-                # Compile and run the QProgram on the platform.
-                print(f"Running \"{node.qprogram.__name__}\" experiment\n")
-                
-                # Real version:
-                #node.experiment_results = self._platform.execute_qprogram(node.qprogram(drive_bus = "drive_bus", readout_bus = "readout_bus", sweep_values = node.sweep_interval))
-                
-                # Test version:  
-                node.experiment_results = "./tests/automatic_calibration/rabi.yml"
-                
-                if analyze:
-                    # Call the general analysis function with the appropriate model, or the custom one (no need to specify the model in this case, it will already be hardcoded).
-                    # If node.manual_check is True, the analysis function will also open the file containing the plot.
-                    print(f"Running the \"{node.analysis_function.__name__}\" analysis function\n")
-                    optimal_parameter_value = node.analysis_function(results = node.experiment_results, show_plot=node.manual_check)
+            
+            # Compile and run the QProgram on the platform.
+            print(f"Running \"{node.qprogram.__name__}\" experiment in node \"{node.node_id}\"\n")
+            
+            # Real version, uncomment when testing on hardware and when 'Platform.execute_qprogram' is in main
+            #node.experiment_results = self._platform.execute_qprogram(node.qprogram(drive_bus = "drive_bus", readout_bus = "readout_bus", sweep_values = node.sweep_interval))
+            
+            # Test version that returns dummy data
+            node.experiment_results = "./tests/automatic_calibration/rabi.yml"
+            
+            if analyze:
+                # Call the general analysis function with the appropriate model, or the custom one (no need to specify the model in this case, it will already be hardcoded).
+                # If node.manual_check is True, the analysis function will also open the file containing the plot so the user can approve it manually.
+                print(f"Running the \"{node.analysis_function.__name__}\" analysis function in node \"{node.node_id}\"\n")
+                optimal_parameter_value = node.analysis_function(results = node.experiment_results, show_plot=node.manual_check)
 
-                # If the 'manual_check' option is activated for the node, show the plot and ask the user for approval.
-                if node.manual_check:
-                    user_input = input("Do you want to repeat the experiment? (y/n): ").lower()
-                    if user_input != "y" and user_input != "n":
-                        raise ValueError("Invalid input! Please enter 'y' or 'n'.")
-                    if user_input == "n": user_approves_plot = True
-                else:
-                    user_approves_plot = True
+            # If the 'manual_check' option is activated for the node, show the plot and ask the user for approval. This does not need to be in a loop
+            # because 'maintain()' will recursively call itself on the node, so 'run_experiment' will be called on the node and the user will again be
+            # asked to approve the plot. 
+            # run_experiment will always be called in the recursive 'maintain' call of this node, since 'check_state' will fail because 
+            # of the 'needs_recalibration' flag being set to True, and 'check_data' will return either 'bad_data' or 'out_of_spec', so the 
+            # 'calibrate' will be called either way and therefore 'run_experiment' will be called.
+            # FIXME: read the above: is it true that check_data will never return 'in_spec' in this situation'. It could happen that, despite having 
+            # run maintain on the node again, we still get the faulty data that the user had refused, but we won't see it because if we don't go through
+            # 'run_experiment', which is only called by 'calibrate', the plot is not shown. Thus, the manual check should probably be moved to 'maintain', 
+            # so that the plot can be shown even if we just call 'check_state' or 'check_state' and 'chec_data', but not 'calibrate'. That could be tricky 
+            # because of the recursive structure of 'maintain'.
+            if node.manual_check:
+                user_input = input("Do you want to repeat the experiment? (y/n): ").lower()
+                if user_input != "y" and user_input != "n":
+                    raise ValueError("Invalid input! Please enter 'y' or 'n'.")
+                if user_input == "y": 
+                    node.needs_recalibration = True
+                    self.maintain(node = node)
 
             return optimal_parameter_value
 
@@ -281,4 +311,14 @@ class Controller:
             list: The nodes that the argument node depends on
         """        
         return self._calibration_graph.successors(node)
+    
+    @property
+    def calibration_graph(self):
+        return self._calibration_graph
+    
+    @calibration_graph.setter
+    def calibration_graph(self, calibration_graph):
+        if not nx.is_directed_acyclic_graph(calibration_graph):
+                raise ValueError("The calibration graph must be a Directed Acyclic Graph (DAG).")
+        self._calibration_graph = calibration_graph
         

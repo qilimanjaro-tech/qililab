@@ -34,6 +34,11 @@ rabi_values = {"start": 0,
                "step": (0.25-0)/40 # It's written like this because it's derived from a np.linspace definition
                }
 
+sweep_interval_dummy = {"start": 0,
+                        "stop": 10,
+                        "step": 1
+                        }
+
 def rabi(drive_bus: str, readout_bus: str, sweep_values: dict):
     """The Rabi experiment written as a QProgram.
 
@@ -65,6 +70,8 @@ def rabi(drive_bus: str, readout_bus: str, sweep_values: dict):
 
     return qp
 
+def qprogram_dummy(drive_bus: str, readout_bus: str, sweep_values: dict):
+    return ql.QProgram()
 
 ##################################### ANALYSIS ##################################################
 
@@ -147,11 +154,15 @@ def analyze_rabi(results, show_plot: bool, fit_quadrature="i", label=""):
         plt.show(block=False)
     return fitted_pi_pulse_amplitude
 
+def analysis_dummy(results, show_plot: bool):
+    optimal_parameter_value_dummy = 1.0
+    return optimal_parameter_value_dummy
+
 
 ##################################### GRAPH ##########################################################
 
 # TODO:
-# * I don't know if, in the new buses, we need both the parameter and alias arguments.
+# * I don't know if, with the new buses, we need both the parameter and alias arguments.
 # * The name given to alias here is not ok: the parameter update fails because the platform can't find an instrument with that alias: what's a good alias for this experiment?
 rabi_1_node = CalibrationNode(
     node_id="rabi_1",
@@ -159,24 +170,73 @@ rabi_1_node = CalibrationNode(
     sweep_interval=rabi_values,
     analysis_function=analyze_rabi,
     qubit=0,
-    parameter='amplitude',
-    alias="Drag(0)",
-    manual_check=True
+    parameter=ql.Parameter.AMPLITUDE,
+    alias="drive_line_q0_bus",
+    manual_check=False
+)
+
+dummy_1_node = CalibrationNode(
+    node_id="dummy_1",
+    qprogram=qprogram_dummy,
+    sweep_interval=sweep_interval_dummy,
+    is_refinement=False,
+    analysis_function=analysis_dummy,
+    fitting_model=None,
+    plotting_labels=None,
+    qubit=0,
+    parameter=None,
+    alias=None,
+    drift_timeout=0,
+    data_validation_threshold=1,
+    number_of_random_datapoints=1,
+    manual_check=False
+)
+dummy_2_node = CalibrationNode(
+    node_id="dummy_2",
+    qprogram=qprogram_dummy,
+    sweep_interval=sweep_interval_dummy,
+    is_refinement=False,
+    analysis_function=analysis_dummy,
+    fitting_model=None,
+    plotting_labels=None,
+    qubit=0,
+    parameter=None,
+    alias=None,
+    drift_timeout=0,
+    data_validation_threshold=1,
+    number_of_random_datapoints=1,
+    manual_check=False
 )
 
 calibration_graph = nx.DiGraph()
 
 nodes = [    
-    rabi_1_node
+    dummy_1_node, 
+    dummy_2_node
 ]
 
 calibration_graph.add_nodes_from(nodes)
 
+calibration_graph.add_edge(dummy_2_node, dummy_1_node)
+
+# Visualization of the calibration graph
+labels = {node: node.node_id for node in calibration_graph.nodes}
+nx.draw_planar(calibration_graph, labels=labels, with_labels=True)
+graph_figure_filepath ="./tests/automatic_calibration/calibration_graph.PNG"
+plt.savefig(graph_figure_filepath, format="PNG")
+
+show_calibration_graph = False
+
+if show_calibration_graph:
+    graph_figure = mpimg.imread(graph_figure_filepath)
+    plt.imshow(graph_figure)
+    plt.show()
+    
 ######################################################################################################
 """
 Initialize the controller and start the calibration algorithm.
 """
-controller = Controller(platform = platform, calibration_graph = calibration_graph)
+controller = Controller(calibration_sequence_name= 'test_sequence', platform = platform, calibration_graph = calibration_graph, manual_check_all=True)
 
 # Start automatic calibration
 controller.run_calibration()
