@@ -9,7 +9,7 @@ from .bus_execution import BusExecution
 
 
 # TODO: Rename to Drawer and simplify class
-class ExecutionManager:
+class ExecutionManager:  # pylint: disable=too-few-public-methods
     """ExecutionManager class.
 
     This class only contains drawing capabilities. The `ExecutionManager` name is maintained for backwards
