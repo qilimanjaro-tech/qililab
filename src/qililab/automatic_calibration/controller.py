@@ -69,7 +69,7 @@ class Controller:
                 self.diagnose(n)
 
         # calibrate
-        result, plot, plot_filepath = self.calibrate(node)       
+        result, plot_filepath = self.calibrate(node)       
         
         if node.manual_check:
             plot_image = mpimg.imread(plot_filepath)
@@ -201,7 +201,7 @@ class Controller:
         random_values = get_random_values(array=np.arange(node.sweep_interval["start"], node.sweep_interval["stop"], node.sweep_interval["step"]), number_of_values=node._number_of_random_datapoints) 
                
         for value in random_values:
-            current_point_result = self.run_experiment(node = node, analyze=True, experiment_point=value)
+            current_point_result, plot_filepath = self.run_experiment(node = node, analyze=True, experiment_point=value)
             # Check if result matches old data
             # return in_spec, out_of_spec or bad_data
             # TODO: implement the above
@@ -215,28 +215,29 @@ class Controller:
         
 
     def calibrate(self, node: CalibrationNode) -> float | str | bool:
-        """Run a node's calibration experiment on its default interval of sweep values.
-            #TODO: this method and 'run_calibration' could be merged, separating them brings nearly no advantage.
+        """
+        Run a node's calibration experiment on its default interval of sweep values.        
 
         Args:
             node (CalibrationNode): The node where the calibration experiment is run.
 
         Returns:
             float | str | bool: The optimal parameter value found by the calibration experiment.
-            plt.Figure: The plot obtained by the analysis function.
             plot_filepath: The path of the file containing the plot.
         """
         print(f"Calibrating node \"{node.node_id}\"\n")
-        optimal_parameter_value, plot, plot_filepath = self.run_experiment(node)
+        optimal_parameter_value, plot_filepath = self.run_experiment(node)
 
         # Add timestamp to the timestamps list of the node.
         node.add_timestamp(timestamp=get_timestamp(), type_of_timestamp="calibrate")
         
-        return optimal_parameter_value, plot, plot_filepath
+        return optimal_parameter_value, plot_filepath
 
     def run_experiment(self, node: CalibrationNode, analyze: bool = True, experiment_point: float = None) -> float | str | bool:
         """
         Run the experiment, fit and plot data.
+        This method is separate from the 'calibrate' method because sometimes we just need to run the experiment in a few points, not
+        on the whole sweep interval (see 'check_data' method in this class).
 
         Args:
             analyze (bool): If set to true the analysis function is run, otherwise it's not. Default value is True. TODO: is this useful? Is there a case when we don't want to analyze?
@@ -246,7 +247,6 @@ class Controller:
         
         Returns:
             float | str | bool: The optimal parameter value found by the calibration experiment.
-            plt.Figure: The plot obtained by the analysis function.
             plot_filepath: The path of the file containing the plot.
         """
         
