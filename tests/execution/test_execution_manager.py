@@ -38,9 +38,9 @@ def fixture_execution_manager(experiment: Experiment) -> ExecutionManager:
 def fixture_nested_experiment(request: pytest.FixtureRequest):
     """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="sauron")
+    with patch("qililab.data_management.yaml.safe_load", return_value=runcard) as mock_load:
+        with patch("qililab.data_management.open") as mock_open:
+            platform = build_platform(path="sauron")
             mock_load.assert_called()
             mock_open.assert_called()
     loop2 = Loop(
@@ -65,9 +65,9 @@ def fixture_nested_experiment(request: pytest.FixtureRequest):
 def fixture_experiment(request: pytest.FixtureRequest):
     """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="sauron")
+    with patch("qililab.data_management.yaml.safe_load", return_value=runcard) as mock_load:
+        with patch("qililab.data_management.open") as mock_open:
+            platform = build_platform(path="sauron")
             mock_load.assert_called()
             mock_open.assert_called()
     loop = Loop(

@@ -37,11 +37,9 @@ def fixture_simulated_platform(mock_evolution: MagicMock) -> Platform:
     mock_evolution.return_value.times = []
     mock_evolution.return_value.psi0 = None
 
-    with patch(
-        "qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=FluxQubitSimulator.runcard
-    ) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="flux_qubit")
+    with patch("qililab.data_management.yaml.safe_load", return_value=FluxQubitSimulator.runcard) as mock_load:
+        with patch("qililab.data_management.open") as mock_open:
+            platform = build_platform(path="flux_qubit")
             mock_load.assert_called()
             mock_open.assert_called()
     return platform
@@ -51,9 +49,9 @@ def fixture_simulated_platform(mock_evolution: MagicMock) -> Platform:
 def fixture_nested_experiment(request: pytest.FixtureRequest):
     """Return a nested Experiment object."""
     runcard, circuits = request.param  # type: ignore
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="sauron")
+    with patch("qililab.data_management.yaml.safe_load", return_value=runcard) as mock_load:
+        with patch("qililab.data_management.open") as mock_open:
+            platform = build_platform(path="sauron")
             mock_load.assert_called()
             mock_open.assert_called()
     loop2 = Loop(
@@ -78,9 +76,9 @@ def fixture_nested_experiment(request: pytest.FixtureRequest):
 def fixture_experiment(request: pytest.FixtureRequest):
     """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="_")
+    with patch("qililab.data_management.yaml.safe_load", return_value=runcard) as mock_load:
+        with patch("qililab.data_management.open") as mock_open:
+            platform = build_platform(path="_")
             mock_load.assert_called()
             mock_open.assert_called()
     loop = Loop(
@@ -104,9 +102,9 @@ def fixture_platform() -> Platform:
 def fixture_experiment_all_platforms(request: pytest.FixtureRequest):
     """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="flux_qubit")
+    with patch("qililab.data_management.yaml.safe_load", return_value=runcard) as mock_load:
+        with patch("qililab.data_management.open") as mock_open:
+            platform = build_platform(path="flux_qubit")
             mock_load.assert_called()
             mock_open.assert_called()
     experiment = Experiment(platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits])
@@ -142,10 +140,10 @@ def fixture_experiment_reset(request: pytest.FixtureRequest):
     """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
     runcard = copy.deepcopy(runcard)
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
+    with patch("qililab.data_management.yaml.safe_load", return_value=runcard) as mock_load:
+        with patch("qililab.data_management.open") as mock_open:
             mock_load.return_value[RUNCARD.INSTRUMENT_CONTROLLERS][0] |= {"reset": False}
-            platform = build_platform(name="galadriel")
+            platform = build_platform(path="galadriel")
             mock_load.assert_called()
             mock_open.assert_called()
     loop = Loop(

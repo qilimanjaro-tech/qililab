@@ -84,9 +84,9 @@ def fixture_sauron_platform() -> Platform:
 def fixture_nested_experiment(request: pytest.FixtureRequest):
     """Return BaseExperiment object."""
     runcard, _ = request.param  # type: ignore
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="galdriel")
+    with patch("qililab.data_management.yaml.safe_load", return_value=runcard) as mock_load:
+        with patch("qililab.data_management.open") as mock_open:
+            platform = build_platform(path="galdriel")
             mock_load.assert_called()
             mock_open.assert_called()
     loop2 = Loop(
@@ -109,9 +109,9 @@ def fixture_nested_experiment(request: pytest.FixtureRequest):
 def fixture_experiment_all_platforms(request: pytest.FixtureRequest):
     """Return BaseExperiment object."""
     runcard, _ = request.param  # type: ignore
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="galadriel")
+    with patch("qililab.data_management.yaml.safe_load", return_value=runcard) as mock_load:
+        with patch("qililab.data_management.open") as mock_open:
+            platform = build_platform(path="galadriel")
             mock_load.assert_called()
             mock_open.assert_called()
     # Build loop from an existing alias on the testing platform Galadriel
@@ -131,10 +131,10 @@ def fixture_experiment_reset(request: pytest.FixtureRequest):
     """Return BaseExperiment object."""
     runcard, _ = request.param  # type: ignore
     runcard = copy.deepcopy(runcard)
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
+    with patch("qililab.data_management.yaml.safe_load", return_value=runcard) as mock_load:
+        with patch("qililab.data_management.open") as mock_open:
             mock_load.return_value[RUNCARD.INSTRUMENT_CONTROLLERS][0] |= {"reset": False}
-            platform = build_platform(name="sauron")
+            platform = build_platform(path="sauron")
             mock_load.assert_called()
             mock_open.assert_called()
     loop = Loop(
@@ -152,9 +152,9 @@ def fixture_experiment_reset(request: pytest.FixtureRequest):
 def fixture_exp(request: pytest.FixtureRequest):
     """Return BaseExperiment object."""
     runcard, _ = request.param  # type: ignore
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="galadriel")
+    with patch("qililab.data_management.yaml.safe_load", return_value=runcard) as mock_load:
+        with patch("qililab.data_management.open") as mock_open:
+            platform = build_platform(path="galadriel")
             mock_load.assert_called()
             mock_open.assert_called()
     loop = Loop(

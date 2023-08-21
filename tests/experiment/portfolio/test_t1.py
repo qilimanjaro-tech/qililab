@@ -24,9 +24,9 @@ q_data = Q_AMPLITUDE * np.exp(Q_RATE * x)
 @pytest.fixture(name="t1")
 def fixture_t1():
     """Return Experiment object."""
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=Galadriel.runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="flux_qubit")
+    with patch("qililab.data_management.yaml.safe_load", return_value=Galadriel.runcard) as mock_load:
+        with patch("qililab.data_management.open") as mock_open:
+            platform = build_platform(path="flux_qubit")
             mock_load.assert_called()
             mock_open.assert_called()
     analysis = T1(platform=platform, qubit=0, wait_loop_values=np.linspace(start=START, stop=STOP, num=NUM))

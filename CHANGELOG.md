@@ -266,7 +266,7 @@
   ```
 
   ```pycon
-  >>> platform = build_platform(name=runcard_name)
+  >>> platform = build_platform(path=runcard_name)
   [qililab] [0.16.1|WARNING|2023-05-09 17:18:51]: Cannot set `output_i=1` and `output_q=0` in hardware. The I/Q signals sent to sequencer 0 will be swapped to allow this setting.
   ```
 
@@ -743,7 +743,7 @@ awg_sequencers:
   [#211](https://github.com/qilimanjaro-tech/qililab/pull/211)
 
   ```python
-  platform = build_platform(name=runcard_name, connection=connection)
+  platform = build_platform(path=runcard_name, connection=connection)
   platform.connect(manual_override=False)
   ```
 

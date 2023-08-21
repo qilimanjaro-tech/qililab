@@ -21,7 +21,7 @@ from .circuit import (
 )
 from .config import __version__, logger
 from .data_management import build_platform, load_results, save_platform, save_results
-from .execute import execute
+from .execute_circuit import execute
 from .experiment import Experiment
 from .qprogram import QProgram
 from .result import Results
