@@ -96,6 +96,14 @@ class TestPlatform:
         element = platform.get_element(alias=InstrumentName.QBLOX_QRM.value)
         assert isinstance(element, AWGAnalogDigitalConverter)
 
+    @patch("qililab.platform.platform_manager_yaml.open")
+    @patch("qililab.platform.platform_manager_yaml.yaml.dump")
+    def test_platform_manager_dump_method(self, mock_dump: MagicMock, mock_open: MagicMock, platform: Platform):
+        """Test PlatformManager dump method."""
+        save_platform(path="runcard.yml", platform=platform)
+        mock_open.assert_called_once_with(file="runcard.yml", mode="w", encoding="utf-8")
+        mock_dump.assert_called_once()
+
     def test_get_bus_by_qubit_index(self, platform: Platform):
         """Test get_bus_by_qubit_index method."""
         _, control_bus, readout_bus = platform.get_bus_by_qubit_index(0)
