@@ -30,7 +30,7 @@ class BiasTeeCorrection(PulseDistortion):
 
     Examples:
 
-        Imagine you want to distort a `Rectangular` envelope with an `BiasTeeCorrection`. You could do:
+        Imagine you want to distort a `Rectangular` envelope with a `BiasTeeCorrection`. You could do:
 
         .. code-block:: python3
 
