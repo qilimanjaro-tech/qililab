@@ -97,7 +97,3 @@ class ExecutionManager:
             dict[str, Waveforms]: Dictionary containing a list of the I/Q amplitudes of the pulses applied on each bus.
         """
         return {bus.alias: bus.waveforms(modulation=modulation, resolution=resolution, idx=idx) for bus in self.buses}
-
-    def __iter__(self):
-        """Redirect __iter__ magic method to buses."""
-        return self.buses.__iter__()
