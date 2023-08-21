@@ -96,8 +96,8 @@ class TestPlatform:
         element = platform.get_element(alias=InstrumentName.QBLOX_QRM.value)
         assert isinstance(element, AWGAnalogDigitalConverter)
 
-    @patch("qililab.platform.platform_manager_yaml.open")
-    @patch("qililab.platform.platform_manager_yaml.yaml.dump")
+    @patch("qililab.data_management.open")
+    @patch("qililab.data_management.yaml.dump")
     def test_platform_manager_dump_method(self, mock_dump: MagicMock, mock_open: MagicMock, platform: Platform):
         """Test PlatformManager dump method."""
         save_platform(path="runcard.yml", platform=platform)
