@@ -76,7 +76,7 @@ def qprogram_dummy(drive_bus: str, readout_bus: str, sweep_values: dict):
 ##################################### ANALYSIS ##################################################
 
 
-def analyze_rabi(results, show_plot: bool, fit_quadrature="i", label=""):
+def analyze_rabi(results, fit_quadrature="i", label=""):
     """
     Analyzes the Rabi experiment data.
 
@@ -88,8 +88,7 @@ def analyze_rabi(results, show_plot: bool, fit_quadrature="i", label=""):
                  https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/pulsar.html#qblox_instruments.native.Pulsar.get_acquisitions
                  The list only has 1 element because each element represents the acquisitions dictionary of one readout bus, 
                  and for the moment multiple readout buses are not supported.
-        show_plot (bool): If true, the plot is saved and printed so the user can see it. If false, the plot is just saved.
-
+                 
     Returns:
         fitted_pi_pulse_amplitude (int)
     """
@@ -147,13 +146,8 @@ def analyze_rabi(results, show_plot: bool, fit_quadrature="i", label=""):
     plot_fit(
         amplitude_loop_values, optimal_parameters, axes[fit_signal_idx], fitted_pi_pulse_amplitude
     )
-    fig.savefig(figure_filepath, format="PNG")
-    if show_plot:
-        plot = mpimg.imread(figure_filepath)
-        plt.imshow(plot)
-        plt.show(block=False)
-    return fitted_pi_pulse_amplitude
-
+    return fitted_pi_pulse_amplitude, fig, figure_filepath
+    
 def analysis_dummy(results, show_plot: bool):
     optimal_parameter_value_dummy = 1.0
     return optimal_parameter_value_dummy

@@ -1,5 +1,7 @@
 import networkx as nx
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 
 from qililab.automatic_calibration.calibration_utils.calibration_utils import is_timeout_expired, get_timestamp, get_random_values, get_raw_data
 from qililab.automatic_calibration.calibration_node import CalibrationNode
@@ -52,14 +54,33 @@ class Controller:
         # check_data
         result = self.check_data(node)
         if result == "in_spec":
+            if node.manual_check:
+                plot_image = mpimg.imread(plot_filepath)
+                plt.imshow(plot_image)
+                plt.show(block=False)
+                user_input = input("Do you approve the plot? (y/n)").lower()
+                if user_input != "y" and user_input != "n":
+                    raise ValueError("Invalid input! Please enter 'y' or 'n'.")
+                if user_input == "n":
+                    self.maintain(node = node)
             return
         elif result == "bad_data":
             for n in self.dependents(node):
                 self.diagnose(n)
 
         # calibrate
-        result = self.calibrate(node)
-
+        result, plot, plot_filepath = self.calibrate(node)       
+        
+        if node.manual_check:
+            plot_image = mpimg.imread(plot_filepath)
+            plt.imshow(plot_image)
+            plt.show(block=False)
+            user_input = input("Do you approve the plot? (y/n)").lower()
+            if user_input != "y" and user_input != "n":
+                raise ValueError("Invalid input! Please enter 'y' or 'n'.")
+            if user_input == "n":
+                self.maintain(node = node) 
+            
         #FIXME: this parameter update doesn't work because the platform can't find an instrument with the alias that I'm giving
         # as argument when initializing the node.
         #self.update_parameter(node = node, parameter_value = result)
@@ -96,8 +117,9 @@ class Controller:
 
         # calibrate
         result = self.calibrate(node)
-    
-        self.update_parameter(node = node, parameter_value = result)
+
+        #TODO: uncomment this when I have figured out why alias is wrong
+        #self.update_parameter(node = node, parameter_value = result)
         
         return True
 
@@ -127,13 +149,14 @@ class Controller:
                 self.maintain(n)
         else:
             self.maintain(node)
-
-        #TODO: implement saving of current data: for each node, the content of the 'experiment_results' attribute and the last item of the list
-        #      in the 'timestamps' attribute has to be saved in a YAML file.
         
         print("####################################\n"
               "Calibration completed successfully!\n"
               "####################################")
+        
+        #TODO: implement saving of current data: for each node, the content of the 'experiment_results' attribute and the last item of the list
+        #      in the 'timestamps' attribute has to be saved in a YAML file.
+        print("Saving data of the calibration sequence to YAML files...\n")
 
     def check_state(self, node: CalibrationNode) -> bool:
         """
@@ -184,7 +207,7 @@ class Controller:
             # TODO: implement the above
 
         # dummy return value while method is not yet implemented:
-        return "in_spec"
+        return "bad_data"
     
         # Add timestamp to the timestamps list of the node when check_data returns "in_spec" result.
         node.add_timestamp(timestamp=get_timestamp(), type_of_timestamp="check_data")
@@ -193,20 +216,23 @@ class Controller:
 
     def calibrate(self, node: CalibrationNode) -> float | str | bool:
         """Run a node's calibration experiment on its default interval of sweep values.
+            #TODO: this method and 'run_calibration' could be merged, separating them brings nearly no advantage.
 
         Args:
             node (CalibrationNode): The node where the calibration experiment is run.
 
         Returns:
             float | str | bool: The optimal parameter value found by the calibration experiment.
+            plt.Figure: The plot obtained by the analysis function.
+            plot_filepath: The path of the file containing the plot.
         """
         print(f"Calibrating node \"{node.node_id}\"\n")
-        optimal_parameter_value = self.run_experiment(node)
+        optimal_parameter_value, plot, plot_filepath = self.run_experiment(node)
 
         # Add timestamp to the timestamps list of the node.
         node.add_timestamp(timestamp=get_timestamp(), type_of_timestamp="calibrate")
         
-        return optimal_parameter_value
+        return optimal_parameter_value, plot, plot_filepath
 
     def run_experiment(self, node: CalibrationNode, analyze: bool = True, experiment_point: float = None) -> float | str | bool:
         """
@@ -219,7 +245,9 @@ class Controller:
                                     If not None, the experiment was started by the 'check_data' method, and will be run only in the point specified by this argument.
         
         Returns:
-            float | str | bool: The optimal parameter value found by the experiment.
+            float | str | bool: The optimal parameter value found by the calibration experiment.
+            plt.Figure: The plot obtained by the analysis function.
+            plot_filepath: The path of the file containing the plot.
         """
         
         if node.is_refinement:
@@ -255,28 +283,12 @@ class Controller:
                 # Call the general analysis function with the appropriate model, or the custom one (no need to specify the model in this case, it will already be hardcoded).
                 # If node.manual_check is True, the analysis function will also open the file containing the plot so the user can approve it manually.
                 print(f"Running the \"{node.analysis_function.__name__}\" analysis function in node \"{node.node_id}\"\n")
-                optimal_parameter_value = node.analysis_function(results = node.experiment_results, show_plot=node.manual_check)
+                optimal_parameter_value, plot, plot_filepath = node.analysis_function(results = node.experiment_results, show_plot=node.manual_check)
+            
+            #TODO: I'm not sure this is the best way and place to save the plot figure.
+            plot.savefig(plot_filepath, format="PNG")
 
-            # If the 'manual_check' option is activated for the node, show the plot and ask the user for approval. This does not need to be in a loop
-            # because 'maintain()' will recursively call itself on the node, so 'run_experiment' will be called on the node and the user will again be
-            # asked to approve the plot. 
-            # run_experiment will always be called in the recursive 'maintain' call of this node, since 'check_state' will fail because 
-            # of the 'needs_recalibration' flag being set to True, and 'check_data' will return either 'bad_data' or 'out_of_spec', so the 
-            # 'calibrate' will be called either way and therefore 'run_experiment' will be called.
-            # FIXME: read the above: is it true that check_data will never return 'in_spec' in this situation'. It could happen that, despite having 
-            # run maintain on the node again, we still get the faulty data that the user had refused, but we won't see it because if we don't go through
-            # 'run_experiment', which is only called by 'calibrate', the plot is not shown. Thus, the manual check should probably be moved to 'maintain', 
-            # so that the plot can be shown even if we just call 'check_state' or 'check_state' and 'chec_data', but not 'calibrate'. That could be tricky 
-            # because of the recursive structure of 'maintain'.
-            if node.manual_check:
-                user_input = input("Do you want to repeat the experiment? (y/n): ").lower()
-                if user_input != "y" and user_input != "n":
-                    raise ValueError("Invalid input! Please enter 'y' or 'n'.")
-                if user_input == "y": 
-                    node.needs_recalibration = True
-                    self.maintain(node = node)
-
-            return optimal_parameter_value
+            return optimal_parameter_value, plot_filepath
 
         # Case when the experiment is started by 'check_data': the experiment is run only in 1 point. In this case we don't store the 
         # experiment results in the node's 'experiment_results' attribute, because we don't want to overwrite the old results: 
