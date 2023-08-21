@@ -42,15 +42,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         self.name = runcard.name
         """Name of the platform (str) """
 
-        self.device_id = runcard.device_id
-        """Device id of the platform (int). This attribute is needed for `qiboconnection` to save results remotely."""
-
-        self.gates_settings = runcard.gates_settings
-        """Dataclass with all the settings and gates definitions needed to decompose gates into pulses."""
-
-        self.chip = Chip(**asdict(runcard.chip))
-        """Chip class, instantiated given the ChipSettings class of the Runcard class"""
-
         if new_drivers:
             # uses the new drivers and buses
             self.new_instruments = NewInstruments(elements=self._load_new_instruments(instruments_dict=runcard.instruments))
@@ -65,6 +56,15 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             # )
             """New Buses class, instantiated given the list[BusSettings] classes of the Runcard class"""
         else:
+            self.device_id = runcard.device_id
+            """Device id of the platform (int). This attribute is needed for `qiboconnection` to save results remotely."""
+
+            self.gates_settings = runcard.gates_settings
+            """Dataclass with all the settings and gates definitions needed to decompose gates into pulses."""
+
+            self.chip = Chip(**asdict(runcard.chip))
+            """Chip class, instantiated given the ChipSettings class of the Runcard class"""
+
             self.instruments = Instruments(elements=self._load_instruments(instruments_dict=runcard.instruments))
             """Instruments corresponding classes, instantiated given the instruments list[dict] of the Runcard class"""
 
@@ -81,11 +81,11 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             )
             """All the buses of the platform and their needed settings, contained as elements (`list[Bus]`) inside a `Buses` class"""
 
-        self.connection = connection
-        """API connection of the platform. Same as the passed argument. Defaults to None."""
+            self.connection = connection
+            """API connection of the platform. Same as the passed argument. Defaults to None."""
 
-        self._connected_to_instruments: bool = False
-        """Boolean describing the connection to the instruments. Defaults to False (not connected)."""
+            self._connected_to_instruments: bool = False
+            """Boolean describing the connection to the instruments. Defaults to False (not connected)."""
 
     def connect(self, manual_override=False):
         """Blocks the given device and connects to the instruments.
@@ -236,7 +236,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         instruments = []
         for instrument in instruments_dict:
             local_dict = deepcopy(instrument)
-            instruments.append(InstrumentDriverFactory.get(local_dict.pop(RUNCARD.NAME))(**local_dict))
+            instruments.append(InstrumentDriverFactory.get(local_dict.pop(RUNCARD.ALIAS))(**local_dict))
         return instruments
 
     def _load_instruments(self, instruments_dict: list[dict]) -> list[Instrument]:

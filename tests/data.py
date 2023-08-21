@@ -33,6 +33,158 @@ from qililab.typings.enums import (
     SystemControlName,
 )
 
+class NewGaladriel:
+    """Test data of the new galadriel platform."""
+
+    name = "galadriel"
+
+    gates_settings: dict[str, Any] = {
+        PLATFORM.MINIMUM_CLOCK_TIME: 4,
+        PLATFORM.DELAY_BETWEEN_PULSES: 0,
+        PLATFORM.DELAY_BEFORE_READOUT: 0,
+        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
+        PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
+        PLATFORM.PASSIVE_RESET_DURATION: 100,
+        "operations": [
+            {
+                "name": "Rxy",
+                "pulse": {"name": "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+            },
+            {
+                "name": "R180",
+                "pulse": {"name": "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+            },
+            {
+                "name": "X",
+                "pulse": {"name": "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+            },
+            {
+                "name": "Measure",
+                "pulse": {"name": "Square", "amplitude": 1.0, "duration": 6000, "parameters": {}},
+            },
+        ],
+        "gates": {
+            "M(0)": [
+                {
+                    "bus": "feedline_input_output_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 2000,
+                        "frequency": 0,
+                        "shape": {"name": "rectangular"},
+                    },
+                }
+            ],
+            "I(0)": [
+                {
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 100,
+                        "frequency": 0,
+                        "shape": {"name": "rectangular"},
+                    },
+                }
+            ],
+            "X(0)": [
+                {
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 50,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "Y(0)": [
+                {
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "RY(0)": [
+                {
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "RX(0)": [
+                {
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+        },
+    }
+    device_id = 0
+    chip: dict[str, Any] = {
+        "nodes": [],
+    }
+    instrument_controllers: dict[str, Any] = {}
+    buses: dict[str, Any] = {}
+    pulsar_qrm: dict[str, Any]  = {
+        "alias": "Pulsar",
+        "type": "Pulsar",
+        "address": "192.168.1.20",
+        "sequencers": {
+            "q0_flux": {
+                "path0_out": "0"
+            },
+            "q1_flux": {
+                "path0_out": "1"
+            },
+            "q2_flux": {
+                "path0_out": "2"
+            },
+            "q3_flux": {
+                "path0_out": "3"
+            },
+            "q4_flux": {
+                "path0_out": "4"
+            },
+        }
+    }
+
+    instruments: list[dict] = [pulsar_qrm]
+
+    runcard: dict[str, Any] = {
+        RUNCARD.NAME: name,
+        RUNCARD.DEVICE_ID: device_id,
+        RUNCARD.GATES_SETTINGS: gates_settings,
+        RUNCARD.CHIP: chip,
+        RUNCARD.BUSES: buses,
+        RUNCARD.INSTRUMENTS: instruments,
+        RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
+    }
+
 
 class Galadriel:
     """Test data of the galadriel platform."""

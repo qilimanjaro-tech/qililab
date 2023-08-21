@@ -7,6 +7,7 @@ import pytest
 from qililab import save_platform
 from qililab.chip import Chip, Qubit
 from qililab.constants import DEFAULT_PLATFORM_NAME
+from qililab.drivers.instruments import Instruments as NewInstruments
 from qililab.instrument_controllers import InstrumentControllers
 from qililab.instruments import AWG, AWGAnalogDigitalConverter, SignalGenerator
 from qililab.instruments.instruments import Instruments
@@ -16,9 +17,20 @@ from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName
 from qililab.typings.yaml_type import yaml
-from tests.data import Galadriel
+from tests.data import Galadriel, NewGaladriel
 from tests.test_utils import platform_db
 
+@pytest.mark.parametrize("new_runcard", [Runcard(**NewGaladriel.runcard)])
+class TestPlatformInitializationNewRuncard:
+    """Unit tests for the Platform class initialization using new runcard, instruments and buses"""
+
+    def test_init_method(self, new_runcard):
+        """Test initialization of the class"""
+        platform = Platform(runcard=new_runcard, new_drivers=True)
+
+        assert platform.name == new_runcard.name
+        assert isinstance(platform.name, str)
+        assert isinstance(platform.instruments, NewInstruments)
 
 @pytest.mark.parametrize("runcard", [Runcard(**Galadriel.runcard)])
 class TestPlatformInitialization:
