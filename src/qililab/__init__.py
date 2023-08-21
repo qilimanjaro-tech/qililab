@@ -3,7 +3,7 @@ This is the top level module from which all basic functions and classes of
 Qililab can be directly imported.
 """
 from .config import __version__, logger
-from .execute_circuit import execute
+from .execute import execute
 from .experiment import Experiment
 from .platform import build_platform, save_platform
 from .qprogram import QProgram
