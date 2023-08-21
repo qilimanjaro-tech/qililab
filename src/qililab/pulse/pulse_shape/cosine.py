@@ -13,13 +13,13 @@ from qililab.utils import Factory
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class Cosine(PulseShape):
-    r"""Cosine pulse shape like A/2*(1-lambda_1*cos(phi)-lambda_2*cos(2phi)), giving a modified sinusoidal-gaussian.
+    """Cosine pulse shape like :math:`A/2 (1-\lambda_1\cos(\phi)-\lambda_2\cos(2\phi))`, giving a modified sinusoidal-gaussian.
 
-    - lambda_1 cosine A/2*(1-cos(x)): Starts at height 0 (phase=0), maximum height A (phase=pi) and ends at height 0 (phase=2pi). Which is a sinusoidal like gaussian. Shaped like: _/\_
+    - lambda_1 cosine :math:`A/2 (1-\cos(x))`: Starts at height 0 (phase=0), maximum height A (phase=pi) and ends at height 0 (phase=2pi). Which is a sinusoidal like gaussian. Shaped with one maximum like ``_/\_``
 
-    - lambda_2 cosine A/2*(1-cos(2x)): Starts at height 0 (phase=0), maximum height A (phase=pi/2) then another height 0 in the middle at phase=pi, then another maximum height A (phase=3/2pi) and ends at height 0 (phase=2pi). Shaped like: _/v\_
+    - lambda_2 cosine :math:`A/2 (1-\cos(2x))`: Starts at height 0 (phase=0), maximum height A (phase=pi/2) then another height 0 in the middle at phase=pi, then another maximum height A (phase=3/2pi) and ends at height 0 (phase=2pi). Shaped with two symmetric maximums like: ``_/v\_``
 
-    Total would be a sum of lambda_1 x _/\_ + lambda_2 _/v\_, giving a modified sinusoidal-gaussian.
+    Total would be a sum of lambda_1 x ``_/\_`` + lambda_2 x ``_/v\_``, giving an intermediate modified sinusoidal-gaussian.
     Check the following graph from Wolframalpha, where y is the lambda_2 parameter: [https://imgur.com/a/tjatZsg]
 
     References:
@@ -27,8 +27,8 @@ class Cosine(PulseShape):
         - OPTIMAL SOLUTION: SMALL CHANGE IN θ: [https://arxiv.org/abs/1402.5467]
 
     Args:
-        lambda_2 (float): Parameter for moving the function A/2*(1-cos(x)) into A/2*(1-lambda_1*cos(x)-lambda_2*cos(2x))
-                    which fulfills the constrain: 1=lambda_1+lambda_2.
+        lambda_2 (float): Parameter for moving the function :math:`A/2*(1-\cos(x))` into :math:`A/2*(1-\lambda_1\cos(x)-\lambda_2\cos(2x))`
+                    which fulfills the constrain: :math:`1=\lambda_1+\lambda_2`.
     """
 
     name = PulseShapeName.COSINE
