@@ -101,7 +101,3 @@ class ExecutionManager:
     def __iter__(self):
         """Redirect __iter__ magic method to buses."""
         return self.buses.__iter__()
-
-    def __getitem__(self, key):
-        """Redirect __get_item__ magic method."""
-        return self.buses.__getitem__(key)
