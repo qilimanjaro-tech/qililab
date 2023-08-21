@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from pathlib import Path
 
 import h5py
 import numpy as np
@@ -62,14 +63,14 @@ def save_results(results: np.ndarray, loops: dict[str, np.ndarray], data_path: s
     now = datetime.now()
 
     # Generate path to the daily folder
-    daily_path = f"{data_path}/{now.year}{now.month:02d}{now.day:02d}"
+    daily_path = Path(data_path) / f"{now.year}{now.month:02d}{now.day:02d}"
 
     # Check if folder exists, if not create one
     if not os.path.exists(daily_path):
         os.makedirs(daily_path)
 
     # Generate path to the results folder
-    now_path = f"{daily_path}/{now.hour:02d}{now.minute:02d}{now.second:02d}"
+    now_path = str(daily_path / f"{now.hour:02d}{now.minute:02d}{now.second:02d}")
 
     if name is not None:
         now_path = f"{now_path}_{name}"
@@ -123,7 +124,7 @@ def load_results(path: str) -> tuple[np.ndarray, dict[str, np.ndarray]]:
     return results, loops  # type: ignore
 
 
-def save_platform(path: str, platform: Platform):
+def save_platform(path: str, platform: Platform) -> str:
     """Serialize and save the platform in the given path.
 
     If the path string doesn't end with `.yml` or `.yaml`  this function will assume the `path` corresponds to an
@@ -133,12 +134,19 @@ def save_platform(path: str, platform: Platform):
     Args:
         path (str): Path to the folder where the YAML file will be saved.
         platform (Platform): Platform class to serialize and save to a YAML file.
+
+    Returns:
+        str: Path to the file where the platform is saved.
     """
     if not (path.endswith(".yml") or path.endswith(".yaml")):
-        path = f"{path}/{platform.name}.yml"
+        new_path = Path(path) / f"{platform.name}.yml"
+    else:
+        new_path = Path(path)
 
-    with open(file=path, mode="w", encoding="utf-8") as file:
+    with open(file=new_path, mode="w", encoding="utf-8") as file:
         yaml.dump(data=platform.to_dict(), stream=file, sort_keys=False)
+
+    return str(new_path)
 
 
 def build_platform(path: str, connection: API | None = None, new_drivers: bool = False) -> Platform:
