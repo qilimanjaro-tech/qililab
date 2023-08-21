@@ -40,7 +40,7 @@ class BiasTeeCorrection(PulseDistortion):
         which would return a distorted envelope with the same real max height as the initial.
 
         .. note::
-            further examples in the PulseDistortion documentation.
+            You can find more examples in the docstring of the :class:`PulseDistortion` class.
     """
 
     name = PulseDistortionName.BIAS_TEE_CORRECTION
