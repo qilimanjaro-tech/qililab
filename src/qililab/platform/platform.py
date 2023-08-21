@@ -16,7 +16,7 @@ from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.utils import InstrumentFactory
-from qililab.platform.components import Bus, BusDriver, Buses
+from qililab.platform.components import Bus, Buses
 from qililab.platform.components.bus_element import dict_factory
 from qililab.settings import Runcard
 from qililab.typings.enums import Line, Parameter
@@ -236,7 +236,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         instruments = []
         for instrument in instruments_dict:
             local_dict = deepcopy(instrument)
-            instruments.append(InstrumentDriverFactory.get(local_dict.pop(RUNCARD.ALIAS))(**local_dict))
+            instruments.append(InstrumentDriverFactory.get(local_dict.pop(RUNCARD.TYPE))(**local_dict))
         return instruments
 
     def _load_instruments(self, instruments_dict: list[dict]) -> list[Instrument]:

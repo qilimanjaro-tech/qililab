@@ -45,104 +45,8 @@ class NewGaladriel:
         PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
         PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
         PLATFORM.PASSIVE_RESET_DURATION: 100,
-        "operations": [
-            {
-                "name": "Rxy",
-                "pulse": {"name": "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
-            },
-            {
-                "name": "R180",
-                "pulse": {"name": "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
-            },
-            {
-                "name": "X",
-                "pulse": {"name": "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
-            },
-            {
-                "name": "Measure",
-                "pulse": {"name": "Square", "amplitude": 1.0, "duration": 6000, "parameters": {}},
-            },
-        ],
-        "gates": {
-            "M(0)": [
-                {
-                    "bus": "feedline_input_output_bus",
-                    "wait_time": 0,
-                    "pulse": {
-                        "amplitude": 1.0,
-                        "phase": 0,
-                        "duration": 2000,
-                        "frequency": 0,
-                        "shape": {"name": "rectangular"},
-                    },
-                }
-            ],
-            "I(0)": [
-                {
-                    "bus": "drive_line_q0_bus",
-                    "wait_time": 0,
-                    "pulse": {
-                        "amplitude": 1.0,
-                        "phase": 0,
-                        "duration": 100,
-                        "frequency": 0,
-                        "shape": {"name": "rectangular"},
-                    },
-                }
-            ],
-            "X(0)": [
-                {
-                    "bus": "drive_line_q0_bus",
-                    "wait_time": 0,
-                    "pulse": {
-                        "amplitude": 1.0,
-                        "phase": 0,
-                        "duration": 50,
-                        "frequency": 0,
-                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
-                    },
-                }
-            ],
-            "Y(0)": [
-                {
-                    "bus": "drive_line_q0_bus",
-                    "wait_time": 0,
-                    "pulse": {
-                        "amplitude": 1.0,
-                        "phase": 1.5707963267948966,
-                        "duration": 20,
-                        "frequency": 0,
-                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
-                    },
-                }
-            ],
-            "RY(0)": [
-                {
-                    "bus": "drive_line_q0_bus",
-                    "wait_time": 0,
-                    "pulse": {
-                        "amplitude": 1.0,
-                        "phase": 1.5707963267948966,
-                        "duration": 20,
-                        "frequency": 0,
-                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
-                    },
-                }
-            ],
-            "RX(0)": [
-                {
-                    "bus": "drive_line_q0_bus",
-                    "wait_time": 0,
-                    "pulse": {
-                        "amplitude": 1.0,
-                        "phase": 1.5707963267948966,
-                        "duration": 20,
-                        "frequency": 0,
-                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
-                    },
-                }
-            ],
-        },
+        "operations": [],
+        "gates": {},
     }
     device_id = 0
     chip: dict[str, Any] = {
@@ -151,7 +55,7 @@ class NewGaladriel:
     instrument_controllers: dict[str, Any] = {}
     buses: dict[str, Any] = {}
     pulsar_qrm: dict[str, Any]  = {
-        "alias": "Pulsar",
+        "alias": "pulsar_qrm",
         "type": "Pulsar",
         "address": "192.168.1.20",
         "sequencers": {

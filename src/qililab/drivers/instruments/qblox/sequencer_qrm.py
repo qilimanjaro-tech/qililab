@@ -18,7 +18,7 @@ from .sequencer_qcm import SequencerQCM
 class SequencerQRM(SequencerQCM, Digitiser):
     """Qililab's driver for QBlox-instruments digitiser Sequencer"""
 
-    def __init__(self, parent: Instrument, name: str, seq_idx: int):
+    def __init__(self, parent: Instrument, name: str, seq_idx: int, map_dict: dict[str, str]):
         """Initialise the instrument.
 
         Args:
@@ -28,7 +28,7 @@ class SequencerQRM(SequencerQCM, Digitiser):
             sequence_timeout (int): timeout to retrieve sequencer state in minutes
             acquisition_timeout (int): timeout to retrieve acquisition state in minutes
         """
-        super().__init__(parent=parent, name=name, seq_idx=seq_idx)
+        super().__init__(parent=parent, name=name, seq_idx=seq_idx, map_dict=map_dict)
         self.add_parameter(name="sequence_timeout", vals=vals.Ints(), set_cmd=None, initial_value=1)
         self.add_parameter(name="acquisition_timeout", vals=vals.Ints(), set_cmd=None, initial_value=1)
         self.add_parameter(name="weights_i", vals=vals.Lists(), set_cmd=None, initial_value=[])

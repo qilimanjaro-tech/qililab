@@ -22,6 +22,7 @@ class RUNCARD:
     """YAML constants."""
 
     NAME = "name"
+    TYPE = "type"
     DEVICE_ID = "device_id"
     ALIAS = "alias"
     INSTRUMENT = "instrument"

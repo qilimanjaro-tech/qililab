@@ -25,16 +25,19 @@ class SequencerQCM(Sequencer, AWG):
 
     _MIN_WAIT_TIME: int = 4
 
-    def __init__(self, parent: Instrument, name: str, seq_idx: int):
+    def __init__(self, parent: Instrument, name: str, seq_idx: int, map_dict: dict[str, str]):
         """Initialise the instrument.
 
         Args:
             parent (Instrument): Parent for the sequencer instance.
             name (str): Sequencer name
             seq_idx (int): sequencer identifier index
+            map_dict (dict): mappings parameters
         """
         super().__init__(parent=parent, name=name, seq_idx=seq_idx)
         self.add_parameter(name="swap_paths", set_cmd=None, vals=vals.Bool(), initial_value=False)
+        for key, value in map_dict.items():
+            self.set(key, value)
 
     @property
     def params(self):
@@ -65,8 +68,8 @@ class SequencerQCM(Sequencer, AWG):
             param_name (str): Parameter name
             param_value (Any): Parameter value
         """
-        allowed_conf = {("path0", 0), ("path0", 2), ("path1", 1), ("path1", 3)}
-        swappable_conf = {("path0", 1), ("path0", 3), ("path1", 0), ("path1", 2)}
+        allowed_conf = {("path0_out", 0), ("path0_out", 2), ("path1_out", 1), ("path1_out", 3)}
+        swappable_conf = {("path0_out", 1), ("path0_out", 3), ("path1_out", 0), ("path1_out", 2)}
         if (param_name, param_value) in allowed_conf:
             self.set(f"channel_map_{param_name}_out{param_value}_en", True)
         elif (param_name, param_value) in swappable_conf:
