@@ -41,7 +41,7 @@ class ExponentialCorrection(PulseDistortion):
         which would return a distorted envelope with the same real max height as the initial.
 
         .. note::
-        You can find more examples in the docstring of the :class:`PulseDistortion` class.
+            You can find more examples in the docstring of the :class:`PulseDistortion` class.
     """
 
     name = PulseDistortionName.EXPONENTIAL_CORRECTION
