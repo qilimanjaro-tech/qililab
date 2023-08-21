@@ -20,9 +20,9 @@ from .circuit import (
     X,
 )
 from .config import __version__, logger
+from .data_management import build_platform, load_results, save_platform, save_results
 from .execute import execute
 from .experiment import Experiment
-from .platform import build_platform, save_platform
 from .qprogram import QProgram
 from .result import Results
 from .transpiler import Drag, Park, translate_circuit
