@@ -4,15 +4,16 @@ import itertools
 import numpy as np
 import pytest
 
-from qililab.pulse.pulse_shape import Cosine, Drag, Gaussian, PulseShape, Rectangular
-from qililab.utils import Factory
+from qililab.constants import RUNCARD
+from qililab.pulse.pulse_shape import SNZ, PulseShape
+from qililab.typings.enums import PulseShapeSettingsName
 
 from .helper_functions import return_envelope
 
 # Parameters of the envelope.
-DURATION = [40, 25]
-AMPLITUDE = [0, 0.95, -0.8, 1.3]
-RESOLUTION = [1.0, 0.2]
+DURATION = [50, 40, 500]
+AMPLITUDE = [0, 0.9, -1.0, 1.2]
+RESOLUTION = [1.0]
 
 
 @pytest.fixture(
@@ -27,20 +28,11 @@ def fixture_env_params(request: pytest.FixtureRequest) -> list:
     return request.param
 
 
-@pytest.mark.parametrize(
-    "pulse_shape",
-    [
-        Rectangular(),
-        Cosine(),
-        Cosine(lambda_2=0.3),
-        Gaussian(num_sigmas=4),
-        Drag(num_sigmas=4, drag_coefficient=1.0),
-    ],
-)
+@pytest.mark.parametrize("pulse_shape", [SNZ(b=0.1, t_phi=2), SNZ(b=0.2, t_phi=4)])
 class TestPulseShape:
     """Unit tests checking the PulseShape attributes and methods"""
 
-    def test_envelope_methods(self, pulse_shape: PulseShape, env_params: dict[str, int]):
+    def test_envelope_methods(self, pulse_shape: SNZ, env_params: dict[str, int]):
         """Test the envelope method"""
         env = return_envelope(pulse_shape, env_params)
 
@@ -51,51 +43,78 @@ class TestPulseShape:
         # Assert size of np.ndarray
         assert len(env) == env_params["duration"] / env_params["resolution"]
 
-    def test_max_min_of_envelope_method(self, pulse_shape: PulseShape, env_params: dict[str, int]):
+    def test_max_min_of_envelope_method(self, pulse_shape: SNZ, env_params: dict[str, int]):
         """Test the maximums and minimums of the envelope method"""
         env = return_envelope(pulse_shape, env_params)
 
         # Test  the maximums of the positive envelopes
         if env_params["amplitude"] > 0:
+            assert round(np.max(np.real(env)), 2) == np.max(env_params["amplitude"])
             assert round(np.max(np.real(env)), 2) > 0
 
         # Test the minimums of the negative envelopes
         elif env_params["amplitude"] < 0:
+            assert round(np.min(np.real(env)), 2) == np.min(env_params["amplitude"])
             assert round(np.min(np.real(env)), 2) < 0
 
         # Test the 0 amplitude case
         elif env_params["amplitude"] == 0:
             assert np.min(np.real(env)) == np.max(np.real(env)) == 0
 
-    def test_from_dict(self, pulse_shape: PulseShape):
+    def test_envelope_method_shapes(self, pulse_shape: SNZ, env_params: dict[str, int]):
+        """Test shapes of the envelopes"""
+        env = return_envelope(pulse_shape, env_params)
+
+        # positive amplitude cases
+        if env_params["amplitude"] > 0:
+            assert np.max(env) == -np.min(env)
+            assert env[len(env) // 2] == 0
+
+        # negative ampltiude cases
+        elif env_params["amplitude"] < 0:
+            assert np.max(env) == -np.min(env)
+            assert env[len(env) // 2] == 0
+
+        elif env_params["amplitude"] == 0:
+            assert np.min(np.real(env)) == np.max(np.real(env)) == 0
+
+    def test_from_dict(self, pulse_shape: SNZ):
         """Test for the to_dict method."""
         dictionary = pulse_shape.to_dict()
-        pulse_shape2: PulseShape = Factory.get(name=pulse_shape.name).from_dict(dictionary)
+        pulse_shape2: SNZ = SNZ.from_dict(dictionary)
 
         dictionary2 = pulse_shape2.to_dict()
-        pulse_shape3: PulseShape = Factory.get(name=pulse_shape2.name).from_dict(dictionary2)
+        pulse_shape3: SNZ = SNZ.from_dict(dictionary2)
 
         for shape in [pulse_shape2, pulse_shape3]:
             assert shape is not None
             assert isinstance(shape, PulseShape)
-            assert isinstance(shape, Factory.get(name=pulse_shape.name))
+            assert isinstance(shape, SNZ)
 
         assert pulse_shape == pulse_shape2 == pulse_shape3
 
-    def test_to_dict_method(self, pulse_shape: PulseShape):
+    def test_to_dict_method(self, pulse_shape: SNZ):
         """Test to_dict method"""
         dictionary = pulse_shape.to_dict()
 
-        pulse_shape2: PulseShape = Factory.get(name=pulse_shape.name).from_dict(dictionary)
+        pulse_shape2: SNZ = SNZ.from_dict(dictionary)
         dictionary2 = pulse_shape2.to_dict()
 
         for dict_ in [dictionary, dictionary2]:
             assert dict_ is not None
             assert isinstance(dict_, dict)
 
-        assert dictionary2 == dictionary
+        assert (
+            dictionary
+            == dictionary2
+            == {
+                RUNCARD.NAME: pulse_shape.name.value,
+                PulseShapeSettingsName.B.value: pulse_shape.b,
+                PulseShapeSettingsName.T_PHI.value: pulse_shape.t_phi,
+            }
+        )
 
-    def test_envelope_with_amplitude_0(self, pulse_shape):
+    def test_envelope_with_amplitude_0(self, pulse_shape: SNZ):
         """Testing that the corner case amplitude = 0 works properly."""
         ENV_DURATION = 10
         envelope = pulse_shape.envelope(amplitude=0, duration=ENV_DURATION)
