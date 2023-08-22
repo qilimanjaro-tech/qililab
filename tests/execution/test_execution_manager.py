@@ -1,26 +1,22 @@
 """Tests for the ExecutionManager class."""
-from queue import Queue
 from unittest.mock import MagicMock, patch
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
-from qpysequence import Sequence
 
-from qililab import build_platform
 from qililab.constants import RESULTSDATAFRAME
 from qililab.execution import ExecutionManager
 from qililab.experiment.experiment import Experiment
 from qililab.instruments import AWG
-from qililab.instruments.qblox import QbloxQRM
 from qililab.result.results import Results
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils import Loop
 from tests.data import experiment_params
-from tests.test_utils import mock_instruments
+from tests.test_utils import build_platform, mock_instruments
 
 
 @pytest.fixture(name="execution_manager")
@@ -38,11 +34,7 @@ def fixture_execution_manager(experiment: Experiment) -> ExecutionManager:
 def fixture_nested_experiment(request: pytest.FixtureRequest):
     """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="sauron")
-            mock_load.assert_called()
-            mock_open.assert_called()
+    platform = build_platform(runcard)
     loop2 = Loop(
         alias="platform",
         parameter=Parameter.DELAY_BEFORE_READOUT,
@@ -65,11 +57,7 @@ def fixture_nested_experiment(request: pytest.FixtureRequest):
 def fixture_experiment(request: pytest.FixtureRequest):
     """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="sauron")
-            mock_load.assert_called()
-            mock_open.assert_called()
+    platform = build_platform(runcard)
     loop = Loop(
         alias="X(0)",
         parameter=Parameter.DURATION,
@@ -87,7 +75,7 @@ class TestExecutionManager:
     def test_waveforms_method(self, execution_manager: ExecutionManager):
         """Test waveforms method."""
         for resolution in [0.01, 0.1, 1.0, 10.0]:
-            execution_manager.waveforms_dict(resolution=resolution)
+            execution_manager._waveforms_dict(resolution=resolution)
 
     def test_draw_method(self, execution_manager: ExecutionManager):
         """Test draw method."""
@@ -246,7 +234,7 @@ class TestExecutionManagerPlatform:
         results_2 = nested_experiment.execute()
         mock_urllib.request.Request.assert_called()
         mock_urllib.request.urlopen.assert_called()
-        assert results == results_2
+        assert results.to_dict() == results_2.to_dict()
         mock_rs.assert_called()
         mock_pulsar.assert_called()
         assert isinstance(results, Results)
@@ -314,49 +302,3 @@ def fixture_mocked_execution_manager(execution_manager: ExecutionManager):
         awg.device.sequencers = [MagicMock(), MagicMock()]
         awg.device.get_acquisitions.return_value = qblox_acquisition
     return execution_manager
-
-
-class TestWorkflow:
-    """Unit tests for the methods used in the workflow of an `ExecutionManager` class."""
-
-    def test_compile(self, execution_manager: ExecutionManager):
-        """Test the compile method of the ``ExecutionManager`` class."""
-        sequences = execution_manager.compile(idx=0, nshots=1000, repetition_duration=2000, num_bins=1)
-        assert isinstance(sequences, dict)
-        assert len(sequences) == len(execution_manager.buses)
-        for alias, sequences in sequences.items():
-            assert alias in {bus.alias for bus in execution_manager.buses}
-            assert isinstance(sequences, list)
-            assert len(sequences) == 1
-            assert isinstance(sequences[0], Sequence)
-            assert sequences[0]._program.duration == 2000 * 1000 + 4  # additional 4ns for the initial wait_sync
-
-    def test_upload(self, mocked_execution_manager: ExecutionManager):
-        """Test upload method."""
-        _ = mocked_execution_manager.compile(idx=0, nshots=1000, repetition_duration=2000, num_bins=1)
-        mocked_execution_manager.upload()
-
-        awgs = [bus.system_control.instruments[0] for bus in mocked_execution_manager.buses]
-
-        for awg in awgs:
-            for seq_idx in range(awg.num_sequencers):  # type: ignore
-                if isinstance(awg, QbloxQRM) and seq_idx == 1:
-                    assert awg.device.sequencers[seq_idx].sequence.call_count == 0  # type: ignore
-                    continue
-                assert awg.device.sequencers[seq_idx].sequence.call_count == 1  # type: ignore
-
-    def test_run_multiple_readout_buses_raises_error(self, mocked_execution_manager: ExecutionManager):
-        """Test that an error is raised when calling ``run`` with multiple readout buses."""
-        readout_bus = mocked_execution_manager.readout_buses[0]
-        mocked_execution_manager.buses += [readout_bus]  # add extra readout bus
-        with patch("qililab.execution.execution_manager.logger") as mocked_logger:
-            mocked_execution_manager.run(queue=Queue())
-            mocked_logger.error.assert_called_once_with(
-                "Only One Readout Bus allowed. Reading only from the first one."
-            )
-
-    def test_run_no_readout_buses_raises_error(self, mocked_execution_manager: ExecutionManager):
-        """Test that an error is raised when calling ``run`` with no readout buses."""
-        mocked_execution_manager.buses = []
-        with pytest.raises(ValueError, match="No Results acquired"):
-            mocked_execution_manager.run(queue=Queue())

@@ -1,6 +1,7 @@
 """SimulatorResult class."""
 from dataclasses import dataclass
 
+import numpy as np
 from qutip import Qobj
 
 from qililab.result.result import Result
@@ -47,3 +48,7 @@ class SimulatorResult(Result):  # pylint: disable=abstract-method
         """
         # FIXME: yaml.safe_dump fails with default implementation
         return {}
+
+    @property
+    def array(self) -> np.ndarray:
+        return np.array([])

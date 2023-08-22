@@ -12,7 +12,7 @@ from qililab.utils.factory import Factory
 
 @Factory.register
 @dataclass
-class VNAResult(Result):
+class VNAResult(Result):  # TODO: Remove this class (it is useless)
     """VNAResult class."""
 
     name = ResultName.VECTOR_NETWORK_ANALYZER
@@ -29,3 +29,10 @@ class VNAResult(Result):
             tuple[float, float]: Probabilities of being in the ground and excited state.
         """
         raise NotImplementedError
+
+    @property
+    def array(self) -> np.ndarray:
+        return np.array([])
+
+    def to_dict(self) -> dict:
+        return {}

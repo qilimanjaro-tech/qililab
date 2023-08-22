@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 from qcodes.instrument_drivers.tektronix.Keithley_2600_channels import KeithleyChannel
 
-from qililab import build_platform
+import qililab as ql
 from qililab.platform import Platform
 
 
@@ -123,21 +123,12 @@ dummy_qrm_name_generator = name_generator("dummy_qrm")
 dummy_qcm_name_generator = name_generator("dummy_qcm")
 
 
-def platform_db(runcard: dict) -> Platform:
+def build_platform(runcard: dict) -> Platform:
     """Return PlatformBuilderDB instance with loaded platform."""
+    runcard = copy.deepcopy(runcard)
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="_")
+            pl = ql.build_platform(name="_")
             mock_load.assert_called()
             mock_open.assert_called()
-    return platform
-
-
-def platform_yaml(runcard: dict) -> Platform:
-    """Return PlatformBuilderYAML instance with loaded platform."""
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="_")
-            mock_load.assert_called()
-            mock_open.assert_called()
-    return platform
+    return pl
