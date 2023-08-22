@@ -24,13 +24,14 @@ class CalibrationNode:
                                 for more details.
         _analysis_function (function): analysis function for the experimental data. If set to None, we use a standard analysis function defined for all experiments.
         _fitting_model: The fitting model for the experimental data. If None, it means we're using a custom fitting function that already has a built-in fitting model.
+        _fit_quadrature (str): The quadrature that has to be fitted by the analysis function. It can be either 'i' or 'q'.
         _plotting_labels (dict): Labels used in the plot of the fitted experimental data. The keys of the dictionary indicate the axis,
                                     the values indicate the corresponding label.
         _qubit (int): The qubit that is being calibrated by the calibration graph to which the node belongs.
         _parameter (str): The parameter that this node will tune.
         _alias (str): The alias of the bus where the parameters is set #TODO: I think this is part of the old buses implementation: if possible, remove asap.
         _drift_timeout (float): A durations in seconds, representing an estimate of how long it takes for the parameter to drift.
-        _data_validation_threshold (float): The threshold used by the check_data() method to validate the data fittings.
+        _data_validation_threshold (float): The threshold used by the check_data() method to validate the data fittings. #TODO: this is now used for the rsquared value in check_data, change docs
         _timestamps (dict): A dictionary where keys are timestamps and values are the operations that generated the timestamp.
                            This operation can be either a function call of check_data() or of calibrate()
         _number_of_random_datapoints (int) : The number of points, chosen randomly within the sweep interval, where we check if the experiment
@@ -51,14 +52,16 @@ class CalibrationNode:
         is_refinement: bool = False,
         analysis_function = None,
         fitting_model = None,
+        fit_quadrature: str = 'i',
         plotting_labels: dict = None,
         qubit: int = None,
         parameter: str = None,
         alias: str = None,
         drift_timeout: float = 0,
-        data_validation_threshold: float = 1,
+        data_validation_threshold: float = 0.96,
         number_of_random_datapoints: int = 10,
-        manual_check: bool = False
+        manual_check: bool = False,
+        needs_recalibration = False
     ):
         self._node_id = node_id
         self._qprogram = qprogram
@@ -66,16 +69,21 @@ class CalibrationNode:
         self._is_refinement = is_refinement
         self._analysis_function = self.analysis if analysis_function is None else analysis_function
         self._fitting_model = fitting_model
+        if fit_quadrature != 'i' and fit_quadrature != 'q':
+            raise ValueError("Fit quadrature can only be 'i' or 'q'")
+        self._fit_quadrature = fit_quadrature 
         self._plotting_labels = plotting_labels
         self._qubit = qubit
         self._parameter = parameter
         self._alias = alias
         self._drift_timeout = drift_timeout
+        if not(0 <= data_validation_threshold <= 1): raise ValueError("Data validation threshold must be between 0 and 1, as it represent the R-squared value of a fit.")
         self._data_validation_threshold = data_validation_threshold
         self._number_of_random_datapoints = number_of_random_datapoints
         self._manual_check = manual_check
         self._timestamps = {}
         self._experiment_results = None
+        self._needs_recalibration = needs_recalibration
     
     def _hash_(self) -> int:
         """
@@ -122,6 +130,14 @@ class CalibrationNode:
         return self._analysis_function
     
     @property
+    def fitting_model(self):
+        return self._fitting_model
+    
+    @property
+    def fit_quadrature(self):
+        return self._fit_quadrature
+    
+    @property
     def parameter(self):
         return self._parameter
     
@@ -132,6 +148,10 @@ class CalibrationNode:
     @property
     def drift_timeout(self):
         return self._drift_timeout
+    
+    @property
+    def data_validation_threshold(self):
+        return self._data_validation_threshold
     
     @property
     def timestamps(self):

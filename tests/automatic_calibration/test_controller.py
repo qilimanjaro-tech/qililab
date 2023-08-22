@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import networkx as nx
 import numpy as np
-from scipy.signal import find_peaks
 
 import qililab as ql
 from qililab.automatic_calibration import CalibrationNode, Controller
@@ -150,7 +149,9 @@ def analyze_rabi(results, fit_quadrature="i", label=""):
     
 def analysis_dummy(results, show_plot: bool):
     optimal_parameter_value_dummy = 1.0
-    return optimal_parameter_value_dummy
+    fig = plt.figure()
+    figure_filepath = "tests/automatic_calibration/drag.PNG"
+    return optimal_parameter_value_dummy, fig, figure_filepath
 
 
 ##################################### GRAPH ##########################################################

@@ -1,0 +1,998 @@
+software_average: 1
+num_schedules: 2
+shape:
+- 21
+loops:
+- alias: Drag(4)
+  parameter: drag_coefficient
+  values:
+  - -6
+  - -5.4
+  - -4.8
+  - -4.2
+  - -3.6
+  - -3
+  - -2.4
+  - -1.8
+  - -1.2
+  - -0.6
+  - 0
+  - 0.6
+  - 1.2
+  - 1.8
+  - 2.4
+  - 3
+  - 3.6
+  - 4.2
+  - 4.8
+  - 5.4
+  - 6
+  loop:
+  channel_id:
+results:
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -1.8849851001465558
+        path1:
+        - -0.6419044943820225
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -1.8913133854421105
+        path1:
+        - -0.6137037127503664
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -1.896175134342941
+        path1:
+        - -0.6611231069858329
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -1.92049902296043
+        path1:
+        - -0.6531299462628236
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -1.907375915974597
+        path1:
+        - -0.6668273082559844
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -1.9190029311187102
+        path1:
+        - -0.7028497801660968
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -1.966472642892037
+        path1:
+        - -0.7088602833414753
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -1.9701729360039082
+        path1:
+        - -0.7424714215925745
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -1.9605151441133366
+        path1:
+        - -0.7468307278944797
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -1.9649592085979481
+        path1:
+        - -0.786290425012213
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -2.008899120664387
+        path1:
+        - -0.8131785539814362
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -2.0104802149487053
+        path1:
+        - -0.8550373717635564
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -2.021594040058622
+        path1:
+        - -0.842353199804592
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -2.0338497801660966
+        path1:
+        - -0.8480161211529067
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -2.0276289692232536
+        path1:
+        - -0.883719345383488
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -2.0244938935026866
+        path1:
+        - -0.8870522716170005
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -2.024368588177821
+        path1:
+        - -0.898185393258427
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -2.0665354176844164
+        path1:
+        - -0.9124291646311675
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -2.029993404982902
+        path1:
+        - -0.8848085002442599
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -2.035794088910601
+        path1:
+        - -0.9056936980947727
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -2.05292940889106
+        path1:
+        - -0.88488104543234
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -1.9482261846604787
+        path1:
+        - -0.753148265754763
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -1.989912554958476
+        path1:
+        - -0.8061526624328285
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -2.015109184171959
+        path1:
+        - -0.8655937957987297
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -2.0592874938935024
+        path1:
+        - -0.9433668783585736
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -2.104119443087445
+        path1:
+        - -0.9913759159745971
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -2.094683439179287
+        path1:
+        - -0.9897782120175868
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -2.1167955544699564
+        path1:
+        - -1.0260974596971177
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -2.1126424035173423
+        path1:
+        - -1.0116805080605764
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -2.129062774792379
+        path1:
+        - -1.0159826575476307
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -2.121454811919883
+        path1:
+        - -0.980432584269663
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -2.099392281387396
+        path1:
+        - -0.9918277967757694
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -2.0991057645334634
+        path1:
+        - -0.9300180752320469
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -2.061412554958476
+        path1:
+        - -0.8969694675134343
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -2.021635319980459
+        path1:
+        - -0.8638766487542746
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -2.029634831460674
+        path1:
+        - -0.8416463116756229
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -1.9868148510014656
+        path1:
+        - -0.7952677088422081
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -1.970946507083537
+        path1:
+        - -0.791100879335613
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -1.9966260381045433
+        path1:
+        - -0.8091470444553005
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -1.997033463605276
+        path1:
+        - -0.7879631167562285
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -1.9696011235955058
+        path1:
+        - -0.7996384953590621
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0
+- name: qblox
+  integration_lengths:
+  - 1800
+  qblox_raw_results:
+  - scope:
+      path0:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+      path1:
+        data: []
+        out-of-range: false
+        avg_cnt: 0
+    bins:
+      integration:
+        path0:
+        - -1.966925256472887
+        path1:
+        - -0.7905173424523693
+      threshold:
+      - 0.0
+      avg_cnt:
+      - 2000.0

@@ -2,6 +2,7 @@ import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import lmfit
 
 from qililab.automatic_calibration.calibration_utils.calibration_utils import is_timeout_expired, get_timestamp, get_random_values, get_raw_data
 from qililab.automatic_calibration.calibration_node import CalibrationNode
@@ -152,7 +153,7 @@ class Controller:
         
         print("####################################\n"
               "Calibration completed successfully!\n"
-              "####################################")
+              "####################################\n")
         
         #TODO: implement saving of current data: for each node, the content of the 'experiment_results' attribute and the last item of the list
         #      in the 'timestamps' attribute has to be saved in a YAML file.
@@ -199,19 +200,35 @@ class Controller:
         
         # Choose random points within the sweep interval.
         random_values = get_random_values(array=np.arange(node.sweep_interval["start"], node.sweep_interval["stop"], node.sweep_interval["step"]), number_of_values=node._number_of_random_datapoints) 
-               
-        for value in random_values:
-            current_point_result, plot_filepath = self.run_experiment(node = node, analyze=True, experiment_point=value)
-            # Check if result matches old data
-            # return in_spec, out_of_spec or bad_data
-            # TODO: implement the above
 
-        # dummy return value while method is not yet implemented:
-        return "bad_data"
-    
-        # Add timestamp to the timestamps list of the node when check_data returns "in_spec" result.
-        node.add_timestamp(timestamp=get_timestamp(), type_of_timestamp="check_data")
-        return "in_spec"
+        quadrature_path = "path0" if node.fit_quadrature == 'i' else "path1"
+        
+        old_results_array = []
+        new_results_array = []
+        for value in random_values:
+            
+            value_index = node.experiment_results["loops"][0]['values'].index(value) 
+            old_results_array.append(node.experiment_results["results"][value_index]["qblox_raw_results"][0]["bins"]["integration"][quadrature_path])
+            
+            current_point_result, _ = self.run_experiment(node = node, analyze=True, experiment_point=value)
+            new_results_array.append(current_point_result["results"][0]["qblox_raw_results"][0]["bins"]["integration"][quadrature_path])
+            
+        # Compare results
+        absolute_differences = np.abs(new_results_array - old_results_array)
+        mean_diff = np.mean(absolute_differences)
+        std_dev_diff = np.std(absolute_differences)
+        confidence_level = 2
+        threshold = mean_diff + confidence_level * std_dev_diff
+        if len(old_results_array) == np.where(absolute_differences <= threshold):
+            node.add_timestamp(timestamp=get_timestamp(), type_of_timestamp="check_data")
+            return "in_spec"
+        else:
+            model = lmfit.Model(node.fitting_model)
+            fit = model.fit(data=new_results_array, x=random_values)
+            r_squared = 1 - fit.residual.var() / np.var(new_results_array)
+            if r_squared >= node.data_validation_threshold:
+                return "out_of_spec"
+            return "bad_data"        
         
 
     def calibrate(self, node: CalibrationNode) -> float | str | bool:
@@ -248,6 +265,7 @@ class Controller:
         Returns:
             float | str | bool: The optimal parameter value found by the calibration experiment.
             plot_filepath: The path of the file containing the plot.
+            #TODO: return value is different if the function is called by check_data, document that.
         """
         
         if node.is_refinement:
@@ -293,7 +311,6 @@ class Controller:
         # Case when the experiment is started by 'check_data': the experiment is run only in 1 point. In this case we don't store the 
         # experiment results in the node's 'experiment_results' attribute, because we don't want to overwrite the old results: 
         # we need them to compare them with the new ones, which here we simply return.
-        # TODO: for now I just return the data of the experiment in the point, figure out the details when implementing check_data
         
         # FIXME: uncomment the following when execute_qprogram is merged into main.        
         #return self._platform.execute_qprogram(node.qprogram(node.qprogram(drive_bus = "drive_bus", readout_bus = "readout_bus", sweep_values = list(experiment_point))))
