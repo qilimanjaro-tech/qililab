@@ -14,6 +14,10 @@ class ExecutionManager:  # pylint: disable=too-few-public-methods
 
     This class only contains drawing capabilities. The `ExecutionManager` name is maintained for backwards
     compatibility.
+
+    Args:
+        num_schedules (int): Number of pulse schedules used in the experiment.
+        buses (list[BusExecution] | None): List of buses used in the experiment.
     """
 
     def __init__(self, num_schedules: int, buses: list[BusExecution] | None = None):
