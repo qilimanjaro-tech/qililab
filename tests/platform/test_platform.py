@@ -1,5 +1,6 @@
 """Tests for the Platform class."""
 import copy
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -101,7 +102,7 @@ class TestPlatform:
     def test_platform_manager_dump_method(self, mock_dump: MagicMock, mock_open: MagicMock, platform: Platform):
         """Test PlatformManager dump method."""
         save_platform(path="runcard.yml", platform=platform)
-        mock_open.assert_called_once_with(file="runcard.yml", mode="w", encoding="utf-8")
+        mock_open.assert_called_once_with(file=Path("runcard.yml"), mode="w", encoding="utf-8")
         mock_dump.assert_called_once()
 
     def test_get_bus_by_qubit_index(self, platform: Platform):
