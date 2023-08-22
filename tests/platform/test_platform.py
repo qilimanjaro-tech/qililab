@@ -1,8 +1,12 @@
 """Tests for the Platform class."""
 import copy
+from queue import Queue
 from unittest.mock import MagicMock, patch
 
 import pytest
+from qibo import gates
+from qibo.models import Circuit
+from qpysequence import Sequence
 
 from qililab import save_platform
 from qililab.chip import Chip, Qubit
@@ -12,13 +16,24 @@ from qililab.instrument_controllers import InstrumentControllers
 from qililab.instruments import AWG, AWGAnalogDigitalConverter, SignalGenerator
 from qililab.instruments.instruments import Instruments
 from qililab.platform import Bus, Buses, Platform
+from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
 from qililab.settings import Runcard
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName
 from qililab.typings.yaml_type import yaml
 from tests.data import Galadriel, NewGaladriel
-from tests.test_utils import platform_db
+from tests.test_utils import build_platform
+
+
+@pytest.fixture(name="platform")
+def fixture_platform():
+    return build_platform(runcard=Galadriel.runcard)
+
+
+@pytest.fixture(name="runcard")
+def fixture_runcard():
+    return Runcard(**copy.deepcopy(Galadriel.runcard))
 
 @pytest.mark.parametrize("new_runcard", [Runcard(**NewGaladriel.runcard)])
 class TestPlatformInitializationNewRuncard:
@@ -37,7 +52,6 @@ class TestPlatformInitializationNewRuncard:
         assert isinstance(platform.new_instruments, NewInstruments)
         assert isinstance(platform.chip, Chip)
 
-@pytest.mark.parametrize("runcard", [Runcard(**Galadriel.runcard)])
 class TestPlatformInitialization:
     """Unit tests for the Platform class initialization"""
 
@@ -59,10 +73,6 @@ class TestPlatformInitialization:
         assert platform._connected_to_instruments is False
 
 
-@pytest.fixture(name="platform")
-def fixture_platform():
-    return copy.deepcopy(platform_db(Galadriel.runcard))
-
 class TestPlatform:
     """Unit tests checking the Platform class."""
 
@@ -77,8 +87,8 @@ class TestPlatform:
 
     def test_get_element_with_gate(self, platform: Platform):
         """Test the get_element method with a gate alias."""
-        gates = platform.gates_settings.gates.keys()
-        all(isinstance(event, GateEventSettings) for gate in gates for event in platform.get_element(alias=gate))
+        p_gates = platform.gates_settings.gates.keys()
+        all(isinstance(event, GateEventSettings) for gate in p_gates for event in platform.get_element(alias=gate))
 
     def test_str_magic_method(self, platform: Platform):
         """Test __str__ magic method."""
@@ -132,7 +142,10 @@ class TestPlatform:
         """Test that the get_bus_by_qubit_index method raises an error when there is no bus connected to the port
         of the given qubit."""
         platform.buses[0].settings.port = 100
-        with pytest.raises(ValueError, match="Could not find buses for qubit 0 connected to the ports"):
+        with pytest.raises(
+            ValueError,
+            match="There can only be one bus connected to a port. There are 0 buses connected to port drive_q0",
+        ):
             platform.get_bus_by_qubit_index(0)
         platform.buses[0].settings.port = 0  # Setting it back to normal to not disrupt future tests
 
@@ -182,3 +195,105 @@ class TestPlatform:
         assert str(newest_platform.chip) == str(new_platform.chip)
         assert str(newest_platform.instruments) == str(new_platform.instruments)
         assert str(newest_platform.instrument_controllers) == str(new_platform.instrument_controllers)
+
+
+class TestMethods:
+    """Unit tests for the methods of the Platform class."""
+
+    def test_compile_circuit(self, platform: Platform):
+        """Test the compilation of a qibo Circuit."""
+        circuit = Circuit(1)
+        circuit.add(gates.X(0))
+        circuit.add(gates.Y(0))
+        circuit.add(gates.M(0))
+
+        self._compile_and_assert(platform, circuit, 3)
+
+    def test_compile_pulse_schedule(self, platform: Platform):
+        """Test the compilation of a qibo Circuit."""
+        pulse_schedule = PulseSchedule()
+        drag_pulse = Pulse(
+            amplitude=1, phase=0.5, duration=200, frequency=1e9, pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
+        )
+        readout_pulse = Pulse(amplitude=1, phase=0.5, duration=1500, frequency=1e9, pulse_shape=Rectangular())
+        pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), port="drive_q0", port_delay=0)
+        pulse_schedule.add_event(
+            PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), port="feedline_input", port_delay=0
+        )
+
+        self._compile_and_assert(platform, pulse_schedule, 2)
+
+    def _compile_and_assert(self, platform: Platform, program: Circuit | PulseSchedule, len_sequences: int):
+        sequences = platform.compile(program=program, num_avg=1000, repetition_duration=2000, num_bins=1)
+        assert isinstance(sequences, dict)
+        assert len(sequences) == len_sequences
+        for alias, sequences in sequences.items():
+            assert alias in {bus.alias for bus in platform.buses}
+            assert isinstance(sequences, list)
+            assert len(sequences) == 1
+            assert isinstance(sequences[0], Sequence)
+            assert sequences[0]._program.duration == 2000 * 1000 + 4
+
+    def test_execute(self, platform: Platform):
+        """Test that the execute method calls the buses to run and return the results."""
+        # Define pulse schedule
+        pulse_schedule = PulseSchedule()
+        drag_pulse = Pulse(
+            amplitude=1, phase=0.5, duration=200, frequency=1e9, pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
+        )
+        readout_pulse = Pulse(amplitude=1, phase=0.5, duration=1500, frequency=1e9, pulse_shape=Rectangular())
+        pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), port="drive_q0", port_delay=0)
+        pulse_schedule.add_event(
+            PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), port="feedline_input", port_delay=0
+        )
+        with patch.object(Bus, "upload") as upload:
+            with patch.object(Bus, "run") as run:
+                with patch.object(Bus, "acquire_result") as acquire_result:
+                    acquire_result.return_value = 123
+                    result = platform.execute(
+                        program=pulse_schedule, num_avg=1000, repetition_duration=2000, num_bins=1
+                    )
+
+        assert upload.call_count == len(pulse_schedule.elements)
+        assert run.call_count == len(pulse_schedule.elements)
+        acquire_result.assert_called_once_with()
+        assert result == 123
+
+    def test_execute_with_queue(self, platform: Platform):
+        """Test that the execute method adds the obtained results to the given queue."""
+        queue: Queue = Queue()
+        with patch.object(Bus, "upload"):
+            with patch.object(Bus, "run"):
+                with patch.object(Bus, "acquire_result") as acquire_result:
+                    acquire_result.return_value = 123
+                    _ = platform.execute(
+                        program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1, queue=queue
+                    )
+
+        assert len(queue.queue) == 1
+        assert queue.get() == 123
+
+    def test_execute_raises_error_if_no_readout_buses_present(self, platform: Platform):
+        """Test that `Platform.execute` raises an error when the platform contains more than one readout bus."""
+        platform.buses.elements = []
+        with pytest.raises(ValueError, match="There are no readout buses in the platform."):
+            platform.execute(program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1)
+
+    def test_execute_raises_error_if_more_than_one_readout_bus_present(self, platform: Platform):
+        """Test that `Platform.execute` raises an error when the platform contains more than one readout bus."""
+        platform.buses.add(
+            Bus(
+                settings=copy.deepcopy(Galadriel.buses[1]),
+                platform_instruments=platform.instruments,
+                chip=platform.chip,
+            )
+        )
+        with patch.object(Bus, "upload"):
+            with patch.object(Bus, "run"):
+                with patch.object(Bus, "acquire_result"):
+                    with patch("qililab.platform.platform.logger") as mock_logger:
+                        _ = platform.execute(
+                            program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1
+                        )
+
+        mock_logger.error.assert_called_once_with("Only One Readout Bus allowed. Reading only from the first one.")

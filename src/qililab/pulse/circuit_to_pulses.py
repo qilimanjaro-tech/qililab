@@ -9,13 +9,14 @@ from qibo.models.circuit import Circuit
 from qililab.chip.nodes import Coupler, Qubit
 from qililab.constants import RUNCARD
 from qililab.platform import Bus, Platform
-from qililab.pulse.pulse import Pulse
-from qililab.pulse.pulse_event import PulseEvent
-from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.transpiler import Drag
 from qililab.typings.enums import Line
 from qililab.utils import Factory, qibo_gates
+
+from .pulse import Pulse
+from .pulse_event import PulseEvent
+from .pulse_schedule import PulseSchedule
 
 
 class CircuitToPulses:  # pylint: disable=too-few-public-methods
@@ -240,7 +241,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
                 amplitude=pulse.amplitude,
                 phase=pulse.phase,
                 duration=pulse.duration,
-                frequency=pulse.frequency,
+                frequency=0,
                 pulse_shape=pulse_shape,
             ),
             start_time=time + gate_event.wait_time + self.platform.gates_settings.delay_before_readout,

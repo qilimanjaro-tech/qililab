@@ -132,7 +132,6 @@ class Galadriel:
                         "amplitude": 1.0,
                         "phase": 0,
                         "duration": 2000,
-                        "frequency": 0,
                         "shape": {"name": "rectangular"},
                     },
                 }
@@ -145,7 +144,6 @@ class Galadriel:
                         "amplitude": 1.0,
                         "phase": 0,
                         "duration": 100,
-                        "frequency": 0,
                         "shape": {"name": "rectangular"},
                     },
                 }
@@ -158,7 +156,6 @@ class Galadriel:
                         "amplitude": 1.0,
                         "phase": 0,
                         "duration": 50,
-                        "frequency": 0,
                         "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
                     },
                 }
@@ -171,7 +168,6 @@ class Galadriel:
                         "amplitude": 1.0,
                         "phase": 1.5707963267948966,
                         "duration": 20,
-                        "frequency": 0,
                         "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
                     },
                 }
@@ -184,7 +180,6 @@ class Galadriel:
                         "amplitude": 1.0,
                         "phase": 1.5707963267948966,
                         "duration": 20,
-                        "frequency": 0,
                         "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
                     },
                 }
@@ -197,7 +192,6 @@ class Galadriel:
                         "amplitude": 1.0,
                         "phase": 1.5707963267948966,
                         "duration": 20,
-                        "frequency": 0,
                         "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
                     },
                 }
@@ -581,7 +575,6 @@ class FluxQubitSimulator:
                         "amplitude": 1.0,
                         "phase": 0,
                         "duration": 2000,
-                        "frequency": 0,
                         "shape": {"name": "rectangular"},
                     },
                 }
@@ -594,7 +587,6 @@ class FluxQubitSimulator:
                         "amplitude": 1.0,
                         "phase": 0,
                         "duration": 100,
-                        "frequency": 0,
                         "shape": {"name": "rectangular"},
                     },
                 }
@@ -607,7 +599,6 @@ class FluxQubitSimulator:
                         "amplitude": 1.0,
                         "phase": 0,
                         "duration": 50,
-                        "frequency": 0,
                         "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
                     },
                 }
@@ -620,7 +611,6 @@ class FluxQubitSimulator:
                         "amplitude": 1.0,
                         "phase": 1.5707963267948966,
                         "duration": 20,
-                        "frequency": 0,
                         "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
                     },
                 }
@@ -633,7 +623,6 @@ class FluxQubitSimulator:
                         "amplitude": 1.0,
                         "phase": 1.5707963267948966,
                         "duration": 20,
-                        "frequency": 0,
                         "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
                     },
                 }
@@ -646,7 +635,6 @@ class FluxQubitSimulator:
                         "amplitude": 1.0,
                         "phase": 1.5707963267948966,
                         "duration": 20,
-                        "frequency": 0,
                         "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
                     },
                 }
