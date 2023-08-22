@@ -13,16 +13,19 @@ from qililab.typings.enums import PulseDistortionSettingsName
 from qililab.utils import Factory
 
 # Parameters for the different corrections.
-TAU_BIAS_TEE = [0.7, 1.3]
-TAU_EXPONENTIAL = [0.7, 1.3]
-AMP = [-5.1, 0.8, 2.1]
+NORM_FACTOR = [0.95]
+TAU_BIAS_TEE = [0.6]
+TAU_EXPONENTIAL = [0.7]
+AMP = [-2.1, 0.8]
+A = [[0.7, 1.3]]
+B = [[0.5, 0.6]]
 
 # Parameters of the Pulse and its envelope.
-AMPLITUDE = [0.9]
-PHASE = [0, np.pi / 3, 2 * np.pi]
-DURATION = [47]
+AMPLITUDE = [-0.8, 0.9, 0]
+PHASE = [0, np.pi / 3]
+DURATION = [50, 37]  # Since we don't have the SNZ in this test, we can try an odd duration here.
 FREQUENCY = [0.7e9]
-RESOLUTION = [1.1]
+RESOLUTION = [1.0]
 SHAPE = [
     Rectangular(),
     Cosine(),
@@ -35,10 +38,14 @@ SHAPE = [
 @pytest.fixture(
     name="pulse_distortion",
     params=[
-        ExponentialCorrection(tau_exponential=tau_exponential, amp=amp)
-        for tau_exponential, amp in itertools.product(TAU_EXPONENTIAL, AMP)
+        ExponentialCorrection(tau_exponential=tau_exponential, amp=amp, norm_factor=norm_factor)
+        for tau_exponential, amp, norm_factor in itertools.product(TAU_EXPONENTIAL, AMP, NORM_FACTOR)
     ]
-    + [BiasTeeCorrection(tau_bias_tee=tau_bias_tee) for tau_bias_tee in TAU_BIAS_TEE],
+    + [BiasTeeCorrection(tau_bias_tee=tau_bias_tee) for tau_bias_tee in TAU_BIAS_TEE]
+    + [
+        LFilterCorrection(a=a, b=b, norm_factor=norm_factor)
+        for a, b, norm_factor in itertools.product(A, B, NORM_FACTOR)
+    ],
 )
 def fixture_pulse_distortion(request: pytest.FixtureRequest) -> ExponentialCorrection:
     """Fixture for the pulse distortion class."""
@@ -61,45 +68,87 @@ def fixture_envelope(request: pytest.FixtureRequest) -> np.ndarray:
     return request.param
 
 
+def return_corrected_envelopes_examples(
+    pulse_distortion: PulseDistortion, envelope: np.ndarray, norm_factors: list[float]
+):
+    """Helper function that returns examples of envelopes with & without auto_norm"""
+    norm_corr_envelopes = [pulse_distortion.apply(envelope=envelope)]
+    norm_corr_envelopes.append(
+        ExponentialCorrection(tau_exponential=1.3, amp=2.0, norm_factor=norm_factors[0]).apply(
+            envelope=norm_corr_envelopes[0]
+        )
+    )
+    norm_corr_envelopes.append(
+        BiasTeeCorrection(tau_bias_tee=0.5, norm_factor=norm_factors[1]).apply(envelope=norm_corr_envelopes[1])
+    )
+    not_norm_corr_envelopes = [
+        ExponentialCorrection(tau_exponential=0.5, amp=-5.0, auto_norm=False, norm_factor=norm_factors[1]).apply(
+            envelope=norm_corr_envelopes[1]
+        )
+    ]
+    not_norm_corr_envelopes.append(
+        LFilterCorrection(a=[0.7, 1.3], b=[0.5, 0.6], norm_factor=norm_factors[0]).apply(
+            envelope=not_norm_corr_envelopes[0]
+        )
+    )
+    return norm_corr_envelopes, not_norm_corr_envelopes
+
+
 class TestPulseDistortion:
     """Unit tests checking the PulseDistortion attributes and methods"""
 
-    def test_apply(self, pulse_distortion: PulseDistortion, envelope: np.ndarray):
+    def test_apply_method(self, pulse_distortion: PulseDistortion, envelope: np.ndarray):
         """Test for the apply method."""
-        norm_factors = [0.85, 0.15]
-        corr_envelopes = [pulse_distortion.apply(envelope=envelope)]
-        corr_envelopes.append(
-            ExponentialCorrection(tau_exponential=1.3, amp=2.0, norm_factor=norm_factors[0]).apply(
-                envelope=corr_envelopes[0]
-            )
+        norm_factors = [0.8, 1.15]
+        norm_corr_envelopes, not_norm_corr_envelopes = return_corrected_envelopes_examples(
+            pulse_distortion, envelope, norm_factors
         )
-        corr_envelopes.append(
-            BiasTeeCorrection(tau_bias_tee=0.5, norm_factor=norm_factors[1]).apply(envelope=corr_envelopes[1])
-        )
-        not_corr_envelopes = [
-            ExponentialCorrection(tau_exponential=0.5, amp=-5.0, auto_norm=False).apply(envelope=corr_envelopes[1])
-        ]
 
-        for corr_envelope in corr_envelopes:
+        # Basic checks
+        for corr_envelope in norm_corr_envelopes + not_norm_corr_envelopes:
             assert corr_envelope is not None
-            assert isinstance(corr_envelope, np.ndarray)
+            assert isinstance(envelope, np.ndarray)
             assert len(envelope) == len(corr_envelope)
-            assert not np.array_equal(corr_envelope, envelope)
-            assert np.max((np.real(corr_envelope))) <= 1
-            assert np.min((np.real(corr_envelope))) >= -1
+            assert (
+                not np.array_equal(envelope, corr_envelope)
+                or np.max(np.abs(np.real(envelope))) == np.max(np.abs(np.real(corr_envelope))) == 0.0
+            )  # Discarting the ampltidue = 0 case
 
-        for not_corr_envelope in not_corr_envelopes:
-            assert not_corr_envelope is not None
-            assert isinstance(not_corr_envelope, np.ndarray)
-            assert len(envelope) == len(not_corr_envelope)
-            assert not np.array_equal(not_corr_envelope, envelope)
+        # Autonorm = True cases, with amplitudes and norm_factors <= 1, have to return an envelope between -1 and 1:
+        for norm_corr_envelope in norm_corr_envelopes:
+            assert np.max((np.real(norm_corr_envelope))) <= 1
+            assert np.min((np.real(norm_corr_envelope))) >= -1
 
+    def test_norm_factors_and_auto_norm_in_apply_method(self, pulse_distortion: PulseDistortion, envelope: np.ndarray):
+        """Test for the apply method."""
+        norm_factors = [1.8, 0.35, 0.8]
+        norm_corr_envelopes, not_norm_corr_envelopes = return_corrected_envelopes_examples(
+            pulse_distortion, envelope, norm_factors
+        )
+
+        # Both Auto-norm = True & False, and Norm factors > 1 included
         assert (
-            round(np.max(np.abs(np.real(corr_envelopes[0]))), 14)
-            == round(np.max(np.abs(np.real(corr_envelopes[1]))) / norm_factors[0], 14)
-            == round(np.max(np.abs(np.real(corr_envelopes[2]))) / (norm_factors[0] * norm_factors[1]), 14)
-            == round(np.max(np.abs(np.real(envelope))) * pulse_distortion.norm_factor, 14)
-            != round(np.max(np.abs(np.real(not_corr_envelopes[0]))) / (norm_factors[0] * norm_factors[1]), 14)
+            0.0  # Testing/Discarting the amplitude = 0 cases
+            == round(np.max(np.abs(np.real(envelope))), 13)
+            == round(np.min(np.abs(np.real(envelope))), 13)
+            == round(np.max(np.abs(np.real(norm_corr_envelopes[0]))), 13)
+            == round(np.min(np.abs(np.real(norm_corr_envelopes[0]))), 13)
+            == round(np.max(np.abs(np.real(norm_corr_envelopes[1]))), 13)
+            == round(np.min(np.abs(np.real(norm_corr_envelopes[1]))), 13)
+            == round(np.max(np.abs(np.real(norm_corr_envelopes[2]))), 13)
+            == round(np.min(np.abs(np.real(norm_corr_envelopes[2]))), 13)
+            == round(np.max(np.abs(np.real(not_norm_corr_envelopes[0]))), 13)
+            == round(np.min(np.abs(np.real(not_norm_corr_envelopes[0]))), 13)
+            == round(np.max(np.abs(np.real(not_norm_corr_envelopes[1]))), 13)
+            == round(np.min(np.abs(np.real(not_norm_corr_envelopes[1]))), 13)
+        ) or (  # Actual testing that the norm_factors are working properly
+            round(np.max(np.abs(np.real(norm_corr_envelopes[0]))), 13)
+            == round(np.max(np.abs(np.real(norm_corr_envelopes[1]))) / norm_factors[0], 13)
+            == round(np.max(np.abs(np.real(norm_corr_envelopes[2]))) / (norm_factors[0] * norm_factors[1]), 13)
+            == round(np.max(np.abs(np.real(envelope))) * pulse_distortion.norm_factor, 13)
+            # Testing that the auto_norm changes the norm from the previous
+            != round(np.max(np.abs(np.real(not_norm_corr_envelopes[0]))) / (norm_factors[0] * norm_factors[1]), 2)
+            == round(np.max(np.abs(np.real(not_norm_corr_envelopes[1]))) / (norm_factors[0] ** 2 * norm_factors[1]), 2)
         )
 
     def test_from_dict(self, pulse_distortion: PulseDistortion):
@@ -151,8 +200,42 @@ class TestPulseDistortion:
                 PulseDistortionSettingsName.AUTO_NORM.value: pulse_distortion.auto_norm,
             }
 
-    def test_envelope_with_amplitude_0(self, pulse_distortion):
+    # TESTING CORNER CASES:
+
+    @pytest.mark.parametrize(
+        "envelope",
+        [
+            Rectangular().envelope(amplitude=0, duration=DURATION[1]),
+            Rectangular().envelope(amplitude=0, duration=DURATION[0]),
+            Cosine().envelope(amplitude=0, duration=DURATION[0]),
+            Cosine(lambda_2=0.3).envelope(amplitude=0, duration=DURATION[0]),
+            Gaussian(num_sigmas=4).envelope(amplitude=0, duration=DURATION[0]),
+            Drag(num_sigmas=4, drag_coefficient=1.0).envelope(amplitude=0, duration=DURATION[0]),
+        ],
+    )
+    def test_envelope_with_amplitude_0(self, pulse_distortion, envelope):
         """Testing that the corner case amplitude = 0 works properly."""
-        envelope = Rectangular().envelope(amplitude=0, duration=DURATION[0])
         corr_envelope = pulse_distortion.apply(envelope)
-        assert np.allclose(corr_envelope, np.zeros(DURATION[0]))
+        assert 0.0 == np.max(np.abs(np.real(corr_envelope))) == np.min(np.abs(np.real(corr_envelope)))
+
+    BIG_AMPLITUDES = [2.0, 1.2, -2.0]
+
+    @pytest.mark.parametrize(
+        "envelope",
+        [
+            Rectangular().envelope(amplitude=BIG_AMPLITUDES[0], duration=DURATION[1]),
+            Rectangular().envelope(amplitude=BIG_AMPLITUDES[1], duration=DURATION[0]),
+            Rectangular().envelope(amplitude=BIG_AMPLITUDES[2], duration=DURATION[0]),
+            Cosine().envelope(amplitude=BIG_AMPLITUDES[1], duration=DURATION[0]),
+            Cosine().envelope(amplitude=BIG_AMPLITUDES[2], duration=DURATION[1]),
+            Cosine(lambda_2=0.3).envelope(amplitude=BIG_AMPLITUDES[1], duration=DURATION[0]),
+            Gaussian(num_sigmas=4).envelope(amplitude=BIG_AMPLITUDES[1], duration=DURATION[0]),
+            Drag(num_sigmas=4, drag_coefficient=1.0).envelope(amplitude=BIG_AMPLITUDES[1], duration=DURATION[0]),
+        ],
+    )
+    def test_envelope_with_amplitude_bigger_than_1(self, pulse_distortion, envelope):
+        """Testing that the corner case amplitude = 0 works properly."""
+        assert np.max(np.abs(np.real(envelope))) > 1 or np.min(np.abs(np.real(envelope))) < 1
+
+        corr_envelope = pulse_distortion.apply(envelope)
+        assert np.max(np.abs(np.real(corr_envelope))) > 1 or np.min(np.abs(np.real(corr_envelope))) < 1

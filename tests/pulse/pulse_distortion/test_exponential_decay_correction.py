@@ -11,14 +11,15 @@ from qililab.pulse.pulse_shape import SNZ, Cosine, Drag, Gaussian, Rectangular
 from qililab.typings.enums import PulseDistortionSettingsName
 
 # Parameters for the ExponentialCorrection.
+NORM_FACTOR = [1.0]
 TAU_EXPONENTIAL = [0.7, 1.3]
 AMP = [-5.1, 0.8, 2.1]
 
 # Parameters of the Pulse and its envelope.
-AMPLITUDE = [0.9]
+AMPLITUDE = [-0.8, 0.9, 0, 1.8]
 PHASE = [0, np.pi / 3]
-DURATION = [48]
-FREQUENCY = [0.7e9]
+DURATION = [28]
+FREQUENCY = [0.6e9]
 RESOLUTION = [1.0]
 SHAPE = [Rectangular(), Cosine(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0), SNZ(b=0.1, t_phi=4)]
 
@@ -51,47 +52,73 @@ def fixture_envelope(request: pytest.FixtureRequest) -> np.ndarray:
     return request.param
 
 
+def return_corrected_envelopes_examples(
+    pulse_distortion: ExponentialCorrection, envelope: np.ndarray, norm_factors: list[float]
+):
+    """Helper function that returns examples of envelopes with & without auto_norm"""
+    norm_corr_envelopes = [pulse_distortion.apply(envelope=envelope)]
+    norm_corr_envelopes.append(
+        ExponentialCorrection(tau_exponential=1.3, amp=2.0, norm_factor=norm_factors[0]).apply(
+            envelope=norm_corr_envelopes[0]
+        )
+    )
+    norm_corr_envelopes.append(
+        ExponentialCorrection(tau_exponential=0.5, amp=-5.0, norm_factor=norm_factors[1]).apply(
+            envelope=norm_corr_envelopes[1]
+        )
+    )
+    not_norm_corr_envelopes = [
+        ExponentialCorrection(tau_exponential=0.9, amp=-5.0, auto_norm=False).apply(envelope=norm_corr_envelopes[2])
+    ]
+    not_norm_corr_envelopes.append(
+        ExponentialCorrection(tau_exponential=0.7, amp=3.1, auto_norm=False).apply(envelope=not_norm_corr_envelopes[0])
+    )
+    return norm_corr_envelopes, not_norm_corr_envelopes
+
+
 class TestExponentialCorrection:
     """Unit tests checking the ExponentialCorrection attributes and methods"""
 
     def test_apply(self, pulse_distortion: ExponentialCorrection, envelope: np.ndarray):
         """Test for the envelope method."""
         norm_factors = [1.0, 0.75]
-        corr_envelopes = [pulse_distortion.apply(envelope=envelope)]
-        corr_envelopes.append(
-            ExponentialCorrection(tau_exponential=1.3, amp=2.0, norm_factor=norm_factors[0]).apply(
-                envelope=corr_envelopes[0]
-            )
+        norm_corr_envelopes, not_norm_corr_envelopes = return_corrected_envelopes_examples(
+            pulse_distortion, envelope, norm_factors
         )
-        corr_envelopes.append(
-            ExponentialCorrection(tau_exponential=0.5, amp=-5.0, norm_factor=norm_factors[1]).apply(
-                envelope=corr_envelopes[1]
-            )
-        )
-        not_corr_envelopes = [
-            ExponentialCorrection(tau_exponential=0.9, amp=-5.0, auto_norm=False).apply(envelope=corr_envelopes[2])
-        ]
 
-        for corr_envelope in corr_envelopes:
+        # Basic checks
+        for corr_envelope in norm_corr_envelopes + not_norm_corr_envelopes:
             assert corr_envelope is not None
             assert isinstance(corr_envelope, np.ndarray)
             assert len(envelope) == len(corr_envelope)
-            assert not np.array_equal(corr_envelope, envelope)
-            assert np.max((np.real(corr_envelope))) <= 1
-            assert np.min((np.real(corr_envelope))) >= -1
+            assert (
+                not np.array_equal(corr_envelope, envelope)
+                or np.max(np.abs(np.real(envelope))) == np.max(np.abs(np.real(corr_envelope))) == 0.0
+            )
 
-        for not_corr_envelope in not_corr_envelopes:
-            assert not_corr_envelope is not None
-            assert isinstance(not_corr_envelope, np.ndarray)
-            assert len(envelope) == len(not_corr_envelope)
-            assert not np.array_equal(not_corr_envelope, envelope)
-
+        # Check that norm_factor and auto_norm is working properly
         assert (
-            round(np.max(np.abs(np.real(corr_envelopes[0]))), 14)
-            == round(np.max(np.abs(np.real(corr_envelopes[1]))) / norm_factors[0], 14)
-            == round(np.max(np.abs(np.real(corr_envelopes[2]))) / (norm_factors[0] * norm_factors[1]), 14)
+            0.0  # Testing/Discarting the amplitude = 0 cases
+            == round(np.max(np.abs(np.real(envelope))), 13)
+            == round(np.min(np.abs(np.real(envelope))), 13)
+            == round(np.max(np.abs(np.real(norm_corr_envelopes[0]))), 13)
+            == round(np.min(np.abs(np.real(norm_corr_envelopes[0]))), 13)
+            == round(np.max(np.abs(np.real(norm_corr_envelopes[1]))), 13)
+            == round(np.min(np.abs(np.real(norm_corr_envelopes[1]))), 13)
+            == round(np.max(np.abs(np.real(norm_corr_envelopes[2]))), 13)
+            == round(np.min(np.abs(np.real(norm_corr_envelopes[2]))), 13)
+            == round(np.max(np.abs(np.real(not_norm_corr_envelopes[0]))), 13)
+            == round(np.min(np.abs(np.real(not_norm_corr_envelopes[0]))), 13)
+            == round(np.max(np.abs(np.real(not_norm_corr_envelopes[1]))), 13)
+            == round(np.min(np.abs(np.real(not_norm_corr_envelopes[1]))), 13)
+        ) or (  # Actual testing that the norm_factors are working properly
+            round(np.max(np.abs(np.real(norm_corr_envelopes[0]))), 14)
+            == round(np.max(np.abs(np.real(norm_corr_envelopes[1]))) / norm_factors[0], 14)
+            == round(np.max(np.abs(np.real(norm_corr_envelopes[2]))) / (norm_factors[0] * norm_factors[1]), 14)
             == round(np.max(np.abs(np.real(envelope))) * pulse_distortion.norm_factor, 14)
-            != round(np.max(np.abs(np.real(not_corr_envelopes[0]))) / (norm_factors[0] * norm_factors[1]), 14)
+            # Testing that the auto_norm changes the norm from the previous
+            != round(np.max(np.abs(np.real(not_norm_corr_envelopes[0]))) / (norm_factors[0] * norm_factors[1]), 14)
+            != round(np.max(np.abs(np.real(not_norm_corr_envelopes[1]))) / (norm_factors[0] * norm_factors[1]), 14)
         )
 
     def test_from_dict(self, pulse_distortion: ExponentialCorrection):
