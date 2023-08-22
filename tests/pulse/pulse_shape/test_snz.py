@@ -119,3 +119,15 @@ class TestPulseShape:
         ENV_DURATION = 10
         envelope = pulse_shape.envelope(amplitude=0, duration=ENV_DURATION)
         assert np.allclose(envelope, np.zeros(ENV_DURATION))
+
+
+class TestCornerCase:
+    """Test corner case"""
+
+    def test_snz_with_t_phi_float(self):
+        """Testing that the corner case where t_phi is a float raises the warning properly."""
+        with pytest.raises(
+            ValueError,
+            match="t_phi with value 1.1ns for pulse SNZ cannot have decimal part since min time resolution is 1ns",
+        ):
+            _ = SNZ(b=0.1, t_phi=1.1).envelope(amplitude=1, duration=10)
