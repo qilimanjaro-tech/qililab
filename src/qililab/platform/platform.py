@@ -3,6 +3,7 @@ import ast
 import re
 from copy import deepcopy
 from dataclasses import asdict
+import warnings
 
 from qiboconnection.api import API
 
@@ -43,6 +44,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """Name of the platform (str) """
 
         if new_drivers:
+            self.new_drivers = new_drivers
             # uses the new drivers and buses
             self.new_instruments = NewInstruments(elements=self._load_new_instruments(instruments_dict=runcard.instruments))
             """Instruments corresponding classes, instantiated given the instruments list[dict] of the Runcard class"""
@@ -96,42 +98,57 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             manual_override (bool, optional): If ``True``, avoid checking if the device is blocked. This will stop any
                 current execution. Defaults to False.
         """
-        if self._connected_to_instruments:
-            logger.info("Already connected to the instruments")
-            return
+        if not self.new_drivers:
+            if self._connected_to_instruments:
+                logger.info("Already connected to the instruments")
+                return
 
-        if self.connection is not None and not manual_override:
-            self.connection.block_device_id(device_id=self.device_id)
+            if self.connection is not None and not manual_override:
+                self.connection.block_device_id(device_id=self.device_id)
 
-        self.instrument_controllers.connect()
-        self._connected_to_instruments = True
-        logger.info("Connected to the instruments")
+            self.instrument_controllers.connect()
+            self._connected_to_instruments = True
+            logger.info("Connected to the instruments")
+        else:
+            warnings.warn("This method is deprecated when using the new_drivers flag", DeprecationWarning)
 
     def initial_setup(self):
         """Set the initial setup of the instruments"""
-        self.instrument_controllers.initial_setup()
-        logger.info("Initial setup applied to the instruments")
+        if not self.new_drivers:
+            self.instrument_controllers.initial_setup()
+            logger.info("Initial setup applied to the instruments")
+        else:
+            warnings.warn("This method is deprecated when using the new_drivers flag", DeprecationWarning)
 
     def turn_on_instruments(self):
         """Turn on the instruments"""
-        self.instrument_controllers.turn_on_instruments()
-        logger.info("Instruments turned on")
+        if not self.new_drivers:
+            self.instrument_controllers.turn_on_instruments()
+            logger.info("Instruments turned on")
+        else:
+            warnings.warn("This method is deprecated when using the new_drivers flag", DeprecationWarning)
 
     def turn_off_instruments(self):
         """Turn off the instruments"""
-        self.instrument_controllers.turn_off_instruments()
-        logger.info("Instruments turned off")
+        if not self.new_drivers:
+            self.instrument_controllers.turn_off_instruments()
+            logger.info("Instruments turned off")
+        else:
+            warnings.warn("This method is deprecated when using the new_drivers flag", DeprecationWarning)
 
     def disconnect(self):
         """Close connection to the instrument controllers."""
-        if self.connection is not None:
-            self.connection.release_device(device_id=self.device_id)
-        if not self._connected_to_instruments:
-            logger.info("Already disconnected from the instruments")
-            return
-        self.instrument_controllers.disconnect()
-        self._connected_to_instruments = False
-        logger.info("Disconnected from instruments")
+        if not self.new_drivers:
+            if self.connection is not None:
+                self.connection.release_device(device_id=self.device_id)
+            if not self._connected_to_instruments:
+                logger.info("Already disconnected from the instruments")
+                return
+            self.instrument_controllers.disconnect()
+            self._connected_to_instruments = False
+            logger.info("Disconnected from instruments")
+        else:
+            warnings.warn("This method is deprecated when using the new_drivers flag", DeprecationWarning)
 
     def get_element(self, alias: str):
         """Get platform element.
