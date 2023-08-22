@@ -36,9 +36,10 @@ class Pulsar(QcodesPulsar, BaseInstrument):  # pylint: disable=abstract-method
             for seq_idx, seq_name in enumerate(sequencers):
                 seq = sequencer_class(parent=self, name=seq_name, seq_idx=seq_idx, map_dict=sequencers[seq_name])  # type: ignore
                 self.add_submodule(seq_name, seq)
-        # for seq_idx in range(6):
-        #     seq = sequencer_class(parent=self, name=f"sequencer{seq_idx}", seq_idx=seq_idx)  # type: ignore
-        #     self.add_submodule(f"sequencer{seq_idx}", seq)
+        else:
+            for seq_idx in range(6):
+                seq = sequencer_class(parent=self, name=f"sequencer{seq_idx}", seq_idx=seq_idx)  # type: ignore
+                self.add_submodule(f"sequencer{seq_idx}", seq)
     @property
     def params(self):
         """return the parameters of the instrument"""

@@ -18,7 +18,7 @@ from .sequencer_qcm import SequencerQCM
 class SequencerQRM(SequencerQCM, Digitiser):
     """Qililab's driver for QBlox-instruments digitiser Sequencer"""
 
-    def __init__(self, parent: Instrument, name: str, seq_idx: int, map_dict: dict[str, str]):
+    def __init__(self, parent: Instrument, name: str, seq_idx: int, map_dict: dict[str, str] | None = None):
         """Initialise the instrument.
 
         Args:

@@ -43,6 +43,15 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         self.name = runcard.name
         """Name of the platform (str) """
 
+        self.device_id = runcard.device_id
+        """Device id of the platform (int). This attribute is needed for `qiboconnection` to save results remotely."""
+
+        self.gates_settings = runcard.gates_settings
+        """Dataclass with all the settings and gates definitions needed to decompose gates into pulses."""
+
+        self.chip = Chip(**asdict(runcard.chip))
+        """Chip class, instantiated given the ChipSettings class of the Runcard class"""
+
         if new_drivers:
             self.new_drivers = new_drivers
             # uses the new drivers and buses
@@ -58,15 +67,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             # )
             """New Buses class, instantiated given the list[BusSettings] classes of the Runcard class"""
         else:
-            self.device_id = runcard.device_id
-            """Device id of the platform (int). This attribute is needed for `qiboconnection` to save results remotely."""
-
-            self.gates_settings = runcard.gates_settings
-            """Dataclass with all the settings and gates definitions needed to decompose gates into pulses."""
-
-            self.chip = Chip(**asdict(runcard.chip))
-            """Chip class, instantiated given the ChipSettings class of the Runcard class"""
-
             self.instruments = Instruments(elements=self._load_instruments(instruments_dict=runcard.instruments))
             """Instruments corresponding classes, instantiated given the instruments list[dict] of the Runcard class"""
 

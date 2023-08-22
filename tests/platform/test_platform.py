@@ -30,7 +30,12 @@ class TestPlatformInitializationNewRuncard:
 
         assert platform.name == new_runcard.name
         assert isinstance(platform.name, str)
+        assert platform.device_id == new_runcard.device_id
+        assert isinstance(platform.device_id, int)
+        assert platform.gates_settings == new_runcard.gates_settings
+        assert isinstance(platform.gates_settings, Runcard.GatesSettings)
         assert isinstance(platform.new_instruments, NewInstruments)
+        assert isinstance(platform.chip, Chip)
 
 @pytest.mark.parametrize("runcard", [Runcard(**Galadriel.runcard)])
 class TestPlatformInitialization:
@@ -57,7 +62,6 @@ class TestPlatformInitialization:
 @pytest.fixture(name="platform")
 def fixture_platform():
     return copy.deepcopy(platform_db(Galadriel.runcard))
-
 
 class TestPlatform:
     """Unit tests checking the Platform class."""
