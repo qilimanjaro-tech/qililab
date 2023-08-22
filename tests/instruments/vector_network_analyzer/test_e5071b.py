@@ -2,6 +2,7 @@
 import copy
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 
 from qililab.instrument_controllers.vector_network_analyzer.agilent_E5071B_vna_controller import E5071BController
@@ -11,13 +12,13 @@ from qililab.platform import Platform
 from qililab.result.vna_result import VNAResult
 from qililab.typings.enums import Parameter, VNAScatteringParameters, VNATriggerModes
 from tests.data import SauronVNA
-from tests.test_utils import platform_db
+from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="sauron_platform")
 def fixture_sauron_platform() -> Platform:
     """Return Platform object."""
-    return platform_db(runcard=SauronVNA.runcard)
+    return build_platform(runcard=SauronVNA.runcard)
 
 
 @pytest.fixture(name="e5071b_controller")
@@ -240,6 +241,8 @@ class TestE5071B:
         mock_frombuffer.return_value = mock_buffer
         output = e5071b.acquire_result()
         assert isinstance(output, VNAResult)
+        assert np.allclose(output.array, [])
+        assert output.to_dict() == {}
 
     @pytest.mark.parametrize("continuous", [True, False])
     def test_continuous_method(self, continuous, e5071b: E5071B):

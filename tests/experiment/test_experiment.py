@@ -11,7 +11,7 @@ from matplotlib.figure import Figure
 from qibo.models.circuit import Circuit
 from qpysequence import Sequence
 
-from qililab import build_platform
+import qililab as ql
 from qililab.constants import RUNCARD
 from qililab.execution import ExecutionManager
 from qililab.experiment.experiment import Experiment
@@ -21,7 +21,7 @@ from qililab.typings import InstrumentName, Parameter
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils import Loop
 from tests.data import FluxQubitSimulator, Galadriel, experiment_params, simulated_experiment_circuit
-from tests.test_utils import mock_instruments, platform_db
+from tests.test_utils import build_platform, mock_instruments
 
 
 @pytest.fixture(name="simulated_platform")
@@ -37,23 +37,14 @@ def fixture_simulated_platform(mock_evolution: MagicMock) -> Platform:
     mock_evolution.return_value.times = []
     mock_evolution.return_value.psi0 = None
 
-    with patch("qililab.data_management.yaml.safe_load", return_value=FluxQubitSimulator.runcard) as mock_load:
-        with patch("qililab.data_management.open") as mock_open:
-            platform = build_platform(path="flux_qubit")
-            mock_load.assert_called()
-            mock_open.assert_called()
-    return platform
+    return build_platform(FluxQubitSimulator.runcard)
 
 
 @pytest.fixture(name="nested_experiment", params=experiment_params)
 def fixture_nested_experiment(request: pytest.FixtureRequest):
     """Return a nested Experiment object."""
     runcard, circuits = request.param  # type: ignore
-    with patch("qililab.data_management.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.data_management.open") as mock_open:
-            platform = build_platform(path="sauron")
-            mock_load.assert_called()
-            mock_open.assert_called()
+    platform = build_platform(runcard)
     loop2 = Loop(
         alias="platform",
         parameter=Parameter.DELAY_BEFORE_READOUT,
@@ -76,11 +67,7 @@ def fixture_nested_experiment(request: pytest.FixtureRequest):
 def fixture_experiment(request: pytest.FixtureRequest):
     """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
-    with patch("qililab.data_management.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.data_management.open") as mock_open:
-            platform = build_platform(path="_")
-            mock_load.assert_called()
-            mock_open.assert_called()
+    platform = build_platform(runcard)
     loop = Loop(
         alias="X(0)",
         parameter=Parameter.DURATION,
@@ -95,21 +82,18 @@ def fixture_experiment(request: pytest.FixtureRequest):
 @pytest.fixture(name="platform")
 def fixture_platform() -> Platform:
     """Return Platform object."""
-    return platform_db(runcard=Galadriel.runcard)
+    return build_platform(runcard=Galadriel.runcard)
 
 
 @pytest.fixture(name="experiment_all_platforms", params=experiment_params)
 def fixture_experiment_all_platforms(request: pytest.FixtureRequest):
     """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
-    with patch("qililab.data_management.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.data_management.open") as mock_open:
-            platform = build_platform(path="flux_qubit")
-            mock_load.assert_called()
-            mock_open.assert_called()
-    experiment = Experiment(platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits])
-    mock_load.assert_called()
-    return experiment
+    platform = build_platform(runcard)
+    return Experiment(
+        platform=platform,
+        circuits=circuits if isinstance(circuits, list) else [circuits],
+    )
 
 
 @pytest.fixture(name="connected_experiment")
@@ -127,7 +111,7 @@ def fixture_connected_experiment(
     """Fixture that mocks all the instruments, connects to the mocked instruments and returns the `Experiment`
     instance."""
     mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
-    experiment_all_platforms.connect()
+    experiment_all_platforms.platform.connect()
     mock_mini_circuits.assert_called()
     mock_keithley.assert_called()
     mock_rs.assert_called()
@@ -143,7 +127,7 @@ def fixture_experiment_reset(request: pytest.FixtureRequest):
     with patch("qililab.data_management.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.data_management.open") as mock_open:
             mock_load.return_value[RUNCARD.INSTRUMENT_CONTROLLERS][0] |= {"reset": False}
-            platform = build_platform(path="galadriel")
+            platform = ql.build_platform(path="galadriel")
             mock_load.assert_called()
             mock_open.assert_called()
     loop = Loop(

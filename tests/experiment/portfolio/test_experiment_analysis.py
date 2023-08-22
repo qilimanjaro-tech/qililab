@@ -1,16 +1,16 @@
 """Unit tests for the ``ExperimentAnalysis`` class."""
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
 from qibo.gates import RX, RY, I, M, X, Y
 from qibo.models import Circuit
 
-from qililab import build_platform
 from qililab.experiment.portfolio import ExperimentAnalysis, FittingModel
 from qililab.typings import ExperimentOptions, Parameter
 from qililab.utils import Loop
 from tests.data import Galadriel
+from tests.test_utils import build_platform
 
 circuit = Circuit(1)
 circuit.add(I(0))
@@ -41,11 +41,7 @@ class DummyExperimentAnalysis(ExperimentAnalysis, DummyFittingModel):
 @pytest.fixture(name="experiment_analysis")
 def fixture_experiment_analysis():
     """Return Experiment object."""
-    with patch("qililab.data_management.yaml.safe_load", return_value=Galadriel.runcard) as mock_load:
-        with patch("qililab.data_management.open") as mock_open:
-            platform = build_platform(path="flux_qubit")
-            mock_load.assert_called()
-            mock_open.assert_called()
+    platform = build_platform(Galadriel.runcard)
     loop = Loop(
         alias="X(0)",
         parameter=Parameter.DURATION,
