@@ -91,7 +91,7 @@ class TestBiasTeeCorrection:
 
         # Check that norm_factor and auto_norm is working properly
         assert (
-            0.0  # Testing/Discarting the amplitude = 0 cases
+            0.0  # Testing/Discarting the amplitude = 0 cases, for both maxs and mins.
             == round(np.max(np.abs(np.real(envelope))), 13)
             == round(np.min(np.abs(np.real(envelope))), 13)
             == round(np.max(np.abs(np.real(norm_corr_envelopes[0]))), 13)
@@ -104,13 +104,16 @@ class TestBiasTeeCorrection:
             == round(np.min(np.abs(np.real(not_norm_corr_envelopes[0]))), 13)
             == round(np.max(np.abs(np.real(not_norm_corr_envelopes[1]))), 13)
             == round(np.min(np.abs(np.real(not_norm_corr_envelopes[1]))), 13)
-        ) or (  # Actual testing that the norm_factors are working properly
+        ) or (
+            # Actual testing that the norm_factors are working properly, the factors
+            # should correspond to the ones in the function "return_corrected_envelopes_examples()"
             round(np.max(np.abs(np.real(norm_corr_envelopes[0]))), 14)
             == round(np.max(np.abs(np.real(norm_corr_envelopes[1]))) / norm_factors[0], 14)
             == round(np.max(np.abs(np.real(norm_corr_envelopes[2]))) / (norm_factors[0] * norm_factors[1]), 14)
             == round(np.max(np.abs(np.real(envelope))) * pulse_distortion.norm_factor, 14)
             # Testing that the auto_norm changes the norm from the previous
             != round(np.max(np.abs(np.real(not_norm_corr_envelopes[0]))) / (norm_factors[0] * norm_factors[1]), 14)
+            # The next one has auto_norm = False again, so it has to be different again.
             != round(np.max(np.abs(np.real(not_norm_corr_envelopes[1]))) / (norm_factors[0] * norm_factors[1]), 14)
         )
 

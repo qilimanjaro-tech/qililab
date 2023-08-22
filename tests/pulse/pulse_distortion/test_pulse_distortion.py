@@ -111,8 +111,9 @@ class TestPulseDistortion:
             assert len(envelope) == len(corr_envelope)
             assert (
                 not np.array_equal(envelope, corr_envelope)
+                # Discarting the ampltidue = 0 case
                 or np.max(np.abs(np.real(envelope))) == np.max(np.abs(np.real(corr_envelope))) == 0.0
-            )  # Discarting the ampltidue = 0 case
+            )
 
         # Autonorm = True cases, with amplitudes and norm_factors <= 1, have to return an envelope between -1 and 1:
         for norm_corr_envelope in norm_corr_envelopes:
@@ -128,7 +129,7 @@ class TestPulseDistortion:
 
         # Both Auto-norm = True & False, and Norm factors > 1 included
         assert (
-            0.0  # Testing/Discarting the amplitude = 0 cases
+            0.0  # Testing/Discarting the amplitude = 0 cases, for both maxs and mins.
             == round(np.max(np.abs(np.real(envelope))), 13)
             == round(np.min(np.abs(np.real(envelope))), 13)
             == round(np.max(np.abs(np.real(norm_corr_envelopes[0]))), 13)
@@ -141,13 +142,16 @@ class TestPulseDistortion:
             == round(np.min(np.abs(np.real(not_norm_corr_envelopes[0]))), 13)
             == round(np.max(np.abs(np.real(not_norm_corr_envelopes[1]))), 13)
             == round(np.min(np.abs(np.real(not_norm_corr_envelopes[1]))), 13)
-        ) or (  # Actual testing that the norm_factors are working properly
+        ) or (
+            # Actual testing that the norm_factors are working properly, the factors
+            # should correspond to the ones in the function "return_corrected_envelopes_examples()"
             round(np.max(np.abs(np.real(norm_corr_envelopes[0]))), 13)
             == round(np.max(np.abs(np.real(norm_corr_envelopes[1]))) / norm_factors[0], 13)
             == round(np.max(np.abs(np.real(norm_corr_envelopes[2]))) / (norm_factors[0] * norm_factors[1]), 13)
             == round(np.max(np.abs(np.real(envelope))) * pulse_distortion.norm_factor, 13)
             # Testing that the auto_norm changes the norm from the previous
             != round(np.max(np.abs(np.real(not_norm_corr_envelopes[0]))) / (norm_factors[0] * norm_factors[1]), 2)
+            # Then we get back to a case with auto_norm = True, so we can check it again.
             == round(np.max(np.abs(np.real(not_norm_corr_envelopes[1]))) / (norm_factors[0] ** 2 * norm_factors[1]), 2)
         )
 

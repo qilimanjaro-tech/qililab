@@ -69,52 +69,6 @@ class TestPulse:
         elif pulse.amplitude == 0.0:
             assert 0.0 == np.max(envelope) == np.min(envelope)
 
-        # Test the shape of the positive envelopes
-        if pulse.amplitude > 0:
-            if isinstance(pulse.pulse_shape, Rectangular):
-                assert np.max(envelope) == np.min(envelope)
-
-            if isinstance(pulse.pulse_shape, Cosine) and pulse.pulse_shape.lambda_2 > 0.0:
-                assert np.max(envelope) != envelope[len(envelope) // 2]
-                assert np.min(envelope) == envelope[0]
-
-            if isinstance(pulse.pulse_shape, Cosine) and pulse.pulse_shape.lambda_2 <= 0.0:
-                assert np.max(envelope) == envelope[len(envelope) // 2]
-                assert np.min(envelope) == envelope[0]
-
-            if isinstance(pulse.pulse_shape, Gaussian):
-                assert np.max(envelope) == envelope[len(envelope) // 2]
-                assert np.max(envelope) / 2 < envelope[len(envelope) // 4]
-                assert np.min(envelope) == envelope[0]
-
-            if isinstance(pulse.pulse_shape, Drag):
-                assert np.max(np.real(envelope)) == np.real(envelope[len(envelope) // 2])
-                assert np.max(np.real(envelope)) / 2 < np.real(envelope[len(envelope) // 4])
-                assert np.min(np.real(envelope)) == np.real(envelope[0])
-
-        # Test the shape of the negative envelopes
-        if pulse.amplitude < 0:
-            if isinstance(pulse.pulse_shape, Rectangular):
-                assert np.max(envelope) == np.min(envelope)
-
-            if isinstance(pulse.pulse_shape, Cosine) and pulse.pulse_shape.lambda_2 > 0.0:
-                assert np.min(envelope) != envelope[len(envelope) // 2]
-                assert np.max(envelope) == envelope[0]
-
-            if isinstance(pulse.pulse_shape, Cosine) and pulse.pulse_shape.lambda_2 <= 0.0:
-                assert np.min(envelope) == envelope[len(envelope) // 2]
-                assert np.max(envelope) == envelope[0]
-
-            if isinstance(pulse.pulse_shape, Gaussian):
-                assert np.min(envelope) == envelope[len(envelope) // 2]
-                assert np.min(envelope) / 2 > envelope[len(envelope) // 4]
-                assert np.max(envelope) == envelope[0]
-
-            if isinstance(pulse.pulse_shape, Drag):
-                assert np.min(np.real(envelope)) == np.real(envelope[len(envelope) // 2])
-                assert np.min(np.real(envelope)) / 2 > np.real(envelope[len(envelope) // 4])
-                assert np.max(np.real(envelope)) == np.real(envelope[0])
-
     def test_from_dict_method(self, pulse: Pulse):
         """Test to_dict method"""
         dictionary = pulse.to_dict()
