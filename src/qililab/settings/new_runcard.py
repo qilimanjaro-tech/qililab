@@ -23,10 +23,9 @@ class NewRuncard:
     - chip:
     - buses:
     - instruments: List of "instruments" dictionaries
-    - instrument_controllers: List of "instrument_controllers" dictionaries
 
     The gates_settings, chip and bus dictionaries will be passed to their corresponding NewRuncard.GatesSettings,
-    NewRuncard.Chip or NewRuncard.Bus classes here, meanwhile the instruments and instrument_controllers will remain dictionaries.
+    NewRuncard.Chip or NewRuncard.Bus classes here, meanwhile the instruments will remain dictionaries.
 
     Then this full class gets passed to the Platform who will instantiate the actual qililab Chip, Buses/Bus and the
     corresponding Instrument classes with the settings attributes of this class.
@@ -36,8 +35,6 @@ class NewRuncard:
         chip (dict): Chip settings dictionary -> Runcard.Chip settings inner dataclass
         buses (list[dict]): List of Bus settings dictionaries -> list[Runcard.Bus] settings inner dataclass
         instruments (list[dict]): List of dictionaries containing the "instruments" information (does not transform)
-        instruments_controllers (list[dict]): List of dictionaries containing the "instrument_controllers" information
-            (does not transform)
     """
 
     # Inner dataclasses definition
@@ -47,7 +44,6 @@ class NewRuncard:
 
         Args:
             alias (str): Alias of the bus.
-            system_control (dict): Dictionary containing the settings of the system control of the bus.
             port (str): Alias of the port of the chip the bus is connected to.
             distortions (list[dict]): List of dictionaries containing the settings of the distortions applied to each
                 bus.
@@ -121,7 +117,7 @@ class NewRuncard:
             for operation in self.operations:
                 # TODO: Fix bug that parses settings as dict instead of defined classes
                 if isinstance(operation, dict):
-                    operation = Runcard.GatesSettings.OperationSettings(**operation)
+                    operation = NewRuncard.GatesSettings.OperationSettings(**operation)
                 if operation.name == name:
                     return operation
             raise ValueError(f"Operation {name} not found in gates settings.")
