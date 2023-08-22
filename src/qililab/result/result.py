@@ -11,7 +11,7 @@ from qililab.utils import nested_dict_to_pandas_dataframe
 
 
 class Result(FactoryElement, ABC):
-    """Result class."""
+    """Abstract class used to hold the results of a single execution."""
 
     name: ResultName
     data_dataframe_indices: set[str]
