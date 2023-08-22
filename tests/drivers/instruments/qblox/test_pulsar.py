@@ -20,7 +20,7 @@ class TestPulsar:
 
     def test_init_qcm_type(self):
         """Unittest for init method for a QCM pulsar."""
-        pulsar = Pulsar(name=PULSAR_NAME, dummy_type=PulsarType.PULSAR_QCM)
+        pulsar = Pulsar(alias=PULSAR_NAME, dummy_type=PulsarType.PULSAR_QCM)
         sequencers_prefix = "sequencer"
         submodules = pulsar.submodules
         seq_idxs = list(submodules.keys())
@@ -33,7 +33,7 @@ class TestPulsar:
 
     def test_init_qrm_type(self):
         """Unittest for init method for a QRM pulsar."""
-        pulsar = Pulsar(name=PULSAR_NAME, dummy_type=PulsarType.PULSAR_QRM)
+        pulsar = Pulsar(alias=PULSAR_NAME, dummy_type=PulsarType.PULSAR_QRM)
         sequencers_prefix = "sequencer"
         submodules = pulsar.submodules
         seq_idxs = list(submodules.keys())
@@ -46,16 +46,16 @@ class TestPulsar:
 
     def test_params(self):
         """Unittest to test the params property."""
-        pulsar_qcm = Pulsar(name=f"{PULSAR_NAME}1", dummy_type=PulsarType.PULSAR_QCM)
-        pulsar_qrm = Pulsar(name=PULSAR_NAME, dummy_type=PulsarType.PULSAR_QRM)
+        pulsar_qcm = Pulsar(alias=f"{PULSAR_NAME}1", dummy_type=PulsarType.PULSAR_QCM)
+        pulsar_qrm = Pulsar(alias=PULSAR_NAME, dummy_type=PulsarType.PULSAR_QRM)
 
         assert pulsar_qcm.params == pulsar_qcm.parameters
         assert pulsar_qrm.params == pulsar_qrm.parameters
 
     def test_alias(self):
         """Unittest to test the alias property."""
-        pulsar_qcm = Pulsar(name=f"{PULSAR_NAME}1", dummy_type=PulsarType.PULSAR_QCM)
-        pulsar_qrm = Pulsar(name=PULSAR_NAME, dummy_type=PulsarType.PULSAR_QRM)
+        pulsar_qcm = Pulsar(alias=f"{PULSAR_NAME}1", dummy_type=PulsarType.PULSAR_QCM)
+        pulsar_qrm = Pulsar(alias=PULSAR_NAME, dummy_type=PulsarType.PULSAR_QRM)
 
         assert pulsar_qcm.alias == pulsar_qcm.name
         assert pulsar_qrm.alias == pulsar_qrm.name

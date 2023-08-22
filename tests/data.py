@@ -4,6 +4,7 @@ import copy
 from typing import Any
 
 import numpy as np
+from qblox_instruments.types import PulsarType
 from qibo.gates import I, M, X, Y
 from qibo.models.circuit import Circuit
 
@@ -57,22 +58,22 @@ class NewGaladriel:
     pulsar_qrm: dict[str, Any]  = {
         "alias": "pulsar_qrm",
         "type": "Pulsar",
-        "address": "192.168.1.20",
+        "dummy_type": PulsarType.PULSAR_QCM,
         "sequencers": {
             "q0_flux": {
-                "path0_out": "0"
+                "path0": "0"
             },
             "q1_flux": {
-                "path0_out": "1"
+                "path0": "1"
             },
             "q2_flux": {
-                "path0_out": "2"
+                "path0": "2"
             },
             "q3_flux": {
-                "path0_out": "3"
+                "path0": "3"
             },
             "q4_flux": {
-                "path0_out": "4"
+                "path0": "0"
             },
         }
     }

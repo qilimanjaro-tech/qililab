@@ -30,7 +30,7 @@ class TestPlatformInitializationNewRuncard:
 
         assert platform.name == new_runcard.name
         assert isinstance(platform.name, str)
-        assert isinstance(platform.instruments, NewInstruments)
+        assert isinstance(platform.new_instruments, NewInstruments)
 
 @pytest.mark.parametrize("runcard", [Runcard(**Galadriel.runcard)])
 class TestPlatformInitialization:
