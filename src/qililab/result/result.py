@@ -20,7 +20,8 @@ class Result(FactoryElement, ABC):
         """Return probabilities of being in the ground and excited state.
 
         Returns:
-            tuple[float, float]: Probabilities of being in the ground and excited state.
+            dict[str, float]: Dictionary containing the quantum states as the keys of the dictionary, and the
+                probabilities obtained for each state as the values of the dictionary.
         """
         return self.counts().probabilities()
 
