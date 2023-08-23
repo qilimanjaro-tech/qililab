@@ -36,6 +36,7 @@ def fixture_platform():
 def fixture_runcard():
     return Runcard(**copy.deepcopy(Galadriel.runcard))
 
+
 @pytest.mark.parametrize("new_runcard", [Runcard(**NewGaladriel.runcard)])
 class TestPlatformInitializationNewRuncard:
     """Unit tests for the Platform class initialization using new runcard, instruments and buses"""
@@ -52,6 +53,7 @@ class TestPlatformInitializationNewRuncard:
         assert isinstance(platform.gates_settings, Runcard.GatesSettings)
         assert isinstance(platform.new_instruments, NewInstruments)
         assert isinstance(platform.chip, Chip)
+
 
 class TestPlatformInitialization:
     """Unit tests for the Platform class initialization"""
