@@ -29,7 +29,6 @@ def save_results(results: np.ndarray, loops: dict[str, np.ndarray], data_path: s
         str: Path to folder where the results are saved.
 
     Examples:
-
         Imagine you want to run the following sequence:
 
         .. code-block:: python3
@@ -102,8 +101,7 @@ def load_results(path: str) -> tuple[np.ndarray, dict[str, np.ndarray]]:
         dictionary containing the loops of the experiment: ``{"loop_1": loop_1_values, "loop_2": loop_2_values, ...}``.
 
     Examples:
-
-        Imagine you want to load the results of an experiment located in `data/20230514/083005/results.h5`:
+        Imagine you want to load the results of an experiment located in ``data/20230514/083005/results.h5``:
 
         >>> results, loops = ql.load_results(path="data/20230514/083005/results.h5")
         >>> results.shape
@@ -135,6 +133,14 @@ def save_platform(path: str, platform: Platform) -> str:
 
     Returns:
         str: Path to the file where the platform is saved.
+
+    Examples:
+        If you save a platform by giving the path to a folder:
+
+        >>> ql.save_platform(path="examples/runcards/", platform=platform)
+
+        Qililab will use the name of the platform to create the YAML file. If ``platform.name == "galadriel"``, a file
+        will be created in ``examples/runcards/galadriel.yml``.
     """
     if not (path.endswith(".yml") or path.endswith(".yaml")):
         new_path = Path(path) / f"{platform.name}.yml"
