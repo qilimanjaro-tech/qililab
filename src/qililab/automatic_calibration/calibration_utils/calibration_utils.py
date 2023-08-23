@@ -139,6 +139,6 @@ def get_most_recent_folder(directory: str):
         return None
     
     # Convert folder names to timestamps and find the most recent one
-    most_recent_folder = max(subfolders, key=lambda x: int(x))
+    most_recent_folder = max(subfolders, key=lambda x: float(x))
     
     return os.path.join(directory, most_recent_folder)

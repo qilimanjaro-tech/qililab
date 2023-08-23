@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import lmfit
 import yaml
+from tqdm import tqdm
 
 from qililab.automatic_calibration.calibration_utils.calibration_utils import is_timeout_expired, get_timestamp, get_random_values, get_raw_data, get_most_recent_folder
 from qililab.automatic_calibration.calibration_node import CalibrationNode
@@ -31,7 +32,7 @@ class Controller:
         self._calibration_sequence_name = calibration_sequence_name
         if manual_check_all:
             for node in self._calibration_graph.nodes(): node.manual_check = True
-
+    
     def maintain(self, node: CalibrationNode):
         """This is primary interface for our calibration procedure and it's the highest level algorithm.
         We call maintain on the node that we want in spec, and maintain will call all the subroutines necessary to do that.
@@ -142,12 +143,19 @@ class Controller:
         # Check if the folder for this calibration sequence already exists, i.e. if this sequence has been run before.
         if os.path.exists(this_calibration_sequence_folder) and os.path.isdir(this_calibration_sequence_folder):
             most_recent_run_folder = get_most_recent_folder(this_calibration_sequence_folder)
-            for n, in self._calibration_graph.nodes():
-                #TODO: get the yml called n.node_id and load the data from there.
-                #node.add_timestamp(the last timestamp created during the previous run of the automatic calibration routine)
-                #node.experiment_results =the content of the experiment_results attribute of this same node in the previous run of the automatic calibration routine
-                pass
-        
+            nodes_list = self._calibration_graph.nodes()
+            loading_progress_bar = tqdm(nodes_list, desc="Loading data from previous calibration sequence", unit="node")
+            for n in loading_progress_bar:
+                node_file = os.path.join(most_recent_run_folder, f"{n.node_id}.yml")
+                if os.path.exists(node_file):
+                    with open(node_file, 'r') as f:
+                        node_data = yaml.safe_load(f)
+                        node_timestamp = node_data["latest_timestamp"]
+                        if node_timestamp is not None and node_timestamp:
+                            n.add_timestamp(timestamp = node_timestamp)
+                        n.experiment_results = node_data["experiment_results"]
+            loading_progress_bar.close()
+            
         # Find highest level node(s) in the calibration graph, the one(s) that no other node depends on. If we call 'maintain' from this node(s), 
         # 'maintain' will recursively call itself on all the lower level nodes.
         if node is None:
@@ -163,19 +171,19 @@ class Controller:
               "Calibration completed successfully!\n"
               "####################################\n")
         
-        print("Saving data of the calibration sequence to YAML files...\n")
         # For each node, the content of the 'experiment_results' attribute and the last item of the list
         # in the 'timestamps' attribute has to be saved in a YAML file to be used by check_state and check_data
         # during future runs of the same calibration sequence.
         current_run_of_calibration_sequence_folder = os.path.join(this_calibration_sequence_folder, str(get_timestamp()))
         os.makedirs(current_run_of_calibration_sequence_folder, exist_ok=True)
-        for n in self._calibration_graph.nodes():
+        nodes_list = list(self._calibration_graph.nodes())
+        progress_bar = tqdm(nodes_list, desc="Saving data of the calibration sequence to YAML files", unit="node")
+        for n in progress_bar:
             node_file = os.path.join(current_run_of_calibration_sequence_folder, f"{n.node_id}.yml")
             node_data = {"latest_timestamp": n.get_latest_timestamp(), "experiment_results": n.experiment_results}
-            print(node_file)
-            print(node_data)
             with open(node_file, 'w') as f:
                 yaml.dump(node_data, f)
+        progress_bar.close()
         
     def check_state(self, node: CalibrationNode) -> bool:
         """
@@ -195,8 +203,7 @@ class Controller:
             # This is the first time that this automatic calibration routine is run, so there is no previous data
             # to use for the check, thus we assume the check would fail.
             return False
-        
-        return not (node.needs_recalibration or is_timeout_expired(node.get_latest_timestamp(), node.drift_timeout))
+        return not (node.needs_recalibration or is_timeout_expired(node.get_latest_timestamp(value_only = True), node.drift_timeout))
 
     def check_data(self, node: CalibrationNode) -> str:
         """

@@ -1,4 +1,4 @@
-from qililab.automatic_calibration.calibration_utils.calibration_utils import get_raw_data, get_iq_from_raw, plot_iq, plot_fit
+'''from qililab.automatic_calibration.calibration_utils.calibration_utils import get_raw_data, get_iq_from_raw, plot_iq, plot_fit
 import numpy as np
 
 import lmfit
@@ -22,9 +22,6 @@ def is_within_threshold(a, b, threshold):
     return b - threshold <= a <= b + threshold
 
 
-'''
-In check_data I can compare the results in each of the randomly chosen points to the results in the same point in the full calibration. 
-'''
 tolerance = 0
 random_points = [0.0166667, 0.0333333] # these are points chosen randomly from the sweep interval used in rabi.yml
 
@@ -79,4 +76,13 @@ fig.savefig(plot_filepath, format="PNG")
 plot_image = mpimg.imread(plot_filepath)
 plt.imshow(plot_image)
 plt.show()
-print(1 - fit.residual.var() / np.var(fit_signal))
+print(1 - fit.residual.var() / np.var(fit_signal))'''
+
+times = {1:'pipo', 2:'pipino'}
+latest_timestamp_key = list(times)[-1]
+latest_timestamp = times[latest_timestamp_key]
+print({latest_timestamp_key: times[latest_timestamp_key]})
+
+pipi = {}
+print(f"none {pipi is None}")
+print(f"empty {not pipi}")

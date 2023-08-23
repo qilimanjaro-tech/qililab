@@ -9,7 +9,7 @@ import numpy as np
 import qililab as ql
 from qililab.settings import Runcard
 from qililab.automatic_calibration import CalibrationNode, Controller
-from qililab.automatic_calibration.calibration_utils.calibration_utils import get_raw_data, get_iq_from_raw, plot_iq, plot_fit
+from qililab.automatic_calibration.calibration_utils.calibration_utils import get_raw_data, get_iq_from_raw, plot_iq, plot_fit, get_timestamp
 from qililab.waveforms import DragPair, IQPair, Square
 
 ##################################### PLATFORM ####################################################
@@ -158,8 +158,12 @@ rabi_1_node = CalibrationNode(
     qubit=0,
     parameter=ql.Parameter.AMPLITUDE,
     alias="drive_line_q0_bus",
-    manual_check=False
+    drift_timeout=1,
+    manual_check=True
 )
+
+# Uncomment the following line to test check_state
+#rabi_1_node.add_timestamp(timestamp=get_timestamp(), type_of_timestamp="calibration")
 
 calibration_graph = nx.DiGraph()
 

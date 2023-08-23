@@ -157,13 +157,35 @@ class CalibrationNode:
     def timestamps(self):
         return self._timestamps
     
-    def add_timestamp(self, timestamp: int, type_of_timestamp: str):
-        self._timestamps[timestamp] = type_of_timestamp
+    def add_timestamp(self, timestamp: float | dict, type_of_timestamp: str = None):
+        if isinstance(timestamp, float):
+            if type_of_timestamp is None:
+                raise ValueError("Timestamp must have a type_of_timestamp attribute associated.")
+            self._timestamps[timestamp] = type_of_timestamp
+        elif isinstance(timestamp, dict):
+            dict_key = list(timestamp)[0]    
+            self._timestamps[dict_key] = timestamp[dict_key]   
         
-    def get_latest_timestamp(self):
+    def get_latest_timestamp(self, value_only: bool = False) -> dict:
+        """Gets the latest timestamp associated with the node. For more details on the meaning of these timestamp, see documentation
+        of the CalibrationNode class.
+
+        Args:
+            value_only (bool, optional): The _timestamps attribute of the CalibrationNode class is a dictionary where keys are UNIX timestamps
+            and values are strings indicating how the timestamp was generated (if by a calibration experiment or else). If this argument is set 
+            to True, the function only returns the value of the most recent UNIX timestamp, not the string. Otherwise it returns a dictionary with 
+            only 1 key and value, where the key is the most recent UNIX timestamp and the value is its corresponding string as described above.
+
+        Returns:
+            float | dict: Depending on the value of the 'value_only' attribute, just a timestamp or a dictionary with only 1 key and value. See description
+            of the 'value_only' argument for more information.
+        """    
         if self._timestamps is None or (not hasattr(self, 'timestamps')) or len(self._timestamps) == 0:
-            raise ValueError("This node has no timestamps.")
-        return list(self.timestamps)[-1]
+            return {}
+        latest_timestamp_key = list(self.timestamps)[-1]
+        if value_only:
+            return latest_timestamp_key    
+        return {latest_timestamp_key: self.timestamps[latest_timestamp_key]}
         
     @property
     def experiment_results(self):
