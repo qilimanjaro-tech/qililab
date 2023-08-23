@@ -1,4 +1,5 @@
 """Driver for the Qblox Pulsar class."""
+from typing import Any
 from qblox_instruments.qcodes_drivers import Pulsar as QcodesPulsar
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 
@@ -13,17 +14,18 @@ from .sequencer_qrm import SequencerQRM
 class Pulsar(QcodesPulsar, BaseInstrument):  # pylint: disable=abstract-method
     """Qililab's driver for QBlox-instruments Pulsar"""
 
-    def __init__(self, alias: str, address: str | None = None, **kwargs):
+    def __init__(self, alias: str, address: str | None = None, sequencers: list[str] | None = None, **kwargs):
         """Initialise the instrument.
 
         Args:
             alias (str): Pulsar name
             address (str): Instrument address
         """
-        port = kwargs.get('port', None)
-        debug = kwargs.get('debug', None)
-        dummy_type = kwargs.get('dummy_type', None)
-        super().__init__(name=alias, identifier=address, port=port, debug=debug, dummy_type=dummy_type)
+        self.address = address
+        self.port = kwargs.get('port', None)
+        self.debug = kwargs.get('debug', None)
+        self.dummy_type = kwargs.get('dummy_type', None)
+        super().__init__(name=alias, identifier=address, port=self.port, debug=self.debug, dummy_type=self.dummy_type)
 
         # Add sequencers
         self.submodules: dict[str, SequencerQCM | SequencerQRM] = {}  # resetting superclass submodules
@@ -31,8 +33,7 @@ class Pulsar(QcodesPulsar, BaseInstrument):  # pylint: disable=abstract-method
         self._channel_lists: dict[str, ChannelTuple] = {}  # resetting superclass channel lists
 
         sequencer_class = SequencerQCM if self.is_qcm_type else SequencerQRM
-        if "sequencers" in kwargs:
-            sequencers = kwargs["sequencers"]
+        if sequencers is not None:
             for seq_idx, seq_name in enumerate(sequencers):
                 seq = sequencer_class(parent=self, name=seq_name, seq_idx=seq_idx, map_dict=sequencers[seq_name])  # type: ignore
                 self.add_submodule(seq_name, seq)
@@ -49,3 +50,10 @@ class Pulsar(QcodesPulsar, BaseInstrument):  # pylint: disable=abstract-method
     def alias(self):
         """return the alias of the instrument, which corresponds to the QCodes name attribute"""
         return self.name
+
+    def initial_setup(self, setup_dict):
+        """Initializes the parameters and submodules of a dictionary.
+
+        Args:
+            setup_dict (dict[str, Any]): Dictionary representation.
+        """
