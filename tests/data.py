@@ -34,62 +34,6 @@ from qililab.typings.enums import (
     SystemControlName,
 )
 
-class NewGaladriel:
-    """Test data of the new galadriel platform."""
-
-    name = "galadriel"
-
-    gates_settings: dict[str, Any] = {
-        PLATFORM.MINIMUM_CLOCK_TIME: 4,
-        PLATFORM.DELAY_BETWEEN_PULSES: 0,
-        PLATFORM.DELAY_BEFORE_READOUT: 0,
-        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
-        PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
-        PLATFORM.PASSIVE_RESET_DURATION: 100,
-        "operations": [],
-        "gates": {},
-    }
-    device_id = 0
-    chip: dict[str, Any] = {
-        "nodes": [],
-    }
-    instrument_controllers: dict[str, Any] = {}
-    buses: dict[str, Any] = {}
-    pulsar_qrm: dict[str, Any]  = {
-        "alias": "pulsar_qrm",
-        "type": "Pulsar",
-        "dummy_type": PulsarType.PULSAR_QCM,
-        "sequencers": {
-            "q0_flux": {
-                "path0": "0"
-            },
-            "q1_flux": {
-                "path0": "1"
-            },
-            "q2_flux": {
-                "path0": "2"
-            },
-            "q3_flux": {
-                "path0": "3"
-            },
-            "q4_flux": {
-                "path0": "0"
-            },
-        }
-    }
-
-    instruments: list[dict] = [pulsar_qrm]
-
-    runcard: dict[str, Any] = {
-        RUNCARD.NAME: name,
-        RUNCARD.DEVICE_ID: device_id,
-        RUNCARD.GATES_SETTINGS: gates_settings,
-        RUNCARD.CHIP: chip,
-        RUNCARD.BUSES: buses,
-        RUNCARD.INSTRUMENTS: instruments,
-        RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
-    }
-
 
 class Galadriel:
     """Test data of the galadriel platform."""
