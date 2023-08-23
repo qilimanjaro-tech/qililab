@@ -66,8 +66,6 @@ class SequencerQCM(Sequencer, AWG):
             param_name (str): Parameter name
             param_value (Any): Parameter value
         """
-        if isinstance(param_value, str):
-            param_value = int(param_value)
         allowed_conf = {("path0", 0), ("path0", 2), ("path1", 1), ("path1", 3)}
         swappable_conf = {("path0", 1), ("path0", 3), ("path1", 0), ("path1", 2)}
         if (param_name, param_value) in allowed_conf:
