@@ -14,6 +14,7 @@ from qililab.drivers.interfaces.base_instrument import BaseInstrument
 NUM_SUBMODULES = 6
 PULSAR_NAME = "test"
 
+
 class MockPulsar(DummyInstrument):  # pylint: disable=abstract-method
     """Mock class for Pulsar"""
 
@@ -28,8 +29,7 @@ class MockPulsar(DummyInstrument):  # pylint: disable=abstract-method
         self.add_parameter(
             "reference_source",
             label="Reference source",
-            docstring="Sets/gets reference source ('internal' = internal "
-                      "10 MHz, 'external' = external 10 MHz).",
+            docstring="Sets/gets reference source ('internal' = internal " "10 MHz, 'external' = external 10 MHz).",
             unit="",
             vals=vals.Bool(),
             val_mapping={"internal": True, "external": False},
@@ -44,12 +44,13 @@ class MockPulsar(DummyInstrument):  # pylint: disable=abstract-method
             label="out0_offset",
             docstring="Sets/gets outset for output 0.",
             unit="",
-            vals=vals.Numbers(0,1),
+            vals=vals.Numbers(0, 1),
             set_parser=int,
             get_parser=int,
             set_cmd=None,
             get_cmd=None,
         )
+
 
 class TestPulsar:
     """Unit tests checking the Pulsar attributes and methods. These tests mock the parent class of the `Pulsar`,
@@ -75,7 +76,7 @@ class TestPulsar:
 
     def test_init_with_sequencers(self):
         """Test init method without dummy configuration and sequencers"""
-        sequencers = ['q0_flux', 'q1_flux']
+        sequencers = ["q0_flux", "q1_flux"]
         pulsar = Pulsar(alias="test_pulsar_with_sequencers", sequencers=sequencers)
         submodules = pulsar.submodules
         registered_names = list(submodules.keys())
@@ -84,15 +85,13 @@ class TestPulsar:
 
     def test_initial_setup(self):
         """Test initial setup method"""
-        parameters = {
-            'out0_offset': 1,
-            'reference_source': 'internal'
-        }
+        parameters = {"out0_offset": 1, "reference_source": "internal"}
         pulsar = Pulsar(alias="test_pulsar_with_sequencers")
         pulsar.initial_setup(params=parameters)
 
-        assert pulsar.get('out0_offset') == 1
-        assert pulsar.get('reference_source') == 'internal'
+        assert pulsar.get("out0_offset") == 1
+        assert pulsar.get("reference_source") == "internal"
+
 
 class TestPulsarIntegration:
     """Integration tests for the Pulsar class. These tests use the `dummy_cfg` attribute to be able to use the

@@ -57,8 +57,7 @@ class MockQcmQrm(DummyChannel):
         self.add_parameter(
             "reference_source",
             label="Reference source",
-            docstring="Sets/gets reference source ('internal' = internal "
-                      "10 MHz, 'external' = external 10 MHz).",
+            docstring="Sets/gets reference source ('internal' = internal " "10 MHz, 'external' = external 10 MHz).",
             unit="",
             vals=vals.Bool(),
             val_mapping={"internal": True, "external": False},
@@ -72,7 +71,7 @@ class MockQcmQrm(DummyChannel):
             label="out0_offset",
             docstring="Sets/gets outset for output 0.",
             unit="",
-            vals=vals.Numbers(0,1),
+            vals=vals.Numbers(0, 1),
             set_parser=int,
             get_parser=int,
             set_cmd=None,
@@ -106,12 +105,11 @@ class MockCluster(DummyInstrument):  # pylint: disable=abstract-method
         self.submodules = {}
         for idx in range(1, NUM_SLOTS + 1):
             self.submodules[f"module{idx}"] = MockQcmQrm(parent=self, name=f"module{idx}", slot_idx=idx)
-            
+
         self.add_parameter(
             "reference_source",
             label="Reference source",
-            docstring="Sets/gets reference source ('internal' = internal "
-                      "10 MHz, 'external' = external 10 MHz).",
+            docstring="Sets/gets reference source ('internal' = internal " "10 MHz, 'external' = external 10 MHz).",
             unit="",
             vals=vals.Bool(),
             val_mapping={"internal": True, "external": False},
@@ -126,7 +124,7 @@ class MockCluster(DummyInstrument):  # pylint: disable=abstract-method
             label="out0_offset",
             docstring="Sets/gets outset for output 0.",
             unit="",
-            vals=vals.Numbers(0,1),
+            vals=vals.Numbers(0, 1),
             set_parser=int,
             get_parser=int,
             set_cmd=None,
@@ -247,18 +245,18 @@ class TestCluster:
 
     def test_init_with_submodules(self):
         """Test init method without dummy configuration and submodules"""
-        expected_names = ['qrm_0', 'qcm_0'] 
+        expected_names = ["qrm_0", "qcm_0"]
         submodules = [
             {
-                'alias': 'qrm_0',
-                'slot_id': 2,
+                "alias": "qrm_0",
+                "slot_id": 2,
             },
             {
-                'alias': 'qcm_0',
-                'slot_id': 4,
-            }
+                "alias": "qcm_0",
+                "slot_id": 4,
+            },
         ]
-        cluster = Cluster(name='test_cluster_with_submodules', submodules=submodules)
+        cluster = Cluster(name="test_cluster_with_submodules", submodules=submodules)
         submodules = cluster.submodules
         registered_names = list(submodules.keys())
 
@@ -266,15 +264,12 @@ class TestCluster:
 
     def test_initial_setup(self):
         """Test initial setup method"""
-        params = {
-            'out0_offset': 1,
-            'reference_source': 'internal'
-        }
-        cluster = Cluster(name='test_cluster_initial_setup')
+        params = {"out0_offset": 1, "reference_source": "internal"}
+        cluster = Cluster(name="test_cluster_initial_setup")
         cluster.initial_setup(params=params)
 
-        assert cluster.get('out0_offset') == 1
-        assert cluster.get('reference_source') == 'internal'
+        assert cluster.get("out0_offset") == 1
+        assert cluster.get("reference_source") == "internal"
 
 
 class TestClusterIntegration:
@@ -302,6 +297,7 @@ class TestClusterIntegration:
     def test_alias(self, cluster):
         """Unittest to test the alias property."""
         assert cluster.alias == cluster.name
+
 
 class TestQcmQrm:
     """Unit tests checking the Qililab QcmQrm instances from parent using submodules and initial setup"""
@@ -335,7 +331,7 @@ class TestQcmQrm:
         parent._is_rf_type.return_value = False
 
         qcm_qrm_name = "qcm_qrm"
-        sequencers = ['q0_drive', 'q1_drive']
+        sequencers = ["q0_drive", "q1_drive"]
         qcm_qrm = QcmQrm(parent=parent, alias=qcm_qrm_name, slot_idx=0, sequencers=sequencers)
 
         submodules = qcm_qrm.submodules
@@ -356,7 +352,7 @@ class TestQcmQrm:
         parent._is_rf_type.return_value = False
 
         qcm_qrm_name = "qcm_qrm"
-        sequencers = ['q0_readout', 'q1_readout', 'q2_readout']
+        sequencers = ["q0_readout", "q1_readout", "q2_readout"]
         qcm_qrm = QcmQrm(parent=parent, alias=qcm_qrm_name, slot_idx=0, sequencers=sequencers)
 
         submodules = qcm_qrm.submodules
@@ -368,10 +364,7 @@ class TestQcmQrm:
 
     def test_initial_setup(self):
         """Test initial setup method"""
-        params = {
-            'out0_offset': 1,
-            'reference_source': 'internal'
-        }
+        params = {"out0_offset": 1, "reference_source": "internal"}
         parent = MagicMock()
 
         # Set qcm/qrm attributes
@@ -382,8 +375,9 @@ class TestQcmQrm:
         qcm_qrm = QcmQrm(parent=parent, alias="test_initial_setup", slot_idx=0)
         qcm_qrm.initial_setup(params=params)
 
-        assert qcm_qrm.get('out0_offset') == 1
-        assert qcm_qrm.get('reference_source') == 'internal'
+        assert qcm_qrm.get("out0_offset") == 1
+        assert qcm_qrm.get("reference_source") == "internal"
+
 
 class TestQcmQrmIntegration:
     """Unit tests checking the Qililab QcmQrm attributes and methods"""

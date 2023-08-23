@@ -28,9 +28,9 @@ class Cluster(QcodesCluster, BaseInstrument):  # pylint: disable=abstract-method
     """
 
     def __init__(self, name: str, submodules: list[dict[str, Any]] | None = None, address: str | None = None, **kwargs):
-        port = kwargs.get('port', None)
-        debug = kwargs.get('debug', None)
-        dummy_cfg = kwargs.get('dummy_cfg', None)
+        port = kwargs.get("port", None)
+        debug = kwargs.get("debug", None)
+        dummy_cfg = kwargs.get("dummy_cfg", None)
         super().__init__(name, identifier=address, port=port, debug=debug, dummy_cfg=dummy_cfg)
 
         # registering only the slots specified in the dummy config if that is the case
@@ -50,10 +50,10 @@ class Cluster(QcodesCluster, BaseInstrument):  # pylint: disable=abstract-method
 
         if submodules is not None:
             for submodule in submodules:
-                alias = submodule['alias']
+                alias = submodule["alias"]
                 slot_id = submodule["slot_id"]
                 module_params: dict | None = submodule.get("parameters", None)
-                sequencers: list[str] | None = submodule.get('sequencers', None)
+                sequencers: list[str] | None = submodule.get("sequencers", None)
                 if submodules_present[slot_id - 1]:
                     module = QcmQrm(parent=self, alias=alias, slot_idx=slot_id, sequencers=sequencers)
                     if module_params:

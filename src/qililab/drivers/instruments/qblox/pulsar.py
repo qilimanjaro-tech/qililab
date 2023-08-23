@@ -22,9 +22,9 @@ class Pulsar(QcodesPulsar, BaseInstrument):  # pylint: disable=abstract-method
             alias (str): Pulsar name
             address (str): Instrument address
         """
-        port = kwargs.get('port', None)
-        debug = kwargs.get('debug', None)
-        dummy_type = kwargs.get('dummy_type', None)
+        port = kwargs.get("port", None)
+        debug = kwargs.get("debug", None)
+        dummy_type = kwargs.get("dummy_type", None)
         super().__init__(name=alias, identifier=address, port=port, debug=debug, dummy_type=dummy_type)
 
         # Add sequencers
