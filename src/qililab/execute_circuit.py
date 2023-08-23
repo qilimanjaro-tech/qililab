@@ -1,18 +1,19 @@
 """Execute function used to execute a qibo Circuit using the given runcard."""
 from qibo.models import Circuit
 
+from .data_management import build_platform
 from .experiment.experiment import Experiment
-from .platform import build_platform
 from .transpiler import translate_circuit
 from .typings import ExperimentOptions, ExperimentSettings
 
 
-def execute(circuit: Circuit, runcard_name: str, nshots=1):
+def execute(circuit: Circuit, platform_path: str, nshots: int = 1):
     """Execute a qibo with qililab and native gates
 
     Args:
-        circuit (Circuit): qibo circuit
-        runcard_name (str): name of the runcard to be loaded
+        circuit (Circuit): Qibo Circuit.
+        platform_path (str): Path to the YAML file containing the serialization of the Platform to be used.
+        nshots (int, optional): Number of shots to execute. Defaults to 1.
 
     Returns:
         Results: ``Results`` class containing the experiment results
@@ -39,7 +40,7 @@ def execute(circuit: Circuit, runcard_name: str, nshots=1):
         c.add(gates.SWAP(4,2))
         c.add(gates.RX(1, 3*np.pi/2))
 
-        probabilities = ql.execute(c, runcard_name="galadriel")
+        probabilities = ql.execute(c, platform_path="./runcards/galadriel.yml")
 
 
     """
@@ -47,7 +48,7 @@ def execute(circuit: Circuit, runcard_name: str, nshots=1):
     circuit = translate_circuit(circuit, optimize=True)
 
     # create platform
-    platform = build_platform(name=runcard_name)
+    platform = build_platform(path=platform_path)
 
     settings = ExperimentSettings(hardware_average=1, repetition_duration=200000, software_average=1, num_bins=nshots)
     options = ExperimentOptions(settings=settings)
