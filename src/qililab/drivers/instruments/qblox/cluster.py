@@ -27,11 +27,10 @@ class Cluster(QcodesCluster, BaseInstrument):  # pylint: disable=abstract-method
     """
 
     def __init__(self, name: str, submodules: dict[str, Any], address: str | None = None, **kwargs):
-        self.address = address
-        self.port = kwargs.get('port', None)
-        self.debug = kwargs.get('debug', None)
-        self.dummy_cfg = kwargs.get('dummy_cfg', None)
-        super().__init__(name, identifier=self.address, port=self.port, debug=self.debug, dummy_cfg=self.dummy_cfg)
+        port = kwargs.get('port', None)
+        debug = kwargs.get('debug', None)
+        dummy_cfg = kwargs.get('dummy_cfg', None)
+        super().__init__(name, identifier=address, port=port, debug=debug, dummy_cfg=dummy_cfg)
 
         # registering only the slots specified in the dummy config if that is the case
         if "dummy_cfg" in kwargs:
