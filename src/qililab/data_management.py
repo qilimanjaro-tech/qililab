@@ -15,7 +15,7 @@ def save_results(results: np.ndarray, loops: dict[str, np.ndarray], data_path: s
     """Save the given results and the platform.
 
     A timestamp is used to create a folder to save the data. The data will be saved within the file located in:
-    `path/yearmonthday/hourminutesecond_name/results.h5`.
+    ``path/yearmonthday/hourminutesecond_name/results.h5``.
 
     Args:
         results (np.ndarray): Array containing the results to be saved.
