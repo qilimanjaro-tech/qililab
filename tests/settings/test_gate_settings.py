@@ -14,7 +14,6 @@ def fixture_schedule() -> list[dict]:
             "pulse": {
                 "amplitude": 0.8,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 200,
                 "shape": {"name": "drag", "drag_coefficient": 0.8, "num_sigmas": 2},
             },
@@ -25,7 +24,6 @@ def fixture_schedule() -> list[dict]:
             "pulse": {
                 "amplitude": 0.8,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 200,
                 "shape": {"name": "drag", "drag_coefficient": 0.8, "num_sigmas": 2},
             },
@@ -35,7 +33,6 @@ def fixture_schedule() -> list[dict]:
             "pulse": {
                 "amplitude": 0.8,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 100,
                 "shape": {"name": "rectangular"},
             },
@@ -54,7 +51,6 @@ class TestGateEventSettings:
         assert isinstance(pulse, GateEventSettings.GatePulseSettings)
         assert pulse.amplitude == 0.8
         assert pulse.phase == 0
-        assert pulse.frequency == 3.0e6
         assert pulse.duration == 200
         assert pulse.shape == {"name": "drag", "drag_coefficient": 0.8, "num_sigmas": 2}
 

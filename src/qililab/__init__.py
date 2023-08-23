@@ -2,23 +2,6 @@
 This is the top level module from which all basic functions and classes of
 Qililab can be directly imported.
 """
-
-from .circuit import (
-    R180,
-    Barrier,
-    Circuit,
-    CircuitTranspiler,
-    CPhase,
-    DragPulse,
-    GaussianPulse,
-    Measure,
-    QiliQasmConverter,
-    Reset,
-    Rxy,
-    SquarePulse,
-    Wait,
-    X,
-)
 from .config import __version__, logger
 from .execute import execute
 from .experiment import Experiment

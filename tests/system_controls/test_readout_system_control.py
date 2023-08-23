@@ -4,13 +4,13 @@ import pytest
 from qililab.platform import Platform
 from qililab.system_control.readout_system_control import ReadoutSystemControl
 from tests.data import Galadriel
-from tests.test_utils import platform_db
+from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="platform")
 def fixture_platform() -> Platform:
     """Return Platform object."""
-    return platform_db(runcard=Galadriel.runcard)
+    return build_platform(runcard=Galadriel.runcard)
 
 
 @pytest.fixture(name="system_control")

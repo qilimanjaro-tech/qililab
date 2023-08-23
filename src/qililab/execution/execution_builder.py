@@ -23,15 +23,15 @@ class ExecutionBuilder(metaclass=Singleton):
         buses: dict[int, BusExecution] = {}
         for pulse_schedule in pulse_schedules:
             for pulse_bus_schedule in pulse_schedule.elements:
-                port, bus_idx, bus = self._get_bus_info_from_pulse_bus_schedule_port(platform, pulse_bus_schedule)
+                port, bus = self._get_bus_info_from_pulse_bus_schedule_port(platform, pulse_bus_schedule)
                 if bus is None:
                     raise ValueError(f"There is no bus connected to port {port}.")
-                if bus_idx not in buses:
-                    buses[bus_idx] = BusExecution(bus=bus, pulse_bus_schedules=[pulse_bus_schedule])
+                if port not in buses:
+                    buses[port] = BusExecution(bus=bus, pulse_bus_schedules=[pulse_bus_schedule])
                     continue
-                buses[bus_idx].add_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule)
+                buses[port].add_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule)
 
-        return ExecutionManager(buses=list(buses.values()), num_schedules=len(pulse_schedules), platform=platform)
+        return ExecutionManager(buses=list(buses.values()), num_schedules=len(pulse_schedules))
 
     def build_from_loops(self, platform: Platform, loops: list[Loop]) -> ExecutionManager:
         """Build ExecutionManager class.
@@ -58,7 +58,7 @@ class ExecutionBuilder(metaclass=Singleton):
                 else:
                     buses[alias] = BusExecution(bus=bus, pulse_bus_schedules=[])
 
-        return ExecutionManager(buses=list(buses.values()), num_schedules=0, platform=platform)
+        return ExecutionManager(buses=list(buses.values()), num_schedules=0)
 
     def _get_bus_info_from_pulse_bus_schedule_port(self, platform: Platform, pulse_bus_schedule: PulseBusSchedule):
         """get the bus information that it is connected to the port in the pulse bus schedule
@@ -71,8 +71,8 @@ class ExecutionBuilder(metaclass=Singleton):
             bus: Bus object
         """
         port = pulse_bus_schedule.port
-        bus_idx, bus = platform.get_bus(port=port)
-        return port, bus_idx, bus
+        bus = platform.buses.get(port=port)
+        return port, bus
 
     def _get_bus_info_from_loop_alias(self, platform: Platform, loop: Loop):
         """get the bus information that it is connected to the port from the loop alias. Loop alias has to be the same as the bus alias

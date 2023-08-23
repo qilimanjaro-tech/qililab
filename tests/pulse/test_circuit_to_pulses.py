@@ -20,7 +20,7 @@ from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.transpiler import Drag
 from qililab.utils import Wait
 from tests.data import Galadriel
-from tests.test_utils import platform_db
+from tests.test_utils import build_platform
 
 platform_gates = {
     "M(0)": [
@@ -29,7 +29,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.8,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 200,
                 "shape": {"name": "rectangular"},
             },
@@ -41,7 +40,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.8,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 198,  # try some non-multiple of clock time (4)
                 "shape": {"name": "drag", "drag_coefficient": 0.8, "num_sigmas": 2},
             },
@@ -54,7 +52,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.8,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 200,
                 "shape": {"name": "drag", "drag_coefficient": 0.8, "num_sigmas": 2},
             },
@@ -65,7 +62,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.8,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 200,
                 "shape": {"name": "drag", "drag_coefficient": 0.8, "num_sigmas": 2},
             },
@@ -75,7 +71,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.8,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 100,
                 "shape": {"name": "rectangular"},
             },
@@ -85,7 +80,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.8,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 100,
                 "shape": {"name": "gaussian", "num_sigmas": 4},
             },
@@ -97,7 +91,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.8,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 200,
                 "shape": {"name": "rectangular"},
             },
@@ -109,7 +102,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.8,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 200,
                 "shape": {"name": "rectangular"},
             },
@@ -121,7 +113,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.7,
                 "phase": 0.5,
-                "frequency": 2.0e6,
                 "duration": 100,
                 "shape": {"name": "gaussian", "num_sigmas": 2},
             },
@@ -133,7 +124,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.7,
                 "phase": 0.5,
-                "frequency": 2.0e6,
                 "duration": 100,
                 "shape": {"name": "gaussian", "num_sigmas": 2},
             },
@@ -146,7 +136,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.7,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 90,
                 "shape": {"name": "snz", "b": 0.5, "t_phi": 1},
             },
@@ -157,7 +146,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.7,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 100,
                 "shape": {"name": "rectangular"},
             },
@@ -171,7 +159,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.7,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 90,
                 "shape": {"name": "snz", "b": 0.5, "t_phi": 1},
             },
@@ -181,7 +168,6 @@ platform_gates = {
             "pulse": {
                 "amplitude": 0.7,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 100,
                 "shape": {"name": "rectangular"},
             },
@@ -271,10 +257,6 @@ def fixture_chip():
 @pytest.fixture(name="platform")
 def fixture_platform(chip: Chip) -> Platform:
     """Fixture that returns an instance of a ``Runcard.GatesSettings`` class."""
-    name = "dummy"
-
-    device_id = 9
-
     gates_settings = {
         "minimum_clock_time": 5,
         "delay_between_pulses": 0,
@@ -409,9 +391,7 @@ def fixture_platform(chip: Chip) -> Platform:
     ]
 
     gates_settings = Runcard.GatesSettings(**gates_settings)  # type: ignore  # pylint: disable=unexpected-keyword-arg
-    platform = platform_db(runcard=Galadriel.runcard)
-    platform.name = name
-    platform.device_id = device_id
+    platform = build_platform(runcard=Galadriel.runcard)
     platform.gates_settings = gates_settings  # type: ignore
     platform.chip = chip
     buses = Buses(
@@ -443,7 +423,7 @@ class TestTranslation:
                 amplitude=0.8,
                 phase=0,
                 duration=200,
-                frequency=3.0e6,
+                frequency=0,
                 pulse_shape=Rectangular(),
             ),
             start_time=time,
@@ -503,7 +483,7 @@ class TestTranslation:
                 amplitude=0.7,
                 phase=0.5,
                 duration=100,
-                frequency=2.0e6,
+                frequency=0,
                 pulse_shape=Gaussian(num_sigmas=2),
             ),
             start_time=930,
@@ -527,8 +507,8 @@ class TestTranslation:
             {
                 "amplitude": 0.8,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 200,
+                "frequency": 0,
                 "start_time": 0,
                 "qubit": 0,
                 "pulse_shape": asdict(Drag_pulse(drag_coefficient=0.8, num_sigmas=2)),
@@ -536,8 +516,8 @@ class TestTranslation:
             {
                 "amplitude": 0.8,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 100,
+                "frequency": 0,
                 "start_time": 0,
                 "qubit": 0,
                 "pulse_shape": asdict(Rectangular()),
@@ -545,8 +525,8 @@ class TestTranslation:
             {
                 "amplitude": 0.8 / np.pi,
                 "phase": 0.5,
-                "frequency": 3.0e6,
                 "duration": 198,
+                "frequency": 0,
                 "start_time": 230,
                 "qubit": 0,
                 "pulse_shape": asdict(Drag_pulse(drag_coefficient=0.8, num_sigmas=2)),
@@ -554,8 +534,8 @@ class TestTranslation:
             {
                 "amplitude": 2 * 0.8 / np.pi,
                 "phase": 0.5,
-                "frequency": 3.0e6,
                 "duration": 198,
+                "frequency": 0,
                 "start_time": 1140,
                 "qubit": 0,
                 "pulse_shape": asdict(Drag_pulse(drag_coefficient=0.8, num_sigmas=2)),
@@ -566,8 +546,8 @@ class TestTranslation:
             {
                 "amplitude": 0.8,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 100,
+                "frequency": 0,
                 "start_time": 0,
                 "qubit": 4,
                 "pulse_shape": asdict(Gaussian(num_sigmas=4)),
@@ -578,8 +558,8 @@ class TestTranslation:
             {
                 "amplitude": 0.8,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 200,
+                "frequency": 0,
                 "start_time": 30,
                 "qubit": 0,
                 "pulse_shape": asdict(Drag_pulse(drag_coefficient=0.8, num_sigmas=2)),
@@ -587,8 +567,8 @@ class TestTranslation:
             {
                 "amplitude": 0.7,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 100,
+                "frequency": 0,
                 "start_time": 430,
                 "qubit": 0,
                 "pulse_shape": asdict(Rectangular()),
@@ -596,8 +576,8 @@ class TestTranslation:
             {
                 "amplitude": 0.7,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 100,
+                "frequency": 0,
                 "start_time": 730,
                 "qubit": 0,
                 "pulse_shape": asdict(Rectangular()),
@@ -605,8 +585,8 @@ class TestTranslation:
             {
                 "amplitude": 0.7,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 100,
+                "frequency": 0,
                 "start_time": 830,
                 "qubit": 0,
                 "pulse_shape": asdict(Rectangular()),
@@ -617,8 +597,8 @@ class TestTranslation:
             {
                 "amplitude": 0.7,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 90,
+                "frequency": 0,
                 "start_time": 440,
                 "qubit": 2,
                 "pulse_shape": asdict(SNZ(b=0.5, t_phi=1)),
@@ -626,8 +606,8 @@ class TestTranslation:
             {
                 "amplitude": 0.7,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 90,
+                "frequency": 0,
                 "start_time": 740,
                 "qubit": 2,
                 "pulse_shape": asdict(SNZ(b=0.5, t_phi=1)),
@@ -638,8 +618,8 @@ class TestTranslation:
             {
                 "amplitude": 0.7,
                 "phase": 0,
-                "frequency": 3.0e6,
                 "duration": 90,
+                "frequency": 0,
                 "start_time": 840,
                 "qubit": None,
                 "pulse_shape": asdict(SNZ(b=0.5, t_phi=1)),

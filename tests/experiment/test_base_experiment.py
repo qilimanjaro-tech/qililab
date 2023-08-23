@@ -1,25 +1,32 @@
 """Tests for the BaseExperiment class."""
 import copy
 import os
-from contextlib import ExitStack
+from queue import Queue
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 
-from qililab import build_platform
+import qililab as ql
 from qililab.constants import DATA, RUNCARD
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment.base_experiment import BaseExperiment
 from qililab.platform import Platform
-from qililab.result.results import Results
-from qililab.result.vna_result import VNAResult
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils import Loop
 from tests.data import Galadriel, SauronVNA, experiment_params
-from tests.test_utils import mock_instruments, platform_db
+from tests.test_utils import build_platform, mock_instruments
+
+
+class MockExperiment(BaseExperiment):
+    @classmethod
+    def from_dict(cls, dictionary: dict):
+        pass
+
+    def _execute_recursive_loops(self, loops: list[Loop] | None, queue: Queue, depth=0):
+        pass
 
 
 @pytest.fixture(name="connected_experiment")
@@ -37,7 +44,7 @@ def fixture_connected_experiment(
     """Fixture that mocks all the instruments, connects to the mocked instruments and returns the `BaseExperiment`
     instance."""
     mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
-    experiment_all_platforms.connect()
+    experiment_all_platforms.platform.connect()
     mock_mini_circuits.assert_called()
     mock_keithley.assert_called()
     mock_rs.assert_called()
@@ -60,7 +67,7 @@ def fixture_connected_nested_experiment(
     """Fixture that mocks all the instruments, connects to the mocked instruments and returns the `BaseExperiment`
     instance."""
     mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
-    nested_experiment.connect()
+    nested_experiment.platform.connect()
     mock_mini_circuits.assert_called()
     mock_keithley.assert_called()
     mock_rs.assert_called()
@@ -71,24 +78,20 @@ def fixture_connected_nested_experiment(
 @pytest.fixture(name="platform")
 def fixture_platform() -> Platform:
     """Return Platform object."""
-    return platform_db(runcard=Galadriel.runcard)
+    return build_platform(runcard=Galadriel.runcard)
 
 
 @pytest.fixture(name="sauron_platform")
 def fixture_sauron_platform() -> Platform:
     """Return Platform object."""
-    return platform_db(runcard=SauronVNA.runcard)
+    return build_platform(runcard=SauronVNA.runcard)
 
 
 @pytest.fixture(name="nested_experiment", params=experiment_params)
 def fixture_nested_experiment(request: pytest.FixtureRequest):
     """Return BaseExperiment object."""
     runcard, _ = request.param  # type: ignore
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="galdriel")
-            mock_load.assert_called()
-            mock_open.assert_called()
+    platform = build_platform(runcard)
     loop2 = Loop(
         alias="platform",
         parameter=Parameter.DELAY_BEFORE_READOUT,
@@ -102,27 +105,22 @@ def fixture_nested_experiment(request: pytest.FixtureRequest):
         loop=loop2,
     )
     options = ExperimentOptions(loops=[loop])
-    return BaseExperiment(platform=platform, options=options)
+    return MockExperiment(platform=platform, options=options)
 
 
 @pytest.fixture(name="experiment_all_platforms", params=experiment_params)
 def fixture_experiment_all_platforms(request: pytest.FixtureRequest):
     """Return BaseExperiment object."""
     runcard, _ = request.param  # type: ignore
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="galadriel")
-            mock_load.assert_called()
-            mock_open.assert_called()
-    # Build loop from an existing alias on the testing platform Galadriel
+    platform = build_platform(runcard)
+    # Build loop from an existing alias on the testing platform
     loop = Loop(
         alias=Galadriel.buses[0][RUNCARD.ALIAS],  # type: ignore
         parameter=Parameter.LO_FREQUENCY,
         values=np.linspace(start=3544000000, stop=3744000000, num=2),
     )
     options = ExperimentOptions(loops=[loop])
-    experiment = BaseExperiment(platform=platform, options=options)
-    mock_load.assert_called()
+    experiment = MockExperiment(platform=platform, options=options)
     return experiment
 
 
@@ -134,7 +132,7 @@ def fixture_experiment_reset(request: pytest.FixtureRequest):
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
             mock_load.return_value[RUNCARD.INSTRUMENT_CONTROLLERS][0] |= {"reset": False}
-            platform = build_platform(name="sauron")
+            platform = ql.build_platform(name="sauron.yml")
             mock_load.assert_called()
             mock_open.assert_called()
     loop = Loop(
@@ -143,7 +141,7 @@ def fixture_experiment_reset(request: pytest.FixtureRequest):
         values=np.linspace(start=3544000000, stop=3744000000, num=2),
     )
     options = ExperimentOptions(loops=[loop])
-    experiment = BaseExperiment(platform=platform, options=options)
+    experiment = MockExperiment(platform=platform, options=options)
     mock_load.assert_called()
     return experiment
 
@@ -152,42 +150,14 @@ def fixture_experiment_reset(request: pytest.FixtureRequest):
 def fixture_exp(request: pytest.FixtureRequest):
     """Return BaseExperiment object."""
     runcard, _ = request.param  # type: ignore
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="galadriel")
-            mock_load.assert_called()
-            mock_open.assert_called()
+    platform = build_platform(runcard)
     loop = Loop(
         alias=Galadriel.buses[0][RUNCARD.ALIAS],  # type: ignore
         parameter=Parameter.DURATION,
         values=np.arange(start=4, stop=1000, step=40),
     )
     options = ExperimentOptions(loops=[loop])
-    return BaseExperiment(platform=platform, options=options)
-
-
-@pytest.fixture(name="vna_experiment")
-@patch(
-    "qililab.instrument_controllers.vector_network_analyzer.keysight_E5080B_vna_controller.VectorNetworkAnalyzerDriver",
-    autospec=True,
-)
-@patch(
-    "qililab.instrument_controllers.vector_network_analyzer.agilent_E5071B_vna_controller.VectorNetworkAnalyzerDriver",
-    autospec=True,
-)
-def fixture_vna_experiment(
-    mock_agilent: MagicMock, mock_keysight: MagicMock, sauron_platform: Platform
-):  # pylint: disable=W0613
-    """Return a connected experiment with the VNA instrument"""
-    loop = Loop(
-        alias=SauronVNA.buses[0][RUNCARD.ALIAS],  # type: ignore
-        parameter=Parameter.POWER,
-        values=np.linspace(0, 10, 10),
-    )
-    options = ExperimentOptions(loops=[loop])
-    vna_experiment = BaseExperiment(platform=sauron_platform, options=options)
-    vna_experiment.connect()
-    return vna_experiment
+    return MockExperiment(platform=platform, options=options)
 
 
 class TestAttributes:
@@ -223,18 +193,6 @@ class TestProperties:
 class TestMethods:
     """Test the methods of the BaseExperiment class."""
 
-    def test_connect(self, experiment_all_platforms: BaseExperiment):
-        """Test the ``connect`` method of the BaseExperiment class."""
-        with patch("qililab.platform.platform.Platform.connect") as mock_connect:
-            experiment_all_platforms.connect()
-            mock_connect.assert_called_once()
-
-    def test_initial_setup(self, experiment_all_platforms: BaseExperiment):
-        """Test the ``initial_setup`` method of the BaseExperiment class."""
-        with patch("qililab.platform.platform.Platform.initial_setup") as mock_initial_setup:
-            experiment_all_platforms.initial_setup()
-            mock_initial_setup.assert_called_once()
-
     def test_build_execution(self, exp: BaseExperiment):
         """Test the ``build_execution`` method of the BaseExperiment class."""
         # Check that attributes don't exist
@@ -262,138 +220,15 @@ class TestMethods:
         if old_data is not None:
             os.environ[DATA] = old_data
 
-    def test_run_with_vna_result(self, vna_experiment: BaseExperiment):
-        """
-        THIS TEST DOES NOT PROPERLY TEST THE METHOD IMPROVED ON NEXT PR
-
-        Test the ``run`` method of the BaseExperiment class, this is a temporary test until ``run``function of the vna is implemented.
-        """
-        vna_experiment.build_execution()
-        vna_experiment.platform.connection = MagicMock()  # mock connection
-        assert not hasattr(vna_experiment, "_plot")
-        assert not hasattr(vna_experiment, "results")
-
-        mocks = ExitStack()
-        mock_open = mocks.enter_context(patch("qililab.experiment.base_experiment.open"))
-        mock_makedirs = mocks.enter_context(patch("qililab.experiment.base_experiment.os.makedirs"))
-        mock_plot = mocks.enter_context(patch("qililab.experiment.base_experiment.LivePlot"))
-        mock_acq_res = mocks.enter_context(patch("qililab.execution.execution_manager.BusExecution.acquire_result"))
-        mock_run = mocks.enter_context(patch("qililab.execution.execution_manager.BusExecution.run"))
-
-        mock_acq_res.return_value = VNAResult(data=[])
-        # Build execution
-        results = vna_experiment.run()
-        # Assert that the mocks are called when building the execution (such that NO files are created)
-        mock_open.assert_called()
-        mock_makedirs.assert_called()
-        mock_open.assert_called()
-        mock_plot.assert_called_once_with(
-            connection=vna_experiment.platform.connection,
-            loops=vna_experiment.options.loops or [],
-            num_schedules=1,
-            title=vna_experiment.options.name,
-        )
-        mock_plot.assert_called_once()
-        mock_run.assert_called()
-        mock_acq_res.assert_called()
-
-        mocks.close()
-        assert isinstance(results, Results)
-        assert len(vna_experiment.results.results) > 0
-
     def test_run_raises_error(self, exp: BaseExperiment):
         """Test that the ``run`` method raises an error if ``build_execution`` has not been called."""
         with pytest.raises(ValueError, match="Please build the execution_manager before running an experiment"):
             exp.run()
 
-    @patch("qililab.experiment.base_experiment.BaseExperiment.remote_save_experiment", autospec=True)
-    def test_run_with_vna_result_remote_save(self, mock_remote_save: MagicMock, vna_experiment: BaseExperiment):
-        """
-        THIS TEST DOES NOT PROPERLY TEST THE METHOD IMPROVED ON NEXT PR
-
-        Test the ``run`` method with remote save of the BaseExperiment class, this is a temporary test until ``run``function of the vna is implemented.
-        """
-        vna_experiment.build_execution()
-        vna_experiment.platform.connection = MagicMock()  # mock connection
-        assert not hasattr(vna_experiment, "_plot")
-        assert not hasattr(vna_experiment, "results")
-
-        mocks = ExitStack()
-        mock_open = mocks.enter_context(patch("qililab.experiment.base_experiment.open"))
-        mock_makedirs = mocks.enter_context(patch("qililab.experiment.base_experiment.os.makedirs"))
-        mock_plot = mocks.enter_context(patch("qililab.experiment.base_experiment.LivePlot"))
-        mock_acq_res = mocks.enter_context(patch("qililab.execution.execution_manager.BusExecution.acquire_result"))
-        mock_run = mocks.enter_context(patch("qililab.execution.execution_manager.BusExecution.run"))
-
-        mock_acq_res.return_value = VNAResult(data=[])
-        vna_experiment.options.remote_save = True
-        # Build execution
-        vna_experiment.run()
-        # Assert that the mocks are called when building the execution (such that NO files are created)
-        mock_open.assert_called()
-        mock_makedirs.assert_called()
-        mock_open.assert_called()
-        mock_plot.assert_called_once_with(
-            connection=vna_experiment.platform.connection,
-            loops=vna_experiment.options.loops or [],
-            num_schedules=1,
-            title=vna_experiment.options.name,
-        )
-        mock_plot.assert_called_once()
-        mock_run.assert_called()
-        mock_acq_res.assert_called()
-        mock_remote_save.assert_called()
-
-        mocks.close()
-        assert len(vna_experiment.results.results) > 0
-
-    def test_turn_on_instruments(self, connected_experiment: BaseExperiment):
-        """Test the ``turn_on_instruments`` method of the BaseExperiment class."""
-        connected_experiment.build_execution()
-        with patch("qililab.platform.platform.Platform.turn_on_instruments") as mock_turn_on:
-            connected_experiment.turn_on_instruments()
-            mock_turn_on.assert_called_once()
-
-    def test_turn_on_instruments_raises_error(self, exp: BaseExperiment):
-        """Test that the ``turn_on_instruments`` method raises an error if ``build_execution`` has not been called."""
-        with pytest.raises(ValueError, match="Please build the execution_manager before turning on the instruments"):
-            exp.turn_on_instruments()
-
-    def test_turn_off_instruments(self, connected_experiment: BaseExperiment):
-        """Test the ``turn_off_instruments`` method of the BaseExperiment class."""
-        connected_experiment.build_execution()
-        with patch("qililab.platform.platform.Platform.turn_off_instruments") as mock_turn_off:
-            connected_experiment.turn_off_instruments()
-            mock_turn_off.assert_called_once()
-
-    def test_turn_off_instruments_raises_error(self, exp: BaseExperiment):
-        """Test that the ``turn_off_instruments`` method raises an error if ``build_execution`` has not been called."""
-        with pytest.raises(ValueError, match="Please build the execution_manager before turning off the instruments"):
-            exp.turn_off_instruments()
-
-    def test_disconnect(self, exp: BaseExperiment):
-        """Test the ``disconnect`` method of the BaseExperiment class."""
-        with patch("qililab.platform.platform.Platform.disconnect") as mock_disconnect:
-            exp.disconnect()
-            mock_disconnect.assert_called_once()
-
     def test_to_dict_method(self, experiment_all_platforms: BaseExperiment):
         """Test to_dict method."""
         dictionary = experiment_all_platforms.to_dict()
         assert isinstance(dictionary, dict)
-
-    def test_from_dict_method(self, exp: BaseExperiment):
-        # sourcery skip: class-extract-method
-        """Test from_dict method."""
-        dictionary = exp.to_dict()
-        experiment_2 = BaseExperiment.from_dict(dictionary)
-        assert isinstance(experiment_2, BaseExperiment)
-
-    def test_from_dict_method_loop(self, nested_experiment: BaseExperiment):
-        """Test from_dict method with an experiment with a nested loop."""
-        dictionary = nested_experiment.to_dict()
-        experiment_2 = BaseExperiment.from_dict(dictionary)
-        assert isinstance(experiment_2, BaseExperiment)
 
     def test_loop_num_loops_property(self, experiment_all_platforms: BaseExperiment):
         """Test loop's num_loops property."""
