@@ -128,7 +128,7 @@ def save_platform(path: str, platform: Platform) -> str:
     where `platform_name` corresponds to the `name` attribute of the given `Platform`.
 
     Args:
-        path (str): Path to the folder where the YAML file will be saved.
+        path (str): Path to the folder/file where the YAML file will be saved.
         platform (Platform): Platform class to serialize and save to a YAML file.
 
     Returns:
