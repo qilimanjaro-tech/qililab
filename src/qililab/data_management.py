@@ -23,6 +23,7 @@ def save_results(results: np.ndarray, loops: dict[str, np.ndarray], data_path: s
             loop and the values of the dictionary correspond to the values of the loop.
         data_path (str): Path to the main data directory.
         name (str | None, optional): Name of the experiment. If given, the name is added to the name of the folder.
+            Defaults to None.
 
     Returns:
         str: Path to folder where the results are saved.
@@ -154,9 +155,9 @@ def build_platform(path: str, connection: API | None = None, new_drivers: bool =
 
     Args:
         path (str): Path to the platform's YAML file.
-        connection (API | None): Qiboconnection's API class used to block access to the Platform when connected to it.
+        connection (API | None, optional): Qiboconnection's API class used to block access to the Platform when connected to it.
             Defaults to None.
-        new_drivers (bool): Whether to use the new drivers or not. Defaults to False.
+        new_drivers (bool, optional): Whether to use the new drivers or not. Defaults to False.
 
     Returns:
         Platform: Platform object.
