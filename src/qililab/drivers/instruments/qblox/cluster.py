@@ -26,7 +26,7 @@ class Cluster(QcodesCluster, BaseInstrument):  # pylint: disable=abstract-method
             <https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/cluster.html>`_.
     """
 
-    def __init__(self, name: str, submodules: list[dict[str, Any]], address: str | None = None, **kwargs):
+    def __init__(self, name: str, submodules: list[dict[str, Any]] | None = None, address: str | None = None, **kwargs):
         port = kwargs.get('port', None)
         debug = kwargs.get('debug', None)
         dummy_cfg = kwargs.get('dummy_cfg', None)
