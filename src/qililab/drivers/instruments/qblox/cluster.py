@@ -65,7 +65,7 @@ class Cluster(QcodesCluster, BaseInstrument):  # pylint: disable=abstract-method
 class QcmQrm(QcodesQcmQrm, BaseInstrument):
     """Qililab's driver for QBlox-instruments QcmQrm"""
 
-    def __init__(self, parent: Instrument, name: str, slot_idx: int, map_dict: dict[str, str]):
+    def __init__(self, parent: Instrument, name: str, slot_idx: int, **kwargs):
         """Initialise the instrument.
 
         Args:
@@ -81,7 +81,7 @@ class QcmQrm(QcodesQcmQrm, BaseInstrument):
         self._channel_lists: dict[str, ChannelTuple] = {}  # resetting superclass channel lists
         sequencer_class = SequencerQCM if self.is_qcm_type else SequencerQRM
         for seq_idx in range(6):
-            seq = sequencer_class(parent=self, name=f"sequencer{seq_idx}", seq_idx=seq_idx, map_dict=map_dict)  # type: ignore
+            seq = sequencer_class(parent=self, name=f"sequencer{seq_idx}", seq_idx=seq_idx)  # type: ignore
             self.add_submodule(f"sequencer{seq_idx}", seq)
 
         # Add RF submodules

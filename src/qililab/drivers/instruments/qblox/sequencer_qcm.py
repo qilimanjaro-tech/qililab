@@ -25,7 +25,7 @@ class SequencerQCM(Sequencer, AWG):
 
     _MIN_WAIT_TIME: int = 4
 
-    def __init__(self, parent: Instrument, name: str, seq_idx: int, map_dict: dict[str, str] | None = None):
+    def __init__(self, parent: Instrument, name: str, seq_idx: int, **kwargs):
         """Initialise the instrument.
 
         Args:
@@ -36,9 +36,6 @@ class SequencerQCM(Sequencer, AWG):
         """
         super().__init__(parent=parent, name=name, seq_idx=seq_idx)
         self.add_parameter(name="swap_paths", set_cmd=None, vals=vals.Bool(), initial_value=False)
-        if map_dict:
-            for key, value in map_dict.items():
-                self.set(key, value)
 
     @property
     def params(self):
