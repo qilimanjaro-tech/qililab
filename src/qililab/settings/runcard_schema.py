@@ -66,11 +66,11 @@ class RuncardSchema:
 
         @nested_dataclass
         class OperationSettings:
-            """OperationSchema class"""
+            """OperationSchema class."""
 
             @dataclass
             class PulseSettings:
-                """PulseSchema class"""
+                """PulseSchema class."""
 
                 name: str
                 amplitude: float
