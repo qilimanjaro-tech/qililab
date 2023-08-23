@@ -26,7 +26,7 @@ class PulseDistortion(FactoryElement):
         if self.auto_norm:
             auto_norm_envelope = corrected_envelope * (original_norm / corrected_norm)
 
-    If the corrected envelope is zero everywhere or doesn't have a real part (`corrected_norm != 0`) this process is skipped, since the factor would diverge:
+    If the corrected envelope is zero everywhere or doesn't have a real part (`corrected_norm == 0`) this process is skipped, since the factor in the denominator would diverge:
 
     .. code-block:: python3
 

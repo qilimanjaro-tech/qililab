@@ -127,7 +127,7 @@ class TestCornerCase:
     def test_snz_with_t_phi_float(self):
         """Testing that the corner case where t_phi is a float raises the warning properly."""
         with pytest.raises(
-            ValueError,
-            match="t_phi with value 1.1ns for pulse SNZ cannot have decimal part since min time resolution is 1ns",
+            TypeError,
+            match="t_phi for pulse SNZ has to be an integer. Since min time resolution is 1ns",
         ):
-            _ = SNZ(b=0.1, t_phi=1.1).envelope(amplitude=1, duration=10)
+            _ = SNZ(b=0.1, t_phi=1.1)

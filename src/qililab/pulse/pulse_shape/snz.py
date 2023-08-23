@@ -36,6 +36,11 @@ class SNZ(PulseShape):
     b: float
     t_phi: int
 
+    def __post_init__(self):
+        # ensure t_phi is an int
+        if not isinstance(self.t_phi, int):
+            raise TypeError("t_phi for pulse SNZ has to be an integer. Since min time resolution is 1ns")
+
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
         """Constant amplitude envelope.
 
@@ -51,14 +56,6 @@ class SNZ(PulseShape):
         halfpulse_t = (duration - t_phi - 2) / 2. This implies that (duration - t_phi) should be even.
         The -2 in the formula above is due to the 2 impulses b.
         """
-
-        # ensure t_phi is an int or float with 0 decimal part
-        if not isinstance(self.t_phi, int):
-            if self.t_phi % 1 != 0:
-                raise ValueError(
-                    f"t_phi with value {self.t_phi}ns for pulse SNZ cannot have decimal part since min time resolution is 1ns"
-                )
-            self.t_phi = int(self.t_phi)
         # calculate the halfpulse duration
         halfpulse_t = (duration - 2 - self.t_phi) / 2
         halfpulse_t = int(halfpulse_t / resolution)
