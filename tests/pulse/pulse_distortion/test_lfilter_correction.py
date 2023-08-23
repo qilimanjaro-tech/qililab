@@ -154,7 +154,6 @@ class TestLFilterCorrection:
         assert isinstance(dictionary, dict)
         assert dictionary == {
             "name": pulse_distortion.name.value,
-            PulseDistortionSettingsName.NORM_FACTOR.value: pulse_distortion.norm_factor,
             PulseDistortionSettingsName.A.value: pulse_distortion.a,
             PulseDistortionSettingsName.B.value: pulse_distortion.b,
             PulseDistortionSettingsName.NORM_FACTOR.value: pulse_distortion.norm_factor,

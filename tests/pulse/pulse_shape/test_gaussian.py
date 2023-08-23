@@ -4,7 +4,6 @@ import itertools
 import numpy as np
 import pytest
 
-from qililab.constants import RUNCARD
 from qililab.pulse.pulse_shape import Gaussian, PulseShape
 from qililab.typings.enums import PulseShapeSettingsName
 
@@ -108,7 +107,7 @@ class TestPulseShape:
             dictionary
             == dictionary2
             == {
-                RUNCARD.NAME: pulse_shape.name.value,
+                "name": pulse_shape.name.value,
                 PulseShapeSettingsName.NUM_SIGMAS.value: pulse_shape.num_sigmas,
             }
         )

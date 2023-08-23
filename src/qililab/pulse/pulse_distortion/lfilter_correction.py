@@ -119,7 +119,6 @@ class LFilterCorrection(PulseDistortion):
         """
         return {
             "name": self.name.value,
-            PulseDistortionSettingsName.NORM_FACTOR.value: self.norm_factor,
             PulseDistortionSettingsName.A.value: self.a,
             PulseDistortionSettingsName.B.value: self.b,
             PulseDistortionSettingsName.NORM_FACTOR.value: self.norm_factor,

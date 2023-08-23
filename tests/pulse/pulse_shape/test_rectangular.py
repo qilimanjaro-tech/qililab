@@ -4,7 +4,6 @@ import itertools
 import numpy as np
 import pytest
 
-from qililab.constants import RUNCARD
 from qililab.pulse.pulse_shape import PulseShape, Rectangular
 
 from .helper_functions import return_envelope
@@ -93,7 +92,7 @@ class TestPulseShape:
             dictionary
             == dictionary2
             == {
-                RUNCARD.NAME: pulse_shape.name.value,
+                "name": pulse_shape.name.value,
             }
         )
 
