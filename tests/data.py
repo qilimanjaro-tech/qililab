@@ -4,7 +4,6 @@ import copy
 from typing import Any
 
 import numpy as np
-from qblox_instruments.types import PulsarType
 from qibo.gates import I, M, X, Y
 from qibo.models.circuit import Circuit
 

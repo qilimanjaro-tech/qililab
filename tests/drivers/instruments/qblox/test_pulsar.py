@@ -1,6 +1,4 @@
 """module to test the pulsar class."""
-from typing import Any
-
 from qblox_instruments.types import PulsarType
 from qcodes import Instrument
 from qcodes import validators as vals
@@ -18,7 +16,7 @@ PULSAR_NAME = "test"
 class MockPulsar(DummyInstrument):  # pylint: disable=abstract-method
     """Mock class for Pulsar"""
 
-    def __init__(self, name, identifier=None, port=None, debug=None, dummy_type=None):
+    def __init__(self, name, identifier=None, port=None, debug=None, dummy_type=None): # pylint: disable=unused-argument
         """Mock init method"""
 
         super().__init__(name)

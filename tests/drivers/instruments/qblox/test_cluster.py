@@ -95,7 +95,7 @@ class MockCluster(DummyInstrument):  # pylint: disable=abstract-method
 
     is_rf_type = True
 
-    def __init__(self, alias, identifier=None, port=None, debug=None, dummy_cfg=None, **kwargs):
+    def __init__(self, alias, identifier=None, port=None, debug=None, dummy_cfg=None, **kwargs): # pylint: disable=unused-argument
         """Mock init method"""
 
         super().__init__(name=alias, **kwargs)
