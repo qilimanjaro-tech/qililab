@@ -39,6 +39,9 @@ class Cluster(QcodesCluster, BaseInstrument):  # pylint: disable=abstract-method
         else:
             slot_ids = list(range(1, self._num_slots + 1))
 
+        self._add_qcm_qrm_modules(slot_ids=slot_ids, submodules=submodules)
+
+    def _add_qcm_qrm_modules(self, slot_ids: list[int], submodules: list[dict[str, Any]] | None = None):
         # Save information about modules actually being present in the cluster
         old_submodules = self.submodules
         submodules_present = [submodule.get("present") for submodule in old_submodules.values()]
