@@ -96,9 +96,14 @@ class QcmQrm(QcodesQcmQrm, BaseInstrument):
         self.instrument_modules: dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
         self._channel_lists: dict[str, ChannelTuple] = {}  # resetting superclass channel lists
         sequencer_class = SequencerQCM if self.is_qcm_type else SequencerQRM
-        for seq_idx in range(6):
-            seq = sequencer_class(parent=self, name=f"sequencer{seq_idx}", seq_idx=seq_idx)  # type: ignore
-            self.add_submodule(f"sequencer{seq_idx}", seq)
+        if sequencers is not None:
+            for seq_idx, seq_name in enumerate(sequencers):
+                seq = sequencer_class(parent=self, name=seq_name, seq_idx=seq_idx)  # type: ignore
+                self.add_submodule(seq_name, seq)
+        else:
+            for seq_idx in range(6):
+                seq = sequencer_class(parent=self, name=f"sequencer{seq_idx}", seq_idx=seq_idx)  # type: ignore
+                self.add_submodule(f"sequencer{seq_idx}", seq)
 
         # Add RF submodules
         if super().is_rf_type:
@@ -107,14 +112,14 @@ class QcmQrm(QcodesQcmQrm, BaseInstrument):
             # logic as for the attenuator or other instruments
             lo_channels = ["out0_in0"] if super().is_qrm_type else ["out0", "out1"]
             for channel in lo_channels:
-                lo = QcmQrmRfLo(name=f"{name}_lo_{channel}", parent=self, channel=channel)
-                self.add_submodule(f"{name}_lo_{channel}", lo)
+                lo = QcmQrmRfLo(name=f"{alias}_lo_{channel}", parent=self, channel=channel)
+                self.add_submodule(f"{alias}_lo_{channel}", lo)
 
             # Add attenuators
             att_channels = ["out0", "in0"] if super().is_qrm_type else ["out0", "out1"]
             for channel in att_channels:
-                att = QcmQrmRfAtt(name=f"{name}_attenuator_{channel}", parent=self, channel=channel)
-                self.add_submodule(f"{name}_attenuator_{channel}", att)
+                att = QcmQrmRfAtt(name=f"{alias}_attenuator_{channel}", parent=self, channel=channel)
+                self.add_submodule(f"{alias}_attenuator_{channel}", att)
 
     @property
     def params(self):
