@@ -80,19 +80,21 @@ class Cluster(QcodesCluster, BaseInstrument):  # pylint: disable=abstract-method
 
 
 class QcmQrm(QcodesQcmQrm, BaseInstrument):
-    """Qililab's driver for QBlox-instruments QcmQrm"""
-
-    def __init__(self, parent: Instrument, alias: str, slot_idx: int, sequencers: list[str] | None = None, **kwargs):
-        """Initialise the instrument.
-
-        Args:
+    """Qililab's driver for QBlox-instruments QcmQrm
+    
+       Args:
             parent (Instrument): Instrument's parent
             name (str): Name of the instrument
             slot_idx (int): Index of the slot
-        """
-        super().__init__(parent=parent, name=alias, slot_idx=slot_idx)
+    """
 
-        # Add sequencers
+    def __init__(self, parent: Instrument, alias: str, slot_idx: int, sequencers: list[str] | None = None):
+        super().__init__(parent=parent, name=alias, slot_idx=slot_idx)
+        self._add_sequencers(sequencers=sequencers)
+        self._add_rf_modules(alias=alias)
+
+    def _add_sequencers(self, sequencers: list[str] | None = None):
+        """Adds sequencers to the instrument."""
         self.submodules: dict[str, InstrumentModule | ChannelTuple] = {}  # resetting superclass submodules
         self.instrument_modules: dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
         self._channel_lists: dict[str, ChannelTuple] = {}  # resetting superclass channel lists
@@ -106,7 +108,8 @@ class QcmQrm(QcodesQcmQrm, BaseInstrument):
                 seq = sequencer_class(parent=self, name=f"sequencer{seq_idx}", seq_idx=seq_idx)  # type: ignore
                 self.add_submodule(f"sequencer{seq_idx}", seq)
 
-        # Add RF submodules
+    def _add_rf_modules(self, alias: str):
+        """Adds RF modules to the instrument."""
         if super().is_rf_type:
             # Add local oscillators
             # We use strings as channels to keep the in/out name and conserve the same
