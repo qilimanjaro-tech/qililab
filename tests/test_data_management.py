@@ -26,7 +26,7 @@ class TestPlatformData:
         mock_open.assert_called_once()
 
     def test_build_method_with_new_drivers(self, mock_open: MagicMock, mock_load: MagicMock):
-        """Test build method."""
+        """Test build method with the new drivers."""
         with pytest.raises(NotImplementedError, match="New drivers are not supported yet"):
             _ = ql.build_platform(path="_", new_drivers=True)
         mock_open.assert_called_once_with(file="_", mode="r", encoding="utf8")
