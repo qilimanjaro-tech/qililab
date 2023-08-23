@@ -21,11 +21,10 @@ class Pulsar(QcodesPulsar, BaseInstrument):  # pylint: disable=abstract-method
             alias (str): Pulsar name
             address (str): Instrument address
         """
-        self.address = address
-        self.port = kwargs.get('port', None)
-        self.debug = kwargs.get('debug', None)
-        self.dummy_type = kwargs.get('dummy_type', None)
-        super().__init__(name=alias, identifier=address, port=self.port, debug=self.debug, dummy_type=self.dummy_type)
+        port = kwargs.get('port', None)
+        debug = kwargs.get('debug', None)
+        dummy_type = kwargs.get('dummy_type', None)
+        super().__init__(name=alias, identifier=address, port=port, debug=debug, dummy_type=dummy_type)
 
         # Add sequencers
         self.submodules: dict[str, SequencerQCM | SequencerQRM] = {}  # resetting superclass submodules
@@ -35,7 +34,7 @@ class Pulsar(QcodesPulsar, BaseInstrument):  # pylint: disable=abstract-method
         sequencer_class = SequencerQCM if self.is_qcm_type else SequencerQRM
         if sequencers is not None:
             for seq_idx, seq_name in enumerate(sequencers):
-                seq = sequencer_class(parent=self, name=seq_name, seq_idx=seq_idx, map_dict=sequencers[seq_name])  # type: ignore
+                seq = sequencer_class(parent=self, name=seq_name, seq_idx=seq_idx)  # type: ignore
                 self.add_submodule(seq_name, seq)
         else:
             for seq_idx in range(6):
@@ -50,13 +49,3 @@ class Pulsar(QcodesPulsar, BaseInstrument):  # pylint: disable=abstract-method
     def alias(self):
         """return the alias of the instrument, which corresponds to the QCodes name attribute"""
         return self.name
-
-    def initial_setup(self, params: dict[str, Any] | None = None):
-        """Initializes the parameters of the instrument and of the submodules.
-
-        Args:
-            setup_dict (dict[str, Any]): Dictionary representation.
-        """
-        if params:
-            for param_name, value in params.items():
-                self.set(param_name=param_name, value=value)

@@ -152,9 +152,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         if new_drivers:
             self.new_drivers = new_drivers
             # uses the new drivers and buses
-            self.new_instruments = NewInstruments(elements=self._load_new_instruments(instruments_dict=runcard.instruments))
+            self.instruments: Instruments | NewInstruments = NewInstruments(elements=self._load_new_instruments(instruments_dict=runcard.instruments))
             """Instruments corresponding classes, instantiated given the instruments list[dict] of the Runcard class"""
 
+            self.buses = None
             # TODO: uncomment this when from_dict is available
             # self.new_buses = Buses(
             #     elements=[
@@ -163,6 +164,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             #     ]
             # )
             """New Buses class, instantiated given the list[BusSettings] classes of the Runcard class"""
+            self._connected_to_instruments: bool = True
+            """Boolean describing the connection to the instruments. Defaults to False (not connected)."""
         else:
             self.instruments = Instruments(elements=self._load_instruments(instruments_dict=runcard.instruments))
             """Instruments corresponding classes, instantiated given the instruments list[dict] of the Runcard class"""
@@ -179,12 +182,13 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 ]
             )
             """All the buses of the platform and their needed settings, contained as elements (`list[Bus]`) inside a `Buses` class"""
-
-            self.connection = connection
-            """API connection of the platform. Same as the passed argument. Defaults to None."""
-
+            
             self._connected_to_instruments: bool = False
             """Boolean describing the connection to the instruments. Defaults to False (not connected)."""
+
+        self.connection = connection
+        """API connection of the platform. Same as the passed argument. Defaults to None."""
+
 
     def connect(self, manual_override=False):
         """Blocks the given device and connects to the instruments.
@@ -325,7 +329,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
 
     def _load_new_instruments(self, instruments_dict: list[dict]) -> list[BaseInstrument]:
-        """Instantiate all instrument classes from their respective dictionaries.
+        """Instantiate all instrument classes from their respective dictionaries and also set the inital parameters up.
 
         Args:
             instruments_dict (list[dict]): List of dictionaries containing the settings of each instrument.
@@ -336,7 +340,13 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         instruments = []
         for instrument in instruments_dict:
             local_dict = deepcopy(instrument)
-            instruments.append(InstrumentDriverFactory.get(local_dict.pop(RUNCARD.TYPE))(**local_dict))
+            init_dict = {
+                'alias': local_dict['alias'],
+                'address': local_dict['address'],
+            }
+            instrument_instance = InstrumentDriverFactory.get(local_dict.pop(RUNCARD.TYPE))(**init_dict)
+            instrument_instance.initial_setup(local_dict)
+            instruments.append(instrument_instance)
         return instruments
 
     def _load_instruments(self, instruments_dict: list[dict]) -> list[Instrument]:

@@ -36,10 +36,12 @@ class BaseInstrument(ABC):
             Any: Current value of the parameter.
         """
 
-    @abstractmethod
     def initial_setup(self, params: dict[str, Any] | None = None):
         """Initializes the parameters of the instrument and of the submodules.
 
         Args:
             setup_dict (dict[str, Any]): Dictionary representation.
         """
+        if params:
+            for param_name, value in params.items():
+                self.set(param_name=param_name, value=value)

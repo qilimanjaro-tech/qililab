@@ -47,16 +47,6 @@ class SequencerQCM(Sequencer, AWG):
         """return the alias of the instrument, which corresponds to the QCodes name attribute"""
         return self.name
 
-    def initial_setup(self, params: dict[str, Any] | None = None):
-        """Initializes the parameters of the instrument and of the submodules.
-
-        Args:
-            setup_dict (dict[str, Any]): Dictionary representation.
-        """
-        if params:
-            for param_name, value in params.items():
-                self.set(param_name=param_name, value=value)
-
     def set(self, param_name: str, value: Any):
         """Sets a parameter value checking if is an output mapping.
 

@@ -1,3 +1,4 @@
+from typing import Any
 from qblox_instruments.qcodes_drivers import Cluster as QcodesCluster
 from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm as QcodesQcmQrm
 from qcodes import Instrument
@@ -25,8 +26,12 @@ class Cluster(QcodesCluster, BaseInstrument):  # pylint: disable=abstract-method
             <https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/cluster.html>`_.
     """
 
-    def __init__(self, name: str, address: str | None = None, **kwargs):
-        super().__init__(name, identifier=address, **kwargs)
+    def __init__(self, name: str, submodules: dict[str, Any], address: str | None = None, **kwargs):
+        self.address = address
+        self.port = kwargs.get('port', None)
+        self.debug = kwargs.get('debug', None)
+        self.dummy_cfg = kwargs.get('dummy_cfg', None)
+        super().__init__(name, identifier=self.address, port=self.port, debug=self.debug, dummy_cfg=self.dummy_cfg)
 
         # registering only the slots specified in the dummy config if that is the case
         if "dummy_cfg" in kwargs:
@@ -43,13 +48,23 @@ class Cluster(QcodesCluster, BaseInstrument):  # pylint: disable=abstract-method
         self.instrument_modules: dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
         self._channel_lists: dict[str, ChannelTuple] = {}  # resetting superclass channel lists
 
-        for slot_idx in slot_ids:
-            if submodules_present[slot_idx - 1]:
-                module = QcmQrm(self, f"module{slot_idx}", slot_idx)
-                self.add_submodule(f"module{slot_idx}", module)
-            else:
-                old_module = old_submodules[f"module{slot_idx}"]
-                self.add_submodule(f"module{slot_idx}", old_module)
+        if submodules is not None:
+            for submodule in submodules:
+                slot_id = submodule["slot_id"]
+                if submodules_present[slot_id - 1]:
+                    module = QcmQrm(self, f"module{slot_idx}", slot_idx)
+                    self.add_submodule(f"module{slot_idx}", module)
+                else:
+                    old_module = old_submodules[f"module{slot_idx}"]
+                    self.add_submodule(f"module{slot_idx}", old_module)
+        else:
+            for slot_idx in slot_ids:
+                if submodules_present[slot_idx - 1]:
+                    module = QcmQrm(self, f"module{slot_idx}", slot_idx)
+                    self.add_submodule(f"module{slot_idx}", module)
+                else:
+                    old_module = old_submodules[f"module{slot_idx}"]
+                    self.add_submodule(f"module{slot_idx}", old_module)
 
     @property
     def params(self):
