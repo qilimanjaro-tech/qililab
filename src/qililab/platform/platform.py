@@ -3,7 +3,6 @@ import ast
 import re
 from copy import deepcopy
 from dataclasses import asdict
-import warnings
 from queue import Queue
 
 from qibo.models import Circuit
@@ -12,8 +11,6 @@ from qiboconnection.api import API
 from qililab.chip import Chip
 from qililab.config import logger
 from qililab.constants import GATE_ALIAS_REGEX, RUNCARD
-from qililab.drivers import BaseInstrument,InstrumentDriverFactory
-from qililab.drivers import Instruments as NewInstruments
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
 from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
@@ -136,7 +133,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 [5, 4, 3, 2, 1, 2, 3]])
     """
 
-    def __init__(self, runcard: Runcard, connection: API | None = None, new_drivers: bool = False):
+    def __init__(self, runcard: Runcard, connection: API | None = None):
         self.name = runcard.name
         """Name of the platform (str) """
 
@@ -146,49 +143,30 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         self.gates_settings = runcard.gates_settings
         """Dataclass with all the settings and gates definitions needed to decompose gates into pulses."""
 
+        self.instruments = Instruments(elements=self._load_instruments(instruments_dict=runcard.instruments))
+        """All the instruments of the platform and their needed settings, contained as elements (`list[Instrument]`) inside an `Instruments` class."""
+
+        self.instrument_controllers = InstrumentControllers(
+            elements=self._load_instrument_controllers(instrument_controllers_dict=runcard.instrument_controllers)
+        )
+        """All the instrument controllers of the platform and their needed settings, contained as elements (`list[InstrumentController]`) inside an `InstrumentControllers` class."""
+
         self.chip = Chip(**asdict(runcard.chip))
-        """Chip class, instantiated given the ChipSettings class of the Runcard class"""
+        """All the chip nodes (`list[Nodes]`) of the platform, contained inside a `Chip` class"""
 
-        if new_drivers:
-            self.new_drivers = new_drivers
-            # uses the new drivers and buses
-            self.instruments: Instruments | NewInstruments = NewInstruments(elements=self._load_new_instruments(instruments_dict=runcard.instruments))
-            """Instruments corresponding classes, instantiated given the instruments list[dict] of the Runcard class"""
-
-            self.buses = None
-            # TODO: uncomment this when from_dict is available
-            # self.new_buses = Buses(
-            #     elements=[
-            #         BusDriver.from_dict(settings=asdict(bus), platform_instruments=self.new_instruments)
-            #         for bus in runcard.buses
-            #     ]
-            # )
-            """New Buses class, instantiated given the list[BusSettings] classes of the Runcard class"""
-            self._connected_to_instruments: bool = True
-            """Boolean describing the connection to the instruments. Defaults to False (not connected)."""
-        else:
-            self.instruments = Instruments(elements=self._load_instruments(instruments_dict=runcard.instruments))
-            """Instruments corresponding classes, instantiated given the instruments list[dict] of the Runcard class"""
-
-            self.instrument_controllers = InstrumentControllers(
-                elements=self._load_instrument_controllers(instrument_controllers_dict=runcard.instrument_controllers)
-            )
-            """All the instrument controllers of the platform and their needed settings, contained as elements (`list[InstrumentController]`) inside an `InstrumentControllers` class."""
-
-            self.buses = Buses(
-                elements=[
-                    Bus(settings=asdict(bus), platform_instruments=self.instruments, chip=self.chip)
-                    for bus in runcard.buses
-                ]
-            )
-            """All the buses of the platform and their needed settings, contained as elements (`list[Bus]`) inside a `Buses` class"""
-
-            self._connected_to_instruments = False
-            """Boolean describing the connection to the instruments. Defaults to False (not connected)."""
+        self.buses = Buses(
+            elements=[
+                Bus(settings=asdict(bus), platform_instruments=self.instruments, chip=self.chip)
+                for bus in runcard.buses
+            ]
+        )
+        """All the buses of the platform and their needed settings, contained as elements (`list[Bus]`) inside a `Buses` class"""
 
         self.connection = connection
         """API connection of the platform. Same as the passed argument. Defaults to None."""
 
+        self._connected_to_instruments: bool = False
+        """Boolean describing the connection to the instruments. Defaults to False (not connected)."""
 
     def connect(self, manual_override=False):
         """Blocks the given device and connects to the instruments.
@@ -199,57 +177,42 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             manual_override (bool, optional): If ``True``, avoid checking if the device is blocked. This will stop any
                 current execution. Defaults to False.
         """
-        if not self.new_drivers:
-            if self._connected_to_instruments:
-                logger.info("Already connected to the instruments")
-                return
+        if self._connected_to_instruments:
+            logger.info("Already connected to the instruments")
+            return
 
-            if self.connection is not None and not manual_override:
-                self.connection.block_device_id(device_id=self.device_id)
+        if self.connection is not None and not manual_override:
+            self.connection.block_device_id(device_id=self.device_id)
 
-            self.instrument_controllers.connect()
-            self._connected_to_instruments = True
-            logger.info("Connected to the instruments")
-        else:
-            warnings.warn("This method is deprecated when using the new_drivers flag", DeprecationWarning)
+        self.instrument_controllers.connect()
+        self._connected_to_instruments = True
+        logger.info("Connected to the instruments")
 
     def initial_setup(self):
         """Set the initial setup of the instruments"""
-        if not self.new_drivers:
-            self.instrument_controllers.initial_setup()
-            logger.info("Initial setup applied to the instruments")
-        else:
-            warnings.warn("This method is deprecated when using the new_drivers flag", DeprecationWarning)
+        self.instrument_controllers.initial_setup()
+        logger.info("Initial setup applied to the instruments")
 
     def turn_on_instruments(self):
         """Turn on the instruments"""
-        if not self.new_drivers:
-            self.instrument_controllers.turn_on_instruments()
-            logger.info("Instruments turned on")
-        else:
-            warnings.warn("This method is deprecated when using the new_drivers flag", DeprecationWarning)
+        self.instrument_controllers.turn_on_instruments()
+        logger.info("Instruments turned on")
 
     def turn_off_instruments(self):
         """Turn off the instruments"""
-        if not self.new_drivers:
-            self.instrument_controllers.turn_off_instruments()
-            logger.info("Instruments turned off")
-        else:
-            warnings.warn("This method is deprecated when using the new_drivers flag", DeprecationWarning)
+        self.instrument_controllers.turn_off_instruments()
+        logger.info("Instruments turned off")
 
     def disconnect(self):
         """Close connection to the instrument controllers."""
-        if not self.new_drivers:
-            if self.connection is not None:
-                self.connection.release_device(device_id=self.device_id)
-            if not self._connected_to_instruments:
-                logger.info("Already disconnected from the instruments")
-                return
-            self.instrument_controllers.disconnect()
-            self._connected_to_instruments = False
-            logger.info("Disconnected from instruments")
-        else:
-            warnings.warn("This method is deprecated when using the new_drivers flag", DeprecationWarning)
+        if self.connection is not None:
+            self.connection.release_device(device_id=self.device_id)
+        if not self._connected_to_instruments:
+            logger.info("Already disconnected from the instruments")
+            return
+        self.instrument_controllers.disconnect()
+        self._connected_to_instruments = False
+        logger.info("Disconnected from instruments")
 
     def get_element(self, alias: str):
         """Get platform element.
@@ -327,27 +290,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             return
         element = self.get_element(alias=alias)
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
-
-    def _load_new_instruments(self, instruments_dict: list[dict]) -> list[BaseInstrument]:
-        """Instantiate all instrument classes from their respective dictionaries and also set the inital parameters up.
-
-        Args:
-            instruments_dict (list[dict]): List of dictionaries containing the settings of each instrument.
-
-        Returns:
-            list[BaseInstrument]: List of instantiated instrument classes.
-        """
-        instruments = []
-        for instrument in instruments_dict:
-            local_dict = deepcopy(instrument)
-            init_dict = {
-                'alias': local_dict['alias'],
-                'address': local_dict['address'],
-            }
-            instrument_instance = InstrumentDriverFactory.get(local_dict.pop(RUNCARD.TYPE))(**init_dict)
-            instrument_instance.initial_setup(local_dict)
-            instruments.append(instrument_instance)
-        return instruments
 
     def _load_instruments(self, instruments_dict: list[dict]) -> list[Instrument]:
         """Instantiate all instrument classes from their respective dictionaries.
