@@ -54,12 +54,8 @@ def save_results(results: np.ndarray, loops: dict[str, np.ndarray], data_path: s
             loops = {"drive_q0_gain": gain_values}
             ql.save_results(results=results, loops=loops, path="data/", name="rabi")
 
-        .. note::
-
-            This method will create 2 folders within the path you provided: one folder with the name `yearmonthday`
-            (if not already present) and another one with the name `hourminutesecond_name`.
-
-            The results will be saved inside the last folder under the name `results.h5`.
+        Imagine we call the cell above on August 22nd of 2023, at 15:14:12. The file will then be saved
+        to: ``data/20230822/151412_rabi/results.h5``.
     """
     now = datetime.now()
 
