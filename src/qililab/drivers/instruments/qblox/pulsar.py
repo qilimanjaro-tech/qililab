@@ -51,9 +51,12 @@ class Pulsar(QcodesPulsar, BaseInstrument):  # pylint: disable=abstract-method
         """return the alias of the instrument, which corresponds to the QCodes name attribute"""
         return self.name
 
-    def initial_setup(self, setup_dict):
-        """Initializes the parameters and submodules of a dictionary.
+    def initial_setup(self, params: dict[str, Any] | None = None):
+        """Initializes the parameters of the instrument and of the submodules.
 
         Args:
             setup_dict (dict[str, Any]): Dictionary representation.
         """
+        if params:
+            for param_name, value in params.items():
+                self.set(param_name=param_name, value=value)
