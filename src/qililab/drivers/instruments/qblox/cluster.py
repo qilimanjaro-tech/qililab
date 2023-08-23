@@ -26,7 +26,7 @@ class Cluster(QcodesCluster, BaseInstrument):  # pylint: disable=abstract-method
             <https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/cluster.html>`_.
     """
 
-    def __init__(self, name: str, submodules: dict[str, Any], address: str | None = None, **kwargs):
+    def __init__(self, name: str, submodules: list[dict[str, Any]], address: str | None = None, **kwargs):
         port = kwargs.get('port', None)
         debug = kwargs.get('debug', None)
         dummy_cfg = kwargs.get('dummy_cfg', None)
@@ -49,21 +49,22 @@ class Cluster(QcodesCluster, BaseInstrument):  # pylint: disable=abstract-method
 
         if submodules is not None:
             for submodule in submodules:
+                alias = submodule['alias']
                 slot_id = submodule["slot_id"]
+                module_params: dict | None = submodule.get("parameters", None)
                 if submodules_present[slot_id - 1]:
-                    module = QcmQrm(self, f"module{slot_idx}", slot_idx)
-                    self.add_submodule(f"module{slot_idx}", module)
+                    module = QcmQrm(parent=self, alias=alias, slot_idx=slot_id)
+                    if module_params:
+                        module.initial_setup(module_params)
+                    self.add_submodule(alias, module)
                 else:
-                    old_module = old_submodules[f"module{slot_idx}"]
-                    self.add_submodule(f"module{slot_idx}", old_module)
+                    self.add_submodule(f"module{slot_id}", old_submodules[f"module{slot_id}"])
         else:
             for slot_idx in slot_ids:
                 if submodules_present[slot_idx - 1]:
-                    module = QcmQrm(self, f"module{slot_idx}", slot_idx)
-                    self.add_submodule(f"module{slot_idx}", module)
+                    self.add_submodule(f"module{slot_idx}", QcmQrm(self, f"module{slot_idx}", slot_idx))
                 else:
-                    old_module = old_submodules[f"module{slot_idx}"]
-                    self.add_submodule(f"module{slot_idx}", old_module)
+                    self.add_submodule(f"module{slot_idx}", old_submodules[f"module{slot_id}"])
 
     @property
     def params(self):
@@ -79,15 +80,15 @@ class Cluster(QcodesCluster, BaseInstrument):  # pylint: disable=abstract-method
 class QcmQrm(QcodesQcmQrm, BaseInstrument):
     """Qililab's driver for QBlox-instruments QcmQrm"""
 
-    def __init__(self, parent: Instrument, name: str, slot_idx: int, **kwargs):
+    def __init__(self, parent: Instrument, alias: str, slot_idx: int, **kwargs):
         """Initialise the instrument.
 
         Args:
-            parent (Instrument): Instrument´s parent
+            parent (Instrument): Instrument's parent
             name (str): Name of the instrument
             slot_idx (int): Index of the slot
         """
-        super().__init__(parent, name, slot_idx)
+        super().__init__(parent=parent, name=alias, slot_idx=slot_idx)
 
         # Add sequencers
         self.submodules: dict[str, InstrumentModule | ChannelTuple] = {}  # resetting superclass submodules
