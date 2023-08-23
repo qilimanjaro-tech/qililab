@@ -81,11 +81,11 @@ class Cluster(QcodesCluster, BaseInstrument):  # pylint: disable=abstract-method
 
 class QcmQrm(QcodesQcmQrm, BaseInstrument):
     """Qililab's driver for QBlox-instruments QcmQrm
-    
-       Args:
-            parent (Instrument): Instrument's parent
-            name (str): Name of the instrument
-            slot_idx (int): Index of the slot
+
+    Args:
+         parent (Instrument): Instrument's parent
+         name (str): Name of the instrument
+         slot_idx (int): Index of the slot
     """
 
     def __init__(self, parent: Instrument, alias: str, slot_idx: int, sequencers: list[str] | None = None):
