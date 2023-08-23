@@ -16,7 +16,9 @@ PULSAR_NAME = "test"
 class MockPulsar(DummyInstrument):  # pylint: disable=abstract-method
     """Mock class for Pulsar"""
 
-    def __init__(self, name, identifier=None, port=None, debug=None, dummy_type=None): # pylint: disable=unused-argument
+    def __init__(
+        self, name, identifier=None, port=None, debug=None, dummy_type=None
+    ):  # pylint: disable=unused-argument
         """Mock init method"""
 
         super().__init__(name)
