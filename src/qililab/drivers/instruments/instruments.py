@@ -8,7 +8,7 @@ from qililab.drivers.interfaces import BaseInstrument
 
 @dataclass
 class Instruments:
-    """Instruments class."""
+    """Class used to represent a group of instruments."
 
     elements: list[BaseInstrument]
 
