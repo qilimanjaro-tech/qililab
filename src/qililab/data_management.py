@@ -164,6 +164,11 @@ def build_platform(path: str, connection: API | None = None, new_drivers: bool =
 
     Returns:
         Platform: Platform object.
+
+    Examples:
+        >>> platform = ql.build_platform(path="runcards/galadriel.yml")
+        >>> platform.name
+        galadriel
     """
     with open(file=path, mode="r", encoding="utf8") as file:
         settings = yaml.safe_load(stream=file)
