@@ -4,6 +4,7 @@ Useful functions for calibration experiments and data analysis.
 
 import random
 from datetime import datetime, timedelta
+import os
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -130,3 +131,14 @@ def plot_fit(xdata, popt, ax, fitted_pi_pulse_amplitude):
     label_fit = f"FIT $A_\pi$ = {fitted_pi_pulse_amplitude:.3f}"
     ax.plot(xdata, sinus(xdata, *popt), "--", label=label_fit, color="red")
     ax.legend()
+
+def get_most_recent_folder(directory: str):
+    subfolders = [f for f in os.listdir(directory) if os.path.isdir(os.path.join(directory, f))]
+    
+    if not subfolders:
+        return None
+    
+    # Convert folder names to timestamps and find the most recent one
+    most_recent_folder = max(subfolders, key=lambda x: int(x))
+    
+    return os.path.join(directory, most_recent_folder)

@@ -7,6 +7,7 @@ import networkx as nx
 import numpy as np
 
 import qililab as ql
+from qililab.settings import Runcard
 from qililab.automatic_calibration import CalibrationNode, Controller
 from qililab.automatic_calibration.calibration_utils.calibration_utils import get_raw_data, get_iq_from_raw, plot_iq, plot_fit
 from qililab.waveforms import DragPair, IQPair, Square
@@ -32,11 +33,6 @@ rabi_values = {"start": 0,
                "stop": 0.25,
                "step": (0.25-0)/40 # It's written like this because it's derived from a np.linspace definition
                }
-
-sweep_interval_dummy = {"start": 0,
-                        "stop": 10,
-                        "step": 1
-                        }
 
 def rabi(drive_bus: str, readout_bus: str, sweep_values: dict):
     """The Rabi experiment written as a QProgram.
@@ -69,9 +65,6 @@ def rabi(drive_bus: str, readout_bus: str, sweep_values: dict):
 
     return qp
 
-def qprogram_dummy(drive_bus: str, readout_bus: str, sweep_values: dict):
-    return ql.QProgram()
-
 ##################################### ANALYSIS ##################################################
 
 
@@ -94,16 +87,19 @@ def analyze_rabi(results, fit_quadrature="i", label=""):
 
     # Get the path of the experimental data file
     if isinstance(results, str):
-        # The 'results' argument is the path to the file where the results are stored.
+        # The 'results' argument is the path to the file where the results are stored. 
+        # NOTE: this is only here to maintain backwards compatibility. Remove asap.
         parent_directory = os.path.dirname(results)
         figure_filepath = os.path.join(parent_directory, "Rabi.PNG")
         data_raw = get_raw_data(results)
-    elif isinstance(results, list):
-        # The 'results' argument is list where the elements are dictionaries storing the raw results.
+    elif isinstance(results, dict):
+        # The 'results' argument is a dictionary storing the raw results.
         # FIXME: This implementation will have to change when multiple readout buses are supported, because then the results list 
         # will contain more than one element. See the 'run' method src/qililab/execution/execution_manager.py for more details.
-        data_raw = results[0]
-    
+        data_raw = results
+        figure_filepath = "./tests/automatic_calibration/Rabi.PNG"
+    else: 
+        raise ValueError("Results are in incompatible format. They should be either a string representing a filepath or a dictionary")
 
     amplitude_loop_values = np.array(data_raw["loops"][0]["values"])
     swept_variable = data_raw["loops"][0]["parameter"]
@@ -145,13 +141,8 @@ def analyze_rabi(results, fit_quadrature="i", label=""):
     plot_fit(
         amplitude_loop_values, optimal_parameters, axes[fit_signal_idx], fitted_pi_pulse_amplitude
     )
+    #TODO: save the plot here, not in Controller class.
     return fitted_pi_pulse_amplitude, fig, figure_filepath
-    
-def analysis_dummy(results, show_plot: bool):
-    optimal_parameter_value_dummy = 1.0
-    fig = plt.figure()
-    figure_filepath = "tests/automatic_calibration/drag.PNG"
-    return optimal_parameter_value_dummy, fig, figure_filepath
 
 
 ##################################### GRAPH ##########################################################
@@ -170,49 +161,13 @@ rabi_1_node = CalibrationNode(
     manual_check=False
 )
 
-dummy_1_node = CalibrationNode(
-    node_id="dummy_1",
-    qprogram=qprogram_dummy,
-    sweep_interval=sweep_interval_dummy,
-    is_refinement=False,
-    analysis_function=analysis_dummy,
-    fitting_model=None,
-    plotting_labels=None,
-    qubit=0,
-    parameter=None,
-    alias=None,
-    drift_timeout=0,
-    data_validation_threshold=1,
-    number_of_random_datapoints=1,
-    manual_check=False
-)
-dummy_2_node = CalibrationNode(
-    node_id="dummy_2",
-    qprogram=qprogram_dummy,
-    sweep_interval=sweep_interval_dummy,
-    is_refinement=False,
-    analysis_function=analysis_dummy,
-    fitting_model=None,
-    plotting_labels=None,
-    qubit=0,
-    parameter=None,
-    alias=None,
-    drift_timeout=0,
-    data_validation_threshold=1,
-    number_of_random_datapoints=1,
-    manual_check=False
-)
-
 calibration_graph = nx.DiGraph()
 
 nodes = [    
-    dummy_1_node, 
-    dummy_2_node
+    rabi_1_node
 ]
 
 calibration_graph.add_nodes_from(nodes)
-
-calibration_graph.add_edge(dummy_2_node, dummy_1_node)
 
 # Visualization of the calibration graph
 labels = {node: node.node_id for node in calibration_graph.nodes}
@@ -226,12 +181,16 @@ if show_calibration_graph:
     graph_figure = mpimg.imread(graph_figure_filepath)
     plt.imshow(graph_figure)
     plt.show()
-    
+
+# This closes the figure containing the graph drawing. Every time we call plt.show() in the future, 
+# for example to show the plot given by an analysis function to the user, all open figures will be shown,
+# including this one showing the graph drawing, which we don't want.
+plt.close() 
 ######################################################################################################
 """
 Initialize the controller and start the calibration algorithm.
 """
-controller = Controller(calibration_sequence_name= 'test_sequence', platform = platform, calibration_graph = calibration_graph, manual_check_all=True)
+controller = Controller(calibration_sequence_name= 'test_sequence_1_node', platform = platform, calibration_graph = calibration_graph, manual_check_all=False)
 
 # Start automatic calibration
 controller.run_calibration()

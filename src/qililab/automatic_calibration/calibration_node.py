@@ -160,6 +160,11 @@ class CalibrationNode:
     def add_timestamp(self, timestamp: int, type_of_timestamp: str):
         self._timestamps[timestamp] = type_of_timestamp
         
+    def get_latest_timestamp(self):
+        if self._timestamps is None or (not hasattr(self, 'timestamps')) or len(self._timestamps) == 0:
+            raise ValueError("This node has no timestamps.")
+        return list(self.timestamps)[-1]
+        
     @property
     def experiment_results(self):
         return self._experiment_results

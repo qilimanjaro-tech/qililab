@@ -1,10 +1,13 @@
+import os
+
 import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import lmfit
+import yaml
 
-from qililab.automatic_calibration.calibration_utils.calibration_utils import is_timeout_expired, get_timestamp, get_random_values, get_raw_data
+from qililab.automatic_calibration.calibration_utils.calibration_utils import is_timeout_expired, get_timestamp, get_random_values, get_raw_data, get_most_recent_folder
 from qililab.automatic_calibration.calibration_node import CalibrationNode
 from qililab.platform.platform import Platform
 
@@ -133,12 +136,17 @@ class Controller:
                                          calibrate all the lower level nodes.
         """
         
-        # For each node, load data from the last run of the automatic calibration routine.
-        for n in self._calibration_graph.nodes():
-            #TODO: implement this after data saving is implemented.
-            #node.add_timestamp('''the last timestamp created during the previous run of the automatic calibration routine''')
-            #node.experiment_results = '''the content of the experiment_results attribute of this same node in the previous run of the automatic calibration routine'''
-            pass
+        # For each node, load data from the latest run of the automatic calibration routine (if there is one), which was saved in a YAML file.
+        data_folder = os.environ.get("DATA")
+        this_calibration_sequence_folder = os.path.join(data_folder, self._calibration_sequence_name)
+        # Check if the folder for this calibration sequence already exists, i.e. if this sequence has been run before.
+        if os.path.exists(this_calibration_sequence_folder) and os.path.isdir(this_calibration_sequence_folder):
+            most_recent_run_folder = get_most_recent_folder(this_calibration_sequence_folder)
+            for n, in self._calibration_graph.nodes():
+                #TODO: get the yml called n.node_id and load the data from there.
+                #node.add_timestamp(the last timestamp created during the previous run of the automatic calibration routine)
+                #node.experiment_results =the content of the experiment_results attribute of this same node in the previous run of the automatic calibration routine
+                pass
         
         # Find highest level node(s) in the calibration graph, the one(s) that no other node depends on. If we call 'maintain' from this node(s), 
         # 'maintain' will recursively call itself on all the lower level nodes.
@@ -155,10 +163,20 @@ class Controller:
               "Calibration completed successfully!\n"
               "####################################\n")
         
-        #TODO: implement saving of current data: for each node, the content of the 'experiment_results' attribute and the last item of the list
-        #      in the 'timestamps' attribute has to be saved in a YAML file.
         print("Saving data of the calibration sequence to YAML files...\n")
-
+        # For each node, the content of the 'experiment_results' attribute and the last item of the list
+        # in the 'timestamps' attribute has to be saved in a YAML file to be used by check_state and check_data
+        # during future runs of the same calibration sequence.
+        current_run_of_calibration_sequence_folder = os.path.join(this_calibration_sequence_folder, str(get_timestamp()))
+        os.makedirs(current_run_of_calibration_sequence_folder, exist_ok=True)
+        for n in self._calibration_graph.nodes():
+            node_file = os.path.join(current_run_of_calibration_sequence_folder, f"{n.node_id}.yml")
+            node_data = {"latest_timestamp": n.get_latest_timestamp(), "experiment_results": n.experiment_results}
+            print(node_file)
+            print(node_data)
+            with open(node_file, 'w') as f:
+                yaml.dump(node_data, f)
+        
     def check_state(self, node: CalibrationNode) -> bool:
         """
         Check if the node's parameters drift timeouts have passed since the last calibration or data validation (a call of check_data).
@@ -178,7 +196,7 @@ class Controller:
             # to use for the check, thus we assume the check would fail.
             return False
         
-        return not (node.needs_recalibration or is_timeout_expired(node.timestamps[-1], node.drift_timeout))
+        return not (node.needs_recalibration or is_timeout_expired(node.get_latest_timestamp(), node.drift_timeout))
 
     def check_data(self, node: CalibrationNode) -> str:
         """
@@ -198,6 +216,9 @@ class Controller:
         # so we assume that the node's parameter is out of spec.
         if (not hasattr(node, "experiment_results")) or node.experiment_results is None: return "out_of_spec"
         
+        # Dummy return value used for testing.
+        return "out_of_spec"
+    
         # Choose random points within the sweep interval.
         random_values = get_random_values(array=np.arange(node.sweep_interval["start"], node.sweep_interval["stop"], node.sweep_interval["step"]), number_of_values=node._number_of_random_datapoints) 
 
@@ -214,6 +235,7 @@ class Controller:
             new_results_array.append(current_point_result["results"][0]["qblox_raw_results"][0]["bins"]["integration"][quadrature_path])
             
         # Compare results
+        #TODO: use squares instead of absolutes
         absolute_differences = np.abs(new_results_array - old_results_array)
         mean_diff = np.mean(absolute_differences)
         std_dev_diff = np.std(absolute_differences)
@@ -228,7 +250,7 @@ class Controller:
             r_squared = 1 - fit.residual.var() / np.var(new_results_array)
             if r_squared >= node.data_validation_threshold:
                 return "out_of_spec"
-            return "bad_data"        
+            return "bad_data"
         
 
     def calibrate(self, node: CalibrationNode) -> float | str | bool:
@@ -295,13 +317,13 @@ class Controller:
             #node.experiment_results = self._platform.execute_qprogram(node.qprogram(drive_bus = "drive_bus", readout_bus = "readout_bus", sweep_values = node.sweep_interval))
             
             # Test version that returns dummy data
-            node.experiment_results = "./tests/automatic_calibration/rabi.yml"
+            node.experiment_results = get_raw_data("./tests/automatic_calibration/rabi.yml")
             
             if analyze:
                 # Call the general analysis function with the appropriate model, or the custom one (no need to specify the model in this case, it will already be hardcoded).
                 # If node.manual_check is True, the analysis function will also open the file containing the plot so the user can approve it manually.
                 print(f"Running the \"{node.analysis_function.__name__}\" analysis function in node \"{node.node_id}\"\n")
-                optimal_parameter_value, plot, plot_filepath = node.analysis_function(results = node.experiment_results, show_plot=node.manual_check)
+                optimal_parameter_value, plot, plot_filepath = node.analysis_function(results = node.experiment_results)
             
             #TODO: I'm not sure this is the best way and place to save the plot figure.
             plot.savefig(plot_filepath, format="PNG")
@@ -340,6 +362,11 @@ class Controller:
             list: The nodes that the argument node depends on
         """        
         return self._calibration_graph.successors(node)
+    
+    
+    @property
+    def calibration_sequence_name(self):
+        return self._calibration_sequence_name
     
     @property
     def calibration_graph(self):

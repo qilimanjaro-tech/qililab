@@ -17,6 +17,7 @@ gates_settings:
           amplitude: 1.0
           phase: 0
           duration: 2000
+          frequency: 0
           shape:
             name: rectangular
     Drag(0):
@@ -25,6 +26,7 @@ gates_settings:
           amplitude: 1.0
           phase: 0
           duration: 20
+          frequency: 0
           shape:
             name: drag
             num_sigmas: 4
@@ -36,6 +38,7 @@ gates_settings:
           amplitude: 1.0
           phase: 0
           duration: 2000
+          frequency: 0
           shape:
             name: rectangular
     Drag(1):
@@ -44,6 +47,7 @@ gates_settings:
           amplitude: 1.0
           phase: 0
           duration: 20
+          frequency: 0
           shape:
             name: drag
             num_sigmas: 4
@@ -55,6 +59,7 @@ gates_settings:
           amplitude: 1.0
           phase: 0
           duration: 2000
+          frequency: 0
           shape:
             name: rectangular
     Drag(2):
@@ -63,6 +68,7 @@ gates_settings:
           amplitude: 1.0
           phase: 0
           duration: 20
+          frequency: 0
           shape:
             name: drag
             num_sigmas: 4
@@ -74,6 +80,7 @@ gates_settings:
           amplitude: 1.0
           phase: 0
           duration: 2000
+          frequency: 0
           shape:
             name: rectangular
     Drag(3):
@@ -82,6 +89,7 @@ gates_settings:
           amplitude: 1.0
           phase: 0
           duration: 20
+          frequency: 0
           shape:
             name: drag
             num_sigmas: 4
@@ -93,6 +101,7 @@ gates_settings:
           amplitude: 1.0
           phase: 0
           duration: 2000
+          frequency: 0
           shape:
             name: rectangular
 
@@ -102,6 +111,7 @@ gates_settings:
           amplitude: 1.0
           phase: 0
           duration: 20
+          frequency: 0
           shape:
             name: drag
             num_sigmas: 4
@@ -113,6 +123,7 @@ gates_settings:
           amplitude: 1.0
           phase: 0
           duration: 101
+          frequency: 0
           shape:
             name: snz
             t_phi: 1
@@ -123,6 +134,7 @@ gates_settings:
           amplitude: 1.0
           phase: 0
           duration: 121
+          frequency: 0
           shape:
             name: rectangular
 
@@ -132,6 +144,7 @@ gates_settings:
           amplitude: 1.0
           phase: 0
           duration: 101
+          frequency: 0
           shape:
             name: snz
             t_phi: 1
@@ -142,6 +155,7 @@ gates_settings:
           amplitude: 1.0
           phase: 0
           duration: 121
+          frequency: 0
           shape:
             name: rectangular
 
@@ -151,6 +165,7 @@ gates_settings:
           amplitude: 1.0
           phase: 0
           duration: 101
+          frequency: 0
           shape:
             name: snz
             t_phi: 1
@@ -162,6 +177,7 @@ gates_settings:
           amplitude: 1.0
           phase: 0
           duration: 101
+          frequency: 0
           shape:
             name: snz
             t_phi: 1

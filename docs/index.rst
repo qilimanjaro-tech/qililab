@@ -50,3 +50,4 @@ Get started
    code/result
    code/transpiler
    code/waveforms
+   code/automatic_calibration

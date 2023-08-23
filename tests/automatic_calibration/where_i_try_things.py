@@ -7,7 +7,7 @@ import matplotlib.image as mpimg
 import networkx as nx
 from scipy.signal import find_peaks
 
-results = "./tests/automatic_calibration/drag.yml"
+results = "./tests/automatic_calibration/rabi.yml"
 data_raw = get_raw_data(results)
 index=0
 i = np.array([item["qblox_raw_results"][index]["bins"]["integration"]["path0"] for item in data_raw["results"]])
@@ -17,7 +17,6 @@ print(sweep_values)
 print(len(i)-len(q))
 print(len(i))
 print(len(sweep_values))
-
 
 def is_within_threshold(a, b, threshold):
     return b - threshold <= a <= b + threshold
