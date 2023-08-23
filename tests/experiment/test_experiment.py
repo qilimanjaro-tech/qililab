@@ -127,7 +127,7 @@ def fixture_experiment_reset(request: pytest.FixtureRequest):
     with patch("qililab.data_management.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.data_management.open") as mock_open:
             mock_load.return_value[RUNCARD.INSTRUMENT_CONTROLLERS][0] |= {"reset": False}
-            platform = ql.build_platform(path="galadriel")
+            platform = ql.build_platform(path="galadriel.yml")
             mock_load.assert_called()
             mock_open.assert_called()
     loop = Loop(
