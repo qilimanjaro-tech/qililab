@@ -7,7 +7,7 @@ from .transpiler import translate_circuit
 from .typings import ExperimentOptions, ExperimentSettings
 
 
-def execute(circuit: Circuit, platform_path: str, nshots=1):
+def execute(circuit: Circuit, platform_path: str, nshots: int = 1):
     """Execute a qibo with qililab and native gates
 
     Args:
