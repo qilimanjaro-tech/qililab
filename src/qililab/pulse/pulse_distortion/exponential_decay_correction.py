@@ -1,10 +1,10 @@
 """Exponential decay correction."""
+from copy import deepcopy
 from dataclasses import dataclass
 
 import numpy as np
 from scipy import signal
 
-from qililab.constants import RUNCARD
 from qililab.typings import PulseDistortionName, PulseDistortionSettingsName
 from qililab.utils import Factory
 
@@ -102,8 +102,8 @@ class ExponentialCorrection(PulseDistortion):
         Returns:
             ExponentialCorrection: Loaded class.
         """
-        local_dictionary = dictionary.copy()
-        local_dictionary.pop(RUNCARD.NAME, None)
+        local_dictionary = deepcopy(dictionary)
+        local_dictionary.pop("name", None)
         return cls(**local_dictionary)
 
     def to_dict(self) -> dict:
@@ -113,7 +113,7 @@ class ExponentialCorrection(PulseDistortion):
             dict: Dictionary.
         """
         return {
-            RUNCARD.NAME: self.name.value,
+            "name": self.name.value,
             PulseDistortionSettingsName.TAU_EXPONENTIAL.value: self.tau_exponential,
             PulseDistortionSettingsName.AMP.value: self.amp,
             PulseDistortionSettingsName.SAMPLING_RATE.value: self.sampling_rate,

@@ -1,9 +1,9 @@
 """Gaussian pulse shape."""
+from copy import deepcopy
 from dataclasses import dataclass
 
 import numpy as np
 
-from qililab.constants import RUNCARD
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
 from qililab.typings import PulseShapeName, PulseShapeSettingsName
 from qililab.utils import Factory
@@ -57,8 +57,8 @@ class Gaussian(PulseShape):
         Returns:
             Gaussian: Loaded class.
         """
-        local_dictionary = dictionary.copy()
-        local_dictionary.pop(RUNCARD.NAME, None)
+        local_dictionary = deepcopy(dictionary)
+        local_dictionary.pop("name", None)
         return cls(**local_dictionary)
 
     def to_dict(self):
@@ -68,6 +68,6 @@ class Gaussian(PulseShape):
             dict: Dictionary.
         """
         return {
-            RUNCARD.NAME: self.name.value,
+            "name": self.name.value,
             PulseShapeSettingsName.NUM_SIGMAS.value: self.num_sigmas,
         }

@@ -4,7 +4,9 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from qililab.typings import FactoryElement, PulseShapeName
+from qililab.typings import PulseShapeName
+from qililab.typings.factory_element import FactoryElement
+from qililab.utils import Factory
 
 
 @dataclass(frozen=True, eq=True)
@@ -26,7 +28,6 @@ class PulseShape(FactoryElement):
         """
 
     @classmethod
-    @abstractmethod
     def from_dict(cls, dictionary: dict) -> "PulseShape":
         """Return dictionary representation of the pulse shape.
 
@@ -36,6 +37,8 @@ class PulseShape(FactoryElement):
         Returns:
             PulseShape: Loaded class.
         """
+        shape_class = Factory.get(name=dictionary["name"])
+        return shape_class.from_dict(dictionary)
 
     @abstractmethod
     def to_dict(self) -> dict:

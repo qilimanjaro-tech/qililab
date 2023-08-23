@@ -70,10 +70,10 @@ class TestPulseShape:
     def test_from_dict(self, pulse_shape: PulseShape):
         """Test for the to_dict method."""
         dictionary = pulse_shape.to_dict()
-        pulse_shape2: PulseShape = Factory.get(name=pulse_shape.name).from_dict(dictionary)
+        pulse_shape2 = PulseShape.from_dict(dictionary)
 
         dictionary2 = pulse_shape2.to_dict()
-        pulse_shape3: PulseShape = Factory.get(name=pulse_shape2.name).from_dict(dictionary2)
+        pulse_shape3 = PulseShape.from_dict(dictionary2)
 
         for shape in [pulse_shape2, pulse_shape3]:
             assert shape is not None

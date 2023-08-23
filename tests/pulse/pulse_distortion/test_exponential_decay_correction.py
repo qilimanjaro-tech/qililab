@@ -4,7 +4,6 @@ import itertools
 import numpy as np
 import pytest
 
-from qililab.constants import RUNCARD
 from qililab.pulse import Pulse
 from qililab.pulse.pulse_distortion import ExponentialCorrection
 from qililab.pulse.pulse_shape import SNZ, Cosine, Drag, Gaussian, Rectangular
@@ -132,7 +131,7 @@ class TestExponentialCorrection:
         dictionary.pop(PulseDistortionSettingsName.SAMPLING_RATE.value)
         pulse_distortions.append(ExponentialCorrection.from_dict(dictionary))
 
-        dictionary.pop(RUNCARD.NAME)
+        dictionary.pop("name")
         pulse_distortions.append(ExponentialCorrection.from_dict(dictionary))
 
         dictionary[PulseDistortionSettingsName.TAU_EXPONENTIAL.value] = 0.5
@@ -151,7 +150,7 @@ class TestExponentialCorrection:
         assert dictionary is not None
         assert isinstance(dictionary, dict)
         assert dictionary == {
-            RUNCARD.NAME: pulse_distortion.name.value,
+            "name": pulse_distortion.name.value,
             PulseDistortionSettingsName.TAU_EXPONENTIAL.value: pulse_distortion.tau_exponential,
             PulseDistortionSettingsName.AMP.value: pulse_distortion.amp,
             PulseDistortionSettingsName.SAMPLING_RATE.value: pulse_distortion.sampling_rate,

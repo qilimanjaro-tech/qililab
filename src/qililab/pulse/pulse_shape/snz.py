@@ -1,10 +1,10 @@
 """SNZ pulse shape."""
+from copy import deepcopy
 from dataclasses import dataclass
 
 import numpy as np
 
 from qililab.config import logger
-from qililab.constants import RUNCARD
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
 from qililab.typings import PulseShapeName
 from qililab.typings.enums import PulseShapeSettingsName
@@ -84,8 +84,8 @@ class SNZ(PulseShape):
         Returns:
             Rectangular: Loaded class.
         """
-        local_dictionary = dictionary.copy()
-        local_dictionary.pop(RUNCARD.NAME, None)
+        local_dictionary = deepcopy(dictionary)
+        local_dictionary.pop("name", None)
         return cls(**local_dictionary)
 
     def to_dict(self):
@@ -96,7 +96,7 @@ class SNZ(PulseShape):
         """
 
         return {
-            RUNCARD.NAME: self.name.value,
+            "name": self.name.value,
             PulseShapeSettingsName.B.value: self.b,
             PulseShapeSettingsName.T_PHI.value: self.t_phi,
         }

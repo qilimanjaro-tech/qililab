@@ -1,10 +1,10 @@
 # pylint: disable=anomalous-backslash-in-string
 """Rectangular pulse shape."""
+from copy import deepcopy
 from dataclasses import dataclass
 
 import numpy as np
 
-from qililab.constants import RUNCARD
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
 from qililab.typings import PulseShapeName
 from qililab.typings.enums import PulseShapeSettingsName
@@ -58,8 +58,8 @@ class Cosine(PulseShape):
         Returns:
             Cosine: Loaded class.
         """
-        local_dictionary = dictionary.copy()
-        local_dictionary.pop(RUNCARD.NAME, None)
+        local_dictionary = deepcopy(dictionary)
+        local_dictionary.pop("name", None)
         return cls(**local_dictionary)
 
     def to_dict(self):
@@ -69,6 +69,6 @@ class Cosine(PulseShape):
             dict: Dictionary.
         """
         return {
-            RUNCARD.NAME: self.name.value,
+            "name": self.name.value,
             PulseShapeSettingsName.LAMBDA_2.value: self.lambda_2,
         }

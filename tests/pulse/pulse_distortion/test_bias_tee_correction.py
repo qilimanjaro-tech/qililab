@@ -4,7 +4,6 @@ import itertools
 import numpy as np
 import pytest
 
-from qililab.constants import RUNCARD
 from qililab.pulse import Pulse
 from qililab.pulse.pulse_distortion import BiasTeeCorrection
 from qililab.pulse.pulse_shape import SNZ, Cosine, Drag, Gaussian, Rectangular
@@ -125,7 +124,7 @@ class TestBiasTeeCorrection:
         dictionary.pop(PulseDistortionSettingsName.SAMPLING_RATE.value)
         pulse_distortions.append(BiasTeeCorrection.from_dict(dictionary))
 
-        dictionary.pop(RUNCARD.NAME)
+        dictionary.pop("name")
         pulse_distortions.append(BiasTeeCorrection.from_dict(dictionary))
 
         dictionary[PulseDistortionSettingsName.TAU_BIAS_TEE.value] = 0.5
@@ -143,7 +142,7 @@ class TestBiasTeeCorrection:
         assert dictionary is not None
         assert isinstance(dictionary, dict)
         assert dictionary == {
-            RUNCARD.NAME: pulse_distortion.name.value,
+            "name": pulse_distortion.name.value,
             PulseDistortionSettingsName.TAU_BIAS_TEE.value: pulse_distortion.tau_bias_tee,
             PulseDistortionSettingsName.SAMPLING_RATE.value: pulse_distortion.sampling_rate,
             PulseDistortionSettingsName.NORM_FACTOR.value: pulse_distortion.norm_factor,

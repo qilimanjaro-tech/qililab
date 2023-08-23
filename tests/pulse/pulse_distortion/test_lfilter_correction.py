@@ -4,7 +4,6 @@ import itertools
 import numpy as np
 import pytest
 
-from qililab.constants import RUNCARD
 from qililab.pulse import Pulse
 from qililab.pulse.pulse_distortion import LFilterCorrection
 from qililab.pulse.pulse_shape import SNZ, Cosine, Drag, Gaussian, Rectangular
@@ -134,7 +133,7 @@ class TestLFilterCorrection:
         dictionary = pulse_distortion.to_dict()
         pulse_distortions = [LFilterCorrection.from_dict(dictionary)]
 
-        dictionary.pop(RUNCARD.NAME)
+        dictionary.pop("name")
         pulse_distortions.append(LFilterCorrection.from_dict(dictionary))
 
         dictionary[PulseDistortionSettingsName.A.value] = [0.7, 1.3]
@@ -154,7 +153,8 @@ class TestLFilterCorrection:
         assert dictionary is not None
         assert isinstance(dictionary, dict)
         assert dictionary == {
-            RUNCARD.NAME: pulse_distortion.name.value,
+            "name": pulse_distortion.name.value,
+            PulseDistortionSettingsName.NORM_FACTOR.value: pulse_distortion.norm_factor,
             PulseDistortionSettingsName.A.value: pulse_distortion.a,
             PulseDistortionSettingsName.B.value: pulse_distortion.b,
             PulseDistortionSettingsName.NORM_FACTOR.value: pulse_distortion.norm_factor,

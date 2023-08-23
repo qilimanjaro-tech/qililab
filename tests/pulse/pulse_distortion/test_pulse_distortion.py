@@ -4,7 +4,6 @@ import itertools
 import numpy as np
 import pytest
 
-from qililab.constants import RUNCARD
 from qililab.pulse import Pulse
 from qililab.pulse.pulse_distortion import BiasTeeCorrection, ExponentialCorrection, LFilterCorrection
 from qililab.pulse.pulse_distortion.pulse_distortion import PulseDistortion
@@ -178,7 +177,7 @@ class TestPulseDistortion:
 
         if isinstance(pulse_distortion, BiasTeeCorrection):
             assert dictionary == {
-                RUNCARD.NAME: pulse_distortion.name.value,
+                "name": pulse_distortion.name.value,
                 PulseDistortionSettingsName.TAU_BIAS_TEE.value: pulse_distortion.tau_bias_tee,
                 PulseDistortionSettingsName.SAMPLING_RATE.value: pulse_distortion.sampling_rate,
                 PulseDistortionSettingsName.NORM_FACTOR.value: pulse_distortion.norm_factor,
@@ -187,7 +186,7 @@ class TestPulseDistortion:
 
         if isinstance(pulse_distortion, ExponentialCorrection):
             assert dictionary == {
-                RUNCARD.NAME: pulse_distortion.name.value,
+                "name": pulse_distortion.name.value,
                 PulseDistortionSettingsName.TAU_EXPONENTIAL.value: pulse_distortion.tau_exponential,
                 PulseDistortionSettingsName.AMP.value: pulse_distortion.amp,
                 PulseDistortionSettingsName.SAMPLING_RATE.value: pulse_distortion.sampling_rate,
@@ -197,7 +196,8 @@ class TestPulseDistortion:
 
         if isinstance(pulse_distortion, LFilterCorrection):
             assert dictionary == {
-                RUNCARD.NAME: pulse_distortion.name.value,
+                "name": pulse_distortion.name.value,
+                PulseDistortionSettingsName.NORM_FACTOR.value: pulse_distortion.norm_factor,
                 PulseDistortionSettingsName.A.value: pulse_distortion.a,
                 PulseDistortionSettingsName.B.value: pulse_distortion.b,
                 PulseDistortionSettingsName.NORM_FACTOR.value: pulse_distortion.norm_factor,
