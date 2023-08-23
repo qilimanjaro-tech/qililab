@@ -1,5 +1,6 @@
 """module to test the pulsar class."""
 from typing import Any
+
 from qblox_instruments.types import PulsarType
 from qcodes import Instrument
 from qcodes import validators as vals
