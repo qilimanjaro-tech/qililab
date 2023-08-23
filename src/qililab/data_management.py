@@ -102,7 +102,8 @@ def load_results(path: str) -> tuple[np.ndarray, dict[str, np.ndarray]]:
         path (str): Path to the `.h5` file that needs to be loaded.
 
     Returns:
-        tuple[np.ndarray, dict[str, np.ndarray]]: Tuple with the results and the loops of the experiment.
+        tuple[np.ndarray, dict[str, np.ndarray]]: Tuple containing a numpy array with the saved results and a
+        dictionary containing the loops of the experiment: ``{"loop_1": loop_1_values, "loop_2": loop_2_values, ...}``.
 
     Examples:
 
