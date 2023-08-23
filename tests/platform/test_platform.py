@@ -12,7 +12,6 @@ from qpysequence import Sequence
 from qililab import save_platform
 from qililab.chip import Chip, Qubit
 from qililab.constants import DEFAULT_PLATFORM_NAME
-from qililab.drivers.instruments import Instruments as NewInstruments
 from qililab.instrument_controllers import InstrumentControllers
 from qililab.instruments import AWG, AWGAnalogDigitalConverter, SignalGenerator
 from qililab.instruments.instruments import Instruments
