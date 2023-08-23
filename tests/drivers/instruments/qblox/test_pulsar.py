@@ -37,7 +37,7 @@ class MockPulsar(DummyInstrument):  # pylint: disable=abstract-method
             set_cmd=None,
             get_cmd=None,
         )
-        
+
         self.add_parameter(
             "out0_offset",
             label="out0_offset",
@@ -82,7 +82,7 @@ class TestPulsar:
         assert sequencers == registered_names
 
     def test_initial_setup(self):
-        """Test init method without dummy configuration and sequencers"""
+        """Test initial setup method"""
         parameters = {
             'out0_offset': 1,
             'reference_source': 'internal'
