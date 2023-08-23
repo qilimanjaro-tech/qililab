@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import numpy as np
+import pytest
 
 import qililab as ql
 from qililab.data_management import load_results, save_platform, save_results
@@ -26,10 +27,10 @@ class TestPlatformData:
 
     def test_build_method_with_new_drivers(self, mock_open: MagicMock, mock_load: MagicMock):
         """Test build method."""
-        platform = ql.build_platform(path="_", new_drivers=True)
-        assert isinstance(platform, Platform)
+        with pytest.raises(NotImplementedError, match="New drivers are not supported yet"):
+            _ = ql.build_platform(path="_", new_drivers=True)
+        mock_open.assert_called_once_with(file="_", mode="r", encoding="utf8")
         mock_load.assert_called_once()
-        mock_open.assert_called_once()
 
     def test_save_platform_with_non_yml_path(self, mock_open: MagicMock, mock_load: MagicMock):
         """Test the `save_platform` function with a path that doesn't end in .yml."""
