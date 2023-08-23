@@ -65,7 +65,7 @@ class Cluster(QcodesCluster, BaseInstrument):  # pylint: disable=abstract-method
                 if submodules_present[slot_idx - 1]:
                     self.add_submodule(f"module{slot_idx}", QcmQrm(self, f"module{slot_idx}", slot_idx))
                 else:
-                    self.add_submodule(f"module{slot_idx}", old_submodules[f"module{slot_id}"])
+                    self.add_submodule(f"module{slot_idx}", old_submodules[f"module{slot_idx}"])
 
     @property
     def params(self):

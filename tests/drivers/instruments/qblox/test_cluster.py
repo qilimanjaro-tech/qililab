@@ -12,6 +12,7 @@ from qililab.drivers import parameters
 from qililab.drivers.instruments.qblox.cluster import Cluster, QcmQrm, QcmQrmRfAtt, QcmQrmRfLo
 from qililab.drivers.instruments.qblox.sequencer_qcm import SequencerQCM
 from qililab.drivers.instruments.qblox.sequencer_qrm import SequencerQRM
+from qililab.drivers.interfaces.base_instrument import BaseInstrument
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
 
@@ -71,16 +72,42 @@ class MockCluster(DummyInstrument):  # pylint: disable=abstract-method
 
     is_rf_type = True
 
-    def __init__(self, name, identifier=None, **kwargs):
+    def __init__(self, alias, identifier=None, port=None, debug=None, dummy_cfg=None, **kwargs):
         """Mock init method"""
 
-        super().__init__(name, **kwargs)
+        super().__init__(name=alias, **kwargs)
         self.is_rf_type = True
         self.address = identifier
         self._num_slots = 20
         self.submodules = {}
         for idx in range(1, NUM_SLOTS + 1):
             self.submodules[f"module{idx}"] = MockQcmQrm(parent=self, name=f"module{idx}", slot_idx=idx)
+            
+        self.add_parameter(
+            "reference_source",
+            label="Reference source",
+            docstring="Sets/gets reference source ('internal' = internal "
+                      "10 MHz, 'external' = external 10 MHz).",
+            unit="",
+            vals=vals.Bool(),
+            val_mapping={"internal": True, "external": False},
+            set_parser=bool,
+            get_parser=bool,
+            set_cmd=None,
+            get_cmd=None,
+        )
+
+        self.add_parameter(
+            "out0_offset",
+            label="out0_offset",
+            docstring="Sets/gets outset for output 0.",
+            unit="",
+            vals=vals.Numbers(0,1),
+            set_parser=int,
+            get_parser=int,
+            set_cmd=None,
+            get_cmd=None,
+        )
 
     def _present_at_init(self, slot_idx: int):
         """Mock _present_at_init method"""
@@ -161,7 +188,7 @@ class TestCluster:
         cls.old_qcm_qrm_bases = QcmQrm.__bases__
         cls.old_cluster_bases = Cluster.__bases__
         QcmQrm.__bases__ = (MockQcmQrm,)
-        Cluster.__bases__ = (MockCluster,)
+        Cluster.__bases__ = (MockCluster, BaseInstrument)
 
     @classmethod
     def teardown_class(cls):
@@ -193,6 +220,37 @@ class TestCluster:
         ]
         assert all(isinstance(module, MockQcmQrm) for module in non_present_modules)
         assert cluster_submodules_expected_names == cluster_registered_names
+
+    def test_init_with_submodules(self):
+        """Test init method without dummy configuration and submodules"""
+        expected_names = ['qrm_0', 'qcm_0'] 
+        submodules = [
+            {
+                'alias': 'qrm_0',
+                'slot_id': 2,
+            },
+            {
+                'alias': 'qcm_0',
+                'slot_id': 4,
+            }
+        ]
+        cluster = Cluster(name='test_cluster_with_submodules', submodules=submodules)
+        submodules = cluster.submodules
+        registered_names = list(submodules.keys())
+
+        assert registered_names == expected_names
+
+    def test_initial_setup(self):
+        """Test initial setup method"""
+        params = {
+            'out0_offset': 1,
+            'reference_source': 'internal'
+        }
+        cluster = Cluster(name='test_cluster_with_submodules')
+        cluster.initial_setup(params=params)
+
+        assert cluster.get('out0_offset') == 1
+        assert cluster.get('reference_source') == 'internal'
 
 
 class TestClusterIntegration:
@@ -236,7 +294,7 @@ class TestQcmQrm:
         parent._is_rf_type.return_value = False
 
         qcm_qrm_name = "qcm_qrm"
-        qcm_qrm = QcmQrm(parent=parent, name=qcm_qrm_name, slot_idx=0)
+        qcm_qrm = QcmQrm(parent=parent, alias=qcm_qrm_name, slot_idx=0)
 
         submodules = qcm_qrm.submodules
         seq_idxs = list(submodules.keys())
@@ -258,7 +316,7 @@ class TestQcmQrm:
         parent._is_rf_type.return_value = False
 
         qcm_qrn_name = "qcm_qrm"
-        qcm_qrm = QcmQrm(parent=parent, name=qcm_qrn_name, slot_idx=0)
+        qcm_qrm = QcmQrm(parent=parent, alias=qcm_qrn_name, slot_idx=0)
 
         submodules = qcm_qrm.submodules
         seq_idxs = list(submodules.keys())
@@ -287,18 +345,18 @@ class TestQcmQrm:
         parent._is_qrm_type.return_value = qrm_qcm == "qrm"
 
         qcm_qrm_rf = "qcm_qrm_rf"
-        qcm_qrm_rf = QcmQrm(parent=parent, name=qcm_qrm_rf, slot_idx=0)
+        qcm_qrm_rf = QcmQrm(parent=parent, alias=qcm_qrm_rf, slot_idx=0)
 
         assert all((channel in qcm_qrm_rf.parameters for channel in channels))
 
     def test_params(self):
         """Unittest to test the params property."""
-        qcm_qrm_rf = QcmQrm(parent=MagicMock(), name="qcm_qrm_rf", slot_idx=0)
+        qcm_qrm_rf = QcmQrm(parent=MagicMock(), alias="qcm_qrm_rf", slot_idx=0)
         assert qcm_qrm_rf.params == qcm_qrm_rf.parameters
 
     def test_alias(self):
         """Unittest to test the alias property."""
-        qcm_qrm_rf = QcmQrm(parent=MagicMock(), name="qcm_qrm_rf", slot_idx=0)
+        qcm_qrm_rf = QcmQrm(parent=MagicMock(), alias="qcm_qrm_rf", slot_idx=0)
         assert qcm_qrm_rf.alias == qcm_qrm_rf.name
 
 
