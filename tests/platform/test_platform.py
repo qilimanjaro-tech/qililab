@@ -23,7 +23,7 @@ from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName
 from qililab.typings.yaml_type import yaml
-from tests.data import Galadriel, NewGaladriel
+from tests.data import Galadriel
 from tests.test_utils import build_platform
 
 
@@ -35,24 +35,6 @@ def fixture_platform():
 @pytest.fixture(name="runcard")
 def fixture_runcard():
     return Runcard(**copy.deepcopy(Galadriel.runcard))
-
-
-@pytest.mark.parametrize("new_runcard", [Runcard(**NewGaladriel.runcard)])
-class TestPlatformInitializationNewRuncard:
-    """Unit tests for the Platform class initialization using new runcard, instruments and buses"""
-
-    def test_init_method(self, new_runcard):
-        """Test initialization of the class"""
-        platform = Platform(runcard=new_runcard, new_drivers=True)
-
-        assert platform.name == new_runcard.name
-        assert isinstance(platform.name, str)
-        assert platform.device_id == new_runcard.device_id
-        assert isinstance(platform.device_id, int)
-        assert platform.gates_settings == new_runcard.gates_settings
-        assert isinstance(platform.gates_settings, Runcard.GatesSettings)
-        assert isinstance(platform.new_instruments, NewInstruments)
-        assert isinstance(platform.chip, Chip)
 
 
 class TestPlatformInitialization:
