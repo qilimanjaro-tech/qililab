@@ -23,7 +23,7 @@ def fixture_rabi():
     """Return Experiment object."""
     with patch("qililab.data_management.yaml.safe_load", return_value=Galadriel.runcard) as mock_load:
         with patch("qililab.data_management.open") as mock_open:
-            platform = build_platform(path="flux_qubit")
+            platform = build_platform(path="flux_qubit.yml")
             mock_load.assert_called()
             mock_open.assert_called()
     analysis = Rabi(platform=platform, qubit=0, loop_values=np.linspace(start=START, stop=STOP, num=NUM))
