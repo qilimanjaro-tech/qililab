@@ -16,10 +16,7 @@ from .sequencer_qcm import SequencerQCM
 
 @InstrumentDriverFactory.register
 class SequencerQRM(SequencerQCM, Digitiser):
-    """Qililab's driver for QBlox-instruments digitiser Sequencer"""
-
-    def __init__(self, parent: Instrument, name: str, seq_idx: int):
-        """Initialise the instrument.
+    """Qililab's driver for QBlox-instruments digitiser Sequencer
 
         Args:
             parent (Instrument): Parent for the sequencer instance.
@@ -27,7 +24,51 @@ class SequencerQRM(SequencerQCM, Digitiser):
             seq_idx (int): sequencer identifier index
             sequence_timeout (int): timeout to retrieve sequencer state in minutes
             acquisition_timeout (int): timeout to retrieve acquisition state in minutes
+
+        In order to use a SequencerQRM it needs to be done through the parent instrument, which can be a Pulsar
+        or a QcmQrm being a module of a Cluster instrument. Once we have one of the parent classes, we can act on the
+        sequencer instance.
+
+        Examples:
+            .. note::
+
+                The following example shows how to execute a PulseBusSchedule on a SequencerQRM and then retrieve acquisitions,
+                given that an instance of the parent instrument class already exists. In the following example we will be using
+                a Pulsar type for the parent instrument.
+
+            We can execute PulseBusSchedule and retrieve acquisitions on a SequencerQRM by using
+            the execute and get_results methods:
+
+            .. code-block:: python3
+
+                from qililab.drivers.instruments.qblox.pulsar import Pulsar
+
+                # first we need to define the measurement pulse bus schedule
+
+                start_time = 200
+                pulse_shape = Rectangular()
+                pulse = Pulse(
+                    amplitude=PULSE_AMPLITUDE,
+                    phase=PULSE_PHASE,
+                    duration=PULSE_DURATION,
+                    frequency=PULSE_FREQUENCY,
+                    pulse_shape=pulse_shape,
+                )
+                pulse_event = PulseEvent(pulse=pulse, start_time=start_time)
+
+                pulse_bus_schedule = PulseBusSchedule(timeline=[pulse_event], port=0)
+
+                pulsar = Pulsar(alias=PULSAR_NAME, address=192.168.1.1)
+                # now we can access any of the six sequencers a Pulsar contains by default
+                sequencer = pulsar.submodules[0]
+                sequencer.execute(pulse_bus_schedule=pulse_bus_schedule,
+                                  nshots=1,
+                                  repetition_duration=1000,
+                                  num_bins=1)
+                results = sequencer.get_results()
         """
+
+    def __init__(self, parent: Instrument, name: str, seq_idx: int):
         super().__init__(parent=parent, name=name, seq_idx=seq_idx)
         self.add_parameter(name="sequence_timeout", vals=vals.Ints(), set_cmd=None, initial_value=1)
         self.add_parameter(name="acquisition_timeout", vals=vals.Ints(), set_cmd=None, initial_value=1)
