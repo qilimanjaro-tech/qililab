@@ -14,6 +14,7 @@ class BusExecution:
     pulse schedules that will be executed on this bus.
 
     This class is a relic and should be removed once the drawing responsibilities are moved to its own class.
+
     Args:
         bus (Bus): Bus where the pulse schedules will be executed.
         pulse_bus_schedules (list[PulseBusSchedule]): pulse schedules to execute on the Bus.
