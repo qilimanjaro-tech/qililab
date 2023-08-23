@@ -182,7 +182,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 ]
             )
             """All the buses of the platform and their needed settings, contained as elements (`list[Bus]`) inside a `Buses` class"""
-            
+
             self._connected_to_instruments = False
             """Boolean describing the connection to the instruments. Defaults to False (not connected)."""
 
