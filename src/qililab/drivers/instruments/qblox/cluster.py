@@ -52,8 +52,9 @@ class Cluster(QcodesCluster, BaseInstrument):  # pylint: disable=abstract-method
                 alias = submodule['alias']
                 slot_id = submodule["slot_id"]
                 module_params: dict | None = submodule.get("parameters", None)
+                sequencers: list[str] | None = submodule.get('sequencers', None)
                 if submodules_present[slot_id - 1]:
-                    module = QcmQrm(parent=self, alias=alias, slot_idx=slot_id)
+                    module = QcmQrm(parent=self, alias=alias, slot_idx=slot_id, sequencers=sequencers)
                     if module_params:
                         module.initial_setup(module_params)
                     self.add_submodule(alias, module)
@@ -80,7 +81,7 @@ class Cluster(QcodesCluster, BaseInstrument):  # pylint: disable=abstract-method
 class QcmQrm(QcodesQcmQrm, BaseInstrument):
     """Qililab's driver for QBlox-instruments QcmQrm"""
 
-    def __init__(self, parent: Instrument, alias: str, slot_idx: int, **kwargs):
+    def __init__(self, parent: Instrument, alias: str, slot_idx: int, sequencers: list[str] | None = None, **kwargs):
         """Initialise the instrument.
 
         Args:
