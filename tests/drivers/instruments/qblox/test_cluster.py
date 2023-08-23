@@ -54,6 +54,30 @@ class MockQcmQrm(DummyChannel):
             get_parser=bool,
             vals=vals.Numbers(0, 20e9),
         )
+        self.add_parameter(
+            "reference_source",
+            label="Reference source",
+            docstring="Sets/gets reference source ('internal' = internal "
+                      "10 MHz, 'external' = external 10 MHz).",
+            unit="",
+            vals=vals.Bool(),
+            val_mapping={"internal": True, "external": False},
+            set_parser=bool,
+            get_parser=bool,
+            set_cmd=None,
+            get_cmd=None,
+        )
+        self.add_parameter(
+            "out0_offset",
+            label="out0_offset",
+            docstring="Sets/gets outset for output 0.",
+            unit="",
+            vals=vals.Numbers(0,1),
+            set_parser=int,
+            get_parser=int,
+            set_cmd=None,
+            get_cmd=None,
+        )
         self.set("present", slot_idx % 2 == 0)
 
     def arm_sequencer(self):
@@ -246,7 +270,7 @@ class TestCluster:
             'out0_offset': 1,
             'reference_source': 'internal'
         }
-        cluster = Cluster(name='test_cluster_with_submodules')
+        cluster = Cluster(name='test_cluster_initial_setup')
         cluster.initial_setup(params=params)
 
         assert cluster.get('out0_offset') == 1
@@ -279,9 +303,90 @@ class TestClusterIntegration:
         """Unittest to test the alias property."""
         assert cluster.alias == cluster.name
 
-
 class TestQcmQrm:
-    """Unit tests checking the QililabQcmQrm attributes and methods"""
+    """Unit tests checking the Qililab QcmQrm instances from parent using submodules and initial setup"""
+
+    @classmethod
+    def setup_class(cls):
+        """Set up for all tests"""
+
+        cls.old_qcm_qrm_bases = QcmQrm.__bases__
+        QcmQrm.__bases__ = (MockQcmQrm, BaseInstrument)
+
+    @classmethod
+    def teardown_class(cls):
+        """Tear down after all tests have been run"""
+
+        QcmQrm.__bases__ = cls.old_qcm_qrm_bases
+
+    def teardown_method(self):
+        """Close all instruments after each test has been run"""
+
+        Instrument.close_all()
+
+    def test_init_qcm_type_with_sequencers(self):
+        """Test init method for QcmQrm for a QCM module with sequencers parameter."""
+
+        parent = MagicMock()
+
+        # Set qcm/qrm attributes
+        parent._is_qcm_type.return_value = True
+        parent._is_qrm_type.return_value = False
+        parent._is_rf_type.return_value = False
+
+        qcm_qrm_name = "qcm_qrm"
+        sequencers = ['q0_drive', 'q1_drive']
+        qcm_qrm = QcmQrm(parent=parent, alias=qcm_qrm_name, slot_idx=0, sequencers=sequencers)
+
+        submodules = qcm_qrm.submodules
+        registered_names = list(submodules.keys())
+
+        assert len(submodules) == len(sequencers)
+        assert all(isinstance(submodules[module_name], SequencerQCM) for module_name in sequencers)
+        assert sequencers == registered_names
+
+    def test_init_qrm_type_with_sequencers(self):
+        """Test init method for QcmQrm for a QRM module with sequencers parameters."""
+
+        parent = MagicMock()
+
+        # Set qcm/qrm attributes
+        parent._is_qcm_type.return_value = False
+        parent._is_qrm_type.return_value = True
+        parent._is_rf_type.return_value = False
+
+        qcm_qrm_name = "qcm_qrm"
+        sequencers = ['q0_readout', 'q1_readout', 'q2_readout']
+        qcm_qrm = QcmQrm(parent=parent, alias=qcm_qrm_name, slot_idx=0, sequencers=sequencers)
+
+        submodules = qcm_qrm.submodules
+        registered_names = list(submodules.keys())
+
+        assert len(submodules) == len(sequencers)
+        assert all(isinstance(submodules[module_name], SequencerQCM) for module_name in sequencers)
+        assert sequencers == registered_names
+
+    def test_initial_setup(self):
+        """Test initial setup method"""
+        params = {
+            'out0_offset': 1,
+            'reference_source': 'internal'
+        }
+        parent = MagicMock()
+
+        # Set qcm/qrm attributes
+        parent._is_qcm_type.return_value = False
+        parent._is_qrm_type.return_value = True
+        parent._is_rf_type.return_value = False
+
+        qcm_qrm = QcmQrm(parent=parent, alias="test_initial_setup", slot_idx=0)
+        qcm_qrm.initial_setup(params=params)
+
+        assert qcm_qrm.get('out0_offset') == 1
+        assert qcm_qrm.get('reference_source') == 'internal'
+
+class TestQcmQrmIntegration:
+    """Unit tests checking the Qililab QcmQrm attributes and methods"""
 
     def test_init_qcm_type(self):
         """Test init method for QcmQrm for a QCM module."""
