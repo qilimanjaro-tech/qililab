@@ -54,7 +54,7 @@ def fixture_experiment(request: pytest.FixtureRequest):
 @pytest.fixture(name="pulse_bus_schedule")
 def fixture_pulse_bus_schedule(pulse_event: PulseEvent) -> PulseBusSchedule:
     """Return PulseBusSchedule instance."""
-    return PulseBusSchedule(timeline=[pulse_event], port=0)
+    return PulseBusSchedule(timeline=[pulse_event], port="drive_0")
 
 
 @pytest.fixture(name="bus_execution")

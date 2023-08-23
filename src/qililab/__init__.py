@@ -3,9 +3,16 @@ This is the top level module from which all basic functions and classes of
 Qililab can be directly imported.
 """
 from .config import __version__, logger
-from .execute import execute
+from .data_management import build_platform, load_results, save_platform, save_results
+from .execute_circuit import execute
 from .experiment import Experiment
-from .platform import build_platform, save_platform, Platform
+
+<<<<<<< HEAD
+from .platform import Platform, build_platform, save_platform
+
+=======
+>>>>>>> 78ca2d254600e3a8def897cf3017ee26986be42f
+from .automatic_calibration import *
 from .qprogram import QProgram
 from .result import Results
 from .transpiler import Drag, Park, translate_circuit
@@ -13,4 +20,3 @@ from .typings import ExperimentOptions, ExperimentSettings, Parameter
 from .utils import Loop
 from .utils.load_data import load
 from .waveforms import *
-from .automatic_calibration import *

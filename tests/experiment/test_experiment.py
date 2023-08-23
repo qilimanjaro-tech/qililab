@@ -124,10 +124,10 @@ def fixture_experiment_reset(request: pytest.FixtureRequest):
     """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
     runcard = copy.deepcopy(runcard)
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
+    with patch("qililab.data_management.yaml.safe_load", return_value=runcard) as mock_load:
+        with patch("qililab.data_management.open") as mock_open:
             mock_load.return_value[RUNCARD.INSTRUMENT_CONTROLLERS][0] |= {"reset": False}
-            platform = ql.build_platform(name="galadriel")
+            platform = ql.build_platform(path="galadriel.yml")
             mock_load.assert_called()
             mock_open.assert_called()
     loop = Loop(
