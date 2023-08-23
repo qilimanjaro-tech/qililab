@@ -13,6 +13,7 @@ def execute(circuit: Circuit, platform_path: str, nshots=1):
     Args:
         circuit (Circuit): Qibo Circuit.
         platform_path (str): Path to the YAML file containing the serialization of the Platform to be used.
+        nshots (int, optional): Number of shots to execute. Defaults to 1.
 
     Returns:
         Results: ``Results`` class containing the experiment results
