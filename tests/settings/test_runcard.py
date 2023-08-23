@@ -1,5 +1,6 @@
 """Unit tests for the Runcard class."""
 import ast
+import copy
 import re
 from dataclasses import asdict
 
@@ -12,14 +13,22 @@ from qililab.typings import Parameter
 from tests.data import Galadriel
 
 
-@pytest.mark.parametrize("runcard_dict", [Galadriel.runcard])
+@pytest.fixture(name="runcard")
+def fixture_runcard():
+    return Runcard(**copy.deepcopy(Galadriel.runcard))
+
+
+@pytest.fixture(name="gates_settings")
+def fixture_gate_settings(runcard: Runcard):
+    return runcard.gates_settings
+
+
 class TestRuncard:
     """Unit tests for the Runcard dataclass initialization."""
 
-    def test_attributes(self, runcard_dict: dict):
+    def test_attributes(self, runcard: Runcard):
         """Test that the attributes of the Runcard are casted into dataclasses, and that
         the values they contain are the same as the input dictionaries."""
-        runcard = Runcard(**runcard_dict)
 
         assert isinstance(runcard.name, str)
         assert runcard.name == Galadriel.runcard["name"]
@@ -48,18 +57,13 @@ class TestRuncard:
         for index, instrument_controller in enumerate(runcard.instrument_controllers):
             assert instrument_controller == Galadriel.runcard["instrument_controllers"][index]
 
-    def test_serialization(self, runcard_dict: dict):
+    def test_serialization(self, runcard):
         """Test that a serialization of the Platform is possible"""
+
+        runcard_dict = asdict(runcard)
         assert isinstance(runcard_dict, dict)
 
-        runcard = Runcard(**runcard_dict)
-        assert isinstance(runcard, Runcard)
-
-        new_runcard_dict = asdict(runcard)
-        assert isinstance(new_runcard_dict, dict)
-        assert new_runcard_dict == runcard_dict
-
-        new_runcard = Runcard(**new_runcard_dict)
+        new_runcard = Runcard(**runcard_dict)
         assert isinstance(new_runcard, Runcard)
         assert str(new_runcard) == str(runcard)
         assert str(new_runcard.name) == str(runcard.name)
@@ -69,12 +73,11 @@ class TestRuncard:
         assert str(new_runcard.instruments) == str(runcard.instruments)
         assert str(new_runcard.instrument_controllers) == str(runcard.instrument_controllers)
 
-        newest_runcard_dict = asdict(new_runcard)
-        assert isinstance(newest_runcard_dict, dict)
-        assert newest_runcard_dict == runcard_dict
+        new_runcard_dict = asdict(new_runcard)
+        assert isinstance(new_runcard_dict, dict)
+        assert new_runcard_dict == runcard_dict
 
 
-@pytest.mark.parametrize("gates_settings", [Runcard(**Galadriel.runcard).gates_settings])
 class TestGatesSettings:
     """Unit tests for the Runcard.GatesSettings class."""
 
