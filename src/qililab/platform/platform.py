@@ -148,6 +148,15 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         self.gates_settings = runcard.gates_settings
         """Dataclass with all the settings and gates definitions needed to decompose gates into pulses."""
 
+        self.chip = Chip(**asdict(runcard.chip))
+        """All the chip nodes (`list[Nodes]`) of the platform, contained inside a `Chip` class"""
+
+        self.connection = connection
+        """API connection of the platform. Same as the passed argument. Defaults to None."""
+
+        self._connected_to_instruments: bool = False
+        """Boolean describing the connection to the instruments. Defaults to False (not connected)."""
+
         if new_drivers:
             self.instruments: Instruments | NewInstruments = NewInstruments(
                 elements=self._load_new_instruments(instruments_dict=runcard.instruments)
@@ -169,15 +178,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 ]
             )
             """All the buses of the platform and their needed settings, contained as elements (`list[Bus]`) inside a `Buses` class"""
-
-        self.chip = Chip(**asdict(runcard.chip))
-        """All the chip nodes (`list[Nodes]`) of the platform, contained inside a `Chip` class"""
-
-        self.connection = connection
-        """API connection of the platform. Same as the passed argument. Defaults to None."""
-
-        self._connected_to_instruments: bool = False
-        """Boolean describing the connection to the instruments. Defaults to False (not connected)."""
 
     def connect(self, manual_override=False):
         """Blocks the given device and connects to the instruments.

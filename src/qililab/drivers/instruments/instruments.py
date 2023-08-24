@@ -1,8 +1,5 @@
 """Instruments class"""
 from dataclasses import dataclass
-
-import yaml
-
 from qililab.drivers.interfaces import BaseInstrument
 
 
