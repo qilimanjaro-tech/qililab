@@ -49,7 +49,7 @@ NORM_FACTOR = 0.8
     ],
 )
 def fixture_pulses(request: pytest.FixtureRequest) -> Pulse:
-    """Fixture for the pulse distortion class."""
+    """Fixture for the Pulse class."""
     return request.param
 
 

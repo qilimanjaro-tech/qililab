@@ -46,7 +46,7 @@ def fixture_pulse_distortion(request: pytest.FixtureRequest) -> ExponentialCorre
     ],
 )
 def fixture_envelope(request: pytest.FixtureRequest) -> np.ndarray:
-    """Fixture for the pulse distortion class."""
+    """Fixture for an envelope."""
     return request.param
 
 

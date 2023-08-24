@@ -23,7 +23,7 @@ RESOLUTION = [1.0, 0.2]
     ],
 )
 def fixture_env_params(request: pytest.FixtureRequest) -> list:
-    """Fixture for the LFilterCorrection distortion class."""
+    """Fixture for the envelope parameters."""
     return request.param
 
 
