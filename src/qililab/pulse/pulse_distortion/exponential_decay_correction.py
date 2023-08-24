@@ -33,12 +33,14 @@ class ExponentialCorrection(PulseDistortion):
 
         Imagine you want to distort a `Rectangular` envelope with an `ExponentialCorrection`. You could do:
 
-        .. code-block:: python3
-
-            envelope = Rectangular().envelope(duration=..., amplitude=...)
-            distorted_envelope = ExponentialCorrection(tau_exponential=1.3, amp=2.0).apply(envelope)
+        >>> from qililab.pulse import Rectangular, BiasTeeCorrection
+        >>> envelope = Rectangular().envelope(duration=50, amplitude=1.0)
+        >>> distorted_envelope = ExponentialCorrection(tau_exponential=1.3, amp=2.0).apply(envelope)
 
         which would return a distorted envelope with the same real max height as the initial.
+
+        >>> np.max(distorted_envelope) == np.max(envelope)
+        True
 
         .. note::
             You can find more examples in the docstring of the :class:`PulseDistortion` class.

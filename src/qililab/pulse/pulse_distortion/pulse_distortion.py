@@ -52,30 +52,32 @@ class PulseDistortion(FactoryElement):
 
         Imagine you want to distort a `Rectangular` envelope with an `LFilterCorrection`. You could do:
 
-        .. code-block:: python3
-
-            envelope = Rectangular().envelope(duration=..., amplitude=...)
-            distorted_envelope = LFilterCorrection(a=[0.7, 1.3], b=[0.5, 0.6]).apply(envelope)
+        >>> from qililab.pulse import Rectangular, LFilterCorrection
+        >>> envelope = Rectangular().envelope(duration=50, amplitude=1.0)
+        >>> distorted_envelope = LFilterCorrection(a=[0.7, 1.3], b=[0.5, 0.6]).apply(envelope)
 
         which would return a distorted envelope with the same real max height as the initial.
 
+        >>> np.max(distorted_envelope) == np.max(envelope)
+        True
+
         If instead you wanted to manually modify the envelope to make it 90% smaller than the initial, you would instead do:
 
-        .. code-block:: python3
-
-            distorted_envelope = LFilterCorrection(a=[0.7, 1.3], b=[0.5, 0.6], norm_factor=0.9).apply(envelope)
+        >>> distorted_envelope = LFilterCorrection(a=[0.7, 1.3], b=[0.5, 0.6], norm_factor=0.9).apply(envelope)
+        >>> np.max(distorted_envelope) == 0.9 * np.max(envelope)
+        True
 
         And if you wanted to only apply the scipy correction without any normalization, you would then do:
 
-        .. code-block:: python3
-
-            distorted_envelope = LFilterCorrection(a=[0.7, 1.3], b=[0.5, 0.6], auto_norm=False).apply(envelope)
+        >>> distorted_envelope_no_norm = LFilterCorrection(a=[0.7, 1.3], b=[0.5, 0.6], auto_norm=False).apply(envelope)
+        >>> np.max(distorted_envelope_no_norm) == np.max(envelope)
+        False
 
         Which if ended bigger/smaller than you wanted, you can then also manually modify it like:
 
-        .. code-block:: python3
-
-            distorted_envelope = LFilterCorrection(a=[0.7, 1.3], b=[0.5, 0.6], auto_norm=False, norm_factor=0.8).apply(envelope)
+        >>> distorted_envelope_manual_norm = LFilterCorrection(a=[0.7, 1.3], b=[0.5, 0.6], auto_norm=False, norm_factor=0.8).apply(envelope)
+        >>> np.max(distorted_envelope_manual_norm) == 0.8 * np.max(distorted_envelope_no_norm) != np.max(envelope)
+        True
     """
 
     norm_factor: float = 1.0
