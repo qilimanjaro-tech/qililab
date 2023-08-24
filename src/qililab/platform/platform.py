@@ -88,8 +88,8 @@ class Platform:  # pylint: disable=too-many-public-methods
             qprogram (QProgram): The qprogram to execute.
 
         Returns:
-            A list where each element is the results of the acquisition performed by a readout bus.
-            These results are represented as instances of the QbloxResult class.
+            QbloxResult: The results of the acquisition performed by a readout bus.
+            This result is represented as an instance of the QbloxResult class.
         """
         compiler = QBloxCompiler(settings=Settings())
         compiled_results = compiler.compile(qprogram)
@@ -99,11 +99,12 @@ class Platform:  # pylint: disable=too-many-public-methods
             bus.execute_qpysequence(sequence)
 
         results = []
+        #FIXME: this implementation does not support multiple readout buses
         for bus in self.buses.readout_buses():
             result = bus.acquire_results()
             results.append(result)
 
-        return results
+        return results[0]
 
     def get_element(self, alias: str):
         """Get platform element.
