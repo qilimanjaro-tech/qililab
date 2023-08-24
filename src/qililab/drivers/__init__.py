@@ -61,7 +61,6 @@ from .instruments import (
     Cluster,
     ERASynthPlus,
     InstrumentDriverFactory,
-    Instruments,
     Keithley2600,
     Pulsar,
     RhodeSchwarzSGS100A,
