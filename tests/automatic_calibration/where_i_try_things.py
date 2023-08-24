@@ -1,3 +1,35 @@
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+# TODO: DELETE THIS
+
 '''from qililab.automatic_calibration.calibration_utils.calibration_utils import get_raw_data, get_iq_from_raw, plot_iq, plot_fit
 import numpy as np
 
@@ -86,3 +118,8 @@ print({latest_timestamp_key: times[latest_timestamp_key]})
 pipi = {}
 print(f"none {pipi is None}")
 print(f"empty {not pipi}")
+
+import numpy as np
+a = [[1, 2, 3],[4, 5, 6]]
+print(a)
+print(np.hstack((a)))
