@@ -173,8 +173,5 @@ def build_platform(path: str, connection: API | None = None, new_drivers: bool =
     with open(file=path, mode="r", encoding="utf8") as file:
         settings = yaml.safe_load(stream=file)
 
-    if new_drivers:
-        raise NotImplementedError("New drivers are not supported yet.")
-
     runcard = Runcard(**settings)
-    return Platform(runcard=runcard, connection=connection)
+    return Platform(runcard=runcard, connection=connection, new_drivers=new_drivers)
