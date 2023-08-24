@@ -377,7 +377,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             gates_settings_dict = {RUNCARD.GATES_SETTINGS: asdict(self.gates_settings, dict_factory=dict_factory)}
             chip_dict = {RUNCARD.CHIP: self.chip.to_dict() if self.chip is not None else None}
             buses_dict = {RUNCARD.BUSES: self.buses.to_dict() if self.buses is not None else None}
-            instrument_dict = {RUNCARD.INSTRUMENTS: self.instruments.to_dict() if self.instruments is not None else None}
+            instrument_dict = {
+                RUNCARD.INSTRUMENTS: self.instruments.to_dict() if self.instruments is not None else None
+            }
             instrument_controllers_dict = {
                 RUNCARD.INSTRUMENT_CONTROLLERS: self.instrument_controllers.to_dict()
                 if self.instrument_controllers is not None
