@@ -250,6 +250,21 @@ class SystemControlName(str, Enum):
     SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
 
 
+class BusDriverName(str, Enum):
+    """Bus Driver names.
+
+    Args:
+        enum (str): Available bus driver element names:
+        * drive_bus
+        * flux_bus
+        * readout_bus
+    """
+
+    DRIVE_BUS = "drive_bus"
+    FLUX_BUS = "flux_bus"
+    READOUT_BUS = "readout_bus"
+
+
 class Parameter(str, Enum):
     """Parameter names."""
 

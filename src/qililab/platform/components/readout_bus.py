@@ -43,3 +43,13 @@ class ReadoutBus(BusDriver):
             results (QbloxResult): acquisitions of results
         """
         return self._digitiser.get_results()
+
+    def to_dict(self, instruments):
+        """Generates a dict representation given the Buses and the instruments get_parms()"""
+        raise NotImplementedError
+
+    @classmethod
+    def from_dict(cls, dictionary: dict) -> "ReadoutBus":
+        """Generates the ReadoutBus class and passes the instrument params info to be set with set_params(), given a dictionary"""
+        _ = dict
+        raise NotImplementedError

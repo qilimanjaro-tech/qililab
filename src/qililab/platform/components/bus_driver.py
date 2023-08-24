@@ -1,13 +1,17 @@
 """Bus Class Interface."""
-from abc import ABC
+from abc import abstractmethod
 from typing import Any
 
 from qililab.drivers.interfaces import BaseInstrument
 from qililab.drivers.interfaces.awg import AWG
+from qililab.instruments.instruments import Instruments
 from qililab.pulse import PulseBusSchedule, PulseDistortion
+from qililab.typings.factory_element import FactoryElement
+
+from .bus_factory import BusFactory
 
 
-class BusDriver(ABC):
+class BusDriver(FactoryElement):
     """Bus Class."""
 
     def __init__(self, alias: str, port: int, awg: AWG | None):
@@ -120,12 +124,12 @@ class BusDriver(ABC):
             + f"--> port {self.port}"
         )
 
-    def to_dict(self, instruments):
-        """Generates a dict representation given the Buses and the instruments get_parms()"""
-        raise NotImplementedError
-
     @classmethod
-    def from_dict(cls, dict):
+    def from_dict(cls, dictionary: dict) -> "BusDriver":
         """Generates the Buses classes and passes the instrument params info to be set with set_params(), given a dictionary"""
-        _ = dict
-        raise NotImplementedError
+        bus_class = BusFactory.get(name=dictionary["name"])
+        return bus_class.from_dict(dictionary)  # type: ignore[attr-defined]
+
+    @abstractmethod
+    def to_dict(self, instruments: Instruments) -> dict:
+        """Generates a dict representation given the Buses and the instruments get_parms()"""

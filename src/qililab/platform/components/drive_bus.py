@@ -27,3 +27,13 @@ class DriveBus(BusDriver):
             self.instruments["local_oscillator"] = local_oscillator
         if attenuator:
             self.instruments["attenuator"] = attenuator
+
+    def to_dict(self, instruments):
+        """Generates a dict representation given the Buses and the instruments get_parms()"""
+        raise NotImplementedError
+
+    @classmethod
+    def from_dict(cls, dictionary: dict) -> "DriveBus":
+        """Generates the DriveBus class and passes the instrument params info to be set with set_params(), given a dictionary"""
+        _ = dict
+        raise NotImplementedError
