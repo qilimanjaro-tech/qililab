@@ -333,7 +333,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         instruments = []
         for instrument in instruments_dict:
             local_dict = deepcopy(instrument)
-            instruments.append(InstrumentDriverFactory.get(local_dict.pop(RUNCARD.NAME))(**local_dict))
+            params = local_dict.get('parameters', None)
+            instrument_instance: BaseInstrument = InstrumentDriverFactory.get(local_dict.pop(RUNCARD.TYPE))(**local_dict)
+            instrument_instance.initial_setup(params=params)
+            instruments.append(instrument_instance)
         return instruments
 
     def _load_instruments(self, instruments_dict: list[dict]) -> list[Instrument]:
