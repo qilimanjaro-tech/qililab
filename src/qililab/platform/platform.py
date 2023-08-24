@@ -11,9 +11,9 @@ from qiboconnection.api import API
 from qililab.chip import Chip
 from qililab.config import logger
 from qililab.constants import GATE_ALIAS_REGEX, RUNCARD
+from qililab.drivers import Instruments as NewInstruments
 from qililab.drivers.instruments import InstrumentDriverFactory
 from qililab.drivers.interfaces import BaseInstrument
-from qililab.drivers import Instruments as NewInstruments
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
 from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
