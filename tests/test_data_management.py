@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
+import yaml
 
 import qililab as ql
 from qililab.data_management import load_results, save_platform, save_results
@@ -13,11 +14,11 @@ from tests.data import Galadriel
 from tests.test_utils import build_platform
 
 
-@patch("qililab.data_management.yaml.safe_load", return_value=copy.deepcopy(Galadriel.runcard))
-@patch("qililab.data_management.open")
 class TestPlatformData:
     """Unit tests for the `build_platform` function.."""
 
+    @patch("qililab.data_management.yaml.safe_load", return_value=copy.deepcopy(Galadriel.runcard))
+    @patch("qililab.data_management.open")
     def test_build_platform(self, mock_open: MagicMock, mock_load: MagicMock):
         """Test build method."""
         platform = ql.build_platform(path="_")
@@ -25,10 +26,12 @@ class TestPlatformData:
         mock_load.assert_called_once()
         mock_open.assert_called_once()
 
+    @patch("qililab.data_management.yaml.safe_load")
+    @patch("qililab.data_management.open")
     def test_build_method_with_new_drivers(self, mock_open: MagicMock, mock_load: MagicMock):
         """Test build method with the new drivers."""
-        with pytest.raises(NotImplementedError, match="New drivers are not supported yet"):
-            _ = ql.build_platform(path="_", new_drivers=True)
+        platform = ql.build_platform(path="new_galadriel.yml", new_drivers=True)
+        assert isinstance(platform, Platform)
         mock_open.assert_called_once_with(file="_", mode="r", encoding="utf8")
         mock_load.assert_called_once()
 

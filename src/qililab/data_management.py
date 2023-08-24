@@ -8,6 +8,7 @@ import yaml
 from qiboconnection.api import API
 
 from .platform import Platform
+from .settings import NewRuncard
 from .settings import Runcard
 
 
@@ -173,5 +174,8 @@ def build_platform(path: str, connection: API | None = None, new_drivers: bool =
     with open(file=path, mode="r", encoding="utf8") as file:
         settings = yaml.safe_load(stream=file)
 
-    runcard = Runcard(**settings)
+    if new_drivers:
+        runcard: NewRuncard | Runcard = NewRuncard(**settings)
+    else:
+        runcard = Runcard(**settings)
     return Platform(runcard=runcard, connection=connection, new_drivers=new_drivers)

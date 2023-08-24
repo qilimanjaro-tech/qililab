@@ -22,6 +22,7 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSchedule
 from qililab.result import Result
+from qililab.settings import NewRuncard
 from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import Line, Parameter
@@ -42,7 +43,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
     This class also handles the corresponding dis/connections, set_ups, set_parameters and turning the instruments on/off.
 
     Args:
-        runcard (Runcard): Runcard class containing all the chip, buses & instruments information of the platform.
+        runcard (NewRuncard | Runcard): Runcard class containing all the chip, buses & instruments information of the platform.
         connection (API | None = None): Qiboconnection's API class used to block access to other users when connected
             to the platform.
         new_drivers (bool, Optional = False): Flag to indicate the platform should use the new drivers and buses,
@@ -139,7 +140,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 [5, 4, 3, 2, 1, 2, 3]])
     """
 
-    def __init__(self, runcard: Runcard, connection: API | None = None, new_drivers: bool = False):
+    def __init__(self, runcard: NewRuncard | Runcard, connection: API | None = None, new_drivers: bool = False):
         self.new_drivers = new_drivers
         self.name = runcard.name
         """Name of the platform (str) """
@@ -168,10 +169,11 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             self.instruments = Instruments(elements=self._load_instruments(instruments_dict=runcard.instruments))
             """All the instruments of the platform and their needed settings, contained as elements (`list[Instrument]`) inside an `Instruments` class."""
 
-            self.instrument_controllers = InstrumentControllers(
-                elements=self._load_instrument_controllers(instrument_controllers_dict=runcard.instrument_controllers)
-            )
-            """All the instrument controllers of the platform and their needed settings, contained as elements (`list[InstrumentController]`) inside an `InstrumentControllers` class."""
+            if isinstance(runcard, Runcard):
+                self.instrument_controllers = InstrumentControllers(
+                    elements=self._load_instrument_controllers(instrument_controllers_dict=runcard.instrument_controllers)
+                )
+                """All the instrument controllers of the platform and their needed settings, contained as elements (`list[InstrumentController]`) inside an `InstrumentControllers` class."""
 
             self.buses = Buses(
                 elements=[
