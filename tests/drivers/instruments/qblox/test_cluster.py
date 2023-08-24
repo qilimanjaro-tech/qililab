@@ -253,13 +253,7 @@ class TestCluster:
                 "alias": "qrm_0",
                 "slot_id": 1,
             },
-            {
-                "alias": "qrm_1",
-                "slot_id": 2,
-                "parameters": {
-                    "out0_offset": 1
-                }
-            },
+            {"alias": "qrm_1", "slot_id": 2, "parameters": {"out0_offset": 1}},
             {
                 "alias": "qcm_0",
                 "slot_id": 4,
