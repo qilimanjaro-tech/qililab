@@ -147,7 +147,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """Dataclass with all the settings and gates definitions needed to decompose gates into pulses."""
 
         if new_drivers:
-            self.instruments: Instruments | NewInstruments = NewInstruments(elements=self._load_new_instruments(instruments_dict=runcard.instruments))
+            self.instruments: Instruments | NewInstruments = NewInstruments(
+                elements=self._load_new_instruments(instruments_dict=runcard.instruments)
+            )
             """All the instruments of the platform and their needed settings, contained as elements (`list[BaseInstrument]`) inside an `Instruments` class."""
         else:
             self.instruments = Instruments(elements=self._load_instruments(instruments_dict=runcard.instruments))
@@ -165,11 +167,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 ]
             )
             """All the buses of the platform and their needed settings, contained as elements (`list[Bus]`) inside a `Buses` class"""
-        
+
         self.chip = Chip(**asdict(runcard.chip))
         """All the chip nodes (`list[Nodes]`) of the platform, contained inside a `Chip` class"""
-
-        
 
         self.connection = connection
         """API connection of the platform. Same as the passed argument. Defaults to None."""
