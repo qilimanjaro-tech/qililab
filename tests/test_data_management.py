@@ -29,7 +29,9 @@ class TestPlatformData:
     @patch("qililab.platform.platform.Platform._load_new_instruments")
     @patch("qililab.data_management.yaml.safe_load", return_value=copy.deepcopy(NewGaladriel.runcard))
     @patch("qililab.data_management.open")
-    def test_build_method_with_new_drivers(self, mock_open: MagicMock, mock_load: MagicMock, mock_load_new_instruments: MagicMock):
+    def test_build_method_with_new_drivers(
+        self, mock_open: MagicMock, mock_load: MagicMock, mock_load_new_instruments: MagicMock
+    ):
         """Test build method with the new drivers."""
         platform = ql.build_platform(path="_", new_drivers=True)
         assert isinstance(platform, Platform)

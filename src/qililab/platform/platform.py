@@ -170,7 +170,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
             if isinstance(runcard, Runcard):
                 self.instrument_controllers = InstrumentControllers(
-                    elements=self._load_instrument_controllers(instrument_controllers_dict=runcard.instrument_controllers)
+                    elements=self._load_instrument_controllers(
+                        instrument_controllers_dict=runcard.instrument_controllers
+                    )
                 )
                 """All the instrument controllers of the platform and their needed settings, contained as elements (`list[InstrumentController]`) inside an `InstrumentControllers` class."""
 
@@ -332,8 +334,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         instruments = []
         for instrument in instruments_dict:
             local_dict = deepcopy(instrument)
-            params = local_dict.get('parameters', None)
-            instrument_instance: BaseInstrument = InstrumentDriverFactory.get(local_dict.pop(RUNCARD.TYPE))(**local_dict)
+            params = local_dict.get("parameters", None)
+            instrument_instance: BaseInstrument = InstrumentDriverFactory.get(local_dict.pop(RUNCARD.TYPE))(
+                **local_dict
+            )
             instrument_instance.initial_setup(params=params)
             instruments.append(instrument_instance)
         return instruments
