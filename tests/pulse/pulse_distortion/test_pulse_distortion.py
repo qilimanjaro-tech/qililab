@@ -236,7 +236,7 @@ class TestPulseDistortion:
         ],
     )
     def test_envelope_with_amplitude_bigger_than_1(self, pulse_distortion, envelope):
-        """Testing that the corner case amplitude = 0 works properly."""
+        """Testing that the corner case amplitude > 1 works properly."""
         assert np.max(np.abs(np.real(envelope))) > 1 or np.min(np.abs(np.real(envelope))) < 1
 
         corr_envelope = pulse_distortion.apply(envelope)
