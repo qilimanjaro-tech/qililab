@@ -131,16 +131,13 @@ class PulseDistortion(FactoryElement):
         Returns:
             np.ndarray: Normalized final envelope.
         """
-        # Automatic and manual normalization
+        # Automatic normalization if applies
         if self.auto_norm:
             norm = np.max(np.abs(np.real(envelope)))
             corr_norm = np.max(np.abs(np.real(corr_envelope)))
 
-            return (
-                corr_envelope * self.norm_factor * (norm / corr_norm)
-                if corr_norm != 0
-                else corr_envelope * self.norm_factor
-            )
+            if corr_norm != 0:
+                corr_envelope *= norm / corr_norm
 
-        # Only manual normalization
+        # Apply manual normalization
         return corr_envelope * self.norm_factor
