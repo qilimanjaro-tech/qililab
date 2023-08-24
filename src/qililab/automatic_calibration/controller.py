@@ -238,7 +238,7 @@ class Controller:
             value_index = node.experiment_results["loops"][0]['values'].index(value) 
             old_results_array.append(node.experiment_results["results"][value_index]["qblox_raw_results"][0]["bins"]["integration"][quadrature_path])
             
-            current_point_result, _ = self.run_experiment(node = node, analyze=True, experiment_point=value)
+            current_point_result, _ = self.run_experiment(node = node, experiment_point=value)
             new_results_array.append(current_point_result["results"][0]["qblox_raw_results"][0]["bins"]["integration"][quadrature_path])
             
         # Compare results
@@ -279,14 +279,13 @@ class Controller:
         
         return optimal_parameter_value, plot_filepath
 
-    def run_experiment(self, node: CalibrationNode, analyze: bool = True, experiment_point: float = None) -> float | str | bool:
+    def run_experiment(self, node: CalibrationNode, experiment_point: float = None) -> float | str | bool:
         """
         Run the experiment, fit and plot data.
         This method is separate from the 'calibrate' method because sometimes we just need to run the experiment in a few points, not
         on the whole sweep interval (see 'check_data' method in this class).
 
         Args:
-            analyze (bool): If set to true the analysis function is run, otherwise it's not. Default value is True. TODO: is this useful? Is there a case when we don't want to analyze?
             manual_check (bool): If set to true, the user will be shown and asked to approve or reject the result of the fitting done by the analysis function. Default value is False.
             experiment_point (float): If None, the experiment was started by the 'calibrate' method, and will be run on the entire default sweep interval.
                                     If not None, the experiment was started by the 'check_data' method, and will be run only in the point specified by this argument.
@@ -294,7 +293,7 @@ class Controller:
         Returns:
             float | str | bool: The optimal parameter value found by the calibration experiment.
             plot_filepath: The path of the file containing the plot.
-            #TODO: return value is different if the function is called by check_data, document that.
+            #TODO: return value is different if the function is called by check_data: document that.
         """
         
         if node.is_refinement:
@@ -320,19 +319,19 @@ class Controller:
             # Compile and run the QProgram on the platform.
             print(f"Running \"{node.qprogram.__name__}\" experiment in node \"{node.node_id}\"\n")
             
-            # Real version, uncomment when testing on hardware and when 'Platform.execute_qprogram' is in main
-            #node.experiment_results = self._platform.execute_qprogram(node.qprogram(drive_bus = "drive_bus", readout_bus = "readout_bus", sweep_values = node.sweep_interval))
+            #TODO: here I'm hardcoding the name of the drive and readout buses but they should probably be given as input somewhere: where?
+            node.experiment_results = node.experiment(platform = self._platform, drive_bus = "drive_bus", readout_bus = "readout_bus", sweep_values = node.sweep_interval)
             
             # Test version that returns dummy data
             node.experiment_results = get_raw_data("./tests/automatic_calibration/rabi.yml")
             
-            if analyze:
-                # Call the general analysis function with the appropriate model, or the custom one (no need to specify the model in this case, it will already be hardcoded).
-                # If node.manual_check is True, the analysis function will also open the file containing the plot so the user can approve it manually.
-                print(f"Running the \"{node.analysis_function.__name__}\" analysis function in node \"{node.node_id}\"\n")
-                optimal_parameter_value, plot, plot_filepath = node.analysis_function(results = node.experiment_results)
             
-            #TODO: I'm not sure this is the best way and place to save the plot figure.
+            # Call the general analysis function with the appropriate model, or the custom one (no need to specify the model in this case, it will already be hardcoded).
+            # If node.manual_check is True, the analysis function will also open the file containing the plot so the user can approve it manually.
+            print(f"Running the \"{node.analysis_function.__name__}\" analysis function in node \"{node.node_id}\"\n")
+            optimal_parameter_value, plot, plot_filepath = node.analysis_function(results = node.experiment_results)
+            
+            #TODO: change this so the path where it's saved is standardized.
             plot.savefig(plot_filepath, format="PNG")
 
             return optimal_parameter_value, plot_filepath
@@ -341,9 +340,8 @@ class Controller:
         # experiment results in the node's 'experiment_results' attribute, because we don't want to overwrite the old results: 
         # we need them to compare them with the new ones, which here we simply return.
         
-        # FIXME: uncomment the following when execute_qprogram is merged into main.        
-        #return self._platform.execute_qprogram(node.qprogram(node.qprogram(drive_bus = "drive_bus", readout_bus = "readout_bus", sweep_values = list(experiment_point))))
-        print("Trying to run qprogram experiment but failed because execute_qprogram is not yet implemented in main\n")
+        #TODO: here I'm hardcoding the name of the drive and readout buses but they should probably be given as input somewhere: where?
+        node.experiment_results = node.experiment(platform = self._platform, drive_bus = "drive_bus", readout_bus = "readout_bus", sweep_values = [experiment_point])
 
     def update_parameter(self, node: CalibrationNode, parameter_value: float | bool | str) -> None:
         """Update a parameter value in the platform. 

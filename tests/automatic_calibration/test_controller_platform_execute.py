@@ -37,7 +37,7 @@ rabi_values = {"start": 0,
                "step": (0.25-0)/40 # It's written like this because it's derived from a np.linspace definition
                }
 
-def rabi(drive_bus: str, readout_bus: str, sweep_values: dict, platform: Platform):
+def rabi(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dict):
     """
     TODO: rewrite for pulse schedule experiment.
     The Rabi experiment written as a QProgram.
@@ -62,8 +62,11 @@ def rabi(drive_bus: str, readout_bus: str, sweep_values: dict, platform: Platfor
     for gain in gain_values:
         platform.set_parameter(alias=drive_bus, parameter=ql.Parameter.GAIN, value=gain)
         result = platform.execute(program=pulse_schedule, num_avg=1000, repetition_duration=6000)
-        results.append(result.array)
+        # Convert the result to array. See Qblox_results.array() for details.
+        results.append(result.array) #TODO: add this to qprogram-defining functions too so they return an array!!!!!
+        
     results = np.hstack(results)
+    
 ##################################### ANALYSIS ##################################################
 
 

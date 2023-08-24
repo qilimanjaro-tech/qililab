@@ -12,7 +12,12 @@ class CalibrationNode:
 
     Attributes:
         _node_id (str): A unique identifier for the node. It should describe what the node does in the calibration graph.
-        _qprogram (function): The function that generates the QProgram describing the experiment done in the node.
+        _experiment (function): The function that generates and executes the experiment to be done in the node. This experiment 
+                                can be anything (a Qprogram, a circuit with a pulse schedule, ...), as long as it returns its
+                                results in the following format: an array with dimensions (2, N), where N is the number of elements
+                                of the loop that is run by the experiment. This array contains the results of the experiment for the
+                                'I' and the 'Q' quadrature. If the results array is called 'results_array', then the 'I' results will
+                                be in array_results[0] and the 'Q' results will be in array_results[1].
         _sweep_interval (dict): Dictionary with 3 keys describing the sweep values of the experiment. The keys are:
                                 *start
                                 *step
@@ -47,7 +52,7 @@ class CalibrationNode:
     def __init__(
         self,
         node_id: str,
-        qprogram,
+        experiment,
         sweep_interval: dict = None,
         is_refinement: bool = False,
         analysis_function = None,
@@ -64,7 +69,7 @@ class CalibrationNode:
         needs_recalibration = False
     ):
         self._node_id = node_id
-        self._qprogram = qprogram
+        self._experiment = experiment
         self._sweep_interval = sweep_interval
         self._is_refinement = is_refinement
         self._analysis_function = self.analysis if analysis_function is None else analysis_function
@@ -110,8 +115,8 @@ class CalibrationNode:
         return self._node_id
     
     @property
-    def qprogram(self):
-        return self._qprogram
+    def experiment(self):
+        return self._experiment
     
     @property
     def sweep_interval(self):

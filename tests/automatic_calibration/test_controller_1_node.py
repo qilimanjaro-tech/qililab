@@ -34,7 +34,7 @@ rabi_values = {"start": 0,
                "step": (0.25-0)/40 # It's written like this because it's derived from a np.linspace definition
                }
 
-def rabi(drive_bus: str, readout_bus: str, sweep_values: dict):
+def rabi(drive_bus: str, readout_bus: str, sweep_values: dict) -> list:
     """The Rabi experiment written as a QProgram.
 
     Args:
@@ -43,7 +43,7 @@ def rabi(drive_bus: str, readout_bus: str, sweep_values: dict):
         sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the qprogram iterate
 
     Returns:
-        qp (QProgram): The QProgram describing the experiment. It will need to be compiled to be run on the qblox cluster.
+        list: An array with dimensions (2, N) where N is the number of sweep value, i.e. the size of the experiment's loop.
     """
     qp = ql.QProgram()
     gain = qp.variable(float)
@@ -62,8 +62,11 @@ def rabi(drive_bus: str, readout_bus: str, sweep_values: dict):
             qp.sync()
             qp.play(bus=readout_bus, waveform=IQPair(I=ones_wf, Q=zeros_wf))
             qp.acquire(bus=readout_bus)
-
-    return qp
+    
+    results = platform.execute_qprogram(qp)
+    
+    return results
+    
 
 ##################################### ANALYSIS ##################################################
 
