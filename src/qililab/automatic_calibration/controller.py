@@ -123,7 +123,7 @@ class Controller:
         # calibrate
         result = self.calibrate(node)
 
-        #TODO: uncomment this when I have figured out why alias is wrong
+        #FIXME: uncomment this when I have figured out why alias is wrong
         #self.update_parameter(node = node, parameter_value = result)
         
         return True
@@ -223,9 +223,6 @@ class Controller:
         # so we assume that the node's parameter is out of spec.
         if (not hasattr(node, "experiment_results")) or node.experiment_results is None: return "out_of_spec"
         
-        # Dummy return value used for testing.
-        return "out_of_spec"
-    
         # Choose random points within the sweep interval.
         random_values = get_random_values(array=np.arange(node.sweep_interval["start"], node.sweep_interval["stop"], node.sweep_interval["step"]), number_of_values=node._number_of_random_datapoints) 
 
@@ -331,7 +328,7 @@ class Controller:
             print(f"Running the \"{node.analysis_function.__name__}\" analysis function in node \"{node.node_id}\"\n")
             optimal_parameter_value = node.analysis_function(results = node.experiment_results, experiment_name = node.node_id, parameter = node.parameter, sweep_values = np.arange(node.sweep_interval["start"], node.sweep_interval["stop"], node.sweep_interval["step"]))
             
-            #TODO: change this so the path where it's saved is standardized.
+            #TODO: save the plot figure to standardized path, but not here, in the analysis function.
             plot.savefig(plot_filepath, format="PNG")
 
             return optimal_parameter_value
