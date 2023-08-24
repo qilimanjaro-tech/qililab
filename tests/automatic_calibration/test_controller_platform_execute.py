@@ -40,7 +40,7 @@ rabi_values = {"start": 0,
 def rabi(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dict):
     """
     TODO: rewrite for pulse schedule experiment.
-    The Rabi experiment written as a QProgram.
+    The Rabi experiment written as a circuit and pulse schedule.
 
     Args:
         drive_bus (str): Name of the drive bus
@@ -48,7 +48,7 @@ def rabi(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dic
         sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the qprogram iterate
 
     Returns:
-        qp (QProgram): The QProgram describing the experiment. It will need to be compiled to be run on the qblox cluster.
+        list: An array with dimensions (2, N) where N is the number of sweep value, i.e. the size of the experiment's loop.
     """
         
     circuit = Circuit(1)
@@ -63,14 +63,15 @@ def rabi(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dic
         platform.set_parameter(alias=drive_bus, parameter=ql.Parameter.GAIN, value=gain)
         result = platform.execute(program=pulse_schedule, num_avg=1000, repetition_duration=6000)
         # Convert the result to array. See Qblox_results.array() for details.
-        results.append(result.array) #TODO: add this to qprogram-defining functions too so they return an array!!!!!
+        results.append(result.array)
         
     results = np.hstack(results)
+    return results
     
 ##################################### ANALYSIS ##################################################
 
 
-def analyze_rabi(results: str | dict, fit_quadrature="i", label=""):
+def analyze_rabi(results: list,  experiment_name: str, parameter: str, sweep_values: list, fit_quadrature="i"):
     """
     Analyzes the Rabi experiment data.
 
@@ -82,34 +83,17 @@ def analyze_rabi(results: str | dict, fit_quadrature="i", label=""):
                  https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/pulsar.html#qblox_instruments.native.Pulsar.get_acquisitions
                  The list only has 1 element because each element represents the acquisitions dictionary of one readout bus, 
                  and for the moment multiple readout buses are not supported.
+        experiment_name: The name of the experiment of which this function will analyze the data. The name is used to label the figure that 
+                         this function will produce, which will contain the plot.
                  
     Returns:
         fitted_pi_pulse_amplitude (int)
     """
-
-    # Get the path of the experimental data file
-    if isinstance(results, str):
-        # The 'results' argument is the path to the file where the results are stored. 
-        # NOTE: this is only here to maintain backwards compatibility. Remove asap.
-        parent_directory = os.path.dirname(results)
-        figure_filepath = os.path.join(parent_directory, "Rabi.PNG")
-        data_raw = get_raw_data(results)
-    elif isinstance(results, dict):
-        # The 'results' argument is a dictionary storing the raw results.
-        # FIXME: This implementation will have to change when multiple readout buses are supported, because then 'results' 
-        # will be a list with more than one element, where each element is the results of a specific readout bus. 
-        # See the 'run' method src/qililab/execution/execution_manager.py for more details.
-        data_raw = results
-        figure_filepath = "./tests/automatic_calibration/Rabi.PNG"
-    else: 
-        raise ValueError("Results are in incompatible format. They should be either a string representing a filepath or a dictionary")
-
-    amplitude_loop_values = np.array(data_raw["loops"][0]["values"])
-    swept_variable = data_raw["loops"][0]["parameter"]
-    this_shape = len(amplitude_loop_values)
-
+    
     # Get flattened data and shape it
-    i, q = get_iq_from_raw(data_raw)
+    this_shape = len(sweep_values)
+    i = results[0]
+    q = results[1]
     i = i.reshape(this_shape)
     q = q.reshape(this_shape)
 
@@ -128,7 +112,7 @@ def analyze_rabi(results: str | dict, fit_quadrature="i", label=""):
     mod.set_param_hint("d", value=1 / 2, vary=True, min=0)
 
     params = mod.make_params()
-    fit = mod.fit(data=fit_signal, params=params, x=amplitude_loop_values)
+    fit = mod.fit(data=fit_signal, params=params, x=sweep_values)
 
     a_value = fit.params["a"].value
     b_value = fit.params["b"].value
@@ -139,13 +123,13 @@ def analyze_rabi(results: str | dict, fit_quadrature="i", label=""):
     fitted_pi_pulse_amplitude = np.abs(1 / (2 * optimal_parameters[1]))
 
     # Plot
-    title_label = f"{label}"
-    fig, axes = plot_iq(amplitude_loop_values, i, q, title_label, swept_variable)
+    title_label = experiment_name
+    fig, axes = plot_iq(sweep_values, i, q, title_label, parameter)
     plot_fit(
-        amplitude_loop_values, optimal_parameters, axes[fit_signal_idx], fitted_pi_pulse_amplitude
+        sweep_values, optimal_parameters, axes[fit_signal_idx], fitted_pi_pulse_amplitude
     )
     #TODO: save the plot here, not in Controller class.
-    return fitted_pi_pulse_amplitude, fig, figure_filepath
+    return fitted_pi_pulse_amplitude, fig
 
 
 ##################################### GRAPH ##########################################################

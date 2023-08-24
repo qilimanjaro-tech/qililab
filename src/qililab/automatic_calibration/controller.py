@@ -272,12 +272,12 @@ class Controller:
             plot_filepath: The path of the file containing the plot.
         """
         print(f"Calibrating node \"{node.node_id}\"\n")
-        optimal_parameter_value, plot_filepath = self.run_experiment(node)
+        optimal_parameter_value = self.run_experiment(node)
 
         # Add timestamp to the timestamps list of the node.
         node.add_timestamp(timestamp=get_timestamp(), type_of_timestamp="calibrate")
         
-        return optimal_parameter_value, plot_filepath
+        return optimal_parameter_value
 
     def run_experiment(self, node: CalibrationNode, experiment_point: float = None) -> float | str | bool:
         """
@@ -329,12 +329,12 @@ class Controller:
             # Call the general analysis function with the appropriate model, or the custom one (no need to specify the model in this case, it will already be hardcoded).
             # If node.manual_check is True, the analysis function will also open the file containing the plot so the user can approve it manually.
             print(f"Running the \"{node.analysis_function.__name__}\" analysis function in node \"{node.node_id}\"\n")
-            optimal_parameter_value, plot, plot_filepath = node.analysis_function(results = node.experiment_results)
+            optimal_parameter_value = node.analysis_function(results = node.experiment_results, experiment_name = node.node_id, parameter = node.parameter, sweep_values = np.arange(node.sweep_interval["start"], node.sweep_interval["stop"], node.sweep_interval["step"]))
             
             #TODO: change this so the path where it's saved is standardized.
             plot.savefig(plot_filepath, format="PNG")
 
-            return optimal_parameter_value, plot_filepath
+            return optimal_parameter_value
 
         # Case when the experiment is started by 'check_data': the experiment is run only in 1 point. In this case we don't store the 
         # experiment results in the node's 'experiment_results' attribute, because we don't want to overwrite the old results: 
