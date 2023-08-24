@@ -1,10 +1,10 @@
 """Platform class."""
 import ast
 import re
+import warnings
 from copy import deepcopy
 from dataclasses import asdict
 from queue import Queue
-import warnings
 
 from qibo.models import Circuit
 from qiboconnection.api import API
