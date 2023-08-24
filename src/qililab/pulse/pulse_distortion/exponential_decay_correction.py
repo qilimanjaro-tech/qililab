@@ -21,9 +21,9 @@ class ExponentialCorrection(PulseDistortion):
     Args:
         tau_bias_tee (float): Time constant
         amp (float): Amplitude constant
-        sampling_rate (float): Sampling rate. Defaults to 1.
-        norm_factor (float): The manual normalization factor that multiplies the envelope in the apply() method. Defaults to 1 (no effect).
-        auto_norm (bool): Whether to automatically normalize the corrected envelope with the original max height in the apply() method.
+        sampling_rate (float, optional): Sampling rate. Defaults to 1.
+        norm_factor (float, optional): The manual normalization factor that multiplies the envelope in the apply() method. Defaults to 1 (no effect).
+        auto_norm (bool, optional): Whether to automatically normalize the corrected envelope with the original max height in the apply() method.
             (The max height is the furthest number from 0 in the envelope, only checking the real axis/part). Defaults to True.
 
     Returns:
@@ -64,7 +64,7 @@ class ExponentialCorrection(PulseDistortion):
         For further details on the normalization implementation see the docstring on :class:`PulseDistortion` base class.
 
         Args:
-            envelope (numpy.ndarray): array representing the envelope of a pulse for each time step.
+            envelope (numpy.ndarray): Array representing the envelope of a pulse for each time step.
 
         Returns:
             numpy.ndarray: Amplitude of the envelope for each time step.

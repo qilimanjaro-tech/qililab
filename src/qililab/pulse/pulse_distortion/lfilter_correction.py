@@ -48,8 +48,8 @@ class LFilterCorrection(PulseDistortion):
     Args:
         a (list[float]): The denominator coefficient vector in a 1-D sequence.
         b (list[float]): The numerator coefficient vector in a 1-D sequence.
-        norm_factor (float): The manual normalization factor that multiplies the envelope in the apply() method. Defaults to 1 (no effect).
-        auto_norm (bool): Whether to automatically normalize the corrected envelope with the original max height in the apply() method.
+        norm_factor (float, optional): The manual normalization factor that multiplies the envelope in the apply() method. Defaults to 1 (no effect).
+        auto_norm (bool, optional): Whether to automatically normalize the corrected envelope with the original max height in the apply() method.
             (The max height is the furthest number from 0 in the envelope, only checking the real axis/part). Defaults to True.
 
     Returns:
@@ -88,7 +88,7 @@ class LFilterCorrection(PulseDistortion):
         For further details on the normalization implementation see the docstring on :class:`PulseDistortion` base class.
 
         Args:
-            envelope (numpy.ndarray): array representing the envelope of a pulse for each time step.
+            envelope (numpy.ndarray): Array representing the envelope of a pulse for each time step.
 
         Returns:
             numpy.ndarray: Amplitude of the envelope for each time step.
