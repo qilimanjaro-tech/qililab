@@ -4,8 +4,6 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import numpy as np
-import pytest
-import yaml
 
 import qililab as ql
 from qililab.data_management import load_results, save_platform, save_results
