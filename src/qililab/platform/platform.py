@@ -44,7 +44,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         runcard (Runcard): Runcard class containing all the chip, buses & instruments information of the platform.
         connection (API | None = None): Qiboconnection's API class used to block access to other users when connected
             to the platform.
-        new_drivers (bool, Optional = False): Flag to indicate the platform should use the new drivers and buses, 
+        new_drivers (bool, Optional = False): Flag to indicate the platform should use the new drivers and buses,
             along the new runcard format. Defaults to False.
 
     Examples:
