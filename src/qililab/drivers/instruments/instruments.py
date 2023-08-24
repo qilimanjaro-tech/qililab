@@ -1,5 +1,6 @@
 """Instruments class"""
 from dataclasses import dataclass
+
 from qililab.drivers.interfaces import BaseInstrument
 
 
