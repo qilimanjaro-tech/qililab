@@ -85,7 +85,7 @@ class LFilterCorrection(PulseDistortion):
 
         Finally it applies the manual `self.norm_factor` to the result, reducing the full envelope by its magnitude.
 
-        For further details on the normalization implementation see the documentation on :class:`PulseDistortion` base class.
+        For further details on the normalization implementation see the docstring on :class:`PulseDistortion` base class.
 
         Args:
             envelope (numpy.ndarray): array representing the envelope of a pulse for each time step.

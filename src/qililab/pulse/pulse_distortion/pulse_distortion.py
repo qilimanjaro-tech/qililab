@@ -83,7 +83,7 @@ class PulseDistortion(FactoryElement):
 
     @abstractmethod
     def apply(self, envelope: np.ndarray) -> np.ndarray:
-        """_summary_
+        """Method for applying the distortion to the given envelope.
 
         Args:
             envelope (np.ndarray): Original pulse envelope to be distorted.
@@ -122,7 +122,7 @@ class PulseDistortion(FactoryElement):
 
         Finally it applies the manual `self.norm_factor` to the result, reducing the full envelope by its magnitude.
 
-        (For further details on the normalization implementation see the documentation of the class)
+        For further details on the normalization implementation see the docstring of the class.
 
         Args:
             envelope (np.ndarray): The original envelope before applying the distortion.
