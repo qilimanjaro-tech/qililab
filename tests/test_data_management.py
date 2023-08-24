@@ -13,6 +13,7 @@ from qililab.platform import Platform
 from tests.data import Galadriel, NewGaladriel
 from tests.test_utils import build_platform
 
+
 class TestPlatformData:
     """Unit tests for the `build_platform` function.."""
 

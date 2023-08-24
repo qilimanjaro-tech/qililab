@@ -22,8 +22,7 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSchedule
 from qililab.result import Result
-from qililab.settings import NewRuncard
-from qililab.settings import Runcard
+from qililab.settings import NewRuncard, Runcard
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import Line, Parameter
 from qililab.typings.yaml_type import yaml

@@ -33,6 +33,7 @@ from qililab.typings.enums import (
     SystemControlName,
 )
 
+
 class NewGaladriel:
     """Test data of the new galadriel platform"""
 

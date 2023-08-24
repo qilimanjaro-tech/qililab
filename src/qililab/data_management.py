@@ -8,8 +8,7 @@ import yaml
 from qiboconnection.api import API
 
 from .platform import Platform
-from .settings import NewRuncard
-from .settings import Runcard
+from .settings import NewRuncard, Runcard
 
 
 def save_results(results: np.ndarray, loops: dict[str, np.ndarray], data_path: str, name: str | None = None) -> str:
