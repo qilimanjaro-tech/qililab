@@ -211,7 +211,7 @@ class TestCluster:
 
         cls.old_qcm_qrm_bases = QcmQrm.__bases__
         cls.old_cluster_bases = Cluster.__bases__
-        QcmQrm.__bases__ = (MockQcmQrm,)
+        QcmQrm.__bases__ = (MockQcmQrm, BaseInstrument)
         Cluster.__bases__ = (MockCluster, BaseInstrument)
 
     @classmethod
@@ -247,11 +247,18 @@ class TestCluster:
 
     def test_init_with_submodules(self):
         """Test init method without dummy configuration and submodules"""
-        expected_names = ["qrm_0", "qcm_0"]
+        expected_names = ["module1", "qrm_1", "qcm_0"]
         submodules = [
             {
                 "alias": "qrm_0",
+                "slot_id": 1,
+            },
+            {
+                "alias": "qrm_1",
                 "slot_id": 2,
+                "parameters": {
+                    "out0_offset": 1
+                }
             },
             {
                 "alias": "qcm_0",
@@ -263,6 +270,7 @@ class TestCluster:
         registered_names = list(submodules.keys())
 
         assert registered_names == expected_names
+        assert cluster.submodules["qrm_1"].get("out0_offset") == 1
 
     def test_initial_setup(self):
         """Test initial setup method"""
