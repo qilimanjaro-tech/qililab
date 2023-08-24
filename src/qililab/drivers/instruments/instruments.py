@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 import yaml
 
-from qililab.drivers import BaseInstrument
+from qililab.drivers.interfaces import BaseInstrument
 
 
 @dataclass
