@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 
+from qililab.drivers.instruments import Instruments as NewInstruments
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.utils.instrument_reference import InstrumentReference
 
@@ -20,7 +21,7 @@ class Loader:
 
     def replace_modules_from_settings_with_instrument_objects(
         self,
-        instruments: Instruments,
+        instruments: Instruments | NewInstruments,
         instrument_references: list[InstrumentReference],
     ):
         """Replace dictionaries from settings into its respective instrument classes.
