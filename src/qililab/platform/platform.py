@@ -395,7 +395,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 | instrument_dict
                 | instrument_controllers_dict
             )
-        
+
         warnings.warn("to_dict() not yet implemented for new drivers")
         return {}
 
