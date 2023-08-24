@@ -4,6 +4,7 @@ import re
 from copy import deepcopy
 from dataclasses import asdict
 from queue import Queue
+import warnings
 
 from qibo.models import Circuit
 from qiboconnection.api import API
@@ -189,42 +190,57 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             manual_override (bool, optional): If ``True``, avoid checking if the device is blocked. This will stop any
                 current execution. Defaults to False.
         """
-        if self._connected_to_instruments:
-            logger.info("Already connected to the instruments")
-            return
+        if not self.new_drivers:
+            if self._connected_to_instruments:
+                logger.info("Already connected to the instruments")
+                return
 
-        if self.connection is not None and not manual_override:
-            self.connection.block_device_id(device_id=self.device_id)
+            if self.connection is not None and not manual_override:
+                self.connection.block_device_id(device_id=self.device_id)
 
-        self.instrument_controllers.connect()
-        self._connected_to_instruments = True
-        logger.info("Connected to the instruments")
+            self.instrument_controllers.connect()
+            self._connected_to_instruments = True
+            logger.info("Connected to the instruments")
+        else:
+            warnings.warn("connect() is deprecated when using new instruments")
 
     def initial_setup(self):
         """Set the initial setup of the instruments"""
-        self.instrument_controllers.initial_setup()
-        logger.info("Initial setup applied to the instruments")
+        if not self.new_drivers:
+            self.instrument_controllers.initial_setup()
+            logger.info("Initial setup applied to the instruments")
+        else:
+            warnings.warn("initial_setup() is deprecated when using new instruments")
 
     def turn_on_instruments(self):
         """Turn on the instruments"""
-        self.instrument_controllers.turn_on_instruments()
-        logger.info("Instruments turned on")
+        if not self.new_drivers:
+            self.instrument_controllers.turn_on_instruments()
+            logger.info("Instruments turned on")
+        else:
+            warnings.warn("turn_on_instruments() is deprecated when using new instruments")
 
     def turn_off_instruments(self):
         """Turn off the instruments"""
-        self.instrument_controllers.turn_off_instruments()
-        logger.info("Instruments turned off")
+        if not self.new_drivers:
+            self.instrument_controllers.turn_off_instruments()
+            logger.info("Instruments turned off")
+        else:
+            warnings.warn("turn_off_instruments() is deprecated when using new instruments")
 
     def disconnect(self):
         """Close connection to the instrument controllers."""
-        if self.connection is not None:
-            self.connection.release_device(device_id=self.device_id)
-        if not self._connected_to_instruments:
-            logger.info("Already disconnected from the instruments")
-            return
-        self.instrument_controllers.disconnect()
-        self._connected_to_instruments = False
-        logger.info("Disconnected from instruments")
+        if not self.new_drivers:
+            if self.connection is not None:
+                self.connection.release_device(device_id=self.device_id)
+            if not self._connected_to_instruments:
+                logger.info("Already disconnected from the instruments")
+                return
+            self.instrument_controllers.disconnect()
+            self._connected_to_instruments = False
+            logger.info("Disconnected from instruments")
+        else:
+            warnings.warn("disconnect() is deprecated when using new instruments")
 
     def get_element(self, alias: str):
         """Get platform element.
@@ -355,27 +371,31 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
     def to_dict(self):
         """Return all platform information as a dictionary."""
-        name_dict = {RUNCARD.NAME: self.name}
-        device_id = {RUNCARD.DEVICE_ID: self.device_id}
-        gates_settings_dict = {RUNCARD.GATES_SETTINGS: asdict(self.gates_settings, dict_factory=dict_factory)}
-        chip_dict = {RUNCARD.CHIP: self.chip.to_dict() if self.chip is not None else None}
-        buses_dict = {RUNCARD.BUSES: self.buses.to_dict() if self.buses is not None else None}
-        instrument_dict = {RUNCARD.INSTRUMENTS: self.instruments.to_dict() if self.instruments is not None else None}
-        instrument_controllers_dict = {
-            RUNCARD.INSTRUMENT_CONTROLLERS: self.instrument_controllers.to_dict()
-            if self.instrument_controllers is not None
-            else None,
-        }
+        if not self.new_drivers:
+            name_dict = {RUNCARD.NAME: self.name}
+            device_id = {RUNCARD.DEVICE_ID: self.device_id}
+            gates_settings_dict = {RUNCARD.GATES_SETTINGS: asdict(self.gates_settings, dict_factory=dict_factory)}
+            chip_dict = {RUNCARD.CHIP: self.chip.to_dict() if self.chip is not None else None}
+            buses_dict = {RUNCARD.BUSES: self.buses.to_dict() if self.buses is not None else None}
+            instrument_dict = {RUNCARD.INSTRUMENTS: self.instruments.to_dict() if self.instruments is not None else None}
+            instrument_controllers_dict = {
+                RUNCARD.INSTRUMENT_CONTROLLERS: self.instrument_controllers.to_dict()
+                if self.instrument_controllers is not None
+                else None,
+            }
 
-        return (
-            name_dict
-            | device_id
-            | gates_settings_dict
-            | chip_dict
-            | buses_dict
-            | instrument_dict
-            | instrument_controllers_dict
-        )
+            return (
+                name_dict
+                | device_id
+                | gates_settings_dict
+                | chip_dict
+                | buses_dict
+                | instrument_dict
+                | instrument_controllers_dict
+            )
+        else:
+            warnings.warn("to_dict() not yet implemented for new drivers")
+            return {}
 
     def __str__(self) -> str:
         """String representation of the platform
