@@ -11,7 +11,7 @@ from qililab.instruments.utils.instrument_reference import InstrumentReference
 class Loader:
     """Loads the Instruments supported types froom the Instrument References"""
 
-    def _get_instrument_or_raise_error_when_not_found_or_not_supported_type(self, instruments: Instruments, alias: str):
+    def _get_instrument_or_raise_error_when_not_found_or_not_supported_type(self, instruments: Instruments | NewInstruments, alias: str):
         """get instrument or raise error when not found"""
         instrument = instruments.get_instrument(alias=alias)
         if instrument is None:
@@ -27,7 +27,7 @@ class Loader:
         """Replace dictionaries from settings into its respective instrument classes.
 
         Args:
-            instruments (Instruments): Instruments loaded into the platform.
+            instruments (Instruments | NewInstruments): Instruments loaded into the platform.
             instrument_references (list[InstrumentReference]): List of references to the instruments
             with its alias to be retrieved from the Instrument Factory.
 
