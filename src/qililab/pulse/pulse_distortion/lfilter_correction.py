@@ -64,10 +64,10 @@ class LFilterCorrection(PulseDistortion):
 
         Corrects an envelope applying the scipy.signal.lfilter.
 
-        Then normalizes the resulting envelope to have the same max height than the starting one.
-        (the max height is the furthest number from 0, only checking the real axis/part)
+        Then if possible (corrected norm != 0), normalizes the resulting envelope to have the same max height than the
+        starting one. (the max height is the furthest number from 0, only checking the real axis/part)
 
-        Finally it applies the self.norm_factor to the result, reducing the full envelope by its magnitude.
+        Finally it applies the manual self.norm_factor to the result, reducing the full envelope by its magnitude.
 
         Args:
             envelope (numpy.ndarray): array representing the envelope of a pulse for each time step.
@@ -77,10 +77,15 @@ class LFilterCorrection(PulseDistortion):
         """
         corr_envelope = signal.lfilter(b=self.b, a=self.a, x=envelope)
 
+        # Automatic normalization if applicable.
         norm = np.max(np.abs(np.real(envelope)))
         corr_norm = np.max(np.abs(np.real(corr_envelope)))
 
-        return corr_envelope * (norm / corr_norm) * self.norm_factor
+        if corr_norm != 0:
+            corr_envelope *= norm / corr_norm
+
+        # Apply manual normalization.
+        return corr_envelope * self.norm_factor
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "LFilterCorrection":
