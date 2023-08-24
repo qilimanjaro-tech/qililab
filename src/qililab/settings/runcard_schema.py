@@ -116,7 +116,10 @@ class RuncardSchema:
             self.gates = (
                 {
                     qubit
-                    if isinstance(qubit, int)
+                    if (
+                        isinstance(qubit, int)
+                        or (isinstance(qubit, tuple) and isinstance(qubit[0], int) and isinstance(qubit[1], int))
+                    )
                     else ast.literal_eval(qubit): [self.GateSettings(**gate) for gate in gate_list]
                     for qubit, gate_list in self.gates.items()
                 }
