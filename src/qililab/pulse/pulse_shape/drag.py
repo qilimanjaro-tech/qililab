@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
-from qililab.typings import PulseShapeName, PulseShapeSettingsName
+from qililab.typings import PulseShapeName
 from qililab.utils import Factory
 
 
@@ -28,11 +28,11 @@ class Drag(PulseShape):
         Gaussian(x) = amplitude * exp(-0.5 * (x - mu)^2 / sigma^2)
 
     References:
-        - Analytic control methods for high-fidelity unitary operations in a weakly nonlinear oscillator: https://journals.aps.org/pra/abstract/10.1103/PhysRevA.83.012308
-        - Simple Pulses for Elimination of Leakage in Weakly Nonlinear Qubits: https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.103.110501
+        - Analytic control methods for high-fidelity unitary operations in a weakly nonlinear oscillator: https://journals.aps.org/pra/abstract/10.1103/PhysRevA.83.012308.
+        - Simple Pulses for Elimination of Leakage in Weakly Nonlinear Qubits: https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.103.110501.
 
     Args:
-        num_sigmas (float): Sigma number of the gaussian
+        num_sigmas (float): Sigma number of the gaussian.
         drag_coefficient (float): Drag coefficient that give the DRAG its imaginary components.
     """
 
@@ -86,6 +86,6 @@ class Drag(PulseShape):
         """
         return {
             "name": self.name.value,
-            PulseShapeSettingsName.NUM_SIGMAS.value: self.num_sigmas,
-            PulseShapeSettingsName.DRAG_COEFFICIENT.value: self.drag_coefficient,
+            "num_sigmas": self.num_sigmas,
+            "drag_coefficient": self.drag_coefficient,
         }

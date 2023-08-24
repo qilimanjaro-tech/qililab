@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
-from qililab.typings import PulseShapeName, PulseShapeSettingsName
+from qililab.typings import PulseShapeName
 from qililab.utils import Factory
 
 
@@ -19,7 +19,7 @@ class Gaussian(PulseShape):
         Gaussian(x) = amplitude * exp(-0.5 * (x - mu)^2 / sigma^2)
 
     Args:
-        num_sigmas (float): sigma number of the gaussian.
+        num_sigmas (float): Sigma number of the gaussian.
     """
 
     name = PulseShapeName.GAUSSIAN
@@ -69,5 +69,5 @@ class Gaussian(PulseShape):
         """
         return {
             "name": self.name.value,
-            PulseShapeSettingsName.NUM_SIGMAS.value: self.num_sigmas,
+            "num_sigmas": self.num_sigmas,
         }

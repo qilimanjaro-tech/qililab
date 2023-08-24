@@ -7,7 +7,6 @@ import pytest
 from qililab.pulse import Pulse
 from qililab.pulse.pulse_distortion import BiasTeeCorrection
 from qililab.pulse.pulse_shape import SNZ, Cosine, Drag, Gaussian, Rectangular
-from qililab.typings.enums import PulseDistortionSettingsName
 
 # Parameters for the BiasTeeCorrection.
 NORM_FACTOR = [0.7]
@@ -121,14 +120,14 @@ class TestBiasTeeCorrection:
         dictionary = pulse_distortion.to_dict()
         pulse_distortions = [BiasTeeCorrection.from_dict(dictionary)]
 
-        dictionary.pop(PulseDistortionSettingsName.SAMPLING_RATE.value)
+        dictionary.pop("sampling_rate")
         pulse_distortions.append(BiasTeeCorrection.from_dict(dictionary))
 
         dictionary.pop("name")
         pulse_distortions.append(BiasTeeCorrection.from_dict(dictionary))
 
-        dictionary[PulseDistortionSettingsName.TAU_BIAS_TEE.value] = 0.5
-        dictionary[PulseDistortionSettingsName.SAMPLING_RATE.value] = 2.0
+        dictionary["tau_bias_tee"] = 0.5
+        dictionary["sampling_rate"] = 2.0
         pulse_distortions.append(BiasTeeCorrection.from_dict(dictionary))
 
         for distortion in pulse_distortions:
@@ -143,10 +142,10 @@ class TestBiasTeeCorrection:
         assert isinstance(dictionary, dict)
         assert dictionary == {
             "name": pulse_distortion.name.value,
-            PulseDistortionSettingsName.TAU_BIAS_TEE.value: pulse_distortion.tau_bias_tee,
-            PulseDistortionSettingsName.SAMPLING_RATE.value: pulse_distortion.sampling_rate,
-            PulseDistortionSettingsName.NORM_FACTOR.value: pulse_distortion.norm_factor,
-            PulseDistortionSettingsName.AUTO_NORM.value: pulse_distortion.auto_norm,
+            "tau_bias_tee": pulse_distortion.tau_bias_tee,
+            "sampling_rate": pulse_distortion.sampling_rate,
+            "norm_factor": pulse_distortion.norm_factor,
+            "auto_norm": pulse_distortion.auto_norm,
         }
 
     def test_serialization(self, pulse_distortion: BiasTeeCorrection):

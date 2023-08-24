@@ -7,7 +7,6 @@ import pytest
 from qililab.pulse import Pulse
 from qililab.pulse.pulse_distortion import LFilterCorrection
 from qililab.pulse.pulse_shape import SNZ, Cosine, Drag, Gaussian, Rectangular
-from qililab.typings.enums import PulseDistortionSettingsName
 
 # Parameters for the LFilterCorrection.
 NORM_FACTOR = [1.0]
@@ -136,10 +135,10 @@ class TestLFilterCorrection:
         dictionary.pop("name")
         pulse_distortions.append(LFilterCorrection.from_dict(dictionary))
 
-        dictionary[PulseDistortionSettingsName.A.value] = [0.7, 1.3]
-        dictionary[PulseDistortionSettingsName.B.value] = [0.5, 0.6]
-        dictionary[PulseDistortionSettingsName.AUTO_NORM.value] = False
-        dictionary[PulseDistortionSettingsName.NORM_FACTOR.value] = 1.2
+        dictionary["a"] = [0.7, 1.3]
+        dictionary["b"] = [0.5, 0.6]
+        dictionary["auto_norm"] = False
+        dictionary["norm_factor"] = 1.2
         pulse_distortions.append(LFilterCorrection.from_dict(dictionary))
 
         for distortion in pulse_distortions:
@@ -154,10 +153,10 @@ class TestLFilterCorrection:
         assert isinstance(dictionary, dict)
         assert dictionary == {
             "name": pulse_distortion.name.value,
-            PulseDistortionSettingsName.A.value: pulse_distortion.a,
-            PulseDistortionSettingsName.B.value: pulse_distortion.b,
-            PulseDistortionSettingsName.NORM_FACTOR.value: pulse_distortion.norm_factor,
-            PulseDistortionSettingsName.AUTO_NORM.value: pulse_distortion.auto_norm,
+            "a": pulse_distortion.a,
+            "b": pulse_distortion.b,
+            "norm_factor": pulse_distortion.norm_factor,
+            "auto_norm": pulse_distortion.auto_norm,
         }
 
     def test_serialization(self, pulse_distortion: LFilterCorrection):

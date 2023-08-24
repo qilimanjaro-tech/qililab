@@ -7,7 +7,6 @@ import numpy as np
 from qililab.config import logger
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
 from qililab.typings import PulseShapeName
-from qililab.typings.enums import PulseShapeSettingsName
 from qililab.utils import Factory
 
 
@@ -28,8 +27,8 @@ class SNZ(PulseShape):
         limit in a superconducting quantum processor: https://arxiv.org/abs/2008.07411
 
     Args:
-        b (float): instant stops height when going from the rectangular half-duration to height=0.
-        t_phi (int): time at height=0, in the middle of the positive and negative rectangular pulses.
+        b (float): Instant stops height when going from the rectangular half-duration to `height = 0`.
+        t_phi (int): Time at `height = 0`, in the middle of the positive and negative rectangular pulses.
     """
 
     name = PulseShapeName.SNZ
@@ -97,6 +96,6 @@ class SNZ(PulseShape):
 
         return {
             "name": self.name.value,
-            PulseShapeSettingsName.B.value: self.b,
-            PulseShapeSettingsName.T_PHI.value: self.t_phi,
+            "b": self.b,
+            "t_phi": self.t_phi,
         }

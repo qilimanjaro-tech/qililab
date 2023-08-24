@@ -5,7 +5,6 @@ import numpy as np
 import pytest
 
 from qililab.pulse.pulse_shape import SNZ, PulseShape
-from qililab.typings.enums import PulseShapeSettingsName
 
 from .helper_functions import return_envelope
 
@@ -108,8 +107,8 @@ class TestPulseShape:
             == dictionary2
             == {
                 "name": pulse_shape.name.value,
-                PulseShapeSettingsName.B.value: pulse_shape.b,
-                PulseShapeSettingsName.T_PHI.value: pulse_shape.t_phi,
+                "b": pulse_shape.b,
+                "t_phi": pulse_shape.t_phi,
             }
         )
 

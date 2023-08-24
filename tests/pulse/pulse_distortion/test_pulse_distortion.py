@@ -8,7 +8,6 @@ from qililab.pulse import Pulse
 from qililab.pulse.pulse_distortion import BiasTeeCorrection, ExponentialCorrection, LFilterCorrection
 from qililab.pulse.pulse_distortion.pulse_distortion import PulseDistortion
 from qililab.pulse.pulse_shape import Cosine, Drag, Gaussian, Rectangular
-from qililab.typings.enums import PulseDistortionSettingsName
 from qililab.utils import Factory
 
 # Parameters for the different corrections.
@@ -178,29 +177,29 @@ class TestPulseDistortion:
         if isinstance(pulse_distortion, BiasTeeCorrection):
             assert dictionary == {
                 "name": pulse_distortion.name.value,
-                PulseDistortionSettingsName.TAU_BIAS_TEE.value: pulse_distortion.tau_bias_tee,
-                PulseDistortionSettingsName.SAMPLING_RATE.value: pulse_distortion.sampling_rate,
-                PulseDistortionSettingsName.NORM_FACTOR.value: pulse_distortion.norm_factor,
-                PulseDistortionSettingsName.AUTO_NORM.value: pulse_distortion.auto_norm,
+                "tau_bias_tee": pulse_distortion.tau_bias_tee,
+                "sampling_rate": pulse_distortion.sampling_rate,
+                "norm_factor": pulse_distortion.norm_factor,
+                "auto_norm": pulse_distortion.auto_norm,
             }
 
         if isinstance(pulse_distortion, ExponentialCorrection):
             assert dictionary == {
                 "name": pulse_distortion.name.value,
-                PulseDistortionSettingsName.TAU_EXPONENTIAL.value: pulse_distortion.tau_exponential,
-                PulseDistortionSettingsName.AMP.value: pulse_distortion.amp,
-                PulseDistortionSettingsName.SAMPLING_RATE.value: pulse_distortion.sampling_rate,
-                PulseDistortionSettingsName.NORM_FACTOR.value: pulse_distortion.norm_factor,
-                PulseDistortionSettingsName.AUTO_NORM.value: pulse_distortion.auto_norm,
+                "tau_exponential": pulse_distortion.tau_exponential,
+                "amp": pulse_distortion.amp,
+                "sampling_rate": pulse_distortion.sampling_rate,
+                "norm_factor": pulse_distortion.norm_factor,
+                "auto_norm": pulse_distortion.auto_norm,
             }
 
         if isinstance(pulse_distortion, LFilterCorrection):
             assert dictionary == {
                 "name": pulse_distortion.name.value,
-                PulseDistortionSettingsName.A.value: pulse_distortion.a,
-                PulseDistortionSettingsName.B.value: pulse_distortion.b,
-                PulseDistortionSettingsName.NORM_FACTOR.value: pulse_distortion.norm_factor,
-                PulseDistortionSettingsName.AUTO_NORM.value: pulse_distortion.auto_norm,
+                "a": pulse_distortion.a,
+                "b": pulse_distortion.b,
+                "norm_factor": pulse_distortion.norm_factor,
+                "auto_norm": pulse_distortion.auto_norm,
             }
 
     # TESTING CORNER CASES:

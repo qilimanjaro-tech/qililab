@@ -5,7 +5,6 @@ import numpy as np
 import pytest
 
 from qililab.pulse.pulse_shape import Drag, PulseShape
-from qililab.typings.enums import PulseShapeSettingsName
 
 from .helper_functions import return_envelope
 
@@ -110,8 +109,8 @@ class TestPulseShape:
             == dictionary2
             == {
                 "name": pulse_shape.name.value,
-                PulseShapeSettingsName.NUM_SIGMAS.value: pulse_shape.num_sigmas,
-                PulseShapeSettingsName.DRAG_COEFFICIENT.value: pulse_shape.drag_coefficient,
+                "num_sigmas": pulse_shape.num_sigmas,
+                "drag_coefficient": pulse_shape.drag_coefficient,
             }
         )
 

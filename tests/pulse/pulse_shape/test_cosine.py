@@ -5,7 +5,6 @@ import numpy as np
 import pytest
 
 from qililab.pulse.pulse_shape import Cosine, PulseShape
-from qililab.typings.enums import PulseShapeSettingsName
 
 from .helper_functions import return_envelope
 
@@ -125,7 +124,7 @@ class TestPulseShape:
             == dictionary2
             == {
                 "name": pulse_shape.name.value,
-                PulseShapeSettingsName.LAMBDA_2.value: pulse_shape.lambda_2,
+                "lambda_2": pulse_shape.lambda_2,
             }
         )
 

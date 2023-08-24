@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import numpy as np
 from scipy import signal
 
-from qililab.typings import PulseDistortionName, PulseDistortionSettingsName
+from qililab.typings import PulseDistortionName
 from qililab.utils import Factory
 
 from .pulse_distortion import PulseDistortion
@@ -19,12 +19,12 @@ class ExponentialCorrection(PulseDistortion):
     For more info, check SUPLEMENTAL MATERIAL IV. B. in [https://arxiv.org/abs/1907.04818].
 
     Args:
-        tau_bias_tee (float): time constant
-        amp (float): amplitude constant
-        sampling_rate (float): sampling rate. Defaults to 1.
+        tau_bias_tee (float): Time constant
+        amp (float): Amplitude constant
+        sampling_rate (float): Sampling rate. Defaults to 1.
         norm_factor (float): The manual normalization factor that multiplies the envelope in the apply() method. Defaults to 1 (no effect).
         auto_norm (bool): Whether to automatically normalize the corrected envelope with the original max height in the apply() method.
-            (the max height is the furthest number from 0 in the envelope, only checking the real axis/part). Defaults to True.
+            (The max height is the furthest number from 0 in the envelope, only checking the real axis/part). Defaults to True.
 
     Returns:
         PulseDistortion: Distortion to apply to given envelopes in PulseEvent.
@@ -61,7 +61,7 @@ class ExponentialCorrection(PulseDistortion):
 
         Finally it applies the manual `self.norm_factor` to the result, reducing the full envelope by its magnitude.
 
-        (For further details on the normalization implementation see the documentation on PulseDistortion base class)
+        For further details on the normalization implementation see the documentation on :class:`PulseDistortion` base class.
 
         Args:
             envelope (numpy.ndarray): array representing the envelope of a pulse for each time step.
@@ -114,9 +114,9 @@ class ExponentialCorrection(PulseDistortion):
         """
         return {
             "name": self.name.value,
-            PulseDistortionSettingsName.TAU_EXPONENTIAL.value: self.tau_exponential,
-            PulseDistortionSettingsName.AMP.value: self.amp,
-            PulseDistortionSettingsName.SAMPLING_RATE.value: self.sampling_rate,
-            PulseDistortionSettingsName.NORM_FACTOR.value: self.norm_factor,
-            PulseDistortionSettingsName.AUTO_NORM.value: self.auto_norm,
+            "tau_exponential": self.tau_exponential,
+            "amp": self.amp,
+            "sampling_rate": self.sampling_rate,
+            "norm_factor": self.norm_factor,
+            "auto_norm": self.auto_norm,
         }
