@@ -139,6 +139,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
     """
 
     def __init__(self, runcard: Runcard, connection: API | None = None, new_drivers: bool = False):
+        self.new_drivers = new_drivers
         self.name = runcard.name
         """Name of the platform (str) """
 

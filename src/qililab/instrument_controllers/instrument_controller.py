@@ -6,6 +6,7 @@ from typing import Callable, Sequence, get_type_hints
 
 from qililab.config import logger
 from qililab.constants import INSTRUMENTCONTROLLER, RUNCARD
+from qililab.drivers.instruments import Instruments as NewInstruments
 from qililab.instrument_connections.connection import Connection
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
@@ -85,7 +86,7 @@ class InstrumentController(BusElement, ABC):
             ref.connection.check_instrument_is_connected()
             return self._method(ref, *args, **kwargs)
 
-    def __init__(self, settings: dict, loaded_instruments: Instruments):
+    def __init__(self, settings: dict, loaded_instruments: Instruments | NewInstruments):
         settings_class: type[InstrumentControllerSettings] = get_type_hints(self).get("settings")  # type: ignore
         self.settings = settings_class(**settings)
         self.modules = Loader().replace_modules_from_settings_with_instrument_objects(
