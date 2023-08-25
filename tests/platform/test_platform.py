@@ -36,6 +36,7 @@ def fixture_platform():
 def fixture_runcard():
     return Runcard(**copy.deepcopy(Galadriel.runcard))
 
+
 @pytest.fixture(name="new_runcard")
 def fixture_new_runcard():
     return NewRuncard(**copy.deepcopy(NewGaladriel.runcard))
@@ -58,6 +59,7 @@ class TestPlatformNewDriversInitialization:
         assert isinstance(platform.chip, Chip)
         assert platform.connection is None
         assert platform._connected_to_instruments is False
+
 
 class TestPlatformInitialization:
     """Unit tests for the Platform class initialization"""
