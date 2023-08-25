@@ -133,10 +133,8 @@ class TestPulsarIntegration:
         pulsar_qcm = Pulsar(alias=f"{PULSAR_NAME}1", dummy_type=PulsarType.PULSAR_QCM)
         pulsar_qrm = Pulsar(alias=PULSAR_NAME, dummy_type=PulsarType.PULSAR_QRM)
 
-        print(pulsar_qcm.params)
         assert pulsar_qcm.params == pulsar_qcm.parameters
         assert pulsar_qrm.params == pulsar_qrm.parameters
-        assert 1 == 0
 
     def test_alias(self):
         """Unittest to test the alias property."""
