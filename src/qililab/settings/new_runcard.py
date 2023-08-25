@@ -161,6 +161,6 @@ class NewRuncard:
     # Runcard class actual initialization
     name: str
     device_id: int
-    chip: Chip # This actually is a list[dict] until the post_init is called
+    chip: Chip  # This actually is a list[dict] until the post_init is called
     instruments: list[dict]
     gates_settings: GatesSettings
