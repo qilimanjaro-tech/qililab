@@ -41,7 +41,8 @@ class CalibrationNode:
         _parameter_bus_alias (str): The alias of the bus where the parameter is updated.
         _parameter (str): The parameter that this node will tune.
         _drift_timeout (float): A durations in seconds, representing an estimate of how long it takes for the parameter to drift.
-        _data_validation_threshold (float): The threshold used by the check_data() method to validate the data fittings. #TODO: this is now used for the rsquared value in check_data, change docs
+        _check_data_confidence_level (float): The confidence level used to determine whether check_data should return "in_spec" or not. See check_data for more information.
+        _r_squared_threshold (float): The minimum r-squared value acceptable when determining if check_data should return "out_of_spec" or "bad_data". See check_data for more information.
         _timestamps (dict): A dictionary where keys are timestamps and values are the operations that generated the timestamp.
                            This operation can be either a function call of check_data() or of calibrate()
         _number_of_random_datapoints (int) : The number of points, chosen randomly within the sweep interval, where we check if the experiment
@@ -66,11 +67,12 @@ class CalibrationNode:
         plotting_labels: dict = None,
         qubit: int = None,
         drive_bus_alias: str = None,
-        readout_bus: str = None,
+        readout_bus_alias: str = None,
         parameter_bus_alias: str = None,
         parameter: str = None,
         drift_timeout: float = 0,
-        data_validation_threshold: float = 0.96,
+        check_data_confidence_level = 2,
+        r_squared_threshold: float = 0.96,
         number_of_random_datapoints: int = 10,
         manual_check: bool = False,
         needs_recalibration = False
@@ -87,12 +89,13 @@ class CalibrationNode:
         self._plotting_labels = plotting_labels
         self._qubit = qubit
         self._drive_bus_alias = drive_bus_alias
-        self._readout_bus = readout_bus
+        self._readout_bus_alias = readout_bus_alias
         self._parameter_bus_alias = parameter_bus_alias
         self._parameter = parameter
         self._drift_timeout = drift_timeout
-        if not(0 <= data_validation_threshold <= 1): raise ValueError("Data validation threshold must be between 0 and 1, as it represent the R-squared value of a fit.")
-        self._data_validation_threshold = data_validation_threshold
+        if not(0 <= r_squared_threshold <= 1): raise ValueError("Data validation threshold must be between 0 and 1, as it represent the R-squared value of a fit.")
+        self._check_data_confidence_level = check_data_confidence_level
+        self._r_squared_threshold = r_squared_threshold
         self._number_of_random_datapoints = number_of_random_datapoints
         self._manual_check = manual_check
         self._timestamps = {}
@@ -159,8 +162,8 @@ class CalibrationNode:
         return self._drive_bus_alias
     
     @property
-    def readout_bus(self):
-        return self._readout_bus
+    def readout_bus_alias(self):
+        return self._readout_bus_alias
     
     @property
     def parameter_bus_alias(self):
@@ -179,8 +182,12 @@ class CalibrationNode:
         return self._drift_timeout
     
     @property
-    def data_validation_threshold(self):
-        return self._data_validation_threshold
+    def check_data_confidence_level(self):
+        return self._check_data_confidence_level
+    
+    @property
+    def r_squared_threshold(self):
+        return self._r_squared_threshold
     
     @property
     def timestamps(self):

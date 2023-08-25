@@ -242,8 +242,7 @@ class Controller:
         square_differences = (new_results_array - old_results_array)**2
         mean_diff = np.mean(square_differences)
         std_dev_diff = np.std(square_differences)
-        confidence_level = 2 #TODO: this should be set by the user somewhere, not hardcoded
-        threshold = mean_diff + confidence_level * std_dev_diff
+        threshold = mean_diff + node.check_data_confidence_level * std_dev_diff
         if len(old_results_array) == np.where(square_differences <= threshold):
             node.add_timestamp(timestamp=get_timestamp(), type_of_timestamp="check_data")
             return "in_spec"
@@ -251,7 +250,7 @@ class Controller:
             model = lmfit.Model(node.fitting_model)
             fit = model.fit(data=new_results_array, x=random_values)
             r_squared = 1 - fit.residual.var() / np.var(new_results_array)
-            if r_squared >= node.data_validation_threshold:
+            if r_squared >= node.r_squared_threshold:
                 return "out_of_spec"
             return "bad_data"
 

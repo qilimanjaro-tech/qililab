@@ -5,11 +5,24 @@ Useful functions for calibration experiments and data analysis.
 import random
 from datetime import datetime, timedelta
 import os
+import networkx as nx
 
 import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 import numpy as np
 import yaml
 
+def visualize_calibration_graph(calibration_graph: nx.DiGraph, graph_figure_path: str):
+    labels = {node: node.node_id for node in calibration_graph.nodes}
+    nx.draw_planar(calibration_graph, labels=labels, with_labels=True)
+    plt.savefig(graph_figure_path, format="PNG")
+    graph_figure = mpimg.imread(graph_figure_path)
+    plt.imshow(graph_figure)
+    plt.show()
+    # This closes the figure containing the graph drawing. Every time we call plt.show() in the future, 
+    # for example to show the plot given by an analysis function to the user, all open figures will be shown,
+    # including this one showing the graph drawing, which we don't want.
+    plt.close()
 
 def get_timestamp() -> int:
     """Generate a UNIX timestamp.
