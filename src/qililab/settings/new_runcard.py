@@ -21,19 +21,41 @@ class NewRuncard:
     The input to the constructor should be a dictionary of the desired runcard with the following structure:
     - gates_settings:
     - chip:
+    - buses:
     - instruments: List of "instruments" dictionaries
 
     The gates_settings, chip and bus dictionaries will be passed to their corresponding NewRuncard.GatesSettings,
-    NewRuncard.Chip or NewRuncard.Bus classes here, meanwhile the instruments will remain dictionaries.
+    NewRuncard.Chip or NewRuncard.Bus classes here, meanwhile the instruments and instrument_controllers will remain dictionaries.
 
-    Then this full class gets passed to the Platform who will instantiate the actual qililab Chip and the
+    Then this full class gets passed to the Platform who will instantiate the actual qililab Chip, Buses/Bus and the
     corresponding Instrument classes with the settings attributes of this class.
 
     Args:
         gates_settings (dict): Gates settings dictionary -> Runcard.GatesSettings inner dataclass
         chip (dict): Chip settings dictionary -> Runcard.Chip settings inner dataclass
+        buses (list[dict]): List of Bus settings dictionaries -> list[Runcard.Bus] settings inner dataclass
         instruments (list[dict]): List of dictionaries containing the "instruments" information (does not transform)
     """
+
+    # Inner dataclasses definition
+    @dataclass
+    class Bus:
+        """Dataclass with all the settings the buses of the platform need.
+
+        Args:
+            alias (str): Alias of the bus.
+            system_control (dict): Dictionary containing the settings of the system control of the bus.
+            port (str): Alias of the port of the chip the bus is connected to.
+            distortions (list[dict]): List of dictionaries containing the settings of the distortions applied to each
+                bus.
+            delay (int, optional): Delay applied to all pulses sent in this bus. Defaults to 0.
+        """
+
+        alias: str
+        type: str
+        port: str
+        distortions: list[dict]
+        delay: int = 0
 
     @dataclass
     class Chip:
@@ -161,6 +183,10 @@ class NewRuncard:
     # Runcard class actual initialization
     name: str
     device_id: int
-    chip: Chip  # This actually is a list[dict] until the post_init is called
+    chip: Chip
+    buses: list[Bus]  # This actually is a list[dict] until the post_init is called
     instruments: list[dict]
     gates_settings: GatesSettings
+
+    def __post_init__(self):
+        self.buses = [self.Bus(**bus) for bus in self.buses] if self.buses is not None else None
