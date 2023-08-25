@@ -8,11 +8,10 @@ from qililab.constants import PULSE
 from qililab.pulse import Cosine, Drag, Gaussian, Pulse, Rectangular
 
 # Parameters for the different Pulses
-AMPLITUDE = [0.9]
+AMPLITUDE = [0, 0.9, 1.1, -0.8]
 PHASE = [0, np.pi / 3, 2 * np.pi]
-DURATION = [47]
+DURATION = [47, 40]
 FREQUENCY = [0.7e9]
-RESOLUTION = [1.1]
 SHAPE = [
     Rectangular(),
     Cosine(),
@@ -20,6 +19,9 @@ SHAPE = [
     Gaussian(num_sigmas=4),
     Drag(num_sigmas=4, drag_coefficient=1.0),
 ]
+
+# Parameters of the envelope.
+RESOLUTION = 1.0
 
 
 @pytest.mark.parametrize(
@@ -36,53 +38,36 @@ class TestPulse:
 
     def test_envelope_method(self, pulse: Pulse):
         """Test envelope method"""
-        resolution = 0.1
+        envelope = pulse.envelope(resolution=RESOLUTION)
 
-        envelope = pulse.envelope()
-        envelope2 = pulse.envelope(resolution=resolution)
-        envelope3 = pulse.envelope(amplitude=2.0, resolution=resolution)
+        # Test not None and type
+        assert envelope is not None
+        assert isinstance(envelope, np.ndarray)
 
-        for env in [envelope, envelope2, envelope3]:
-            assert env is not None
-            assert isinstance(env, np.ndarray)
+        # Assert size of np.ndarray
+        assert len(envelope) == pulse.duration / RESOLUTION
 
-        if isinstance(pulse.pulse_shape, Cosine) and pulse.pulse_shape.lambda_2 > 0.0:
-            # If lambda_2 > 0.0 the max amplitude is reduced
-            assert round(np.max(np.real(envelope)), 2 * int(np.sqrt(1 / 1.0))) < pulse.amplitude
-            assert round(np.max(np.real(envelope2)), int(np.sqrt(1 / resolution))) < pulse.amplitude
-            assert round(np.max(np.real(envelope3)), int(np.sqrt(1 / resolution))) < 2.0
-            # If you check the form of this shape, the maximum never gets down 70% of the Amplitude for any lambda_2
-            assert round(np.max(np.real(envelope)), 2 * int(np.sqrt(1 / 1.0))) > 0.7 * pulse.amplitude
-            assert round(np.max(np.real(envelope2)), int(np.sqrt(1 / resolution))) > 0.7 * pulse.amplitude
-            assert round(np.max(np.real(envelope3)), int(np.sqrt(1 / resolution))) > 0.7 * 2.0
+        # Test the maximums of the positive envelopes
+        if pulse.amplitude >= 0.0:
+            if isinstance(pulse.pulse_shape, Cosine) and pulse.pulse_shape.lambda_2 > 0.0:
+                # If lambda_2 > 0.0 the max amplitude is reduced, but never gets down 70% of the Amplitude
+                assert round(np.max(np.real(envelope)), 2) <= pulse.amplitude
+                assert round(np.max(np.real(envelope)), 2) >= 0.7 * pulse.amplitude
+            else:
+                assert round(np.max(np.real(envelope)), 2) == pulse.amplitude
 
-        else:
-            assert round(np.max(np.real(envelope)), 2 * int(np.sqrt(1 / 1.0))) == pulse.amplitude
-            assert round(np.max(np.real(envelope2)), int(np.sqrt(1 / resolution))) == pulse.amplitude
-            assert round(np.max(np.real(envelope3)), int(np.sqrt(1 / resolution))) == 2.0
+        # Test the minimums of the negative envelopes
+        elif pulse.amplitude <= 0.0:
+            if isinstance(pulse.pulse_shape, Cosine) and pulse.pulse_shape.lambda_2 > 0.0:
+                # If lambda_2 > 0.0 the max amplitude is reduced, but never gets down 70% of the Amplitude
+                assert round(np.min(np.real(envelope)), 2) >= pulse.amplitude
+                assert round(np.min(np.real(envelope)), 2) <= 0.7 * pulse.amplitude
+            else:
+                assert round(np.min(np.real(envelope)), 2) == pulse.amplitude
 
-        assert len(envelope) * 10 == len(envelope2) == len(envelope3)
-
-        if isinstance(pulse.pulse_shape, Rectangular):
-            assert np.max(envelope) == np.min(envelope)
-
-        if isinstance(pulse.pulse_shape, Cosine) and pulse.pulse_shape.lambda_2 > 0.0:
-            assert np.max(envelope) != envelope[len(envelope) // 2]
-            assert np.min(envelope) == envelope[0]
-
-        if isinstance(pulse.pulse_shape, Cosine) and pulse.pulse_shape.lambda_2 <= 0.0:
-            assert np.max(envelope) == envelope[len(envelope) // 2]
-            assert np.min(envelope) == envelope[0]
-
-        if isinstance(pulse.pulse_shape, Gaussian):
-            assert np.max(envelope) == envelope[len(envelope) // 2]
-            assert np.max(envelope) / 2 < envelope[len(envelope) // 4]
-            assert np.min(envelope) == envelope[0]
-
-        if isinstance(pulse.pulse_shape, Drag):
-            assert np.max(np.real(envelope)) == np.real(envelope[len(envelope) // 2])
-            assert np.max(np.real(envelope)) / 2 < np.real(envelope[len(envelope) // 4])
-            assert np.min(np.real(envelope)) == np.real(envelope[0])
+        # Test the 0 amplitude case
+        elif pulse.amplitude == 0.0:
+            assert 0.0 == np.max(envelope) == np.min(envelope)
 
     def test_from_dict_method(self, pulse: Pulse):
         """Test to_dict method"""

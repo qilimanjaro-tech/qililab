@@ -1,24 +1,44 @@
 """SNZ pulse shape."""
+from copy import deepcopy
 from dataclasses import dataclass
 
 import numpy as np
 
 from qililab.config import logger
-from qililab.constants import RUNCARD
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
 from qililab.typings import PulseShapeName
-from qililab.typings.enums import PulseShapeSettingsName
 from qililab.utils import Factory
 
 
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class SNZ(PulseShape):
-    """Sudden net zero pulse shape. See supplementary material I in https://arxiv.org/abs/2008.07411"""
+    """Sudden net zero pulse shape. It is composed of a half-duration positive rectangular pulse, followed
+    by three stops to cross height = 0, to then have another half-duration negative rectangular pulse.\
+
+    |   --------------                      <- half-duration positive rectangular pulse
+    |                 -                     <- instantaneous stop at height b
+    0                  ---                  <- t-phi duration at height = 0
+    |                     -                 <- instantaneous stop at height -b
+    |                      -------------    <- half-duration negative rectangular pulse
+
+    References:
+        High-fidelity controlled-Z gate with maximal intermediate leakage operating at the speed
+        limit in a superconducting quantum processor: https://arxiv.org/abs/2008.07411
+
+    Args:
+        b (float): Instant stops height when going from the rectangular half-duration to `height = 0`.
+        t_phi (int): Time at `height = 0`, in the middle of the positive and negative rectangular pulses.
+    """
 
     name = PulseShapeName.SNZ
     b: float
     t_phi: int
+
+    def __post_init__(self):
+        # ensure t_phi is an int
+        if not isinstance(self.t_phi, int):
+            raise TypeError("t_phi for pulse SNZ has to be an integer. Since min time resolution is 1ns")
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
         """Constant amplitude envelope.
@@ -35,14 +55,6 @@ class SNZ(PulseShape):
         halfpulse_t = (duration - t_phi - 2) / 2. This implies that (duration - t_phi) should be even.
         The -2 in the formula above is due to the 2 impulses b.
         """
-
-        # ensure t_phi is an int or float with 0 decimal part
-        if not isinstance(self.t_phi, int):
-            if self.t_phi % 1 != 0:
-                raise ValueError(
-                    f"t_phi with value {self.t_phi}ns for pulse SNZ cannot have decimal part since min time resolution is 1ns"
-                )
-            self.t_phi = int(self.t_phi)
         # calculate the halfpulse duration
         halfpulse_t = (duration - 2 - self.t_phi) / 2
         halfpulse_t = int(halfpulse_t / resolution)
@@ -71,8 +83,8 @@ class SNZ(PulseShape):
         Returns:
             Rectangular: Loaded class.
         """
-        local_dictionary = dictionary.copy()
-        local_dictionary.pop(RUNCARD.NAME, None)
+        local_dictionary = deepcopy(dictionary)
+        local_dictionary.pop("name", None)
         return cls(**local_dictionary)
 
     def to_dict(self):
@@ -83,7 +95,7 @@ class SNZ(PulseShape):
         """
 
         return {
-            RUNCARD.NAME: self.name.value,
-            PulseShapeSettingsName.B.value: self.b,
-            PulseShapeSettingsName.T_PHI.value: self.t_phi,
+            "name": self.name.value,
+            "b": self.b,
+            "t_phi": self.t_phi,
         }

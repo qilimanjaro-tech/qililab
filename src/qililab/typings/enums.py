@@ -114,25 +114,6 @@ class PulseDistortionName(str, Enum):
     LFILTER = "lfilter"
 
 
-class PulseDistortionSettingsName(str, Enum):
-    """Pulse Shape Settings names.
-
-    Args:
-        enum (str): Available types of pulse distortion settings names:
-        * tau_bias_tee
-        * tau_exponential
-        * amp
-    """
-
-    TAU_BIAS_TEE = "tau_bias_tee"
-    TAU_EXPONENTIAL = "tau_exponential"
-    AMP = "amp"
-    SAMPLING_RATE = "sampling_rate"
-    NORM_FACTOR = "norm_factor"
-    A = "a"
-    B = "b"
-
-
 class PulseShapeName(str, Enum):
     """Pulse shape options.
 
@@ -146,23 +127,6 @@ class PulseShapeName(str, Enum):
     RECTANGULAR = "rectangular"
     SNZ = "snz"
     COSINE = "cosine"
-
-
-class PulseShapeSettingsName(str, Enum):
-    """Pulse Shape Settings names.
-
-    Args:
-        enum (str): Available types of pulse shape settings names:
-        * num_sigmas
-        * drag_coefficient
-        * b (amplitude of the first and last sampling points of t_phi in the SNZ pulse)
-    """
-
-    NUM_SIGMAS = "num_sigmas"
-    DRAG_COEFFICIENT = "drag_coefficient"
-    B = "b"
-    T_PHI = "t_phi"
-    LAMBDA_2 = "lambda_2"
 
 
 class NodeName(str, Enum):
