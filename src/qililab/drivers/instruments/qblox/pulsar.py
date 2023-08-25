@@ -58,23 +58,21 @@ class Pulsar(QcodesPulsar, BaseInstrument):  # pylint: disable=abstract-method
         Returns:
             inst_repr (dict[str, Any]): Instrument representation
         """
-        inst_repr: dict[str, Any] = {
-            'alias': self.alias
-        }
+        inst_repr: dict[str, Any] = {"alias": self.alias}
         if self.identifier:
-            inst_repr['address'] = self.identifier
+            inst_repr["address"] = self.identifier
         if self.port:
-            inst_repr['port'] = self.port
+            inst_repr["port"] = self.port
         if self.dummy_type:
-            inst_repr['dummy_type'] = self.dummy_type
+            inst_repr["dummy_type"] = self.dummy_type
 
         params: dict[str, Any] = {}
         for param_name in self.params:
             param_value = self.get(param_name)
             params[param_name] = param_value
-        inst_repr['parameters'] = params
+        inst_repr["parameters"] = params
 
         sequencers = [submodule for submodule in self.submodules]
-        inst_repr['sequencers'] = sequencers
+        inst_repr["sequencers"] = sequencers
 
         return inst_repr

@@ -87,27 +87,25 @@ class Cluster(QcodesCluster, BaseInstrument):  # pylint: disable=abstract-method
         Returns:
             inst_repr (dict[str, Any]): Instrument representation
         """
-        inst_repr: dict[str, Any] = {
-            'alias': self.alias
-        }
+        inst_repr: dict[str, Any] = {"alias": self.alias}
         if self.identifier:
-            inst_repr['address'] = self.identifier
+            inst_repr["address"] = self.identifier
         if self.debug:
-            inst_repr['debug'] = self.debug
+            inst_repr["debug"] = self.debug
         if self.dummy_type:
-            inst_repr['dummy_cfg'] = self.dummy_cfg
+            inst_repr["dummy_cfg"] = self.dummy_cfg
 
         params: dict[str, Any] = {}
         for param_name in self.params:
             param_value = self.get(param_name)
             params[param_name] = param_value
-        inst_repr['parameters'] = params
+        inst_repr["parameters"] = params
 
         submodules: list[dict[str, Any]] = []
         for _, submodule in self.submodules.items():
             if isinstance(submodule, BaseInstrument):
                 submodules.append(submodule.instrument_repr())
-        inst_repr['submodules'] = submodules
+        inst_repr["submodules"] = submodules
 
         return inst_repr
 
@@ -174,19 +172,16 @@ class QcmQrm(QcodesQcmQrm, BaseInstrument):
         Returns:
             inst_repr (dict[str, Any]): Instrument representation
         """
-        inst_repr: dict[str, Any] = {
-            'alias': self.alias,
-            'slot_id': self.slot_idx
-        }
+        inst_repr: dict[str, Any] = {"alias": self.alias, "slot_id": self.slot_idx}
 
         params: dict[str, Any] = {}
         for param_name in self.params:
             param_value = self.get(param_name)
             params[param_name] = param_value
-        inst_repr['parameters'] = params
+        inst_repr["parameters"] = params
 
         sequencers = [submodule for submodule in self.submodules]
-        inst_repr['sequencers'] = sequencers
+        inst_repr["sequencers"] = sequencers
 
         return inst_repr
 
@@ -238,14 +233,14 @@ class QcmQrmRfLo(InstrumentModule, LocalOscillator):
             inst_repr (dict[str, Any]): Instrument representation
         """
         inst_repr: dict[str, Any] = {
-            'alias': self.alias,
+            "alias": self.alias,
         }
 
         params: dict[str, Any] = {}
         for param_name in self.params:
             param_value = self.get(param_name)
             params[param_name] = param_value
-        inst_repr['parameters'] = params
+        inst_repr["parameters"] = params
 
         return inst_repr
 
@@ -277,7 +272,7 @@ class QcmQrmRfAtt(InstrumentModule, Attenuator):
     def alias(self):
         """return the alias of the instrument, which corresponds to the QCodes name attribute"""
         return self.name
-    
+
     def instrument_repr(self) -> dict[str, Any]:
         """Returns a dictionary representation of the instrument, parameters and submodules.
 
@@ -285,13 +280,13 @@ class QcmQrmRfAtt(InstrumentModule, Attenuator):
             inst_repr (dict[str, Any]): Instrument representation
         """
         inst_repr: dict[str, Any] = {
-            'alias': self.alias,
+            "alias": self.alias,
         }
 
         params: dict[str, Any] = {}
         for param_name in self.params:
             param_value = self.get(param_name)
             params[param_name] = param_value
-        inst_repr['parameters'] = params
+        inst_repr["parameters"] = params
 
         return inst_repr

@@ -43,14 +43,14 @@ class BaseInstrument(ABC):
             inst_repr (dict[str, Any]): Instrument representation
         """
         inst_repr: dict[str, Any] = {
-            'alias': self.alias,
+            "alias": self.alias,
         }
 
         params: dict[str, Any] = {}
         for param_name in self.params:
             param_value = self.get(param_name)
             params[param_name] = param_value
-        inst_repr['parameters'] = params
+        inst_repr["parameters"] = params
 
         return inst_repr
 

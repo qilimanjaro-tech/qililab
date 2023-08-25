@@ -44,7 +44,7 @@ class SpiRack(QcodesSpiRack, BaseInstrument):  # pylint: disable=abstract-method
     def alias(self):
         """return the alias of the instrument, which corresponds to the QCodes name attribute"""
         return self.name
-    
+
     def instrument_repr(self) -> dict[str, Any]:
         """Returns a dictionary representation of the instrument, parameters and submodules.
 
@@ -52,14 +52,14 @@ class SpiRack(QcodesSpiRack, BaseInstrument):  # pylint: disable=abstract-method
             inst_repr (dict[str, Any]): Instrument representation
         """
         inst_repr: dict[str, Any] = {
-            'alias': self.alias,
+            "alias": self.alias,
         }
 
         params: dict[str, Any] = {}
         for param_name in self.params:
             param_value = self.get(param_name)
             params[param_name] = param_value
-        inst_repr['parameters'] = params
+        inst_repr["parameters"] = params
 
         return inst_repr
 
@@ -101,7 +101,7 @@ class D5aModule(QcodesD5aModule, BaseInstrument):
     def alias(self):
         """return the alias of the instrument, which corresponds to the QCodes name attribute"""
         return self.name
-    
+
     def instrument_repr(self) -> dict[str, Any]:
         """Returns a dictionary representation of the instrument, parameters and submodules.
 
@@ -109,14 +109,14 @@ class D5aModule(QcodesD5aModule, BaseInstrument):
             inst_repr (dict[str, Any]): Instrument representation
         """
         inst_repr: dict[str, Any] = {
-            'alias': self.alias,
+            "alias": self.alias,
         }
 
         params: dict[str, Any] = {}
         for param_name in self.params:
             param_value = self.get(param_name)
             params[param_name] = param_value
-        inst_repr['parameters'] = params
+        inst_repr["parameters"] = params
 
         return inst_repr
 
@@ -166,14 +166,14 @@ class S4gModule(QcodesS4gModule, BaseInstrument):
             inst_repr (dict[str, Any]): Instrument representation
         """
         inst_repr: dict[str, Any] = {
-            'alias': self.alias,
+            "alias": self.alias,
         }
 
         params: dict[str, Any] = {}
         for param_name in self.params:
             param_value = self.get(param_name)
             params[param_name] = param_value
-        inst_repr['parameters'] = params
+        inst_repr["parameters"] = params
 
         return inst_repr
 
@@ -200,7 +200,7 @@ class D5aDacChannel(QcodesD5aDacChannel, VoltageSource):
     def alias(self):
         """return the alias of the instrument, which corresponds to the QCodes name attribute"""
         return self.name
-    
+
     def instrument_repr(self) -> dict[str, Any]:
         """Returns a dictionary representation of the instrument, parameters and submodules.
 
@@ -208,14 +208,14 @@ class D5aDacChannel(QcodesD5aDacChannel, VoltageSource):
             inst_repr (dict[str, Any]): Instrument representation
         """
         inst_repr: dict[str, Any] = {
-            'alias': self.alias,
+            "alias": self.alias,
         }
 
         params: dict[str, Any] = {}
         for param_name in self.params:
             param_value = self.get(param_name)
             params[param_name] = param_value
-        inst_repr['parameters'] = params
+        inst_repr["parameters"] = params
 
         return inst_repr
 
