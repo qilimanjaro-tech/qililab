@@ -1,8 +1,13 @@
 """Keithley2600 & Keithley2600Channel drivers."""
 from typing import Any
+
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
-from qcodes.instrument_drivers.Keithley._Keithley_2600 import Keithley2600 as QCodesKeithley2600
-from qcodes.instrument_drivers.Keithley._Keithley_2600 import Keithley2600Channel as QCodesKeithley2600Channel
+from qcodes.instrument_drivers.Keithley._Keithley_2600 import (
+    Keithley2600 as QCodesKeithley2600,
+)
+from qcodes.instrument_drivers.Keithley._Keithley_2600 import (
+    Keithley2600Channel as QCodesKeithley2600Channel,
+)
 
 from qililab.drivers.instruments.instrument_factory import InstrumentDriverFactory
 from qililab.drivers.interfaces import BaseInstrument, CurrentSource, VoltageSource
