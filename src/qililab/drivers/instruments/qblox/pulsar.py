@@ -1,5 +1,6 @@
 """Driver for the Qblox Pulsar class."""
 from typing import Any
+
 from qblox_instruments.qcodes_drivers import Pulsar as QcodesPulsar
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 
