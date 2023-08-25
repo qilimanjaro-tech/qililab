@@ -79,14 +79,12 @@ class NewGaladriel:
         },
     ]
     chip: dict[str, Any] = {"nodes": []}
-    buses: list[dict[str, Any]] = []
 
     runcard: dict[str, Any] = {
         RUNCARD.NAME: name,
         RUNCARD.DEVICE_ID: device_id,
         RUNCARD.GATES_SETTINGS: gates_settings,
         RUNCARD.CHIP: chip,
-        RUNCARD.BUSES: buses,
         RUNCARD.INSTRUMENTS: instruments,
     }
 
