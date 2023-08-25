@@ -2,9 +2,8 @@
 from abc import abstractmethod
 from typing import Any
 
-from qililab.drivers.interfaces import BaseInstrument
-from qililab.drivers.interfaces.awg import AWG
-from qililab.instruments.instruments import Instruments
+from qililab.drivers.interfaces import AWG, BaseInstrument
+from qililab.drivers.interfaces.instrument_interface_factory import InstrumentInterfaceFactory
 from qililab.pulse import PulseBusSchedule, PulseDistortion
 from qililab.typings.factory_element import FactoryElement
 
@@ -12,24 +11,26 @@ from .bus_factory import BusFactory
 
 
 class BusDriver(FactoryElement):
-    """Bus Class."""
+    """Bus Class.
 
-    def __init__(self, alias: str, port: int, awg: AWG | None):
-        """Initialise the bus.
+    Args:
+        alias (str): Bus alias.
+        port (int): Port to target.
+        awg (AWG): Sequencer.
+        distortions (list): Distortions to apply in this Bus.
+    """
 
-        Args:
-            alias (str): Bus alias
-            port (int): Port to target
-            awg (AWG): Sequencer
-            local_oscillator (LocalOscillator | None): Local oscillator
-            attenuator (Attenuator | None): Attenuator
-        """
+    def __init__(self, alias: str, port: int, awg: AWG | None, distortions: list):
+        """Initialise the base of a bus."""
         self.alias = alias
         self.port = port
         self._awg = awg
         self.instruments: dict[str, BaseInstrument | None] = {"awg": self._awg}
-        self.delay = 0
-        self.distortions: list[PulseDistortion] = []
+        self.delay: int = 0
+        self.distortions: list[PulseDistortion] = [
+            PulseDistortion.from_dict(distortion) if isinstance(distortion, dict) else distortion
+            for distortion in distortions
+        ]
 
     def execute(
         self,
@@ -124,12 +125,110 @@ class BusDriver(FactoryElement):
             + f"--> port {self.port}"
         )
 
+    @staticmethod
+    def bus_instruments_str_to_classes_and_set_params(dictionary: dict, instruments: list[BaseInstrument]) -> dict:
+        """Passes the strings of the instruments associated to the bus, into their corresponding (already instantiated)
+        classes throught their "alias". While it also sets their corresponding given parameters.
+
+        And finally returns a dictionary with only the instruments classes.
+
+        Passes the instruments classes associated with the bus, into their corresponding strings. While it
+        also gets all their corresponding parameters to be printed together in a dictionary.
+
+        The dictionary reading follows the following diagram: (Picture)[https://imgur.com/a/U4Oyapo]
+
+        Args:
+            dictionary (dict): Bus dictionary with the instruments as strings.
+            instruments (list[BaseInstrument]): Already instantiated instruments.
+
+        Returns:
+            dict: Bus dictionary with the instruments as classes to be inserted in the bus dictionary.
+        """
+        # Dictionary to translate the instruments[str] to the caps showing in the Runcard (for aesthetics).
+        caps_translate_dict = {
+            "AWG": "awg",
+            "Digitiser": "digitiser",
+            "LocalOscillator": "local_oscillator",
+            "Attenuator": "attenuator",
+            "VoltageSource": "voltage_source",
+            "CurrentSource": "current_source",
+        }
+
+        instruments_dictionary: dict[str, BaseInstrument] = {}
+        memorized_keys: list[str] = []
+
+        for key, instrument_dict in dictionary.items():
+            if key in ("AWG", "Digitiser", "LocalOscillator", "Attenuator", "VoltageSource", "CurrentSource"):
+                memorized_keys.append(key)
+                for instrument in instruments:
+                    if (
+                        issubclass(instrument.__class__, InstrumentInterfaceFactory.get(key))
+                        and instrument.alias == instrument_dict["alias"]
+                    ):
+                        for parameter, value in instrument_dict["parameters"].items():
+                            instrument.set(param_name=parameter, value=value)
+
+                        instruments_dictionary[caps_translate_dict[key]] = instrument
+                        break
+
+        for key in memorized_keys:
+            dictionary.pop(key)
+
+        return dictionary | instruments_dictionary
+
+    @staticmethod
+    def bus_instruments_classes_to_str_and_get_params(instruments: list[BaseInstrument]) -> dict[str, dict]:
+        """Passes the instruments classes associated to the bus, into their corresponding strings. While it
+        also gets all their corresponding parameters to be printed together in a dictionary.
+
+        And finally returns a dictionary with the instrument str as key (str), and the alias and parameters as values (dict).
+
+        The dictionary construction follows the following diagram: (Picture)[https://imgur.com/a/U4Oyapo]
+
+        Args:
+            instruments (list[BaseInstrument]): Instruments corresponding the the given Bus.
+
+        Returns:
+            dict[str, dict]: The instruments dictionary to be inserted in the bus dictionary. Keys are the instruments str,
+                and values are an inner dictionary containing the alias and the parameters dictionary.
+        """
+        instruments_dict = {}
+        for instrument in instruments:
+            if instrument is not None:
+                instrument_dict = {"alias": instrument.alias}
+
+                if instrument.params:
+                    params_dict = {
+                        parameter: instrument.get(parameter)
+                        for parameter in instrument.params.keys()
+                        if parameter != "IDN"
+                        # always skip IDN parameter, which goes into the instruments part of the runcard.
+                    }
+                if params_dict:
+                    instrument_dict["parameters"] = params_dict
+
+                instruments_dict[instrument.__class__.__name__] = instrument_dict
+
+        return instruments_dict
+
     @classmethod
-    def from_dict(cls, dictionary: dict) -> "BusDriver":
-        """Generates the Buses classes and passes the instrument params info to be set with set_params(), given a dictionary"""
-        bus_class = BusFactory.get(name=dictionary["name"])
-        return bus_class.from_dict(dictionary)  # type: ignore[attr-defined]
+    def from_dict(cls, dictionary: dict, instruments: list[BaseInstrument]) -> "BusDriver":
+        """Loads the corresponding Bus driver class with a Factory Pattern, and sets the instrument params to the corresponding instruments.
+
+        Args:
+            dictionary (dict): Dictionary representation of the Bus driver object and its instrument params.
+            instruments (list[BaseInstrument]): Already instantiated instruments.
+
+        Returns:
+            BusDriver: Loaded class.
+        """
+        bus_class = BusFactory.get(name=dictionary["type"])
+        return bus_class.from_dict(dictionary, instruments)  # type: ignore[attr-defined]
 
     @abstractmethod
-    def to_dict(self, instruments: Instruments) -> dict:
-        """Generates a dict representation given the Buses and the instruments get_parms()"""
+    def to_dict(self) -> dict:
+        """Generates a dict representation given the Buses and the instruments params of such bus.
+
+        Returns:
+            dict: Bus dictionary with its corresponding instrument parameters.
+        """

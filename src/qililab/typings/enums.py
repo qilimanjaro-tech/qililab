@@ -175,6 +175,27 @@ class InstrumentName(str, Enum):
     QCMRF = "QCM-RF"
 
 
+class InstrumentInterfaceName(str, Enum):
+    """Instrument interfaces names.
+
+    Args:
+        enum (str): Available instrument interfaces element names:
+            AWG
+            Attenuator
+            Digitiser
+            LocalOscillator
+            CurrentSource
+            VoltageSource
+    """
+
+    AWG = "AWG"
+    ATTENUATOR = "Attenuator"
+    DIGITISER = "Digitiser"
+    LOCAL_OSCILLATOR = "LocalOscillator"
+    CURRENT_SOURCE = "CurrentSource"
+    VOLTAGE_SOURCE = "VoltageSource"
+
+
 class InstrumentControllerName(str, Enum):
     """Instrument Controller names.
 

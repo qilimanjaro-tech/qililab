@@ -40,7 +40,7 @@ def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, nu
     pulse_event = PulseEvent(pulse=pulse, start_time=start_time)
     timeline = [pulse_event for _ in range(number_pulses)]
 
-    return PulseBusSchedule(timeline=timeline, port=0)
+    return PulseBusSchedule(timeline=timeline, port="test")
 
 
 class MockQcmQrmRF(DummyInstrument):  # pylint: disable=abstract-method
@@ -125,8 +125,24 @@ def fixture_attenuator() -> QcmQrmRfAtt:
 
 @pytest.fixture(name="drive_bus")
 def fixture_drive_bus(sequencer: SequencerQCM, local_oscillator: QcmQrmRfLo, attenuator: QcmQrmRfAtt) -> DriveBus:
-    """Return DriveBus instance"""
-    return DriveBus(alias=ALIAS, port=PORT, awg=sequencer, local_oscillator=local_oscillator, attenuator=attenuator)
+    """Return DriveBus instance."""
+    return DriveBus(
+        alias=ALIAS, port=PORT, awg=sequencer, local_oscillator=local_oscillator, attenuator=attenuator, distortions=[]
+    )
+
+
+@pytest.fixture(name="bus_dictionary")
+def fixture_bus_dictionary(drive_bus: DriveBus) -> dict:
+    """Returns a dictionary of a DriveBus instance."""
+    return {
+        "alias": drive_bus.alias,
+        "type": drive_bus.__class__.__name__,
+        "awg": drive_bus._awg,
+        "local_oscillator": drive_bus.instruments["local_oscillator"],
+        "attenuator": drive_bus.instruments["attenuator"],
+        "port": drive_bus.port,
+        "distortions": [],
+    }
 
 
 class TestDriveBus:
@@ -230,3 +246,14 @@ class TestDriveBus:
         )
 
         assert str(drive_bus) == expected_str
+
+    # def test_from_dict(self, bus_dictionary: dict):
+    #     """Test that the from_dict method of the BusDriver base class calls the child ones correctly."""
+    #     flux_bus = BusDriver.from_dict(bus_dictionary)
+
+    #     assert isinstance(flux_bus, FluxBus)
+    #     assert flux_bus.alias == ALIAS
+    #     assert flux_bus._awg is None
+    #     assert flux_bus.instruments["source"] is None
+    #     assert flux_bus.port == PORT
+    #     assert flux_bus.distortions == []

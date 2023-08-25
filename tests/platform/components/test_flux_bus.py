@@ -40,7 +40,7 @@ def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, nu
     pulse_event = PulseEvent(pulse=pulse, start_time=start_time)
     timeline = [pulse_event for _ in range(number_pulses)]
 
-    return PulseBusSchedule(timeline=timeline, port=0)
+    return PulseBusSchedule(timeline=timeline, port="test")
 
 
 class MockQcodesS4gD5aDacChannels(DummyChannel):
@@ -141,13 +141,26 @@ def fixture_current_source() -> S4gDacChannel:
 @pytest.fixture(name="flux_bus_current_source")
 def fixture_flux_bus_current_source(sequencer: SequencerQCM, current_source: S4gDacChannel) -> FluxBus:
     """Return FluxBus instance with current source."""
-    return FluxBus(alias=ALIAS, port=PORT, awg=sequencer, source=current_source)
+    return FluxBus(alias=ALIAS, port=PORT, awg=sequencer, source=current_source, distortions=[])
 
 
 @pytest.fixture(name="flux_bus_voltage_source")
 def fixture_flux_bus_voltage_source(sequencer: SequencerQCM, voltage_source: D5aDacChannel) -> FluxBus:
     """Return FluxBus instance with voltage source."""
-    return FluxBus(alias=ALIAS, port=PORT, awg=sequencer, source=voltage_source)
+    return FluxBus(alias=ALIAS, port=PORT, awg=sequencer, source=voltage_source, distortions=[])
+
+
+@pytest.fixture(name="bus_dictionary")
+def fixture_bus_dictionary(flux_bus_current_source: FluxBus) -> dict:
+    """Returns a dictionary of a FluxBus instance."""
+    return {
+        "alias": flux_bus_current_source.alias,
+        "type": flux_bus_current_source.__class__.__name__,
+        "awg": flux_bus_current_source._awg,
+        "source": flux_bus_current_source.instruments["source"],
+        "port": flux_bus_current_source.port,
+        "distortions": [],
+    }
 
 
 class TestFluxBus:

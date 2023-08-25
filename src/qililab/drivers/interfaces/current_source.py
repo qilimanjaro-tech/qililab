@@ -2,8 +2,10 @@
 from abc import abstractmethod
 
 from .base_instrument import BaseInstrument
+from .instrument_interface_factory import InstrumentInterfaceFactory
 
 
+@InstrumentInterfaceFactory.register
 class CurrentSource(BaseInstrument):
     """Current source interface with set, get, on & off abstract methods"""
 
