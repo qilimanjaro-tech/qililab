@@ -56,4 +56,14 @@ Interfaces
     ~VoltageSource
     ~Attenuator
 """
-from .instruments import GS200, Cluster, ERASynthPlus, Keithley2600, Pulsar, RhodeSchwarzSGS100A, SpiRack
+from .instruments import (
+    GS200,
+    Cluster,
+    ERASynthPlus,
+    InstrumentDriverFactory,
+    Keithley2600,
+    Pulsar,
+    RhodeSchwarzSGS100A,
+    SpiRack,
+)
+from .interfaces import BaseInstrument

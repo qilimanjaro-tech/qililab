@@ -1,3 +1,5 @@
+from typing import Any
+
 from qblox_instruments.qcodes_drivers import Cluster as QcodesCluster
 from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm as QcodesQcmQrm
 from qcodes import Instrument
@@ -25,8 +27,11 @@ class Cluster(QcodesCluster, BaseInstrument):  # pylint: disable=abstract-method
             <https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/cluster.html>`_.
     """
 
-    def __init__(self, name: str, address: str | None = None, **kwargs):
-        super().__init__(name, identifier=address, **kwargs)
+    def __init__(self, name: str, submodules: list[dict[str, Any]] | None = None, address: str | None = None, **kwargs):
+        port = kwargs.get("port", None)
+        debug = kwargs.get("debug", None)
+        dummy_cfg = kwargs.get("dummy_cfg", None)
+        super().__init__(name, identifier=address, port=port, debug=debug, dummy_cfg=dummy_cfg)
 
         # registering only the slots specified in the dummy config if that is the case
         if "dummy_cfg" in kwargs:
@@ -34,6 +39,9 @@ class Cluster(QcodesCluster, BaseInstrument):  # pylint: disable=abstract-method
         else:
             slot_ids = list(range(1, self._num_slots + 1))
 
+        self._add_qcm_qrm_modules(slot_ids=slot_ids, submodules=submodules)
+
+    def _add_qcm_qrm_modules(self, slot_ids: list[int], submodules: list[dict[str, Any]] | None = None):
         # Save information about modules actually being present in the cluster
         old_submodules = self.submodules
         submodules_present = [submodule.get("present") for submodule in old_submodules.values()]
@@ -43,13 +51,25 @@ class Cluster(QcodesCluster, BaseInstrument):  # pylint: disable=abstract-method
         self.instrument_modules: dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
         self._channel_lists: dict[str, ChannelTuple] = {}  # resetting superclass channel lists
 
-        for slot_idx in slot_ids:
-            if submodules_present[slot_idx - 1]:
-                module = QcmQrm(self, f"module{slot_idx}", slot_idx)
-                self.add_submodule(f"module{slot_idx}", module)
-            else:
-                old_module = old_submodules[f"module{slot_idx}"]
-                self.add_submodule(f"module{slot_idx}", old_module)
+        if submodules is not None:
+            for submodule in submodules:
+                alias = submodule["alias"]
+                slot_id = submodule["slot_id"]
+                module_params: dict | None = submodule.get("parameters", None)
+                sequencers: list[str] | None = submodule.get("sequencers", None)
+                if submodules_present[slot_id - 1]:
+                    module = QcmQrm(parent=self, alias=alias, slot_idx=slot_id, sequencers=sequencers)
+                    if module_params:
+                        module.initial_setup(module_params)
+                    self.add_submodule(alias, module)
+                else:
+                    self.add_submodule(f"module{slot_id}", old_submodules[f"module{slot_id}"])
+        else:
+            for slot_idx in slot_ids:
+                if submodules_present[slot_idx - 1]:
+                    self.add_submodule(f"module{slot_idx}", QcmQrm(self, f"module{slot_idx}", slot_idx))
+                else:
+                    self.add_submodule(f"module{slot_idx}", old_submodules[f"module{slot_idx}"])
 
     @property
     def params(self):
@@ -61,44 +81,80 @@ class Cluster(QcodesCluster, BaseInstrument):  # pylint: disable=abstract-method
         """return the alias of the instrument, which corresponds to the QCodes name attribute"""
         return self.name
 
+    def instrument_repr(self) -> dict[str, Any]:
+        """Returns a dictionary representation of the instrument, parameters and submodules.
+
+        Returns:
+            inst_repr (dict[str, Any]): Instrument representation
+        """
+        inst_repr: dict[str, Any] = {"alias": self.alias}
+        if self.identifier:
+            inst_repr["address"] = self.identifier
+        if self.debug:
+            inst_repr["debug"] = self.debug
+        if self.dummy_type:
+            inst_repr["dummy_cfg"] = self.dummy_cfg
+
+        params: dict[str, Any] = {}
+        for param_name in self.params:
+            param_value = self.get(param_name)
+            params[param_name] = param_value
+        inst_repr["parameters"] = params
+
+        submodules: list[dict[str, Any]] = []
+        for _, submodule in self.submodules.items():
+            if isinstance(submodule, BaseInstrument):
+                submodules.append(submodule.instrument_repr())
+        inst_repr["submodules"] = submodules
+
+        return inst_repr
+
 
 class QcmQrm(QcodesQcmQrm, BaseInstrument):
-    """Qililab's driver for QBlox-instruments QcmQrm"""
+    """Qililab's driver for QBlox-instruments QcmQrm
 
-    def __init__(self, parent: Instrument, name: str, slot_idx: int):
-        """Initialise the instrument.
+    Args:
+         parent (Instrument): Instrument's parent
+         name (str): Name of the instrument
+         slot_idx (int): Index of the slot
+    """
 
-        Args:
-            parent (Instrument): Instrument´s parent
-            name (str): Name of the instrument
-            slot_idx (int): Index of the slot
-        """
-        super().__init__(parent, name, slot_idx)
+    def __init__(self, parent: Instrument, alias: str, slot_idx: int, sequencers: list[str] | None = None):
+        super().__init__(parent=parent, name=alias, slot_idx=slot_idx)
+        self._add_sequencers(sequencers=sequencers)
+        self._add_rf_modules(alias=alias)
 
-        # Add sequencers
+    def _add_sequencers(self, sequencers: list[str] | None = None):
+        """Adds sequencers to the instrument."""
         self.submodules: dict[str, InstrumentModule | ChannelTuple] = {}  # resetting superclass submodules
         self.instrument_modules: dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
         self._channel_lists: dict[str, ChannelTuple] = {}  # resetting superclass channel lists
         sequencer_class = SequencerQCM if self.is_qcm_type else SequencerQRM
-        for seq_idx in range(6):
-            seq = sequencer_class(parent=self, name=f"sequencer{seq_idx}", seq_idx=seq_idx)  # type: ignore
-            self.add_submodule(f"sequencer{seq_idx}", seq)
+        if sequencers is not None:
+            for seq_idx, seq_name in enumerate(sequencers):
+                seq = sequencer_class(parent=self, name=seq_name, seq_idx=seq_idx)  # type: ignore
+                self.add_submodule(seq_name, seq)
+        else:
+            for seq_idx in range(6):
+                seq = sequencer_class(parent=self, name=f"sequencer{seq_idx}", seq_idx=seq_idx)  # type: ignore
+                self.add_submodule(f"sequencer{seq_idx}", seq)
 
-        # Add RF submodules
+    def _add_rf_modules(self, alias: str):
+        """Adds RF modules to the instrument."""
         if super().is_rf_type:
             # Add local oscillators
             # We use strings as channels to keep the in/out name and conserve the same
             # logic as for the attenuator or other instruments
             lo_channels = ["out0_in0"] if super().is_qrm_type else ["out0", "out1"]
             for channel in lo_channels:
-                lo = QcmQrmRfLo(name=f"{name}_lo_{channel}", parent=self, channel=channel)
-                self.add_submodule(f"{name}_lo_{channel}", lo)
+                lo = QcmQrmRfLo(name=f"{alias}_lo_{channel}", parent=self, channel=channel)
+                self.add_submodule(f"{alias}_lo_{channel}", lo)
 
             # Add attenuators
             att_channels = ["out0", "in0"] if super().is_qrm_type else ["out0", "out1"]
             for channel in att_channels:
-                att = QcmQrmRfAtt(name=f"{name}_attenuator_{channel}", parent=self, channel=channel)
-                self.add_submodule(f"{name}_attenuator_{channel}", att)
+                att = QcmQrmRfAtt(name=f"{alias}_attenuator_{channel}", parent=self, channel=channel)
+                self.add_submodule(f"{alias}_attenuator_{channel}", att)
 
     @property
     def params(self):
@@ -109,6 +165,25 @@ class QcmQrm(QcodesQcmQrm, BaseInstrument):
     def alias(self):
         """return the alias of the instrument, which corresponds to the QCodes name attribute"""
         return self.name
+
+    def instrument_repr(self) -> dict[str, Any]:
+        """Returns a dictionary representation of the instrument, parameters and submodules.
+
+        Returns:
+            inst_repr (dict[str, Any]): Instrument representation
+        """
+        inst_repr: dict[str, Any] = {"alias": self.alias, "slot_id": self.slot_idx}
+
+        params: dict[str, Any] = {}
+        for param_name in self.params:
+            param_value = self.get(param_name)
+            params[param_name] = param_value
+        inst_repr["parameters"] = params
+
+        sequencers = [submodule for submodule in self.submodules]
+        inst_repr["sequencers"] = sequencers
+
+        return inst_repr
 
 
 class QcmQrmRfLo(InstrumentModule, LocalOscillator):
@@ -151,6 +226,24 @@ class QcmQrmRfLo(InstrumentModule, LocalOscillator):
     def off(self):
         self.set("status", False)
 
+    def instrument_repr(self) -> dict[str, Any]:
+        """Returns a dictionary representation of the instrument, parameters and submodules.
+
+        Returns:
+            inst_repr (dict[str, Any]): Instrument representation
+        """
+        inst_repr: dict[str, Any] = {
+            "alias": self.alias,
+        }
+
+        params: dict[str, Any] = {}
+        for param_name in self.params:
+            param_value = self.get(param_name)
+            params[param_name] = param_value
+        inst_repr["parameters"] = params
+
+        return inst_repr
+
 
 class QcmQrmRfAtt(InstrumentModule, Attenuator):
     """Attenuator driver for the QCM / QRM - RF instrument
@@ -179,3 +272,21 @@ class QcmQrmRfAtt(InstrumentModule, Attenuator):
     def alias(self):
         """return the alias of the instrument, which corresponds to the QCodes name attribute"""
         return self.name
+
+    def instrument_repr(self) -> dict[str, Any]:
+        """Returns a dictionary representation of the instrument, parameters and submodules.
+
+        Returns:
+            inst_repr (dict[str, Any]): Instrument representation
+        """
+        inst_repr: dict[str, Any] = {
+            "alias": self.alias,
+        }
+
+        params: dict[str, Any] = {}
+        for param_name in self.params:
+            param_value = self.get(param_name)
+            params[param_name] = param_value
+        inst_repr["parameters"] = params
+
+        return inst_repr

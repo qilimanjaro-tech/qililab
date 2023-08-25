@@ -21,18 +21,58 @@ from qililab.pulse import PulseBusSchedule, PulseShape
 
 @InstrumentDriverFactory.register
 class SequencerQCM(Sequencer, AWG):
-    """Qililab's driver for QBlox-instruments Sequencer"""
+    """Qililab's driver for QBlox-instruments Sequencer
+
+    Args:
+        parent (Instrument): Parent for the sequencer instance.
+        name (str): Sequencer name
+        seq_idx (int): sequencer identifier index
+        map_dict (dict): mappings parameters
+
+    In order to use a SequencerQCM it needs to be done through the parent instrument, which can be a Pulsar
+    or a QcmQrm being a module of a Cluster instrument. Once we have one of the parent classes, we can act on the
+    sequencer instance.
+
+    Examples:
+        .. note::
+
+            The following example shows how to execute a PulseBusSchedule on a SequencerQCM, given that an instance
+            of the parent instrument class already exists. In the following example we will be using a Pulsar type for
+            the parent instrument.
+
+        We can execute PulseBusSchedule on a SequencerQCM by using the execute method:
+
+        .. code-block:: python3
+
+            from qililab.drivers.instruments.qblox.pulsar import Pulsar
+
+            # first we define a pulse bus schedule
+            number_pulses = 1
+            pulse_shape = Gaussian(num_sigmas=PULSE_SIGMAS)
+            pulse = Pulse(
+                amplitude=(-1 * PULSE_AMPLITUDE) if negative_amplitude else PULSE_AMPLITUDE,
+                phase=PULSE_PHASE,
+                duration=PULSE_DURATION,
+                frequency=PULSE_FREQUENCY,
+                pulse_shape=pulse_shape,
+            )
+            pulse_event = PulseEvent(pulse=pulse, start_time=start_time)
+            timeline = [pulse_event for _ in range(number_pulses)]
+
+            pulse_bus_schedule = PulseBusSchedule(timeline=timeline, port=0)
+
+            pulsar = Pulsar(alias=PULSAR_NAME, address=192.168.1.1)
+            # now we can access any of the six sequencers a Pulsar contains by default
+            sequencer = pulsar.submodules[0]
+            sequencer.execute(pulse_bus_schedule=pulse_bus_schedule,
+                              nshots=1,
+                              repetition_duration=1000,
+                              num_bins=1)
+    """
 
     _MIN_WAIT_TIME: int = 4
 
     def __init__(self, parent: Instrument, name: str, seq_idx: int):
-        """Initialise the instrument.
-
-        Args:
-            parent (Instrument): Parent for the sequencer instance.
-            name (str): Sequencer name
-            seq_idx (int): sequencer identifier index
-        """
         super().__init__(parent=parent, name=name, seq_idx=seq_idx)
         self.add_parameter(name="swap_paths", set_cmd=None, vals=vals.Bool(), initial_value=False)
 
@@ -58,7 +98,7 @@ class SequencerQCM(Sequencer, AWG):
         else:
             super().set(param_name, value)
 
-    def _map_outputs(self, param_name: str, param_value: Any):
+    def _map_outputs(self, param_name: str, param_value: int):
         """Map sequencer paths with output channels and set the swapping.
 
         Args:
@@ -71,7 +111,7 @@ class SequencerQCM(Sequencer, AWG):
             self.set(f"channel_map_{param_name}_out{param_value}_en", True)
         elif (param_name, param_value) in swappable_conf:
             self.set("swap_paths", True)
-            self.set(f"channel_map_{param_name}_out{1 - param_value}_en", True)
+            self.set(f"channel_map_{param_name}_out{abs(1 - param_value)}_en", True)
         else:
             raise ValueError(
                 f"Impossible path configuration detected. {param_name} cannot be mapped to output {param_value}."
