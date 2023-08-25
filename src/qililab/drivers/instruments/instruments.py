@@ -16,4 +16,4 @@ class Instruments:
 
     def to_dict(self):
         """Return a dict representation of the Instruments class."""
-        return [instrument.to_dict() for instrument in self.elements]
+        return [instrument.instrument_repr() for instrument in self.elements]
