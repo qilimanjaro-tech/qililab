@@ -70,7 +70,7 @@ def rabi(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dic
 ##################################### ANALYSIS ##################################################
 
 
-def analyze_rabi(results: list,  experiment_name: str, parameter: str, sweep_values: list, fit_quadrature="i"):
+def analyze_rabi(results: list,  experiment_name: str, parameter: str, sweep_values: list, plot_figure_path: str = None, fit_quadrature="i"):
     """
     Analyzes the Rabi experiment data.
 
@@ -82,6 +82,7 @@ def analyze_rabi(results: list,  experiment_name: str, parameter: str, sweep_val
                  https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/pulsar.html#qblox_instruments.native.Pulsar.get_acquisitions
                  The list only has 1 element because each element represents the acquisitions dictionary of one readout bus, 
                  and for the moment multiple readout buses are not supported.
+        plot_figure_path (str): The path where the plot figure PNG file will be saved.
         experiment_name: The name of the experiment of which this function will analyze the data. The name is used to label the figure that 
                          this function will produce, which will contain the plot.
                  
@@ -127,8 +128,11 @@ def analyze_rabi(results: list,  experiment_name: str, parameter: str, sweep_val
     plot_fit(
         sweep_values, optimal_parameters, axes[fit_signal_idx], fitted_pi_pulse_amplitude
     )
-    #TODO: save the plot here, not in Controller class.
-    return fitted_pi_pulse_amplitude, fig
+    
+    # The user can change this to save to a custom location
+    fig.savefig(plot_figure_path)
+    
+    return fitted_pi_pulse_amplitude
 
 
 ##################################### GRAPH ##########################################################

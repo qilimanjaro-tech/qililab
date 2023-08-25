@@ -57,11 +57,13 @@ class Controller:
             return
 
         # check_data
+        #TODO: find plot_figure_filepath using standard path structure. For now there's a placeholder value for testing
+        plot_figure_filepath = "./tests/automatic_calibration/Rabi.PNG"
         result = self.check_data(node)
         if result == "in_spec":
             if node.manual_check:
-                plot_image = mpimg.imread(plot_filepath)
-                plt.imshow(plot_image)
+                plot_figure = mpimg.imread(plot_figure_filepath)
+                plt.imshow(plot_figure)
                 plt.show(block=False)
                 user_input = input("Do you approve the plot? (y/n)").lower()
                 if user_input != "y" and user_input != "n":
@@ -74,21 +76,19 @@ class Controller:
                 self.diagnose(n)
 
         # calibrate
-        result, plot_filepath = self.calibrate(node)       
+        result = self.calibrate(node)       
         
         if node.manual_check:
-            plot_image = mpimg.imread(plot_filepath)
-            plt.imshow(plot_image)
+            plot_figure = mpimg.imread(plot_figure_filepath)
+            plt.imshow(plot_figure)
             plt.show(block=False)
             user_input = input("Do you approve the plot? (y/n)").lower()
             if user_input != "y" and user_input != "n":
                 raise ValueError("Invalid input! Please enter 'y' or 'n'.")
             if user_input == "n":
-                self.maintain(node = node) 
-            
-        #FIXME: this parameter update doesn't work because the platform can't find an instrument with the alias that I'm giving
-        # as argument when initializing the node.
-        #self.update_parameter(node = node, parameter_value = result)
+                self.maintain(node = node)
+  
+        self.update_parameter(node = node, parameter_value = result)
         print(f"Updated parameter \"{node.parameter}\" value.\n")
 
 
@@ -123,8 +123,7 @@ class Controller:
         # calibrate
         result = self.calibrate(node)
 
-        #FIXME: uncomment this when I have figured out why alias is wrong
-        #self.update_parameter(node = node, parameter_value = result)
+        self.update_parameter(node = node, parameter_value = result)
         
         return True
 
@@ -313,7 +312,7 @@ class Controller:
             """
             
             # Compile and run the QProgram on the platform.
-            print(f"Running \"{node.qprogram.__name__}\" experiment in node \"{node.node_id}\"\n")
+            print(f"Running \"{node.experiment.__name__}\" experiment in node \"{node.node_id}\"\n")
             
             node.experiment_results = node.experiment(platform = self._platform, drive_bus = node.drive_bus, readout_bus = node.readout_bus, sweep_values = node.sweep_interval)
             
@@ -326,10 +325,7 @@ class Controller:
             # Call the general analysis function with the appropriate model, or the custom one (no need to specify the model in this case, it will already be hardcoded).
             # If node.manual_check is True, the analysis function will also open the file containing the plot so the user can approve it manually.
             print(f"Running the \"{node.analysis_function.__name__}\" analysis function in node \"{node.node_id}\"\n")
-            optimal_parameter_value = node.analysis_function(results = node.experiment_results, experiment_name = node.node_id, parameter = node.parameter, sweep_values = np.arange(node.sweep_interval["start"], node.sweep_interval["stop"], node.sweep_interval["step"]))
-            
-            #TODO: save the plot figure to standardized path, but not here, in the analysis function.
-            plot.savefig(plot_filepath, format="PNG")
+            optimal_parameter_value = node.analysis_function(results = node.experiment_results, experiment_name = node.node_id, parameter = node.parameter, sweep_values = np.arange(node.sweep_interval["start"], node.sweep_interval["stop"], node.sweep_interval["step"]), plot_figure_path = "./tests/automatic_calibration/Rabi.PNG")
 
             return optimal_parameter_value
 
@@ -350,7 +346,7 @@ class Controller:
             parameter_value (float | bool | str): The optimal value of the parameter found by the experiment.
         """        
         if hasattr(node, "parameter") and node.parameter is not None:
-            self._platform.set_parameter(parameter = node.parameter, alias = node.parameter, value = parameter_value)
+            self._platform.set_parameter(alias = node.parameter_bus_alias, parameter = node.parameter, value = parameter_value)
         
     def dependents(self, node: CalibrationNode):
         """Find the nodes that a node depends on. 
