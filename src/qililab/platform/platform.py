@@ -403,23 +403,23 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 | instrument_dict
                 | instrument_controllers_dict
             )
-        else:
-            name_dict = {RUNCARD.NAME: self.name}
-            device_id = {RUNCARD.DEVICE_ID: self.device_id}
-            gates_settings_dict = {RUNCARD.GATES_SETTINGS: asdict(self.gates_settings, dict_factory=dict_factory)}
-            chip_dict = {RUNCARD.CHIP: self.chip.to_dict() if self.chip is not None else None}
-            instrument_dict = {
-                RUNCARD.INSTRUMENTS: self.instruments.to_dict() if self.instruments is not None else None
-            }
-            return (
-                name_dict
-                | device_id
-                | gates_settings_dict
-                | chip_dict
-                | buses_dict
-                | instrument_dict
-                | instrument_controllers_dict
-            )
+        
+        name_dict = {RUNCARD.NAME: self.name}
+        device_id = {RUNCARD.DEVICE_ID: self.device_id}
+        gates_settings_dict = {RUNCARD.GATES_SETTINGS: asdict(self.gates_settings, dict_factory=dict_factory)}
+        chip_dict = {RUNCARD.CHIP: self.chip.to_dict() if self.chip is not None else None}
+        instrument_dict = {
+            RUNCARD.INSTRUMENTS: self.instruments.to_dict() if self.instruments is not None else None
+        }
+        return (
+            name_dict
+            | device_id
+            | gates_settings_dict
+            | chip_dict
+            | buses_dict
+            | instrument_dict
+            | instrument_controllers_dict
+        )
 
     def __str__(self) -> str:
         """String representation of the platform
