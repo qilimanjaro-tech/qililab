@@ -88,7 +88,8 @@ class Controller:
             if user_input == "n":
                 self.maintain(node = node)
   
-        self.update_parameter(node = node, parameter_value = result)
+        #GALADRIEL: uncomment when platform is connected
+        #self.update_parameter(node = node, parameter_value = result)
         print(f"Updated parameter \"{node.parameter}\" value.\n")
 
 
@@ -123,7 +124,8 @@ class Controller:
         # calibrate
         result = self.calibrate(node)
 
-        self.update_parameter(node = node, parameter_value = result)
+        #GALADRIEL: uncomment when platform is connected
+        #self.update_parameter(node = node, parameter_value = result)
         
         return True
 
@@ -141,8 +143,8 @@ class Controller:
         this_calibration_sequence_folder = os.path.join(data_folder, self._calibration_sequence_name)
         # Check if the folder for this calibration sequence already exists, i.e. if this sequence has been run before.
         if os.path.exists(this_calibration_sequence_folder) and os.path.isdir(this_calibration_sequence_folder):
-            print(f"This calibration sequence has already been run. Data found in {most_recent_run_folder}")
             most_recent_run_folder = get_most_recent_folder(this_calibration_sequence_folder)
+            print(f"This calibration sequence has already been run. Data found in {most_recent_run_folder}")
             nodes_list = self._calibration_graph.nodes()
             loading_progress_bar = tqdm(nodes_list, desc="Loading the data obtained the last time this calibration sequence was run.", unit="node")
             for n in loading_progress_bar:
@@ -153,7 +155,7 @@ class Controller:
                         node_timestamp = node_data["latest_timestamp"]
                         if node_timestamp is not None and node_timestamp:
                             n.add_timestamp(timestamp = node_timestamp)
-                        n.experiment_results = node_data["experiment_results"]
+                        n.experiment_results = np.array(node_data["experiment_results"])
             loading_progress_bar.close()
         else: print("This calibration sequence has never been run before: there is no historical data to load.")
             
@@ -181,7 +183,7 @@ class Controller:
         progress_bar = tqdm(nodes_list, desc="Saving data of the calibration sequence to YAML files", unit="node")
         for n in progress_bar:
             node_file = os.path.join(current_run_of_calibration_sequence_folder, f"{n.node_id}.yml")
-            node_data = {"latest_timestamp": n.get_latest_timestamp(), "experiment_results": n.experiment_results}
+            node_data = {"latest_timestamp": n.get_latest_timestamp(), "experiment_results": np.array(n.experiment_results).tolist()}
             with open(node_file, 'w') as f:
                 yaml.dump(node_data, f)
         progress_bar.close()

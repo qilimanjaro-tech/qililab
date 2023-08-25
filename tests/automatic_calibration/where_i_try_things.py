@@ -116,8 +116,12 @@ rabi_values = {"start": 0,
                "step": (0.25-0)/31 # It's written like this because it's derived from a np.linspace definition
                }
 dummy_data_path = "./tests/automatic_calibration/rabi.yml"
+iq = get_iq_from_raw(get_raw_data(dummy_data_path))
+thing = [[k[0] for k in iq[0]], [p[0] for p in iq[1]]]
+print(isinstance(thing, list))
 
-#print(amplitude_loop_values)
+
+'''#print(amplitude_loop_values)
 nightmare = np.arange(rabi_values["start"], rabi_values["stop"], rabi_values["step"]).tolist()
 old = amplitude_loop_values.tolist()
 #print(nightmare)
@@ -126,4 +130,4 @@ b = np.linspace(0, 0.25, 31).tolist()
 c = [x - y for x, y in zip(a, b)]
 d = [x - y for x, y in zip(a, nightmare)]
 print(sum([x**2 for x in c]))
-print(sum([x**2 for x in d]))
+print(sum([x**2 for x in d]))'''
