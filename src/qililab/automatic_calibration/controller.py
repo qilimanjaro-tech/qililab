@@ -141,9 +141,10 @@ class Controller:
         this_calibration_sequence_folder = os.path.join(data_folder, self._calibration_sequence_name)
         # Check if the folder for this calibration sequence already exists, i.e. if this sequence has been run before.
         if os.path.exists(this_calibration_sequence_folder) and os.path.isdir(this_calibration_sequence_folder):
+            print(f"This calibration sequence has already been run. Data found in {most_recent_run_folder}")
             most_recent_run_folder = get_most_recent_folder(this_calibration_sequence_folder)
             nodes_list = self._calibration_graph.nodes()
-            loading_progress_bar = tqdm(nodes_list, desc="Loading data from previous calibration sequence", unit="node")
+            loading_progress_bar = tqdm(nodes_list, desc="Loading the data obtained the last time this calibration sequence was run.", unit="node")
             for n in loading_progress_bar:
                 node_file = os.path.join(most_recent_run_folder, f"{n.node_id}.yml")
                 if os.path.exists(node_file):
@@ -154,6 +155,7 @@ class Controller:
                             n.add_timestamp(timestamp = node_timestamp)
                         n.experiment_results = node_data["experiment_results"]
             loading_progress_bar.close()
+        else: print("This calibration sequence has never been run before: there is no historical data to load.")
             
         # Find highest level node(s) in the calibration graph, the one(s) that no other node depends on. If we call 'maintain' from this node(s), 
         # 'maintain' will recursively call itself on all the lower level nodes.
@@ -223,7 +225,7 @@ class Controller:
         if (not hasattr(node, "experiment_results")) or node.experiment_results is None: return "out_of_spec"
         
         # Choose random points within the sweep interval.
-        random_values = get_random_values(array=np.arange(node.sweep_interval["start"], node.sweep_interval["stop"], node.sweep_interval["step"]), number_of_values=node._number_of_random_datapoints) 
+        random_values = get_random_values(array=np.arange(node.sweep_interval["start"], node.sweep_interval["stop"], node.sweep_interval["step"]).tolist(), number_of_values=node._number_of_random_datapoints) 
 
         quadrature_index = 0 if node.fit_quadrature == 'i' else 1
         
@@ -313,18 +315,19 @@ class Controller:
             # Compile and run the QProgram on the platform.
             print(f"Running \"{node.experiment.__name__}\" experiment in node \"{node.node_id}\"\n")
             
-            node.experiment_results = node.experiment(platform = self._platform, drive_bus = node.drive_bus, readout_bus = node.readout_bus, sweep_values = node.sweep_interval)
+            #GALADRIEL: uncomment this when connected to an actual platform
+            #node.experiment_results = node.experiment(platform = self._platform, drive_bus = node.drive_bus_alias, readout_bus = node.readout_bus_alias, sweep_values = node.sweep_interval)
             
-            #DEBUG: test version that returns dummy data
+            #GALADRIEL: comment this out when connected to an actual platform, it returns dummy data instead of running the experiment.
             dummy_data_path = "./tests/automatic_calibration/rabi.yml"
-            iq = [get_iq_from_raw(get_raw_data(dummy_data_path))]
+            iq = get_iq_from_raw(get_raw_data(dummy_data_path))
             node.experiment_results = [[k[0] for k in iq[0]], [p[0] for p in iq[1]]]
             
             
             # Call the general analysis function with the appropriate model, or the custom one (no need to specify the model in this case, it will already be hardcoded).
             # If node.manual_check is True, the analysis function will also open the file containing the plot so the user can approve it manually.
             print(f"Running the \"{node.analysis_function.__name__}\" analysis function in node \"{node.node_id}\"\n")
-            optimal_parameter_value = node.analysis_function(results = node.experiment_results, experiment_name = node.node_id, parameter = node.parameter, sweep_values = np.arange(node.sweep_interval["start"], node.sweep_interval["stop"], node.sweep_interval["step"]), plot_figure_path = "./tests/automatic_calibration/Rabi.PNG")
+            optimal_parameter_value = node.analysis_function(results = node.experiment_results, experiment_name = node.node_id, parameter = node.parameter, sweep_values = np.arange(node.sweep_interval["start"], node.sweep_interval["stop"], node.sweep_interval["step"]).tolist(), plot_figure_path = "./tests/automatic_calibration/Rabi.PNG")
 
             return optimal_parameter_value
 
@@ -332,7 +335,7 @@ class Controller:
         # experiment results in the node's 'experiment_results' attribute, because we don't want to overwrite the old results: 
         # we need them to compare them with the new ones, which here we simply return.
         
-        node.experiment_results = node.experiment(platform = self._platform, drive_bus = node.drive_bus, readout_bus = node.readout_bus, sweep_values = [experiment_point])
+        node.experiment_results = node.experiment(platform = self._platform, drive_bus = node.drive_bus_alias, readout_bus = node.readout_bus_alias, sweep_values = [experiment_point])
 
     def update_parameter(self, node: CalibrationNode, parameter_value: float | bool | str) -> None:
         """Update a parameter value in the platform. 

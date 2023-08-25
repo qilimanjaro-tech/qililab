@@ -35,7 +35,7 @@ platform = ql.build_platform(path = platform_path)
 # Rabi experiment 
 rabi_values = {"start": 0,
                "stop": 0.25,
-               "step": (0.25-0)/40 # It's written like this because it's derived from a np.linspace definition
+               "step": (0.25-0)/31 # It's written like this because it's derived from a np.linspace definition
                }
 
 def rabi(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dict):
@@ -66,6 +66,7 @@ def rabi(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dic
         results.append(result.array)
         
     results = np.hstack(results)
+    
     return results
     
 ##################################### ANALYSIS ##################################################
@@ -93,8 +94,8 @@ def analyze_rabi(results: list,  experiment_name: str, parameter: str, sweep_val
     
     # Get flattened data and shape it
     this_shape = len(sweep_values)
-    i = results[0]
-    q = results[1]
+    i = np.array(results[0])
+    q = np.array(results[1])
     i = i.reshape(this_shape)
     q = q.reshape(this_shape)
 
@@ -176,7 +177,7 @@ calibration_graph_figure_path = "./tests/automatic_calibration/calibration_graph
 """
 Initialize the controller and start the calibration algorithm.
 """
-controller = Controller(calibration_sequence_name= 'test_sequence_1_node', platform = platform, calibration_graph = calibration_graph, manual_check_all=False)
+controller = Controller(calibration_sequence_name= 'test_sequence_pulse_schedule_1_node', platform = platform, calibration_graph = calibration_graph, manual_check_all=False)
 
 # Start automatic calibration
 controller.run_calibration()

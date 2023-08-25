@@ -40,12 +40,12 @@ import networkx as nx
 from scipy.signal import find_peaks
 
 results = "./tests/automatic_calibration/rabi.yml"
-print("HERE")
+#print("HERE")
 iq = get_iq_from_raw(get_raw_data(results))
 i = [k[0] for k in iq[0]]
 q = [k[0] for k in iq[1]]
 iq_array = [i, q]    
-print(iq_array)
+#print(iq_array)
 #pipo = [i, q]
 #print(pipo)
 #["qblox_raw_results"][index]["bins"]["integration"]["path0"] for item in data_raw["results"]]
@@ -108,19 +108,22 @@ plot_fit(
 # plot_image = mpimg.imread(plot_filepath)
 # plt.imshow(plot_image)
 # plt.show()
-print(1 - fit.residual.var() / np.var(fit_signal))
+#print(1 - fit.residual.var() / np.var(fit_signal))
 
-'''
-times = {1:'pipo', 2:'pipino'}
-latest_timestamp_key = list(times)[-1]
-latest_timestamp = times[latest_timestamp_key]
-print({latest_timestamp_key: times[latest_timestamp_key]})
 
-pipi = {}
-print(f"none {pipi is None}")
-print(f"empty {not pipi}")
+rabi_values = {"start": 0,
+               "stop": 0.25,
+               "step": (0.25-0)/31 # It's written like this because it's derived from a np.linspace definition
+               }
+dummy_data_path = "./tests/automatic_calibration/rabi.yml"
 
-import numpy as np
-a = [[1, 2, 3],[4, 5, 6]]
-print(a)
-print(np.hstack((a)))'''
+#print(amplitude_loop_values)
+nightmare = np.arange(rabi_values["start"], rabi_values["stop"], rabi_values["step"]).tolist()
+old = amplitude_loop_values.tolist()
+#print(nightmare)
+a = old
+b = np.linspace(0, 0.25, 31).tolist()
+c = [x - y for x, y in zip(a, b)]
+d = [x - y for x, y in zip(a, nightmare)]
+print(sum([x**2 for x in c]))
+print(sum([x**2 for x in d]))
