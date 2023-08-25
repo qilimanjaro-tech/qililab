@@ -128,17 +128,6 @@ class TestPulsarIntegration:
         assert all(isinstance(submodules[seq_idx], SequencerQRM) for seq_idx in seq_idxs)
         assert expected_names == registered_names
 
-    # def test_initial_setup(self):
-    #     """Unittest for initial_setup method for a QRM pulsar."""
-    #     parameters = {'out0_offset':0.2, 'reference_source': 'internal'}
-    #     pulsar = Pulsar(alias=PULSAR_NAME, dummy_type=PulsarType.PULSAR_QRM)
-    #     pulsar.initial_setup(params=parameters)
-
-    #     print(pulsar._get_reference_source())
-    #     pulsar._set_reference_source = True
-    #     print(pulsar._get_reference_source())
-    #     assert pulsar.get("reference_source") == 'internal'
-
     def test_params(self):
         """Unittest to test the params property."""
         pulsar_qcm = Pulsar(alias=f"{PULSAR_NAME}1", dummy_type=PulsarType.PULSAR_QCM)
