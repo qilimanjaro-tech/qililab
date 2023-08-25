@@ -30,7 +30,7 @@
 # TODO: DELETE THIS
 # TODO: DELETE THIS
 
-'''from qililab.automatic_calibration.calibration_utils.calibration_utils import get_raw_data, get_iq_from_raw, plot_iq, plot_fit
+from qililab.automatic_calibration.calibration_utils.calibration_utils import get_raw_data, get_iq_from_raw, plot_iq, plot_fit
 import numpy as np
 
 import lmfit
@@ -40,15 +40,16 @@ import networkx as nx
 from scipy.signal import find_peaks
 
 results = "./tests/automatic_calibration/rabi.yml"
-data_raw = get_raw_data(results)
-index=0
-i = np.array([item["qblox_raw_results"][index]["bins"]["integration"]["path0"] for item in data_raw["results"]])
-q = np.array([item["qblox_raw_results"][index]["bins"]["integration"]["path1"] for item in data_raw["results"]])
-sweep_values = np.array(data_raw["loops"][0]['values'])
-print(sweep_values)
-print(len(i)-len(q))
-print(len(i))
-print(len(sweep_values))
+print("HERE")
+iq = get_iq_from_raw(get_raw_data(results))
+i = [k[0] for k in iq[0]]
+q = [k[0] for k in iq[1]]
+iq_array = [i, q]    
+print(iq_array)
+#pipo = [i, q]
+#print(pipo)
+#["qblox_raw_results"][index]["bins"]["integration"]["path0"] for item in data_raw["results"]]
+
 
 def is_within_threshold(a, b, threshold):
     return b - threshold <= a <= b + threshold
@@ -62,7 +63,6 @@ random_points = [0.0166667, 0.0333333] # these are points chosen randomly from t
 fit_quadrature = 'i'
 
 data_raw = get_raw_data("./tests/automatic_calibration/rabi.yml")
-
 amplitude_loop_values = np.array(data_raw["loops"][0]["values"])
 swept_variable = data_raw["loops"][0]["parameter"]
 this_shape = len(amplitude_loop_values)
@@ -103,13 +103,14 @@ fig, axes = plot_iq(amplitude_loop_values, i, q, title_label, swept_variable)
 plot_fit(
     amplitude_loop_values, optimal_parameters, axes[fit_signal_idx], fitted_pi_pulse_amplitude
 )
-plot_filepath = results = "./tests/automatic_calibration/drag.PNG"
-fig.savefig(plot_filepath, format="PNG")
-plot_image = mpimg.imread(plot_filepath)
-plt.imshow(plot_image)
-plt.show()
-print(1 - fit.residual.var() / np.var(fit_signal))'''
+# plot_filepath = results = "./tests/automatic_calibration/drag.PNG"
+# fig.savefig(plot_filepath, format="PNG")
+# plot_image = mpimg.imread(plot_filepath)
+# plt.imshow(plot_image)
+# plt.show()
+print(1 - fit.residual.var() / np.var(fit_signal))
 
+'''
 times = {1:'pipo', 2:'pipino'}
 latest_timestamp_key = list(times)[-1]
 latest_timestamp = times[latest_timestamp_key]
@@ -122,4 +123,4 @@ print(f"empty {not pipi}")
 import numpy as np
 a = [[1, 2, 3],[4, 5, 6]]
 print(a)
-print(np.hstack((a)))
+print(np.hstack((a)))'''

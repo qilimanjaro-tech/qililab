@@ -8,7 +8,7 @@ import lmfit
 import yaml
 from tqdm import tqdm
 
-from qililab.automatic_calibration.calibration_utils.calibration_utils import is_timeout_expired, get_timestamp, get_random_values, get_raw_data, get_most_recent_folder
+from qililab.automatic_calibration.calibration_utils.calibration_utils import is_timeout_expired, get_timestamp, get_random_values, get_raw_data, get_most_recent_folder, get_iq_from_raw
 from qililab.automatic_calibration.calibration_node import CalibrationNode
 from qililab.platform.platform import Platform
 
@@ -226,26 +226,26 @@ class Controller:
         # Choose random points within the sweep interval.
         random_values = get_random_values(array=np.arange(node.sweep_interval["start"], node.sweep_interval["stop"], node.sweep_interval["step"]), number_of_values=node._number_of_random_datapoints) 
 
-        quadrature_path = "path0" if node.fit_quadrature == 'i' else "path1"
+        quadrature_index = 0 if node.fit_quadrature == 'i' else 1
         
         old_results_array = []
         new_results_array = []
         for value in random_values:
             
-            value_index = node.experiment_results["loops"][0]['values'].index(value) 
-            old_results_array.append(node.experiment_results["results"][value_index]["qblox_raw_results"][0]["bins"]["integration"][quadrature_path])
+            value_index = node.sweep_interval_as_array().index(value) 
+            old_results_array.append(node.experiment_results[quadrature_index][value_index])
             
-            current_point_result, _ = self.run_experiment(node = node, experiment_point=value)
-            new_results_array.append(current_point_result["results"][0]["qblox_raw_results"][0]["bins"]["integration"][quadrature_path])
+            current_point_result = self.run_experiment(node = node, experiment_point=value)
+            new_results_array.append(current_point_result[quadrature_index][0])
             
         # Compare results
-        #TODO: use squares instead of absolutes
-        absolute_differences = np.abs(new_results_array - old_results_array)
-        mean_diff = np.mean(absolute_differences)
-        std_dev_diff = np.std(absolute_differences)
-        confidence_level = 2
+        
+        square_differences = (new_results_array - old_results_array)**2
+        mean_diff = np.mean(square_differences)
+        std_dev_diff = np.std(square_differences)
+        confidence_level = 2 #TODO: this should be set by the user somewhere, not hardcoded
         threshold = mean_diff + confidence_level * std_dev_diff
-        if len(old_results_array) == np.where(absolute_differences <= threshold):
+        if len(old_results_array) == np.where(square_differences <= threshold):
             node.add_timestamp(timestamp=get_timestamp(), type_of_timestamp="check_data")
             return "in_spec"
         else:
@@ -255,7 +255,7 @@ class Controller:
             if r_squared >= node.data_validation_threshold:
                 return "out_of_spec"
             return "bad_data"
-        
+
 
     def calibrate(self, node: CalibrationNode) -> float | str | bool:
         """
@@ -289,12 +289,11 @@ class Controller:
         
         Returns:
             float | str | bool: The optimal parameter value found by the calibration experiment.
-            plot_filepath: The path of the file containing the plot.
             #TODO: return value is different if the function is called by check_data: document that.
         """
         
         if node.is_refinement:
-            # FIXME: this doesn't work if the node depends on more than one other node.
+            # FIXME: this doesn't work if the node depends on more than one other node. Does this ever happen? 
             previous_experiment_data = list(self._calibration_graph.successors(node))[0].experiment_results
             node.sweep_interval = node.sweep_interval + previous_experiment_data
             # NOTE: I'm not sure that the above can always be handled like this: I'm taking the example from
@@ -319,8 +318,10 @@ class Controller:
             #TODO: here I'm hardcoding the name of the drive and readout buses but they should probably be given as input somewhere: where?
             node.experiment_results = node.experiment(platform = self._platform, drive_bus = "drive_bus", readout_bus = "readout_bus", sweep_values = node.sweep_interval)
             
-            # Test version that returns dummy data
-            node.experiment_results = get_raw_data("./tests/automatic_calibration/rabi.yml")
+            #DEBUG: test version that returns dummy data
+            dummy_data_path = "./tests/automatic_calibration/rabi.yml"
+            iq = [get_iq_from_raw(get_raw_data(dummy_data_path))]
+            node.experiment_results = [[k[0] for k in iq[0]], [p[0] for p in iq[1]]]
             
             
             # Call the general analysis function with the appropriate model, or the custom one (no need to specify the model in this case, it will already be hardcoded).

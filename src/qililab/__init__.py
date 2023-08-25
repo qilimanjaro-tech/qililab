@@ -7,12 +7,7 @@ from .data_management import build_platform, load_results, save_platform, save_r
 from .execute_circuit import execute
 from .experiment import Experiment
 
-<<<<<<< HEAD
-from .platform import Platform, build_platform, save_platform
-
-=======
->>>>>>> 78ca2d254600e3a8def897cf3017ee26986be42f
-from .automatic_calibration import *
+#from .automatic_calibration import *
 from .qprogram import QProgram
 from .result import Results
 from .transpiler import Drag, Park, translate_circuit

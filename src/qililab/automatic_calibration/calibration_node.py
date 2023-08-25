@@ -125,6 +125,9 @@ class CalibrationNode:
     @sweep_interval.setter
     def sweep_interval(self, value):
         self._sweep_interval = value
+        
+    def sweep_interval_as_array(self) -> list:
+        return np.arange(self._sweep_interval["start"], self._sweep_interval["stop"], self._sweep_interval["step"])
     
     @property
     def is_refinement(self):
