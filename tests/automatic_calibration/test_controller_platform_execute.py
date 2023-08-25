@@ -39,7 +39,6 @@ rabi_values = {"start": 0,
 
 def rabi(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dict):
     """
-    TODO: rewrite for pulse schedule experiment.
     The Rabi experiment written as a circuit and pulse schedule.
 
     Args:

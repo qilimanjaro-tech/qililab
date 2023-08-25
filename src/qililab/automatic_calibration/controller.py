@@ -315,8 +315,7 @@ class Controller:
             # Compile and run the QProgram on the platform.
             print(f"Running \"{node.qprogram.__name__}\" experiment in node \"{node.node_id}\"\n")
             
-            #TODO: here I'm hardcoding the name of the drive and readout buses but they should probably be given as input somewhere: where?
-            node.experiment_results = node.experiment(platform = self._platform, drive_bus = "drive_bus", readout_bus = "readout_bus", sweep_values = node.sweep_interval)
+            node.experiment_results = node.experiment(platform = self._platform, drive_bus = node.drive_bus, readout_bus = node.readout_bus, sweep_values = node.sweep_interval)
             
             #DEBUG: test version that returns dummy data
             dummy_data_path = "./tests/automatic_calibration/rabi.yml"
@@ -338,8 +337,7 @@ class Controller:
         # experiment results in the node's 'experiment_results' attribute, because we don't want to overwrite the old results: 
         # we need them to compare them with the new ones, which here we simply return.
         
-        #TODO: here I'm hardcoding the name of the drive and readout buses but they should probably be given as input somewhere: where?
-        node.experiment_results = node.experiment(platform = self._platform, drive_bus = "drive_bus", readout_bus = "readout_bus", sweep_values = [experiment_point])
+        node.experiment_results = node.experiment(platform = self._platform, drive_bus = node.drive_bus, readout_bus = node.readout_bus, sweep_values = [experiment_point])
 
     def update_parameter(self, node: CalibrationNode, parameter_value: float | bool | str) -> None:
         """Update a parameter value in the platform. 

@@ -32,9 +32,13 @@ class CalibrationNode:
         _fit_quadrature (str): The quadrature that has to be fitted by the analysis function. It can be either 'i' or 'q'.
         _plotting_labels (dict): Labels used in the plot of the fitted experimental data. The keys of the dictionary indicate the axis,
                                     the values indicate the corresponding label.
-        _qubit (int): The qubit that is being calibrated by the calibration graph to which the node belongs.
+        _qubit (int): The qubit whose parameter (one of them) is calibrated by this node. This attribute is used to name the drive bus, which is qubit-specific, 
+                      so it can be passed to the function contained in the _experiment attribute. NOTE: this is useless for now, because bus aliases are not yet standardized
+                      and it's therefore not possible to have a standard mapping between qubit number and bus alias. That's why the _drive_bus and _readout_bus attributes are
+                      here.
+        _drive_bus (str): The alias of the drive bus. The correct alias of the bus can be found in the runcard.
+        _readout_bus (str): The alias of the readout bus. The correct alias of the bus can be found in the runcard.
         _parameter (str): The parameter that this node will tune.
-        _alias (str): The alias of the bus where the parameters is set #TODO: I think this is part of the old buses implementation: if possible, remove asap.
         _drift_timeout (float): A durations in seconds, representing an estimate of how long it takes for the parameter to drift.
         _data_validation_threshold (float): The threshold used by the check_data() method to validate the data fittings. #TODO: this is now used for the rsquared value in check_data, change docs
         _timestamps (dict): A dictionary where keys are timestamps and values are the operations that generated the timestamp.
@@ -60,8 +64,9 @@ class CalibrationNode:
         fit_quadrature: str = 'i',
         plotting_labels: dict = None,
         qubit: int = None,
+        drive_bus: str = None,
+        readout_bus: str = None,
         parameter: str = None,
-        alias: str = None,
         drift_timeout: float = 0,
         data_validation_threshold: float = 0.96,
         number_of_random_datapoints: int = 10,
@@ -79,8 +84,9 @@ class CalibrationNode:
         self._fit_quadrature = fit_quadrature 
         self._plotting_labels = plotting_labels
         self._qubit = qubit
+        self._drive_bus = drive_bus
+        self._readout_bus = readout_bus
         self._parameter = parameter
-        self._alias = alias
         self._drift_timeout = drift_timeout
         if not(0 <= data_validation_threshold <= 1): raise ValueError("Data validation threshold must be between 0 and 1, as it represent the R-squared value of a fit.")
         self._data_validation_threshold = data_validation_threshold
@@ -144,6 +150,14 @@ class CalibrationNode:
     @property
     def fit_quadrature(self):
         return self._fit_quadrature
+    
+    @property
+    def drive_bus(self):
+        return self._drive_bus
+    
+    @property
+    def readout_bus(self):
+        return self._readout_bus
     
     @property
     def parameter(self):
