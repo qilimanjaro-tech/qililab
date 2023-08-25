@@ -40,21 +40,3 @@ class GS200(QCodesGS200, BaseInstrument):
     def alias(self):
         """return the alias of the instrument, which corresponds to the QCodes name attribute"""
         return self.name
-
-    def instrument_repr(self) -> dict[str, Any]:
-        """Returns a dictionary representation of the instrument, parameters and submodules.
-
-        Returns:
-            inst_repr (dict[str, Any]): Instrument representation
-        """
-        inst_repr: dict[str, Any] = {
-            'alias': self.alias,
-        }
-
-        params: dict[str, Any] = {}
-        for param_name in self.params:
-            param_value = self.get(param_name)
-            params[param_name] = param_value
-        inst_repr['parameters'] = params
-
-        return inst_repr

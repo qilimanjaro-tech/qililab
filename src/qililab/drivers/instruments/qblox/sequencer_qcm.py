@@ -86,19 +86,6 @@ class SequencerQCM(Sequencer, AWG):
         """return the alias of the instrument, which corresponds to the QCodes name attribute"""
         return self.name
 
-    def instrument_repr(self) -> dict[str, Any]:
-        """Returns a dictionary representation of the instrument, parameters and submodules.
-
-        Returns:
-            dict[str, Any]: Instrument representation
-        """
-        params = {}
-        for param_name in self.params:
-            param_value = self.get(param_name)
-            params[param_name] = param_value
-
-        return {'parameters': params}
-
     def set(self, param_name: str, value: Any):
         """Sets a parameter value checking if is an output mapping.
 
