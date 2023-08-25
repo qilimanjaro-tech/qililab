@@ -1,4 +1,5 @@
 """Driver for the Qblox Pulsar class."""
+from typing import Any
 from qblox_instruments.qcodes_drivers import Pulsar as QcodesPulsar
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 
@@ -49,3 +50,30 @@ class Pulsar(QcodesPulsar, BaseInstrument):  # pylint: disable=abstract-method
     def alias(self):
         """return the alias of the instrument, which corresponds to the QCodes name attribute"""
         return self.name
+
+    def instrument_repr(self) -> dict[str, Any]:
+        """Returns a dictionary representation of the instrument, parameters and submodules.
+
+        Returns:
+            inst_repr (dict[str, Any]): Instrument representation
+        """
+        inst_repr: dict[str, Any] = {
+            'alias': self.alias
+        }
+        if self.identifier:
+            inst_repr['address'] = self.identifier
+        if self.port:
+            inst_repr['port'] = self.port
+        if self.dummy_type:
+            inst_repr['dummy_type'] = self.dummy_type
+
+        params: dict[str, Any] = {}
+        for param_name in self.params:
+            param_value = self.get(param_name)
+            params[param_name] = param_value
+        inst_repr['parameters'] = params
+
+        sequencers = [submodule for submodule in self.submodules]
+        inst_repr['sequencers'] = sequencers
+
+        return inst_repr

@@ -36,6 +36,14 @@ class BaseInstrument(ABC):
             Any: Current value of the parameter.
         """
 
+    @abstractmethod
+    def instrument_repr(self) -> dict[str, Any]:
+        """Returns a dictionary representation of the instrument, parameters and submodules.
+
+        Returns:
+            dict[str, Any]: Instrument representation
+        """
+
     def initial_setup(self, params: dict[str, Any] | None = None):
         """Initializes the parameters of the instrument and of the submodules.
 
