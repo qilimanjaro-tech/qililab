@@ -11,13 +11,13 @@ from qililab.platform import Platform
 from qililab.result.vna_result import VNAResult
 from qililab.typings.enums import Parameter, VNAScatteringParameters, VNASweepModes, VNATriggerModes
 from tests.data import SauronVNA
-from tests.test_utils import platform_db
+from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="sauron_platform")
 def fixture_sauron_platform() -> Platform:
     """Return Platform object."""
-    return platform_db(runcard=SauronVNA.runcard)
+    return build_platform(runcard=SauronVNA.runcard)
 
 
 @pytest.fixture(name="e5080b_controller")

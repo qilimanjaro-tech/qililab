@@ -5,12 +5,12 @@ import numpy as np
 import pytest
 from qibo.gates import M
 
-from qililab import build_platform
 from qililab.experiment import T2Echo
 from qililab.transpiler.native_gates import Drag
 from qililab.typings.enums import Parameter
 from qililab.utils import Wait
 from tests.data import Galadriel
+from tests.test_utils import build_platform
 
 START, STOP, NUM = (1, 1000, 101)
 I_AMPLITUDE, I_RATE, I_OFFSET = (5, -2, 0)
@@ -24,11 +24,7 @@ q = Q_AMPLITUDE * np.exp(Q_RATE * x)
 @pytest.fixture(name="t2echo")
 def fixture_t2echo():
     """Return Experiment object."""
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=Galadriel.runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="_")
-            mock_load.assert_called()
-            mock_open.assert_called()
+    platform = build_platform(Galadriel.runcard)
     analysis = T2Echo(platform=platform, qubit=0, wait_loop_values=np.linspace(start=START, stop=STOP, num=NUM))
     analysis.results = MagicMock()
     analysis.results.acquisitions.return_value = {

@@ -262,3 +262,30 @@ class TestsQbloxResult:
         """
         with pytest.raises(IndexError, match="Sequencers must have the same number of bins."):
             qblox_asymmetric_bins_result.counts()
+
+    def test_array_property_of_scope(self, dummy_qrm: DummyPulsar, qblox_result_scope: QbloxResult):
+        """Test the array property of the QbloxResult class."""
+        array = qblox_result_scope.array
+        assert np.shape(array) == (2, 16380)  # I/Q values of the whole scope
+        assert np.allclose(array, np.array([dummy_qrm._input_path0, dummy_qrm._input_path1]))
+
+    def test_array_property_of_binned_data(self, dummy_qrm: DummyPulsar, qblox_result_noscope: QbloxResult):
+        """Test the array property of the QbloxResult class."""
+        array = qblox_result_noscope.array
+        assert np.shape(array) == (2, 1)  # (1 sequencer, I/Q, 1 bin)
+        path0, path1 = dummy_qrm._dummy_sequencers[0].demodulate(dummy_qrm._input_path0, dummy_qrm._input_path1)
+        assert np.allclose(array, np.array([[sum(path0[:1000])], [sum(path1[:1000])]]))
+
+    def test_array_property_asymmetric_bins_raise_error(self, qblox_asymmetric_bins_result: QbloxResult):
+        """Tests if IndexError exception is raised when sequencers have different number of bins.
+
+        Args:
+            qblox_asymmetric_bins_result (QbloxResult): QbloxResult instance with different number of bins on each sequencer.
+        """
+        with pytest.raises(IndexError, match="All sequencers must have the same number of bins to return an array"):
+            _ = qblox_asymmetric_bins_result.array
+
+    def test_to_dataframe(self, qblox_result_noscope: QbloxResult):
+        """Test the to_dataframe method."""
+        dataframe = qblox_result_noscope.to_dataframe()
+        assert isinstance(dataframe, pd.DataFrame)

@@ -62,6 +62,7 @@ class TestSimulatedSystemControl:
         simulated_system_control.run(port=pulse_bus_schedule.port)
         result = simulated_system_control.acquire_result()
         assert isinstance(result, SimulatorResult)
+        assert np.allclose(result.array, [])
 
     def test_name_property(self, simulated_system_control: SimulatedSystemControl):
         """Test name property."""

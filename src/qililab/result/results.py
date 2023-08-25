@@ -13,7 +13,7 @@ from qililab.utils.loop import Loop
 from qililab.utils.util_loops import compute_ranges_from_loops, compute_shapes_from_loops
 
 from .counts import Counts
-from .qblox_results import QbloxResult
+from .qblox_results.qblox_result import QbloxResult
 from .result import Result
 
 

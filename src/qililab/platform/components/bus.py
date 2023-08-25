@@ -4,9 +4,10 @@ from dataclasses import InitVar, dataclass
 from qililab.chip import Chip, Coil, Coupler, Qubit, Resonator
 from qililab.constants import BUS, NODE, RUNCARD
 from qililab.instruments import Instruments, ParameterNotFound
-from qililab.pulse import PulseDistortion
+from qililab.pulse import PulseBusSchedule, PulseDistortion
+from qililab.result import Result
 from qililab.settings import Settings
-from qililab.system_control import SystemControl
+from qililab.system_control import ReadoutSystemControl, SystemControl
 from qililab.typings import Parameter
 from qililab.utils import Factory
 
@@ -158,3 +159,37 @@ class Bus:
                 raise ParameterNotFound(
                     f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
                 ) from error
+
+    def compile(
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
+    ) -> list:
+        """Compiles the ``PulseBusSchedule`` into an assembly program.
+
+        Args:
+            pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
+            nshots (int): number of shots / hardware average
+            repetition_duration (int): maximum window for the duration of one hardware repetition
+            num_bins (int): number of bins
+        """
+        return self.system_control.compile(pulse_bus_schedule, nshots, repetition_duration, num_bins)
+
+    def upload(self):
+        """Uploads any previously compiled program into the instrument."""
+        self.system_control.upload(port=self.port)
+
+    def run(self) -> None:
+        """Runs any previously uploaded program into the instrument."""
+        self.system_control.run(port=self.port)
+
+    def acquire_result(self) -> Result:
+        """Read the result from the vector network analyzer instrument
+
+        Returns:
+            Result: Acquired result
+        """
+        if isinstance(self.system_control, ReadoutSystemControl):
+            return self.system_control.acquire_result()
+
+        raise AttributeError(
+            f"The bus {self.alias} cannot acquire results because it doesn't have a readout system control."
+        )

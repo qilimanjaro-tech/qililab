@@ -1,18 +1,26 @@
 """Gaussian pulse shape."""
+from copy import deepcopy
 from dataclasses import dataclass
 
 import numpy as np
 
-from qililab.constants import RUNCARD
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
-from qililab.typings import PulseShapeName, PulseShapeSettingsName
+from qililab.typings import PulseShapeName
 from qililab.utils import Factory
 
 
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class Gaussian(PulseShape):
-    """Gaussian pulse shape"""
+    """Standard Gaussian pulse shape:
+
+    .. math::
+
+        Gaussian(x) = amplitude * exp(-0.5 * (x - mu)^2 / sigma^2)
+
+    Args:
+        num_sigmas (float): Sigma number of the gaussian.
+    """
 
     name = PulseShapeName.GAUSSIAN
     num_sigmas: float
@@ -32,12 +40,12 @@ class Gaussian(PulseShape):
         mu_ = duration / 2
 
         gaussian = amplitude * np.exp(-0.5 * (time - mu_) ** 2 / sigma**2)
-        norm = np.amax(np.real(gaussian))
+        norm = np.amax(np.abs(np.real(gaussian)))
 
         gaussian = gaussian - gaussian[0]  # Shift to avoid introducing noise at time 0
-        corr_norm = np.amax(np.real(gaussian))
+        corr_norm = np.amax(np.abs(np.real(gaussian)))
 
-        return gaussian * norm / corr_norm
+        return gaussian * norm / corr_norm if corr_norm != 0 else gaussian
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "Gaussian":
@@ -49,8 +57,8 @@ class Gaussian(PulseShape):
         Returns:
             Gaussian: Loaded class.
         """
-        local_dictionary = dictionary.copy()
-        local_dictionary.pop(RUNCARD.NAME, None)
+        local_dictionary = deepcopy(dictionary)
+        local_dictionary.pop("name", None)
         return cls(**local_dictionary)
 
     def to_dict(self):
@@ -60,6 +68,6 @@ class Gaussian(PulseShape):
             dict: Dictionary.
         """
         return {
-            RUNCARD.NAME: self.name.value,
-            PulseShapeSettingsName.NUM_SIGMAS.value: self.num_sigmas,
+            "name": self.name.value,
+            "num_sigmas": self.num_sigmas,
         }

@@ -4,31 +4,30 @@ import itertools
 import numpy as np
 import pytest
 
-from qililab.constants import RUNCARD
 from qililab.pulse import Pulse
 from qililab.pulse.pulse_distortion import LFilterCorrection
-from qililab.pulse.pulse_shape import Cosine, Drag, Gaussian, Rectangular
-from qililab.typings.enums import PulseDistortionSettingsName
+from qililab.pulse.pulse_shape import SNZ, Cosine, Drag, Gaussian, Rectangular
 
 # Parameters for the LFilterCorrection.
-NORMALIZATION_FACTOR = [1.0, 2.0]
+NORM_FACTOR = [1.0]
 A = [[0.7, 1.3], [0.8, 0.6]]
 B = [[0.5, 0.6], [0.8, 1.3]]
 
+
 # Parameters of the Pulse and its envelope.
-AMPLITUDE = [0.9]
-PHASE = [0, np.pi / 3, 2 * np.pi]
-DURATION = [47]
+AMPLITUDE = [0, 0.9, -0.7, 2.1]
+PHASE = [np.pi / 3, 2 * np.pi]
+DURATION = [48]
 FREQUENCY = [0.7e9]
-RESOLUTION = [1.1]
-SHAPE = [Rectangular(), Cosine(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]
+RESOLUTION = [1.0]
+SHAPE = [Rectangular(), Cosine(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0), SNZ(b=0.1, t_phi=2)]
 
 
 @pytest.fixture(
     name="pulse_distortion",
     params=[
-        LFilterCorrection(norm_factor=norm_factor, a=a, b=b)
-        for norm_factor, a, b, in itertools.product(NORMALIZATION_FACTOR, A, B)
+        LFilterCorrection(a=a, b=b, norm_factor=norm_factor)
+        for a, b, norm_factor in itertools.product(A, B, NORM_FACTOR)
     ],
 )
 def fixture_pulse_distortion(request: pytest.FixtureRequest) -> LFilterCorrection:
@@ -48,8 +47,36 @@ def fixture_pulse_distortion(request: pytest.FixtureRequest) -> LFilterCorrectio
     ],
 )
 def fixture_envelope(request: pytest.FixtureRequest) -> np.ndarray:
-    """Fixture for the pulse distortion class."""
+    """Fixture for an envelope."""
     return request.param
+
+
+def return_corrected_envelopes_examples(
+    pulse_distortion: LFilterCorrection, envelope: np.ndarray, norm_factors: list[float]
+):
+    """Helper function that returns examples of envelopes with & without auto_norm"""
+    norm_corr_envelopes = [pulse_distortion.apply(envelope=envelope)]
+    norm_corr_envelopes.append(
+        LFilterCorrection(a=[0.7, 1.3], b=[0.5, 0.6], norm_factor=norm_factors[0]).apply(
+            envelope=norm_corr_envelopes[0]
+        )
+    )
+    norm_corr_envelopes.append(
+        LFilterCorrection(a=[0.5, 0.6], b=[0.7, 1.3], norm_factor=norm_factors[1]).apply(
+            envelope=norm_corr_envelopes[1]
+        )
+    )
+    not_norm_corr_envelopes = [
+        LFilterCorrection(a=[0.1, 0.2, 7.1, 0.2], b=[1.1, 2.2, 1.1, 2.2], auto_norm=False).apply(
+            envelope=norm_corr_envelopes[2]
+        )
+    ]
+    not_norm_corr_envelopes.append(
+        LFilterCorrection(a=[0.1, 0.2, 3.1, 0.1], b=[1.1, 4.2, 1.1, 2.2], auto_norm=False).apply(
+            envelope=not_norm_corr_envelopes[0]
+        )
+    )
+    return norm_corr_envelopes, not_norm_corr_envelopes
 
 
 class TestLFilterCorrection:
@@ -57,25 +84,47 @@ class TestLFilterCorrection:
 
     def test_apply(self, pulse_distortion: LFilterCorrection, envelope: np.ndarray):
         """Test for the envelope method."""
-        norm_factors = [1.2, 2.3]
-        corr_envelopes = [pulse_distortion.apply(envelope=envelope)]
-        corr_envelopes.append(
-            LFilterCorrection(norm_factor=norm_factors[0], a=[0.7, 1.3], b=[0.5, 0.6]).apply(envelope=corr_envelopes[0])
-        )
-        corr_envelopes.append(
-            LFilterCorrection(norm_factor=norm_factors[1], a=[0.5, 0.6], b=[0.7, 1.3]).apply(envelope=corr_envelopes[1])
+        norm_factors = [0.90, 0.35]
+        norm_corr_envelopes, not_norm_corr_envelopes = return_corrected_envelopes_examples(
+            pulse_distortion, envelope, norm_factors
         )
 
-        for corr_envelope in corr_envelopes:
+        # Basic checks
+        for corr_envelope in norm_corr_envelopes + not_norm_corr_envelopes:
             assert corr_envelope is not None
             assert isinstance(corr_envelope, np.ndarray)
             assert len(envelope) == len(corr_envelope)
-            assert not np.array_equal(corr_envelope, envelope)
+            assert (
+                not np.array_equal(corr_envelope, envelope)
+                or np.max(np.abs(np.real(envelope))) == np.max(np.abs(np.real(corr_envelope))) == 0.0
+            )
+
+        # Check that norm_factor and auto_norm is working properly
         assert (
-            round(np.max(np.real(corr_envelopes[0])), 14)
-            == round(np.max(np.real(corr_envelopes[1])) / norm_factors[0], 14)
-            == round(np.max(np.real(corr_envelopes[2])) / (norm_factors[0] * norm_factors[1]), 14)
-            == round(np.max(np.real(envelope)) * pulse_distortion.norm_factor, 14)
+            0.0  # Testing/Discarting the amplitude = 0 cases, for both maxs and mins.
+            == round(np.max(np.abs(np.real(envelope))), 13)
+            == round(np.min(np.abs(np.real(envelope))), 13)
+            == round(np.max(np.abs(np.real(norm_corr_envelopes[0]))), 13)
+            == round(np.min(np.abs(np.real(norm_corr_envelopes[0]))), 13)
+            == round(np.max(np.abs(np.real(norm_corr_envelopes[1]))), 13)
+            == round(np.min(np.abs(np.real(norm_corr_envelopes[1]))), 13)
+            == round(np.max(np.abs(np.real(norm_corr_envelopes[2]))), 13)
+            == round(np.min(np.abs(np.real(norm_corr_envelopes[2]))), 13)
+            == round(np.max(np.abs(np.real(not_norm_corr_envelopes[0]))), 13)
+            == round(np.min(np.abs(np.real(not_norm_corr_envelopes[0]))), 13)
+            == round(np.max(np.abs(np.real(not_norm_corr_envelopes[1]))), 13)
+            == round(np.min(np.abs(np.real(not_norm_corr_envelopes[1]))), 13)
+        ) or (
+            # Actual testing that the norm_factors are working properly, the factors
+            # should correspond to the ones in the function "return_corrected_envelopes_examples()"
+            round(np.max(np.abs(np.real(norm_corr_envelopes[0]))), 14)
+            == round(np.max(np.abs(np.real(norm_corr_envelopes[1]))) / norm_factors[0], 14)
+            == round(np.max(np.abs(np.real(norm_corr_envelopes[2]))) / (norm_factors[0] * norm_factors[1]), 14)
+            == round(np.max(np.abs(np.real(envelope))) * pulse_distortion.norm_factor, 14)
+            # Testing that the auto_norm changes the norm from the previous
+            != round(np.max(np.abs(np.real(not_norm_corr_envelopes[0]))) / (norm_factors[0] * norm_factors[1]), 14)
+            # The next one has auto_norm = False again, so it has to be different again.
+            != round(np.max(np.abs(np.real(not_norm_corr_envelopes[1]))) / (norm_factors[0] * norm_factors[1]), 14)
         )
 
     def test_from_dict(self, pulse_distortion: LFilterCorrection):
@@ -83,12 +132,13 @@ class TestLFilterCorrection:
         dictionary = pulse_distortion.to_dict()
         pulse_distortions = [LFilterCorrection.from_dict(dictionary)]
 
-        dictionary.pop(RUNCARD.NAME)
+        dictionary.pop("name")
         pulse_distortions.append(LFilterCorrection.from_dict(dictionary))
 
-        dictionary[PulseDistortionSettingsName.NORM_FACTOR.value] = 1.2
-        dictionary[PulseDistortionSettingsName.A.value] = [0.7, 1.3]
-        dictionary[PulseDistortionSettingsName.B.value] = [0.5, 0.6]
+        dictionary["a"] = [0.7, 1.3]
+        dictionary["b"] = [0.5, 0.6]
+        dictionary["auto_norm"] = False
+        dictionary["norm_factor"] = 1.2
         pulse_distortions.append(LFilterCorrection.from_dict(dictionary))
 
         for distortion in pulse_distortions:
@@ -102,8 +152,21 @@ class TestLFilterCorrection:
         assert dictionary is not None
         assert isinstance(dictionary, dict)
         assert dictionary == {
-            RUNCARD.NAME: pulse_distortion.name.value,
-            PulseDistortionSettingsName.NORM_FACTOR.value: pulse_distortion.norm_factor,
-            PulseDistortionSettingsName.A.value: pulse_distortion.a,
-            PulseDistortionSettingsName.B.value: pulse_distortion.b,
+            "name": pulse_distortion.name.value,
+            "a": pulse_distortion.a,
+            "b": pulse_distortion.b,
+            "norm_factor": pulse_distortion.norm_factor,
+            "auto_norm": pulse_distortion.auto_norm,
         }
+
+    def test_serialization(self, pulse_distortion: LFilterCorrection):
+        """Test that a serialization of the distortion is possible"""
+        dictionary = pulse_distortion.to_dict()
+        assert isinstance(dictionary, dict)
+
+        new_pulse_distortion = LFilterCorrection.from_dict(dictionary)
+        assert isinstance(new_pulse_distortion, LFilterCorrection)
+
+        new_dictionary = new_pulse_distortion.to_dict()
+        assert isinstance(new_dictionary, dict)
+        assert new_dictionary == dictionary
