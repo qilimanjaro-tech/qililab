@@ -96,11 +96,11 @@ class MockCluster(DummyInstrument):  # pylint: disable=abstract-method
     is_rf_type = True
 
     def __init__(
-        self, alias, identifier=None, port=None, debug=None, dummy_cfg=None, **kwargs
+        self, name, identifier=None, port=None, debug=None, dummy_cfg=None, **kwargs
     ):  # pylint: disable=unused-argument
         """Mock init method"""
 
-        super().__init__(name=alias, **kwargs)
+        super().__init__(name=name, **kwargs)
         self.is_rf_type = True
         self.address = identifier
         self._num_slots = 20
@@ -198,7 +198,7 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
 @pytest.fixture(name="cluster")
 def fixture_cluster() -> Cluster:
     """Return Cluster instance."""
-    return Cluster(name="test_cluster_dummy", dummy_cfg=DUMMY_CFG)
+    return Cluster(alias="test_cluster_dummy", dummy_cfg=DUMMY_CFG)
 
 
 class TestCluster:
@@ -229,7 +229,7 @@ class TestCluster:
     def test_init_without_dummy_cfg(self):
         """Test init method without dummy configuration"""
         cluster_name = "test_cluster_without_dummy"
-        cluster = Cluster(name=cluster_name)
+        cluster = Cluster(alias=cluster_name)
         cluster_submodules = cluster.submodules
         qcm_qrm_idxs = list(cluster_submodules.keys())
         cluster_submodules_expected_names = [f"{cluster_name}_module{idx}" for idx in range(1, NUM_SLOTS + 1)]
@@ -259,7 +259,7 @@ class TestCluster:
                 "slot_id": 4,
             },
         ]
-        cluster = Cluster(name="test_cluster_with_submodules", submodules=submodules)
+        cluster = Cluster(alias="test_cluster_with_submodules", submodules=submodules)
         submodules = cluster.submodules
         registered_names = list(submodules.keys())
 
@@ -269,7 +269,7 @@ class TestCluster:
     def test_initial_setup(self):
         """Test initial setup method"""
         params = {"out0_offset": 1, "reference_source": "internal"}
-        cluster = Cluster(name="test_cluster_initial_setup")
+        cluster = Cluster(alias="test_cluster_initial_setup")
         cluster.initial_setup(params=params)
 
         assert cluster.get("out0_offset") == 1

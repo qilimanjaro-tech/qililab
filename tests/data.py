@@ -4,6 +4,7 @@ import copy
 from typing import Any
 
 import numpy as np
+from qblox_instruments.types import ClusterType, PulsarType
 from qibo.gates import I, M, X, Y
 from qibo.models.circuit import Circuit
 
@@ -55,24 +56,22 @@ class NewGaladriel:
         {
             "alias": "pulsar_qrm",
             "type": "Pulsar",
-            "parameters": {"out0_offseet": 0},
+            "dummy_type": PulsarType.PULSAR_QCM,
             "sequencers": ["q0_flux", "q1_flux", "q2_flux", "q3_flux"],
         },
         {
             "alias": "cluster",
             "type": "Cluster",
-            "parameters": {"reference_source": "internal"},
+            "dummy_cfg": {1: ClusterType.CLUSTER_QCM_RF},
             "submodules": [
                 {
                     "alias": "qrm_0",
                     "slot_id": 1,
-                    "parameters": {"out0_offset": 0},
                     "sequencers": ["q0_flux", "q1_flux", "q2_flux", "q3_flux"],
                 },
                 {
                     "alias": "qcm_0",
                     "slot_id": 2,
-                    "parameters": {"out0_offset": 0},
                     "sequencers": ["q0_drive", "q1_drive"],
                 },
             ],
