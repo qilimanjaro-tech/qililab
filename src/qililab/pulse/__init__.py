@@ -41,12 +41,13 @@ Distortions
     :toctree: api
 
     ~PulseDistortion
+    ~LFilterCorrection
     ~BiasTeeCorrection
     ~ExponentialCorrection
 """
 from .pulse import Pulse
 from .pulse_bus_schedule import PulseBusSchedule
-from .pulse_distortion import BiasTeeCorrection, ExponentialCorrection, PulseDistortion
+from .pulse_distortion import BiasTeeCorrection, ExponentialCorrection, LFilterCorrection, PulseDistortion
 from .pulse_event import PulseEvent
 from .pulse_schedule import PulseSchedule
 from .pulse_shape import SNZ, Cosine, Drag, Gaussian, PulseShape, Rectangular

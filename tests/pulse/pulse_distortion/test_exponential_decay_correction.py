@@ -4,23 +4,22 @@ import itertools
 import numpy as np
 import pytest
 
-from qililab.constants import RUNCARD
 from qililab.pulse import Pulse
 from qililab.pulse.pulse_distortion import ExponentialCorrection
-from qililab.pulse.pulse_shape import Cosine, Drag, Gaussian, Rectangular
-from qililab.typings.enums import PulseDistortionSettingsName
+from qililab.pulse.pulse_shape import SNZ, Cosine, Drag, Gaussian, Rectangular
 
 # Parameters for the ExponentialCorrection.
+NORM_FACTOR = [1.0]
 TAU_EXPONENTIAL = [0.7, 1.3]
 AMP = [-5.1, 0.8, 2.1]
 
 # Parameters of the Pulse and its envelope.
-AMPLITUDE = [0.9]
-PHASE = [0, np.pi / 3, 2 * np.pi]
-DURATION = [47]
-FREQUENCY = [0.7e9]
-RESOLUTION = [1.1]
-SHAPE = [Rectangular(), Cosine(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]
+AMPLITUDE = [-0.8, 0.9, 0, 1.8]
+PHASE = [0, np.pi / 3]
+DURATION = [28]
+FREQUENCY = [0.6e9]
+RESOLUTION = [1.0]
+SHAPE = [Rectangular(), Cosine(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0), SNZ(b=0.1, t_phi=4)]
 
 
 @pytest.fixture(
@@ -47,8 +46,32 @@ def fixture_pulse_distortion(request: pytest.FixtureRequest) -> ExponentialCorre
     ],
 )
 def fixture_envelope(request: pytest.FixtureRequest) -> np.ndarray:
-    """Fixture for the pulse distortion class."""
+    """Fixture for an envelope."""
     return request.param
+
+
+def return_corrected_envelopes_examples(
+    pulse_distortion: ExponentialCorrection, envelope: np.ndarray, norm_factors: list[float]
+):
+    """Helper function that returns examples of envelopes with & without auto_norm"""
+    norm_corr_envelopes = [pulse_distortion.apply(envelope=envelope)]
+    norm_corr_envelopes.append(
+        ExponentialCorrection(tau_exponential=1.3, amp=2.0, norm_factor=norm_factors[0]).apply(
+            envelope=norm_corr_envelopes[0]
+        )
+    )
+    norm_corr_envelopes.append(
+        ExponentialCorrection(tau_exponential=0.5, amp=-5.0, norm_factor=norm_factors[1]).apply(
+            envelope=norm_corr_envelopes[1]
+        )
+    )
+    not_norm_corr_envelopes = [
+        ExponentialCorrection(tau_exponential=0.9, amp=-5.0, auto_norm=False).apply(envelope=norm_corr_envelopes[2])
+    ]
+    not_norm_corr_envelopes.append(
+        ExponentialCorrection(tau_exponential=0.7, amp=3.1, auto_norm=False).apply(envelope=not_norm_corr_envelopes[0])
+    )
+    return norm_corr_envelopes, not_norm_corr_envelopes
 
 
 class TestExponentialCorrection:
@@ -56,32 +79,63 @@ class TestExponentialCorrection:
 
     def test_apply(self, pulse_distortion: ExponentialCorrection, envelope: np.ndarray):
         """Test for the envelope method."""
-        corr_envelopes = [pulse_distortion.apply(envelope=envelope)]
-        corr_envelopes.append(ExponentialCorrection(tau_exponential=1.3, amp=2.0).apply(envelope=corr_envelopes[0]))
-        corr_envelopes.append(ExponentialCorrection(tau_exponential=0.5, amp=-5.0).apply(envelope=corr_envelopes[1]))
-        corr_envelopes.append(ExponentialCorrection(tau_exponential=0.9, amp=-5.0).apply(envelope=corr_envelopes[2]))
+        norm_factors = [1.0, 0.75]
+        norm_corr_envelopes, not_norm_corr_envelopes = return_corrected_envelopes_examples(
+            pulse_distortion, envelope, norm_factors
+        )
 
-        for corr_envelope in corr_envelopes:
+        # Basic checks
+        for corr_envelope in norm_corr_envelopes + not_norm_corr_envelopes:
             assert corr_envelope is not None
             assert isinstance(corr_envelope, np.ndarray)
             assert len(envelope) == len(corr_envelope)
-            assert round(np.max(np.real(corr_envelope)), 14) == round(np.max(np.real(envelope)), 14)
-            assert not np.array_equal(corr_envelope, envelope)
+            assert (
+                not np.array_equal(corr_envelope, envelope)
+                or np.max(np.abs(np.real(envelope))) == np.max(np.abs(np.real(corr_envelope))) == 0.0
+            )
+
+        # Check that norm_factor and auto_norm is working properly
+        assert (
+            0.0  # Testing/Discarting the amplitude = 0 cases, for both maxs and mins.
+            == round(np.max(np.abs(np.real(envelope))), 13)
+            == round(np.min(np.abs(np.real(envelope))), 13)
+            == round(np.max(np.abs(np.real(norm_corr_envelopes[0]))), 13)
+            == round(np.min(np.abs(np.real(norm_corr_envelopes[0]))), 13)
+            == round(np.max(np.abs(np.real(norm_corr_envelopes[1]))), 13)
+            == round(np.min(np.abs(np.real(norm_corr_envelopes[1]))), 13)
+            == round(np.max(np.abs(np.real(norm_corr_envelopes[2]))), 13)
+            == round(np.min(np.abs(np.real(norm_corr_envelopes[2]))), 13)
+            == round(np.max(np.abs(np.real(not_norm_corr_envelopes[0]))), 13)
+            == round(np.min(np.abs(np.real(not_norm_corr_envelopes[0]))), 13)
+            == round(np.max(np.abs(np.real(not_norm_corr_envelopes[1]))), 13)
+            == round(np.min(np.abs(np.real(not_norm_corr_envelopes[1]))), 13)
+        ) or (
+            # Actual testing that the norm_factors are working properly, the factors
+            # should correspond to the ones in the function "return_corrected_envelopes_examples()"
+            round(np.max(np.abs(np.real(norm_corr_envelopes[0]))), 14)
+            == round(np.max(np.abs(np.real(norm_corr_envelopes[1]))) / norm_factors[0], 14)
+            == round(np.max(np.abs(np.real(norm_corr_envelopes[2]))) / (norm_factors[0] * norm_factors[1]), 14)
+            == round(np.max(np.abs(np.real(envelope))) * pulse_distortion.norm_factor, 14)
+            # Testing that the auto_norm changes the norm from the previous
+            != round(np.max(np.abs(np.real(not_norm_corr_envelopes[0]))) / (norm_factors[0] * norm_factors[1]), 14)
+            # The next one has auto_norm = False again, so it has to be different again.
+            != round(np.max(np.abs(np.real(not_norm_corr_envelopes[1]))) / (norm_factors[0] * norm_factors[1]), 14)
+        )
 
     def test_from_dict(self, pulse_distortion: ExponentialCorrection):
         """Test for the to_dict method."""
         dictionary = pulse_distortion.to_dict()
         pulse_distortions = [ExponentialCorrection.from_dict(dictionary)]
 
-        dictionary.pop(PulseDistortionSettingsName.SAMPLING_RATE.value)
+        dictionary.pop("sampling_rate")
         pulse_distortions.append(ExponentialCorrection.from_dict(dictionary))
 
-        dictionary.pop(RUNCARD.NAME)
+        dictionary.pop("name")
         pulse_distortions.append(ExponentialCorrection.from_dict(dictionary))
 
-        dictionary[PulseDistortionSettingsName.TAU_EXPONENTIAL.value] = 0.5
-        dictionary[PulseDistortionSettingsName.AMP.value] = 1.2
-        dictionary[PulseDistortionSettingsName.SAMPLING_RATE.value] = 2.0
+        dictionary["tau_exponential"] = 0.5
+        dictionary["amp"] = 1.2
+        dictionary["sampling_rate"] = 2.0
         pulse_distortions.append(ExponentialCorrection.from_dict(dictionary))
 
         for distortion in pulse_distortions:
@@ -95,8 +149,22 @@ class TestExponentialCorrection:
         assert dictionary is not None
         assert isinstance(dictionary, dict)
         assert dictionary == {
-            RUNCARD.NAME: pulse_distortion.name.value,
-            PulseDistortionSettingsName.TAU_EXPONENTIAL.value: pulse_distortion.tau_exponential,
-            PulseDistortionSettingsName.AMP.value: pulse_distortion.amp,
-            PulseDistortionSettingsName.SAMPLING_RATE.value: pulse_distortion.sampling_rate,
+            "name": pulse_distortion.name.value,
+            "tau_exponential": pulse_distortion.tau_exponential,
+            "amp": pulse_distortion.amp,
+            "sampling_rate": pulse_distortion.sampling_rate,
+            "norm_factor": pulse_distortion.norm_factor,
+            "auto_norm": pulse_distortion.auto_norm,
         }
+
+    def test_serialization(self, pulse_distortion: ExponentialCorrection):
+        """Test that a serialization of the distortion is possible"""
+        dictionary = pulse_distortion.to_dict()
+        assert isinstance(dictionary, dict)
+
+        new_pulse_distortion = ExponentialCorrection.from_dict(dictionary)
+        assert isinstance(new_pulse_distortion, ExponentialCorrection)
+
+        new_dictionary = new_pulse_distortion.to_dict()
+        assert isinstance(new_dictionary, dict)
+        assert new_dictionary == dictionary

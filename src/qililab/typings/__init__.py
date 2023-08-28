@@ -11,9 +11,7 @@ from .enums import (
     OperationName,
     Parameter,
     PulseDistortionName,
-    PulseDistortionSettingsName,
     PulseShapeName,
-    PulseShapeSettingsName,
     ReferenceClock,
     ResultName,
 )

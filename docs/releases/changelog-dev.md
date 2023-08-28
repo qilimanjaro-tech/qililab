@@ -4,6 +4,16 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Distorsions and PulseShapes have been improved: [#512](https://github.com/qilimanjaro-tech/qililab/pull/512)
+
+  They now work for `amplitude=0`, and for negative and `snz` envelopes (both positive and negatives)
+
+  It now also adds the `norm_factor` parameter for manual normalization to all the distortions (previously only in the lfilter distortion)
+
+  And finally we also have added the option to skip the automatic normalization that we do, setting the parameter `auto_norm` to `False`, (defaults to `True`).
+
+  Plus, added a lots of tests and documentation to both classes.
+
 - Fixed bug which did not allow gaussian waveforms to have amplitude 0
   [#471](https://github.com/qilimanjaro-tech/qililab/pull/471)
 
