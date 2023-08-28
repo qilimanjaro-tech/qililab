@@ -273,25 +273,25 @@ buses:
   - alias: drive_line_q0_bus
     system_control:
       name: system_control
-      instruments: [QCM-RF1]
+      instruments: [QCM1]
     port: drive_line_q0
     distortions: []
   - alias: flux_line_q0_bus
     system_control:
       name: system_control
-      instruments: [QCM1]
+      instruments: [QCM4]
     port: flux_line_q0
     distortions: []
   - alias: drive_line_q1_bus
     system_control:
       name: system_control
-      instruments: [QCM-RF1]
+      instruments: [QCM1]
     port: drive_line_q1
     distortions: []
   - alias: flux_line_q1_bus
     system_control:
       name: system_control
-      instruments: [QCM1]
+      instruments: [QCM4]
     port: flux_line_q1
     distortions:
       - name: bias_tee
@@ -355,37 +355,37 @@ buses:
   - alias: drive_line_q2_bus
     system_control:
       name: system_control
-      instruments: [QCM-RF2]
+      instruments: [QCM3]
     port: drive_line_q2
     distortions: []
   - alias: flux_line_q2_bus
     system_control:
       name: system_control
-      instruments: [QCM2]
+      instruments: [QCM3]
     port: flux_line_q2
     distortions: []
   - alias: drive_line_q3_bus
     system_control:
       name: system_control
-      instruments: [QCM-RF3]
+      instruments: [QCM2]
     port: drive_line_q3
     distortions: []
   - alias: flux_line_q3_bus
     system_control:
       name: system_control
-      instruments: [QCM1]
+      instruments: [QCM4]
     port: flux_line_q3
     distortions: []
   - alias: drive_line_q4_bus
     system_control:
       name: system_control
-      instruments: [QCM-RF3]
+      instruments: [QCM2]
     port: drive_line_q4
     distortions: []
   - alias: flux_line_q4_bus
     system_control:
       name: system_control
-      instruments: [QCM1]
+      instruments: [QCM4]
     port: flux_line_q4
     distortions: []
 
@@ -412,7 +412,7 @@ instruments:
         threshold: 0.5
         threshold_rotation: 0.0
         num_bins: 1
-        intermediate_frequency: 10.e+06
+        intermediate_frequency: 380.97e+06
         gain_imbalance: 1.
         phase_imbalance: 0
         hardware_modulation: true
@@ -440,7 +440,7 @@ instruments:
         threshold: 0.5
         threshold_rotation: 0.0
         num_bins: 1
-        intermediate_frequency: 20.e+06
+        intermediate_frequency: 9.01e+06
         gain_imbalance: 1.
         phase_imbalance: 0
         hardware_modulation: true
@@ -468,7 +468,7 @@ instruments:
         threshold: 0.5
         threshold_rotation: 0.0
         num_bins: 1
-        intermediate_frequency: 30.e+06
+        intermediate_frequency: 20.e+06
         gain_imbalance: 1.
         phase_imbalance: 0
         hardware_modulation: true
@@ -496,7 +496,7 @@ instruments:
         threshold: 0.5
         threshold_rotation: 0.0
         num_bins: 1
-        intermediate_frequency: 40.e+06
+        intermediate_frequency: -213.e+06
         gain_imbalance: 1.
         phase_imbalance: 0
         hardware_modulation: true
@@ -524,7 +524,7 @@ instruments:
         threshold: 0.5
         threshold_rotation: 0.0
         num_bins: 1
-        intermediate_frequency: 50.e+06
+        intermediate_frequency: -389.20e+06
         gain_imbalance: 1.
         phase_imbalance: 0
         hardware_modulation: true
@@ -537,33 +537,24 @@ instruments:
         acquisition_timeout: 1
         hardware_demodulation: true
         scope_store_enabled: false
-  - name: QCM-RF
-    alias: QCM-RF1
+  - name: QCM # q0 and q1 drive
+    alias: QCM1
     firmware: 0.7.0
     num_sequencers: 2
-    out0_lo_freq: 6.5e+09
-    out0_lo_en: true
-    out0_att: 0
-    out0_offset_path0: 0.
-    out0_offset_path1: 0.0
-    out1_lo_freq: 6.7e+09
-    out1_lo_en: true
-    out1_att: 0
-    out1_offset_path0: 0.
-    out1_offset_path1: 0.
+    out_offsets: [-0.0061, -0.0097, 0.0019, -0.0078]
     awg_sequencers:
       - identifier: 0
         chip_port_id: drive_line_q0
         output_i: 0
         output_q: 1
-        gain_i: 0.1
-        gain_q: 0.1
-        offset_i: 0. # -0.012
+        gain_i: 1.0
+        gain_q: 1.0
+        offset_i: 0.
         offset_q: 0.
         num_bins: 1
-        intermediate_frequency: 10.e+06
-        gain_imbalance: 0.940
-        phase_imbalance: 14.482
+        intermediate_frequency: 85.e+06
+        gain_imbalance: 1.
+        phase_imbalance: 0.
         hardware_modulation: true
       - identifier: 1
         chip_port_id: drive_line_q1
@@ -574,64 +565,27 @@ instruments:
         offset_i: 0
         offset_q: 0
         num_bins: 1
-        intermediate_frequency: 20.e+06
-        gain_imbalance: 0.5
+        intermediate_frequency: 113.e+06
+        gain_imbalance: 1.
         phase_imbalance: 0
         hardware_modulation: true
-  - name: QCM-RF
-    alias: QCM-RF2
-    firmware: 0.7.0
-    num_sequencers: 1
-    out0_lo_freq: 6.5e+09
-    out0_lo_en: true
-    out0_att: 0
-    out0_offset_path0: 0.
-    out0_offset_path1: 0.0
-    out1_lo_freq: 6.7e+09
-    out1_lo_en: true
-    out1_att: 0
-    out1_offset_path0: 0.
-    out1_offset_path1: 0.
-    awg_sequencers:
-      - identifier: 0
-        chip_port_id: drive_line_q2
-        output_i: 0
-        output_q: 1
-        gain_i: 0.1
-        gain_q: 0.1
-        offset_i: 0.
-        offset_q: 0.
-        num_bins: 1
-        intermediate_frequency: 10.e+06
-        gain_imbalance: .5
-        phase_imbalance: 0.
-        hardware_modulation: true
-  - name: QCM-RF
-    alias: QCM-RF3
+  - name: QCM # q3 and q4 drive
+    alias: QCM2
     firmware: 0.7.0
     num_sequencers: 2
-    out0_lo_freq: 5.e+09
-    out0_lo_en: true
-    out0_att: 0
-    out0_offset_path0: 0.
-    out0_offset_path1: 0.0
-    out1_lo_freq: 5.2e+09
-    out1_lo_en: true
-    out1_att: 0
-    out1_offset_path0: 0.
-    out1_offset_path1: 0.
+    out_offsets: [-0.0083, -0.0075, -0.0118, 0.0014]
     awg_sequencers:
       - identifier: 0
         chip_port_id: drive_line_q3
         output_i: 0
         output_q: 1
-        gain_i: 0.1
-        gain_q: 0.1
+        gain_i: 1.0
+        gain_q: 1.0
         offset_i: 0.
         offset_q: 0.
         num_bins: 1
-        intermediate_frequency: 10.e+06
-        gain_imbalance: .5
+        intermediate_frequency: 54.e+06
+        gain_imbalance: 1.
         phase_imbalance: 0.
         hardware_modulation: true
       - identifier: 1
@@ -643,27 +597,60 @@ instruments:
         offset_i: 0
         offset_q: 0
         num_bins: 1
-        intermediate_frequency: 20.e+06
-        gain_imbalance: 0.5
+        intermediate_frequency: 164.e+06
+        gain_imbalance: 1.
         phase_imbalance: 0
         hardware_modulation: true
+  - name: QCM # q2 drive and flux
+    alias: QCM3
+    firmware: 0.7.0
+    num_sequencers: 2
+    out_offsets: [-0.0046, 0.0032, 0.0, 0.627] # qubit 2 (slot 3)
+    awg_sequencers:
+      - identifier: 0
+        chip_port_id: drive_line_q2
+        output_i: 0
+        output_q: 1
+        gain_i: 1.0
+        gain_q: 1.0
+        offset_i: 0.
+        offset_q: 0.
+        num_bins: 1
+        intermediate_frequency: 86.e+06
+        gain_imbalance: 1.
+        phase_imbalance: 0.
+        hardware_modulation: true
+      - identifier: 1
+        chip_port_id: flux_line_q2 #TODO CHECK
+        output_i: 3
+        output_q: 2
+        gain_i: 1
+        gain_q: 1
+        offset_i: 0
+        offset_q: 0
+        num_bins: 1
+        intermediate_frequency: 0.
+        gain_imbalance: 1.
+        phase_imbalance: 0
+        hardware_modulation: true
+
   - name: QCM
-    alias: QCM1
+    alias: QCM4
     firmware: 0.7.0
     num_sequencers: 4
-    out_offsets: [0.0, 0.0, 0.0, 0.0]
+    out_offsets: [-0.39, -1.27, -0.66, -0.91] # q0, q1, q3, q4
     awg_sequencers:
       - identifier: 0
         chip_port_id: flux_line_q0
         output_i: 0
         output_q: 1
-        gain_i: 0.1
-        gain_q: 0.1
+        gain_i: 1.
+        gain_q: 1.
         offset_i: 0.
         offset_q: 0.
         num_bins: 1
-        intermediate_frequency: 10.e+06
-        gain_imbalance: .5
+        intermediate_frequency: 0.
+        gain_imbalance: 1.
         phase_imbalance: 0.
         hardware_modulation: true
       - identifier: 1
@@ -676,7 +663,7 @@ instruments:
         offset_q: 0
         num_bins: 1
         intermediate_frequency: 0.
-        gain_imbalance: 0.5
+        gain_imbalance: 1.
         phase_imbalance: 0
         hardware_modulation: true
       - identifier: 2
@@ -689,7 +676,7 @@ instruments:
         offset_q: 0
         num_bins: 1
         intermediate_frequency: 0.
-        gain_imbalance: 0.5
+        gain_imbalance: 1.
         phase_imbalance: 0
         hardware_modulation: true
       - identifier: 3
@@ -702,38 +689,38 @@ instruments:
         offset_q: 0
         num_bins: 1
         intermediate_frequency: 0.
-        gain_imbalance: 0.5
+        gain_imbalance: 1.
         phase_imbalance: 0
         hardware_modulation: true
-  - name: QCM
-    alias: QCM2
-    firmware: 0.7.0
-    num_sequencers: 1
-    out_offsets: [0.0, 0.0, 0.0, 0.0]
-    awg_sequencers:
-      - identifier: 0
-        chip_port_id: flux_line_q2
-        output_i: 0
-        output_q: 1
-        gain_i: 1.
-        gain_q: 1.
-        offset_i: 0.
-        offset_q: 0.
-        num_bins: 1
-        intermediate_frequency: 10.e+06
-        gain_imbalance: .5
-        phase_imbalance: 0.
-        hardware_modulation: true
-  - name: rohde_schwarz
+
+  - name: rohde_schwarz # readout
     alias: rs_1
     firmware: 4.2.76.0-4.30.046.295
     power: 16
-    frequency: 8.0726e+09
+    frequency: 7.7e+09
     rf_on: true
-  - name: mini_circuits
+  - name: rohde_schwarz # qubit 0 and qubit 1
+    alias: rs_2
+    firmware: 4.2.76.0-4.30.046.295
+    power: 16
+    frequency: 4.7e+09
+    rf_on: true
+  - name: rohde_schwarz # qubit 3 and qubit 4
+    alias: rs_3
+    firmware: 4.2.76.0-4.30.046.295
+    power: 16
+    frequency: 6.7403e+09
+    rf_on: true
+  - name: rohde_schwarz # qubit 2
+    alias: rs_4
+    firmware: 4.2.76.0-4.30.046.295
+    power: 16
+    frequency: 5.590e+09
+    rf_on: true
+  - name: mini_circuits 
     alias: attenuator
     firmware: None
-    attenuation: 32
+    attenuation: 10
 
 instrument_controllers:
   - name: qblox_cluster
@@ -741,28 +728,53 @@ instrument_controllers:
     reference_clock: internal
     connection:
       name: tcp_ip
-      address: 192.168.1.20
+      address: 192.168.1.24
     modules:
       - alias: QRM1
-        slot_id: 12
-      - alias: QCM-RF1
-        slot_id: 6
-      - alias: QCM-RF3
-        slot_id: 8
-      - alias: QCM-RF2
-        slot_id: 14
+        slot_id: 4
       - alias: QCM1
-        slot_id: 14
+        slot_id: 2
       - alias: QCM2
-        slot_id: 14
+        slot_id: 6
+      - alias: QCM3
+        slot_id: 8
+      - alias: QCM4
+        slot_id: 10
   - name: rohde_schwarz
     alias: rohde_schwarz_controller_0
     reference_clock: internal
     connection:
       name: tcp_ip
-      address: 192.168.1.11
+      address: 192.168.1.15
     modules:
       - alias: rs_1
+        slot_id: 0
+  - name: rohde_schwarz
+    alias: rohde_schwarz_controller_1
+    reference_clock: internal
+    connection:
+      name: tcp_ip
+      address: 192.168.1.14
+    modules:
+      - alias: rs_2
+        slot_id: 0
+  - name: rohde_schwarz
+    alias: rohde_schwarz_controller_2
+    reference_clock: internal
+    connection:
+      name: tcp_ip
+      address: 192.168.1.11
+    modules:
+      - alias: rs_3
+        slot_id: 0
+  - name: rohde_schwarz
+    alias: rohde_schwarz_controller_3
+    reference_clock: internal
+    connection:
+      name: tcp_ip
+      address: 192.168.1.21
+    modules:
+      - alias: rs_4
         slot_id: 0
   - name: mini_circuits
     alias: attenuator_controller_0

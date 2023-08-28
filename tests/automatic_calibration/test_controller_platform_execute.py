@@ -20,7 +20,7 @@ from qililab.pulse.circuit_to_pulses import CircuitToPulses
 
 os.environ["RUNCARDS"] = "./tests/automatic_calibration/runcards"
 os.environ["DATA"] = "./tests/automatic_calibration/data"
-platform_name = "soprano_master_galadriel"
+platform_name = "galadriel"
 platform_path = os.path.join(os.environ["RUNCARDS"], f"{platform_name}.yml")
 platform = ql.build_platform(path = platform_path)
 
