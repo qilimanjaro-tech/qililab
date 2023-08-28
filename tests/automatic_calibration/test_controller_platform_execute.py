@@ -20,7 +20,7 @@ from qililab.pulse.circuit_to_pulses import CircuitToPulses
 
 os.environ["RUNCARDS"] = "./tests/automatic_calibration/runcards"
 os.environ["DATA"] = "./tests/automatic_calibration/data"
-platform_name = "galadriel"
+platform_name = "soprano_master_galadriel"
 platform_path = os.path.join(os.environ["RUNCARDS"], f"{platform_name}.yml")
 platform = ql.build_platform(path = platform_path)
 
@@ -108,7 +108,7 @@ def analyze_rabi(results: list,  experiment_name: str, parameter: str, sweep_val
 
     # TODO: hint values are pretty random, they should be tuned better. Trial and error seems to be the best way.
     mod = lmfit.Model(sinus)
-    mod.set_param_hint("a", value=1 / 2, vary=True, min=0)
+    mod.set_param_hint("a", value=0.3, vary=True, min=0)
     mod.set_param_hint("b", value=0, vary=True)
     mod.set_param_hint("c", value=0, vary=True)
     mod.set_param_hint("d", value=1 / 2, vary=True, min=0)
