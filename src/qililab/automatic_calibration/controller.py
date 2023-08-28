@@ -89,7 +89,7 @@ class Controller:
                 self.maintain(node = node)
   
         #GALADRIEL: uncomment when platform is connected
-        #self.update_parameter(node = node, parameter_value = result)
+        self.update_parameter(node = node, parameter_value = result)
         print(f"Updated parameter \"{node.parameter}\" value.\n")
 
 
@@ -125,7 +125,7 @@ class Controller:
         result = self.calibrate(node)
 
         #GALADRIEL: uncomment when platform is connected
-        #self.update_parameter(node = node, parameter_value = result)
+        self.update_parameter(node = node, parameter_value = result)
         
         return True
 
@@ -144,19 +144,20 @@ class Controller:
         # Check if the folder for this calibration sequence already exists, i.e. if this sequence has been run before.
         if os.path.exists(this_calibration_sequence_folder) and os.path.isdir(this_calibration_sequence_folder):
             most_recent_run_folder = get_most_recent_folder(this_calibration_sequence_folder)
-            print(f"This calibration sequence has already been run. Data found in {most_recent_run_folder}")
-            nodes_list = self._calibration_graph.nodes()
-            loading_progress_bar = tqdm(nodes_list, desc="Loading the data obtained the last time this calibration sequence was run.", unit="node")
-            for n in loading_progress_bar:
-                node_file = os.path.join(most_recent_run_folder, f"{n.node_id}.yml")
-                if os.path.exists(node_file):
-                    with open(node_file, 'r') as f:
-                        node_data = yaml.safe_load(f)
-                        node_timestamp = node_data["latest_timestamp"]
-                        if node_timestamp is not None and node_timestamp:
-                            n.add_timestamp(timestamp = node_timestamp)
-                        n.experiment_results = np.array(node_data["experiment_results"])
-            loading_progress_bar.close()
+            if most_recent_run_folder is not None:
+                print(f"This calibration sequence has already been run. Data found in {most_recent_run_folder}")
+                nodes_list = self._calibration_graph.nodes()
+                loading_progress_bar = tqdm(nodes_list, desc="Loading the data obtained the last time this calibration sequence was run.", unit="node")
+                for n in loading_progress_bar:
+                    node_file = os.path.join(most_recent_run_folder, f"{n.node_id}.yml")
+                    if os.path.exists(node_file):
+                        with open(node_file, 'r') as f:
+                            node_data = yaml.safe_load(f)
+                            node_timestamp = node_data["latest_timestamp"]
+                            if node_timestamp is not None and node_timestamp:
+                                n.add_timestamp(timestamp = node_timestamp)
+                            n.experiment_results = np.array(node_data["experiment_results"])
+                loading_progress_bar.close()
         else: print("This calibration sequence has never been run before: there is no historical data to load.")
             
         # Find highest level node(s) in the calibration graph, the one(s) that no other node depends on. If we call 'maintain' from this node(s), 
@@ -318,12 +319,12 @@ class Controller:
             print(f"Running \"{node.experiment.__name__}\" experiment in node \"{node.node_id}\"\n")
             
             #GALADRIEL: uncomment this when connected to an actual platform
-            #node.experiment_results = node.experiment(platform = self._platform, drive_bus = node.drive_bus_alias, readout_bus = node.readout_bus_alias, sweep_values = node.sweep_interval)
+            node.experiment_results = node.experiment(platform = self._platform, drive_bus = node.drive_bus_alias, readout_bus = node.readout_bus_alias, sweep_values = node.sweep_interval)
             
             #GALADRIEL: comment this out when connected to an actual platform, it returns dummy data instead of running the experiment.
-            dummy_data_path = "./tests/automatic_calibration/rabi.yml"
-            iq = get_iq_from_raw(get_raw_data(dummy_data_path))
-            node.experiment_results = [[k[0] for k in iq[0]], [p[0] for p in iq[1]]]
+            # dummy_data_path = "./tests/automatic_calibration/rabi.yml"
+            # iq = get_iq_from_raw(get_raw_data(dummy_data_path))
+            # node.experiment_results = [[k[0] for k in iq[0]], [p[0] for p in iq[1]]]
             
             
             # Call the general analysis function with the appropriate model, or the custom one (no need to specify the model in this case, it will already be hardcoded).

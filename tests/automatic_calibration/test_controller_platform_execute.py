@@ -7,12 +7,13 @@ import networkx as nx
 import numpy as np
 
 import qililab as ql
+from qililab import Drag
 from qililab.platform import Platform
 from qililab.automatic_calibration import CalibrationNode, Controller
 from qililab.automatic_calibration.calibration_utils.calibration_utils import get_raw_data, get_iq_from_raw, plot_iq, plot_fit, get_timestamp, visualize_calibration_graph
 
 from qibo.models import Circuit
-from qibo import gates
+from qibo.gates import M
 from qililab.pulse.circuit_to_pulses import CircuitToPulses
 
 ##################################### PLATFORM ####################################################
@@ -24,10 +25,10 @@ platform_name = "galadriel"
 platform_path = os.path.join(os.environ["RUNCARDS"], f"{platform_name}.yml")
 platform = ql.build_platform(path = platform_path)
 
-# Uncomment the following when working with an actual platform
-#platform.connect()
-#platform.turn_on_instruments()
-#platform.initial_setup()
+#GALADRIEL:  Uncomment the following when working with an actual platform
+platform.connect()
+platform.turn_on_instruments()
+platform.initial_setup()
 
 ##################################### EXPERIMENTS ##################################################
 
@@ -52,15 +53,15 @@ def rabi(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dic
     """
         
     circuit = Circuit(1)
-    circuit.add(gates.X(0))
-    circuit.add(gates.M(0))
+    circuit.add(Drag(0, theta=np.pi, phase=0))
+    circuit.add(M(0))
 
-    pulse_schedule = CircuitToPulses(platform=platform).translate(circuits=[circuit])
+    pulse_schedule = CircuitToPulses(platform=platform).translate(circuits=[circuit])[0]
 
     results = []
     gain_values = np.arange(sweep_values["start"], sweep_values["stop"], sweep_values["step"])
     for gain in gain_values:
-        platform.set_parameter(alias=drive_bus, parameter=ql.Parameter.GAIN, value=gain)
+        platform.set_parameter(alias=drive_bus, parameter=ql.Parameter.AMPLITUDE, value=gain)
         result = platform.execute(program=pulse_schedule, num_avg=1000, repetition_duration=6000)
         # Convert the result to array. See Qblox_results.array() for details.
         results.append(result.array)
@@ -127,9 +128,11 @@ def analyze_rabi(results: list,  experiment_name: str, parameter: str, sweep_val
     # Plot
     title_label = experiment_name
     fig, axes = plot_iq(sweep_values, i, q, title_label, parameter)
-    plot_fit(
-        sweep_values, optimal_parameters, axes[fit_signal_idx], fitted_pi_pulse_amplitude
-    )
+    # plot_fit(
+    #     sweep_values, optimal_parameters, axes[fit_signal_idx], fitted_pi_pulse_amplitude
+    # )
+    
+    #plt.plot(sweep_values, np.abs(i+1j*q), title_label, parameter)
     
     # The user can change this to save to a custom location
     fig.savefig(plot_figure_path)
@@ -146,15 +149,15 @@ rabi_1_node = CalibrationNode(
     is_refinement=False,
     analysis_function=analyze_rabi,
     qubit=0,
-    drive_bus_alias="drive_line_q0_bus",
+    drive_bus_alias="Drag(0)",
     readout_bus_alias="feedline_bus",
-    parameter_bus_alias="drive_line_q0_bus", #if this doesn't work try "Drag(0)"
+    parameter_bus_alias="Drag(0)", #if this doesn't work try "Drag(0)"
     parameter=ql.Parameter.AMPLITUDE,
     drift_timeout=0,
     check_data_confidence_level = 2,
     r_squared_threshold=0.8,
     number_of_random_datapoints=10,
-    manual_check=True
+    manual_check=False
 )
 
 # Uncomment the following line to test check_state
