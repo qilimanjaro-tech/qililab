@@ -1,19 +1,26 @@
 import os
 
 import lmfit
-import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
+from qibo.gates import M
+from qibo.models import Circuit
 
 import qililab as ql
 from qililab import Drag
-from qililab.platform import Platform
+from qililab.utils import Wait
 from qililab.automatic_calibration import CalibrationNode, Controller
-from qililab.automatic_calibration.calibration_utils.calibration_utils import get_raw_data, get_iq_from_raw, plot_iq, plot_fit, get_timestamp, visualize_calibration_graph
-
-from qibo.models import Circuit
-from qibo.gates import M
+from qililab.automatic_calibration.calibration_utils.calibration_utils import (
+    get_iq_from_raw,
+    get_raw_data,
+    get_timestamp,
+    plot_fit,
+    plot_iq,
+    visualize_calibration_graph,
+)
+from qililab.platform import Platform
 from qililab.pulse.circuit_to_pulses import CircuitToPulses
 
 ##################################### PLATFORM ####################################################
@@ -23,9 +30,9 @@ os.environ["RUNCARDS"] = "./tests/automatic_calibration/runcards"
 os.environ["DATA"] = "./tests/automatic_calibration/data"
 platform_name = "galadriel"
 platform_path = os.path.join(os.environ["RUNCARDS"], f"{platform_name}.yml")
-platform = ql.build_platform(path = platform_path)
+platform = ql.build_platform(path=platform_path)
 
-#GALADRIEL:  Uncomment the following when working with an actual platform
+# GALADRIEL:  Uncomment the following when working with an actual platform
 platform.connect()
 platform.turn_on_instruments()
 platform.initial_setup()
@@ -33,11 +40,13 @@ platform.initial_setup()
 ##################################### EXPERIMENTS ##################################################
 
 
-# Rabi experiment 
-rabi_values = {"start": 0,
-               "stop": 0.25,
-               "step": (0.25)/50 # It's written like this because it's derived from a np.linspace definition
-               }
+# Rabi experiment
+rabi_values = {
+    "start": 0,
+    "stop": 0.25,
+    "step": (0.25) / 50,  # It's written like this because it's derived from a np.linspace definition
+}
+
 
 def rabi(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dict):
     """
@@ -51,9 +60,10 @@ def rabi(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dic
     Returns:
         list: An array with dimensions (2, N) where N is the number of sweep value, i.e. the size of the experiment's loop.
     """
-        
+
     circuit = Circuit(1)
     circuit.add(Drag(0, theta=np.pi, phase=0))
+    circuit.add(Wait(0, 100))
     circuit.add(M(0))
 
     # CircuitToPulses returns a list of pulse schedules, which in this case is of lenght 1,
@@ -67,39 +77,47 @@ def rabi(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dic
         result = platform.execute(program=pulse_schedule, num_avg=10000, repetition_duration=6000)
         # Convert the result to array. See Qblox_results.array() for details.
         results.append(result.array)
-        
+
     results = np.hstack(results)
-    
+
     return results
-    
+
+
 ##################################### ANALYSIS ##################################################
 
 
-def analyze_rabi(results: list,  experiment_name: str, parameter: str, sweep_values: list, plot_figure_path: str = None, fit_quadrature="i"):
+def analyze_rabi(
+    results: list,
+    experiment_name: str,
+    parameter: str,
+    sweep_values: list,
+    plot_figure_path: str = None,
+    fit_quadrature="i",
+):
     """
     Analyzes the Rabi experiment data.
 
     Args:
-        results: Where the data experimental is stored. If it's a string, it represents the path of the yml file where the data is. 
+        results: Where the data experimental is stored. If it's a string, it represents the path of the yml file where the data is.
                  Otherwise it's a list with only 1 element. This element is a dictionary containing the data.
-                 For now this only supports experiment run on QBlox hardware. The dictionary is a standard structure in which the data 
-                 is stored by the QBlox hardware. For more details see this documentation: 
+                 For now this only supports experiment run on QBlox hardware. The dictionary is a standard structure in which the data
+                 is stored by the QBlox hardware. For more details see this documentation:
                  https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/pulsar.html#qblox_instruments.native.Pulsar.get_acquisitions
-                 The list only has 1 element because each element represents the acquisitions dictionary of one readout bus, 
+                 The list only has 1 element because each element represents the acquisitions dictionary of one readout bus,
                  and for the moment multiple readout buses are not supported.
         plot_figure_path (str): The path where the plot figure PNG file will be saved.
-        experiment_name: The name of the experiment of which this function will analyze the data. The name is used to label the figure that 
+        experiment_name: The name of the experiment of which this function will analyze the data. The name is used to label the figure that
                          this function will produce, which will contain the plot.
-                 
+
     Returns:
         fitted_pi_pulse_amplitude (int)
     """
-    
+
     # Get flattened data and shape it
-    #FIXME: i'm dividing i and q by the integration lenght. Hardcoded for now, fix it.
+    # FIXME: i'm dividing i and q by the integration lenght. Hardcoded for now, fix it.
     this_shape = len(sweep_values)
-    i = np.array(results[0])/2000
-    q = np.array(results[1])/2000
+    i = np.array(results[0]) / 2000
+    q = np.array(results[1]) / 2000
     i = i.reshape(this_shape)
     q = q.reshape(this_shape)
 
@@ -131,16 +149,12 @@ def analyze_rabi(results: list,  experiment_name: str, parameter: str, sweep_val
     # Plot
     title_label = experiment_name
     fig, axes = plot_iq(sweep_values, i, q, title_label, parameter)
-    plot_fit(
-        sweep_values, optimal_parameters, axes[fit_signal_idx], fitted_pi_pulse_amplitude
-    )
-    
-    #plt.plot(sweep_values, np.abs(i+1j*q), title_label, parameter)
-    
+    plot_fit(sweep_values, optimal_parameters, axes[fit_signal_idx], fitted_pi_pulse_amplitude)
+
     # The user can change this to save to a custom location
     print(f"Saving the plot in {plot_figure_path}\n")
     fig.savefig(plot_figure_path)
-    
+
     return fitted_pi_pulse_amplitude
 
 
@@ -155,36 +169,39 @@ rabi_1_node = CalibrationNode(
     qubit=0,
     drive_bus_alias="Drag(0)",
     readout_bus_alias="feedline_bus",
-    parameter_bus_alias="Drag(0)", #if this doesn't work try "Drag(0)"
+    parameter_bus_alias="Drag(0)",  # if this doesn't work try "Drag(0)"
     parameter=ql.Parameter.AMPLITUDE,
     drift_timeout=0,
-    check_data_confidence_level = 2,
+    check_data_confidence_level=2,
     r_squared_threshold=0.8,
     number_of_random_datapoints=10,
-    manual_check=False
+    manual_check=False,
 )
 
 # Uncomment the following line to test check_state
-#rabi_1_node.add_timestamp(timestamp=get_timestamp(), type_of_timestamp="calibration")
+# rabi_1_node.add_timestamp(timestamp=get_timestamp(), type_of_timestamp="calibration")
 
 calibration_graph = nx.DiGraph()
 
-nodes = [    
-    rabi_1_node
-]
+nodes = [rabi_1_node]
 
 calibration_graph.add_nodes_from(nodes)
 
 calibration_graph_figure_path = "./tests/automatic_calibration/data/pulse_schedule_1_node_graph.PNG"
 
 # Visualization of the calibration graph
-#visualize_calibration_graph(calibration_graph = calibration_graph, graph_figure_path = calibration_graph_figure_path)
+# visualize_calibration_graph(calibration_graph = calibration_graph, graph_figure_path = calibration_graph_figure_path)
 
 ######################################################################################################
 """
 Initialize the controller and start the calibration algorithm.
 """
-controller = Controller(calibration_sequence_name= 'test_sequence_pulse_schedule_1_node', platform = platform, calibration_graph = calibration_graph, manual_check_all=False)
+controller = Controller(
+    calibration_sequence_name="test_sequence_pulse_schedule_1_node",
+    platform=platform,
+    calibration_graph=calibration_graph,
+    manual_check_all=False,
+)
 
 # Start automatic calibration
 controller.run_calibration()
