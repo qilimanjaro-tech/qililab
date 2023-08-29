@@ -25,14 +25,22 @@ rabi_values = {"start": 0,
                "step": (0.25-0)/31 # It's written like this because it's derived from a np.linspace definition
                }
 
-with open("./tests/automatic_calibration/data/test_sequence_pulse_schedule_1_node/1693241829.041737/rabi_1.yml", "r") as f:
+with open("./tests/automatic_calibration/data/rabi.yml", "r") as f:
     results = yaml.safe_load(f)
+results = results["experiment_results"]
 experiment_name= "rabi"
 parameter= "amplitude" 
 sweep_values = np.arange(rabi_values["start"], rabi_values["stop"], rabi_values["step"])
-plot_figure_path = "qililab/tests/automatic_calibration/IS_IT_RIGHT.png"
+plot_figure_path = "./tests/automatic_calibration/IS_IT_RIGHT.png"
 fit_quadrature="i"
 
+dummy_data_path = "./tests/automatic_calibration/rabi_pauls_data.yml"
+iq = get_iq_from_raw(get_raw_data(dummy_data_path))
+pauls_results = [[k[0] for k in iq[0]], [p[0] for p in iq[1]]]
+my_results = results        
+print(my_results[0])
+check = np.abs(np.array(my_results[0]) - np.array(pauls_results[0]))
+print(check)
 """
 Analyzes the Rabi experiment data.
 
@@ -62,6 +70,9 @@ q = q.reshape(this_shape)
 fit_signal = i if fit_quadrature == "i" else q
 fit_signal_idx = 0 if fit_quadrature == "i" else 1
 
+#Uncomment this to use i AND q instead of only one of them
+#fit_signal = np.abs(i+1j*q)
+
 # Fit
 def sinus(x, a, b, c, d):
     return a * np.sin(2 * np.pi * b * np.array(x) - c) + d
@@ -87,11 +98,9 @@ fitted_pi_pulse_amplitude = np.abs(1 / (2 * optimal_parameters[1]))
 # Plot
 title_label = experiment_name
 fig, axes = plot_iq(sweep_values, i, q, title_label, parameter)
-# plot_fit(
-#     sweep_values, optimal_parameters, axes[fit_signal_idx], fitted_pi_pulse_amplitude
-# )
-
-#plt.plot(sweep_values, np.abs(i+1j*q), title_label, parameter)
+plot_fit(
+    sweep_values, optimal_parameters, axes[fit_signal_idx], fitted_pi_pulse_amplitude
+)
 
 # The user can change this to save to a custom location
 fig.savefig(plot_figure_path)

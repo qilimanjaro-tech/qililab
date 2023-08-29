@@ -35,8 +35,8 @@ platform.initial_setup()
 
 # Rabi experiment 
 rabi_values = {"start": 0,
-               "stop": 0.25,
-               "step": (0.25-0)/31 # It's written like this because it's derived from a np.linspace definition
+               "stop": 1.,
+               "step": (1)/40 # It's written like this because it's derived from a np.linspace definition
                }
 
 def rabi(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dict):
@@ -56,6 +56,8 @@ def rabi(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dic
     circuit.add(Drag(0, theta=np.pi, phase=0))
     circuit.add(M(0))
 
+    # CircuitToPulses returns a list of pulse schedules, which in this case is of lenght 1,
+    # so we take the first element of that list.
     pulse_schedule = CircuitToPulses(platform=platform).translate(circuits=[circuit])[0]
 
     results = []
