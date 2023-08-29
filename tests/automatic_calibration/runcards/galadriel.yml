@@ -720,7 +720,7 @@ instruments:
   - name: mini_circuits 
     alias: attenuator
     firmware: None
-    attenuation: 10
+    attenuation: 30
 
 instrument_controllers:
   - name: qblox_cluster

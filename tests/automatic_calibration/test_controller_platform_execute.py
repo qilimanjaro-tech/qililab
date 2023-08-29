@@ -36,7 +36,7 @@ platform.initial_setup()
 # Rabi experiment 
 rabi_values = {"start": 0,
                "stop": 0.25,
-               "step": (0.25)/31 # It's written like this because it's derived from a np.linspace definition
+               "step": (0.25)/100 # It's written like this because it's derived from a np.linspace definition
                }
 
 def rabi(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dict):
@@ -64,7 +64,7 @@ def rabi(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dic
     gain_values = np.arange(sweep_values["start"], sweep_values["stop"], sweep_values["step"])
     for gain in gain_values:
         platform.set_parameter(alias=drive_bus, parameter=ql.Parameter.AMPLITUDE, value=gain)
-        result = platform.execute(program=pulse_schedule, num_avg=1000, repetition_duration=6000)
+        result = platform.execute(program=pulse_schedule, num_avg=10000, repetition_duration=6000)
         # Convert the result to array. See Qblox_results.array() for details.
         results.append(result.array)
         
