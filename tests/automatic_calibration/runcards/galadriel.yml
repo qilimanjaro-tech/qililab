@@ -14,7 +14,7 @@ gates_settings:
     M(0):
       - bus: feedline_bus # alias of the bus
         pulse:
-          amplitude: 1.0
+          amplitude: 0.5
           phase: 0
           duration: 2000
           shape:
@@ -22,7 +22,7 @@ gates_settings:
     Drag(0):
       - bus: drive_line_q0_bus
         pulse:
-          amplitude: 1.0
+          amplitude: 0.0805
           phase: 0
           duration: 20
           shape:
