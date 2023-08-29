@@ -605,7 +605,7 @@ instruments:
     alias: QCM3
     firmware: 0.7.0
     num_sequencers: 2
-    out_offsets: [-0.0046, 0.0032, 0.0, 0.627] # qubit 2 (slot 3)
+    out_offsets: [-0.0046, 0.0032, 0.0, 0.6319] # qubit 2 (slot 3)
     awg_sequencers:
       - identifier: 0
         chip_port_id: drive_line_q2
@@ -638,7 +638,7 @@ instruments:
     alias: QCM4
     firmware: 0.7.0
     num_sequencers: 4
-    out_offsets: [-0.39, -1.27, -0.66, -0.91] # q0, q1, q3, q4
+    out_offsets: [-0.39, -1.254, -0.6599, -0.91] # q0, q1, q3, q4
     awg_sequencers:
       - identifier: 0
         chip_port_id: flux_line_q0
