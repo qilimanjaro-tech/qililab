@@ -1,5 +1,5 @@
 """Bus Class Interface."""
-from abc import abstractmethod
+from copy import deepcopy
 from typing import Any
 
 from qililab.drivers.interfaces import AWG, BaseInstrument
@@ -125,8 +125,10 @@ class BusDriver(FactoryElement):
             + f"--> port {self.port}"
         )
 
-    @staticmethod
-    def bus_instruments_str_to_classes_and_set_params(dictionary: dict, instruments: list[BaseInstrument]) -> dict:
+    @classmethod
+    def convert_instruments_strings_to_classes_and_set_params(
+        cls, dictionary: dict, instruments: list[BaseInstrument]
+    ) -> dict:
         """Passes the strings of the instruments associated to the bus, into their corresponding (already instantiated)
         classes throught their "alias". While it also sets their corresponding given parameters.
 
@@ -144,21 +146,11 @@ class BusDriver(FactoryElement):
         Returns:
             dict: Bus dictionary with the instruments as classes to be inserted in the bus dictionary.
         """
-        # Dictionary to translate the instruments[str] to the caps showing in the Runcard (for aesthetics).
-        caps_translate_dict = {
-            "AWG": "awg",
-            "Digitiser": "digitiser",
-            "LocalOscillator": "local_oscillator",
-            "Attenuator": "attenuator",
-            "VoltageSource": "voltage_source",
-            "CurrentSource": "current_source",
-        }
-
         instruments_dictionary: dict[str, BaseInstrument] = {}
         memorized_keys: list[str] = []
 
         for key, instrument_dict in dictionary.items():
-            if key in ("AWG", "Digitiser", "LocalOscillator", "Attenuator", "VoltageSource", "CurrentSource"):
+            if key in cls.caps_translate_dict():
                 memorized_keys.append(key)
                 for instrument in instruments:
                     if (
@@ -168,7 +160,7 @@ class BusDriver(FactoryElement):
                         for parameter, value in instrument_dict["parameters"].items():
                             instrument.set(param_name=parameter, value=value)
 
-                        instruments_dictionary[caps_translate_dict[key]] = instrument
+                        instruments_dictionary[cls.caps_translate_dict()[key]] = instrument
                         break
 
         for key in memorized_keys:
@@ -176,8 +168,10 @@ class BusDriver(FactoryElement):
 
         return dictionary | instruments_dictionary
 
-    @staticmethod
-    def bus_instruments_classes_to_str_and_get_params(instruments: list[BaseInstrument]) -> dict[str, dict]:
+    @classmethod
+    def convert_instruments_classes_to_strings_and_get_params(
+        cls, instruments: list[BaseInstrument]
+    ) -> dict[str, dict]:
         """Passes the instruments classes associated to the bus, into their corresponding strings. While it
         also gets all their corresponding parameters to be printed together in a dictionary.
 
@@ -201,13 +195,18 @@ class BusDriver(FactoryElement):
                     params_dict = {
                         parameter: instrument.get(parameter)
                         for parameter in instrument.params.keys()
-                        if parameter != "IDN"
-                        # always skip IDN parameter, which goes into the instruments part of the runcard.
+                        if parameter
+                        not in (
+                            "IDN",
+                            "sequence",
+                        )  # skip IDN and sequence parameters. Which will go into other parts of the runcard.
                     }
                 if params_dict:
                     instrument_dict["parameters"] = params_dict
 
-                instruments_dict[instrument.__class__.__name__] = instrument_dict
+                for key in cls.caps_translate_dict():
+                    if issubclass(instrument.__class__, InstrumentInterfaceFactory.get(key)):
+                        instruments_dict[key] = instrument_dict
 
         return instruments_dict
 
@@ -222,13 +221,48 @@ class BusDriver(FactoryElement):
         Returns:
             BusDriver: Loaded class.
         """
-        bus_class = BusFactory.get(name=dictionary["type"])
-        return bus_class.from_dict(dictionary, instruments)  # type: ignore[attr-defined]
+        local_dictionary = deepcopy(dictionary)
+        local_dictionary.pop("type", None)
 
-    @abstractmethod
+        # Transform the instrument str into the corresponding classes for the dictionary, and set its parameters.
+        local_dictionary = cls.convert_instruments_strings_to_classes_and_set_params(
+            dictionary=local_dictionary, instruments=instruments
+        )
+
+        return BusFactory.get(name=dictionary["type"])(**local_dictionary)  # type: ignore[return-value]
+
     def to_dict(self) -> dict:
         """Generates a dict representation given the Buses and the instruments params of such bus.
 
         Returns:
             dict: Bus dictionary with its corresponding instrument parameters.
         """
+        bus_dictionary_start: dict = {
+            "alias": self.alias,
+            "type": self.__class__.__name__,
+        }
+
+        # Get the instruments dictionary.
+        instruments_list = [instrument for instrument in self.instruments.values() if instrument is not None]
+        instruments_dictionary = self.convert_instruments_classes_to_strings_and_get_params(
+            instruments=instruments_list
+        )
+
+        bus_dictionary_end = {
+            "port": self.port,
+            "distortions": [distortion.to_dict() for distortion in self.distortions],
+        }
+
+        return bus_dictionary_start | instruments_dictionary | bus_dictionary_end
+
+    @staticmethod
+    def caps_translate_dict() -> dict:
+        """Dictionary to translate the instruments[str] to the caps showing in the Runcard (for aesthetics)."""
+        return {
+            "AWG": "awg",
+            "Digitiser": "digitiser",
+            "LocalOscillator": "local_oscillator",
+            "Attenuator": "attenuator",
+            "VoltageSource": "voltage_source",
+            "CurrentSource": "current_source",
+        }
