@@ -63,7 +63,7 @@ def rabi(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dic
 
     circuit = Circuit(1)
     circuit.add(Drag(0, theta=np.pi, phase=0))
-    circuit.add(Wait(0, 100))
+    circuit.add(Wait(0, 500))
     circuit.add(M(0))
 
     # CircuitToPulses returns a list of pulse schedules, which in this case is of lenght 1,
@@ -74,7 +74,7 @@ def rabi(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dic
     gain_values = np.arange(sweep_values["start"], sweep_values["stop"], sweep_values["step"])
     for gain in gain_values:
         platform.set_parameter(alias=drive_bus, parameter=ql.Parameter.AMPLITUDE, value=gain)
-        result = platform.execute(program=pulse_schedule, num_avg=10000, repetition_duration=6000)
+        result = platform.execute(program=pulse_schedule, num_avg=10000, repetition_duration=200000)
         # Convert the result to array. See Qblox_results.array() for details.
         results.append(result.array)
 
