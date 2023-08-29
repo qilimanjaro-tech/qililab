@@ -65,11 +65,11 @@ def rabi(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dic
 
     #TODO: pass the qubit as argument to this function instead of hardcoding it
     circuit = Circuit(1)
-    # circuit.add(Drag(0, theta=np.pi, phase=0))
-    # circuit.add(Wait(0, 500))
-    # circuit.add(M(0))
-    circuit.add(gates.X(0))
-    circuit.add(gates.M(0))
+    circuit.add(Drag(0, theta=np.pi, phase=0))
+    circuit.add(Wait(0, 500))
+    circuit.add(M(0))
+    # circuit.add(gates.X(0))
+    # circuit.add(gates.M(0))
 
     # CircuitToPulses returns a list of pulse schedules, which in this case is of lenght 1,
     # so we take the first element of that list.
