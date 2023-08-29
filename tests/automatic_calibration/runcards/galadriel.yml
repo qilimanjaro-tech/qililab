@@ -14,9 +14,9 @@ gates_settings:
     M(0):
       - bus: feedline_bus # alias of the bus
         pulse:
-          amplitude: 0.5
+          amplitude: 0.3
           phase: 0
-          duration: 2000
+          duration: 1600
           shape:
             name: rectangular
     Drag(0):
@@ -409,8 +409,8 @@ instruments:
         weights_i: [1., 1., 1., 1., 1.] # to calibrate
         weights_q: [1., 1., 1., 1., 1.] # to calibrate
         weighed_acq_enabled: False
-        threshold: 0.5
-        threshold_rotation: 0.0
+        threshold: 0.000980215
+        threshold_rotation: 301.91
         num_bins: 1
         intermediate_frequency: 380.97e+06
         gain_imbalance: 1.

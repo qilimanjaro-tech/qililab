@@ -5,6 +5,8 @@ import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
+
+from qibo import gates
 from qibo.gates import M
 from qibo.models import Circuit
 
@@ -61,10 +63,13 @@ def rabi(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dic
         list: An array with dimensions (2, N) where N is the number of sweep value, i.e. the size of the experiment's loop.
     """
 
+    #TODO: pass the qubit as argument to this function instead of hardcoding it
     circuit = Circuit(1)
-    circuit.add(Drag(0, theta=np.pi, phase=0))
-    circuit.add(Wait(0, 500))
-    circuit.add(M(0))
+    # circuit.add(Drag(0, theta=np.pi, phase=0))
+    # circuit.add(Wait(0, 500))
+    # circuit.add(M(0))
+    circuit.add(gates.X(0))
+    circuit.add(gates.M(0))
 
     # CircuitToPulses returns a list of pulse schedules, which in this case is of lenght 1,
     # so we take the first element of that list.
@@ -167,7 +172,7 @@ rabi_1_node = CalibrationNode(
     is_refinement=False,
     analysis_function=analyze_rabi,
     qubit=0,
-    drive_bus_alias="Drag(0)",
+    drive_bus_alias="drive_line_q0",
     readout_bus_alias="feedline_bus",
     parameter_bus_alias="Drag(0)",  # if this doesn't work try "Drag(0)"
     parameter=ql.Parameter.AMPLITUDE,
