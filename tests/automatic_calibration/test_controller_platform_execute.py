@@ -114,7 +114,7 @@ def analyze_rabi(results: list,  experiment_name: str, parameter: str, sweep_val
     mod.set_param_hint("a", value=0.3, vary=True, min=0)
     mod.set_param_hint("b", value=0, vary=True)
     mod.set_param_hint("c", value=0, vary=True)
-    mod.set_param_hint("d", value=1 / 2, vary=True, min=0)
+    mod.set_param_hint("d", value=1 / 2, vary=True)
 
     params = mod.make_params()
     fit = mod.fit(data=fit_signal, params=params, x=sweep_values)
