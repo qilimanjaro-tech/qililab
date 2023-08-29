@@ -60,7 +60,7 @@ gates_settings:
     Drag(2):
       - bus: drive_line_q2_bus
         pulse:
-          amplitude: 1.0
+          amplitude: 0.028607768945471977
           phase: 0
           duration: 20
           shape:
@@ -468,7 +468,7 @@ instruments:
         threshold: 0.5
         threshold_rotation: 0.0
         num_bins: 1
-        intermediate_frequency: 20.e+06
+        intermediate_frequency: -7.969e+06
         gain_imbalance: 1.
         phase_imbalance: 0
         hardware_modulation: true
