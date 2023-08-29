@@ -96,9 +96,10 @@ def analyze_rabi(results: list,  experiment_name: str, parameter: str, sweep_val
     """
     
     # Get flattened data and shape it
+    #FIXME: i'm dividing i and q by the integration lenght. Hardcoded for now, fix it.
     this_shape = len(sweep_values)
-    i = np.array(results[0])
-    q = np.array(results[1])
+    i = np.array(results[0])/2000
+    q = np.array(results[1])/2000
     i = i.reshape(this_shape)
     q = q.reshape(this_shape)
 
