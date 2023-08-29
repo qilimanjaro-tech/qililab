@@ -173,7 +173,7 @@ nodes = [
 
 calibration_graph.add_nodes_from(nodes)
 
-calibration_graph_figure_path = "./tests/automatic_calibration/pulse_schedule_1_node.PNG"
+calibration_graph_figure_path = "./tests/automatic_calibration/data/pulse_schedule_1_node_graph.PNG"
 
 # Visualization of the calibration graph
 #visualize_calibration_graph(calibration_graph = calibration_graph, graph_figure_path = calibration_graph_figure_path)

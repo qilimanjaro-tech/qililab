@@ -58,7 +58,7 @@ class Controller:
 
         # check_data
         #TODO: find plot_figure_filepath using standard path structure. For now there's a placeholder value for testing
-        plot_figure_filepath = "./tests/automatic_calibration/Rabi.PNG"
+        plot_figure_filepath = "./tests/automatic_calibration/data/rabi_plot_test.PNG"
         result = self.check_data(node)
         if result == "in_spec":
             if node.manual_check:
