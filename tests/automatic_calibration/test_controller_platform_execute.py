@@ -137,7 +137,7 @@ def analyze_rabi(results: list,  experiment_name: str, parameter: str, sweep_val
     #plt.plot(sweep_values, np.abs(i+1j*q), title_label, parameter)
     
     # The user can change this to save to a custom location
-    print(f"Saving the plot\n")
+    print(f"Saving the plot in {plot_figure_path}\n")
     fig.savefig(plot_figure_path)
     
     return fitted_pi_pulse_amplitude
