@@ -130,9 +130,9 @@ def analyze_rabi(results: list,  experiment_name: str, parameter: str, sweep_val
     # Plot
     title_label = experiment_name
     fig, axes = plot_iq(sweep_values, i, q, title_label, parameter)
-    # plot_fit(
-    #     sweep_values, optimal_parameters, axes[fit_signal_idx], fitted_pi_pulse_amplitude
-    # )
+    plot_fit(
+        sweep_values, optimal_parameters, axes[fit_signal_idx], fitted_pi_pulse_amplitude
+    )
     
     #plt.plot(sweep_values, np.abs(i+1j*q), title_label, parameter)
     
