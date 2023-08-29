@@ -129,9 +129,5 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Data
-data/
-_build
-
 .qibo_configuration
 tmp.*
