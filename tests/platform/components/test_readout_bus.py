@@ -134,20 +134,6 @@ def fixture_readout_bus(digitiser: SequencerQRM, local_oscillator: QcmQrmRfLo, a
     )
 
 
-@pytest.fixture(name="bus_dictionary")
-def fixture_bus_dictionary(drive_bus: ReadoutBus) -> dict:
-    """Returns a dictionary of a ReadoutBus instance."""
-    return {
-        "alias": drive_bus.alias,
-        "type": drive_bus.__class__.__name__,
-        "awg": drive_bus._awg,
-        "local_oscillator": drive_bus.instruments["local_oscillator"],
-        "attenuator": drive_bus.instruments["attenuator"],
-        "port": drive_bus.port,
-        "distortions": [],
-    }
-
-
 class TestReadoutBus:
     """Unit tests checking the ReadoutBus attributes and methods. These tests mock the parent classes of the instruments,
     such that the code from `qcodes` is never executed."""

@@ -150,19 +150,6 @@ def fixture_flux_bus_voltage_source(sequencer: SequencerQCM, voltage_source: D5a
     return FluxBus(alias=ALIAS, port=PORT, awg=sequencer, source=voltage_source, distortions=[])
 
 
-@pytest.fixture(name="bus_dictionary")
-def fixture_bus_dictionary(flux_bus_current_source: FluxBus) -> dict:
-    """Returns a dictionary of a FluxBus instance."""
-    return {
-        "alias": flux_bus_current_source.alias,
-        "type": flux_bus_current_source.__class__.__name__,
-        "awg": flux_bus_current_source._awg,
-        "source": flux_bus_current_source.instruments["source"],
-        "port": flux_bus_current_source.port,
-        "distortions": [],
-    }
-
-
 class TestFluxBus:
     """Unit tests checking the FluxBus attributes and methods. These tests mock the parent classes of the instruments,
     such that the code from `qcodes` is never executed."""

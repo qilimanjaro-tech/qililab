@@ -131,20 +131,6 @@ def fixture_drive_bus(sequencer: SequencerQCM, local_oscillator: QcmQrmRfLo, att
     )
 
 
-@pytest.fixture(name="bus_dictionary")
-def fixture_bus_dictionary(drive_bus: DriveBus) -> dict:
-    """Returns a dictionary of a DriveBus instance."""
-    return {
-        "alias": drive_bus.alias,
-        "type": drive_bus.__class__.__name__,
-        "awg": drive_bus._awg,
-        "local_oscillator": drive_bus.instruments["local_oscillator"],
-        "attenuator": drive_bus.instruments["attenuator"],
-        "port": drive_bus.port,
-        "distortions": [],
-    }
-
-
 class TestDriveBus:
     """Unit tests checking the DriveBus attributes and methods. These tests mock the parent classes of the instruments,
     such that the code from `qcodes` is never executed."""
@@ -246,14 +232,3 @@ class TestDriveBus:
         )
 
         assert str(drive_bus) == expected_str
-
-    # def test_from_dict(self, bus_dictionary: dict):
-    #     """Test that the from_dict method of the BusDriver base class calls the child ones correctly."""
-    #     flux_bus = BusDriver.from_dict(bus_dictionary)
-
-    #     assert isinstance(flux_bus, FluxBus)
-    #     assert flux_bus.alias == ALIAS
-    #     assert flux_bus._awg is None
-    #     assert flux_bus.instruments["source"] is None
-    #     assert flux_bus.port == PORT
-    #     assert flux_bus.distortions == []
