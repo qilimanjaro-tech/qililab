@@ -57,8 +57,14 @@ class Controller:
             return
 
         # check_data
-        #TODO: find plot_figure_filepath using standard path structure. For now there's a placeholder value for testing
-        plot_figure_filepath = "./tests/automatic_calibration/data/rabi_plot_test.PNG"
+        #TODO: put the following in a separate function (possibly in automatic_calibration/calibration_utils):
+        #      most of this is also used when loading and saving data in 'run_calibration'.
+        data_folder = os.environ.get("DATA")
+        this_calibration_sequence_folder = os.path.join(data_folder, self._calibration_sequence_name)
+        current_run_of_calibration_sequence_folder = os.path.join(this_calibration_sequence_folder, str(get_timestamp()))
+        os.makedirs(current_run_of_calibration_sequence_folder, exist_ok=True)
+        plot_figure_filepath = os.path.join(current_run_of_calibration_sequence_folder, f"{node.node_id}.png")
+        
         result = self.check_data(node)
         if result == "in_spec":
             if node.manual_check:
@@ -330,7 +336,13 @@ class Controller:
             # Call the general analysis function with the appropriate model, or the custom one (no need to specify the model in this case, it will already be hardcoded).
             # If node.manual_check is True, the analysis function will also open the file containing the plot so the user can approve it manually.
             print(f"Running the \"{node.analysis_function.__name__}\" analysis function in node \"{node.node_id}\"\n")
-            optimal_parameter_value = node.analysis_function(results = node.experiment_results, experiment_name = node.node_id, parameter = node.parameter, sweep_values = np.arange(node.sweep_interval["start"], node.sweep_interval["stop"], node.sweep_interval["step"]).tolist(), plot_figure_path = "./tests/automatic_calibration/Rabi.PNG")
+            # Get the path where the plot figure should be saved.
+            data_folder = os.environ.get("DATA")
+            this_calibration_sequence_folder = os.path.join(data_folder, self._calibration_sequence_name)
+            current_run_of_calibration_sequence_folder = os.path.join(this_calibration_sequence_folder, str(get_timestamp()))
+            os.makedirs(current_run_of_calibration_sequence_folder, exist_ok=True)
+            plot_figure_filepath = os.path.join(current_run_of_calibration_sequence_folder, f"{node.node_id}.png")
+            optimal_parameter_value = node.analysis_function(results = node.experiment_results, experiment_name = node.node_id, parameter = node.parameter, sweep_values = np.arange(node.sweep_interval["start"], node.sweep_interval["stop"], node.sweep_interval["step"]).tolist(), plot_figure_path = plot_figure_filepath) 
 
             return optimal_parameter_value
 
