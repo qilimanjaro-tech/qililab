@@ -35,7 +35,7 @@ platform.initial_setup()
 
 # Rabi experiment 
 rabi_values = {"start": 0,
-               "stop": 1.,
+               "stop": 0.25,
                "step": (1)/40 # It's written like this because it's derived from a np.linspace definition
                }
 

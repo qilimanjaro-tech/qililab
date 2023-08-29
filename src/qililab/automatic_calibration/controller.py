@@ -342,7 +342,6 @@ class Controller:
             current_run_of_calibration_sequence_folder = os.path.join(this_calibration_sequence_folder, str(get_timestamp()))
             os.makedirs(current_run_of_calibration_sequence_folder, exist_ok=True)
             plot_figure_filepath = os.path.join(current_run_of_calibration_sequence_folder, f"{node.node_id}.png")
-            print(f"PLOT PATH = {plot_figure_filepath}\n")
             optimal_parameter_value = node.analysis_function(results = node.experiment_results, experiment_name = node.node_id, parameter = node.parameter, sweep_values = np.arange(node.sweep_interval["start"], node.sweep_interval["stop"], node.sweep_interval["step"]).tolist(), plot_figure_path = plot_figure_filepath) 
 
             return optimal_parameter_value
