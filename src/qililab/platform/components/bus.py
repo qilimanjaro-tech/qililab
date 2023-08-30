@@ -4,15 +4,18 @@ from dataclasses import InitVar, dataclass
 from qililab.chip import Chip, Coil, Coupler, Qubit, Resonator
 from qililab.constants import BUS, NODE, RUNCARD
 from qililab.instruments import Instruments, ParameterNotFound
-from qililab.pulse import PulseDistortion
-from qililab.settings import DDBBElement
-from qililab.system_control import SystemControl
+from qililab.pulse import PulseBusSchedule, PulseDistortion
+from qililab.result import Result
+from qililab.settings import Settings
+from qililab.system_control import ReadoutSystemControl, SystemControl
 from qililab.typings import Parameter
 from qililab.utils import Factory
 
 
 class Bus:
-    """Bus class. Ideally a bus should contain a qubit control/readout and a signal generator, which are connected
+    """Bus class.
+
+    Ideally a bus should contain a qubit control/readout and a signal generator, which are connected
     through a mixer for up- or down-conversion. At the end of the bus there should be a qubit or a resonator object,
     which is connected to one or multiple qubits.
 
@@ -23,20 +26,20 @@ class Bus:
     targets: list[Qubit | Resonator | Coupler | Coil]  # port target (or targets in case of multiple resonators)
 
     @dataclass
-    class BusSettings(DDBBElement):
+    class BusSettings(Settings):
         """Bus settings.
 
         Args:
-            bus_category (BusCategory): Bus category.
-            bus_subcategory (BusSubCategory): Bus subcategory
+            alias (str): Alias of the bus.
             system_control (SystemControl): System control used to control and readout the qubits of the bus.
-            port (int): Chip's port where bus is connected.
+            port (str): Alias of the port where bus is connected.
             distortions (list[PulseDistotion]): List of the distortions to apply to the Bus.
             delay (int): Bus delay
         """
 
+        alias: str
         system_control: SystemControl
-        port: int
+        port: str
         platform_instruments: InitVar[Instruments]
         distortions: list[PulseDistortion]
         delay: int
@@ -57,15 +60,7 @@ class Bus:
 
     def __init__(self, settings: dict, platform_instruments: Instruments, chip: Chip):
         self.settings = self.BusSettings(**settings, platform_instruments=platform_instruments)  # type: ignore
-        self.targets = chip.get_port_nodes(port_id=self.port)
-
-    @property
-    def id_(self):
-        """Bus 'id_' property.
-        Returns:
-            int: settings.id_.
-        """
-        return self.settings.id_
+        self.targets = chip.get_port_nodes(alias=self.port)
 
     @property
     def alias(self):
@@ -112,18 +107,9 @@ class Bus:
         """
         return self.settings.delay
 
-    @property
-    def category(self):
-        """Bus 'category' property.
-
-        Returns:
-            str: settings.category.
-        """
-        return self.settings.category
-
     def __str__(self):
         """String representation of a bus. Prints a drawing of the bus elements."""
-        return f"Bus {self.id_}:  ----{self.system_control}---" + "".join(
+        return f"Bus {self.alias}:  ----{self.system_control}---" + "".join(
             f"--|{target}|----" for target in self.targets
         )
 
@@ -147,10 +133,8 @@ class Bus:
         return iter(self.system_control)
 
     def to_dict(self):
-        """Return a dict representation of the SchemaSettings class."""
+        """Return a dict representation of the Bus class."""
         return {
-            RUNCARD.ID: self.id_,
-            RUNCARD.CATEGORY: self.category.value,
             RUNCARD.ALIAS: self.alias,
             RUNCARD.SYSTEM_CONTROL: self.system_control.to_dict(),
             BUS.PORT: self.port,
@@ -175,3 +159,37 @@ class Bus:
                 raise ParameterNotFound(
                     f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
                 ) from error
+
+    def compile(
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
+    ) -> list:
+        """Compiles the ``PulseBusSchedule`` into an assembly program.
+
+        Args:
+            pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
+            nshots (int): number of shots / hardware average
+            repetition_duration (int): maximum window for the duration of one hardware repetition
+            num_bins (int): number of bins
+        """
+        return self.system_control.compile(pulse_bus_schedule, nshots, repetition_duration, num_bins)
+
+    def upload(self):
+        """Uploads any previously compiled program into the instrument."""
+        self.system_control.upload(port=self.port)
+
+    def run(self) -> None:
+        """Runs any previously uploaded program into the instrument."""
+        self.system_control.run(port=self.port)
+
+    def acquire_result(self) -> Result:
+        """Read the result from the vector network analyzer instrument
+
+        Returns:
+            Result: Acquired result
+        """
+        if isinstance(self.system_control, ReadoutSystemControl):
+            return self.system_control.acquire_result()
+
+        raise AttributeError(
+            f"The bus {self.alias} cannot acquire results because it doesn't have a readout system control."
+        )

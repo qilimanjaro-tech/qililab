@@ -21,23 +21,23 @@ GATE_ALIAS_REGEX = r"(?P<gate>[a-zA-Z]+)\((?P<qubits>\d+(?:,\s*\d+)*)\)"
 class RUNCARD:
     """YAML constants."""
 
-    ID = "id_"
     NAME = "name"
+    DEVICE_ID = "device_id"
     ALIAS = "alias"
-    CATEGORY = "category"
-    SUBCATEGORY = "subcategory"
     INSTRUMENT = "instrument"
     INSTRUMENTS = "instruments"
     ELEMENTS = "elements"
     READOUT = "readout"
-    SETTINGS = "settings"
+    GATES_SETTINGS = "gates_settings"
     PLATFORM = "platform"
-    SCHEMA = "schema"
+    BUSES = "buses"
+    CHIP = "chip"
     AWG = "awg"
     SIGNAL_GENERATOR = "signal_generator"
     ATTENUATOR = "attenuator"
     SYSTEM_CONTROL = "system_control"
     INSTRUMENT_CONTROLLER = "instrument_controller"
+    INSTRUMENT_CONTROLLERS = "instrument_controllers"
     FIRMWARE = "firmware"
     GATES = "gates"
     VOLTAGE_SOURCE = "voltage_source"
@@ -101,15 +101,6 @@ class EXPERIMENT:
     PULSE_SCHEDULES = "pulse_schedules"
     REMOTE_SAVE = "remote_save"
     DESCRIPTION = "description"
-
-
-class SCHEMA:
-    """Schema constants."""
-
-    INSTRUMENTS = "instruments"
-    BUSES = "buses"
-    CHIP = "chip"
-    INSTRUMENT_CONTROLLERS = "instrument_controllers"
 
 
 class BUS:
@@ -200,12 +191,6 @@ class CONNECTION:
     """Connection attribute names."""
 
     ADDRESS = "address"
-
-
-class INSTRUMENTREFERENCE:
-    """InstrumentReference attribute names."""
-
-    SLOT_ID = "slot_id"
 
 
 class QBLOXRESULT:

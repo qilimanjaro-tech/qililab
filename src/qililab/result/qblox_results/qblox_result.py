@@ -1,23 +1,22 @@
 """QbloxResult class."""
 from copy import deepcopy
-from dataclasses import dataclass, field
 
+import numpy as np
 import pandas as pd
 
 from qililab.constants import QBLOXRESULT, RUNCARD
 from qililab.exceptions import DataUnavailable
-from qililab.instruments.qblox.constants import SCOPE_ACQ_MAX_DURATION
 from qililab.result.counts import Counts
-from qililab.result.qblox_results.qblox_acquisitions_builder import QbloxAcquisitionsBuilder
-from qililab.result.qblox_results.qblox_bins_acquisitions import QbloxBinsAcquisitions
-from qililab.result.qblox_results.qblox_scope_acquisitions import QbloxScopeAcquisitions
 from qililab.result.result import Result
 from qililab.typings.enums import ResultName
 from qililab.utils.factory import Factory
 
+from .constants import SCOPE_ACQ_MAX_DURATION
+from .qblox_acquisitions_builder import QbloxAcquisitionsBuilder
+from .qblox_scope_acquisitions import QbloxScopeAcquisitions
+
 
 @Factory.register
-@dataclass
 class QbloxResult(Result):
     """QbloxResult class. Contains the binning acquisition results obtained from the `Pulsar.get_acquisitions` method.
 
@@ -29,23 +28,22 @@ class QbloxResult(Result):
     - threshold: threshold result bin list.
     - valid: list of valid indications per bin.
     - avg_cnt: list of number of averages per bin.
+
     Args:
-        pulse_length (int): Duration (in ns) of the pulse.
+        qblox_raw_results (list[dict]): Raw results obtained from a Qblox digitiser.
+        integration_lengths (list[int]): Integration lengths used to get the given results.
     """
 
     name = ResultName.QBLOX
-    integration_lengths: list[int]
-    qblox_raw_results: list[dict]
-    qblox_bins_acquisitions: QbloxBinsAcquisitions = field(init=False, compare=False)
-    qblox_scope_acquisitions: QbloxScopeAcquisitions | None = field(init=False, compare=False)
 
-    def __post_init__(self):
-        """Create a Qblox Acquisition class from dictionaries data"""
+    def __init__(self, qblox_raw_results: list[dict], integration_lengths: list[int]):
+        self.qblox_raw_results = qblox_raw_results
+        self.integration_lengths = integration_lengths
         self.qblox_scope_acquisitions = QbloxAcquisitionsBuilder.get_scope(
-            integration_lengths=self.integration_lengths, qblox_raw_results=self.qblox_raw_results
+            integration_lengths=integration_lengths, qblox_raw_results=qblox_raw_results
         )
         self.qblox_bins_acquisitions = QbloxAcquisitionsBuilder.get_bins(
-            integration_lengths=self.integration_lengths, qblox_raw_results=self.qblox_raw_results
+            integration_lengths=integration_lengths, qblox_raw_results=qblox_raw_results
         )
         self._qblox_scope_acquisition_copy = deepcopy(self.qblox_scope_acquisitions)
         self.data_dataframe_indices = self.qblox_bins_acquisitions.data_dataframe_indices
@@ -129,6 +127,31 @@ class QbloxResult(Result):
             Counts: Counts object containing the counts of each state.
         """
         return self.qblox_bins_acquisitions.counts()
+
+    @property
+    def array(self) -> np.ndarray:
+        # Save array data
+        if self.qblox_scope_acquisitions is not None:
+            # The dimensions of the array are: (2, N) where N is the length of the scope.
+            path0 = self.qblox_scope_acquisitions.scope.path0.data
+            path1 = self.qblox_scope_acquisitions.scope.path1.data
+            return np.array([path0, path1])
+
+        bins_len = [len(bins) for bins in self.qblox_bins_acquisitions.bins]
+        # Check that all sequencers have the same number of bins.
+        if len(set(bins_len)) != 1:
+            raise IndexError(
+                f"All sequencers must have the same number of bins to return an array. Obtained {len(bins_len)} "
+                f"sequencers with {bins_len} bins respectively."
+            )
+        # The dimensions of the array are the following: (#sequencers, 2, #bins)
+        # Where the 2 corresponds to path0 (I) and path1 (Q) of the sequencer
+        bins = [
+            [sequencer.integration.path0, sequencer.integration.path1]
+            for sequencer in self.qblox_bins_acquisitions.bins
+        ]
+
+        return np.concatenate(bins)
 
     @property
     def shape(self) -> list[int]:

@@ -2,7 +2,6 @@
 from .enums import (
     AcquireTriggerMode,
     AcquisitionName,
-    Category,
     ConnectionName,
     GateName,
     Instrument,
@@ -12,12 +11,9 @@ from .enums import (
     OperationName,
     Parameter,
     PulseDistortionName,
-    PulseDistortionSettingsName,
     PulseShapeName,
-    PulseShapeSettingsName,
     ReferenceClock,
     ResultName,
-    SchemaDrawOptions,
 )
 from .experiment import ExperimentOptions, ExperimentSettings
 from .factory_element import FactoryElement

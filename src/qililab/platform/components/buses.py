@@ -22,6 +22,20 @@ class Buses:
             bus (Bus): Bus object to append."""
         self.elements.append(bus)
 
+    def get(self, port: str):
+        """Get bus connected to the specified port.
+
+        Args:
+            port (int): Port of the Chip where the bus is connected to.
+        """
+        bus = [bus for bus in self.elements if bus.port == port]
+        if len(bus) == 1:
+            return bus[0]
+
+        raise ValueError(
+            f"There can only be one bus connected to a port. There are {len(bus)} buses connected to port {port}."
+        )
+
     def __iter__(self):
         """Redirect __iter__ magic method to iterate over buses."""
         return self.elements.__iter__()
@@ -37,6 +51,14 @@ class Buses:
     def to_dict(self) -> list[dict]:
         """Return a dict representation of the Buses class."""
         return [bus.to_dict() for bus in self.elements]
+
+    def __str__(self) -> str:
+        """String representation of the buses
+
+        Returns:
+            str: Buses structure representation
+        """
+        return "\n".join(str(bus) for bus in self.elements)
 
     @property
     def readout_buses(self) -> list[Bus]:

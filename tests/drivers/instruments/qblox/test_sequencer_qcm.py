@@ -86,6 +86,12 @@ def fixture_pulse_bus_schedule_negative_amplitude() -> PulseBusSchedule:
     return get_pulse_bus_schedule(start_time=0, negative_amplitude=True)
 
 
+@pytest.fixture(name="sequencer")
+def fixture_sequencer() -> SequencerQCM:
+    """Return SequencerQCM instance."""
+    return SequencerQCM(parent=MagicMock(), name="test", seq_idx=4)
+
+
 class TestSequencer:
     """Unit tests checking the Sequencer attributes and methods"""
 
@@ -102,7 +108,6 @@ class TestSequencer:
     @pytest.mark.parametrize("path0", [0, 1])
     def test_set_with_qililab_path(self, mock_map_outputs: MagicMock, path0: int):
         """Unit tests for set method with qililab path"""
-
         sequencer_name = "test_sequencer_set_qililab_path"
         seq_idx = 0
         sequencer = SequencerQCM(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
@@ -110,24 +115,14 @@ class TestSequencer:
         sequencer.set("path0", path0)
         mock_map_outputs.assert_called_once_with("path0", path0)
 
-    def test_set_with_qblox_parameter(self):
+    def test_set_with_qblox_parameter(self, sequencer):
         """Unit tests for set method with qblox parameter"""
-
-        sequencer_name = "test_sequencer_set_qblox_parameter"
-        seq_idx = 0
-        sequencer = SequencerQCM(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
-
         sequencer.set("channel_map_path0_out0_en", True)
         assert sequencer.get("channel_map_path0_out0_en") is True
 
     @pytest.mark.parametrize("path0", [0, 1, 10])
-    def test_map_outputs(self, path0: int):
+    def test_map_outputs(self, sequencer, path0: int):
         """Unit tests for _map_outputs method"""
-
-        sequencer_name = f"test_sequencer_map_outputs{path0}"
-        seq_idx = 0
-        sequencer = SequencerQCM(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
-
         if path0 == 10:
             error_str = f"Impossible path configuration detected. path0 cannot be mapped to output {path0}."
             with pytest.raises(ValueError, match=error_str):
@@ -142,13 +137,9 @@ class TestSequencer:
                 assert sequencer.get("swap_paths") is True
 
     @pytest.mark.parametrize("path0", [0, 1])
-    def test_generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule, path0: int):
+    def test_generate_waveforms(self, sequencer, pulse_bus_schedule: PulseBusSchedule, path0: int):
         """Unit tests for _generate_waveforms method"""
-
-        sequencer_name = f"test_sequencer_waveforms{path0}"
-        seq_idx = 0
         label = pulse_bus_schedule.timeline[0].pulse.label()
-        sequencer = SequencerQCM(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
         envelope = get_envelope()
         sequencer.set("path0", path0)
         waveforms = sequencer._generate_waveforms(pulse_bus_schedule).to_dict()
@@ -170,12 +161,10 @@ class TestSequencer:
             assert np.alltrue(envelope == waveforms[waveforms_keys[0]]["data"])
 
     @pytest.mark.parametrize("path0", [0, 1])
-    def test_generate_waveforms_multiple_pulses(self, pulse_bus_schedule_repeated_pulses: PulseBusSchedule, path0: int):
+    def test_generate_waveforms_multiple_pulses(
+        self, sequencer, pulse_bus_schedule_repeated_pulses: PulseBusSchedule, path0: int
+    ):
         """Unit tests for _generate_waveforms method with repeated pulses"""
-
-        sequencer_name = f"test_sequencer_waveforms{path0}"
-        seq_idx = 0
-        sequencer = SequencerQCM(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
         sequencer.set("path0", path0)
         waveforms = sequencer._generate_waveforms(pulse_bus_schedule_repeated_pulses).to_dict()
 
@@ -183,17 +172,14 @@ class TestSequencer:
 
     @pytest.mark.parametrize("path0", [0, 1])
     def test_generate_waveforms_negative_amplitude(
-        self, pulse_bus_schedule_negative_amplitude: PulseBusSchedule, path0: int
+        self, sequencer, pulse_bus_schedule_negative_amplitude: PulseBusSchedule, path0: int
     ):
         """Unit tests for _generate_waveforms method with negative amplitude"""
-
-        sequencer_name = f"test_sequencer_waveforms{path0}"
-        seq_idx = 0
-        sequencer = SequencerQCM(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
         sequencer.set("path0", path0)
         waveforms = sequencer._generate_waveforms(pulse_bus_schedule_negative_amplitude).to_dict()
 
-        print("waveforms: ", waveforms)
+        assert isinstance(waveforms, dict)
+        assert isinstance(str(waveforms), str)
         assert len(waveforms) == 2
 
     @patch("qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM._generate_waveforms")
@@ -202,7 +188,6 @@ class TestSequencer:
         self, mock_generate_program: MagicMock, mock_generate_waveforms: MagicMock, pulse_bus_schedule: PulseBusSchedule
     ):
         """Unit tests for _translate_pulse_bus_schedule method"""
-
         sequencer_name = "test_sequencer_translate_pulse_bus_schedule"
         seq_idx = 0
         sequencer = SequencerQCM(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
@@ -251,10 +236,8 @@ class TestSequencer:
                 parent.arm_sequencer.assert_called_once_with(sequencer=sequencer.seq_idx)
                 parent.start_sequencer.assert_called_once_with(sequencer=sequencer.seq_idx)
 
-    def test_generate_weights(self):
+    def test_generate_weights(self, sequencer):
         """Test the ``_generate_weights`` method."""
-        sequencer = SequencerQCM(parent=MagicMock(), name="test", seq_idx=4)
-
         weights = sequencer._generate_weights()
         assert isinstance(weights, Weights)
 
@@ -262,9 +245,8 @@ class TestSequencer:
         # must be empty dictionary
         assert not weights
 
-    def test_generate_acquisitions(self):
+    def test_generate_acquisitions(self, sequencer):
         """Test the ``_generate_acquisitions`` method."""
-        sequencer = SequencerQCM(parent=MagicMock(), name="test", seq_idx=4)
         num_bins = 1
         acquisitions = sequencer._generate_acquisitions(num_bins=num_bins)
 
@@ -273,3 +255,11 @@ class TestSequencer:
         acquisitions = acquisitions.to_dict()
         # must be empty dictionary
         assert not acquisitions
+
+    def test_params(self, sequencer):
+        """Unittest to test the params property."""
+        assert sequencer.params == sequencer.parameters
+
+    def test_alias(self, sequencer):
+        """Unittest to test the alias property."""
+        assert sequencer.alias == sequencer.name

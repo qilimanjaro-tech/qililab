@@ -9,21 +9,22 @@ from qibo.models.circuit import Circuit
 from qililab.chip.nodes import Coupler, Qubit
 from qililab.constants import RUNCARD
 from qililab.platform import Bus, Platform
-from qililab.pulse.pulse import Pulse
-from qililab.pulse.pulse_event import PulseEvent
-from qililab.pulse.pulse_schedule import PulseSchedule
-from qililab.settings.gate_settings import GateEventSettings
+from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.transpiler import Drag
 from qililab.typings.enums import Line
 from qililab.utils import Factory, qibo_gates
 
+from .pulse import Pulse
+from .pulse_event import PulseEvent
+from .pulse_schedule import PulseSchedule
+
 
 class CircuitToPulses:  # pylint: disable=too-few-public-methods
     """Translates a list of circuits into a list of pulse sequences (each circuit to an independent pulse sequence)
-    For each circuit gate we look up for its corresponding gate settings in the runcard (the name of the class of the circuit
+    For each circuit gate we look up for its corresponding gates settings in the runcard (the name of the class of the circuit
     gate and the name of the gate in the runcard should match) and load its schedule of GateEvents.
     Each gate event corresponds to a concrete pulse applied at a certain time w.r.t the gate's start time and through a specific bus
-    (see gate settings docstrings for more details).
+    (see gates settings docstrings for more details).
 
     Measurement gates are handled in a slightly different manner. For a circuit gate M(0,1,2) the settings for each M(0), M(1), M(2)
     will be looked up and will be applied in sync. Note that thus a circuit gate for M(0,1,2) is different from the circuit sequence
@@ -128,7 +129,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
             list[GateEventSettings]: schedule list with each of the pulses settings
         """
 
-        gate_schedule = self.platform.settings.get_gate(name=gate.__class__.__name__, qubits=gate.qubits)
+        gate_schedule = self.platform.gates_settings.get_gate(name=gate.__class__.__name__, qubits=gate.qubits)
 
         if not isinstance(gate, Drag):
             return gate_schedule
@@ -205,15 +206,19 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
     ) -> PulseEvent:
         """Translate a gate element into a pulse.
 
-        Args:
-            time (dict[int, int]): dictionary containing qubit indices as keys and current time (ns) as values
-            gate (gate): circuit gate. This is used only to know the qubit target of measurement gates
-            gate_event (GateEventSettings): gate event, a single element of a gate schedule containing information
-            about the pulse to be applied
-            bus (bus): bus through which the pulse is sent
+                Args:
+                    time (dict[int, int]): dictionary containing qubit indices as keys and current time (ns) as values
+                    gate (gate): circuit gate. This is used only to know the qubit target of measurement gates
+                    gate_event (GateEventSettings): gate event, a single element of a gate schedule containing information
+                    about the pulse to be applied
+                    bus (bus): bus through which the pulse is sent
 
-        Returns:
-            PulseEvent: pulse event corresponding to the input gate event
+                Returns:
+        <<<<<<< HEAD
+                    tuple[PulseEvent | None, str]: (PulseEvent or None, port_id).
+        =======
+                    PulseEvent: pulse event corresponding to the input gate event
+        >>>>>>> main
         """
 
         # copy to avoid modifying runcard settings
@@ -236,10 +241,10 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
                 amplitude=pulse.amplitude,
                 phase=pulse.phase,
                 duration=pulse.duration,
-                frequency=pulse.frequency,
+                frequency=0,
                 pulse_shape=pulse_shape,
             ),
-            start_time=time + gate_event.wait_time + self.platform.settings.delay_before_readout,
+            start_time=time + gate_event.wait_time + self.platform.gates_settings.delay_before_readout,
             pulse_distortions=bus.distortions,
             qubit=qubit,
         )
@@ -257,7 +262,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
         """
         cz_qubits = cz.qubits
         try:
-            self.platform.settings.get_gate(name=cz.__class__.__name__, qubits=cz_qubits)
+            self.platform.gates_settings.get_gate(name=cz.__class__.__name__, qubits=cz_qubits)
             return cz
         except KeyError:
             return CZ(cz_qubits[1], cz_qubits[0])
@@ -273,9 +278,9 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
         if qubit not in time:
             time[qubit] = 0
         old_time = time[qubit]
-        residue = (gate_time) % self.platform.settings.minimum_clock_time
+        residue = (gate_time) % self.platform.gates_settings.minimum_clock_time
         if residue != 0:
-            gate_time += self.platform.settings.minimum_clock_time - residue
+            gate_time += self.platform.gates_settings.minimum_clock_time - residue
         time[qubit] += gate_time
         return old_time
 

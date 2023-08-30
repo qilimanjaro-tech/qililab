@@ -17,14 +17,12 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     pulse_shape = Gaussian(num_sigmas=4)
     pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
     pulse_event = PulseEvent(pulse=pulse, start_time=0)
-    return PulseBusSchedule(timeline=[pulse_event], port=0)
+    return PulseBusSchedule(timeline=[pulse_event], port="q0")
 
 
 @pytest.fixture(name="simulated_system_control")
 def fixture_simulated_system_control():
     settings = {
-        "id_": 0,
-        "category": "system_control",
         "qubit": "csfq4jj",
         "qubit_params": {"n_cut": 10, "phi_x": 6.28318530718, "phi_z": -0.25132741228},
         "drive": "zport",
@@ -55,15 +53,16 @@ class TestSimulatedSystemControl:
 
     def test_upload_method(self, simulated_system_control: SimulatedSystemControl):
         """Test upload method."""
-        simulated_system_control.upload(port=0)  # this method does nothing
+        simulated_system_control.upload(port="q0")  # this method does nothing
 
     def test_run_method(self, simulated_system_control: SimulatedSystemControl, pulse_bus_schedule: PulseBusSchedule):
         """Test run method."""
         simulated_system_control._evo = MagicMock()
         simulated_system_control.compile(pulse_bus_schedule=pulse_bus_schedule)
         simulated_system_control.run(port=pulse_bus_schedule.port)
-        result = simulated_system_control.acquire_result(port=pulse_bus_schedule.port)
+        result = simulated_system_control.acquire_result()
         assert isinstance(result, SimulatorResult)
+        assert np.allclose(result.array, [])
 
     def test_name_property(self, simulated_system_control: SimulatedSystemControl):
         """Test name property."""
@@ -77,5 +76,5 @@ class TestSimulatedSystemControl:
         simulated_system_control.compile(pulse_bus_schedule=pulse_bus_schedule)
         simulated_system_control.compile(pulse_bus_schedule=pulse_bus_schedule)
         simulated_system_control.run(port=pulse_bus_schedule.port)
-        result = simulated_system_control.acquire_result(port=pulse_bus_schedule.port)
+        result = simulated_system_control.acquire_result()
         assert result.probabilities() == {}

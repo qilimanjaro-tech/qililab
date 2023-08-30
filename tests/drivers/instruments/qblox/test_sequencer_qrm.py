@@ -11,7 +11,7 @@ from qpysequence.weights import Weights
 from qililab.drivers.instruments.qblox.sequencer_qrm import SequencerQRM
 from qililab.pulse import Pulse, PulseBusSchedule, Rectangular
 from qililab.pulse.pulse_event import PulseEvent
-from qililab.result.qblox_results import QbloxResult
+from qililab.result.qblox_results.qblox_acquisitions_builder import QbloxAcquisitionsBuilder
 
 PULSE_SIGMAS = 4
 PULSE_AMPLITUDE = 1
@@ -49,6 +49,12 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     return get_pulse_bus_schedule(start_time=0)
 
 
+@pytest.fixture(name="sequencer")
+def fixture_sequencer() -> SequencerQRM:
+    """Return SequencerQCM instance."""
+    return SequencerQRM(parent=MagicMock(), name="test", seq_idx=4)
+
+
 class TestSequencerQRM:
     """Unit tests checking the Sequencer attributes and methods"""
 
@@ -78,9 +84,9 @@ class TestSequencerQRM:
         sequencer.set("acquisition_timeout", acquisition_timeout)
 
         # Get results
-        with patch.object(QbloxResult, "__post_init__") as post_init:
+        with patch.object(QbloxAcquisitionsBuilder, "get_bins") as get_bins:
             results = sequencer.get_results()
-            post_init.assert_called_once_with()
+            get_bins.assert_called_once()
 
         # Assert calls and results
         parent.get_sequencer_state.assert_called_once_with(sequencer=seq_idx, timeout=sequence_timeout)
@@ -90,20 +96,18 @@ class TestSequencerQRM:
         # assert sequencer.get("sync_en") is False  # TODO: Uncomment this once qblox dummy driver is fixed
         assert results.integration_lengths == [sequencer.get("integration_length_acq")]
 
-    def test_get_results_with_weights(self):
+    def test_get_results_with_weights(self, sequencer):
         """Test that calling ``get_results`` with a weighed acquisition, the integration length
         corresponds to the length of the weights' list."""
-        sequencer = SequencerQRM(parent=MagicMock(), name="test", seq_idx=4)
-
         # Set values
         sequencer.set("weights_i", [1, 2, 3, 4, 5])
         sequencer.set("weights_q", [6, 7, 8, 9, 10])
         sequencer.set("weighed_acq_enabled", True)
 
         # Get results
-        with patch.object(QbloxResult, "__post_init__") as post_init:
+        with patch.object(QbloxAcquisitionsBuilder, "get_bins") as get_bins:
             results = sequencer.get_results()
-            post_init.assert_called_once_with()
+            get_bins.assert_called_once()
 
         # Asserts
         assert results.integration_lengths == [len(sequencer.get("weights_i"))]
@@ -115,10 +119,10 @@ class TestSequencerQRM:
         parent.get.return_value = seq_idx
         sequencer = SequencerQRM(parent=parent, name="test", seq_idx=seq_idx)
 
-        # Execute and get results
-        with patch.object(QbloxResult, "__post_init__") as post_init:
+        # Get results
+        with patch.object(QbloxAcquisitionsBuilder, "get_bins") as get_bins:
             _ = sequencer.get_results()
-            post_init.assert_called_once_with()
+            get_bins.assert_called_once()
 
         # Asserts
         parent.store_scope_acquisition.assert_called_once_with(sequencer=seq_idx, name="default")
@@ -143,10 +147,8 @@ class TestSequencerQRM:
         assert isinstance(program, Program)
         assert re.match(expected_program_str, repr(program))
 
-    def test_generate_empty_weights(self):
+    def test_generate_empty_weights(self, sequencer):
         """Test the ``_generate_weights`` method when no weights have been set beforehand."""
-        sequencer = SequencerQRM(parent=MagicMock(), name="test", seq_idx=4)
-
         weights = sequencer._generate_weights()
         assert isinstance(weights, Weights)
 
@@ -171,10 +173,8 @@ class TestSequencerQRM:
         # must be empty dictionary
         assert not weights
 
-    def test_generate_weights(self):
+    def test_generate_weights(self, sequencer):
         """Test the ``_generate_weights`` method."""
-        sequencer = SequencerQRM(parent=MagicMock(), name="test", seq_idx=4)
-
         # Set values
         weights_i = [1, 2, 3, 4]
         weights_q = [5, 6, 7, 8]
@@ -188,9 +188,8 @@ class TestSequencerQRM:
         assert pair.weight_i.data == weights_i
         assert pair.weight_q.data == weights_q
 
-    def test_generate_acquisitions(self):
+    def test_generate_acquisitions(self, sequencer):
         """Test the ``_generate_acquisitions`` method."""
-        sequencer = SequencerQRM(parent=MagicMock(), name="test", seq_idx=4)
         num_bins = 1
         acquisitions = sequencer._generate_acquisitions(num_bins=num_bins)
         acquisitions_dict = acquisitions.to_dict()
@@ -202,10 +201,8 @@ class TestSequencerQRM:
         assert "num_bins" in default_acq
         assert default_acq["num_bins"] == num_bins
 
-    def test_generate_weights_with_swap(self):
+    def test_generate_weights_with_swap(self, sequencer):
         """Test the ``_generate_weights`` method when `swap_paths` is True."""
-        sequencer = SequencerQRM(parent=MagicMock(), name="test", seq_idx=4)
-
         # Set values
         weights_i = [1, 2, 3, 4]
         weights_q = [5, 6, 7, 8]
@@ -234,3 +231,11 @@ class TestSequencerQRM:
                 mock_translate.assert_called_once()
                 parent.arm_sequencer.assert_called_once()
                 parent.start_sequencer.assert_called_once()
+
+    def test_params(self, sequencer):
+        """Unittest to test the params property."""
+        assert sequencer.params == sequencer.parameters
+
+    def test_alias(self, sequencer):
+        """Unittest to test the alias property."""
+        assert sequencer.alias == sequencer.name

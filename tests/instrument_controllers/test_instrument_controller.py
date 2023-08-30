@@ -1,35 +1,27 @@
 """This file tests the the ``InstrumentController`` class"""
 import pytest
+import yaml
 
-from qililab.constants import CONNECTION, INSTRUMENTCONTROLLER, INSTRUMENTREFERENCE, RUNCARD
+from qililab.constants import CONNECTION, INSTRUMENTCONTROLLER, RUNCARD
 from qililab.instrument_controllers.rohde_schwarz import SGS100AController
 from qililab.platform import Platform
-from qililab.typings.enums import (
-    Category,
-    ConnectionName,
-    InstrumentControllerName,
-    InstrumentControllerSubCategory,
-    Parameter,
-)
+from qililab.typings.enums import ConnectionName, InstrumentControllerName, Parameter
 from tests.data import Galadriel
-from tests.test_utils import platform_db
+from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="platform")
 def fixture_platform() -> Platform:
     """Return Platform object."""
-    return platform_db(runcard=Galadriel.runcard)
+    return build_platform(runcard=Galadriel.runcard)
 
 
 @pytest.fixture(name="rs_settings")
 def fixture_rs_settings():
     """Fixture that returns an instance of a dummy RS."""
     return {
-        RUNCARD.ID: 2,
         RUNCARD.NAME: InstrumentControllerName.ROHDE_SCHWARZ,
         RUNCARD.ALIAS: "rohde_schwarz_controller_0",
-        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
-        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
         Parameter.REFERENCE_CLOCK.value: "EXT",
         INSTRUMENTCONTROLLER.CONNECTION: {
             RUNCARD.NAME: ConnectionName.TCP_IP.value,
@@ -37,8 +29,8 @@ def fixture_rs_settings():
         },
         INSTRUMENTCONTROLLER.MODULES: [
             {
-                Category.SIGNAL_GENERATOR.value: "rs_0",
-                INSTRUMENTREFERENCE.SLOT_ID: 0,
+                "alias": "rs_0",
+                "slot_id": 0,
             }
         ],
     }
@@ -67,12 +59,12 @@ class TestConnection:
         """
         rs_settings[INSTRUMENTCONTROLLER.MODULES] = [
             {
-                Category.SIGNAL_GENERATOR.value: "rs_0",
-                INSTRUMENTREFERENCE.SLOT_ID: 0,
+                "alias": "rs_0",
+                "slot_id": 0,
             },
             {
-                Category.SIGNAL_GENERATOR.value: "rs_1",
-                INSTRUMENTREFERENCE.SLOT_ID: 1,
+                "alias": "rs_1",
+                "slot_id": 1,
             },
         ]
         name = rs_settings.pop(RUNCARD.NAME)
@@ -81,3 +73,8 @@ class TestConnection:
             match=f"The {name.value} Instrument Controller only supports 1 module/s.You have loaded 2 modules.",
         ):
             SGS100AController(settings=rs_settings, loaded_instruments=platform.instruments)
+
+    def test_print_instrument_controllers(self, platform: Platform):
+        """Test print instruments."""
+        instr_cont = platform.instrument_controllers
+        assert str(instr_cont) == str(yaml.dump(instr_cont.to_dict(), sort_keys=False))

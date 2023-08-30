@@ -7,15 +7,15 @@ import pytest
 from qpysequence.sequence import Sequence
 
 from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
-from qililab.instruments import QbloxQRM
 from qililab.instruments.awg_settings.awg_qblox_adc_sequencer import AWGQbloxADCSequencer
 from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
+from qililab.instruments.qblox import QbloxQRM
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent, Rectangular
 from qililab.result.results import QbloxResult
 from qililab.typings import InstrumentName
 from qililab.typings.enums import AcquireTriggerMode, IntegrationMode, Parameter
 from tests.data import Galadriel
-from tests.test_utils import platform_db
+from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="settings_6_sequencers")
@@ -23,7 +23,7 @@ def fixture_settings_6_sequencers():
     sequencers = [
         {
             "identifier": seq_idx,
-            "chip_port_id": 1,
+            "chip_port_id": "feedline_input",
             "qubit": 5 - seq_idx,
             "output_i": 1,
             "output_q": 0,
@@ -55,8 +55,6 @@ def fixture_settings_6_sequencers():
     ]
     return {
         "alias": "test",
-        "id_": 0,
-        "category": "awg",
         "firmware": "0.4.0",
         "num_sequencers": 6,
         "out_offsets": [0.123, 1.23],
@@ -70,7 +68,7 @@ def fixture_settings_even_sequencers():
     sequencers = [
         {
             "identifier": seq_idx,
-            "chip_port_id": 1,
+            "chip_port_id": "feedline_input",
             "qubit": 5 - seq_idx,
             "output_i": 1,
             "output_q": 0,
@@ -102,8 +100,6 @@ def fixture_settings_even_sequencers():
     ]
     return {
         "alias": "test",
-        "id_": 0,
-        "category": "awg",
         "firmware": "0.4.0",
         "num_sequencers": 3,
         "out_offsets": [0.123, 1.23],
@@ -123,7 +119,7 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     pulse_shape = Gaussian(num_sigmas=4)
     pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
     pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=0)
-    return PulseBusSchedule(timeline=[pulse_event], port=1)
+    return PulseBusSchedule(timeline=[pulse_event], port="feedline_input")
 
 
 @pytest.fixture(name="pulse_bus_schedule_odd_qubits")
@@ -131,13 +127,13 @@ def fixture_pulse_bus_schedule_odd_qubits() -> PulseBusSchedule:
     """Returns a PulseBusSchedule with readout pulses for qubits 1, 3 and 5."""
     pulse = Pulse(amplitude=1.0, phase=0, duration=1000, frequency=7.0e9, pulse_shape=Rectangular())
     timeline = [PulseEvent(pulse=pulse, start_time=0, qubit=qubit) for qubit in [3, 1, 5]]
-    return PulseBusSchedule(timeline=timeline, port=1)
+    return PulseBusSchedule(timeline=timeline, port="feedline_input")
 
 
 @pytest.fixture(name="pulsar_controller_qrm")
 def fixture_pulsar_controller_qrm():
     """Return an instance of QbloxPulsarController class"""
-    platform = platform_db(runcard=Galadriel.runcard)
+    platform = build_platform(runcard=Galadriel.runcard)
     settings = copy.deepcopy(Galadriel.pulsar_controller_qrm_0)
     settings.pop("name")
     return QbloxPulsarController(settings=settings, loaded_instruments=platform.instruments)
@@ -234,7 +230,7 @@ def fixture_big_pulse_bus_schedule() -> PulseBusSchedule:
         )
         for n in range(2)
     ]
-    return PulseBusSchedule(timeline=timeline, port=1)
+    return PulseBusSchedule(timeline=timeline, port="feedline_input")
 
 
 class TestQbloxQRM:
@@ -271,7 +267,7 @@ class TestQbloxQRM:
 
     def test_start_sequencer_method(self, qrm: QbloxQRM):
         """Test start_sequencer method"""
-        qrm.start_sequencer(port=1)
+        qrm.start_sequencer(port="feedline_input")
         qrm.device.arm_sequencer.assert_not_called()
         qrm.device.start_sequencer.assert_not_called()
 
@@ -423,7 +419,7 @@ class TestQbloxQRM:
 
     def test_upload_method(self, qrm, pulse_bus_schedule):
         """Test upload method"""
-        pulse_bus_schedule.port = 1
+        pulse_bus_schedule.port = "feedline_input"
         qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100, num_bins=1)
         qrm.upload(port=pulse_bus_schedule.port)
         qrm.device.sequencers[0].sync_en.assert_called_once_with(True)
@@ -454,17 +450,9 @@ class TestQbloxQRM:
         qrm.device.get_acquisition_state.assert_not_called()
         qrm.device.get_acquisitions.assert_not_called()
 
-    def test_id_property(self, qrm_no_device: QbloxQRM):
-        """Test id property."""
-        assert qrm_no_device.id_ == qrm_no_device.settings.id_
-
     def test_name_property(self, qrm_no_device: QbloxQRM):
         """Test name property."""
         assert qrm_no_device.name == InstrumentName.QBLOX_QRM
-
-    def test_category_property(self, qrm_no_device: QbloxQRM):
-        """Test category property."""
-        assert qrm_no_device.category == qrm_no_device.settings.category
 
     def test_integration_length_property(self, qrm_no_device: QbloxQRM):
         """Test integration_length property."""
@@ -486,7 +474,9 @@ class TestQbloxQRM:
         new_qrm = QbloxQRM(settings=qrm_settings)
         # We create a pulse bus schedule
         pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=Gaussian(num_sigmas=4))
-        pulse_bus_schedule = PulseBusSchedule(timeline=[PulseEvent(pulse=pulse, start_time=0, qubit=0)], port=1)
+        pulse_bus_schedule = PulseBusSchedule(
+            timeline=[PulseEvent(pulse=pulse, start_time=0, qubit=0)], port="feedline_input"
+        )
         sequences = new_qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000, num_bins=1)
         # We assert that the waveform/weights of the first path is all zeros and the waveform of the second path is the gaussian
         waveforms = sequences[0]._waveforms._waveforms

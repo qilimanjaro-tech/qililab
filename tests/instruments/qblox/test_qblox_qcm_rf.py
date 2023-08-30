@@ -5,7 +5,7 @@ import pytest
 from qblox_instruments.qcodes_drivers.cluster import Cluster
 from qblox_instruments.types import ClusterType
 
-from qililab.instruments import QbloxQCMRF
+from qililab.instruments.qblox import QbloxQCMRF
 from qililab.typings import Parameter
 
 
@@ -13,8 +13,6 @@ from qililab.typings import Parameter
 def fixture_settings():
     return {
         "alias": "test",
-        "id_": 0,
-        "category": "awg",
         "firmware": "0.7.0",
         "num_sequencers": 1,
         "out0_lo_freq": 3.7e9,
@@ -30,7 +28,7 @@ def fixture_settings():
         "awg_sequencers": [
             {
                 "identifier": 0,
-                "chip_port_id": 0,
+                "chip_port_id": "drive_q0",
                 "output_i": 0,
                 "output_q": 1,
                 "num_bins": 1,

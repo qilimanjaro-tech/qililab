@@ -27,9 +27,6 @@ class Keithley2600(Instrument):
         max_current: float
         max_voltage: float
 
-    # TODO: This instruments contains two independent instruments inside: 'device.smua' and 'device.smub'.
-    # Right now we only use smua. Discuss how to handle them.
-
     settings: Keithley2600Settings
     device: Keithley2600Driver
 

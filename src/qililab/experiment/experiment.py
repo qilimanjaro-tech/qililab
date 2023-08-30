@@ -15,7 +15,7 @@ from qililab.platform.platform import Platform
 from qililab.pulse import PulseSchedule
 from qililab.pulse.circuit_to_pulses import CircuitToPulses
 from qililab.result.results import Results
-from qililab.settings import RuncardSchema
+from qililab.settings import Runcard
 from qililab.typings.enums import Instrument, Parameter
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils.live_plot import LivePlot
@@ -47,14 +47,23 @@ class Experiment(BaseExperiment):
 
     def run(self, save_experiment=True, save_results=True) -> Results:
         """This method is responsible for:
+
         * Creating the live plotting (if connection is provided).
+
         * Preparing the `Results` class and the `results.yml` file.
+
         * Looping over all the given circuits, loops and/or software averages. And for each loop:
+
             * Generating and uploading the program corresponding to the circuit.
+
             * Executing the circuit.
+
             * Saving the results to the ``results.yml`` file.
+
             * Sending the data to the live plotting (if asked to).
+
             * Save the results to the ``results`` attribute.
+
             * Save the results to the remote database (if asked to).
         """
         # Generate live plotting
@@ -106,14 +115,13 @@ class Experiment(BaseExperiment):
         idx = copy.deepcopy(kwargs["idx"])
 
         if loops is None or len(loops) == 0:
-            self.execution_manager.compile(
-                idx=idx,
-                nshots=self.hardware_average,
+            result = self.platform.execute(
+                program=self.pulse_schedules[idx],
+                num_avg=self.hardware_average,
                 repetition_duration=self.repetition_duration,
                 num_bins=self.num_bins,
+                queue=queue,
             )
-            self.execution_manager.upload()
-            result = self.execution_manager.run(queue)
             if result is not None:
                 self.results.add(result)
             return
@@ -161,8 +169,8 @@ class Experiment(BaseExperiment):
         if not hasattr(self, "execution_manager"):
             raise ValueError("Please build the execution_manager before compilation.")
         return [
-            self.execution_manager.compile(schedule_idx, self.hardware_average, self.repetition_duration, self.num_bins)
-            for schedule_idx in range(len(self.pulse_schedules))
+            self.platform.compile(schedule, self.hardware_average, self.repetition_duration, self.num_bins)
+            for schedule in self.pulse_schedules
         ]
 
     def draw(
@@ -222,7 +230,7 @@ class Experiment(BaseExperiment):
             dictionary (dict): Dictionary description of a Experiment.
         """
 
-        platform = Platform(runcard_schema=RuncardSchema(**dictionary[RUNCARD.PLATFORM]))
+        platform = Platform(runcard=Runcard(**dictionary[RUNCARD.PLATFORM]))
         circuits = (
             [Circuit.from_qasm(settings) for settings in dictionary[EXPERIMENT.CIRCUITS]]
             if EXPERIMENT.CIRCUITS in dictionary
@@ -246,7 +254,7 @@ class Experiment(BaseExperiment):
         parameter: Parameter,
         value: float | str | bool,
         alias: str,
-        element: RuncardSchema.PlatformSettings | Node | Instrument | None = None,
+        element: Runcard.GatesSettings | Node | Instrument | None = None,
         channel_id: int | None = None,
     ):
         """Set parameter of a platform element.

@@ -3,8 +3,18 @@ import pytest
 
 from qililab.platform import Bus, Buses
 from qililab.system_control import ReadoutSystemControl
+from tests.data import Galadriel
+from tests.test_utils import build_platform
 
-from .aux_methods import buses as load_buses
+
+def load_buses() -> Buses:
+    """Load Buses.
+
+    Returns:
+        Buses: Instance of the Buses class.
+    """
+    platform = build_platform(Galadriel.runcard)
+    return platform.buses
 
 
 @pytest.mark.parametrize("buses", [load_buses()])
@@ -31,3 +41,7 @@ class TestBuses:
         readout_buses = buses.readout_buses
         assert isinstance(readout_buses, list)
         assert isinstance(readout_buses[0].system_control, ReadoutSystemControl)
+
+    def test_str_method(self, buses: Buses):
+        """Test print buses."""
+        assert str(buses) == "\n".join(str(bus) for bus in buses.elements)

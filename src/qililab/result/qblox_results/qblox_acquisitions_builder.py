@@ -9,7 +9,7 @@ class QbloxAcquisitionsBuilder:
     """Qblox Acquisitions Results Builder"""
 
     @classmethod
-    def get_scope(cls, integration_lengths: list[int], qblox_raw_results: dict) -> QbloxScopeAcquisitions | None:
+    def get_scope(cls, integration_lengths: list[int], qblox_raw_results: list[dict]) -> QbloxScopeAcquisitions | None:
         """Cast dictionaries to their corresponding class."""
         sequencer_scope = cls._get_sequencer_with_scope_data_available(qblox_raw_results)
         if sequencer_scope is not None:
@@ -29,13 +29,17 @@ class QbloxAcquisitionsBuilder:
         )
 
     @classmethod
-    def _get_sequencer_with_scope_data_available(cls, qblox_raw_results: dict) -> int | None:
+    def _get_sequencer_with_scope_data_available(cls, qblox_raw_results: list[dict]) -> int | None:
         """Returns the sequencer with scope data available.
 
         Returns:
             int | None: Number of the sequencer with scope data. None if there is no scope data available in any sequencer.
         """
-        for sequencer, acquitision in enumerate(qblox_raw_results):
-            if any(acquitision["scope"]["path0"]["data"]):
-                return sequencer
-        return None
+        return next(
+            (
+                sequencer
+                for sequencer, acquitision in enumerate(qblox_raw_results)
+                if any(acquitision["scope"]["path0"]["data"])
+            ),
+            None,
+        )

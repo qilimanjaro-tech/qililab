@@ -2,47 +2,6 @@
 from enum import Enum
 
 
-class Category(str, Enum):
-    """Category of settings.
-
-    Args:
-        enum (str): Available types of settings categories:
-        * platform
-        * qubit
-        * awg
-        * signal_generator
-        * buses
-        * bus
-        * schema
-        * resonator
-        * node
-        * instrument_controller
-        * voltage_source
-        * current_source
-        * digital_analog_converter
-    """
-
-    PLATFORM = "platform"
-    QUBIT = "qubit"
-    AWG = "awg"
-    SIGNAL_GENERATOR = "signal_generator"
-    SCHEMA = "schema"
-    RESONATOR = "resonator"
-    BUSES = "buses"
-    BUS = "bus"
-    SYSTEM_CONTROL = "system_control"
-    EXPERIMENT = "experiment"
-    ATTENUATOR = "attenuator"
-    DC_SOURCE = "dc_source"
-    VNA = "vna"
-    CHIP = "chip"
-    NODE = "node"
-    INSTRUMENT_CONTROLLER = "instrument_controller"
-    VOLTAGE_SOURCE = "voltage_source"
-    CURRENT_SOURCE = "current_source"
-    ADC = "adc"
-
-
 class Instrument(str, Enum):
     """Instrument.
 
@@ -62,19 +21,6 @@ class Instrument(str, Enum):
     ATTENUATOR = "attenuator"
     VOLTAGE_SOURCE = "voltage_source"
     CURRENT_SOURCE = "current_source"
-
-
-class InstrumentControllerSubCategory(str, Enum):
-    """Instrument Controller subcategory types.
-
-    Args:
-        enum (str): Available types of instrument controllers:
-        * single_instrument
-        * multiple_instruments
-    """
-
-    SINGLE = "single_instrument"
-    MULTI = "multiple_instruments"
 
 
 class ReferenceClock(str, Enum):
@@ -155,19 +101,6 @@ class AcquisitionName(str, Enum):
     LARGE = "large"
 
 
-class SchemaDrawOptions(str, Enum):
-    """Schema draw options.
-
-    Args:
-        enum (str): Available types of schema draw options:
-        * print
-        * file
-    """
-
-    PRINT = "print"
-    FILE = "file"
-
-
 class PulseDistortionName(str, Enum):
     """Pulse distortion options.
 
@@ -179,25 +112,6 @@ class PulseDistortionName(str, Enum):
     BIAS_TEE_CORRECTION = "bias_tee"
     EXPONENTIAL_CORRECTION = "exponential"
     LFILTER = "lfilter"
-
-
-class PulseDistortionSettingsName(str, Enum):
-    """Pulse Shape Settings names.
-
-    Args:
-        enum (str): Available types of pulse distortion settings names:
-        * tau_bias_tee
-        * tau_exponential
-        * amp
-    """
-
-    TAU_BIAS_TEE = "tau_bias_tee"
-    TAU_EXPONENTIAL = "tau_exponential"
-    AMP = "amp"
-    SAMPLING_RATE = "sampling_rate"
-    NORM_FACTOR = "norm_factor"
-    A = "a"
-    B = "b"
 
 
 class PulseShapeName(str, Enum):
@@ -213,23 +127,6 @@ class PulseShapeName(str, Enum):
     RECTANGULAR = "rectangular"
     SNZ = "snz"
     COSINE = "cosine"
-
-
-class PulseShapeSettingsName(str, Enum):
-    """Pulse Shape Settings names.
-
-    Args:
-        enum (str): Available types of pulse shape settings names:
-        * num_sigmas
-        * drag_coefficient
-        * b (amplitude of the first and last sampling points of t_phi in the SNZ pulse)
-    """
-
-    NUM_SIGMAS = "num_sigmas"
-    DRAG_COEFFICIENT = "drag_coefficient"
-    B = "b"
-    T_PHI = "t_phi"
-    LAMBDA_2 = "lambda_2"
 
 
 class NodeName(str, Enum):
