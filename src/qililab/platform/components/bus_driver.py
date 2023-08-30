@@ -1,16 +1,16 @@
 """Bus Class Interface."""
+from abc import ABC
 from copy import deepcopy
 from typing import Any
 
 from qililab.drivers.interfaces import AWG, BaseInstrument
 from qililab.drivers.interfaces.instrument_interface_factory import InstrumentInterfaceFactory
 from qililab.pulse import PulseBusSchedule, PulseDistortion
-from qililab.typings.factory_element import FactoryElement
 
 from .bus_factory import BusFactory
 
 
-class BusDriver(FactoryElement):
+class BusDriver(ABC):
     """Bus Class.
 
     Args:

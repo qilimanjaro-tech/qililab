@@ -175,54 +175,6 @@ class InstrumentName(str, Enum):
     QCMRF = "QCM-RF"
 
 
-class InstrumentInterfaceName(str, Enum):
-    """Instrument interfaces names.
-
-    Args:
-        enum (str): Available instrument interfaces element names:
-            AWG
-            Attenuator
-            Digitiser
-            LocalOscillator
-            CurrentSource
-            VoltageSource
-    """
-
-    AWG = "AWG"
-    ATTENUATOR = "Attenuator"
-    DIGITISER = "Digitiser"
-    LOCAL_OSCILLATOR = "LocalOscillator"
-    CURRENT_SOURCE = "CurrentSource"
-    VOLTAGE_SOURCE = "VoltageSource"
-
-
-class InstrumentDriverName(str, Enum):
-    """Instrument interfaces names.
-
-    Args:
-        enum (str): Available instrument interfaces element names:
-            ERASynthPlus
-            Keithley2600
-            Cluster
-            Pulsar
-            SequencerQCM
-            SequencerQRM
-            SpiRack
-            RhodeSchwarzSGS100A
-            GS200
-    """
-
-    ERA_SYNTH_PLUS = "ERASynthPlus"
-    KEITHLEY_2600 = "Keithley2600"
-    CLUSTER = "Cluster"
-    PULSAR = "Pulsar"
-    SEQUENCER_QCM = "SequencerQCM"
-    SEQUENCER_QRM = "SequencerQRM"
-    SPI_RACK = "SpiRack"
-    RHODE_SCHWARZ_SGS100A = "RhodeSchwarzSGS100A"
-    GS200 = "GS200"
-
-
 class InstrumentControllerName(str, Enum):
     """Instrument Controller names.
 
@@ -260,21 +212,6 @@ class SystemControlName(str, Enum):
     SYSTEM_CONTROL = "system_control"
     READOUT_SYSTEM_CONTROL = "readout_system_control"
     SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
-
-
-class BusDriverName(str, Enum):
-    """Bus Driver names.
-
-    Args:
-        enum (str): Available bus driver element names:
-        * drive_bus
-        * flux_bus
-        * readout_bus
-    """
-
-    DRIVE_BUS = "drive_bus"
-    FLUX_BUS = "flux_bus"
-    READOUT_BUS = "readout_bus"
 
 
 class Parameter(str, Enum):
