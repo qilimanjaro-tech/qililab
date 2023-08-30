@@ -186,7 +186,7 @@ class BusDriver(FactoryElement):
             dict[str, dict]: The instruments dictionary to be inserted in the bus dictionary. Keys are the instruments str,
                 and values are an inner dictionary containing the alias and the parameters dictionary.
         """
-        instruments_dict = {}
+        instruments_dict: dict[str, dict] = {}
         for instrument in instruments:
             if instrument is not None:
                 instrument_dict = {"alias": instrument.alias}

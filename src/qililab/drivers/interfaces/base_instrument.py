@@ -1,11 +1,9 @@
 """SignalGenerator class."""
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from typing import Any
 
-from qililab.typings.factory_element import FactoryElement
 
-
-class BaseInstrument(FactoryElement):
+class BaseInstrument(ABC):
     """Base Interface for all instruments."""
 
     @property
