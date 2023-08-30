@@ -196,6 +196,33 @@ class InstrumentInterfaceName(str, Enum):
     VOLTAGE_SOURCE = "VoltageSource"
 
 
+class InstrumentDriverName(str, Enum):
+    """Instrument interfaces names.
+
+    Args:
+        enum (str): Available instrument interfaces element names:
+            ERASynthPlus
+            Keithley2600
+            Cluster
+            Pulsar
+            SequencerQCM
+            SequencerQRM
+            SpiRack
+            RhodeSchwarzSGS100A
+            GS200
+    """
+
+    ERA_SYNTH_PLUS = "ERASynthPlus"
+    KEITHLEY_2600 = "Keithley2600"
+    CLUSTER = "Cluster"
+    PULSAR = "Pulsar"
+    SEQUENCER_QCM = "SequencerQCM"
+    SEQUENCER_QRM = "SequencerQRM"
+    SPI_RACK = "SpiRack"
+    RHODE_SCHWARZ_SGS100A = "RhodeSchwarzSGS100A"
+    GS200 = "GS200"
+
+
 class InstrumentControllerName(str, Enum):
     """Instrument Controller names.
 

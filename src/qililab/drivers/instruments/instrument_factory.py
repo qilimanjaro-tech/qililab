@@ -1,18 +1,18 @@
 """InstrumentDriverFactory class module."""
 from typing import TypeVar
 
-from qililab.drivers.interfaces import BaseInstrument
+from qililab.typings.factory_element import InstrumentFactoryElement
 
-Element = TypeVar("Element", bound=BaseInstrument)
+Element = TypeVar("Element", bound=InstrumentFactoryElement)
 
 
 class InstrumentDriverFactory:
     """Hash table that loads a specific class given an object's __name__."""
 
-    handlers: dict[str, type[BaseInstrument]] = {}
+    handlers: dict[str, type[InstrumentFactoryElement]] = {}
 
     @classmethod
-    def register(cls, handler_cls: type[Element]) -> type[BaseInstrument]:
+    def register(cls, handler_cls: type[Element]) -> type[InstrumentFactoryElement]:
         """Register handler in the factory given the class (through its __name__).
 
         Args:
@@ -22,6 +22,6 @@ class InstrumentDriverFactory:
         return handler_cls
 
     @classmethod
-    def get(cls, name: str) -> type[BaseInstrument]:
+    def get(cls, name: str) -> type[InstrumentFactoryElement]:
         """Return class attribute given its __name__"""
         return cls.handlers[name]

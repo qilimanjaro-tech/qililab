@@ -1,14 +1,13 @@
 from abc import abstractmethod
 
 from qililab.pulse import PulseBusSchedule
-from qililab.typings.factory_element import FactoryElement
 
 from .base_instrument import BaseInstrument
 from .instrument_interface_factory import InstrumentInterfaceFactory
 
 
 @InstrumentInterfaceFactory.register
-class AWG(BaseInstrument, FactoryElement):
+class AWG(BaseInstrument):
     """
     Interface for AWG sequencer instrument types.
     """

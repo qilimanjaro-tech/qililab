@@ -3,6 +3,7 @@ from qililab.typings.enums import (
     BusDriverName,
     ConnectionName,
     InstrumentControllerName,
+    InstrumentDriverName,
     InstrumentInterfaceName,
     InstrumentName,
     NodeName,
@@ -25,6 +26,11 @@ class FactoryElement:  # pylint: disable=too-few-public-methods
         | NodeName
         | ConnectionName
         | InstrumentControllerName
-        | InstrumentInterfaceName
         | BusDriverName
     )
+
+
+class InstrumentFactoryElement:  # pylint: disable=too-few-public-methods
+    """Class InstrumentFactoryElement"""
+
+    type: (InstrumentDriverName | InstrumentInterfaceName)

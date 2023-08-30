@@ -2,14 +2,12 @@
 from abc import abstractmethod
 from typing import Any
 
-from qililab.typings.factory_element import FactoryElement
-
 from .base_instrument import BaseInstrument
 from .instrument_interface_factory import InstrumentInterfaceFactory
 
 
 @InstrumentInterfaceFactory.register
-class Digitiser(BaseInstrument, FactoryElement):
+class Digitiser(BaseInstrument):
     """Digitiser interface."""
 
     @abstractmethod
