@@ -41,7 +41,7 @@ def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, nu
     pulse_event = PulseEvent(pulse=pulse, start_time=start_time)
     timeline = [pulse_event for _ in range(number_pulses)]
 
-    return PulseBusSchedule(timeline=timeline, port=0)
+    return PulseBusSchedule(timeline=timeline, port="test")
 
 
 class MockQcmQrmRF(DummyInstrument):  # pylint: disable=abstract-method
@@ -130,6 +130,7 @@ def fixture_readout_bus(digitiser: SequencerQRM, local_oscillator: QcmQrmRfLo, a
         digitiser=digitiser,
         local_oscillator=local_oscillator,
         attenuator=attenuator,
+        distortions=[],
     )
 
 

@@ -4,6 +4,12 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Buses serialization have been implemented: [#515](https://github.com/qilimanjaro-tech/qililab/pull/515)
+
+  When printing the runcard, in the buses part we will now have the normal Buses serialization, plus the parameters of the instruments associated to that bus, with the `to_dict/from_dict` methods.\`
+
+  Also the serialization includes using the `set/get_params` for setting/getting the instruments params.
+
 - Distorsions and PulseShapes have been improved: [#512](https://github.com/qilimanjaro-tech/qililab/pull/512)
 
   They now work for `amplitude=0`, and for negative and `snz` envelopes (both positive and negatives)

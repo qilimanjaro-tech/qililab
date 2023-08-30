@@ -40,7 +40,7 @@ def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, nu
     pulse_event = PulseEvent(pulse=pulse, start_time=start_time)
     timeline = [pulse_event for _ in range(number_pulses)]
 
-    return PulseBusSchedule(timeline=timeline, port=0)
+    return PulseBusSchedule(timeline=timeline, port="test")
 
 
 class MockQcmQrmRF(DummyInstrument):  # pylint: disable=abstract-method
@@ -125,8 +125,10 @@ def fixture_attenuator() -> QcmQrmRfAtt:
 
 @pytest.fixture(name="drive_bus")
 def fixture_drive_bus(sequencer: SequencerQCM, local_oscillator: QcmQrmRfLo, attenuator: QcmQrmRfAtt) -> DriveBus:
-    """Return DriveBus instance"""
-    return DriveBus(alias=ALIAS, port=PORT, awg=sequencer, local_oscillator=local_oscillator, attenuator=attenuator)
+    """Return DriveBus instance."""
+    return DriveBus(
+        alias=ALIAS, port=PORT, awg=sequencer, local_oscillator=local_oscillator, attenuator=attenuator, distortions=[]
+    )
 
 
 class TestDriveBus:

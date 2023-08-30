@@ -1,4 +1,4 @@
-"""InstrumentDriverFactory class module."""
+"""InstrumentInterfaceFactory class module."""
 from typing import TypeVar
 
 from qililab.drivers.interfaces.base_instrument import BaseInstrument
@@ -6,7 +6,7 @@ from qililab.drivers.interfaces.base_instrument import BaseInstrument
 Element = TypeVar("Element", bound=BaseInstrument)
 
 
-class InstrumentDriverFactory:
+class InstrumentInterfaceFactory:
     """Hash table that loads a specific class given an object's __name__."""
 
     handlers: dict[str, type[BaseInstrument]] = {}
