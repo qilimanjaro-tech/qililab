@@ -16,22 +16,32 @@ from qililab.platform.platform import Platform
 class Controller:
     """Class that controls the automatic calibration sequence.
 
-    Attributes:
+    Args:
         _calibration_graph (nx.DiGraph): The calibration graph. This is a directed graph where each node is a CalibrationNode object.
         _platform (Platform): The platform where the experiments will be run. See the Platform class for more information.
+        _current_run_of_calibration_sequence_folder (str): The folder where the data from the current run of the calibration sequence are saved.
     """
 
     def __init__(self, calibration_sequence_name: str, platform: Platform, calibration_graph: nx.DiGraph = None, manual_check_all: bool = False):
         if calibration_graph is None:
             self._calibration_graph = nx.DiGraph()
         else:
-            self._calibration_graph = calibration_graph
-            if not nx.is_directed_acyclic_graph(self._calibration_graph):
+            if not nx.is_directed_acyclic_graph(calibration_graph):
                 raise ValueError("The calibration graph must be a Directed Acyclic Graph (DAG).")
+            #TODO: check if, for each node in the calibration graph, the `node_id` attribute is unique. If not, raise an exception.
+            self._calibration_graph = calibration_graph
         self._platform = platform
         self._calibration_sequence_name = calibration_sequence_name
         if manual_check_all:
             for node in self._calibration_graph.nodes(): node.manual_check = True
+        
+        # Find the folder where the data from this run of the calibration sequence should be saved
+        #TODO: this should be changed to use the standard folder structure with hours, minutes, seconds instead
+        # of naming the folders with UNIX timestamps like it's done here.
+        data_folder = os.environ.get("DATA")
+        this_calibration_sequence_folder = os.path.join(data_folder, self._calibration_sequence_name)
+        self._current_run_of_calibration_sequence_folder = os.path.join(this_calibration_sequence_folder, str(get_timestamp()))
+        os.makedirs(self._current_run_of_calibration_sequence_folder, exist_ok=True)
     
     def maintain(self, node: CalibrationNode):
         """This is primary interface for our calibration procedure and it's the highest level algorithm.
@@ -57,13 +67,7 @@ class Controller:
             return
 
         # check_data
-        #TODO: put the following in a separate function (possibly in automatic_calibration/calibration_utils):
-        #      most of this is also used when loading and saving data in 'run_calibration'.
-        data_folder = os.environ.get("DATA")
-        this_calibration_sequence_folder = os.path.join(data_folder, self._calibration_sequence_name)
-        current_run_of_calibration_sequence_folder = os.path.join(this_calibration_sequence_folder, str(get_timestamp()))
-        os.makedirs(current_run_of_calibration_sequence_folder, exist_ok=True)
-        plot_figure_filepath = os.path.join(current_run_of_calibration_sequence_folder, f"{node.node_id}.png")
+        plot_figure_filepath = os.path.join(self._current_run_of_calibration_sequence_folder, f"{node.node_id}.png")
         
         result = self.check_data(node)
         if result == "in_spec":
@@ -100,8 +104,8 @@ class Controller:
 
 
     def diagnose(self, node: CalibrationNode):
-        """This is a method called by 'maintain' in the special case that its call of 'check_data' finds bad data.
-        'maintain' assumes that our knowledge of the state of the system matches the actual state of the
+        """This is a method called by `maintain` in the special case that its call of `check_data` finds bad data.
+        `maintain` assumes that our knowledge of the state of the system matches the actual state of the
         system: if we knew a node would return bad data, we wouldn't bother running experiments on it.
         The fact that check_data returns bad data means that that's not the case: out knowledge of the state
         of the system is inaccurate. The purpose of diagnose is to repair inaccuracies in our knowledge of the
@@ -135,7 +139,7 @@ class Controller:
         
         return True
 
-    def run_calibration(self, node: CalibrationNode = None) -> None:
+    def run_automatic_calibration(self, node: CalibrationNode = None) -> None:
         """Run the calibration procedure starting from the given node.
 
         Args:
@@ -184,12 +188,10 @@ class Controller:
         # For each node, the content of the 'experiment_results' attribute and the last item of the list
         # in the 'timestamps' attribute has to be saved in a YAML file to be used by check_state and check_data
         # during future runs of the same calibration sequence.
-        current_run_of_calibration_sequence_folder = os.path.join(this_calibration_sequence_folder, str(get_timestamp()))
-        os.makedirs(current_run_of_calibration_sequence_folder, exist_ok=True)
         nodes_list = list(self._calibration_graph.nodes())
         progress_bar = tqdm(nodes_list, desc="Saving data of the calibration sequence to YAML files", unit="node")
         for n in progress_bar:
-            node_file = os.path.join(current_run_of_calibration_sequence_folder, f"{n.node_id}.yml")
+            node_file = os.path.join(self._current_run_of_calibration_sequence_folder, f"{n.node_id}.yml")
             node_data = {"latest_timestamp": n.get_latest_timestamp(), "experiment_results": np.array(n.experiment_results).tolist()}
             with open(node_file, 'w') as f:
                 yaml.dump(node_data, f)
@@ -217,14 +219,22 @@ class Controller:
 
     def check_data(self, node: CalibrationNode) -> str:
         """
-        Check if the parameters found in the last calibration are still valid. This removes the need to redo the entire calibration procedure,
-        which is much more time-expensive than just calling this method.
+        Check if the parameters found in the last calibration are still valid. To do this, this function runs the experiment only in a few 
+        points, randomly chosen within the sweep interval, and compares the results with the data obtained in the same points whe the 
+        experiment was last run on the entire sweep interval (full calibration).
         
         Args:
             node: The node whose parameters need to be checked.
 
         Returns:
-            str: TODO: finish docstrings
+            str: Based on how the experiment results compare with the results obtained during the last full calibration, the function will return 
+                
+                - "in_spec" if the results are similar. Similarity is determined using the `check_data_confidence_level` argument of the :obj:`~automatic_calibration.CalibrationNode`.
+                - "out_of_spec" if the results are not similar enough.
+                - "bad_data" if the results are not similar and they don't even fit the model that is expected for this data. The model that the data should fit is indicated 
+                        by the `fitting_model` attribute of :obj:`~automatic_calibration.CalibrationNode`, and to decide if the data fits the model well enough the r-squared 
+                        parameter of the fit is used. The tolerance for the r-squared is indicated in the `r_squared_threshold` attribute of :obj:`~automatic_calibration.CalibrationNode`.
+                See the source code for details on how these metrics are used to decide what string to return.
         """
         
         print(f"Checking data of node \"{node.node_id}\"\n")
@@ -248,8 +258,7 @@ class Controller:
             current_point_result = self.run_experiment(node = node, experiment_point=value)
             new_results_array.append(current_point_result[quadrature_index][0])
             
-        # Compare results
-        
+        # Compare results with those obtained during the last full calibration        
         square_differences = (new_results_array - old_results_array)**2
         mean_diff = np.mean(square_differences)
         std_dev_diff = np.std(square_differences)
@@ -287,18 +296,22 @@ class Controller:
 
     def run_experiment(self, node: CalibrationNode, experiment_point: float = None) -> float | str | bool:
         """
-        Run the experiment, fit and plot data.
-        This method is separate from the 'calibrate' method because sometimes we just need to run the experiment in a few points, not
-        on the whole sweep interval (see 'check_data' method in this class).
+        Run the node's experiment and its analysis function.
+        This method is separate from the `calibrate` method because sometimes we just need to run the experiment in a few points, not
+        on the whole sweep interval (see :func:`~automatic_calibration.Controller.check_data` method in this class).
 
         Args:
             manual_check (bool): If set to true, the user will be shown and asked to approve or reject the result of the fitting done by the analysis function. Default value is False.
-            experiment_point (float): If None, the experiment was started by the 'calibrate' method, and will be run on the entire default sweep interval.
-                                    If not None, the experiment was started by the 'check_data' method, and will be run only in the point specified by this argument.
+            experiment_point (float): If `None`, the experiment was started by the :func:`~automatic_calibration.Controller.calibrate` method, and will be run on the entire default sweep interval.
+                                    If `not None`, the experiment was started by the :func:`~automatic_calibration.Controller.check_data` method, and will be run only in the point specified by this argument.
         
         Returns:
-            float | str | bool: The optimal parameter value found by the calibration experiment.
-            #TODO: return value is different if the function is called by check_data: document that.
+            (int | float | bool | list)
+            - If the experiment was started by the :func:`~automatic_calibration.Controller.calibrate` method, this function returns the optimal parameter value found by the calibration experiment. 
+                In this case the return value is of type `int | float | bool`
+            - If the experiment was started by the :func:`~automatic_calibration.Controller.check_data` method, this function returns the results of the experiment, which is run only in the point 
+                indicated by the `experiment_point` argument. 
+                In this case the return value is of type `list`
         """
         
         if node.is_refinement:
@@ -321,7 +334,7 @@ class Controller:
                     else: go back to 1.
             """
             
-            # Compile and run the QProgram on the platform.
+            # Compile and run the experiment on the platform.
             print(f"Running \"{node.experiment.__name__}\" experiment in node \"{node.node_id}\"\n")
             
             #GALADRIEL: uncomment this when connected to an actual platform
@@ -332,11 +345,10 @@ class Controller:
             # iq = get_iq_from_raw(get_raw_data(dummy_data_path))
             # node.experiment_results = [[k[0] for k in iq[0]], [p[0] for p in iq[1]]]
             
-            
-            # Call the general analysis function with the appropriate model, or the custom one (no need to specify the model in this case, it will already be hardcoded).
             # If node.manual_check is True, the analysis function will also open the file containing the plot so the user can approve it manually.
             print(f"Running the \"{node.analysis_function.__name__}\" analysis function in node \"{node.node_id}\"\n")
             # Get the path where the plot figure should be saved.
+            #TODO: use a function for this
             data_folder = os.environ.get("DATA")
             this_calibration_sequence_folder = os.path.join(data_folder, self._calibration_sequence_name)
             current_run_of_calibration_sequence_folder = os.path.join(this_calibration_sequence_folder, str(get_timestamp()))
@@ -387,8 +399,9 @@ class Controller:
         return self._calibration_graph
     
     @calibration_graph.setter
-    def calibration_graph(self, calibration_graph):
+    def calibration_graph(self, calibration_graph: nx.DiGraph):
         if not nx.is_directed_acyclic_graph(calibration_graph):
                 raise ValueError("The calibration graph must be a Directed Acyclic Graph (DAG).")
+        #TODO: check if, for each node in the calibration graph, the `node_id` attribute is unique. If not, raise an exception.
         self._calibration_graph = calibration_graph
         

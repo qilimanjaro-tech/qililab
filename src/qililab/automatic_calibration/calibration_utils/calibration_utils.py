@@ -1,5 +1,5 @@
 """
-Useful functions for calibration experiments and data analysis.
+Module with useful functions for calibration experiments and data analysis.
 """
 
 import random
@@ -13,15 +13,26 @@ import numpy as np
 import yaml
 
 def visualize_calibration_graph(calibration_graph: nx.DiGraph, graph_figure_path: str):
+    """
+    Visualizes a calibration graph using networkx and saves the visualization as an image.
+
+    This function takes a calibration graph represented as a directed graph and generates a planar visualization
+    with node labels. The visualization is then saved as an image file at the specified path. The saved image
+    is also displayed to the user.
+
+    Args:
+        calibration_graph (nx.DiGraph): The calibration graph to visualize.
+        graph_figure_path (str): The file path to save the visualization image.
+
+    Returns:
+        None
+    """
     labels = {node: node.node_id for node in calibration_graph.nodes}
     nx.draw_planar(calibration_graph, labels=labels, with_labels=True)
     plt.savefig(graph_figure_path, format="PNG")
     graph_figure = mpimg.imread(graph_figure_path)
     plt.imshow(graph_figure)
     plt.show()
-    # This closes the figure containing the graph drawing. Every time we call plt.show() in the future, 
-    # for example to show the plot given by an analysis function to the user, all open figures will be shown,
-    # including this one showing the graph drawing, which we don't want.
     plt.close()
 
 def get_timestamp() -> int:
@@ -34,13 +45,13 @@ def get_timestamp() -> int:
     return datetime.timestamp(now)
 
 
-def is_timeout_expired(timestamp, timeout):
+def is_timeout_expired(timestamp: float, timeout: float):
     """
     Check if the time passed since the timestamp is greater than the timeout duration.
 
     Args:
-        timestamp (int): Timestamp from which the time should be checked, described in UNIX timestamp format.
-        timeout (int): The timeout duration in seconds.
+        timestamp (float): Timestamp from which the time should be checked, described in UNIX timestamp format.
+        timeout (float): The timeout duration in seconds.
 
     Returns:
         bool: True if the timeout has expired, False otherwise.
@@ -108,9 +119,39 @@ def get_iq_from_raw(data_raw, index=0):
     return i, q
 
 
-# TODO: docstrings. I took this from LabScripts/QuantumPainHackathon/calibration/calibration.py and I don't know what
-# it does yet, it's only here because it's used in analysis functions.
 def plot_iq(xdata, i, q, title_label, xlabel):
+    """
+    Plot the I and Q components of data against the specified x values.
+
+    This function creates a side-by-side plot with two subplots to visualize the I (in-phase) and Q (quadrature)
+    components of data as functions of the specified x values. The I and Q components are plotted separately,
+    with the given xdata values.
+
+    Args:
+        xdata (array-like): The x values for which the I and Q components are plotted.
+        i (array-like): The in-phase (I) component values to be plotted.
+        q (array-like): The quadrature (Q) component values to be plotted.
+        title_label (str): The title for the entire plot.
+        xlabel (str): The label for the x-axis.
+
+    Returns:
+        tuple: A tuple containing the figure and axes objects of the created plot.
+
+    Note: 
+        This function was taken from without any modifications LabScripts/QuantumPainHackathon/calibration/calibration.py
+        
+    Example:
+        
+        .. code-block:: python3
+        
+            xdata = [1, 2, 3, 4, 5]
+            i = [0.5, 0.8, 0.7, 1.0, 0.9]
+            q = [0.3, 0.6, 0.8, 0.7, 0.5]
+            title = "I-Q Components"
+            x_label = "Frequency [Hz]"
+            fig, axes = plot_iq(xdata, i, q, title, x_label)
+            plt.show()
+    """
     # Plot data
     fig, axes = plt.subplots(1, 2, figsize=(13, 7))
     # axes.set_title(options.name)
@@ -129,11 +170,30 @@ def plot_iq(xdata, i, q, title_label, xlabel):
     return fig, axes
 
 
-# TODO: docstrings. I took this from LabScripts/QuantumPainHackathon/calibration/calibration.py and I don't know what
-# it does yet, it's only here because it's used in analysis functions.
-def plot_fit(xdata, popt, ax, fitted_pi_pulse_amplitude):
-    # Create label text
+def plot_fit(xdata, popt, ax, label):
+    """
+    Plot the fitted sinusoidal curve on a given axis.
 
+    This function takes the xdata, optimized parameters (popt), and the axis (ax) and plots a sinusoidal curve
+    based on the fitted parameters. It also adds a legend to the plot indicating the fitted pi-pulse amplitude.
+
+    Args:
+        xdata (array-like): The x values for the data points.
+        popt (array-like): Optimized parameters of the fitted sinusoidal function.
+        ax (matplotlib.axes._axes.Axes): The axis object where the plot will be created.
+        fitted_pi_pulse_amplitude (float): The amplitude of the fitted pi-pulse.
+
+    Returns:
+        None
+
+    Note: 
+        This function was taken from without any modifications LabScripts/QuantumPainHackathon/calibration/calibration.py
+    
+    Todo:
+        * Add fitting model as argument instead of hardcoding it. Now the function only works with sinus as a model.
+    """
+
+    #TODO: this function should be able to fit to any model: add the model as an argument, instead of hardcoding it here.
     def sinus(x, a, b, c, d):
         return a * np.sin(2 * np.pi * b * np.array(x) - c) + d
 
@@ -141,10 +201,11 @@ def plot_fit(xdata, popt, ax, fitted_pi_pulse_amplitude):
     # args = list(inspect.signature(func).parameters.keys())[1:]
     # text = "".join(f"{arg}: {value:.5f}\n" for arg, value in zip(args, popt))
 
-    label_fit = f"FIT $A_\pi$ = {fitted_pi_pulse_amplitude:.3f}"
+    label_fit = f"FIT $A_\pi$ = {label:.3f}"
     ax.plot(xdata, sinus(xdata, *popt), "--", label=label_fit, color="red")
     ax.legend()
 
+# TODO: replace with standard format
 def get_most_recent_folder(directory: str):
     subfolders = [f for f in os.listdir(directory) if os.path.isdir(os.path.join(directory, f))]
     

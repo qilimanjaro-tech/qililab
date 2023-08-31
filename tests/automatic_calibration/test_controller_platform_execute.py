@@ -209,4 +209,4 @@ controller = Controller(
 )
 
 # Start automatic calibration
-controller.run_calibration()
+controller.run_automatic_calibration()
