@@ -2,10 +2,11 @@
 from dataclasses import dataclass
 from typing import Sequence, cast
 
+from qpysequence import Program
 from qpysequence import Sequence as QpySequence
-from qpysequence.program import Loop, Program, Register
+from qpysequence import Weights
+from qpysequence.program import Loop, Register
 from qpysequence.program.instructions import Acquire, AcquireWeighed, Move
-from qpysequence.weights import Weights
 
 from qililab.config import logger
 from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
@@ -268,28 +269,35 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 if sequencer.scope_store_enabled:
                     self.device.store_scope_acquisition(sequencer=sequencer_id, name="default")
 
-                results.append(self.device.get_acquisitions(sequencer=sequencer.identifier)["default"]["acquisition"])
+                for key, data in self.device.get_acquisitions(sequencer=sequencer.identifier).items():
+                    acquisitions = data["acquisition"]
+                    qubit_measure = key[1:].split("_")
+                    acquisitions["qubit"] = int(qubit_measure[0])
+                    acquisitions["measurement"] = int(qubit_measure[1])
+                    results.append(acquisitions)
+                
+                # results.append(self.device.get_acquisitions(sequencer=sequencer.identifier)["default"]["acquisition"])
                 self.device.sequencers[sequencer.identifier].sync_en(False)
                 integration_lengths.append(sequencer.used_integration_length)
 
         return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
 
     def _append_acquire_instruction(
-        self, loop: Loop, bin_index: Register | int, sequencer_id: int, weight_regs: tuple[Register, Register]
+        self, loop: Loop, bin_index: Register | int, sequencer_id: int, weight_regs: tuple[Register, Register], acq_index: int
     ):
         """Append an acquire instruction to the loop."""
         weighed_acq = self._get_sequencer_by_id(id=sequencer_id).weighed_acq_enabled
 
         acq_instruction = (
             AcquireWeighed(
-                acq_index=0,
+                acq_index=acq_index,
                 bin_index=bin_index,
                 weight_index_0=weight_regs[0],
                 weight_index_1=weight_regs[1],
                 wait_time=self._MIN_WAIT_TIME,
             )
             if weighed_acq
-            else Acquire(acq_index=0, bin_index=bin_index, wait_time=self._MIN_WAIT_TIME)
+            else Acquire(acq_index=acq_index, bin_index=bin_index, wait_time=self._MIN_WAIT_TIME)
         )
         loop.append_component(acq_instruction)
 
