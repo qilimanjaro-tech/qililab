@@ -45,7 +45,7 @@ def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, nu
 
 @pytest.fixture(name="pulse_bus_schedule")
 def fixture_pulse_bus_schedule() -> PulseBusSchedule:
-    """Return PulseBusSchedule instance."""
+    """Return a PulseBusSchedule instance."""
     return get_pulse_bus_schedule(start_time=0)
 
 
@@ -58,7 +58,7 @@ def fixture_buses(
     current_source: S4gDacChannel,
     voltage_source: D5aDacChannel,
 ) -> list[BusDriver]:
-    """Return DriveBus instance."""
+    """Return a list of bus drivers instances."""
     return [
         BusDriver(alias=ALIAS, port=PORT, awg=sequencer_qcm, distortions=[]),
         DriveBus(
@@ -85,13 +85,13 @@ def fixture_buses(
 
 @pytest.fixture(name="digitiser")
 def fixture_sequencer() -> SequencerQRM:
-    """Return SequencerQCM instance."""
+    """Return a SequencerQRM instance."""
     return SequencerQRM(parent=MagicMock(), name="test", seq_idx=0)
 
 
 @pytest.fixture(name="current_source")
 def fixture_current_source() -> S4gDacChannel:
-    """Return S4gDacChannel instance."""
+    """Return a S4gDacChannel instance."""
     mocked_parent = MagicMock()
     mocked_parent.api = DummyS4gApi(spi_rack=MagicMock(), module=0)
     return S4gDacChannel(parent=mocked_parent, name="test", dac=0)
@@ -99,7 +99,7 @@ def fixture_current_source() -> S4gDacChannel:
 
 @pytest.fixture(name="voltage_source")
 def fixture_voltage_source() -> D5aDacChannel:
-    """Return S4gDacChannel instance."""
+    """Return a D5aDacChannel instance."""
     mocked_parent = MagicMock()
     mocked_parent.api = DummyD5aApi(spi_rack=MagicMock(), module=0)
     return D5aDacChannel(parent=mocked_parent, name="test", dac=0)
@@ -107,7 +107,7 @@ def fixture_voltage_source() -> D5aDacChannel:
 
 @pytest.fixture(name="sequencer_qcm")
 def fixture_sequencer_qcm() -> SequencerQCM:
-    """Return SequencerQCM instance."""
+    """Return a SequencerQCM instance."""
     sequencer = SequencerQCM(parent=MagicMock(), name="q0_readout", seq_idx=0)
     sequencer.add_parameter(name="path0_out", vals=vals.Ints(), set_cmd=None, initial_value=0)
     sequencer.add_parameter(name="path1_out", vals=vals.Ints(), set_cmd=None, initial_value=1)
@@ -118,7 +118,7 @@ def fixture_sequencer_qcm() -> SequencerQCM:
 
 @pytest.fixture(name="qcmqrm_lo")
 def fixture_qcmqrm_lo() -> QcmQrmRfLo:
-    """Return SequencerQCM instance."""
+    """Return a QcmQrmRfLo instance."""
     lo = QcmQrmRfLo(parent=MagicMock(), name="lo_readout", channel="test")
     lo.add_parameter(name="attenuation", vals=vals.Ints(), set_cmd=None, initial_value=20)
     return lo
@@ -126,7 +126,7 @@ def fixture_qcmqrm_lo() -> QcmQrmRfLo:
 
 @pytest.fixture(name="qcmqrm_attenuator")
 def fixture_qcmqrm_attenuator() -> QcmQrmRfAtt:
-    """Return SequencerQCM instance."""
+    """Return a QcmQrmRfAtt instance."""
     attenuator = QcmQrmRfAtt(parent=MagicMock(), name="attenuator_0", channel="test")
     attenuator.add_parameter(name="lo_frequency", vals=vals.Numbers(), set_cmd=None, initial_value=1e9)
     return attenuator
@@ -136,13 +136,13 @@ def fixture_qcmqrm_attenuator() -> QcmQrmRfAtt:
 def fixture_drive_bus_instruments(
     sequencer_qcm: SequencerQCM, qcmqrm_lo: QcmQrmRfLo, qcmqrm_attenuator: QcmQrmRfAtt
 ) -> list:
-    """Return instrument dict instance."""
+    """Return a list of instrument instances."""
     return [sequencer_qcm, qcmqrm_lo, qcmqrm_attenuator]
 
 
 @pytest.fixture(name="drive_bus_dictionary")
 def fixture_drive_bus_dictionary() -> dict:
-    """Returns a dictionary of a FluxBus instance."""
+    """Returns a dictionary of a DriveBus instance."""
     return {
         "alias": ALIAS,
         "type": "DriveBus",
