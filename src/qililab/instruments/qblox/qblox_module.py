@@ -17,7 +17,7 @@ from qililab.config import logger
 from qililab.instruments.awg import AWG
 from qililab.instruments.awg_settings import AWGQbloxSequencer
 from qililab.instruments.instrument import Instrument, ParameterNotFound
-from qililab.pulse import PulseBusSchedule, PulseShape
+from qililab.pulse import PulseBusSchedule, PulseShape, PulseEvent
 from qililab.typings.enums import Parameter
 from qililab.typings.instruments import Pulsar, QcmQrm
 
@@ -176,7 +176,10 @@ class QbloxModule(AWG):
             Sequence: Qblox Sequence object containing the program and waveforms.
         """
         waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule, sequencer=sequencer)
-        acquisitions = self._generate_acquisitions()
+        if pulse_bus_schedule.port != "feedline_input":
+            acquisitions = self._generate_acquisitions()
+        else: # handle qrm measurements
+            acquisitions = self._generate_qrm_acquisitions(timeline=pulse_bus_schedule.timeline)
         program = self._generate_program(
             pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, sequencer=sequencer.identifier
         )
@@ -228,9 +231,17 @@ class QbloxModule(AWG):
                     wait_time=int(wait_time),
                 )
             )
-        self._append_acquire_instruction(
-            loop=bin_loop, bin_index=bin_loop.counter_register, sequencer_id=sequencer, weight_regs=weight_registers
-        )
+            # TODO: added to test multi measurements on same qubit
+            if pulse_bus_schedule.port == "feedline_input":
+                self._append_acquire_instruction(
+                    loop=bin_loop, bin_index=bin_loop.counter_register, sequencer_id=sequencer, weight_regs=weight_registers, acq_index=i
+                )
+        # TODO: added to test multi measurements on same qubit
+        if pulse_bus_schedule.port != "feedline_input":
+            self._append_acquire_instruction(
+                loop=bin_loop, bin_index=bin_loop.counter_register, sequencer_id=sequencer, weight_regs=weight_registers
+            )
+
         if self.repetition_duration is not None:
             wait_time = self.repetition_duration - bin_loop.duration_iter
             if wait_time > self._MIN_WAIT_TIME:
@@ -255,6 +266,15 @@ class QbloxModule(AWG):
         acquisitions.add(name="default", num_bins=self.num_bins, index=0)
         return acquisitions
 
+    def _generate_qrm_acquisitions(self, timeline: list[PulseEvent]) -> Acquisitions:
+        # Temp method to generate qrm acquisitions for multiple readouts of same qubit
+        acquisitions = Acquisitions()
+        for index, pulse_event in enumerate(timeline):
+            acquisitions.add(name=f"q{pulse_event.qubit}_{index}", index=index)
+        return acquisitions
+
+
+
     @abstractmethod
     def _generate_weights(self, sequencer: AWGQbloxSequencer) -> Weights:
         """Generate acquisition weights.
@@ -265,7 +285,7 @@ class QbloxModule(AWG):
 
     @abstractmethod
     def _append_acquire_instruction(
-        self, loop: Loop, bin_index: Register | int, sequencer_id: int, weight_regs: tuple[Register, Register]
+        self, loop: Loop, bin_index: Register | int, sequencer_id: int, weight_regs: tuple[Register, Register], acq_index: int
     ):
         """Append an acquire instruction to the loop."""
 

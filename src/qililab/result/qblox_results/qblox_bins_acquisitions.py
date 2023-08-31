@@ -22,10 +22,16 @@ class QbloxBinsAcquisitions(Acquisitions):  # pylint: disable=abstract-method
 
     def __post_init__(self):
         """Create acquisitions"""
+        # self._acquisitions = [
+        #     self._build_bin_acquisition(bins_data=bins_data, integration_length=self.integration_lengths[sequencer_id])
+        #     for sequencer_id, bins_data in enumerate(self.bins)
+        # ]
+        if not all(self.integration_lengths[0]==length for length in self.integration_lengths):
+            raise NotImplementedError("Using different integration lengths for different sequnencers is not implemented for multimeasurements of a single qubit")
         self._acquisitions = [
-            self._build_bin_acquisition(bins_data=bins_data, integration_length=self.integration_lengths[sequencer_id])
-            for sequencer_id, bins_data in enumerate(self.bins)
-        ]
+            self._build_bin_acquisition(bins_data=bins_data, integration_length=self.integration_lengths[0])
+            for bins_data in self.bins]
+        
         self.data_dataframe_indices = set().union(*[acq.data_dataframe_indices for acq in self._acquisitions])
 
     def _build_bin_acquisition(self, bins_data: BinsData, integration_length: int):
