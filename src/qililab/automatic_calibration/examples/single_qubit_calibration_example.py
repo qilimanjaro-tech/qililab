@@ -1,7 +1,11 @@
 """
-This file contains an example of use of the automatic calibration algorithm. 
+This file contains an example of use of the automatic calibration algorithm with Qprograms.
 
-TODO: elaborate
+In this example the calibration graph represents the full calibration of single qubit gates for a specific qubit.
+
+This example is not complete (some Qprograms are not fully implemented) and has not been tested on hardware, but it can 
+be used to understand how the automatic calibration architecture works in a large calibration procedure and, when completed,
+can be used for testing.
 
 Notes:
 * The ultimate goal for the analysis functions is to generalize all of them into a single universal analysis function which can 
@@ -18,18 +22,19 @@ import networkx as nx
 import numpy as np
 from scipy.signal import find_peaks
 
-from calibration_utils.calibration_utils import get_raw_data, get_iq_from_raw, plot_iq, plot_fit
 import qililab as ql
-from automatic_calibration import CalibrationNode, Controller
+from qililab.automatic_calibration import CalibrationNode, Controller
 from qililab.waveforms import DragPair, IQPair, Square
+from qililab.automatic_calibration.calibration_utils.calibration_utils import get_raw_data, get_iq_from_raw, plot_iq, plot_fit
+from qililab.platform import Platform
 
 #################################################################################################
 """ Define the platform and connect to the instruments """
-os.environ["RUNCARDS"] = "../runcards"
-os.environ["DATA"] = "../data"
-platform_name = "soprano_master_galadriel"
-platform = ql.build_platform(name=platform_name)
-platform.filepath = os.path.join(os.environ["RUNCARDS"], f"{platform_name}.yml")
+os.environ["RUNCARDS"] = "./tests/automatic_calibration/runcards"
+os.environ["DATA"] = "./tests/automatic_calibration/data"
+platform_name = "galadriel"
+platform_path = os.path.join(os.environ["RUNCARDS"], f"{platform_name}.yml")
+platform = ql.build_platform(path=platform_path)
 
 platform.connect()
 platform.turn_on_instruments()
@@ -103,16 +108,18 @@ fine_rabi_values = {"start": -0.1,
                     "step": 0.001
                     }
 
-def rabi(drive_bus: str, readout_bus: str, sweep_values: dict):
+def rabi(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dict):
     """The Rabi experiment written as a QProgram.
 
     Args:
+        platform (Platform): The platform where the experiment is run   
         drive_bus (str): Name of the drive bus
         readout_bus (str): Name of the readout bus
         sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the qprogram iterate
 
     Returns:
-        qp (QProgram): The QProgram describing the experiment. It will need to be compiled to be run on the qblox cluster.
+        list: The IQ data of the experiment given as a list of 2 elements: the first element is a list with the I data,
+            the second element is a list with the Q data.
     """
     qp = ql.QProgram()
     gain = qp.variable(float)
@@ -132,25 +139,27 @@ def rabi(drive_bus: str, readout_bus: str, sweep_values: dict):
             qp.play(bus=readout_bus, waveform=IQPair(I=ones_wf, Q=zeros_wf))
             qp.acquire(bus=readout_bus)
 
-    return qp
+    results = platform.execute_qprogram(qp)    
+    return results
 
 
 # Ramsey experiment (it's run twice to refine values)
-# TODO: implement this once parallel loops are supported by qprogram
+# TODO: this is not implemented yet
 wait_values = np.arange(8.0, 1000, 20)
 fine_if_values = np.arange(-2e6, 2e6, 0.2e6)
 
-
-def ramsey(drive_bus: str, readout_bus: str):
+def ramsey(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dict):
     """The Ramsey experiment written as a QProgram.
 
     Args:
+        platform (Platform): The platform where the experiment is run
         drive_bus (str): Name of the drive bus
         readout_bus (str): Name of the readout bus
         sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the qprogram iterate
 
     Returns:
-        qp (QProgram): The QProgram describing the experiment. It will need to be compiled to be run on the qblox cluster.
+        list: The IQ data of the experiment given as a list of 2 elements: the first element is a list with the I data,
+            the second element is a list with the Q data.
     """
     qp = ql.QProgram()
     wait_time = qp.variable(int)
@@ -159,18 +168,10 @@ def ramsey(drive_bus: str, readout_bus: str):
     ones_wf = Square(amplitude=1.0, duration=1000)
     zeros_wf = Square(amplitude=0.0, duration=1000)
 
-    with qp.average(iterations=1000):
-        with qp.for_loop(variable=wait_time, values=wait_values):
-            qp.play(bus=drive_bus, waveform=drag_pair)
-            qp.wait(bus=drive_bus, time=wait_time)
-            qp.play(bus=drive_bus, waveform=drag_pair)
-            qp.sync()  # this ok?
-            qp.play(
-                bus=readout_bus, waveform=IQPair(I=ones_wf, Q=zeros_wf)
-            )
-            qp.acquire(bus=readout_bus)
+    #implementation goes here...
 
-    return qp
+    results = platform.execute_qprogram(qp)
+    return results
 
 
 # Drag coefficient calibration experiment
@@ -179,18 +180,20 @@ drag_values = {"start": -3,
                "step": 0.15
                }
 
-# NOTE: This experiment cannot be done with a qprogram yet: it requires to iterate over the drag coefficient, which would mean changing the waveform. That is not supported yet.
+# TODO: This is not implemented yet because this experiment cannot be done with a qprogram yet: it requires to iterate over the drag coefficient, which would mean changing the waveform. That is not supported yet.
 # See HardwareDataTools/src/hwdatatools/experiment_portfolio/drag_coefficient.py for more details on this iteration.
-def drag_coefficient_calibration(drive_bus: str, readout_bus: str, sweep_values: dict):
+def drag_coefficient_calibration(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dict):
     """The drag coefficient calibration experiment written as a QProgram.
 
     Args:
+        platform (Platform): The platform where the experiment is run
         drive_bus (str): Name of the drive bus
         readout_bus (str): Name of the readout bus
         sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the qprogram iterate
 
     Returns:
-        qp (QProgram): The QProgram describing the experiment. It will need to be compiled to be run on the qblox cluster.
+        list: The IQ data of the experiment given as a list of 2 elements: the first element is a list with the I data,
+            the second element is a list with the Q data.
     """
 
     qp = ql.QProgram()
@@ -210,25 +213,10 @@ def drag_coefficient_calibration(drive_bus: str, readout_bus: str, sweep_values:
     ones_wf = Square(amplitude=1.0, duration=1000)
     zeros_wf = Square(amplitude=0.0, duration=1000)
 
-    with qp.average(iterations=1000):
-        with qp.for_loop(variable=drag_coefficient, start = sweep_values["start"], stop = sweep_values["stop"], step = sweep_values["step"]):
-            qp.set_phase(drive_bus, 0)
-            qp.play(bus=drive_bus, waveform=drag_pair_1)
-            qp.set_phase(drive_bus, np.pi / 2)
-            qp.play(bus=drive_bus, waveform=drag_pair_2)
-            qp.sync()
-            qp.play(bus=readout_bus, waveform=IQPair(I=ones_wf, Q=zeros_wf))
-            qp.acquire(bus=readout_bus)
-        with qp.for_loop(variable=drag_coefficient, start = drag_values["start"], stop = drag_values["stop"], step = drag_values["step"]):
-            qp.set_phase(drive_bus, np.pi / 2)
-            qp.play(bus=drive_bus, waveform=drag_pair_1)
-            qp.set_phase(drive_bus, 0)
-            qp.play(bus=drive_bus, waveform=drag_pair_2)
-            qp.sync()
-            qp.play(bus=readout_bus, waveform=IQPair(I=ones_wf, Q=zeros_wf))
-            qp.acquire(bus=readout_bus)
+    #implementation goes here...
 
-    return qp
+    results = platform.execute_qprogram(qp)
+    return results
 
 
 # Flipping experiment 
@@ -238,16 +226,18 @@ flip_values_array = {"start": 0,
                     }
 
 
-def flipping(drive_bus: str, readout_bus: str, sweep_values: list[int]):
+def flipping(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dict):
     """The flipping experiment written as a QProgram.
 
     Args:
+        platform (Platform): The platform where the experiment is run
         drive_bus (str): Name of the drive bus
         readout_bus (str): Name of the readout bus
         sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the qprogram iterate
 
     Returns:
-        qp (QProgram): The QProgram describing the experiment. It will need to be compiled to be run on the qblox cluster.
+        list: The IQ data of the experiment given as a list of 2 elements: the first element is a list with the I data,
+            the second element is a list with the Q data.
     """
 
     qp = ql.QProgram()
@@ -291,19 +281,23 @@ def flipping(drive_bus: str, readout_bus: str, sweep_values: list[int]):
         qp.play(bus=readout_bus, waveform=IQPair(I=ones_wf, Q=zeros_wf))
         qp.acquire(bus=readout_bus)
 
-    return qp
+    results = platform.execute_qprogram(qp)
+    return results
 
 
 # AllXY experiment node (for initial status check and final validation)
-def all_xy(drive_bus: str, readout_bus: str):
+def all_xy(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dict = None):
     """The allXY experiment written as a QProgram.
 
     Args:
+        platform (Platform): The platform where the experiment is run
         drive_bus (str): Name of the drive bus
         readout_bus (str): Name of the readout bus
+        sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the qprogram iterate
 
     Returns:
-        qp (QProgram): The QProgram describing the experiment. It will need to be compiled to be run on the qblox cluster.
+        list: The IQ data of the experiment given as a list of 2 elements: the first element is a list with the I data,
+            the second element is a list with the Q data.
     """
     qp = ql.QProgram()
 
@@ -362,34 +356,32 @@ def all_xy(drive_bus: str, readout_bus: str):
                 qp.play(bus=readout_bus, waveform=IQPair(I=ones_wf, Q=zeros_wf))
                 qp.acquire(bus=readout_bus)
 
-    return qp
+    results = platform.execute_qprogram(qp)
+    return results
 
 
 ######################################### ANALYSIS ###################################################
 """
-Define the analysis functions and plotting functions.
-    - Analysis functions analyze and fit the experimental data. One analysis function could be used by more
+Define the analysis function for each experiment.
+
+    - Analysis functions analyze, plot, and fit the experimental data. One analysis function could be used by more
         than one experiment.
     - Plotting functions plot the fitted data.
-NOTE: For now, each experiment has it own custom function that handled both analysis (=processing and fitting the data) and plotting. 
+    
+Note: For now, each experiment has it own custom function that handled both analysis (=processing and fitting the data) and plotting. 
         This will be made less hardcoded in the future by another intern, possibly using a generic function called analyze_experiment()
         that takes as arguments the dimensions of the plot (2D or 3D), plot labels, parameters, and all the experiment-specific stuff.
         For now, there is a lot of repetition from one analysis function to another, because I'm trying to make them already as similar
         as possible to each other.
 """
 
-def analyze_rabi(results, show_plot: bool, fit_quadrature="i", label=""):
+def analyze_rabi(results: list, experient_name: str, parameter: str, sweep_values: list, plot_figure_path: str, fit_quadrature="i"):
     """
     Analyzes the Rabi experiment data.
 
     Args:
-        results: Where the data experimental is stored. If it's a string, it represents the path of the yml file where the data is. 
-                 Otherwise it's a list with only 1 element. This element is a dictionary containing the data.
-                 For now this only supports experiment run on QBlox hardware. The dictionary is a standard structure in which the data 
-                 is stored by the QBlox hardware. For more details see this documentation: 
-                 https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/pulsar.html#qblox_instruments.native.Pulsar.get_acquisitions
-                 The list only has 1 element because each element represents the acquisitions dictionary of one readout bus, 
-                 and for the moment multiple readout buses are not supported.
+        results: The IQ data of the experiment given as a list of 2 elements: the first element is a list with the I data,
+            the second element is a list with the Q data.
         show_plot (bool): If true, the plot is saved and printed so the user can see it. If false, the plot is just saved.
 
     Returns:

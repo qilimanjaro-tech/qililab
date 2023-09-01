@@ -79,6 +79,7 @@ def rabi(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dic
     The Rabi experiment written as a circuit and pulse schedule.
 
     Args:
+        platform (Platform): The platform where the experiment is run
         drive_bus (str): Name of the drive bus
         readout_bus (str): Name of the readout bus
         sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the qprogram iterate

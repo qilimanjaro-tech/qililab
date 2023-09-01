@@ -258,7 +258,9 @@ class Controller:
             current_point_result = self.run_experiment(node = node, experiment_point=value)
             new_results_array.append(current_point_result[quadrature_index][0])
             
-        # Compare results with those obtained during the last full calibration        
+        # Compare results with those obtained during the last full calibration       
+        #TODO: it would be a good idea to add some user interaction here: show the comparison between the new and old 
+        # data and allow the user to decide which of the 3 possible cases best describes the situation. 
         square_differences = (new_results_array - old_results_array)**2
         mean_diff = np.mean(square_differences)
         std_dev_diff = np.std(square_differences)
