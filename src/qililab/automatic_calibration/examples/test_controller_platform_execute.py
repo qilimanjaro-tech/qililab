@@ -1,3 +1,27 @@
+"""
+This file contains an example of use of the automatic calibration algorithm. 
+
+In this example the calibration graph has only one node, which represents a Rabi experiment.
+
+This example was run on galadriel. The `automatic_calibration` module's code worked without showing any issues,
+but the plot obtained from the experimental data was not good. This is probably due to issues with the `Platform.execute()` method,
+which at the time when I'm writing this (August 2023), has not been tested thoroughly on hardware yet.
+
+The example follows this structure:
+    - A `Rabi` function is defined. This function runs a Rabi experiment and returns the results as an array, as
+        described in the docs of the `experiment_results` attribute of the :obj:`~automatic_calibration/Controller` class
+    - An analysis function is defined. This function analyzes the results of the Rabi experiment and returns the optimal 
+        parameter value, in this case the pi-pulse amplitude.
+    - An :obj:`~automatic_calibration/CalibrationNode` object is instantiated. The functions defined above are two of the
+        attributes of this object. A calibration graph is initialized and the node defined above is added to the graph.
+    - A :obj:`~automatic_calibration/Controller` object is instantiated. This object will handle all the operations within
+        the calibration graph defined above. 
+    - The automatic calibration procedure is executed.
+
+This example can also be run without connecting to hardware by using the dummy data in `dummy_rabi_data.yml`. To do so, follow 
+the instructions in the comments that start with `# GALADRIEL`.
+
+"""
 import os
 
 import lmfit
@@ -68,8 +92,6 @@ def rabi(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dic
     circuit.add(Drag(0, theta=np.pi, phase=0))
     circuit.add(Wait(0, 500))
     circuit.add(M(0))
-    # circuit.add(gates.X(0))
-    # circuit.add(gates.M(0))
 
     # CircuitToPulses returns a list of pulse schedules, which in this case is of lenght 1,
     # so we take the first element of that list.
@@ -119,10 +141,9 @@ def analyze_rabi(
     """
 
     # Get flattened data and shape it
-    # FIXME: i'm dividing i and q by the integration lenght. Hardcoded for now, fix it.
     this_shape = len(sweep_values)
-    i = np.array(results[0]) / 2000
-    q = np.array(results[1]) / 2000
+    i = np.array(results[0])
+    q = np.array(results[1])
     i = i.reshape(this_shape)
     q = q.reshape(this_shape)
 
@@ -183,7 +204,7 @@ rabi_1_node = CalibrationNode(
     manual_check=False,
 )
 
-# Uncomment the following line to test check_state
+# Uncomment the following line to test the Controller.check_state() method
 # rabi_1_node.add_timestamp(timestamp=get_timestamp(), type_of_timestamp="calibration")
 
 calibration_graph = nx.DiGraph()

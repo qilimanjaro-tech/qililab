@@ -25,7 +25,6 @@ from qililab.waveforms import DragPair, IQPair, Square
 
 #################################################################################################
 """ Define the platform and connect to the instruments """
-#TODO: use new runcard when available.
 os.environ["RUNCARDS"] = "../runcards"
 os.environ["DATA"] = "../data"
 platform_name = "soprano_master_galadriel"
