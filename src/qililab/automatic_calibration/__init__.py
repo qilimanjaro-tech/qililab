@@ -5,6 +5,11 @@ can be found in this Notion page: https://www.notion.so/qilimanjaro/Automatic-qu
 
 Examples are found in the `qililab/src/qililab/automatic_calibration/examples` folder
 
+Things left to do to improve this module:
+
+    - Task 1
+    - Task 2
+
 .. currentmodule:: qililab.automatic_calibration
 
 Calibration-related methods

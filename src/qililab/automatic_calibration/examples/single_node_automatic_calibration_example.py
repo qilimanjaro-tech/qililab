@@ -82,7 +82,7 @@ def rabi(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dic
         platform (Platform): The platform where the experiment is run
         drive_bus (str): Name of the drive bus
         readout_bus (str): Name of the readout bus
-        sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the qprogram iterate
+        sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the experiment iterate
 
     Returns:
         list: An array with dimensions (2, N) where N is the number of sweep value, i.e. the size of the experiment's loop.
@@ -126,16 +126,14 @@ def analyze_rabi(
     Analyzes the Rabi experiment data.
 
     Args:
-        results: Where the data experimental is stored. If it's a string, it represents the path of the yml file where the data is.
-                 Otherwise it's a list with only 1 element. This element is a dictionary containing the data.
-                 For now this only supports experiment run on QBlox hardware. The dictionary is a standard structure in which the data
-                 is stored by the QBlox hardware. For more details see this documentation:
-                 https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/pulsar.html#qblox_instruments.native.Pulsar.get_acquisitions
-                 The list only has 1 element because each element represents the acquisitions dictionary of one readout bus,
-                 and for the moment multiple readout buses are not supported.
-        plot_figure_path (str): The path where the plot figure PNG file will be saved.
+        results (list): The IQ data of the experiment given as a list of 2 elements: the first element is a list with the I data,
+            the second element is a list with the Q data.
         experiment_name: The name of the experiment of which this function will analyze the data. The name is used to label the figure that
                          this function will produce, which will contain the plot.
+        parameter (str): The name of the parameter that is being calibrated.
+        sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the experiment iterate
+        plot_figure_path (str): The path where the plot figure PNG file will be saved.
+        fit_quadrature (str): The quadrature to fit. It can be either "i" or "q"
 
     Returns:
         fitted_pi_pulse_amplitude (int)

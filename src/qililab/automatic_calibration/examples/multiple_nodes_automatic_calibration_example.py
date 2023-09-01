@@ -56,9 +56,9 @@ Examples:
                     }
                 
                 
-    Here's a general example of a function defining a QProgram:
+    Here's a general example of a function defining and running a QProgram:
 
-    def name_of_the_experiment(drive_bus: str, readout_bus: str, sweep_values: dict):
+    def name_of_the_experiment(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dict):
 
         '''Define the qprogram and a variable to iterate over. There can be more than one variable'''
         qp = ql.QProgram()
@@ -90,8 +90,10 @@ Examples:
                 qp.play(bus=readout_bus, waveform=IQPair(I=ones_wf, Q=zeros_wf))
                 qp.acquire(bus=readout_bus)
 
-        '''An instance of the QProgram class is returned, so that this qprogram can be compiled by the QProgram compiler and then run.'''
-        return qp
+        '''The qprogram is compiled and executed, and the results obtained by running it are returned as a list of 2 elements: the first element is a list with the I data,
+            the second element is a list with the Q data.'''
+        platform.execute_qprogram(qp)
+        return results
     
 The following contains specific implementations of this general example, for experiment like Rabi, Ramsey, the Flipping Experiment, etc.
 
@@ -115,7 +117,7 @@ def rabi(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: dic
         platform (Platform): The platform where the experiment is run   
         drive_bus (str): Name of the drive bus
         readout_bus (str): Name of the readout bus
-        sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the qprogram iterate
+        sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the experiment iterate
 
     Returns:
         list: The IQ data of the experiment given as a list of 2 elements: the first element is a list with the I data,
@@ -155,7 +157,7 @@ def ramsey(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: d
         platform (Platform): The platform where the experiment is run
         drive_bus (str): Name of the drive bus
         readout_bus (str): Name of the readout bus
-        sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the qprogram iterate
+        sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the experiment iterate
 
     Returns:
         list: The IQ data of the experiment given as a list of 2 elements: the first element is a list with the I data,
@@ -189,7 +191,7 @@ def drag_coefficient_calibration(platform: Platform, drive_bus: str, readout_bus
         platform (Platform): The platform where the experiment is run
         drive_bus (str): Name of the drive bus
         readout_bus (str): Name of the readout bus
-        sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the qprogram iterate
+        sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the experiment iterate
 
     Returns:
         list: The IQ data of the experiment given as a list of 2 elements: the first element is a list with the I data,
@@ -233,7 +235,7 @@ def flipping(platform: Platform, drive_bus: str, readout_bus: str, sweep_values:
         platform (Platform): The platform where the experiment is run
         drive_bus (str): Name of the drive bus
         readout_bus (str): Name of the readout bus
-        sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the qprogram iterate
+        sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the experiment iterate
 
     Returns:
         list: The IQ data of the experiment given as a list of 2 elements: the first element is a list with the I data,
@@ -293,7 +295,7 @@ def all_xy(platform: Platform, drive_bus: str, readout_bus: str, sweep_values: d
         platform (Platform): The platform where the experiment is run
         drive_bus (str): Name of the drive bus
         readout_bus (str): Name of the readout bus
-        sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the qprogram iterate
+        sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the experiment iterate
 
     Returns:
         list: The IQ data of the experiment given as a list of 2 elements: the first element is a list with the I data,
@@ -375,38 +377,35 @@ Note: For now, each experiment has it own custom function that handled both anal
         as possible to each other.
 """
 
-def analyze_rabi(results: list, experient_name: str, parameter: str, sweep_values: list, plot_figure_path: str, fit_quadrature="i"):
+def analyze_rabi(
+    results: list,
+    experiment_name: str,
+    parameter: str,
+    sweep_values: list,
+    plot_figure_path: str = None,
+    fit_quadrature="i",
+):
     """
     Analyzes the Rabi experiment data.
 
     Args:
-        results: The IQ data of the experiment given as a list of 2 elements: the first element is a list with the I data,
+        results (list): The IQ data of the experiment given as a list of 2 elements: the first element is a list with the I data,
             the second element is a list with the Q data.
-        show_plot (bool): If true, the plot is saved and printed so the user can see it. If false, the plot is just saved.
+        experiment_name: The name of the experiment of which this function will analyze the data. The name is used to label the figure that
+                         this function will produce, which will contain the plot.
+        parameter (str): The name of the parameter that is being calibrated.
+        sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the experiment iterate
+        plot_figure_path (str): The path where the plot figure PNG file will be saved.
+        fit_quadrature (str): The quadrature to fit. It can be either "i" or "q"
 
     Returns:
         fitted_pi_pulse_amplitude (int)
     """
 
-    # Get the path of the experimental data file
-    if isinstance(results, str):
-        # The 'results' argument is the path to the file where the results are stored.
-        parent_directory = os.path.dirname(results)
-        figure_filepath = os.path.join(parent_directory, "Rabi.PNG")
-        data_raw = get_raw_data(results)
-    elif isinstance(results, list):
-        # The 'results' argument is list where the elements are dictionaries storing the raw results.
-        # FIXME: This implementation will have to change when multiple readout buses are supported, because then the results list 
-        # will contain more than one element. See the 'run' method src/qililab/execution/execution_manager.py for more details.
-        data_raw = results[0]
-    
-
-    amplitude_loop_values = np.array(data_raw["loops"][0]["values"])
-    swept_variable = data_raw["loops"][0]["parameter"]
-    this_shape = len(amplitude_loop_values)
-
     # Get flattened data and shape it
-    i, q = get_iq_from_raw(data_raw)
+    this_shape = len(sweep_values)
+    i = np.array(results[0])
+    q = np.array(results[1])
     i = i.reshape(this_shape)
     q = q.reshape(this_shape)
 
@@ -419,52 +418,54 @@ def analyze_rabi(results: list, experient_name: str, parameter: str, sweep_value
 
     # TODO: hint values are pretty random, they should be tuned better. Trial and error seems to be the best way.
     mod = lmfit.Model(sinus)
-    mod.set_param_hint("a", value=1 / 2, vary=True, min=0)
+    mod.set_param_hint("a", value=0.3, vary=True, min=0)
     mod.set_param_hint("b", value=0, vary=True)
     mod.set_param_hint("c", value=0, vary=True)
-    mod.set_param_hint("d", value=1 / 2, vary=True, min=0)
+    mod.set_param_hint("d", value=1 / 2, vary=True)
 
     params = mod.make_params()
-    fit = mod.fit(data=fit_signal, params=params, x=amplitude_loop_values)
+    fit = mod.fit(data=fit_signal, params=params, x=sweep_values)
 
     a_value = fit.params["a"].value
     b_value = fit.params["b"].value
     c_value = fit.params["c"].value
     d_value = fit.params["d"].value
 
-    print(fit.params)
-
     optimal_parameters = [a_value, b_value, c_value, d_value]
     fitted_pi_pulse_amplitude = np.abs(1 / (2 * optimal_parameters[1]))
 
     # Plot
-    title_label = f"{label}"
-    fig, axes = plot_iq(amplitude_loop_values, i, q, title_label, swept_variable)
-    plot_fit(
-        amplitude_loop_values, optimal_parameters, axes[fit_signal_idx], fitted_pi_pulse_amplitude
-    )
-    fig.savefig(figure_filepath, format="PNG")
-    if show_plot:
-        plot = mpimg.imread(figure_filepath)
-        plt.imshow(plot)
-        plt.show()
+    title_label = experiment_name
+    fig, axes = plot_iq(sweep_values, i, q, title_label, parameter)
+    plot_fit(sweep_values, optimal_parameters, axes[fit_signal_idx], fitted_pi_pulse_amplitude)
+
+    # The user can change this to save to a custom location
+    print(f"Saving the plot in {plot_figure_path}\n")
+    fig.savefig(plot_figure_path)
+
     return fitted_pi_pulse_amplitude
 
 
-def analyze_ramsey(results, show_plot: bool, fit_quadrature="i", label="", prominence_peaks=20, analyze=True):
+def analyze_ramsey(results: list,
+    experiment_name: str,
+    parameter: str,
+    sweep_values: list,
+    plot_figure_path: str = None,
+    fit_quadrature="i",
+    prominence_peak = 20
+):
     """
     Analyzes the ramsey experiment data.
 
     Args:
-        results: Where the data experimental is stored. If it's a string, it represents the path of the yml file where the data is. 
-                 Otherwise it's a list with only 1 element. This element is a dictionary containing the data.
-                 For now this only supports experiment run on QBlox hardware. The dictionary is a standard structure in which the data 
-                 is stored by the QBlox hardware. For more details see this documentation: 
-                 https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/pulsar.html#qblox_instruments.native.Pulsar.get_acquisitions
-                 The list only has 1 element because each element represents the acquisitions dictionary of one readout bus, 
-                 and for the moment multiple readout buses are not supported.
-        show_plot (bool): If true, the plot is saved and printed so the user can see it. If false, the plot is just saved.
-
+        results (list): The IQ data of the experiment given as a list of 2 elements: the first element is a list with the I data,
+            the second element is a list with the Q data.
+        experiment_name: The name of the experiment of which this function will analyze the data. The name is used to label the figure that
+                         this function will produce, which will contain the plot.
+        parameter (str): The name of the parameter that is being calibrated.
+        sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the experiment iterate
+        plot_figure_path (str): The path where the plot figure PNG file will be saved.
+        fit_quadrature (str): The quadrature to fit. It can be either "i" or "q"
 
     Returns:
         The optimal frequency found with the Ramsey experiment.
@@ -507,21 +508,20 @@ def analyze_ramsey(results, show_plot: bool, fit_quadrature="i", label="", promi
     x_axis = fft_x_sorted
     y_axis = freq_loop_values
     z_axis = []
-    if analyze:
-        for ii, freq in enumerate(freq_loop_values):
-            fft_y = np.fft.fft(signal_vec[ii, :] - np.mean(signal_vec[ii, :]))
-            # sort
-            fft_y_sorted = fft_y[mask_fft]
-            # normalize
-            this_norm = np.sqrt(np.sum(np.abs(fft_y_sorted) ** 2))
-            # fft_y_sorted = fft_y_sorted/this_norm
+    for ii, freq in enumerate(freq_loop_values):
+        fft_y = np.fft.fft(signal_vec[ii, :] - np.mean(signal_vec[ii, :]))
+        # sort
+        fft_y_sorted = fft_y[mask_fft]
+        # normalize
+        this_norm = np.sqrt(np.sum(np.abs(fft_y_sorted) ** 2))
+        # fft_y_sorted = fft_y_sorted/this_norm
 
-            peak, _ = find_peaks(np.abs(fft_y_sorted), prominence=prominence_peaks)
-            if len(peak) == 2:
-                peaks_idx.append(peak)
-            else:
-                peaks_idx.append([np.nan, np.nan])
-            z_axis.append(fft_y_sorted)
+        peak, _ = find_peaks(np.abs(fft_y_sorted), prominence=prominence_peaks)
+        if len(peak) == 2:
+            peaks_idx.append(peak)
+        else:
+            peaks_idx.append([np.nan, np.nan])
+        z_axis.append(fft_y_sorted)
 
         peaks_idx = np.array(peaks_idx)
         nan_indexes = np.argwhere(np.isnan(peaks_idx))
@@ -554,75 +554,54 @@ def analyze_ramsey(results, show_plot: bool, fit_quadrature="i", label="", promi
             z_axis.append(fft_y_sorted)
 
     # Plot
-    title_label = f"{label}"
+    title_label = f"{experiment_name}"
     fig, ax = plt.subplots()
     plt.pcolormesh(x_axis, y_axis, np.abs(z_axis), label="FFT Data")
-    if analyze:
-        ax.plot(fit_y, fit_x, "r-")
-        ax.plot(peaks_x, y_axis_fit, "ro", label="Data")
-        ax.axhline(
-            fit_res.best_values["xc"],
-            linestyle="--",
-            color="r",
-            label=f"Fit={fit_res.best_values['xc']*1e-9:.5f} GHz",
-        )
+    ax.plot(fit_y, fit_x, "r-")
+    ax.plot(peaks_x, y_axis_fit, "ro", label="Data")
+    ax.axhline(
+        fit_res.best_values["xc"],
+        linestyle="--",
+        color="r",
+        label=f"Fit={fit_res.best_values['xc']*1e-9:.5f} GHz",
+    )
 
     ax.legend()
     ax.set_xlabel("Frequency (GHz)")
     ax.set_ylabel("Detuning")
     ax.set_title(title_label)
     fig.savefig(figure_filepath, format="PNG")
-    if show_plot:
-        plot = mpimg.imread(figure_filepath)
-        plt.imshow(plot)
-        plt.show()
-    return fit_res.best_values["xc"] if analyze else None
+    return fit_res.best_values["xc"] 
 
 
-def analyze_drag_coefficient(results,  show_plot: bool, fit_quadrature="i", label=""):
+def analyze_drag_coefficient(results: list,
+    experiment_name: str,
+    parameter: str,
+    sweep_values: list,
+    plot_figure_path: str = None,
+    fit_quadrature="i",
+):
     """
     Analyzes the drag coefficient calibration experiment data.
 
     Args:
-        results: Where the data experimental is stored. If it's a string, it represents the path of the yml file where the data is. 
-                 Otherwise it's a list with only 1 element. This element is a dictionary containing the data.
-                 For now this only supports experiment run on QBlox hardware. The dictionary is a standard structure in which the data 
-                 is stored by the QBlox hardware. For more details see this documentation: 
-                 https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/pulsar.html#qblox_instruments.native.Pulsar.get_acquisitions
-                 The list only has 1 element because each element represents the acquisitions dictionary of one readout bus, 
-                 and for the moment multiple readout buses are not supported.
-        show_plot (bool): If true, the plot is saved and printed so the user can see it. If false, the plot is just saved.
+        results (list): The IQ data of the experiment given as a list of 2 elements: the first element is a list with the I data,
+            the second element is a list with the Q data.
+        experiment_name: The name of the experiment of which this function will analyze the data. The name is used to label the figure that
+                         this function will produce, which will contain the plot.
+        parameter (str): The name of the parameter that is being calibrated.
+        sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the experiment iterate
+        plot_figure_path (str): The path where the plot figure PNG file will be saved.
+        fit_quadrature (str): The quadrature to fit. It can be either "i" or "q"
 
     Returns:
         fitted_drag_coeff (int): The optimal drag coefficient.
     """
 
-    # Get path of the experimental data file
-    # TODO: this will not work with my implementation, there always needs to be a datapath or a unique way to
-    # identify the right file.
-    # Get the path of the experimental data file
-    if isinstance(results, str):
-        # The 'results' argument is the path to the file where the results are stored.
-        parent_directory = os.path.dirname(results)
-        figure_filepath = os.path.join(parent_directory, "Rabi.PNG")
-        data_raw = get_raw_data(results)
-    elif isinstance(results, list):
-        # The 'results' argument is list where the elements are dictionaries storing the raw results.
-        # FIXME: This implementation will have to change when multiple readout buses are supported, because then the results list 
-        # will contain more than one element. See the 'run' method src/qililab/execution/execution_manager.py for more details.
-        data_raw = results[0]
-
-    parameter = data_raw["loops"][0]["parameter"]
-    drag_values = data_raw["loops"][0]["values"]
-
-    num_circuits = 2
-    this_shape = (
-        num_circuits,
-        len(drag_values),
-    )
-
     # Get flattened data and shape it
-    i, q = get_iq_from_raw(data_raw)
+    this_shape = len(sweep_values)
+    i = np.array(results[0])
+    q = np.array(results[1])
     i = i.reshape(this_shape)
     q = q.reshape(this_shape)
 
@@ -674,47 +653,42 @@ def analyze_drag_coefficient(results,  show_plot: bool, fit_quadrature="i", labe
     ax.plot(drag_values, difference, "o")
     ax.set_xlabel("Drag Coefficient")
     ax.legend()
-    fig.savefig(figure_filepath, format="PNG")
-    if show_plot:
-        plot = mpimg.imread(figure_filepath)
-        plt.imshow(plot)
-        plt.show()
+    fig.savefig(plot_figure_path, format="PNG")
     return fitted_drag_coeff
 
 
-def analyze_flipping(results, flips_values, show_plot: bool, fit_quadrature="i", label=""):
+def analyze_flipping(
+    results: list,
+    experiment_name: str,
+    parameter: str,
+    sweep_values: list,
+    plot_figure_path: str = None,
+    fit_quadrature="i",
+):
     """
     Analyzes the flipping experiment data.
 
     Args:
-        results: Where the data experimental is stored. If it's a string, it represents the path of the yml file where the data is. 
-                 Otherwise it's a list with only 1 element. This element is a dictionary containing the data.
-                 For now this only supports experiment run on QBlox hardware. The dictionary is a standard structure in which the data 
-                 is stored by the QBlox hardware. For more details see this documentation: 
-                 https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/pulsar.html#qblox_instruments.native.Pulsar.get_acquisitions
-                 The list only has 1 element because each element represents the acquisitions dictionary of one readout bus, 
-                 and for the moment multiple readout buses are not supported.
-        show_plot (bool): If true, the plot is saved and printed so the user can see it. If false, the plot is just saved.
+        results (list): The IQ data of the experiment given as a list of 2 elements: the first element is a list with the I data,
+            the second element is a list with the Q data.
+        experiment_name: The name of the experiment of which this function will analyze the data. The name is used to label the figure that
+                         this function will produce, which will contain the plot.
+        parameter (str): The name of the parameter that is being calibrated.
+        sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the experiment iterate
+        plot_figure_path (str): The path where the plot figure PNG file will be saved.
+        fit_quadrature (str): The quadrature to fit. It can be either "i" or "q"
 
+    Returns: 
+        int: The optimal parameter value
 
     """
 
-    # Get the path of the experimental data file
-    if isinstance(results, str):
-        # The 'results' argument is the path to the file where the results are stored.
-        parent_directory = os.path.dirname(results)
-        figure_filepath = os.path.join(parent_directory, "Rabi.PNG")
-        data_raw = get_raw_data(results)
-    elif isinstance(results, list):
-        # The 'results' argument is list where the elements are dictionaries storing the raw results.
-        # FIXME: This implementation will have to change when multiple readout buses are supported, because then the results list 
-        # will contain more than one element. See the 'run' method src/qililab/execution/execution_manager.py for more details.
-        data_raw = results[0]
-
     # Get flattened data and shape it
-    i, q = get_iq_from_raw(data_raw)
-    i = np.array(i).flatten()
-    q = np.array(q).flatten()
+    this_shape = len(sweep_values)
+    i = np.array(results[0])
+    q = np.array(results[1])
+    i = i.reshape(this_shape)
+    q = q.reshape(this_shape)
 
     # Process data
     use_signal = i if fit_quadrature == "i" else q
@@ -738,7 +712,7 @@ def analyze_flipping(results, flips_values, show_plot: bool, fit_quadrature="i",
     mod.set_param_hint("d", value=1 / 2, vary=True, min=0)
 
     params = mod.make_params()
-    fit = mod.fit(data=scaled_data, params=params, x=flips_values)
+    fit = mod.fit(data=scaled_data, params=params, x=sweep_values)
 
     a_value = fit.params["a"].value
     b_value = fit.params["b"].value
@@ -759,7 +733,7 @@ def analyze_flipping(results, flips_values, show_plot: bool, fit_quadrature="i",
     mod2.set_param_hint("b", value=0.5, vary=True)
 
     params2 = mod2.make_params()
-    fit2 = mod2.fit(data=scaled_data, params=params2, x=flips_values)
+    fit2 = mod2.fit(data=scaled_data, params=params2, x=sweep_values)
 
     a_value2 = fit2.params["a"].value
     b_value2 = fit2.params["b"].value
@@ -770,12 +744,12 @@ def analyze_flipping(results, flips_values, show_plot: bool, fit_quadrature="i",
     reduced_chi2 = fit2.redchi
 
     # Plot
-    title_label = f"{label}"
+    title_label = f"{experiment_name}"
     fig, axs = plt.subplots(1, 2)
     ax = axs[0]
-    ax.plot(flips_values, scaled_data, "--o", label="data")
-    ax.plot(flips_values[-1] + 1, 1, "o", label="1")
-    ax.plot(flips_values[-1] + 1, 0, "o", label="0")
+    ax.plot(sweep_values, scaled_data, "--o", label="data")
+    ax.plot(sweep_values[-1] + 1, 1, "o", label="1")
+    ax.plot(sweep_values[-1] + 1, 0, "o", label="0")
     ax.set_xlabel("Number of Flips")
     ax.legend()
 
@@ -783,62 +757,50 @@ def analyze_flipping(results, flips_values, show_plot: bool, fit_quadrature="i",
     if reduced_chi < reduced_chi2:
         func = sinus
         label_fit = rf"$\epsilon$ = {epsilon_coef:.3f}"
-        ax.plot(flips_values, func(flips_values, *popt), "--", label=label_fit, color="red")
+        ax.plot(sweep_values, func(sweep_values, *popt), "--", label=label_fit, color="red")
     else:
         func = line
         label_fit = rf"$\epsilon$ = {epsilon_coef2:.3f}"
-        ax.plot(flips_values, func(flips_values, *popt2), "--", label=label_fit, color="red")
+        ax.plot(sweep_values, func(sweep_values, *popt2), "--", label=label_fit, color="red")
 
-    ax.plot(flips_values, scaled_data, "--o")
-    ax.plot(flips_values[-1] + 1, 1, "o", label="1")
-    ax.plot(flips_values[-1] + 1, 0, "o", label="0")
+    ax.plot(sweep_values, scaled_data, "--o")
+    ax.plot(sweep_values[-1] + 1, 1, "o", label="1")
+    ax.plot(sweep_values[-1] + 1, 0, "o", label="0")
     ax.set_xlabel("Number of Flips")
     ax.legend()
-    fig.savefig(figure_filepath, format="PNG")
-    if show_plot:
-        plot = mpimg.imread(figure_filepath)
-        plt.imshow(plot)
-        plt.show()
-
+    fig.savefig(plot_figure_path, format="PNG")
+    
     return epsilon_coef if reduced_chi < reduced_chi2 else epsilon_coef2
 
 
-def analyze_all_xy(results, show_plot: bool, label=""):
+def analyze_all_xy(
+    results: list,
+    experiment_name: str,
+    sweep_values: list,
+    plot_figure_path: str = None,
+    fit_quadrature="i",
+    parameter: str = None,
+) -> None:
     """
     Analyzes the AllXY experiment data.
 
     Args:
-        results: Where the data experimental is stored. If it's a string, it represents the path of the yml file where the data is. 
-                 Otherwise it's a list with only 1 element. This element is a dictionary containing the data.
-                 For now this only supports experiment run on QBlox hardware. The dictionary is a standard structure in which the data 
-                 is stored by the QBlox hardware. For more details see this documentation: 
-                 https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/pulsar.html#qblox_instruments.native.Pulsar.get_acquisitions
-                 The list only has 1 element because each element represents the acquisitions dictionary of one readout bus, 
-                 and for the moment multiple readout buses are not supported.
-        show_plot (bool): If true, the plot is saved and printed so the user can see it. If false, the plot is just saved.
+        results (list): The IQ data of the experiment given as a list of 2 elements: the first element is a list with the I data,
+            the second element is a list with the Q data.
+        experiment_name: The name of the experiment of which this function will analyze the data. The name is used to label the figure that
+                         this function will produce, which will contain the plot.
+        parameter (str): AllXY does not calibrate a specific parameter, but the analysis function takes an argument called `parameter` anyways 
+                            and set it to None by default, to make it compatible with code in the `Controller` class that calls the analysis functions.
+        sweep_values (dict): The sweep values of the experiment. These are the values over which the loops of the experiment iterate
+        plot_figure_path (str): The path where the plot figure PNG file will be saved.
+        fit_quadrature (str): The quadrature to fit. It can be either "i" or "q"
 
-    Returns:
-        The plot of the AllXY experiment data
     """
 
-    # Get the path of the experimental data file
-    if isinstance(results, str):
-        # The 'results' argument is the path to the file where the results are stored.
-        parent_directory = os.path.dirname(results)
-        figure_filepath = os.path.join(parent_directory, "Rabi.PNG")
-        data_raw = get_raw_data(results)
-    elif isinstance(results, list):
-        # The 'results' argument is list where the elements are dictionaries storing the raw results.
-        # FIXME: This implementation will have to change when multiple readout buses are supported, because then the results list 
-        # will contain more than one element. See the 'run' method src/qililab/execution/execution_manager.py for more details.
-        data_raw = results[0]
-
-    amplitude_loop_values = np.array(data_raw["loops"][0]["values"])
-    swept_variable = data_raw["loops"][0]["parameter"]
-    this_shape = len(amplitude_loop_values)
-
-    # Get flattened data and shape it
-    i, q = get_iq_from_raw(data_raw)
+    #Get flattened data and shape it
+    this_shape = len(sweep_values)
+    i = np.array(results[0])
+    q = np.array(results[1])
     i = i.reshape(this_shape)
     q = q.reshape(this_shape)
 
@@ -846,12 +808,9 @@ def analyze_all_xy(results, show_plot: bool, label=""):
     plt.figure()
     plt.plot(i, "-o")
     ax = plt.gca()
-    ax.set_title(ax.get_title()) 
-    #TODO: save figure with appropriate path
-    if show_plot:
-        plot = mpimg.imread(figure_filepath)
-        plt.imshow(plot)
-        plt.show()
+    ax.set_title(ax.get_title())
+    ax.savefig(plot_figure_path)
+    
     
 ######################################################################################################
 """
