@@ -341,14 +341,14 @@ class Controller:
             node.experiment_results = node.experiment(platform = self._platform, drive_bus = node.drive_bus_alias, readout_bus = node.readout_bus_alias, sweep_values = node.sweep_interval)
             
             #GALADRIEL: comment this out when connected to an actual platform, it returns dummy data instead of running the experiment.
-            # dummy_data_path = "./tests/automatic_calibration/rabi.yml"
+            # dummy_data_path = "./automatic_calibration/examples/dummy_rabi_data.yml"
             # iq = get_iq_from_raw(get_raw_data(dummy_data_path))
             # node.experiment_results = [[k[0] for k in iq[0]], [p[0] for p in iq[1]]]
             
             # If node.manual_check is True, the analysis function will also open the file containing the plot so the user can approve it manually.
             print(f"Running the \"{node.analysis_function.__name__}\" analysis function in node \"{node.node_id}\"\n")
             # Get the path where the plot figure should be saved.
-            #TODO: use a function for this
+            #TODO: define a function that does this
             data_folder = os.environ.get("DATA")
             this_calibration_sequence_folder = os.path.join(data_folder, self._calibration_sequence_name)
             current_run_of_calibration_sequence_folder = os.path.join(this_calibration_sequence_folder, str(get_timestamp()))

@@ -1,5 +1,5 @@
 """
-This file contains an example of use of the automatic calibration algorithm. 
+This file contains an example of use of the automatic calibration algorithm with the `Platform.execute()` method.
 
 In this example the calibration graph has only one node, which represents a Rabi experiment.
 
@@ -19,7 +19,7 @@ The example follows this structure:
     - The automatic calibration procedure is executed.
 
 This example can also be run without connecting to hardware by using the dummy data in `dummy_rabi_data.yml`. To do so, follow 
-the instructions in the comments that start with `# GALADRIEL`.
+the instructions in the comments that start with `#GALADRIEL` in this file and in `automatic_calibration/controller.py`.
 
 """
 import os
@@ -58,7 +58,7 @@ platform_name = "galadriel"
 platform_path = os.path.join(os.environ["RUNCARDS"], f"{platform_name}.yml")
 platform = ql.build_platform(path=platform_path)
 
-# GALADRIEL:  Uncomment the following when working with an actual platform
+#GALADRIEL:  Uncomment the following when working with an actual platform
 platform.connect()
 platform.turn_on_instruments()
 platform.initial_setup()
