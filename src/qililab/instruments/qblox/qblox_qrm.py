@@ -2,7 +2,6 @@
 from dataclasses import dataclass
 from typing import Sequence, cast
 
-from qpysequence import Program
 from qpysequence import Sequence as QpySequence
 from qpysequence.program import Loop, Program, Register
 from qpysequence.program.instructions import Acquire, AcquireWeighed, Move

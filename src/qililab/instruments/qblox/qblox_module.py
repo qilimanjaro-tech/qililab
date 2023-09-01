@@ -7,15 +7,10 @@ from typing import Sequence, cast
 
 import numpy as np
 from qpysequence.acquisitions import Acquisitions
-from qpysequence import Acquisitions, Program
-from qpysequence import Sequence as QpySequence
-from qpysequence import Waveforms, Weights
+from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Program, Register
 from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetMrk, SetPh, Stop, UpdParam, Wait
 from qpysequence.sequence import Sequence as QpySequence
-from qpysequence.library import long_wait
-from qpysequence.program import Block, Loop, Register
-from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop
 from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.waveforms import Waveforms
 from qpysequence.weights import Weights
@@ -25,7 +20,6 @@ from qililab.instruments.awg import AWG
 from qililab.instruments.awg_settings import AWGQbloxSequencer
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.pulse import PulseBusSchedule, PulseShape
-from qililab.pulse import PulseBusSchedule, PulseShape, PulseEvent
 from qililab.typings.enums import Parameter
 from qililab.typings.instruments import Pulsar, QcmQrm
 
