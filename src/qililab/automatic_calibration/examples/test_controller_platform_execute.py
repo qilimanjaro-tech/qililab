@@ -8,7 +8,7 @@ but the plot obtained from the experimental data was not good. This is probably 
 which at the time when I'm writing this (August 2023), has not been tested thoroughly on hardware yet.
 
 The example follows this structure:
-    - A `Rabi` function is defined. This function runs a Rabi experiment and returns the results as an array, as
+    - A `rabi` function is defined. This function runs a Rabi experiment and returns the results as an array, as
         described in the docs of the `experiment_results` attribute of the :obj:`~automatic_calibration/Controller` class
     - An analysis function is defined. This function analyzes the results of the Rabi experiment and returns the optimal 
         parameter value, in this case the pi-pulse amplitude.

@@ -3,7 +3,7 @@ This module contains all the methods and classes used for automatic calibration.
 A high level view of how the automatic calibration algorithm works and how the different classes and methods are used 
 can be found in this Notion page: https://www.notion.so/qilimanjaro/Automatic-qubit-calibration-algorithm-architecture-73133434c9c04b9cb8f6bd178d0b06d9?pvs=4
 
-Examples are found in `qililab/src/qililab/automatic_calibration/examples` folder
+Examples are found in the `qililab/src/qililab/automatic_calibration/examples` folder
 
 .. currentmodule:: qililab.automatic_calibration
 
