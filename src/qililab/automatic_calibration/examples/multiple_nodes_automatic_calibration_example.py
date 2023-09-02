@@ -222,7 +222,7 @@ def drag_coefficient_calibration(platform: Platform, drive_bus: str, readout_bus
 
 
 # Flipping experiment 
-flip_values_array = {"start": 0,
+flipping_values = {"start": 0,
                     "stop": 20,
                     "step": 1
                     }
@@ -822,72 +822,156 @@ Example of interpretation of an edge:
 
 all_xy_node_1 = CalibrationNode(
     node_id="all_xy_1", 
-    qprogram=all_xy, 
+    experiment=all_xy, 
     analysis_function=analyze_all_xy, 
-    qubit=0
-)
-rabi_1_node = CalibrationNode(
-    node_id="rabi_1", 
-    qprogram=rabi, 
-    sweep_interval=rabi_values, 
-    analysis_function=analyze_rabi, 
     qubit=0,
-    parameter="amplitude"
+    manual_check = True
 )
+
+rabi_1_node = CalibrationNode(
+    node_id="rabi_1",
+    experiment=rabi,
+    sweep_interval=rabi_values,
+    is_refinement=False,
+    analysis_function=analyze_rabi,
+    qubit=0,
+    drive_bus_alias="Drag(0)",
+    readout_bus_alias="feedline_bus",
+    parameter_bus_alias="Drag(0)",
+    parameter=ql.Parameter.AMPLITUDE,
+    drift_timeout=0,
+    check_data_confidence_level=2,
+    r_squared_threshold=0.8,
+    number_of_random_datapoints=10,
+    manual_check=False,
+)
+
 ramsey_coarse_node = CalibrationNode(
     node_id="ramsey_coarse",
-    qprogram=ramsey("drive_bus", "readout_bus"),
-    sweep_intervals=wait_values,
+    experiment=ramsey,
+    sweep_interval=wait_values,
+    is_refinement=False,
     analysis_function=analyze_ramsey,
     qubit=0,
-    parameter="if"
+    
+    #TODO: add the appropriate bus aliases. These can be found in the runcard.
+    drive_bus_alias="#TODO",
+    readout_bus_alias="#TODO",
+    parameter_bus_alias="#TODO",
+    
+    parameter=ql.Parameter.IF,
+    drift_timeout=0,
+    check_data_confidence_level=2,
+    r_squared_threshold=0.8,
+    number_of_random_datapoints=10,
+    manual_check=False,
 )
+
 ramsey_fine_node = CalibrationNode(
     node_id="ramsey_fine",
-    qprogram=ramsey("drive_bus", "readout_bus"),
+    experiment=ramsey,
     sweep_interval=fine_if_values,
     is_refinement=True,
     analysis_function=analyze_ramsey,
     qubit=0,
-    parameter="if"
+    
+    #TODO: add the appropriate bus aliases. These can be found in the runcard.
+    drive_bus_alias="#TODO",
+    readout_bus_alias="#TODO",
+    parameter_bus_alias="#TODO",
+    
+    parameter=ql.Parameter.IF,
+    drift_timeout=0,
+    check_data_confidence_level=2,
+    r_squared_threshold=0.8,
+    number_of_random_datapoints=10,
+    manual_check=False,
 )
+
 drag_coefficient_node = CalibrationNode(
     node_id="drag",
-    qprogram=drag_coefficient_calibration,
+    experiment=drag_coefficient_calibration,
     sweep_interval=drag_values,
+    is_refinement=False,
     analysis_function=analyze_drag_coefficient,
     qubit=0,
-    parameter="drag_coefficient"
+    
+    #TODO: add the appropriate bus aliases. These can be found in the runcard.
+    drive_bus_alias="#TODO",
+    readout_bus_alias="#TODO",
+    parameter_bus_alias="#TODO",
+    
+    parameter=ql.Parameter.DRAG_COEFFICIENT,
+    drift_timeout=0,
+    check_data_confidence_level=2,
+    r_squared_threshold=0.8,
+    number_of_random_datapoints=10,
+    manual_check=False,
 )
+
 rabi_2_coarse_node = CalibrationNode(
     node_id="rabi_2_coarse",
-    qprogram=rabi,
+    experiment=rabi,
     sweep_interval=rabi_values,
+    is_refinement=False,
     analysis_function=analyze_rabi,
     qubit=0,
-    parameter="amplitude"
+    drive_bus_alias="Drag(0)",
+    readout_bus_alias="feedline_bus",
+    parameter_bus_alias="Drag(0)",
+    parameter=ql.Parameter.AMPLITUDE,
+    drift_timeout=0,
+    check_data_confidence_level=2,
+    r_squared_threshold=0.8,
+    number_of_random_datapoints=10,
+    manual_check=False,
 )
+
 rabi_2_fine_node = CalibrationNode(
     node_id="rabi_2_fine",
-    qprogram=rabi,
-    sweep_interval=rabi_values,
+    experiment=rabi,
+    sweep_interval=fine_rabi_values,
     is_refinement=True,
     analysis_function=analyze_rabi,
     qubit=0,
-    parameter="amplitude"
+    drive_bus_alias="Drag(0)",
+    readout_bus_alias="feedline_bus",
+    parameter_bus_alias="Drag(0)",
+    parameter=ql.Parameter.AMPLITUDE,
+    drift_timeout=0,
+    check_data_confidence_level=2,
+    r_squared_threshold=0.8,
+    number_of_random_datapoints=10,
+    manual_check=False,
 )
+
 flipping_node = CalibrationNode(
     node_id="flipping",
-    qprogram=flipping,
+    experiment=flipping,
+    sweep_interval=flipping_values,
+    is_refinement=False,
     analysis_function=analyze_flipping,
     qubit=0,
-    parameter="amplitude"
+    
+    #TODO: add the appropriate bus aliases. These can be found in the runcard.
+    drive_bus_alias="#TODO",
+    readout_bus_alias="#TODO",
+    parameter_bus_alias="#TODO",
+    
+    parameter=ql.Parameter.AMPLITUDE,
+    drift_timeout=0,
+    check_data_confidence_level=2,
+    r_squared_threshold=0.8,
+    number_of_random_datapoints=10,
+    manual_check=False,
 )
+
 all_xy_node_2 = CalibrationNode(
     node_id="all_xy_2", 
-    qprogram=all_xy, 
+    experiment=all_xy, 
     analysis_function=analyze_all_xy, 
-    qubit=0
+    qubit=0,
+    manual_check = True
 )
 
 calibration_graph = nx.DiGraph()
@@ -921,4 +1005,4 @@ Initialize the controller and start the calibration algorithm.
 controller = Controller(calibration_graph)
 
 # Start automatic calibration
-controller.run_calibration()
+controller.run_automatic_calibration()
