@@ -304,23 +304,23 @@ class TestBusDriver:
                     )
 
     # TODO: Problems with 1) the Mocking in the instruments, 2) and about still passing the old instruments in the 2n iteration maybe?
-    # def test_serialization_starting_from_dict(self, drive_bus_dictionary: dict, drive_bus_instruments: list):
-    #     """Test that the todict & from_dict methods of the BusDriver base class work correctly together."""
-    #     drive_bus = BusDriver.from_dict(drive_bus_dictionary, drive_bus_instruments)
-    #     dictionary = drive_bus.to_dict()
+    def test_serialization_starting_from_dict(self, drive_bus_dictionary: dict, drive_bus_instruments: list):
+        """Test that the todict & from_dict methods of the BusDriver base class work correctly together."""
+        drive_bus = BusDriver.from_dict(drive_bus_dictionary, drive_bus_instruments)
+        dictionary = drive_bus.to_dict()
 
-    #     new_drive_bus = BusDriver.from_dict(dictionary, drive_bus_instruments)
-    #     new_dictionary = new_drive_bus.to_dict()
+        new_drive_bus = BusDriver.from_dict(dictionary, drive_bus_instruments)
+        new_dictionary = new_drive_bus.to_dict()
 
-    #     assert drive_bus_dictionary == dictionary == new_dictionary
+        assert drive_bus_dictionary == dictionary == new_dictionary
 
-    # # TODO: For this to work, I would need to pass the corresponding instruments for each bus.
-    # def test_serialization_starting_from_class(self, buses: list[BusDriver], drive_bus_instruments: list):
-    #     """Test that the to_dict method of the BusDriver base class works correctly."""
-    #     for bus in buses:
-    #         dictionary = bus.to_dict()
-    #         new_bus = BusDriver.from_dict(dictionary, drive_bus_instruments)
-    #         new_dictionary = bus.to_dict()
+    # TODO: For this to work, I would need to pass the corresponding instruments for each bus.
+    def test_serialization_starting_from_class(self, buses: list[BusDriver], drive_bus_instruments: list):
+        """Test that the to_dict method of the BusDriver base class works correctly."""
+        for bus in buses:
+            dictionary = bus.to_dict()
+            new_bus = BusDriver.from_dict(dictionary, drive_bus_instruments)
+            new_dictionary = bus.to_dict()
 
-    #         assert dictionary == new_dictionary
-    #         assert bus == new_bus
+            assert dictionary == new_dictionary
+            assert bus == new_bus

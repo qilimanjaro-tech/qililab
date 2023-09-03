@@ -157,8 +157,9 @@ class BusDriver(ABC):
                         issubclass(instrument.__class__, InstrumentInterfaceFactory.get(key))
                         and instrument.alias == instrument_dict["alias"]
                     ):
-                        for parameter, value in instrument_dict["parameters"].items():
-                            instrument.set(param_name=parameter, value=value)
+                        if "parameters" in instrument_dict:
+                            for parameter, value in instrument_dict["parameters"].items():
+                                instrument.set(param_name=parameter, value=value)
 
                         instruments_dictionary[cls.caps_translate_dict()[key]] = instrument
                         break
@@ -195,11 +196,9 @@ class BusDriver(ABC):
                     params_dict = {
                         parameter: instrument.get(parameter)
                         for parameter in instrument.params.keys()
-                        if parameter
-                        not in (
-                            "IDN",
-                            "sequence",
-                        )  # skip IDN and sequence parameters. Which will go into other parts of the runcard.
+                        if (parameter in instrument.params_set)
+                        # skip IDN and sequence parameters. Which will go into other parts of the runcard.
+                        # skip 1, 1.0 and True since they are the default values when you ask for a get.
                     }
                 if params_dict:
                     instrument_dict["parameters"] = params_dict
