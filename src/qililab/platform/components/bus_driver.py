@@ -129,7 +129,9 @@ class BusDriver(ABC):
     def convert_instruments_strings_to_classes_and_set_params(
         cls, dictionary: dict, instruments: list[BaseInstrument]
     ) -> dict:
-        """Passes the strings of the instruments associated to the bus, into their corresponding (already instantiated)
+        """Function called in the `from_dict()` method to construct an instance of a bus class from a dictionary.
+
+        Passes the strings of the instruments associated to the bus, into their corresponding (already instantiated)
         classes throught their "alias". While it also sets their corresponding given parameters.
 
         And finally returns a dictionary with only the instruments classes.
@@ -137,7 +139,7 @@ class BusDriver(ABC):
         Passes the instruments classes associated with the bus, into their corresponding strings. While it
         also gets all their corresponding parameters to be printed together in a dictionary.
 
-        The dictionary reading follows the following diagram: (Picture)[https://imgur.com/a/U4Oyapo]
+        The dictionary reading follows the following structure: (Picture)[https://imgur.com/a/U4Oyapo]
 
         Args:
             dictionary (dict): Bus dictionary with the instruments as strings.
@@ -157,8 +159,9 @@ class BusDriver(ABC):
                         issubclass(instrument.__class__, InstrumentInterfaceFactory.get(key))
                         and instrument.alias == instrument_dict["alias"]
                     ):
-                        for parameter, value in instrument_dict["parameters"].items():
-                            instrument.set(param_name=parameter, value=value)
+                        if "parameters" in instrument_dict:
+                            for parameter, value in instrument_dict["parameters"].items():
+                                instrument.set(parameter, value)
 
                         instruments_dictionary[cls.caps_translate_dict()[key]] = instrument
                         break
@@ -169,50 +172,10 @@ class BusDriver(ABC):
         return dictionary | instruments_dictionary
 
     @classmethod
-    def convert_instruments_classes_to_strings_and_get_params(
-        cls, instruments: list[BaseInstrument]
-    ) -> dict[str, dict]:
-        """Passes the instruments classes associated to the bus, into their corresponding strings. While it
-        also gets all their corresponding parameters to be printed together in a dictionary.
-
-        And finally returns a dictionary with the instrument str as key (str), and the alias and parameters as values (dict).
-
-        The dictionary construction follows the following diagram: (Picture)[https://imgur.com/a/U4Oyapo]
-
-        Args:
-            instruments (list[BaseInstrument]): Instruments corresponding the the given Bus.
-
-        Returns:
-            dict[str, dict]: The instruments dictionary to be inserted in the bus dictionary. Keys are the instruments str,
-                and values are an inner dictionary containing the alias and the parameters dictionary.
-        """
-        instruments_dict: dict[str, dict] = {}
-        for instrument in instruments:
-            if instrument is not None:
-                instrument_dict = {"alias": instrument.alias}
-
-                if instrument.params:
-                    params_dict = {
-                        parameter: instrument.get(parameter)
-                        for parameter in instrument.params.keys()
-                        if parameter
-                        not in (
-                            "IDN",
-                            "sequence",
-                        )  # skip IDN and sequence parameters. Which will go into other parts of the runcard.
-                    }
-                if params_dict:
-                    instrument_dict["parameters"] = params_dict
-
-                for key in cls.caps_translate_dict():
-                    if issubclass(instrument.__class__, InstrumentInterfaceFactory.get(key)):
-                        instruments_dict[key] = instrument_dict
-
-        return instruments_dict
-
-    @classmethod
     def from_dict(cls, dictionary: dict, instruments: list[BaseInstrument]) -> "BusDriver":
         """Loads the corresponding Bus driver class with a Factory Pattern, and sets the instrument params to the corresponding instruments.
+
+        The received dictionary follows the following structure: (Picture)[https://imgur.com/a/U4Oyapo]
 
         Args:
             dictionary (dict): Dictionary representation of the Bus driver object and its instrument params.
@@ -231,8 +194,66 @@ class BusDriver(ABC):
 
         return BusFactory.get(name=dictionary["type"])(**local_dictionary)  # type: ignore[return-value]
 
+    @classmethod
+    def convert_instruments_classes_to_strings_and_get_params(
+        cls, instruments: list[BaseInstrument]
+    ) -> dict[str, dict]:
+        """Function called in the `to_dict()` method, to construct a dictionary representing the actual bus instance.
+
+        Passes the instruments classes associated to the bus, into their corresponding strings. While it
+        also gets all their corresponding parameters to be printed together in a dictionary.
+
+        And finally returns a dictionary with the instrument str as key (str), and the alias and parameters as values (dict).
+
+        The dictionary construction follows the following structure: (Picture)[https://imgur.com/a/U4Oyapo]
+
+        Args:
+            instruments (list[BaseInstrument]): Instruments corresponding the the given Bus.
+
+        Returns:
+            dict[str, dict]: The instruments dictionary to be inserted in the bus dictionary. Keys are the instruments str,
+                and values are an inner dictionary containing the alias and the parameters dictionary.
+        """
+        instruments_dict: dict[str, dict] = {}
+        saved_instruments: set[
+            str
+        ] = (
+            set()
+        )  # This ensures that the Digitiser of the Readout bus doesn't overwrite the AWG one... (since QRM inherits from QCM)
+
+        for (
+            key
+        ) in (
+            cls.caps_translate_dict()
+        ):  # The order of caps_translate_dict is important, because it marks the order of writing...
+            for instrument in instruments:
+                if instrument is not None and issubclass(instrument.__class__, InstrumentInterfaceFactory.get(key)):
+                    instrument_dict = {"alias": instrument.alias}
+
+                    if instrument.alias not in saved_instruments:
+                        if instrument.params:
+                            params_dict = {
+                                parameter: instrument.get(parameter)
+                                for parameter in instrument.params.keys()
+                                if parameter
+                                not in (
+                                    "IDN",
+                                    "sequence",
+                                )  # skip IDN and sequence parameters. Which will go into other parts of the runcard.
+                            }
+                        if params_dict:
+                            instrument_dict["parameters"] = params_dict
+
+                    instruments_dict[key] = instrument_dict
+                    saved_instruments.add(instrument.alias)
+                    break
+
+        return instruments_dict
+
     def to_dict(self) -> dict:
         """Generates a dict representation given the Buses and the instruments params of such bus.
+
+        The dictionary construction follows the following structure: (Picture)[https://imgur.com/a/U4Oyapo]
 
         Returns:
             dict: Bus dictionary with its corresponding instrument parameters.
