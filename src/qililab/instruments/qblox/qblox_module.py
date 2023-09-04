@@ -186,7 +186,7 @@ class QbloxModule(AWG):
             pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, sequencer=sequencer.identifier
         )
         weights = self._generate_weights(sequencer=sequencer)
-        return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
+        return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights.to_dict())
 
     def _generate_program(  # pylint: disable=too-many-locals
         self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, sequencer: int
