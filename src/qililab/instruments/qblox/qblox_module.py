@@ -272,7 +272,7 @@ class QbloxModule(AWG):
         # Temp method to generate qrm acquisitions for multiple readouts of same qubit
         acquisitions = Acquisitions()
         for index, pulse_event in enumerate(timeline):
-            acquisitions.add(name=f"q{pulse_event.qubit}_{index}", index=index)
+            acquisitions.add(name=f"q{pulse_event.qubit}_{index}", num_bins=self.num_bins, index=index)
         return acquisitions
 
     def _is_qrm(self, pulse_bus_schedule) -> bool:
