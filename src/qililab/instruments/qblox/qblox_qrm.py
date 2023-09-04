@@ -152,7 +152,8 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 # compiled sequences
                 sequence_uploaded = self.sequences[sequencer.identifier][1]
                 if sequence_uploaded:
-                    self.device.delete_acquisition_data(sequencer=sequencer.identifier, name="default")
+                    # self.device.delete_acquisition_data(sequencer=sequencer.identifier, name="default")
+                    self.device.delete_acquisition_data(sequencer=sequencer.identifier, all=True) # TODO: we were already deleting all acq data for the sequencer with the line above
                 compiled_sequences.append(self.sequences[sequencer.identifier][0])
         return compiled_sequences
 
