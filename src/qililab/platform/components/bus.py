@@ -1,5 +1,8 @@
 """Bus class."""
 from dataclasses import InitVar, dataclass
+from typing import overload
+
+from qpysequence import Sequence as QpySequence
 
 from qililab.chip import Chip, Coil, Coupler, Qubit, Resonator
 from qililab.constants import BUS, NODE, RUNCARD
@@ -172,6 +175,10 @@ class Bus:
             num_bins (int): number of bins
         """
         return self.system_control.compile(pulse_bus_schedule, nshots, repetition_duration, num_bins)
+
+    def upload_qpysequence(self, qpysequence: QpySequence):
+        """Uploads the qpysequence into the instrument."""
+        self.system_control.upload_qpysequence(qpysequence=qpysequence, port=self.port)
 
     def upload(self):
         """Uploads any previously compiled program into the instrument."""

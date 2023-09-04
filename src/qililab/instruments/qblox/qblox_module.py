@@ -498,6 +498,14 @@ class QbloxModule(AWG):
         self.clear_cache()
         self.device.reset()
 
+    def upload_qpysequence(self, qpysequence: QpySequence, port: str):
+        """Upload the qpysequence to its corresponding sequencers."""
+        sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
+        for sequencer in sequencers:
+            logger.info("Sequence program: \n %s", repr(qpysequence._program))
+            self.device.sequencers[sequencer.identifier].sync_en(True)
+            self.device.sequencers[sequencer.identifier].sequence(qpysequence.todict())
+
     def upload(self, port: str):
         """Upload all the previously compiled programs to its corresponding sequencers.
 

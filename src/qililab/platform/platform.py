@@ -17,6 +17,8 @@ from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSchedule
+from qililab.qprogram.qblox_compiler import QbloxCompiler
+from qililab.qprogram.qprogram import QProgram
 from qililab.result import Result
 from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
@@ -357,6 +359,50 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             str: Name of the platform
         """
         return str(yaml.dump(self.to_dict(), sort_keys=False))
+
+    def execute_qprogram(self, qprogram: QProgram, integration_length: int = 1000):
+        """Execute a QProgram using the platform instruments.
+
+        Args:
+            qprogram (QProgram): The QProgram to run
+            integration_length (int, optional): The integration length used in acquisitions. Defaults to 1000.
+
+        Returns:
+            Result: Result obtained from the execution. This corresponds to a numpy array that depending on the
+                platform configuration may contain the following:
+
+                - Scope acquisition is enabled: An array with dimension `(2, N)` which contain the scope data for
+                    path0 (I) and path1 (Q). N corresponds to the length of the scope measured.
+
+                - Scope acquisition disabled: An array with dimension `(#sequencers, 2, #bins)`.
+        """
+        qblox_compiler = QbloxCompiler()
+        sequences = qblox_compiler.compile(qprogram=qprogram)
+
+        # Upload sequences
+        for bus_alias in sequences:
+            bus = self.get_bus_by_alias(alias=bus_alias)
+            bus.upload_qpysequence(qpysequence=sequences[bus_alias])
+
+        # Execute sequences
+        for bus_alias in sequences:
+            bus = self.get_bus_by_alias(alias=bus_alias)
+            bus.run()
+
+        # Acquire results
+        readout_buses = [bus for bus in self.buses if isinstance(bus.system_control, ReadoutSystemControl)]
+        results: list[Result] = []
+        for bus in readout_buses:
+            result = bus.acquire_result()
+            results.append(result)
+
+        # FIXME: set multiple readout buses
+        if len(results) > 1:
+            logger.error("Only One Readout Bus allowed. Reading only from the first one.")
+        if not results:
+            raise ValueError("There are no readout buses in the platform.")
+
+        return results[0]
 
     def execute(
         self,
