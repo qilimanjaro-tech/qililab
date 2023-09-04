@@ -178,7 +178,7 @@ class QbloxModule(AWG):
             Sequence: Qblox Sequence object containing the program and waveforms.
         """
         waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule, sequencer=sequencer)
-        if pulse_bus_schedule.port != "feedline_input":
+        if not self._is_qrm(pulse_bus_schedule): # TODO: fix for qrm 
             acquisitions = self._generate_acquisitions()
         else: # handle qrm measurements
             acquisitions = self._generate_qrm_acquisitions(timeline=pulse_bus_schedule.timeline)
@@ -186,7 +186,7 @@ class QbloxModule(AWG):
             pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, sequencer=sequencer.identifier
         )
         weights = self._generate_weights(sequencer=sequencer)
-        return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights.to_dict())
+        return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
 
     def _generate_program(  # pylint: disable=too-many-locals
         self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, sequencer: int
@@ -234,12 +234,12 @@ class QbloxModule(AWG):
             # avg_loop.append_component(UpdParam(wait_time=4))
 
             # TODO: added to test multi measurements on same qubit
-            if pulse_bus_schedule.port == "feedline_input":
+            if self._is_qrm(pulse_bus_schedule):
                 self._append_acquire_instruction(
                     loop=bin_loop, bin_index=bin_loop.counter_register, sequencer_id=sequencer, weight_regs=weight_registers, acq_index=i
                 )
         # TODO: added to test multi measurements on same qubit
-        if pulse_bus_schedule.port != "feedline_input":
+        if not self._is_qrm(pulse_bus_schedule): #TODO: temporary fix
             self._append_acquire_instruction(
                 loop=bin_loop, bin_index=bin_loop.counter_register, sequencer_id=sequencer, weight_regs=weight_registers
             )
@@ -275,6 +275,9 @@ class QbloxModule(AWG):
             acquisitions.add(name=f"q{pulse_event.qubit}_{index}", index=index)
         return acquisitions
 
+    def _is_qrm(self, pulse_bus_schedule) -> bool:
+        # Temp method to find out if a given port is assigned to a qrm or a qcm
+        return all("weights_i" in sequencer.to_dict() for sequencer in self.get_sequencers_from_chip_port_id(pulse_bus_schedule.port))
 
 
     @abstractmethod

@@ -266,7 +266,8 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 )
 
                 if sequencer.scope_store_enabled:
-                    self.device.store_scope_acquisition(sequencer=sequencer_id, name="default")
+                    raise NotImplementedError("Scope acquisition not implemented for multimeasurement of a single qubit")
+                    # self.device.store_scope_acquisition(sequencer=sequencer_id, name="default")
 
                 for key, data in self.device.get_acquisitions(sequencer=sequencer.identifier).items():
                     acquisitions = data["acquisition"]
