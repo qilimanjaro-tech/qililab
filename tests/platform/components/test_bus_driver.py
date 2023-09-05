@@ -39,6 +39,7 @@ LO_ALIAS = "lo_readout"
 AWG_ALIAS = "q0_readout"
 
 
+# FIXURES FOR PULSE_BUS_SCHEDULES
 def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, number_pulses: int = 1):
     """Returns a gaussian pulse bus schedule"""
     pulse_shape = Gaussian(num_sigmas=PULSE_SIGMAS)
@@ -61,40 +62,7 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     return get_pulse_bus_schedule(start_time=0)
 
 
-@pytest.fixture(name="buses")
-def fixture_buses(
-    sequencer_qcm: SequencerQCM,
-    qcmqrm_lo: QcmQrmRfLo,
-    qcmqrm_att: QcmQrmRfAtt,
-    digitiser: SequencerQRM,
-    current_source: S4gDacChannel,
-    voltage_source: D5aDacChannel,
-) -> list[BusDriver]:
-    """Return a list of bus drivers instances."""
-    return [
-        BusDriver(alias=ALIAS, port=PORT, awg=sequencer_qcm, distortions=[]),
-        DriveBus(
-            alias=ALIAS,
-            port=PORT,
-            awg=sequencer_qcm,
-            local_oscillator=qcmqrm_lo,
-            attenuator=qcmqrm_att,
-            distortions=[],
-        ),
-        FluxBus(alias=ALIAS, port=PORT, awg=sequencer_qcm, source=current_source, distortions=[]),
-        FluxBus(alias=ALIAS, port=PORT, awg=sequencer_qcm, source=voltage_source, distortions=[]),
-        ReadoutBus(
-            alias=ALIAS,
-            port=PORT,
-            awg=digitiser,
-            local_oscillator=qcmqrm_lo,
-            attenuator=qcmqrm_att,
-            digitiser=digitiser,
-            distortions=[],
-        ),
-    ]
-
-
+# FIXTURES FOR INSTRUMENTS AND BUSES
 @pytest.fixture(name="current_source")
 def fixture_current_source() -> S4gDacChannel:
     """Return a S4gDacChannel instance."""
@@ -112,7 +80,7 @@ def fixture_voltage_source() -> D5aDacChannel:
 
 
 @pytest.fixture(name="digitiser")
-def fixture_sequencer() -> SequencerQRM:
+def fixture_digitiser() -> SequencerQRM:
     """Return a SequencerQRM instance."""
     digitiser = SequencerQRM(parent=MagicMock(), name="test", seq_idx=0)
     digitiser.add_parameter(name="path0_out", vals=vals.Ints(), set_cmd=None, initial_value=PATH0_OUT)
@@ -151,39 +119,38 @@ def fixture_qcmqrm_att() -> QcmQrmRfAtt:
     return attenuator
 
 
-@pytest.fixture(name="drive_bus_instruments")
-def fixture_drive_bus_instruments(sequencer_qcm: SequencerQCM, qcmqrm_lo: QcmQrmRfLo, qcmqrm_att: QcmQrmRfAtt) -> list:
-    """Return a list of instrument instances."""
-    return [sequencer_qcm, qcmqrm_lo, qcmqrm_att]
-
-
-@pytest.fixture(name="drive_bus_dictionary")
-def fixture_drive_bus_dictionary() -> dict:
-    """Returns a dictionary of a DriveBus instance."""
-    return {
-        "alias": ALIAS,
-        "type": "DriveBus",
-        "AWG": {
-            "alias": AWG_ALIAS,
-            "parameters": {
-                "path0_out": PATH0_OUT,
-                "path1_out": PATH1_OUT,
-                "intermediate_frequency": INTERMED_FREQ,
-                "gain": GAIN,
-            },
-        },
-        "LocalOscillator": {
-            "alias": LO_ALIAS,
-            "parameters": {
-                "lo_frequency": LO_FREQUENCY,
-            },
-        },
-        "Attenuator": {
-            "alias": ATT_ALIAS,
-        },
-        "port": PORT,
-        "distortions": [],
-    }
+@pytest.fixture(name="buses")
+def fixture_buses(
+    sequencer_qcm: SequencerQCM,
+    qcmqrm_lo: QcmQrmRfLo,
+    qcmqrm_att: QcmQrmRfAtt,
+    digitiser: SequencerQRM,
+    current_source: S4gDacChannel,
+    voltage_source: D5aDacChannel,
+) -> list[BusDriver]:
+    """Return a list of bus drivers instances."""
+    return [
+        BusDriver(alias=ALIAS, port=PORT, awg=sequencer_qcm, distortions=[]),
+        DriveBus(
+            alias=ALIAS,
+            port=PORT,
+            awg=sequencer_qcm,
+            local_oscillator=qcmqrm_lo,
+            attenuator=qcmqrm_att,
+            distortions=[],
+        ),
+        FluxBus(alias=ALIAS, port=PORT, awg=sequencer_qcm, source=current_source, distortions=[]),
+        FluxBus(alias=ALIAS, port=PORT, awg=sequencer_qcm, source=voltage_source, distortions=[]),
+        ReadoutBus(
+            alias=ALIAS,
+            port=PORT,
+            awg=digitiser,
+            local_oscillator=qcmqrm_lo,
+            attenuator=qcmqrm_att,
+            digitiser=digitiser,
+            distortions=[],
+        ),
+    ]
 
 
 class TestBusDriver:
@@ -277,42 +244,8 @@ class TestBusDriver:
         for bus in buses:
             assert "random str" != bus
 
-    def test_from_dict(
-        self,
-        drive_bus_dictionary: dict,
-        drive_bus_instruments: list,
-        sequencer_qcm: SequencerQCM,
-        qcmqrm_lo: QcmQrmRfLo,
-        qcmqrm_att: QcmQrmRfAtt,
-    ):
-        """Test that the from_dict method of the BusDriver base class works correctly."""
-        with patch("qcodes.instrument.instrument_base.InstrumentBase.set") as mock_set:
-            drive_bus = BusDriver.from_dict(drive_bus_dictionary, drive_bus_instruments)
-
-            # Check the basic bus dictionary part
-            assert isinstance(drive_bus, DriveBus)
-            assert drive_bus.alias == ALIAS
-            assert drive_bus.port == PORT
-            assert drive_bus.distortions == []
-
-            # Check the instrument parameters dictionary part inside the bus dictionary
-            assert mock_set.call_count == 5
-
-            assert drive_bus.instruments["awg"] == sequencer_qcm
-            for param, value in drive_bus_dictionary["AWG"]["parameters"].items():
-                assert param in drive_bus.instruments["awg"].params
-                mock_set.assert_any_call(param, value)
-
-            assert drive_bus.instruments["local_oscillator"] == qcmqrm_lo
-            for param, value in drive_bus_dictionary["LocalOscillator"]["parameters"].items():
-                assert param in drive_bus.instruments["local_oscillator"].params
-                mock_set.assert_any_call(param, value)
-
-            assert drive_bus.instruments["attenuator"] == qcmqrm_att
-            assert "parameters" not in drive_bus_dictionary["Attenuator"]
-            # This test attenuator has no parameters
-
     def test_to_dict(self, buses: list[BusDriver]):
+        # sourcery skip: merge-duplicate-blocks, remove-redundant-if, switch
         """Test that the to_dict method of the BusDriver base class works correctly."""
         for bus in buses:
             dictionary = bus.to_dict()
@@ -326,7 +259,7 @@ class TestBusDriver:
 
             # Check the instrument parameters dictionary part inside the bus dictionary
             for key, instrument_dict in dictionary.items():
-                # Check the general structure of all the parameters
+                # Check the general structure of all the instrument dict
                 if key not in ("alias", "port", "type", "distortions"):
                     assert key in BusDriver.instrument_interfaces_caps_translate()
                     assert isinstance(instrument_dict, dict)
@@ -334,8 +267,24 @@ class TestBusDriver:
                     if "parameters" in instrument_dict:
                         assert isinstance(instrument_dict["parameters"], dict)
 
-                # Check the actual values of the passed parameters to AWG
-                if key == "AWG" and "parameters" in instrument_dict:
+                # TEST ALIASES
+                if key in ("VoltageSource", "CurrentSource", "Digitiser"):
+                    assert instrument_dict["alias"] == "test"
+
+                elif key == "LocalOscillator":
+                    assert instrument_dict["alias"] == LO_ALIAS
+
+                elif key == "Attenuator":
+                    assert instrument_dict["alias"] == ATT_ALIAS
+
+                elif key == "AWG":
+                    if isinstance(bus, ReadoutBus):
+                        assert instrument_dict["alias"] == "test"
+                    else:
+                        assert instrument_dict["alias"] == AWG_ALIAS
+
+                # TEST PARAMETERS
+                if key == "AWG":
                     assert (
                         instrument_dict["parameters"].items()
                         >= {
@@ -346,24 +295,39 @@ class TestBusDriver:
                         }.items()
                     )
 
-    # # TODO: Problems with 1) the Mocking in the instruments, 2) and about still passing the old instruments in the 2n iteration maybe?
-    # def test_serialization_starting_with_from_dict(self, drive_bus_dictionary: dict, drive_bus_instruments: list):
-    #     """Test that the todict & from_dict methods of the BusDriver base class work correctly together."""
-    #     drive_bus = BusDriver.from_dict(drive_bus_dictionary, drive_bus_instruments)
-    #     dictionary = drive_bus.to_dict()
+                # Check that for the Readout Bus, the parameters has been printed only in the AWG, and not repeated in the Digitiser
+                elif key == "Digitiser":
+                    assert "parameters" not in instrument_dict
 
-    #     new_drive_bus = BusDriver.from_dict(dictionary, drive_bus_instruments)
-    #     new_dictionary = new_drive_bus.to_dict()
+                elif key == "Attenuator":
+                    assert instrument_dict["parameters"].items() >= {"lo_frequency": LO_FREQUENCY}.items()
 
-    #     assert drive_bus_dictionary == dictionary == new_dictionary
+    def test_serialization_without_setting_values(self, buses: list[BusDriver]):
+        """Test that the to_dict & from_dict methods of the BusDriver base class work correctly together whenever we don't set values."""
+        for bus in buses:
+            if isinstance(bus, (DriveBus, FluxBus, ReadoutBus)):
+                dictionary = bus.to_dict()
 
-    # # TODO: For this to work, I would need to pass the corresponding instruments for each bus.
-    # def test_serialization_starting_with_to_dict(self, buses: list[BusDriver], drive_bus_instruments: list):
-    #     """Test that the to_dict method of the BusDriver base class works correctly."""
-    #     for bus in buses:
-    #         dictionary = bus.to_dict()
-    #         new_bus = BusDriver.from_dict(dictionary, drive_bus_instruments)
-    #         new_dictionary = bus.to_dict()
+                with patch("qcodes.instrument.instrument_base.InstrumentBase.set") as mock_set:
+                    new_bus = BusDriver.from_dict(dictionary, list(bus.instruments.values()))
+                    mock_set.assert_called()
+                    calls = mock_set.mock_calls
 
-    #         assert dictionary == new_dictionary
-    #         assert bus == new_bus
+                new_dictionary = new_bus.to_dict()
+
+                with patch("qcodes.instrument.instrument_base.InstrumentBase.set") as mock_set:
+                    newest_bus = BusDriver.from_dict(new_dictionary, list(new_bus.instruments.values()))
+                    mock_set.assert_called()
+                    new_calls = mock_set.mock_calls
+
+                newest_dictionary = newest_bus.to_dict()
+
+                # Assert dictionaries and buses are the same, if we don't set anything
+                assert dictionary == new_dictionary == newest_dictionary
+                assert bus == new_bus == newest_bus
+
+                # Test the calls are the same each time
+                for index in range(
+                    69
+                ):  # Three are more depending on the bus, but from this number up, mockings start to appear that give problems with id's...
+                    assert calls[index] == new_calls[index]

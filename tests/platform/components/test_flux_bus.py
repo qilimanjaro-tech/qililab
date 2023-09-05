@@ -2,6 +2,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from qblox_instruments.native.spi_rack_modules import DummyD5aApi, DummyS4gApi
 from qcodes import Instrument
 from qcodes import validators as vals
 from qcodes.tests.instrument_mocks import DummyChannel
@@ -9,7 +10,7 @@ from qcodes.tests.instrument_mocks import DummyChannel
 from qililab.drivers.instruments.qblox.sequencer_qcm import SequencerQCM
 from qililab.drivers.instruments.qblox.spi_rack import D5aDacChannel, S4gDacChannel
 from qililab.drivers.interfaces import CurrentSource, VoltageSource
-from qililab.platform.components import FluxBus
+from qililab.platform.components import BusDriver, FluxBus
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
 
@@ -312,8 +313,388 @@ class TestFluxBus:
         """Unittest for __str__ method."""
         expected_str = (
             f"{ALIAS} ({flux_bus_current_source.__class__.__name__}): "
-            + "".join(f"--|{instrument.name}|" for instrument in flux_bus_current_source.instruments.values())
+            + "".join(f"--|{instrument.alias}|" for instrument in flux_bus_current_source.instruments.values())
             + f"--> port {flux_bus_current_source.port}"
         )
 
         assert str(flux_bus_current_source) == expected_str
+
+
+# Instrument parameters for testing:
+PATH0_OUT = 0
+PATH1_OUT = 1
+INTERMED_FREQ = 100e5
+GAIN = 0.9
+SOURCE_ALIAS = "test"
+AWG_ALIAS = "q0_readout"
+
+
+@pytest.fixture(name="current_source_api")
+def fixture_current_source_api() -> S4gDacChannel:
+    """Return a S4gDacChannel instance."""
+    mocked_parent = MagicMock()
+    mocked_parent.api = DummyS4gApi(spi_rack=MagicMock(), module=0)
+    return S4gDacChannel(parent=mocked_parent, name=SOURCE_ALIAS, dac=0)
+
+
+@pytest.fixture(name="voltage_source_api")
+def fixture_voltage_source_api() -> D5aDacChannel:
+    """Return a D5aDacChannel instance."""
+    mocked_parent = MagicMock()
+    mocked_parent.api = DummyD5aApi(spi_rack=MagicMock(), module=0)
+    return D5aDacChannel(parent=mocked_parent, name=SOURCE_ALIAS, dac=0)
+
+
+@pytest.fixture(name="sequencer_qcm")
+def fixture_sequencer_qcm() -> SequencerQCM:
+    """Return a SequencerQCM instance."""
+    sequencer = SequencerQCM(parent=MagicMock(), name=AWG_ALIAS, seq_idx=0)
+    sequencer.add_parameter(name="path0_out", vals=vals.Ints(), set_cmd=None, initial_value=PATH0_OUT)
+    sequencer.add_parameter(name="path1_out", vals=vals.Ints(), set_cmd=None, initial_value=PATH1_OUT)
+    sequencer.add_parameter(
+        name="intermediate_frequency", vals=vals.Numbers(), set_cmd=None, initial_value=INTERMED_FREQ
+    )
+    sequencer.add_parameter(name="gain", vals=vals.Numbers(), set_cmd=None, initial_value=GAIN)
+    return sequencer
+
+
+@pytest.fixture(name="current_flux_bus_instruments")
+def fixture_current_flux_bus_instruments(sequencer_qcm: SequencerQCM, current_source_api: S4gDacChannel) -> list:
+    """Return a list of instrument instances."""
+    return [sequencer_qcm, current_source_api]
+
+
+@pytest.fixture(name="current_flux_bus_dictionary")
+def fixture_current_flux_bus_dictionary() -> dict:
+    """Returns a dictionary of a FluxBus (current) instance."""
+    return {
+        "alias": ALIAS,
+        "type": "FluxBus",
+        "AWG": {
+            "alias": AWG_ALIAS,
+            "parameters": {
+                "path0_out": PATH0_OUT,
+                "path1_out": PATH1_OUT,
+                "intermediate_frequency": INTERMED_FREQ,
+                "gain": GAIN,
+            },
+        },
+        "CurrentSource": {
+            "alias": SOURCE_ALIAS,
+        },
+        "port": PORT,
+        "distortions": [],
+    }
+
+
+class TestCurrentFluxBusSerialization:
+    """Unit tests checking the FluxBus (voltage) serialization methods."""
+
+    def test_from_dict(
+        self,
+        current_flux_bus_dictionary: dict,
+        current_flux_bus_instruments: list,
+        sequencer_qcm: SequencerQCM,
+        current_source_api: S4gDacChannel,
+    ):
+        """Test that the from_dict method of the FluxBus class (current) works correctly."""
+        with patch("qcodes.instrument.instrument_base.InstrumentBase.set") as mock_set:
+            flux_bus = BusDriver.from_dict(current_flux_bus_dictionary, current_flux_bus_instruments)
+
+            # Check the basic bus dictionary part
+            assert isinstance(flux_bus, FluxBus)
+            assert flux_bus.alias == ALIAS
+            assert flux_bus.port == PORT
+            assert flux_bus.distortions == []
+
+            # Check the instrument parameters dictionary part inside the bus dictionary
+            assert mock_set.call_count == 4
+
+            assert flux_bus.instruments["awg"] == sequencer_qcm
+            for param, value in current_flux_bus_dictionary["AWG"]["parameters"].items():
+                assert param in flux_bus.instruments["awg"].params
+                mock_set.assert_any_call(param, value)
+
+            assert flux_bus.instruments["source"] == current_source_api
+            assert "parameters" not in current_flux_bus_dictionary["CurrentSource"]
+            # This test that the attenuator has no parameters
+
+    def test_to_dict(self, sequencer_qcm: SequencerQCM, current_source_api: S4gDacChannel):
+        # sourcery skip: merge-duplicate-blocks, remove-redundant-if, switch
+        """Test that the to_dict method of the FluxBus class (current) has the correct structure."""
+        bus = FluxBus(
+            alias=ALIAS,
+            port=PORT,
+            awg=sequencer_qcm,
+            source=current_source_api,
+            distortions=[],
+        )
+        # patch the values to True, we are only interested in the structure of the dictionary
+        with patch("qcodes.instrument.instrument_base.InstrumentBase.get", return_value=True) as mock_get:
+            dictionary = bus.to_dict()
+            mock_get.assert_called()
+
+            assert dictionary == {
+                "alias": ALIAS,
+                "type": "FluxBus",
+                "AWG": {
+                    "alias": AWG_ALIAS,
+                    "parameters": {
+                        "channel_map_path0_out0_en": True,
+                        "channel_map_path1_out1_en": True,
+                        "channel_map_path0_out2_en": True,
+                        "channel_map_path1_out3_en": True,
+                        "sync_en": True,
+                        "nco_freq": True,
+                        "nco_phase_offs": True,
+                        "nco_prop_delay_comp": True,
+                        "nco_prop_delay_comp_en": True,
+                        "marker_ovr_en": True,
+                        "marker_ovr_value": True,
+                        "trigger1_count_threshold": True,
+                        "trigger1_threshold_invert": True,
+                        "trigger2_count_threshold": True,
+                        "trigger2_threshold_invert": True,
+                        "trigger3_count_threshold": True,
+                        "trigger3_threshold_invert": True,
+                        "trigger4_count_threshold": True,
+                        "trigger4_threshold_invert": True,
+                        "trigger5_count_threshold": True,
+                        "trigger5_threshold_invert": True,
+                        "trigger6_count_threshold": True,
+                        "trigger6_threshold_invert": True,
+                        "trigger7_count_threshold": True,
+                        "trigger7_threshold_invert": True,
+                        "trigger8_count_threshold": True,
+                        "trigger8_threshold_invert": True,
+                        "trigger9_count_threshold": True,
+                        "trigger9_threshold_invert": True,
+                        "trigger10_count_threshold": True,
+                        "trigger10_threshold_invert": True,
+                        "trigger11_count_threshold": True,
+                        "trigger11_threshold_invert": True,
+                        "trigger12_count_threshold": True,
+                        "trigger12_threshold_invert": True,
+                        "trigger13_count_threshold": True,
+                        "trigger13_threshold_invert": True,
+                        "trigger14_count_threshold": True,
+                        "trigger14_threshold_invert": True,
+                        "trigger15_count_threshold": True,
+                        "trigger15_threshold_invert": True,
+                        "cont_mode_en_awg_path0": True,
+                        "cont_mode_en_awg_path1": True,
+                        "cont_mode_waveform_idx_awg_path0": True,
+                        "cont_mode_waveform_idx_awg_path1": True,
+                        "upsample_rate_awg_path0": True,
+                        "upsample_rate_awg_path1": True,
+                        "gain_awg_path0": True,
+                        "gain_awg_path1": True,
+                        "offset_awg_path0": True,
+                        "offset_awg_path1": True,
+                        "mixer_corr_phase_offset_degree": True,
+                        "mixer_corr_gain_ratio": True,
+                        "mod_en_awg": True,
+                        "demod_en_acq": True,
+                        "integration_length_acq": True,
+                        "thresholded_acq_rotation": True,
+                        "thresholded_acq_threshold": True,
+                        "thresholded_acq_marker_en": True,
+                        "thresholded_acq_marker_address": True,
+                        "thresholded_acq_marker_invert": True,
+                        "thresholded_acq_trigger_en": True,
+                        "thresholded_acq_trigger_address": True,
+                        "thresholded_acq_trigger_invert": True,
+                        "swap_paths": True,
+                        "path0_out": True,
+                        "path1_out": True,
+                        "intermediate_frequency": True,
+                        "gain": True,
+                    },
+                },
+                "CurrentSource": {
+                    "alias": SOURCE_ALIAS,
+                    "parameters": {
+                        "current": True,
+                        "span": True,
+                        "ramp_rate": True,
+                        "ramp_max_step": True,
+                        "ramping_enabled": True,
+                        "is_ramping": True,
+                        "stepsize": True,
+                        "dac_channel": True,
+                    },
+                },
+                "port": PORT,
+                "distortions": [],
+            }
+
+
+@pytest.fixture(name="voltage_flux_bus_instruments")
+def fixture_voltage_flux_bus_instruments(sequencer_qcm: SequencerQCM, voltage_source_api: D5aDacChannel) -> list:
+    """Return a list of instrument instances."""
+    return [sequencer_qcm, voltage_source_api]
+
+
+@pytest.fixture(name="voltage_flux_bus_dictionary")
+def fixture_voltage_flux_bus_dictionary() -> dict:
+    """Returns a dictionary of a FluxBus (current) instance."""
+    return {
+        "alias": ALIAS,
+        "type": "FluxBus",
+        "AWG": {
+            "alias": AWG_ALIAS,
+            "parameters": {
+                "path0_out": PATH0_OUT,
+                "path1_out": PATH1_OUT,
+                "intermediate_frequency": INTERMED_FREQ,
+                "gain": GAIN,
+            },
+        },
+        "VoltageSource": {
+            "alias": SOURCE_ALIAS,
+        },
+        "port": PORT,
+        "distortions": [],
+    }
+
+
+class TestVoltageFluxBusSerialization:
+    """Unit tests checking the FluxBus (voltage) serialization methods."""
+
+    def test_from_dict(
+        self,
+        voltage_flux_bus_dictionary: dict,
+        voltage_flux_bus_instruments: list,
+        sequencer_qcm: SequencerQCM,
+        voltage_source_api: D5aDacChannel,
+    ):
+        """Test that the from_dict method of the FluxBus class (voltage) works correctly."""
+        with patch("qcodes.instrument.instrument_base.InstrumentBase.set") as mock_set:
+            flux_bus = BusDriver.from_dict(voltage_flux_bus_dictionary, voltage_flux_bus_instruments)
+
+            # Check the basic bus dictionary part
+            assert isinstance(flux_bus, FluxBus)
+            assert flux_bus.alias == ALIAS
+            assert flux_bus.port == PORT
+            assert flux_bus.distortions == []
+
+            # Check the instrument parameters dictionary part inside the bus dictionary
+            assert mock_set.call_count == 4
+
+            assert flux_bus.instruments["awg"] == sequencer_qcm
+            for param, value in voltage_flux_bus_dictionary["AWG"]["parameters"].items():
+                assert param in flux_bus.instruments["awg"].params
+                mock_set.assert_any_call(param, value)
+
+            assert flux_bus.instruments["source"] == voltage_source_api
+            assert "parameters" not in voltage_flux_bus_dictionary["VoltageSource"]
+            # This test that the attenuator has no parameters
+
+    def test_to_dict(self, sequencer_qcm: SequencerQCM, voltage_source_api: D5aDacChannel):
+        # sourcery skip: merge-duplicate-blocks, remove-redundant-if, switch
+        """Test that the to_dict method of the FluxBus class (voltage) has the correct structure."""
+        bus = FluxBus(
+            alias=ALIAS,
+            port=PORT,
+            awg=sequencer_qcm,
+            source=voltage_source_api,
+            distortions=[],
+        )
+        # patch the values to True, we are only interested in the structure of the dictionary
+        with patch("qcodes.instrument.instrument_base.InstrumentBase.get", return_value=True) as mock_get:
+            dictionary = bus.to_dict()
+            mock_get.assert_called()
+
+            assert dictionary == {
+                "alias": ALIAS,
+                "type": "FluxBus",
+                "AWG": {
+                    "alias": AWG_ALIAS,
+                    "parameters": {
+                        "channel_map_path0_out0_en": True,
+                        "channel_map_path1_out1_en": True,
+                        "channel_map_path0_out2_en": True,
+                        "channel_map_path1_out3_en": True,
+                        "sync_en": True,
+                        "nco_freq": True,
+                        "nco_phase_offs": True,
+                        "nco_prop_delay_comp": True,
+                        "nco_prop_delay_comp_en": True,
+                        "marker_ovr_en": True,
+                        "marker_ovr_value": True,
+                        "trigger1_count_threshold": True,
+                        "trigger1_threshold_invert": True,
+                        "trigger2_count_threshold": True,
+                        "trigger2_threshold_invert": True,
+                        "trigger3_count_threshold": True,
+                        "trigger3_threshold_invert": True,
+                        "trigger4_count_threshold": True,
+                        "trigger4_threshold_invert": True,
+                        "trigger5_count_threshold": True,
+                        "trigger5_threshold_invert": True,
+                        "trigger6_count_threshold": True,
+                        "trigger6_threshold_invert": True,
+                        "trigger7_count_threshold": True,
+                        "trigger7_threshold_invert": True,
+                        "trigger8_count_threshold": True,
+                        "trigger8_threshold_invert": True,
+                        "trigger9_count_threshold": True,
+                        "trigger9_threshold_invert": True,
+                        "trigger10_count_threshold": True,
+                        "trigger10_threshold_invert": True,
+                        "trigger11_count_threshold": True,
+                        "trigger11_threshold_invert": True,
+                        "trigger12_count_threshold": True,
+                        "trigger12_threshold_invert": True,
+                        "trigger13_count_threshold": True,
+                        "trigger13_threshold_invert": True,
+                        "trigger14_count_threshold": True,
+                        "trigger14_threshold_invert": True,
+                        "trigger15_count_threshold": True,
+                        "trigger15_threshold_invert": True,
+                        "cont_mode_en_awg_path0": True,
+                        "cont_mode_en_awg_path1": True,
+                        "cont_mode_waveform_idx_awg_path0": True,
+                        "cont_mode_waveform_idx_awg_path1": True,
+                        "upsample_rate_awg_path0": True,
+                        "upsample_rate_awg_path1": True,
+                        "gain_awg_path0": True,
+                        "gain_awg_path1": True,
+                        "offset_awg_path0": True,
+                        "offset_awg_path1": True,
+                        "mixer_corr_phase_offset_degree": True,
+                        "mixer_corr_gain_ratio": True,
+                        "mod_en_awg": True,
+                        "demod_en_acq": True,
+                        "integration_length_acq": True,
+                        "thresholded_acq_rotation": True,
+                        "thresholded_acq_threshold": True,
+                        "thresholded_acq_marker_en": True,
+                        "thresholded_acq_marker_address": True,
+                        "thresholded_acq_marker_invert": True,
+                        "thresholded_acq_trigger_en": True,
+                        "thresholded_acq_trigger_address": True,
+                        "thresholded_acq_trigger_invert": True,
+                        "swap_paths": True,
+                        "path0_out": True,
+                        "path1_out": True,
+                        "intermediate_frequency": True,
+                        "gain": True,
+                    },
+                },
+                "VoltageSource": {
+                    "alias": SOURCE_ALIAS,
+                    "parameters": {
+                        "voltage": True,
+                        "span": True,
+                        "ramp_rate": True,
+                        "ramp_max_step": True,
+                        "ramping_enabled": True,
+                        "is_ramping": True,
+                        "stepsize": True,
+                        "dac_channel": True,
+                    },
+                },
+                "port": PORT,
+                "distortions": [],
+            }

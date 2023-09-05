@@ -135,7 +135,7 @@ class BusDriver(ABC):
         """String representation of a Bus."""
         return (
             f"{self.alias} ({self.__class__.__name__}): "
-            + "".join(f"--|{instrument.name}|" for instrument in self.instruments.values())
+            + "".join(f"--|{instrument.alias}|" for instrument in self.instruments.values())
             + f"--> port {self.port}"
         )
 
@@ -280,8 +280,8 @@ class BusDriver(ABC):
         If the same instrument works as several interfaces, the parameters of such instrument will only be printed in one interface, the first one.
         The same alias instead will be present in all the interfaces.
 
-        The interfaces in the runcard will be printed with the format in the keys of instrument_interfaces_caps_translate(), meaning that they will be:
-        AWG, Digitiser, LocalOscillator, Attenuator, VoltageSource or CurrentSource.
+        The interfaces in the runcard will be printed with the format and order of the keys of instrument_interfaces_caps_translate(), meaning that
+        they will be: AWG, Digitiser, LocalOscillator, Attenuator, VoltageSource or CurrentSource.
 
         The dictionary construction follows the following structure: (Picture)[https://imgur.com/a/U4Oyapo]
 
@@ -319,6 +319,6 @@ class BusDriver(ABC):
             "Digitiser": "digitiser",
             "LocalOscillator": "local_oscillator",
             "Attenuator": "attenuator",
-            "VoltageSource": "voltage_source",
-            "CurrentSource": "current_source",
+            "VoltageSource": "source",
+            "CurrentSource": "source",
         }

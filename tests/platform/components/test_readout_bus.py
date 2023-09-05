@@ -11,7 +11,7 @@ from qililab.drivers import parameters
 from qililab.drivers.instruments.qblox.cluster import QcmQrmRfAtt, QcmQrmRfLo
 from qililab.drivers.instruments.qblox.sequencer_qcm import SequencerQCM
 from qililab.drivers.instruments.qblox.sequencer_qrm import SequencerQRM
-from qililab.platform.components import ReadoutBus
+from qililab.platform.components import BusDriver, ReadoutBus
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
 
@@ -244,8 +244,247 @@ class TestReadoutBus:
         """Unittest for __str__ method."""
         expected_str = (
             f"{ALIAS} ({readout_bus.__class__.__name__}): "
-            + "".join(f"--|{instrument.name}|" for instrument in readout_bus.instruments.values())
+            + "".join(f"--|{instrument.alias}|" for instrument in readout_bus.instruments.values())
             + f"--> port {readout_bus.port}"
         )
 
         assert str(readout_bus) == expected_str
+
+
+# Instrument parameters for testing:
+PATH0_OUT = 0
+PATH1_OUT = 1
+INTERMED_FREQ = 100e5
+GAIN = 0.9
+LO_FREQUENCY = 1e9
+ATTENUATION = 20
+ATT_ALIAS = "attenuator_0"
+LO_ALIAS = "lo_readout"
+AWG_ALIAS = "q0_readout"
+
+
+@pytest.fixture(name="digitiser")
+def fixture_sequencer() -> SequencerQRM:
+    """Return a SequencerQRM instance."""
+    digitiser = SequencerQRM(parent=MagicMock(), name=AWG_ALIAS, seq_idx=0)
+    digitiser.add_parameter(name="path0_out", vals=vals.Ints(), set_cmd=None, initial_value=PATH0_OUT)
+    digitiser.add_parameter(name="path1_out", vals=vals.Ints(), set_cmd=None, initial_value=PATH1_OUT)
+    digitiser.add_parameter(
+        name="intermediate_frequency", vals=vals.Numbers(), set_cmd=None, initial_value=INTERMED_FREQ
+    )
+    digitiser.add_parameter(name="gain", vals=vals.Numbers(), set_cmd=None, initial_value=GAIN)
+    return digitiser
+
+
+@pytest.fixture(name="qcmqrm_lo")
+def fixture_qcmqrm_lo() -> QcmQrmRfLo:
+    """Return a QcmQrmRfLo instance."""
+    return QcmQrmRfLo(parent=MagicMock(), name=LO_ALIAS, channel="test")
+
+
+@pytest.fixture(name="qcmqrm_att")
+def fixture_qcmqrm_att() -> QcmQrmRfAtt:
+    """Return a QcmQrmRfAtt instance."""
+    attenuator = QcmQrmRfAtt(parent=MagicMock(), name=ATT_ALIAS, channel="test")
+    attenuator.add_parameter(name="lo_frequency", vals=vals.Numbers(), set_cmd=None, initial_value=LO_FREQUENCY)
+    return attenuator
+
+
+@pytest.fixture(name="readout_bus_instruments")
+def fixture_readout_bus_instruments(digitiser: SequencerQRM, qcmqrm_lo: QcmQrmRfLo, qcmqrm_att: QcmQrmRfAtt) -> list:
+    """Return a list of instrument instances."""
+    return [digitiser, qcmqrm_lo, qcmqrm_att]
+
+
+@pytest.fixture(name="readout_bus_dictionary")
+def fixture_readout_bus_dictionary() -> dict:
+    """Returns a dictionary of a ReadoutBus instance."""
+    return {
+        "alias": ALIAS,
+        "type": "ReadoutBus",
+        "AWG": {
+            "alias": AWG_ALIAS,
+            "parameters": {
+                "path0_out": PATH0_OUT,
+                "path1_out": PATH1_OUT,
+                "intermediate_frequency": INTERMED_FREQ,
+                "gain": GAIN,
+            },
+        },
+        "Digitiser": {
+            "alias": AWG_ALIAS,
+        },
+        "LocalOscillator": {
+            "alias": LO_ALIAS,
+            "parameters": {
+                "lo_frequency": LO_FREQUENCY,
+            },
+        },
+        "Attenuator": {
+            "alias": ATT_ALIAS,
+        },
+        "port": PORT,
+        "distortions": [],
+    }
+
+
+class TestReadoutBusSerialization:
+    """Unit tests checking the ReadoutBus serialization methods."""
+
+    def test_from_dict(
+        self,
+        readout_bus_dictionary: dict,
+        readout_bus_instruments: list,
+        digitiser: SequencerQRM,
+        qcmqrm_lo: QcmQrmRfLo,
+        qcmqrm_att: QcmQrmRfAtt,
+    ):
+        """Test that the from_dict method of the ReadoutBus class works correctly."""
+        with patch("qcodes.instrument.instrument_base.InstrumentBase.set") as mock_set:
+            readout_bus = BusDriver.from_dict(readout_bus_dictionary, readout_bus_instruments)
+
+            # Check the basic bus dictionary part
+            assert isinstance(readout_bus, ReadoutBus)
+            assert readout_bus.alias == ALIAS
+            assert readout_bus.port == PORT
+            assert readout_bus.distortions == []
+
+            # Check the instrument parameters dictionary part inside the bus dictionary
+            assert mock_set.call_count == 5
+
+            assert readout_bus.instruments["awg"] == digitiser
+            for param, value in readout_bus_dictionary["AWG"]["parameters"].items():
+                assert param in readout_bus.instruments["awg"].params
+                mock_set.assert_any_call(param, value)
+
+            # Here we are checking that the parameters of the digitiser are the same than the one of AWG, since it the same instrument!
+            assert readout_bus.instruments["digitiser"] == digitiser
+            for param, value in readout_bus_dictionary["AWG"]["parameters"].items():
+                assert param in readout_bus.instruments["digitiser"].params
+                mock_set.assert_any_call(param, value)
+
+            assert readout_bus.instruments["local_oscillator"] == qcmqrm_lo
+            for param, value in readout_bus_dictionary["LocalOscillator"]["parameters"].items():
+                assert param in readout_bus.instruments["local_oscillator"].params
+                mock_set.assert_any_call(param, value)
+
+            assert readout_bus.instruments["attenuator"] == qcmqrm_att
+            assert "parameters" not in readout_bus_dictionary["Attenuator"]
+            # This test that the attenuator has no parameters
+
+    def test_to_dict(self, digitiser: SequencerQRM, qcmqrm_lo: QcmQrmRfLo, qcmqrm_att: QcmQrmRfAtt):
+        # sourcery skip: merge-duplicate-blocks, remove-redundant-if, switch
+        """Test that the to_dict method of the ReadoutBus class has the correct structure."""
+        bus = ReadoutBus(
+            alias=ALIAS,
+            port=PORT,
+            awg=digitiser,
+            digitiser=digitiser,
+            local_oscillator=qcmqrm_lo,
+            attenuator=qcmqrm_att,
+            distortions=[],
+        )
+        # patch the values to True, we are only interested in the structure of the dictionary
+        with patch("qcodes.instrument.instrument_base.InstrumentBase.get", return_value=True) as mock_get:
+            dictionary = bus.to_dict()
+            mock_get.assert_called()
+
+            assert dictionary == {
+                "alias": ALIAS,
+                "type": "ReadoutBus",
+                "AWG": {
+                    "alias": AWG_ALIAS,
+                    "parameters": {
+                        "channel_map_path0_out0_en": True,
+                        "channel_map_path1_out1_en": True,
+                        "channel_map_path0_out2_en": True,
+                        "channel_map_path1_out3_en": True,
+                        "sync_en": True,
+                        "nco_freq": True,
+                        "nco_phase_offs": True,
+                        "nco_prop_delay_comp": True,
+                        "nco_prop_delay_comp_en": True,
+                        "marker_ovr_en": True,
+                        "marker_ovr_value": True,
+                        "trigger1_count_threshold": True,
+                        "trigger1_threshold_invert": True,
+                        "trigger2_count_threshold": True,
+                        "trigger2_threshold_invert": True,
+                        "trigger3_count_threshold": True,
+                        "trigger3_threshold_invert": True,
+                        "trigger4_count_threshold": True,
+                        "trigger4_threshold_invert": True,
+                        "trigger5_count_threshold": True,
+                        "trigger5_threshold_invert": True,
+                        "trigger6_count_threshold": True,
+                        "trigger6_threshold_invert": True,
+                        "trigger7_count_threshold": True,
+                        "trigger7_threshold_invert": True,
+                        "trigger8_count_threshold": True,
+                        "trigger8_threshold_invert": True,
+                        "trigger9_count_threshold": True,
+                        "trigger9_threshold_invert": True,
+                        "trigger10_count_threshold": True,
+                        "trigger10_threshold_invert": True,
+                        "trigger11_count_threshold": True,
+                        "trigger11_threshold_invert": True,
+                        "trigger12_count_threshold": True,
+                        "trigger12_threshold_invert": True,
+                        "trigger13_count_threshold": True,
+                        "trigger13_threshold_invert": True,
+                        "trigger14_count_threshold": True,
+                        "trigger14_threshold_invert": True,
+                        "trigger15_count_threshold": True,
+                        "trigger15_threshold_invert": True,
+                        "cont_mode_en_awg_path0": True,
+                        "cont_mode_en_awg_path1": True,
+                        "cont_mode_waveform_idx_awg_path0": True,
+                        "cont_mode_waveform_idx_awg_path1": True,
+                        "upsample_rate_awg_path0": True,
+                        "upsample_rate_awg_path1": True,
+                        "gain_awg_path0": True,
+                        "gain_awg_path1": True,
+                        "offset_awg_path0": True,
+                        "offset_awg_path1": True,
+                        "mixer_corr_phase_offset_degree": True,
+                        "mixer_corr_gain_ratio": True,
+                        "mod_en_awg": True,
+                        "demod_en_acq": True,
+                        "integration_length_acq": True,
+                        "thresholded_acq_rotation": True,
+                        "thresholded_acq_threshold": True,
+                        "thresholded_acq_marker_en": True,
+                        "thresholded_acq_marker_address": True,
+                        "thresholded_acq_marker_invert": True,
+                        "thresholded_acq_trigger_en": True,
+                        "thresholded_acq_trigger_address": True,
+                        "thresholded_acq_trigger_invert": True,
+                        "swap_paths": True,
+                        "sequence_timeout": True,
+                        "acquisition_timeout": True,
+                        "weights_i": True,
+                        "weights_q": True,
+                        "weighed_acq_enabled": True,
+                        "path0_out": True,
+                        "path1_out": True,
+                        "intermediate_frequency": True,
+                        "gain": True,
+                    },
+                },
+                "Digitiser": {
+                    "alias": AWG_ALIAS,
+                },
+                "LocalOscillator": {
+                    "alias": LO_ALIAS,
+                    "parameters": {"lo_frequency": True, "status": True},
+                },
+                "Attenuator": {
+                    "alias": ATT_ALIAS,
+                    "parameters": {
+                        "attenuation": True,
+                        "lo_frequency": True,
+                    },
+                },
+                "port": PORT,
+                "distortions": [],
+            }
