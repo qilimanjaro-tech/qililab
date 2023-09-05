@@ -277,7 +277,6 @@ class TestBusDriver:
         for bus in buses:
             assert "random str" != bus
 
-    # TODO: Check that the from_dict works when there is no parameters..
     def test_from_dict(
         self,
         drive_bus_dictionary: dict,
@@ -329,7 +328,7 @@ class TestBusDriver:
             for key, instrument_dict in dictionary.items():
                 # Check the general structure of all the parameters
                 if key not in ("alias", "port", "type", "distortions"):
-                    assert key in BusDriver.caps_translate_dict()
+                    assert key in BusDriver.instrument_interfaces_caps_translate()
                     assert isinstance(instrument_dict, dict)
                     assert isinstance(instrument_dict["alias"], str)
                     if "parameters" in instrument_dict:

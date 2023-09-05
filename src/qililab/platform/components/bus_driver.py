@@ -132,12 +132,9 @@ class BusDriver(ABC):
         """Function called in the `from_dict()` method to construct an instance of a bus class from a dictionary.
 
         Passes the strings of the instruments associated to the bus, into their corresponding (already instantiated)
-        classes throught their "alias". While it also sets their corresponding given parameters.
+        classes, through their "alias" and interface. While it also sets their corresponding given parameters.
 
         And finally returns a dictionary with only the instruments classes.
-
-        Passes the instruments classes associated with the bus, into their corresponding strings. While it
-        also gets all their corresponding parameters to be printed together in a dictionary.
 
         The dictionary reading follows the following structure: (Picture)[https://imgur.com/a/U4Oyapo]
 
@@ -149,33 +146,52 @@ class BusDriver(ABC):
             dict: Bus dictionary with the instruments as classes to be inserted in the bus dictionary.
         """
         instruments_dictionary: dict[str, BaseInstrument] = {}
-        memorized_keys: list[str] = []
+        used_keys: list[str] = []
 
-        for key, instrument_dict in dictionary.items():
-            if key in cls.caps_translate_dict():
-                memorized_keys.append(key)
+        # Set parameters of instruments and create a dictionary with classes instead than strings.
+        for key, instrument_dict in dictionary.items():  # pylint: disable=too-many-nested-blocks
+            if key in cls.instrument_interfaces_caps_translate():
                 for instrument in instruments:
                     if (
                         issubclass(instrument.__class__, InstrumentInterfaceFactory.get(key))
                         and instrument.alias == instrument_dict["alias"]
                     ):
+                        # If the alias and the interface of the dictionary coincide with one of the given instruments:
+
+                        # Set parameters of the instrument
                         if "parameters" in instrument_dict:
                             for parameter, value in instrument_dict["parameters"].items():
                                 instrument.set(parameter, value)
 
-                        instruments_dictionary[cls.caps_translate_dict()[key]] = instrument
+                        # Save the instrument into the new dictionary, in the corresponding position after translating the caps
+                        # of the instrument interfaces (from "AWG" to "awg", from "LocalOscillator" to "local_oscillator", etc...).
+                        instruments_dictionary[cls.instrument_interfaces_caps_translate()[key]] = instrument
                         break
 
-        for key in memorized_keys:
+                # Remember used keys to remove them later from the original dictionary
+                used_keys.append(key)
+
+        # Remove old instrument strings from dictionary
+        for key in used_keys:
             dictionary.pop(key)
 
+        # Add new instrument classes to dictionary
         return dictionary | instruments_dictionary
 
     @classmethod
     def from_dict(cls, dictionary: dict, instruments: list[BaseInstrument]) -> "BusDriver":
         """Loads the corresponding Bus driver class with a Factory Pattern, and sets the instrument params to the corresponding instruments.
 
-        The received dictionary follows the following structure: (Picture)[https://imgur.com/a/U4Oyapo]
+        To sets the given parameters, we pass the strings of the instruments associated to the bus into their corresponding (already instantiated)
+        classes, through their "alias" and interface, and then set them through its class set method.
+
+        If the same instrument works as several interfaces, the parameters of such instrument should only be passed in one interface, or you will
+        be setting the same parameters multiple times. The same alias instead, should be present in all the interfaces.
+
+        The interfaces in the runcard should follow the format in the keys of instrument_interfaces_caps_translate(), meaning that they should be:
+        AWG, Digitiser, LocalOscillator, Attenuator, VoltageSource or CurrentSource.
+
+        The received dictionary follows the following structure: (Picture)[https://imgur.com/a/U4Oyapo].
 
         Args:
             dictionary (dict): Dictionary representation of the Bus driver object and its instrument params.
@@ -187,7 +203,7 @@ class BusDriver(ABC):
         local_dictionary = deepcopy(dictionary)
         local_dictionary.pop("type", None)
 
-        # Transform the instrument str into the corresponding classes for the dictionary, and set its parameters.
+        # Transform the instrument strings into the corresponding classes for the dictionary, and set its parameters.
         local_dictionary = cls.convert_instruments_strings_to_classes_and_set_params(
             dictionary=local_dictionary, instruments=instruments
         )
@@ -215,36 +231,30 @@ class BusDriver(ABC):
                 and values are an inner dictionary containing the alias and the parameters dictionary.
         """
         instruments_dict: dict[str, dict] = {}
-        saved_instruments: set[
-            str
-        ] = (
-            set()
-        )  # This ensures that the Digitiser of the Readout bus doesn't overwrite the AWG one... (since QRM inherits from QCM)
+        saved_instruments: set[str] = set()
 
-        for (
-            key
-        ) in (
-            cls.caps_translate_dict()
-        ):  # The order of caps_translate_dict is important, because it marks the order of writing...
+        # The order of caps_translate_dict is important, because it marks the order of writing, and since we only save the parameters of a same instrument once, concretely in
+        # the first one to appear, this means that the order of caps_translate_dict will indicate in which interface dict you save the parameters (the first one to appear).
+        for key in cls.instrument_interfaces_caps_translate():
             for instrument in instruments:
-                if instrument is not None and issubclass(instrument.__class__, InstrumentInterfaceFactory.get(key)):
-                    instrument_dict = {"alias": instrument.alias}
+                if issubclass(instrument.__class__, InstrumentInterfaceFactory.get(key)):
+                    # Add alias of the instrument to the dictionary
+                    instruments_dict[key] = {"alias": instrument.alias}
 
-                    if instrument.alias not in saved_instruments:
-                        if instrument.params:
-                            params_dict = {
-                                parameter: instrument.get(parameter)
-                                for parameter in instrument.params.keys()
-                                if parameter
-                                not in (
-                                    "IDN",
-                                    "sequence",
-                                )  # skip IDN and sequence parameters. Which will go into other parts of the runcard.
-                            }
-                        if params_dict:
-                            instrument_dict["parameters"] = params_dict
+                    # This ensures that instruments with multiple interfaces, don't write the same parameters two times
+                    if instrument.alias not in saved_instruments and instrument.params:
+                        # Add parameters of the instrument to the dictionary
+                        instruments_dict[key]["parameters"] = {
+                            parameter: instrument.get(parameter)
+                            for parameter in instrument.params.keys()
+                            if parameter
+                            not in (
+                                "IDN",
+                                "sequence",
+                            )  # skip IDN and sequence parameters. Which will go into other parts of the runcard.
+                        }
 
-                    instruments_dict[key] = instrument_dict
+                    # Save already saved instruments, to not write same parameters twice
                     saved_instruments.add(instrument.alias)
                     break
 
@@ -253,11 +263,18 @@ class BusDriver(ABC):
     def to_dict(self) -> dict:
         """Generates a dict representation given the Buses and the instruments params of such bus.
 
+        If the same instrument works as several interfaces, the parameters of such instrument will only be printed in one interface, the first one.
+        The same alias instead will be present in all the interfaces.
+
+        The interfaces in the runcard will be printed with the format in the keys of instrument_interfaces_caps_translate(), meaning that they will be:
+        AWG, Digitiser, LocalOscillator, Attenuator, VoltageSource or CurrentSource.
+
         The dictionary construction follows the following structure: (Picture)[https://imgur.com/a/U4Oyapo]
 
         Returns:
             dict: Bus dictionary with its corresponding instrument parameters.
         """
+        # Print alias and type
         bus_dictionary_start: dict = {
             "alias": self.alias,
             "type": self.__class__.__name__,
@@ -269,6 +286,7 @@ class BusDriver(ABC):
             instruments=instruments_list
         )
 
+        # Print port and distortions
         bus_dictionary_end = {
             "port": self.port,
             "distortions": [distortion.to_dict() for distortion in self.distortions],
@@ -277,8 +295,11 @@ class BusDriver(ABC):
         return bus_dictionary_start | instruments_dictionary | bus_dictionary_end
 
     @staticmethod
-    def caps_translate_dict() -> dict:
-        """Dictionary to translate the instruments[str] to the caps showing in the Runcard (for aesthetics)."""
+    def instrument_interfaces_caps_translate() -> dict:
+        """Dictionary to translate the instruments[str] to the caps showing in the Runcard (for aesthetics).
+
+        The order of the interfaces here determine the order for the printing too.
+        """
         return {
             "AWG": "awg",
             "Digitiser": "digitiser",
