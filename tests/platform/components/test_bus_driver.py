@@ -244,7 +244,7 @@ class TestBusDriver:
         for bus in buses:
             assert "random str" != bus
 
-    def test_to_dict(self, buses: list[BusDriver]):
+    def test_to_dict(self, buses: list[BusDriver]):  # pylint: disable=too-many-branches
         # sourcery skip: merge-duplicate-blocks, remove-redundant-if, switch
         """Test that the to_dict method of the BusDriver base class works correctly."""
         for bus in buses:
