@@ -166,7 +166,7 @@ class BusDriver(ABC):
         used_keys: list[str] = []
 
         for key, instrument_dict in dictionary.items():  # pylint: disable=too-many-nested-blocks
-            if key in cls.instrument_interfaces_caps_translate():
+            if key in cls.__instrument_interfaces_caps_translate():
                 for instrument in instruments:
                     # If the alias and the interface of the dictionary coincide with one of the given instruments:
                     if (
@@ -179,7 +179,7 @@ class BusDriver(ABC):
                                 instrument.set(parameter, value)
 
                         # Save the instrument classes in the corresponding key, after translating the caps of the interfaces.
-                        instruments_dictionary[cls.instrument_interfaces_caps_translate()[key]] = instrument
+                        instruments_dictionary[cls.__instrument_interfaces_caps_translate()[key]] = instrument
                         break
 
                 # Remember used keys, to remove the instrument strings from the original dictionary
@@ -251,7 +251,7 @@ class BusDriver(ABC):
         saved_instruments: set[str] = set()
 
         # The order of keys marks the writting order and in which interface dict you save the parameters & alias and in which only the alias.
-        for key in cls.instrument_interfaces_caps_translate():
+        for key in cls.__instrument_interfaces_caps_translate():
             for instrument in instruments:
                 if issubclass(instrument.__class__, InstrumentInterfaceFactory.get(key)):
                     # Add alias of the instrument to the dictionary
@@ -311,7 +311,7 @@ class BusDriver(ABC):
         return bus_dictionary_start | instruments_dictionary | bus_dictionary_end
 
     @staticmethod
-    def instrument_interfaces_caps_translate() -> dict:
+    def __instrument_interfaces_caps_translate() -> dict:
         """Dictionary to translate the instruments[str] to the caps showing in the Runcard (for aesthetics).
 
         The order of the interfaces here determine the order for the printing too, and since we only save the parameters
