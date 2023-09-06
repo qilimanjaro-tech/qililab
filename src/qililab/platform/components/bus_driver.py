@@ -140,7 +140,7 @@ class BusDriver(ABC):
         )
 
     @classmethod
-    def convert_instruments_strings_to_classes_and_set_params(
+    def __convert_instruments_strings_to_classes_and_set_params(
         cls, dictionary: dict, instruments: list[BaseInstrument]
     ) -> dict:
         """Function called in the `from_dict()` method to construct an instance of a bus class from a dictionary.
@@ -216,14 +216,14 @@ class BusDriver(ABC):
         local_dictionary = deepcopy(dictionary)
         local_dictionary.pop("type", None)
 
-        local_dictionary = cls.convert_instruments_strings_to_classes_and_set_params(
+        local_dictionary = cls.__convert_instruments_strings_to_classes_and_set_params(
             dictionary=local_dictionary, instruments=instruments
         )
 
         return BusFactory.get(name=dictionary["type"])(**local_dictionary)  # type: ignore[return-value]
 
     @classmethod
-    def convert_instruments_classes_to_strings_and_get_params(
+    def __convert_instruments_classes_to_strings_and_get_params(
         cls, instruments: list[BaseInstrument]
     ) -> dict[str, dict]:
         """Function called in the `to_dict()` method, to construct a dictionary representing the actual bus instance.
@@ -299,7 +299,7 @@ class BusDriver(ABC):
             "type": self.__class__.__name__,
         }
 
-        instruments_dictionary = self.convert_instruments_classes_to_strings_and_get_params(
+        instruments_dictionary = self.__convert_instruments_classes_to_strings_and_get_params(
             instruments=[instrument for instrument in self.instruments.values() if instrument is not None]
         )
 
