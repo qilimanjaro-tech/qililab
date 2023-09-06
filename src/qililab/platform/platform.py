@@ -5,9 +5,12 @@ from copy import deepcopy
 from dataclasses import asdict
 from queue import Queue
 
+import numpy as np
+from qibo.gates import M
 from qibo.models import Circuit
 from qiboconnection.api import API
 
+from qililab import Drag
 from qililab.chip import Chip
 from qililab.config import logger
 from qililab.constants import GATE_ALIAS_REGEX, RUNCARD
@@ -435,6 +438,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         )
 
         if isinstance(program, Circuit):
+            if self.gates_settings.active_reset is True:
+                program = self._add_active_reset_circuit(program)
             translator = CircuitToPulses(platform=self)
             pulse_schedule = translator.translate(circuits=[program])[0]
         else:
@@ -447,3 +452,20 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             programs[bus.alias] = bus_programs
 
         return programs
+
+    def _add_active_reset_circuit(self, circuit: Circuit) -> Circuit:
+        """Add the active reset gates (M-X) to each qubit in the circuit
+
+        Args:
+            program (Circuit): qibo circuit to which we prepend the reset gates
+
+        Returns:
+            Circuit: qibo circuit
+        """
+
+        nqubits = circuit.nqubits
+        c = Circuit(nqubits)
+        c.add([M(qubit) for qubit in range(nqubits)])  # measurement
+        c.add([Drag(qubit, np.pi, 0) for qubit in range(nqubits)])  # pi pulse
+        c.add(circuit.queue)
+        return c

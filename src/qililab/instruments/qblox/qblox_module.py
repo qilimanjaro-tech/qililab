@@ -46,6 +46,7 @@ class QbloxModule(AWG):
 
         awg_sequencers: Sequence[AWGQbloxSequencer]
         out_offsets: list[float]
+        active_reset: bool
 
         def __post_init__(self):
             """build AWGQbloxSequencer"""
@@ -205,6 +206,9 @@ class QbloxModule(AWG):
         avg_loop = Loop(name="average", begin=int(self.nshots))  # type: ignore
         bin_loop = Loop(name="bin", begin=0, end=self.num_bins, step=1)
         avg_loop.append_component(bin_loop)
+        if self.settings.active_reset is True:
+            act_rst = Block(name="active_reset")
+            program.append_block(act_rst)
         program.append_block(avg_loop)
         stop = Block(name="stop")
         stop.append_component(Stop())

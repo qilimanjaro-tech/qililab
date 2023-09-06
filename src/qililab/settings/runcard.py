@@ -100,6 +100,7 @@ class Runcard:
         passive_reset_duration: int
         operations: list[OperationSettings]
         gates: dict[str, list[GateEventSettings]]
+        active_reset: bool
 
         def __post_init__(self):
             """Build the Gates Settings based on the master settings."""
