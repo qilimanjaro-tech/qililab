@@ -1,12 +1,15 @@
 """Tests for the SystemControl class."""
+import wave
 from unittest.mock import MagicMock
 
 import pytest
-from qpysequence import Sequence
+import qpysequence.program.instructions as instructions
+from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 
 from qililab.instruments import AWG, Instrument
 from qililab.platform import Platform
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
+from qililab.qprogram.blocks.block import Block
 from qililab.system_control import SystemControl
 from tests.data import Galadriel
 from tests.test_utils import build_platform
@@ -16,6 +19,16 @@ from tests.test_utils import build_platform
 def fixture_platform() -> Platform:
     """Return Platform object."""
     return build_platform(runcard=Galadriel.runcard)
+
+
+@pytest.fixture(name="qpysequence")
+def fixture_qpysequence() -> Sequence:
+    """Return Sequence instance."""
+    program = Program()
+    main = Block()
+    main.append(instructions.SetFreq(frequency=1e9))
+    program.append_block(block=main)
+    return Sequence(program=program, waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
 
 
 @pytest.fixture(name="pulse_bus_schedule")
@@ -98,6 +111,9 @@ class TestMethods:
             match="The system control doesn't have any AWG to upload a program",
         ):
             system_control_without_awg.upload(port="drive_q0")
+
+    def test_upload_qpysequence(self, system_control: SystemControl, qpysequence: Sequence):
+        ...
 
     def test_upload(self, system_control: SystemControl, pulse_bus_schedule: PulseBusSchedule):
         """Test upload method."""

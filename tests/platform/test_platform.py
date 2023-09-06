@@ -17,11 +17,13 @@ from qililab.instruments import AWG, AWGAnalogDigitalConverter, SignalGenerator
 from qililab.instruments.instruments import Instruments
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
+from qililab.qprogram import QbloxCompiler, QProgram
 from qililab.settings import Runcard
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName
 from qililab.typings.yaml_type import yaml
+from qililab.waveforms import IQPair, Square
 from tests.data import Galadriel
 from tests.test_utils import build_platform
 
@@ -217,6 +219,27 @@ class TestMethods:
             assert len(sequences) == 1
             assert isinstance(sequences[0], Sequence)
             assert sequences[0]._program.duration == 2000 * 1000 + 4
+
+    def test_execute_qprogram(self, platform: Platform):
+        """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
+        qprogram.sync()
+        qprogram.play(bus="feedline_input_output_bus", waveform=readout_wf)
+        qprogram.acquire(bus="feedline_input_output_bus")
+
+        with patch.object(Bus, "upload_qpysequence") as upload:
+            with patch.object(Bus, "run") as run:
+                with patch.object(Bus, "acquire_result") as acquire_result:
+                    acquire_result.return_value = 123
+                    result = platform.execute_qprogram(qprogram=qprogram)
+
+        assert upload.call_count == 2
+        assert run.call_count == 2
+        acquire_result.assert_called_once_with()
+        assert result == 123
 
     def test_execute(self, platform: Platform):
         """Test that the execute method calls the buses to run and return the results."""
