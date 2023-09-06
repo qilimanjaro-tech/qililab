@@ -162,34 +162,31 @@ class BusDriver(ABC):
         instruments_dictionary: dict[str, BaseInstrument] = {}
         used_keys: list[str] = []
 
-        # Set parameters of instruments and create a dictionary with classes instead than strings.
         for key, instrument_dict in dictionary.items():  # pylint: disable=too-many-nested-blocks
             if key in cls.instrument_interfaces_caps_translate():
                 for instrument in instruments:
+                    # If the alias and the interface of the dictionary coincide with one of the given instruments:
                     if (
                         issubclass(instrument.__class__, InstrumentInterfaceFactory.get(key))
                         and instrument.alias == instrument_dict["alias"]
                     ):
-                        # If the alias and the interface of the dictionary coincide with one of the given instruments:
-
-                        # Set parameters of the instrument
+                        # Set parameters of the initialized instrument
                         if "parameters" in instrument_dict:
                             for parameter, value in instrument_dict["parameters"].items():
                                 instrument.set(parameter, value)
 
-                        # Save the instrument into the new dictionary, in the corresponding position after translating the caps
-                        # of the instrument interfaces (from "AWG" to "awg", from "LocalOscillator" to "local_oscillator", etc...).
+                        # Save the instrument into a new dictionary, in the corresponding key, after translating the caps of
+                        # the instrument interfaces (from "AWG" to "awg", from "LocalOscillator" to "local_oscillator", etc...).
                         instruments_dictionary[cls.instrument_interfaces_caps_translate()[key]] = instrument
                         break
 
-                # Remember used keys to remove them later from the original dictionary
+                # Remember used keys, to remove the instrument strings from the original dictionary
                 used_keys.append(key)
 
-        # Remove old instrument strings from dictionary
         for key in used_keys:
             dictionary.pop(key)
 
-        # Add new instrument classes to dictionary
+        # Add new initialize instrument classes to dictionary
         return dictionary | instruments_dictionary
 
     @classmethod
@@ -217,7 +214,6 @@ class BusDriver(ABC):
         local_dictionary = deepcopy(dictionary)
         local_dictionary.pop("type", None)
 
-        # Transform the instrument strings into the corresponding classes for the dictionary, and set its parameters.
         local_dictionary = cls.convert_instruments_strings_to_classes_and_set_params(
             dictionary=local_dictionary, instruments=instruments
         )
@@ -247,8 +243,8 @@ class BusDriver(ABC):
         instruments_dict: dict[str, dict] = {}
         saved_instruments: set[str] = set()
 
-        # The order of caps_translate_dict is important, because it marks the order of writing, and since we only save the parameters of a same instrument once, concretely in
-        # the first one to appear, this means that the order of caps_translate_dict will indicate in which interface dict you save the parameters (the first one to appear).
+        # The order of caps_translate_dict is important, because here it marks the order of writing, and since we only save the parameters of a same instrument once, concretely in
+        # the first one to appear, this means that the order of caps_translate_dict will indicate in which interface dict you save the parameters and in which you only save the alias.
         for key in cls.instrument_interfaces_caps_translate():
             for instrument in instruments:
                 if issubclass(instrument.__class__, InstrumentInterfaceFactory.get(key)):
@@ -268,7 +264,7 @@ class BusDriver(ABC):
                             )  # skip IDN and sequence parameters. Which will go into other parts of the runcard.
                         }
 
-                    # Save already saved instruments, to not write same parameters twice
+                    # Save already saved instruments, to not write same parameters twice (in different interfaces)
                     saved_instruments.add(instrument.alias)
                     break
 
@@ -288,19 +284,16 @@ class BusDriver(ABC):
         Returns:
             dict: Bus dictionary with its corresponding instrument parameters.
         """
-        # Print alias and type
         bus_dictionary_start: dict = {
             "alias": self.alias,
             "type": self.__class__.__name__,
         }
 
-        # Get the instruments dictionary.
         instruments_list = [instrument for instrument in self.instruments.values() if instrument is not None]
         instruments_dictionary = self.convert_instruments_classes_to_strings_and_get_params(
             instruments=instruments_list
         )
 
-        # Print port and distortions
         bus_dictionary_end = {
             "port": self.port,
             "distortions": [distortion.to_dict() for distortion in self.distortions],
