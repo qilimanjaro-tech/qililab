@@ -17,16 +17,18 @@ from qibo.models import Circuit
 
 from .data_management import build_platform
 from .experiment.experiment import Experiment
+from .platform import Platform
 from .transpiler import translate_circuit
 from .typings import ExperimentOptions, ExperimentSettings
 
 
-def execute(circuit: Circuit, platform_path: str, nshots: int = 1):
+def execute(circuit: Circuit, platform: str | Platform, nshots: int = 1):
     """Execute a qibo with qililab and native gates
 
     Args:
         circuit (Circuit): Qibo Circuit.
-        platform_path (str): Path to the YAML file containing the serialization of the Platform to be used.
+        platform_path (Platform | str): Platform used to execute the circuit. If a string is given, it should correspond
+            to the path to the YAML file containing the serialization of the Platform to be used.
         nshots (int, optional): Number of shots to execute. Defaults to 1.
 
     Returns:
@@ -62,7 +64,8 @@ def execute(circuit: Circuit, platform_path: str, nshots: int = 1):
     circuit = translate_circuit(circuit, optimize=True)
 
     # create platform
-    platform = build_platform(path=platform_path)
+    if isinstance(platform, str):
+        platform = build_platform(path=platform)
 
     settings = ExperimentSettings(hardware_average=1, repetition_duration=200000, software_average=1, num_bins=nshots)
     options = ExperimentOptions(settings=settings)
