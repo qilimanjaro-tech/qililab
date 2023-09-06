@@ -261,7 +261,14 @@ class TestBusDriver:
             for key, instrument_dict in dictionary.items():
                 # Check the general structure of all the instrument dict
                 if key not in ("alias", "port", "type", "distortions"):
-                    assert key in BusDriver.__instrument_interfaces_caps_translate()
+                    assert key in (
+                        "AWG",
+                        "Digitiser",
+                        "LocalOscillator",
+                        "Attenuator",
+                        "VoltageSource",
+                        "CurrentSource",
+                    )
                     assert isinstance(instrument_dict, dict)
                     assert isinstance(instrument_dict["alias"], str)
                     if "parameters" in instrument_dict:
