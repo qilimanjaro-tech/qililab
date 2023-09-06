@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """VectorNetworkAnalyzer class."""
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -9,11 +23,11 @@ from qililab.typings.instruments.vector_network_analyzer import VectorNetworkAna
 DEFAULT_NUMBER_POINTS = 1000
 
 
-class VectorNetworkAnalyzer(Instrument, ABC):
+class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instance-attributes, too-many-public-methods
     """Abstract base class defining all vector network analyzers"""
 
     @dataclass
-    class VectorNetworkAnalyzerSettings(Instrument.InstrumentSettings):
+    class VectorNetworkAnalyzerSettings(Instrument.InstrumentSettings):  # pylint: disable=too-many-instance-attributes
         """Contains the settings of a specific signal generator.
 
         Args:
@@ -99,7 +113,9 @@ class VectorNetworkAnalyzer(Instrument, ABC):
 
         raise ParameterNotFound(f"Invalid Parameter: {parameter}")
 
-    def _set_parameter_float(self, parameter: Parameter, value: float):
+    def _set_parameter_float(  # pylint: disable=too-many-branches, too-many-return-statements
+        self, parameter: Parameter, value: float
+    ):
         """Set instrument settings parameter to the corresponding value
 
         Args:
@@ -369,14 +385,14 @@ class VectorNetworkAnalyzer(Instrument, ABC):
         return self.send_command(command=":OUTP", arg="OFF")
 
     def send_command(self, command: str, arg: str = "?") -> str:
-        """
-        Send a command directly to the device.
+        """Send a command directly to the device.
 
-        Input:
+        Args:
             command(str): Command to send the device
             arg(str): Argument to send the command with. Default empty string
+
         Example:
-            send_command(command=":OUTP",arg="ON") -> ":OUTP ON"
+            >>> send_command(command=":OUTP",arg="ON") -> ":OUTP ON"
         """
         return self.device.send_command(command=command, arg=arg)
 

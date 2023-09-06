@@ -1,18 +1,40 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Gaussian pulse shape."""
+from copy import deepcopy
 from dataclasses import dataclass
 
 import numpy as np
 
-from qililab.constants import RUNCARD
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
-from qililab.typings import PulseShapeName, PulseShapeSettingsName
+from qililab.typings import PulseShapeName
 from qililab.utils import Factory
 
 
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class Gaussian(PulseShape):
-    """Gaussian pulse shape"""
+    """Standard Gaussian pulse shape:
+
+    .. math::
+
+        Gaussian(x) = amplitude * exp(-0.5 * (x - mu)^2 / sigma^2)
+
+    Args:
+        num_sigmas (float): Sigma number of the gaussian.
+    """
 
     name = PulseShapeName.GAUSSIAN
     num_sigmas: float
@@ -32,12 +54,12 @@ class Gaussian(PulseShape):
         mu_ = duration / 2
 
         gaussian = amplitude * np.exp(-0.5 * (time - mu_) ** 2 / sigma**2)
-        norm = np.amax(np.real(gaussian))
+        norm = np.amax(np.abs(np.real(gaussian)))
 
         gaussian = gaussian - gaussian[0]  # Shift to avoid introducing noise at time 0
-        corr_norm = np.amax(np.real(gaussian))
+        corr_norm = np.amax(np.abs(np.real(gaussian)))
 
-        return gaussian * norm / corr_norm
+        return gaussian * norm / corr_norm if corr_norm != 0 else gaussian
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "Gaussian":
@@ -49,8 +71,8 @@ class Gaussian(PulseShape):
         Returns:
             Gaussian: Loaded class.
         """
-        local_dictionary = dictionary.copy()
-        local_dictionary.pop(RUNCARD.NAME, None)
+        local_dictionary = deepcopy(dictionary)
+        local_dictionary.pop("name", None)
         return cls(**local_dictionary)
 
     def to_dict(self):
@@ -60,6 +82,6 @@ class Gaussian(PulseShape):
             dict: Dictionary.
         """
         return {
-            RUNCARD.NAME: self.name.value,
-            PulseShapeSettingsName.NUM_SIGMAS.value: self.num_sigmas,
+            "name": self.name.value,
+            "num_sigmas": self.num_sigmas,
         }

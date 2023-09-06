@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Qblox Pulsar Controller class"""
 from dataclasses import dataclass
 
@@ -21,9 +35,7 @@ class QbloxPulsarController(SingleInstrumentController, QbloxController):
     device: Pulsar
 
     @dataclass
-    class QbloxPulsarControllerSettings(
-        SingleInstrumentController.SingleInstrumentControllerSettings, QbloxController.QbloxControllerSettings
-    ):
+    class QbloxPulsarControllerSettings(QbloxController.QbloxControllerSettings):
         """Contains the settings of a specific Qblox Pulsar Controller."""
 
         def __post_init__(self):
@@ -34,7 +46,7 @@ class QbloxPulsarController(SingleInstrumentController, QbloxController):
 
     def _initialize_device(self):
         """Initialize device controller."""
-        self.device = Pulsar(name=f"{self.name.value}_{self.id_}", identifier=self.address)
+        self.device = Pulsar(name=f"{self.name.value}_{self.alias}", identifier=self.address)
 
     @QbloxController.CheckConnected
     def _set_reference_source(self):

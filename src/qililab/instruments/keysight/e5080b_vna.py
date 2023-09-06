@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """KeySight Vector Network Analyzer E5080B class."""
 import time
 from dataclasses import dataclass
@@ -105,7 +119,6 @@ class E5080B(VectorNetworkAnalyzer):
         self.settings.sweep_mode = VNASweepModes(value)
         mode = self.settings.sweep_mode.name
         self.send_command(f"SENS{channel}:SWE:MODE", mode)
-        return
 
     @property
     def device_timeout(self):
@@ -186,7 +199,7 @@ class E5080B(VectorNetworkAnalyzer):
         """
         try:  # the VNA sometimes throws an error here, we just ignore it
             return self._get_sweep_mode() == "HOLD"
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             return False
 
     def release(self, channel=1):

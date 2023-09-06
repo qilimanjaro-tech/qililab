@@ -1,57 +1,82 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """SNZ pulse shape."""
+from copy import deepcopy
 from dataclasses import dataclass
 
 import numpy as np
 
 from qililab.config import logger
-from qililab.constants import RUNCARD
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
 from qililab.typings import PulseShapeName
-from qililab.typings.enums import PulseShapeSettingsName
 from qililab.utils import Factory
 
 
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class SNZ(PulseShape):
-    """Sudden net zero pulse shape. See supplementary material I in https://arxiv.org/abs/2008.07411"""
+    """Sudden net zero pulse shape. It is composed of a half-duration positive rectangular pulse, followed
+    by three stops to cross height = 0, to then have another half-duration negative rectangular pulse.\
+
+    |   --------------                      <- half-duration positive rectangular pulse
+    |                 -                     <- instantaneous stop at height b
+    0                  ---                  <- t-phi duration at height = 0
+    |                     -                 <- instantaneous stop at height -b
+    |                      -------------    <- half-duration negative rectangular pulse
+
+    References:
+        High-fidelity controlled-Z gate with maximal intermediate leakage operating at the speed
+        limit in a superconducting quantum processor: https://arxiv.org/abs/2008.07411
+
+    Args:
+        b (float): Instant stops height when going from the rectangular half-duration to `height = 0`.
+        t_phi (int): Time at `height = 0`, in the middle of the positive and negative rectangular pulses.
+    """
 
     name = PulseShapeName.SNZ
     b: float
     t_phi: int
 
+    def __post_init__(self):
+        # ensure t_phi is an int
+        if not isinstance(self.t_phi, int):
+            raise TypeError("t_phi for pulse SNZ has to be an integer. Since min time resolution is 1ns")
+
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
         """Constant amplitude envelope.
 
         Args:
-            duration (int): HALF-PULSE duration of the pulse (ns).
+            duration (int): total pulse duration (ns).
             amplitude (float): Maximum amplitude of the pulse
             resolution (float): Pulse resolution
 
         Returns:
             ndarray: Amplitude of the envelope for each time step.
 
-        The duration of the pulse is determined by duration, which is the duration of a halfpulse
-        thus the total duration will be 2*duration + t_phi + 2, where the 2 is due to each of the
-        1ns b pulses
+        The duration of the each half-pulse is determined by the total pulse duration. Thus
+        halfpulse_t = (duration - t_phi - 2) / 2. This implies that (duration - t_phi) should be even.
+        The -2 in the formula above is due to the 2 impulses b.
         """
-
-        # ensure t_phi is an int or float with 0 decimal part
-        if not isinstance(self.t_phi, int):
-            if self.t_phi % 1 != 0:
-                raise ValueError(
-                    f"t_phi with value {self.t_phi}ns for pulse SNZ cannot have decimal part since min time resolution is 1ns"
-                )
-            else:
-                self.t_phi = int(self.t_phi)
-        # full_snz_duration = 2 * duration + self.t_phi + 2
+        # calculate the halfpulse duration
         halfpulse_t = (duration - 2 - self.t_phi) / 2
         halfpulse_t = int(halfpulse_t / resolution)
 
         envelope = np.zeros(round(duration / resolution))
         # raise warning if we are rounding
         if (duration / resolution) % 1 != 0 or (halfpulse_t / resolution) % 1 != 0:
-            logger.warning(
+            logger.warning(  # pylint: disable=logging-fstring-interpolation
                 f"Envelope length rounded to nearest value {len(envelope)} from division full_snz_duration ({duration}) / resolution ({resolution}) = {duration/resolution}"
             )
         envelope[:halfpulse_t] = amplitude * np.ones(halfpulse_t)  # positive square halfpulse
@@ -72,8 +97,8 @@ class SNZ(PulseShape):
         Returns:
             Rectangular: Loaded class.
         """
-        local_dictionary = dictionary.copy()
-        local_dictionary.pop(RUNCARD.NAME, None)
+        local_dictionary = deepcopy(dictionary)
+        local_dictionary.pop("name", None)
         return cls(**local_dictionary)
 
     def to_dict(self):
@@ -84,7 +109,7 @@ class SNZ(PulseShape):
         """
 
         return {
-            RUNCARD.NAME: self.name.value,
-            PulseShapeSettingsName.B.value: self.b,
-            PulseShapeSettingsName.T_PHI.value: self.t_phi,
+            "name": self.name.value,
+            "b": self.b,
+            "t_phi": self.t_phi,
         }

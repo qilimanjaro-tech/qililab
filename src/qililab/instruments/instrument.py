@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Instrument class"""
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -5,10 +19,9 @@ from functools import partial
 from typing import Callable, get_type_hints
 
 from qililab.config import logger
-from qililab.constants import RUNCARD
 from qililab.platform.components.bus_element import BusElement
 from qililab.result import Result
-from qililab.settings import DDBBElement
+from qililab.settings import Settings
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.typings.instruments.device import Device
 
@@ -24,14 +37,15 @@ class Instrument(BusElement, ABC):
     name: InstrumentName
 
     @dataclass
-    class InstrumentSettings(DDBBElement):
+    class InstrumentSettings(Settings):
         """Contains the settings of an instrument.
 
         Args:
+            alias (str): Alias of the instrument.
             firmware (str): Firmware version installed on the instrument.
-            channels (int | None): Number of channels supported or None otherwise.
         """
 
+        alias: str
         firmware: str
 
     settings: InstrumentSettings  # a subtype of settings must be specified by the subclass
@@ -139,7 +153,7 @@ class Instrument(BusElement, ABC):
 
     def __init__(self, settings: dict):
         """Cast the settings to its corresponding class."""
-        settings_class: type[self.InstrumentSettings] = get_type_hints(self).get(RUNCARD.SETTINGS)  # type: ignore
+        settings_class: type[self.InstrumentSettings] = get_type_hints(self).get("settings")  # type: ignore
         self.settings = settings_class(**settings)
 
     @CheckDeviceInitialized
@@ -179,15 +193,6 @@ class Instrument(BusElement, ABC):
         """Turn off an instrument."""
 
     @property
-    def id_(self):
-        """Instrument 'id' property.
-
-        Returns:
-            int: settings.id_.
-        """
-        return self.settings.id_
-
-    @property
     def alias(self):
         """Instrument 'alias' property.
 
@@ -195,15 +200,6 @@ class Instrument(BusElement, ABC):
             str: settings.alias.
         """
         return self.settings.alias
-
-    @property
-    def category(self):
-        """Instrument 'category' property.
-
-        Returns:
-            Category: settings.category.
-        """
-        return self.settings.category
 
     @property
     def firmware(self):
@@ -216,7 +212,7 @@ class Instrument(BusElement, ABC):
 
     def __str__(self):
         """String representation of an instrument."""
-        return f"{self.alias}" if self.alias is not None else f"{self.category}_{self.id_}"
+        return f"{self.alias}"
 
     def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Sets the parameter of a specific instrument.

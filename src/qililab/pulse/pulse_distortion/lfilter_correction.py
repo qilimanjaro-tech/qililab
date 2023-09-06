@@ -1,11 +1,25 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """LFilter correction."""
+from copy import deepcopy
 from dataclasses import dataclass
 
 import numpy as np
 from scipy import signal
 
-from qililab.constants import RUNCARD
-from qililab.typings import PulseDistortionName, PulseDistortionSettingsName
+from qililab.typings import PulseDistortionName
 from qililab.utils import Factory
 
 from .pulse_distortion import PulseDistortion
@@ -48,36 +62,56 @@ class LFilterCorrection(PulseDistortion):
     Args:
         a (list[float]): The denominator coefficient vector in a 1-D sequence.
         b (list[float]): The numerator coefficient vector in a 1-D sequence.
-        norm_factor (float): A coefficient to multiply the final result with, to scale it.
+        norm_factor (float, optional): The manual normalization factor that multiplies the envelope in the apply() method. Defaults to 1 (no effect).
+        auto_norm (bool, optional): Whether to automatically normalize the corrected envelope with the original max height in the apply() method.
+            (The max height is the furthest number from 0 in the envelope, only checking the real axis/part). Defaults to True.
 
     Returns:
         PulseDistortion: Distortion to apply to given envelopes in PulseEvent.
+
+    Examples:
+
+        Imagine you want to distort a `Rectangular` envelope with an `LFilterCorrection`. You could do:
+
+        >>> from qililab.pulse import Rectangular, BiasTeeCorrection
+        >>> envelope = Rectangular().envelope(duration=50, amplitude=1.0)
+        >>> distorted_envelope = LFilterCorrection(a=[0.7, 1.3], b=[0.5, 0.6]).apply(envelope)
+
+        which would return a distorted envelope with the same real max height as the initial.
+
+        >>> np.max(distorted_envelope) == np.max(envelope)
+        True
+
+        .. note::
+            You can find more examples in the docstring of the :class:`PulseDistortion` class.
     """
 
     name = PulseDistortionName.LFILTER
     a: list[float]
     b: list[float]
-    norm_factor: float = 1.0
 
     def apply(self, envelope: np.ndarray) -> np.ndarray:
         """Distorts envelopes (which normally get calibrated with square envelopes).
 
         Corrects an envelope applying the scipy.signal.lfilter.
-        And then normalizes the pulse to the same real amplitude as the initial one.
+
+        If `self.auto_norm` is True (default) normalizes the resulting envelope to have the same real max height than the starting one.
+        (the max height is the furthest number from 0, only checking the real axis/part)
+        If the corrected envelope is zero everywhere or doesn't have a real part this process is skipped.
+
+        Finally it applies the manual `self.norm_factor` to the result, reducing the full envelope by its magnitude.
+
+        For further details on the normalization implementation see the docstring on :class:`PulseDistortion` base class.
 
         Args:
-            envelope (numpy.ndarray): array representing the envelope of a pulse for each time step.
+            envelope (numpy.ndarray): Array representing the envelope of a pulse for each time step.
 
         Returns:
             numpy.ndarray: Amplitude of the envelope for each time step.
         """
-        # Filtered signal, normalized with envelopes max heights (of the real parts)
-        norm = np.amax(np.real(envelope)) * self.norm_factor
+        # Filtered signal
         corr_envelope = signal.lfilter(b=self.b, a=self.a, x=envelope)
-        corr_norm = np.max(np.real(corr_envelope))
-        corr_envelope = corr_envelope * norm / corr_norm
-
-        return corr_envelope
+        return self.normalize_envelope(envelope=envelope, corr_envelope=corr_envelope)
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "LFilterCorrection":
@@ -89,8 +123,8 @@ class LFilterCorrection(PulseDistortion):
         Returns:
             LFilterCorrection: Loaded class.
         """
-        local_dictionary = dictionary.copy()
-        local_dictionary.pop(RUNCARD.NAME, None)
+        local_dictionary = deepcopy(dictionary)
+        local_dictionary.pop("name", None)
         return cls(**local_dictionary)
 
     def to_dict(self) -> dict:
@@ -100,8 +134,9 @@ class LFilterCorrection(PulseDistortion):
             dict: Dictionary.
         """
         return {
-            RUNCARD.NAME: self.name.value,
-            PulseDistortionSettingsName.NORM_FACTOR.value: self.norm_factor,
-            PulseDistortionSettingsName.A.value: self.a,
-            PulseDistortionSettingsName.B.value: self.b,
+            "name": self.name.value,
+            "a": self.a,
+            "b": self.b,
+            "norm_factor": self.norm_factor,
+            "auto_norm": self.auto_norm,
         }

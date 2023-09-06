@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Circuit class
 
 This file provides the Circuit class for representing quantum circuits.
@@ -131,34 +145,37 @@ class Circuit:
         """Get the layers of operation nodes. Each layer represents an advancement in time.
 
         Args:
-            method (OperationTimingsCalculationMethod, optional): The method that layers should be calculated. If set to `OperationTimingsCalcuationMethod.AS_LATE_AS_POSSIBLE, we rearrange the layers, moving operations to the largest layer index possible. Defaults to OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE.
+            method (OperationTimingsCalculationMethod, optional): The method that layers should be calculated.
+                If set to `OperationTimingsCalculationMethod.AS_LATE_AS_POSSIBLE`, we rearrange the layers, moving
+                operations to the largest layer index possible. Defaults to
+                OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE.
 
         Returns:
-            list[list[OperationNode]]: A list of layers each containing a list of operation nodes. Operation nodes are sorted based on their index. (order of insertion)
+            list[list[OperationNode]]: A list of layers each containing a list of operation nodes.
+                Operation nodes are sorted based on their index. (order of insertion)
         """
         layers = rx.layers(self.graph, [self.entry_node.index])[1:]  # pylint: disable=no-member
         for layer in layers:
             layer.sort(key=lambda node: node.index)
         if method == OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE:
             return layers
-        else:
-            for qubit in range(self.num_qubits):
-                for index, layer in enumerate(layers):
-                    current_single_operations_on_qubit = [
-                        op_i
-                        for op_i, operation in enumerate(layer)
-                        if qubit in operation.qubits and len(operation.qubits) == 1
-                    ]
-                    if len(current_single_operations_on_qubit) == 0:
-                        continue
-                    if index == len(layers) - 1:
-                        continue
-                    next_layer_operations_on_qubit = [
-                        operation for operation in layers[index + 1] if qubit in operation.qubits
-                    ]
-                    if len(next_layer_operations_on_qubit) == 0:
-                        layers[index + 1].append(layer.pop(current_single_operations_on_qubit[0]))
-            return layers
+        for qubit in range(self.num_qubits):
+            for index, layer in enumerate(layers):
+                current_single_operations_on_qubit = [
+                    op_i
+                    for op_i, operation in enumerate(layer)
+                    if qubit in operation.qubits and len(operation.qubits) == 1
+                ]
+                if len(current_single_operations_on_qubit) == 0:
+                    continue
+                if index == len(layers) - 1:
+                    continue
+                next_layer_operations_on_qubit = [
+                    operation for operation in layers[index + 1] if qubit in operation.qubits
+                ]
+                if len(next_layer_operations_on_qubit) == 0:
+                    layers[index + 1].append(layer.pop(current_single_operations_on_qubit[0]))
+        return layers
 
     def draw(self, filename: str | None = None):
         """Draws the circuit's graph.
@@ -170,12 +187,11 @@ class Circuit:
         def node_attr(node):
             if isinstance(node, EntryNode):
                 return {"color": "yellow", "fillcolor": "yellow", "style": "filled", "label": "start"}
-            else:
-                operation = str(node.operation)
-                qubits = ", ".join((str(qubit) for qubit in node.qubits))
-                timing = f"{node.timing.start}ns -> {node.timing.end}ns" if node.timing is not None else ""
-                label = f"{operation}: {qubits}\n{timing}"
-                return {"color": "red", "fillcolor": "red", "style": "filled", "label": label}
+            operation = str(node.operation)
+            qubits = ", ".join((str(qubit) for qubit in node.qubits))
+            timing = f"{node.timing.start}ns -> {node.timing.end}ns" if node.timing is not None else ""
+            label = f"{operation}: {qubits}\n{timing}"
+            return {"color": "red", "fillcolor": "red", "style": "filled", "label": label}
 
         image = graphviz_draw(self.graph, node_attr_fn=node_attr, filename=filename)
         if image is not None:

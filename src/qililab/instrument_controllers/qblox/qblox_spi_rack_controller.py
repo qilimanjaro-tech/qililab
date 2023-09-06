@@ -1,8 +1,22 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Qblox SPI Rack Controller class"""
 from dataclasses import dataclass
 from typing import Sequence
 
-from qililab.instrument_controllers.multi_instrument_controller import MultiInstrumentController
+from qililab.instrument_controllers.instrument_controller import InstrumentController, InstrumentControllerSettings
 from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instruments.qblox.qblox_d5a import QbloxD5a
 from qililab.instruments.qblox.qblox_s4g import QbloxS4g
@@ -11,7 +25,7 @@ from qililab.typings.instruments.spi_rack import SPI_Rack
 
 
 @InstrumentControllerFactory.register
-class QbloxSPIRackController(MultiInstrumentController):
+class QbloxSPIRackController(InstrumentController):
     """Qblox SPI Rack Controller class.
 
     Args:
@@ -28,7 +42,7 @@ class QbloxSPIRackController(MultiInstrumentController):
     modules: Sequence[QbloxD5a | QbloxS4g]
 
     @dataclass
-    class QbloxSPIRackControllerSettings(MultiInstrumentController.MultiInstrumentControllerSettings):
+    class QbloxSPIRackControllerSettings(InstrumentControllerSettings):
         """Contains the settings of a specific Qblox Cluster Controller."""
 
         reset = False
@@ -41,7 +55,7 @@ class QbloxSPIRackController(MultiInstrumentController):
 
     def _initialize_device(self):
         """Initialize device controller."""
-        self.device = SPI_Rack(name=f"{self.name.value}_{self.id_}", address=self.address)
+        self.device = SPI_Rack(name=f"{self.name.value}_{self.alias}", address=self.address)
 
     def _set_device_to_all_modules(self):
         """Sets the initialized device to all attached modules,

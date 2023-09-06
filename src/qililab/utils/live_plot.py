@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """LivePlot class."""
 from collections.abc import Iterator
 from itertools import count
@@ -10,7 +24,7 @@ from qililab.typings.enums import LivePlotTypes
 from qililab.utils.loop import Loop
 
 
-class LivePlot:
+class LivePlot:  # pylint: disable=too-many-instance-attributes
     """Class used to live plot experiment results.
 
     This class supports 1D and 2D plots. When running multiple sequences, the sequencer index will always be plotted
@@ -161,7 +175,7 @@ class LivePlot:
         """Return plot label from loop object.
 
         Args:
-            loop (Loop): Loop class.
+            loop (~utils.loop.Loop): Loop class.
 
         Returns:
             str: Plot label.

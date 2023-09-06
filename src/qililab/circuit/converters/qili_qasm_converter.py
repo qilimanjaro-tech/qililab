@@ -1,10 +1,24 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """QiliQasmConvert
 
 This file provides the `QiliQasmConverter` class, which is responsible for converting Qililab quantum circuits
 to and from QILIQASM format. The QILIQASM format is a custom representation designed specifically for Qililab circuits.
 """
-from qililab.circuit import Circuit
-from qililab.circuit.operations import Operation
+from qililab.circuit import Circuit  # pylint: disable=cyclic-import
+from qililab.circuit.operations import Operation  # pylint: disable=cyclic-import
 from qililab.config.version import __version__
 
 

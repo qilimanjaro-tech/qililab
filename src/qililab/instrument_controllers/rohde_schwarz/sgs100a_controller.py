@@ -1,7 +1,22 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """ Rohde & Schwarz SGS100A Instrument Controller """
 from dataclasses import dataclass
 from typing import Sequence
 
+from qililab.instrument_controllers.instrument_controller import InstrumentControllerSettings
 from qililab.instrument_controllers.single_instrument_controller import SingleInstrumentController
 from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instruments.rohde_schwarz.sgs100a import SGS100A
@@ -24,7 +39,7 @@ class SGS100AController(SingleInstrumentController):
     modules: Sequence[SGS100A]
 
     @dataclass
-    class SGS100AControllerSettings(SingleInstrumentController.SingleInstrumentControllerSettings):
+    class SGS100AControllerSettings(InstrumentControllerSettings):
         """Contains the settings of a specific SGS100A Controller."""
 
         reference_clock: str
@@ -43,7 +58,7 @@ class SGS100AController(SingleInstrumentController):
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
-        self.device = RohdeSchwarzSGS100A(f"{self.name.value}_{self.id_}", f"TCPIP0::{self.address}::inst0::INSTR")
+        self.device = RohdeSchwarzSGS100A(f"{self.name.value}_{self.alias}", f"TCPIP0::{self.address}::inst0::INSTR")
 
     def _check_supported_modules(self):
         """check if all instrument modules loaded are supported modules for the controller."""

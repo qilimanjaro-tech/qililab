@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Operation class
 
 This file provides the abstract base class (ABC) Operation, which serves as the base class for all quantum operations in a quantum circuit.
@@ -135,11 +149,10 @@ class Operation(ABC):
         Returns:
             Operation: An instance of the parsed operation.
         """
-        match = re.match(r"(\w+)(?:\((\w+=.+,?)\))?", string_representation)
-        if match:
+        if match := re.match(r"(\w+)(?:\((\w+=.+,?)\))?", string_representation):
             operation_name, parameters_str = match.groups()
             operation_class = OperationFactory.get(operation_name)
-            operation_signature = operation_class._get_signature()
+            operation_signature = operation_class._get_signature()  # pylint: disable=protected-access
             parameters = {}
             if parameters_str is not None:
                 for parameter_str in parameters_str.split(","):
@@ -150,5 +163,4 @@ class Operation(ABC):
                     value = parameter_signature.annotation(value)
                     parameters[name] = value
             return operation_class(**parameters)
-        else:
-            raise ValueError(f"Invalid string representation: {string_representation}")
+        raise ValueError(f"Invalid string representation: {string_representation}")

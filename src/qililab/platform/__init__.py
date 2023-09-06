@@ -1,37 +1,39 @@
-"""__init__.py"""
-from qiboconnection.api import API
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-from .components import Bus, BusElement, Buses, Schema
+"""
+This module contains all the methods and classes used to define a Platform, which is a representation
+of a laboratory.
+
+Platform Class
+~~~~~~~~~~~~~~~~
+
+.. currentmodule:: qililab.platform
+
+.. autosummary::
+    :toctree: api
+
+    ~Platform
+
+
+Platform Components
+~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~Bus
+"""
+from .components import Bus, BusElement, Buses
 from .platform import Platform
-from .platform_manager_db import PlatformManagerDB
-from .platform_manager_yaml import PlatformManagerYAML
-
-PLATFORM_MANAGER_DB = PlatformManagerDB()
-PLATFORM_MANAGER_YAML = PlatformManagerYAML()
-
-
-def build_platform(name: str, connection: API | None = None, database: bool = False) -> Platform:
-    """Build platform.
-
-    Args:
-        platform_name (str): Platform name.
-        database (bool, optional): If True, build platform from database. Defaults to False.
-
-    Returns:
-        Platform: Platform object.
-    """
-    if database:
-        raise NotImplementedError
-    return PLATFORM_MANAGER_YAML.build(platform_name=name, connection=connection)
-
-
-def save_platform(platform: Platform, database: bool = False):
-    """Save platform.
-
-    Args:
-        platform_name (str): Platform name.
-        database (bool, optional): If True, save platform to database. Defaults to False.
-    """
-    if database:
-        raise NotImplementedError
-    return PLATFORM_MANAGER_YAML.dump(platform=platform)
