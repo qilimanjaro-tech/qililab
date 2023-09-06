@@ -1,3 +1,4 @@
+import pytest
 import qcodes.validators as vals
 from qcodes.instrument import DelegateParameter, Instrument
 from qcodes.tests.instrument_mocks import DummyInstrument
@@ -19,6 +20,12 @@ class MockInstrument(DummyInstrument):  # pylint: disable=abstract-method
             get_parser=float,
             vals=vals.Numbers(0, 20e9),
         )
+
+
+@pytest.fixture(name="era_synth_plus")
+def fixture_era_synth_plus() -> ERASynthPlus:
+    """Return ERASynthPlus instance."""
+    return ERASynthPlus(name="dummy_ERASynthPlus", address="none")
 
 
 class TestERASynthPlus:
@@ -43,16 +50,18 @@ class TestERASynthPlus:
 
         Instrument.close_all()
 
-    def test_init(self):
+    def test_init(self, era_synth_plus):
         """Test the init method of the ERASynthPlus class."""
-        es = ERASynthPlus(name="dummy_ERASynthPlus", address="none")
-        assert isinstance(es.parameters["lo_frequency"], DelegateParameter)
+        assert isinstance(era_synth_plus.parameters["lo_frequency"], DelegateParameter)
         # test set get with frequency and lo_frequency
-        es.set("frequency", 2)
-        assert es.get("lo_frequency") == 2
-        assert es.lo_frequency.label == "Delegated parameter for local oscillator frequency"
+        era_synth_plus.set("frequency", 2)
+        assert era_synth_plus.get("lo_frequency") == 2
+        assert era_synth_plus.lo_frequency.label == "Delegated parameter for local oscillator frequency"
 
-    def test_params(self):
+    def test_params(self, era_synth_plus):
         """Unittest to test the params property."""
-        es = ERASynthPlus(name="dummy_ERASynthPlus", address="none")
-        assert es.params == es.parameters
+        assert era_synth_plus.params == era_synth_plus.parameters
+
+    def test_alias(self, era_synth_plus):
+        """Unittest to test the alias property."""
+        assert era_synth_plus.alias == era_synth_plus.name

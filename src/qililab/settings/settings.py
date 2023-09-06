@@ -1,26 +1,29 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Settings class."""
 from dataclasses import dataclass
 from types import NoneType
 from typing import Any
 
-from qililab.typings import Category, Parameter
+from qililab.typings import Parameter
 from qililab.utils.castings import cast_enum_fields
 
 
 @dataclass(kw_only=True)
-class DDBBElement:
-    """Settings class.
-
-    Args:
-        id_ (str): ID of the settings.
-        category (str): General name of the settings category. Options are "platform", "awg",
-        "signal_generator", "qubit", "resonator", "mixer" and "bus".
-        alias (str): Unique name identifying the element.
-    """
-
-    id_: int
-    category: Category
-    alias: str | None = None
+class Settings:
+    """Settings class."""
 
     def __post_init__(self):
         """Cast all enum attributes to its corresponding Enum class."""

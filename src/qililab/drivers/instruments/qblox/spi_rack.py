@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Drivers for SpiRack and its corresponging channels: D5aDacChannel & S4gDacChannel."""
 from typing import Union
 
@@ -10,12 +24,12 @@ from qcodes import Instrument
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 
 from qililab.drivers.instruments.instrument_factory import InstrumentDriverFactory
-from qililab.drivers.interfaces import CurrentSource, VoltageSource
+from qililab.drivers.interfaces import BaseInstrument, CurrentSource, VoltageSource
 
 
 # MAIN SpiRack CLASS
 @InstrumentDriverFactory.register
-class SpiRack(QcodesSpiRack):  # pylint: disable=abstract-method
+class SpiRack(QcodesSpiRack, BaseInstrument):  # pylint: disable=abstract-method
     """
     Qililab's driver for the Qblox SpiRack.
 
@@ -35,9 +49,19 @@ class SpiRack(QcodesSpiRack):  # pylint: disable=abstract-method
         self._MODULES_MAP["S4g"] = S4gModule
         self._MODULES_MAP["D5a"] = D5aModule
 
+    @property
+    def params(self):
+        """return the parameters of the instrument"""
+        return self.parameters
+
+    @property
+    def alias(self):
+        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
+        return self.name
+
 
 # MODULE CLASSES that select the channels
-class D5aModule(QcodesD5aModule):
+class D5aModule(QcodesD5aModule, BaseInstrument):
     """
     Qililab's driver for the Qblox D5a Module.
 
@@ -64,8 +88,18 @@ class D5aModule(QcodesD5aModule):
             self._channels[dac] = new_channel
             self.add_submodule(old_channel._chan_name, new_channel)
 
+    @property
+    def params(self):
+        """return the parameters of the instrument"""
+        return self.parameters
 
-class S4gModule(QcodesS4gModule):
+    @property
+    def alias(self):
+        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
+        return self.name
+
+
+class S4gModule(QcodesS4gModule, BaseInstrument):
     """
     Qililab's driver for the Qblox S4g Module.
 
@@ -93,6 +127,16 @@ class S4gModule(QcodesS4gModule):
             self._channels[dac] = new_channel
             self.add_submodule(old_channel._chan_name, new_channel)
 
+    @property
+    def params(self):
+        """return the parameters of the instrument"""
+        return self.parameters
+
+    @property
+    def alias(self):
+        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
+        return self.name
+
 
 # CHANNELS CLASSES that act as the corresponding Voltage/Current sources.
 class D5aDacChannel(QcodesD5aDacChannel, VoltageSource):
@@ -111,6 +155,11 @@ class D5aDacChannel(QcodesD5aDacChannel, VoltageSource):
     def params(self):
         """return the parameters of the instrument"""
         return self.parameters
+
+    @property
+    def alias(self):
+        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
+        return self.name
 
     def on(self) -> None:
         """Start D5aDacChannel"""
@@ -136,6 +185,11 @@ class S4gDacChannel(QcodesS4gDacChannel, CurrentSource):
     def params(self):
         """return the parameters of the instrument"""
         return self.parameters
+
+    @property
+    def alias(self):
+        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
+        return self.name
 
     def on(self) -> None:
         """Start S4gDacChannel"""

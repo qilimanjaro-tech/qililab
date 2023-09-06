@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Class that translates a Qibo Circuit into a PulseSequence"""
 import contextlib
 from dataclasses import asdict
@@ -9,13 +23,14 @@ from qibo.models.circuit import Circuit
 from qililab.chip.nodes import Coupler, Qubit
 from qililab.constants import RUNCARD
 from qililab.platform import Bus, Platform
-from qililab.pulse.pulse import Pulse
-from qililab.pulse.pulse_event import PulseEvent
-from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.transpiler import Drag
 from qililab.typings.enums import Line
 from qililab.utils import Factory, qibo_gates
+
+from .pulse import Pulse
+from .pulse_event import PulseEvent
+from .pulse_schedule import PulseSchedule
 
 
 class CircuitToPulses:  # pylint: disable=too-few-public-methods
@@ -205,15 +220,19 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
     ) -> PulseEvent:
         """Translate a gate element into a pulse.
 
-        Args:
-            time (dict[int, int]): dictionary containing qubit indices as keys and current time (ns) as values
-            gate (gate): circuit gate. This is used only to know the qubit target of measurement gates
-            gate_event (GateEventSettings): gate event, a single element of a gate schedule containing information
-            about the pulse to be applied
-            bus (bus): bus through which the pulse is sent
+                Args:
+                    time (dict[int, int]): dictionary containing qubit indices as keys and current time (ns) as values
+                    gate (gate): circuit gate. This is used only to know the qubit target of measurement gates
+                    gate_event (GateEventSettings): gate event, a single element of a gate schedule containing information
+                    about the pulse to be applied
+                    bus (bus): bus through which the pulse is sent
 
-        Returns:
-            PulseEvent: pulse event corresponding to the input gate event
+                Returns:
+        <<<<<<< HEAD
+                    tuple[PulseEvent | None, str]: (PulseEvent or None, port_id).
+        =======
+                    PulseEvent: pulse event corresponding to the input gate event
+        >>>>>>> main
         """
 
         # copy to avoid modifying runcard settings
@@ -236,7 +255,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
                 amplitude=pulse.amplitude,
                 phase=pulse.phase,
                 duration=pulse.duration,
-                frequency=pulse.frequency,
+                frequency=0,
                 pulse_shape=pulse_shape,
             ),
             start_time=time + gate_event.wait_time + self.platform.gates_settings.delay_before_readout,

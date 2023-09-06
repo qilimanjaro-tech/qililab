@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Simulated SystemControl class."""
 from dataclasses import dataclass, field
 
@@ -70,22 +84,28 @@ class SimulatedSystemControl(ReadoutSystemControl):
         """String representation of a Simulated SystemControl class."""
         return "--"
 
-    def run(self, port: int) -> None:
-        """Run the program"""
+    def run(self, port: str) -> None:
+        """Run the program.
+
+        Args:
+            port (str): Port of the chip.
+        """
         self._evo.set_pulse_sequence(pulse_sequence=self.sequence, resolution=self.settings.resolution * 1e-9)
         self._evo.evolve()
 
-    def acquire_result(self, port: int) -> SimulatorResult:
+    def acquire_result(self) -> SimulatorResult:
         """Read the result from the AWG instrument
+        Args:
+            port (str): Port of the chip.
 
         Returns:
-            Result: Acquired result
+            SimulatorResult: Acquired result.
         """
         return SimulatorResult(psi0=self._evo.psi0, states=self._evo.states, times=self._evo.times)
 
     def to_dict(self):
         """Return a dict representation of a SystemControl class."""
-        return {RUNCARD.ID: self.id_, RUNCARD.NAME: self.name.value, RUNCARD.CATEGORY: self.settings.category.value}
+        return {RUNCARD.NAME: self.name.value}
 
     def compile(
         self,
@@ -100,9 +120,10 @@ class SimulatedSystemControl(ReadoutSystemControl):
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             nshots (int): number of shots / hardware average
             repetition_duration (int): maximum window for the duration of one hardware repetition
+            num_bins (int, optional): Number of bins used. Defaults to 1.
 
         Returns:
-            list: empty list
+            list: Empty list.
         """
         # TODO: get pulses -> check
         waveforms = pulse_bus_schedule.waveforms(resolution=self.settings.resolution)
@@ -110,5 +131,11 @@ class SimulatedSystemControl(ReadoutSystemControl):
         self.sequence = [i_waveform]
         return []
 
-    def upload(self, port: int):
-        pass
+    def upload(self, port: str):
+        """Upload sequence.
+
+        This method is added just for compatibility with qililab's workflow.
+
+        Args:
+            port (str): Port of the chip.
+        """

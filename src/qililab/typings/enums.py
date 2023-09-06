@@ -1,44 +1,19 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Enum classes"""
 from enum import Enum
-
-
-class Category(str, Enum):
-    """Category of settings.
-
-    Args:
-        enum (str): Available types of settings categories:
-        * platform
-        * qubit
-        * awg
-        * signal_generator
-        * buses
-        * bus
-        * resonator
-        * node
-        * instrument_controller
-        * voltage_source
-        * current_source
-        * digital_analog_converter
-    """
-
-    PLATFORM = "platform"
-    QUBIT = "qubit"
-    AWG = "awg"
-    SIGNAL_GENERATOR = "signal_generator"
-    RESONATOR = "resonator"
-    BUSES = "buses"
-    BUS = "bus"
-    SYSTEM_CONTROL = "system_control"
-    EXPERIMENT = "experiment"
-    ATTENUATOR = "attenuator"
-    DC_SOURCE = "dc_source"
-    VNA = "vna"
-    CHIP = "chip"
-    NODE = "node"
-    INSTRUMENT_CONTROLLER = "instrument_controller"
-    VOLTAGE_SOURCE = "voltage_source"
-    CURRENT_SOURCE = "current_source"
-    ADC = "adc"
 
 
 class Instrument(str, Enum):
@@ -60,19 +35,6 @@ class Instrument(str, Enum):
     ATTENUATOR = "attenuator"
     VOLTAGE_SOURCE = "voltage_source"
     CURRENT_SOURCE = "current_source"
-
-
-class InstrumentControllerSubCategory(str, Enum):
-    """Instrument Controller subcategory types.
-
-    Args:
-        enum (str): Available types of instrument controllers:
-        * single_instrument
-        * multiple_instruments
-    """
-
-    SINGLE = "single_instrument"
-    MULTI = "multiple_instruments"
 
 
 class ReferenceClock(str, Enum):
@@ -166,25 +128,6 @@ class PulseDistortionName(str, Enum):
     LFILTER = "lfilter"
 
 
-class PulseDistortionSettingsName(str, Enum):
-    """Pulse Shape Settings names.
-
-    Args:
-        enum (str): Available types of pulse distortion settings names:
-        * tau_bias_tee
-        * tau_exponential
-        * amp
-    """
-
-    TAU_BIAS_TEE = "tau_bias_tee"
-    TAU_EXPONENTIAL = "tau_exponential"
-    AMP = "amp"
-    SAMPLING_RATE = "sampling_rate"
-    NORM_FACTOR = "norm_factor"
-    A = "a"
-    B = "b"
-
-
 class PulseShapeName(str, Enum):
     """Pulse shape options.
 
@@ -198,23 +141,6 @@ class PulseShapeName(str, Enum):
     RECTANGULAR = "rectangular"
     SNZ = "snz"
     COSINE = "cosine"
-
-
-class PulseShapeSettingsName(str, Enum):
-    """Pulse Shape Settings names.
-
-    Args:
-        enum (str): Available types of pulse shape settings names:
-        * num_sigmas
-        * drag_coefficient
-        * b (amplitude of the first and last sampling points of t_phi in the SNZ pulse)
-    """
-
-    NUM_SIGMAS = "num_sigmas"
-    DRAG_COEFFICIENT = "drag_coefficient"
-    B = "b"
-    T_PHI = "t_phi"
-    LAMBDA_2 = "lambda_2"
 
 
 class NodeName(str, Enum):

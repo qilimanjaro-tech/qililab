@@ -4,6 +4,19 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Distorsions and PulseShapes have been improved: [#512](https://github.com/qilimanjaro-tech/qililab/pull/512)
+
+  They now work for `amplitude=0`, and for negative and `snz` envelopes (both positive and negatives)
+
+  It now also adds the `norm_factor` parameter for manual normalization to all the distortions (previously only in the lfilter distortion)
+
+  And finally we also have added the option to skip the automatic normalization that we do, setting the parameter `auto_norm` to `False`, (defaults to `True`).
+
+  Plus, added a lots of tests and documentation to both classes.
+
+- Fixed bug which did not allow gaussian waveforms to have amplitude 0
+  [#471](https://github.com/qilimanjaro-tech/qililab/pull/471)
+
 - Delete `Schema` class from `Platform` and `RuncardSchema` classes (and from the rest of qililab).
 
   Also `RuncardSchema` is now called simply `Runcard` (since its the class that maps our runcard files).
@@ -247,12 +260,43 @@ This document contains the changes of the current release.
 - Added support for `Parameter.Gate_Parameter` in `experiment.set_parameter()` method. In this case, alias is a, convertable to integer, string that denotes the index of the parameter to change, as returned by `circuit.get_parameters()` method.
   [#404](https://github.com/qilimanjaro-tech/qililab/pull/404)
 
+- The `Chip` class now uses the `alias` of each node to define node connections.
+  [#494](https://github.com/qilimanjaro-tech/qililab/pull/494)
+
+  Before:
+
+  ```yaml
+  chip:
+  nodes:
+    - name: qubit
+      alias: qubit_0
+      id_: 0
+      qubit_index: 0
+      frequency: 4.92e+09
+      nodes: [2, 10, 20, 30]
+  ```
+
+  Now:
+
+  ```yaml
+  chip:
+  nodes:
+    - name: qubit
+      alias: qubit_0
+      qubit_index: 0
+      frequency: 4.92e+09
+      nodes: [qubit_2, resonator_q0, drive_line_q0, flux_line_q0]
+  ```
+
 ### Breaking changes
 
 - Old scripts using `Experiment` with circuits should be changed and use `CircuitExperiment` instead.
   [#334](https://github.com/qilimanjaro-tech/qililab/pull/334)
 
 ### Deprecations / Removals
+
+- `id` and `category` attributes have been removed from `qililab`.
+  [#494](https://github.com/qilimanjaro-tech/qililab/pull/494)
 
 ### Documentation
 

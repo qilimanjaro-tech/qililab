@@ -92,6 +92,8 @@ class TestKeithley2600:
         assert all(isinstance(submodules[name], Keithley2600Channel) for name in channels_names)
         assert all(isinstance(instrument_modules[name], Keithley2600Channel) for name in channels_names)
         assert keithley_2600.channels == [submodules["smua"], submodules["smub"]]
+        assert keithley_2600.params == keithley_2600.parameters
+        assert keithley_2600.alias == keithley_2600.name
 
 
 class TestKeithley2600Channel:
@@ -139,3 +141,10 @@ class TestKeithley2600Channel:
         channel_smub = Keithley2600Channel(parent=MagicMock(), name="test_channel_smub", channel="smub")
         assert channel_smua.params == channel_smua.parameters
         assert channel_smub.params == channel_smub.parameters
+
+    def test_alias(self):
+        """Unittest to test the alias property."""
+        channel_smua = Keithley2600Channel(parent=MagicMock(), name="test_channel_smua", channel="smua")
+        channel_smub = Keithley2600Channel(parent=MagicMock(), name="test_channel_smub", channel="smub")
+        assert channel_smua.alias == channel_smua.name
+        assert channel_smub.alias == channel_smub.name

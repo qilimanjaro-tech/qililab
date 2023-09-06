@@ -10,13 +10,13 @@ from qililab.instruments import Attenuator
 from qililab.platform import Platform
 from qililab.typings.enums import Parameter
 from tests.data import Galadriel
-from tests.test_utils import platform_db
+from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="platform")
 def fixture_platform() -> Platform:
     """Return Platform object."""
-    return platform_db(runcard=Galadriel.runcard)
+    return build_platform(runcard=Galadriel.runcard)
 
 
 @pytest.fixture(name="attenuator_controller")
@@ -59,14 +59,6 @@ def fixture_attenuator(mock_urllib: MagicMock, attenuator_controller: MiniCircui
 
 class TestAttenuator:
     """Unit tests checking the Attenuator attributes and methods."""
-
-    def test_id_property(self, attenuator_no_device: Attenuator):
-        """Test id property."""
-        assert attenuator_no_device.id_ == attenuator_no_device.settings.id_
-
-    def test_category_property(self, attenuator_no_device: Attenuator):
-        """Test category property."""
-        assert attenuator_no_device.category == attenuator_no_device.settings.category
 
     def test_attenuation_property(self, attenuator: Attenuator):
         """Test attenuation property."""

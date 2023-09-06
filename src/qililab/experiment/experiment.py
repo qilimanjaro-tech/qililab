@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """ Experiment class."""
 import copy
 import itertools
@@ -115,14 +129,13 @@ class Experiment(BaseExperiment):
         idx = copy.deepcopy(kwargs["idx"])
 
         if loops is None or len(loops) == 0:
-            self.execution_manager.compile(
-                idx=idx,
-                nshots=self.hardware_average,
+            result = self.platform.execute(
+                program=self.pulse_schedules[idx],
+                num_avg=self.hardware_average,
                 repetition_duration=self.repetition_duration,
                 num_bins=self.num_bins,
+                queue=queue,
             )
-            self.execution_manager.upload()
-            result = self.execution_manager.run(queue)
             if result is not None:
                 self.results.add(result)
             return
@@ -170,8 +183,8 @@ class Experiment(BaseExperiment):
         if not hasattr(self, "execution_manager"):
             raise ValueError("Please build the execution_manager before compilation.")
         return [
-            self.execution_manager.compile(schedule_idx, self.hardware_average, self.repetition_duration, self.num_bins)
-            for schedule_idx in range(len(self.pulse_schedules))
+            self.platform.compile(schedule, self.hardware_average, self.repetition_duration, self.num_bins)
+            for schedule in self.pulse_schedules
         ]
 
     def draw(

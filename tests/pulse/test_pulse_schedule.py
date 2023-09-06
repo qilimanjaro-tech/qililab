@@ -5,7 +5,7 @@ from qililab.platform import Platform
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent, PulseSchedule
 from qililab.pulse.circuit_to_pulses import CircuitToPulses
 from tests.data import Galadriel, circuit, experiment_params
-from tests.test_utils import platform_db
+from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="pulse_event")
@@ -23,7 +23,7 @@ def fixture_pulse_event() -> PulseEvent:
 @pytest.fixture(name="platform")
 def fixture_platform() -> Platform:
     """Return Platform object."""
-    return platform_db(runcard=Galadriel.runcard)
+    return build_platform(runcard=Galadriel.runcard)
 
 
 @pytest.fixture(name="pulse_schedule", params=experiment_params)

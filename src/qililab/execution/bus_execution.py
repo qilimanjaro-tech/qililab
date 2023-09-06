@@ -1,47 +1,41 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """BusExecution class."""
 from dataclasses import dataclass, field
 
 from qililab.platform import Bus
 from qililab.pulse import PulseBusSchedule
-from qililab.result.result import Result
-from qililab.system_control import ReadoutSystemControl, SimulatedSystemControl, SystemControl
+from qililab.system_control import ReadoutSystemControl, SystemControl
 from qililab.utils import Waveforms
 
 
+# TODO: Remove class once a Drawer class is implemented
 @dataclass
 class BusExecution:
     """This class contains the information of a specific bus in the platform together with a list of
-    pulse schedules that will be executed on this bus."""
+    pulse schedules that will be executed on this bus.
+
+    This class is a relic and should be removed once the drawing responsibilities are moved to its own class.
+
+    Args:
+        bus (Bus): Bus where the pulse schedules will be executed.
+        pulse_bus_schedules (list[PulseBusSchedule]): pulse schedules to execute on the Bus.
+    """
 
     bus: Bus
     pulse_bus_schedules: list[PulseBusSchedule] = field(default_factory=list)
-
-    def compile(self, idx: int, nshots: int, repetition_duration: int, num_bins: int) -> list:
-        """Compiles the pulse schedule at index ``idx`` into an assembly program.
-
-        Args:
-            idx (int): index of the circuit to compile and upload
-            nshots (int): number of shots / hardware average
-            repetition_duration (int): maximum window for the duration of one hardware repetition
-            num_bins (int): number of bins.
-
-        Returns:
-            list: list of compiled assembly programs
-        """
-        return self.system_control.compile(
-            pulse_bus_schedule=self.pulse_bus_schedules[idx],
-            nshots=nshots,
-            repetition_duration=repetition_duration,
-            num_bins=num_bins,
-        )
-
-    def upload(self):
-        """Uploads any previously compiled program into the instrument."""
-        self.system_control.upload(port=self.port)
-
-    def run(self):
-        """Run the given pulse sequence."""
-        return self.system_control.run(port=self.port)
 
     def add_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule):
         """Add pulse to the BusPulseSequence given by idx.
@@ -51,19 +45,6 @@ class BusExecution:
             idx (int): Index of the BusPulseSequence to add the pulse.
         """
         self.pulse_bus_schedules.append(pulse_bus_schedule)
-
-    def acquire_result(self) -> Result:
-        """Read the result from the AWG instrument
-
-        Returns:
-            Result: Acquired result
-        """
-        if not isinstance(self.system_control, (ReadoutSystemControl, SimulatedSystemControl)):
-            raise ValueError(
-                f"The bus {self.bus.alias} needs a readout system control to acquire the results. This bus "
-                f"has a {self.system_control.name} instead."
-            )
-        return self.system_control.acquire_result(port=self.port)  # type: ignore  # pylint: disable=no-member
 
     def acquire_time(self, idx: int = 0) -> int:
         """BusExecution 'acquire_time' property.
@@ -96,15 +77,6 @@ class BusExecution:
         return self.pulse_bus_schedules[idx].waveforms(modulation=modulation, resolution=resolution)
 
     @property
-    def port(self):
-        """BusExecution 'port' property
-
-        Returns:
-            int: Port where the bus is connected.
-        """
-        return self.bus.port
-
-    @property
     def system_control(self) -> SystemControl:
         """BusExecution 'system_control' property.
 
@@ -112,15 +84,6 @@ class BusExecution:
             SystemControl: bus.system_control
         """
         return self.bus.system_control
-
-    @property
-    def id_(self):
-        """BusExecution id property.
-
-        Returns:
-            int: The id of the bus.
-        """
-        return self.bus.id_
 
     @property
     def alias(self):

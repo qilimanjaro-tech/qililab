@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Instrument Controller class"""
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -12,30 +26,29 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.utils.instrument_reference import InstrumentReference
 from qililab.instruments.utils.loader import Loader
 from qililab.platform.components.bus_element import BusElement
-from qililab.settings import DDBBElement
-from qililab.typings.enums import InstrumentControllerName, InstrumentControllerSubCategory, Parameter
+from qililab.settings import Settings
+from qililab.typings.enums import InstrumentControllerName, Parameter
 from qililab.typings.instruments.device import Device
 from qililab.utils import Factory
 
 
 @dataclass(kw_only=True)
-class InstrumentControllerSettings(DDBBElement):
+class InstrumentControllerSettings(Settings):
     """Contains the settings of a specific Instrument Controller.
 
     Args:
-        subcategory (InstrumentControllerSubCategory): Subcategory type of the Instrument Controller.
         connection (Connection): Connection class that represents the connection type of the Instrument Controller.
         modules: (list[InstrumentReference]): List of the Instrument References that links to the actual Instruments
                                                 to be managed by the Instrument Controller.
+        reset (bool, optional): Whether or not to reset the instrument after connecting to it. Defaults to True.
     """
 
+    alias: str
     connection: Connection
     modules: list[InstrumentReference]
-    subcategory: InstrumentControllerSubCategory  # a subtype of settings must be specified by the subclass
     reset: bool = True
 
     def __post_init__(self):
-        """Cast nodes and category to their corresponding classes."""
         super().__post_init__()
         if self.connection and isinstance(self.connection, dict):
             # Pop the connection name from the dictionary and instantiate its corresponding Connection class.
@@ -199,15 +212,6 @@ class InstrumentController(BusElement, ABC):
         self._release_device_and_set_to_all_modules()
 
     @property
-    def id_(self):
-        """ID of the instrument controller.
-
-        Returns:
-            int: ID of the instrument controller.
-        """
-        return self.settings.id_
-
-    @property
     def alias(self):
         """Instrument Controller 'alias' property.
 
@@ -215,24 +219,6 @@ class InstrumentController(BusElement, ABC):
             str: settings.alias.
         """
         return self.settings.alias
-
-    @property
-    def category(self):
-        """Instrument Controller 'category' property.
-
-        Returns:
-            Category: settings.category.
-        """
-        return self.settings.category
-
-    @property
-    def subcategory(self):
-        """Instrument Controller 'subcategory' property.
-
-        Returns:
-            InstrumentControllerSubcategory: settings.subcategory.
-        """
-        return self.settings.subcategory
 
     @property
     def connection(self):
@@ -254,16 +240,13 @@ class InstrumentController(BusElement, ABC):
 
     def __str__(self):
         """String representation of an instrument controller."""
-        return f"{self.alias}" if self.alias is not None else f"{self.category}_{self.subcategory}_{self.id_}"
+        return f"{self.alias}"
 
     def to_dict(self):
         """Return a dict representation of the InstrumentReference class."""
         return {
             RUNCARD.NAME: self.name.value,
-            RUNCARD.ID: self.id_,
             RUNCARD.ALIAS: self.alias,
-            RUNCARD.CATEGORY: self.category.value,
-            RUNCARD.SUBCATEGORY: self.subcategory.value,
             INSTRUMENTCONTROLLER.CONNECTION: self.connection.to_dict(),
             INSTRUMENTCONTROLLER.MODULES: [module.to_dict() for module in self.settings.modules],
         }

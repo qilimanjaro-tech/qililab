@@ -37,6 +37,8 @@ class TestSpiRack:
 
         assert spi_rack._MODULES_MAP["S4g"] == S4gModule
         assert spi_rack._MODULES_MAP["D5a"] == D5aModule
+        assert spi_rack.params == spi_rack.parameters
+        assert spi_rack.alias == spi_rack.name
 
 
 class TestD5aModule:
@@ -65,6 +67,8 @@ class TestD5aModule:
         assert len(channels) == NUM_DACS_D5AMODULE
         assert all(isinstance(submodules[dac_idx], D5aDacChannel) for dac_idx in dac_idxs)
         assert all(isinstance(channels[dac_idx], D5aDacChannel) for dac_idx in range(NUM_DACS_D5AMODULE))
+        assert d5a_module.params == d5a_module.parameters
+        assert d5a_module.alias == d5a_module.name
 
 
 class TestS4gModule:
@@ -93,6 +97,8 @@ class TestS4gModule:
         assert len(channels) == NUM_DACS_S4GMODULE
         assert all(isinstance(submodules[dac_idx], S4gDacChannel) for dac_idx in dac_idxs)
         assert all(isinstance(channels[dac_idx], S4gDacChannel) for dac_idx in range(NUM_DACS_S4GMODULE))
+        assert s4g_module.params == s4g_module.parameters
+        assert s4g_module.alias == s4g_module.name
 
 
 class TestD5aDacChannel:
@@ -117,6 +123,12 @@ class TestD5aDacChannel:
 
         assert d5a_dac_channel.get("voltage") == 0
 
+    def test_params_and_alias(self):
+        """Unit tests for the params and alias properties"""
+        d5a_dac_channel = D5aDacChannel(parent=MagicMock(), name="test_d5a_dac_channel", dac=0)
+        assert d5a_dac_channel.params == d5a_dac_channel.parameters
+        assert d5a_dac_channel.alias == d5a_dac_channel.name
+
 
 class TestS4gDacChannel:
     """Unit tests checking the qililab S4gDacChannel attributes and methods"""
@@ -140,3 +152,9 @@ class TestS4gDacChannel:
         s4g_dac_channel.off()
 
         assert s4g_dac_channel.get("current") == 0
+
+    def test_params_and_alias(self):
+        """Unit tests for the params and alias properties"""
+        s4g_dac_channel = S4gDacChannel(parent=MagicMock(), name="test_s4g_dac_channel", dac=0)
+        assert s4g_dac_channel.params == s4g_dac_channel.parameters
+        assert s4g_dac_channel.alias == s4g_dac_channel.name

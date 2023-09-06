@@ -1,5 +1,20 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """ BaseExperiment class."""
 import os
+from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
 from queue import Empty, Queue
@@ -25,7 +40,7 @@ from qililab.utils.loop import Loop
 from qililab.utils.util_loops import compute_shapes_from_loops
 
 
-class BaseExperiment:
+class BaseExperiment(ABC):
     """BaseExperiment class"""
 
     # Specify the types of the attributes that are not defined during initialization
@@ -38,14 +53,6 @@ class BaseExperiment:
     def __init__(self, platform: Platform, options: ExperimentOptions = ExperimentOptions()):
         self.platform = platform
         self.options = options
-
-    def connect(self, manual_override=False):
-        """Connects to the instruments and blocks the device."""
-        self.platform.connect(manual_override=manual_override)
-
-    def initial_setup(self):
-        """Configure each instrument with the values defined in the runcard."""
-        self.platform.initial_setup()
 
     def build_execution(self):
         """Creates the ``ExecutionManager`` class from loops."""
@@ -125,22 +132,6 @@ class BaseExperiment:
         thread = Thread(target=_threaded_function)
         thread.start()
 
-    def turn_on_instruments(self):
-        """Turn on instruments."""
-        if not hasattr(self, "execution_manager"):
-            raise ValueError("Please build the execution_manager before turning on the instruments.")
-        self.execution_manager.turn_on_instruments()
-
-    def turn_off_instruments(self):
-        """Turn off instruments."""
-        if not hasattr(self, "execution_manager"):
-            raise ValueError("Please build the execution_manager before turning off the instruments.")
-        self.execution_manager.turn_off_instruments()
-
-    def disconnect(self):
-        """Disconnects from the instruments and releases the device."""
-        self.platform.disconnect()
-
     def execute(self, save_experiment=True, save_results=True) -> Results:
         """Runs the whole execution pipeline, which includes the following steps:
 
@@ -157,13 +148,13 @@ class BaseExperiment:
         Returns:
             Results: execution results
         """
-        self.connect()
-        self.initial_setup()
+        self.platform.connect()
+        self.platform.initial_setup()
         self.build_execution()
-        self.turn_on_instruments()
+        self.platform.turn_on_instruments()
         results = self.run(save_experiment=save_experiment, save_results=save_results)
-        self.turn_off_instruments()
-        self.disconnect()
+        self.platform.turn_off_instruments()
+        self.platform.disconnect()
         QcodesInstrument.close_all()
         return results
 
@@ -188,6 +179,7 @@ class BaseExperiment:
             favorite=False,
         )
 
+    @abstractmethod
     def _execute_recursive_loops(self, loops: list[Loop] | None, queue: Queue, depth=0):
         """Loop over all the values defined in the Loop class and change the parameters of the chosen instruments.
 
@@ -196,13 +188,6 @@ class BaseExperiment:
             parameter values to loop over.
             depth (int): depth of the recursive loop.
         """
-        if loops is None or len(loops) == 0:
-            result = self.execution_manager.run(queue)
-            if result is not None:
-                self.results.add(result)
-            return
-
-        self._process_loops(loops=loops, queue=queue, depth=depth)
 
     def _process_loops(self, loops: list[Loop], queue: Queue, depth: int):
         """Loop over the loop values, change the element's parameter and call the recursive_loop function.
@@ -302,20 +287,13 @@ class BaseExperiment:
         }
 
     @classmethod
+    @abstractmethod
     def from_dict(cls, dictionary: dict):
         """Load BaseExperiment from dictionary.
 
         Args:
             dictionary (dict): Dictionary description of an BaseExperiment.
         """
-
-        platform = Platform(runcard=Runcard(**dictionary[RUNCARD.PLATFORM]))
-
-        experiment_options = ExperimentOptions.from_dict(dictionary[EXPERIMENT.OPTIONS])
-        return BaseExperiment(
-            platform=platform,
-            options=experiment_options,
-        )
 
     def __str__(self):
         """String representation of a base experiment."""

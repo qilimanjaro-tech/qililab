@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """ AWG Sequencer """
 from dataclasses import asdict, dataclass, field
 
@@ -11,7 +25,7 @@ class AWGSequencer:  # pylint: disable=too-many-instance-attributes
 
     Args:
         identifier (int): The identifier of the sequencer
-        chip_port_id (int | None): Port identifier of the chip where a specific sequencer is connected to.
+        chip_port_id (str | None): Port identifier of the chip where a specific sequencer is connected to.
                                     By default, using the first sequencer
         output_i (int): AWG output associated with the I channel of the sequencer
         output_q (int): AWG output associated with the Q channel of the sequencer
@@ -26,7 +40,7 @@ class AWGSequencer:  # pylint: disable=too-many-instance-attributes
     """
 
     identifier: int
-    chip_port_id: int | None
+    chip_port_id: str | None
     output_i: int | None
     output_q: int | None
     intermediate_frequency: float

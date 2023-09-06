@@ -55,7 +55,7 @@ class TestQbloxModule:
             )
         ]
 
-        pulse_bus_schedule = PulseBusSchedule(timeline=timeline, port=0)
+        pulse_bus_schedule = PulseBusSchedule(timeline=timeline, port="drive_q0")
 
         sequences = qblox_module.compile(pulse_bus_schedule, nshots=1, repetition_duration=1, num_bins=1)
         program = sequences[0]._program

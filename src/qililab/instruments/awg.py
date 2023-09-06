@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """QubitControl class."""
 from abc import abstractmethod
 from dataclasses import asdict, dataclass
@@ -67,11 +81,11 @@ class AWG(Instrument):
         """
 
     @abstractmethod
-    def run(self, port: int):
+    def run(self, port: str):
         """Run the uploaded program"""
 
     @abstractmethod
-    def upload(self, port: int):
+    def upload(self, port: str):
         """Upload compiled program."""
 
     @property
@@ -97,11 +111,11 @@ class AWG(Instrument):
         """Return a dict representation of an AWG instrument."""
         return {RUNCARD.NAME: self.name.value} | self.settings.to_dict()
 
-    def get_sequencers_from_chip_port_id(self, chip_port_id: int):
+    def get_sequencers_from_chip_port_id(self, chip_port_id: str):
         """Get sequencer ids from the chip port identifier
 
         Args:
-            chip_port_id (int): chip port identifier
+            chip_port_id (str): chip port identifier
 
         Returns:
             list[AWGSequencer]: list of integers containing the indices of the sequencers connected to the chip port
