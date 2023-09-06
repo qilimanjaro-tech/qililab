@@ -46,7 +46,6 @@ class QbloxModule(AWG):
 
         awg_sequencers: Sequence[AWGQbloxSequencer]
         out_offsets: list[float]
-        active_reset: bool
 
         def __post_init__(self):
             """build AWGQbloxSequencer"""
@@ -70,6 +69,7 @@ class QbloxModule(AWG):
                 else sequencer  # pylint: disable=not-a-mapping
                 for sequencer in self.awg_sequencers
             ]
+            self.active_reset = False # TODO: add this in init?
             super().__post_init__()
 
     settings: QbloxModuleSettings
@@ -209,6 +209,18 @@ class QbloxModule(AWG):
         if self.settings.active_reset is True:
             act_rst = Block(name="active_reset")
             program.append_block(act_rst)
+            if pulse_bus_schedule.port == "feedline_input":
+                # measure and add wait sync at the end
+                pass
+            # alternatively
+            # if self.__class__.__name__ in ("QbloxQRM", "QbloxQRMRF"):
+            #     pass
+            elif "drive" in pulse_bus_schedule.port: # TODO: find a better way to do this
+                # do active reset program
+                pass
+            else:
+                # add wait syncs for flux ports? probably not, this is just for sequencers - checkout
+                pass
         program.append_block(avg_loop)
         stop = Block(name="stop")
         stop.append_component(Stop())

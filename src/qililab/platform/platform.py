@@ -10,7 +10,7 @@ from qibo.gates import M
 from qibo.models import Circuit
 from qiboconnection.api import API
 
-from qililab import Drag
+from qililab.transpiler.native_gates import Drag # FIXME: avoid circular import problems
 from qililab.chip import Chip
 from qililab.config import logger
 from qililab.constants import GATE_ALIAS_REGEX, RUNCARD
@@ -390,6 +390,13 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
                 - Scope acquisition disabled: An array with dimension `(#sequencers, 2, #bins)`.
         """
+        # Set active reset option to that of the runcard
+        # FIXME: perhaps not the best way to do this, but we do not have(?) a "qblox" flag in qblox instruments
+        if self.gates_settings.active_reset is True:
+            for element in self.instruments.elements:
+                if ("awg_sequencers" in element.to_dict()):
+                    self.instruments.elements[0].settings.active_reset = True
+                    
         # Compile pulse schedule
         programs = self.compile(program, num_avg, repetition_duration, num_bins)
 
