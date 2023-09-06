@@ -148,6 +148,9 @@ class BusDriver(ABC):
         Passes the strings of the instruments associated to the bus, into their corresponding (already instantiated)
         classes, through their "alias" and interface. While it also sets their corresponding given parameters.
 
+        To do so, we translate the caps of the instrument interfaces with `instrument_interfaces_caps_translate()`
+        (from "AWG" to "awg", from "LocalOscillator" to "local_oscillator", etc...).
+
         And finally returns a dictionary with only the instruments classes.
 
         The dictionary reading follows the following structure: (Picture)[https://imgur.com/a/U4Oyapo]
@@ -175,8 +178,7 @@ class BusDriver(ABC):
                             for parameter, value in instrument_dict["parameters"].items():
                                 instrument.set(parameter, value)
 
-                        # Save the instrument into a new dictionary, in the corresponding key, after translating the caps of
-                        # the instrument interfaces (from "AWG" to "awg", from "LocalOscillator" to "local_oscillator", etc...).
+                        # Save the instrument classes in the corresponding key, after translating the caps of the interfaces.
                         instruments_dictionary[cls.instrument_interfaces_caps_translate()[key]] = instrument
                         break
 
@@ -197,10 +199,10 @@ class BusDriver(ABC):
         classes, through their "alias" and interface, and then set them through its class set method.
 
         If the same instrument works as several interfaces, the parameters of such instrument should only be passed in one interface, or you will
-        be setting the same parameters multiple times. The same alias instead, should be present in all the interfaces.
+        be setting the same parameters multiple times. The alias instead, should be present in all the corresponding interfaces.
 
-        The interfaces in the runcard should follow the format in the keys of instrument_interfaces_caps_translate(), meaning that they should be:
-        AWG, Digitiser, LocalOscillator, Attenuator, VoltageSource or CurrentSource.
+        The interfaces in the runcard should follow the format and order in the keys of `instrument_interfaces_caps_translate()`, meaning that they
+        should be: AWG, Digitiser, LocalOscillator, Attenuator, VoltageSource or CurrentSource.
 
         The received dictionary follows the following structure: (Picture)[https://imgur.com/a/U4Oyapo].
 
@@ -229,6 +231,11 @@ class BusDriver(ABC):
         Passes the instruments classes associated to the bus, into their corresponding strings. While it
         also gets all their corresponding parameters to be printed together in a dictionary.
 
+        To do so, we use the caps format, of the instrument interfaces of `instrument_interfaces_caps_translate()`. And the order
+        is important here, because it marks the order of writing, and since we only save the parameters of each instrument once,
+        concretely in the first interface to appear, this means that the order of instrument_interfaces_caps_translate()
+        will indicate in which interface dict you save the parameters & alias and in which you only save the alias.
+
         And finally returns a dictionary with the instrument str as key (str), and the alias and parameters as values (dict).
 
         The dictionary construction follows the following structure: (Picture)[https://imgur.com/a/U4Oyapo]
@@ -243,8 +250,7 @@ class BusDriver(ABC):
         instruments_dict: dict[str, dict] = {}
         saved_instruments: set[str] = set()
 
-        # The order of caps_translate_dict is important, because here it marks the order of writing, and since we only save the parameters of a same instrument once, concretely in
-        # the first one to appear, this means that the order of caps_translate_dict will indicate in which interface dict you save the parameters and in which you only save the alias.
+        # The order of keys marks the writting order and in which interface dict you save the parameters & alias and in which only the alias.
         for key in cls.instrument_interfaces_caps_translate():
             for instrument in instruments:
                 if issubclass(instrument.__class__, InstrumentInterfaceFactory.get(key)):
@@ -273,11 +279,15 @@ class BusDriver(ABC):
     def to_dict(self) -> dict:
         """Generates a dict representation given the Buses and the instruments params of such bus.
 
-        If the same instrument works as several interfaces, the parameters of such instrument will only be printed in one interface, the first one.
-        The same alias instead will be present in all the interfaces.
+        The interfaces in the runcard will be printed with the format and order of the keys of `instrument_interfaces_caps_translate()`,
+        meaning that they will be: AWG, Digitiser, LocalOscillator, Attenuator, VoltageSource or CurrentSource.
 
-        The interfaces in the runcard will be printed with the format and order of the keys of instrument_interfaces_caps_translate(), meaning that
-        they will be: AWG, Digitiser, LocalOscillator, Attenuator, VoltageSource or CurrentSource.
+        If the same instrument works as several interfaces, the parameters of such instrument will only be printed in one interface, the
+        first one to appear. The alias instead, will be repeated in all the interfaces of such instrument, so its easier to link them.
+
+        And the order of `instrument_interfaces_caps_translate()' in such case is important, because it marks the order of writing, and
+        since we only save the parameters of each instrument once, concretely in the first interface to appear, this means that the
+        order will indicate in which interface dict you save the parameters & alias and in which you only save the alias.
 
         The dictionary construction follows the following structure: (Picture)[https://imgur.com/a/U4Oyapo]
 
@@ -289,9 +299,8 @@ class BusDriver(ABC):
             "type": self.__class__.__name__,
         }
 
-        instruments_list = [instrument for instrument in self.instruments.values() if instrument is not None]
         instruments_dictionary = self.convert_instruments_classes_to_strings_and_get_params(
-            instruments=instruments_list
+            instruments=[instrument for instrument in self.instruments.values() if instrument is not None]
         )
 
         bus_dictionary_end = {
@@ -305,7 +314,9 @@ class BusDriver(ABC):
     def instrument_interfaces_caps_translate() -> dict:
         """Dictionary to translate the instruments[str] to the caps showing in the Runcard (for aesthetics).
 
-        The order of the interfaces here determine the order for the printing too.
+        The order of the interfaces here determine the order for the printing too, and since we only save the parameters
+        of a same instrument once, concretely in the first interface to appear, this means that the order also indicates
+        in which interface dict you save the parameters & alias and in which you only save the alias. .
         """
         return {
             "AWG": "awg",
