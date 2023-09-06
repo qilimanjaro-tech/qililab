@@ -193,7 +193,7 @@ class BusDriver(ABC):
 
     @classmethod
     def from_dict(cls, dictionary: dict, instruments: list[BaseInstrument]) -> "BusDriver":
-        """Loads the corresponding Bus driver class with a Factory Pattern, and sets the instrument params to the corresponding instruments.
+        """Loads the corresponding Bus driver class, and sets the instrument parameters to the corresponding instruments.
 
         To sets the given parameters, we pass the strings of the instruments associated to the bus into their corresponding (already instantiated)
         classes, through their "alias" and interface, and then set them through its class set method.
