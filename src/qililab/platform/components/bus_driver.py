@@ -153,11 +153,12 @@ class BusDriver(ABC):
 
         And finally returns a dictionary with only the instruments classes.
 
-        The dictionary reading follows the following structure: (Picture)[https://imgur.com/a/U4Oyapo]
+        The dictionary reading follows the following structure: [https://imgur.com/a/U4Oyapo], check th `from_dict()`
+        documentation for more information regarding this.
 
         Args:
-            dictionary (dict): Bus dictionary with the instruments as strings.
-            instruments (list[BaseInstrument]): Already instantiated instruments.
+            dictionary (dict): A dictionary representing the BusDriver object and its instrument parameters.
+            instruments (list[BaseInstrument]): A list of pre-instantiated instrument objects.
 
         Returns:
             dict: Bus dictionary with the instruments as classes to be inserted in the bus dictionary.
@@ -193,25 +194,49 @@ class BusDriver(ABC):
 
     @classmethod
     def from_dict(cls, dictionary: dict, instruments: list[BaseInstrument]) -> "BusDriver":
-        """Loads the corresponding Bus driver class, and sets the instrument parameters to the corresponding instruments.
+        """Loads the corresponding BusDriver class and sets the instrument parameters for the corresponding instruments.
 
-        To sets the given parameters, we pass the strings of the instruments associated to the bus into their corresponding (already instantiated)
-        classes, through their "alias" and interface, and then set them through its class set method.
+        The input dictionary should conform to the following structure: [https://imgur.com/a/U4Oyapo]
 
-        If the same instrument works as several interfaces, the parameters of such instrument should only be passed in one interface, or you will
-        be setting the same parameters multiple times. The alias instead, should be present in all the corresponding interfaces.
+        .. code-block:: yaml
 
-        The interfaces in the runcard should follow the format and order in the keys of `instrument_interfaces_caps_translate()`, meaning that they
-        should be: AWG, Digitiser, LocalOscillator, Attenuator, VoltageSource or CurrentSource.
+            alias: bus_example
+            type: DriveBus
+            AWG:
+                alias: q0_readout
+                parameters:
+                    gain: 0.9
+                    ...
+            LO:
+                alias: lo_readout
+                parameters:
+                    frequency: 1e9
+                    ...
+            Attenuator:
+                alias: attenuator_0
+                parameters:
+                    attenuation: 20
+                    ...
+            port: 100
+            distortions: []
 
-        The received dictionary follows the following structure: (Picture)[https://imgur.com/a/U4Oyapo].
+        To correctly set the instrument parameters, the instrument alias (`q0_readout`, ...) and its corresponding
+        interface (`AWG`, `LO`, ...) need to match with one of the passed instruments.
+
+        If an instrument serves multiple interfaces, its parameters should be set through only one interface to avoid
+        redundancy or to avoid setting them multiple times with different values. However, the (same) alias should be
+        specified in all corresponding interfaces.
+
+        The interfaces specified in the dictionary must adhere to the format and sequence outlined in the keys of
+        `instrument_interfaces_caps_translate()`. Valid interface types are: AWG, Digitiser, LocalOscillator,
+        Attenuator, VoltageSource, and CurrentSource.
 
         Args:
-            dictionary (dict): Dictionary representation of the Bus driver object and its instrument params.
-            instruments (list[BaseInstrument]): Already instantiated instruments.
+            dictionary (dict): A dictionary representing the BusDriver object and its instrument parameters.
+            instruments (list[BaseInstrument]): A list of pre-instantiated instrument objects.
 
         Returns:
-            BusDriver: Loaded class.
+            BusDriver: The initialized BusDriver class.
         """
         local_dictionary = deepcopy(dictionary)
         local_dictionary.pop("type", None)
@@ -231,21 +256,23 @@ class BusDriver(ABC):
         Passes the instruments classes associated to the bus, into their corresponding strings. While it
         also gets all their corresponding parameters to be printed together in a dictionary.
 
-        To do so, we use the caps format, of the instrument interfaces of `instrument_interfaces_caps_translate()`. And the order
-        is important here, because it marks the order of writing, and since we only save the parameters of each instrument once,
-        concretely in the first interface to appear, this means that the order of instrument_interfaces_caps_translate()
-        will indicate in which interface dict you save the parameters & alias and in which you only save the alias.
+        To do so, we use the caps format of the instrument interfaces from `instrument_interfaces_caps_translate()`.
+        And the order is important here, because it marks the order of writing, and since we only save the parameters
+        of each instrument once, concretely in the first interface to appear, this means that the order of
+        `__instrument_interfaces_caps_translate()` will indicate in which interface dict you save the
+        parameters & alias and in which you only save the alias.
 
-        And finally returns a dictionary with the instrument str as key (str), and the alias and parameters as values (dict).
+        And finally returns a dictionary with the instrument string as key (str), and the alias and parameters as values (dict).
 
-        The dictionary construction follows the following structure: (Picture)[https://imgur.com/a/U4Oyapo]
+        The dictionary construction follows the following structure: [https://imgur.com/a/U4Oyapo], check th `to_dict()`
+        documentation for more information regarding this.
 
         Args:
             instruments (list[BaseInstrument]): Instruments corresponding the the given Bus.
 
         Returns:
-            dict[str, dict]: The instruments dictionary to be inserted in the bus dictionary. Keys are the instruments str,
-                and values are an inner dictionary containing the alias and the parameters dictionary.
+            dict[str, dict]: The instruments dictionary to be inserted in the bus dictionary. Keys are the instruments
+                strings, and values are an inner dictionary containing the alias and the parameters dictionary.
         """
         instruments_dict: dict[str, dict] = {}
         saved_instruments: set[str] = set()
@@ -277,22 +304,46 @@ class BusDriver(ABC):
         return instruments_dict
 
     def to_dict(self) -> dict:
-        """Generates a dict representation given the Buses and the instruments params of such bus.
+        """Generates a dictionary representation of the Bus and its corresponding instrument parameters.
 
-        The interfaces in the runcard will be printed with the format and order of the keys of `instrument_interfaces_caps_translate()`,
-        meaning that they will be: AWG, Digitiser, LocalOscillator, Attenuator, VoltageSource or CurrentSource.
+        The structure of the output dictionary is the following: [https://imgur.com/a/U4Oyapo]
 
-        If the same instrument works as several interfaces, the parameters of such instrument will only be printed in one interface, the
-        first one to appear. The alias instead, will be repeated in all the interfaces of such instrument, so its easier to link them.
+        .. code-block:: yaml
 
-        And the order of `instrument_interfaces_caps_translate()' in such case is important, because it marks the order of writing, and
-        since we only save the parameters of each instrument once, concretely in the first interface to appear, this means that the
-        order will indicate in which interface dict you save the parameters & alias and in which you only save the alias.
+            alias: bus_example
+            type: DriveBus
+            AWG:
+                alias: q0_readout
+                parameters:
+                    gain: 0.9
+                    ...
+            LO:
+                alias: lo_readout
+                parameters:
+                    frequency: 1e9
+                    ...
+            Attenuator:
+                alias: attenuator_0
+                parameters:
+                    attenuation: 20
+                    ...
+            port: 100
+            distortions: []
 
-        The dictionary construction follows the following structure: (Picture)[https://imgur.com/a/U4Oyapo]
+        The interfaces in the runcard are formatted and ordered according to the keys of `instrument_interfaces_caps_translate()`.
+        Acceptable interface types are: AWG, Digitiser, LocalOscillator, Attenuator, VoltageSource, and CurrentSource.
+
+        If an instrument serves multiple interfaces, its parameters will only be included under the first interface
+        that appears in the list. However, the alias for that instrument will be repeated across all its interfaces,
+        making it easier to associate them.
+
+        The sequence defined in `instrument_interfaces_caps_translate()` is significant because it dictates the order
+        in which the parameters are written. Since each instrument's parameters are only saved once, specifically under
+        the first interface that appears, the sequence will determine which interface's dictionary entry will include both
+        the parameters and the alias, and which will include only the alias.
 
         Returns:
-            dict: Bus dictionary with its corresponding instrument parameters.
+            dict: A dictionary representing the Bus and its associated instrument parameters.
         """
         bus_dictionary_start: dict = {
             "alias": self.alias,
