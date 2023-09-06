@@ -9,6 +9,7 @@ gates_settings:
   reset_method: passive
   passive_reset_duration: 100
   minimum_clock_time: 4
+  active_reset: True
   operations: []
   gates:
     M(0):
