@@ -419,7 +419,7 @@ class TestCurrentFluxBusSerialization:
             assert "parameters" not in current_flux_bus_dictionary["CurrentSource"]
             # This test that the attenuator has no parameters
 
-    def test_to_dict(self, sequencer_qcm: SequencerQCM, current_source_api: S4gDacChannel):
+    def test_to_dict_structure(self, sequencer_qcm: SequencerQCM, current_source_api: S4gDacChannel):
         # sourcery skip: merge-duplicate-blocks, remove-redundant-if, switch
         """Test that the to_dict method of the FluxBus class (current) has the correct structure."""
         bus = FluxBus(
@@ -590,7 +590,7 @@ class TestVoltageFluxBusSerialization:
             assert "parameters" not in voltage_flux_bus_dictionary["VoltageSource"]
             # This test that the attenuator has no parameters
 
-    def test_to_dict(self, sequencer_qcm: SequencerQCM, voltage_source_api: D5aDacChannel):
+    def test_to_dict_structure(self, sequencer_qcm: SequencerQCM, voltage_source_api: D5aDacChannel):
         # sourcery skip: merge-duplicate-blocks, remove-redundant-if, switch
         """Test that the to_dict method of the FluxBus class (voltage) has the correct structure."""
         bus = FluxBus(

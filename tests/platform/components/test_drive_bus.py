@@ -346,7 +346,7 @@ class TestDriveBusSerialization:
             assert "parameters" not in drive_bus_dictionary["LocalOscillator"]
             # This test that the local_oscillator has no set parameters by us
 
-    def test_to_dict(self, sequencer_qcm: SequencerQCM, qcmqrm_lo: QcmQrmRfLo, qcmqrm_att: QcmQrmRfAtt):
+    def test_to_dict_structure(self, sequencer_qcm: SequencerQCM, qcmqrm_lo: QcmQrmRfLo, qcmqrm_att: QcmQrmRfAtt):
         # sourcery skip: merge-duplicate-blocks, remove-redundant-if, switch
         """Test that the to_dict method of the DriveBus class has the correct structure."""
         bus = DriveBus(

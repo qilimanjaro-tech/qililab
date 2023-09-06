@@ -372,7 +372,7 @@ class TestReadoutBusSerialization:
             assert "parameters" not in readout_bus_dictionary["Attenuator"]
             # This test that the attenuator has no parameters
 
-    def test_to_dict(self, digitiser: SequencerQRM, qcmqrm_lo: QcmQrmRfLo, qcmqrm_att: QcmQrmRfAtt):
+    def test_to_dict_structure(self, digitiser: SequencerQRM, qcmqrm_lo: QcmQrmRfLo, qcmqrm_att: QcmQrmRfAtt):
         # sourcery skip: merge-duplicate-blocks, remove-redundant-if, switch
         """Test that the to_dict method of the ReadoutBus class has the correct structure."""
         bus = ReadoutBus(
