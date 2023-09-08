@@ -13,20 +13,21 @@
 # limitations under the License.
 
 """InstrumentDriverFactory class module."""
-from typing import TypeVar
-
-from qililab.drivers.interfaces import BaseInstrument
-
-Element = TypeVar("Element", bound=BaseInstrument)
+from ..interfaces.base_instrument import BaseInstrument
 
 
 class InstrumentDriverFactory:
-    """Hash table that loads a specific class given an object's __name__."""
+    """Hash table that loads a specific instrument driver (child of BaseInstrument) given an object's __name__.
+
+    Actually this factory could initialize any class that inherits from `BaseInstrument` which gets registered into it with @InstrumentDriverFactory.register.
+
+    If you want to call this Factory inside the `BaseInstrument` class, import it inside the method were its needed to not cause circular imports.
+    """
 
     handlers: dict[str, type[BaseInstrument]] = {}
 
     @classmethod
-    def register(cls, handler_cls: type[Element]) -> type[BaseInstrument]:
+    def register(cls, handler_cls: type[BaseInstrument]) -> type[BaseInstrument]:
         """Register handler in the factory given the class (through its __name__).
 
         Args:

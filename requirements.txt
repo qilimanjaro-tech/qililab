@@ -1,7 +1,7 @@
 pandas==1.5.3
 qibo==0.1.12
 PyYAML==6.0
-qblox-instruments==0.9.0
+qblox-instruments==0.10.0
 qcodes==0.38.1
 qcodes_contrib_drivers==0.18.0
 PyVISA-py==0.5.2

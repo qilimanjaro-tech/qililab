@@ -21,7 +21,20 @@ from qililab.result.qblox_results.qblox_result import QbloxResult
 
 @BusFactory.register
 class ReadoutBus(BusDriver):
-    """Qililab's driver for Readout Bus"""
+    """Qililab's driver for Readout Bus
+
+    Args:
+        alias: Bus alias.
+        port (int): Port to target.
+        awg (AWG): Sequencer.
+        digitiser (Digitiser): Arbitrary Wave Generator instance to acquire results.
+        local_oscillator (LocalOscillator | None): Local oscillator.
+        attenuator (Attenuator | None): Attenuator.
+        distortions (list): Distortions to apply in this Bus.
+
+    Returns:
+        BusDriver: BusDriver instance of type readout bus.
+    """
 
     def __init__(
         self,
@@ -31,18 +44,10 @@ class ReadoutBus(BusDriver):
         digitiser: Digitiser,
         local_oscillator: LocalOscillator | None,
         attenuator: Attenuator | None,
+        distortions: list,
     ):
-        """Initialise the bus.
-
-        Args:
-            alias (str): Bus alias
-            port (int): Port to target
-            awg (AWG): Arbitrary Wave Generator instance
-            digitiser (Digitiser): Arbitrary Wave Generator instance to acquire results
-            local_oscillator (LocalOscillator): Local Oscillator
-            attenuator (Attenuator): Attenuator
-        """
-        super().__init__(alias=alias, port=port, awg=awg)
+        """Initialise the bus."""
+        super().__init__(alias=alias, port=port, awg=awg, distortions=distortions)
         self._digitiser = digitiser
         self.instruments["digitiser"] = self._digitiser
         if local_oscillator:
