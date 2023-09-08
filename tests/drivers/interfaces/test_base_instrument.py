@@ -1,6 +1,8 @@
 """ Unit testing module for the Factory of instrument drivers"""
 from typing import Any
+
 from qililab.drivers.interfaces import BaseInstrument
+
 
 class TestInstrument(BaseInstrument):
     """Testing class implementing BaseInstrument methods and properties."""
@@ -40,8 +42,10 @@ class TestInstrument(BaseInstrument):
         """return the alias of the instrument, which corresponds to the QCodes name attribute"""
         return self.name
 
+
 class TestBaseInstrument:
     """Unit test for BaseInstrument interface not abstract methods"""
+
     def __init__(self):
         self.instrument = TestInstrument()
         self.instrument.set(param_name="param_0", value=10)
@@ -57,10 +61,7 @@ class TestBaseInstrument:
 
     def test_params(self):
         """Test that the params method returns the BaseInstrument parameters."""
-        expected_dict = {
-            "param_0": 10,
-            "param_1": 1
-        }
+        expected_dict = {"param_0": 10, "param_1": 1}
 
         for key, value in expected_dict.items():
             assert key in self.instrument.params
@@ -72,11 +73,7 @@ class TestBaseInstrument:
 
     def test_instrument_repr(self):
         """Test that the instrument_repr method returns the right representation."""
-        expected_dict = {
-            "alias": "test_instrument",
-            "param_0": 10,
-            "param_1": 1
-        }
+        expected_dict = {"alias": "test_instrument", "param_0": 10, "param_1": 1}
         instrument_reptr = self.instrument.instrument_repr()
 
         for key, value in expected_dict.items():
@@ -85,14 +82,8 @@ class TestBaseInstrument:
 
     def test_initial_setup(self):
         """Test that the initial_setup method sets all parameters."""
-        default_params = {
-            "param_0": 10,
-            "param_1": 1
-        }
-        initial_params = {
-            "param_2": 20,
-            "param_3": 2
-        }
+        default_params = {"param_0": 10, "param_1": 1}
+        initial_params = {"param_2": 20, "param_3": 2}
         self.instrument.initial_setup(params=initial_params)
 
         for key, value in default_params.items():
