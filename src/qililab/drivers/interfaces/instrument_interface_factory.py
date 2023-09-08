@@ -12,22 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""BusFactory class module."""
-from .bus_driver import BusDriver
+"""InstrumentInterfaceFactory class module."""
+from .base_instrument import BaseInstrument
 
 
-class BusFactory:
-    """Hash table that loads a specific bus driver (child of BusDriver) given an object's __name__.
+class InstrumentInterfaceFactory:
+    """Hash table that loads a specific instrument interface (child of BaseInstrument) given an object's __name__.
 
-    Actually this factory could initialize any class that inherits from `BusDriver`, which gets registered into it with @BusFactory.register.
+    Actually this factory could initialize any class that inherits from `BaseInstrument`, which gets registered into it with @InstrumentInterfaceFactory.register.
 
-    If you want to call this Factory inside the `BusDriver` class, import it inside the method were its needed to not cause circular imports.
+    If you want to call this Factory inside the BaseInstrument class, import it inside the method were its needed to not cause circular imports.
     """
 
-    handlers: dict[str, type[BusDriver]] = {}
+    handlers: dict[str, type[BaseInstrument]] = {}
 
     @classmethod
-    def register(cls, handler_cls: type[BusDriver]) -> type[BusDriver]:
+    def register(cls, handler_cls: type[BaseInstrument]) -> type[BaseInstrument]:
         """Register handler in the factory given the class (through its __name__).
 
         Args:
@@ -37,6 +37,6 @@ class BusFactory:
         return handler_cls
 
     @classmethod
-    def get(cls, name: str) -> type[BusDriver]:
+    def get(cls, name: str) -> type[BaseInstrument]:
         """Return class attribute given its __name__"""
         return cls.handlers[name]
