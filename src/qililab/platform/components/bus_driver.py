@@ -171,7 +171,7 @@ class BusDriver(ABC):
         Returns:
             BusDriver: The initialized BusDriver class.
         """
-        from .bus_factory import BusFactory  # pylint: disable=import-outside-toplevel
+        from .bus_factory import BusFactory  # pylint: disable=import-outside-toplevel, cyclic-import
 
         local_dictionary = deepcopy(dictionary)
         local_dictionary.pop("type", None)
