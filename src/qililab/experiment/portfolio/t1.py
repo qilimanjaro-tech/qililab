@@ -18,7 +18,7 @@ from qibo.gates import M
 from qibo.models import Circuit
 
 import qililab as ql  # pylint: disable=cyclic-import
-from qililab.platform import Platform
+from qililab.platform import Platform  # pylint: disable=cyclic-import
 from qililab.typings import ExperimentOptions, ExperimentSettings, Parameter
 from qililab.utils import Loop, Wait
 
