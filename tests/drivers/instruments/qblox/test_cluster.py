@@ -382,6 +382,27 @@ class TestQcmQrm:
         assert qcm_qrm.get("out0_offset") == 1
         assert qcm_qrm.get("reference_source") == "internal"
 
+    def test_instrument_repr(self):
+        """Test that the instrument_repr method returns the right representation."""
+        params = {"out0_offset": 1, "reference_source": "internal"}
+        parent = MagicMock()
+
+        # Set qcm/qrm attributes
+        parent._is_qcm_type.return_value = False
+        parent._is_qrm_type.return_value = True
+        parent._is_rf_type.return_value = False
+
+        qcm_qrm = QcmQrm(parent=parent, alias="test_initial_setup", slot_idx=0)
+        qcm_qrm.initial_setup(params=params)
+
+        expected_dict = {"alias": "test_initial_setup",
+                         "out0_offset": 1,
+                         "reference_source": "internal"}
+        instrument_reptr = qcm_qrm.instrument_repr()
+
+        for key, value in instrument_reptr.items():
+            assert key in expected_dict
+            assert expected_dict[key] == value
 
 class TestQcmQrmIntegration:
     """Unit tests checking the Qililab QcmQrm attributes and methods"""
