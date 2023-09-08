@@ -379,7 +379,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         Args:
             qprogram (QProgram): The QProgram to run
-            integration_length (int, optional): The integration length used in acquisitions. Defaults to 1000.
 
         Returns:
             Result: Result obtained from the execution. This corresponds to a numpy array that depending on the
