@@ -47,3 +47,8 @@ class QbloxQCM(QbloxModule):
             QbloxResult: Acquired Qblox result
         """
         raise NotImplementedError
+
+    def _set_active_reset_triggers(self):
+        """Enables triggers for all QRM sequencers. Used for active reset
+        """
+

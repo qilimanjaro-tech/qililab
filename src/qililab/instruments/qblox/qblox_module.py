@@ -10,7 +10,9 @@ from qpysequence import Sequence as QpySequence
 from qpysequence import Waveforms, Weights
 from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Register
-from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop
+from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop, Acquire, WaitSync
+from qpysequence.program.instructions import SetLatchEn, LatchRst, Wait, SetCond
+
 from qpysequence.utils.constants import AWG_MAX_GAIN
 
 from qililab.config import logger
@@ -209,28 +211,68 @@ class QbloxModule(AWG):
         if self.settings.active_reset is True:
             act_rst = Block(name="active_reset")
             program.append_block(act_rst)
-            if pulse_bus_schedule.port == "feedline_input":
-                # measure and add wait sync at the end
-                pass
-            # alternatively
-            # if self.__class__.__name__ in ("QbloxQRM", "QbloxQRMRF"):
-            #     pass
-            elif "drive" in pulse_bus_schedule.port: # TODO: find a better way to do this
-                # do active reset program
-                pass
-            else:
-                # add wait syncs for flux ports? probably not, this is just for sequencers - checkout
-                pass
+            added_active_reset = False
+
         program.append_block(avg_loop)
         stop = Block(name="stop")
         stop.append_component(Stop())
         program.append_block(block=stop)
         timeline = pulse_bus_schedule.timeline
         if len(timeline) > 0 and timeline[0].start_time != 0:
-            bin_loop.append_component(long_wait(wait_time=int(timeline[0].start_time)))
+            # Conditional X pulses for active reset run after measurement
+            if (self.settings.active_reset and not added_active_reset)  is True and "drive" in pulse_bus_schedule.port:
+                # active reset sequence 1
+                act_rst.append_component(SetLatchEn(1, 4)) # latch any trigger
+                act_rst.append_component(LatchRst(4)) # #Reset the trigger network address counters, then wait on trigger address 
+                act_rst.append_component(long_wait(wait_time=int(timeline[0].start_time - 8))) # wait and listen for triggers until readout finishes
+            else:
+                bin_loop.append_component(long_wait(wait_time=int(timeline[0].start_time)))
 
+        # handle empty flux lines for active reset
+        if (self.settings.active_reset is True) and len(timeline) == 0:
+            act_rst.append_component(WaitSync(4))
         for i, pulse_event in enumerate(timeline):
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
+
+            # ACTIVE RESET # TODO: simplify if possible
+            if (self.settings.active_reset and not added_active_reset)  is True:
+                act_rst.append_component(ResetPh())
+                gain = int(np.abs(pulse_event.pulse.amplitude) * AWG_MAX_GAIN)  # np.abs() needed for negative pulses
+                act_rst.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
+                phase = int((pulse_event.pulse.phase % (2 * np.pi)) * 1e9 / (2 * np.pi))
+                act_rst.append_component(SetPh(phase=phase))
+                if pulse_bus_schedule.port == "feedline_input":
+                    # measure and add wait sync at the end
+                    act_rst.append_component(
+                        Play(
+                            waveform_0=waveform_pair.waveform_i.index,
+                            waveform_1=waveform_pair.waveform_q.index,
+                            wait_time=4,
+                        )
+                    )
+                    act_rst.append_component(Acquire(0,0,4))
+                    act_rst.append_component(WaitSync(4))
+                # alternatively
+                # if self.__class__.__name__ in ("QbloxQRM", "QbloxQRMRF"):
+                #     pass
+                elif "drive" in pulse_bus_schedule.port: # TODO: find a better way to do this
+                    # trigger address conditional is 2^sequencer
+                    act_rst.append_component(SetCond(1,2**sequencer,0,4)) # TODO: else duration
+                    act_rst.append_component(Play(
+                                                        waveform_0=waveform_pair.waveform_i.index,
+                                                        waveform_1=waveform_pair.waveform_q.index,
+                                                        wait_time=int(4),
+                                                    ))
+                    act_rst.append_component(SetCond(0,2**sequencer,0,4)) # TODO: else duration
+                    act_rst.append_component(long_wait(wait_time=int(timeline[0].start_time - 8))) # wait and listen for triggers until readout finishes
+                    act_rst.append_component(WaitSync(4))
+                else:
+                    # handle flux lines
+                    act_rst.append_componennt(WaitSync(4))
+                added_active_reset = True
+                # skip to next timeline element
+                continue
+
             wait_time = timeline[i + 1].start_time - pulse_event.start_time if (i < (len(timeline) - 1)) else 4
             bin_loop.append_component(ResetPh())
             gain = int(np.abs(pulse_event.pulse.amplitude) * AWG_MAX_GAIN)  # np.abs() needed for negative pulses
@@ -284,6 +326,12 @@ class QbloxModule(AWG):
         self, loop: Loop, bin_index: Register | int, sequencer_id: int, weight_regs: tuple[Register, Register]
     ):
         """Append an acquire instruction to the loop."""
+
+
+    @abstractmethod
+    def _set_active_reset_triggers(self):
+        """Enables triggers for all QRM sequencers. Used for active reset
+        """
 
     def start_sequencer(self, port: str):
         """Start sequencer and execute the uploaded instructions."""
