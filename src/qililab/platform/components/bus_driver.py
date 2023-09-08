@@ -21,8 +21,6 @@ from qililab.drivers.interfaces import AWG, BaseInstrument
 from qililab.drivers.interfaces.instrument_interface_factory import InstrumentInterfaceFactory
 from qililab.pulse import PulseBusSchedule, PulseDistortion
 
-from .bus_factory import BusFactory
-
 
 class BusDriver(ABC):
     """Bus Class.
@@ -173,6 +171,8 @@ class BusDriver(ABC):
         Returns:
             BusDriver: The initialized BusDriver class.
         """
+        from .bus_factory import BusFactory  # pylint: disable=import-outside-toplevel
+
         local_dictionary = deepcopy(dictionary)
         local_dictionary.pop("type", None)
 

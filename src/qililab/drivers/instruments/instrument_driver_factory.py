@@ -13,24 +13,21 @@
 # limitations under the License.
 
 """InstrumentDriverFactory class module."""
-from abc import (  # The ABC is actually a BaseInstrument class, less general, but we don't want to cause circular imports.
-    ABC,
-)
-from typing import TypeVar
-
-Element = TypeVar("Element", bound=ABC)  # The ABC is actually a BaseInstrument class.
+from ..interfaces.base_instrument import BaseInstrument
 
 
 class InstrumentDriverFactory:
     """Hash table that loads a specific instrument driver (child of BaseInstrument) given an object's __name__.
 
-    (Actually this factory could initialize any class that inherits from ABC which gets registered into it with @InstrumentDriverFactory.register)
+    Actually this factory could initialize any class that inherits from `BaseInstrument` which gets registered into it with @InstrumentDriverFactory.register.
+
+    If you want to call this Factory inside the `BaseInstrument` class, import it inside the method were its needed to not cause circular imports.
     """
 
-    handlers: dict[str, type[ABC]] = {}  # The ABC is actually a BaseInstrument class.
+    handlers: dict[str, type[BaseInstrument]] = {}
 
     @classmethod
-    def register(cls, handler_cls: type[Element]) -> type[ABC]:  # The ABC is actually a BaseInstrument class.
+    def register(cls, handler_cls: type[BaseInstrument]) -> type[BaseInstrument]:
         """Register handler in the factory given the class (through its __name__).
 
         Args:
@@ -40,6 +37,6 @@ class InstrumentDriverFactory:
         return handler_cls
 
     @classmethod
-    def get(cls, name: str) -> type[ABC]:  # The ABC is actually a BaseInstrument class.
+    def get(cls, name: str) -> type[BaseInstrument]:
         """Return class attribute given its __name__"""
         return cls.handlers[name]

@@ -13,22 +13,21 @@
 # limitations under the License.
 
 """BusFactory class module."""
-from abc import ABC  # The ABC is actually a BusDriver class, less general, but we don't want to cause circular imports.
-from typing import TypeVar
-
-Element = TypeVar("Element", bound=ABC)  # The ABC is actually a BusDriver class.
+from .bus_driver import BusDriver
 
 
 class BusFactory:
     """Hash table that loads a specific bus driver (child of BusDriver) given an object's __name__.
 
-    (Actually this factory could initialize any class that inherits from ABC, which gets registered into it with @BusFactory.register)
+    Actually this factory could initialize any class that inherits from `BusDriver`, which gets registered into it with @BusFactory.register.
+
+    If you want to call this Factory inside the `BusDriver` class, import it inside the method were its needed to not cause circular imports.
     """
 
-    handlers: dict[str, type[ABC]] = {}  # The ABC is actually a BusDriver class.
+    handlers: dict[str, type[BusDriver]] = {}
 
     @classmethod
-    def register(cls, handler_cls: type[Element]) -> type[ABC]:  # The ABC is actually a BusDriver class.
+    def register(cls, handler_cls: type[BusDriver]) -> type[BusDriver]:
         """Register handler in the factory given the class (through its __name__).
 
         Args:
@@ -38,6 +37,6 @@ class BusFactory:
         return handler_cls
 
     @classmethod
-    def get(cls, name: str) -> type[ABC]:  # The ABC is actually a BusDriver class.
+    def get(cls, name: str) -> type[BusDriver]:
         """Return class attribute given its __name__"""
         return cls.handlers[name]
