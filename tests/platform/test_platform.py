@@ -228,7 +228,7 @@ class TestMethods:
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
         qprogram.sync()
         qprogram.play(bus="feedline_input_output_bus", waveform=readout_wf)
-        qprogram.acquire(bus="feedline_input_output_bus")
+        qprogram.acquire(bus="feedline_input_output_bus", duration=1000)
 
         with patch.object(Bus, "upload_qpysequence") as upload:
             with patch.object(Bus, "run") as run:
