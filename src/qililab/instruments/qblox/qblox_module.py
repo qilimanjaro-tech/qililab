@@ -209,8 +209,12 @@ class QbloxModule(AWG):
         bin_loop = Loop(name="bin", begin=0, end=self.num_bins, step=1)
         avg_loop.append_component(bin_loop)
         if self.settings.active_reset is True:
+            sync = Block(name="sync")
+            sync.append_component(WaitSync(1000))
             act_rst = Block(name="active_reset")
+            act_rst_loop = Loop(name="act_rst_loop", begin=0, end=1, step=1)
             program.append_block(act_rst)
+            program.append_block(sync)
             added_active_reset = False
 
         program.append_block(avg_loop)
@@ -221,54 +225,47 @@ class QbloxModule(AWG):
         if len(timeline) > 0 and timeline[0].start_time != 0:
             # Conditional X pulses for active reset run after measurement
             if (self.settings.active_reset and not added_active_reset)  is True and "drive" in pulse_bus_schedule.port:
+                
                 # active reset sequence 1
-                act_rst.append_component(SetLatchEn(1, 4)) # latch any trigger
-                act_rst.append_component(LatchRst(4)) # #Reset the trigger network address counters, then wait on trigger address 
-                act_rst.append_component(long_wait(wait_time=int(timeline[0].start_time - 8))) # wait and listen for triggers until readout finishes
+                act_rst_loop.append_component(SetLatchEn(1, 4)) # latch any trigger
+                act_rst_loop.append_component(LatchRst(4)) # #Reset the trigger network address counters, then wait on trigger address
+                act_rst_loop.append_component(long_wait(wait_time=int(timeline[0].start_time))) # wait for duration of measurement pulse
             else:
                 bin_loop.append_component(long_wait(wait_time=int(timeline[0].start_time)))
 
-        # handle empty flux lines for active reset
-        if (self.settings.active_reset is True) and len(timeline) == 0:
-            act_rst.append_component(WaitSync(4))
         for i, pulse_event in enumerate(timeline):
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
 
             # ACTIVE RESET # TODO: simplify if possible
             if (self.settings.active_reset and not added_active_reset)  is True:
-                act_rst.append_component(ResetPh())
+                act_rst_loop.append_component(ResetPh())
                 gain = int(np.abs(pulse_event.pulse.amplitude) * AWG_MAX_GAIN)  # np.abs() needed for negative pulses
-                act_rst.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
+                act_rst_loop.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
                 phase = int((pulse_event.pulse.phase % (2 * np.pi)) * 1e9 / (2 * np.pi))
-                act_rst.append_component(SetPh(phase=phase))
+                act_rst_loop.append_component(SetPh(phase=phase))
                 if pulse_bus_schedule.port == "feedline_input":
                     # measure and add wait sync at the end
-                    act_rst.append_component(
+                    act_rst_loop.append_component(
                         Play(
                             waveform_0=waveform_pair.waveform_i.index,
                             waveform_1=waveform_pair.waveform_q.index,
                             wait_time=4,
                         )
                     )
-                    act_rst.append_component(Acquire(0,0,4))
-                    act_rst.append_component(WaitSync(4))
-                # alternatively
-                # if self.__class__.__name__ in ("QbloxQRM", "QbloxQRMRF"):
-                #     pass
+                    self._append_acquire_instruction(
+                        loop=act_rst_loop, bin_index=act_rst_loop.counter_register, sequencer_id=sequencer, weight_regs=weight_registers, acq_index=1
+                    )
                 elif "drive" in pulse_bus_schedule.port: # TODO: find a better way to do this
                     # trigger address conditional is 2^sequencer
-                    act_rst.append_component(SetCond(1,2**sequencer,0,4)) # TODO: else duration
-                    act_rst.append_component(Play(
+                    act_rst_loop.append_component(SetCond(1,2**sequencer,0,4)) # TODO: else duration
+                    act_rst_loop.append_component(Play(
                                                         waveform_0=waveform_pair.waveform_i.index,
                                                         waveform_1=waveform_pair.waveform_q.index,
-                                                        wait_time=int(4),
+                                                        wait_time=4,
                                                     ))
-                    act_rst.append_component(SetCond(0,2**sequencer,0,4)) # TODO: else duration
-                    act_rst.append_component(long_wait(wait_time=int(timeline[0].start_time - 8))) # wait and listen for triggers until readout finishes
-                    act_rst.append_component(WaitSync(4))
-                else:
-                    # handle flux lines
-                    act_rst.append_componennt(WaitSync(4))
+                    act_rst_loop.append_component(SetCond(0,2**sequencer,0,4)) # TODO: else duration
+                    act_rst_loop.append_component(long_wait(wait_time=int(timeline[0].start_time - 8))) # wait and listen for triggers until readout finishes
+
                 added_active_reset = True
                 # skip to next timeline element
                 continue
@@ -311,6 +308,7 @@ class QbloxModule(AWG):
         # FIXME: is it really necessary to generate acquisitions for a QCM??
         acquisitions = Acquisitions()
         acquisitions.add(name="default", num_bins=self.num_bins, index=0)
+        acquisitions.add(name="reset", num_bins=1, index=1)
         return acquisitions
 
     @abstractmethod
@@ -323,7 +321,7 @@ class QbloxModule(AWG):
 
     @abstractmethod
     def _append_acquire_instruction(
-        self, loop: Loop, bin_index: Register | int, sequencer_id: int, weight_regs: tuple[Register, Register]
+        self, loop: Loop, bin_index: Register | int, sequencer_id: int, weight_regs: tuple[Register, Register], acq_index: int=0
     ):
         """Append an acquire instruction to the loop."""
 
