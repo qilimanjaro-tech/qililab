@@ -73,4 +73,10 @@ def execute(circuit: Circuit, platform: str | Platform, nshots: int = 1):
     # create experiment with options
     sample_experiment = Experiment(platform=platform, circuits=[circuit], options=options)
 
-    return sample_experiment.execute(save_experiment=False, save_results=False)
+    try:
+        results = sample_experiment.execute(save_experiment=False, save_results=False)
+    except Exception as e:
+        platform.disconnect()
+        raise e
+
+    return results
