@@ -92,6 +92,23 @@ class TestPulsar:
         assert pulsar.get("out0_offset") == 1
         assert pulsar.get("reference_source") == "internal"
 
+    def test_instrument_repr(self):
+        """Test that the instrument_repr method returns the right representation."""
+        parameters = {"out0_offset": 1, "reference_source": "internal"}
+        pulsar = Pulsar(alias="test_pulsar_with_sequencers")
+        pulsar.initial_setup(params=parameters)
+
+        expected_alias = "test_pulsar_with_sequencers"
+        expected_minimum_params = {"out0_offset": 1, "reference_source": "internal"}
+        instrument_reptr = pulsar.instrument_repr()
+
+        assert "alias" in instrument_reptr
+        assert expected_alias == instrument_reptr["alias"]
+        assert "parameters" in instrument_reptr
+        for key, value in expected_minimum_params.items():
+            assert key in instrument_reptr["parameters"]
+            assert instrument_reptr["parameters"][key] == value
+
 
 class TestPulsarIntegration:
     """Integration tests for the Pulsar class. These tests use the `dummy_cfg` attribute to be able to use the
