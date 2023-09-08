@@ -275,6 +275,23 @@ class TestCluster:
         assert cluster.get("out0_offset") == 1
         assert cluster.get("reference_source") == "internal"
 
+    def test_instrument_repr(self):
+        """Test that the instrument_repr method returns the right representation."""
+        params = {"out0_offset": 1, "reference_source": "internal"}
+        cluster = Cluster(alias="test_cluster_initial_setup")
+        cluster.initial_setup(params=params)
+
+        expected_alias = "test_cluster_initial_setup"
+        expected_minimum_params = {"out0_offset": 1, "reference_source": "internal"}
+        instrument_reptr = cluster.instrument_repr()
+
+        assert "alias" in instrument_reptr
+        assert expected_alias == instrument_reptr["alias"]
+        assert "parameters" in instrument_reptr
+        for key, value in expected_minimum_params.items():
+            assert key in instrument_reptr["parameters"]
+            assert instrument_reptr["parameters"][key] == value
+
 
 class TestClusterIntegration:
     """Integration tests for the Cluster class. These tests use the `dummy_cfg` attribute to be able to use the
