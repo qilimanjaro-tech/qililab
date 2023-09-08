@@ -374,7 +374,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """
         return str(yaml.dump(self.to_dict(), sort_keys=False))
 
-    def execute_qprogram(self, qprogram: QProgram, integration_length: int = 1000):
+    def execute_qprogram(self, qprogram: QProgram):
         """Execute a QProgram using the platform instruments.
 
         Args:

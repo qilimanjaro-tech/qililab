@@ -21,7 +21,7 @@ def fixture_no_loops_all_operations() -> QProgram:
     qp.sync()
     qp.wait(bus="readout", time=100)
     qp.play(bus="readout", waveform=readout_pair)
-    qp.acquire(bus="readout")
+    qp.acquire(bus="readout", duration=1000)
     return qp
 
 
@@ -35,7 +35,7 @@ def fixture_average() -> QProgram:
         qp.sync()
         qp.wait(bus="readout", time=100)
         qp.play(bus="readout", waveform=readout_pair)
-        qp.acquire(bus="readout")
+        qp.acquire(bus="readout", duration=1000)
     return qp
 
 
@@ -87,7 +87,7 @@ def fixture_average_with_for_loop() -> QProgram:
             qp.sync()
             qp.wait(bus="readout", time=wait_time)
             qp.play(bus="readout", waveform=readout_pair)
-            qp.acquire(bus="readout")
+            qp.acquire(bus="readout", duration=1000)
     return qp
 
 
@@ -121,12 +121,12 @@ def fixture_average_with_multiple_for_loops_and_acquires() -> QProgram:
         with qp.for_loop(variable=frequency, start=0, stop=500, step=10):
             qp.set_frequency(bus="readout", frequency=frequency)
             qp.play(bus="readout", waveform=readout_pair)
-            qp.acquire(bus="readout")
-        qp.acquire(bus="readout")
+            qp.acquire(bus="readout", duration=1000)
+        qp.acquire(bus="readout", duration=1000)
         with qp.for_loop(variable=gain, start=0.0, stop=1.0, step=0.1):
             qp.set_gain(bus="readout", gain_path0=gain, gain_path1=gain)
             qp.play(bus="readout", waveform=readout_pair)
-            qp.acquire(bus="readout")
+            qp.acquire(bus="readout", duration=1000)
     return qp
 
 
@@ -145,7 +145,7 @@ def fixture_average_with_nested_for_loops() -> QProgram:
                 qp.sync()
                 qp.wait(bus="readout", time=wait_time)
                 qp.play(bus="readout", waveform=readout_pair)
-                qp.acquire(bus="readout")
+                qp.acquire(bus="readout", duration=1000)
     return qp
 
 
@@ -168,7 +168,7 @@ def fixture_average_with_parallel_for_loops() -> QProgram:
             qp.play(bus="drive", waveform=drag_pair)
             qp.sync()
             qp.play(bus="readout", waveform=readout_pair)
-            qp.acquire(bus="readout")
+            qp.acquire(bus="readout", duration=1000)
     return qp
 
 

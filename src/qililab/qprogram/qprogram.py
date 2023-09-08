@@ -195,14 +195,16 @@ class QProgram:
         operation = Wait(bus=bus, time=time)
         self._active_block.append(operation)
 
-    def acquire(self, bus: str, weights: IQPair | None = None):
+    def acquire(self, bus: str, duration: int | None = None, weights: IQPair | None = None):
         """Acquire results.
 
         Args:
             bus (str): Unique identifier of the bus.
             weights (IQPair | None, optional): Weights used during acquisition. Defaults to None.
         """
-        operation = Acquire(bus=bus, weights=weights)
+        if (duration is None) == (weights is None):
+            raise ValueError("Either duration or weights should be set.")
+        operation = Acquire(bus=bus, duration=duration, weights=weights)
         self._active_block.append(operation)
 
     def sync(self, buses: list[str] | None = None):

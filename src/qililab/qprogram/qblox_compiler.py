@@ -74,10 +74,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
 
     minimum_wait_duration: int = 4
 
-    def __init__(self, integration_length: int = 1000):
-        # External settings
-        self._integration_length = integration_length
-
+    def __init__(self):
         # Handlers to map each operation to a corresponding handler function
         self._handlers: dict[type, Callable] = {
             Parallel: self._handle_parallel,
@@ -400,7 +397,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                     component=QPyInstructions.Acquire(
                         acq_index=self._buses[element.bus].next_acquisition_index,
                         bin_index=bin_register,
-                        wait_time=self._integration_length,
+                        wait_time=element.duration,
                     )
                 )
             self._buses[element.bus].qpy_block_stack[block_index_for_add_instruction].append_component(
@@ -421,7 +418,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                 component=QPyInstructions.Acquire(
                     acq_index=self._buses[element.bus].next_acquisition_index,
                     bin_index=self._buses[element.bus].next_bin_index,
-                    wait_time=self._integration_length,
+                    wait_time=element.duration,
                 )
             )
         self._buses[element.bus].next_bin_index += num_bins
