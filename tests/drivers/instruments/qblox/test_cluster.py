@@ -395,14 +395,13 @@ class TestQcmQrm:
         qcm_qrm = QcmQrm(parent=parent, alias="test_initial_setup", slot_idx=0)
         qcm_qrm.initial_setup(params=params)
 
-        expected_dict = {"alias": "test_initial_setup",
-                         "out0_offset": 1,
-                         "reference_source": "internal"}
+        expected_dict = {"alias": "test_initial_setup", "out0_offset": 1, "reference_source": "internal"}
         instrument_reptr = qcm_qrm.instrument_repr()
 
         for key, value in instrument_reptr.items():
             assert key in expected_dict
             assert expected_dict[key] == value
+
 
 class TestQcmQrmIntegration:
     """Unit tests checking the Qililab QcmQrm attributes and methods"""
