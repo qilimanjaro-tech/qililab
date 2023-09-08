@@ -396,10 +396,7 @@ class TestQcmQrm:
         qcm_qrm.initial_setup(params=params)
 
         expected_alias = "test_initial_setup"
-        expected_minimum_params = {
-                "out0_offset": 1,
-                "reference_source": "internal"
-        }
+        expected_minimum_params = {"out0_offset": 1, "reference_source": "internal"}
         instrument_reptr = qcm_qrm.instrument_repr()
 
         assert "alias" in instrument_reptr
