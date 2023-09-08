@@ -28,7 +28,7 @@ from qpysequence.waveforms import Waveforms
 from qpysequence.weights import Weights
 
 from qililab.config import logger
-from qililab.drivers.instruments.instrument_factory import InstrumentDriverFactory
+from qililab.drivers.instruments.instrument_driver_factory import InstrumentDriverFactory
 from qililab.drivers.interfaces import AWG
 from qililab.pulse import PulseBusSchedule, PulseShape
 
