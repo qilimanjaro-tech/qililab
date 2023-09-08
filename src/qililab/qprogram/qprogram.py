@@ -196,11 +196,22 @@ class QProgram:
         self._active_block.append(operation)
 
     def acquire(self, bus: str, duration: int | None = None, weights: IQPair | None = None):
-        """Acquire results.
+        """Acquire results based on the given duration or weights.
+
+        If the `duration` is provided, it specifies the acquisition's duration.
+        However, it's essential to ensure that the provided duration matches the
+        one set in QCoDes; otherwise, the results might be incorrect.
+
+        If `weights` are provided, the acquisition duration is determined by the
+        duration of the weights waveforms.
 
         Args:
             bus (str): Unique identifier of the bus.
-            weights (IQPair | None, optional): Weights used during acquisition. Defaults to None.
+            duration (int | None, optional): Duration for the acquisition in units relevant to your application. Defaults to None.
+            weights (IQPair | None, optional): Weights used during acquisition. If set, the acquisition duration is determined by these weights. Defaults to None.
+
+        Raises:
+            ValueError: If neither or both `duration` and `weights` are provided.
         """
         if (duration is None) == (weights is None):
             raise ValueError("Either duration or weights should be set.")
