@@ -207,6 +207,7 @@ class QbloxModule(AWG):
         self._init_weights_registers(registers=weight_registers, values=(0, 1), program=program)
         avg_loop = Loop(name="average", begin=int(self.nshots))  # type: ignore
         bin_loop = Loop(name="bin", begin=0, end=self.num_bins, step=1)
+        bin_loop.append_component(WaitSync(4))
         avg_loop.append_component(bin_loop)
         if self.settings.active_reset is True:
             act_rst = Block(name="active_reset")
