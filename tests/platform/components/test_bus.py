@@ -3,6 +3,7 @@ from types import NoneType
 from unittest.mock import MagicMock
 
 import pytest
+from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.platform import Bus, Buses
@@ -20,6 +21,12 @@ def load_buses() -> Buses:
     """
     platform = build_platform(Galadriel.runcard)
     return platform.buses
+
+
+@pytest.fixture(name="qpysequence")
+def fixture_qpysequence() -> Sequence:
+    """Return Sequence instance."""
+    return Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
 
 
 @pytest.mark.parametrize("bus", [load_buses().elements[0], load_buses().elements[1]])
@@ -55,6 +62,12 @@ class TestBus:
             ParameterNotFound, match=f"No parameter with name duration was found in the bus with alias {bus.alias}"
         ):
             bus.set_parameter(parameter=Parameter.DURATION, value=0.5, channel_id=1)
+
+    def test_upload_qpysequence(self, bus: Bus, qpysequence: Sequence):
+        """Test upload_qpysequence method."""
+        bus.settings.system_control = MagicMock()
+        bus.upload_qpysequence(qpysequence=qpysequence)
+        bus.system_control.upload_qpysequence.assert_called_once_with(qpysequence=qpysequence, port=bus.port)
 
 
 class TestErrors:

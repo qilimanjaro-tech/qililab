@@ -3,13 +3,11 @@ import wave
 from unittest.mock import MagicMock
 
 import pytest
-import qpysequence.program.instructions as instructions
 from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 
 from qililab.instruments import AWG, Instrument
 from qililab.platform import Platform
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
-from qililab.qprogram.blocks.block import Block
 from qililab.system_control import SystemControl
 from tests.data import Galadriel
 from tests.test_utils import build_platform
