@@ -1,6 +1,5 @@
 """Tests for the Experiment class."""
 import copy
-import time
 from queue import Queue
 from unittest.mock import MagicMock, patch
 
