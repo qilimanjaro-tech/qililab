@@ -41,13 +41,19 @@ jobs:
           python -m pip install .
 
       - name: Isort
-        run: isort . -l 120 --check
+        run: |
+          isort src -l 120 --check
+          isort tests -l 120 --check
 
       - name: Black
-        run: black . -l 120 --check
+        run: |
+          black src -l 120 --check
+          black tests -l 120 --check
 
       - name: Flake8
-        run: flake8
+        run: |
+          flake8 src
+          flake8 tests
 
       - name: Pylint
         run: |
