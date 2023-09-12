@@ -12,5 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" library version """
+"""Version number (major.minor.patch[-label])"""
 __version__ = "0.20.4"
