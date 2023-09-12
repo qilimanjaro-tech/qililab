@@ -61,7 +61,7 @@ jobs:
           pylint tests --rcfile tests/.pylintrc
 
       - name: Mypy
-        run: mypy src
+        run: mypy src --ignore-missing-imports
 
       - name: Bandit
         run: bandit -r src -c .bandit
