@@ -116,6 +116,16 @@ class TestMethods:
         for seq_idx in range(awg.num_sequencers):
             awg.device.sequencers[seq_idx].sequence.assert_called_once()
 
+    def test_upload_qpysequence_raises_error_when_awg_is_missing(
+        self, system_control_without_awg: SystemControl, qpysequence: Sequence
+    ):
+        """Test that the ``upload`` method raises an error when the system control doesn't have an AWG."""
+        with pytest.raises(
+            AttributeError,
+            match="The system control doesn't have any AWG to upload a qpysequence.",
+        ):
+            system_control_without_awg.upload_qpysequence(qpysequence=qpysequence, port="drive_q0")
+
     def test_upload(self, system_control: SystemControl, pulse_bus_schedule: PulseBusSchedule):
         """Test upload method."""
         awg = system_control.instruments[0]
