@@ -17,7 +17,7 @@ from qililab.instruments import AWG, AWGAnalogDigitalConverter, SignalGenerator
 from qililab.instruments.instruments import Instruments
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
-from qililab.qprogram import QbloxCompiler, QProgram
+from qililab.qprogram import QProgram
 from qililab.settings import Runcard
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.system_control import ReadoutSystemControl

@@ -1,5 +1,4 @@
 """Tests for the SystemControl class."""
-import wave
 from unittest.mock import MagicMock
 
 import pytest
