@@ -10,7 +10,7 @@ from qpysequence import Sequence as QpySequence
 from qpysequence import Waveforms, Weights
 from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Register
-from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop, Acquire, WaitSync
+from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop, Acquire, WaitSync, UpdParam
 from qpysequence.program.instructions import SetLatchEn, LatchRst, Wait, SetCond
 
 from qpysequence.utils.constants import AWG_MAX_GAIN
@@ -209,12 +209,9 @@ class QbloxModule(AWG):
         bin_loop = Loop(name="bin", begin=0, end=self.num_bins, step=1)
         avg_loop.append_component(bin_loop)
         if self.settings.active_reset is True:
-            sync = Block(name="sync")
-            sync.append_component(WaitSync(1000))
-            act_rst = Loop(name="act_rst", begin=0, end=1, step=1)
+            act_rst = Block(name="active_reset")
             program.append_block(act_rst)
-            program.append_block(sync)
-            added_active_reset = False
+            self._add_active_reset(act_rst=act_rst,pulse_bus_schedule=pulse_bus_schedule,waveforms=waveforms,sequencer=sequencer)
 
         program.append_block(avg_loop)
         stop = Block(name="stop")
@@ -222,53 +219,10 @@ class QbloxModule(AWG):
         program.append_block(block=stop)
         timeline = pulse_bus_schedule.timeline
         if len(timeline) > 0 and timeline[0].start_time != 0:
-            # Conditional X pulses for active reset run after measurement
-            if (self.settings.active_reset and not added_active_reset)  is True and "drive" in pulse_bus_schedule.port:
-                
-                # active reset sequence 1
-                act_rst.append_component(SetLatchEn(1, 4)) # latch any trigger
-                act_rst.append_component(LatchRst(4)) # #Reset the trigger network address counters, then wait on trigger address
-                act_rst.append_component(long_wait(wait_time=int(timeline[0].start_time))) # wait for duration of measurement pulse
-            else:
-                bin_loop.append_component(long_wait(wait_time=int(timeline[0].start_time)))
+            bin_loop.append_component(long_wait(wait_time=int(timeline[0].start_time)))
 
         for i, pulse_event in enumerate(timeline):
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
-
-            # ACTIVE RESET # TODO: simplify if possible
-            if (self.settings.active_reset and not added_active_reset)  is True:
-                act_rst.append_component(ResetPh())
-                gain = int(np.abs(pulse_event.pulse.amplitude) * AWG_MAX_GAIN)  # np.abs() needed for negative pulses
-                act_rst.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
-                phase = int((pulse_event.pulse.phase % (2 * np.pi)) * 1e9 / (2 * np.pi))
-                act_rst.append_component(SetPh(phase=phase))
-                if pulse_bus_schedule.port == "feedline_input":
-                    # measure and add wait sync at the end
-                    act_rst.append_component(
-                        Play(
-                            waveform_0=waveform_pair.waveform_i.index,
-                            waveform_1=waveform_pair.waveform_q.index,
-                            wait_time=4,
-                        )
-                    )
-                    self._append_acquire_instruction(
-                        loop=act_rst, bin_index=act_rst.counter_register, sequencer_id=sequencer, weight_regs=weight_registers, acq_index=1
-                    )
-                elif "drive" in pulse_bus_schedule.port: # TODO: find a better way to do this
-                    # trigger address conditional is 2^sequencer
-                    act_rst.append_component(SetCond(1,2**sequencer,0,4)) # TODO: else duration
-                    act_rst.append_component(Play(
-                                                        waveform_0=waveform_pair.waveform_i.index,
-                                                        waveform_1=waveform_pair.waveform_q.index,
-                                                        wait_time=4,
-                                                    ))
-                    act_rst.append_component(SetCond(0,2**sequencer,0,4)) # TODO: else duration
-                    act_rst.append_component(long_wait(wait_time=int(timeline[0].start_time - 8))) # wait and listen for triggers until readout finishes
-
-                added_active_reset = True
-                # skip to next timeline element
-                continue
-
             wait_time = timeline[i + 1].start_time - pulse_event.start_time if (i < (len(timeline) - 1)) else 4
             bin_loop.append_component(ResetPh())
             gain = int(np.abs(pulse_event.pulse.amplitude) * AWG_MAX_GAIN)  # np.abs() needed for negative pulses
@@ -293,6 +247,70 @@ class QbloxModule(AWG):
         program.allocate_registers() # TODO: why does this fix registers
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
         return program
+    
+
+    def _add_active_reset(self, act_rst : Block, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, sequencer: int) -> Block:
+        """Adds active reset sequence and removes active reset PulseEvents from pulse_bus_schedule
+
+        Args:
+            act_rst (Block): _description_
+            pulse_bus_schedule (PulseBusSchedule | None, optional): _description_. Defaults to None.
+
+        Returns:
+            Block: _description_
+        """
+
+        
+        if pulse_bus_schedule.port == "feedline_input":
+            # acquire instruction
+            # measure and add wait sync at the end
+            pulse_event = pulse_bus_schedule.timeline[0]
+            waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
+            act_rst.append_component(WaitSync(4))
+            act_rst.append_component(UpdParam(1000))
+            act_rst.append_component(
+                Play(
+                    waveform_0=waveform_pair.waveform_i.index,
+                    waveform_1=waveform_pair.waveform_q.index,
+                    wait_time=4,
+                )
+            )
+            act_rst.append_component(Acquire(acq_index=1,bin_index=1,wait_time=pulse_event.duration))
+            act_rst.append_component(Wait(1000))
+            act_rst.append_component(UpdParam(1000))
+
+            pulse_bus_schedule.timeline = pulse_bus_schedule.timeline[1:] # erase event from timeline
+
+        elif "drive" in pulse_bus_schedule.port:
+            pulse_event = pulse_bus_schedule.timeline[0]
+            waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
+
+            # Conditional X pulses for active reset run after measurement                
+            # active reset sequence 1
+            act_rst.append_component(SetLatchEn(1, 4)) # latch any trigger
+            act_rst.append_component(WaitSync(4)) # TODO: does this fix anything
+
+            act_rst.append_component(Wait(1000)) # TODO: wait according to qrm
+            act_rst.append_component(LatchRst(1000)) # #Reset the trigger network address counters, then wait on trigger address TODO: we dont know the time for the m pulse from here
+            act_rst.append_component(Wait(1000)) # wait for duration of measurement pulse
+
+            # trigger address conditional is 2^sequencer
+            act_rst.append_component(SetCond(1,2**sequencer,0,pulse_event.duration)) # TODO: else duration
+            act_rst.append_component(Play(
+                                                waveform_0=waveform_pair.waveform_i.index,
+                                                waveform_1=waveform_pair.waveform_q.index,
+                                                wait_time=4, # we don't care about this wait time sinc we're running sync after it
+                                            ))
+            act_rst.append_component(SetCond(0,2**sequencer,0,4)) # TODO: else duration
+
+            pulse_bus_schedule.timeline = pulse_bus_schedule.timeline[1:] # erase event from timeline
+
+        else: # compensate wait syncs for other ports
+            act_rst.append_component(WaitSync(4))
+        
+        act_rst.append_component(WaitSync(4))
+
+
 
     def _init_weights_registers(self, registers: tuple[Register, Register], values: tuple[int, int], program: Program):
         """Initialize the weights `registers` to the `values` specified and place the required instructions in the
