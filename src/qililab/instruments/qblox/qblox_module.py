@@ -292,7 +292,7 @@ class QbloxModule(AWG):
 
             act_rst.append_component(Wait(1000)) # TODO: wait according to qrm
             act_rst.append_component(LatchRst(1000)) # #Reset the trigger network address counters, then wait on trigger address TODO: we dont know the time for the m pulse from here
-            wait_time = pulse_bus_schedule.timeline[1].start_time - pulse_event.start_time
+            wait_time = pulse_event.start_time
             act_rst.append_component(long_wait(wait_time)) # wait for duration of measurement pulse
 
             # trigger address conditional is 2^sequencer
