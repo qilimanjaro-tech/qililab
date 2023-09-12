@@ -24,11 +24,7 @@ def fixture_platform() -> Platform:
 @pytest.fixture(name="qpysequence")
 def fixture_qpysequence() -> Sequence:
     """Return Sequence instance."""
-    program = Program()
-    main = Block()
-    main.append(instructions.SetFreq(frequency=1e9))
-    program.append_block(block=main)
-    return Sequence(program=program, waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
+    return Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
 
 
 @pytest.fixture(name="pulse_bus_schedule")
@@ -113,7 +109,12 @@ class TestMethods:
             system_control_without_awg.upload(port="drive_q0")
 
     def test_upload_qpysequence(self, system_control: SystemControl, qpysequence: Sequence):
-        ...
+        awg = system_control.instruments[0]
+        assert isinstance(awg, AWG)
+        awg.device = MagicMock()
+        system_control.upload_qpysequence(qpysequence=qpysequence, port="drive_q0")
+        for seq_idx in range(awg.num_sequencers):
+            awg.device.sequencers[seq_idx].sequence.assert_called_once()
 
     def test_upload(self, system_control: SystemControl, pulse_bus_schedule: PulseBusSchedule):
         """Test upload method."""
