@@ -410,8 +410,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             results.append(result)
 
         # FIXME: allow multiple readout buses
-        if results:
-            return results[0]
+        return results[0] if results else None
 
     def execute(
         self,
