@@ -14,7 +14,6 @@
 
 """Bus class."""
 from dataclasses import InitVar, dataclass
-from typing import overload
 
 from qpysequence import Sequence as QpySequence
 
