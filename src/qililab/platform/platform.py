@@ -409,13 +409,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             result = bus.acquire_result()
             results.append(result)
 
-        # FIXME: set multiple readout buses
-        if len(results) > 1:
-            logger.error("Only One Readout Bus allowed. Reading only from the first one.")
-        if not results:
-            raise ValueError("There are no readout buses in the platform.")
-
-        return results[0]
+        # FIXME: allow multiple readout buses
+        if results:
+            return results[0]
 
     def execute(
         self,
