@@ -56,7 +56,6 @@ jobs:
 
       - name: Mypy
         run: |
-          mypy --install-types
           mypy src
 
       - name: Bandit
