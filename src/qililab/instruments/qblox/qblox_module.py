@@ -266,7 +266,7 @@ class QbloxModule(AWG):
             # measure and add wait sync at the end
             pulse_event = pulse_bus_schedule.timeline[0]
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
-            act_rst.append_component(WaitSync(4))
+            # act_rst.append_component(WaitSync(4))
             act_rst.append_component(UpdParam(1000))
             act_rst.append_component(
                 Play(
@@ -275,7 +275,7 @@ class QbloxModule(AWG):
                     wait_time=4,
                 )
             )
-            act_rst.append_component(Acquire(acq_index=1,bin_index=1,wait_time=pulse_event.duration))
+            act_rst.append_component(Acquire(acq_index=1,bin_index=0,wait_time=pulse_event.duration))
             act_rst.append_component(Wait(1000))
             act_rst.append_component(UpdParam(1000))
 
@@ -288,11 +288,12 @@ class QbloxModule(AWG):
             # Conditional X pulses for active reset run after measurement                
             # active reset sequence 1
             act_rst.append_component(SetLatchEn(1, 4)) # latch any trigger
-            act_rst.append_component(WaitSync(4)) # TODO: does this fix anything
+            # act_rst.append_component(WaitSync(4)) # TODO: does this fix anything
 
             act_rst.append_component(Wait(1000)) # TODO: wait according to qrm
             act_rst.append_component(LatchRst(1000)) # #Reset the trigger network address counters, then wait on trigger address TODO: we dont know the time for the m pulse from here
-            act_rst.append_component(Wait(1000)) # wait for duration of measurement pulse
+            wait_time = pulse_bus_schedule.timeline[1].start_time - pulse_event.start_time
+            act_rst.append_component(long_wait(wait_time)) # wait for duration of measurement pulse
 
             # trigger address conditional is 2^sequencer
             act_rst.append_component(SetCond(1,2**sequencer,0,pulse_event.duration)) # TODO: else duration
@@ -306,7 +307,8 @@ class QbloxModule(AWG):
             pulse_bus_schedule.timeline = pulse_bus_schedule.timeline[1:] # erase event from timeline
 
         else: # compensate wait syncs for other ports
-            act_rst.append_component(WaitSync(4))
+            pass
+            # act_rst.append_component(WaitSync(1000))
         
         act_rst.append_component(WaitSync(4))
 
