@@ -30,10 +30,10 @@ with open(os.path.join(this_directory, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
 setup(
-    name="qilimanjaro-qililab",
+    name=PACKAGE,
     version=get_version(),
-    description="A template repository to create a Qilimanjaro Python library",
-    author="Qilimanjaro team",
+    description="Fundamental package for fast characterization and calibration of quantum chips.",
+    author="Qilimanjaro Quantum Tech",
     author_email="info@qilimanjaro.tech",
     url="https://github.com/qilimanjaro-tech/qililab",
     packages=find_packages("src"),
@@ -61,4 +61,5 @@ setup(
     python_requires=">=3.10.0",
     long_description=long_description,
     long_description_content_type="text/markdown",
+    license="Apache License, Version 2.0",
 )
