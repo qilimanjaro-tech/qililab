@@ -22,6 +22,9 @@ from qililab.platform.components.bus_factory import BusFactory
 class FluxBus(BusDriver):
     """Qililab's driver for Flux Bus
 
+    Bases:
+        :class:`BusDriver`
+
     Args:
         alias: Bus alias.
         port (int): Port to target.

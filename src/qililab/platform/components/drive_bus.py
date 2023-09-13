@@ -24,6 +24,9 @@ from qililab.platform.components.bus_factory import BusFactory
 class DriveBus(BusDriver):
     """Qililab's driver for Drive Bus.
 
+    Bases:
+        :class:`BusDriver`
+
     Args:
         alias: Bus alias.
         port (int): Port to target.

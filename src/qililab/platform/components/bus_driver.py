@@ -25,6 +25,9 @@ from qililab.pulse import PulseBusSchedule, PulseDistortion
 class BusDriver(ABC):
     """Bus Class.
 
+    Bases:
+        :class:`abc.ABC`
+
     Args:
         alias (str): Bus alias.
         port (int): Port to target.

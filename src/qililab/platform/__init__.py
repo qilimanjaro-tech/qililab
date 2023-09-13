@@ -34,10 +34,8 @@ Platform Components
     :toctree: api
 
     ~Bus
-    ~BusDriver
-    ~DriveBus
-    ~FluxBus
-    ~ReadoutBus
+    ~Buses
+    ~BusElement
 
 """
 from .components import Bus, BusDriver, BusElement, Buses, DriveBus, FluxBus, ReadoutBus

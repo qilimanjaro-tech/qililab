@@ -22,7 +22,11 @@ from qililab.utils import dict_factory
 
 
 class BusElement(FactoryElement):
-    """Class BusElement. All bus element classes must inherit from this class."""
+    """Class BusElement. All bus element classes must inherit from this class.
+
+    Bases:
+        :class:`FactoryElement`
+    """
 
     settings: Settings
 
