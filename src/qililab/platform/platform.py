@@ -396,7 +396,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             for instrument in self.instruments.elements:
                 if ("awg_sequencers" in instrument.to_dict()):
                     instrument.settings.active_reset = True
-                    instrument._set_active_reset_triggers()
                     
                     
         # Compile pulse schedule

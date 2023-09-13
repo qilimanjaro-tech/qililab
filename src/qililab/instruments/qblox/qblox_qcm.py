@@ -48,7 +48,7 @@ class QbloxQCM(QbloxModule):
         """
         raise NotImplementedError
 
-    def _set_active_reset_triggers(self):
+    def _set_active_reset_triggers(self, sequencer):
         """Enables triggers for all QRM sequencers. Used for active reset
         """
 

@@ -201,12 +201,13 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """
         self.device.sequencers[sequencer_id].integration_length_acq(value)
 
-    def _set_active_reset_triggers(self):
+    def _set_active_reset_triggers(self, sequencer):
         """Enables triggers for all QRM sequencers. Used for active reset
         """
         for sequencer in self.device.sequencers:
-            sequencer.thresholded_acq_trigger_address(sequencer._seq_idx + 1)
             sequencer.thresholded_acq_trigger_en(True)
+            sequencer.thresholded_acq_trigger_address(sequencer._seq_idx + 1)
+            sequencer.thresholded_acq_trigger_invert(False)
 
 
     def _set_device_scope_hardware_averaging(self, value: bool, sequencer_id: int):

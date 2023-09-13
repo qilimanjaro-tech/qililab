@@ -41,6 +41,8 @@ class Experiment(BaseExperiment):
         # Translate circuits into pulses if needed
         if self.circuits:
             translator = CircuitToPulses(platform=self.platform)
+            if self.platform.gates_settings.active_reset is True:
+                self.circuits = [self.platform._add_active_reset_circuit(c) for c in self.circuits]
             self.pulse_schedules = translator.translate(circuits=self.circuits)
         # Build ``ExecutionManager`` class
         self.execution_manager = EXECUTION_BUILDER.build(platform=self.platform, pulse_schedules=self.pulse_schedules)
