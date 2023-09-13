@@ -25,7 +25,7 @@ class DriveBus(BusDriver):
     """Qililab's driver for Drive Bus.
 
     Bases:
-        :class:`BusDriver`
+        :class:`BusDriver`.
 
     Args:
         alias: Bus alias.

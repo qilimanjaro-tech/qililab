@@ -40,6 +40,9 @@ class SNZ(PulseShape):
         High-fidelity controlled-Z gate with maximal intermediate leakage operating at the speed
         limit in a superconducting quantum processor: https://arxiv.org/abs/2008.07411
 
+    Bases:
+        :class:`PulseShape`.
+
     Args:
         b (float): Instant stops height when going from the rectangular half-duration to `height = 0`.
         t_phi (int): Time at `height = 0`, in the middle of the positive and negative rectangular pulses.

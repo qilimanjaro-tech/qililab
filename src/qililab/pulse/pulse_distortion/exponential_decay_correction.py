@@ -28,9 +28,14 @@ from .pulse_distortion import PulseDistortion
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class ExponentialCorrection(PulseDistortion):
-    """Exponential decay distortion
+    """Exponential decay distortion. Corrects an exponential decay using a linear IIR filter.
 
-    For more info, check SUPLEMENTAL MATERIAL IV. B. in [https://arxiv.org/abs/1907.04818].
+    Fitting should be done to y = g*(1+amp*exp(-t/tau)), where g is ignored in the corrections.
+
+    For more info, check `SUPLEMENTAL MATERIAL IV. B. <https://arxiv.org/abs/1907.04818>`_.
+
+    Bases:
+        :class:`PulseDistortion`.
 
     Args:
         tau_bias_tee (float): Time constant
@@ -69,6 +74,7 @@ class ExponentialCorrection(PulseDistortion):
         """Distorts envelopes (originally created to distort square envelopes).
 
         Corrects an exponential decay using a linear IIR filter.
+
         Fitting should be done to y = g*(1+amp*exp(-t/tau)), where g is ignored in the corrections.
 
         If `self.auto_norm` is True (default) normalizes the resulting envelope to have the same real max height than the starting one.

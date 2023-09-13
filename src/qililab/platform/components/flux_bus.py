@@ -23,7 +23,7 @@ class FluxBus(BusDriver):
     """Qililab's driver for Flux Bus
 
     Bases:
-        :class:`BusDriver`
+        :class:`BusDriver`.
 
     Args:
         alias: Bus alias.

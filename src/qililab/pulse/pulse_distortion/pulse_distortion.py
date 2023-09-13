@@ -57,6 +57,9 @@ class PulseDistortion(FactoryElement):
 
         final_envelope = almost_final_envelope * self.norm_factor
 
+    .. note::
+        Current supported pulse shapes in qililab: :class:`BiasTeeCorrection`, :class:`ExponentialCorrection` and :class:`LFilterCorrection`.
+
     Args:
         norm_factor (float): The manual normalization factor that multiplies the envelope in the apply() method. Defaults to 1 (no effect).
         auto_norm (bool): Whether to automatically normalize the corrected envelope with the original max height in the apply() method.

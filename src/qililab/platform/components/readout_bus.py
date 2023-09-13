@@ -24,7 +24,7 @@ class ReadoutBus(BusDriver):
     """Qililab's driver for Readout Bus
 
     Bases:
-        :class:`BusDriver`
+        :class:`BusDriver`.
 
     Args:
         alias: Bus alias.

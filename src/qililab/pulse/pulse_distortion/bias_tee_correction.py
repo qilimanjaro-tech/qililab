@@ -28,9 +28,12 @@ from .pulse_distortion import PulseDistortion
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class BiasTeeCorrection(PulseDistortion):
-    """Bias tee distortion.
+    """Bias tee distortion. Corrects for a bias tee using a linear IIR filter with time constant tau.
 
-    For more info, check SUPLEMENTAL MATERIAL in [https://arxiv.org/abs/1907.04818].
+    For more info, check `SUPLEMENTAL MATERIAL <https://arxiv.org/abs/1907.04818>`_.
+
+    Bases:
+        :class:`PulseDistortion`.
 
     Args:
         tau_bias_tee (float): Time constant.

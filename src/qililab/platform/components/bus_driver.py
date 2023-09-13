@@ -26,7 +26,7 @@ class BusDriver(ABC):
     """Bus Class.
 
     Bases:
-        :class:`abc.ABC`
+        `abc.ABC <https://docs.python.org/3/library/abc.html#abc.ABC>`_.
 
     Args:
         alias (str): Bus alias.
