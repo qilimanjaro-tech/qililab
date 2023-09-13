@@ -74,5 +74,5 @@ jobs:
           nbqa black .
           nbqa isort .
           nbqa flake8 .
-          nbqa mypy .
+          nbqa mypy . --ignore-missing-imports
           nbqa mdformat .
