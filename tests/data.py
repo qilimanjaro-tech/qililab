@@ -481,143 +481,6 @@ class Galadriel:
     }
 
 
-class FluxQubitSimulator:
-    """Test data of the flux_qubit platform."""
-
-    name = "flux_qubit"
-
-    device_id = 9
-
-    gates_settings: dict[str, Any] = {
-        PLATFORM.MINIMUM_CLOCK_TIME: 4,
-        PLATFORM.DELAY_BETWEEN_PULSES: 0,
-        PLATFORM.DELAY_BEFORE_READOUT: 40,
-        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
-        PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
-        PLATFORM.PASSIVE_RESET_DURATION: 100,
-        "operations": [
-            {
-                "name": "Rxy",
-                "pulse": {"name": "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
-            },
-            {
-                "name": "R180",
-                "pulse": {"name": "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
-            },
-            {
-                "name": "X",
-                "pulse": {"name": "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
-            },
-        ],
-        "gates": {
-            "M(0)": [
-                {
-                    "bus": "simulated_bus",
-                    "wait_time": 0,
-                    "pulse": {
-                        "amplitude": 1.0,
-                        "phase": 0,
-                        "duration": 2000,
-                        "shape": {"name": "rectangular"},
-                    },
-                }
-            ],
-            "I(0)": [
-                {
-                    "bus": "simulated_bus",
-                    "wait_time": 0,
-                    "pulse": {
-                        "amplitude": 1.0,
-                        "phase": 0,
-                        "duration": 100,
-                        "shape": {"name": "rectangular"},
-                    },
-                }
-            ],
-            "X(0)": [
-                {
-                    "bus": "simulated_bus",
-                    "wait_time": 0,
-                    "pulse": {
-                        "amplitude": 1.0,
-                        "phase": 0,
-                        "duration": 50,
-                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
-                    },
-                }
-            ],
-            "Y(0)": [
-                {
-                    "bus": "simulated_bus",
-                    "wait_time": 0,
-                    "pulse": {
-                        "amplitude": 1.0,
-                        "phase": 1.5707963267948966,
-                        "duration": 20,
-                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
-                    },
-                }
-            ],
-            "RY(0)": [
-                {
-                    "bus": "simulated_bus",
-                    "wait_time": 0,
-                    "pulse": {
-                        "amplitude": 1.0,
-                        "phase": 1.5707963267948966,
-                        "duration": 20,
-                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
-                    },
-                }
-            ],
-            "RX(0)": [
-                {
-                    "bus": "simulated_bus",
-                    "wait_time": 0,
-                    "pulse": {
-                        "amplitude": 1.0,
-                        "phase": 1.5707963267948966,
-                        "duration": 20,
-                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
-                    },
-                }
-            ],
-        },
-    }
-
-    chip: dict[str, Any] = {
-        "nodes": [
-            {"name": "port", "alias": "drive_q0", "line": "drive", "nodes": ["q0"]},
-            {"name": "qubit", "alias": "q0", "qubit_index": 0, "frequency": 3.451e09, "nodes": ["drive_q0"]},
-        ],
-    }
-
-    runcard: dict[str, Any] = {
-        RUNCARD.NAME: name,
-        RUNCARD.DEVICE_ID: device_id,
-        RUNCARD.GATES_SETTINGS: gates_settings,
-        RUNCARD.INSTRUMENTS: [],
-        RUNCARD.INSTRUMENT_CONTROLLERS: [],
-        RUNCARD.CHIP: chip,
-        RUNCARD.BUSES: [
-            {
-                "alias": "simulated_bus",
-                "system_control": {
-                    "name": SystemControlName.SIMULATED_SYSTEM_CONTROL,
-                    "qubit": "csfq4jj",
-                    "qubit_params": {"n_cut": 10, "phi_x": 6.28318530718, "phi_z": -0.25132741228},
-                    "drive": "zport",
-                    "drive_params": {"dimension": 10},
-                    "resolution": 1,
-                    "store_states": False,
-                },
-                RUNCARD.DISTORTIONS: [],
-                "port": "drive_q0",
-            }
-        ],
-    }
-
-
 experiment_params: list[list[str | Circuit | list[Circuit]]] = []
 for platform in [Galadriel]:
     circuit = Circuit(1)
@@ -630,14 +493,6 @@ for platform in [Galadriel]:
     if platform == Galadriel:
         circuit.add(M(0))
     experiment_params.extend([[platform.runcard, circuit], [platform.runcard, [circuit, circuit]]])  # type: ignore
-
-# Circuit used for simulator
-simulated_experiment_circuit: Circuit = Circuit(1)
-simulated_experiment_circuit.add(I(0))
-simulated_experiment_circuit.add(X(0))
-simulated_experiment_circuit.add(Y(0))
-# simulated_experiment_circuit.add(RX(0, 23))
-# simulated_experiment_circuit.add(RY(0, 15))
 
 results_two_loops: dict[str, Any] = {
     EXPERIMENT.SOFTWARE_AVERAGE: 1,
@@ -932,13 +787,10 @@ class SauronVNA:
 class MockedSettingsFactory:
     """Class that loads a specific class given an object's name."""
 
-    handlers: dict[str, type[Galadriel] | type[FluxQubitSimulator]] = {
-        "galadriel": Galadriel,
-        "flux_qubit": FluxQubitSimulator,
-    }
+    handlers: dict[str, type[Galadriel]] = {"galadriel": Galadriel}
 
     @classmethod
-    def register(cls, handler_cls: type[Galadriel] | type[FluxQubitSimulator]):
+    def register(cls, handler_cls: type[Galadriel]):
         """Register handler in the factory.
 
         Args:

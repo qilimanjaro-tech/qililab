@@ -55,7 +55,8 @@ jobs:
           pylint tests --rcfile tests/.pylintrc
 
       - name: Mypy
-        run: mypy src
+        run: |
+          mypy src
 
       - name: Bandit
         run: bandit -r src -c .bandit
