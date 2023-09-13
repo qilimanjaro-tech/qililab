@@ -473,7 +473,12 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         nqubits = circuit.nqubits
         c = Circuit(nqubits)
-        c.add([M(qubit) for qubit in range(nqubits)])  # measurement
-        c.add([Drag(qubit, np.pi, 0) for qubit in range(nqubits)])  # pi pulse
+        # get unique qubits
+        qubits = set()
+        for gate in circuit.queue:
+            for qubit in gate.qubits:
+                qubits.add(qubit)
+        c.add([M(qubit) for qubit in qubits])  # measurement
+        c.add([Drag(qubit, np.pi, 0) for qubit in qubits])  # pi pulse
         c.add(circuit.queue)
         return c
