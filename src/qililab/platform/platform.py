@@ -42,14 +42,14 @@ from .components.bus_element import dict_factory
 
 
 class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-attributes
-    """Platform object that describes setup used to control quantum devices.
+    """Platform object that describes the setup used to control the quantum devices.
 
-    The class will receive the Runcard class, with all the inner GatesSettings, Chip, Bus classes that the Runcard class has created
+    The class will receive the Runcard class, which all the inner GatesSettings, Chip, Bus classes that the Runcard class has created
     from the dictionaries, together with the instrument dictionaries that the Runcard class has not transform into classes yet.
 
     And with all that information instantiates the actual qililab Chip, Buses/Bus and corresponding Instrument classes.
 
-    This class also handles the corresponding dis/connections, set_ups, set_parameters and turning the instruments on/off.
+    This class also handles the corresponding dis/connections, set ups, set parameters and turning on/off the instruments.
 
     Args:
         runcard (Runcard): Runcard class containing all the chip, buses & instruments information of the platform.
