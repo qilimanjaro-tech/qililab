@@ -28,6 +28,9 @@ class BusDriver(ABC):
     Bases:
         `abc.ABC <https://docs.python.org/3/library/abc.html#abc.ABC>`_.
 
+    Derived:
+        :class:`DriveBus`, :class:`FluxBus` and :class:`ReadoutBus`
+
     Args:
         alias (str): Bus alias.
         port (int): Port to target.
