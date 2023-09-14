@@ -21,10 +21,15 @@ from qililab.system_control import ReadoutSystemControl, SimulatedSystemControl
 
 @dataclass
 class Buses:
-    """Class used as a container of :class:`Bus` objects.
+    """Class used as a container of :class:`Bus` objects, these are inside the `elements` attribute, as a list.
+
+    You can add more :class:`Bus` objects to the list, you can get the :class:`Bus` object connected to a concrete port
+    through the `add()` or `get()` methods respectively.
+
+    And you can also get all the :class:`Bus` objects containing system controls used for readout via the `readout_buses` property.
 
     Args:
-        buses (list[Bus]): List of Bus objects.
+        buses (list[Bus]): List of :class:`Bus` objects.
     """
 
     elements: list[Bus]
