@@ -233,7 +233,8 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             value (float): Normalized threshold value (-1.0 to 1.0)
             sequencer_id (int): sequencer to update the value
         """
-        integer_value = int(value * self._get_sequencer_by_id(id=sequencer_id).used_integration_length)
+        # integer_value = int(value * self._get_sequencer_by_id(id=sequencer_id).used_integration_length)
+        integer_value =value * self._get_sequencer_by_id(id=sequencer_id).used_integration_length
         self.device.sequencers[sequencer_id].thresholded_acq_threshold(integer_value)
 
     def _set_device_threshold_rotation(self, value: float, sequencer_id: int):

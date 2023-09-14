@@ -211,16 +211,14 @@ class QbloxModule(AWG):
         if self.settings.active_reset is True:
             act_rst = Block(name="active_reset")
             bin_loop.append_component(act_rst)
-            self._add_active_reset(act_rst=act_rst,pulse_bus_schedule=pulse_bus_schedule,waveforms=waveforms,sequencer=sequencer)
+            self._add_active_reset(act_rst=act_rst,bin_loop=bin_loop, pulse_bus_schedule=pulse_bus_schedule,waveforms=waveforms,sequencer=sequencer, weight_registers=weight_registers)
 
         program.append_block(avg_loop)
         stop = Block(name="stop")
         stop.append_component(Stop())
         program.append_block(block=stop)
-        if self.settings.active_reset is True and (("feedline_input" == pulse_bus_schedule.port) or ("drive" in pulse_bus_schedule.port)):
-            timeline = pulse_bus_schedule.timeline
-        else:
-            timeline = pulse_bus_schedule.timeline[1:]
+        timeline = pulse_bus_schedule.timeline # TODO: check that elements are removed from timeline acter active reset
+
         if len(timeline) > 0 and timeline[0].start_time != 0:
             bin_loop.append_component(long_wait(wait_time=int(timeline[0].start_time)))
 
@@ -252,7 +250,7 @@ class QbloxModule(AWG):
         return program
     
 
-    def _add_active_reset(self, act_rst : Block, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, sequencer: int) -> Block:
+    def _add_active_reset(self, act_rst : Block, bin_loop: Loop, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, sequencer: int, weight_registers: tuple[Register, Register]) -> Block:
         """Adds active reset sequence and removes active reset PulseEvents from pulse_bus_schedule
 
         Args:
@@ -269,6 +267,13 @@ class QbloxModule(AWG):
             # measure and add wait sync at the end
             pulse_event = pulse_bus_schedule.timeline[0]
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
+
+            act_rst.append_component(ResetPh())
+            gain = int(np.abs(pulse_event.pulse.amplitude) * AWG_MAX_GAIN)  # np.abs() needed for negative pulses
+            act_rst.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
+            phase = int((pulse_event.pulse.phase % (2 * np.pi)) * 1e9 / (2 * np.pi))
+            act_rst.append_component(SetPh(phase=phase))
+            
             act_rst.append_component(
                 Play(
                     waveform_0=waveform_pair.waveform_i.index,
@@ -276,8 +281,7 @@ class QbloxModule(AWG):
                     wait_time=4,
                 )
             )
-            act_rst.append_component(Acquire(acq_index=1,bin_index=100,wait_time=pulse_event.duration + (4 - pulse_event.duration % 4)))
-            act_rst.append_component(Wait(1000)) # this should wait for the active reset pulse to finish
+            self._append_acquire_instruction(loop=act_rst,bin_index=bin_loop.counter_register,sequencer_id=sequencer, weight_regs=weight_registers, acq_index=1)
 
             pulse_bus_schedule.timeline = pulse_bus_schedule.timeline[1:] # erase event from timeline
 
@@ -285,11 +289,17 @@ class QbloxModule(AWG):
             pulse_event = pulse_bus_schedule.timeline[0]
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
 
+            act_rst.append_component(ResetPh())
+            gain = int(np.abs(pulse_event.pulse.amplitude) * AWG_MAX_GAIN)  # np.abs() needed for negative pulses
+            act_rst.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
+            phase = int((pulse_event.pulse.phase % (2 * np.pi)) * 1e9 / (2 * np.pi))
+            act_rst.append_component(SetPh(phase=phase))
+
             # Conditional X pulses for active reset run after measurement                
             # active reset sequence 1
             act_rst.append_component(SetLatchEn(1, 4)) # latch any trigger
             # act_rst.append_component(WaitSync(4)) # TODO: does this fix anything
-            act_rst.append_component(LatchRst(300)) # #Reset the trigger network address counters, then wait on trigger address TODO: we dont know the time for the m pulse from here
+            act_rst.append_component(LatchRst(1000)) # #Reset the trigger network address counters, then wait on trigger address TODO: we dont know the time for the m pulse from here
             wait_time = pulse_event.start_time
             act_rst.append_component(long_wait(wait_time)) # wait for duration of measurement pulse
 
@@ -326,7 +336,7 @@ class QbloxModule(AWG):
         # FIXME: is it really necessary to generate acquisitions for a QCM??
         acquisitions = Acquisitions()
         acquisitions.add(name="default", num_bins=self.num_bins, index=0)
-        acquisitions.add(name="reset", num_bins=100, index=1)
+        acquisitions.add(name="reset", num_bins=self.num_bins, index=1)
         return acquisitions
 
     @abstractmethod
@@ -596,7 +606,8 @@ class QbloxModule(AWG):
                     self.device.sequencers[seq_idx].thresholded_acq_trigger_address(1)
                     self.device.sequencers[seq_idx].thresholded_acq_trigger_invert(False)
                 except AttributeError as e:
-                    print(e)
+                    # print(e)
+                    pass
                 
                 if not uploaded:
                     logger.info("Sequence program: \n %s", repr(sequence._program))  # pylint: disable=protected-access
