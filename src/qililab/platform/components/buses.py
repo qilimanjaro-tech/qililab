@@ -21,7 +21,7 @@ from qililab.system_control import ReadoutSystemControl, SimulatedSystemControl
 
 @dataclass
 class Buses:
-    """Class used as a container of Bus objects.
+    """Class used as a container of :class:`Bus` objects.
 
     Args:
         buses (list[Bus]): List of Bus objects.

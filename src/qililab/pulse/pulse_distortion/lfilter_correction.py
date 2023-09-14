@@ -79,7 +79,7 @@ class LFilterCorrection(PulseDistortion):
         True
 
         .. note::
-            You can find more examples in the docstring of the :class:`PulseDistortion` class.
+            You can find more examples in the docstring of the :class:`PulseDistortion` base class.
     """
 
     name = PulseDistortionName.LFILTER
