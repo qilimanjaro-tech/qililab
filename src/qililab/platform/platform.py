@@ -42,14 +42,57 @@ from .components.bus_element import dict_factory
 
 
 class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-attributes
-    """Platform object that describes the setup used to control the quantum devices.
+    """Platform object that describes and modifies the setup used to control the quantum devices.
 
-    The class will receive the Runcard class, which all the inner GatesSettings, Chip, Bus classes that the Runcard class has created
-    from the dictionaries, together with the instrument dictionaries that the Runcard class has not transform into classes yet.
+    To instantiate this class we use ``qililab.build_platform()``, like:
 
-    And with all that information instantiates the actual qililab Chip, Buses/Bus and corresponding Instrument classes.
+    >>> platform = ql.build_platform(runcard="runcards/galadriel.yml")
+    >>> platform.name
+    galadriel
 
-    This class also handles the corresponding dis/connections, set ups, set parameters and turning on/off the instruments.
+    where we have passed the path where our runcard is located. Or like:
+
+    >>> platform = ql.build_platform(runcard=galadriel_dict)
+    >>> platform.name
+    galadriel
+
+    where we directly passed a dictionary containing the serialized platform.
+
+    Doing so the class will receive a dictionary containing the serialized platform (runcard), which should follow this structure:
+
+    .. code-block:: python3
+
+        {
+            "name": name,                                           # str
+            "device_id": device_id,                                 # int
+            "gates_settings": gates_settings,                       # dict
+            "chip": chip,                                           # dict
+            "buses": buses,                                         # list[dict]
+            "instruments": instruments,                             # list[dict]
+            "instrument_controllers": instrument_controllers        # list[dict]
+        }
+
+    And with all that information instantiates the actual chip, buses and corresponding instruments of the laboratory.
+
+    To do so, the common first(last) three steps, are to (dis)connect, set up and turning (off)on the instruments:
+
+    >>> platform.connect(manual_override=False) # Connect to all instruments of the platform and block the connection for other users
+    >>> platform.initial_setup()  # Sets all the values of the Runcard to the connected instruments
+    >>> platform.turn_on_instruments()  # Turns on all instruments
+
+    And then you normally also set the needed parameters in the instruments, and finally execute the platform for simple cases, with:
+
+    >>> result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
+
+    or for more complicated cases, run a experiment with the :class:`Experiment` class, that does it for you like:
+
+    >>> experiment = ql.Experiment(platform=platform, circuits=[circuit], options=options)
+    >>> results = sample_experiment.run()
+
+    Also a final remark, during all this process you can also print the buses and chip structure if needed, with:
+
+    >>> print(platform.chip)
+    >>> print(platform.buses)
 
     Args:
         runcard (Runcard): Runcard class containing all the chip, buses & instruments information of the platform.
