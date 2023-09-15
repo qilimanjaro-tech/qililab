@@ -25,10 +25,10 @@ class Pulse:
     """Describes a single pulse to be added to waveform array.
 
     Args:
-        amplitude (float): Pulse's amplitude.
-        phase (float): Pulse's phase.
-        duration (int): Pulse's duration.
-        frequency (float): Pulse's frequency.
+        amplitude (float): Pulse's amplitude. Value normalized between 0 and 1.
+        phase (float): Pulse's phase. Value in radians.
+        duration (int): Pulse's duration. Value in nanoseconds.
+        frequency (float): Pulse's frequency. Value in Hertzs.
         pulse_shape (PulseShape): Pulse's shape. Can be any of the different types of pulse shapes supported.
     """
 
