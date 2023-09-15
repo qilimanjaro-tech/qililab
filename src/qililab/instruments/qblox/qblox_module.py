@@ -217,7 +217,7 @@ class QbloxModule(AWG):
         stop = Block(name="stop")
         stop.append_component(Stop())
         program.append_block(block=stop)
-        timeline = pulse_bus_schedule.timeline # TODO: check that elements are removed from timeline acter active reset
+        timeline = pulse_bus_schedule.timeline
 
         if len(timeline) > 0 and timeline[0].start_time != 0:
             bin_loop.append_component(long_wait(wait_time=int(timeline[0].start_time)))
@@ -265,6 +265,8 @@ class QbloxModule(AWG):
         if pulse_bus_schedule.port == "feedline_input":
             # acquire instruction
             # measure and add wait sync at the end
+            act_rst.append_component(WaitSync(4))
+
             pulse_event = pulse_bus_schedule.timeline[0]
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
 
@@ -282,40 +284,47 @@ class QbloxModule(AWG):
                 )
             )
             self._append_acquire_instruction(loop=act_rst,bin_index=bin_loop.counter_register,sequencer_id=sequencer, weight_regs=weight_registers, acq_index=1)
+            act_rst.append_component(WaitSync(300))
+
 
             pulse_bus_schedule.timeline = pulse_bus_schedule.timeline[1:] # erase event from timeline
 
         elif "drive" in pulse_bus_schedule.port:
+            act_rst.append_component(WaitSync(4))
+
             pulse_event = pulse_bus_schedule.timeline[0]
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
+
+            # Conditional X pulses for active reset run after measurement                
+            # active reset sequence 1
+            act_rst.append_component(SetLatchEn(1, 4)) # latch any trigger
+            act_rst.append_component(LatchRst(1000)) # #Reset the trigger network address counters, then wait on trigger address
+            wait_time = pulse_event.start_time
+            act_rst.append_component(long_wait(wait_time)) # wait for duration of measurement pulse
+            act_rst.append_component(WaitSync(300))
+
+            # trigger address conditional is 2^sequencer
+            act_rst.append_component(SetCond(1,1,0,pulse_event.duration)) # TODO: else duration
 
             act_rst.append_component(ResetPh())
             gain = int(np.abs(pulse_event.pulse.amplitude) * AWG_MAX_GAIN)  # np.abs() needed for negative pulses
             act_rst.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
             phase = int((pulse_event.pulse.phase % (2 * np.pi)) * 1e9 / (2 * np.pi))
             act_rst.append_component(SetPh(phase=phase))
-
-            # Conditional X pulses for active reset run after measurement                
-            # active reset sequence 1
-            act_rst.append_component(SetLatchEn(1, 4)) # latch any trigger
-            # act_rst.append_component(WaitSync(4)) # TODO: does this fix anything
-            act_rst.append_component(LatchRst(1000)) # #Reset the trigger network address counters, then wait on trigger address TODO: we dont know the time for the m pulse from here
-            wait_time = pulse_event.start_time
-            act_rst.append_component(long_wait(wait_time)) # wait for duration of measurement pulse
-
-            # trigger address conditional is 2^sequencer
-            act_rst.append_component(SetCond(1,1,0,pulse_event.duration)) # TODO: else duration
             act_rst.append_component(Play(
                                                 waveform_0=waveform_pair.waveform_i.index,
                                                 waveform_1=waveform_pair.waveform_q.index,
                                                 wait_time=4, # we don't care about this wait time since we're running sync after it
                                             ))
-            act_rst.append_component(SetCond(0,2**sequencer,0,4)) # TODO: else duration
+            act_rst.append_component(SetCond(0,1,0,4)) # TODO: else duration
 
             pulse_bus_schedule.timeline = pulse_bus_schedule.timeline[1:] # erase event from timeline
 
         else: # compensate wait syncs for other ports
-            pass
+            act_rst.append_component(WaitSync(4))
+
+            act_rst.append_component(WaitSync(300))
+            # pass
             # act_rst.append_component(WaitSync(1000))
         
         act_rst.append_component(WaitSync(4))
