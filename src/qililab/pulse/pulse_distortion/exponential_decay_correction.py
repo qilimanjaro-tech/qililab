@@ -65,10 +65,10 @@ class ExponentialCorrection(PulseDistortion):
             You can find more examples in the docstring of the :class:`PulseDistortion` base class.
     """
 
-    name = PulseDistortionName.EXPONENTIAL_CORRECTION
-    tau_exponential: float
-    amp: float
-    sampling_rate: float = 1.0
+    name = PulseDistortionName.EXPONENTIAL_CORRECTION #: Type of the correction. Enum type of PulseDistortionName class.
+    tau_exponential: float #: Tau exponential factor.
+    amp: float #: Amplitude constant. Value between 0 and 1.
+    sampling_rate: float = 1.0 #: Sampling rate. Defaults to 1.
 
     def apply(self, envelope: np.ndarray) -> np.ndarray:
         """Distorts envelopes (originally created to distort square envelopes).
@@ -135,10 +135,10 @@ class ExponentialCorrection(PulseDistortion):
             dict: Dictionary.
         """
         return {
-            "name": self.name.value, #: Name of the correction.
-            "tau_exponential": self.tau_exponential, #: Tau exponential factor.
-            "amp": self.amp, #: Amplification.
-            "sampling_rate": self.sampling_rate, #: Sampling rate.
-            "norm_factor": self.norm_factor, #: Auto normalization factor.
-            "auto_norm": self.auto_norm, #: Auto normalization flag.
+            "name": self.name.value,
+            "tau_exponential": self.tau_exponential,
+            "amp": self.amp,
+            "sampling_rate": self.sampling_rate,
+            "norm_factor": self.norm_factor,
+            "auto_norm": self.auto_norm,
         }
