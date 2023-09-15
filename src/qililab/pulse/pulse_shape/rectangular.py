@@ -32,7 +32,7 @@ class Rectangular(PulseShape):
         :class:`PulseShape`.
     """
 
-    name = PulseShapeName.RECTANGULAR
+    name = PulseShapeName.RECTANGULAR #: Name of the rectangular pulse shape.
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
         """Constant amplitude envelope.

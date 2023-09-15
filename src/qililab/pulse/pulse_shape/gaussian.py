@@ -36,11 +36,11 @@ class Gaussian(PulseShape):
         :class:`PulseShape`.
 
     Args:
-        num_sigmas (float): Sigma number of the gaussian.
+        num_sigmas (float): Sigma number of the gaussian pulse shape.
     """
 
-    name = PulseShapeName.GAUSSIAN
-    num_sigmas: float
+    name = PulseShapeName.GAUSSIAN #: Name of the gaussian pulse shape.
+    num_sigmas: float #: Sigma number of the gaussian pulse shape.
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
         """Gaussian envelope centered with respect to the pulse.

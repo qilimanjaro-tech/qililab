@@ -31,7 +31,7 @@ class PulseShape(FactoryElement):
         :class:`Rectangular`, :class:`Gaussian`, :class:`Drag`, :class:`Cosine` and :class:`SNZ`.
     """
 
-    name: PulseShapeName = field(init=False)
+    name: PulseShapeName = field(init=False) #: Name of the pulse shape.
 
     @abstractmethod
     def envelope(self, duration: int, amplitude: float, resolution: float) -> np.ndarray:
