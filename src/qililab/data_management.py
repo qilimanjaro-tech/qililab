@@ -186,11 +186,13 @@ def build_platform(
 
     Examples:
         Passing the path of YAML file containing the serialized platform, in the `runcard` argument:
+
         >>> platform = ql.build_platform(runcard="runcards/galadriel.yml")
         >>> platform.name
         galadriel
 
         Passing a dictionary containing the serialized platform, in the `runcard` argument:
+
         >>> platform = ql.build_platform(runcard=galadriel_dict")
         >>> platform.name
         galadriel
