@@ -173,7 +173,9 @@ def build_platform(
     """Build `Platform` object given one of two things:
         - a path to a YAML file containing a dictionary of the serialized platform (runcard).
         - directly a dictionary of the serialized platform (runcard).
+
     |
+
     The dictionary should follow the next structure:
 
     .. code-block:: python3
