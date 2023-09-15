@@ -38,7 +38,7 @@ class ExponentialCorrection(PulseDistortion):
         :class:`PulseDistortion`.
 
     Args:
-        tau_bias_tee (float): Time constant
+        tau_exponential (float): Tau exponential factor
         amp (float): Amplitude constant
         sampling_rate (float, optional): Sampling rate. Defaults to 1.
         norm_factor (float, optional): The manual normalization factor that multiplies the envelope in the apply() method. Defaults to 1 (no effect).
@@ -135,10 +135,10 @@ class ExponentialCorrection(PulseDistortion):
             dict: Dictionary.
         """
         return {
-            "name": self.name.value,
-            "tau_exponential": self.tau_exponential,
-            "amp": self.amp,
-            "sampling_rate": self.sampling_rate,
-            "norm_factor": self.norm_factor,
-            "auto_norm": self.auto_norm,
+            "name": self.name.value, #: Name of the correction.
+            "tau_exponential": self.tau_exponential, #: Tau exponential factor.
+            "amp": self.amp, #: Amplification.
+            "sampling_rate": self.sampling_rate, #: Sampling rate.
+            "norm_factor": self.norm_factor, #: Auto normalization factor.
+            "auto_norm": self.auto_norm, #: Auto normalization flag.
         }
