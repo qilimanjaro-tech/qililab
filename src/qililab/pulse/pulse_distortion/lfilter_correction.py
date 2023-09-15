@@ -28,22 +28,16 @@ from .pulse_distortion import PulseDistortion
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class LFilterCorrection(PulseDistortion):
-    """LFilter correction from scipy.signal.lfilter
-    [https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.lfilter.html]
+    """LFilter from `scipy.signal.lfilter
+    <https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.lfilter.html>`_.
 
-    Filter data along one-dimension with an IIR or FIR filter.
+    Filters data along one-dimension with an IIR or FIR filter.
 
     Filter a data sequence, `x`, using a digital filter.  This works for many
     fundamental data types (including Object type).  The filter is a direct
     form II transposed implementation of the standard difference equation
     (see Notes).
 
-    The function `sosfilt` (and filter design using ``output='sos'``) should be
-    preferred over `lfilter` for most filtering tasks, as second-order sections
-    have fewer numerical problems.
-
-    Notes
-    -----
     The filter function is implemented as a direct II transposed structure.
     This means that the filter implements::
 
@@ -58,6 +52,9 @@ class LFilterCorrection(PulseDistortion):
          Y(z) = -------------------------------- X(z)
                              -1              -N
                  a[0] + a[1]z  + ... + a[N] z
+
+    Bases:
+        :class:`PulseDistortion`.
 
     Args:
         a (list[float]): The denominator coefficient vector in a 1-D sequence.
@@ -83,7 +80,7 @@ class LFilterCorrection(PulseDistortion):
         True
 
         .. note::
-            You can find more examples in the docstring of the :class:`PulseDistortion` class.
+            You can find more examples in the docstring of the :class:`PulseDistortion` base class.
     """
 
     name = PulseDistortionName.LFILTER

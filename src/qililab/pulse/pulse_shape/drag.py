@@ -45,6 +45,9 @@ class Drag(PulseShape):
         - Analytic control methods for high-fidelity unitary operations in a weakly nonlinear oscillator: https://journals.aps.org/pra/abstract/10.1103/PhysRevA.83.012308.
         - Simple Pulses for Elimination of Leakage in Weakly Nonlinear Qubits: https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.103.110501.
 
+    Bases:
+        :class:`PulseShape`.
+
     Args:
         num_sigmas (float): Sigma number of the gaussian.
         drag_coefficient (float): Drag coefficient that give the DRAG its imaginary components.
