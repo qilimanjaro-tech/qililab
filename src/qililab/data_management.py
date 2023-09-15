@@ -170,13 +170,26 @@ def save_platform(path: str, platform: Platform) -> str:
 def build_platform(
     runcard: str | dict | None = None, path: str | None = None, connection: API | None = None, new_drivers: bool = False
 ) -> Platform:
-    """Build `Platform` object given one of the next two things:
-        - a path to a YAML file containing the serialized platform.
-        - a dictionary directly containing the serialized platform.
+    """Build `Platform` object given one of two things:
+        - a path to a YAML file containing a dictionary of the serialized platform (runcard).
+        - directly a dictionary of the serialized platform (runcard).
+    |
+    The dictionary should follow the next structure:
+
+        .. code-block:: python3
+
+            {
+                "name": name,                                           # str
+                "device_id": device_id,                                 # int
+                "gates_settings": gates_settings,                       # dict
+                "chip": chip,                                           # dict
+                "buses": buses,                                         # list[dict]
+                "instruments": instruments,                             # list[dict]
+                "instrument_controllers": instrument_controllers        # list[dict]
+            }
 
     Args:
-        path (str): Old deprecated argument, that now has to be passed to the `runcard` argument.
-        runcard (str | dict): Path to the platform's runcard YAML file, or dictionary containing the platform's runcard info.
+        runcard (str | dict): Path to the platform's runcard YAML file, or direct dictionary of the platform's runcard info.
         connection (API | None, optional): Qiboconnection's API class used to block access to the Platform when connected to it.
             Defaults to None.
         new_drivers (bool, optional): Whether to use the new drivers or not. Defaults to False.
