@@ -176,17 +176,17 @@ def build_platform(
     |
     The dictionary should follow the next structure:
 
-        .. code-block:: python3
+    .. code-block:: python3
 
-            {
-                "name": name,                                           # str
-                "device_id": device_id,                                 # int
-                "gates_settings": gates_settings,                       # dict
-                "chip": chip,                                           # dict
-                "buses": buses,                                         # list[dict]
-                "instruments": instruments,                             # list[dict]
-                "instrument_controllers": instrument_controllers        # list[dict]
-            }
+        {
+            "name": name,                                           # str
+            "device_id": device_id,                                 # int
+            "gates_settings": gates_settings,                       # dict
+            "chip": chip,                                           # dict
+            "buses": buses,                                         # list[dict]
+            "instruments": instruments,                             # list[dict]
+            "instrument_controllers": instrument_controllers        # list[dict]
+        }
 
     Args:
         runcard (str | dict): Path to the platform's runcard YAML file, or direct dictionary of the platform's runcard info.
