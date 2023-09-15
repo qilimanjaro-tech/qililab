@@ -18,19 +18,19 @@ from tests.test_utils import build_platform
 class TestPlatformData:
     """Unit tests for the `build_platform` function.."""
 
-    def test_build_platform(self, mock_open: MagicMock, mock_load: MagicMock):
+    def test_build_platform_passing_a_path(self, mock_open: MagicMock, mock_load: MagicMock):
         """Test build method."""
-        platform = ql.build_platform(path="_")
+        platform = ql.build_platform(runcard="_")
         assert isinstance(platform, Platform)
         mock_load.assert_called_once()
         mock_open.assert_called_once()
 
-    def test_build_method_with_new_drivers(self, mock_open: MagicMock, mock_load: MagicMock):
-        """Test build method with the new drivers."""
-        with pytest.raises(NotImplementedError, match="New drivers are not supported yet"):
-            _ = ql.build_platform(path="_", new_drivers=True)
-        mock_open.assert_called_once_with(file="_", mode="r", encoding="utf8")
-        mock_load.assert_called_once()
+    def test_build_platform_passing_a_dict(self, mock_open: MagicMock, mock_load: MagicMock):
+        """Test build method."""
+        platform = ql.build_platform(runcard=copy.deepcopy(Galadriel.runcard))
+        assert isinstance(platform, Platform)
+        mock_load.assert_not_called()
+        mock_open.assert_not_called()
 
     def test_save_platform_with_non_yml_path(self, mock_open: MagicMock, mock_load: MagicMock):
         """Test the `save_platform` function with a path that doesn't end in .yml."""
@@ -49,6 +49,31 @@ class TestPlatformData:
 
         assert path == "test/test.yml"
         mock_load.assert_not_called()
+
+
+class TestBuildPlatformCornerCases:
+    """Unit tests for the corner cases of the `build_platform` function.."""
+
+    def test_build_method_with_only_old_path_argument(self):
+        """Test build method with the new drivers."""
+        with pytest.raises(
+            DeprecationWarning,
+            match="`path` argument is deprecated. Please use the mandatory `runcard` argument instead.",
+        ):
+            _ = ql.build_platform(path="_")
+
+    def test_build_method_with_old_path_and_new_runcard_arguments(self):
+        """Test build method with the new drivers."""
+        with pytest.raises(
+            DeprecationWarning,
+            match="`path` argument is deprecated. Please use the mandatory `runcard` argument instead.",
+        ):
+            _ = ql.build_platform(runcard="_", path="_")
+
+    def test_build_method_with_new_drivers(self):
+        """Test build method with the new drivers."""
+        with pytest.raises(NotImplementedError, match="New drivers are not supported yet"):
+            _ = ql.build_platform(runcard="_", new_drivers=True)
 
 
 @patch("qililab.data_management.os.makedirs")

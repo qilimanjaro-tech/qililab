@@ -167,11 +167,16 @@ def save_platform(path: str, platform: Platform) -> str:
     return str(new_path)
 
 
-def build_platform(path: str, connection: API | None = None, new_drivers: bool = False) -> Platform:
-    """Build `Platform` object given a path to a YAML file containing the serialized platform.
+def build_platform(
+    runcard: str | dict | None = None, path: str | None = None, connection: API | None = None, new_drivers: bool = False
+) -> Platform:
+    """Build `Platform` object given one of the next two things:
+        - a path to a YAML file containing the serialized platform.
+        - a dictionary directly containing the serialized platform.
 
     Args:
-        path (str): Path to the platform's YAML file.
+        path (str): Old deprecated argument, that now has to be passed to the `runcard` argument.
+        runcard (str | dict): Path to the platform's runcard YAML file, or dictionary containing the platform's runcard info.
         connection (API | None, optional): Qiboconnection's API class used to block access to the Platform when connected to it.
             Defaults to None.
         new_drivers (bool, optional): Whether to use the new drivers or not. Defaults to False.
@@ -180,15 +185,25 @@ def build_platform(path: str, connection: API | None = None, new_drivers: bool =
         Platform: Platform object.
 
     Examples:
-        >>> platform = ql.build_platform(path="runcards/galadriel.yml")
+        Passing the path of YAML file containing the serialized platform, in the `runcard` argument:
+        >>> platform = ql.build_platform(runcard="runcards/galadriel.yml")
+        >>> platform.name
+        galadriel
+
+        Passing a dictionary containing the serialized platform, in the `runcard` argument:
+        >>> platform = ql.build_platform(runcard=galadriel_dict")
         >>> platform.name
         galadriel
     """
-    with open(file=path, mode="r", encoding="utf8") as file:
-        settings = yaml.safe_load(stream=file)
+    if path is not None or runcard is None:
+        raise DeprecationWarning("`path` argument is deprecated. Please use the mandatory `runcard` argument instead.")
 
     if new_drivers:
         raise NotImplementedError("New drivers are not supported yet.")
 
-    runcard = Runcard(**settings)
-    return Platform(runcard=runcard, connection=connection)
+    if isinstance(runcard, str):
+        with open(file=runcard, mode="r", encoding="utf8") as file:
+            runcard = yaml.safe_load(stream=file)
+
+    runcard_class = Runcard(**runcard)
+    return Platform(runcard=runcard_class, connection=connection)
