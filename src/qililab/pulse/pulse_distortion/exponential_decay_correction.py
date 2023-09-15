@@ -33,6 +33,7 @@ class ExponentialCorrection(PulseDistortion):
     Fitting should be done to y = g*(1+amp*exp(-t/tau)), where g is ignored in the corrections.
 
     For more info, check `SUPLEMENTAL MATERIAL IV. B. <https://arxiv.org/abs/1907.04818>`_.
+
     Bases:
         :class:`PulseDistortion`.
 
