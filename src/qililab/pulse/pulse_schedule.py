@@ -24,7 +24,7 @@ from qililab.pulse.pulse_event import PulseEvent
 class PulseSchedule:
     """Class containing a list of PulseBusSchedule objects. It is the pulsed representation of a Qibo circuit.
 
-    This class will receive a list of PulseBusSchedule objects as argument. The class allows several operations to this 
+    This class will receive a list of PulseBusSchedule objects as argument. The class allows several operations to this
     list of PulseSequence objects and it is the class that allows to transpile pulse sequences into programs that run on quantum
     hardware control instruments.
 
@@ -175,7 +175,7 @@ class PulseSchedule:
             pulse_schedule = PulseSchedule.from_dict(pulse_schedule_dict)
     """
 
-    elements: list[PulseBusSchedule] = field(default_factory=list) #: List of pulse bus schedules.
+    elements: list[PulseBusSchedule] = field(default_factory=list)  #: List of pulse bus schedules.
 
     def add_event(self, pulse_event: PulseEvent, port: str, port_delay: int):
         """Add pulse event to the list of pulse bus schedules.

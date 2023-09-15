@@ -89,9 +89,12 @@ class PulseBusSchedule:
             )
             drive_schedule.add_event(drag_pulse_event_1)
     """
-    # FIXME: we may have one port being used by more than one bus. Use virtual ports instead. 
+
+    # FIXME: we may have one port being used by more than one bus. Use virtual ports instead.
     port: str  #: Port(bus) alias.
-    timeline: list[PulseEvent] = field(default_factory=list) #: List of PulseEvent objects the PulseBusSchedule is composed of.
+    timeline: list[PulseEvent] = field(
+        default_factory=list
+    )  #: List of PulseEvent objects the PulseBusSchedule is composed of.
     _pulses: set[Pulse] = field(init=False, default_factory=set)
 
     def __post_init__(self):
