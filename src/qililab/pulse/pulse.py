@@ -22,7 +22,15 @@ from qililab.utils import Factory
 
 @dataclass(frozen=True, eq=True)
 class Pulse:
-    """Describes a single pulse to be added to waveform array."""
+    """Describes a single pulse to be added to waveform array.
+    
+    Args:
+        amplitude (float): Pulse's amplitude.
+        phase (float): Pulse's phase.
+        duration (int): Pulse's duration.
+        frequency (float): Pulse's frequency.
+        pulse_shape (PulseShape): Pulse's shape. Can be any of the different types of pulse shapes supported.
+    """
 
     amplitude: float
     phase: float
