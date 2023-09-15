@@ -22,16 +22,168 @@ from qililab.pulse.pulse_event import PulseEvent
 
 @dataclass
 class PulseSchedule:
-    """Class containing a list of PulseSequence objects. It is the pulsed representation of a Qibo circuit.
+    """Class containing a list of PulseBusSchedule objects. It is the pulsed representation of a Qibo circuit.
+
+    This class will receive a list of PulseBusSchedule objects as argument. The class allows several operations to this 
+    list of PulseSequence objects and it is the class that allows to transpile pulse sequences into programs that run on quantum
+    hardware control instruments.
 
     Args:
-        elements (list[PulseSequences]): List of pulse sequences.
+        elements (list[PulseBusSchedule]): List of pulse bus schedules.
+
+    Examples:
+        Imagine we want to create a PulseSchedule instance that will contain two PulseBusSchedule objects, one for driving a qubit
+        and the other one to do readout on the same qubit.
+
+        To do so
+
+        .. code-block:: python3
+
+            drag_pulse = Pulse(
+                amplitude=1,
+                phase=0.5,
+                duration=200,
+                frequency=1e9,
+                pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
+            )
+            readout_pulse = Pulse(
+                amplitude=1,
+                phase=0.5,
+                duration=1500,
+                frequency=1e9,
+                pulse_shape=Rectangular())
+            drag_pulse_event = PulseEvent(
+                pulse=drag_pulse,
+                start_time=0
+            )
+            readout_pulse_event = PulseEvent(
+                pulse=readout_pulse,
+                start_time=200,
+                qubit=0
+            )
+
+            drive_schedule = PulseBusSchedule(
+                timeline=[drag_pulse_event],
+                port="drive_q0"
+            )
+            readout_schedule = PulseBusSchedule(
+                timeline=[pulse_event],
+                port="feedline_input"
+            )
+            list_pulse_bus_schedules = [drive_schedule, readout_schedule]
+
+            pulse_schedule = PulseSchedule(list_pulse_bus_schedules)
+
+        We can also create a pulse schedule by creating an instance of PulseSchedule class, with no pulse bus schedules passed
+        as arguments, and dinamically adding pulses to the PulseSchedule class, which will then create a PulseBusSchedule for
+        each bus the pulses will be using.
+
+        To do so, we can first create an instance of the PulseSchedule class, create each of the two pulses by creating two
+        instances of the Pulse class, and then use the `add_event()` method of the PulseSchedule class to add the two pulses, wrapped
+        by PulseEvent class, to the schedule:
+
+        .. code-block:: python3
+
+            pulse_schedule = PulseSchedule()
+            drag_pulse = Pulse(
+                amplitude=1,
+                phase=0.5,
+                duration=200,
+                frequency=1e9,
+                pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
+            )
+            readout_pulse = Pulse(amplitude=1,
+                                  phase=0.5,
+                                  duration=1500,
+                                  frequency=1e9,
+                                  pulse_shape=Rectangular()
+            )
+            pulse_schedule.add_event(
+                PulseEvent(pulse=drag_pulse, start_time=0),
+                port="drive_q0",
+                port_delay=0
+            )
+            pulse_schedule.add_event(
+                PulseEvent(pulse=readout_pulse,start_time=200, qubit=0),
+                port="feedline_input",
+                port_delay=0
+            )
+
+        It is possible to serialize a PulseSchedule object as a dictionary. To do so we can use the `to_dict()` method:
+
+        .. code-block:: python3
+
+            pulse_schedule = PulseSchedule()
+            drag_pulse = Pulse(
+                amplitude=1,
+                phase=0.5,
+                duration=200,
+                frequency=1e9,
+                pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
+            )
+            readout_pulse = Pulse(amplitude=1,
+                                  phase=0.5,
+                                  duration=1500,
+                                  frequency=1e9,
+                                  pulse_shape=Rectangular()
+            )
+            pulse_schedule.add_event(
+                PulseEvent(pulse=drag_pulse, start_time=0),
+                port="drive_q0",
+                port_delay=0
+            )
+            pulse_schedule.add_event(
+                PulseEvent(pulse=readout_pulse,start_time=200, qubit=0),
+                port="feedline_input",
+                port_delay=0
+            )
+
+            pulse_schedule_dict = pulse_schedule.to_dict()
+
+        It is also possible to create a PulseSchedule object from a dictionary that contains the serialized description of the
+        object. To do so we can use the `from_dict()` method:
+
+        .. code-block:: python3
+
+            pulse_schedule = PulseSchedule()
+            drag_pulse = Pulse(
+                amplitude=1,
+                phase=0.5,
+                duration=200,
+                frequency=1e9,
+                pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
+            )
+            readout_pulse = Pulse(amplitude=1,
+                                  phase=0.5,
+                                  duration=1500,
+                                  frequency=1e9,
+                                  pulse_shape=Rectangular()
+            )
+            pulse_schedule.add_event(
+                PulseEvent(pulse=drag_pulse, start_time=0),
+                port="drive_q0",
+                port_delay=0
+            )
+            pulse_schedule.add_event(
+                PulseEvent(pulse=readout_pulse,start_time=200, qubit=0),
+                port="feedline_input",
+                port_delay=0
+            )
+
+            pulse_schedule_dict = pulse_schedule.to_dict()
+
+            pulse_schedule = PulseSchedule.from_dict(pulse_schedule_dict)
     """
 
-    elements: list[PulseBusSchedule] = field(default_factory=list)
+    elements: list[PulseBusSchedule] = field(default_factory=list) #: List of pulse bus schedules.
 
     def add_event(self, pulse_event: PulseEvent, port: str, port_delay: int):
-        """Add pulse event.
+        """Add pulse event to the list of pulse bus schedules.
+
+        This functions receives a PulseEvent object, a port (targetting a bus) and a port delay parameter, and checks whether
+        there is already a PulseBusSchedule for the given port, adding the pulse event to the PulseBusSchedule. If there is not
+        a PulseBusSchedule for that port, it creates a new one passing the pulse event and port as parameters, and adds this
+        new instance to the list of PulseBusSchedule.
 
         Args:
             pulse_event (PulseEvent): PulseEvent object.
