@@ -16,7 +16,7 @@
 from dataclasses import dataclass
 
 from qililab.platform.components.bus import Bus
-from qililab.system_control import ReadoutSystemControl, SimulatedSystemControl
+from qililab.system_control import ReadoutSystemControl
 
 
 @dataclass
@@ -82,5 +82,4 @@ class Buses:
     @property
     def readout_buses(self) -> list[Bus]:
         """Returns a list of buses containing system controls used for readout."""
-        readout_sc = (ReadoutSystemControl, SimulatedSystemControl)
-        return [bus for bus in self.elements if isinstance(bus.system_control, readout_sc)]
+        return [bus for bus in self.elements if isinstance(bus.system_control, ReadoutSystemControl)]
