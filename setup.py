@@ -1,22 +1,13 @@
 """Installation script for python"""
 import os
-import re
 
 from setuptools import find_packages, setup
 
 PACKAGE = "qililab"
 
 
-def get_version():
-    """Gets the version from the package's __init__ file
-    if there is some problem, let it happily fail"""
-    version_file_path = os.path.join("src", PACKAGE, "config", "version.py")
-    with open(version_file_path, "rt", encoding="utf-8") as version_file:
-        initfile_lines = version_file.readlines()
-    vsre = r"^__version__ = ['\"]([^'\"]*)['\"]"
-    for line in initfile_lines:
-        if mo_ := re.search(vsre, line, re.M):
-            return mo_[1]
+with open("src/qililab/config/version.py") as f:
+    version = f.readlines()[-1].split()[-1].strip("\"'")
 
 
 # Read in requirements
@@ -30,10 +21,10 @@ with open(os.path.join(this_directory, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
 setup(
-    name="qilimanjaro-qililab",
-    version=get_version(),
-    description="A template repository to create a Qilimanjaro Python library",
-    author="Qilimanjaro team",
+    name=PACKAGE,
+    version=version,
+    description="Fundamental package for fast characterization and calibration of quantum chips.",
+    author="Qilimanjaro Quantum Tech",
     author_email="info@qilimanjaro.tech",
     url="https://github.com/qilimanjaro-tech/qililab",
     packages=find_packages("src"),
@@ -42,23 +33,24 @@ setup(
     include_package_data=True,
     zip_safe=False,
     classifiers=[
+        "Environment :: Console",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: Apache Software License",
+        "Natural Language :: English",
+        "Operating System :: POSIX",
+        "Operating System :: MacOS :: MacOS X",
+        "Operating System :: POSIX :: Linux",
+        "Operating System :: Microsoft :: Windows",
+        "Programming Language :: Python",
         "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3 :: Only",
         "Topic :: Scientific/Engineering :: Physics",
     ],
     install_requires=requirements,
-    extras_require={
-        "docs": [
-            "sphinx",
-            "sphinx_rtd_theme",
-            "recommonmark",
-            "sphinxcontrib-bibtex",
-            "sphinx_markdown_tables",
-            "nbsphinx",
-            "IPython",
-        ],
-        "tests": ["pytest"],
-    },
     python_requires=">=3.10.0",
     long_description=long_description,
     long_description_content_type="text/markdown",
+    license="Apache License 2.0",
 )
