@@ -15,6 +15,7 @@
 import os
 from datetime import datetime
 from pathlib import Path
+from warnings import warn
 
 import h5py
 import numpy as np
@@ -191,6 +192,7 @@ def build_platform(
         }
 
     Args:
+        path (str): Old, deprecated, path to the platform's runcard YAML file. This argument will get removed soon.
         runcard (str | dict): Path to the platform's runcard YAML file, or direct dictionary of the platform's runcard info.
         connection (API | None, optional): Qiboconnection's API class used to block access to the Platform when connected to it.
             Defaults to None.
@@ -208,12 +210,18 @@ def build_platform(
 
         Passing a dictionary containing the serialized platform, in the `runcard` argument:
 
-        >>> platform = ql.build_platform(runcard=galadriel_dict")
+        >>> platform = ql.build_platform(runcard=galadriel_dict)
         >>> platform.name
         galadriel
     """
-    if path is not None or runcard is None:
-        raise DeprecationWarning("`path` argument is deprecated. Please use the mandatory `runcard` argument instead.")
+    if path is not None:
+        warn(
+            "`path` argument is deprecated. Please use only the mandatory `runcard` argument instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+    if runcard is None:
+        raise ValueError("Mandatory `runcard` argument has not been passed to `build_platform()`.")
 
     if new_drivers:
         raise NotImplementedError("New drivers are not supported yet.")
