@@ -34,6 +34,7 @@ Get started
    :hidden:
 
    development/guide
+   development/deprecations
 
 .. toctree::
    :caption: API
