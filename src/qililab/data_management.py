@@ -215,14 +215,12 @@ def build_platform(
         galadriel
     """
     if path is None and runcard is None:
-        raise ValueError(
-            "Mandatory `runcard` argument (str | dict) has not been passed to the `build_platform()` function."
-        )
+        raise ValueError("`runcard` argument (str | dict) has not been passed to the `build_platform()` function.")
     if path is not None:
         if runcard is not None:
-            raise ValueError("Use only the mandatory `runcard` argument, `path` argument is deprecated.")
+            raise ValueError("Use only the `runcard` argument, `path` argument is deprecated.")
         warn(
-            "`path` argument is deprecated and will be removed soon. Use the mandatory `runcard` argument instead.",
+            "`path` argument is deprecated and will be removed soon. Use the `runcard` argument instead.",
             DeprecationWarning,
             stacklevel=2,
         )

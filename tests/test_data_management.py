@@ -20,8 +20,14 @@ class TestPlatformData:
 
     def test_build_platform_passing_a_path_to_old_path_argument(self, mock_open: MagicMock, mock_load: MagicMock):
         """Test build method."""
-        platform = ql.build_platform(path="_")
+        with pytest.warns() as record:
+            platform = ql.build_platform(path="_")
         assert isinstance(platform, Platform)
+        assert len(record) == 1
+        assert (
+            str(record[0].message)
+            == "`path` argument is deprecated and will be removed soon. Use the `runcard` argument instead."
+        )
         mock_load.assert_called_once()
         mock_open.assert_called_once()
 
