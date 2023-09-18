@@ -4,6 +4,7 @@ import copy
 from typing import Any
 
 import numpy as np
+from qblox_instruments.types import ClusterType, PulsarType
 from qibo.gates import I, M, X, Y
 from qibo.models.circuit import Circuit
 
@@ -32,6 +33,61 @@ from qililab.typings.enums import (
     ResetMethod,
     SystemControlName,
 )
+
+
+class NewGaladriel:
+    """Test data of the new galadriel platform"""
+
+    name = "galadriel"
+
+    device_id = 9
+
+    gates_settings: dict[str, Any] = {
+        PLATFORM.MINIMUM_CLOCK_TIME: 4,
+        PLATFORM.DELAY_BETWEEN_PULSES: 0,
+        PLATFORM.DELAY_BEFORE_READOUT: 0,
+        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
+        PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
+        PLATFORM.PASSIVE_RESET_DURATION: 100,
+        "operations": [],
+        "gates": {},
+    }
+    instruments: list[dict[str, Any]] = [
+        {
+            "alias": "pulsar_qrm",
+            "type": "Pulsar",
+            "dummy_type": PulsarType.PULSAR_QCM,
+            "sequencers": ["q0_flux", "q1_flux", "q2_flux", "q3_flux"],
+        },
+        {
+            "alias": "cluster",
+            "type": "Cluster",
+            "dummy_cfg": {1: ClusterType.CLUSTER_QCM_RF},
+            "submodules": [
+                {
+                    "alias": "qrm_0",
+                    "slot_id": 1,
+                    "sequencers": ["q0_flux", "q1_flux", "q2_flux", "q3_flux"],
+                },
+                {
+                    "alias": "qcm_0",
+                    "slot_id": 2,
+                    "sequencers": ["q0_drive", "q1_drive"],
+                },
+            ],
+        },
+    ]
+    chip: dict[str, Any] = {"nodes": []}
+    buses: list[dict[str, Any]] = []
+
+    runcard: dict[str, Any] = {
+        RUNCARD.NAME: name,
+        RUNCARD.DEVICE_ID: device_id,
+        RUNCARD.GATES_SETTINGS: gates_settings,
+        RUNCARD.CHIP: chip,
+        RUNCARD.BUSES: buses,
+        RUNCARD.INSTRUMENTS: instruments,
+    }
 
 
 class Galadriel:

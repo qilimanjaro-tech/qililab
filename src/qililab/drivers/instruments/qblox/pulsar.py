@@ -27,14 +27,17 @@ from .sequencer_qrm import SequencerQRM
 class Pulsar(QcodesPulsar, BaseInstrument):  # pylint: disable=abstract-method
     """Qililab's driver for QBlox-instruments Pulsar"""
 
-    def __init__(self, name: str, address: str | None = None, **kwargs):
+    def __init__(self, alias: str, address: str | None = None, sequencers: list[str] | None = None, **kwargs):
         """Initialise the instrument.
 
         Args:
-            name (str): Sequencer name
+            alias (str): Pulsar name
             address (str): Instrument address
         """
-        super().__init__(name, identifier=address, **kwargs)
+        port = kwargs.get("port", None)
+        debug = kwargs.get("debug", None)
+        dummy_type = kwargs.get("dummy_type", None)
+        super().__init__(name=alias, identifier=address, port=port, debug=debug, dummy_type=dummy_type)
 
         # Add sequencers
         self.submodules: dict[str, SequencerQCM | SequencerQRM] = {}  # resetting superclass submodules
@@ -42,9 +45,14 @@ class Pulsar(QcodesPulsar, BaseInstrument):  # pylint: disable=abstract-method
         self._channel_lists: dict[str, ChannelTuple] = {}  # resetting superclass channel lists
 
         sequencer_class = SequencerQCM if self.is_qcm_type else SequencerQRM
-        for seq_idx in range(6):
-            seq = sequencer_class(parent=self, name=f"sequencer{seq_idx}", seq_idx=seq_idx)  # type: ignore
-            self.add_submodule(f"sequencer{seq_idx}", seq)
+        if sequencers is not None:
+            for seq_idx, seq_name in enumerate(sequencers):
+                seq = sequencer_class(parent=self, name=seq_name, seq_idx=seq_idx)  # type: ignore
+                self.add_submodule(seq_name, seq)
+        else:
+            for seq_idx in range(6):
+                seq = sequencer_class(parent=self, name=f"sequencer{seq_idx}", seq_idx=seq_idx)  # type: ignore
+                self.add_submodule(f"sequencer{seq_idx}", seq)
 
     @property
     def params(self):

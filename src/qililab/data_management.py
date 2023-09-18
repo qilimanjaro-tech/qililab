@@ -22,7 +22,7 @@ import yaml
 from qiboconnection.api import API
 
 from .platform import Platform
-from .settings import Runcard
+from .settings import NewRuncard, Runcard
 
 
 def save_results(results: np.ndarray, loops: dict[str, np.ndarray], data_path: str, name: str | None = None) -> str:
@@ -188,7 +188,7 @@ def build_platform(path: str, connection: API | None = None, new_drivers: bool =
         settings = yaml.safe_load(stream=file)
 
     if new_drivers:
-        raise NotImplementedError("New drivers are not supported yet.")
-
-    runcard = Runcard(**settings)
-    return Platform(runcard=runcard, connection=connection)
+        runcard: NewRuncard | Runcard = NewRuncard(**settings)
+    else:
+        runcard = Runcard(**settings)
+    return Platform(runcard=runcard, connection=connection, new_drivers=new_drivers)
