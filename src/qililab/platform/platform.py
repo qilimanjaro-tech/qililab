@@ -83,7 +83,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
     The typical first(last) three steps, are (dis)connecting, setting up and turning (off)on the instruments, which need to be done only once:
 
-    >>> platform.connect(manual_override=False) # Connect to all instruments and block the connection for other users
+    >>> platform.connect() # Connect to all instruments and block the connection for other users
     >>> platform.initial_setup()  # Sets the values of the Runcard to the connected instruments
     >>> platform.turn_on_instruments()  # Turns on all instruments
 
@@ -129,29 +129,34 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         For testing purposes, you can already execute this circuit using the platform. To build it, you need to use
         the :meth:`qililab.build_platform()` function:
 
-        >>> platform = ql.build_platform(runcard="runcards/galadriel.yml")
+        >>> platform = ql.build_platform(runcard="runcards/galadriel.yml") #Assuming the serialized platform (runcard) is there
         >>> print(platform.name)
         galadriel
 
-        Now, to execute a circuit or a pulse schedule, you need to connect to the platform:
+        Now, to execute a circuit or a pulse schedule, you need to connect and set up the platform:
 
         >>> platform.connect()
+        >>> platform.initial_setup()
+        >>> platform.turn_on_instruments()
+
+        And finally, you can execute the circuit:
+
         >>> result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
         >>> result.array
         array([[5.],
                 [5.]])
 
         When disabling scope acquisition mode, the array obtained has shape `(#sequencers, 2, #bins)`. In this case,
-        given that we are using only 1 sequencer to acquire the results, we obtain an array with shape `(2, #bins)`.
+        given that you are using only 1 sequencer to acquire the results, you would obtain an array with shape `(2, #bins)`.
 
         .. note::
 
             Remember that the values obtained correspond to the integral of the I/Q signals received by the
-            digitiser.
+            digitizer.
 
-        Now let's run the Rabi sequence. We will run this sequence by looping over the gain of the AWG used to
-        create the pi pulse. To do so, we will use the `set_parameter` method with the alias of the bus used to
-        drive qubit 0.
+        Now to run the Rabi sequence. You would need to run this sequence by looping over the gain of the AWG used
+        to create the pi pulse. To do so, you need to use the `set_parameter` method with the alias of the bus used
+        to drive qubit 0.
 
         .. code-block:: python3
 
@@ -166,7 +171,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
                 results.append(result.array)
 
-        No we can use `np.hstack` to stack the obtained results horizontally. By doing this, we will obtain an
+        No you can use `np.hstack` to stack the obtained results horizontally. By doing this, you would obtain an
         array with shape `(2, N)`, where N is the number of elements inside the loop:
 
         >>> results = np.hstack(results)
@@ -174,18 +179,22 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         array([[5, 4, 3, 2, 1, 2, 3],
                 [5, 4, 3, 2, 1, 2, 3]])
 
-        We can see how the integrated I/Q values oscillated, meaning that qubit 0 oscillates between ground and
+        You can see how the integrated I/Q values oscillated, indicating that qubit 0 oscillates between ground and
         excited state!
 
-        Given that we are looping over variables that are independent of the circuit (in this case the gain of the AWG),
-        we can speed up the experiment by translating the circuit into pulses only once, and then executing the obtained
-        pulses inside the loop:
+        Since you are looping over variables that are independent of the circuit (in this case, the gain of the AWG),
+        you can speed up the experiment by translating the circuit into pulses only once:
 
         .. code-block:: python3
 
             from qililab.pulses.circuit_to_pulses import CircuitToPulses
 
             pulse_schedule = CircuitToPulses(platform=platform).translate(circuits=[circuit])
+
+        and then, executing the obtained pulses inside the loop. Which is the same as before, but passing the
+        `pulse_schedule` instead than the `circuit`, to the `execute` method:
+
+        .. code-block:: python3
 
             results = []
 
@@ -196,12 +205,44 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 result = platform.execute(program=pulse_schedule, num_avg=1000, repetition_duration=6000)
                 results.append(result.array)
 
-        If we stack and print the results, we see how we obtain similar results, but much faster!
+        If you now stack and print the results, you see how you obtain similar results, but much faster!
 
         >>> results = np.hstack(results)
         >>> results
         array([[5, 4, 3, 2, 1, 2, 3],
                 [5, 4, 3, 2, 1, 2, 3]])
+
+        And finally mention, that during this example, you could have check the ``chip`` and ``buses`` structure at any moment, printing:
+
+        >>> print(platform.chip)
+        Chip with 5 qubits and 12 ports:
+        * Port drive_line_q0 (drive): ----|qubit_0|----
+        * Port drive_line_q1 (drive): ----|qubit_1|----
+        * Port drive_line_q2 (drive): ----|qubit_2|----
+        * Port drive_line_q3 (drive): ----|qubit_3|----
+        * Port drive_line_q4 (drive): ----|qubit_4|----
+        * Port flux_line_q0 (flux): ----|qubit_0|----
+        * Port flux_line_q1 (flux): ----|qubit_1|----
+        * Port flux_line_q2 (flux): ----|qubit_2|----
+        * Port flux_line_q3 (flux): ----|qubit_3|----
+        * Port flux_line_q4 (flux): ----|qubit_4|----
+        * Port feedline_input (feedline_input): ----|resonator_q0|--|resonator_q1|--|resonator_q2|--|resonator_q3|--|resonator_q4|----
+        * Port feedline_output (feedline_output): ----|resonator_q0|--|resonator_q1|--|resonator_q2|--|resonator_q3|--|resonator_q4|----
+
+        >>> print(platform.buses)
+        Bus feedline_bus:  -----|QRM1|--|rs_1|------|resonator_q0|------|resonator_q1|------|resonator_q2|------|resonator_q3|------|resonator_q4|----
+        Bus drive_line_q0_bus:  -----|QCM-RF1|------|qubit_0|----
+        Bus flux_line_q0_bus:  -----|QCM1|------|qubit_0|----
+        Bus drive_line_q1_bus:  -----|QCM-RF1|------|qubit_1|----
+        Bus flux_line_q1_bus:  -----|QCM1|------|qubit_1|----
+        Bus drive_line_q2_bus:  -----|QCM-RF2|------|qubit_2|----
+        Bus flux_line_q2_bus:  -----|QCM2|------|qubit_2|----
+        Bus drive_line_q3_bus:  -----|QCM-RF3|------|qubit_3|----
+        Bus flux_line_q3_bus:  -----|QCM1|------|qubit_3|----
+        Bus drive_line_q4_bus:  -----|QCM-RF3|------|qubit_4|----
+        Bus flux_line_q4_bus:  -----|QCM1|------|qubit_4|----
+
+        where you can see the connections between the buses and the chips.
     """
 
     def __init__(self, runcard: Runcard, connection: API | None = None):
