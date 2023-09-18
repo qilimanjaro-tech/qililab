@@ -1,6 +1,5 @@
 """Tests for the Experiment class."""
 import copy
-import time
 from queue import Queue
 from unittest.mock import MagicMock, patch
 
@@ -20,24 +19,8 @@ from qililab.pulse import PulseSchedule
 from qililab.typings import InstrumentName, Parameter
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils import Loop
-from tests.data import FluxQubitSimulator, Galadriel, experiment_params, simulated_experiment_circuit
+from tests.data import Galadriel, experiment_params
 from tests.test_utils import build_platform, mock_instruments
-
-
-@pytest.fixture(name="simulated_platform")
-@patch("qililab.system_control.simulated_system_control.Evolution", autospec=True)
-def fixture_simulated_platform(mock_evolution: MagicMock) -> Platform:
-    """Return Platform object."""
-
-    # Mocked Evolution needs: system.qubit.frequency, psi0, states, times
-    mock_system = MagicMock()
-    mock_system.qubit.frequency = 0
-    mock_evolution.return_value.system = mock_system
-    mock_evolution.return_value.states = []
-    mock_evolution.return_value.times = []
-    mock_evolution.return_value.psi0 = None
-
-    return build_platform(FluxQubitSimulator.runcard)
 
 
 @pytest.fixture(name="nested_experiment", params=experiment_params)
@@ -141,12 +124,6 @@ def fixture_experiment_reset(request: pytest.FixtureRequest):
     )
     mock_load.assert_called()
     return experiment
-
-
-@pytest.fixture(name="simulated_experiment")
-def fixture_simulated_experiment(simulated_platform: Platform):
-    """Return Experiment object."""
-    return Experiment(platform=simulated_platform, circuits=[simulated_experiment_circuit])
 
 
 class TestMethods:
@@ -342,60 +319,3 @@ class TestReset:
         experiment_reset.platform.connect()
         experiment_reset.platform.disconnect()
         assert mock_reset.call_count == 10
-
-
-@patch("qililab.experiment.base_experiment.open")
-@patch("qililab.experiment.base_experiment.yaml.safe_dump")
-@patch("qililab.system_control.simulated_system_control.SimulatedSystemControl.run")
-@patch("qililab.experiment.base_experiment.os.makedirs")
-class TestSimulatedExecution:
-    """Unit tests checking the execution of a simulated platform"""
-
-    def test_execute_without_saving_experiment(
-        self,
-        mock_open: MagicMock,
-        mock_dump: MagicMock,
-        mock_ssc_run: MagicMock,
-        mock_makedirs: MagicMock,
-        simulated_experiment: Experiment,
-    ):  # pylint: disable=W0613
-        """Test execute method with simulated qubit"""
-
-        # Method under test
-        results = simulated_experiment.execute(save_experiment=False)
-
-        time.sleep(0.3)
-
-        # Assert simulator called
-        mock_ssc_run.assert_called()
-
-        # Test result
-        with pytest.raises(ValueError):  # Result should be SimulatedResult
-            results.acquisitions()
-
-    def test_execute_with_saving_experiment(
-        self,
-        mock_open: MagicMock,
-        mock_dump: MagicMock,
-        mock_ssc_run: MagicMock,
-        mock_makedirs: MagicMock,
-        simulated_experiment: Experiment,
-    ):
-        """Test execute method with simulated qubit"""
-
-        # Method under test
-        results = simulated_experiment.execute()
-
-        time.sleep(0.3)
-
-        # Assert simulator called
-        mock_ssc_run.assert_called()
-
-        # Assert called functions
-        mock_makedirs.assert_called()
-        mock_open.assert_called()
-        mock_dump.assert_called()
-
-        # Test result
-        with pytest.raises(ValueError):  # Result should be SimulatedResult
-            results.acquisitions()

@@ -220,12 +220,10 @@ class SystemControlName(str, Enum):
         enum (str): Available system control element names:
         * system_control
         * readout_system_control
-        * simulated_system_control
     """
 
     SYSTEM_CONTROL = "system_control"
     READOUT_SYSTEM_CONTROL = "readout_system_control"
-    SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
 
 
 class Parameter(str, Enum):
@@ -329,11 +327,9 @@ class ResultName(str, Enum):
     Args:
         enum (str): Available result element names:
         * qblox
-        * simulator
     """
 
     QBLOX = "qblox"
-    SIMULATOR = "simulator"
     VECTOR_NETWORK_ANALYZER = "vector_network_analyzer"
 
 
