@@ -49,7 +49,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
     time is 4 and a pulse applied to qubit k lasts 17ns, the next pulse at qubit k will be at t=20ns
 
     Arguments:
-        platform (Platform): platform with gate and hardware settings
+        platform (Platform): :class:`Platform` with gate and hardware settings
 
     Attributes:
         platform (Platform): same as above
@@ -68,7 +68,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
             circuits (List[Circuit]): List of Qibo Circuit classes.
 
         Returns:
-            list[PulseSequences]: List of PulseSequences classes.
+            list[PulseSequences]: List of :class:`PulseSequences` classes.
         """
         pulse_schedule_list: list[PulseSchedule] = []
         for circuit in circuits:
@@ -228,11 +228,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
                     bus (bus): bus through which the pulse is sent
 
                 Returns:
-        <<<<<<< HEAD
-                    tuple[PulseEvent | None, str]: (PulseEvent or None, port_id).
-        =======
                     PulseEvent: pulse event corresponding to the input gate event
-        >>>>>>> main
         """
 
         # copy to avoid modifying runcard settings
