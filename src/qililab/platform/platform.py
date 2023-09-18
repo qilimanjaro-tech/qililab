@@ -42,20 +42,30 @@ from .components.bus_element import dict_factory
 
 
 class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-attributes
-    """Platform object that represents the laboratory setup used to control the quantum devices.
+    """Platform object representing the laboratory setup used to control the quantum devices.
 
-    To instantiate this class we use :meth:`qililab.build_platform()`, in one of these two ways:
+    The platform is responsible for managing the initializations, connections, setups, and executions of the laboratory, which mainly consists of:
 
-    - passing a path to where our serialized platform (runcard) is located:
+    - :class:`.Chip`
+
+    - Buses
+
+    - Instruments
+
+    |
+
+    To instantiate this class use the :meth:`qililab.build_platform()` function in one of two ways:
+
+    1. By passing a path to the location of our serialized platform (runcard):
 
         >>> platform = ql.build_platform(runcard="runcards/galadriel.yml")
 
 
-    - directly passing a dictionary containing the serialized platform (runcard).
+    2. By directly passing a dictionary containing the serialized platform (runcard).
 
         >>> platform = ql.build_platform(runcard=galadriel_dict)
 
-    Doing so the class will receive a dictionary containing the serialized platform (runcard), which should follow this structure:
+    In both cases, the class will will receive a dictionary containing the serialized platform (runcard), which should follow this structure:
 
     .. code-block:: python3
 
@@ -69,25 +79,25 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             "instrument_controllers": instrument_controllers        # list[dict]
         }
 
-    And with all this information the Platform class instantiates, connects and controls the actual chip, buses and instruments of the laboratory.
+    With this information the ``Platform`` class instantiates, connects and controls the actual chip, buses and instruments of the laboratory.
 
-    To do so, the common first(last) three steps, are to (dis)connect, set up and turning (off)on the instruments:
+    The typical first(last) three steps, are (dis)connecting, setting up and turning (off)on the instruments, which need to be done only once:
 
-    >>> platform.connect(manual_override=False) # Connect to all instruments of the platform and block the connection for other users
-    >>> platform.initial_setup()  # Sets all the values of the Runcard to the connected instruments
+    >>> platform.connect(manual_override=False) # Connect to all instruments and block the connection for other users
+    >>> platform.initial_setup()  # Sets the values of the Runcard to the connected instruments
     >>> platform.turn_on_instruments()  # Turns on all instruments
 
-    And then you normally also set the needed parameters in the instruments, and finally execute the platform for simple cases, with:
+    And then, for each experiment, set the required parameters in the instruments and execute the platform as follows:
 
     >>> platform.set_parameter(alias="drive_q0", parameter=ql.Parameter.GAIN, value=gain)
     >>> result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
 
-    or for more complicated cases, run a experiment with the :class:`Experiment` class, that does it for you like:
+    For more complex cases, you can run a experiment with the :class:`Experiment` class, that does the same for you:
 
     >>> experiment = ql.Experiment(platform=platform, circuits=[circuit], options=options)
     >>> results = sample_experiment.run()
 
-    Also a final remark, during all this process you can also print the buses and chip structure if needed, with:
+    Additionally, you can print the structure of the buses and the chip, at any moment during the process:
 
     >>> print(platform.chip)
     >>> print(platform.buses)
@@ -101,10 +111,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         .. note::
 
-            The following examples contain made up results. These will soon be updated with real results.
+            The following examples contain fictitious results. These will soon be updated with real results.
 
 
-        Imagine we want to run a Rabi sequence. To do so, we can first define a Qibo Circuit that contains a
+        Imagine you want to run a Rabi sequence. To do so, we can first define a Qibo Circuit that contains a
         pi pulse and a measurement gate:
 
         .. code-block:: python3
@@ -116,8 +126,14 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             circuit.add(gates.X(0))
             circuit.add(gates.M(0))
 
-        For testing purposes, we can already execute this circuit using the platform. In order to execute a circuit or
-        a pulse schedule we first need to connect to the platform:
+        For testing purposes, you can already execute this circuit using the platform. To build it, you need to use
+        the :meth:`qililab.build_platform()` function:
+
+        >>> platform = ql.build_platform(runcard="runcards/galadriel.yml")
+        >>> print(platform.name)
+        galadriel
+
+        Now, to execute a circuit or a pulse schedule, you need to connect to the platform:
 
         >>> platform.connect()
         >>> result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
@@ -190,24 +206,24 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
     def __init__(self, runcard: Runcard, connection: API | None = None):
         self.name = runcard.name
-        """Name of the platform (str) """
+        """Name of the platform (``str``) """
 
         self.device_id = runcard.device_id
-        """Device id of the platform (int). This attribute is needed for `qiboconnection` to save results remotely."""
+        """Device id of the platform (``int``). This attribute is needed for `qiboconnection` to save results remotely."""
 
         self.gates_settings = runcard.gates_settings
-        """Dataclass with all the settings and gates definitions needed to decompose gates into pulses."""
+        """Gate settings and definitions of the platform (``dataclass``). Needed to decompose gates into pulses. """
 
         self.instruments = Instruments(elements=self._load_instruments(instruments_dict=runcard.instruments))
-        """All the instruments of the platform and their needed settings, contained as elements (`list[Instrument]`) inside an `Instruments` class."""
+        """All the instruments of the platform and their needed settings (``dataclass``). Each individual instrument is contained in a list inside the dataclass."""
 
         self.instrument_controllers = InstrumentControllers(
             elements=self._load_instrument_controllers(instrument_controllers_dict=runcard.instrument_controllers)
         )
-        """All the instrument controllers of the platform and their needed settings, contained as elements (`list[InstrumentController]`) inside an `InstrumentControllers` class."""
+        """All the instrument controllers of the platform and their needed settings (``dataclass``). Each individual instrument controller is contained in a list inside the dataclass."""
 
         self.chip = Chip(**asdict(runcard.chip))
-        """All the chip nodes (`list[Nodes]`) of the platform, contained inside a `Chip` class"""
+        """Chip and nodes settings of the platform (:class:`.Chip` dataclass). Each individual node is contained in a list inside :class:`.Chip`."""
 
         self.buses = Buses(
             elements=[
@@ -215,10 +231,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 for bus in runcard.buses
             ]
         )
-        """All the buses of the platform and their needed settings, contained as elements (`list[Bus]`) inside a `Buses` class"""
+        """All the buses of the platform and their needed settings (``dataclass``). Each individual bus is contained in a list inside the dataclass."""
 
         self.connection = connection
-        """API connection of the platform. Same as the passed argument. Defaults to None."""
+        """API connection of the platform (``API | None``). Same as the passed argument. Defaults to None."""
 
         self._connected_to_instruments: bool = False
         """Boolean describing the connection to the instruments. Defaults to False (not connected)."""
