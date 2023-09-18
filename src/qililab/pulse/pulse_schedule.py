@@ -22,17 +22,17 @@ from qililab.pulse.pulse_event import PulseEvent
 
 @dataclass
 class PulseSchedule:
-    """Class containing a list of PulseBusSchedule objects. It is the pulsed representation of a Qibo circuit.
+    """Class containing a list of :class:`PulseBusSchedule` objects. It is the pulsed representation of a Qibo circuit.
 
-    This class will receive a list of PulseBusSchedule objects as argument. The class allows several operations to this
+    This class will receive a list of :class:`PulseBusSchedule` objects as argument. The class allows several operations to this
     list of PulseSequence objects and it is the class that allows to transpile pulse sequences into programs that run on quantum
     hardware control instruments.
 
     Args:
-        elements (list[PulseBusSchedule]): List of pulse bus schedules.
+        elements (list[PulseBusSchedule]): List of :class:`PulseBusSchedule`.
 
     Examples:
-        Imagine we want to create a PulseSchedule instance that will contain two PulseBusSchedule objects, one for driving a qubit
+        Imagine we want to create a PulseSchedule instance that will contain two :class:`PulseBusSchedule` objects, one for driving a qubit
         and the other one to do readout on the same qubit.
 
         To do so
@@ -75,12 +75,12 @@ class PulseSchedule:
             pulse_schedule = PulseSchedule(list_pulse_bus_schedules)
 
         We can also create a pulse schedule by creating an instance of PulseSchedule class, with no pulse bus schedules passed
-        as arguments, and dinamically adding pulses to the PulseSchedule class, which will then create a PulseBusSchedule for
+        as arguments, and dynamically adding pulses to the PulseSchedule class, which will then create a :class:`PulseBusSchedule` for
         each bus the pulses will be using.
 
         To do so, we can first create an instance of the PulseSchedule class, create each of the two pulses by creating two
         instances of the Pulse class, and then use the `add_event()` method of the PulseSchedule class to add the two pulses, wrapped
-        by PulseEvent class, to the schedule:
+        by :class:`PulseEvent` class, to the schedule:
 
         .. code-block:: python3
 
@@ -180,15 +180,15 @@ class PulseSchedule:
     def add_event(self, pulse_event: PulseEvent, port: str, port_delay: int):
         """Add pulse event to the list of pulse bus schedules.
 
-        This functions receives a PulseEvent object, a port (targetting a bus) and a port delay parameter, and checks whether
-        there is already a PulseBusSchedule for the given port, adding the pulse event to the PulseBusSchedule. If there is not
-        a PulseBusSchedule for that port, it creates a new one passing the pulse event and port as parameters, and adds this
-        new instance to the list of PulseBusSchedule.
+        This functions receives a :class:`PulseEvent` object, a port (targetting a bus) and a port delay parameter, and checks whether
+        there is already a PulseBusSchedule for the given port, adding the pulse event to the :class:`PulseBusSchedule`. If there is not
+        a :class:`PulseBusSchedule` for that port, it creates a new one passing the pulse event and port as parameters, and adds this
+        new instance to the list of :class:`PulseBusSchedule`.
 
         Args:
-            pulse_event (PulseEvent): PulseEvent object.
+            pulse_event (PulseEvent): :class:`PulseEvent` object.
             port (str): Alias of the port of the chip targeted by the pulse event.
-            port_delay (int): Delay (in ns) of the pulse event. This delay is added at the beginning of the pulse event.
+            port_delay (int): Delay (in ns) of the pulse event. This delay is added at the beginning of the :class:`PulseEvent`.
         """
         pulse_event.start_time += port_delay
         for pulse_sequence in self.elements:
