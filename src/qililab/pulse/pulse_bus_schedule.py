@@ -32,7 +32,7 @@ class PulseBusSchedule:
 
     Args:
         port (str): Port (bus) alias.
-        timeline (list[PulseEvent]): List of PulseEvent objects the PulseBusSchedule is composed of.
+        timeline (list[PulseEvent]): List of :class:`PulseEvent` objects the PulseBusSchedule is composed of.
 
     Examples:
         We can create a PulseBusSchedule targeting a bus or port in our chip by doing:
@@ -108,7 +108,7 @@ class PulseBusSchedule:
         """Add pulse event to sequence.
 
         Args:
-            pulse_event (PulseEvent): PulseEvent object.
+            pulse_event (PulseEvent): :class:`PulseEvent` object.
         """
         self._pulses.add(pulse_event.pulse)
         insort(self.timeline, pulse_event)
@@ -154,7 +154,7 @@ class PulseBusSchedule:
         """Set of Pulse objects used in this PulseBusSchedule.
 
         Returns:
-            str: The set of Pulse objects."""
+            str: The set of :class:`Pulse` objects."""
         return self._pulses
 
     @property
@@ -204,7 +204,7 @@ class PulseBusSchedule:
         return waveforms
 
     def qubit_schedules(self) -> list[PulseBusSchedule]:
-        """This method separates all the PulseEvent objects that act on different qubits, and returns a list
+        """This method separates all the :class:`PulseEvent` objects that act on different qubits, and returns a list
         of PulseBusSchedule objects, each one acting on a single qubit.
 
         Returns:
