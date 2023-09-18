@@ -42,21 +42,18 @@ from .components.bus_element import dict_factory
 
 
 class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-attributes
-    """Platform object that describes and modifies the setup used to control the quantum devices.
+    """Platform object that represents the laboratory setup used to control the quantum devices.
 
-    To instantiate this class we use ``qililab.build_platform()``, like:
+    To instantiate this class we use :meth:`qililab.build_platform()`, in one of these two ways:
 
-    >>> platform = ql.build_platform(runcard="runcards/galadriel.yml")
-    >>> platform.name
-    galadriel
+    - passing a path to where our serialized platform (runcard) is located:
 
-    where we have passed the path where our runcard is located. Or like:
+        >>> platform = ql.build_platform(runcard="runcards/galadriel.yml")
 
-    >>> platform = ql.build_platform(runcard=galadriel_dict)
-    >>> platform.name
-    galadriel
 
-    where we directly passed a dictionary containing the serialized platform.
+    - directly passing a dictionary containing the serialized platform (runcard).
+
+        >>> platform = ql.build_platform(runcard=galadriel_dict)
 
     Doing so the class will receive a dictionary containing the serialized platform (runcard), which should follow this structure:
 
@@ -72,7 +69,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             "instrument_controllers": instrument_controllers        # list[dict]
         }
 
-    And with all that information instantiates the actual chip, buses and corresponding instruments of the laboratory.
+    And with all this information the Platform class instantiates, connects and controls the actual chip, buses and instruments of the laboratory.
 
     To do so, the common first(last) three steps, are to (dis)connect, set up and turning (off)on the instruments:
 
@@ -82,6 +79,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
     And then you normally also set the needed parameters in the instruments, and finally execute the platform for simple cases, with:
 
+    >>> platform.set_parameter(alias="drive_q0", parameter=ql.Parameter.GAIN, value=gain)
     >>> result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
 
     or for more complicated cases, run a experiment with the :class:`Experiment` class, that does it for you like:
