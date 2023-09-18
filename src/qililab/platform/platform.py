@@ -281,12 +281,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """Boolean describing the connection to the instruments. Defaults to False (not connected)."""
 
     def connect(self, manual_override=False):
-        """Blocks the given device and connects to the instruments.
+        """Block the given device and connect to the instruments via qiboconnection's `API` and the `device_id`.
 
         Args:
-            connection (API): qiboconnection's ``API`` class
-            device_id (int): id of the device
-            manual_override (bool, optional): If ``True``, avoid checking if the device is blocked. This will stop any
+            manual_override (bool, optional): If ``True``, avoid checking if the device is blocked (surpasses any blocked connection). This will stop any
                 current execution. Defaults to False.
         """
         if self._connected_to_instruments:
@@ -301,17 +299,17 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         logger.info("Connected to the instruments")
 
     def initial_setup(self):
-        """Set the initial setup of the instruments"""
+        """Set the initial setup of the instruments."""
         self.instrument_controllers.initial_setup()
         logger.info("Initial setup applied to the instruments")
 
     def turn_on_instruments(self):
-        """Turn on the instruments"""
+        """Turn on the instruments."""
         self.instrument_controllers.turn_on_instruments()
         logger.info("Instruments turned on")
 
     def turn_off_instruments(self):
-        """Turn off the instruments"""
+        """Turn off the instruments."""
         self.instrument_controllers.turn_off_instruments()
         logger.info("Instruments turned off")
 
@@ -327,7 +325,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         logger.info("Disconnected from instruments")
 
     def get_element(self, alias: str):
-        """Get platform element.
+        """Get platform element and to which bus is connected, through its alias.
 
         Args:
             alias (str): Element alias to identify it.
@@ -356,13 +354,13 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         return element
 
     def get_bus_by_qubit_index(self, qubit_index: int) -> tuple[Bus, Bus, Bus]:
-        """Find bus associated with the given qubit index.
+        """Find buses associated with the given qubit index.
 
         Args:
-            qubit_index (int): qubit index
+            qubit_index (int): Qubit index to get the buses from.
 
         Returns:
-            tuple[Bus, Bus, Bus]: Returns a tuple of Bus objects containing the flux, control and readout buses of the given qubit
+            tuple[:class:`Bus`, :class:`Bus`, :class:`Bus`]: Tuple of Bus objects containing the flux, control and readout buses of the given qubit.
         """
         flux_port = self.chip.get_port_from_qubit_idx(idx=qubit_index, line=Line.FLUX)
         control_port = self.chip.get_port_from_qubit_idx(idx=qubit_index, line=Line.DRIVE)
@@ -378,7 +376,15 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         return flux_bus, control_bus, readout_bus
 
     def get_bus_by_alias(self, alias: str | None = None):
-        """Get bus given an alias."""
+        """Get bus given its alias.
+
+        Args:
+            alias (str | None, optional): Bus alias to identify it. Defaults to None.
+
+        Returns:
+            :class:`Bus`: Bus corresponding to the given alias. If none is found `None` is returned.
+
+        """
         return next((bus for bus in self.buses if bus.alias == alias), None)
 
     def set_parameter(
@@ -388,11 +394,11 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         alias: str,
         channel_id: int | None = None,
     ):
-        """Set parameter of a platform element.
+        """Set a parameter of a platform element.
 
         Args:
             parameter (Parameter): Name of the parameter to change.
-            value (float | str | bool): New value to set.
+            value (float | str | bool): New value to set in the parameter.
             alias (str): Alias of the bus where the parameter is set.
             channel_id (int, optional): ID of the channel we want to use to set the parameter. Defaults to None.
         """
@@ -439,7 +445,11 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         return instrument_controllers
 
     def to_dict(self):
-        """Return all platform information as a dictionary."""
+        """Return all platform information as a dictionary. Used for the platform serialization.
+
+        Returns:
+            dict: Dictionary of the serialized platform.
+        """
         name_dict = {RUNCARD.NAME: self.name}
         device_id = {RUNCARD.DEVICE_ID: self.device_id}
         gates_settings_dict = {RUNCARD.GATES_SETTINGS: asdict(self.gates_settings, dict_factory=dict_factory)}
@@ -463,10 +473,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         )
 
     def __str__(self) -> str:
-        """String representation of the platform
+        """String representation of the platform.
 
         Returns:
-            str: Name of the platform
+            str: Name of the platform.
         """
         return str(yaml.dump(self.to_dict(), sort_keys=False))
 
@@ -480,11 +490,11 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
     ) -> Result:
         """Execute a circuit or a pulse schedule using the platform instruments.
 
-        If a Circuit is given, then it will be translated into a pulse schedule by using the transpilation
+        If a :class:`Circuit` is given, then it will be translated into a :class:`PulseSchedule` by using the transpilation
         settings of the platform.
 
         Args:
-            program (PulseSchedule | Circuit): Circuit or pulse schedule to execute.
+            program (:class:`PulseSchedule` | :class:`Circuit`): Circuit or pulse schedule to execute.
             num_avg (int): Number of hardware averages used.
             repetition_duration (int): Minimum duration of a single execution.
             num_bins (int, optional): Number of bins used. Defaults to 1.
@@ -533,7 +543,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """Compiles the circuit / pulse schedule into a set of assembly programs.
 
         Args:
-            program (PulseSchedule | Circuit): Circuit to compile.
+            program (:class:`PulseSchedule` | :class:`Circuit`): Circuit or pulse schedule to compile.
             num_avg (int): Number of hardware averages used.
             repetition_duration (int): Minimum duration of a single execution.
             num_bins (int): Number of bins used.
