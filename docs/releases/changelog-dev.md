@@ -313,3 +313,6 @@ This document contains the changes of the current release.
 ### Documentation
 
 ### Bug fixes
+
+- The `threshold` and `threshold_rotation` parameters of a `QbloxQRM` can now be set using `Platform.set_parameter`.
+  [#534](https://github.com/qilimanjaro-tech/qililab/pull/534)

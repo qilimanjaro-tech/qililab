@@ -1,5 +1,5 @@
 """This file tests the the ``AWGAnalogDigitalConverter`` class"""
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -87,3 +87,17 @@ class TestAWGAnalogDigitalConverter:
         with pytest.raises(ValueError, match="channel not specified to update instrument"):
             awg.device = MagicMock()
             awg.setup(parameter=Parameter.ACQUISITION_DELAY_TIME, value=2, channel_id=None)
+
+    def test_setup_threshold(self, awg: AWG):
+        """Test that calling `setup` with the `THRESHOLD` parameter works correctly."""
+        awg.device = MagicMock()
+        with patch.object(target=AWGAnalogDigitalConverter, attribute="_set_threshold") as mock_set:
+            awg.setup(parameter=Parameter.THRESHOLD, value=2)
+            mock_set.assert_called_once_with(value=2, sequencer_id=0)
+
+    def test_setup_threshold_rotation(self, awg: AWG):
+        """Test that calling `setup` with the `THRESHOLD_ROTATION` parameter works correctly."""
+        awg.device = MagicMock()
+        with patch.object(target=AWGAnalogDigitalConverter, attribute="_set_threshold_rotation") as mock_set:
+            awg.setup(parameter=Parameter.THRESHOLD_ROTATION, value=2)
+            mock_set.assert_called_once_with(value=2, sequencer_id=0)
