@@ -73,16 +73,13 @@ class TestBuildPlatformCornerCases:
             _ = ql.build_platform()
 
             (msg,) = no_arg_error.value.args
-            assert (
-                msg
-                == "Mandatory `runcard` argument (str | dict) has not been passed to the `build_platform()` function."
-            )
+            assert msg == "`runcard` argument (str | dict) has not been passed to the `build_platform()` function."
 
     def test_build_method_with_old_path_and_new_runcard_arguments(self):
         """Test build method with the new drivers."""
         with pytest.raises(
             ValueError,
-            match="Use only the mandatory `runcard` argument, `path` argument is deprecated.",
+            match="Use only the `runcard` argument, `path` argument is deprecated.",
         ):
             _ = ql.build_platform(runcard="_", path="_")
 
