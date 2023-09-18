@@ -157,7 +157,7 @@ class Bus:
         }
 
     def set_parameter(self, parameter: Parameter, value: int | float | str | bool, channel_id: int | None = None):
-        """_summary_
+        """Sets a parameter to the bus.
 
         Args:
             parameter (Parameter): parameter settings of the instrument to update
