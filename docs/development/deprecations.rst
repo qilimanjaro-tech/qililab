@@ -3,7 +3,9 @@ Deprecations
 
 Pending deprecations
 ---------------------
-- `qililab.build_platform` will no longer support the `path` argument.
+- The `path` argument in `qililab.build_platform` will be changed to the `runcard` argument, since now it will not only accept a path to the YAML file but also the dictionary directly.
+    - Deprecated in v0.20.5
+    - Removed in v0.20.6
 
 Completed deprecation cycles
 -----------------------------
