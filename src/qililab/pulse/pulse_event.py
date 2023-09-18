@@ -26,15 +26,15 @@ from qililab.utils.signal_processing import modulate
 
 @dataclass
 class PulseEvent:
-    """Object representing a Pulse starting at a certain time.
+    """Object representing a :class:`Pulse` starting at a certain time.
 
-    This class will receive a Pulse object, a start time, a list of PulseDistortion objects and a qubit alias as arguments.
+    This class will receive a :class:`Pulse` object, a start time, a list of :class:`PulseDistortion` objects and a qubit alias as arguments.
     It provides functionality for instrument to generate the waveforms and modulation of pulses.
 
     Args:
-        pulse (Pulse): Pulse contained in the PulseEvent.
-        start_time (int): Start time of the pulse.
-        pulse_distortion (list[PulseDistortion]: pulse distortions applied to the pulse.
+        pulse (Pulse): :class:`Pulse` contained in the PulseEvent.
+        start_time (int): Start time of the pulse. Value in ns.
+        pulse_distortion (list[PulseDistortion]: List of :class:`PulseDistortion` applied to the pulse.
         qubit (int): the qubit alias.
     """
 
