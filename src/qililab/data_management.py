@@ -214,14 +214,19 @@ def build_platform(
         >>> platform.name
         galadriel
     """
+    if path is None and runcard is None:
+        raise ValueError(
+            "Mandatory `runcard` argument (str | dict) has not been passed to the `build_platform()` function."
+        )
     if path is not None:
+        if runcard is not None:
+            raise ValueError("Use only the mandatory `runcard` argument, `path` argument is deprecated.")
         warn(
-            "`path` argument is deprecated. Please use only the mandatory `runcard` argument instead.",
+            "`path` argument is deprecated and will be removed soon. Use the mandatory `runcard` argument instead.",
             DeprecationWarning,
             stacklevel=2,
         )
-    if runcard is None:
-        raise ValueError("Mandatory `runcard` argument has not been passed to `build_platform()`.")
+        runcard = path
 
     if new_drivers:
         raise NotImplementedError("New drivers are not supported yet.")

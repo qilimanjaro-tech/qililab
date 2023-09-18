@@ -18,14 +18,21 @@ from tests.test_utils import build_platform
 class TestPlatformData:
     """Unit tests for the `build_platform` function.."""
 
-    def test_build_platform_passing_a_path(self, mock_open: MagicMock, mock_load: MagicMock):
+    def test_build_platform_passing_a_path_to_old_path_argument(self, mock_open: MagicMock, mock_load: MagicMock):
+        """Test build method."""
+        platform = ql.build_platform(path="_")
+        assert isinstance(platform, Platform)
+        mock_load.assert_called_once()
+        mock_open.assert_called_once()
+
+    def test_build_platform_passing_a_path_to_runcard_argument(self, mock_open: MagicMock, mock_load: MagicMock):
         """Test build method."""
         platform = ql.build_platform(runcard="_")
         assert isinstance(platform, Platform)
         mock_load.assert_called_once()
         mock_open.assert_called_once()
 
-    def test_build_platform_passing_a_dict(self, mock_open: MagicMock, mock_load: MagicMock):
+    def test_build_platform_passing_a_dict_to_runcard_argument(self, mock_open: MagicMock, mock_load: MagicMock):
         """Test build method."""
         platform = ql.build_platform(runcard=copy.deepcopy(Galadriel.runcard))
         assert isinstance(platform, Platform)
@@ -54,19 +61,22 @@ class TestPlatformData:
 class TestBuildPlatformCornerCases:
     """Unit tests for the corner cases of the `build_platform` function.."""
 
-    def test_build_method_with_only_old_path_argument(self):
+    def test_build_method_with_no_arguments(self):
         """Test build method with the new drivers."""
-        with pytest.raises(
-            DeprecationWarning,
-            match="`path` argument is deprecated. Please use the mandatory `runcard` argument instead.",
-        ):
-            _ = ql.build_platform(path="_")
+        with pytest.raises(ValueError) as no_arg_error:
+            _ = ql.build_platform()
+
+            (msg,) = no_arg_error.value.args
+            assert (
+                msg
+                == "Mandatory `runcard` argument (str | dict) has not been passed to the `build_platform()` function."
+            )
 
     def test_build_method_with_old_path_and_new_runcard_arguments(self):
         """Test build method with the new drivers."""
         with pytest.raises(
-            DeprecationWarning,
-            match="`path` argument is deprecated. Please use the mandatory `runcard` argument instead.",
+            ValueError,
+            match="Use only the mandatory `runcard` argument, `path` argument is deprecated.",
         ):
             _ = ql.build_platform(runcard="_", path="_")
 
