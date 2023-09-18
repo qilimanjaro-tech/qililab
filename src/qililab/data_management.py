@@ -15,6 +15,7 @@
 import os
 from datetime import datetime
 from pathlib import Path
+from warnings import warn
 
 import h5py
 import numpy as np
@@ -167,11 +168,32 @@ def save_platform(path: str, platform: Platform) -> str:
     return str(new_path)
 
 
-def build_platform(path: str, connection: API | None = None, new_drivers: bool = False) -> Platform:
-    """Build `Platform` object given a path to a YAML file containing the serialized platform.
+def build_platform(
+    runcard: str | dict | None = None, path: str | None = None, connection: API | None = None, new_drivers: bool = False
+) -> Platform:
+    """Build `Platform` object given one of two things:
+        - a path to a YAML file containing a dictionary of the serialized platform (runcard).
+        - directly a dictionary of the serialized platform (runcard).
+
+    |
+
+    The dictionary should follow the next structure:
+
+    .. code-block:: python3
+
+        {
+            "name": name,                                           # str
+            "device_id": device_id,                                 # int
+            "gates_settings": gates_settings,                       # dict
+            "chip": chip,                                           # dict
+            "buses": buses,                                         # list[dict]
+            "instruments": instruments,                             # list[dict]
+            "instrument_controllers": instrument_controllers        # list[dict]
+        }
 
     Args:
-        path (str): Path to the platform's YAML file.
+        path (str): Path to the platform's runcard YAML file. This argument is deprecated and will be removed soon.
+        runcard (str | dict): Path to the platform's runcard YAML file, or direct dictionary of the platform's runcard info.
         connection (API | None, optional): Qiboconnection's API class used to block access to the Platform when connected to it.
             Defaults to None.
         new_drivers (bool, optional): Whether to use the new drivers or not. Defaults to False.
@@ -180,15 +202,36 @@ def build_platform(path: str, connection: API | None = None, new_drivers: bool =
         Platform: Platform object.
 
     Examples:
-        >>> platform = ql.build_platform(path="runcards/galadriel.yml")
+        Passing the path of YAML file containing the serialized platform, in the `runcard` argument:
+
+        >>> platform = ql.build_platform(runcard="runcards/galadriel.yml")
+        >>> platform.name
+        galadriel
+
+        Passing a dictionary containing the serialized platform, in the `runcard` argument:
+
+        >>> platform = ql.build_platform(runcard=galadriel_dict)
         >>> platform.name
         galadriel
     """
-    with open(file=path, mode="r", encoding="utf8") as file:
-        settings = yaml.safe_load(stream=file)
+    if path is None and runcard is None:
+        raise ValueError("`runcard` argument (str | dict) has not been passed to the `build_platform()` function.")
+    if path is not None:
+        if runcard is not None:
+            raise ValueError("Use only the `runcard` argument, `path` argument is deprecated.")
+        warn(
+            "`path` argument is deprecated and will be removed soon. Use the `runcard` argument instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        runcard = path
 
     if new_drivers:
         raise NotImplementedError("New drivers are not supported yet.")
 
-    runcard = Runcard(**settings)
-    return Platform(runcard=runcard, connection=connection)
+    if isinstance(runcard, str):
+        with open(file=runcard, mode="r", encoding="utf8") as file:
+            runcard = yaml.safe_load(stream=file)
+
+    runcard_class = Runcard(**runcard)
+    return Platform(runcard=runcard_class, connection=connection)
