@@ -48,6 +48,7 @@ automodapi_toctreedirnm = "code/api"  # location where the automodapi rst files 
 autoclass_content = "class"  # only show class docstrings (hide init docstrings)
 
 autodoc_typehints = "none"
+autodoc_member_order = "bysource"
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
