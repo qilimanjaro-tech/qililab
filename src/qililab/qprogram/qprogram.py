@@ -40,11 +40,6 @@ class QProgram:
     It contains methods for creating, manipulating and controlling
     the execution flow of quantum operations within a program.
 
-    Attributes:
-        _program (Block): The main program block.
-        _variables (list[Variable]): List of variables used within the program.
-        _block_stack (deque[Block]): A stack to manage nested blocks within the program.
-
     Examples:
 
         The following example illustrates how to define a Rabi sequence using QProgram.
@@ -79,216 +74,222 @@ class QProgram:
         return self._block_stack[-1]
 
     def block(self):
-        """Define a generic block for scoping operations.
+        """Define a generic block intended for scoping operations.
 
-        Blocks need to open a scope.
+        This method is designed to be used with the `with` keyword, which establishes a new scope. Failure to use the `with` keyword will result in incorrect behavior.
 
         Returns:
             Block: The block.
 
         Examples:
-
             >>> with qp.block() as block:
-            >>>    # operations that shall be executed in the block
+            >>>    # operations executed within the block
         """
         return QProgram._BlockContext(qprogram=self)
 
     def parallel(self, loops: list[ForLoop]):
-        """Define a block for running multiple loops in parallel.
+        """Define a block for concurrently executing multiple loops.
 
-        Blocks need to open a scope.
+        This method is designed to be used with the `with` keyword, which establishes a new scope. Failure to use the `with` keyword will result in incorrect behavior.
+
+        Args:
+            loops (list[ForLoop]): List of loops intended to run in parallel.
+
+        Returns:
+            Parallel: The loop block.
 
         Examples:
             >>> gain = qp.variable(float)
             >>> frequency = qp.variable(float)
-            >>> with qp.parallel(loops=[ForLoop(variable=frequency, start=0, stop=100, step=10),
-                                        ForLoop(variable=gain, start=0.0, stop=1.0, step=0.1)]):
-            >>>    # operations that shall be executed in the block
-
-        Args:
-            loops (list[Loop  |  ForLoop]): The loops to run in parallel
-
-        Returns:
-            Parallel: The parallel block.
+            >>> with qp.parallel(loops=[
+                    ForLoop(variable=frequency, start=0, stop=100, step=10),
+                    ForLoop(variable=gain, start=0.0, stop=1.0, step=0.1)
+                ]):
+            >>>     # operations executed within the parallel block
         """
         return QProgram._ParallelContext(qprogram=self, loops=loops)
 
     def average(self, shots: int):
-        """Define an acquire loop block with averaging in real time.
+        """Define a loop block for real-time averaging.
 
-        Blocks need to open a scope.
+        This method is designed to be used with the `with` keyword, which establishes a new scope. Failure to use the `with` keyword will result in incorrect behavior.
 
         Args:
-            iterations (int): The number of acquire iterations.
+            shots (int): Number of acquisition shots.
 
         Returns:
-            AcquireLoop: The acquire_loop block.
+            AcquireLoop: The loop block.
 
         Examples:
-
-            >>> with qp.acquire_loop(iterations=1000):
-            >>>    # operations that shall be executed in the acquire_loop block
+            >>> with qp.average(shots=1000):
+            >>>    # operations executed within the average block
         """
         return QProgram._AverageContext(qprogram=self, iterations=shots)
 
     def loop(self, variable: Variable, values: np.ndarray):
-        """Define a loop block to iterate values over a variable.
+        """Define a loop block for iterating over a set of values for a specified variable.
 
-        Blocks need to open a scope.
+        This method is designed to be used with the `with` keyword, which establishes a new scope. Failure to use the `with` keyword will result in incorrect behavior.
 
         Args:
-            variable (Variable): The variable to be affected from the loop.
-            values (np.ndarray): The values to iterate over.
+            variable (Variable): Target variable affected by the loop iteration.
+            values (np.ndarray): Array of values to be iterated over.
 
         Returns:
             Loop: The loop block.
 
         Examples:
-
             >>> variable = qp.variable(int)
             >>> with qp.loop(variable=variable, values=np.array(range(100))):
-            >>>    # operations that shall be executed in the loop block
+            >>>    # operations executed within the average block
         """
 
         return QProgram._LoopContext(qprogram=self, variable=variable, values=values)
 
     def for_loop(self, variable: Variable, start: int | float, stop: int | float, step: int | float = 1):
-        """Define a for_loop block to iterate values over a variable.
+        """Define a loop block for iterating values over a given variable.
 
-        Blocks need to open a scope.
+        This method is designed to be used with the `with` keyword, which establishes a new scope. Failure to use the `with` keyword will result in incorrect behavior.
 
         Args:
-            variable (Variable): The variable to be affected from the loop.
-            start (int | float): The start value.
-            stop (int | float): The stop value.
-            step (int | float, optional): The step value. Defaults to 1.
+            variable (Variable): Target variable affected by the loop iteration.
+            start (int | float): Initial value for the loop.
+            stop (int | float): Ending value for the loop.
+            step (int | float, optional): Increment value for each loop iteration. Defaults to 1.
 
         Returns:
-            Loop: The loop block.
+            ForLoop: The constructed loop block.
 
         Examples:
-
             >>> variable = qp.variable(int)
             >>> with qp.for_loop(variable=variable, start=0, stop=100, step=5)):
-            >>>    # operations that shall be executed in the for_loop block
+            >>>    # operations executed within the average block
         """
 
         return QProgram._ForLoopContext(qprogram=self, variable=variable, start=start, stop=stop, step=step)
 
     def play(self, bus: str, waveform: Waveform | IQPair):
-        """Play a single waveform or an I/Q pair of waveforms on the bus.
+        """Play either a singular waveform or an I/Q pair of waveforms on the specified bus.
 
         Args:
-            bus (str): Unique identifier of the bus.
-            waveform (Waveform | IQPair): A single waveform or an I/Q pair of waveforms
+            bus (str): Unique identifier of the target bus.
+            waveform (Waveform | IQPair): The waveform to be played, either a singular waveform or an I/Q pair.
         """
+
         operation = Play(bus=bus, waveform=waveform)
         self._active_block.append(operation)
 
     def wait(self, bus: str, time: int):
-        """Adds a delay on the bus with a specified time.
+        """Introduce a delay on the specified bus for the given duration.
 
         Args:
-            bus (str): Unique identifier of the bus.
+            bus (str): Unique identifier of the target bus.
             time (int): Duration of the delay.
         """
+
         operation = Wait(bus=bus, time=time)
         self._active_block.append(operation)
 
     def acquire(self, bus: str, duration: int | None = None, weights: IQPair | None = None):
-        """Acquire results based on the given duration or weights.
+        """Acquire results based on a specified duration or set of weights.
 
-        If the `duration` is provided, it specifies the acquisition's duration.
-        However, it's essential to ensure that the provided duration matches the
-        one set in QCoDes; otherwise, the results might be incorrect.
+        - If `duration` is provided, it denotes the acquisition's duration. It's crucial that the specified duration aligns with the settings in QCoDes; otherwise, the acquisition results might be inaccurate.
+        - If `weights` are provided, the acquisition's duration is inferred from the duration of the weight waveforms.
 
-        If `weights` are provided, the acquisition duration is determined by the
-        duration of the weights waveforms.
 
         Args:
-            bus (str): Unique identifier of the bus.
-            duration (int | None, optional): Duration for the acquisition in units relevant to your application. Defaults to None.
+            bus (str): Unique identifier of the target bus.
+            duration (int | None, optional): Duration of the acquisition in relevant units. If not set, the duration will be derived from the `weights`. Defaults to None.
             weights (IQPair | None, optional): Weights used during acquisition. If set, the acquisition duration is determined by these weights. Defaults to None.
 
         Raises:
-            ValueError: If neither or both `duration` and `weights` are provided.
+            ValueError: Raised if both or neither `duration` and `weights` are provided.
         """
+
         if (duration is None) == (weights is None):
             raise ValueError("Either duration or weights should be set.")
         operation = Acquire(bus=bus, duration=duration, weights=weights)
         self._active_block.append(operation)
 
     def sync(self, buses: list[str] | None = None):
-        """Synchronize operations between buses, so the operations following will start at the same time. If no buses are given, then the synchronization will involve all buses present in the QProgram.
+        """Synchronize operations across buses to ensure subsequent operations start simultaneously.
+
+        If no specific buses are provided, the synchronization will involve all buses present in the QProgram.
 
         Args:
-            buses (list[str] | None, optional): List of unique identifiers of the buses. Defaults to None.
+            buses (list[str] | None, optional): List of unique identifiers for the target buses. If None, all buses in the QProgram are used. Defaults to None.
         """
+
         operation = Sync(buses=buses)
         self._active_block.append(operation)
 
     def reset_phase(self, bus: str):
-        """Reset the absolute phase of the NCO associated with the bus.
+        """Reset the absolute phase of the Numerically Controlled Oscillator (NCO) associated with the specified bus.
 
         Args:
-            bus (str): Unique identifier of the bus.
+            bus (str): The unique identifier of the target bus.
         """
+
         operation = ResetPhase(bus=bus)
         self._active_block.append(operation)
 
     def set_phase(self, bus: str, phase: float):
-        """Set the absolute phase of the NCO associated with the bus.
+        """Set the absolute phase of the Numerically Controlled Oscillator (NCO) associated with the specified bus.
 
         Args:
-            bus (str): Unique identifier of the bus.
+            bus (str): The unique identifier of the target bus.
             phase (float): The new absolute phase of the NCO.
         """
+
         operation = SetPhase(bus=bus, phase=phase)
         self._active_block.append(operation)
 
     def set_frequency(self, bus: str, frequency: float):
-        """Set the frequency of the NCO associated with bus.
+        """Set the frequency of the Numerically Controlled Oscillator (NCO) associated with the specified bus.
 
         Args:
-            bus (str): Unique identifier of the bus.
+            bus (str): The unique identifier of the target bus.
             frequency (float): The new frequency of the NCO.
         """
+
         operation = SetFrequency(bus=bus, frequency=frequency)
         self._active_block.append(operation)
 
     def set_gain(self, bus: str, gain_path0: float, gain_path1: float):
-        """Set the gain of the AWG associated with bus.
+        """Set the gain of the Arbitrary Waveform Generator (AWG) associated with the specified bus.
 
         Args:
-            bus (str): Unique identifier of the bus.
+            bus (str): The unique identifier of the target bus.
             gain_path0 (float): The new gain of the AWG for path0.
             gain_path1 (float): The new gain of the AWG for path1.
         """
+
         operation = SetGain(bus=bus, gain_path0=gain_path0, gain_path1=gain_path1)
         self._active_block.append(operation)
 
     def set_offset(self, bus: str, offset_path0: float, offset_path1: float):
-        """Set the gain of the AWG associated with bus.
+        """Set the offset of the Arbitrary Waveform Generator (AWG) associated with the specified bus.
 
         Args:
-            bus (str): Unique identifier of the bus.
+            bus (str): The unique identifier of the target bus.
             offset_path0 (float): The new offset of the AWG for path0.
             offset_path1 (float): The new offset of the AWG for path1.
         """
+
         operation = SetOffset(bus=bus, offset_path0=offset_path0, offset_path1=offset_path1)
         self._active_block.append(operation)
 
     def variable(self, type: type[int | float]):  # pylint: disable=redefined-builtin
-        """Declare a variable.
+        """Declare a variable of the specified type.
 
         Args:
-            type (int | float): The type of the variable.
+            type (int | float): Data type of the variable, either int or float.
 
         Raises:
-            NotImplementedError: If an unsupported type is provided.
+            NotImplementedError: Raised if a type other than int or float is provided.
 
         Returns:
-            IntVariable | FloatVariable: The variable.
+            IntVariable | FloatVariable: The declared variable based on the specified type.
         """
 
         def _int_variable(value: int = 0) -> IntVariable:
