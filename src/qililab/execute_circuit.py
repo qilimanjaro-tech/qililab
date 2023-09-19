@@ -62,7 +62,7 @@ def execute(circuit: Circuit, platform_path: str, nshots: int = 1):
     circuit = translate_circuit(circuit, optimize=True)
 
     # create platform
-    platform = build_platform(path=platform_path)
+    platform = build_platform(runcard=platform_path)
 
     settings = ExperimentSettings(hardware_average=1, repetition_duration=200000, software_average=1, num_bins=nshots)
     options = ExperimentOptions(settings=settings)
