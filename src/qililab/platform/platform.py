@@ -117,8 +117,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 # Executing the platform:
                 result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
 
-            |
-
             The results would look something like this:
 
             >>> result.array
@@ -127,7 +125,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
             .. note::
 
-                Remember that the values obtained correspond to the integral of the I/Q signals received by the digitizer.
+                The obtained vlaue correspond to the integral of the I/Q signals received by the digitizer.
                 And they have shape `(#sequencers, 2, #bins)`, in this case we only have 1 sequencer and 1 bin.
 
         |
@@ -135,30 +133,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         2. Running a Rabi sequence with Platform:
 
             To do a Rabi sequence, you precisely need the previous circuit and again you also need to build, connect and setup the platform,
-            but this time, instead than executing the circuit once, you loop changing the gain parameter of the AWG (generator of
-            the pi pulse):
+            but this time, instead than executing the circuit once, you loop changing the gain parameter of the AWG (generator of the pi pulse):
 
             .. code-block:: python
-
-                import qililab as ql
-
-                import numpy as np
-
-                from qibo.models import Circuit
-                from qibo import gates
-
-                # Defining the Rabi circuit:
-                circuit = Circuit(q+1)
-                circuit.add(gates.X(q))
-                circuit.add(gates.M(q))
-
-                # Building the platform:
-                platform = ql.build_platform(runcard="runcards/galadriel.yml")
-
-                # Connecting and setting up the platform:
-                platform.connect()
-                platform.initial_setup()
-                platform.turn_on_instruments()
 
                 # Looping over the AWG gain to execute the Rabi sequence:
                 results = []
@@ -172,6 +149,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             Now you can use `np.hstack` to stack the results horizontally. By doing this, you would obtain an
             array with shape `(2, N)`, where N is the number of elements inside the loop:
 
+            >>> import numpy as np
             >>> np.hstack(results)
             array([[5, 4, 3, 2, 1, 2, 3],
                     [5, 4, 3, 2, 1, 2, 3]])
@@ -207,8 +185,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
             If you now stack and print the results, you obtain similar results, but much faster!
 
-            >>> results = np.hstack(results)
-            >>> results
+            >>> np.hstack(results)
             array([[5, 4, 3, 2, 1, 2, 3],
                     [5, 4, 3, 2, 1, 2, 3]])
 
@@ -216,7 +193,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         4. Running a Ramsey, looping a parameter inside a the circuit:
 
-            To do a Ramsey, you also need to build, connect and setup the platform, but this time the circuit is different from the previous,
+            To do a Ramsey, you also need to build, connect and setup the platform as before, but this time the circuit is different from the previous,
             and you also this time you need to loop over a parameter of the circuit, concretely over the time of a wait gate.
 
             To run the Ramsey, you need to loop over the `t` parameter of the first Align gate. To do so, since the parameter is inside the
@@ -225,11 +202,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
             .. code-block:: python
 
-                import qililab as ql
-
-                from qibo.models import Circuit
-                from qibo import gates
-
                 # Defining the Ramsey circuit:
                 circuit = Circuit(q + 1)
                 circuit.add(gates.RX(q, theta=np.pi/2))
@@ -237,14 +209,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 circuit.add(gates.RX(q, theta=np.pi/2))
                 circuit.add(gates.Align(q, t=0))
                 circuit.add(gates.M(q))
-
-                # Building the platform:
-                platform = ql.build_platform(runcard="runcards/galadriel.yml")
-
-                # Connecting and setting up the platform:
-                platform.connect()
-                platform.initial_setup()
-                platform.turn_on_instruments()
 
                 # Looping over the wait time t, to execute the Ramsey:
                 results_list = []
