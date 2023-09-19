@@ -52,197 +52,211 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
     - Instruments
 
-    |
+    .. note::
 
-    To instantiate this class use the :meth:`qililab.build_platform()` function in one of two ways:
+        This class should be instantiated with the :meth:`qililab.build_platform()` function, by passing a serialized platform (runcard) dictionary
+        or a path to the location of the YAML file containing it.
 
-    1. By passing a path to the location of our serialized platform (runcard):
+        You can find more information about the runcard structure, in the documentation :any:`Runcards` section.
 
-        >>> platform = ql.build_platform(runcard="runcards/galadriel.yml")
+    When you have an initilized :class:`Platform`, the typical first three steps (which normally only need to be done at the start) are:
 
+    >>> platform.connect() # Connects to all the instruments.
+    >>> platform.initial_setup()  # Sets the values stored in the runcard.
+    >>> platform.turn_on_instruments()  # Turns the signal outputs on.
 
-    2. By directly passing a dictionary containing the serialized platform (runcard).
+    And then, for each experiment you want to run, you normally would repeat:
 
-        >>> platform = ql.build_platform(runcard=galadriel_dict)
-
-    In both cases, the class will will receive a dictionary containing the serialized platform (runcard), which should follow this structure:
-
-    .. code-block:: python3
-
-        {
-            "name": name,                                           # str
-            "device_id": device_id,                                 # int
-            "gates_settings": gates_settings,                       # dict
-            "chip": chip,                                           # dict
-            "buses": buses,                                         # list[dict]
-            "instruments": instruments,                             # list[dict]
-            "instrument_controllers": instrument_controllers        # list[dict]
-        }
-
-    With this information the ``Platform`` class instantiates, connects and controls the actual chip, buses and instruments of the laboratory.
-
-    The typical first(last) three steps, are (dis)connecting, setting up and turning (off)on the instruments, which need to be done only once:
-
-    >>> platform.connect() # Connect to all instruments and block the connection for other users
-    >>> platform.initial_setup()  # Sets the values of the Runcard to the connected instruments
-    >>> platform.turn_on_instruments()  # Turns on all instruments
-
-    And then, for each experiment, set the required parameters in the instruments and execute the platform as follows:
-
-    >>> platform.set_parameter(alias="drive_q0", parameter=ql.Parameter.GAIN, value=gain)
-    >>> result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
-
-    For more complex cases, you can run a experiment with the :class:`Experiment` class, that does the same for you:
-
-    >>> experiment = ql.Experiment(platform=platform, circuits=[circuit], options=options)
-    >>> results = sample_experiment.run()
-
-    Additionally, you can print the structure of the buses and the chip, at any moment during the process:
-
-    >>> print(platform.chip)
-    >>> print(platform.buses)
+    >>> platform.set_parameter(...) # Sets parameters in instruments.
+    >>> result = platform.execute(...) # Executes the platform.
 
     Args:
-        runcard (Runcard): Runcard class containing all the chip, buses & instruments information of the platform.
-        connection (API | None = None): Qiboconnection's API class used to block access to other users when connected
+        runcard (Runcard): Runcard dataclass containing the serialized platform (chip, instruments, buses...), created during :meth:`qililab.build_platform()` given a dictionary.
+        connection (API | None = None): `Qiboconnection's <https://pypi.org/project/qiboconnection>`_ API class used to block access to other users when connected
             to the platform.
 
     Examples:
 
         .. note::
 
-            The following examples contain fictitious results. These will soon be updated with real results.
+            All the following examples are explained in detail in the :any:`.Platform` section of the documentation. But a few thing to keep in mind:
 
+            - In order to connect you need to have access to the IP’s addresses provided in the serialized platform (runcard), and connection is necessary for the next steps of the examples.
 
-        Imagine you want to run a Rabi sequence. To do so, we can first define a Qibo Circuit that contains a
-        pi pulse and a measurement gate:
+            - You might want to skip the `platform.initial_setup()` and the `platform.turn_on_instruments()` if you think nothing has been modified since last time, but we recommend you to do it always.
 
-        .. code-block:: python3
+            - `platform.turn_on_instruments()` does not actually turn the instruments of the laboratory on, it only opens and closes their signal output generation.
 
-            from qibo.models import Circuit
-            from qibo import gates
+            - You can print `platform.chip` and `platform.buses` at any moment, to check the platform structure.
 
-            circuit = Circuit(1)
-            circuit.add(gates.X(0))
-            circuit.add(gates.M(0))
+        1. Executing a circuit with Platform:
 
-        For testing purposes, you can already execute this circuit using the platform. To build it, you need to use
-        the :meth:`qililab.build_platform()` function:
+            To execute a circuit you first need to define your circuit, for example one with a pi pulse and a measurement gate in qubit q (``int``),
+            and then you also need to build, connect, setup and execute the platform, which together look like:
 
-        >>> platform = ql.build_platform(runcard="runcards/galadriel.yml") #Assuming the serialized platform (runcard) is there
-        >>> print(platform.name)
-        galadriel
+            .. code-block:: python
 
-        Now, to execute a circuit or a pulse schedule, you need to connect and set up the platform:
+                import qililab as ql
 
-        >>> platform.connect()
-        >>> platform.initial_setup()
-        >>> platform.turn_on_instruments()
+                from qibo.models import Circuit
+                from qibo import gates
 
-        And finally, you can execute the circuit:
+                # Defining the Rabi circuit:
+                circuit = Circuit(q+1)
+                circuit.add(gates.X(q))
+                circuit.add(gates.M(q))
 
-        >>> result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
-        >>> result.array
-        array([[5.],
-                [5.]])
+                # Building the platform:
+                platform = ql.build_platform(runcard="runcards/galadriel.yml")
 
-        When disabling scope acquisition mode, the array obtained has shape `(#sequencers, 2, #bins)`. In this case,
-        given that you are using only 1 sequencer to acquire the results, you would obtain an array with shape `(2, #bins)`.
+                # Connecting and setting up the platform:
+                platform.connect()
+                platform.initial_setup()
+                platform.turn_on_instruments()
 
-        .. note::
-
-            Remember that the values obtained correspond to the integral of the I/Q signals received by the
-            digitizer.
-
-        Now to run the Rabi sequence. You would need to run this sequence by looping over the gain of the AWG used
-        to create the pi pulse. To do so, you need to use the `set_parameter` method with the alias of the bus used
-        to drive qubit 0.
-
-        .. code-block:: python3
-
-            import numpy as np
-
-            results = []
-
-            gain_values = np.arange(0, 1, step=0.1)
-            for gain in gain_values:
-                # We assume the bus used to drive qubit 0 is called "drive_q0"
-                platform.set_parameter(alias="drive_q0", parameter=ql.Parameter.GAIN, value=gain)
+                # Executing the platform:
                 result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
-                results.append(result.array)
 
-        No you can use `np.hstack` to stack the obtained results horizontally. By doing this, you would obtain an
-        array with shape `(2, N)`, where N is the number of elements inside the loop:
+            |
 
-        >>> results = np.hstack(results)
-        >>> results
-        array([[5, 4, 3, 2, 1, 2, 3],
-                [5, 4, 3, 2, 1, 2, 3]])
+            The results would look something like this:
 
-        You can see how the integrated I/Q values oscillated, indicating that qubit 0 oscillates between ground and
-        excited state!
+            >>> result.array
+            array([[5.],
+                    [5.]])
 
-        Since you are looping over variables that are independent of the circuit (in this case, the gain of the AWG),
-        you can speed up the experiment by translating the circuit into pulses only once:
+            .. note::
 
-        .. code-block:: python3
+                Remember that the values obtained correspond to the integral of the I/Q signals received by the digitizer.
+                And they have shape `(#sequencers, 2, #bins)`, in this case we only have 1 sequencer and 1 bin.
 
-            from qililab.pulses.circuit_to_pulses import CircuitToPulses
+        |
 
-            pulse_schedule = CircuitToPulses(platform=platform).translate(circuits=[circuit])
+        2. Running a Rabi sequence with Platform:
 
-        and then, executing the obtained pulses inside the loop. Which is the same as before, but passing the
-        `pulse_schedule` instead than the `circuit`, to the `execute` method:
+            To do a Rabi sequence, you precisely need the previous circuit and again you also need to build, connect and setup the platform,
+            but this time, instead than executing the circuit once, you loop changing the gain parameter of the AWG (generator of
+            the pi pulse):
 
-        .. code-block:: python3
+            .. code-block:: python
 
-            results = []
+                import qililab as ql
 
-            gain_values = np.arange(0, 1, step=0.1)
-            for gain in gain_values:
-                # We assume the bus used to drive qubit 0 is called "drive_q0"
-                platform.set_parameter(alias="drive_q0", parameter=ql.Parameter.GAIN, value=gain)
-                result = platform.execute(program=pulse_schedule, num_avg=1000, repetition_duration=6000)
-                results.append(result.array)
+                import numpy as np
 
-        If you now stack and print the results, you see how you obtain similar results, but much faster!
+                from qibo.models import Circuit
+                from qibo import gates
 
-        >>> results = np.hstack(results)
-        >>> results
-        array([[5, 4, 3, 2, 1, 2, 3],
-                [5, 4, 3, 2, 1, 2, 3]])
+                # Defining the Rabi circuit:
+                circuit = Circuit(q+1)
+                circuit.add(gates.X(q))
+                circuit.add(gates.M(q))
 
-        And finally mention, that during this example, you could have check the ``chip`` and ``buses`` structure at any moment, printing:
+                # Building the platform:
+                platform = ql.build_platform(runcard="runcards/galadriel.yml")
 
-        >>> print(platform.chip)
-        Chip with 5 qubits and 12 ports:
-        * Port drive_line_q0 (drive): ----|qubit_0|----
-        * Port drive_line_q1 (drive): ----|qubit_1|----
-        * Port drive_line_q2 (drive): ----|qubit_2|----
-        * Port drive_line_q3 (drive): ----|qubit_3|----
-        * Port drive_line_q4 (drive): ----|qubit_4|----
-        * Port flux_line_q0 (flux): ----|qubit_0|----
-        * Port flux_line_q1 (flux): ----|qubit_1|----
-        * Port flux_line_q2 (flux): ----|qubit_2|----
-        * Port flux_line_q3 (flux): ----|qubit_3|----
-        * Port flux_line_q4 (flux): ----|qubit_4|----
-        * Port feedline_input (feedline_input): ----|resonator_q0|--|resonator_q1|--|resonator_q2|--|resonator_q3|--|resonator_q4|----
-        * Port feedline_output (feedline_output): ----|resonator_q0|--|resonator_q1|--|resonator_q2|--|resonator_q3|--|resonator_q4|----
+                # Connecting and setting up the platform:
+                platform.connect()
+                platform.initial_setup()
+                platform.turn_on_instruments()
 
-        >>> print(platform.buses)
-        Bus feedline_bus:  -----|QRM1|--|rs_1|------|resonator_q0|------|resonator_q1|------|resonator_q2|------|resonator_q3|------|resonator_q4|----
-        Bus drive_line_q0_bus:  -----|QCM-RF1|------|qubit_0|----
-        Bus flux_line_q0_bus:  -----|QCM1|------|qubit_0|----
-        Bus drive_line_q1_bus:  -----|QCM-RF1|------|qubit_1|----
-        Bus flux_line_q1_bus:  -----|QCM1|------|qubit_1|----
-        Bus drive_line_q2_bus:  -----|QCM-RF2|------|qubit_2|----
-        Bus flux_line_q2_bus:  -----|QCM2|------|qubit_2|----
-        Bus drive_line_q3_bus:  -----|QCM-RF3|------|qubit_3|----
-        Bus flux_line_q3_bus:  -----|QCM1|------|qubit_3|----
-        Bus drive_line_q4_bus:  -----|QCM-RF3|------|qubit_4|----
-        Bus flux_line_q4_bus:  -----|QCM1|------|qubit_4|----
+                # Looping over the AWG gain to execute the Rabi sequence:
+                results = []
+                gain_values = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9, 1.0]
 
-        where you can see the connections between the buses and the chips.
+                for gain in gain_values:
+                    platform.set_parameter(alias="drive_q0", parameter=ql.Parameter.GAIN, value=gain)
+                    result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
+                    results.append(result.array)
+
+            Now you can use `np.hstack` to stack the results horizontally. By doing this, you would obtain an
+            array with shape `(2, N)`, where N is the number of elements inside the loop:
+
+            >>> np.hstack(results)
+            array([[5, 4, 3, 2, 1, 2, 3],
+                    [5, 4, 3, 2, 1, 2, 3]])
+
+            You can see how the integrated I/Q values oscillated, indicating that qubit 0 oscillates between ground and
+            excited state!
+
+        |
+
+        3. Running a Rabi sequence faster, circuit to pulses:
+
+            Since you are looping over variables that are independent of the circuit (in this case, the gain of the AWG),
+            you can speed up the experiment by translating the circuit into pulses only once, and then, executing the obtained
+            pulses inside the loop.
+
+            Which is the same as before, but passing the `pulse_schedule` instead than the `circuit`, to the `execute` method:
+
+            .. code-block:: python
+
+                from qililab.pulse.circuit_to_pulses import CircuitToPulses
+
+                # Translating the circuit to pulses:
+                pulse_schedule = CircuitToPulses(platform=platform).translate(circuits=[circuit])
+
+                # Looping over the AWG gain to execute the Rabi sequence:
+                results = []
+                gain_values = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9, 1.0]
+
+                for gain in gain_values:
+                    platform.set_parameter(alias="drive_q0", parameter=ql.Parameter.GAIN, value=gain)
+                    result = platform.execute(program=pulse_schedule, num_avg=1000, repetition_duration=6000)
+                    results.append(result.array)
+
+            If you now stack and print the results, you obtain similar results, but much faster!
+
+            >>> results = np.hstack(results)
+            >>> results
+            array([[5, 4, 3, 2, 1, 2, 3],
+                    [5, 4, 3, 2, 1, 2, 3]])
+
+        |
+
+        4. Running a Ramsey, looping a parameter inside a the circuit:
+
+            To do a Ramsey, you also need to build, connect and setup the platform, but this time the circuit is different from the previous,
+            and you also this time you need to loop over a parameter of the circuit, concretely over the time of a wait gate.
+
+            To run the Ramsey, you need to loop over the `t` parameter of the first Align gate. To do so, since the parameter is inside the
+            circuit you need to use Qibo own `circuit.set_parameters` method, putting the parameters you want to set in the order they appear
+            in the circuit construction:
+
+            .. code-block:: python
+
+                import qililab as ql
+
+                from qibo.models import Circuit
+                from qibo import gates
+
+                # Defining the Ramsey circuit:
+                circuit = Circuit(q + 1)
+                circuit.add(gates.RX(q, theta=np.pi/2))
+                circuit.add(gates.Align(q, t=0))
+                circuit.add(gates.RX(q, theta=np.pi/2))
+                circuit.add(gates.Align(q, t=0))
+                circuit.add(gates.M(q))
+
+                # Building the platform:
+                platform = ql.build_platform(runcard="runcards/galadriel.yml")
+
+                # Connecting and setting up the platform:
+                platform.connect()
+                platform.initial_setup()
+                platform.turn_on_instruments()
+
+                # Looping over the wait time t, to execute the Ramsey:
+                results_list = []
+                wait_times = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+                for wait in wait_times:
+                    circuit.set_parameters([np.pi/2, wait, np.pi/2, 0])
+                    result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
+                    results_list.append(result.array)
+
+            so we were always setting `np.pi/2` to the `theta` parameter of the first `RX` gate, then the looped wait time `t` in the first `Align` gate,
+            then another `np.pi/2` to the second `RX`, and finally a `0` to the second `Align` gate.
     """
 
     def __init__(self, runcard: Runcard, connection: API | None = None):

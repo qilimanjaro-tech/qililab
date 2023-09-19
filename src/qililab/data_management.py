@@ -171,7 +171,7 @@ def save_platform(path: str, platform: Platform) -> str:
 def build_platform(
     runcard: str | dict | None = None, path: str | None = None, connection: API | None = None, new_drivers: bool = False
 ) -> Platform:
-    """Build `Platform` object given one of two things:
+    """Build a :class:`.Platform` object, given one of two things:
         - a path to a YAML file containing a dictionary of the serialized platform (runcard).
         - directly a dictionary of the serialized platform (runcard).
 
@@ -191,6 +191,12 @@ def build_platform(
             "instrument_controllers": instrument_controllers        # list[dict]
         }
 
+    which contains the information the :class:`.Platform` class uses to connect, setup and control the actual chip, buses and instruments of the laboratory.
+
+    .. note::
+
+        You can find more information about the complete structure of such dictionary, in the :any:`Runcards` section of the documentation.
+
     Args:
         path (str): Path to the platform's runcard YAML file. This argument is deprecated and will be removed soon.
         runcard (str | dict): Path to the platform's runcard YAML file, or direct dictionary of the platform's runcard info.
@@ -202,13 +208,13 @@ def build_platform(
         Platform: Platform object.
 
     Examples:
-        Passing the path of YAML file containing the serialized platform, in the `runcard` argument:
+        Passing the path of a YAML file containing a dictionary of the serialized platform, in the `runcard` argument:
 
         >>> platform = ql.build_platform(runcard="runcards/galadriel.yml")
         >>> platform.name
         galadriel
 
-        Passing a dictionary containing the serialized platform, in the `runcard` argument:
+        Passing a dictionary of the serialized platform, in the `runcard` argument:
 
         >>> platform = ql.build_platform(runcard=galadriel_dict)
         >>> platform.name
