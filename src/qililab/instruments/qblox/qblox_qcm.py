@@ -50,7 +50,12 @@ class QbloxQCM(QbloxModule):
         return Weights()
 
     def _append_acquire_instruction(
-        self, loop: Loop, bin_index: Register | int, sequencer_id: int, weight_regs: tuple[Register, Register],acq_index: int=0
+        self,
+        loop: Loop,
+        bin_index: Register | int,
+        sequencer_id: int,
+        weight_regs: tuple[Register, Register],
+        acq_index: int = 0,
     ):
         """Append an acquire instruction to the loop."""
 
@@ -63,6 +68,4 @@ class QbloxQCM(QbloxModule):
         raise NotImplementedError
 
     def _set_active_reset_triggers(self, sequencer):
-        """Enables triggers for all QRM sequencers. Used for active reset
-        """
-
+        """Enables triggers for all QRM sequencers. Used for active reset"""

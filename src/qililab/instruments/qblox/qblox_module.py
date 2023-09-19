@@ -24,9 +24,20 @@ from qpysequence import Sequence as QpySequence
 from qpysequence import Waveforms, Weights
 from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Register
-from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop, Acquire, WaitSync, UpdParam
-from qpysequence.program.instructions import SetLatchEn, LatchRst, Wait, SetCond
-
+from qpysequence.program.instructions import (
+    Acquire,
+    LatchRst,
+    Play,
+    ResetPh,
+    SetAwgGain,
+    SetCond,
+    SetLatchEn,
+    SetPh,
+    Stop,
+    UpdParam,
+    Wait,
+    WaitSync,
+)
 from qpysequence.utils.constants import AWG_MAX_GAIN
 
 from qililab.config import logger
@@ -85,7 +96,7 @@ class QbloxModule(AWG):
                 else sequencer  # pylint: disable=not-a-mapping
                 for sequencer in self.awg_sequencers
             ]
-            self.active_reset = False # TODO: add this in init?
+            self.active_reset = False  # TODO: add this in init?
             super().__post_init__()
 
     settings: QbloxModuleSettings
@@ -215,7 +226,7 @@ class QbloxModule(AWG):
         """
 
         # Define program's blocks
-        program = Program()
+        program = Program() # TODO: remove first wait sync if active reset
         # Create registers with 0 and 1 (necessary for qblox)
         weight_registers = Register(), Register()
         self._init_weights_registers(registers=weight_registers, values=(0, 1), program=program)
@@ -225,7 +236,14 @@ class QbloxModule(AWG):
         if self.settings.active_reset is True:
             act_rst = Block(name="active_reset")
             bin_loop.append_component(act_rst)
-            self._add_active_reset(act_rst=act_rst,bin_loop=bin_loop, pulse_bus_schedule=pulse_bus_schedule,waveforms=waveforms,sequencer=sequencer, weight_registers=weight_registers)
+            self._add_active_reset(
+                act_rst=act_rst,
+                bin_loop=bin_loop,
+                pulse_bus_schedule=pulse_bus_schedule,
+                waveforms=waveforms,
+                sequencer=sequencer,
+                weight_registers=weight_registers,
+            )
 
         program.append_block(avg_loop)
         stop = Block(name="stop")
@@ -259,12 +277,19 @@ class QbloxModule(AWG):
             if wait_time > self._MIN_WAIT_TIME:
                 bin_loop.append_component(long_wait(wait_time=wait_time))
 
-        program.allocate_registers() # TODO: why does this fix registers
+        program.allocate_registers()  # TODO: why does this fix registers
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
         return program
-    
 
-    def _add_active_reset(self, act_rst : Block, bin_loop: Loop, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, sequencer: int, weight_registers: tuple[Register, Register]) -> Block:
+    def _add_active_reset(
+        self,
+        act_rst: Block,
+        bin_loop: Loop,
+        pulse_bus_schedule: PulseBusSchedule,
+        waveforms: Waveforms,
+        sequencer: int,
+        weight_registers: tuple[Register, Register],
+    ) -> Block:
         """Adds active reset sequence and removes active reset PulseEvents from pulse_bus_schedule
 
         Args:
@@ -275,7 +300,6 @@ class QbloxModule(AWG):
             Block: _description_
         """
 
-        
         if pulse_bus_schedule.port == "feedline_input":
             # acquire instruction
             # measure and add wait sync at the end
@@ -289,19 +313,28 @@ class QbloxModule(AWG):
             act_rst.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
             phase = int((pulse_event.pulse.phase % (2 * np.pi)) * 1e9 / (2 * np.pi))
             act_rst.append_component(SetPh(phase=phase))
-            
+
             act_rst.append_component(
                 Play(
                     waveform_0=waveform_pair.waveform_i.index,
                     waveform_1=waveform_pair.waveform_q.index,
-                    wait_time=4,
+                    wait_time=4, # TODO: check if we have readout delay (instead of TOF)
                 )
             )
-            self._append_acquire_instruction(loop=act_rst,bin_index=bin_loop.counter_register,sequencer_id=sequencer, weight_regs=weight_registers, acq_index=1)
-            act_rst.append_component(WaitSync(300))
+            self._append_acquire_instruction( #TODO: add integration length to wait after acquisition - done
+                loop=act_rst,
+                bin_index=bin_loop.counter_register,
+                sequencer_id=sequencer,
+                weight_regs=weight_registers,
+                acq_index=1,
+            )
+            act_rst.append_component(WaitSync(4))
 
-
-            pulse_bus_schedule.timeline = pulse_bus_schedule.timeline[1:] # erase event from timeline
+            pulse_bus_schedule.timeline = pulse_bus_schedule.timeline[1:]  # erase event from timeline
+            rst_pulse_time = pulse_event.duration
+            for pulse_event in pulse_bus_schedule.timeline:
+                pulse_event.start_time = pulse_event.start_time - rst_pulse_time
+            
 
         elif "drive" in pulse_bus_schedule.port:
             act_rst.append_component(WaitSync(4))
@@ -309,41 +342,48 @@ class QbloxModule(AWG):
             pulse_event = pulse_bus_schedule.timeline[0]
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
 
-            # Conditional X pulses for active reset run after measurement                
+            # Conditional X pulses for active reset run after measurement
             # active reset sequence 1
-            act_rst.append_component(SetLatchEn(1, 4)) # latch any trigger
-            act_rst.append_component(LatchRst(1000)) # #Reset the trigger network address counters, then wait on trigger address
+            act_rst.append_component(SetLatchEn(1, 4))  # latch any trigger
+            # wait total of M pulse lenght + tof + integration length
             wait_time = pulse_event.start_time
-            act_rst.append_component(long_wait(wait_time)) # wait for duration of measurement pulse
-            act_rst.append_component(WaitSync(300))
+            integration_length = self.device.sequencers[sequencer].integration_length_acq()
+            act_rst.append_component(long_wait(wait_time + integration_length))  # wait for duration of measurement pulse + integration length
+
+            #Reset the trigger network address counters, then wait on trigger address
+            act_rst.append_component(LatchRst(300)) # FIXME: 300 is to account for time of flight
+            act_rst.append_component(WaitSync(4))
 
             # trigger address conditional is 2^sequencer
-            act_rst.append_component(SetCond(1,1,0,pulse_event.duration)) # TODO: else duration
+            act_rst.append_component(SetCond(1, 1, 0, pulse_event.duration))
 
             act_rst.append_component(ResetPh())
             gain = int(np.abs(pulse_event.pulse.amplitude) * AWG_MAX_GAIN)  # np.abs() needed for negative pulses
             act_rst.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
             phase = int((pulse_event.pulse.phase % (2 * np.pi)) * 1e9 / (2 * np.pi))
             act_rst.append_component(SetPh(phase=phase))
-            act_rst.append_component(Play(
-                                                waveform_0=waveform_pair.waveform_i.index,
-                                                waveform_1=waveform_pair.waveform_q.index,
-                                                wait_time=4, # we don't care about this wait time since we're running sync after it
-                                            ))
-            act_rst.append_component(SetCond(0,1,0,4)) # TODO: else duration
+            act_rst.append_component(
+                Play(
+                    waveform_0=waveform_pair.waveform_i.index,
+                    waveform_1=waveform_pair.waveform_q.index,
+                    wait_time=4,  # we don't care about this wait time since we're running sync after it
+                )
+            )
+            act_rst.append_component(SetCond(0, 1, 0, 4))
 
-            pulse_bus_schedule.timeline = pulse_bus_schedule.timeline[1:] # erase event from timeline
+            pulse_bus_schedule.timeline = pulse_bus_schedule.timeline[1:]  # erase event from timeline
+            rst_pulse_time = pulse_event.duration
+            for pulse_event in pulse_bus_schedule.timeline:
+                pulse_event.start_time = pulse_event.start_time - rst_pulse_time
 
-        else: # compensate wait syncs for other ports
+        else:  # compensate wait syncs for other ports
             act_rst.append_component(WaitSync(4))
 
-            act_rst.append_component(WaitSync(300))
+            act_rst.append_component(WaitSync(4))
             # pass
             # act_rst.append_component(WaitSync(1000))
-        
-        act_rst.append_component(WaitSync(4))
 
-
+        act_rst.append_component(WaitSync(4)) #TODO: we dont need this wait sync if times are calculated properly (and possibly don't need the one right above either)
 
     def _init_weights_registers(self, registers: tuple[Register, Register], values: tuple[int, int], program: Program):
         """Initialize the weights `registers` to the `values` specified and place the required instructions in the
@@ -372,15 +412,18 @@ class QbloxModule(AWG):
 
     @abstractmethod
     def _append_acquire_instruction(
-        self, loop: Loop, bin_index: Register | int, sequencer_id: int, weight_regs: tuple[Register, Register], acq_index: int=0
+        self,
+        loop: Loop,
+        bin_index: Register | int,
+        sequencer_id: int,
+        weight_regs: tuple[Register, Register],
+        acq_index: int = 0,
     ):
         """Append an acquire instruction to the loop."""
 
-
     @abstractmethod
     def _set_active_reset_triggers(self, sequencer):
-        """Enables triggers for all QRM sequencers. Used for active reset
-        """
+        """Enables triggers for all QRM sequencers. Used for active reset"""
 
     def start_sequencer(self, port: str):
         """Start sequencer and execute the uploaded instructions."""
@@ -622,7 +665,7 @@ class QbloxModule(AWG):
             if (seq_idx := sequencer.identifier) in self.sequences:
                 sequence, uploaded = self.sequences[seq_idx]
                 self.device.sequencers[seq_idx].sync_en(True)
-                
+
                 # TODO: temporal test
                 try:
                     self.device.sequencers[seq_idx].thresholded_acq_trigger_en(True)
@@ -631,7 +674,7 @@ class QbloxModule(AWG):
                 except AttributeError as e:
                     # print(e)
                     pass
-                
+
                 if not uploaded:
                     logger.info("Sequence program: \n %s", repr(sequence._program))  # pylint: disable=protected-access
                     self.device.sequencers[seq_idx].sequence(sequence.todict())

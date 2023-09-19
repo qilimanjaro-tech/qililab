@@ -216,13 +216,11 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         self.device.sequencers[sequencer_id].integration_length_acq(value)
 
     def _set_active_reset_triggers(self, sequencer):
-        """Enables triggers for all QRM sequencers. Used for active reset
-        """
+        """Enables triggers for all QRM sequencers. Used for active reset"""
         for sequencer in self.device.sequencers:
             sequencer.thresholded_acq_trigger_en(True)
             sequencer.thresholded_acq_trigger_address(sequencer._seq_idx + 1)
             sequencer.thresholded_acq_trigger_invert(False)
-
 
     def _set_device_scope_hardware_averaging(self, value: bool, sequencer_id: int):
         """set scope_hardware_averaging for the specific channel
@@ -248,7 +246,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             sequencer_id (int): sequencer to update the value
         """
         # integer_value = int(value * self._get_sequencer_by_id(id=sequencer_id).used_integration_length)
-        integer_value =value * self._get_sequencer_by_id(id=sequencer_id).used_integration_length
+        integer_value = value * self._get_sequencer_by_id(id=sequencer_id).used_integration_length
         self.device.sequencers[sequencer_id].thresholded_acq_threshold(integer_value)
 
     def _set_device_threshold_rotation(self, value: float, sequencer_id: int):
@@ -300,10 +298,16 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
 
     def _append_acquire_instruction(
-        self, loop: Loop, bin_index: Register | int, sequencer_id: int, weight_regs: tuple[Register, Register],acq_index: int=0
+        self,
+        loop: Loop,
+        bin_index: Register | int,
+        sequencer_id: int,
+        weight_regs: tuple[Register, Register],
+        acq_index: int = 0,
     ):
         """Append an acquire instruction to the loop."""
         weighed_acq = self._get_sequencer_by_id(id=sequencer_id).weighed_acq_enabled
+        integration_length = self.integration_length(sequencer_id=sequencer_id)
 
         acq_instruction = (
             AcquireWeighed(
@@ -311,10 +315,10 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 bin_index=bin_index,
                 weight_index_0=weight_regs[0],
                 weight_index_1=weight_regs[1],
-                wait_time=self._MIN_WAIT_TIME,
+                wait_time=integration_length,
             )
             if weighed_acq
-            else Acquire(acq_index=acq_index, bin_index=bin_index, wait_time=self._MIN_WAIT_TIME)
+            else Acquire(acq_index=acq_index, bin_index=bin_index, wait_time=integration_length)
         )
         loop.append_component(acq_instruction)
 

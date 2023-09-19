@@ -24,7 +24,6 @@ from qibo.gates import M
 from qibo.models import Circuit
 from qiboconnection.api import API
 
-from qililab.transpiler.native_gates import Drag # FIXME: avoid circular import problems
 from qililab.chip import Chip
 from qililab.config import logger
 from qililab.constants import GATE_ALIAS_REGEX, RUNCARD
@@ -37,6 +36,7 @@ from qililab.pulse import PulseSchedule
 from qililab.result import Result
 from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
+from qililab.transpiler.native_gates import Drag  # FIXME: avoid circular import problems
 from qililab.typings.enums import Line, Parameter
 from qililab.typings.yaml_type import yaml
 
@@ -408,10 +408,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         # FIXME: perhaps not the best way to do this, but we do not have(?) a "qblox" flag in qblox instruments
         if self.gates_settings.active_reset is True:
             for instrument in self.instruments.elements:
-                if ("awg_sequencers" in instrument.to_dict()):
+                if "awg_sequencers" in instrument.to_dict():
                     instrument.settings.active_reset = True
-                    
-                    
+
         # Compile pulse schedule
         programs = self.compile(program, num_avg, repetition_duration, num_bins)
 
