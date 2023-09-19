@@ -4,6 +4,12 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- build_platform() has been extended: [#533](https://github.com/qilimanjaro-tech/qililab/pull/533)
+
+  Now appart from passing the runcard YAML file path, you can directly pass an already build dictionary.
+
+  Also the argument has changed names from `path` to `runcard`.
+
 - Buses serialization have been implemented: [#515](https://github.com/qilimanjaro-tech/qililab/pull/515)
 
   When printing the runcard, in the buses part we will now have the normal Buses serialization, plus the parameters of the instruments associated to that bus, with the `to_dict/from_dict` methods.\`
@@ -307,3 +313,6 @@ This document contains the changes of the current release.
 ### Documentation
 
 ### Bug fixes
+
+- The `threshold` and `threshold_rotation` parameters of a `QbloxQRM` can now be set using `Platform.set_parameter`.
+  [#534](https://github.com/qilimanjaro-tech/qililab/pull/534)
