@@ -1,5 +1,4 @@
-{{ fullname | replace("qililab", "ql") }}
-{{ underline }}
+{{ objname | escape | underline }}
 
 .. currentmodule:: {{ module }}
 
