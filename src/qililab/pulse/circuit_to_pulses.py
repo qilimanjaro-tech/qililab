@@ -204,9 +204,9 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
             [
                 target.qubit_index
                 for schedule_element in schedule
-                for target in self.platform._get_bus_by_alias(
+                for target in self.platform._get_bus_by_alias(  # pylint: disable=protected-access
                     schedule_element.bus
-                ).targets  # pylint: disable=protected-access
+                ).targets
                 if isinstance(target, Qubit)
             ]
             if schedule is not None
