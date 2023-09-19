@@ -48,9 +48,9 @@ class SNZ(PulseShape):
         t_phi (int): Time at `height = 0`, in the middle of the positive and negative rectangular pulses.
     """
 
-    name = PulseShapeName.SNZ #: Name of the snz pulse shape.
-    b: float #: Instant stops height.
-    t_phi: int #: Time at `height = 0`.
+    name = PulseShapeName.SNZ  #: Name of the snz pulse shape.
+    b: float  #: Instant stops height.
+    t_phi: int  #: Time at `height = 0`.
 
     def __post_init__(self):
         # ensure t_phi is an int

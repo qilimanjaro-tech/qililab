@@ -220,15 +220,15 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
     ) -> PulseEvent:
         """Translates a gate element into a pulse.
 
-                Args:
-                    time (dict[int, int]): dictionary containing qubit indices as keys and current time (ns) as values
-                    gate (gate): circuit gate. This is used only to know the qubit target of measurement gates
-                    gate_event (GateEventSettings): gate event, a single element of a gate schedule containing information
-                    about the pulse to be applied
-                    bus (bus): bus through which the pulse is sent
+        Args:
+            time (dict[int, int]): dictionary containing qubit indices as keys and current time (ns) as values
+            gate (gate): circuit gate. This is used only to know the qubit target of measurement gates
+            gate_event (GateEventSettings): gate event, a single element of a gate schedule containing information
+            about the pulse to be applied
+            bus (bus): bus through which the pulse is sent
 
-                Returns:
-                    PulseEvent: pulse event corresponding to the input gate event
+        Returns:
+            PulseEvent: pulse event corresponding to the input gate event
         """
 
         # copy to avoid modifying runcard settings
