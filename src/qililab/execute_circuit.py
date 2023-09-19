@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Execute function used to execute a qibo Circuit using the given runcard."""
 from qibo.models import Circuit
 
@@ -48,7 +62,7 @@ def execute(circuit: Circuit, platform_path: str, nshots: int = 1):
     circuit = translate_circuit(circuit, optimize=True)
 
     # create platform
-    platform = build_platform(path=platform_path)
+    platform = build_platform(runcard=platform_path)
 
     settings = ExperimentSettings(hardware_average=1, repetition_duration=200000, software_average=1, num_bins=nshots)
     options = ExperimentOptions(settings=settings)
