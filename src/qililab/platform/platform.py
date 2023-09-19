@@ -57,7 +57,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         This class should be instantiated with the :meth:`qililab.build_platform()` function, by passing a serialized platform (runcard) dictionary
         or a path to the location of the YAML file containing it.
 
-        You can find more information about the runcard structure, in the documentation :any:`Runcards` section.
+        You can find more information about the runcard structure, in the documentation :ref:`Runcards <runcards>` section.
 
     When you have an initilized :class:`Platform`, the typical first three steps (which normally only need to be done at the start) are:
 
@@ -79,7 +79,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         .. note::
 
-            All the following examples are explained in detail in the :any:`.Platform` section of the documentation. But a few thing to keep in mind:
+            All the following examples are explained in detail in the :ref:`Platform <platform>` section of the documentation. But a few thing to keep in mind:
 
             - In order to connect you need to have access to the IP’s addresses provided in the serialized platform (runcard), and connection is necessary for the next steps of the examples.
 

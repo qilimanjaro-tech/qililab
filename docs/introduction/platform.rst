@@ -1,5 +1,8 @@
+.. _platform:
+
 Platform
 =========
+
 The platform represents the laboratory setup used to control the quantum devices.
 
 The :class:`.Platform` object is the responsible for managing the initializations, connections, setups, and executions of the laboratory, which mainly consists of:
@@ -28,7 +31,7 @@ Building and printing a Platform:
 
     .. note::
 
-        You can find more information about the actual structure of such dictionary, in the :any:`Runcards` section of the documentation.
+        You can find more information about the actual structure of such dictionary, in the :ref:`Runcards <runcards>` section of the documentation.
 
     You can see if the platform has been set correctly printing the platform ``name``, or the ``chip`` and ``buses`` structure at any moment:
 

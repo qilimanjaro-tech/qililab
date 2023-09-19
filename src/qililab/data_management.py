@@ -195,7 +195,7 @@ def build_platform(
 
     .. note::
 
-        You can find more information about the complete structure of such dictionary, in the :any:`Runcards` section of the documentation.
+        You can find more information about the complete structure of such dictionary, in the :ref:`Runcards <runcards>` section of the documentation.
 
     Args:
         path (str): Path to the platform's runcard YAML file. This argument is deprecated and will be removed soon.
