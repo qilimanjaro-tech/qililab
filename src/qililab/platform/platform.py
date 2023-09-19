@@ -362,12 +362,12 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         if element is None:
             element = self.instrument_controllers.get_instrument_controller(alias=alias)
         if element is None:
-            element = self.get_bus_by_alias(alias=alias)
+            element = self._get_bus_by_alias(alias=alias)
         if element is None:
             element = self.chip.get_node_from_alias(alias=alias)
         return element
 
-    def get_bus_by_qubit_index(self, qubit_index: int) -> tuple[Bus, Bus, Bus]:
+    def _get_bus_by_qubit_index(self, qubit_index: int) -> tuple[Bus, Bus, Bus]:
         """Find buses associated with the given qubit index.
 
         Args:
@@ -389,7 +389,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             )
         return flux_bus, control_bus, readout_bus
 
-    def get_bus_by_alias(self, alias: str | None = None):
+    def _get_bus_by_alias(self, alias: str | None = None):
         """Get bus given its alias.
 
         Args:
@@ -528,12 +528,12 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         # Upload pulse schedule
         for bus_alias in programs:
-            bus = self.get_bus_by_alias(alias=bus_alias)
+            bus = self._get_bus_by_alias(alias=bus_alias)
             bus.upload()
 
         # Execute pulse schedule
         for bus_alias in programs:
-            bus = self.get_bus_by_alias(alias=bus_alias)
+            bus = self._get_bus_by_alias(alias=bus_alias)
             bus.run()
 
         # Acquire results

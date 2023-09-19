@@ -116,7 +116,7 @@ class TestPlatform:
 
     def test_get_bus_by_qubit_index(self, platform: Platform):
         """Test get_bus_by_qubit_index method."""
-        _, control_bus, readout_bus = platform.get_bus_by_qubit_index(0)
+        _, control_bus, readout_bus = platform._get_bus_by_qubit_index(0)
         assert isinstance(control_bus, Bus)
         assert isinstance(readout_bus, Bus)
         assert not isinstance(control_bus.system_control, ReadoutSystemControl)
@@ -130,13 +130,13 @@ class TestPlatform:
             ValueError,
             match="There can only be one bus connected to a port. There are 0 buses connected to port drive_q0",
         ):
-            platform.get_bus_by_qubit_index(0)
+            platform._get_bus_by_qubit_index(0)
         platform.buses[0].settings.port = 0  # Setting it back to normal to not disrupt future tests
 
     @pytest.mark.parametrize("alias", ["drive_line_bus", "feedline_input_output_bus", "foobar"])
     def test_get_bus_by_alias(self, platform: Platform, alias):
         """Test get_bus_by_alias method"""
-        bus = platform.get_bus_by_alias(alias)
+        bus = platform._get_bus_by_alias(alias)
         if alias == "foobar":
             assert bus is None
         if bus is not None:
