@@ -226,7 +226,7 @@ class QbloxModule(AWG):
         """
 
         # Define program's blocks
-        program = Program() # TODO: remove first wait sync if active reset
+        program = Program()  # TODO: remove first wait sync if active reset
         # Create registers with 0 and 1 (necessary for qblox)
         weight_registers = Register(), Register()
         self._init_weights_registers(registers=weight_registers, values=(0, 1), program=program)
@@ -318,10 +318,10 @@ class QbloxModule(AWG):
                 Play(
                     waveform_0=waveform_pair.waveform_i.index,
                     waveform_1=waveform_pair.waveform_q.index,
-                    wait_time=4, # TODO: check if we have readout delay (instead of TOF)
+                    wait_time=4,  # TODO: check if we have readout delay (instead of TOF)
                 )
             )
-            self._append_acquire_instruction( #TODO: add integration length to wait after acquisition - done
+            self._append_acquire_instruction(  # TODO: add integration length to wait after acquisition - done
                 loop=act_rst,
                 bin_index=bin_loop.counter_register,
                 sequencer_id=sequencer,
@@ -334,7 +334,6 @@ class QbloxModule(AWG):
             rst_pulse_time = pulse_event.duration
             for pulse_event in pulse_bus_schedule.timeline:
                 pulse_event.start_time = pulse_event.start_time - rst_pulse_time
-            
 
         elif "drive" in pulse_bus_schedule.port:
             act_rst.append_component(WaitSync(4))
@@ -348,10 +347,12 @@ class QbloxModule(AWG):
             # wait total of M pulse lenght + tof + integration length
             wait_time = pulse_event.start_time
             integration_length = self.device.sequencers[sequencer].integration_length_acq()
-            act_rst.append_component(long_wait(wait_time + integration_length))  # wait for duration of measurement pulse + integration length
+            act_rst.append_component(
+                long_wait(wait_time + integration_length)
+            )  # wait for duration of measurement pulse + integration length
 
-            #Reset the trigger network address counters, then wait on trigger address
-            act_rst.append_component(LatchRst(300)) # FIXME: 300 is to account for time of flight
+            # Reset the trigger network address counters, then wait on trigger address
+            act_rst.append_component(LatchRst(300))  # FIXME: 300 is to account for time of flight
             act_rst.append_component(WaitSync(4))
 
             # trigger address conditional is 2^sequencer
@@ -383,7 +384,9 @@ class QbloxModule(AWG):
             # pass
             # act_rst.append_component(WaitSync(1000))
 
-        act_rst.append_component(WaitSync(4)) #TODO: we dont need this wait sync if times are calculated properly (and possibly don't need the one right above either)
+        act_rst.append_component(
+            WaitSync(4)
+        )  # TODO: we dont need this wait sync if times are calculated properly (and possibly don't need the one right above either)
 
     def _init_weights_registers(self, registers: tuple[Register, Register], values: tuple[int, int], program: Program):
         """Initialize the weights `registers` to the `values` specified and place the required instructions in the
