@@ -4,6 +4,10 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Documentation for the Pulse module: [#532](https://github.com/qilimanjaro-tech/qililab/pull/532)
+
+  Includes documentation for all public features of the Pulse module
+
 - Buses serialization have been implemented: [#515](https://github.com/qilimanjaro-tech/qililab/pull/515)
 
   When printing the runcard, in the buses part we will now have the normal Buses serialization, plus the parameters of the instruments associated to that bus, with the `to_dict/from_dict` methods.\`
