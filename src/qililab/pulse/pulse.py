@@ -50,7 +50,7 @@ class Pulse:
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "Pulse":
-        """Load Pulse object from dictionary.
+        """Loads Pulse object from dictionary.
 
         Args:
             dictionary (dict): Dictionary representation of the Pulse object.
@@ -67,7 +67,7 @@ class Pulse:
         return cls(**local_dictionary)
 
     def to_dict(self):
-        """Return dictionary of pulse.
+        """Returns dictionary of pulse.
 
         Returns:
             dict: Dictionary describing the pulse.
@@ -81,5 +81,5 @@ class Pulse:
         }
 
     def label(self) -> str:
-        """Return short string representation of the Pulse object."""
+        """Returns short string representation of the Pulse object."""
         return f"{str(self.pulse_shape)} - {self.duration}ns"

@@ -102,7 +102,7 @@ class PulseDistortion(FactoryElement):
 
     @abstractmethod
     def apply(self, envelope: np.ndarray) -> np.ndarray:
-        """Method for applying the distortion to the given envelope.
+        """Applies the distortion to the given envelope.
 
         Args:
             envelope (np.ndarray): Original pulse envelope to be distorted.
@@ -113,7 +113,7 @@ class PulseDistortion(FactoryElement):
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "PulseDistortion":
-        """Load PulseDistortion object from dictionary.
+        """Loads PulseDistortion object from dictionary.
 
         Args:
             dictionary (dict): Dictionary representation of the PulseDistortion object.
@@ -126,7 +126,7 @@ class PulseDistortion(FactoryElement):
 
     @abstractmethod
     def to_dict(self) -> dict:
-        """Return dictionary of PulseDistortion.
+        """Returns dictionary of PulseDistortion.
 
         Returns:
             dict: Dictionary describing the pulse distortion.

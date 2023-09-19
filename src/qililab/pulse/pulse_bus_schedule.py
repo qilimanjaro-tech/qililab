@@ -35,7 +35,7 @@ class PulseBusSchedule:
         timeline (list[PulseEvent]): List of :class:`PulseEvent` objects the PulseBusSchedule is composed of.
 
     Examples:
-        We can create a PulseBusSchedule targeting a bus or port in our chip by doing:
+        You can create a PulseBusSchedule targeting a bus or port in our chip by doing:
 
         .. code-block:: python3
 
@@ -56,7 +56,7 @@ class PulseBusSchedule:
                 port="drive_q0"
             )
 
-        We can add further pulse events to an already created PulseBusSchedule. To do so:
+        You can add further pulse events to an already created PulseBusSchedule. To do so:
 
         .. code-block:: python3
 
@@ -98,14 +98,14 @@ class PulseBusSchedule:
     _pulses: set[Pulse] = field(init=False, default_factory=set)
 
     def __post_init__(self):
-        """Sort timeline and add used pulses to the pulses set if timeline is not empty."""
+        """Sorts timeline and add used pulses to the pulses set if timeline is not empty."""
         if self.timeline:
             self.timeline.sort()
             for pulse_event in self.timeline:
                 self._pulses.add(pulse_event.pulse)
 
     def add_event(self, pulse_event: PulseEvent):
-        """Add pulse event to sequence.
+        """Adds pulse event to sequence.
 
         Args:
             pulse_event (PulseEvent): :class:`PulseEvent` object.
@@ -173,7 +173,7 @@ class PulseBusSchedule:
         return qubits.pop()
 
     def __iter__(self):
-        """Redirect __iter__ magic method."""
+        """Redirects __iter__ magic method."""
         return self.timeline.__iter__()
 
     def waveforms(self, resolution: float = 1.0, modulation: bool = True) -> Waveforms:
@@ -204,7 +204,7 @@ class PulseBusSchedule:
         return waveforms
 
     def qubit_schedules(self) -> list[PulseBusSchedule]:
-        """This method separates all the :class:`PulseEvent` objects that act on different qubits, and returns a list
+        """Separates all the :class:`PulseEvent` objects that act on different qubits, and returns a list
         of PulseBusSchedule objects, each one acting on a single qubit.
 
         Returns:
@@ -220,7 +220,7 @@ class PulseBusSchedule:
         return schedules
 
     def to_dict(self):
-        """Return dictionary representation of the class.
+        """Returns dictionary representation of the class.
 
         Returns:
             dict: Dictionary representation of the class.
@@ -232,7 +232,7 @@ class PulseBusSchedule:
 
     @classmethod
     def from_dict(cls, dictionary: dict):
-        """Load PulseBusSchedule object from dictionary.
+        """Loads PulseBusSchedule object from dictionary.
 
         Args:
             dictionary (dict): Dictionary representation of the PulseBusSchedule object.

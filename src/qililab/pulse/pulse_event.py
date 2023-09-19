@@ -102,7 +102,7 @@ class PulseEvent:
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "PulseEvent":
-        """Load PulseEvent object from dictionary.
+        """Loads PulseEvent object from dictionary.
 
         Args:
             dictionary (dict): Dictionary representation of the PulseEvent object.
@@ -127,7 +127,7 @@ class PulseEvent:
         return cls(**local_dictionary)
 
     def to_dict(self) -> dict:
-        """Return dictionary of pulse.
+        """Returns dictionary of pulse.
 
         Returns:
             dict: Dictionary describing the pulse.

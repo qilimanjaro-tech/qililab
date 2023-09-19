@@ -33,7 +33,7 @@ class LFilterCorrection(PulseDistortion):
 
     Filters data along one-dimension with an IIR or FIR filter.
 
-    Filter a data sequence, `x`, using a digital filter.  This works for many
+    Filters a data sequence, `x`, using a digital filter.  This works for many
     fundamental data types (including Object type).  The filter is a direct
     form II transposed implementation of the standard difference equation
     (see Notes).
@@ -112,7 +112,7 @@ class LFilterCorrection(PulseDistortion):
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "LFilterCorrection":
-        """Load LFilterCorrection object from dictionary.
+        """Loads LFilterCorrection object from dictionary.
 
         Args:
             dictionary (dict): Dictionary representation of the LFilterCorrection object.
@@ -125,7 +125,7 @@ class LFilterCorrection(PulseDistortion):
         return cls(**local_dictionary)
 
     def to_dict(self) -> dict:
-        """Return dictionary representation of the distortion.
+        """Returns dictionary representation of the distortion.
 
         Returns:
             dict: Dictionary.

@@ -43,11 +43,11 @@ class BiasTeeCorrection(PulseDistortion):
             (The max height is the furthest number from 0 in the envelope, only checking the real axis/part). Defaults to True.
 
     Returns:
-        PulseDistortion: Distortion to apply to given envelopes in PulseEvent.
+        PulseDistortion: Distortion to apply to given envelopes in :class:`PulseEvent`.
 
     Examples:
 
-        Imagine you want to distort a `Rectangular` envelope with a `BiasTeeCorrection`. You could do:
+        Imagine you want to distort a :class:`Rectangular` envelope with a BiasTeeCorrection. You could do:
 
         >>> from qililab.pulse import Rectangular, BiasTeeCorrection
         >>> envelope = Rectangular().envelope(duration=50, amplitude=1.0)

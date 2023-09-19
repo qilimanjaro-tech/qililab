@@ -83,7 +83,7 @@ class Drag(PulseShape):
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "Drag":
-        """Load Drag object/shape from dictionary.
+        """Loads Drag object/shape from dictionary.
 
         Args:
             dictionary (dict): Dictionary representation of the Drag object/shape.
@@ -96,7 +96,7 @@ class Drag(PulseShape):
         return cls(**local_dictionary)
 
     def to_dict(self):
-        """Return dictionary representation of the Drag object/shape.
+        """Returns dictionary representation of the Drag object/shape.
 
         Returns:
             dict: Dictionary.

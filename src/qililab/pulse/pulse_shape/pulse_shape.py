@@ -35,7 +35,7 @@ class PulseShape(FactoryElement):
 
     @abstractmethod
     def envelope(self, duration: int, amplitude: float, resolution: float) -> np.ndarray:
-        """Compute the amplitudes of the pulse shape envelope.
+        """Computes the amplitudes of the pulse shape envelope.
 
         Args:
             duration (int): Duration of the pulse (ns).
@@ -47,7 +47,7 @@ class PulseShape(FactoryElement):
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "PulseShape":
-        """Return dictionary representation of the pulse shape.
+        """Returns dictionary representation of the pulse shape.
 
         Args:
             dictionary (dict): Dictionary representation of the PulseShape object.
@@ -60,7 +60,7 @@ class PulseShape(FactoryElement):
 
     @abstractmethod
     def to_dict(self) -> dict:
-        """Return dictionary representation of the pulse shape.
+        """Returns dictionary representation of the pulse shape.
 
         Returns:
             dict: Dictionary.

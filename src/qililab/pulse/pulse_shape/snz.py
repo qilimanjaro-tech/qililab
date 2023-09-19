@@ -92,7 +92,7 @@ class SNZ(PulseShape):
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "SNZ":
-        """Load SNZ object/shape from dictionary.
+        """Loads SNZ object/shape from dictionary.
 
         Args:
             dictionary (dict): Dictionary representation of the SNZ object/shape.
@@ -105,7 +105,7 @@ class SNZ(PulseShape):
         return cls(**local_dictionary)
 
     def to_dict(self):
-        """Return dictionary representation of the Rectangular object/shape.
+        """Returns dictionary representation of the Rectangular object/shape.
 
         Returns:
             dict: Dictionary.

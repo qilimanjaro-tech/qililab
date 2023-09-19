@@ -66,7 +66,7 @@ class Cosine(PulseShape):
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "Cosine":
-        """Load Cosine object/shape from dictionary.
+        """Loads Cosine object/shape from dictionary.
 
         Args:
             dictionary (dict): Dictionary representation of the Cosine object/shape.
@@ -79,7 +79,7 @@ class Cosine(PulseShape):
         return cls(**local_dictionary)
 
     def to_dict(self):
-        """Return dictionary representation of the Cosine object/shape.
+        """Returns dictionary representation of the Cosine object/shape.
 
         Returns:
             dict: Dictionary.

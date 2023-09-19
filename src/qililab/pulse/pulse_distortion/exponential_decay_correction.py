@@ -50,7 +50,7 @@ class ExponentialCorrection(PulseDistortion):
 
     Examples:
 
-        Imagine you want to distort a `Rectangular` envelope with an `ExponentialCorrection`. You could do:
+        Imagine you want to distort a :class:`Rectangular` envelope with an `ExponentialCorrection`. You could do:
 
         >>> from qililab.pulse import Rectangular, BiasTeeCorrection
         >>> envelope = Rectangular().envelope(duration=50, amplitude=1.0)
@@ -116,7 +116,7 @@ class ExponentialCorrection(PulseDistortion):
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "ExponentialCorrection":
-        """Load ExponentialCorrection object from dictionary.
+        """Loads ExponentialCorrection object from dictionary.
 
         Args:
             dictionary (dict): Dictionary representation of the ExponentialCorrection object.
@@ -129,7 +129,7 @@ class ExponentialCorrection(PulseDistortion):
         return cls(**local_dictionary)
 
     def to_dict(self) -> dict:
-        """Return dictionary representation of the distortion.
+        """Returns dictionary representation of the distortion.
 
         Returns:
             dict: Dictionary.

@@ -32,7 +32,7 @@ class PulseSchedule:
         elements (list[PulseBusSchedule]): List of :class:`PulseBusSchedule`.
 
     Examples:
-        Imagine we want to create a PulseSchedule instance that will contain two :class:`PulseBusSchedule` objects, one for driving a qubit
+        Imagine you want to create a PulseSchedule instance that will contain two :class:`PulseBusSchedule` objects, one for driving a qubit
         and the other one to do readout on the same qubit.
 
         To do so
@@ -74,11 +74,11 @@ class PulseSchedule:
 
             pulse_schedule = PulseSchedule(list_pulse_bus_schedules)
 
-        We can also create a pulse schedule by creating an instance of PulseSchedule class, with no pulse bus schedules passed
+        You can also create a pulse schedule by creating an instance of PulseSchedule class, with no pulse bus schedules passed
         as arguments, and dynamically adding pulses to the PulseSchedule class, which will then create a :class:`PulseBusSchedule` for
         each bus the pulses will be using.
 
-        To do so, we can first create an instance of the PulseSchedule class, create each of the two pulses by creating two
+        To do so, you can first create an instance of the PulseSchedule class, create each of the two pulses by creating two
         instances of the Pulse class, and then use the `add_event()` method of the PulseSchedule class to add the two pulses, wrapped
         by :class:`PulseEvent` class, to the schedule:
 
@@ -109,7 +109,7 @@ class PulseSchedule:
                 port_delay=0
             )
 
-        It is possible to serialize a PulseSchedule object as a dictionary. To do so we can use the `to_dict()` method:
+        It is possible to serialize a PulseSchedule object as a dictionary. To do so you can use the `to_dict()` method:
 
         .. code-block:: python3
 
@@ -141,7 +141,7 @@ class PulseSchedule:
             pulse_schedule_dict = pulse_schedule.to_dict()
 
         It is also possible to create a PulseSchedule object from a dictionary that contains the serialized description of the
-        object. To do so we can use the `from_dict()` method:
+        object. To do so you can use the `from_dict()` method:
 
         .. code-block:: python3
 
@@ -178,7 +178,7 @@ class PulseSchedule:
     elements: list[PulseBusSchedule] = field(default_factory=list)  #: List of pulse bus schedules.
 
     def add_event(self, pulse_event: PulseEvent, port: str, port_delay: int):
-        """Add pulse event to the list of pulse bus schedules.
+        """Adds pulse event to the list of pulse bus schedules.
 
         This functions receives a :class:`PulseEvent` object, a port (targetting a bus) and a port delay parameter, and checks whether
         there is already a PulseBusSchedule for the given port, adding the pulse event to the :class:`PulseBusSchedule`. If there is not
@@ -210,7 +210,7 @@ class PulseSchedule:
             self.elements.append(PulseBusSchedule(port=port))
 
     def to_dict(self):
-        """Return dictionary representation of the class.
+        """Returns dictionary representation of the class.
 
         Returns:
             dict: Dictionary representation of the class.
@@ -219,7 +219,7 @@ class PulseSchedule:
 
     @classmethod
     def from_dict(cls, dictionary: dict):
-        """Build PulseSequence instance from dictionary.
+        """Builds PulseSequence instance from dictionary.
 
         Args:
             dictionary (dict): Dictionary description of the class.
@@ -232,9 +232,9 @@ class PulseSchedule:
         return PulseSchedule(elements=elements)
 
     def __iter__(self):
-        """Redirect __iter__ magic method to elements."""
+        """Redirects __iter__ magic method to elements."""
         return self.elements.__iter__()
 
     def __len__(self):
-        """Redirect __len__ magic method to elements."""
+        """Redirects __len__ magic method to elements."""
         return len(self.elements)
