@@ -247,7 +247,8 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """
         # integer_value = int(value * self._get_sequencer_by_id(id=sequencer_id).used_integration_length)
         integer_value = value * self._get_sequencer_by_id(id=sequencer_id).used_integration_length
-        self.device.sequencers[sequencer_id].thresholded_acq_threshold(integer_value)
+        # min value -16777211
+        self.device.sequencers[sequencer_id].thresholded_acq_threshold(-16777211)
 
     def _set_device_threshold_rotation(self, value: float, sequencer_id: int):
         """Sets the threshold rotation for classification at the specific channel.

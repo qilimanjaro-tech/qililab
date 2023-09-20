@@ -328,12 +328,11 @@ class QbloxModule(AWG):
                 weight_regs=weight_registers,
                 acq_index=1,
             )
-            act_rst.append_component(WaitSync(4))
 
             pulse_bus_schedule.timeline = pulse_bus_schedule.timeline[1:]  # erase event from timeline
-            rst_pulse_time = pulse_event.duration
-            for pulse_event in pulse_bus_schedule.timeline:
-                pulse_event.start_time = pulse_event.start_time - rst_pulse_time
+            # rst_pulse_time = pulse_event.duration #FIXME: this doesnt work because we are only substracting the M pulse duration and the X for drive (below). We should substract the whole rst duration
+            # for pulse_event in pulse_bus_schedule.timeline:
+            #     pulse_event.start_time = pulse_event.start_time - rst_pulse_time
 
         elif "drive" in pulse_bus_schedule.port:
             act_rst.append_component(WaitSync(4))
@@ -344,16 +343,14 @@ class QbloxModule(AWG):
             # Conditional X pulses for active reset run after measurement
             # active reset sequence 1
             act_rst.append_component(SetLatchEn(1, 4))  # latch any trigger
+            # Reset the trigger network address counters, then wait on trigger address
+            act_rst.append_component(LatchRst(300))  # FIXME: 300 is to account for time of flight
             # wait total of M pulse lenght + tof + integration length
+            integration_length = 2000  # TODO: hardcoded integration length
             wait_time = pulse_event.start_time
-            integration_length = self.device.sequencers[sequencer].integration_length_acq()
             act_rst.append_component(
                 long_wait(wait_time + integration_length)
             )  # wait for duration of measurement pulse + integration length
-
-            # Reset the trigger network address counters, then wait on trigger address
-            act_rst.append_component(LatchRst(300))  # FIXME: 300 is to account for time of flight
-            act_rst.append_component(WaitSync(4))
 
             # trigger address conditional is 2^sequencer
             act_rst.append_component(SetCond(1, 1, 0, pulse_event.duration))
@@ -373,20 +370,20 @@ class QbloxModule(AWG):
             act_rst.append_component(SetCond(0, 1, 0, 4))
 
             pulse_bus_schedule.timeline = pulse_bus_schedule.timeline[1:]  # erase event from timeline
-            rst_pulse_time = pulse_event.duration
-            for pulse_event in pulse_bus_schedule.timeline:
-                pulse_event.start_time = pulse_event.start_time - rst_pulse_time
+            # rst_pulse_time = pulse_event.duration
+            # for pulse_event in pulse_bus_schedule.timeline:
+            #     pulse_event.start_time = pulse_event.start_time - rst_pulse_time
 
         else:  # compensate wait syncs for other ports
             act_rst.append_component(WaitSync(4))
 
-            act_rst.append_component(WaitSync(4))
             # pass
             # act_rst.append_component(WaitSync(1000))
 
         act_rst.append_component(
             WaitSync(4)
         )  # TODO: we dont need this wait sync if times are calculated properly (and possibly don't need the one right above either)
+        act_rst.append_component(long_wait(10000))
 
     def _init_weights_registers(self, registers: tuple[Register, Register], values: tuple[int, int], program: Program):
         """Initialize the weights `registers` to the `values` specified and place the required instructions in the
@@ -673,7 +670,6 @@ class QbloxModule(AWG):
                 try:
                     self.device.sequencers[seq_idx].thresholded_acq_trigger_en(True)
                     self.device.sequencers[seq_idx].thresholded_acq_trigger_address(1)
-                    self.device.sequencers[seq_idx].thresholded_acq_trigger_invert(False)
                 except AttributeError as e:
                     # print(e)
                     pass
