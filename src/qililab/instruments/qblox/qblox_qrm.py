@@ -242,13 +242,12 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """Sets the threshold for classification at the specific channel.
 
         Args:
-            value (float): Normalized threshold value (-1.0 to 1.0)
+            value (float): Normalized threshold value (-1.0 to 1.0) # FIXME: update docstring
             sequencer_id (int): sequencer to update the value
         """
-        # integer_value = int(value * self._get_sequencer_by_id(id=sequencer_id).used_integration_length)
-        integer_value = value * self._get_sequencer_by_id(id=sequencer_id).used_integration_length
+        integrated_value = value * self._get_sequencer_by_id(id=sequencer_id).used_integration_length
         # min value -16777211
-        self.device.sequencers[sequencer_id].thresholded_acq_threshold(-16777211)
+        self.device.sequencers[sequencer_id].thresholded_acq_threshold(integrated_value)
 
     def _set_device_threshold_rotation(self, value: float, sequencer_id: int):
         """Sets the threshold rotation for classification at the specific channel.
