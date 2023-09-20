@@ -26,8 +26,7 @@ from qililab.utils import Factory
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class Rectangular(PulseShape):
-    """Rectangular/square pulse shape.
-    """
+    """Rectangular/square pulse shape."""
 
     name = PulseShapeName.RECTANGULAR  #: Name of the rectangular pulse shape.
 
