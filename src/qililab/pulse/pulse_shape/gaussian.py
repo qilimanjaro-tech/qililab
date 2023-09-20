@@ -32,9 +32,6 @@ class Gaussian(PulseShape):
 
         Gaussian(x) = amplitude * exp(-0.5 * (x - mu)^2 / sigma^2)
 
-    Bases:
-        :class:`PulseShape`.
-
     Args:
         num_sigmas (float): Sigma number of the gaussian pulse shape.
     """

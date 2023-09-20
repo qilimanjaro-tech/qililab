@@ -40,9 +40,6 @@ class Cosine(PulseShape):
         - Supplemental material B. "Flux pulse parametrization": [https://arxiv.org/abs/1903.02492].
         - OPTIMAL SOLUTION: SMALL CHANGE IN θ: [https://arxiv.org/abs/1402.5467].
 
-    Bases:
-        :class:`PulseShape`.
-
     Args:
         lambda_2 (float, optional): Parameter for moving the function :math:`A/2*(1-\cos(x))` into :math:`A/2*(1-\lambda_1\cos(x)-\lambda_2\cos(2x))`
                     which fulfills the constrain: :math:`1=\lambda_1+\lambda_2`.

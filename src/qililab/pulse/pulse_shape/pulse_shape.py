@@ -26,9 +26,6 @@ from qililab.utils import Factory
 @dataclass(frozen=True, eq=True)
 class PulseShape(FactoryElement):
     """Pulse shape abstract base class.
-
-    Derived:
-        :class:`Rectangular`, :class:`Gaussian`, :class:`Drag`, :class:`Cosine` and :class:`SNZ`.
     """
 
     name: PulseShapeName = field(init=False)  #: Name of the pulse shape.
