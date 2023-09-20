@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Driver for the Drive Bus class."""
 from qililab.drivers.interfaces import AWG, Attenuator, Digitiser, LocalOscillator
 from qililab.platform.components.bus_driver import BusDriver
@@ -7,7 +21,20 @@ from qililab.result.qblox_results.qblox_result import QbloxResult
 
 @BusFactory.register
 class ReadoutBus(BusDriver):
-    """Qililab's driver for Readout Bus"""
+    """Qililab's driver for Readout Bus
+
+    Args:
+        alias: Bus alias.
+        port (int): Port to target.
+        awg (AWG): Sequencer.
+        digitiser (Digitiser): Arbitrary Wave Generator instance to acquire results.
+        local_oscillator (LocalOscillator | None): Local oscillator.
+        attenuator (Attenuator | None): Attenuator.
+        distortions (list): Distortions to apply in this Bus.
+
+    Returns:
+        BusDriver: BusDriver instance of type readout bus.
+    """
 
     def __init__(
         self,
@@ -17,18 +44,10 @@ class ReadoutBus(BusDriver):
         digitiser: Digitiser,
         local_oscillator: LocalOscillator | None,
         attenuator: Attenuator | None,
+        distortions: list,
     ):
-        """Initialise the bus.
-
-        Args:
-            alias (str): Bus alias
-            port (int): Port to target
-            awg (AWG): Arbitrary Wave Generator instance
-            digitiser (Digitiser): Arbitrary Wave Generator instance to acquire results
-            local_oscillator (LocalOscillator): Local Oscillator
-            attenuator (Attenuator): Attenuator
-        """
-        super().__init__(alias=alias, port=port, awg=awg)
+        """Initialise the bus."""
+        super().__init__(alias=alias, port=port, awg=awg, distortions=distortions)
         self._digitiser = digitiser
         self.instruments["digitiser"] = self._digitiser
         if local_oscillator:
