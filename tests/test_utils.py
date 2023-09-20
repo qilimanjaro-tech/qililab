@@ -128,7 +128,7 @@ def build_platform(runcard: dict) -> Platform:
     runcard = copy.deepcopy(runcard)
     with patch("qililab.data_management.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.data_management.open") as mock_open:
-            pl = ql.build_platform(path="_")
+            pl = ql.build_platform(runcard="_")
             mock_load.assert_called()
             mock_open.assert_called()
     return pl

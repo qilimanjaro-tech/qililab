@@ -89,6 +89,12 @@ class AWGAnalogDigitalConverter(AWG):
         if parameter == Parameter.SCOPE_STORE_ENABLED:
             self._set_scope_store_enabled(value=value, sequencer_id=channel_id)
             return
+        if parameter == Parameter.THRESHOLD:
+            self._set_threshold(value=value, sequencer_id=channel_id)
+            return
+        if parameter == Parameter.THRESHOLD_ROTATION:
+            self._set_threshold_rotation(value=value, sequencer_id=channel_id)
+            return
 
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
