@@ -312,7 +312,7 @@ This document contains the changes of the current release.
 
 ### Documentation
 
-- Added documentation for platform module and the tutorial sections of Platform and Runcards. (#531)\[https://github.com/qilimanjaro-tech/qililab/pull/531/files\]
+- Added documentation for platform module and the tutorial sections of Platform and Runcards: [#531](https://github.com/qilimanjaro-tech/qililab/pull/531/files)
 
 ### Bug fixes
 
