@@ -40,8 +40,8 @@ from qililab.qprogram.variable import Variable
 from qililab.waveforms import IQPair, Waveform
 
 
-class BusInfo:  # pylint: disable=too-many-instance-attributes, too-few-public-methods
-    """Class representing the information stored by QBloxCompiler for a bus."""
+class BusCompilationInfo:  # pylint: disable=too-many-instance-attributes, too-few-public-methods
+    """Class representing the information stored during compilation for a bus."""
 
     def __init__(self):
         # The generated Sequence
@@ -70,9 +70,32 @@ class BusInfo:  # pylint: disable=too-many-instance-attributes, too-few-public-m
 
 
 class QbloxCompiler:  # pylint: disable=too-few-public-methods
-    """A class for compiling QProgram to QBlox hardware."""
+    """Compiler for converting QProgram into hardware-executable sequences for QBlox's Quantum Control/Readout Modules (QCM/QRM).
 
-    minimum_wait_duration: int = 4
+    At the heart of QCM/QRM lies the Q1 Sequence Processor. Q1 Sequence Processors are programmed using sequence constructs which consist of 4 key parts: waveforms, weights, acquisitions, and a program. While QCM/QRM are expecting a string representation of these sequences, in Qililab the `Sequence <https://github.com/qilimanjaro-tech/qpysequence/blob/main/src/qpysequence/sequence.py>`_ class of `qpysequence <https://github.com/qilimanjaro-tech/qpysequence>`_ library is used.
+
+    Examples:
+
+        The following example illustrates how to compile a Rabi sequence for Qblox.
+
+        .. code-block:: python3
+
+            qp = QProgram()
+            amplitude = qp.variable(float)
+            drag = DRAG(amplitude=amplitude, duration=40, num_sigmas=4, drag_correction=1.2)
+            square_wf = Square(amplitude=1.0, duration=1000)
+            zeros_wf = Square(amplitude=0.0, duration=1000)
+            with qp.loop(variable=amplitude, values=np.arange(0, 1, 101)):
+                qp.play(bus="drive_bus", waveform=drag)
+                qp.sync()
+                qp.play(bus="readout_bus", waveform=IQPair(I=square_wf, Q=zeros_wf))
+                qp.acquire(bus="readout_bus")
+
+            qblox_compiler = QbloxCompiler()
+            sequences = qblox_compiler.compile(qprogram=qp)
+    """
+
+    _minimum_wait_duration: int = 4
 
     def __init__(self):
         # Handlers to map each operation to a corresponding handler function
@@ -93,16 +116,20 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         }
 
         self._qprogram: QProgram
-        self._buses: dict[str, BusInfo]
+        self._buses: dict[str, BusCompilationInfo]
 
     def compile(self, qprogram: QProgram) -> dict[str, QPy.Sequence]:
-        """Compile QProgram to qpysequence.Sequence
+        """Compile a :class:`QProgram` into sequences suitable for QBlox hardware.
+
+        This method manages the traversal of QProgram blocks, calling the appropriate handlers for each type of
+        operation or block. Post-processing steps include adding stop instructions and final compilation of the sequence.
 
         Args:
-            qprogram (QProgram): The QProgram to be compiled
+            qprogram (QProgram): The QProgram to be compiled.
 
         Returns:
-            dict[str, QPy.Sequence]: A dictionary with the buses participating in the QProgram as keys and the corresponding Sequence as values.
+            dict[str, Sequence]: A dictionary where keys are the bus names participating in the QProgram and the
+            values are the compiled sequences for each bus.
         """
 
         def traverse(block: Block):
@@ -152,7 +179,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                         yield bus
 
         buses = set(collect_buses(self._qprogram._program))
-        return {bus: BusInfo() for bus in buses}
+        return {bus: BusCompilationInfo() for bus in buses}
 
     def _append_to_waveforms_of_bus(self, bus: str, waveform_I: Waveform, waveform_Q: Waveform | None):
         """Append waveforms to Sequence's Waveforms of the given bus.
@@ -245,7 +272,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         for bus in self._buses:
             qpy_loop = QPyProgram.Loop(name=f"avg_{self._buses[bus].average_counter}", begin=element.shots)
             qpy_loop.append_component(
-                component=QPyInstructions.WaitSync(wait_time=QbloxCompiler.minimum_wait_duration),
+                component=QPyInstructions.WaitSync(wait_time=QbloxCompiler._minimum_wait_duration),
                 bot_position=len(qpy_loop.components),
             )
             self._buses[bus].qpy_block_stack[-1].append_component(qpy_loop)
@@ -261,7 +288,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         for bus in self._buses:
             qpy_loop = QPyProgram.Loop(name=f"loop_{self._buses[bus].loop_counter}", begin=begin, end=end, step=step)
             qpy_loop.append_component(
-                component=QPyInstructions.WaitSync(wait_time=QbloxCompiler.minimum_wait_duration),
+                component=QPyInstructions.WaitSync(wait_time=QbloxCompiler._minimum_wait_duration),
                 bot_position=len(qpy_loop.components),
             )
             self._buses[bus].qpy_block_stack[-1].append_component(qpy_loop)
@@ -342,7 +369,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         # buses = element.buses if element.buses is not None else self._buses.keys()
         for bus in self._buses:
             self._buses[bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.WaitSync(wait_time=QbloxCompiler.minimum_wait_duration)
+                component=QPyInstructions.WaitSync(wait_time=QbloxCompiler._minimum_wait_duration)
             )
 
     def _handle_acquire(self, element: Acquire):
@@ -468,7 +495,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             SetPhase: lambda x: int(x * 1e9 / 360),
             SetGain: lambda x: int(x * 32_767),
             SetOffset: lambda x: int(x * 32_767),
-            Wait: lambda x: max(x, QbloxCompiler.minimum_wait_duration),
+            Wait: lambda x: max(x, QbloxCompiler._minimum_wait_duration),
         }
         return conversion_map.get(type(operation), lambda x: x)
 
