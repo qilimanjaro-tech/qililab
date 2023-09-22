@@ -108,7 +108,7 @@ class PulseEvent:
             dictionary (dict): Dictionary representation of the PulseEvent object.
 
         Returns:
-            PulseEvent: Loaded class.
+            PulseEvent: PulseEvent Loaded class.
         """
         local_dictionary = dictionary.copy()
         pulse_settings = local_dictionary[PULSEEVENT.PULSE]
