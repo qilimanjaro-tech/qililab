@@ -28,7 +28,8 @@ from qililab.utils.signal_processing import modulate
 class PulseEvent:
     """Object representing a :class:`Pulse` starting at a certain time, and with its corresponding :class:`PulseDistortion`'s.
 
-    This class will receive a :class:`Pulse` object, a start time for it, a list of the :class:`PulseDistortion`'s that such pulse will get applied and a qubit alias to where such pulse will be send.
+    This class will receive a :class:`Pulse` object, a start time for it, a list of the :class:`PulseDistortion`'s that such
+    pulse will get applied and a qubit alias to where such pulse will be sent.
     It provides functionality for instrument to generate the waveforms and modulation of pulses.
 
     Args:
@@ -90,7 +91,7 @@ class PulseEvent:
             resolution (float, optional): The resolution of the pulse in ns. Defaults to 1.0.
 
         Returns:
-            np.ndarray: Envelope.
+            np.ndarray: Distorted envelope of the pulse.
         """
         envelope = self.pulse.envelope(amplitude=amplitude, resolution=resolution)
 
