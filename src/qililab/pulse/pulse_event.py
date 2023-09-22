@@ -129,7 +129,7 @@ class PulseEvent:
         """Returns dictionary of pulse.
 
         Returns:
-            dict: Dictionary describing the pulse.
+            dict: Dictionary describing the pulse event.
         """
         return {
             PULSEEVENT.PULSE: self.pulse.to_dict(),
