@@ -96,6 +96,9 @@ class BiasTeeCorrection(PulseDistortion):
     @classmethod
     def from_dict(cls, dictionary: dict) -> "BiasTeeCorrection":
         """Load BiasTeeCorrection object from dictionary.
+        
+        The dictionary representation must include the name of the correction, the tau bias tee factor, the
+        the sampling rate, the normalization factor and the auto normalization flag value.
 
         Args:
             dictionary (dict): Dictionary representation of the BiasTeeCorrection object.
@@ -109,6 +112,9 @@ class BiasTeeCorrection(PulseDistortion):
 
     def to_dict(self) -> dict:
         """Return dictionary representation of the distortion.
+
+        The dictionary representation includes the name of the correction, the tau bias tee factor, the
+        the sampling rate, the normalization factor and the auto normalization flag value.
 
         Returns:
             dict: Dictionary.
