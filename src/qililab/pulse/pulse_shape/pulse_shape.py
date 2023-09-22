@@ -62,5 +62,5 @@ class PulseShape(FactoryElement):
         """Returns dictionary representation of the pulse shape.
 
         Returns:
-            dict: Dictionary.
+        dict: Dictionary representation of the pulse shape.
         """
