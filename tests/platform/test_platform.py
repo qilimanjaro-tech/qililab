@@ -224,11 +224,12 @@ class TestMethods:
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
         qprogram.sync()
         qprogram.play(bus="feedline_input_output_bus", waveform=readout_wf)
-        qprogram.acquire(bus="feedline_input_output_bus", duration=1000)
+        qprogram.acquire(bus="feedline_input_output_bus", weights=weights_wf)
 
         with patch.object(Bus, "upload_qpysequence") as upload:
             with patch.object(Bus, "run") as run:
