@@ -111,7 +111,7 @@ class LFilterCorrection(PulseDistortion):
     def from_dict(cls, dictionary: dict) -> "LFilterCorrection":
         """Loads LFilterCorrection object from dictionary.
 
-        The dictionary representation must include the name of the correction, the a and b parameters, the normalization
+        The dictionary object must include the name of the correction, the a and b parameters, the normalization
         factor and the auto normalization flag value.
 
         Args:

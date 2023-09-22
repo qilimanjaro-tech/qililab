@@ -117,6 +117,9 @@ class ExponentialCorrection(PulseDistortion):
     def from_dict(cls, dictionary: dict) -> "ExponentialCorrection":
         """Loads ExponentialCorrection object from dictionary.
 
+        The dictionary object must include the name of the correction, the tau exponential factor, the
+        amplitude, the sampling rate, the normalization factor and the auto normalization flag value.
+
         Args:
             dictionary (dict): Dictionary representation of the ExponentialCorrection object.
 
@@ -129,6 +132,9 @@ class ExponentialCorrection(PulseDistortion):
 
     def to_dict(self) -> dict:
         """Returns dictionary representation of the distortion.
+
+        The dictionary representation includes the name of the correction, the tau exponential factor, the
+        amplitude, the sampling rate, the normalization factor and the auto normalization flag value.
 
         Returns:
             dict: Dictionary.
