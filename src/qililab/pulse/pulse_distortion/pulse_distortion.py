@@ -113,7 +113,8 @@ class PulseDistortion(FactoryElement):
         """Loads PulseDistortion object from dictionary.
 
         Args:
-            dictionary (dict): Dictionary representation of the PulseDistortion object.
+            dictionary (dict): Dictionary representation of the PulseDistortion object. It must include the name of the
+            correction.
 
         Returns:
             PulseDistortion: Loaded class.
