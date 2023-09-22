@@ -129,17 +129,6 @@ class TestQProgram:
         assert qp._program.elements[0].bus == "drive"
         assert qp._program.elements[0].time == 100
 
-    def test_acquire_method_with_duration(self):
-        """Test acquire method"""
-        qp = QProgram()
-        qp.acquire(bus="drive", duration=123)
-
-        assert len(qp._active_block.elements) == 1
-        assert len(qp._program.elements) == 1
-        assert isinstance(qp._program.elements[0], Acquire)
-        assert qp._program.elements[0].bus == "drive"
-        assert qp._program.elements[0].duration == 123
-
     def test_acquire_method_with_weights(self):
         """Test acquire method"""
         one_wf = Square(amplitude=1.0, duration=40)
@@ -153,18 +142,6 @@ class TestQProgram:
         assert qp._program.elements[0].bus == "drive"
         assert np.equal(qp._program.elements[0].weights.I, one_wf)
         assert np.equal(qp._program.elements[0].weights.Q, zero_wf)
-
-    def test_acquire_method_raises_error_when_both_duration_weights_are_none(self):
-        qp = QProgram()
-        with pytest.raises(ValueError):
-            qp.acquire(bus="drive")
-
-    def test_acquire_method_raises_error_when_both_duration_weights_are_not_none(self):
-        one_wf = Square(amplitude=1.0, duration=40)
-        zero_wf = Square(amplitude=0.0, duration=40)
-        qp = QProgram()
-        with pytest.raises(ValueError):
-            qp.acquire(bus="drive", duration=1000, weights=IQPair(I=one_wf, Q=zero_wf))
 
     def test_sync_method(self):
         """Test sync method"""

@@ -195,31 +195,20 @@ class QProgram:
         operation = Wait(bus=bus, time=time)
         self._active_block.append(operation)
 
-    def acquire(self, bus: str, duration: int | None = None, weights: IQPair | None = None):
-        """Acquire results based on the given duration or weights.
-
-        If the `duration` is provided, it specifies the acquisition's duration.
-        However, it's essential to ensure that the provided duration matches the
-        one set in QCoDes; otherwise, the results might be incorrect.
-
-        If `weights` are provided, the acquisition duration is determined by the
-        duration of the weights waveforms.
+    def acquire(self, bus: str, weights: IQPair):
+        """Acquire results based on the given weights.
 
         Args:
             bus (str): Unique identifier of the bus.
-            duration (int | None, optional): Duration for the acquisition in units relevant to your application. Defaults to None.
-            weights (IQPair | None, optional): Weights used during acquisition. If set, the acquisition duration is determined by these weights. Defaults to None.
-
-        Raises:
-            ValueError: If neither or both `duration` and `weights` are provided.
+            weights (IQPair): Weights used during acquisition.
         """
-        if (duration is None) == (weights is None):
-            raise ValueError("Either duration or weights should be set.")
-        operation = Acquire(bus=bus, duration=duration, weights=weights)
+        operation = Acquire(bus=bus, weights=weights)
         self._active_block.append(operation)
 
     def sync(self, buses: list[str] | None = None):
-        """Synchronize operations between buses, so the operations following will start at the same time. If no buses are given, then the synchronization will involve all buses present in the QProgram.
+        """Synchronize operations between buses, so the operations following will start at the same time.
+
+        If no buses are given, then the synchronization will involve all buses present in the QProgram.
 
         Args:
             buses (list[str] | None, optional): List of unique identifiers of the buses. Defaults to None.

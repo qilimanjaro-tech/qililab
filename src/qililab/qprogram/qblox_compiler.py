@@ -358,52 +358,9 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             index=self._buses[element.bus].next_acquisition_index,
         )
 
-        if element.weights:
-            index_I, index_Q, integration_length = self._append_to_weights_of_bus(element.bus, weights=element.weights)
+        index_I, index_Q, integration_length = self._append_to_weights_of_bus(element.bus, weights=element.weights)
 
-        if num_bins > 1:
-            bin_register = QPyProgram.Register()
-            block_index_for_move_instruction = loops[0][0] - 1 if loops else -2
-            block_index_for_add_instruction = loops[-1][0] if loops else -1
-            self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
-                component=QPyInstructions.Move(var=self._buses[element.bus].next_bin_index, register=bin_register),
-                bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
-            )
-            if element.weights:
-                register_I, register_Q = QPyProgram.Register(), QPyProgram.Register()
-                self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
-                    component=QPyInstructions.Move(var=index_I, register=register_I),
-                    bot_position=len(
-                        self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components
-                    ),
-                )
-                self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
-                    component=QPyInstructions.Move(var=index_Q, register=register_Q),
-                    bot_position=len(
-                        self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components
-                    ),
-                )
-                self._buses[element.bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.AcquireWeighed(
-                        acq_index=self._buses[element.bus].next_acquisition_index,
-                        bin_index=bin_register,
-                        weight_index_0=register_I,
-                        weight_index_1=register_Q,
-                        wait_time=integration_length,
-                    )
-                )
-            else:
-                self._buses[element.bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.Acquire(
-                        acq_index=self._buses[element.bus].next_acquisition_index,
-                        bin_index=bin_register,
-                        wait_time=element.duration,
-                    )
-                )
-            self._buses[element.bus].qpy_block_stack[block_index_for_add_instruction].append_component(
-                component=QPyInstructions.Add(origin=bin_register, var=1, destination=bin_register)
-            )
-        elif element.weights:
+        if num_bins == 1:
             self._buses[element.bus].qpy_block_stack[-1].append_component(
                 component=QPyInstructions.AcquireWeighed(
                     acq_index=self._buses[element.bus].next_acquisition_index,
@@ -414,12 +371,33 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                 )
             )
         else:
+            bin_register = QPyProgram.Register()
+            block_index_for_move_instruction = loops[0][0] - 1 if loops else -2
+            block_index_for_add_instruction = loops[-1][0] if loops else -1
+            self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
+                component=QPyInstructions.Move(var=self._buses[element.bus].next_bin_index, register=bin_register),
+                bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
+            )
+            register_I, register_Q = QPyProgram.Register(), QPyProgram.Register()
+            self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
+                component=QPyInstructions.Move(var=index_I, register=register_I),
+                bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
+            )
+            self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
+                component=QPyInstructions.Move(var=index_Q, register=register_Q),
+                bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
+            )
             self._buses[element.bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.Acquire(
+                component=QPyInstructions.AcquireWeighed(
                     acq_index=self._buses[element.bus].next_acquisition_index,
-                    bin_index=self._buses[element.bus].next_bin_index,
-                    wait_time=element.duration,
+                    bin_index=bin_register,
+                    weight_index_0=register_I,
+                    weight_index_1=register_Q,
+                    wait_time=integration_length,
                 )
+            )
+            self._buses[element.bus].qpy_block_stack[block_index_for_add_instruction].append_component(
+                component=QPyInstructions.Add(origin=bin_register, var=1, destination=bin_register)
             )
         self._buses[element.bus].next_bin_index += num_bins
         self._buses[element.bus].next_acquisition_index += 1
