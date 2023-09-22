@@ -37,6 +37,7 @@ class PulseShape(FactoryElement):
         """Computes the amplitudes of the pulse shape envelope.
 
         Args:
+            resolution (float): Resolution of the pulse envelope.
             duration (int): Duration of the pulse (ns).
             amplitude (float): Maximum amplitude of the pulse.
 
