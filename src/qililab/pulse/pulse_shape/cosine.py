@@ -66,10 +66,11 @@ class Cosine(PulseShape):
         """Loads Cosine object/shape from dictionary.
 
         Args:
-            dictionary (dict): Dictionary representation of the Cosine object/shape.
+            dictionary (dict): Dictionary representation of the Cosine object/shape containing the name of the pulse shape and,
+            optionally, the lambda_2 factor.
 
         Returns:
-            Cosine: Loaded class.
+            Cosine: Cosine pulse shape loaded class.
         """
         local_dictionary = deepcopy(dictionary)
         local_dictionary.pop("name", None)
@@ -79,7 +80,7 @@ class Cosine(PulseShape):
         """Returns dictionary representation of the Cosine object/shape.
 
         Returns:
-            dict: Dictionary representing the Cosine pulse shape.
+            dict: Dictionary representing the Cosine pulse shape. It contains the name of the pulse shape plus the lambda_2 factor.
         """
         return {
             "name": self.name.value,

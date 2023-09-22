@@ -68,7 +68,8 @@ class Gaussian(PulseShape):
         The dictionary representation must include the name of the pulse shape and the number of sigmas.
 
         Args:
-            dictionary (dict): Dictionary representation of the Gaussian object/shape.
+            dictionary (dict): Dictionary representation of the Gaussian object/shape including the name of the pulse shape and
+            the number of sigmas.
 
         Returns:
             Gaussian: Loaded class.
@@ -80,10 +81,8 @@ class Gaussian(PulseShape):
     def to_dict(self):
         """Returns dictionary representation of the Gaussian object/shape.
 
-        The dictionary representation includes the name of the pulse shape and the number of sigmas.
-
         Returns:
-            dict: Dictionary.
+            dict: Dictionary representation including the name of the pulse shape and the number of sigmas.
         """
         return {
             "name": self.name.value,

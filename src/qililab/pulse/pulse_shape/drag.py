@@ -83,7 +83,8 @@ class Drag(PulseShape):
         """Loads Drag object/shape from dictionary.
 
         Args:
-            dictionary (dict): Dictionary representation of the Drag object/shape.
+            dictionary (dict): Dictionary representation of the Drag object/shape containing the name of the pulse shape, the
+            number of sigmas and the drag coefficient.
 
         Returns:
             Drag: Loaded class.
@@ -96,7 +97,8 @@ class Drag(PulseShape):
         """Returns dictionary representation of the Drag object/shape.
 
         Returns:
-            dict: Dictionary representing the Drag pulse shape.
+            dict: Dictionary representing the Drag pulse shape. It contains the name of the pulse shape, the number of sigmas and
+            the drag coefficient.
         """
         return {
             "name": self.name.value,

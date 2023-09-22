@@ -53,7 +53,7 @@ class PulseShape(FactoryElement):
             dictionary (dict): Dictionary representation of the PulseShape object.
 
         Returns:
-            PulseShape: Loaded class.
+            PulseShape: PulseShape loaded class, including the name of the pulse shape and attributes.
         """
         shape_class = Factory.get(name=dictionary["name"])
         return shape_class.from_dict(dictionary)
@@ -63,5 +63,5 @@ class PulseShape(FactoryElement):
         """Returns dictionary representation of the pulse shape.
 
         Returns:
-        dict: Dictionary representation of the pulse shape.
+        dict: Dictionary representation of the pulse shape including the name and attributes of the pulse shape.
         """
