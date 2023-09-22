@@ -79,7 +79,7 @@ class Cosine(PulseShape):
         """Returns dictionary representation of the Cosine object/shape.
 
         Returns:
-            dict: Dictionary.
+            dict: Dictionary representing the Cosine pulse shape.
         """
         return {
             "name": self.name.value,
