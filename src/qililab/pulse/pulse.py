@@ -31,7 +31,7 @@ class Pulse:
         phase (float): Pulse's phase. Value in radians.
         duration (int): Pulse's duration. Value in ns.
         frequency (float): Pulse's frequency. Value in hertzs.
-        pulse_shape (PulseShape): Pulse's shape. Can be any of the different types of pulse shapes supported.
+        pulse_shape (PulseShape): Pulse's envelope shape. Can be any of the different types of pulse shapes supported.
     """
 
     amplitude: float
