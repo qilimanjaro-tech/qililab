@@ -96,7 +96,7 @@ class Drag(PulseShape):
         """Returns dictionary representation of the Drag object/shape.
 
         Returns:
-            dict: Dictionary.
+            dict: Dictionary representing the Drag pulse shape.
         """
         return {
             "name": self.name.value,
