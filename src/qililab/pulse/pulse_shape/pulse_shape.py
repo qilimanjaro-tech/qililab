@@ -25,7 +25,10 @@ from qililab.utils import Factory
 
 @dataclass(frozen=True, eq=True)
 class PulseShape(FactoryElement):
-    """Pulse shape abstract base class."""
+    """Pulse shape abstract base class.
+    
+    Pulse shapes, describe the shape of the :class:`Pulse`'s envelopes.
+    """
 
     name: PulseShapeName = field(init=False)  #: Name of the pulse shape.
 
