@@ -35,7 +35,7 @@ class PulseEvent:
         pulse (Pulse): :class:`Pulse` contained in the PulseEvent.
         start_time (int): Start time of the pulse. Value in ns.
         pulse_distortion (list[PulseDistortion]: List of :class:`PulseDistortion` applied to the pulse.
-        qubit (int): the qubit alias.
+        qubit (int, optional): the qubit alias. Defaults to None.
     """
 
     pulse: Pulse
