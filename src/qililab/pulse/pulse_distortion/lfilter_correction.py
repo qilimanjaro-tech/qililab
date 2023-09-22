@@ -111,6 +111,9 @@ class LFilterCorrection(PulseDistortion):
     def from_dict(cls, dictionary: dict) -> "LFilterCorrection":
         """Loads LFilterCorrection object from dictionary.
 
+        The dictionary representation must include the name of the correction, the a and b parameters, the normalization
+        factor and the auto normalization flag value.
+
         Args:
             dictionary (dict): Dictionary representation of the LFilterCorrection object.
 
@@ -123,6 +126,9 @@ class LFilterCorrection(PulseDistortion):
 
     def to_dict(self) -> dict:
         """Returns dictionary representation of the distortion.
+
+        The dictionary representation includes the name of the correction, the a and b parameters, the normalization
+        factor and the auto normalization flag value.
 
         Returns:
             dict: Dictionary.
