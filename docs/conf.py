@@ -64,7 +64,11 @@ html_theme_options = {
     "logo_dark": "_static/q_dark.jpeg",
     "show_prev_next": True,
     "awesome_external_links": True,
-    "main_nav_links": {"Docs": "index", "Changelog": "changelog"},
+    "main_nav_links": {
+        "QaaS": "https://qaas.readthedocs.io/en/latest/",
+        "Qiboconnection": "https://qaas.readthedocs.io/projects/qiboconnection/en/latest/",
+        "Qililab": "index",
+    },
     "extra_header_link_icons": {
         "repository on GitHub": {
             "link": "https://github.com/qilimanjaro-tech/qililab",
