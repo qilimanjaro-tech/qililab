@@ -91,6 +91,8 @@ class SNZ(PulseShape):
     def from_dict(cls, dictionary: dict) -> "SNZ":
         """Loads SNZ object/shape from dictionary.
 
+        The dictionary representation must include the name of the pulse shape, the b parameter and the t_phi parameter.
+
         Args:
             dictionary (dict): Dictionary representation of the SNZ object/shape.
 
@@ -103,6 +105,8 @@ class SNZ(PulseShape):
 
     def to_dict(self):
         """Returns dictionary representation of the Rectangular object/shape.
+
+        The dictionary representation includes the name of the pulse shape, the b parameter and the t_phi parameter.
 
         Returns:
             dict: Dictionary.
