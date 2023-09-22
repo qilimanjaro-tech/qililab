@@ -68,7 +68,6 @@ class PulseEvent:
 
         Args:
             resolution (float, optional): The resolution of the pulse in ns. Defaults to 1.0.
-            frequency (float, optional): The modulation frequency in Hz, if it is 0.0 then the frequency of the pulse is used. Defaults to 0.0.
 
         Returns:
             Waveforms: I and Q modulated waveforms.
