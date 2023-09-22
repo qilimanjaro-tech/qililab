@@ -96,8 +96,9 @@ class QbloxModule(AWG):
                 else sequencer  # pylint: disable=not-a-mapping
                 for sequencer in self.awg_sequencers
             ]
-            self.active_reset = False  # TODO: add this in init?
             super().__post_init__()
+        
+
 
     settings: QbloxModuleSettings
     device: Pulsar | QcmQrm
@@ -226,7 +227,8 @@ class QbloxModule(AWG):
         """
 
         # Define program's blocks
-        program = Program()  # TODO: remove first wait sync if active reset
+        # if active reset is enabled the wait sync instruction is added at the active reset block
+        program = Program(wait_sync=True) if self.settings.active_reset is False else Program(wait_sync=False)
         # Create registers with 0 and 1 (necessary for qblox)
         weight_registers = Register(), Register()
         self._init_weights_registers(registers=weight_registers, values=(0, 1), program=program)
@@ -300,10 +302,13 @@ class QbloxModule(AWG):
             Block: _description_
         """
 
+        # sync sequencers before start of sequence
+        act_rst.append_component(WaitSync(4))
+
         if pulse_bus_schedule.port == "feedline_input":
             # acquire instruction
             # measure and add wait sync at the end
-            act_rst.append_component(WaitSync(4))
+
 
             pulse_event = pulse_bus_schedule.timeline[0]
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
@@ -318,10 +323,10 @@ class QbloxModule(AWG):
                 Play(
                     waveform_0=waveform_pair.waveform_i.index,
                     waveform_1=waveform_pair.waveform_q.index,
-                    wait_time=4,  # TODO: check if we have readout delay (instead of TOF)
+                    wait_time=4,
                 )
             )
-            self._append_acquire_instruction(  # TODO: add integration length to wait after acquisition - done
+            self._append_acquire_instruction(
                 loop=act_rst,
                 bin_index=bin_loop.counter_register,
                 sequencer_id=sequencer,
@@ -335,7 +340,6 @@ class QbloxModule(AWG):
             #     pulse_event.start_time = pulse_event.start_time - rst_pulse_time
 
         elif "drive" in pulse_bus_schedule.port:
-            act_rst.append_component(WaitSync(4))
 
             pulse_event = pulse_bus_schedule.timeline[0]
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
@@ -374,16 +378,13 @@ class QbloxModule(AWG):
             # for pulse_event in pulse_bus_schedule.timeline:
             #     pulse_event.start_time = pulse_event.start_time - rst_pulse_time
 
-        else:  # compensate wait syncs for other ports
+        else:  # compensate wait syncs for flux buses
             act_rst.append_component(WaitSync(4))
 
-            # pass
-            # act_rst.append_component(WaitSync(1000))
-
+        # sync instruments at the end of sequence. #FIXME: this is just for safety, should eventually be removed
         act_rst.append_component(
             WaitSync(4)
         )  # TODO: we dont need this wait sync if times are calculated properly (and possibly don't need the one right above either)
-        act_rst.append_component(long_wait(10000))
 
     def _init_weights_registers(self, registers: tuple[Register, Register], values: tuple[int, int], program: Program):
         """Initialize the weights `registers` to the `values` specified and place the required instructions in the

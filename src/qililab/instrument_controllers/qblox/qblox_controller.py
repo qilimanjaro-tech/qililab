@@ -38,6 +38,8 @@ class QbloxController(InstrumentController):
         """Contains the settings of a specific Qblox Pulsar Controller."""
 
         reference_clock: ReferenceClock
+        active_reset: bool = False
+        active_reset_settings: list[dict[str, any]]
 
     settings: QbloxControllerSettings
     device: Pulsar | Cluster

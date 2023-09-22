@@ -22,7 +22,6 @@ from qibo.models.circuit import Circuit
 
 from qililab.chip.nodes import Coupler, Qubit
 from qililab.constants import RUNCARD
-from qililab.platform import Bus, Platform
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.transpiler import Drag
 from qililab.typings.enums import Line
@@ -55,7 +54,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
         platform (Platform): same as above
     """
 
-    def __init__(self, platform: Platform):
+    def __init__(self, platform: "Platform"):
         self.platform = platform
 
     def translate(  # pylint: disable=too-many-locals, too-many-branches
@@ -216,7 +215,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
         return list(set(schedule_qubits + gate_qubits))  # converto to set and back to list to remove repeated items
 
     def _gate_element_to_pulse_event(
-        self, time: int, gate: Gate, gate_event: GateEventSettings, bus: Bus
+        self, time: int, gate: Gate, gate_event: GateEventSettings, bus: "Bus"
     ) -> PulseEvent:
         """Translate a gate element into a pulse.
 

@@ -21,6 +21,7 @@ from queue import Queue
 
 import numpy as np
 from qibo.gates import M
+from qililab.utils.qibo_gates import Wait # FIXME: change wait gate and Drag to the same location
 from qibo.models import Circuit
 from qiboconnection.api import API
 
@@ -32,13 +33,14 @@ from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.utils import InstrumentFactory
-from qililab.pulse import PulseSchedule
+from qililab.pulse import PulseSchedule, PulseEvent, Pulse
 from qililab.result import Result
 from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
 from qililab.transpiler.native_gates import Drag  # FIXME: avoid circular import problems
-from qililab.typings.enums import Line, Parameter
+from qililab.typings.enums import Line, Parameter, InstrumentControllerName
 from qililab.typings.yaml_type import yaml
+from qililab.pulse.circuit_to_pulses import CircuitToPulses
 
 from .components import Bus, Buses
 from .components.bus_element import dict_factory
@@ -404,12 +406,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
                 - Scope acquisition disabled: An array with dimension `(#sequencers, 2, #bins)`.
         """
-        # Set active reset option to that of the runcard
-        # FIXME: perhaps not the best way to do this, but we do not have(?) a "qblox" flag in qblox instruments
-        if self.gates_settings.active_reset is True:
-            for instrument in self.instruments.elements:
-                if "awg_sequencers" in instrument.to_dict():
-                    instrument.settings.active_reset = True
 
         # Compile pulse schedule
         programs = self.compile(program, num_avg, repetition_duration, num_bins)
@@ -453,16 +449,13 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         Returns:
             dict: Dictionary of compiled assembly programs.
         """
-        # We have a circular import because Platform uses CircuitToPulses and vice versa
-        from qililab.pulse.circuit_to_pulses import (  # pylint: disable=import-outside-toplevel, cyclic-import
-            CircuitToPulses,
-        )
 
         if isinstance(program, Circuit):
-            if self.gates_settings.active_reset is True:
-                program = self._add_active_reset_circuit(program)
             translator = CircuitToPulses(platform=self)
             pulse_schedule = translator.translate(circuits=[program])[0]
+            if self.gates_settings.active_reset is True:
+                self._add_active_reset_settings(circuit=program)
+                
         else:
             pulse_schedule = program
 
@@ -474,8 +467,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         return programs
 
-    def _add_active_reset_circuit(self, circuit: Circuit) -> Circuit:
-        """Add the active reset gates (M-X) to each qubit in the circuit
+    def _add_active_reset_settings(self, circuit: Circuit) -> Circuit:
+        """Prepends an active reset 
 
         Args:
             program (Circuit): qibo circuit to which we prepend the reset gates
@@ -484,14 +477,36 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             Circuit: qibo circuit
         """
 
+        # add active reset sequence to circuit
         nqubits = circuit.nqubits
-        c = Circuit(nqubits)
         # get unique qubits
         qubits = set()
         for gate in circuit.queue:
             for qubit in gate.qubits:
                 qubits.add(qubit)
-        c.add([M(qubit) for qubit in qubits])  # measurement
-        c.add([Drag(qubit, np.pi, 0) for qubit in qubits])  # pi pulse
-        c.add(circuit.queue)
-        return c
+        
+        act_rst_settings = []
+        c = Circuit(len(nqubits))
+        c.add([M(qubit) for qubit in nqubits])
+        c.add([Drag(qubit, np.pi, 0) for qubit in nqubits])
+
+        translator = CircuitToPulses(platform=self)
+        pulse_schedule = translator.translate(circuits=[c])[0]
+        measurements = [pulse_bus_schedule for pulse_bus_schedule in pulse_schedule if pulse_bus_schedule.port == "feedline_input"][0]
+        for qubit in nqubits:
+            m_pulse = [pulse_event for pulse_event in measurements.timeline if pulse_event.qubit == qubit]
+            pi_pulse = [pulse_bus_schedule.timeline[0] for pulse_bus_schedule in pulse_schedule if f"drive_line_q{qubit}_bus" in pulse_bus_schedule.port][0]
+            settings = {
+                    "qubit": qubit,
+                    "M": m_pulse,
+                    "X": pi_pulse,
+                    }
+            act_rst_settings.append(settings.copy())
+
+        # add active reset settings to instrument and set active reset as true
+        for instrument_controller in self.instrument_controllers:
+            if instrument_controller.name == InstrumentControllerName.QBLOX_CLUSTER:
+                instrument_controller.active_reset = True
+                instrument_controller.active_reset_settings = act_rst_settings
+            
+
