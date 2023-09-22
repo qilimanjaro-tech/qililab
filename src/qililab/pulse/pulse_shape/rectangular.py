@@ -46,6 +46,8 @@ class Rectangular(PulseShape):
     def from_dict(cls, dictionary: dict) -> "Rectangular":
         """Loads Rectangular object/shape from dictionary.
 
+        The dictionary representation must include the name of the pulse shape.
+
         Args:
             dictionary (dict): Dictionary representation of the Rectangular object/shape.
 
@@ -58,6 +60,8 @@ class Rectangular(PulseShape):
 
     def to_dict(self):
         """Returns dictionary representation of the Rectangular object/shape.
+
+        The dictionary representation includes the name of the pulse shape.
 
         Returns:
             dict: Dictionary.
