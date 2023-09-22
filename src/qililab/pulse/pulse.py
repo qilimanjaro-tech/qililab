@@ -41,6 +41,10 @@ class Pulse:
     def envelope(self, amplitude: float | None = None, resolution: float = 1.0):
         """Pulse 'envelope' property.
 
+        Args:
+            amplitude (float, optional): Pulse's amplitude. Value normalized between 0 and 1. Defaults to None
+            resolution (float): Pulse's resolution. Value normalized between 0 and 1.
+
         Returns:
             list[float]: Amplitudes of the envelope of the pulse. Max amplitude is fixed to 1.
         """
