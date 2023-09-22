@@ -22,7 +22,9 @@ from qililab.utils import Factory
 
 @dataclass(frozen=True, eq=True)
 class Pulse:
-    """Describes a single pulse to be added to waveform array.
+    """Describes a single pulse to be added to waveform array, which will be send through the lab buses to the chips.
+
+    This class contains information about the pulse envelope shape, amplitude, phase, duration and frequency.
 
     Args:
         amplitude (float): Pulse's amplitude. Value normalized between 0 and 1.
