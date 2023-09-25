@@ -89,139 +89,151 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
             - You can print `platform.chip` and `platform.buses` at any moment, to check the platform structure.
 
-        1. Executing a circuit with Platform:
 
-            To execute a circuit you first need to define your circuit, for example one with a pi pulse and a measurement gate in qubit q (``int``),
-            and then you also need to build, connect, setup and execute the platform, which together look like:
+        **1. Executing a circuit with Platform:**
 
-            .. code-block:: python
 
-                import qililab as ql
+        To execute a circuit you first need to define your circuit, for example one with a pi pulse and a measurement gate in qubit q (``int``),
+        and then you also need to build, connect, setup and execute the platform, which together look like:
 
-                from qibo.models import Circuit
-                from qibo import gates
+        .. code-block:: python
 
-                # Defining the Rabi circuit:
-                circuit = Circuit(q+1)
-                circuit.add(gates.X(q))
-                circuit.add(gates.M(q))
+            import qililab as ql
 
-                # Building the platform:
-                platform = ql.build_platform(runcard="runcards/galadriel.yml")
+            from qibo.models import Circuit
+            from qibo import gates
 
-                # Connecting and setting up the platform:
-                platform.connect()
-                platform.initial_setup()
-                platform.turn_on_instruments()
+            # Defining the Rabi circuit:
+            circuit = Circuit(q+1)
+            circuit.add(gates.X(q))
+            circuit.add(gates.M(q))
 
-                # Executing the platform:
+            # Building the platform:
+            platform = ql.build_platform(runcard="runcards/galadriel.yml")
+
+            # Connecting and setting up the platform:
+            platform.connect()
+            platform.initial_setup()
+            platform.turn_on_instruments()
+
+            # Executing the platform:
+            result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
+
+        The results would look something like this:
+
+        >>> result.array
+        array([[5.],
+                [5.]])
+
+        .. note::
+
+            The obtained vlaue correspond to the integral of the I/Q signals received by the digitizer.
+            And they have shape `(#sequencers, 2, #bins)`, in this case we only have 1 sequencer and 1 bin.
+
+        |
+
+        **2. Running a Rabi sequence with Platform:**
+
+        To do a Rabi sequence, you precisely need the previous circuit and again you also need to build, connect and setup the platform,
+        but this time, instead than executing the circuit once, you loop changing the gain parameter of the AWG (generator of the pi pulse):
+
+        .. code-block:: python
+
+            # Looping over the AWG gain to execute the Rabi sequence:
+            results = []
+            gain_values = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9, 1.0]
+
+            for gain in gain_values:
+                platform.set_parameter(alias="drive_q0", parameter=ql.Parameter.GAIN, value=gain)
                 result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
+                results.append(result.array)
 
-            The results would look something like this:
+        Now you can use `np.hstack` to stack the results horizontally. By doing this, you would obtain an
+        array with shape `(2, N)`, where N is the number of elements inside the loop:
 
-            >>> result.array
-            array([[5.],
-                    [5.]])
+        >>> import numpy as np
+        >>> np.hstack(results)
+        array([[5, 4, 3, 2, 1, 2, 3],
+                [5, 4, 3, 2, 1, 2, 3]])
 
-            .. note::
-
-                The obtained vlaue correspond to the integral of the I/Q signals received by the digitizer.
-                And they have shape `(#sequencers, 2, #bins)`, in this case we only have 1 sequencer and 1 bin.
-
-        |
-
-        2. Running a Rabi sequence with Platform:
-
-            To do a Rabi sequence, you precisely need the previous circuit and again you also need to build, connect and setup the platform,
-            but this time, instead than executing the circuit once, you loop changing the gain parameter of the AWG (generator of the pi pulse):
-
-            .. code-block:: python
-
-                # Looping over the AWG gain to execute the Rabi sequence:
-                results = []
-                gain_values = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9, 1.0]
-
-                for gain in gain_values:
-                    platform.set_parameter(alias="drive_q0", parameter=ql.Parameter.GAIN, value=gain)
-                    result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
-                    results.append(result.array)
-
-            Now you can use `np.hstack` to stack the results horizontally. By doing this, you would obtain an
-            array with shape `(2, N)`, where N is the number of elements inside the loop:
-
-            >>> import numpy as np
-            >>> np.hstack(results)
-            array([[5, 4, 3, 2, 1, 2, 3],
-                    [5, 4, 3, 2, 1, 2, 3]])
-
-            You can see how the integrated I/Q values oscillated, indicating that qubit 0 oscillates between ground and
-            excited state!
+        You can see how the integrated I/Q values oscillated, indicating that qubit 0 oscillates between ground and
+        excited state!
 
         |
 
-        3. Running a Rabi sequence faster, circuit to pulses:
+        **3. A faster Rabi sequence, translating the circuit to pulses:**
 
-            Since you are looping over variables that are independent of the circuit (in this case, the gain of the AWG),
-            you can speed up the experiment by translating the circuit into pulses only once, and then, executing the obtained
-            pulses inside the loop.
+        Since you are looping over variables that are independent of the circuit (in this case, the gain of the AWG),
+        you can speed up the experiment by translating the circuit into pulses beforehand, only once, and then, executing the obtained
+        pulses inside the loop.
 
-            Which is the same as before, but passing the `pulse_schedule` instead than the `circuit`, to the `execute` method:
+        Which is the same as before, but passing the `pulse_schedule` instead than the `circuit`, to the `execute` method:
 
-            .. code-block:: python
+        .. code-block:: python
 
-                from qililab.pulse.circuit_to_pulses import CircuitToPulses
+            from qililab.pulse.circuit_to_pulses import CircuitToPulses
 
-                # Translating the circuit to pulses:
-                pulse_schedule = CircuitToPulses(platform=platform).translate(circuits=[circuit])
+            # Translating the circuit to pulses:
+            pulse_schedule = CircuitToPulses(platform=platform).translate(circuits=[circuit])
 
-                # Looping over the AWG gain to execute the Rabi sequence:
-                results = []
-                gain_values = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9, 1.0]
+            # Looping over the AWG gain to execute the Rabi sequence:
+            results = []
+            gain_values = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9, 1.0]
 
-                for gain in gain_values:
-                    platform.set_parameter(alias="drive_q0", parameter=ql.Parameter.GAIN, value=gain)
-                    result = platform.execute(program=pulse_schedule, num_avg=1000, repetition_duration=6000)
-                    results.append(result.array)
+            for gain in gain_values:
+                platform.set_parameter(alias="drive_q0", parameter=ql.Parameter.GAIN, value=gain)
+                result = platform.execute(program=pulse_schedule, num_avg=1000, repetition_duration=6000)
+                results.append(result.array)
 
-            If you now stack and print the results, you obtain similar results, but much faster!
+        If you now stack and print the results, you obtain similar results, but much faster!
 
-            >>> np.hstack(results)
-            array([[5, 4, 3, 2, 1, 2, 3],
-                    [5, 4, 3, 2, 1, 2, 3]])
+        >>> np.hstack(results)
+        array([[5, 4, 3, 2, 1, 2, 3],
+                [5, 4, 3, 2, 1, 2, 3]])
 
         |
 
-        4. Running a Ramsey, looping a parameter inside a the circuit:
+        **4. Ramsey sequence, looping over a parameter inside the circuit:**
 
-            To do a Ramsey, you also need to build, connect and setup the platform as before, but this time the circuit is different from the previous,
-            and you also this time you need to loop over a parameter of the circuit, concretely over the time of a wait gate.
+        To run a Ramsey sequence you also need to build, connect and setup the platform as before, but the circuit will be different from the previous,
+        and also this time you need to loop over a parameter of the circuit, concretely we will loop over the time of the wait (Align) gate.
 
-            To run the Ramsey, you need to loop over the `t` parameter of the first Align gate. To do so, since the parameter is inside the
-            circuit you need to use Qibo own `circuit.set_parameters` method, putting the parameters you want to set in the order they appear
-            in the circuit construction:
+        To do so, since the parameter is inside the Qibo circuit, you will need to use Qibo own `circuit.set_parameters()` method, writting the
+        parameters you want to set in the same order they appear in the circuit construction:
 
-            .. code-block:: python
+        .. code-block:: python
 
-                # Defining the Ramsey circuit:
-                circuit = Circuit(q + 1)
-                circuit.add(gates.RX(q, theta=np.pi/2))
-                circuit.add(gates.Align(q, t=0))
-                circuit.add(gates.RX(q, theta=np.pi/2))
-                circuit.add(gates.Align(q, t=0))
-                circuit.add(gates.M(q))
+            import qililab as ql
 
-                # Looping over the wait time t, to execute the Ramsey:
-                results_list = []
-                wait_times = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+            from qibo.models import Circuit
+            from qibo import gates
 
-                for wait in wait_times:
-                    circuit.set_parameters([np.pi/2, wait, np.pi/2, 0])
-                    result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
-                    results_list.append(result.array)
+            # Building the platform:
+            platform = ql.build_platform(runcard="runcards/galadriel.yml")
 
-            so we were always setting `np.pi/2` to the `theta` parameter of the first `RX` gate, then the looped wait time `t` in the first `Align` gate,
-            then another `np.pi/2` to the second `RX`, and finally a `0` to the second `Align` gate.
-    """
+            # Connecting and setting up the platform:
+            platform.connect()
+            platform.initial_setup()
+            platform.turn_on_instruments()
+
+            # Defining the Ramsey circuit:
+            circuit = Circuit(q + 1)
+            circuit.add(gates.RX(q, theta=np.pi/2))
+            circuit.add(gates.Align(q, t=0))
+            circuit.add(gates.RX(q, theta=np.pi/2))
+            circuit.add(gates.M(q))
+
+            # Looping over the wait time t, to execute the Ramsey:
+            results_list = []
+            wait_times = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+            for wait in wait_times:
+                circuit.set_parameters([np.pi/2, wait, np.pi/2])
+                result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
+                results_list.append(result.array)
+
+        so we were always setting `np.pi/2` to the `theta` parameter of the first `RX` gate, then the looped wait time `t` in the `Align` gate,
+        and then another `np.pi/2` to the second `RX` gate."""
 
     def __init__(self, runcard: Runcard, connection: API | None = None):
         self.name = runcard.name
