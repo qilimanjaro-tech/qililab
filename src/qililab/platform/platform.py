@@ -54,7 +54,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
     .. note::
 
-        This class should be instantiated with the :meth:`ql.build_platform()` function, by passing a runcard (serialized platform dictionary)
+        This class should be instantiated with the :meth:`ql.build_platform()` function, by passing a :ref:`runcard <runcards>` (serialized platform dictionary)
         or a path to the location of the YAML file containing it.
 
         You can find more information about the runcard structure, in the documentation :ref:`Runcards <runcards>` section.
@@ -67,7 +67,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
     And then, for each experiment you want to run, you normally would repeat:
 
-    >>> platform.set_parameter(...) # Sets parameters in instruments.
+    >>> platform.set_parameter(...) # Sets any parameter of the Platform.
     >>> result = platform.execute(...) # Executes the platform.
 
     Args:
@@ -85,7 +85,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
             - You might want to skip the ``platform.initial_setup()`` and the ``platform.turn_on_instruments()`` if you think nothing has been modified since last time, but we recommend you to do it always.
 
-            - ``platform.turn_on_instruments()`` does not actually turn the instruments of the laboratory on, it only opens and closes their signal output generation.
+            - ``platform.turn_on_instruments()`` is used to turn on the signal output, of all the source defined in the runcard (RF, Voltage and Current sources).
 
             - You can print ``platform.chip`` and ``platform.buses`` at any moment, to check the platform structure.
 

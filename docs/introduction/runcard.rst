@@ -17,8 +17,7 @@ They contain all the laboratory information, settings and parameters, concretely
 
 |
 
-Normally runcards dictionaries get stored as YAML files to be retrieved later on, in order to save the laboratory instruments,
-and its calibrated parameters, etc.
+Normally, in order to save the laboratory settings and its calibrated parameters, runcards get saved as YAML files to be retrieved later on.
 
 Runcard dictionary structure:
 ------------------------------

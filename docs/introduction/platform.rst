@@ -32,7 +32,7 @@ where ``"runcards/galadriel.ym"`` is the path to a YAML file containing the :ref
 
     You can find more information about the actual structure of such dictionary, in the :ref:`Runcards <runcards>` section of the documentation.
 
-You can see if the platform has been set correctly printing the platform ``name``, or the ``chip`` and ``buses`` structure at any moment:
+You can see if the platform has been set correctly, by printing the platform ``name`` and its ``chip`` and ``buses`` structures:
 
 >>> print(platform.name)
 galadriel
@@ -64,47 +64,33 @@ First you need to build the platform as explained in the above example.
 
 .. note::
 
-    You need to have access to the IP's addresses provided in the runcard (serialized platform), in order to connect, and therefore in order to continue.
+    To connect, your computer must be in the same network of the instruments specified in the runcard (with their IP's addresses).
 
 Now, to connect to the instruments, set all the parameters defined in the runcard and turn the sources outputs on, you need to use the following methods:
 
->>> platform.connect()
+.. code-block:: python
 
-connects to all the instruments and blocks the connection for other users. You must be connected in order to proceed with the following steps.
+    platform.connect()
+    # Connects to all the instruments and blocks the connection for other users.
+    # You must be connected in order to proceed with the following steps.
 
->>> platform.initial_setup()
+    platform.initial_setup()
+    # Sets the values of the runcard (serialized platform) to the connected instruments.
+    # You might want to skip this step if you think no parameters have been modified since last time, but we recommend you to do it always anyway.
 
-sets the values of the runcard (serialized platform) to the connected instruments. You might want to skip this step if you think no
-parameters have been modified since last time, but we recommend you to do it always anyway.
-
->>> platform.turn_on_instruments()
-
-turns on the signal output for the generator instruments (local oscillators, voltage sources and current sources). This does not
-actually turn the instruments of the laboratory on, it only opens and closes their signal output generation. You might want to skip this
-step aswell if the instruments outputs are already open, but again we recommend you to do it always anyway.
+    platform.turn_on_instruments()
+    # Turns on the signal output for the generator instruments (local oscillators, voltage sources and current sources).
+    # This does not actually turn the instruments of the laboratory on, it only opens and closes their signal output generation.
+    # You might want to skip this step aswell if the instruments outputs are already open, but again we recommend you to do it always anyway.
 
 |
 
 Executing a circuit with Platform:
 -----------------------------------
+Platform offers the capabiliy of executing circuits defined with `Qibo, an open-source middleware for quantum computing <https://qibo.science/>`_.
 
-To execute a circuit you first need to build, connect and setup the platform as explained in the above examples, which together look like:
-
-.. code-block:: python
-
-    import qililab as ql
-
-    # Building the platform:
-    platform = ql.build_platform(runcard="runcards/galadriel.yml")
-
-    # Connecting and setting up the platform:
-    platform.connect()
-    platform.initial_setup()
-    platform.turn_on_instruments()
-
-|
-
-Now you need to define your own Qibo circuit, for example you could build something like a pi pulse and a measurement gate on qubit q (``int``):
+To execute a circuit then you first need to build, connect and setup the platform as in the above examples, and then you need to define your
+Qibo circuit, for example you could build something like a pi pulse and a measurement gate on qubit ``q`` (``int``):
 
 .. code-block:: python3
 
@@ -115,9 +101,7 @@ Now you need to define your own Qibo circuit, for example you could build someth
     circuit.add(gates.X(q))
     circuit.add(gates.M(q))
 
-|
-
-And finally, you are ready to execute it the circuit with the platform:
+And now, you can execute it with the platform:
 
 >>> result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
 >>> result.array
@@ -138,7 +122,7 @@ Running a Rabi sequence with Platform:
 ---------------------------------------
 
 To do a Rabi sequence, you need to build, connect and setup the platform, and you also need a circuit with a
-pi pulse and a measurement gate in qubit q (``int``), as in the previous examples:
+pi pulse and a measurement gate in qubit ``q`` (``int``), as in the previous examples, which all together look like:
 
 .. code-block:: python
 
@@ -163,8 +147,8 @@ pi pulse and a measurement gate in qubit q (``int``), as in the previous example
     platform.turn_on_instruments()
 
 Now to run the Rabi sequence, you would need to run this sequence by looping over the gain of the AWG used
-to create the pi pulse. To do so, you need to use the `set_parameter` method with the alias of the bus used
-to drive qubit 0 (Let's assume it's called "drive_q0"):
+to create the pi pulse. To do so, you need to use the ``set_parameter()`` method with the alias of the bus used
+to drive qubit ``q`` (let's assume it's called ``"drive_q"``):
 
 .. code-block:: python3
 
@@ -172,7 +156,7 @@ to drive qubit 0 (Let's assume it's called "drive_q0"):
     gain_values = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9, 1.0]
 
     for gain in gain_values:
-        platform.set_parameter(alias="drive_q0", parameter=ql.Parameter.GAIN, value=gain)
+        platform.set_parameter(alias="drive_q", parameter=ql.Parameter.GAIN, value=gain)
         result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
         results.append(result.array)
 
@@ -252,8 +236,11 @@ basically for doing it in qubit q (``int``), you need:
     platform.turn_on_instruments()
 
 Now to run the Ramsey sequence, you would need to run this sequence by looping over the `t` parameter of the wait (Align) gate. To do so,
-since the parameter is inside the Qibo circuit, you will need to use Qibo own `circuit.set_parameters` method, putting the parameters you want to
+since the parameter is inside the Qibo circuit, you will need to use Qibo own ``circuit.set_parameters`` method, putting the parameters you want to
 set in the order they appear in the circuit construction:
+
+.. note::
+    For more information, please visit the Qibo documentation about `qibo.models.circuit.set_parameter() <https://qibo.science/qibo/stable/api-reference/qibo.html#gates:~:text=circuit%E2%80%99s%20gate%20queue.-,set_parameters,-(parameters)>`_ method.
 
 .. code-block:: python3
 

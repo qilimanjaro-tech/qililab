@@ -171,7 +171,9 @@ def save_platform(path: str, platform: Platform) -> str:
 def build_platform(
     runcard: str | dict | None = None, path: str | None = None, connection: API | None = None, new_drivers: bool = False
 ) -> Platform:
-    """Build a :class:`.Platform` object, given one of two things:
+    """Builds a :class:`.Platform` object, given a :ref:`runcard <runcards>`.
+
+    Such runcard can be passed in one of the following two ways:
         - a path to a YAML file containing a dictionary of the serialized platform (runcard).
         - directly a dictionary of the serialized platform (runcard).
 
