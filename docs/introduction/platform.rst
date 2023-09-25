@@ -13,13 +13,12 @@ The :class:`.Platform` object is the responsible for managing the initialization
 
 - Instruments
 
-Tutorial for using the Platform class:
-------------------------------------------------------------
+Below you can find a beginner's tutorial on how to use the :class:`.Platform` class to execute quantum experiments on your hardware.
 
 Building and printing a Platform:
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----------------------------------
 
-To build a platform, you need to use the :meth:`qililab.build_platform()` function:
+To build a platform, you need to use the :meth:`ql.build_platform()` function:
 
 .. code-block:: python
 
@@ -27,7 +26,7 @@ To build a platform, you need to use the :meth:`qililab.build_platform()` functi
 
     platform = ql.build_platform(runcard="runcards/galadriel.yml")
 
-where "runcards/galadriel.yml" is the path to a YAML file containing a dictionary of the serialized platform. This dictionary contains the information to connect, setup and control the laboratory.
+where ``"runcards/galadriel.ym"`` is the path to a YAML file containing the :ref:`runcard <runcards>`, a dictionary of the serialized platform. This dictionary contains the information to connect, setup and control the laboratory.
 
 .. note::
 
@@ -39,7 +38,7 @@ You can see if the platform has been set correctly printing the platform ``name`
 galadriel
 
 >>> print(platform.chip)
-Chip with 5 qubits and 12 ports:
+Chip with 2 qubits and 6 ports:
 * Port drive_line_q0 (drive): ----|qubit_0|----
 * Port drive_line_q1 (drive): ----|qubit_1|----
 * Port flux_line_q0 (flux): ----|qubit_0|----
@@ -54,20 +53,20 @@ Bus flux_line_q0_bus:  -----|QCM1|------|qubit_0|----
 Bus drive_line_q1_bus:  -----|QCM-RF1|------|qubit_1|----
 Bus flux_line_q1_bus:  -----|QCM1|------|qubit_1|----
 
-where you can see the connections between the buses and the chips.
+where you can see the connections between the buses, the instruments and the elements of the chip.
 
 |
 
 Connecting and setting up the instruments with Platform:
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------------------------------------
 
 First you need to build the platform as explained in the above example.
 
 .. note::
 
-    You need to have access to the IP's addresses provided in the serialized platform (runcard), in order to connect, and therefore in order to continue.
+    You need to have access to the IP's addresses provided in the runcard (serialized platform), in order to connect, and therefore in order to continue.
 
-Now, to connect to the instruments, set them up and turn the signal outputs on, you need to use the following methods:
+Now, to connect to the instruments, set all the parameters defined in the runcard and turn the sources outputs on, you need to use the following methods:
 
 >>> platform.connect()
 
@@ -75,7 +74,7 @@ connects to all the instruments and blocks the connection for other users. You m
 
 >>> platform.initial_setup()
 
-sets the values of the serialized platform (runcard) to the connected instruments. You might want to skip this step if you think no
+sets the values of the runcard (serialized platform) to the connected instruments. You might want to skip this step if you think no
 parameters have been modified since last time, but we recommend you to do it always anyway.
 
 >>> platform.turn_on_instruments()
@@ -87,7 +86,7 @@ step aswell if the instruments outputs are already open, but again we recommend 
 |
 
 Executing a circuit with Platform:
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------------------
 
 To execute a circuit you first need to build, connect and setup the platform as explained in the above examples, which together look like:
 
@@ -136,7 +135,7 @@ given that you are using only 1 sequencer to acquire the results, you would obta
 |
 
 Running a Rabi sequence with Platform:
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------------------
 
 To do a Rabi sequence, you need to build, connect and setup the platform, and you also need a circuit with a
 pi pulse and a measurement gate in qubit q (``int``), as in the previous examples:
@@ -191,7 +190,7 @@ excited state!
 |
 
 A faster Rabi sequence, translating the circuit to pulses:
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------------------------------------------
 
 Since you are looping over variables that are independent of the circuit (in this case, the gain of the AWG),
 you can speed up the experiment by translating the circuit into pulses only once:
@@ -225,7 +224,7 @@ array([[5, 4, 3, 2, 1, 2, 3],
 |
 
 Ramsey sequence, looping over a parameter inside a the circuit:
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----------------------------------------------------------------
 
 To do a Ramsey, you also need to build, connect and setup the platform, but the circuit is different from the previous,
 basically for doing it in qubit q (``int``), you need:

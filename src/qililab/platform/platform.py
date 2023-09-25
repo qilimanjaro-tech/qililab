@@ -54,7 +54,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
     .. note::
 
-        This class should be instantiated with the :meth:`ql.build_platform()` function, by passing a serialized platform (runcard) dictionary
+        This class should be instantiated with the :meth:`ql.build_platform()` function, by passing a runcard (serialized platform dictionary)
         or a path to the location of the YAML file containing it.
 
         You can find more information about the runcard structure, in the documentation :ref:`Runcards <runcards>` section.
@@ -81,13 +81,13 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
             All the following examples are explained in detail in the :ref:`Platform <platform>` section of the documentation. But a few thing to keep in mind:
 
-            - In order to connect you need to have access to the IP’s addresses provided in the serialized platform (runcard), and connection is necessary for the next steps of the examples.
+            - In order to connect you need to have access to the IP’s addresses provided in the :ref:`runcard <runcards>` (serialized platform), and connection is necessary for the next steps of the examples.
 
-            - You might want to skip the `platform.initial_setup()` and the `platform.turn_on_instruments()` if you think nothing has been modified since last time, but we recommend you to do it always.
+            - You might want to skip the ``platform.initial_setup()`` and the ``platform.turn_on_instruments()`` if you think nothing has been modified since last time, but we recommend you to do it always.
 
-            - `platform.turn_on_instruments()` does not actually turn the instruments of the laboratory on, it only opens and closes their signal output generation.
+            - ``platform.turn_on_instruments()`` does not actually turn the instruments of the laboratory on, it only opens and closes their signal output generation.
 
-            - You can print `platform.chip` and `platform.buses` at any moment, to check the platform structure.
+            - You can print ``platform.chip`` and ``platform.buses`` at any moment, to check the platform structure.
 
 
         **1. Executing a circuit with Platform:**
@@ -127,7 +127,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         .. note::
 
-            The obtained vlaue correspond to the integral of the I/Q signals received by the digitizer.
+            The obtained value correspond to the integral of the I/Q signals received by the digitizer.
             And they have shape `(#sequencers, 2, #bins)`, in this case we only have 1 sequencer and 1 bin.
 
         |
@@ -148,7 +148,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
                 results.append(result.array)
 
-        Now you can use `np.hstack` to stack the results horizontally. By doing this, you would obtain an
+        Now you can use ``np.hstack`` to stack the results horizontally. By doing this, you would obtain an
         array with shape `(2, N)`, where N is the number of elements inside the loop:
 
         >>> import numpy as np
@@ -167,7 +167,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         you can speed up the experiment by translating the circuit into pulses beforehand, only once, and then, executing the obtained
         pulses inside the loop.
 
-        Which is the same as before, but passing the `pulse_schedule` instead than the `circuit`, to the `execute` method:
+        Which is the same as before, but passing the ``pulse_schedule`` instead than the ``circuit``, to the ``execute()`` method:
 
         .. code-block:: python
 
@@ -196,9 +196,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         **4. Ramsey sequence, looping over a parameter inside the circuit:**
 
         To run a Ramsey sequence you also need to build, connect and setup the platform as before, but the circuit will be different from the previous,
-        and also this time you need to loop over a parameter of the circuit, concretely we will loop over the time of the wait (Align) gate.
+        and also this time you need to loop over a parameter of the circuit, concretely we will loop over the time of the wait (``Align``) gate.
 
-        To do so, since the parameter is inside the Qibo circuit, you will need to use Qibo own `circuit.set_parameters()` method, writting the
+        To do so, since the parameter is inside the Qibo circuit, you will need to use Qibo own ``circuit.set_parameters()`` method, writting the
         parameters you want to set in the same order they appear in the circuit construction:
 
         .. code-block:: python
@@ -232,8 +232,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
                 results_list.append(result.array)
 
-        so we were always setting `np.pi/2` to the `theta` parameter of the first `RX` gate, then the looped wait time `t` in the `Align` gate,
-        and then another `np.pi/2` to the second `RX` gate."""
+        so we were always setting ``np.pi/2`` to the ``theta`` parameter of the first ``RX`` gate, then the looped wait time ``t`` in the ``Align`` gate,
+        and then another ``np.pi/2`` to the second ``RX`` gate."""
 
     def __init__(self, runcard: Runcard, connection: API | None = None):
         self.name = runcard.name
