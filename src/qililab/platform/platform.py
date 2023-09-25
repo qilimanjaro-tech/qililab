@@ -62,7 +62,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
     When you have an initilized :class:`Platform`, the typical first three steps (which normally only need to be done at the start) are:
 
     >>> platform.connect() # Connects to all the instruments.
-    >>> platform.initial_setup()  # Sets the values stored in the runcard.
+    >>> platform.initial_setup()  # Sets the parameters defined in the runcard.
     >>> platform.turn_on_instruments()  # Turns the signal outputs on.
 
     And then, for each experiment you want to run, you normally would repeat:

@@ -23,13 +23,9 @@ from qililab.pulse import PulseBusSchedule, PulseDistortion
 
 
 class BusDriver(ABC):
-    """Bus Class.
+    """Derived: :class:`DriveBus`, :class:`FluxBus` and :class:`ReadoutBus`
 
-    Bases:
-        `abc.ABC <https://docs.python.org/3/library/abc.html#abc.ABC>`_.
-
-    Derived:
-        :class:`DriveBus`, :class:`FluxBus` and :class:`ReadoutBus`
+    Bus abstract base class.
 
     Args:
         alias (str): Bus alias.

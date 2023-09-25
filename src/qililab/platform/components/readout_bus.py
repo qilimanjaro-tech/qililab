@@ -23,9 +23,6 @@ from qililab.result.qblox_results.qblox_result import QbloxResult
 class ReadoutBus(BusDriver):
     """Qililab's driver for Readout Bus
 
-    Bases:
-        :class:`BusDriver`.
-
     Args:
         alias: Bus alias.
         port (int): Port to target.
