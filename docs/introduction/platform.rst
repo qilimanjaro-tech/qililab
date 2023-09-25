@@ -13,7 +13,7 @@ The :class:`.Platform` object is the responsible for managing the initialization
 
 - Instruments
 
-Tutorial for using the Platform class (:class:`.Platform`):
+Tutorial for using the Platform class:
 ------------------------------------------------------------
 
 Building and printing a Platform:
