@@ -24,7 +24,9 @@ from qililab.utils import Factory
 
 @dataclass(frozen=True, eq=True, kw_only=True)
 class PulseDistortion(FactoryElement):
-    """Base class for the pulse distortions. Every child of this interface needs to contain an `apply` and `to/from_dict` methods (for serialization).
+    """Derived: :class:`BiasTeeCorrection`, :class:`ExponentialCorrection` and :class:`LFilterCorrection`.
+
+    Base class for the pulse distortions. Every child of this interface needs to contain an `apply` and `to/from_dict` methods (for serialization).
 
     The `apply` method will apply the distortion correction to the respective passed envelope, and then will call `normalize_envelope` method of this base class.
 
@@ -56,9 +58,6 @@ class PulseDistortion(FactoryElement):
     .. code-block:: python3
 
         final_envelope = almost_final_envelope * self.norm_factor
-
-    Derived:
-        :class:`BiasTeeCorrection`, :class:`ExponentialCorrection` and :class:`LFilterCorrection`.
 
     Args:
         norm_factor (float): The manual normalization factor that multiplies the envelope in the apply() method. Defaults to 1 (no effect).

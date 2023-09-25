@@ -32,9 +32,6 @@ class BiasTeeCorrection(PulseDistortion):
 
     For more info, check `SUPLEMENTAL MATERIAL <https://arxiv.org/abs/1907.04818>`_.
 
-    Bases:
-        :class:`PulseDistortion`.
-
     Args:
         tau_bias_tee (float): Time constant.
         sampling_rate (float, optional): Sampling rate. Defaults to 1.

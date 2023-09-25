@@ -34,9 +34,6 @@ class ExponentialCorrection(PulseDistortion):
 
     For more info, check `SUPLEMENTAL MATERIAL IV. B. <https://arxiv.org/abs/1907.04818>`_.
 
-    Bases:
-        :class:`PulseDistortion`.
-
     Args:
         tau_bias_tee (float): Time constant
         amp (float): Amplitude constant

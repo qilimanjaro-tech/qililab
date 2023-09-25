@@ -52,9 +52,6 @@ class LFilterCorrection(PulseDistortion):
                              -1              -N
                  a[0] + a[1]z  + ... + a[N] z
 
-    Bases:
-        :class:`PulseDistortion`.
-
     Args:
         a (list[float]): The denominator coefficient vector in a 1-D sequence.
         b (list[float]): The numerator coefficient vector in a 1-D sequence.
