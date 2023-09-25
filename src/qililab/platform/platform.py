@@ -54,7 +54,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
     .. note::
 
-        This class should be instantiated with the :meth:`qililab.build_platform()` function, by passing a serialized platform (runcard) dictionary
+        This class should be instantiated with the :meth:`ql.build_platform()` function, by passing a serialized platform (runcard) dictionary
         or a path to the location of the YAML file containing it.
 
         You can find more information about the runcard structure, in the documentation :ref:`Runcards <runcards>` section.
@@ -71,7 +71,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
     >>> result = platform.execute(...) # Executes the platform.
 
     Args:
-        runcard (Runcard): Runcard dataclass containing the serialized platform (chip, instruments, buses...), created during :meth:`qililab.build_platform()` given a dictionary.
+        runcard (Runcard): Runcard dataclass containing the serialized platform (chip, instruments, buses...), created during :meth:`ql.build_platform()` given a dictionary.
         connection (API | None = None): `Qiboconnection's <https://pypi.org/project/qiboconnection>`_ API class used to block access to other users when connected
             to the platform.
 
