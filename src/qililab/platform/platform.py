@@ -124,11 +124,12 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         >>> result.array
         array([[5.],
                 [5.]])
+        !!! Change this results for the actual ones !!!
 
         .. note::
 
             The obtained value correspond to the integral of the I/Q signals received by the digitizer.
-            And they have shape `(#sequencers, 2, #bins)`, in this case we only have 1 sequencer and 1 bin.
+            And they have shape `(#sequencers, 2, #bins)`, in this case you only have 1 sequencer and 1 bin.
 
         |
 
@@ -155,6 +156,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         >>> np.hstack(results)
         array([[5, 4, 3, 2, 1, 2, 3],
                 [5, 4, 3, 2, 1, 2, 3]])
+        !!! Change this results for the actual ones !!!
 
         You can see how the integrated I/Q values oscillated, indicating that qubit 0 oscillates between ground and
         excited state!
@@ -190,13 +192,14 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         >>> np.hstack(results)
         array([[5, 4, 3, 2, 1, 2, 3],
                 [5, 4, 3, 2, 1, 2, 3]])
+        !!! Change this results for the actual ones !!!
 
         |
 
         **4. Ramsey sequence, looping over a parameter inside the circuit:**
 
         To run a Ramsey sequence you also need to build, connect and setup the platform as before, but the circuit will be different from the previous,
-        and also this time you need to loop over a parameter of the circuit, concretely we will loop over the time of the ``Wait`` gate.
+        and also this time you need to loop over a parameter of the circuit, concretely you will need to loop over the time of the ``Wait`` gate.
 
         To do so, since the parameter is inside the Qibo circuit, you will need to use Qibo own ``circuit.set_parameters()`` method, writting the
         parameters you want to set in the same order they appear in the circuit construction:
@@ -224,23 +227,32 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             circuit.add(gates.M(q))
 
             # Looping over the wait time t, to execute the Ramsey:
-            results_list = []
+            results = []
             wait_times = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
             for wait in wait_times:
                 circuit.set_parameters([np.pi/2, wait, np.pi/2])
                 result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
-                results_list.append(result.array)
+                results.append(result.array)
 
-        so we were always setting ``np.pi/2`` to the ``theta`` parameter of the first ``RX`` gate, then the looped wait time ``t`` in the ``Wait`` gate,
-        and then another ``np.pi/2`` to the second ``RX`` gate."""
+        so you were always setting ``np.pi/2`` to the ``theta`` parameter of the first ``RX`` gate, then the looped wait time ``t`` in the ``Wait`` gate,
+        and then another ``np.pi/2`` to the second ``RX`` gate.
+
+        And if you print the results, you see how you obtain the sinusoidal expected behaviour!
+
+        >>> results = np.hstack(results)
+        >>> results
+        array([[5, 4, 3, 2, 1, 2, 3],
+                [5, 4, 3, 2, 1, 2, 3]])
+        !!! Change this results for the actual sinusoidal ones (change wait_times of execution if needed) !!!
+    """
 
     def __init__(self, runcard: Runcard, connection: API | None = None):
         self.name = runcard.name
         """Name of the platform (``str``) """
 
         self.device_id = runcard.device_id
-        """Device id of the platform (``int``). This attribute is needed for `qiboconnection` to save results remotely."""
+        """Device id of the platform (``int``). This attribute is needed for ``qiboconnection`` to save results remotely."""
 
         self.gates_settings = runcard.gates_settings
         """Gate settings and definitions of the platform (``dataclass``). Needed to decompose gates into pulses. """
@@ -265,13 +277,19 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """All the buses of the platform and their needed settings (``dataclass``). Each individual bus is contained in a list inside the dataclass."""
 
         self.connection = connection
-        """API connection of the platform (``API | None``). Same as the passed argument. Defaults to None."""
+        """API ``qiboconnection`` of the platform (``API | None``). Same as the passed argument. Defaults to None."""
 
         self._connected_to_instruments: bool = False
         """Boolean describing the connection to the instruments. Defaults to False (not connected)."""
 
     def connect(self, manual_override=False):
-        """Block the given device and connect to the instruments via qiboconnection's `API` and the `device_id`.
+        """Connects to all the instruments and blocks the connection for other users.
+
+        You must be connected in order to set up and turn on instruments, or in order to execute the platform.
+
+        To connect, your computer must be in the same network of the instruments specified in the :ref:`runcard <runcards>` (with their corresponding `device_id` and IP's addresses).
+
+        Such connection is handled via `qiboconnection's <https://pypi.org/project/qiboconnection/>`_ `API` in the ``platform.connection`` attribute.
 
         Args:
             manual_override (bool, optional): If ``True``, avoid checking if the device is blocked (surpasses any blocked connection). This will stop any
@@ -289,22 +307,33 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         logger.info("Connected to the instruments")
 
     def initial_setup(self):
-        """Set the initial setup of the instruments."""
+        """Sets the values of the :ref:`runcard <runcards>` to the connected instruments.
+
+        We recommend you to do this always after a connection, to ensure that no parameter is different from the current runcard settings.
+        """
         self.instrument_controllers.initial_setup()
         logger.info("Initial setup applied to the instruments")
 
     def turn_on_instruments(self):
-        """Turn on the instruments."""
+        """Turns on the signal output for the generator instruments (local oscillators, voltage sources and current sources).
+
+        This does not actually turn the instruments of the laboratory on, it only opens their signal output generation.
+
+        We recommend you to do this always after a connection and a setup, to ensure that everything is ready for an execution.
+        """
         self.instrument_controllers.turn_on_instruments()
         logger.info("Instruments turned on")
 
     def turn_off_instruments(self):
-        """Turn off the instruments."""
+        """Turns off the signal output for the generator instruments (local oscillators, voltage sources and current sources).
+
+        This does not actually turn the instruments of the laboratory off, it only closes their signal output generation.
+        """
         self.instrument_controllers.turn_off_instruments()
         logger.info("Instruments turned off")
 
     def disconnect(self):
-        """Close connection to the instrument controllers."""
+        """Closes the connection to all the instruments."""
         if self.connection is not None:
             self.connection.release_device(device_id=self.device_id)
         if not self._connected_to_instruments:
@@ -315,7 +344,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         logger.info("Disconnected from instruments")
 
     def get_element(self, alias: str):
-        """Get platform element and to which bus is connected, through its alias.
+        """Gets the platform element and to which bus is connected, through its alias.
 
         Args:
             alias (str): Element alias to identify it.
@@ -344,7 +373,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         return element
 
     def _get_bus_by_qubit_index(self, qubit_index: int) -> tuple[Bus, Bus, Bus]:
-        """Find buses associated with the given qubit index.
+        """Finds buses associated with the given qubit index.
 
         Args:
             qubit_index (int): Qubit index to get the buses from.
@@ -366,7 +395,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         return flux_bus, control_bus, readout_bus
 
     def _get_bus_by_alias(self, alias: str | None = None):
-        """Get bus given its alias.
+        """Gets buses given its alias.
 
         Args:
             alias (str | None, optional): Bus alias to identify it. Defaults to None.
@@ -384,13 +413,13 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         alias: str,
         channel_id: int | None = None,
     ):
-        """Set a parameter of a platform element.
+        """Sets any parameter of a platform element.
 
         Args:
             parameter (Parameter): Name of the parameter to change.
             value (float | str | bool): New value to set in the parameter.
             alias (str): Alias of the bus where the parameter is set.
-            channel_id (int, optional): ID of the channel we want to use to set the parameter. Defaults to None.
+            channel_id (int, optional): ID of the channel you want to use to set the parameter. Defaults to None.
         """
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
         if alias == "platform" or regex_match is not None:
@@ -435,10 +464,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         return instrument_controllers
 
     def to_dict(self):
-        """Return all platform information as a dictionary. Used for the platform serialization.
+        """Return all platform information as a dictionary, called the :ref:`runcard <runcards>`. Used for the platform serialization.
 
         Returns:
-            dict: Dictionary of the serialized platform.
+            dict: Dictionary of the serialized platform
         """
         name_dict = {RUNCARD.NAME: self.name}
         device_id = {RUNCARD.DEVICE_ID: self.device_id}
@@ -478,10 +507,12 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         num_bins: int = 1,
         queue: Queue | None = None,
     ) -> Result:
-        """Execute a circuit or a pulse schedule using the platform instruments.
+        """Compiles and executes a circuit or a pulse schedule, using the platform instruments.
 
-        If a :class:`Circuit` is given, then it will be translated into a :class:`PulseSchedule` by using the transpilation
-        settings of the platform.
+        If in the ``program`` argument, a :class:`Circuit` is given, first it will be translated into a :class:`PulseSchedule` by using the transpilation
+        settings of the platform. And then the pulse schedules will be compiled into the assembly programs and executed.
+
+        To compile to assembly programs the ``platform.compile()`` method is called, check its documentation for more information.
 
         Args:
             program (:class:`PulseSchedule` | :class:`Circuit`): Circuit or pulse schedule to execute.
@@ -530,7 +561,12 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         return results[0]
 
     def compile(self, program: PulseSchedule | Circuit, num_avg: int, repetition_duration: int, num_bins: int) -> dict:
-        """Compiles the circuit / pulse schedule into a set of assembly programs.
+        """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
+
+        If in the ``program`` argument, a :class:`Circuit` is given, first it will be translated into a :class:`PulseSchedule` by using the transpilation
+        settings of the platform. And then the pulse schedules will be compiled into the assembly programs.
+
+        This methods gets called during the ``platform.execute()`` method, check its documentation for more information.
 
         Args:
             program (:class:`PulseSchedule` | :class:`Circuit`): Circuit or pulse schedule to compile.
@@ -539,7 +575,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             num_bins (int): Number of bins used.
 
         Returns:
-            dict: Dictionary of compiled assembly programs.
+            dict: Dictionary of compiled assembly programs. The key is the bus alias (``str``), and the value is the assembly compilation (``list``).
         """
         # We have a circular import because Platform uses CircuitToPulses and vice versa
         from qililab.pulse.circuit_to_pulses import (  # pylint: disable=import-outside-toplevel, cyclic-import

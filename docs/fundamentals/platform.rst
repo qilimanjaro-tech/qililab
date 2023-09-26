@@ -107,6 +107,7 @@ And now, you can execute it with the platform:
 >>> result.array
 array([[5.],
         [5.]])
+!!! Change this results for the actual ones !!!
 
 When disabling scope acquisition mode, the array obtained has shape `(#sequencers, 2, #bins)`. In this case,
 given that you are using only 1 sequencer to acquire the results, you would obtain an array with shape `(2, #bins)`.
@@ -167,6 +168,7 @@ array with shape `(2, N)`, where N is the number of elements inside the loop:
 >>> results
 array([[5, 4, 3, 2, 1, 2, 3],
         [5, 4, 3, 2, 1, 2, 3]])
+!!! Change this results for the actual ones !!!
 
 You can see how the integrated I/Q values oscillated, indicating that qubit 0 oscillates between ground and
 excited state!
@@ -204,10 +206,11 @@ If you now stack and print the results, you see how you obtain similar results, 
 >>> results
 array([[5, 4, 3, 2, 1, 2, 3],
         [5, 4, 3, 2, 1, 2, 3]])
+!!! Change this results for the actual ones !!!
 
 |
 
-Ramsey sequence, looping over a parameter inside a the circuit:
+Ramsey sequence, looping over a parameter inside the circuit:
 ----------------------------------------------------------------
 
 To do a Ramsey, you also need to build, connect and setup the platform, but the circuit is different from the previous,
@@ -235,25 +238,40 @@ basically for doing it in qubit q (``int``), you need:
     platform.initial_setup()
     platform.turn_on_instruments()
 
-where we have added two default qibo ``RX`` gates, with a qililab ``Wait`` gate in between, which is just a personalized qibo gate that adds a
-free evolution of duration ``t`` that corresponds to a rotation at the detuning frequency, around the Z axis.
+where you would add two default qibo ``RX`` gates, with a qililab ``Wait`` gate in between, which is just a personalized qibo gate that adds a
+free evolution of duration ``t`` that corresponds to a rotation at the detuning frequency, around the Z axis:
 
-Now to run the Ramsey sequence, you would need to run this sequence by looping over the ``t`` parameter of the ``Wait`` gate. To do so,
-since the parameter is inside the Qibo circuit, you will need to use Qibo own ``circuit.set_parameters()`` method, putting the parameters you want to
-set in the order they appear in the circuit construction:
+.. image:: platform_images/ramsey_bloch.png
+  :width: 500
+  :align: center
+
+
+Now to run the Ramsey sequence, you would need to run this looping over the ``t`` parameter of the ``Wait`` gate. Which would give a
+different `Z` axis height projection for each wait time (sinusoidally).
+
+To do so, since the parameter is inside the Qibo circuit, you will need to use Qibo own ``circuit.set_parameters()`` method, putting the parameters
+you want to set in the order they appear in the circuit construction:
 
 .. note::
     For more information, please visit the Qibo documentation about `qibo.models.circuit.set_parameter() <https://qibo.science/qibo/stable/api-reference/qibo.html#gates:~:text=circuit%E2%80%99s%20gate%20queue.-,set_parameters,-(parameters)>`_ method.
 
 .. code-block:: python3
 
-    results_list = []
+    results = []
     wait_times = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
     for wait in wait_times:
         circuit.set_parameters([np.pi/2, wait, np.pi/2])
         result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
-        results_list.append(result.array)
+        results.append(result.array)
 
-which would change the gates parameters for each execution. Concretely, we  were always setting `np.pi/2` to the `theta` parameter of the first
+which would change the gates parameters for each execution. Concretely, you are always setting `np.pi/2` to the `theta` parameter of the first
 `RX` gate, then the looped wait time `t` in the `Wait` gate, and then another `np.pi/2` to the second `RX` gate.
+
+And if you print the results, you see how you obtain the sinusoidal expected behaviour!
+
+>>> results = np.hstack(results)
+>>> results
+array([[5, 4, 3, 2, 1, 2, 3],
+        [5, 4, 3, 2, 1, 2, 3]])
+!!! Change this results for the actual sinusoidal ones (change wait_times of execution if needed) !!!
