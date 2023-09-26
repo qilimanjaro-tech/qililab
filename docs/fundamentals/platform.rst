@@ -148,7 +148,13 @@ pi pulse and a measurement gate in qubit ``q`` (``int``), as in the previous exa
     platform.turn_on_instruments()
 
 Now to run the Rabi sequence, you would need to run this sequence by looping over the gain of the AWG used
-to create the pi pulse. To do so, you need to use the ``set_parameter()`` method with the alias of the bus used
+to create the pi pulse:
+
+.. image:: platform_images/rabi.png
+  :width: 400
+  :align: center
+
+To do so, you need to use the ``set_parameter()`` method with the alias of the bus used
 to drive qubit ``q`` (let's assume it's called ``"drive_q"``):
 
 .. code-block:: python3
