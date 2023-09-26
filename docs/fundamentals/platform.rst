@@ -160,7 +160,7 @@ to drive qubit ``q`` (let's assume it's called ``"drive_q"``):
         result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
         results.append(result.array)
 
-No you can use `np.hstack` to stack the obtained results horizontally. By doing this, you would obtain an
+And then you can use ``np.hstack`` to stack the obtained results horizontally. By doing this, you would obtain an
 array with shape `(2, N)`, where N is the number of elements inside the loop:
 
 >>> results = np.hstack(results)
@@ -223,7 +223,7 @@ basically for doing it in qubit q (``int``), you need:
     # Defining the Ramsey circuit:
     circuit = Circuit(q + 1)
     circuit.add(gates.RX(q, theta=np.pi/2))
-    circuit.add(gates.Align(q, t=0))
+    circuit.add(ql.Wait(q, t=0))
     circuit.add(gates.RX(q, theta=np.pi/2))
     circuit.add(gates.M(q))
 
@@ -235,8 +235,11 @@ basically for doing it in qubit q (``int``), you need:
     platform.initial_setup()
     platform.turn_on_instruments()
 
-Now to run the Ramsey sequence, you would need to run this sequence by looping over the `t` parameter of the wait (Align) gate. To do so,
-since the parameter is inside the Qibo circuit, you will need to use Qibo own ``circuit.set_parameters`` method, putting the parameters you want to
+where we have added two default qibo ``RX`` gates, with a qililab ``Wait`` gate in between, which is just a personalized qibo gate that adds a
+free evolution of duration ``t`` that corresponds to a rotation at the detuning frequency, around the Z axis.
+
+Now to run the Ramsey sequence, you would need to run this sequence by looping over the ``t`` parameter of the ``Wait`` gate. To do so,
+since the parameter is inside the Qibo circuit, you will need to use Qibo own ``circuit.set_parameters()`` method, putting the parameters you want to
 set in the order they appear in the circuit construction:
 
 .. note::
@@ -253,4 +256,4 @@ set in the order they appear in the circuit construction:
         results_list.append(result.array)
 
 which would change the gates parameters for each execution. Concretely, we  were always setting `np.pi/2` to the `theta` parameter of the first
-`RX` gate, then the looped wait time `t` in the `Align` gate, and then another `np.pi/2` to the second `RX` gate.
+`RX` gate, then the looped wait time `t` in the `Wait` gate, and then another `np.pi/2` to the second `RX` gate.

@@ -81,7 +81,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
             All the following examples are explained in detail in the :ref:`Platform <platform>` section of the documentation. But a few thing to keep in mind:
 
-            - In order to connect you need to have access to the IP’s addresses provided in the :ref:`runcard <runcards>` (serialized platform), and connection is necessary for the next steps of the examples.
+            - To connect, your computer must be in the same network of the instruments specified in the runcard (with their IP's addresses), and connection is necessary for the next steps of the examples.
 
             - You might want to skip the ``platform.initial_setup()`` and the ``platform.turn_on_instruments()`` if you think nothing has been modified since last time, but we recommend you to do it always.
 
@@ -196,7 +196,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         **4. Ramsey sequence, looping over a parameter inside the circuit:**
 
         To run a Ramsey sequence you also need to build, connect and setup the platform as before, but the circuit will be different from the previous,
-        and also this time you need to loop over a parameter of the circuit, concretely we will loop over the time of the wait (``Align``) gate.
+        and also this time you need to loop over a parameter of the circuit, concretely we will loop over the time of the ``Wait`` gate.
 
         To do so, since the parameter is inside the Qibo circuit, you will need to use Qibo own ``circuit.set_parameters()`` method, writting the
         parameters you want to set in the same order they appear in the circuit construction:
@@ -219,7 +219,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             # Defining the Ramsey circuit:
             circuit = Circuit(q + 1)
             circuit.add(gates.RX(q, theta=np.pi/2))
-            circuit.add(gates.Align(q, t=0))
+            circuit.add(ql.Wait(q, t=0))
             circuit.add(gates.RX(q, theta=np.pi/2))
             circuit.add(gates.M(q))
 
@@ -232,7 +232,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
                 results_list.append(result.array)
 
-        so we were always setting ``np.pi/2`` to the ``theta`` parameter of the first ``RX`` gate, then the looped wait time ``t`` in the ``Align`` gate,
+        so we were always setting ``np.pi/2`` to the ``theta`` parameter of the first ``RX`` gate, then the looped wait time ``t`` in the ``Wait`` gate,
         and then another ``np.pi/2`` to the second ``RX`` gate."""
 
     def __init__(self, runcard: Runcard, connection: API | None = None):
