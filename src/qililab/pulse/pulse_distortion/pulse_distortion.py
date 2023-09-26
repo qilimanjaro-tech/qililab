@@ -24,7 +24,7 @@ from qililab.utils import Factory
 
 @dataclass(frozen=True, eq=True, kw_only=True)
 class PulseDistortion(FactoryElement):
-    """Derived: :class:`BiasTeeCorrection`, :class:`ExponentialCorrection` and :class:`LFilterCorrection`.
+    """Derived: :class:`BiasTeeCorrection`, :class:`ExponentialCorrection` and :class:`LFilterCorrection`
 
     Base class for the pulse distortions. Every child of this interface needs to contain an `apply` and `to/from_dict` methods (for serialization).
 
