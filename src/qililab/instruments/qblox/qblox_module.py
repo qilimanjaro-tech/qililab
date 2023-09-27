@@ -363,7 +363,11 @@ class QbloxModule(AWG):
 
         if parameter == Parameter.GAIN:
             return sequencer.gain_i, sequencer.gain_q
-        return getattr(sequencer, parameter.value)
+
+        if hasattr(sequencer, parameter.value):
+            return getattr(sequencer, parameter.value)
+
+        raise ParameterNotFound(f"Cannot find parameter {parameter.value} in instrument {self.alias}")
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_num_bins(self, value: float | str | bool, sequencer_id: int):

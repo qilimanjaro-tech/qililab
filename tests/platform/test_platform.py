@@ -306,3 +306,19 @@ class TestMethods:
         """Test the ``get_parameter`` method with platform parameters."""
         value = getattr(platform.gates_settings, parameter.value)
         assert value == platform.get_parameter(parameter=parameter, alias="platform")
+
+    def test_get_parameter_with_delay(self, platform: Platform):
+        """Test the ``get_parameter`` method with the delay of a bus."""
+        bus = platform.get_bus_by_alias(alias="drive_line_q0_bus")
+        assert bus is not None
+        assert bus.delay == platform.get_parameter(parameter=Parameter.DELAY, alias="drive_line_q0_bus")
+
+    @pytest.mark.parametrize("parameter", [Parameter.IF, Parameter.GAIN, Parameter.LO_FREQUENCY])
+    def test_get_parameter_of_bus(self, parameter, platform: Platform):
+        """Test the ``get_parameter`` method with the parameters of a bus."""
+        CHANNEL_ID = 0
+        bus = platform.get_bus_by_alias(alias="drive_line_q0_bus")
+        assert bus is not None
+        assert bus.get_parameter(parameter=parameter, channel_id=CHANNEL_ID) == platform.get_parameter(
+            parameter=parameter, alias="drive_line_q0_bus", channel_id=CHANNEL_ID
+        )
