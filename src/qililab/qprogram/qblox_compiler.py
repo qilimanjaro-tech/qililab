@@ -119,7 +119,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                 appended = handler(element)
                 if isinstance(element, Block):
                     traverse(element)
-                    if isinstance(element, (ForLoop, Parallel, Loop)):
+                    if isinstance(element, (ForLoop, Parallel, Loop, Average)):
                         self._handle_sync(element=Sync(buses=None))
                     if appended:
                         for bus in self._buses:
@@ -349,6 +349,8 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
 
     def _handle_sync(self, element: Sync):
         buses = set(element.buses) if element.buses is not None else set(self._buses.keys())
+        if len(buses) <= 1:
+            return
         buses_with_dynamic_or_sync_durations = set(
             bus for bus in buses if self._buses[bus].dynamic_durations or self._buses[bus].sync_durations
         )
@@ -556,7 +558,11 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
     @staticmethod
     def _convert_for_loop_values(for_loop: ForLoop, operation: Operation):
         convert = QbloxCompiler._convert_value(operation)
-        return tuple(convert(value) for value in (for_loop.start, for_loop.stop, for_loop.step))
+        iterations = math.ceil((for_loop.stop - for_loop.start) / (for_loop.step))
+        qblox_start = convert(for_loop.start)
+        qblox_stop = convert(for_loop.stop)
+        qblox_step = math.ceil((qblox_stop - qblox_start) / iterations)
+        return (qblox_start, qblox_stop, qblox_step)
 
     @staticmethod
     def _convert_value(operation: Operation) -> Callable[[Any], int]:
