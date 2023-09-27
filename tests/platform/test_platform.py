@@ -15,6 +15,7 @@ from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.instrument_controllers import InstrumentControllers
 from qililab.instruments import AWG, AWGAnalogDigitalConverter, SignalGenerator
 from qililab.instruments.instruments import Instruments
+from qililab.instruments.qblox import QbloxModule
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
 from qililab.settings import Runcard
@@ -336,7 +337,10 @@ class TestMethods:
         """Test that we can get a parameter of a ``QbloxModule`` with one sequencers without specifying a channel
         id."""
         bus = platform.get_bus_by_alias(alias="drive_line_q0_bus")
-        bus.system_control.instruments[0].settings.num_sequencers = 1
+        assert isinstance(bus, Bus)
+        qblox_module = bus.system_control.instruments[0]
+        assert isinstance(qblox_module, QbloxModule)
+        qblox_module.settings.num_sequencers = 1
         assert platform.get_parameter(parameter=Parameter.GAIN, alias="drive_line_q0_bus") == bus.get_parameter(
             parameter=Parameter.GAIN
         )
