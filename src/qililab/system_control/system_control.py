@@ -122,3 +122,15 @@ class SystemControl(FactoryElement, ABC):
                 instrument.set_parameter(parameter, value, channel_id)
                 return
         raise ParameterNotFound(f"Could not find parameter {parameter.value} in the system control {self.name}")
+
+    def get_parameter(self, parameter: Parameter, channel_id: int | None = None):
+        """Gets a parameter of a specific instrument.
+
+        Args:
+            parameter (Parameter): Name of the parameter to get.
+            channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
+        """
+        for instrument in self.instruments:
+            with contextlib.suppress(ParameterNotFound):
+                return instrument.get_parameter(parameter, channel_id)
+        raise ParameterNotFound(f"Could not find parameter {parameter.value} in the system control {self.name}")

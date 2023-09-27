@@ -169,6 +169,16 @@ class InstrumentController(BusElement, ABC):
             raise ValueError("Reset value Must be a boolean.")
         self.settings.reset = value
 
+    def get_parameter(
+        self,
+        parameter: Parameter,
+        channel_id: int | None = None,  # pylint: disable=unused-argument
+    ):
+        """updates the reset settings for the controller"""
+        if parameter is not Parameter.RESET:
+            raise ValueError("Reset is the only property that can be set for an Instrument Controller.")
+        return self.settings.reset
+
     @CheckConnected
     def turn_on(self):
         """Turn on an instrument."""
