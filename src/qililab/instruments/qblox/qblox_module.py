@@ -69,6 +69,7 @@ class QbloxModule(AWG):
         Args:
             awg_sequencers (Sequence[AWGQbloxSequencer]): list of settings for each sequencer
             out_offsets (list[float]): list of offsets for each output of the qblox module
+            trigger network delay (int): delay between triggers sent to cluster's trigger network, see https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/cluster/feedback.html
         """
 
         awg_sequencers: Sequence[AWGQbloxSequencer]
@@ -97,8 +98,6 @@ class QbloxModule(AWG):
                 for sequencer in self.awg_sequencers
             ]
             super().__post_init__()
-        
-
 
     settings: QbloxModuleSettings
     device: Pulsar | QcmQrm
@@ -302,6 +301,17 @@ class QbloxModule(AWG):
             Block: _description_
         """
 
+        # get pulse information from settings
+        act_rst_settings = self.settings.active_reset_settings
+        act_rst_wait = sum((setting["added"] for setting in act_rst_settings)) * self.settings.trigger_network_delay
+        setting_k = next(
+            enumerate(setting for setting in act_rst_settings if setting["qubit"] == pulse_bus_schedule.qubit)
+        )
+        pi_pulse = setting_k[1]["X"]
+        m_pulse = setting_k[1]["M"]
+        # mark added as true
+        self.settings.active_reset_settings[setting_k[0]]["added"] = True
+
         # sync sequencers before start of sequence
         act_rst.append_component(WaitSync(4))
 
@@ -309,9 +319,8 @@ class QbloxModule(AWG):
             # acquire instruction
             # measure and add wait sync at the end
 
-
-            pulse_event = pulse_bus_schedule.timeline[0]
-            waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
+            pulse_event = pi_pulse
+            waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())  # TODO: add pulse to waveforms
 
             act_rst.append_component(ResetPh())
             gain = int(np.abs(pulse_event.pulse.amplitude) * AWG_MAX_GAIN)  # np.abs() needed for negative pulses
@@ -340,7 +349,6 @@ class QbloxModule(AWG):
             #     pulse_event.start_time = pulse_event.start_time - rst_pulse_time
 
         elif "drive" in pulse_bus_schedule.port:
-
             pulse_event = pulse_bus_schedule.timeline[0]
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
 

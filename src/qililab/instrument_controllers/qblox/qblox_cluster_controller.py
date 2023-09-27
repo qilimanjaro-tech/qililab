@@ -35,6 +35,10 @@ class QbloxClusterController(QbloxController):
     number_available_modules = 20
     device: Cluster
 
+    active_reset: bool = False
+    active_reset_settings: list[dict[str, any]]
+    trigger_network_delay: int = 260
+
     @dataclass
     class QbloxClusterControllerSettings(QbloxController.QbloxControllerSettings):
         """Contains the settings of a specific Qblox Cluster Controller."""

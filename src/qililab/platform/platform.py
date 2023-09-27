@@ -21,7 +21,6 @@ from queue import Queue
 
 import numpy as np
 from qibo.gates import M
-from qililab.utils.qibo_gates import Wait # FIXME: change wait gate and Drag to the same location
 from qibo.models import Circuit
 from qiboconnection.api import API
 
@@ -33,14 +32,15 @@ from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.utils import InstrumentFactory
-from qililab.pulse import PulseSchedule, PulseEvent, Pulse
+from qililab.pulse import Pulse, PulseEvent, PulseSchedule
+from qililab.pulse.circuit_to_pulses import CircuitToPulses
 from qililab.result import Result
 from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
 from qililab.transpiler.native_gates import Drag  # FIXME: avoid circular import problems
-from qililab.typings.enums import Line, Parameter, InstrumentControllerName
+from qililab.typings.enums import InstrumentControllerName, Line, Parameter
 from qililab.typings.yaml_type import yaml
-from qililab.pulse.circuit_to_pulses import CircuitToPulses
+from qililab.utils.qibo_gates import Wait  # FIXME: change wait gate and Drag to the same location
 
 from .components import Bus, Buses
 from .components.bus_element import dict_factory
@@ -455,7 +455,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             pulse_schedule = translator.translate(circuits=[program])[0]
             if self.gates_settings.active_reset is True:
                 self._add_active_reset_settings(circuit=program)
-                
+
         else:
             pulse_schedule = program
 
@@ -468,7 +468,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         return programs
 
     def _add_active_reset_settings(self, circuit: Circuit) -> Circuit:
-        """Prepends an active reset 
+        """Prepends an active reset
 
         Args:
             program (Circuit): qibo circuit to which we prepend the reset gates
@@ -484,23 +484,26 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         for gate in circuit.queue:
             for qubit in gate.qubits:
                 qubits.add(qubit)
-        
+
         act_rst_settings = []
         c = Circuit(len(nqubits))
         c.add([M(qubit) for qubit in nqubits])
         c.add([Drag(qubit, np.pi, 0) for qubit in nqubits])
 
         translator = CircuitToPulses(platform=self)
+        # TODO: use next instead of lists here
         pulse_schedule = translator.translate(circuits=[c])[0]
-        measurements = [pulse_bus_schedule for pulse_bus_schedule in pulse_schedule if pulse_bus_schedule.port == "feedline_input"][0]
+        measurements = [
+            pulse_bus_schedule for pulse_bus_schedule in pulse_schedule if pulse_bus_schedule.port == "feedline_input"
+        ][0]
         for qubit in nqubits:
             m_pulse = [pulse_event for pulse_event in measurements.timeline if pulse_event.qubit == qubit]
-            pi_pulse = [pulse_bus_schedule.timeline[0] for pulse_bus_schedule in pulse_schedule if f"drive_line_q{qubit}_bus" in pulse_bus_schedule.port][0]
-            settings = {
-                    "qubit": qubit,
-                    "M": m_pulse,
-                    "X": pi_pulse,
-                    }
+            pi_pulse = [
+                pulse_bus_schedule.timeline[0]
+                for pulse_bus_schedule in pulse_schedule
+                if f"drive_line_q{qubit}_bus" in pulse_bus_schedule.port
+            ][0]
+            settings = {"qubit": qubit, "M": m_pulse, "X": pi_pulse, "added": False}
             act_rst_settings.append(settings.copy())
 
         # add active reset settings to instrument and set active reset as true
@@ -508,5 +511,5 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             if instrument_controller.name == InstrumentControllerName.QBLOX_CLUSTER:
                 instrument_controller.active_reset = True
                 instrument_controller.active_reset_settings = act_rst_settings
-            
 
+        # TODO: raise error if active reset set to true but there isnt any device to do it
