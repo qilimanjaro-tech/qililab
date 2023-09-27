@@ -172,7 +172,7 @@ class Instrument(BusElement, ABC):
         """
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
-    def get(self, parameter: Parameter, channel_id: int | None = None):
+    def get(self, parameter: Parameter, channel_id: int | None = None):  # pylint: disable=unused-argument
         """Get instrument parameter.
 
         Args:
