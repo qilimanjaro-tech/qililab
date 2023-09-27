@@ -313,7 +313,10 @@ class TestMethods:
         assert bus is not None
         assert bus.delay == platform.get_parameter(parameter=Parameter.DELAY, alias="drive_line_q0_bus")
 
-    @pytest.mark.parametrize("parameter", [Parameter.IF, Parameter.GAIN, Parameter.LO_FREQUENCY])
+    @pytest.mark.parametrize(
+        "parameter",
+        [Parameter.IF, Parameter.GAIN, Parameter.LO_FREQUENCY, Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT2],
+    )
     def test_get_parameter_of_bus(self, parameter, platform: Platform):
         """Test the ``get_parameter`` method with the parameters of a bus."""
         CHANNEL_ID = 0
@@ -321,4 +324,19 @@ class TestMethods:
         assert bus is not None
         assert bus.get_parameter(parameter=parameter, channel_id=CHANNEL_ID) == platform.get_parameter(
             parameter=parameter, alias="drive_line_q0_bus", channel_id=CHANNEL_ID
+        )
+
+    def test_get_parameter_of_qblox_module_without_channel_id_raises_error(self, platform: Platform):
+        """Test that getting a parameter of a ``QbloxModule`` with multiple sequencers without specifying a channel
+        id raises an error."""
+        with pytest.raises(ValueError, match="Cannot update parameter gain without specifying a channel_id."):
+            platform.get_parameter(parameter=Parameter.GAIN, alias="drive_line_q0_bus")
+
+    def test_get_parameter_of_qblox_module_without_channel_id_and_1_sequencer(self, platform: Platform):
+        """Test that we can get a parameter of a ``QbloxModule`` with one sequencers without specifying a channel
+        id."""
+        bus = platform.get_bus_by_alias(alias="drive_line_q0_bus")
+        bus.system_control.instruments[0].settings.num_sequencers = 1
+        assert platform.get_parameter(parameter=Parameter.GAIN, alias="drive_line_q0_bus") == bus.get_parameter(
+            parameter=Parameter.GAIN
         )
