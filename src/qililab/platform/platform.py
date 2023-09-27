@@ -283,6 +283,21 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """Get bus given an alias."""
         return next((bus for bus in self.buses if bus.alias == alias), None)
 
+    def get_parameter(self, parameter: Parameter, alias: str, channel_id: int | None = None):
+        """Get platform parameter.
+
+        Args:
+            parameter (Parameter): Name of the parameter to get.
+            alias (str): Alias of the bus where the parameter is set.
+            channel_id (int, optional): ID of the channel we want to use to set the parameter. Defaults to None.
+        """
+        regex_match = re.search(GATE_ALIAS_REGEX, alias)
+        if alias == "platform" or regex_match is not None:
+            self.gates_settings.get_parameter(alias=alias, parameter=parameter, channel_id=channel_id)
+            return
+        element = self.get_element(alias=alias)
+        element.get_parameter(parameter=parameter, channel_id=channel_id)
+
     def set_parameter(
         self,
         parameter: Parameter,

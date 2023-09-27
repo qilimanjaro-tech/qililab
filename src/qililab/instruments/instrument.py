@@ -173,6 +173,18 @@ class Instrument(BusElement, ABC):
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
     @CheckDeviceInitialized
+    def get(self, parameter: Parameter, channel_id: int | None = None):
+        """Get instrument parameter.
+
+        Args:
+            parameter (Parameter): Name of the parameter to get.
+            channel_id (int | None): Channel identifier of the parameter to update.
+        """
+        if hasattr(self.settings, parameter.value):
+            return getattr(self.settings, parameter.value)
+        raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
+
+    @CheckDeviceInitialized
     @abstractmethod
     def turn_on(self):
         """Turn on an instrument."""
@@ -235,6 +247,20 @@ class Instrument(BusElement, ABC):
             logger.debug("Setting parameter: %s to value: %f in channel %d", parameter.value, value, channel_id)
 
         return self.setup(parameter=parameter, value=value, channel_id=channel_id)
+
+    def get_parameter(self, parameter: Parameter, channel_id: int | None = None):
+        """Gets the parameter of a specific instrument.
+
+        Args:
+            parameter (Parameter): Name of the parameter to get.
+            channel_id (int | None, optional): Instrument channel, if multiple. Defaults to None.
+
+        Returns:
+            str | int | float | bool: Parameter value.
+        """
+        if not hasattr(self, "device"):
+            raise ValueError(f"Cannot get parameter {parameter} because instrument {self.name.value} is not connected.")
+        return self.get(parameter=parameter, channel_id=channel_id)
 
 
 class ParameterNotFound(Exception):

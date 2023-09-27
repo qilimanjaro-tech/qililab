@@ -174,6 +174,23 @@ class Bus:
                     f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
                 ) from error
 
+    def get_parameter(self, parameter: Parameter, channel_id: int | None = None):
+        """_summary_
+
+        Args:
+            parameter (Parameter): parameter settings of the instrument to update
+            value (int | float | str | bool): value to update
+            channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
+        """
+        if parameter == Parameter.DELAY:
+            return self.settings.delay
+        try:
+            self.system_control.get_parameter(parameter=parameter, channel_id=channel_id)
+        except ParameterNotFound as error:
+            raise ParameterNotFound(
+                f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
+            ) from error
+
     def compile(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
     ) -> list:

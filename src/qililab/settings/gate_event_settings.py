@@ -69,3 +69,16 @@ class GateEventSettings:
             setattr(self.pulse, param, value)
         else:
             self.pulse.shape[param] = value
+
+    def get_parameter(self, parameter: Parameter):
+        """Get a parameter from settings. Will look up into subclasses.
+
+        Args:
+            parameter (Parameter): Parameter to get.
+        """
+        param = parameter.value
+        if hasattr(self, param):
+            return getattr(self, param)
+        if hasattr(self.pulse, param):
+            return getattr(self.pulse, param)
+        return self.pulse.shape[param]

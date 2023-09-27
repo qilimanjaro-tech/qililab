@@ -342,6 +342,28 @@ class QbloxModule(AWG):
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
+    @Instrument.CheckDeviceInitialized
+    def get(self, parameter: Parameter, channel_id: int | None = None):
+        """Get instrument parameter.
+
+        Args:
+            parameter (Parameter): Name of the parameter to get.
+            channel_id (int | None): Channel identifier of the parameter to update.
+        """
+        if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
+            output = int(parameter.value[-1])
+            return self.out_offsets[output]
+
+        if channel_id is None:
+            if self.num_sequencers == 1:
+                channel_id = 0
+            else:
+                raise ValueError("channel not specified to update instrument")
+
+        sequencer = self._get_sequencer_by_id(id=channel_id)
+
+        return getattr(sequencer, parameter.value)
+
     @Instrument.CheckParameterValueFloatOrInt
     def _set_num_bins(self, value: float | str | bool, sequencer_id: int):
         """set num_bins for the specific channel
