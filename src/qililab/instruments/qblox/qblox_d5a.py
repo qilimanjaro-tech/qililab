@@ -100,7 +100,6 @@ class QbloxD5a(VoltageSource):
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
-    @Instrument.CheckDeviceInitialized
     def get(self, parameter: Parameter, channel_id: int | None = None):
         """Get instrument parameter.
 

@@ -172,7 +172,6 @@ class Instrument(BusElement, ABC):
         """
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
-    @CheckDeviceInitialized
     def get(self, parameter: Parameter, channel_id: int | None = None):
         """Get instrument parameter.
 
@@ -258,8 +257,6 @@ class Instrument(BusElement, ABC):
         Returns:
             str | int | float | bool: Parameter value.
         """
-        if not hasattr(self, "device"):
-            raise ValueError(f"Cannot get parameter {parameter} because instrument {self.name.value} is not connected.")
         return self.get(parameter=parameter, channel_id=channel_id)
 
 

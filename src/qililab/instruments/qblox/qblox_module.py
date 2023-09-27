@@ -342,7 +342,6 @@ class QbloxModule(AWG):
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
-    @Instrument.CheckDeviceInitialized
     def get(self, parameter: Parameter, channel_id: int | None = None):
         """Get instrument parameter.
 
@@ -358,10 +357,12 @@ class QbloxModule(AWG):
             if self.num_sequencers == 1:
                 channel_id = 0
             else:
-                raise ValueError("channel not specified to update instrument")
+                raise ValueError(f"Cannot update parameter {parameter.value} without specifying a channel_id.")
 
         sequencer = self._get_sequencer_by_id(id=channel_id)
 
+        if parameter == Parameter.GAIN:
+            return sequencer.gain_i, sequencer.gain_q
         return getattr(sequencer, parameter.value)
 
     @Instrument.CheckParameterValueFloatOrInt

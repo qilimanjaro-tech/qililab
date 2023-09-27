@@ -132,6 +132,5 @@ class SystemControl(FactoryElement, ABC):
         """
         for instrument in self.instruments:
             with contextlib.suppress(ParameterNotFound):
-                instrument.get_parameter(parameter, channel_id)
-                return
+                return instrument.get_parameter(parameter, channel_id)
         raise ParameterNotFound(f"Could not find parameter {parameter.value} in the system control {self.name}")

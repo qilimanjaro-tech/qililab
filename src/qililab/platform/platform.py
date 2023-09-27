@@ -293,10 +293,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
         if alias == "platform" or regex_match is not None:
-            self.gates_settings.get_parameter(alias=alias, parameter=parameter, channel_id=channel_id)
-            return
+            return self.gates_settings.get_parameter(alias=alias, parameter=parameter, channel_id=channel_id)
         element = self.get_element(alias=alias)
-        element.get_parameter(parameter=parameter, channel_id=channel_id)
+        return element.get_parameter(parameter=parameter, channel_id=channel_id)
 
     def set_parameter(
         self,

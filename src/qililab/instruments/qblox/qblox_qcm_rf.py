@@ -106,8 +106,7 @@ class QbloxQCMRF(QbloxQCM):
             return
         super().setup(parameter, value, channel_id)
 
-    @Instrument.CheckDeviceInitialized
-    def get(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def get(self, parameter: Parameter, channel_id: int | None = None):
         """Set a parameter of the Qblox QCM-RF module.
 
         Args:
