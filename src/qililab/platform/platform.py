@@ -289,7 +289,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         To connect, your computer must be in the same network of the instruments specified in the :ref:`runcard <runcards>` (with their corresponding `device_id` and IP's addresses).
 
-        Such connection is handled via `qiboconnection's <https://pypi.org/project/qiboconnection/>`_ `API` in the ``platform.connection`` attribute.
+        Such connection is handled via `qiboconnection's <https://pypi.org/project/qiboconnection>`_ `API` in the ``platform.connection`` attribute.
 
         Args:
             manual_override (bool, optional): If ``True``, avoid checking if the device is blocked (surpasses any blocked connection). This will stop any
