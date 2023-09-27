@@ -107,7 +107,7 @@ And now, you can execute it with the platform:
 >>> result.array
 array([[5.],
         [5.]])
-!!! Change this results for the actual ones !!!
+TODO: !!! Change this results for the actual ones !!!
 
 When disabling scope acquisition mode, the array obtained has shape `(#sequencers, 2, #bins)`. In this case,
 given that you are using only 1 sequencer to acquire the results, you would obtain an array with shape `(2, #bins)`.
@@ -174,7 +174,7 @@ array with shape `(2, N)`, where N is the number of elements inside the loop:
 >>> results
 array([[5, 4, 3, 2, 1, 2, 3],
         [5, 4, 3, 2, 1, 2, 3]])
-!!! Change this results for the actual ones !!!
+TODO: !!! Change this results for the actual ones !!!
 
 You can see how the integrated I/Q values oscillated, indicating that qubit 0 oscillates between ground and
 excited state!
@@ -202,7 +202,7 @@ and then, executing the obtained pulses inside the loop. Which is the same as be
     gain_values = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9, 1.0]
 
     for gain in gain_values:
-        platform.set_parameter(alias="drive_q0", parameter=ql.Parameter.GAIN, value=gain)
+        platform.set_parameter(alias="drive_q", parameter=ql.Parameter.GAIN, value=gain)
         result = platform.execute(program=pulse_schedule, num_avg=1000, repetition_duration=6000)
         results.append(result.array)
 
@@ -212,7 +212,7 @@ If you now stack and print the results, you see how you obtain similar results, 
 >>> results
 array([[5, 4, 3, 2, 1, 2, 3],
         [5, 4, 3, 2, 1, 2, 3]])
-!!! Change this results for the actual ones !!!
+TODO: !!! Change this results for the actual ones !!!
 
 |
 
@@ -280,4 +280,4 @@ And if you print the results, you see how you obtain the sinusoidal expected beh
 >>> results
 array([[5, 4, 3, 2, 1, 2, 3],
         [5, 4, 3, 2, 1, 2, 3]])
-!!! Change this results for the actual sinusoidal ones (change wait_times of execution if needed) !!!
+TODO: !!! Change this results for the actual sinusoidal ones (change wait_times of execution if needed) !!!
