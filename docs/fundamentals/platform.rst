@@ -26,7 +26,7 @@ To build a platform, you need to use the :meth:`ql.build_platform()` function:
 
     platform = ql.build_platform(runcard="runcards/galadriel.yml")
 
-where ``"runcards/galadriel.ym"`` is the path to a YAML file containing the :ref:`runcard <runcards>`, a dictionary of the serialized platform. This dictionary contains the information to connect, setup and control the laboratory.
+where ``"runcards/galadriel.yml"`` is the path to a YAML file containing the :ref:`runcard <runcards>`, a dictionary of the serialized platform. This dictionary contains the information to connect, setup and control the laboratory.
 
 .. note::
 
@@ -194,7 +194,7 @@ you can speed up the experiment by translating the circuit into pulses only once
     pulse_schedule = CircuitToPulses(platform=platform).translate(circuits=[circuit])
 
 and then, executing the obtained pulses inside the loop. Which is the same as before, but passing the
-`pulse_schedule` instead than the `circuit`, to the `execute` method:
+``pulse_schedule`` instead than the ``circuit``, to the ``execute()`` method:
 
 .. code-block:: python3
 
