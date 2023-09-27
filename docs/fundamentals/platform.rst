@@ -26,13 +26,13 @@ To build a platform, you need to use the :meth:`ql.build_platform()` function:
 
     platform = ql.build_platform(runcard="runcards/galadriel.yml")
 
-where ``"runcards/galadriel.yml"`` is the path to a YAML file containing the :ref:`runcard <runcards>`, a dictionary of the serialized platform. This dictionary contains the information to connect, setup and control the laboratory.
+where ``"runcards/galadriel.yml"`` is the path to a YAML file containing the :ref:`runcard <runcards>`, a dictionary of the serialized platform. This dictionary contains the information to connect, set up, and control the laboratory.
 
 .. note::
 
     You can find more information about the actual structure of such dictionary, in the :ref:`Runcards <runcards>` section of the documentation.
 
-You can see if the platform has been set correctly, by printing the platform ``name`` and its ``chip`` and ``buses`` structures:
+You can verify if the platform has been built correctly, by printing the platform ``name``, and its ``chip`` and ``buses`` structures:
 
 >>> print(platform.name)
 galadriel
@@ -53,44 +53,42 @@ Bus flux_line_q0_bus:  -----|QCM1|------|qubit_0|----
 Bus drive_line_q1_bus:  -----|QCM-RF1|------|qubit_1|----
 Bus flux_line_q1_bus:  -----|QCM1|------|qubit_1|----
 
-where you can see the connections between the buses, the instruments and the elements of the chip.
+which displays the connections between the buses, instruments and elements of the chip.
 
 |
 
 Connecting and setting up the instruments with Platform:
 ---------------------------------------------------------
 
-First you need to build the platform as explained in the above example.
-
-.. note::
-
-    To connect, your computer must be in the same network of the instruments specified in the runcard (with their IP's addresses).
-
-Now, to connect to the instruments, set all the parameters defined in the runcard and turn the sources outputs on, you need to use the following methods:
+After building the platform, you need to connect to the instruments, set all the parameters defined in the runcard, and turn on the sources outputs using the following methods:
 
 .. code-block:: python
 
     platform.connect()
     # Connects to all the instruments and blocks the connection for other users.
-    # You must be connected in order to proceed with the following steps.
+    # You must be connected to proceed with the following steps.
 
     platform.initial_setup()
     # Sets the values of the runcard (serialized platform) to the connected instruments.
-    # You might want to skip this step if you think no parameters have been modified since last time, but we recommend you to do it always anyway.
+    # You might want to skip this step if you think no parameters have been modified since last time, but we recommend doing it anyway.
 
     platform.turn_on_instruments()
-    # Turns on the signal output for the generator instruments (local oscillators, voltage sources and current sources).
-    # This does not actually turn the instruments of the laboratory on, it only opens and closes their signal output generation.
-    # You might want to skip this step aswell if the instruments outputs are already open, but again we recommend you to do it always anyway.
+    # Turns on the signal output for the generator instruments (RF, voltage sources and current sources).
+    # This does not actually turn on the instruments of the laboratory, it only opens the signal output generation of the sources.
+    # You might want to skip this step if the instruments outputs are already open, but again, we recommend doing it anyway.
+
+.. note::
+
+    To connect, your computer must be in the same network of the instruments specified in the runcard (with their IP's addresses).
 
 |
 
 Executing a circuit with Platform:
 -----------------------------------
-Platform offers the capabiliy of executing circuits defined with `Qibo, an open-source middleware for quantum computing <https://qibo.science/>`_.
+The Platform offers the capability to execute circuits defined with `Qibo <https://qibo.science/>`_, an open-source middleware for quantum computing.
 
-To execute a circuit then you first need to build, connect and setup the platform as in the above examples, and then you need to define your
-Qibo circuit, for example you could build something like a pi pulse and a measurement gate on qubit ``q`` (``int``):
+To execute a circuit, you first need to build, connect, and set up the platform as shown in the above examples. Then, define your
+Qibo circuit, for example, a pi pulse and a measurement gate on qubit ``q`` (``int``):
 
 .. code-block:: python3
 
@@ -101,7 +99,7 @@ Qibo circuit, for example you could build something like a pi pulse and a measur
     circuit.add(gates.X(q))
     circuit.add(gates.M(q))
 
-And now, you can execute it with the platform:
+And you are ready to execute the circuit with the platform:
 
 >>> result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
 >>> result.array
@@ -109,20 +107,19 @@ array([[5.],
         [5.]])
 TODO: !!! Change this results for the actual ones !!!
 
-When disabling scope acquisition mode, the array obtained has shape `(#sequencers, 2, #bins)`. In this case,
-given that you are using only 1 sequencer to acquire the results, you would obtain an array with shape `(2, #bins)`.
+getting the integrated values of the I/Q signals received by the digitizer!
 
 .. note::
 
-    Remember that the values obtained correspond to the integral of the I/Q signals received by the
-    digitizer.
+    When disabling scope acquisition mode, the array obtained has shape `(#sequencers, 2, #bins)`. In this case,
+    given that you are using only 1 sequencer to acquire the results, you would obtain an array with shape `(2, #bins)`.
 
 |
 
 Running a Rabi sequence with Platform:
 ---------------------------------------
 
-To do a Rabi sequence, you need to build, connect and setup the platform, and you also need a circuit with a
+To perform a Rabi sequence, build, connect and set up the platform, and then create a circuit with a
 pi pulse and a measurement gate in qubit ``q`` (``int``), as in the previous examples, which all together look like:
 
 .. code-block:: python
@@ -154,7 +151,7 @@ to create the pi pulse:
   :width: 400
   :align: center
 
-To do so, you need to use the ``set_parameter()`` method with the alias of the bus used
+To do this, you need to use the ``set_parameter()`` method with the alias of the bus used
 to drive qubit ``q`` (let's assume it's called ``"drive_q"``):
 
 .. code-block:: python3
@@ -193,7 +190,7 @@ you can speed up the experiment by translating the circuit into pulses only once
 
     pulse_schedule = CircuitToPulses(platform=platform).translate(circuits=[circuit])
 
-and then, executing the obtained pulses inside the loop. Which is the same as before, but passing the
+and then, executing the obtained pulses inside the loop, by passing the translated
 ``pulse_schedule`` instead than the ``circuit``, to the ``execute()`` method:
 
 .. code-block:: python3
@@ -206,7 +203,7 @@ and then, executing the obtained pulses inside the loop. Which is the same as be
         result = platform.execute(program=pulse_schedule, num_avg=1000, repetition_duration=6000)
         results.append(result.array)
 
-If you now stack and print the results, you see how you obtain similar results, but much faster!
+This approach yields to similar results, but much faster!
 
 >>> results = np.hstack(results)
 >>> results
@@ -219,8 +216,7 @@ TODO: !!! Change this results for the actual ones !!!
 Ramsey sequence, looping over a parameter inside the circuit:
 ----------------------------------------------------------------
 
-To do a Ramsey, you also need to build, connect and setup the platform, but the circuit is different from the previous,
-basically for doing it in qubit q (``int``), you need:
+To perform a Ramsey sequence, build, connect and setup the platform as before, but this time with a different circuit:
 
 .. code-block:: python
 
@@ -252,10 +248,10 @@ free evolution of duration ``t`` that corresponds to a rotation at the detuning 
   :align: center
 
 
-Now to run the Ramsey sequence, you would need to run this looping over the ``t`` parameter of the ``Wait`` gate. Which would give a
-different `Z` axis height projection for each wait time (sinusoidally).
+To run the Ramsey sequence, you would need to loop over the ``t`` parameter of the ``Wait`` gate. This will produce a
+different `Z` axis height projection for each wait time, resulting in a sinusoidal pattern.
 
-To do so, since the parameter is inside the Qibo circuit, you will need to use Qibo own ``circuit.set_parameters()`` method, putting the parameters
+Since the parameter is inside the Qibo circuit, you will need to use Qibo own ``circuit.set_parameters()`` method, putting the parameters
 you want to set in the order they appear in the circuit construction:
 
 .. note::
@@ -271,10 +267,10 @@ you want to set in the order they appear in the circuit construction:
         result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
         results.append(result.array)
 
-which would change the gates parameters for each execution. Concretely, you are always setting ``np.pi/2``` to the ``theta`` parameter of the first
-``RX`` gate, then the looped wait time ``t`` in the ``Wait`` gate, and then another ``np.pi/2`` to the second ``RX`` gate.
+which for each execution, would set ``np.pi/2`` to the ``theta`` parameters of the ``RX`` gates and the looped ``wait`` time  to the ``t`` parameter of the
+``Wait`` gate.
 
-And if you print the results, you see how you obtain the sinusoidal expected behaviour!
+And finally, if you print the results, you obtain the sinusoidal expected behaviour!
 
 >>> results = np.hstack(results)
 >>> results

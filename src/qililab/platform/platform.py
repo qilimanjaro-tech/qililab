@@ -314,9 +314,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         logger.info("Initial setup applied to the instruments")
 
     def turn_on_instruments(self):
-        """Turns on the signal output for the generator instruments (local oscillators, voltage sources and current sources).
+        """Turns on the signal output for the generator instruments (RF, voltage sources and current sources).
 
-        This does not actually turn the laboratory instruments on, it only opens their signal output generation.
+        This does not actually turn on the laboratory instruments, it only opens the signal output generation of the sources.
 
         We recommend you to do this always after a connection and a setup, to ensure that everything is ready for an execution.
         """
