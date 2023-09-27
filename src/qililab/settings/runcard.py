@@ -214,7 +214,7 @@ class Runcard:
                 return super().get_parameter(parameter=parameter, channel_id=channel_id)
             regex_match = re.search(GATE_ALIAS_REGEX, alias)
             if regex_match is None:
-                raise ValueError(f"Alias {alias} has incorrect format")
+                raise ValueError(f"Could not find gate {alias} in gate settings.")
             name = regex_match["gate"]
             qubits_str = regex_match["qubits"]
             qubits = ast.literal_eval(qubits_str)

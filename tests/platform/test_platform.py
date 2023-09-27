@@ -20,7 +20,7 @@ from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
 from qililab.settings import Runcard
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.system_control import ReadoutSystemControl
-from qililab.typings.enums import InstrumentName
+from qililab.typings.enums import InstrumentName, Parameter
 from qililab.typings.yaml_type import yaml
 from tests.data import Galadriel
 from tests.test_utils import build_platform
@@ -281,3 +281,28 @@ class TestMethods:
                         )
 
         mock_logger.error.assert_called_once_with("Only One Readout Bus allowed. Reading only from the first one.")
+
+    @pytest.mark.parametrize("parameter", [Parameter.AMPLITUDE, Parameter.DURATION, Parameter.PHASE])
+    @pytest.mark.parametrize("gate", ["I(0)", "X(0)", "Y(0)"])
+    def test_get_parameter_of_gates(self, parameter, gate, platform: Platform):
+        """Test the ``get_parameter`` method with gates."""
+        gate_settings = platform.gates_settings.gates[gate][0]
+        assert platform.get_parameter(parameter=parameter, alias=gate) == getattr(gate_settings.pulse, parameter.value)
+
+    @pytest.mark.parametrize("parameter", [Parameter.DRAG_COEFFICIENT, Parameter.NUM_SIGMAS])
+    @pytest.mark.parametrize("gate", ["X(0)", "Y(0)"])
+    def test_get_parameter_of_pulse_shapes(self, parameter, gate, platform: Platform):
+        """Test the ``get_parameter`` method with gates."""
+        gate_settings = platform.gates_settings.gates[gate][0]
+        assert platform.get_parameter(parameter=parameter, alias=gate) == gate_settings.pulse.shape[parameter.value]
+
+    def test_get_parameter_of_gates_raises_error(self, platform: Platform):
+        """Test that the ``get_parameter`` method with gates raises an error when a gate is not found."""
+        with pytest.raises(KeyError, match="Gate Drag for qubits 3 not found in settings"):
+            platform.get_parameter(parameter=Parameter.AMPLITUDE, alias="Drag(3)")
+
+    @pytest.mark.parametrize("parameter", [Parameter.DELAY_BETWEEN_PULSES, Parameter.DELAY_BEFORE_READOUT])
+    def test_get_parameter_of_platform(self, parameter, platform: Platform):
+        """Test the ``get_parameter`` method with platform parameters."""
+        value = getattr(platform.gates_settings, parameter.value)
+        assert value == platform.get_parameter(parameter=parameter, alias="platform")
