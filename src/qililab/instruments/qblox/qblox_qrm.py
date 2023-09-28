@@ -323,7 +323,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             Weights: Acquisition weights.
         """
         weights = Weights()
-        pair = (sequencer.weights_i, sequencer.weights_q)
+        pair = ([float(w) for w in sequencer.weights_i], [float(w) for w in sequencer.weights_q])
         if (sequencer.path_i, sequencer.path_q) == (1, 0):
             pair = pair[::-1]  # swap paths
         weights.add_pair(pair=pair, indices=(0, 1))
@@ -337,9 +337,11 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         return cast(AWGQbloxADCSequencer, self.get_sequencer(sequencer_id)).integration_length
 
     @Instrument.CheckDeviceInitialized
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def setup(
+        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
+    ):
         """set a specific parameter to the instrument"""
         try:
             AWGAnalogDigitalConverter.setup(self, parameter=parameter, value=value, channel_id=channel_id)
         except ParameterNotFound:
-            QbloxModule.setup(self, parameter=parameter, value=value, channel_id=channel_id)
+            QbloxModule.setup(self, parameter=parameter, value=value, channel_id=channel_id, port_id=port_id)

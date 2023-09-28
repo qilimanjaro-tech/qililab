@@ -7,6 +7,7 @@ import pytest
 from qpysequence.sequence import Sequence
 
 from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
+from qililab.instruments import ParameterNotFound
 from qililab.instruments.awg_settings.awg_qblox_adc_sequencer import AWGQbloxADCSequencer
 from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.instruments.qblox import QbloxQRM
@@ -358,7 +359,9 @@ class TestQbloxQRM:
     def test_setup_raises_error(self, qrm: QbloxQRM):
         """Test that the ``setup`` method raises an error when called with a channel id bigger than the number of
         sequencers."""
-        with pytest.raises(ValueError, match="the specified channel id:9 is out of range. Number of sequencers is 2"):
+        with pytest.raises(
+            ParameterNotFound, match="the specified channel id:9 is out of range. Number of sequencers is 2"
+        ):
             qrm.setup(parameter=Parameter.GAIN, value=1, channel_id=9)
 
     def test_setup_out_offset_raises_error(self, qrm: QbloxQRM):
