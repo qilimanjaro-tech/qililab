@@ -60,7 +60,6 @@ class TestQbloxModule:
         sequences = qblox_module.compile(pulse_bus_schedule, nshots=1, repetition_duration=1, num_bins=1)
         program = sequences[0]._program
 
-        expected_gain = int(amplitude * AWG_MAX_GAIN)
         expected_phase = int((phase % (2 * np.pi)) * 1e9 / (2 * np.pi))
 
         bin_loop = program.blocks[2].components[1]
