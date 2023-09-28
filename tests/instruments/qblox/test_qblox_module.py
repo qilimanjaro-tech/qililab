@@ -4,7 +4,6 @@ import copy
 import numpy as np
 import pytest
 from qpysequence.program import Loop, Register
-from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.weights import Weights
 
 from qililab.instruments.awg_settings import AWGQbloxSequencer
