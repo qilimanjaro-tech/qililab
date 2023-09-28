@@ -131,7 +131,7 @@ class SystemControl(FactoryElement, ABC):
                 return
         raise ParameterNotFound(f"Could not find parameter {parameter.value} in the system control {self.name}")
 
-    def get_parameter(self, parameter: Parameter, channel_id: int | None = None):
+    def get_parameter(self, parameter: Parameter, channel_id: int | None = None, port_id: str | None = None):
         """Gets a parameter of a specific instrument.
 
         Args:
@@ -140,5 +140,8 @@ class SystemControl(FactoryElement, ABC):
         """
         for instrument in self.instruments:
             with contextlib.suppress(ParameterNotFound):
-                return instrument.get_parameter(parameter, channel_id)
+                if isinstance(instrument, QbloxModule):
+                    return instrument.get(parameter, channel_id, port_id=port_id)
+                else:
+                    return instrument.get_parameter(parameter, channel_id)
         raise ParameterNotFound(f"Could not find parameter {parameter.value} in the system control {self.name}")

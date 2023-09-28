@@ -309,7 +309,7 @@ class QbloxModule(AWG):
             elif self.num_sequencers == 1:
                 channel_id = 0
             else:
-                raise ParameterNotFound("channel not specified to update instrument")
+                raise ParameterNotFound(f"Cannot update parameter {parameter.value} without specifying a channel_id.")
 
         if channel_id > self.num_sequencers - 1:
             raise ParameterNotFound(
@@ -347,7 +347,7 @@ class QbloxModule(AWG):
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
-    def get(self, parameter: Parameter, channel_id: int | None = None):
+    def get(self, parameter: Parameter, channel_id: int | None = None, port_id: str | None = None):
         """Get instrument parameter.
 
         Args:
@@ -359,10 +359,12 @@ class QbloxModule(AWG):
             return self.out_offsets[output]
 
         if channel_id is None:
-            if self.num_sequencers == 1:
+            if port_id is not None:
+                channel_id = self.get_sequencers_from_chip_port_id(chip_port_id=port_id)[0].identifier
+            elif self.num_sequencers == 1:
                 channel_id = 0
             else:
-                raise ValueError(f"Cannot update parameter {parameter.value} without specifying a channel_id.")
+                raise ParameterNotFound(f"Cannot update parameter {parameter.value} without specifying a channel_id.")
 
         sequencer = self._get_sequencer_by_id(id=channel_id)
 

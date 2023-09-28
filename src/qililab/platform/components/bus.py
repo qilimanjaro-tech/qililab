@@ -187,7 +187,7 @@ class Bus:
         if parameter == Parameter.DELAY:
             return self.settings.delay
         try:
-            return self.system_control.get_parameter(parameter=parameter, channel_id=channel_id)
+            return self.system_control.get_parameter(parameter=parameter, channel_id=channel_id, port_id=self.port)
         except ParameterNotFound as error:
             raise ParameterNotFound(
                 f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
