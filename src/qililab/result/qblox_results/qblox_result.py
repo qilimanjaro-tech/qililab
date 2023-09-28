@@ -165,7 +165,7 @@ class QbloxResult(Result):
             for sequencer in self.qblox_bins_acquisitions.bins
         ]
 
-        return np.concatenate(bins)
+        return np.array(bins[0] if len(bins) == 1 else bins)
 
     @property
     def shape(self) -> list[int]:

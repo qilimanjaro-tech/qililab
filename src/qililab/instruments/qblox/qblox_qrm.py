@@ -323,7 +323,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             Weights: Acquisition weights.
         """
         weights = Weights()
-        pair = (sequencer.weights_i, sequencer.weights_q)
+        pair = ([float(w) for w in sequencer.weights_i], [float(w) for w in sequencer.weights_q])
         if (sequencer.path_i, sequencer.path_q) == (1, 0):
             pair = pair[::-1]  # swap paths
         weights.add_pair(pair=pair, indices=(0, 1))

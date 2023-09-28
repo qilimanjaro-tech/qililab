@@ -76,3 +76,17 @@ class QbloxQRMRF(QbloxQRM):
             self.device.set(parameter.value, value)
             return
         super().setup(parameter, value, channel_id)
+
+    def get(self, parameter: Parameter, channel_id: int | None = None):
+        """Set a parameter of the Qblox QCM-RF module.
+        Args:
+            parameter (Parameter): Parameter name.
+            value (float | str | bool): Value to set.
+            channel_id (int | None, optional): ID of the sequencer. Defaults to None.
+        """
+        if parameter == Parameter.LO_FREQUENCY:
+            parameter = Parameter.OUT0_IN0_LO_FREQ
+
+        if parameter in self.parameters:
+            return getattr(self.settings, parameter.value)
+        return super().get(parameter, channel_id)
