@@ -327,11 +327,16 @@ class TestMethods:
             parameter=parameter, alias="drive_line_q0_bus", channel_id=CHANNEL_ID
         )
 
-    def test_get_parameter_of_qblox_module_without_channel_id_raises_error(self, platform: Platform):
+    def test_get_parameter_of_qblox_module_without_channel_id(self, platform: Platform):
         """Test that getting a parameter of a ``QbloxModule`` with multiple sequencers without specifying a channel
-        id raises an error."""
-        with pytest.raises(ValueError, match="Cannot update parameter gain without specifying a channel_id."):
-            platform.get_parameter(parameter=Parameter.GAIN, alias="drive_line_q0_bus")
+        id still works."""
+        bus = platform.get_bus_by_alias(alias="drive_line_q0_bus")
+        awg = bus.system_control.instruments[0]
+        assert isinstance(awg, QbloxModule)
+        sequencer = awg.get_sequencers_from_chip_port_id(bus.port)[0]
+        assert (sequencer.gain_i, sequencer.gain_q) == platform.get_parameter(
+            parameter=Parameter.GAIN, alias="drive_line_q0_bus"
+        )
 
     def test_get_parameter_of_qblox_module_without_channel_id_and_1_sequencer(self, platform: Platform):
         """Test that we can get a parameter of a ``QbloxModule`` with one sequencers without specifying a channel
