@@ -307,10 +307,10 @@ class QbloxModule(AWG):
             elif self.num_sequencers == 1:
                 channel_id = 0
             else:
-                raise ValueError("channel not specified to update instrument")
+                raise ParameterNotFound("channel not specified to update instrument")
 
         if channel_id > self.num_sequencers - 1:
-            raise ValueError(
+            raise ParameterNotFound(
                 f"the specified channel id:{channel_id} is out of range. Number of sequencers is {self.num_sequencers}"
             )
         if parameter == Parameter.GAIN:

@@ -162,6 +162,17 @@ class TestIntegration:
         qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=sequencer_idx)
         qcm_rf.device.set.assert_called_once_with("out1_lo_freq", 2e9)
 
+    def test_setup_with_lo_frequency_with_port_id(self, settings):
+        """Test the `setup` method when using the `Parameter.LO_FREQUENCY` generic parameter."""
+        sequencer_idx = 0
+        qcm_rf = QbloxQCMRF(settings=settings)
+        sequencer = qcm_rf._get_sequencer_by_id(sequencer_idx)
+        sequencer.output_i = 3
+        sequencer.output_q = 2
+        qcm_rf.device = MagicMock()
+        qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, port_id=sequencer.chip_port_id)
+        qcm_rf.device.set.assert_called_once_with("out1_lo_freq", 2e9)
+
     def test_setup_with_lo_frequency_without_channel_id_raises_error(self, settings):
         """Test that calling `setup` when using the `Parameter.LO_FREQUENCY` generic parameter without
         a channel id raises an error."""

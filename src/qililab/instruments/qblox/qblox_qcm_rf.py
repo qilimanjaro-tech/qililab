@@ -15,8 +15,8 @@
 """This file contains the QbloxQCMRF class."""
 from dataclasses import dataclass, field
 
-from qililab.instruments import Instrument  # pylint: disable=cyclic-import
 from qililab.instruments.awg_settings import AWGQbloxSequencer  # pylint: disable=cyclic-import
+from qililab.instruments.instrument import Instrument, ParameterNotFound  # pylint: disable=cyclic-import
 from qililab.instruments.utils.instrument_factory import InstrumentFactory  # pylint: disable=cyclic-import
 from qililab.typings import InstrumentName, Parameter
 
@@ -85,9 +85,9 @@ class QbloxQCMRF(QbloxQCM):
             if channel_id is not None:
                 sequencer: AWGQbloxSequencer = self._get_sequencer_by_id(channel_id)
             elif port_id is not None:
-                sequencer = self.get_sequencers_from_chip_port_id(chip_port_id=port_id)
+                sequencer = self.get_sequencers_from_chip_port_id(chip_port_id=port_id)[0]
             else:
-                raise ValueError(
+                raise ParameterNotFound(
                     "`channel_id` cannot be None when setting the `LO_FREQUENCY` parameter."
                     "Please specify the sequencer index or use the specific Qblox parameter."
                 )
