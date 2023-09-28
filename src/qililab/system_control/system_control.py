@@ -142,6 +142,5 @@ class SystemControl(FactoryElement, ABC):
             with contextlib.suppress(ParameterNotFound):
                 if isinstance(instrument, QbloxModule):
                     return instrument.get(parameter, channel_id, port_id=port_id)
-                else:
-                    return instrument.get_parameter(parameter, channel_id)
+                return instrument.get_parameter(parameter, channel_id)
         raise ParameterNotFound(f"Could not find parameter {parameter.value} in the system control {self.name}")
