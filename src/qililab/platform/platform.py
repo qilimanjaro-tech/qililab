@@ -234,8 +234,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
                 results.append(result.array)
 
-        were you were always setting ``np.pi/2`` to the ``theta`` parameter of the first ``RX`` gate, then the looped wait time ``t`` in the ``Wait`` gate,
-        and then another ``np.pi/2`` to the second ``RX`` gate.
+        which for each execution, would set ``np.pi/2`` to the ``theta`` parameters of the ``RX`` gates, and the looped ``wait`` time  to the ``t`` parameter of the
+        ``Wait`` gate.
 
         If you print the results, you'll see how you obtain the sinusoidal expected behaviour!
 

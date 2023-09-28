@@ -267,7 +267,7 @@ you want to set in the order they appear in the circuit construction:
         result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
         results.append(result.array)
 
-which for each execution, would set ``np.pi/2`` to the ``theta`` parameters of the ``RX`` gates and the looped ``wait`` time  to the ``t`` parameter of the
+which for each execution, would set ``np.pi/2`` to the ``theta`` parameters of the ``RX`` gates, and the looped ``wait`` time  to the ``t`` parameter of the
 ``Wait`` gate.
 
 And finally, if you print the results, you obtain the sinusoidal expected behaviour!
