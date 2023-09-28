@@ -213,6 +213,9 @@ class QbloxModule(AWG):
 
         # Define program's blocks
         program = Program()
+        start = Block(name="start")
+        start.append_component(ResetPh())
+        program.append_block(block=start)
         # Create registers with 0 and 1 (necessary for qblox)
         weight_registers = Register(), Register()
         self._init_weights_registers(registers=weight_registers, values=(0, 1), program=program)
@@ -230,7 +233,6 @@ class QbloxModule(AWG):
         for i, pulse_event in enumerate(timeline):
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
             wait_time = timeline[i + 1].start_time - pulse_event.start_time if (i < (len(timeline) - 1)) else 4
-            bin_loop.append_component(ResetPh())
             gain = int(np.abs(pulse_event.pulse.amplitude) * AWG_MAX_GAIN)  # np.abs() needed for negative pulses
             bin_loop.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
             phase = int((pulse_event.pulse.phase % (2 * np.pi)) * 1e9 / (2 * np.pi))
