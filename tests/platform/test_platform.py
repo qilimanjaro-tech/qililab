@@ -310,7 +310,7 @@ class TestMethods:
 
     def test_get_parameter_with_delay(self, platform: Platform):
         """Test the ``get_parameter`` method with the delay of a bus."""
-        bus = platform.get_bus_by_alias(alias="drive_line_q0_bus")
+        bus = platform._get_bus_by_alias(alias="drive_line_q0_bus")
         assert bus is not None
         assert bus.delay == platform.get_parameter(parameter=Parameter.DELAY, alias="drive_line_q0_bus")
 
@@ -321,7 +321,7 @@ class TestMethods:
     def test_get_parameter_of_bus(self, parameter, platform: Platform):
         """Test the ``get_parameter`` method with the parameters of a bus."""
         CHANNEL_ID = 0
-        bus = platform.get_bus_by_alias(alias="drive_line_q0_bus")
+        bus = platform._get_bus_by_alias(alias="drive_line_q0_bus")
         assert bus is not None
         assert bus.get_parameter(parameter=parameter, channel_id=CHANNEL_ID) == platform.get_parameter(
             parameter=parameter, alias="drive_line_q0_bus", channel_id=CHANNEL_ID
@@ -336,7 +336,7 @@ class TestMethods:
     def test_get_parameter_of_qblox_module_without_channel_id_and_1_sequencer(self, platform: Platform):
         """Test that we can get a parameter of a ``QbloxModule`` with one sequencers without specifying a channel
         id."""
-        bus = platform.get_bus_by_alias(alias="drive_line_q0_bus")
+        bus = platform._get_bus_by_alias(alias="drive_line_q0_bus")
         assert isinstance(bus, Bus)
         qblox_module = bus.system_control.instruments[0]
         assert isinstance(qblox_module, QbloxModule)
