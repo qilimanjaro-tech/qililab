@@ -304,6 +304,8 @@ class QbloxModule(AWG):
         if channel_id is None:
             if port_id is not None:
                 channel_id = self.get_sequencers_from_chip_port_id(chip_port_id=port_id)[0].identifier
+            elif self.num_sequencers == 1:
+                channel_id = 0
             else:
                 raise ValueError("channel not specified to update instrument")
 
