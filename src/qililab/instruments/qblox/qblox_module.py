@@ -293,16 +293,17 @@ class QbloxModule(AWG):
 
     @Instrument.CheckDeviceInitialized
     def setup(  # pylint: disable=too-many-branches, too-many-return-statements
-        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None
+        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
     ):
         """Set Qblox instrument calibration settings."""
         if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
             output = int(parameter.value[-1])
             self._set_out_offset(output=output, value=value)
             return
+
         if channel_id is None:
-            if self.num_sequencers == 1:
-                channel_id = 0
+            if port_id is not None:
+                channel_id = self.get_sequencers_from_chip_port_id(chip_port_id=port_id)[0].identifier
             else:
                 raise ValueError("channel not specified to update instrument")
 
