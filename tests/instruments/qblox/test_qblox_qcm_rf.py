@@ -5,6 +5,7 @@ import pytest
 from qblox_instruments.qcodes_drivers.cluster import Cluster
 from qblox_instruments.types import ClusterType
 
+from qililab.instruments import ParameterNotFound
 from qililab.instruments.qblox import QbloxQCMRF
 from qililab.typings import Parameter
 
@@ -178,7 +179,9 @@ class TestIntegration:
         a channel id raises an error."""
         qcm_rf = QbloxQCMRF(settings=settings)
         qcm_rf.device = MagicMock()
-        with pytest.raises(ValueError, match="`channel_id` cannot be None when setting the `LO_FREQUENCY` parameter"):
+        with pytest.raises(
+            ParameterNotFound, match="`channel_id` cannot be None when setting the `LO_FREQUENCY` parameter"
+        ):
             qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9)
 
     def test_setup_with_lo_frequency_with_2_los(self, settings):
