@@ -20,7 +20,7 @@ def fixture_no_loops_all_operations() -> QProgram:
     qp.set_offset(bus="drive", offset_path0=0.5, offset_path1=0.5)
     qp.play(bus="drive", waveform=drag_pair)
     qp.sync()
-    qp.wait(bus="readout", time=100)
+    qp.wait(bus="readout", duration=100)
     qp.play(bus="readout", waveform=readout_pair)
     qp.acquire(bus="readout", weights=weights_pair)
     return qp
@@ -38,7 +38,7 @@ def fixture_average_loop() -> QProgram:
     with qp.average(shots=1000):
         qp.play(bus="drive", waveform=drag_pair)
         qp.sync()
-        qp.wait(bus="readout", time=100)
+        qp.wait(bus="readout", duration=100)
         qp.play(bus="readout", waveform=readout_pair)
         qp.acquire(bus="readout", weights=weights)
     return qp
@@ -56,7 +56,7 @@ def fixture_acquire_with_weights_of_different_lengths() -> QProgram:
     with qp.average(shots=1000):
         qp.play(bus="drive", waveform=drag_pair)
         qp.sync()
-        qp.wait(bus="readout", time=100)
+        qp.wait(bus="readout", duration=100)
         qp.play(bus="readout", waveform=readout_pair)
         qp.acquire(bus="readout", weights=weights)
     return qp
@@ -73,7 +73,7 @@ def fixture_average_with_for_loop() -> QProgram:
         with qp.for_loop(variable=wait_time, start=0, stop=100, step=4):
             qp.play(bus="drive", waveform=drag_pair)
             qp.sync()
-            qp.wait(bus="readout", time=wait_time)
+            qp.wait(bus="readout", duration=wait_time)
             qp.play(bus="readout", waveform=readout_pair)
             qp.acquire(bus="readout", weights=weights_pair)
     return qp
@@ -93,7 +93,7 @@ def fixture_acquire_loop_with_for_loop_with_weights_of_same_waveform() -> QProgr
         with qp.for_loop(variable=wait_time, start=0, stop=100, step=4):
             qp.play(bus="drive", waveform=drag_pair)
             qp.sync()
-            qp.wait(bus="readout", time=wait_time)
+            qp.wait(bus="readout", duration=wait_time)
             qp.play(bus="readout", waveform=readout_pair)
             qp.acquire(bus="readout", weights=weights)
     return qp
@@ -135,7 +135,7 @@ def fixture_average_with_nested_for_loops() -> QProgram:
             with qp.for_loop(variable=wait_time, start=0, stop=100, step=4):
                 qp.play(bus="drive", waveform=drag_pair)
                 qp.sync()
-                qp.wait(bus="readout", time=wait_time)
+                qp.wait(bus="readout", duration=wait_time)
                 qp.play(bus="readout", waveform=readout_pair)
                 qp.acquire(bus="readout", weights=weights_pair)
     return qp

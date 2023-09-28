@@ -121,13 +121,13 @@ class TestQProgram:
     def test_wait_method(self):
         """Test wait method"""
         qp = QProgram()
-        qp.wait(bus="drive", time=100)
+        qp.wait(bus="drive", duration=100)
 
         assert len(qp._active_block.elements) == 1
         assert len(qp._program.elements) == 1
         assert isinstance(qp._program.elements[0], Wait)
         assert qp._program.elements[0].bus == "drive"
-        assert qp._program.elements[0].time == 100
+        assert qp._program.elements[0].duration == 100
 
     def test_acquire_method_with_weights(self):
         """Test acquire method"""

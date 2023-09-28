@@ -175,24 +175,24 @@ class QProgram:
 
         return QProgram._ForLoopContext(qprogram=self, variable=variable, start=start, stop=stop, step=step)
 
-    def play(self, bus: str, waveform: Waveform | IQPair):
+    def play(self, bus: str, waveform: Waveform | IQPair, duration: int | None = None):
         """Play a single waveform or an I/Q pair of waveforms on the bus.
 
         Args:
             bus (str): Unique identifier of the bus.
             waveform (Waveform | IQPair): A single waveform or an I/Q pair of waveforms
         """
-        operation = Play(bus=bus, waveform=waveform)
+        operation = Play(bus=bus, waveform=waveform, duration=duration)
         self._active_block.append(operation)
 
-    def wait(self, bus: str, time: int):
+    def wait(self, bus: str, duration: int):
         """Adds a delay on the bus with a specified time.
 
         Args:
             bus (str): Unique identifier of the bus.
             time (int): Duration of the delay.
         """
-        operation = Wait(bus=bus, time=time)
+        operation = Wait(bus=bus, duration=duration)
         self._active_block.append(operation)
 
     def acquire(self, bus: str, weights: IQPair):

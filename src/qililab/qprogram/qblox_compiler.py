@@ -53,6 +53,7 @@ class BusInfo:  # pylint: disable=too-many-instance-attributes, too-few-public-m
         self.variable_to_register: dict[Variable, QPyProgram.Register] = {}
         self.waveform_to_index: dict[str, int] = {}
         self.weight_to_index: dict[str, int] = {}
+        self.acquisition_to_index: dict[str, int] = {}
 
         # Create and append the main block to the Sequence's program
         main_block = QPyProgram.Block(name="main")
@@ -67,9 +68,14 @@ class BusInfo:  # pylint: disable=too-many-instance-attributes, too-few-public-m
         self.next_acquisition_index = 0
         self.loop_counter = 0
         self.average_counter = 0
+
+        # Syncing durations
         self.static_duration = 0
         self.dynamic_durations: list[Variable] = []
         self.sync_durations: list[QPyProgram.Register] = []
+
+        # Syncing marker. If true, a real-time instruction has been added since last sync or start of the program.
+        self.marked_for_sync = False
 
 
 class QbloxCompiler:  # pylint: disable=too-few-public-methods
@@ -159,6 +165,11 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
 
         buses = set(collect_buses(self._qprogram._program))
         return {bus: BusInfo() for bus in buses}
+
+    # TODO: Continue this to allow naming acquisitions
+    # def _append_to_acquisitions_of_bus(self, bus: str, name: str | None, num_bins: int):
+    #     name = name or f"acqusition_{self._buses[bus].next_acquisition_index}"
+    #     if name in self._buses[bus].acquisition_to_index:
 
     def _append_to_waveforms_of_bus(self, bus: str, waveform_I: Waveform, waveform_Q: Waveform | None):
         """Append waveforms to Sequence's Waveforms of the given bus.
@@ -331,27 +342,33 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             else convert(element.offset_path1)
         )
         self._buses[element.bus].qpy_block_stack[-1].append_component(
-            component=QPyInstructions.SetAwgOffs(gain_0=offset_0, gain_1=offset_1)
+            component=QPyInstructions.SetAwgOffs(offset_0=offset_0, offset_1=offset_1)
         )
 
     def _handle_wait(self, element: Wait):
         duration: QPyProgram.Register | int
-        if isinstance(element.time, Variable):
-            duration = self._buses[element.bus].variable_to_register[element.time]
-            self._buses[element.bus].dynamic_durations.append(element.time)
+        if isinstance(element.duration, Variable):
+            duration = self._buses[element.bus].variable_to_register[element.duration]
+            self._buses[element.bus].dynamic_durations.append(element.duration)
         else:
             convert = QbloxCompiler._convert_value(element)
-            duration = convert(element.time)
+            duration = convert(element.duration)
             self._buses[element.bus].static_duration += duration
         self._buses[element.bus].qpy_block_stack[-1].append_component(
             component=QPyInstructions.Wait(wait_time=duration)
         )
+        self._buses[element.bus].marked_for_sync = True
 
     def _handle_sync(self, element: Sync):
         buses = set(element.buses) if element.buses is not None else set(self._buses.keys())
+        # If there is no bus marked for sync, return.
+        if all(not self._buses[bus].marked_for_sync for bus in buses):
+            return
+        # Is there any bus that has dynamic durations?
         buses_with_dynamic_or_sync_durations = set(
             bus for bus in buses if self._buses[bus].dynamic_durations or self._buses[bus].sync_durations
         )
+        # If yes, we must add a sync block that calculates the difference between buses dynamically.
         if buses_with_dynamic_or_sync_durations:
             sync_duration_to_be_added: dict[str, QPyProgram.Register] = {}
             for bus in buses:
@@ -380,7 +397,11 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                     # So we jump to next instruction, if register is negative.
                     skip_previous_sync_label = f"sync{self._sync_counter}_self{i}"
                     sync_block.append_component(
-                        component=QPyInstructions.Jlt(a=sync_duration, b=0, instr=f"@{skip_previous_sync_label}")
+                        component=QPyInstructions.Jlt(
+                            a=sync_duration,
+                            b=QbloxCompiler.minimum_wait_duration - 1,
+                            instr=f"@{skip_previous_sync_label}",
+                        )
                     )
                     sync_block.append_component(
                         component=QPyInstructions.Add(
@@ -394,6 +415,8 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                 sync_block.append_component(
                     component=QPyInstructions.Add(origin=sync_register, var=1, destination=sync_register)
                 )
+                # TODO: The following implementation assumes we have only two buses in the sync operation.
+                #       We should change this to allow more buses to be syncronized dynamically.
                 # Add all durations of other bus
                 other_bus = next(other for other in buses if other != bus)
                 # Add static duration
@@ -410,26 +433,29 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                             origin=sync_register, var=dynamic_duration_register, destination=sync_register
                         )
                     )
+                # TODO: Review this again. It currently adds a register from another sequence!
                 # Add durations created by previous syncs, if any.
-                for i, sync_duration in enumerate(self._buses[other_bus].sync_durations):
-                    # For every previous sync, we add its register if the register is positive.
-                    # So we jump to next instruction, if register is negative.
-                    skip_previous_sync_label = f"sync{self._sync_counter}_other{i}"
-                    sync_block.append_component(
-                        component=QPyInstructions.Jlt(a=sync_duration, b=0, instr=f"@{skip_previous_sync_label}")
-                    )
-                    sync_block.append_component(
-                        component=QPyInstructions.Add(
-                            origin=sync_register, var=sync_duration, destination=sync_register
-                        )
-                    )
-                    sync_block.append_component(component=QPyInstructions.Nop().with_label(skip_previous_sync_label))
+                # for i, sync_duration in enumerate(self._buses[other_bus].sync_durations):
+                #     # For every previous sync, we add its register if the register is positive.
+                #     # So we jump to next instruction, if register is negative.
+                #     skip_previous_sync_label = f"sync{self._sync_counter}_other{i}"
+                #     sync_block.append_component(
+                #         component=QPyInstructions.Jlt(a=sync_duration, b=QbloxCompiler.minimum_wait_duration - 1, instr=f"@{skip_previous_sync_label}")
+                #     )
+                #     sync_block.append_component(
+                #         component=QPyInstructions.Add(
+                #             origin=sync_register, var=sync_duration, destination=sync_register
+                #         )
+                #     )
+                #     sync_block.append_component(component=QPyInstructions.Nop().with_label(skip_previous_sync_label))
                 # sync_register now holds the difference of the two buses.
                 # If sync_register > 0, then `bus` is behind, otherwise `other_bus` is behind.
                 # If `other_bus` is behind, skip wait instruction. Else, wait.
                 skip_sync_label = f"sync{self._sync_counter}_skip"
                 sync_block.append_component(
-                    component=QPyInstructions.Jlt(a=sync_register, b=0, instr=f"@{skip_sync_label}")
+                    component=QPyInstructions.Jlt(
+                        a=sync_register, b=QbloxCompiler.minimum_wait_duration - 1, instr=f"@{skip_sync_label}"
+                    )
                 )
                 sync_block.append_component(component=QPyInstructions.Wait(wait_time=sync_register))
                 sync_block.append_component(component=QPyInstructions.Nop().with_label(skip_sync_label))
@@ -450,6 +476,9 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                 sync_duration_to_be_added[bus] = sync_register
             for bus in sync_duration_to_be_added:
                 self._buses[bus].sync_durations.append(sync_duration_to_be_added[bus])
+            # Increate global sync counter
+            self._sync_counter += 1
+        # If no, calculating the difference is trivial.
         else:
             max_duration = max(self._buses[bus].static_duration for bus in buses)
             for bus in buses:
@@ -459,8 +488,8 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                         component=QPyInstructions.Wait(wait_time=duration_diff)
                     )
                     self._buses[bus].static_duration += duration_diff
-        # Increate global sync counter
-        self._sync_counter += 1
+        for bus in buses:
+            self._buses[bus].marked_for_sync = False
 
     def _handle_acquire(self, element: Acquire):
         loops = [
@@ -517,20 +546,36 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                 component=QPyInstructions.Add(origin=bin_register, var=1, destination=bin_register)
             )
         self._buses[element.bus].static_duration += integration_length
-        self._buses[element.bus].next_bin_index += num_bins
+        self._buses[element.bus].next_bin_index = 0  # maybe this counter can be removed completely
         self._buses[element.bus].next_acquisition_index += 1
+        self._buses[element.bus].marked_for_sync = True
 
     def _handle_play(self, element: Play):
         waveform_I, waveform_Q = element.get_waveforms()
-        variables = element.get_variables()
-        if not variables:
-            index_I, index_Q, length = self._append_to_waveforms_of_bus(
+        waveform_variables = element.get_waveform_variables()
+        if not waveform_variables:
+            index_I, index_Q, wf_duration = self._append_to_waveforms_of_bus(
                 bus=element.bus, waveform_I=waveform_I, waveform_Q=waveform_Q
             )
-            self._buses[element.bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.Play(index_I, index_Q, wait_time=length)
-            )
-            self._buses[element.bus].static_duration += length
+            if element.duration is not None and isinstance(element.duration, Variable):
+                duration = self._buses[element.bus].variable_to_register[element.duration]
+                self._buses[element.bus].static_duration += QbloxCompiler.minimum_wait_duration
+                self._buses[element.bus].dynamic_durations.append(element.duration)
+                self._buses[element.bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.Play(index_I, index_Q, wait_time=QbloxCompiler.minimum_wait_duration)
+                )
+                self._buses[element.bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.Wait(wait_time=duration)
+                )
+            else:
+                convert = QbloxCompiler._convert_value(element)
+                duration = element.duration if element.duration is not None else wf_duration
+                duration = convert(duration)
+                self._buses[element.bus].static_duration += duration
+                self._buses[element.bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.Play(index_I, index_Q, wait_time=duration)
+                )
+            self._buses[element.bus].marked_for_sync = True
 
     @staticmethod
     def _get_reference_operation_of_loop(loop: ForLoop, starting_block: Block | None = None):
@@ -549,7 +594,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             return None
         if len(set(map(type, operations))) != 1:
             raise NotImplementedError("Variables referenced in a loop cannot be used in different types of operations.")
-        if isinstance(operations[0], Play):
+        if isinstance(operations[0], Play) and operations[0].get_waveform_variables():
             raise NotImplementedError("TODO: Variables referenced in a loop cannot be used in Play operation.")
         return operations[0]
 
@@ -566,6 +611,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             SetGain: lambda x: int(x * 32_767),
             SetOffset: lambda x: int(x * 32_767),
             Wait: lambda x: int(max(x, QbloxCompiler.minimum_wait_duration)),
+            Play: lambda x: int(max(x, QbloxCompiler.minimum_wait_duration)),
         }
         return conversion_map.get(type(operation), lambda x: int(x))
 
