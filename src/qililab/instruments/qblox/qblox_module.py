@@ -24,7 +24,8 @@ from qpysequence import Sequence as QpySequence
 from qpysequence import Waveforms, Weights
 from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Register
-from qpysequence.program.instructions import Play, ResetPh, SetPh, Stop
+from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop
+from qpysequence.utils.constants import AWG_MAX_GAIN
 
 from qililab.config import logger
 from qililab.instruments.awg import AWG
@@ -233,6 +234,8 @@ class QbloxModule(AWG):
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
             wait_time = timeline[i + 1].start_time - pulse_event.start_time if (i < (len(timeline) - 1)) else 4
             phase = int((pulse_event.pulse.phase % (2 * np.pi)) * 1e9 / (2 * np.pi))
+            gain = int(np.abs(pulse_event.pulse.amplitude) * AWG_MAX_GAIN)  # np.abs() needed for negative pulses
+            bin_loop.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
             bin_loop.append_component(SetPh(phase=phase))
             bin_loop.append_component(
                 Play(
