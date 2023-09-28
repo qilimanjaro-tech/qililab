@@ -112,7 +112,7 @@ class QbloxQCMRF(QbloxQCM):
             return
         super().setup(parameter, value, channel_id)
 
-    def get(self, parameter: Parameter, channel_id: int | None = None):
+    def get(self, parameter: Parameter, channel_id: int | None = None, port_id: str | None = None):
         """Set a parameter of the Qblox QCM-RF module.
 
         Args:
@@ -121,12 +121,15 @@ class QbloxQCMRF(QbloxQCM):
             channel_id (int | None, optional): ID of the sequencer. Defaults to None.
         """
         if parameter == Parameter.LO_FREQUENCY:
-            if channel_id is None:
-                raise ValueError(
+            if channel_id is not None:
+                sequencer: AWGQbloxSequencer = self._get_sequencer_by_id(channel_id)
+            elif port_id is not None:
+                sequencer = self.get_sequencers_from_chip_port_id(chip_port_id=port_id)[0]
+            else:
+                raise ParameterNotFound(
                     "`channel_id` cannot be None when setting the `LO_FREQUENCY` parameter."
                     "Please specify the sequencer index or use the specific Qblox parameter."
                 )
-            sequencer: AWGQbloxSequencer = self._get_sequencer_by_id(channel_id)
             # Remember that a set is ordered! Thus `{1, 0} == {0, 1}` returns True.
             # For this reason, the following checks also take into account swapped paths!
             if {sequencer.output_i, sequencer.output_q} == {0, 1}:
