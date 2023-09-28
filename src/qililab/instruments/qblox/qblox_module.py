@@ -24,8 +24,7 @@ from qpysequence import Sequence as QpySequence
 from qpysequence import Waveforms, Weights
 from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Register
-from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop
-from qpysequence.utils.constants import AWG_MAX_GAIN
+from qpysequence.program.instructions import Play, ResetPh, SetPh, Stop
 
 from qililab.config import logger
 from qililab.instruments.awg import AWG
