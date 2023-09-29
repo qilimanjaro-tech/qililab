@@ -15,8 +15,8 @@
 """This file contains the QbloxQCMRF class."""
 from dataclasses import dataclass, field
 
-from qililab.instruments import Instrument  # pylint: disable=cyclic-import
 from qililab.instruments.awg_settings import AWGQbloxSequencer  # pylint: disable=cyclic-import
+from qililab.instruments.instrument import Instrument, ParameterNotFound  # pylint: disable=cyclic-import
 from qililab.instruments.utils.instrument_factory import InstrumentFactory  # pylint: disable=cyclic-import
 from qililab.typings import InstrumentName, Parameter
 
@@ -71,7 +71,9 @@ class QbloxQCMRF(QbloxQCM):
             self.setup(parameter, getattr(self.settings, parameter.value))
 
     @Instrument.CheckDeviceInitialized
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def setup(
+        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
+    ):
         """Set a parameter of the Qblox QCM-RF module.
 
         Args:
@@ -80,12 +82,16 @@ class QbloxQCMRF(QbloxQCM):
             channel_id (int | None, optional): ID of the sequencer. Defaults to None.
         """
         if parameter == Parameter.LO_FREQUENCY:
-            if channel_id is None:
-                raise ValueError(
+            if channel_id is not None:
+                sequencer: AWGQbloxSequencer = self._get_sequencer_by_id(channel_id)
+            elif port_id is not None:
+                sequencer = self.get_sequencers_from_chip_port_id(chip_port_id=port_id)[0]
+            else:
+                raise ParameterNotFound(
                     "`channel_id` cannot be None when setting the `LO_FREQUENCY` parameter."
                     "Please specify the sequencer index or use the specific Qblox parameter."
                 )
-            sequencer: AWGQbloxSequencer = self._get_sequencer_by_id(channel_id)
+
             # Remember that a set is ordered! Thus `{1, 0} == {0, 1}` returns True.
             # For this reason, the following checks also take into account swapped paths!
             if {sequencer.output_i, sequencer.output_q} == {0, 1}:
@@ -105,3 +111,39 @@ class QbloxQCMRF(QbloxQCM):
             self.device.set(parameter.value, value)
             return
         super().setup(parameter, value, channel_id)
+
+    def get(self, parameter: Parameter, channel_id: int | None = None, port_id: str | None = None):
+        """Set a parameter of the Qblox QCM-RF module.
+
+        Args:
+            parameter (Parameter): Parameter name.
+            value (float | str | bool): Value to set.
+            channel_id (int | None, optional): ID of the sequencer. Defaults to None.
+        """
+        if parameter == Parameter.LO_FREQUENCY:
+            if channel_id is not None:
+                sequencer: AWGQbloxSequencer = self._get_sequencer_by_id(channel_id)
+            elif port_id is not None:
+                sequencer = self.get_sequencers_from_chip_port_id(chip_port_id=port_id)[0]
+            else:
+                raise ParameterNotFound(
+                    "`channel_id` cannot be None when setting the `LO_FREQUENCY` parameter."
+                    "Please specify the sequencer index or use the specific Qblox parameter."
+                )
+            # Remember that a set is ordered! Thus `{1, 0} == {0, 1}` returns True.
+            # For this reason, the following checks also take into account swapped paths!
+            if {sequencer.output_i, sequencer.output_q} == {0, 1}:
+                output = 0
+            elif {sequencer.output_i, sequencer.output_q} == {2, 3}:
+                output = 1
+            else:
+                raise ValueError(
+                    f"Cannot set the LO frequency of sequencer {channel_id} because it is connected to two LOs. "
+                    f"The paths of the sequencer are mapped to outputs {sequencer.output_i} and {sequencer.output_q} "
+                    "respectively."
+                )
+            parameter = Parameter(f"out{output}_lo_freq")
+
+        if parameter in self.parameters:
+            return getattr(self.settings, parameter.value)
+        return super().get(parameter, channel_id)

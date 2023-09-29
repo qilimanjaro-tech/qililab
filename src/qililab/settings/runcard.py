@@ -197,6 +197,31 @@ class Runcard:
             schedule_element = 0 if len(alias.split("_")) == 1 else int(alias.split("_")[1])
             gates_settings[schedule_element].set_parameter(parameter, value)
 
+        def get_parameter(
+            self,
+            parameter: Parameter,
+            channel_id: int | None = None,
+            alias: str | None = None,
+        ):
+            """Get parameter from gate settings.
+
+            Args:
+                parameter (Parameter): Name of the parameter to get.
+                channel_id (int | None, optional): Channel id. Defaults to None.
+                alias (str): String which specifies where the parameter can be found.
+            """
+            if alias is None or alias == "platform":
+                return super().get_parameter(parameter=parameter, channel_id=channel_id)
+            regex_match = re.search(GATE_ALIAS_REGEX, alias)
+            if regex_match is None:
+                raise ValueError(f"Could not find gate {alias} in gate settings.")
+            name = regex_match["gate"]
+            qubits_str = regex_match["qubits"]
+            qubits = ast.literal_eval(qubits_str)
+            gates_settings = self.get_gate(name=name, qubits=qubits)
+            schedule_element = 0 if len(alias.split("_")) == 1 else int(alias.split("_")[1])
+            return gates_settings[schedule_element].get_parameter(parameter)
+
     # Runcard class actual initialization
     name: str
     device_id: int
