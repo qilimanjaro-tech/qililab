@@ -123,6 +123,11 @@ class QbloxModule(AWG):
         for idx, offset in enumerate(self.out_offsets):
             self._set_out_offset(output=idx, value=offset)
 
+    def desync_sequencers(self) -> None:
+        """Desyncs all sequencers."""
+        for sequencer in self.awg_sequencers:
+            self.device.sequencers[sequencer.identifier].sync_en(False)
+
     @property
     def module_type(self):
         """returns the qblox module type. Options: QCM or QRM"""
