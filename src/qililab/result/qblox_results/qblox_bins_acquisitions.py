@@ -56,7 +56,7 @@ class QbloxBinsAcquisitions(Acquisitions):  # pylint: disable=abstract-method
         """
         # Check that all sequencers have the same number of bins.
         if any(len(seq_bins) != (num_bins := len(self.bins[0])) for seq_bins in self.bins):
-            raise IndexError("Sequencers must have the same number of bins.")
+            raise IndexError("Sequencers must have the same number of bins to compute the counts.")
         # TODO: Add limitations to check we are doing single-shot for multi qubit?
         counts_object = Counts(n_qubits=len(self.bins))
         for bin_idx in range(num_bins):
@@ -66,3 +66,20 @@ class QbloxBinsAcquisitions(Acquisitions):  # pylint: disable=abstract-method
             measurement = "".join(str(bit) for bit in measurement_as_list)
             counts_object.add_measurement(state=measurement)
         return counts_object
+
+    def samples(self) -> np.ndarray:
+        """Returns an array containing the measured samples.
+
+        Returns:
+            np.ndarray: An array containing the measured samples (0 or 1).
+        """
+        # Check that all sequencers have the same number of bins.
+        if any(len(seq_bins) != (num_bins := len(self.bins[0])) for seq_bins in self.bins):
+            raise IndexError("Sequencers must have the same number of bins to compute the samples.")
+        samples = []
+        for bin_idx in range(num_bins):
+            # The threshold inside of a qblox bin is the name they use for already classified data as a value between
+            # 0 and 1, not the value used in the comparator to perform such classification.
+            measurement_as_list = [int(bins_data.threshold[bin_idx]) for bins_data in self.bins]
+            samples.append(measurement_as_list)
+        return np.array(samples)

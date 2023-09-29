@@ -142,6 +142,14 @@ class QbloxResult(Result):
         """
         return self.qblox_bins_acquisitions.counts()
 
+    def samples(self) -> np.ndarray:
+        """Returns an array containing the measured samples.
+
+        Returns:
+            np.ndarray: An array containing the measured samples (0 or 1).
+        """
+        return self.qblox_bins_acquisitions.samples()
+
     @property
     def array(self) -> np.ndarray:
         # Save array data
