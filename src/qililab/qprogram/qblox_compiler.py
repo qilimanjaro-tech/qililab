@@ -40,7 +40,7 @@ from qililab.qprogram.variable import Variable
 from qililab.waveforms import IQPair, Waveform
 
 
-class BusInfo:  # pylint: disable=too-many-instance-attributes, too-few-public-methods
+class BusCompilationInfo:  # pylint: disable=too-many-instance-attributes, too-few-public-methods
     """Class representing the information stored by QBloxCompiler for a bus."""
 
     def __init__(self):
@@ -74,7 +74,7 @@ class BusInfo:  # pylint: disable=too-many-instance-attributes, too-few-public-m
         self.dynamic_durations: list[Variable] = []
         self.sync_durations: list[QPyProgram.Register] = []
 
-        # Syncing marker. If true, a real-time instruction has been added since last sync or start of the program.
+        # Syncing marker. If true, a real-time instruction has been added since the last sync or the beginning of the program.
         self.marked_for_sync = False
 
 
@@ -102,7 +102,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         }
 
         self._qprogram: QProgram
-        self._buses: dict[str, BusInfo]
+        self._buses: dict[str, BusCompilationInfo]
         self._sync_counter: int = 0
 
     def compile(self, qprogram: QProgram) -> dict[str, QPy.Sequence]:
@@ -164,7 +164,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                         yield bus
 
         buses = set(collect_buses(self._qprogram._program))
-        return {bus: BusInfo() for bus in buses}
+        return {bus: BusCompilationInfo() for bus in buses}
 
     # TODO: Continue this to allow naming acquisitions
     # def _append_to_acquisitions_of_bus(self, bus: str, name: str | None, num_bins: int):
@@ -181,7 +181,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         """
 
         def handle_waveform(waveform: Waveform | None, default_length: int = 0):
-            _hash = QbloxCompiler._hash(waveform) if waveform else f"zeros {default_length}"
+            _hash = QbloxCompiler._hash_waveform(waveform) if waveform else f"zeros {default_length}"
 
             if _hash in self._buses[bus].waveform_to_index:
                 index = self._buses[bus].waveform_to_index[_hash]
@@ -205,7 +205,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
 
     def _append_to_weights_of_bus(self, bus: str, weights: IQPair):
         def handle_waveform(waveform: Waveform):
-            _hash = QbloxCompiler._hash(waveform)
+            _hash = QbloxCompiler._hash_waveform(waveform)
 
             if _hash in self._buses[bus].weight_to_index:
                 index = self._buses[bus].weight_to_index[_hash]
@@ -599,12 +599,30 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         return operations[0]
 
     @staticmethod
+    def _calculate_iterations(start: int | float, stop: int | float, step: int | float):
+        if step == 0:
+            raise ValueError("Step value cannot be zero")
+
+        # Calculate the raw number of iterations
+        raw_iterations = (stop - start + step) / step
+
+        # If the raw number of iterations is very close to an integer, round it to that integer
+        # This accounts for potential floating-point inaccuracies
+        if abs(raw_iterations - round(raw_iterations)) < 1e-9:
+            iterations = round(raw_iterations)
+        else:
+            # Otherwise, if we're incrementing, take the ceiling, and if we're decrementing, take the floor
+            iterations = math.floor(raw_iterations) if step > 0 else math.ceil(raw_iterations)
+
+        return iterations
+
+    @staticmethod
     def _convert_for_loop_values(for_loop: ForLoop, operation: Operation):
         convert = QbloxCompiler._convert_value(operation)
-        iterations = math.ceil((for_loop.stop - for_loop.start) / (for_loop.step))
+        iterations = QbloxCompiler._calculate_iterations(start=for_loop.start, stop=for_loop.stop, step=for_loop.step)
         qblox_start = convert(for_loop.start)
         qblox_stop = convert(for_loop.stop)
-        qblox_step = math.ceil((qblox_stop - qblox_start) / iterations)
+        qblox_step = (qblox_stop - qblox_start) // (iterations - 1)
         return (qblox_start, qblox_stop, qblox_step)
 
     @staticmethod
@@ -620,7 +638,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         return conversion_map.get(type(operation), lambda x: int(x))
 
     @staticmethod
-    def _hash(waveform: Waveform):
+    def _hash_waveform(waveform: Waveform):
         hashes = {
             key: (value.__dict__ if isinstance(value, Waveform) else value) for key, value in waveform.__dict__.items()
         }
