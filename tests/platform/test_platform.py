@@ -15,13 +15,14 @@ from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.instrument_controllers import InstrumentControllers
 from qililab.instruments import AWG, AWGAnalogDigitalConverter, SignalGenerator
 from qililab.instruments.instruments import Instruments
+from qililab.instruments.qblox import QbloxModule
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
 from qililab.qprogram import QProgram
 from qililab.settings import Runcard
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.system_control import ReadoutSystemControl
-from qililab.typings.enums import InstrumentName
+from qililab.typings.enums import InstrumentName, Parameter
 from qililab.typings.yaml_type import yaml
 from qililab.waveforms import IQPair, Square
 from tests.data import Galadriel
@@ -305,3 +306,70 @@ class TestMethods:
                         )
 
         mock_logger.error.assert_called_once_with("Only One Readout Bus allowed. Reading only from the first one.")
+
+    @pytest.mark.parametrize("parameter", [Parameter.AMPLITUDE, Parameter.DURATION, Parameter.PHASE])
+    @pytest.mark.parametrize("gate", ["I(0)", "X(0)", "Y(0)"])
+    def test_get_parameter_of_gates(self, parameter, gate, platform: Platform):
+        """Test the ``get_parameter`` method with gates."""
+        gate_settings = platform.gates_settings.gates[gate][0]
+        assert platform.get_parameter(parameter=parameter, alias=gate) == getattr(gate_settings.pulse, parameter.value)
+
+    @pytest.mark.parametrize("parameter", [Parameter.DRAG_COEFFICIENT, Parameter.NUM_SIGMAS])
+    @pytest.mark.parametrize("gate", ["X(0)", "Y(0)"])
+    def test_get_parameter_of_pulse_shapes(self, parameter, gate, platform: Platform):
+        """Test the ``get_parameter`` method with gates."""
+        gate_settings = platform.gates_settings.gates[gate][0]
+        assert platform.get_parameter(parameter=parameter, alias=gate) == gate_settings.pulse.shape[parameter.value]
+
+    def test_get_parameter_of_gates_raises_error(self, platform: Platform):
+        """Test that the ``get_parameter`` method with gates raises an error when a gate is not found."""
+        with pytest.raises(KeyError, match="Gate Drag for qubits 3 not found in settings"):
+            platform.get_parameter(parameter=Parameter.AMPLITUDE, alias="Drag(3)")
+
+    @pytest.mark.parametrize("parameter", [Parameter.DELAY_BETWEEN_PULSES, Parameter.DELAY_BEFORE_READOUT])
+    def test_get_parameter_of_platform(self, parameter, platform: Platform):
+        """Test the ``get_parameter`` method with platform parameters."""
+        value = getattr(platform.gates_settings, parameter.value)
+        assert value == platform.get_parameter(parameter=parameter, alias="platform")
+
+    def test_get_parameter_with_delay(self, platform: Platform):
+        """Test the ``get_parameter`` method with the delay of a bus."""
+        bus = platform.get_bus_by_alias(alias="drive_line_q0_bus")
+        assert bus is not None
+        assert bus.delay == platform.get_parameter(parameter=Parameter.DELAY, alias="drive_line_q0_bus")
+
+    @pytest.mark.parametrize(
+        "parameter",
+        [Parameter.IF, Parameter.GAIN, Parameter.LO_FREQUENCY, Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT2],
+    )
+    def test_get_parameter_of_bus(self, parameter, platform: Platform):
+        """Test the ``get_parameter`` method with the parameters of a bus."""
+        CHANNEL_ID = 0
+        bus = platform.get_bus_by_alias(alias="drive_line_q0_bus")
+        assert bus is not None
+        assert bus.get_parameter(parameter=parameter, channel_id=CHANNEL_ID) == platform.get_parameter(
+            parameter=parameter, alias="drive_line_q0_bus", channel_id=CHANNEL_ID
+        )
+
+    def test_get_parameter_of_qblox_module_without_channel_id(self, platform: Platform):
+        """Test that getting a parameter of a ``QbloxModule`` with multiple sequencers without specifying a channel
+        id still works."""
+        bus = platform.get_bus_by_alias(alias="drive_line_q0_bus")
+        awg = bus.system_control.instruments[0]
+        assert isinstance(awg, QbloxModule)
+        sequencer = awg.get_sequencers_from_chip_port_id(bus.port)[0]
+        assert (sequencer.gain_i, sequencer.gain_q) == platform.get_parameter(
+            parameter=Parameter.GAIN, alias="drive_line_q0_bus"
+        )
+
+    def test_get_parameter_of_qblox_module_without_channel_id_and_1_sequencer(self, platform: Platform):
+        """Test that we can get a parameter of a ``QbloxModule`` with one sequencers without specifying a channel
+        id."""
+        bus = platform.get_bus_by_alias(alias="drive_line_q0_bus")
+        assert isinstance(bus, Bus)
+        qblox_module = bus.system_control.instruments[0]
+        assert isinstance(qblox_module, QbloxModule)
+        qblox_module.settings.num_sequencers = 1
+        assert platform.get_parameter(parameter=Parameter.GAIN, alias="drive_line_q0_bus") == bus.get_parameter(
+            parameter=Parameter.GAIN
+        )
