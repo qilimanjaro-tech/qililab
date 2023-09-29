@@ -63,8 +63,8 @@ class TestQbloxModule:
         expected_gain = int(amplitude * AWG_MAX_GAIN)
         expected_phase = int((phase % (2 * np.pi)) * 1e9 / (2 * np.pi))
 
-        bin_loop = program.blocks[1].components[1]
+        bin_loop = program.blocks[2].components[1]
 
-        assert bin_loop.components[1].args[0] == expected_gain
-        assert bin_loop.components[1].args[1] == expected_gain
-        assert bin_loop.components[2].args[0] == expected_phase
+        assert bin_loop.components[0].args[0] == expected_gain
+        assert bin_loop.components[0].args[1] == expected_gain
+        assert bin_loop.components[1].args[0] == expected_phase

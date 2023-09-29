@@ -22,6 +22,7 @@ from typing import get_type_hints
 from qililab.constants import RUNCARD
 from qililab.instruments import AWG, Instrument, Instruments
 from qililab.instruments.instrument import ParameterNotFound
+from qililab.instruments.qblox import QbloxModule
 from qililab.pulse import PulseBusSchedule
 from qililab.settings import Settings
 from qililab.typings import FactoryElement
@@ -109,16 +110,37 @@ class SystemControl(FactoryElement, ABC):
         """Instruments controlled by this system control."""
         return self.settings.instruments
 
-    def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def set_parameter(
+        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
+    ):
         """Sets the parameter of a specific instrument.
 
         Args:
             parameter (Parameter): parameter settings of the instrument to update
             value (float | str | bool): value to update
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
+            port_id (str | None, optional): The ``port_id`` argument can be used when setting a parameter of a
+                QbloxModule, to avoid having to look which sequencer corresponds to which bus.
         """
         for instrument in self.instruments:
             with contextlib.suppress(ParameterNotFound):
-                instrument.set_parameter(parameter, value, channel_id)
+                if isinstance(instrument, QbloxModule):
+                    instrument.setup(parameter, value, channel_id, port_id=port_id)
+                else:
+                    instrument.set_parameter(parameter, value, channel_id)
                 return
+        raise ParameterNotFound(f"Could not find parameter {parameter.value} in the system control {self.name}")
+
+    def get_parameter(self, parameter: Parameter, channel_id: int | None = None, port_id: str | None = None):
+        """Gets a parameter of a specific instrument.
+
+        Args:
+            parameter (Parameter): Name of the parameter to get.
+            channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
+        """
+        for instrument in self.instruments:
+            with contextlib.suppress(ParameterNotFound):
+                if isinstance(instrument, QbloxModule):
+                    return instrument.get(parameter, channel_id, port_id=port_id)
+                return instrument.get_parameter(parameter, channel_id)
         raise ParameterNotFound(f"Could not find parameter {parameter.value} in the system control {self.name}")
