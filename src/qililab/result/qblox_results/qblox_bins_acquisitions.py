@@ -78,5 +78,8 @@ class QbloxBinsAcquisitions(Acquisitions):  # pylint: disable=abstract-method
         Returns:
             np.ndarray: An array containing the samples measured in each bin of each sequencer.
         """
+        # Check that all sequencers have the same number of bins.
+        if any(len(seq_bins) != len(self.bins[0]) for seq_bins in self.bins):
+            raise IndexError("Sequencers must have the same number of bins to return the samples.")
         samples = [seq_data.threshold for seq_data in self.bins]
         return np.array(samples)
