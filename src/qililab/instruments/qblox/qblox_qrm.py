@@ -242,11 +242,10 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """Sets the threshold for classification at the specific channel.
 
         Args:
-            value (float): Normalized threshold value (-1.0 to 1.0) # FIXME: update docstring
+            value (float): integrated value of the threshold
             sequencer_id (int): sequencer to update the value
         """
         integrated_value = value * self._get_sequencer_by_id(id=sequencer_id).used_integration_length
-        # min value -16777211
         self.device.sequencers[sequencer_id].thresholded_acq_threshold(integrated_value)
 
     def _set_device_threshold_rotation(self, value: float, sequencer_id: int):
@@ -337,7 +336,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             Weights: Acquisition weights.
         """
         weights = Weights()
-        pair = (sequencer.weights_i, sequencer.weights_q)
+        pair = ([float(w) for w in sequencer.weights_i], [float(w) for w in sequencer.weights_q])
         if (sequencer.path_i, sequencer.path_q) == (1, 0):
             pair = pair[::-1]  # swap paths
         weights.add_pair(pair=pair, indices=(0, 1))
@@ -351,9 +350,11 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         return cast(AWGQbloxADCSequencer, self.get_sequencer(sequencer_id)).integration_length
 
     @Instrument.CheckDeviceInitialized
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def setup(
+        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
+    ):
         """set a specific parameter to the instrument"""
         try:
             AWGAnalogDigitalConverter.setup(self, parameter=parameter, value=value, channel_id=channel_id)
         except ParameterNotFound:
-            QbloxModule.setup(self, parameter=parameter, value=value, channel_id=channel_id)
+            QbloxModule.setup(self, parameter=parameter, value=value, channel_id=channel_id, port_id=port_id)
