@@ -92,7 +92,7 @@ class SNZ(PulseShape):
         """Loads SNZ object/shape from dictionary.
 
         Args:
-            dictionary (dict): Dictionary representation of the SNZ object/shape, including the name of the pulse shape, the 
+            dictionary (dict): Dictionary representation of the SNZ object/shape, including the name of the pulse shape, the
             b parameter and the t_phi parameter.
 
         Returns:
