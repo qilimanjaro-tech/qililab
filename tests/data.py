@@ -525,8 +525,8 @@ results_two_loops: dict[str, Any] = {
                     },
                     "bins": {
                         "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-                        "threshold": [0.48046875],
-                        "avg_cnt": [1024],
+                        "threshold": [0],
+                        "avg_cnt": [1],
                     },
                 }
             ],
@@ -542,8 +542,8 @@ results_two_loops: dict[str, Any] = {
                     },
                     "bins": {
                         "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
-                        "threshold": [0.4599609375],
-                        "avg_cnt": [1024],
+                        "threshold": [0],
+                        "avg_cnt": [1],
                     },
                 }
             ],
@@ -576,8 +576,8 @@ results_one_loops: dict[str, Any] = {
                     },
                     "bins": {
                         "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-                        "threshold": [0.48046875],
-                        "avg_cnt": [1024],
+                        "threshold": [0],
+                        "avg_cnt": [1],
                     },
                 }
             ],
@@ -593,8 +593,8 @@ results_one_loops: dict[str, Any] = {
                     },
                     "bins": {
                         "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
-                        "threshold": [0.4599609375],
-                        "avg_cnt": [1024],
+                        "threshold": [0],
+                        "avg_cnt": [1],
                     },
                 }
             ],
