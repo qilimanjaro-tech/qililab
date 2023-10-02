@@ -166,11 +166,6 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         buses = set(collect_buses(self._qprogram._program))
         return {bus: BusCompilationInfo() for bus in buses}
 
-    # TODO: Continue this to allow naming acquisitions
-    # def _append_to_acquisitions_of_bus(self, bus: str, name: str | None, num_bins: int):
-    #     name = name or f"acqusition_{self._buses[bus].next_acquisition_index}"
-    #     if name in self._buses[bus].acquisition_to_index:
-
     def _append_to_waveforms_of_bus(self, bus: str, waveform_I: Waveform, waveform_Q: Waveform | None):
         """Append waveforms to Sequence's Waveforms of the given bus.
 
@@ -231,28 +226,27 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
     def _handle_parallel(self, element: Parallel):
         if not element.loops:
             raise NotImplementedError("Parallel block should contain loops.")
-        if len({int((loop.stop - loop.start) / loop.step) for loop in element.loops}) != 1:
-            raise NotImplementedError("Loops run in parallel should have the same number of iterations.")
+
+        loops = []
+        iterations = []
+        for loop in element.loops:
+            operation = QbloxCompiler._get_reference_operation_of_loop(loop=loop, starting_block=element)
+            if not operation:
+                raise NotImplementedError("Variables referenced in loops should be used in at least one operation.")
+            start, step, iters = QbloxCompiler._convert_for_loop_values(loop, operation)
+            loops.append((start, step))
+            iterations.append(iters)
+        iterations = min(iterations)
+
+        # iterations = min(QbloxCompiler._calculate_iterations(loop.start, loop.stop, loop.step) for loop in element.loops)
+        # loops = [(QbloxCompiler._convert_for_loop_values(for_loop=loop, operation=QbloxCompiler._get_reference_operation_of_loop(element)))[:2]) for loop in element.loops]
+
         for bus in self._buses:
-            iterations = int((element.loops[0].stop - element.loops[0].start) / element.loops[0].step)
-            qpy_loop = QPyProgram.Loop(name=f"loop_{self._buses[bus].loop_counter}", begin=iterations)
-            for loop in element.loops:
-                operation = QbloxCompiler._get_reference_operation_of_loop(loop=loop, starting_block=element)
-                if not operation:
-                    raise NotImplementedError("Variables referenced in loops should be used in at least one operation.")
-                begin, _, step = QbloxCompiler._convert_for_loop_values(loop, operation)
-                loop_register = QPyProgram.Register()
-                self._buses[bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.Move(var=begin, register=loop_register)
-                )
-                qpy_loop.builtin_components.insert(
-                    0,
-                    QPyInstructions.Add(loop_register, step, loop_register)
-                    if step > 0
-                    else QPyInstructions.Sub(loop_register, step, loop_register),
-                )
-                self._buses[bus].variable_to_register[loop.variable] = loop_register
-            # qpy_loop.append_component(QPyInstructions.WaitSync(4))
+            qpy_loop = QPyProgram.IterativeLoop(
+                name=f"loop_{self._buses[bus].loop_counter}", iterations=iterations, loops=loops
+            )
+            for i, loop in enumerate(element.loops):
+                self._buses[bus].variable_to_register[loop.variable] = qpy_loop.loop_registers[i]
             self._buses[bus].qpy_block_stack[-1].append_component(qpy_loop)
             self._buses[bus].qpy_block_stack.append(qpy_loop)
             self._buses[bus].loop_counter += 1
@@ -261,10 +255,6 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
     def _handle_average(self, element: Average):
         for bus in self._buses:
             qpy_loop = QPyProgram.Loop(name=f"avg_{self._buses[bus].average_counter}", begin=element.shots)
-            # qpy_loop.append_component(
-            #     component=QPyInstructions.WaitSync(wait_time=QbloxCompiler.minimum_wait_duration),
-            #     bot_position=len(qpy_loop.components),
-            # )
             self._buses[bus].qpy_block_stack[-1].append_component(qpy_loop)
             self._buses[bus].qpy_block_stack.append(qpy_loop)
             self._buses[bus].average_counter += 1
@@ -274,16 +264,14 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         operation = QbloxCompiler._get_reference_operation_of_loop(element)
         if not operation:
             raise NotImplementedError("Variables referenced in loops should be used in at least one operation.")
-        begin, end, step = QbloxCompiler._convert_for_loop_values(element, operation)
+        start, step, iterations = QbloxCompiler._convert_for_loop_values(element, operation)
         for bus in self._buses:
-            qpy_loop = QPyProgram.Loop(name=f"loop_{self._buses[bus].loop_counter}", begin=begin, end=end, step=step)
-            # qpy_loop.append_component(
-            #     component=QPyInstructions.WaitSync(wait_time=QbloxCompiler.minimum_wait_duration),
-            #     bot_position=len(qpy_loop.components),
-            # )
+            qpy_loop = QPyProgram.IterativeLoop(
+                name=f"loop_{self._buses[bus].loop_counter}", iterations=iterations, loops=[(start, step)]
+            )
             self._buses[bus].qpy_block_stack[-1].append_component(qpy_loop)
             self._buses[bus].qpy_block_stack.append(qpy_loop)
-            self._buses[bus].variable_to_register[element.variable] = qpy_loop.counter_register
+            self._buses[bus].variable_to_register[element.variable] = qpy_loop.loop_registers[0]
             self._buses[bus].loop_counter += 1
         return True
 
@@ -361,6 +349,8 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
 
     def _handle_sync(self, element: Sync):
         buses = set(element.buses) if element.buses is not None else set(self._buses.keys())
+        if len(buses) <= 1:
+            return
         # If there is no bus marked for sync, return.
         if all(not self._buses[bus].marked_for_sync for bus in buses):
             return
@@ -609,12 +599,10 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         # If the raw number of iterations is very close to an integer, round it to that integer
         # This accounts for potential floating-point inaccuracies
         if abs(raw_iterations - round(raw_iterations)) < 1e-9:
-            iterations = round(raw_iterations)
+            return round(raw_iterations)
         else:
             # Otherwise, if we're incrementing, take the ceiling, and if we're decrementing, take the floor
-            iterations = math.floor(raw_iterations) if step > 0 else math.ceil(raw_iterations)
-
-        return iterations
+            return math.floor(raw_iterations) if step > 0 else math.ceil(raw_iterations)
 
     @staticmethod
     def _convert_for_loop_values(for_loop: ForLoop, operation: Operation):
@@ -623,7 +611,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         qblox_start = convert(for_loop.start)
         qblox_stop = convert(for_loop.stop)
         qblox_step = (qblox_stop - qblox_start) // (iterations - 1)
-        return (qblox_start, qblox_stop, qblox_step)
+        return (qblox_start, qblox_step, iterations)
 
     @staticmethod
     def _convert_value(operation: Operation) -> Callable[[Any], int]:
