@@ -29,6 +29,7 @@ from qililab.instrument_controllers import InstrumentController, InstrumentContr
 from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
+from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSchedule
 from qililab.result import Result
@@ -283,6 +284,20 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """Get bus given an alias."""
         return next((bus for bus in self.buses if bus.alias == alias), None)
 
+    def get_parameter(self, parameter: Parameter, alias: str, channel_id: int | None = None):
+        """Get platform parameter.
+
+        Args:
+            parameter (Parameter): Name of the parameter to get.
+            alias (str): Alias of the bus where the parameter is set.
+            channel_id (int, optional): ID of the channel we want to use to set the parameter. Defaults to None.
+        """
+        regex_match = re.search(GATE_ALIAS_REGEX, alias)
+        if alias == "platform" or regex_match is not None:
+            return self.gates_settings.get_parameter(alias=alias, parameter=parameter, channel_id=channel_id)
+        element = self.get_element(alias=alias)
+        return element.get_parameter(parameter=parameter, channel_id=channel_id)
+
     def set_parameter(
         self,
         parameter: Parameter,
@@ -422,6 +437,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             if queue is not None:
                 queue.put_nowait(item=result)
             results.append(result)
+
+        for instrument in self.instruments.elements:
+            if isinstance(instrument, QbloxModule):
+                instrument.desync_sequencers()
 
         # FIXME: set multiple readout buses
         if len(results) > 1:

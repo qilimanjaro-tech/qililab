@@ -100,6 +100,24 @@ class QbloxD5a(VoltageSource):
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
+    def get(self, parameter: Parameter, channel_id: int | None = None):
+        """Get instrument parameter.
+
+        Args:
+            parameter (Parameter): Name of the parameter to get.
+            channel_id (int | None): Channel identifier of the parameter to update.
+        """
+        if channel_id is None:
+            raise ValueError(f"channel not specified to update instrument {self.name.value}")
+        if channel_id > 3:
+            raise ValueError(
+                f"the specified dac index:{channel_id} is out of range."
+                + " Number of dacs is 4 -> maximum channel_id should be 3."
+            )
+        if hasattr(self.settings, parameter.value):
+            return getattr(self.settings, parameter.value)[channel_id]
+        raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
+
     @Instrument.CheckParameterValueFloatOrInt
     def _set_voltage(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the voltage"""

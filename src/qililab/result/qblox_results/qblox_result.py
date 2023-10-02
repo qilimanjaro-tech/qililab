@@ -134,13 +134,29 @@ class QbloxResult(Result):
             )
         return acquisitions.scope.path0.data, acquisitions.scope.path1.data
 
-    def counts(self) -> Counts:
+    def counts_object(self) -> Counts:
         """Returns a Counts object containing the counts of each state.
 
         Returns:
             Counts: Counts object containing the counts of each state.
         """
         return self.qblox_bins_acquisitions.counts()
+
+    def counts(self) -> dict:
+        """Returns a Counts object containing the counts of each state.
+
+        Returns:
+            Counts: Counts object containing the counts of each state.
+        """
+        return self.qblox_bins_acquisitions.counts().as_dict()
+
+    def samples(self) -> np.ndarray:
+        """Returns an array containing the measured samples.
+
+        Returns:
+            np.ndarray: An array containing the measured samples (0 or 1).
+        """
+        return self.qblox_bins_acquisitions.samples()
 
     @property
     def array(self) -> np.ndarray:
@@ -165,7 +181,7 @@ class QbloxResult(Result):
             for sequencer in self.qblox_bins_acquisitions.bins
         ]
 
-        return np.concatenate(bins)
+        return np.array(bins[0] if len(bins) == 1 else bins)
 
     @property
     def shape(self) -> list[int]:

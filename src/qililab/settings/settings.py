@@ -73,3 +73,25 @@ class Settings:
                 + f"{len(attributes)} at position {channel_id}"
             )
         attributes[channel_id] = value
+
+    def get_parameter(self, parameter: Parameter, channel_id: int | None = None):
+        """Get parameter from settings.
+
+        Args:
+            parameter (Parameter): Name of the parameter.
+            channel_id (int | None, optional): Channel id. Defaults to None.
+
+        Raises:
+            ValueError: If the parameter is a list and channel_id is None.
+
+        Returns:
+            int | float | bool | str: Value of the parameter.
+        """
+        param: str = parameter.value
+        attribute = getattr(self, param)
+
+        if isinstance(attribute, list):
+            if channel_id is None:
+                raise ValueError(f"channel_id must be specified to get parameter {param}.")
+            return attribute[channel_id]
+        return attribute

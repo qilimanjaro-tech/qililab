@@ -90,10 +90,10 @@ class Results:
         """
         if len(self.results) == 0:
             return Counts(n_qubits=0)
-        n_qubits = self.results[0].counts().n_qubits
+        n_qubits = self.results[0].counts_object().n_qubits
         all_counts = Counts(n_qubits=n_qubits)
         for result in self.results:
-            all_counts += result.counts()
+            all_counts += result.counts_object()
         return all_counts
 
     def to_dataframe(self) -> pd.DataFrame:
