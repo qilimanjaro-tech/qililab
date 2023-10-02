@@ -56,6 +56,8 @@ class Drag(PulseShape):
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
         """DRAG envelope centered with respect to the pulse.
+        
+        The first point of the gaussian in the envelope is shifted to avoid introducing noise at time 0.
 
         Args:
             duration (int): Duration of the pulse (ns).

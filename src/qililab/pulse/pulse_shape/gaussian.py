@@ -33,7 +33,7 @@ class Gaussian(PulseShape):
         Gaussian(x) = amplitude * exp(-0.5 * (x - mu)^2 / sigma^2)
 
     Args:
-        num_sigmas (float): Sigma number of the gaussian pulse shape.
+        num_sigmas (float): Sigma number of the gaussian pulse shape. Defines the height of the gaussian pulse.
     """
 
     name = PulseShapeName.GAUSSIAN  #: Name of the gaussian pulse shape.
@@ -41,6 +41,8 @@ class Gaussian(PulseShape):
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
         """Gaussian envelope centered with respect to the pulse.
+
+        The first point of the gaussian in the envelope is shifted to avoid introducing noise at time 0.
 
         Args:
             duration (int): Duration of the pulse (ns).
