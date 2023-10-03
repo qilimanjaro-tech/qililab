@@ -75,7 +75,7 @@ def execute(program: Circuit | list[Circuit], runcard: str | dict, nshots: int =
             # Execute circuit
             results.append(platform.execute(circuit, num_avg=1, repetition_duration=200_000, num_bins=nshots))
         platform.disconnect()
-        return results
+        return results[0] if len(results) == 1 else results
     except Exception as e:
         platform.disconnect()
         raise e
