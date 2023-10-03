@@ -21,12 +21,13 @@ from .transpiler import translate_circuit
 from .typings import ExperimentOptions, ExperimentSettings
 
 
-def execute(circuit: Circuit, platform_path: str, nshots: int = 1):
+def execute(circuit: Circuit, runcard: str | dict, nshots: int = 1):
     """Execute a qibo with qililab and native gates
 
     Args:
         circuit (Circuit): Qibo Circuit.
-        platform_path (str): Path to the YAML file containing the serialization of the Platform to be used.
+        runcard (str | dict): If a string, path to the YAML file containing the serialization of the Platform to be
+            used. If a dictionary, the serialized platform to be used.
         nshots (int, optional): Number of shots to execute. Defaults to 1.
 
     Returns:
@@ -62,12 +63,15 @@ def execute(circuit: Circuit, platform_path: str, nshots: int = 1):
     circuit = translate_circuit(circuit, optimize=True)
 
     # create platform
-    platform = build_platform(runcard=platform_path)
+    platform = build_platform(runcard=runcard)
 
     settings = ExperimentSettings(hardware_average=1, repetition_duration=200000, software_average=1, num_bins=nshots)
     options = ExperimentOptions(settings=settings)
 
     # create experiment with options
     sample_experiment = Experiment(platform=platform, circuits=[circuit], options=options)
-
-    return sample_experiment.execute(save_experiment=False, save_results=False)
+    try:
+        return sample_experiment.execute(save_experiment=False, save_results=False)
+    except Exception as e:
+        platform.disconnect()
+        raise e
