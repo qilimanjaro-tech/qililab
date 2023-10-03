@@ -60,7 +60,7 @@ def execute(program: Circuit | list[Circuit], runcard: str | dict, nshots: int =
     if isinstance(program, Circuit):
         program = [program]
 
-    # create platform
+    # Initialize platform and connect to the instruments
     platform = build_platform(runcard=runcard)
     platform.connect()
     platform.initial_setup()
