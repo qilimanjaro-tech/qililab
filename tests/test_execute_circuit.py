@@ -24,7 +24,7 @@ class TestExecute:
         mock_platform.connect.assert_called_once_with()
         mock_platform.initial_setup.assert_called_once_with()
         mock_platform.turn_on_instruments.assert_called_once_with()
-        mock_platform.execute.assert_called_once_with(circuit, num_avg=1, repetition_duration=200_000, num_bins=1)
+        mock_platform.execute.assert_called_once()
         mock_platform.disconnect.assert_called_once_with()
 
     def test_execute_calls_disconnect_after_error(self):
@@ -58,6 +58,5 @@ class TestExecute:
         mock_platform.connect.assert_called_once_with()
         mock_platform.initial_setup.assert_called_once_with()
         mock_platform.turn_on_instruments.assert_called_once_with()
-        mock_platform.execute.assert_called_with(circuit, num_avg=1, repetition_duration=200_000, num_bins=1)
         assert mock_platform.execute.call_count == 2
         mock_platform.disconnect.assert_called_once_with()

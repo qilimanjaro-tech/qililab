@@ -14,6 +14,7 @@
 
 """Execute function used to execute a qibo Circuit using the given runcard."""
 from qibo.models import Circuit
+from tqdm.auto import tqdm
 
 from qililab.result import Result
 
@@ -69,11 +70,11 @@ def execute(program: Circuit | list[Circuit], runcard: str | dict, nshots: int =
         platform.initial_setup()
         platform.turn_on_instruments()
         results = []
-        for circuit in program:
+        for circuit in tqdm(program, total=len(program)):
             # Transpile and optimize circuit
-            program = translate_circuit(circuit, optimize=True)
+            native_circuit = translate_circuit(circuit, optimize=True)
             # Execute circuit
-            results.append(platform.execute(circuit, num_avg=1, repetition_duration=200_000, num_bins=nshots))
+            results.append(platform.execute(native_circuit, num_avg=1, repetition_duration=200_000, num_bins=nshots))
         platform.disconnect()
         return results[0] if len(results) == 1 else results
     except Exception as e:
