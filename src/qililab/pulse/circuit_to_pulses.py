@@ -159,6 +159,9 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
         theta = self.normalize_angle(angle=gate.parameters[0])
         amplitude = drag_schedule.pulse.amplitude * theta / np.pi
         phase = self.normalize_angle(angle=gate.parameters[1])
+        if amplitude < 0:
+            amplitude = -amplitude
+            phase = self.normalize_angle(angle=gate.parameters[1] + np.pi)
         drag_schedule.pulse.amplitude = amplitude
         drag_schedule.pulse.phase = phase
         return [drag_schedule]
