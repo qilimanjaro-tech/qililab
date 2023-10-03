@@ -64,10 +64,10 @@ def execute(program: Circuit | list[Circuit], runcard: str | dict, nshots: int =
     # Initialize platform and connect to the instruments
     platform = build_platform(runcard=runcard)
     platform.connect()
-    platform.initial_setup()
-    platform.turn_on_instruments()
 
     try:
+        platform.initial_setup()
+        platform.turn_on_instruments()
         results = []
         for circuit in program:
             # Transpile and optimize circuit
