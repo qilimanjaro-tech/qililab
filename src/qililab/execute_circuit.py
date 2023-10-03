@@ -21,7 +21,7 @@ from .transpiler import translate_circuit
 from .typings import ExperimentOptions, ExperimentSettings
 
 
-def execute(circuit: Circuit, runcard: str | dict, nshots: int = 1):
+def execute(program: Circuit | list[Circuit], runcard: str | dict, nshots: int = 1):
     """Execute a qibo with qililab and native gates
 
     Args:
@@ -55,23 +55,28 @@ def execute(circuit: Circuit, runcard: str | dict, nshots: int = 1):
         c.add(gates.SWAP(4,2))
         c.add(gates.RX(1, 3*np.pi/2))
 
-        probabilities = ql.execute(c, platform_path="./runcards/galadriel.yml")
+        probabilities = ql.execute(c, runcard="./runcards/galadriel.yml")
 
 
     """
-    # transpile and optimize circuit
-    circuit = translate_circuit(circuit, optimize=True)
+    if isinstance(program, Circuit):
+        program = [program]
 
     # create platform
     platform = build_platform(runcard=runcard)
+    platform.connect()
+    platform.initial_setup()
+    platform.turn_on_instruments()
 
-    settings = ExperimentSettings(hardware_average=1, repetition_duration=200000, software_average=1, num_bins=nshots)
-    options = ExperimentOptions(settings=settings)
-
-    # create experiment with options
-    sample_experiment = Experiment(platform=platform, circuits=[circuit], options=options)
     try:
-        return sample_experiment.execute(save_experiment=False, save_results=False)
+        results = []
+        for circuit in program:
+            # Transpile and optimize circuit
+            program = translate_circuit(circuit, optimize=True)
+            # Execute circuit
+            results.append(platform.execute(circuit, num_avg=1, repetition_duration=200_000, num_bins=nshots))
+        platform.disconnect()
+        return results
     except Exception as e:
         platform.disconnect()
         raise e
