@@ -16,9 +16,7 @@
 from qibo.models import Circuit
 
 from .data_management import build_platform
-from .experiment.experiment import Experiment
 from .transpiler import translate_circuit
-from .typings import ExperimentOptions, ExperimentSettings
 
 
 def execute(program: Circuit | list[Circuit], runcard: str | dict, nshots: int = 1):
