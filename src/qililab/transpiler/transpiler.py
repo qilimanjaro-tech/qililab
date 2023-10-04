@@ -41,7 +41,9 @@ def translate_circuit(
     # add transpiled gates to new circuit, optimize if needed
     if optimize:
         gates_to_optimize = translate_gates(ngates)
-        new_circuit.add(optimize_transpilation(circuit.nqubits, gates_to_optimize, gates_settings))
+        new_circuit.add(
+            optimize_transpilation(circuit.nqubits, ngates=gates_to_optimize, gates_settings=gates_settings)
+        )
     else:
         new_circuit.add(translate_gates(ngates))
 
@@ -49,7 +51,7 @@ def translate_circuit(
 
 
 def optimize_transpilation(
-    nqubits: int, ngates: list[gates.Gate], gates_settings: Runcard.GatesSettings
+    nqubits: int, ngates: list[gates.Gate], gates_settings: Runcard.GatesSettings | None = None
 ) -> list[gates.Gate]:
     """Optimizes transpiled circuit by moving all RZ to the left of all operators as a single RZ
     This RZ can afterwards be removed since the next operation is going to be a measurement,
