@@ -68,6 +68,14 @@ def optimize_transpilation(nqubits: int, ngates: list[gates.Gate]) -> list[gates
             raise NotImplementedError(f"{gate.name} not part of supported gates {supported_gates}")
         if isinstance(gate, gates.RZ):
             shift[gate.qubits[0]] += gate.parameters[0]
+        # add CZ phase correction
+        elif isinstance(gate, gates.CZ):
+            control_qubit = 0
+            target_qubit = 1
+            control_correction = 0
+            target_correction = 0
+            shift[control_qubit] += control_correction
+            shift[target_qubit] += target_correction
         else:
             # if gate is drag pulse, shift parameters by accumulated Zs
             if isinstance(gate, Drag):
