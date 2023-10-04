@@ -16,12 +16,13 @@
 from qibo import gates
 from qibo.models import Circuit
 
+from qililab.settings.runcard import Runcard
 from qililab.transpiler.gate_decompositions import translate_gates
 
 from .native_gates import Drag
 
 
-def translate_circuit(circuit: Circuit, optimize: bool = False) -> Circuit:
+def translate_circuit(circuit: Circuit, gate_settings: Runcard.GatesSettings, optimize: bool = True) -> Circuit:
     """Converts circuit with qibo gates to circuit with native gates
 
     Args:
@@ -38,14 +39,16 @@ def translate_circuit(circuit: Circuit, optimize: bool = False) -> Circuit:
     # add transpiled gates to new circuit, optimize if needed
     if optimize:
         gates_to_optimize = translate_gates(ngates)
-        new_circuit.add(optimize_transpilation(circuit.nqubits, gates_to_optimize))
+        new_circuit.add(optimize_transpilation(circuit.nqubits, gates_to_optimize, gate_settings))
     else:
         new_circuit.add(translate_gates(ngates))
 
     return new_circuit
 
 
-def optimize_transpilation(nqubits: int, ngates: list[gates.Gate]) -> list[gates.Gate]:
+def optimize_transpilation(
+    nqubits: int, ngates: list[gates.Gate], gates_settings: Runcard.GatesSettings
+) -> list[gates.Gate]:
     """Optimizes transpiled circuit by moving all RZ to the left of all operators as a single RZ
     This RZ can afterwards be removed since the next operation is going to be a measurement,
     which happens on the Z basis and is therefore invariant under rotations around the Z axis
@@ -70,12 +73,16 @@ def optimize_transpilation(nqubits: int, ngates: list[gates.Gate]) -> list[gates
             shift[gate.qubits[0]] += gate.parameters[0]
         # add CZ phase correction
         elif isinstance(gate, gates.CZ):
-            control_qubit = 0
-            target_qubit = 1
-            control_correction = 0
-            target_correction = 0
-            shift[control_qubit] += control_correction
-            shift[target_qubit] += target_correction
+            gate_settings = gates_settings.get_gate(name=gate.__class__.__name__, qubits=gate.qubits)
+            control_qubit, target_qubit = gate.qubits
+            corrections = next(
+                event.pulse.options
+                for event in gate_settings
+                if f"q{control_qubit}_phase_correction" in event.pulse.options
+            )
+            shift[control_qubit] += corrections[f"q{control_qubit}_phase_correction"]
+            shift[target_qubit] += corrections[f"q{target_qubit}_phase_correction"]
+            new_gates.append(gate)
         else:
             # if gate is drag pulse, shift parameters by accumulated Zs
             if isinstance(gate, Drag):

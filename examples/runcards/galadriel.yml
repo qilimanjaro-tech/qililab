@@ -117,6 +117,10 @@ gates_settings:
             name: snz
             t_phi: 1
             b: 0.5
+          options:
+            q0_phase_correction: 0.1
+            q2_phase_correction: 0.2
+
       - bus: flux_line_q1_bus # park pulse
         wait_time: 20
         pulse:

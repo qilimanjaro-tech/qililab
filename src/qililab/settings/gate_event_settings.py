@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from qililab.typings.enums import Parameter
 
@@ -46,6 +46,11 @@ class GateEventSettings:
         phase: float
         duration: int
         shape: dict
+        options: dict = field(default_factory=dict)
+
+        def __post_init__(self):
+            for key, value in self.options.items():
+                setattr(self, key, value)
 
     bus: str
     pulse: GatePulseSettings

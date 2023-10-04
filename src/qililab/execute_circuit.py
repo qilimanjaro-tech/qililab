@@ -72,7 +72,7 @@ def execute(program: Circuit | list[Circuit], runcard: str | dict, nshots: int =
         results = []
         for circuit in tqdm(program, total=len(program)):
             # Transpile and optimize circuit
-            native_circuit = translate_circuit(circuit, optimize=True)
+            native_circuit = translate_circuit(circuit, gate_settings=platform.gates_settings)
             # Execute circuit
             results.append(platform.execute(native_circuit, num_avg=1, repetition_duration=200_000, num_bins=nshots))
         platform.disconnect()
