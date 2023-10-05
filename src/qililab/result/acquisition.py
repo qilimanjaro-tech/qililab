@@ -25,11 +25,15 @@ from qililab.constants import RESULTSDATAFRAME
 
 @dataclass
 class Acquisition:
-    """Acquisition normalized
+    """Acquisition class. It wraps the real and imaginary parts of the acquisition returned by hardware control
+    instruments.
+    
+    It allows a standard way of grouping one acquisition, normalize it and 
+
     Args:
         pulse_length (int): Duration (in ns) of the pulse.
-        i_values: (NDArray[numpy.float32]): I data normalized
-        q_values: (NDArray[numpy.float32]): I data normalize
+        i_values: (NDArray[numpy.float32]): I data, or real part, normalized
+        q_values: (NDArray[numpy.float32]): Q data, or imaginary part, normalized
         amplitude_values: (NDArray[numpy.float32]): amplitude values from I/Q normalized
         phase_values: (NDArray[numpy.float32]): phase values from I/Q normalized
 
