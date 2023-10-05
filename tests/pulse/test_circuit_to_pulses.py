@@ -662,7 +662,16 @@ class TestTranslation:
         c.add(Drag(0, np.pi + 0.1, 0))
         translator = CircuitToPulses(platform=platform)
         pulse_schedules = translator.translate(circuits=[c])
-        assert np.allclose(pulse_schedules[0].elements[0].timeline[0].pulse.amplitude, -0.7745352091052967)
+        assert np.allclose(pulse_schedules[0].elements[0].timeline[0].pulse.amplitude, abs(-0.7745352091052967))
+
+    def test_negative_amplitudes_add_extra_phase(self, platform):
+        """Test that transpiling negative amplitudes results in an added PI phase."""
+        c = Circuit(1)
+        c.add(Drag(0, -np.pi / 2, 0))
+        translator = CircuitToPulses(platform=platform)
+        pulse_schedule = translator.translate(circuits=[c])[0]
+        assert np.allclose(pulse_schedule.elements[0].timeline[0].pulse.amplitude, (np.pi / 2) * 0.8 / np.pi)
+        assert np.allclose(pulse_schedule.elements[0].timeline[0].pulse.phase, 0 + np.pi)
 
     def test_drag_schedule_error(self, platform: Platform):
         """Test error is raised if len(drag schedule) > 1"""

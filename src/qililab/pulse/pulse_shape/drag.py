@@ -51,8 +51,8 @@ class Drag(PulseShape):
     """
 
     name = PulseShapeName.DRAG  #: Name of the drag pulse shape.
-    num_sigmas: float  #: Sigma number of the drag pulse shape.
-    drag_coefficient: float  #: Drag coefficient.
+    num_sigmas: float
+    drag_coefficient: float
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
         """DRAG envelope centered with respect to the pulse.

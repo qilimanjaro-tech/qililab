@@ -65,7 +65,7 @@ class QbloxBinsAcquisitions(Acquisitions):  # pylint: disable=abstract-method
         for bin_idx in range(num_bins):
             # The threshold inside of a qblox bin is the name they use for already classified data as a value between
             # 0 and 1, not the value used in the comparator to perform such classification.
-            measurement_as_list = [bins_data.threshold[bin_idx] for bins_data in self.bins]
+            measurement_as_list = [int(bins_data.threshold[bin_idx]) for bins_data in self.bins]
             measurement = "".join(str(bit) for bit in measurement_as_list)
             counts_object.add_measurement(state=measurement)
         return counts_object
