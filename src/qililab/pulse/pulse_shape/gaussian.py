@@ -33,14 +33,16 @@ class Gaussian(PulseShape):
         Gaussian(x) = amplitude * exp(-0.5 * (x - mu)^2 / sigma^2)
 
     Args:
-        num_sigmas (float): Sigma number of the gaussian.
+        num_sigmas (float): Sigma number of the gaussian pulse shape. Defines the height of the gaussian pulse.
     """
 
-    name = PulseShapeName.GAUSSIAN
-    num_sigmas: float
+    name = PulseShapeName.GAUSSIAN  #: Name of the gaussian pulse shape.
+    num_sigmas: float  #: Sigma number of the gaussian pulse shape.
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
         """Gaussian envelope centered with respect to the pulse.
+
+        The first point of the gaussian in the envelope is shifted to avoid introducing noise at time 0.
 
         Args:
             duration (int): Duration of the pulse (ns).
@@ -63,10 +65,13 @@ class Gaussian(PulseShape):
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "Gaussian":
-        """Load Gaussian object/shape from dictionary.
+        """Loads Gaussian object/shape from dictionary.
+
+        The dictionary representation must include the name of the pulse shape and the number of sigmas.
 
         Args:
-            dictionary (dict): Dictionary representation of the Gaussian object/shape.
+            dictionary (dict): Dictionary representation of the Gaussian object/shape including the name of the pulse shape and
+            the number of sigmas.
 
         Returns:
             Gaussian: Loaded class.
@@ -76,10 +81,10 @@ class Gaussian(PulseShape):
         return cls(**local_dictionary)
 
     def to_dict(self):
-        """Return dictionary representation of the Gaussian object/shape.
+        """Returns dictionary representation of the Gaussian object/shape.
 
         Returns:
-            dict: Dictionary.
+            dict: Dictionary representation including the name of the pulse shape and the number of sigmas.
         """
         return {
             "name": self.name.value,
