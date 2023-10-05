@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-This module contains the classes needed to define a quantum chip.
+This module builds the chip class, which contains information about the chip structure. Its data is accessed through ``platform.chip``
 
 .. currentmodule:: qililab.chip
 
