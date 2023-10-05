@@ -18,6 +18,8 @@ from collections.abc import Callable
 import numpy as np
 from qibo import gates
 
+from qililab.utils import Wait
+
 from .native_gates import Drag
 
 
@@ -72,7 +74,7 @@ def translate_gates(ngates: list[gates.Gate]) -> list[gates.Gate]:
     """
 
     # define supported gates (native qpu gates + virtual z + measurement)
-    supported_gates = native_gates() + (gates.RZ, gates.M)
+    supported_gates = native_gates() + (gates.RZ, gates.M, Wait)
 
     # check which gates are native gates and if not all of them are so, translate
     to_translate = [not isinstance(gate, supported_gates) for gate in ngates]
