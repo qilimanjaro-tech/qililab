@@ -7,8 +7,6 @@ from io import StringIO
 
 import papermill as pm
 
-from qililab.automatic_calibration.calibration_utils import get_timestamp
-
 
 class CalibrationNode:
     """Automatic-calibration Node class, which works with notebooks as nodes.
@@ -107,7 +105,7 @@ class CalibrationNode:
         self.previous_output_parameters = self.output_parameters
         self.output_parameters = self._execute_notebook(self.nb_path, output_path, params)
 
-        timestamp = get_timestamp()
+        timestamp = self.get_timestamp()
         os.rename(output_path, self.create_notebook_datetime_path(self.nb_path, timestamp))
         return timestamp
 
@@ -220,7 +218,17 @@ class CalibrationNode:
         folder_path = "/".join(folder_path_list)
 
         return name, folder_path
+    
+    @staticmethod
+    def get_timestamp() -> float:
+        """Generate a UNIX timestamp.
 
+        Returns:
+            float: UNIX timestamp of the time when the function is called.
+        """
+        now = datetime.now()
+        return datetime.timestamp(now)
+    
 
 def export_calibration_outputs(outputs: dict):
     """Function to export node outputs."""

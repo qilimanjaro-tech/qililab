@@ -1,10 +1,10 @@
 """Automatic-calibration Controller module, which works with notebooks as nodes."""
 from typing import Callable
+from datetime import datetime, timedelta
 
 import networkx as nx
 
 from qililab.automatic_calibration.calibration_node import CalibrationNode
-from qililab.automatic_calibration.calibration_utils import is_timeout_expired
 from qililab.data_management import build_platform, save_platform
 from qililab.platform.platform import Platform
 
@@ -147,9 +147,9 @@ class CalibrationController:
             print(f"check_state of {node.node_id} with False!!! \n")
             return False
         print(
-            f"check_state of {node.node_id} with {not is_timeout_expired(node.previous_timestamp, node.drift_timeout)}!!! \n"
+            f"check_state of {node.node_id} with {not self.is_timeout_expired(node.previous_timestamp, node.drift_timeout)}!!! \n"
         )
-        return not is_timeout_expired(node.previous_timestamp, node.drift_timeout)
+        return not self.is_timeout_expired(node.previous_timestamp, node.drift_timeout)
 
     def check_data(self, node: CalibrationNode) -> str:
         """
@@ -264,3 +264,28 @@ class CalibrationController:
             float: difference/error between the two samples.
         """
         return method(obtained, comparison)
+
+    @staticmethod
+    def is_timeout_expired(timestamp: float, timeout: float) -> bool:
+        """
+        Check if the time passed since the timestamp is greater than the timeout duration.
+
+        Args:
+            timestamp (float): Timestamp from which the time should be checked, described in UNIX timestamp format.
+            timeout (float): The timeout duration in seconds.
+
+        Returns:
+            bool: True if the timeout has expired, False otherwise.
+        """
+        # Convert the timestamp and timeout to datetime objects
+        timestamp_dt = datetime.fromtimestamp(timestamp)
+        timeout_duration = timedelta(seconds=timeout)
+
+        # Get the current time
+        current_time = datetime.now()
+
+        # Calculate the time that should have passed (timestamp + timeout duration)
+        timeout_time = timestamp_dt + timeout_duration
+
+        # Check if the current time is greater than the timeout time
+        return current_time > timeout_time
