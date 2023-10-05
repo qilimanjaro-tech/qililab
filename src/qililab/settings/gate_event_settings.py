@@ -40,6 +40,7 @@ class GateEventSettings:
             phase (float): phase of the pulse
             duration (int): pulse duration
             shape (dict): pulse envelope
+            options (dict): optional gate dependant parameters
         """
 
         amplitude: float

@@ -30,6 +30,7 @@ def translate_circuit(
     Args:
         circuit (Circuit): circuit with qibo gates
         optimize (bool): optimize the transpiled circuit using otpimize_transpilation
+        gates_settings (Runcard.GatesSettings): calibrated gate settings from the runcard. This is used only for phase correction in CZ gates
 
     Returns:
         new_circuit (Circuit): circuit with transpiled gates
@@ -53,16 +54,26 @@ def translate_circuit(
 def optimize_transpilation(
     nqubits: int, ngates: list[gates.Gate], gates_settings: Runcard.GatesSettings | None = None
 ) -> list[gates.Gate]:
-    """Optimizes transpiled circuit by moving all RZ to the left of all operators as a single RZ
-    This RZ can afterwards be removed since the next operation is going to be a measurement,
-    which happens on the Z basis and is therefore invariant under rotations around the Z axis
+    """Optimizes transpiled circuit by applying virtual Z gates.
+    This is done by moving all RZ to the left of all operators as a single RZ. The corresponding cumulative rotation
+    from each RZ is carried on as phase in all drag pulses left of the RZ operator.
+    Virtual Z gates are also applied to correct phase errors from CZ gates.
+    The final RZ operator left to be applied as the last operator in the circuit can afterwards be removed since the last
+    operation is going to be a measurement, which is performed on the Z basis and is therefore invariant under rotations
+    around the Z axis.
+    This last step can also be seen from the fact that an RZ operator applied on a single qubit, with no operations carried
+    on afterwards induces a phase rotation. Since phase is an imaginary unitary component, its absolute value will be 1
+    independent on any (unitary) operations carried on it.
 
     Mind that moving an operator to the left is equivalent to applying this operator last so
-    it is actually moved to the _right_ of Circuit.queue (last element of list)
+    it is actually moved to the _right_ of Circuit.queue (last element of list).
+
+    For more information on virtual Z gates, see https://arxiv.org/abs/1612.00858
 
     Args:
         nqubits (int) : number of qubits in the circuit
         ngates (list[gates.Gate]) : list of gates in the circuit
+        gates_settings (Runcard.GatesSettings): calibrated gate settings from the runcard. This is used only for phase correction in CZ gates
 
     Returns:
         list[gates.Gate] : list of re-ordered gates
