@@ -1,6 +1,6 @@
 """Automatic-calibration Controller module, which works with notebooks as nodes."""
-from typing import Callable
 from datetime import datetime, timedelta
+from typing import Callable
 
 import networkx as nx
 
@@ -8,7 +8,7 @@ from qililab.automatic_calibration.calibration_node import CalibrationNode
 from qililab.data_management import build_platform, save_platform
 from qililab.platform.platform import Platform
 
-from .comparison_models import normalized_root_mean_square_error
+from .comparison_models import norm_root_mean_sqrt_error
 
 
 class CalibrationController:
@@ -50,7 +50,7 @@ class CalibrationController:
         """
         print(f"maintaining {node.node_id}!!!\n")
         # Recursion over all the nodes that the current node depends on.
-        for n in self.dependents(node):
+        for n in self._dependents(node):
             print(f"maintaining {n.node_id} from maintain({node.node_id})!!!\n")
             self.maintain(n)
 
@@ -61,14 +61,14 @@ class CalibrationController:
         if result == "in_spec":
             return
         elif result == "bad_data":
-            for n in self.dependents(node):
+            for n in self._dependents(node):
                 self.diagnose(n)
 
         # calibrate
         self.calibrate(node)
 
         # GALADRIEL: uncomment when platform is connected
-        self.update_parameters(node=node)
+        self._update_parameters(node=node)
 
     def diagnose(self, node: CalibrationNode) -> bool:
         """This is a method called by `maintain` in the special case that its call of `check_data` finds bad data.
@@ -96,7 +96,7 @@ class CalibrationController:
         # bad data case
         recalibrated = []
         if result == "bad_data":
-            recalibrated = [self.diagnose(n) for n in self.dependents(node)]
+            recalibrated = [self.diagnose(n) for n in self._dependents(node)]
             print(f"Dependencies diagnoses of {node.node_id}: {recalibrated}\n")
         if recalibrated != [] and not any(recalibrated):
             print(f"{node.node_id} diagnose: False\n")
@@ -106,7 +106,7 @@ class CalibrationController:
         self.calibrate(node)
 
         # GALADRIEL: uncomment when platform is connected
-        self.update_parameters(node=node)
+        self._update_parameters(node=node)
 
         print(f"{node.node_id} diagnose: True\n")
         return True
@@ -138,7 +138,7 @@ class CalibrationController:
 
         # Get the list of the dependencies that have been calibrated before this node, all of them should be True
         dependencies_timestamps_previous = [
-            n.previous_timestamp < node.previous_timestamp for n in self.dependents(node)
+            n.previous_timestamp < node.previous_timestamp for n in self._dependents(node)
         ]
         # Check if something hapened and the timestamp could not be setted properly and the rest of conditions
         if node.previous_timestamp is None or not all(
@@ -147,9 +147,9 @@ class CalibrationController:
             print(f"check_state of {node.node_id} with False!!! \n")
             return False
         print(
-            f"check_state of {node.node_id} with {not self.is_timeout_expired(node.previous_timestamp, node.drift_timeout)}!!! \n"
+            f"check_state of {node.node_id} with {not self._is_timeout_expired(node.previous_timestamp, node.drift_timeout)}!!! \n"
         )
-        return not self.is_timeout_expired(node.previous_timestamp, node.drift_timeout)
+        return not self._is_timeout_expired(node.previous_timestamp, node.drift_timeout)
 
     def check_data(self, node: CalibrationNode) -> str:
         """
@@ -182,33 +182,39 @@ class CalibrationController:
             comparison_outputs is not None and obtained_outputs is not None
         ):  # obtained_outputs will never be None, since we just run the notebook.
             # Get params from last notebook
-            comparison_params = comparison_outputs["check_parameters"]
+            compar_params = comparison_outputs["check_parameters"]
 
             # Get obtained parameters:
-            obtained_params = obtained_outputs["check_parameters"]
+            obtain_params = obtained_outputs["check_parameters"]
+
+            print("The obtained results are:")
+            print("y:", obtain_params["y"])
+            print("x:", obtain_params["x"])
+            print("The comparison results are:")
+            print("y:", compar_params["y"])
+            print("x:", compar_params["x"])
 
             if (
-                self.obtained_comparison_error(
-                    obtained_params, comparison_params, method=normalized_root_mean_square_error
-                )
-                >= node.in_spec_threshold
+                self._obtain_comparison(obtain_params, compar_params, norm_root_mean_sqrt_error)
+                <= node.in_spec_threshold
             ):
                 print(f"check_data of {node.node_id}: in_spec!!!\n")
                 node.add_string_to_checked_nb_name("in_spec", timestamp)
+                node.invert_output_and_previous_output()
                 return "in_spec"
 
             elif (
-                self.obtained_comparison_error(
-                    obtained_params, comparison_params, method=normalized_root_mean_square_error
-                )
-                >= node.bad_data_threshold
+                self._obtain_comparison(obtain_params, compar_params, norm_root_mean_sqrt_error)
+                <= node.bad_data_threshold
             ):
                 print(f"check_data of {node.node_id}: out_of_spec!!!\n")
                 node.add_string_to_checked_nb_name("out_spec", timestamp)
+                node.invert_output_and_previous_output()
                 return "out_spec"
 
         print(f"check_data of {node.node_id}: bad_data!!!\n")
         node.add_string_to_checked_nb_name("bad_data", timestamp)
+        node.invert_output_and_previous_output()
         return "bad_data"
 
     def calibrate(self, node: CalibrationNode) -> None:
@@ -222,7 +228,11 @@ class CalibrationController:
         node.previous_timestamp = node.run_notebook()
         node.add_string_to_checked_nb_name("calibrated", node.previous_timestamp)
 
-    def update_parameters(self, node: CalibrationNode) -> None:
+        # TODO: Remove this threshold change when the good notebooks are created.
+        node.bad_data_threshold = 9.0
+        node.in_spec_threshold = 10.0
+
+    def _update_parameters(self, node: CalibrationNode) -> None:
         """Update a parameter value in the platform.
         If the node does not have an associated parameter, or the parameter attribute of the node is None,
         this function does nothing. That is because some nodes, such as those associated with the AllXY
@@ -240,7 +250,7 @@ class CalibrationController:
             # TODO: Solve the platform serialization problem to descomment this!!!
             # save_platform(self.runcard, self.platform)
 
-    def dependents(self, node: CalibrationNode) -> list:
+    def _dependents(self, node: CalibrationNode) -> list:
         """Find the nodes that a node depends on.
         In this graph, if an edge goes from node A to node B, then node A depends on node B. Thus the nodes that A depends on are its successors.
 
@@ -253,7 +263,7 @@ class CalibrationController:
         return [self.node_sequence[node_name] for node_name in self.calibration_graph.successors(node.node_id)]
 
     @staticmethod
-    def obtained_comparison_error(obtained: dict[str, list], comparison: dict[str, list], method: Callable) -> float:
+    def _obtain_comparison(obtained: dict[str, list], comparison: dict[str, list], method: Callable) -> float:
         """Returns the error, given the chosen method, between the comparison and obtained samples.
 
         Args:
@@ -263,10 +273,11 @@ class CalibrationController:
         Returns:
             float: difference/error between the two samples.
         """
-        return method(obtained, comparison)
+        # TODO: Remove this 3.0 when the good notebooks are created.
+        return method(obtained, comparison) + 3.0
 
     @staticmethod
-    def is_timeout_expired(timestamp: float, timeout: float) -> bool:
+    def _is_timeout_expired(timestamp: float, timeout: float) -> bool:
         """
         Check if the time passed since the timestamp is greater than the timeout duration.
 

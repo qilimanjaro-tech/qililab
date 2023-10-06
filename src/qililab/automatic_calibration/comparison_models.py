@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def normalized_mean_absolute_error(obtained: dict[str, list], comparison: dict[str, list]) -> float:
+def norm_mean_abs_error(obtained: dict[str, list], comparison: dict[str, list]) -> float:
     """Returns the normalized MAE (mean absolute error) between the comparison and obtained samples.
 
     Args:
@@ -19,7 +19,7 @@ def normalized_mean_absolute_error(obtained: dict[str, list], comparison: dict[s
     return mean_absolute_error / np.mean(comparison["y"])  # normalize the difference with the mean values
 
 
-def normalized_mean_square_error(obtained: dict[str, list], comparison: dict[str, list]) -> float:
+def norm_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, list]) -> float:
     """Returns the normalized MSE (mean square error) between the comparison and obtained samples.
 
     Args:
@@ -37,7 +37,7 @@ def normalized_mean_square_error(obtained: dict[str, list], comparison: dict[str
     return mean_square_error / np.mean(comparison["y"])  # normalize the difference with the mean values
 
 
-def normalized_root_mean_square_error(obtained: dict[str, list], comparison: dict[str, list]) -> float:
+def norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, list]) -> float:
     """Returns the normalized RMSE (mean absolute error) between the comparison and obtained samples.
 
     Args:
