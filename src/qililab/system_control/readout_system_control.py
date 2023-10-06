@@ -27,7 +27,7 @@ class ReadoutSystemControl(SystemControl):
 
     name = SystemControlName.READOUT_SYSTEM_CONTROL
 
-    def acquire_result(self) -> Result:
+    def acquire_result(self, acquisitions: list[str] | None = None) -> Result:
         """Read the result from the vector network analyzer instrument
 
         Returns:
@@ -36,7 +36,7 @@ class ReadoutSystemControl(SystemControl):
         # TODO: Support acquisition from multiple instruments
         results: list[Result] = []
         for instrument in self.instruments:
-            result = instrument.acquire_result()
+            result = instrument.acquire_result(acquisitions=acquisitions)
             if result is not None:
                 results.append(result)
 

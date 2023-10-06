@@ -19,6 +19,7 @@ from copy import deepcopy
 from dataclasses import asdict
 from queue import Queue
 
+from numpy import isin
 from qibo.models import Circuit
 from qiboconnection.api import API
 
@@ -405,23 +406,29 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """
         qblox_compiler = QbloxCompiler()
         sequences = qblox_compiler.compile(qprogram=qprogram)
+        buses = {bus_alias: self.get_bus_by_alias(alias=bus_alias) for bus_alias in sequences}
 
         # Upload sequences
         for bus_alias in sequences:
-            bus = self.get_bus_by_alias(alias=bus_alias)
-            bus.upload_qpysequence(qpysequence=sequences[bus_alias])
+            buses[bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
 
         # Execute sequences
         for bus_alias in sequences:
-            bus = self.get_bus_by_alias(alias=bus_alias)
-            bus.run()
+            buses[bus_alias].run()
 
         # Acquire results
-        readout_buses = [bus for bus in self.buses if isinstance(bus.system_control, ReadoutSystemControl)]
+        # readout_buses = [self.get_bus_by_alias(alias=bus_alias) for bus_alias in sequences if isinstance(bus.system_control, ReadoutSystemControl)]
+        # results: list[Result] = []
+        # for bus in readout_buses:
+        #     result = bus.acquire_result()
+        #     results.append(result)
+
         results: list[Result] = []
-        for bus in readout_buses:
-            result = bus.acquire_result()
-            results.append(result)
+        for bus_alias in buses:
+            if isinstance(buses[bus_alias].system_control, ReadoutSystemControl):
+                acquisitions = [acquisition for acquisition in sequences[bus_alias].todict()["acquisitions"]]
+                result = buses[bus_alias].acquire_result(acquisitions=acquisitions)
+                results.append(result)
 
         # FIXME: allow multiple readout buses
         return results[0] if results else None

@@ -188,7 +188,7 @@ class Instrument(BusElement, ABC):
     def turn_on(self):
         """Turn on an instrument."""
 
-    def acquire_result(self) -> Result | None:
+    def acquire_result(self, acquisitions: list[str] | None = None) -> Result | None:
         """Acquire results of the measurement.
 
         In some cases this method might do nothing."""

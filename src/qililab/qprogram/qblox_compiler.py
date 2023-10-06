@@ -348,7 +348,9 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         self._buses[element.bus].marked_for_sync = True
 
     def _handle_sync(self, element: Sync):
+        # The buses that are involved in the sync operation.
         buses = set(element.buses) if element.buses is not None else set(self._buses.keys())
+        # If there are less than two buses, return.
         if len(buses) <= 1:
             return
         # If there is no bus marked for sync, return.
@@ -362,6 +364,12 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         if buses_with_dynamic_or_sync_durations:
             sync_duration_to_be_added: dict[str, QPyProgram.Register] = {}
             for bus in buses:
+                # Is there any bus, other than us, marked for sync? If not, continue.
+                other_buses_marked_for_sync = set(
+                    other_bus for other_bus in buses if other_bus != bus and self._buses[other_bus].marked_for_sync
+                )
+                if not other_buses_marked_for_sync:
+                    continue
                 # Create seperate block for readability.
                 sync_block_label = f"sync{self._sync_counter}_start"
                 sync_block = QPyProgram.Block(name=sync_block_label)
@@ -485,9 +493,9 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         loops = [
             (i, loop)
             for i, loop in enumerate(self._buses[element.bus].qpy_block_stack)
-            if isinstance(loop, QPyProgram.Loop) and not loop.name.startswith("avg")
+            if isinstance(loop, QPyProgram.IterativeLoop) and not loop.name.startswith("avg")
         ]
-        num_bins = math.prod(loop[1]._iterations for loop in loops)
+        num_bins = math.prod(loop[1].iterations for loop in loops)
         self._buses[element.bus].qpy_sequence._acquisitions.add(
             name=f"acquisition_{self._buses[element.bus].next_acquisition_index}",
             num_bins=num_bins,
