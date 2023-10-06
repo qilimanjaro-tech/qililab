@@ -300,6 +300,9 @@ This document contains the changes of the current release.
       nodes: [qubit_2, resonator_q0, drive_line_q0, flux_line_q0]
   ```
 
+- `ql.execute` now accepts a list of circuits!
+  [#549](https://github.com/qilimanjaro-tech/qililab/pull/549)
+
 ### Breaking changes
 
 - Old scripts using `Experiment` with circuits should be changed and use `CircuitExperiment` instead.
@@ -311,6 +314,10 @@ This document contains the changes of the current release.
   [#494](https://github.com/qilimanjaro-tech/qililab/pull/494)
 
 ### Documentation
+
+- Documentation for the Pulse module: [#532](https://github.com/qilimanjaro-tech/qililab/pull/532)
+
+  Includes documentation for all public features of the Pulse module
 
 ### Bug fixes
 

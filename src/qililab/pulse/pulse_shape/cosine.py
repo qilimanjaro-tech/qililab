@@ -42,7 +42,7 @@ class Cosine(PulseShape):
 
     Args:
         lambda_2 (float, optional): Parameter for moving the function :math:`A/2*(1-\cos(x))` into :math:`A/2*(1-\lambda_1\cos(x)-\lambda_2\cos(2x))`
-                    which fulfills the constrain: :math:`1=\lambda_1+\lambda_2`.
+                    which fulfills the constrain: :math:`1=\lambda_1+\lambda_2`. Defaults to 0.
     """
 
     name = PulseShapeName.COSINE
@@ -63,23 +63,24 @@ class Cosine(PulseShape):
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "Cosine":
-        """Load Cosine object/shape from dictionary.
+        """Loads Cosine object/shape from dictionary.
 
         Args:
-            dictionary (dict): Dictionary representation of the Cosine object/shape.
+            dictionary (dict): Dictionary representation of the Cosine object/shape containing the name of the pulse shape and,
+            optionally, the lambda_2 factor.
 
         Returns:
-            Cosine: Loaded class.
+            Cosine: Cosine pulse shape loaded class.
         """
         local_dictionary = deepcopy(dictionary)
         local_dictionary.pop("name", None)
         return cls(**local_dictionary)
 
     def to_dict(self):
-        """Return dictionary representation of the Cosine object/shape.
+        """Returns dictionary representation of the Cosine object/shape.
 
         Returns:
-            dict: Dictionary.
+            dict: Dictionary representing the Cosine pulse shape. It contains the name of the pulse shape plus the lambda_2 factor.
         """
         return {
             "name": self.name.value,
