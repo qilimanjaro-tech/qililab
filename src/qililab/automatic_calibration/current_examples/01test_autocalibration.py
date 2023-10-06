@@ -53,10 +53,13 @@ controller = CalibrationController(node_sequence=nodes, calibration_graph=G, run
 
 ### EXECUTIONS TO DO:
 
-# Calibrate the nodes, for when we have fucked up:
+# Create the first notebook executions, for when we have fucked up:
 controller.calibrate(first)
+first.in_spec_threshold, first.bad_data_threshold = 4, 8
 controller.calibrate(second)
+second.in_spec_threshold, second.bad_data_threshold = 2, 4
 controller.calibrate(third)
+third.in_spec_threshold, third.bad_data_threshold = 1, 2
 
 # Maintain from highest node:
-controller.maintain(third)
+# controller.maintain(third)
