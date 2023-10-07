@@ -348,138 +348,164 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         self._buses[element.bus].marked_for_sync = True
 
     def _handle_sync(self, element: Sync):
-        buses = set(element.buses) if element.buses is not None else set(self._buses.keys())
+        # Get the buses involved in the sync operation.
+        buses = set(element.buses or self._buses)
+
+        # If they are zero or one, return.
         if len(buses) <= 1:
             return
+
         # If there is no bus marked for sync, return.
         if all(not self._buses[bus].marked_for_sync for bus in buses):
             return
+
         # Is there any bus that has dynamic durations?
-        buses_with_dynamic_or_sync_durations = set(
-            bus for bus in buses if self._buses[bus].dynamic_durations or self._buses[bus].sync_durations
-        )
-        # If yes, we must add a sync block that calculates the difference between buses dynamically.
-        if buses_with_dynamic_or_sync_durations:
-            sync_duration_to_be_added: dict[str, QPyProgram.Register] = {}
-            for bus in buses:
-                # Create seperate block for readability.
-                sync_block_label = f"sync{self._sync_counter}_start"
-                sync_block = QPyProgram.Block(name=sync_block_label)
-                self._buses[bus].qpy_sequence._program.append_block(sync_block)
-
-                # Create register to hold the syncing difference.
-                sync_register = QPyProgram.Register()
-                # Initialize register with static duration of bus.
-                sync_block.append_component(
-                    component=QPyInstructions.Move(var=self._buses[bus].static_duration, register=sync_register)
-                )
-                # Add dynamic durations of bus, if any.
-                for dynamic_duration in self._buses[bus].dynamic_durations:
-                    dynamic_duration_register = self._buses[bus].variable_to_register[dynamic_duration]
-                    sync_block.append_component(
-                        component=QPyInstructions.Add(
-                            origin=sync_register, var=dynamic_duration_register, destination=sync_register
-                        )
-                    )
-                # Add durations created by previous syncs, if any.
-                for i, sync_duration in enumerate(self._buses[bus].sync_durations):
-                    # For every previous sync, we add its register if the register is positive.
-                    # So we jump to next instruction, if register is negative.
-                    skip_previous_sync_label = f"sync{self._sync_counter}_self{i}"
-                    sync_block.append_component(
-                        component=QPyInstructions.Jlt(
-                            a=sync_duration,
-                            b=QbloxCompiler.minimum_wait_duration - 1,
-                            instr=f"@{skip_previous_sync_label}",
-                        )
-                    )
-                    sync_block.append_component(
-                        component=QPyInstructions.Add(
-                            origin=sync_register, var=sync_duration, destination=sync_register
-                        )
-                    )
-                    sync_block.append_component(component=QPyInstructions.Nop().with_label(skip_previous_sync_label))
-
-                # Invert the register (x => -x)
-                sync_block.append_component(component=QPyInstructions.Not(var=sync_register, register=sync_register))
-                sync_block.append_component(
-                    component=QPyInstructions.Add(origin=sync_register, var=1, destination=sync_register)
-                )
-                # TODO: The following implementation assumes we have only two buses in the sync operation.
-                #       We should change this to allow more buses to be syncronized dynamically.
-                # Add all durations of other bus
-                other_bus = next(other for other in buses if other != bus)
-                # Add static duration
-                sync_block.append_component(
-                    component=QPyInstructions.Add(
-                        origin=sync_register, var=self._buses[other_bus].static_duration, destination=sync_register
-                    )
-                )
-                # Add dynamic durations, if any.
-                for other_dynamic_duration in self._buses[other_bus].dynamic_durations:
-                    dynamic_duration_register = self._buses[bus].variable_to_register[other_dynamic_duration]
-                    sync_block.append_component(
-                        component=QPyInstructions.Add(
-                            origin=sync_register, var=dynamic_duration_register, destination=sync_register
-                        )
-                    )
-                # TODO: Review this again. It currently adds a register from another sequence!
-                # Add durations created by previous syncs, if any.
-                # for i, sync_duration in enumerate(self._buses[other_bus].sync_durations):
-                #     # For every previous sync, we add its register if the register is positive.
-                #     # So we jump to next instruction, if register is negative.
-                #     skip_previous_sync_label = f"sync{self._sync_counter}_other{i}"
-                #     sync_block.append_component(
-                #         component=QPyInstructions.Jlt(a=sync_duration, b=QbloxCompiler.minimum_wait_duration - 1, instr=f"@{skip_previous_sync_label}")
-                #     )
-                #     sync_block.append_component(
-                #         component=QPyInstructions.Add(
-                #             origin=sync_register, var=sync_duration, destination=sync_register
-                #         )
-                #     )
-                #     sync_block.append_component(component=QPyInstructions.Nop().with_label(skip_previous_sync_label))
-                # sync_register now holds the difference of the two buses.
-                # If sync_register > 0, then `bus` is behind, otherwise `other_bus` is behind.
-                # If `other_bus` is behind, skip wait instruction. Else, wait.
-                skip_sync_label = f"sync{self._sync_counter}_skip"
-                sync_block.append_component(
-                    component=QPyInstructions.Jlt(
-                        a=sync_register, b=QbloxCompiler.minimum_wait_duration - 1, instr=f"@{skip_sync_label}"
-                    )
-                )
-                sync_block.append_component(component=QPyInstructions.Wait(wait_time=sync_register))
-                sync_block.append_component(component=QPyInstructions.Nop().with_label(skip_sync_label))
-
-                # Jump back to main flow.
-                end_sync_label = f"sync{self._sync_counter}_end"
-                sync_block.append_component(component=QPyInstructions.Jmp(instr=f"@{end_sync_label}"))
-
-                # Append the block to program and jump to it.
-                self._buses[bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.Jmp(instr=f"@{sync_block_label}")
-                )
-                self._buses[bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.Nop().with_label(end_sync_label)
-                )
-
-                # Mark sync_register to be added to sync_durations.
-                sync_duration_to_be_added[bus] = sync_register
-            for bus in sync_duration_to_be_added:
-                self._buses[bus].sync_durations.append(sync_duration_to_be_added[bus])
-            # Increate global sync counter
-            self._sync_counter += 1
-        # If no, calculating the difference is trivial.
+        if any(bus for bus in buses if self._buses[bus].dynamic_durations or self._buses[bus].sync_durations):
+            # If yes, we must add a sync block that calculates the difference between buses dynamically.
+            self.__handle_dynamic_sync(buses=buses)
         else:
-            max_duration = max(self._buses[bus].static_duration for bus in buses)
-            for bus in buses:
-                duration_diff = max_duration - self._buses[bus].static_duration
-                if duration_diff > 0:
-                    self._buses[bus].qpy_block_stack[-1].append_component(
-                        component=QPyInstructions.Wait(wait_time=duration_diff)
-                    )
-                    self._buses[bus].static_duration += duration_diff
+            # If no, calculating the difference is trivial.
+            self.__handle_static_sync(buses=buses)
+
+        # In any case, mark al buses as synced.
         for bus in buses:
             self._buses[bus].marked_for_sync = False
+
+    def __handle_static_sync(self, buses: set[str]):
+        max_duration = max(self._buses[bus].static_duration for bus in buses)
+        for bus in buses:
+            duration_diff = max_duration - self._buses[bus].static_duration
+            if duration_diff > 0:
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.Wait(wait_time=duration_diff)
+                )
+                self._buses[bus].static_duration += duration_diff
+
+    def __handle_dynamic_sync(self, buses: set[str]):
+        sync_duration_to_be_added: dict[str, QPyProgram.Register] = {}
+        for bus in buses:
+            # Create seperate block for readability.
+            sync_block_label = f"sync{self._sync_counter}_start"
+            sync_block = QPyProgram.Block(name=sync_block_label)
+            self._buses[bus].qpy_sequence._program.append_block(sync_block)
+
+            # Create register to hold the syncing difference.
+            sync_register = QPyProgram.Register()
+            # Initialize register with static duration of bus.
+            sync_block.append_component(
+                component=QPyInstructions.Move(var=self._buses[bus].static_duration, register=sync_register)
+            )
+            # Add dynamic durations of bus, if any.
+            for dynamic_duration in self._buses[bus].dynamic_durations:
+                dynamic_duration_register = self._buses[bus].variable_to_register[dynamic_duration]
+                sync_block.append_component(
+                    component=QPyInstructions.Add(
+                        origin=sync_register, var=dynamic_duration_register, destination=sync_register
+                    )
+                )
+                sync_block.append_component(component=QPyInstructions.Nop())
+            # Add durations created by previous syncs, if any.
+            for i, sync_duration in enumerate(self._buses[bus].sync_durations):
+                # For every previous sync, we add its register if the register is positive.
+                # So we jump to next instruction, if register is negative.
+                skip_previous_sync_label = f"sync{self._sync_counter}_self{i}"
+                sync_block.append_component(
+                    component=QPyInstructions.Jlt(
+                        a=sync_duration,
+                        b=QbloxCompiler.minimum_wait_duration - 1,
+                        instr=f"@{skip_previous_sync_label}",
+                    )
+                )
+                sync_block.append_component(
+                    component=QPyInstructions.Add(origin=sync_register, var=sync_duration, destination=sync_register)
+                )
+                sync_block.append_component(component=QPyInstructions.Nop().with_label(skip_previous_sync_label))
+
+            # Invert the register (x => -x)
+            sync_block.append_component(component=QPyInstructions.Not(var=sync_register, register=sync_register))
+            sync_block.append_component(
+                component=QPyInstructions.Add(origin=sync_register, var=1, destination=sync_register)
+            )
+
+            # Get the other buses involved in sync operation, that is except the current one.
+            other_buses = set(other_bus for other_bus in buses if other_bus != bus)
+
+            # Find the maximum static duration of other buses.
+            max_static_duration = max(self._buses[other_bus].static_duration for other_bus in other_buses)
+
+            # Add static duration
+            sync_block.append_component(
+                component=QPyInstructions.Add(origin=sync_register, var=max_static_duration, destination=sync_register)
+            )
+
+            # Add dynamic durations, if any.
+            other_dynamic_durations = set(
+                other_dynamic_duration
+                for other_bus in other_buses
+                for other_dynamic_duration in self._buses[other_bus].dynamic_durations
+            )
+            if len(other_dynamic_durations) > 1:
+                # In order to support this, we would have to find the maximum of the registers.
+                raise NotImplementedError(
+                    "Sync operations when multiple dynamic durations are present is not supported yet."
+                )
+            elif len(other_dynamic_durations) == 1:
+                other_dynamic_duration = next(iter(other_dynamic_durations))
+                max_repetitions = max(len(self._buses[bus].dynamic_durations) for bus in other_buses)
+                dynamic_duration_register = self._buses[bus].variable_to_register[other_dynamic_duration]
+                for _ in range(max_repetitions):
+                    sync_block.append_component(
+                        component=QPyInstructions.Add(
+                            origin=sync_register, var=dynamic_duration_register, destination=sync_register
+                        )
+                    )
+                    sync_block.append_component(component=QPyInstructions.Nop())
+            # TODO: Review this again. It currently adds a register from another sequence!
+            # Add durations created by previous syncs, if any.
+            # for i, sync_duration in enumerate(self._buses[other_bus].sync_durations):
+            #     # For every previous sync, we add its register if the register is positive.
+            #     # So we jump to next instruction, if register is negative.
+            #     skip_previous_sync_label = f"sync{self._sync_counter}_other{i}"
+            #     sync_block.append_component(
+            #         component=QPyInstructions.Jlt(a=sync_duration, b=QbloxCompiler.minimum_wait_duration - 1, instr=f"@{skip_previous_sync_label}")
+            #     )
+            #     sync_block.append_component(
+            #         component=QPyInstructions.Add(
+            #             origin=sync_register, var=sync_duration, destination=sync_register
+            #         )
+            #     )
+            #     sync_block.append_component(component=QPyInstructions.Nop().with_label(skip_previous_sync_label))
+
+            # sync_register now holds the difference of the two buses.
+            # If sync_register > 0, then `bus` is behind, otherwise `other_bus` is behind.
+            # If `other_bus` is behind, skip wait instruction. Else, wait.
+            skip_sync_label = f"sync{self._sync_counter}_skip"
+            sync_block.append_component(
+                component=QPyInstructions.Jlt(
+                    a=sync_register, b=QbloxCompiler.minimum_wait_duration - 1, instr=f"@{skip_sync_label}"
+                )
+            )
+            sync_block.append_component(component=QPyInstructions.Wait(wait_time=sync_register))
+            sync_block.append_component(component=QPyInstructions.Nop().with_label(skip_sync_label))
+
+            # Jump back to main flow.
+            end_sync_label = f"sync{self._sync_counter}_end"
+            sync_block.append_component(component=QPyInstructions.Jmp(instr=f"@{end_sync_label}"))
+
+            # Append the block to program and jump to it.
+            self._buses[bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.Jmp(instr=f"@{sync_block_label}")
+            )
+            self._buses[bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.Nop().with_label(end_sync_label)
+            )
+
+            # Mark sync_register to be added to sync_durations.
+            sync_duration_to_be_added[bus] = sync_register
+        for bus in sync_duration_to_be_added:
+            self._buses[bus].sync_durations.append(sync_duration_to_be_added[bus])
+        # Increate global sync counter
+        self._sync_counter += 1
 
     def _handle_acquire(self, element: Acquire):
         loops = [
