@@ -37,9 +37,9 @@ class Result(FactoryElement, ABC):
             dict[str, float]: Dictionary containing the quantum states as the keys of the dictionary, and the
                 probabilities obtained for each state as the values of the dictionary.
         """
-        return self.counts().probabilities()
+        return self.counts_object().probabilities()
 
-    def counts(self) -> Counts:
+    def counts_object(self) -> Counts:
         """Returns a Counts object containing the amount of times each state was measured.
 
         Raises:

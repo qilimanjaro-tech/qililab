@@ -258,15 +258,17 @@ class TestMethods:
         with patch.object(Bus, "upload") as upload:
             with patch.object(Bus, "run") as run:
                 with patch.object(Bus, "acquire_result") as acquire_result:
-                    acquire_result.return_value = 123
-                    result = platform.execute(
-                        program=pulse_schedule, num_avg=1000, repetition_duration=2000, num_bins=1
-                    )
+                    with patch.object(QbloxModule, "desync_sequencers") as desync:
+                        acquire_result.return_value = 123
+                        result = platform.execute(
+                            program=pulse_schedule, num_avg=1000, repetition_duration=2000, num_bins=1
+                        )
 
         assert upload.call_count == len(pulse_schedule.elements)
         assert run.call_count == len(pulse_schedule.elements)
         acquire_result.assert_called_once_with()
         assert result == 123
+        desync.assert_called()
 
     def test_execute_with_queue(self, platform: Platform):
         """Test that the execute method adds the obtained results to the given queue."""
@@ -274,19 +276,23 @@ class TestMethods:
         with patch.object(Bus, "upload"):
             with patch.object(Bus, "run"):
                 with patch.object(Bus, "acquire_result") as acquire_result:
-                    acquire_result.return_value = 123
-                    _ = platform.execute(
-                        program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1, queue=queue
-                    )
+                    with patch.object(QbloxModule, "desync_sequencers") as desync:
+                        acquire_result.return_value = 123
+                        _ = platform.execute(
+                            program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1, queue=queue
+                        )
 
         assert len(queue.queue) == 1
         assert queue.get() == 123
+        desync.assert_called()
 
     def test_execute_raises_error_if_no_readout_buses_present(self, platform: Platform):
         """Test that `Platform.execute` raises an error when the platform contains more than one readout bus."""
         platform.buses.elements = []
         with pytest.raises(ValueError, match="There are no readout buses in the platform."):
-            platform.execute(program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1)
+            with patch.object(QbloxModule, "desync_sequencers") as desync:
+                platform.execute(program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1)
+            desync.assert_called()
 
     def test_execute_raises_error_if_more_than_one_readout_bus_present(self, platform: Platform):
         """Test that `Platform.execute` raises an error when the platform contains more than one readout bus."""
@@ -297,15 +303,18 @@ class TestMethods:
                 chip=platform.chip,
             )
         )
+
         with patch.object(Bus, "upload"):
             with patch.object(Bus, "run"):
                 with patch.object(Bus, "acquire_result"):
                     with patch("qililab.platform.platform.logger") as mock_logger:
-                        _ = platform.execute(
-                            program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1
-                        )
+                        with patch.object(QbloxModule, "desync_sequencers") as desync:
+                            _ = platform.execute(
+                                program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1
+                            )
 
         mock_logger.error.assert_called_once_with("Only One Readout Bus allowed. Reading only from the first one.")
+        desync.assert_called()
 
     @pytest.mark.parametrize("parameter", [Parameter.AMPLITUDE, Parameter.DURATION, Parameter.PHASE])
     @pytest.mark.parametrize("gate", ["I(0)", "X(0)", "Y(0)"])

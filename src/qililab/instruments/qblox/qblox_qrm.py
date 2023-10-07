@@ -170,13 +170,13 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 compiled_sequences.append(self.sequences[sequencer.identifier][0])
         return compiled_sequences
 
-    def acquire_result(self) -> QbloxResult:
+    def acquire_result(self, acquisitions: list[str] | None = None) -> QbloxResult:
         """Read the result from the AWG instrument
 
         Returns:
             QbloxResult: Acquired Qblox result
         """
-        return self.get_acquisitions()
+        return self.get_acquisitions(acquisitions=acquisitions)
 
     def _set_device_hardware_demodulation(self, value: bool, sequencer_id: int):
         """set hardware demodulation
@@ -259,7 +259,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             )
 
     @Instrument.CheckDeviceInitialized
-    def get_acquisitions(self) -> QbloxResult:
+    def get_acquisitions(self, acquisitions: list[str] | None = None) -> QbloxResult:
         """Wait for sequencer to finish sequence, wait for acquisition to finish and get the acquisition results.
         If any of the timeouts is reached, a TimeoutError is raised.
 
@@ -281,9 +281,21 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 )
 
                 if sequencer.scope_store_enabled:
-                    self.device.store_scope_acquisition(sequencer=sequencer_id, name="default")
+                    if acquisitions is None:
+                        self.device.store_scope_acquisition(sequencer=sequencer_id, name="default")
+                    else:
+                        for acquisition in acquisitions:
+                            self.device.store_scope_acquisition(sequencer=sequencer_id, name=acquisition)
 
-                results.append(self.device.get_acquisitions(sequencer=sequencer.identifier)["default"]["acquisition"])
+                if acquisitions is None:
+                    results.append(
+                        self.device.get_acquisitions(sequencer=sequencer.identifier)["default"]["acquisition"]
+                    )
+                else:
+                    for acquisition in acquisitions:
+                        results.append(
+                            self.device.get_acquisitions(sequencer=sequencer.identifier)[acquisition]["acquisition"]
+                        )
                 self.device.sequencers[sequencer.identifier].sync_en(False)
                 integration_lengths.append(sequencer.used_integration_length)
 

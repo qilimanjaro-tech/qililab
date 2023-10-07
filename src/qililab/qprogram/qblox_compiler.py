@@ -511,9 +511,9 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         loops = [
             (i, loop)
             for i, loop in enumerate(self._buses[element.bus].qpy_block_stack)
-            if isinstance(loop, QPyProgram.Loop) and not loop.name.startswith("avg")
+            if isinstance(loop, QPyProgram.IterativeLoop) and not loop.name.startswith("avg")
         ]
-        num_bins = math.prod(loop[1]._iterations for loop in loops)
+        num_bins = math.prod(loop[1].iterations for loop in loops)
         self._buses[element.bus].qpy_sequence._acquisitions.add(
             name=f"acquisition_{self._buses[element.bus].next_acquisition_index}",
             num_bins=num_bins,

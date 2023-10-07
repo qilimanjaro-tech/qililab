@@ -123,6 +123,11 @@ class QbloxModule(AWG):
         for idx, offset in enumerate(self.out_offsets):
             self._set_out_offset(output=idx, value=offset)
 
+    def desync_sequencers(self) -> None:
+        """Desyncs all sequencers."""
+        for sequencer in self.awg_sequencers:
+            self.device.sequencers[sequencer.identifier].sync_en(False)
+
     @property
     def module_type(self):
         """returns the qblox module type. Options: QCM or QRM"""
@@ -551,8 +556,9 @@ class QbloxModule(AWG):
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
         for sequencer in sequencers:
             logger.info("Sequence program: \n %s", repr(qpysequence._program))  # pylint: disable=protected-access
-            self.device.sequencers[sequencer.identifier].sync_en(True)
             self.device.sequencers[sequencer.identifier].sequence(qpysequence.todict())
+            self.device.sequencers[sequencer.identifier].sync_en(True)
+            self.sequences[sequencer.identifier] = (qpysequence, True)
 
     def upload(self, port: str):
         """Upload all the previously compiled programs to its corresponding sequencers.

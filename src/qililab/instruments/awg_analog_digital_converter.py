@@ -42,7 +42,7 @@ class AWGAnalogDigitalConverter(AWG):
     settings: AWGAnalogDigitalConverterSettings
 
     @abstractmethod
-    def acquire_result(self) -> Result:
+    def acquire_result(self, acquisitons: list[str] | None = None) -> Result:
         """Read the result from the AWG instrument
 
         Returns:

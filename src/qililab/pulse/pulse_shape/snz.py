@@ -45,9 +45,9 @@ class SNZ(PulseShape):
         t_phi (int): Time at `height = 0`, in the middle of the positive and negative rectangular pulses.
     """
 
-    name = PulseShapeName.SNZ
-    b: float
-    t_phi: int
+    name = PulseShapeName.SNZ  #: Name of the snz pulse shape.
+    b: float  #: Instant stops height.
+    t_phi: int  #: Time at `height = 0`.
 
     def __post_init__(self):
         # ensure t_phi is an int
@@ -89,10 +89,11 @@ class SNZ(PulseShape):
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "SNZ":
-        """Load SNZ object/shape from dictionary.
+        """Loads SNZ object/shape from dictionary.
 
         Args:
-            dictionary (dict): Dictionary representation of the SNZ object/shape.
+            dictionary (dict): Dictionary representation of the SNZ object/shape, including the name of the pulse shape, the
+            b parameter and the t_phi parameter.
 
         Returns:
             Rectangular: Loaded class.
@@ -102,10 +103,10 @@ class SNZ(PulseShape):
         return cls(**local_dictionary)
 
     def to_dict(self):
-        """Return dictionary representation of the Rectangular object/shape.
+        """Returns dictionary representation of the Rectangular object/shape.
 
         Returns:
-            dict: Dictionary.
+            dict: Dictionary representation including the name of the pulse shape, the b parameter and the t_phi parameter..
         """
 
         return {
