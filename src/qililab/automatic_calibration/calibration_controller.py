@@ -60,7 +60,7 @@ class CalibrationController:
         result = self.check_data(node)
         if result == "in_spec":
             return
-        elif result == "bad_data":
+        if result == "bad_data":
             for n in self._dependents(node):
                 self.diagnose(n)
 
@@ -203,7 +203,7 @@ class CalibrationController:
                 node.invert_output_and_previous_output()
                 return "in_spec"
 
-            elif (
+            if (
                 self._obtain_comparison(obtain_params, compar_params, norm_root_mean_sqrt_error)
                 <= node.bad_data_threshold
             ):
@@ -247,8 +247,8 @@ class CalibrationController:
                 print(f"Platform updated with: ({bus_alias}, {param_name}, {param_value})")
                 # self.platform.set_parameter(alias=bus_alias, parameter=param_name, value=param_value)
 
-            # TODO: Solve the platform serialization problem to descomment this!!!
-            # save_platform(self.runcard, self.platform)
+            # TODO: Solve the platform serialization problem and change the bottom expression to ``self.runcard``!!!
+            save_platform(self.runcard.split(".yml")[0] + "_test.yml", self.platform)
 
     def _dependents(self, node: CalibrationNode) -> list:
         """Find the nodes that a node depends on.

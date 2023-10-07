@@ -9,7 +9,7 @@ import numpy as np
 import papermill as pm
 
 
-class CalibrationNode:
+class CalibrationNode:  # pylint: disable=too-many-instance-attributes
     """Automatic-calibration Node class, which works with notebooks as nodes.
 
     Args:
@@ -213,7 +213,7 @@ class CalibrationNode:
         """
         # Parsing file
         raw_string = ""
-        with open(f"{self.nb_folder}/{file_name}") as file:
+        with open(f"{self.nb_folder}/{file_name}") as file:  # pylint: disable=unspecified-encoding
             lines = file.readlines()
             start = False
             for line in lines:
