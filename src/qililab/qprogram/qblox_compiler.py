@@ -362,7 +362,11 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         # Is there any bus that has dynamic durations?
         if any(bus for bus in buses if self._buses[bus].dynamic_durations or self._buses[bus].sync_durations):
             # If yes, we must add a sync block that calculates the difference between buses dynamically.
-            self.__handle_dynamic_sync(buses=buses)
+            # But the following doesn't work unfortunetely, so raise an error for now.
+            # self.__handle_dynamic_sync(buses=buses)
+            raise NotImplementedError(
+                "Sync operations when used in loops that affect timings are not currenctly supported."
+            )
         else:
             # If no, calculating the difference is trivial.
             self.__handle_static_sync(buses=buses)
