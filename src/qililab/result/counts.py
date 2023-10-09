@@ -20,7 +20,11 @@ from typing import Counter as TCounter
 
 class Counts:
     """
-    Class representing the number of times (counts) each state was measured.
+    Class representing the number of times (counts) each state was measured. It provides methods to compute the probabilities
+    of a group of measurements.
+
+    Args:
+        n_qubits (int): number of qubits used to get the measurements.
     """
 
     def __init__(self, n_qubits: int):
