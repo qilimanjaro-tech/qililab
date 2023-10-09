@@ -17,7 +17,7 @@ import contextlib
 from dataclasses import asdict
 
 import numpy as np
-from qibo.gates import CZ, Gate, M
+from qibo.gates import Gate, M
 from qibo.models.circuit import Circuit
 
 from qililab.chip.nodes import Coupler, Qubit

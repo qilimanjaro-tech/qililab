@@ -164,11 +164,11 @@ class Runcard:
             # parse spaces in tuple if needed, check first case with spaces since it is more common
             if gate_name.replace(" ", "") in self.gates.keys():
                 return self.gates[gate_name.replace(" ", "")]
-            elif gate_name in self.gates.keys():
+            if gate_name in self.gates.keys():
                 return self.gates[gate_name]
-            elif gate_name_t.replace(" ", "") in self.gates.keys():
+            if gate_name_t.replace(" ", "") in self.gates.keys():
                 return self.gates[gate_name_t.replace(" ", "")]
-            elif gate_name_t in self.gates.keys():
+            if gate_name_t in self.gates.keys():
                 return self.gates[gate_name_t]
             raise KeyError(f"Gate {name} for qubits {qubits} not found in settings.")
 
