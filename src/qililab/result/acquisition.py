@@ -25,10 +25,9 @@ from qililab.constants import RESULTSDATAFRAME
 
 @dataclass
 class Acquisition:
-    """Acquisition class. It wraps the in-phase and quadrature parts of the acquisition returned by hardware control
-    instruments.
-
-    It allows a standard way of grouping one acquisition, normalize it and returning it as an instance of the class.
+    """Acquisition class. It wraps the two amplitude-modulated sinusoids that are in quadrature phase, which are the
+    I (in-phase) and Q (quadrature) signals, the pulse length that originated the acquisition, and the amplitude and phase
+    values. It provides methods to normalize the data with respect to the pulse length.
 
     Args:
         pulse_length (int): Duration (in ns) of the pulse.
