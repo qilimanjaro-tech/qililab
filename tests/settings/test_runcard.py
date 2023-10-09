@@ -126,11 +126,10 @@ class TestGatesSettings:
             for gate_name, gate_qubits in gates_qubits
             for gate_event in gates_settings.get_gate(name=gate_name, qubits=ast.literal_eval(gate_qubits))
         )
-        assert all(
-            isinstance(gate_event, GateEventSettings)
-            for gate_name, gate_qubits in gates_qubits
-            for gate_event in gates_settings.get_gate(name=gate_name, qubits=ast.literal_eval(gate_qubits[::-1]))
-        )
+
+        # check that CZs commute
+        assert isinstance(gates_settings.get_gate(name="CZ", qubits=(1, 0))[0], GateEventSettings)
+        assert isinstance(gates_settings.get_gate(name="CZ", qubits=(0, 1))[0], GateEventSettings)
 
     def test_get_gate_raises_error(self, gates_settings):
         """Test that the ``get_gate`` method raises an error when the name is not found."""
