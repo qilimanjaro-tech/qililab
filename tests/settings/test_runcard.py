@@ -128,8 +128,8 @@ class TestGatesSettings:
         )
         assert all(
             isinstance(gate_event, GateEventSettings)
-            for gate_name, gate_qubits in gates_qubits[::-1]
-            for gate_event in gates_settings.get_gate(name=gate_name, qubits=ast.literal_eval(gate_qubits))
+            for gate_name, gate_qubits in gates_qubits
+            for gate_event in gates_settings.get_gate(name=gate_name, qubits=ast.literal_eval(gate_qubits[::-1]))
         )
 
     def test_get_gate_raises_error(self, gates_settings):
