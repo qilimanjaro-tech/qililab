@@ -61,7 +61,7 @@ class QbloxSPIRackController(InstrumentController):
         """Sets the initialized device to all attached modules,
         taking it from the Qblox Cluster device modules
         """
-        for module, slot_id, reference in zip(self.modules, self.connected_modules_slot_ids, self.settings.modules):
+        for module, slot_id in zip(self.modules, self.connected_modules_slot_ids):
             self.device.add_spi_module(address=slot_id, module_type=module.name)
             module.device = self._module(module_id=slot_id)  # slot_id represents the number displayed in the cluster
 
