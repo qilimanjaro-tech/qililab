@@ -317,5 +317,8 @@ This document contains the changes of the current release.
 
 ### Bug fixes
 
+- Removing raised error if the system control has no AWG instruments and tries to compile and returning no compiled programs instead.
+  [#556](https://github.com/qilimanjaro-tech/qililab/pull/bug-557)
+
 - The `threshold` and `threshold_rotation` parameters of a `QbloxQRM` can now be set using `Platform.set_parameter`.
   [#534](https://github.com/qilimanjaro-tech/qililab/pull/534)
