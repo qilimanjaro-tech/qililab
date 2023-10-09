@@ -94,7 +94,7 @@ def optimize_transpilation(
                 (
                     event.pulse.options
                     for event in gate_settings
-                    if f"q{control_qubit}_phase_correction" in event.pulse.options
+                    if (event.pulse.options is not None and f"q{control_qubit}_phase_correction" in event.pulse.options)
                 ),
                 None,
             )
