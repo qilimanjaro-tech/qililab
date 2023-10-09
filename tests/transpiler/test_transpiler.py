@@ -253,11 +253,20 @@ def test_optimize_transpilation(platform):
         gates.RZ(0, 2),
         Drag(0, 3, 3),
         gates.CZ(0, 2),
+        gates.CZ(1, 0),
         Drag(1, 2, 3),
         gates.RZ(1, 0),
     ]
     # resulting gate list from optimization
-    result_gates = [Drag(0, 1, 1), gates.CZ(0, 1), gates.M(0), Drag(0, 3, 0), gates.CZ(0, 2), Drag(1, 2, 0)]
+    result_gates = [
+        Drag(0, 1, 1),
+        gates.CZ(0, 1),
+        gates.M(0),
+        Drag(0, 3, 0),
+        gates.CZ(0, 2),
+        gates.CZ(1, 0),
+        Drag(1, 2, -2),
+    ]
 
     # check that lists are the same
     optimized_gates = optimize_transpilation(3, test_gates, gates_settings=platform.gates_settings)
