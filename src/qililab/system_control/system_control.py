@@ -93,7 +93,7 @@ class SystemControl(FactoryElement, ABC):
                 return
 
         # returning None if there is no AWG instrument in a bus.
-        return None
+        return
 
     def __str__(self):
         """String representation of a SystemControl class."""
