@@ -76,8 +76,8 @@ class TestMethods:
     def test_compile_no_programs(self, system_control_without_awg: SystemControl):
         """Test that the ``compile`` method returns None when the system control doesn't have an AWG."""
         sequences = system_control_without_awg.compile(
-                PulseBusSchedule(port="drive_q0"), nshots=1000, repetition_duration=1000, num_bins=1
-            )
+            PulseBusSchedule(port="drive_q0"), nshots=1000, repetition_duration=1000, num_bins=1
+        )
 
         assert sequences is None
 
