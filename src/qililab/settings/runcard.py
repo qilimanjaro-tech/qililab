@@ -18,6 +18,8 @@ import re
 from dataclasses import dataclass
 from typing import Literal
 
+from qibo.gates import CZ
+
 from qililab.constants import GATE_ALIAS_REGEX
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.typings.enums import OperationTimingsCalculationMethod, Parameter, ResetMethod
@@ -159,12 +161,17 @@ class Runcard:
                 (qubits,) if isinstance(qubits, int) else qubits
             )  # tuplify so that the join method below is general
             gate_name = f"{name}({', '.join(map(str, gate_qubits))})"
+            gate_name_t = f"{name}({', '.join(map(str, gate_qubits[::-1]))})"
 
             # parse spaces in tuple if needed, check first case with spaces since it is more common
             if gate_name.replace(" ", "") in self.gates.keys():
                 return self.gates[gate_name.replace(" ", "")]
-            if gate_name in self.gates.keys():
+            elif gate_name in self.gates.keys():
                 return self.gates[gate_name]
+            elif gate_name_t.replace(" ", "") in self.gates.keys():
+                return self.gates[gate_name_t.replace(" ", "")]
+            elif gate_name_t in self.gates.keys():
+                return self.gates[gate_name_t]
             raise KeyError(f"Gate {name} for qubits {qubits} not found in settings.")
 
         @property
