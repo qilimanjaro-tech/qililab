@@ -128,8 +128,13 @@ class TestGatesSettings:
         )
 
         # check that CZs commute
+        # CZ(0,1) doesn't have spaces in the tuple string
         assert isinstance(gates_settings.get_gate(name="CZ", qubits=(1, 0))[0], GateEventSettings)
         assert isinstance(gates_settings.get_gate(name="CZ", qubits=(0, 1))[0], GateEventSettings)
+
+        # CZ(0, 2) has spaces in the tuple string
+        assert isinstance(gates_settings.get_gate(name="CZ", qubits=(2, 0))[0], GateEventSettings)
+        assert isinstance(gates_settings.get_gate(name="CZ", qubits=(0, 2))[0], GateEventSettings)
 
     def test_get_gate_raises_error(self, gates_settings):
         """Test that the ``get_gate`` method raises an error when the name is not found."""
