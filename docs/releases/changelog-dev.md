@@ -338,6 +338,10 @@ This document contains the changes of the current release.
 
 ### Documentation
 
+- Documentation for the Pulse module: [#532](https://github.com/qilimanjaro-tech/qililab/pull/532)
+
+  Includes documentation for all public features of the Pulse module
+
 ### Bug fixes
 
 - The `threshold` and `threshold_rotation` parameters of a `QbloxQRM` can now be set using `Platform.set_parameter`.

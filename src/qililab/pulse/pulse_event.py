@@ -26,7 +26,18 @@ from qililab.utils.signal_processing import modulate
 
 @dataclass
 class PulseEvent:
-    """Object representing a Pulse starting at a certain time."""
+    """Object representing a :class:`Pulse` starting at a certain time, and with its corresponding :class:`PulseDistortion`'s.
+
+    This class will receive a :class:`Pulse` object, a start time for it, a list of the :class:`PulseDistortion`'s that such
+    pulse will get applied and a qubit alias to where such pulse will be sent.
+    It provides functionality for instrument to generate the waveforms and modulation of pulses.
+
+    Args:
+        pulse (Pulse): :class:`Pulse` contained in the PulseEvent.
+        start_time (int): Start time of the pulse. Value in ns.
+        pulse_distortion (list[PulseDistortion]: List of :class:`PulseDistortion` applied to the pulse.
+        qubit (int, optional): the qubit alias. Defaults to None.
+    """
 
     pulse: Pulse
     start_time: int
@@ -58,7 +69,6 @@ class PulseEvent:
 
         Args:
             resolution (float, optional): The resolution of the pulse in ns. Defaults to 1.0.
-            frequency (float, optional): The modulation frequency in Hz, if it is 0.0 then the frequency of the pulse is used. Defaults to 0.0.
 
         Returns:
             Waveforms: I and Q modulated waveforms.
@@ -81,7 +91,7 @@ class PulseEvent:
             resolution (float, optional): The resolution of the pulse in ns. Defaults to 1.0.
 
         Returns:
-            np.ndarray: Envelope.
+            np.ndarray: Distorted envelope of the pulse.
         """
         envelope = self.pulse.envelope(amplitude=amplitude, resolution=resolution)
 
@@ -92,13 +102,13 @@ class PulseEvent:
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "PulseEvent":
-        """Load PulseEvent object from dictionary.
+        """Loads PulseEvent object from dictionary.
 
         Args:
             dictionary (dict): Dictionary representation of the PulseEvent object.
 
         Returns:
-            PulseEvent: Loaded class.
+            PulseEvent: PulseEvent Loaded class.
         """
         local_dictionary = dictionary.copy()
         pulse_settings = local_dictionary[PULSEEVENT.PULSE]
@@ -117,10 +127,10 @@ class PulseEvent:
         return cls(**local_dictionary)
 
     def to_dict(self) -> dict:
-        """Return dictionary of pulse.
+        """Returns dictionary of pulse.
 
         Returns:
-            dict: Dictionary describing the pulse.
+            dict: Dictionary describing the pulse event.
         """
         return {
             PULSEEVENT.PULSE: self.pulse.to_dict(),

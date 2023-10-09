@@ -28,7 +28,7 @@ from qililab.utils import Factory
 class Rectangular(PulseShape):
     """Rectangular/square pulse shape."""
 
-    name = PulseShapeName.RECTANGULAR
+    name = PulseShapeName.RECTANGULAR  #: Name of the rectangular pulse shape.
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
         """Constant amplitude envelope.
@@ -44,10 +44,10 @@ class Rectangular(PulseShape):
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "Rectangular":
-        """Load Rectangular object/shape from dictionary.
+        """Loads Rectangular object/shape from dictionary.
 
         Args:
-            dictionary (dict): Dictionary representation of the Rectangular object/shape.
+            dictionary (dict): Dictionary representation of the Rectangular object/shape including the name of the pulse shape.
 
         Returns:
             Rectangular: Loaded class.
@@ -57,10 +57,10 @@ class Rectangular(PulseShape):
         return cls(**local_dictionary)
 
     def to_dict(self):
-        """Return dictionary representation of the Rectangular object/shape.
+        """Returns dictionary representation of the Rectangular object/shape.
 
         Returns:
-            dict: Dictionary.
+            dict: Dictionary representation of the pulse shape including its name.
         """
         return {
             "name": self.name.value,
