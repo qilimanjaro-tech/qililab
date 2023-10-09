@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
+from dataclasses import InitVar, dataclass
 
 from qililab.typings.enums import Parameter
 
@@ -40,12 +40,20 @@ class GateEventSettings:
             phase (float): phase of the pulse
             duration (int): pulse duration
             shape (dict): pulse envelope
+            options (dict): optional gate dependant parameters
         """
 
         amplitude: float
         phase: float
         duration: int
         shape: dict
+        options: InitVar[dict | None] = None
+
+        def __post_init__(self, options):
+            # load options if options are defined. This is done so that if options are undefined then no options parameter is created
+            # and serialization of the runcard is consistend / doesn't create an empty options field.
+            if options is not None:
+                self.options = options
 
     bus: str
     pulse: GatePulseSettings
