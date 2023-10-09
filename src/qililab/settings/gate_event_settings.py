@@ -50,6 +50,8 @@ class GateEventSettings:
         options: InitVar[dict | None] = None
 
         def __post_init__(self, options):
+            # load options if options are defined. This is done so that if options are undefined then no options parameter is created
+            # and serialization of the runcard is consistend / doesn't create an empty options field.
             if options is not None:
                 self.options = options
 
