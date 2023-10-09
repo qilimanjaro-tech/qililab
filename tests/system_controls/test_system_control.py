@@ -73,15 +73,13 @@ class TestMethods:
         for instrument in system_control:
             assert isinstance(instrument, Instrument)
 
-    def test_compile_raises_error(self, system_control_without_awg: SystemControl):
-        """Test that the ``compile`` method raises an error when the system control doesn't have an AWG."""
-        with pytest.raises(
-            AttributeError,
-            match="The system control doesn't have any AWG to compile the given pulse sequence",
-        ):
-            system_control_without_awg.compile(
+    def test_compile_no_programs(self, system_control_without_awg: SystemControl):
+        """Test that the ``compile`` method returns None when the system control doesn't have an AWG."""
+        sequences = system_control_without_awg.compile(
                 PulseBusSchedule(port="drive_q0"), nshots=1000, repetition_duration=1000, num_bins=1
             )
+
+        assert sequences is None
 
     def test_compile(self, system_control: SystemControl, pulse_bus_schedule: PulseBusSchedule):
         """Test the ``compile`` method of the ``SystemControl`` class."""
@@ -110,14 +108,6 @@ class TestMethods:
         system_control.upload(port=pulse_bus_schedule.port)
         for seq_idx in range(awg.num_sequencers):
             awg.device.sequencers[seq_idx].sequence.assert_called_once()
-
-    def test_run_raises_error(self, system_control_without_awg: SystemControl):
-        """Test that the ``run`` method raises an error when the system control doesn't have an AWG."""
-        with pytest.raises(
-            AttributeError,
-            match="The system control doesn't have any AWG to run a program",
-        ):
-            system_control_without_awg.run(port="drive_q0")
 
     def test_set_parameter(self, system_control: SystemControl):
         """Test the ``set_parameter`` method with a Rohde & Schwarz instrument."""

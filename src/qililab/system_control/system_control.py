@@ -56,7 +56,7 @@ class SystemControl(FactoryElement, ABC):
 
     def compile(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
-    ) -> list:
+    ) -> list | None:
         """Compiles the ``PulseBusSchedule`` into an assembly program.
 
         Args:
@@ -73,7 +73,8 @@ class SystemControl(FactoryElement, ABC):
                     repetition_duration=repetition_duration,
                     num_bins=num_bins,
                 )
-        raise AttributeError("The system control doesn't have any AWG to compile the given pulse sequence.")
+        # otherwise returning None
+        return None
 
     def upload(self, port: str):
         """Uploads any previously compiled program into the instrument."""
