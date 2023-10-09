@@ -25,7 +25,9 @@ from qililab.utils.dataframe_manipulation import concatenate_creating_new_name_i
 
 @dataclass
 class Acquisitions:
-    """Acquisitions Results
+    """Acquisitions Results. Collection of single Acquisition class instances containing the data collected from hardware quantum
+    control instruments.
+
     Args:
         acquisitions (list[Acquisition]): list of all the acquisition results
 
@@ -35,8 +37,7 @@ class Acquisitions:
     data_dataframe_indices: set[str] = field(init=False, default_factory=set)
 
     def acquisitions(self) -> pd.DataFrame:
-        """return the acquisitions with a structure
-        I, Q, Amplitude, Phase
+        """Returns the acquisitions as a dataframe with the I (in-phase), Q (quadrature), Amplitude, Phase data fields.
         """
         acquisition_list = [acquisition.acquisition for acquisition in self._acquisitions]
 
@@ -45,7 +46,7 @@ class Acquisitions:
         )
 
     def probabilities(self) -> dict[str, float]:
-        """Return probabilities of being in the ground and excited state.
+        """Returns probabilities of being in the ground and excited state.
 
         Returns:
             tuple[float, float]: Probabilities of being in the ground and excited state.
