@@ -91,6 +91,10 @@ class TestMethods:
         assert isinstance(sequences[0], Sequence)
         assert sequences[0]._program.duration == 1000 * 2000 + 4
 
+    def test_run_no_awg(self, system_control_without_awg: SystemControl):
+        """Test that the ``run`` method raises an error when the system control doesn't have an AWG."""
+        assert system_control_without_awg.run(port="drive_q0") is None
+
     def test_upload_raises_error(self, system_control_without_awg: SystemControl):
         """Test that the ``upload`` method raises an error when the system control doesn't have an AWG."""
         with pytest.raises(

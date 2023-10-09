@@ -92,7 +92,8 @@ class SystemControl(FactoryElement, ABC):
                 instrument.run(port=port)
                 return
 
-        raise AttributeError("The system control doesn't have any AWG to run a program.")
+        # returning None if there is no AWG instrument in a bus.
+        return None
 
     def __str__(self):
         """String representation of a SystemControl class."""
