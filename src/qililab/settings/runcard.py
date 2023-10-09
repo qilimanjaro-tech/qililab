@@ -18,8 +18,6 @@ import re
 from dataclasses import dataclass
 from typing import Literal
 
-from qibo.gates import CZ
-
 from qililab.constants import GATE_ALIAS_REGEX
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.typings.enums import OperationTimingsCalculationMethod, Parameter, ResetMethod
