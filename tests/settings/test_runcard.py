@@ -105,6 +105,10 @@ class TestGatesSettings:
                 gates_settings.OperationSettings,
             )
 
+    def test_get_parameter_fails(self, gates_settings):
+        with pytest.raises(ValueError, match="Could not find gate alias in gate settings."):
+            gates_settings.get_parameter(alias="alias", parameter=Parameter.DURATION)
+
     def test_get_operation_settings_raises_error_when_operation_does_not_exist(self, gates_settings):
         """Test the ``get_gate`` method of the Runcard.GatesSettings class."""
         name = "unkown_operation"
@@ -120,6 +124,11 @@ class TestGatesSettings:
         assert all(
             isinstance(gate_event, GateEventSettings)
             for gate_name, gate_qubits in gates_qubits
+            for gate_event in gates_settings.get_gate(name=gate_name, qubits=ast.literal_eval(gate_qubits))
+        )
+        assert all(
+            isinstance(gate_event, GateEventSettings)
+            for gate_name, gate_qubits in gates_qubits[::-1]
             for gate_event in gates_settings.get_gate(name=gate_name, qubits=ast.literal_eval(gate_qubits))
         )
 
