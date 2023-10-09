@@ -25,18 +25,17 @@ from qililab.constants import RESULTSDATAFRAME
 
 @dataclass
 class Acquisition:
-    """Acquisition class. It wraps the real and imaginary parts of the acquisition returned by hardware control
+    """Acquisition class. It wraps the in-phase and quadrature parts of the acquisition returned by hardware control
     instruments.
-    
-    It allows a standard way of grouping one acquisition, normalize it and 
+
+    It allows a standard way of grouping one acquisition, normalize it and returning it as an instance of the class.
 
     Args:
         pulse_length (int): Duration (in ns) of the pulse.
-        i_values: (NDArray[numpy.float32]): I data, or real part, normalized
-        q_values: (NDArray[numpy.float32]): Q data, or imaginary part, normalized
+        i_values: (NDArray[numpy.float32]): In-phase data, normalized
+        q_values: (NDArray[numpy.float32]): Quadrature data, normalized
         amplitude_values: (NDArray[numpy.float32]): amplitude values from I/Q normalized
         phase_values: (NDArray[numpy.float32]): phase values from I/Q normalized
-
     """
 
     integration_length: int
@@ -64,6 +63,7 @@ class Acquisition:
     def _create_acquisition(self) -> pd.DataFrame:
         """Transposes each of the acquired results arrays so that we have for each value a structure with i, q,
         amplitude, phase.
+
         For multiple values you may need to redefine this method.
         """
 
@@ -77,8 +77,7 @@ class Acquisition:
         )
 
     def _normalized_data(self, data: npt.NDArray):
-        """Normalizes the given data with the integration length,
-        which should be the same as the pulse length.
+        """Normalizes the given data with the integration length, which should be the same as the pulse length.
 
         Args:
             data (list[float]): I or Q data from acquisition.
