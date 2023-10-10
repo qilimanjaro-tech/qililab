@@ -128,7 +128,9 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
                     flux_port = self.platform.chip.get_port_from_qubit_idx(idx=qubit, line=Line.FLUX)
                     if flux_port is not None:
                         flux_bus = next((bus for bus in self.platform.buses if bus.port == flux_port), None)
-                        if flux_bus and any(isinstance(instrument, AWG) for instrument in flux_bus.settings.platform_instruments):
+                        if flux_bus and any(
+                            isinstance(instrument, AWG) for instrument in flux_bus.settings.platform_instruments
+                        ):
                             pulse_schedule.create_schedule(port=flux_port)
 
             pulse_schedule_list.append(pulse_schedule)
