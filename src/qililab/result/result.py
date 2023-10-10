@@ -52,13 +52,15 @@ class Result(FactoryElement, ABC):
 
     @abstractmethod
     def to_dict(self) -> dict:
-        """
+        """Returns a dict representation of the result class.
+
         Returns:
             dict: Dictionary containing all the class information.
         """
 
     def to_dataframe(self) -> pd.DataFrame:
-        """
+        """Returns a DataFrame representation of the result class.
+
         Returns:
             DataFrame: dataframe containing all the results.
         """
@@ -68,7 +70,7 @@ class Result(FactoryElement, ABC):
     @property
     @abstractmethod
     def array(self) -> np.ndarray:
-        """Returns the results in a numpy array format.
+        """Returns an array representation of the result class.
 
         Returns:
             np.ndarray: Numpy array containing the results.
