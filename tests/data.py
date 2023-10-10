@@ -139,6 +139,30 @@ class Galadriel:
                     },
                 }
             ],
+            "CZ(0,1)": [
+                {
+                    "bus": "flux_line_q1_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "shape": {"name": "rectangular"},
+                    },
+                }
+            ],
+            "CZ(0, 2)": [
+                {
+                    "bus": "flux_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "shape": {"name": "rectangular"},
+                    },
+                }
+            ],
         },
     }
 
