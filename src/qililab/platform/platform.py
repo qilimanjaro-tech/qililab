@@ -477,9 +477,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         for pulse_bus_schedule in pulse_schedule.elements:
             bus = self.buses.get(port=pulse_bus_schedule.port)
             bus_programs = bus.compile(pulse_bus_schedule, num_avg, repetition_duration, num_bins)
-            # ensuring that buses without AWG type instruments but with non AWG instruments don't get added to the
-            # programs queue
-            if bus_programs:
-                programs[bus.alias] = bus_programs
+            programs[bus.alias] = bus_programs
 
         return programs

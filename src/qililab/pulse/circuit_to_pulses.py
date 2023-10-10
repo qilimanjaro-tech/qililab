@@ -22,6 +22,7 @@ from qibo.models.circuit import Circuit
 
 from qililab.chip.nodes import Coupler, Qubit
 from qililab.constants import RUNCARD
+from qililab.instruments import AWG
 from qililab.platform import Bus, Platform
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.transpiler import Drag
@@ -126,7 +127,9 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
                     # If we find a flux port, create empty schedule for that port
                     flux_port = self.platform.chip.get_port_from_qubit_idx(idx=qubit, line=Line.FLUX)
                     if flux_port is not None:
-                        pulse_schedule.create_schedule(port=flux_port)
+                        flux_bus = next((bus for bus in self.platform.buses if bus.port == flux_port), None)
+                        if flux_bus and any(isinstance(instrument, AWG) for instrument in flux_bus.settings.platform_instruments):
+                            pulse_schedule.create_schedule(port=flux_port)
 
             pulse_schedule_list.append(pulse_schedule)
 
