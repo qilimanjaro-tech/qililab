@@ -17,7 +17,7 @@ import contextlib
 from dataclasses import asdict
 
 import numpy as np
-from qibo.gates import CZ, Gate, M
+from qibo.gates import Gate, M
 from qibo.models.circuit import Circuit
 
 from qililab.chip.nodes import Coupler, Qubit
@@ -90,9 +90,6 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
 
                 # handle control gates
                 else:
-                    # parse symmetry in CZ gates
-                    if isinstance(gate, CZ):
-                        gate = self._parse_check_cz(gate)
                     # extract gate schedule
                     gate_schedule = self._gate_schedule_from_settings(gate)
                     gate_qubits = self._get_gate_qubits(gate, gate_schedule)
@@ -261,24 +258,6 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
             pulse_distortions=bus.distortions,
             qubit=qubit,
         )
-
-    def _parse_check_cz(self, cz: CZ):
-        """Checks if CZ is defined in the runcard, otherwise returns its symmetric gate (with flipped qubits)
-        If none of those are defined in the runcard, a KeyError will be raised by platform.settings on trying
-        to find the gate with qubits flipped
-
-        Args:
-            cz (CZ): qibo CZ gate
-
-        Returns:
-            CZ: qibo CZ gate
-        """
-        cz_qubits = cz.qubits
-        try:
-            self.platform.gates_settings.get_gate(name=cz.__class__.__name__, qubits=cz_qubits)
-            return cz
-        except KeyError:
-            return CZ(cz_qubits[1], cz_qubits[0])
 
     def _update_time(self, time: dict[int, int], qubit: int, gate_time: int):
         """Creates new timeline if not already created and update time.
