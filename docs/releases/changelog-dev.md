@@ -4,6 +4,9 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Update qiboconnection to 0.12.0
+  [#559](https://github.com/qilimanjaro-tech/qililab/pull/559)
+
 - Added phase correction for CZ gates to the optimize step of translate circuit in `qililab.transpiler.transpiler`. Gates now can accept an optional dicionary with additional settings.
   As an example, the CZ phase correction can be added at options for each qubit:
 
