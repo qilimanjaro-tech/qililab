@@ -129,7 +129,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
                     if flux_port is not None:
                         flux_bus = next((bus for bus in self.platform.buses if bus.port == flux_port), None)
                         if flux_bus and any(
-                            isinstance(instrument, AWG) for instrument in flux_bus.settings.platform_instruments
+                            isinstance(instrument, AWG) for instrument in flux_bus.system_control.instruments
                         ):
                             pulse_schedule.create_schedule(port=flux_port)
 
