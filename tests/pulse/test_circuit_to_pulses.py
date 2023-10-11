@@ -472,7 +472,7 @@ class TestTranslation:
             "alias": "flux_q1_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["rs"],
+                "instruments": ["rs_1"],
             },
             "port": "flux_q1",
             "distortions": [],
