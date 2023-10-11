@@ -510,8 +510,12 @@ class TestTranslation:
         assert isinstance(pulse_schedules[0], PulseSchedule)
 
         pulse_schedule = pulse_schedules[0]
+        assert all(len(schedule_element.timeline) == 0 for schedule_element in pulse_schedule.elements[-3:])
+
+        # we can ignore empty elements from here on
+        pulse_schedule.elements = pulse_schedule.elements[:-3]
         # there are 6 different buses + 3 empty for unused flux lines
-        assert len(pulse_schedule) == 9
+        assert len(pulse_schedule) == 6
 
         # extract pulse events per bus and separate measurement pulses
         pulse_bus_schedule = {
