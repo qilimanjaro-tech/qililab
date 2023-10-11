@@ -382,7 +382,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "flux_q4_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM1"],
+                "instruments": ["QCM"],
             },
             "port": "flux_q4",
             "distortions": [],
@@ -439,6 +439,47 @@ class TestTranslation:
             for schedule in pulse_bus_schedule[port]
         ]
 
+    def test_translate_second(self, platform):
+        """Test translate method adding/removing AWG instruments to test empty schedules"""
+        translator = CircuitToPulses(platform=platform)
+        # test circuit
+        circuit = Circuit(1)
+        circuit.add(X(0))
+        circuit.add(M(0))
+
+        pulse_schedules = translator.translate(circuits=[circuit])
+        pulse_schedule = pulse_schedules[0]
+        # there should be 5 pulse_schedules in this configuration
+        assert len(pulse_schedule) == 5
+
+        buses_elements = [bus for bus in platform.buses.elements if bus.settings.alias != "flux_q4_bus"]
+        buses = Buses(elements=buses_elements)
+        platform.buses = buses
+        pulse_schedules = translator.translate(circuits=[circuit])
+
+        pulse_schedule = pulse_schedules[0]
+        # there should be a pulse_schedule removed
+        assert len(pulse_schedule) == 4
+
+        flux_bus_no_awg_settings = {
+            "alias": "flux_q1_bus",
+            "system_control": {
+                "name": "system_control",
+                "instruments": ["rs_1"],
+            },
+            "port": "flux_q1",
+            "distortions": [],
+            "delay": 0,
+        }
+
+        platform.buses.add(
+            Bus(settings=flux_bus_no_awg_settings, platform_instruments=platform.instruments, chip=platform.chip)
+        )
+        pulse_schedules = translator.translate(circuits=[circuit])
+        pulse_schedule = pulse_schedules[0]
+        # there should not be any extra pulse schedule added
+        assert len(pulse_schedule) == 4
+
     def test_translate(self, platform):  # pylint: disable=R0914 # disable pyling too many variables
         """Test translate method"""
         translator = CircuitToPulses(platform=platform)
@@ -462,13 +503,14 @@ class TestTranslation:
         assert isinstance(pulse_schedules[0], PulseSchedule)
 
         pulse_schedule = pulse_schedules[0]
-        # there are 6 different buses + 3 empty for unused flux lines
-        assert len(pulse_schedule) == 6
+        # there are 7 pulse schedules
+        assert len(pulse_schedule) == 7
 
         # extract pulse events per bus and separate measurement pulses
         pulse_bus_schedule = {
             pulse_bus_schedule.port: pulse_bus_schedule.timeline for pulse_bus_schedule in pulse_schedule
         }
+
         m_schedule = pulse_bus_schedule["feedline_input"]
 
         # check measurement gates
