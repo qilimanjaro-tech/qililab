@@ -272,7 +272,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "feedline_bus",
             "system_control": {
                 "name": "readout_system_control",
-                "instruments": ["QRM", "rs"],
+                "instruments": ["QRM", "rs_1"],
             },
             "port": "feedline_input",
             "distortions": [],
@@ -282,7 +282,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "drive_q0_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM-RF"],
+                "instruments": ["QCM"],
             },
             "port": "drive_q0",
             "distortions": [],
@@ -302,7 +302,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "drive_q1_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM-RF"],
+                "instruments": ["QCM"],
             },
             "port": "drive_q1",
             "distortions": [],
@@ -322,7 +322,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "drive_q2_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM-RF"],
+                "instruments": ["QCM"],
             },
             "port": "drive_q2",
             "distortions": [],
@@ -352,7 +352,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "drive_q3_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM-RF"],
+                "instruments": ["QCM"],
             },
             "port": "drive_q3",
             "distortions": [],
@@ -372,7 +372,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "drive_q4_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM-RF"],
+                "instruments": ["QCM"],
             },
             "port": "drive_q4",
             "distortions": [],
@@ -472,7 +472,7 @@ class TestTranslation:
             "alias": "flux_q1_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["rs"],
+                "instruments": ["rs_1"],
             },
             "port": "flux_q1",
             "distortions": [],
