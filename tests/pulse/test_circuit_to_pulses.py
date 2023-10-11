@@ -439,7 +439,7 @@ class TestTranslation:
             for schedule in pulse_bus_schedule[port]
         ]
 
-    def test_translate_second(self, platform):
+    def test_translate_for_no_awg(self, platform):
         """Test translate method adding/removing AWG instruments to test empty schedules"""
         translator = CircuitToPulses(platform=platform)
         # test circuit
@@ -510,18 +510,17 @@ class TestTranslation:
         assert isinstance(pulse_schedules[0], PulseSchedule)
 
         pulse_schedule = pulse_schedules[0]
+        # there are 6 different buses + 3 empty for unused flux lines
+        assert len(pulse_schedule) == 9
         assert all(len(schedule_element.timeline) == 0 for schedule_element in pulse_schedule.elements[-3:])
 
         # we can ignore empty elements from here on
         pulse_schedule.elements = pulse_schedule.elements[:-3]
-        # there are 6 different buses + 3 empty for unused flux lines
-        assert len(pulse_schedule) == 6
 
         # extract pulse events per bus and separate measurement pulses
         pulse_bus_schedule = {
             pulse_bus_schedule.port: pulse_bus_schedule.timeline for pulse_bus_schedule in pulse_schedule
         }
-
         m_schedule = pulse_bus_schedule["feedline_input"]
 
         # check measurement gates
