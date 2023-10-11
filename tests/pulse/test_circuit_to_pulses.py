@@ -456,7 +456,7 @@ class TestTranslation:
 
         pulse_schedules = translator.translate(circuits=[circuit])
         pulse_schedule = pulse_schedules[0]
-        # there should be 8 pulse_schedules in this configuration
+        # there should be 9 pulse_schedules in this configuration
         assert len(pulse_schedule) == 9
 
         buses_elements = [bus for bus in platform.buses.elements if bus.settings.alias != "flux_q4_bus"]
