@@ -347,7 +347,7 @@ This document contains the changes of the current release.
 
 ### Bug fixes
 
-- Removing raised error if the system control has no AWG instruments and tries to compile and returning no compiled programs instead.
+- Avoid creating empty sequences for buses that are no flux lines and do for flux ones that do not have any AWG instrument.
   [#556](https://github.com/qilimanjaro-tech/qililab/pull/bug-557)
 
 - The `threshold` and `threshold_rotation` parameters of a `QbloxQRM` can now be set using `Platform.set_parameter`.
