@@ -37,7 +37,7 @@ class TestRuncard:
         assert runcard.device_id == Galadriel.runcard["device_id"]
 
         assert isinstance(runcard.gates_settings, runcard.GatesSettings)
-        assert asdict(runcard.gates_settings) == Galadriel.runcard["gates_settings"]
+        assert runcard.gates_settings.to_dict() == Galadriel.runcard["gates_settings"]
 
         assert isinstance(runcard.chip, runcard.Chip)
         assert asdict(runcard.chip) == Galadriel.runcard["chip"]
