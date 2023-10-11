@@ -359,7 +359,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """Return all platform information as a dictionary."""
         name_dict = {RUNCARD.NAME: self.name}
         device_id = {RUNCARD.DEVICE_ID: self.device_id}
-        gates_settings_dict = {RUNCARD.GATES_SETTINGS: asdict(self.gates_settings, dict_factory=dict_factory)}
+        gates_settings_dict = {RUNCARD.GATES_SETTINGS: self.gates_settings.to_dict()}
         chip_dict = {RUNCARD.CHIP: self.chip.to_dict() if self.chip is not None else None}
         buses_dict = {RUNCARD.BUSES: self.buses.to_dict() if self.buses is not None else None}
         instrument_dict = {RUNCARD.INSTRUMENTS: self.instruments.to_dict() if self.instruments is not None else None}
