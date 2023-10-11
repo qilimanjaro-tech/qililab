@@ -439,6 +439,54 @@ class TestTranslation:
             for schedule in pulse_bus_schedule[port]
         ]
 
+    def test_translate_for_no_awg(self, platform):
+        """Test translate method adding/removing AWG instruments to test empty schedules"""
+        translator = CircuitToPulses(platform=platform)
+        # test circuit
+        circuit = Circuit(5)
+        circuit.add(X(0))
+        circuit.add(Drag(0, 1, 0.5))
+        circuit.add(CZ(3, 2))
+        circuit.add(M(0))
+        circuit.add(CZ(2, 3))
+        circuit.add(CZ(4, 0))
+        circuit.add(M(*range(4)))
+        circuit.add(Wait(0, t=10))
+        circuit.add(Drag(0, 2, 0.5))
+
+        pulse_schedules = translator.translate(circuits=[circuit])
+        pulse_schedule = pulse_schedules[0]
+        # there should be 9 pulse_schedules in this configuration
+        assert len(pulse_schedule) == 9
+
+        buses_elements = [bus for bus in platform.buses.elements if bus.settings.alias != "flux_q4_bus"]
+        buses = Buses(elements=buses_elements)
+        platform.buses = buses
+        pulse_schedules = translator.translate(circuits=[circuit])
+
+        pulse_schedule = pulse_schedules[0]
+        # there should be a pulse_schedule removed
+        assert len(pulse_schedule) == 8
+
+        flux_bus_no_awg_settings = {
+            "alias": "flux_q1_bus",
+            "system_control": {
+                "name": "system_control",
+                "instruments": ["rs"],
+            },
+            "port": "flux_q1",
+            "distortions": [],
+            "delay": 0,
+        }
+
+        platform.buses.add(
+            Bus(settings=flux_bus_no_awg_settings, platform_instruments=platform.instruments, chip=platform.chip)
+        )
+        pulse_schedules = translator.translate(circuits=[circuit])
+        pulse_schedule = pulse_schedules[0]
+        # there should not be any extra pulse schedule added
+        assert len(pulse_schedule) == 8
+
     def test_translate(self, platform):  # pylint: disable=R0914 # disable pyling too many variables
         """Test translate method"""
         translator = CircuitToPulses(platform=platform)
