@@ -287,7 +287,7 @@ class TestsQbloxResult:
         """Test the array property of the QbloxResult class."""
         array = qblox_result_noscope.array
         assert np.shape(array) == (2, 1)  # (1 sequencer, I/Q, 1 bin)
-        dummy_qrm.start_sequencer()
+        dummy_qrm.start_sequencer(0)
         dummy_qrm.store_scope_acquisition(0, "single")
         bin_data = dummy_qrm.get_acquisitions(0)["single"]["acquisition"]["bins"]["integration"]
         path0, path1 = bin_data["path0"], bin_data["path1"]
