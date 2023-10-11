@@ -39,7 +39,6 @@ from qililab.typings.enums import Line, Parameter
 from qililab.typings.yaml_type import yaml
 
 from .components import Bus, Buses
-from .components.bus_element import dict_factory
 
 
 class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-attributes
