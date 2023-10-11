@@ -272,7 +272,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "feedline_bus",
             "system_control": {
                 "name": "readout_system_control",
-                "instruments": ["QRM1", "rs_1"],
+                "instruments": ["QRM", "rs_1"],
             },
             "port": "feedline_input",
             "distortions": [],
@@ -282,7 +282,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "drive_q0_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM-RF1"],
+                "instruments": ["QCM"],
             },
             "port": "drive_q0",
             "distortions": [],
@@ -292,7 +292,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "flux_q0_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM1"],
+                "instruments": ["QCM"],
             },
             "port": "flux_q0",
             "distortions": [],
@@ -302,7 +302,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "drive_q1_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM-RF1"],
+                "instruments": ["QCM"],
             },
             "port": "drive_q1",
             "distortions": [],
@@ -312,7 +312,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "flux_q1_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM1"],
+                "instruments": ["QCM"],
             },
             "port": "flux_q1",
             "distortions": [],
@@ -322,7 +322,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "drive_q2_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM-RF2"],
+                "instruments": ["QCM"],
             },
             "port": "drive_q2",
             "distortions": [],
@@ -332,7 +332,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "flux_q2_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM2"],
+                "instruments": ["QCM"],
             },
             "port": "flux_q2",
             "distortions": [],
@@ -342,7 +342,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "flux_c2_bus",  # c2 coupler
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM1"],
+                "instruments": ["QCM"],
             },
             "port": "flux_c2",
             "distortions": [],
@@ -352,7 +352,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "drive_q3_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM-RF3"],
+                "instruments": ["QCM"],
             },
             "port": "drive_q3",
             "distortions": [],
@@ -362,7 +362,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "flux_q3_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM1"],
+                "instruments": ["QCM"],
             },
             "port": "flux_q3",
             "distortions": [],
@@ -372,7 +372,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "drive_q4_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM-RF3"],
+                "instruments": ["QCM"],
             },
             "port": "drive_q4",
             "distortions": [],
@@ -382,7 +382,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "flux_q4_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM1"],
+                "instruments": ["QCM"],
             },
             "port": "flux_q4",
             "distortions": [],
