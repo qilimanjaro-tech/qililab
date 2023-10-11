@@ -3,14 +3,13 @@
 import numpy as np
 import pandas as pd
 import pytest
-from dummy_qblox import DummyPulsar
 from qblox_instruments import DummyBinnedAcquisitionData, DummyScopeAcquisitionData, Pulsar, PulsarType
 from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 
 from qililab.constants import QBLOXCONSTANTS, RESULTSDATAFRAME
 from qililab.exceptions.data_unavailable import DataUnavailable
 from qililab.result.qblox_results.qblox_result import QbloxResult
-from qililab.utils.signal_processing import demodulate, modulate
+from qililab.utils.signal_processing import modulate
 from tests.test_utils import compare_pair_of_arrays, complete_array, dummy_qrm_name_generator
 
 
