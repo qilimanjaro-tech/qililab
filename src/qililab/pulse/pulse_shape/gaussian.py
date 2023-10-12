@@ -26,11 +26,30 @@ from qililab.utils import Factory
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class Gaussian(PulseShape):
-    """Standard Gaussian pulse shape:
+    """Standard centered Gaussian pulse shape:
 
     .. math::
 
-        Gaussian(x) = amplitude * exp(-0.5 * (x - mu)^2 / sigma^2)
+        Gaussian(x) = A * exp(-0.5 * (x - \mu)^2 / \sigma^2)
+
+    The gaussian is symmetrically cut in the given ``num_sigmas``, and then is shifted down so that it starts at 0.
+
+    Examples:
+
+        The envelope of a gaussian with ``num_sigmas`` equal to ``1``, ``4``, ``6`` or ``8`` look respectively like:
+
+        .. image:: /classes_images/gaussians.png
+            :width: 800
+            :align: center
+
+        This comes from the following steps, parting from a "full" gaussian (big ``num_sigma``) [blue]:
+            1. you cut a full gaussian to the given ``num_sigmas``, for example ``1`` [small purple].
+            2. represents how this cut gaussian actually expands all the duration [big purple],
+            3. you shift down the cut gaussian, so it starts at 0 height [red].
+
+        .. image:: /classes_images/gaussian_explanation.png
+            :width: 400
+            :align: center
 
     Args:
         num_sigmas (float): Sigma number of the gaussian pulse shape. Defines the height of the gaussian pulse.
@@ -42,7 +61,9 @@ class Gaussian(PulseShape):
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
         """Gaussian envelope centered with respect to the pulse.
 
-        The first point of the gaussian in the envelope is shifted to avoid introducing noise at time 0.
+        The gaussian is symmetrically cut in the given `num_sigmas`, meaning that it starts and ends at that sigma width.
+
+        And then to avoid introducing noise at time 0, the full gaussian is shifted down so that it starts at 0.
 
         Args:
             duration (int): Duration of the pulse (ns).
