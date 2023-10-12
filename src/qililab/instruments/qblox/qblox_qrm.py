@@ -235,11 +235,11 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """Sets the threshold for classification at the specific channel.
 
         Args:
-            value (float): Normalized threshold value (-1.0 to 1.0)
+            value (float): integrated value of the threshold
             sequencer_id (int): sequencer to update the value
         """
-        integer_value = int(value * self._get_sequencer_by_id(id=sequencer_id).used_integration_length)
-        self.device.sequencers[sequencer_id].thresholded_acq_threshold(integer_value)
+        integrated_value = value * self._get_sequencer_by_id(id=sequencer_id).used_integration_length
+        self.device.sequencers[sequencer_id].thresholded_acq_threshold(integrated_value)
 
     def _set_device_threshold_rotation(self, value: float, sequencer_id: int):
         """Sets the threshold rotation for classification at the specific channel.
@@ -337,9 +337,11 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         return cast(AWGQbloxADCSequencer, self.get_sequencer(sequencer_id)).integration_length
 
     @Instrument.CheckDeviceInitialized
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def setup(
+        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
+    ):
         """set a specific parameter to the instrument"""
         try:
             AWGAnalogDigitalConverter.setup(self, parameter=parameter, value=value, channel_id=channel_id)
         except ParameterNotFound:
-            QbloxModule.setup(self, parameter=parameter, value=value, channel_id=channel_id)
+            QbloxModule.setup(self, parameter=parameter, value=value, channel_id=channel_id, port_id=port_id)

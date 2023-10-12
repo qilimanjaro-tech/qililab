@@ -1,14 +1,68 @@
 import numpy as np
+import pytest
 import qibo
 from qibo import gates
 from qibo.backends import NumpyBackend
 from qibo.models import Circuit
 
+from qililab.platform import Platform
+from qililab.settings import Runcard
+from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.transpiler import translate_circuit
 from qililab.transpiler.native_gates import Drag
 from qililab.transpiler.transpiler import optimize_transpilation
+from tests.data import Galadriel
+from tests.test_utils import build_platform
 
 qibo.set_backend("numpy")  # set backend to numpy (this is the faster option for < 15 qubits)
+
+
+@pytest.fixture(name="platform")
+def fixture_platform() -> Platform:
+    """Fixture that returns an instance of a ``Runcard.GatesSettings`` class."""
+    gates_settings = {
+        "minimum_clock_time": 5,
+        "delay_between_pulses": 0,
+        "delay_before_readout": 0,
+        "reset_method": "passive",
+        "passive_reset_duration": 100,
+        "timings_calculation_method": "as_soon_as_possible",
+        "operations": [],
+        "gates": {},
+    }
+    platform_gates = {
+        "CZ(0,1)": [
+            {
+                "bus": "flux_line_q1",
+                "pulse": {
+                    "amplitude": 0.8,
+                    "phase": 0,
+                    "duration": 200,
+                    "shape": {"name": "rectangular"},
+                    "options": {"q0_phase_correction": 1, "q1_phase_correction": 2},
+                },
+            }
+        ],
+        "CZ(0,2)": [
+            {
+                "bus": "flux_line_q2",
+                "pulse": {
+                    "amplitude": 0.8,
+                    "phase": 0,
+                    "duration": 200,
+                    "shape": {"name": "rectangular"},
+                    "options": {"q1_phase_correction": 2, "q2_phase_correction": 0},
+                },
+            }
+        ],
+    }
+    gates_settings = Runcard.GatesSettings(**gates_settings)  # type: ignore  # pylint: disable=unexpected-keyword-arg
+    platform = build_platform(runcard=Galadriel.runcard)
+    platform.gates_settings = gates_settings  # type: ignore
+    platform.gates_settings.gates = {  # type: ignore
+        gate: [GateEventSettings(**event) for event in schedule] for gate, schedule in platform_gates.items()  # type: ignore
+    }
+    return platform
 
 
 def random_circuit(
@@ -178,7 +232,7 @@ def test_translate_gates():
             exhaustive=True,
         )
 
-        c2 = translate_circuit(c1)
+        c2 = translate_circuit(c1, optimize=False)
 
         # check that both c1, c2 are qibo.Circuit
         assert isinstance(c1, Circuit)
@@ -188,7 +242,7 @@ def test_translate_gates():
         assert np.allclose(1, compare_circuits(c1, c2, nqubits))
 
 
-def test_optimize_transpilation():
+def test_optimize_transpilation(platform):
     """Test that optimize_transpilation behaves as expected"""
     # gate list to optimize
     test_gates = [
@@ -199,25 +253,35 @@ def test_optimize_transpilation():
         gates.RZ(0, 2),
         Drag(0, 3, 3),
         gates.CZ(0, 2),
+        gates.CZ(1, 0),
         Drag(1, 2, 3),
         gates.RZ(1, 0),
     ]
     # resulting gate list from optimization
-    result_gates = [Drag(0, 1, 1), gates.CZ(0, 1), gates.M(0), Drag(0, 3, 1), gates.CZ(0, 2), Drag(1, 2, 2)]
+    result_gates = [
+        Drag(0, 1, 1),
+        gates.CZ(0, 1),
+        gates.M(0),
+        Drag(0, 3, 0),
+        gates.CZ(0, 2),
+        gates.CZ(1, 0),
+        Drag(1, 2, -2),
+    ]
 
     # check that lists are the same
-    optimized_gates = optimize_transpilation(3, test_gates)
+    optimized_gates = optimize_transpilation(3, test_gates, gates_settings=platform.gates_settings)
     for gate_r, gate_opt in zip(result_gates, optimized_gates):
         assert gate_r.name == gate_opt.name
         assert gate_r.parameters == gate_opt.parameters
         assert gate_r.qubits == gate_opt.qubits
 
 
-def test_transpiler():
+def test_transpiler(platform):
     """Test full transpilation of a circuit
     (transpilation + optimization)
     """
     rng = np.random.default_rng(seed=42)  # init random number generator
+    platform.gates_settings.gates = {}
 
     # circuits are the same
     for _ in range(0, 500):
@@ -230,7 +294,7 @@ def test_transpiler():
             exhaustive=True,
         )
 
-        c2 = translate_circuit(c1, True)
+        c2 = translate_circuit(c1, gates_settings=None)
 
         # check that both c1, c2 are qibo.Circuit
         assert isinstance(c1, Circuit)

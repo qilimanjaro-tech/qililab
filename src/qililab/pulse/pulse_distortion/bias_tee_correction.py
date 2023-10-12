@@ -40,11 +40,11 @@ class BiasTeeCorrection(PulseDistortion):
             (The max height is the furthest number from 0 in the envelope, only checking the real axis/part). Defaults to True.
 
     Returns:
-        PulseDistortion: Distortion to apply to given envelopes in PulseEvent.
+        PulseDistortion: Distortion to apply to given envelopes in :class:`PulseEvent`.
 
     Examples:
 
-        Imagine you want to distort a `Rectangular` envelope with a `BiasTeeCorrection`. You could do:
+        Imagine you want to distort a :class:`Rectangular` envelope with a BiasTeeCorrection. You could do:
 
         >>> from qililab.pulse import Rectangular, BiasTeeCorrection
         >>> envelope = Rectangular().envelope(duration=50, amplitude=1.0)
@@ -59,9 +59,9 @@ class BiasTeeCorrection(PulseDistortion):
             You can find more examples in the docstring of the :class:`PulseDistortion` base class.
     """
 
-    name = PulseDistortionName.BIAS_TEE_CORRECTION
-    tau_bias_tee: float
-    sampling_rate: float = 1.0
+    name = PulseDistortionName.BIAS_TEE_CORRECTION  #: Type of the correction. Enum type of PulseDistortionName class.
+    tau_bias_tee: float  #: Time constant.
+    sampling_rate: float = 1.0  #: Sampling rate. Defaults to 1.
 
     def apply(self, envelope: np.ndarray) -> np.ndarray:
         """Distorts envelopes (originally created to distort square envelopes).
@@ -98,7 +98,9 @@ class BiasTeeCorrection(PulseDistortion):
         """Load BiasTeeCorrection object from dictionary.
 
         Args:
-            dictionary (dict): Dictionary representation of the BiasTeeCorrection object.
+            dictionary (dict): Dictionary representation of the BiasTeeCorrection object. It must include the name of the
+            correction, the tau bias tee factor, the sampling rate, the normalization factor and the
+            auto normalization flag value.
 
         Returns:
             BiasTeeCorrection: Loaded class.
@@ -111,7 +113,8 @@ class BiasTeeCorrection(PulseDistortion):
         """Return dictionary representation of the distortion.
 
         Returns:
-            dict: Dictionary.
+            dict: Dictionary representation including the name of the correction, the tau bias tee factor,
+            the sampling rate, the normalization factor and the auto normalization flag value.
         """
         return {
             "name": self.name.value,

@@ -139,6 +139,31 @@ class Galadriel:
                     },
                 }
             ],
+            "CZ(0,1)": [
+                {
+                    "bus": "flux_line_q1_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "shape": {"name": "rectangular"},
+                        "options": {"q0_phase_correction": 0.1, "q2_phase_correction": 0.2},
+                    },
+                }
+            ],
+            "CZ(0, 2)": [
+                {
+                    "bus": "flux_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "shape": {"name": "rectangular"},
+                    },
+                }
+            ],
         },
     }
 
@@ -525,8 +550,8 @@ results_two_loops: dict[str, Any] = {
                     },
                     "bins": {
                         "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-                        "threshold": [0.48046875],
-                        "avg_cnt": [1024],
+                        "threshold": [0],
+                        "avg_cnt": [1],
                     },
                 }
             ],
@@ -542,8 +567,8 @@ results_two_loops: dict[str, Any] = {
                     },
                     "bins": {
                         "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
-                        "threshold": [0.4599609375],
-                        "avg_cnt": [1024],
+                        "threshold": [0],
+                        "avg_cnt": [1],
                     },
                 }
             ],
@@ -576,8 +601,8 @@ results_one_loops: dict[str, Any] = {
                     },
                     "bins": {
                         "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-                        "threshold": [0.48046875],
-                        "avg_cnt": [1024],
+                        "threshold": [0],
+                        "avg_cnt": [1],
                     },
                 }
             ],
@@ -593,8 +618,8 @@ results_one_loops: dict[str, Any] = {
                     },
                     "bins": {
                         "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
-                        "threshold": [0.4599609375],
-                        "avg_cnt": [1024],
+                        "threshold": [0],
+                        "avg_cnt": [1],
                     },
                 }
             ],

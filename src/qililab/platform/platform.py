@@ -29,6 +29,7 @@ from qililab.instrument_controllers import InstrumentController, InstrumentContr
 from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
+from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSchedule
 from qililab.result import Result
@@ -38,7 +39,6 @@ from qililab.typings.enums import Line, Parameter
 from qililab.typings.yaml_type import yaml
 
 from .components import Bus, Buses
-from .components.bus_element import dict_factory
 
 
 class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-attributes
@@ -484,7 +484,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """
         name_dict = {RUNCARD.NAME: self.name}
         device_id = {RUNCARD.DEVICE_ID: self.device_id}
-        gates_settings_dict = {RUNCARD.GATES_SETTINGS: asdict(self.gates_settings, dict_factory=dict_factory)}
+        gates_settings_dict = {RUNCARD.GATES_SETTINGS: self.gates_settings.to_dict()}
         chip_dict = {RUNCARD.CHIP: self.chip.to_dict() if self.chip is not None else None}
         buses_dict = {RUNCARD.BUSES: self.buses.to_dict() if self.buses is not None else None}
         instrument_dict = {RUNCARD.INSTRUMENTS: self.instruments.to_dict() if self.instruments is not None else None}
@@ -564,6 +564,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             if queue is not None:
                 queue.put_nowait(item=result)
             results.append(result)
+
+        for instrument in self.instruments.elements:
+            if isinstance(instrument, QbloxModule):
+                instrument.desync_sequencers()
 
         # FIXME: set multiple readout buses
         if len(results) > 1:

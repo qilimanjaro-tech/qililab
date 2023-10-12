@@ -27,16 +27,17 @@ from qililab.utils import Factory
 class PulseShape(FactoryElement):
     """Derived: :class:`Rectangular`, :class:`Gaussian`, :class:`Drag`, :class:`Cosine` and :class:`SNZ`
 
-    Pulse shape abstract base class.
+    Pulse shape abstract base class. Pulse shapes describe the shape of the :class:`Pulse`'s envelopes.
     """
 
-    name: PulseShapeName = field(init=False)
+    name: PulseShapeName = field(init=False)  #: Name of the pulse shape.
 
     @abstractmethod
     def envelope(self, duration: int, amplitude: float, resolution: float) -> np.ndarray:
-        """Compute the amplitudes of the pulse shape envelope.
+        """Computes the amplitudes of the pulse shape envelope.
 
         Args:
+            resolution (float): Resolution of the pulse envelope.
             duration (int): Duration of the pulse (ns).
             amplitude (float): Maximum amplitude of the pulse.
 
@@ -46,21 +47,21 @@ class PulseShape(FactoryElement):
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "PulseShape":
-        """Return dictionary representation of the pulse shape.
+        """Returns dictionary representation of the pulse shape.
 
         Args:
             dictionary (dict): Dictionary representation of the PulseShape object.
 
         Returns:
-            PulseShape: Loaded class.
+            PulseShape: PulseShape loaded class, including the name of the pulse shape and attributes.
         """
         shape_class = Factory.get(name=dictionary["name"])
         return shape_class.from_dict(dictionary)
 
     @abstractmethod
     def to_dict(self) -> dict:
-        """Return dictionary representation of the pulse shape.
+        """Returns dictionary representation of the pulse shape.
 
         Returns:
-            dict: Dictionary.
+        dict: Dictionary representation of the pulse shape including the name and attributes of the pulse shape.
         """

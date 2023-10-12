@@ -35,7 +35,7 @@ class ExponentialCorrection(PulseDistortion):
     For more info, check `SUPLEMENTAL MATERIAL IV. B. <https://arxiv.org/abs/1907.04818>`_.
 
     Args:
-        tau_bias_tee (float): Time constant
+        tau_exponential (float): Tau exponential factor
         amp (float): Amplitude constant
         sampling_rate (float, optional): Sampling rate. Defaults to 1.
         norm_factor (float, optional): The manual normalization factor that multiplies the envelope in the apply() method. Defaults to 1 (no effect).
@@ -47,7 +47,7 @@ class ExponentialCorrection(PulseDistortion):
 
     Examples:
 
-        Imagine you want to distort a `Rectangular` envelope with an `ExponentialCorrection`. You could do:
+        Imagine you want to distort a :class:`Rectangular` envelope with an `ExponentialCorrection`. You could do:
 
         >>> from qililab.pulse import Rectangular, BiasTeeCorrection
         >>> envelope = Rectangular().envelope(duration=50, amplitude=1.0)
@@ -62,10 +62,12 @@ class ExponentialCorrection(PulseDistortion):
             You can find more examples in the docstring of the :class:`PulseDistortion` base class.
     """
 
-    name = PulseDistortionName.EXPONENTIAL_CORRECTION
-    tau_exponential: float
-    amp: float
-    sampling_rate: float = 1.0
+    name = (
+        PulseDistortionName.EXPONENTIAL_CORRECTION
+    )  #: Type of the correction. Enum type of PulseDistortionName class.
+    tau_exponential: float  #: Tau exponential factor.
+    amp: float  #: Amplitude constant. Value between 0 and 1.
+    sampling_rate: float = 1.0  #: Sampling rate. Defaults to 1.
 
     def apply(self, envelope: np.ndarray) -> np.ndarray:
         """Distorts envelopes (originally created to distort square envelopes).
@@ -113,10 +115,12 @@ class ExponentialCorrection(PulseDistortion):
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "ExponentialCorrection":
-        """Load ExponentialCorrection object from dictionary.
+        """Loads ExponentialCorrection object from dictionary.
 
         Args:
-            dictionary (dict): Dictionary representation of the ExponentialCorrection object.
+            dictionary (dict): Dictionary object of the ExponentialCorrection object. It must include the name of the
+            correction, the tau exponential factor, the amplitude, the sampling rate, the normalization factor and
+            the auto normalization flag value.
 
         Returns:
             ExponentialCorrection: Loaded class.
@@ -126,10 +130,11 @@ class ExponentialCorrection(PulseDistortion):
         return cls(**local_dictionary)
 
     def to_dict(self) -> dict:
-        """Return dictionary representation of the distortion.
+        """Returns dictionary representation of the distortion.
 
         Returns:
-            dict: Dictionary.
+            dict: Dictionary representation including the name of the correction, the tau exponential factor, the
+            amplitude, the sampling rate, the normalization factor and the auto normalization flag value.
         """
         return {
             "name": self.name.value,

@@ -50,12 +50,14 @@ class Drag(PulseShape):
         drag_coefficient (float): Drag coefficient that give the DRAG its imaginary components.
     """
 
-    name = PulseShapeName.DRAG
+    name = PulseShapeName.DRAG  #: Name of the drag pulse shape.
     num_sigmas: float
     drag_coefficient: float
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
         """DRAG envelope centered with respect to the pulse.
+
+        The first point of the gaussian in the envelope is shifted to avoid introducing noise at time 0.
 
         Args:
             duration (int): Duration of the pulse (ns).
@@ -80,10 +82,11 @@ class Drag(PulseShape):
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "Drag":
-        """Load Drag object/shape from dictionary.
+        """Loads Drag object/shape from dictionary.
 
         Args:
-            dictionary (dict): Dictionary representation of the Drag object/shape.
+            dictionary (dict): Dictionary representation of the Drag object/shape containing the name of the pulse shape, the
+            number of sigmas and the drag coefficient.
 
         Returns:
             Drag: Loaded class.
@@ -93,10 +96,11 @@ class Drag(PulseShape):
         return cls(**local_dictionary)
 
     def to_dict(self):
-        """Return dictionary representation of the Drag object/shape.
+        """Returns dictionary representation of the Drag object/shape.
 
         Returns:
-            dict: Dictionary.
+            dict: Dictionary representing the Drag pulse shape. It contains the name of the pulse shape, the number of sigmas and
+            the drag coefficient.
         """
         return {
             "name": self.name.value,

@@ -234,15 +234,17 @@ class TestMethods:
         with patch.object(Bus, "upload") as upload:
             with patch.object(Bus, "run") as run:
                 with patch.object(Bus, "acquire_result") as acquire_result:
-                    acquire_result.return_value = 123
-                    result = platform.execute(
-                        program=pulse_schedule, num_avg=1000, repetition_duration=2000, num_bins=1
-                    )
+                    with patch.object(QbloxModule, "desync_sequencers") as desync:
+                        acquire_result.return_value = 123
+                        result = platform.execute(
+                            program=pulse_schedule, num_avg=1000, repetition_duration=2000, num_bins=1
+                        )
 
         assert upload.call_count == len(pulse_schedule.elements)
         assert run.call_count == len(pulse_schedule.elements)
         acquire_result.assert_called_once_with()
         assert result == 123
+        desync.assert_called()
 
     def test_execute_with_queue(self, platform: Platform):
         """Test that the execute method adds the obtained results to the given queue."""
@@ -250,19 +252,23 @@ class TestMethods:
         with patch.object(Bus, "upload"):
             with patch.object(Bus, "run"):
                 with patch.object(Bus, "acquire_result") as acquire_result:
-                    acquire_result.return_value = 123
-                    _ = platform.execute(
-                        program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1, queue=queue
-                    )
+                    with patch.object(QbloxModule, "desync_sequencers") as desync:
+                        acquire_result.return_value = 123
+                        _ = platform.execute(
+                            program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1, queue=queue
+                        )
 
         assert len(queue.queue) == 1
         assert queue.get() == 123
+        desync.assert_called()
 
     def test_execute_raises_error_if_no_readout_buses_present(self, platform: Platform):
         """Test that `Platform.execute` raises an error when the platform contains more than one readout bus."""
         platform.buses.elements = []
         with pytest.raises(ValueError, match="There are no readout buses in the platform."):
-            platform.execute(program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1)
+            with patch.object(QbloxModule, "desync_sequencers") as desync:
+                platform.execute(program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1)
+            desync.assert_called()
 
     def test_execute_raises_error_if_more_than_one_readout_bus_present(self, platform: Platform):
         """Test that `Platform.execute` raises an error when the platform contains more than one readout bus."""
@@ -273,15 +279,18 @@ class TestMethods:
                 chip=platform.chip,
             )
         )
+
         with patch.object(Bus, "upload"):
             with patch.object(Bus, "run"):
                 with patch.object(Bus, "acquire_result"):
                     with patch("qililab.platform.platform.logger") as mock_logger:
-                        _ = platform.execute(
-                            program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1
-                        )
+                        with patch.object(QbloxModule, "desync_sequencers") as desync:
+                            _ = platform.execute(
+                                program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1
+                            )
 
         mock_logger.error.assert_called_once_with("Only One Readout Bus allowed. Reading only from the first one.")
+        desync.assert_called()
 
     @pytest.mark.parametrize("parameter", [Parameter.AMPLITUDE, Parameter.DURATION, Parameter.PHASE])
     @pytest.mark.parametrize("gate", ["I(0)", "X(0)", "Y(0)"])
@@ -327,11 +336,16 @@ class TestMethods:
             parameter=parameter, alias="drive_line_q0_bus", channel_id=CHANNEL_ID
         )
 
-    def test_get_parameter_of_qblox_module_without_channel_id_raises_error(self, platform: Platform):
+    def test_get_parameter_of_qblox_module_without_channel_id(self, platform: Platform):
         """Test that getting a parameter of a ``QbloxModule`` with multiple sequencers without specifying a channel
-        id raises an error."""
-        with pytest.raises(ValueError, match="Cannot update parameter gain without specifying a channel_id."):
-            platform.get_parameter(parameter=Parameter.GAIN, alias="drive_line_q0_bus")
+        id still works."""
+        bus = platform.get_bus_by_alias(alias="drive_line_q0_bus")
+        awg = bus.system_control.instruments[0]
+        assert isinstance(awg, QbloxModule)
+        sequencer = awg.get_sequencers_from_chip_port_id(bus.port)[0]
+        assert (sequencer.gain_i, sequencer.gain_q) == platform.get_parameter(
+            parameter=Parameter.GAIN, alias="drive_line_q0_bus"
+        )
 
     def test_get_parameter_of_qblox_module_without_channel_id_and_1_sequencer(self, platform: Platform):
         """Test that we can get a parameter of a ``QbloxModule`` with one sequencers without specifying a channel
