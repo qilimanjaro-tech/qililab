@@ -26,7 +26,15 @@ from qililab.utils import Factory
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class Rectangular(PulseShape):
-    """Rectangular/square pulse shape."""
+    """Rectangular/square pulse shape. Given by a constant height line.
+
+    Examples:
+        The envelope of a rectangular with ``amplitude`` equal to ``1.`` and ``0.75``, look respectively like:
+
+        .. image:: /classes_images/rectangulars.png
+            :width: 800
+            :align: center
+    """
 
     name = PulseShapeName.RECTANGULAR  #: Name of the rectangular pulse shape.
 

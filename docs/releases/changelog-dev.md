@@ -8,6 +8,9 @@ This document contains the changes of the current release.
 
 - Update qiboconnection to 0.12.0: [#559](https://github.com/qilimanjaro-tech/qililab/pull/559)
 
+- Changed gate settings serialization so that fields with None values are not in the resulting dictionary:
+  [#562](https://github.com/qilimanjaro-tech/qililab/pull/562)
+
 - Added phase correction for CZ gates to the optimize step of translate circuit in `qililab.transpiler.transpiler`, Gates now can accept an optional dicionary with additional settings: [#552](https://github.com/qilimanjaro-tech/qililab/pull/552)
 
   As an example, the CZ phase correction can be added at options for each qubit:
