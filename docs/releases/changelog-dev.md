@@ -4,6 +4,9 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Changed gate settings serialization so that fields with None values are not in the resulting dictionary
+  [#562](https://github.com/qilimanjaro-tech/qililab/pull/562)
+
 - Update qiboconnection to 0.12.0
   [#559](https://github.com/qilimanjaro-tech/qililab/pull/559)
 
