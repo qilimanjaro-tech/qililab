@@ -4,6 +4,7 @@ import logging
 import os
 from datetime import datetime
 from io import StringIO
+from typing import Callable
 
 import numpy as np
 import papermill as pm
@@ -16,6 +17,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         nb_path (str): Full notebook path, with folder, nb_name and ``.ipynb`` extension.
         in_spec_threshold (float): Threshold such that the ``check_data()`` methods return `in_spec` or `out_of_spec`.
         bad_data_threshold (float): Threshold such that the ``check_data()`` methods return `out_of_spec` or `bad_data`.
+        comparison_model (Callable): Comparison model used, to compare data in this node.
         drift_timeout (float): Time for which we believe the parameters of this node should still be considered calibrated, without checking the data.
         input_parameters (dict | None): Extra input parameters to pass to the notebook, a part than the ``sweep_interval`` and the ``number_of_random_datapoints``. Defaults to None.
         sweep_interval (dict | None): Sweep interval to pass to the notebook. If not specified, the default one written in the notebook will be used. Defaults to None.
@@ -27,6 +29,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         nb_path: str,
         in_spec_threshold: float,
         bad_data_threshold: float,
+        comparison_model: Callable,
         drift_timeout: float,
         input_parameters: dict | None = None,
         sweep_interval: dict | None = None,
@@ -43,6 +46,9 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         self.bad_data_threshold = bad_data_threshold
         """Threshold such that the ``check_data()`` methods return `out_of_spec` or `bad_data`."""
+
+        self.comparison_model = comparison_model
+        """Comparison model used, to compare data in this node."""
 
         self.drift_timeout: float = drift_timeout
         """Time for which we believe the parameters of this node should still be considered calibrated, without checking the data."""
@@ -335,5 +341,9 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
 
 def export_calibration_outputs(outputs: dict):
-    """Function to export node outputs."""
+    """Function to export notebook outputs into a stream, later collected by the CalibrationNode class.
+
+    Args:
+        outputs (dict): Outputs from the notebook to export into the CalibrationController/CalibrationNode workflow.
+    """
     print(f"RAND_INT:47102512880765720413 - OUTPUTS: {json.dumps(outputs)}")

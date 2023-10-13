@@ -2,7 +2,7 @@ import os
 
 import networkx as nx
 
-from qililab.automatic_calibration import CalibrationController, CalibrationNode
+from qililab.automatic_calibration import CalibrationController, CalibrationNode, norm_root_mean_sqrt_error
 
 # Change relative os path
 abspath = os.path.abspath(__file__)
@@ -21,12 +21,17 @@ personalized_sweep_interval = {
 # CREATE NODES :
 # (currently comparison return 3 for all notebooks, and when we calibrate we set the thresholds to 10)
 first = CalibrationNode(
-    nb_path="notebooks/first.ipynb", in_spec_threshold=4, bad_data_threshold=8, drift_timeout=1800.0
+    nb_path="notebooks/first.ipynb",
+    in_spec_threshold=4,
+    bad_data_threshold=8,
+    comparison_model=norm_root_mean_sqrt_error,
+    drift_timeout=1800.0,
 )
 second = CalibrationNode(
     nb_path="notebooks/second.ipynb",
     in_spec_threshold=2,
     bad_data_threshold=4,
+    comparison_model=norm_root_mean_sqrt_error,
     drift_timeout=1.0,
     sweep_interval=personalized_sweep_interval,
 )
@@ -34,6 +39,7 @@ third = CalibrationNode(
     nb_path="notebooks/third.ipynb",
     in_spec_threshold=1,
     bad_data_threshold=2,
+    comparison_model=norm_root_mean_sqrt_error,
     drift_timeout=1.0,
     sweep_interval=personalized_sweep_interval,
     number_of_random_datapoints=5,

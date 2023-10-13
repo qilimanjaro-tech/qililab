@@ -1,14 +1,11 @@
 """Automatic-calibration Controller module, which works with notebooks as nodes."""
 from datetime import datetime, timedelta
-from typing import Callable
 
 import networkx as nx
 
 from qililab.automatic_calibration.calibration_node import CalibrationNode
 from qililab.data_management import build_platform, save_platform
 from qililab.platform.platform import Platform
-
-from .comparison_models import norm_root_mean_sqrt_error
 
 
 class CalibrationController:
@@ -161,14 +158,17 @@ class CalibrationController:
             node: The node whose parameters need to be checked.
 
         Returns:
-            str: Based on how the experiment results compare with the results obtained during the last full calibration, the function will return
+            str: Three possible few words description, of how the experiment results compare with the results obtained during the last full calibration.
 
+            Concretely, depending on the provided threshold and comparison method, it will return:
                 - "in_spec" if the results are similar. Similarity is determined using the `check_data_confidence_level` argument of the :obj:`~automatic_calibration.CalibrationNode`.
-                - "out_of_spec" if the results are not similar enough.
-                - "bad_data" if the results are not similar and they don't even fit the model that is expected for this data. The model that the data should fit is indicated
-                        by the `fitting_model` attribute of :obj:`~automatic_calibration.CalibrationNode`, and to decide if the data fits the model well enough the r-squared
-                        parameter of the fit is used. The tolerance for the r-squared is indicated in the `r_squared_threshold` attribute of :obj:`~automatic_calibration.CalibrationNode`.
-                See the source code for details on how these metrics are used to decide what string to return.
+                - "out_of_spec" if the results are not similar enough, but close.
+                - "bad_data" if the results are not closely similar.
+
+                The comparison used is indicated by the `comparison_model` attribute of :obj:`~automatic_calibration.CalibrationNode`, which decides if the data fits the model well enough.
+                The tolerances for the comparison is indicated in the `in_spec_threshold` and `bad_data_threshold` attributes of :obj:`~automatic_calibration.CalibrationNode`.
+
+            See the source code for details on how these metrics are used to decide what string to return.
         """
 
         print(f'Checking data of node "{node.node_id}"\n')
@@ -194,19 +194,13 @@ class CalibrationController:
             print("y:", compar_params["y"])
             print("x:", compar_params["x"])
 
-            if (
-                self._obtain_comparison(obtain_params, compar_params, norm_root_mean_sqrt_error)
-                <= node.in_spec_threshold
-            ):
+            if self._obtain_comparison(node, obtain_params, compar_params) <= node.in_spec_threshold:
                 print(f"check_data of {node.node_id}: in_spec!!!\n")
                 node.add_string_to_checked_nb_name("in_spec", timestamp)
                 node.invert_output_and_previous_output()
                 return "in_spec"
 
-            if (
-                self._obtain_comparison(obtain_params, compar_params, norm_root_mean_sqrt_error)
-                <= node.bad_data_threshold
-            ):
+            if self._obtain_comparison(node, obtain_params, compar_params) <= node.bad_data_threshold:
                 print(f"check_data of {node.node_id}: out_of_spec!!!\n")
                 node.add_string_to_checked_nb_name("out_spec", timestamp)
                 node.invert_output_and_previous_output()
@@ -263,7 +257,7 @@ class CalibrationController:
         return [self.node_sequence[node_name] for node_name in self.calibration_graph.successors(node.node_id)]
 
     @staticmethod
-    def _obtain_comparison(obtained: dict[str, list], comparison: dict[str, list], method: Callable) -> float:
+    def _obtain_comparison(node: CalibrationNode, obtained: dict[str, list], comparison: dict[str, list]) -> float:
         """Returns the error, given the chosen method, between the comparison and obtained samples.
 
         Args:
@@ -274,7 +268,7 @@ class CalibrationController:
             float: difference/error between the two samples.
         """
         # TODO: Remove this 3.0 when the good notebooks are created.
-        return method(obtained, comparison) + 3.0
+        return node.comparison_model(obtained, comparison) + 3
 
     @staticmethod
     def _is_timeout_expired(timestamp: float, timeout: float) -> bool:
