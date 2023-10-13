@@ -349,3 +349,9 @@ This document contains the changes of the current release.
 
 - The `threshold` and `threshold_rotation` parameters of a `QbloxQRM` can now be set using `Platform.set_parameter`.
   [#534](https://github.com/qilimanjaro-tech/qililab/pull/534)
+
+- The `QbloxQRMRF` and `QbloxQCMRF` do not save an empty list for the parameter `out_offsets` in the saved runcard.
+  [#565](https://github.com/qilimanjaro-tech/qililab/pull/565)
+
+- The `save_platform` now saves in the yaml file float values with the same precision as in the `Platform` object.
+  [#565](https://github.com/qilimanjaro-tech/qililab/pull/565)
