@@ -26,6 +26,7 @@ def fixture_schedule() -> list[dict]:
                 "phase": 0,
                 "duration": 200,
                 "shape": {"name": "drag", "drag_coefficient": 0.8, "num_sigmas": 2},
+                "options": {"test_option": 1},
             },
         },
         {
@@ -53,6 +54,7 @@ class TestGateEventSettings:
         assert pulse.phase == 0
         assert pulse.duration == 200
         assert pulse.shape == {"name": "drag", "drag_coefficient": 0.8, "num_sigmas": 2}
+        assert pulse.options["test_option"] == 1
 
     def test_set_parameter(self, schedule):
         """Test the set parameter method"""
