@@ -29,12 +29,27 @@ from qililab.utils import Factory
 class Cosine(PulseShape):
     """Cosine pulse shape like :math:`A/2 (1-\lambda_1\cos(\phi)-\lambda_2\cos(2\phi))`, giving a modified sinusoidal-gaussian.
 
-    - lambda_1 cosine :math:`A/2 (1-\cos(x))`: Starts at height 0 (phase=0), maximum height A (phase=pi) and ends at height 0 (phase=2pi). Which is a sinusoidal like gaussian. Shaped with one maximum like ``_/\_``.
+    - :math:`\lambda_1` cosine :math:`A/2 (1-\cos(x))`: Starts and ends at height 0, with a maximum height A in the middle. Which is a sinusoidal like gaussian:
 
-    - lambda_2 cosine :math:`A/2 (1-\cos(2x))`: Starts at height 0 (phase=0), maximum height A (phase=pi/2) then another height 0 in the middle at phase=pi, then another maximum height A (phase=3/2pi) and ends at height 0 (phase=2pi). Shaped with two symmetric maximums like: ``_/v\_``.
+        .. image:: /classes_images/cos0.png
+                :width: 300
+                :align: center
 
-    Total would be a sum of lambda_1 x ``_/\_`` + lambda_2 x ``_/v\_``, giving an intermediate modified sinusoidal-gaussian.
+    - :math:`\lambda_2` cosine :math:`A/2 (1-\cos(2x))`: Starts and ends at height 0, having two maximums heights A, with a node in between. Which is two sinusoidal like gaussians:
+
+        .. image:: /classes_images/cos1.png
+                :width: 300
+                :align: center
+
+    The finally function would be a weigthed sum of both ``lambda_1`` and ``lambda_2`` contributions, giving an intermediate modified sinusoidal-gaussian.
     Check the following graph from Wolframalpha, where y is the lambda_2 parameter: [https://imgur.com/a/tjatZsg].
+
+    Examples:
+        The envelope of a Cosine with ``lambda_2`` equal to ``0.2`` and ``0.5``, look respectively like:
+
+        .. image:: /classes_images/cosines.png
+            :width: 800
+            :align: center
 
     References:
         - Supplemental material B. "Flux pulse parametrization": [https://arxiv.org/abs/1903.02492].
