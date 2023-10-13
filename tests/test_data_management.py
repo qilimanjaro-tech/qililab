@@ -1,5 +1,6 @@
 """Unit tests for all the methods for data management."""
 import copy
+import os
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -7,6 +8,7 @@ import numpy as np
 import pytest
 
 import qililab as ql
+from qililab.data_management import build_platform as dm_build_platform
 from qililab.data_management import load_results, save_platform, save_results
 from qililab.platform import Platform
 from tests.data import Galadriel
@@ -87,6 +89,17 @@ class TestBuildPlatformCornerCases:
         """Test build method with the new drivers."""
         with pytest.raises(NotImplementedError, match="New drivers are not supported yet"):
             _ = ql.build_platform(runcard="_", new_drivers=True)
+
+    def test_build_save_build_platform(self):
+        """Test the workflow of the platform by building a platform, sving it and then load it back again"""
+        original_platform = build_platform(Galadriel.runcard)
+        path = save_platform(path="./test.yml", platform=original_platform)
+        saved_platform = dm_build_platform(
+            path
+        )  # Needed this method instead of the mocked one in order to propperly read the generated test file
+
+        assert saved_platform.to_dict() == original_platform.to_dict()
+        os.remove(path)  # Cleaning generated file
 
 
 @patch("qililab.data_management.os.makedirs")
