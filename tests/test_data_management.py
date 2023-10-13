@@ -6,9 +6,9 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
+import yaml
 
 import qililab as ql
-from qililab.data_management import build_platform as dm_build_platform
 from qililab.data_management import load_results, save_platform, save_results
 from qililab.platform import Platform
 from tests.data import Galadriel
@@ -90,15 +90,44 @@ class TestBuildPlatformCornerCases:
         with pytest.raises(NotImplementedError, match="New drivers are not supported yet"):
             _ = ql.build_platform(runcard="_", new_drivers=True)
 
-    def test_build_save_build_platform(self):
-        """Test the workflow of the platform by building a platform, sving it and then load it back again"""
-        original_platform = build_platform(Galadriel.runcard)
+    def test_platform_serialization_from_imported_dict(self):
+        """Test platform serialization by building a platform, saving it and then load it back again twice. Starting from a given dict."""
+        original_platform = ql.build_platform(Galadriel.runcard)
         path = save_platform(path="./test.yml", platform=original_platform)
-        saved_platform = dm_build_platform(
-            path
-        )  # Needed this method instead of the mocked one in order to propperly read the generated test file
+        saved_platform = ql.build_platform(path)
+        new_path = save_platform(path="./test.yml", platform=saved_platform)
+        new_saved_platform = ql.build_platform(new_path)
 
-        assert saved_platform.to_dict() == original_platform.to_dict()
+        with open(file="examples/runcards/galadriel.yml", mode="r", encoding="utf8") as yaml_f:
+            yaml_f_dict = yaml.safe_load(stream=yaml_f)
+        with open(file="./test.yml", mode="r", encoding="utf8") as generated_f:
+            generated_f_dict = yaml.safe_load(stream=generated_f)
+
+        assert yaml_f_dict != generated_f_dict == Galadriel.runcard
+        assert (
+            original_platform.to_dict() == saved_platform.to_dict() == new_saved_platform.to_dict() == generated_f_dict
+        )
+        os.remove(path)  # Cleaning generated file
+
+    def test_platform_serialization_from_yaml_file(self):
+        """Test platform serialization by building a platform, saving it and then load it back again twice. Starting from a yaml file."""
+        original_platform = ql.build_platform("examples/runcards/galadriel.yml")
+        path = save_platform(path="./test.yml", platform=original_platform)
+        saved_platform = ql.build_platform(path)
+        new_path = save_platform(path="./test.yml", platform=saved_platform)
+        new_saved_platform = ql.build_platform(new_path)
+
+        with open(file="examples/runcards/galadriel.yml", mode="r", encoding="utf8") as yaml_f:
+            yaml_f_dict = yaml.safe_load(stream=yaml_f)
+        with open(file="./test.yml", mode="r", encoding="utf8") as generated_f:
+            generated_f_dict = yaml.safe_load(stream=generated_f)
+
+        for i in ["name", "device_id", "chip", "instruments", "instrument_controllers"]:
+            assert yaml_f_dict[i] == generated_f_dict[i]
+        assert generated_f_dict != Galadriel.runcard
+        assert (
+            original_platform.to_dict() == saved_platform.to_dict() == new_saved_platform.to_dict() == generated_f_dict
+        )
         os.remove(path)  # Cleaning generated file
 
 
