@@ -4,10 +4,12 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
-- Update qiboconnection to 0.12.0
-  [#559](https://github.com/qilimanjaro-tech/qililab/pull/559)
+- Added the two main classes need for automatic-calibration, `CalibrationController` and `CalibrationNode`: [#554](https://github.com/qilimanjaro-tech/qililab/pull/554)
 
-- Added phase correction for CZ gates to the optimize step of translate circuit in `qililab.transpiler.transpiler`. Gates now can accept an optional dicionary with additional settings.
+- Update qiboconnection to 0.12.0: [#559](https://github.com/qilimanjaro-tech/qililab/pull/559)
+
+- Added phase correction for CZ gates to the optimize step of translate circuit in `qililab.transpiler.transpiler`, Gates now can accept an optional dicionary with additional settings: [#552](https://github.com/qilimanjaro-tech/qililab/pull/552)
+
   As an example, the CZ phase correction can be added at options for each qubit:
 
   ```yml
@@ -27,8 +29,6 @@ This document contains the changes of the current release.
   ```
 
   The default value for the `optimize` flag in qililab.transpiler.transpiler.translate_circuit has been changed from `False` to `True`
-
-  [#552](https://github.com/qilimanjaro-tech/qililab/pull/552)
 
 - build_platform() has been extended: [#533](https://github.com/qilimanjaro-tech/qililab/pull/533)
 
