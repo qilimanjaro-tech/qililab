@@ -1,4 +1,5 @@
 """Tests for the QbloxQRMRF class."""
+from dataclasses import asdict
 from unittest.mock import MagicMock
 
 import pytest
@@ -155,5 +156,6 @@ class TestIntegration:
     def test_to_dict_method(self, settings):
         """Test that the `to_dict` method does not return a dictionary containing the key 'out_offsets' for a correct serialization"""
         qrm_rf = QbloxQRMRF(settings=settings)
-        dictionary = qrm_rf.to_dict()
-        assert "out_offsets" not in dictionary
+        qrm_rf.settings.out_offsets = 0.0
+        assert "out_offsets" in asdict(qrm_rf.settings)
+        assert "out_offsets" not in qrm_rf.to_dict()
