@@ -45,8 +45,8 @@ class Gaussian(PulseShape):
 
         This comes from the following steps, parting from a "full" gaussian (big ``num_sigma``) [blue]:
             1. you cut a full gaussian to the given ``num_sigmas``, for example ``1`` [small purple].
-            2. represents how this cut gaussian actually expands all the duration [big purple],
-            3. you shift down the cut gaussian, so it starts at 0 height [red].
+            2. in reality this cut gaussian, actually extends all the duration [big purple],
+            3. you shift/distortion down the cut gaussian, so it starts at 0 height [red].
 
         .. image:: /classes_images/gaussian_explanation.png
             :width: 400
