@@ -23,6 +23,7 @@ from qililab.typings import PulseShapeName
 from qililab.utils import Factory
 
 
+# pylint: disable=anomalous-backslash-in-string
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class Gaussian(PulseShape):
