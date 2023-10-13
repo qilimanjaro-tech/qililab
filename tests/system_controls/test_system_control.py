@@ -54,6 +54,18 @@ class TestInitialization:
             assert isinstance(instrument, Instrument)
         assert not hasattr(system_control.settings, "platform_instruments")
 
+    def test_init_with_a_wrong_instrument_alias_raises_an_error(self, platform: Platform):
+        """Test that an error is raised when initializing a SystemControl with an instrument alias that is not
+        present in the platform.
+        """
+        alias = "UnknownInstrument"
+        wrong_system_control_settings = {"instruments": [alias]}
+        with pytest.raises(
+            NameError,
+            match=f"The instrument with alias {alias} could not be found within the instruments of the platform",
+        ):
+            SystemControl(settings=wrong_system_control_settings, platform_instruments=platform.instruments)
+
 
 @pytest.fixture(name="base_system_control")
 def fixture_base_system_control(platform: Platform) -> SystemControl:
