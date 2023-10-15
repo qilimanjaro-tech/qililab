@@ -78,6 +78,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         .. note::
 
+            The following examples contain made up results. These will soon be updated with real results.
+
+        .. note::
+
             All the following examples are explained in detail in the :ref:`Platform <platform>` section of the documentation. However, here are a few thing to keep in mind:
 
             - To connect, your computer must be in the same network of the instruments specified in the runcard, with their IP's addresses. Connection is necessary for the subsequent steps.
@@ -87,7 +91,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             - ``platform.turn_on_instruments()`` is used to turn on the signal output of all the sources defined in the runcard (RF, Voltage and Current sources).
 
             - You can print ``platform.chip`` and ``platform.buses`` at any time to check the platform's structure.
-
 
         **1. Executing a circuit with Platform:**
 
@@ -121,30 +124,41 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         The results would look something like this:
 
         >>> result.array
-        array([[5.],
-                [5.]])
-        TODO: !!! Change this results for the actual ones !!!
+        array([[6.],
+                [6.]])
 
         .. note::
 
             The obtained values correspond to the integral of the I/Q signals received by the digitizer.
             And they have shape `(#sequencers, 2, #bins)`, in this case you only have 1 sequencer and 1 bin.
 
+        You could also get the results in a more standard format, as already classified ``counts`` or ``probabilities`` dictionaries, with:
+
+        >>> result.counts
+        {'0': 501, '1': 499}
+
+        >>> result.probabilities
+        {'0': .501, '1': .499}
+
+        .. note::
+
+            You can find more information about the results, in the :class:`.Results` class documentation.
+
         |
 
         **2. Running a Rabi sweep with Platform:**
 
         To perform a Rabi sweep, you need the previous circuit, and again, you also need to build, connect and setup the platform.
-        But this time, instead than executing the circuit once, you will loop changing the gain parameter of the AWG (generator of the pi pulse):
+        But this time, instead than executing the circuit once, you will loop changing the amplitude parameter of the AWG (generator of the pi pulse):
 
         .. code-block:: python
 
-            # Looping over the AWG gain to execute the Rabi sweep:
+            # Looping over the AWG amplitude to execute the Rabi sweep:
             results = []
-            gain_values = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9, 1.0]
+            amp_values = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9, 1.0]
 
-            for gain in gain_values:
-                platform.set_parameter(alias="drive_q", parameter=ql.Parameter.GAIN, value=gain)
+            for amp in amp_values:
+                platform.set_parameter(alias="drive_q", parameter=ql.Parameter.AMPLITUDE, value=amp)
                 result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
                 results.append(result.array)
 
@@ -155,7 +169,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         >>> np.hstack(results)
         array([[5, 4, 3, 2, 1, 2, 3],
                 [5, 4, 3, 2, 1, 2, 3]])
-        TODO: !!! Change this results for the actual ones !!!
 
         You can see how the integrated I/Q values oscillate, indicating that qubit ``q`` oscillates between the ground and
         excited states!
@@ -164,7 +177,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         **3. A faster Rabi sweep, translating the circuit to pulses:**
 
-        Since you are looping over variables that are independent of the circuit (in this case, the gain of the AWG),
+        Since you are looping over variables that are independent of the circuit (in this case, the amplitude of the AWG),
         you can speed up the experiment by translating the circuit into pulses beforehand, only once, and then, executing the obtained
         pulses inside the loop.
 
@@ -177,12 +190,12 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             # Translating the circuit to pulses:
             pulse_schedule = CircuitToPulses(platform=platform).translate(circuits=[circuit])
 
-            # Looping over the AWG gain to execute the Rabi sweep:
+            # Looping over the AWG amplitude to execute the Rabi sweep:
             results = []
-            gain_values = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9, 1.0]
+            amp_values = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9, 1.0]
 
-            for gain in gain_values:
-                platform.set_parameter(alias="drive_q", parameter=ql.Parameter.GAIN, value=gain)
+            for amp in amp_values:
+                platform.set_parameter(alias="drive_q", parameter=ql.Parameter.AMPLITUDE, value=amp)
                 result = platform.execute(program=pulse_schedule, num_avg=1000, repetition_duration=6000)
                 results.append(result.array)
 

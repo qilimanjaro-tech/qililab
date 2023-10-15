@@ -15,6 +15,10 @@ The :class:`.Platform` object is the responsible for managing the initialization
 
 Below you can find a beginner's tutorial on how to use the :class:`.Platform` class to execute quantum experiments on your hardware.
 
+.. note::
+
+    The following examples contain made up results. These will soon be updated with real results.
+
 Building and printing a Platform:
 ----------------------------------
 
@@ -105,7 +109,6 @@ And you are ready to execute the circuit with the platform:
 >>> result.array
 array([[5.],
         [5.]])
-TODO: !!! Change this results for the actual ones !!!
 
 getting the integrated values of the I/Q signals received by the digitizer!
 
@@ -113,6 +116,18 @@ getting the integrated values of the I/Q signals received by the digitizer!
 
     When disabling scope acquisition mode, the array obtained has shape `(#sequencers, 2, #bins)`. In this case,
     given that you are using only 1 sequencer to acquire the results, you would obtain an array with shape `(2, #bins)`.
+
+You could also get the results in a more standard format, as already classified ``counts`` or ``probabilities`` dictionaries, with:
+
+>>> result.counts
+{'0': 501, '1': 499}
+
+>>> result.probabilities
+{'0': .501, '1': .499}
+
+.. note::
+
+    You can find more information about the results, in the :class:`.Results` class documentation.
 
 |
 
@@ -144,7 +159,7 @@ pi pulse and a measurement gate in qubit ``q`` (``int``), as in the previous exa
     platform.initial_setup()
     platform.turn_on_instruments()
 
-Now to run the Rabi sweep, you would need to run this sequence by looping over the gain of the AWG used
+Now to run the Rabi sweep, you would need to run this sequence by looping over the amplitude of the AWG used
 to create the pi pulse:
 
 .. image:: platform_images/rabi.png
@@ -157,10 +172,10 @@ to drive qubit ``q`` (let's assume it's called ``"drive_q"``):
 .. code-block:: python3
 
     results = []
-    gain_values = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9, 1.0]
+    amp_values = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9, 1.0]
 
-    for gain in gain_values:
-        platform.set_parameter(alias="drive_q", parameter=ql.Parameter.GAIN, value=gain)
+    for amp in amp_values:
+        platform.set_parameter(alias="drive_q", parameter=ql.Parameter.AMPLITUDE, value=amp)
         result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
         results.append(result.array)
 
@@ -171,7 +186,6 @@ array with shape `(2, N)`, where N is the number of elements inside the loop:
 >>> results
 array([[5, 4, 3, 2, 1, 2, 3],
         [5, 4, 3, 2, 1, 2, 3]])
-TODO: !!! Change this results for the actual ones !!!
 
 You can see how the integrated I/Q values oscillated, indicating that qubit 0 oscillates between ground and
 excited state!
@@ -181,7 +195,7 @@ excited state!
 A faster Rabi sequence, translating the circuit to pulses:
 -----------------------------------------------------------
 
-Since you are looping over variables that are independent of the circuit (in this case, the gain of the AWG),
+Since you are looping over variables that are independent of the circuit (in this case, the amplitude of the AWG),
 you can speed up the experiment by translating the circuit into pulses only once:
 
 .. code-block:: python3
@@ -196,10 +210,10 @@ and then, executing the obtained pulses inside the loop, by passing the translat
 .. code-block:: python3
 
     results = []
-    gain_values = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9, 1.0]
+    amp_values = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9, 1.0]
 
-    for gain in gain_values:
-        platform.set_parameter(alias="drive_q", parameter=ql.Parameter.GAIN, value=gain)
+    for amp in amp_values:
+        platform.set_parameter(alias="drive_q", parameter=ql.Parameter.AMPLITUDE, value=amp)
         result = platform.execute(program=pulse_schedule, num_avg=1000, repetition_duration=6000)
         results.append(result.array)
 
@@ -209,7 +223,6 @@ This approach yields to similar results, but much faster!
 >>> results
 array([[5, 4, 3, 2, 1, 2, 3],
         [5, 4, 3, 2, 1, 2, 3]])
-TODO: !!! Change this results for the actual ones !!!
 
 |
 
@@ -276,4 +289,3 @@ And finally, if you print the results, you obtain the sinusoidal expected behavi
 >>> results
 array([[5, 4, 3, 2, 1, 2, 3],
         [5, 4, 3, 2, 1, 2, 3]])
-TODO: !!! Change this results for the actual sinusoidal ones (change wait_times of execution if needed) !!!
