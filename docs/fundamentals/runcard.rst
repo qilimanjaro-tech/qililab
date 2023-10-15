@@ -341,9 +341,9 @@ Runcard YAML file example:
                     gain_imbalance: 0.5
                     phase_imbalance: 0
                     hardware_modulation: true
-        -   name: rohde_schwarz
+        -   name: RS
             alias: rs_1
-            firmware: 4.2.76.0-4.30.046.295
+            firmware: 4.2.76.0-3.30.046.294
             power: 16
             frequency: 8.0726e+09
             rf_on: true
@@ -353,12 +353,12 @@ Runcard YAML file example:
             attenuation: 32
 
     instrument_controllers:
-        -   name: qblox_cluster
+        -   name: cluster
             alias: cluster_controller_0
             reference_clock: internal
             connection:
             name: tcp_ip
-            address: 192.168.1.20
+            address: 192.178.1.10
             modules:
                 -   alias: QRM1
                     slot_id: 12
@@ -368,12 +368,12 @@ Runcard YAML file example:
                     slot_id: 14
                 -   alias: QCM2
                     slot_id: 14
-        -   name: rohde_schwarz
-            alias: rohde_schwarz_controller_0
+        -   name: RS
+            alias: RS_controller_0
             reference_clock: internal
             connection:
             name: tcp_ip
-            address: 192.168.1.11
+            address: 192.178.1.21
             modules:
                 -   alias: rs_1
                     slot_id: 0
@@ -381,7 +381,7 @@ Runcard YAML file example:
             alias: attenuator_controller_0
             connection:
             name: tcp_ip
-            address: 192.168.1.69
+            address: 192.188.1.39
             modules:
                 -   alias: attenuator
                     slot_id: 0
