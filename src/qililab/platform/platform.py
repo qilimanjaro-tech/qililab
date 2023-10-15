@@ -132,14 +132,14 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         |
 
-        **2. Running a Rabi sequence with Platform:**
+        **2. Running a Rabi sweep with Platform:**
 
-        To perform a Rabi sequence, you need the previous circuit, and again, you also need to build, connect and setup the platform.
+        To perform a Rabi sweep, you need the previous circuit, and again, you also need to build, connect and setup the platform.
         But this time, instead than executing the circuit once, you will loop changing the gain parameter of the AWG (generator of the pi pulse):
 
         .. code-block:: python
 
-            # Looping over the AWG gain to execute the Rabi sequence:
+            # Looping over the AWG gain to execute the Rabi sweep:
             results = []
             gain_values = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9, 1.0]
 
@@ -162,7 +162,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         |
 
-        **3. A faster Rabi sequence, translating the circuit to pulses:**
+        **3. A faster Rabi sweep, translating the circuit to pulses:**
 
         Since you are looping over variables that are independent of the circuit (in this case, the gain of the AWG),
         you can speed up the experiment by translating the circuit into pulses beforehand, only once, and then, executing the obtained
@@ -177,7 +177,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             # Translating the circuit to pulses:
             pulse_schedule = CircuitToPulses(platform=platform).translate(circuits=[circuit])
 
-            # Looping over the AWG gain to execute the Rabi sequence:
+            # Looping over the AWG gain to execute the Rabi sweep:
             results = []
             gain_values = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9, 1.0]
 

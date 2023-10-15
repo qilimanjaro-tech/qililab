@@ -116,10 +116,10 @@ getting the integrated values of the I/Q signals received by the digitizer!
 
 |
 
-Running a Rabi sequence with Platform:
+Running a Rabi sweep with Platform:
 ---------------------------------------
 
-To perform a Rabi sequence, build, connect and set up the platform, and then create a circuit with a
+To perform a Rabi sweep, build, connect and set up the platform, and then create a circuit with a
 pi pulse and a measurement gate in qubit ``q`` (``int``), as in the previous examples, which all together look like:
 
 .. code-block:: python
@@ -144,7 +144,7 @@ pi pulse and a measurement gate in qubit ``q`` (``int``), as in the previous exa
     platform.initial_setup()
     platform.turn_on_instruments()
 
-Now to run the Rabi sequence, you would need to run this sequence by looping over the gain of the AWG used
+Now to run the Rabi sweep, you would need to run this sequence by looping over the gain of the AWG used
 to create the pi pulse:
 
 .. image:: platform_images/rabi.png
