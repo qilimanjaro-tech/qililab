@@ -339,7 +339,7 @@ class TestMethods:
     def test_get_parameter_of_qblox_module_without_channel_id(self, platform: Platform):
         """Test that getting a parameter of a ``QbloxModule`` with multiple sequencers without specifying a channel
         id still works."""
-        bus = platform.get_bus_by_alias(alias="drive_line_q0_bus")
+        bus = platform._get_bus_by_alias(alias="drive_line_q0_bus")
         awg = bus.system_control.instruments[0]
         assert isinstance(awg, QbloxModule)
         sequencer = awg.get_sequencers_from_chip_port_id(bus.port)[0]
