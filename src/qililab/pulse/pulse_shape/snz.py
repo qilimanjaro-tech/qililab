@@ -28,13 +28,21 @@ from qililab.utils import Factory
 @dataclass(frozen=True, eq=True)
 class SNZ(PulseShape):
     """Sudden net zero pulse shape. It is composed of a half-duration positive rectangular pulse, followed
-    by three stops to cross height = 0, to then have another half-duration negative rectangular pulse.\
+    by three stops to cross height = 0, to then have another half-duration negative rectangular pulse.
 
-    |   --------------                      <- half-duration positive rectangular pulse
-    |                 -                     <- instantaneous stop at height b
-    0                  ---                  <- t-phi duration at height = 0
-    |                     -                 <- instantaneous stop at height -b
-    |                      -------------    <- half-duration negative rectangular pulse
+    More concretely, the shape from left to right is composed by:
+        - half-duration positive rectangular pulse.
+        - instantaneous stop at height b.
+        - t-phi duration at height = 0.
+        - instantaneous stop at height -b.
+        - half-duration negative rectangular pulse.
+
+    Examples:
+        The envelope of a SNZ with ``b=0.2``, ``t_phi=2`` and ``b=0.5``, ``t_phi=10``, look respectively like:
+
+        .. image:: /classes_images/snzs.png
+            :width: 800
+            :align: center
 
     References:
         High-fidelity controlled-Z gate with maximal intermediate leakage operating at the speed
@@ -108,7 +116,6 @@ class SNZ(PulseShape):
         Returns:
             dict: Dictionary representation including the name of the pulse shape, the b parameter and the t_phi parameter..
         """
-
         return {
             "name": self.name.value,
             "b": self.b,
