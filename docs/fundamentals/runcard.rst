@@ -312,7 +312,7 @@ Runcard YAML file example:
         -   name: QCM
             alias: QCM1
             firmware: 0.7.0
-            num_sequencers: 4
+            num_sequencers: 2
             out_offsets: [0.0, 0.0, 0.0, 0.0]
             awg_sequencers:
                 -   identifier: 0
