@@ -15,6 +15,51 @@ class CalibrationController:
         calibration_graph (nx.DiGraph): The calibration graph. This is a directed acyclic graph where each node is a string.
         node_sequence (dict): Mapping for the dodes of the graph, from strings into the actual initialized nodes.
         runcard (str): The runcard path, containing the serialized platform where the experiments will be run.
+
+    Examples:
+        In this example, you will create 2 nodes, and pass them to a :class:`.CalibrationController`, in order to run the maintain algorithm on the second one:
+
+        .. code-block:: python
+
+            personalized_sweep_interval = {
+                "start": 10,
+                "stop": 50,
+                "step": 2,
+            }
+
+            # CREATE NODES :
+            first = CalibrationNode(
+                nb_path="notebooks/first.ipynb",
+                in_spec_threshold=4,
+                bad_data_threshold=8,
+                comparison_model=norm_root_mean_sqrt_error,
+                drift_timeout=1800.0,
+            )
+            second = CalibrationNode(
+                nb_path="notebooks/second.ipynb",
+                in_spec_threshold=2,
+                bad_data_threshold=4,
+                comparison_model=norm_root_mean_sqrt_error,
+                drift_timeout=1.0,
+                sweep_interval=personalized_sweep_interval,
+            )
+
+            # NODE MAPPING TO THE GRAPH (key = name in graph, value = node object):
+            nodes = {"first": first, "second": second}
+
+            # GRAPH CREATION:
+            G = nx.DiGraph()
+            G.add_edge("second", "first")
+
+            # CREATE CALIBRATION CONTROLLER:
+            controller = CalibrationController(node_sequence=nodes, calibration_graph=G, runcard=path_runcard)
+
+            ### EXECUTIONS TO DO:
+            controller.maintain(third)
+
+        .. note::
+
+            Find information about how these nodes and their notebooks need to be in the :class:`CalibrationNode` class documentation.
     """
 
     def __init__(self, calibration_graph: nx.DiGraph, node_sequence: dict, runcard: str):
