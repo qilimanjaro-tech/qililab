@@ -9,6 +9,8 @@ from typing import Callable
 import numpy as np
 import papermill as pm
 
+from qililab.config import logger
+
 
 class CalibrationNode:  # pylint: disable=too-many-instance-attributes
     """Automatic-calibration Node class, which works with notebooks as nodes.
@@ -139,15 +141,32 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         if self.input_parameters is not None:
             params |= self.input_parameters
 
-        output_path = self._create_notebook_datetime_path(self.nb_path)
+        # initially the file is "dirty" until we make sure the execution was not aborted
+        output_path = self._create_notebook_datetime_path(self.nb_path, dirty=True)
         self.previous_output_parameters = self.output_parameters
-        self.output_parameters = self._execute_notebook(self.nb_path, output_path, params)
-        print("Platform output parameters:", self.output_parameters["platform_params"])
-        print("Check output parameters:", self.output_parameters["check_parameters"])
 
-        timestamp = self._get_timestamp()
-        os.rename(output_path, self._create_notebook_datetime_path(self.nb_path, timestamp))
-        return timestamp
+        try:
+            self.output_parameters = self._execute_notebook(self.nb_path, output_path, params)
+            print("Platform output parameters:", self.output_parameters["platform_params"])
+            print("Check output parameters:", self.output_parameters["check_parameters"])
+
+            timestamp = self._get_timestamp()
+            os.rename(output_path, self._create_notebook_datetime_path(self.nb_path, timestamp))
+            return timestamp
+        except KeyboardInterrupt:
+            logger.info("Interrupted autocalibration notebook execution of %s", self.nb_path)
+            exit()
+        except Exception as e:
+            # Generate error folder and move there the notebook
+            timestamp = self._get_timestamp()
+            error_path = self._create_notebook_datetime_path(self.nb_path, timestamp, error=True)
+            os.rename(output_path, error_path)
+            logger.info(
+                "Aborting execution. Exception %s during autocalibration notebook execution, trace of the error can be found in %s",
+                str(e),
+                error_path,
+            )
+            exit()
 
     @staticmethod
     def _build_notebooks_logger_stream() -> StringIO:
@@ -172,13 +191,19 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         Returns:
             dict: Kwargs for the output parameters of the notebook.
         """
-        # Execute the notebook with the passed parameters, and getting the log output:
         pm.execute_notebook(input_path, output_path, parameters, log_output=True, stdout_file=self.stream)
 
         # Retrieve the logger info and extract the output from it:
         logger_string = self.stream.getvalue()
-        logger_outputs_string = logger_string.split("RAND_INT:47102512880765720413 - OUTPUTS: ")[-1].split("\n")[0]
+        if logger_string is None:
+            logger.info(
+                "Aborting execution. No output found, chek the autocalibration output cell is implemented in %s",
+                input_path,
+            )
+            raise ValueError
 
+        logger_outputs_string = logger_string.split("RAND_INT:47102512880765720413 - OUTPUTS: ")[-1].split("\n")[0]
+        # In case something unexpected happened with the output we raise an error
         return json.loads(logger_outputs_string)
 
     def _get_last_calibrated_timestamp(self) -> float | None:
@@ -268,7 +293,9 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         return last_modified_file_name if last_modified_file_time != -1.0 else None
 
     @classmethod
-    def _create_notebook_datetime_path(cls, original_path: str, timestamp: float | None = None) -> str:
+    def _create_notebook_datetime_path(
+        cls, original_path: str, timestamp: float | None = None, dirty: bool = False, error: bool = False
+    ) -> str:
         """Adds the datetime to the file name end, just before the ``.ipynb``.
 
         If the path directory doesn't exist, it gets created.
@@ -294,6 +321,11 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         name, folder_path = cls._path_to_name_and_folder(original_path)
         os.makedirs(folder_path, exist_ok=True)
 
+        if dirty:  # return the path of the execution
+            return f"{folder_path}/{name}_{now_path}_dirty.ipynb"
+        elif error:
+            os.makedirs(f"{folder_path}/error_executions", exist_ok=True)
+            return f"{folder_path}/error_executions/{name}_{now_path}.ipynb"
         # return the string where saved
         return f"{folder_path}/{name}_{now_path}.ipynb"
 
