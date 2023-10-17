@@ -23,6 +23,7 @@ from qililab.typings import PulseShapeName
 from qililab.utils import Factory
 
 
+# pylint: disable=anomalous-backslash-in-string
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class Drag(PulseShape):
@@ -32,14 +33,23 @@ class Drag(PulseShape):
 
     .. math::
 
-        f(x) & = (1 + 1j * drag_coefficient * d/dx) * Gaussian(x) = \\\\
-             & = (1 + 1j * drag_coefficient * (x - mu) / sigma^2) * Gaussian(x)
+        f(x) & = (1 + 1j * alpha * d/dx) * Gaussian(x) = \\\\
+             & = (1 + 1j * alpha * (x - \mu) / \sigma^2) * Gaussian(x)
 
-    where 'Gaussian' is:
+    where the 'Gaussian' is symmetrically cut in the given `num_sigmas`, and then is shifted down so that the extremes are at 0, following:
 
     .. math::
 
-        Gaussian(x) = amplitude * exp(-0.5 * (x - mu)^2 / sigma^2)
+        Gaussian(x) = A * exp(-0.5 * (x - \mu)^2 / \sigma^2)
+
+    more information about the gaussian can be found in the :class:`Gaussian` documentation.
+
+    Examples:
+        The envelope of a drag with ``num_sigmas = 8`` and ``drag_coefficient`` (`alpha`) is ``1`` and ``10``, look respectively like:
+
+        .. image:: /classes_images/drags.png
+            :width: 800
+            :align: center
 
     References:
         - Analytic control methods for high-fidelity unitary operations in a weakly nonlinear oscillator: https://journals.aps.org/pra/abstract/10.1103/PhysRevA.83.012308.

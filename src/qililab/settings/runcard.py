@@ -15,7 +15,7 @@
 """Runcard class."""
 import ast
 import re
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Literal
 
 from qililab.constants import GATE_ALIAS_REGEX
@@ -120,6 +120,18 @@ class Runcard:
             self.gates = {
                 gate: [GateEventSettings(**event) for event in schedule] for gate, schedule in self.gates.items()
             }
+
+        def to_dict(self):
+            """Serializes gate settings to dictionary and removes fields with None values"""
+
+            def remove_none_values(data):
+                if isinstance(data, dict):
+                    data = {key: remove_none_values(item) for key, item in data.items() if item is not None}
+                elif isinstance(data, list):
+                    data = [remove_none_values(item) for item in data if item is not None]
+                return data
+
+            return remove_none_values(data=asdict(self))
 
         def get_operation_settings(self, name: str) -> OperationSettings:
             """Get OperationSettings by operation's name.

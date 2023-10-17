@@ -148,6 +148,7 @@ class Galadriel:
                         "phase": 1.5707963267948966,
                         "duration": 20,
                         "shape": {"name": "rectangular"},
+                        "options": {"q0_phase_correction": 0.1, "q2_phase_correction": 0.2},
                     },
                 }
             ],
