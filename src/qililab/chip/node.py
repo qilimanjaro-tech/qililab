@@ -21,7 +21,9 @@ from qililab.typings import FactoryElement
 
 @dataclass(kw_only=True)
 class Node(Settings, FactoryElement):
-    """Class representing a node of the chip's graph."""
+    """This class is used to represent a node of the chip's graph.
+    Each node is an element of the chip
+    """
 
     alias: str
     nodes: list[str]
