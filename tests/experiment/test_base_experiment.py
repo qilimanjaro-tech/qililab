@@ -322,7 +322,7 @@ class TestSetParameter:
         alias = Galadriel.buses[0][RUNCARD.ALIAS]
         element = exp.platform.get_element(alias)  # type: ignore
         exp.set_parameter(element=element, alias=alias, parameter=Parameter.DELAY, value=bus_delay)  # type: ignore
-        assert exp.platform.get_bus_by_alias(alias).delay == bus_delay  # type: ignore
+        assert exp.platform._get_bus_by_alias(alias).delay == bus_delay  # type: ignore
         exp.build_execution.assert_called_once_with()
 
 

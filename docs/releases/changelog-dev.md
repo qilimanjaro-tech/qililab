@@ -348,6 +348,8 @@ This document contains the changes of the current release.
 
   Includes documentation for all public features of the Pulse module
 
+- Added documentation for platform module and the tutorial sections of Platform and Runcards: [#531](https://github.com/qilimanjaro-tech/qililab/pull/531/files)
+
 ### Bug fixes
 
 - Avoid creating empty sequences for buses that are no flux lines and do for flux ones that do not have any AWG instrument.
