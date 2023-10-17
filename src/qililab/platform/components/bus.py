@@ -34,10 +34,12 @@ class Bus:
     which is connected to one or multiple qubits.
 
     Args:
+        targets (list[Qubit | Resonator | Coupler | Coil]): Port target (or targets in case of multiple resonators).
         settings (BusSettings): Bus settings.
     """
 
-    targets: list[Qubit | Resonator | Coupler | Coil]  # port target (or targets in case of multiple resonators)
+    targets: list[Qubit | Resonator | Coupler | Coil]
+    """Port target (or targets in case of multiple resonators)."""
 
     @dataclass
     class BusSettings(Settings):
@@ -71,6 +73,9 @@ class Bus:
             ]
 
     settings: BusSettings
+    """Bus settings. Containing the alias of the bus, the system control used to control and readout its qubits, the alias
+    of the port where it's connected, the list of the distortions to apply, and its delay.
+    """
 
     def __init__(self, settings: dict, platform_instruments: Instruments, chip: Chip):
         self.settings = self.BusSettings(**settings, platform_instruments=platform_instruments)  # type: ignore
@@ -157,7 +162,7 @@ class Bus:
         }
 
     def set_parameter(self, parameter: Parameter, value: int | float | str | bool, channel_id: int | None = None):
-        """_summary_
+        """Set a parameter to the bus.
 
         Args:
             parameter (Parameter): parameter settings of the instrument to update
@@ -177,7 +182,7 @@ class Bus:
                 ) from error
 
     def get_parameter(self, parameter: Parameter, channel_id: int | None = None):
-        """_summary_
+        """Gets a parameter of the bus.
 
         Args:
             parameter (Parameter): parameter settings of the instrument to update
