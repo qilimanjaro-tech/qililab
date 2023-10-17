@@ -49,3 +49,6 @@ class DragCorrection(Waveform):  # pylint: disable=too-few-public-methods
 
             return (-1 * self.drag_coefficient * (x - mu) / sigma**2) * self.waveform.envelope()
         raise NotImplementedError(f"Cannot apply drag correction on a {self.waveform.__class__.__name__} waveform.")
+
+    def get_duration(self) -> int:
+        return self.waveform.get_duration()

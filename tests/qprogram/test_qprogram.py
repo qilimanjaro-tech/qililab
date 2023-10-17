@@ -188,14 +188,13 @@ class TestQProgram:
     def test_set_awg_gain(self):
         """Test set_awg_gain method"""
         qp = QProgram()
-        qp.set_gain(bus="drive", gain_path0=1.0, gain_path1=0.0)
+        qp.set_gain(bus="drive", gain=1.0)
 
         assert len(qp._active_block.elements) == 1
         assert len(qp._program.elements) == 1
         assert isinstance(qp._program.elements[0], SetGain)
         assert qp._program.elements[0].bus == "drive"
-        assert qp._program.elements[0].gain_path0 == 1.0
-        assert qp._program.elements[0].gain_path1 == 0.0
+        assert qp._program.elements[0].gain == 1.0
 
     def test_set_awg_offset(self):
         """Test set_awg_offset method"""

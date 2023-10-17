@@ -58,3 +58,6 @@ class Gaussian(Waveform):  # pylint: disable=too-few-public-methods
         corr_norm = np.amax(np.real(gaussian))
 
         return gaussian * norm / corr_norm if corr_norm != 0 else gaussian
+
+    def get_duration(self) -> int:
+        return self.duration

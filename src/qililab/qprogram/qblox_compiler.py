@@ -303,18 +303,13 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
 
     def _handle_set_gain(self, element: SetGain):
         convert = QbloxCompiler._convert_value(element)
-        gain_0 = (
-            self._buses[element.bus].variable_to_register[element.gain_path0]
-            if isinstance(element.gain_path0, Variable)
-            else convert(element.gain_path0)
-        )
-        gain_1 = (
-            self._buses[element.bus].variable_to_register[element.gain_path1]
-            if isinstance(element.gain_path1, Variable)
-            else convert(element.gain_path1)
+        gain = (
+            self._buses[element.bus].variable_to_register[element.gain]
+            if isinstance(element.gain, Variable)
+            else convert(element.gain)
         )
         self._buses[element.bus].qpy_block_stack[-1].append_component(
-            component=QPyInstructions.SetAwgGain(gain_0=gain_0, gain_1=gain_1)
+            component=QPyInstructions.SetAwgGain(gain_0=gain, gain_1=gain)
         )
 
     def _handle_set_offset(self, element: SetOffset):

@@ -4,6 +4,8 @@ PyYAML==6.0
 qblox-instruments==0.10.1
 qcodes==0.38.1
 qcodes_contrib_drivers==0.18.0
+qm_qua==1.1.4
+qualang-tools==0.15.2
 PyVISA-py==0.5.2
 tqdm==4.64.1
 urllib3==1.26.12

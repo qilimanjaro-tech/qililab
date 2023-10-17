@@ -17,6 +17,7 @@ from collections import deque
 import numpy as np
 
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
+from qililab.qprogram.decorators import requires_domain
 from qililab.qprogram.operations import (
     Acquire,
     Play,
@@ -28,7 +29,7 @@ from qililab.qprogram.operations import (
     Sync,
     Wait,
 )
-from qililab.qprogram.variable import FloatVariable, IntVariable, Variable
+from qililab.qprogram.variable import Domain, FloatVariable, IntVariable, Variable
 from qililab.waveforms import IQPair, Waveform
 
 
@@ -185,6 +186,7 @@ class QProgram:
         operation = Play(bus=bus, waveform=waveform, duration=duration)
         self._active_block.append(operation)
 
+    @requires_domain("duration", Domain.Time)
     def wait(self, bus: str, duration: int):
         """Adds a delay on the bus with a specified time.
 
@@ -225,6 +227,7 @@ class QProgram:
         operation = ResetPhase(bus=bus)
         self._active_block.append(operation)
 
+    @requires_domain("phase", Domain.Phase)
     def set_phase(self, bus: str, phase: float):
         """Set the absolute phase of the NCO associated with the bus.
 
@@ -235,6 +238,7 @@ class QProgram:
         operation = SetPhase(bus=bus, phase=phase)
         self._active_block.append(operation)
 
+    @requires_domain("frequency", Domain.Frequency)
     def set_frequency(self, bus: str, frequency: float):
         """Set the frequency of the NCO associated with bus.
 
@@ -245,15 +249,15 @@ class QProgram:
         operation = SetFrequency(bus=bus, frequency=frequency)
         self._active_block.append(operation)
 
-    def set_gain(self, bus: str, gain_path0: float, gain_path1: float):
+    @requires_domain("gain", Domain.Voltage)
+    def set_gain(self, bus: str, gain: float):
         """Set the gain of the AWG associated with bus.
 
         Args:
             bus (str): Unique identifier of the bus.
-            gain_path0 (float): The new gain of the AWG for path0.
-            gain_path1 (float): The new gain of the AWG for path1.
+            gain (float): The new gain of the AWG.
         """
-        operation = SetGain(bus=bus, gain_path0=gain_path0, gain_path1=gain_path1)
+        operation = SetGain(bus=bus, gain=gain)
         self._active_block.append(operation)
 
     def set_offset(self, bus: str, offset_path0: float, offset_path1: float):
@@ -267,7 +271,7 @@ class QProgram:
         operation = SetOffset(bus=bus, offset_path0=offset_path0, offset_path1=offset_path1)
         self._active_block.append(operation)
 
-    def variable(self, type: type[int | float]):  # pylint: disable=redefined-builtin
+    def variable(self, type: type[int | float], domain: Domain = Domain.Unitless):  # pylint: disable=redefined-builtin
         """Declare a variable.
 
         Args:
@@ -280,20 +284,20 @@ class QProgram:
             IntVariable | FloatVariable: The variable.
         """
 
-        def _int_variable(value: int = 0) -> IntVariable:
-            variable = IntVariable(value)
+        def _int_variable(domain: Domain = Domain.Unitless) -> IntVariable:
+            variable = IntVariable(domain)
             self._variables.append(variable)
             return variable
 
-        def _float_variable(value: float = 0.0) -> FloatVariable:
-            variable = FloatVariable(value)
+        def _float_variable(domain: Domain = Domain.Unitless) -> FloatVariable:
+            variable = FloatVariable(domain)
             self._variables.append(variable)
             return variable
 
         if type == int:
-            return _int_variable()
+            return _int_variable(domain)
         if type == float:
-            return _float_variable()
+            return _float_variable(domain)
         raise NotImplementedError
 
     class _BlockContext:

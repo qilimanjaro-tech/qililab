@@ -14,7 +14,16 @@
 
 """This file contains all the variables used inside a QProgram."""
 import math
+from enum import Enum
 from uuid import UUID, uuid4
+
+
+class Domain(Enum):
+    Unitless = (0,)
+    Time = (1,)
+    Frequency = (2,)
+    Phase = (3,)
+    Voltage = 4
 
 
 class Variable:
@@ -22,15 +31,16 @@ class Variable:
 
     _uuid: UUID
     value: int | float
+    domain: Domain
 
     def __init__(self):
         self._uuid = uuid4()
 
     def __str__(self):
-        return str(self.value)
+        return str(self._uuid)
 
     def __repr__(self):
-        return repr(self.value)
+        return repr(self._uuid)
 
     def __hash__(self):
         return hash(self._uuid)
@@ -129,19 +139,38 @@ class Variable:
         return self.value >= other
 
 
+# class TimeVariable(Variable, int):  # type: ignore
+#     """Integer variable. This class is used to define a variable of type int, such that Python recognizes this class
+#     as an integer."""
+
+#     def __init__(self, domain: Domain):
+#         self.domain: Domain = Domain.Time
+#         super().__init__()
+
+
 class IntVariable(Variable, int):  # type: ignore
     """Integer variable. This class is used to define a variable of type int, such that Python recognizes this class
     as an integer."""
 
-    def __init__(self, value: int = 0):
-        self.value: int = value
-        super().__init__()
+    def __new__(cls, _: Domain = Domain.Unitless):
+        # Create a new float instance
+        instance = int.__new__(cls, 0)
+        return instance
+
+    def __init__(self, domain: Domain = Domain.Unitless):
+        Variable.__init__(self)
+        self.domain = domain
 
 
 class FloatVariable(Variable, float):  # type: ignore
     """Float variable. This class is used to define a variable of type float, such that Python recognizes this class
     as a float."""
 
-    def __init__(self, value: float = 0.0):
-        self.value: float = value
-        super().__init__()
+    def __new__(cls, _: Domain = Domain.Unitless):
+        # Create a new int instance
+        instance = float.__new__(cls, 0.0)
+        return instance
+
+    def __init__(self, domain: Domain = Domain.Unitless):
+        Variable.__init__(self)
+        self.domain = domain

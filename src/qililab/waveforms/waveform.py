@@ -27,3 +27,6 @@ class Waveform(Protocol):  # pylint: disable=too-few-public-methods, disable=mis
         Returns:
             np.ndarray: pulse matrix
         """
+
+    def get_duration(self) -> int:
+        return len(self.envelope())

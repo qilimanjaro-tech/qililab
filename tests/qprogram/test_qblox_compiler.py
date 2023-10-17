@@ -16,7 +16,7 @@ def fixture_no_loops_all_operations() -> QProgram:
     qp.set_frequency(bus="drive", frequency=300)
     qp.set_phase(bus="drive", phase=90)
     qp.reset_phase(bus="drive")
-    qp.set_gain(bus="drive", gain_path0=0.5, gain_path1=0.5)
+    qp.set_gain(bus="drive", gain=0.5)
     qp.set_offset(bus="drive", offset_path0=0.5, offset_path1=0.5)
     qp.play(bus="drive", waveform=drag_pair)
     qp.sync()
@@ -115,7 +115,7 @@ def fixture_average_with_multiple_for_loops_and_acquires() -> QProgram:
             qp.acquire(bus="readout", weights=weights_pair_0)
         qp.acquire(bus="readout", weights=weights_pair_1)
         with qp.for_loop(variable=gain, start=0.0, stop=1.0, step=0.1):
-            qp.set_gain(bus="readout", gain_path0=gain, gain_path1=gain)
+            qp.set_gain(bus="readout", gain=gain)
             qp.play(bus="readout", waveform=readout_pair)
             qp.acquire(bus="readout", weights=weights_pair_2)
     return qp
@@ -131,7 +131,7 @@ def fixture_average_with_nested_for_loops() -> QProgram:
     gain = qp.variable(float)
     with qp.average(shots=1000):
         with qp.for_loop(variable=gain, start=0, stop=1, step=0.1):
-            qp.set_gain(bus="drive", gain_path0=gain, gain_path1=gain)
+            qp.set_gain(bus="drive", gain=gain)
             with qp.for_loop(variable=wait_time, start=0, stop=100, step=4):
                 qp.play(bus="drive", waveform=drag_pair)
                 qp.sync()
@@ -156,7 +156,7 @@ def fixture_average_with_parallel_for_loops() -> QProgram:
                 ForLoop(variable=gain, start=0, stop=1, step=0.1),
             ]
         ):
-            qp.set_gain(bus="drive", gain_path0=gain, gain_path1=gain)
+            qp.set_gain(bus="drive", gain=gain)
             qp.set_frequency(bus="readout", frequency=frequency)
             qp.play(bus="drive", waveform=drag_pair)
             qp.sync()

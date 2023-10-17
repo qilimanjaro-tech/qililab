@@ -40,3 +40,6 @@ class Square(Waveform):  # pylint: disable=too-few-public-methods
             np.ndarray: pulse matrix
         """
         return self.amplitude * np.ones(round(self.duration / resolution))
+
+    def get_duration(self) -> int:
+        return self.duration
