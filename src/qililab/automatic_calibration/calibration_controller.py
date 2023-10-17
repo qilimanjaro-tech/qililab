@@ -78,6 +78,19 @@ class CalibrationController:
         self.platform: Platform = build_platform(runcard)
         """The initialized platform, where the experiments will be run."""
 
+    def run_automatic_calibration(self) -> None:
+        """Run the automatic calibration procedure."""
+        highest_level_nodes = [node for node, in_degree in self.calibration_graph.in_degree() if in_degree == 0]
+
+        for n in highest_level_nodes:
+            self.maintain(n)
+
+        print(
+            "#############################################\n"
+            "Automatic calibration completed successfully!\n"
+            "#############################################\n"
+        )
+
     def maintain(self, node: CalibrationNode) -> None:
         """This is primary interface for our calibration procedure and it's the highest level algorithm.
         We call maintain on the node that we want in spec, and maintain will call all the subroutines necessary to do that.
@@ -267,10 +280,6 @@ class CalibrationController:
         node.previous_timestamp = node.run_notebook()
         node.add_string_to_checked_nb_name("calibrated", node.previous_timestamp)
 
-        # TODO: Remove this threshold change when the good notebooks are created.
-        node.bad_data_threshold = 9.0
-        node.in_spec_threshold = 10.0
-
     def _update_parameters(self, node: CalibrationNode) -> None:
         """Update a parameter value in the platform.
         If the node does not have an associated parameter, or the parameter attribute of the node is None,
@@ -284,10 +293,9 @@ class CalibrationController:
         if node.output_parameters is not None and "platform_params" in node.output_parameters:
             for bus_alias, param_name, param_value in node.output_parameters["platform_params"]:
                 print(f"Platform updated with: ({bus_alias}, {param_name}, {param_value})")
-                # self.platform.set_parameter(alias=bus_alias, parameter=param_name, value=param_value)
+                self.platform.set_parameter(alias=bus_alias, parameter=param_name, value=param_value)
 
-            # TODO: Solve the platform serialization problem and change the bottom expression to ``self.runcard``!!!
-            save_platform(self.runcard.split(".yml")[0] + "_test.yml", self.platform)
+            save_platform(self.runcard, self.platform)
 
     def _dependents(self, node: CalibrationNode) -> list:
         """Find the nodes that a node depends on.
@@ -312,8 +320,7 @@ class CalibrationController:
         Returns:
             float: difference/error between the two samples.
         """
-        # TODO: Remove this 3.0 when the good notebooks are created.
-        return node.comparison_model(obtained, comparison) + 3
+        return node.comparison_model(obtained, comparison)
 
     @staticmethod
     def _is_timeout_expired(timestamp: float, timeout: float) -> bool:

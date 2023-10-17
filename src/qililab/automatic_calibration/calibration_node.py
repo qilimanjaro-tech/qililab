@@ -9,6 +9,8 @@ from typing import Callable
 import numpy as np
 import papermill as pm
 
+logger_output_start = "RAND_INT:47102512880765720413 - OUTPUTS: "
+
 
 class CalibrationNode:  # pylint: disable=too-many-instance-attributes
     """Automatic-calibration Node class, which represent a node in the calibration graph.
@@ -335,7 +337,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         # Retrieve the logger info and extract the output from it:
         logger_string = self.stream.getvalue()
-        logger_outputs_string = logger_string.split("RAND_INT:47102512880765720413 - OUTPUTS: ")[-1].split("\n")[0]
+        logger_outputs_string = logger_string.split(logger_output_start)[-1].split("\n")[0]
 
         return json.loads(logger_outputs_string)
 
@@ -381,7 +383,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             lines = file.readlines()
             start = False
             for line in lines:
-                if line.find("RAND_INT:47102512880765720413 - OUTPUTS: ") != -1:
+                if line.find(logger_output_start) != -1:
                     raw_string += line
                     start = True
                 if start and line.find("\n") == -1:
@@ -393,7 +395,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         # TODO: Make sure that the encoding of special characters (i.e. \\“) doesn’t depend on the OS because
         # Windows uses UTF-16LE and Linux (UNIX based like MacOS) uses UTF-8
         # Postprocessing file
-        data = raw_string.split("RAND_INT:47102512880765720413 - OUTPUTS: ")
+        data = raw_string.split(logger_output_start)
         clean_data = data[1].split('\\n"')
         dict_as_string = clean_data[0].replace('\\"', '"')
 
@@ -498,10 +500,10 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         return datetime.timestamp(now)
 
 
-def export_calibration_outputs(outputs: dict):
+def export_calibration_outputs(outputs: dict) -> None:
     """Function to export notebook outputs into a stream, later collected by the CalibrationNode class.
 
     Args:
         outputs (dict): Outputs from the notebook to export into the CalibrationController/CalibrationNode workflow.
     """
-    print(f"RAND_INT:47102512880765720413 - OUTPUTS: {json.dumps(outputs)}")
+    print(f"{logger_output_start}{json.dumps(outputs)}")
