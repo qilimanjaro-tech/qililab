@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """Class Quantum Machines Manager"""
-from qm.QuantumMachinesManager import QuantumMachinesManager as QMM
+from qm import QuantumMachinesManager as QMM
 from qililab.typings.instruments.device import Device
 
 

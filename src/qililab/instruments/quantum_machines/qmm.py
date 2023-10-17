@@ -58,14 +58,14 @@ class QMM(Instrument):
 
     def __init__(self, settings: dict):
         # It creates a new instance of the Quantum Machines Manager
-        self.qmm = QuantumMachinesManager(host=self.settings.qop_ip, port=self.settings.qop_port)
-        self.qm = self.qmm.open_qm(self.settings.config)
+        qmm = QuantumMachinesManager(host=self.settings.qop_ip, port=self.settings.qop_port)
+        self.device = qmm.open_qm(self.settings.config)
 
         super().__init__(settings=settings)
 
     def run(self, program:Program) -> Result:
         """Run the QUA Program"""
-        job = self.qm.execute(program)
+        job = self.device.execute(program)
         res_handles = job.result_handles
         res_handles.wait_for_all_values()
 
@@ -73,7 +73,7 @@ class QMM(Instrument):
 
     def simulate(self, program:Program) -> Result:
         """Run the QProgram"""
-        job = self.qm.simulate(program, SimulationConfig(40_000))
+        job = self.device.simulate(program, SimulationConfig(40_000))
         return job.result_handles
 
 
