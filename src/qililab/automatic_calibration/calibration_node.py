@@ -173,8 +173,6 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                     }
                 )
             where the ``check_parameters`` are a dictionary of the saved results to do comparisons against. And the ``platform_params`` are a list of parameters to set on the platform.
-
-
     """
 
     def __init__(

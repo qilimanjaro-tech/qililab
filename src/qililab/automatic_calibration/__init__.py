@@ -9,21 +9,21 @@ can be read from: https://arxiv.org/abs/1803.03226
 .. currentmodule:: qililab.automatic_calibration
 
 CalibrationController class
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autosummary::
     :toctree: api
 
     ~CalibrationController
 
 CalibrationNode Class
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 .. autosummary::
     :toctree: api
 
     ~CalibrationNode
 
 Calibration-related methods
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autosummary::
     :toctree: api
 
