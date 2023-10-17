@@ -30,11 +30,13 @@
 from dataclasses import dataclass
 import numpy as np
 from typing import Any, Dict
+from qm import SimulationConfig
+from qm.qua import Program
 from qm.QuantumMachinesManager import QuantumMachinesManager
 from qililab.constants import RUNCARD
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
-from qililab.qprogram import QProgram
+from qililab.result import Result
 from qililab.typings import InstrumentName, QMMDriver
 
 @InstrumentFactory.register
@@ -61,11 +63,19 @@ class QMM(Instrument):
 
         super().__init__(settings=settings)
 
-    def run(self, program:QProgram) -> Any:
-        """Run the QProgram"""
+    def run(self, program:Program) -> Result:
+        """Run the QUA Program"""
         job = self.qm.execute(program)
         res_handles = job.result_handles
         res_handles.wait_for_all_values()
+
+        return res_handles
+
+    def simulate(self, program:Program) -> Result:
+        """Run the QProgram"""
+        job = self.qm.simulate(program, SimulationConfig(40_000))
+        return job.result_handles
+
 
     def to_dict(self):
         """Return a dict representation of an OPX instrument."""
