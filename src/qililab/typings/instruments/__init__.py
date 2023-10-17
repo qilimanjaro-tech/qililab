@@ -22,4 +22,4 @@ from .qblox_d5a import QbloxD5a
 from .qblox_s4g import QbloxS4g
 from .qcm_qrm import QcmQrm
 from .rohde_schwarz import RohdeSchwarzSGS100A
-from .quantum_machines_opx import OPXDriver
+from .opx_driver import OPXDriver

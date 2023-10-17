@@ -27,43 +27,39 @@
 # limitations under the License.
 
 """Quantum Machines OPX class."""
+from dataclasses import dataclass
 import numpy as np
-from typing import Dict
+from typing import Any, Dict
 from qililab.constants import RUNCARD
+from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
-from qualang_tools.external_frameworks.qcodes.opx_driver import OPX as QuantumMachinesOPX
+from qililab.qprogram import QProgram
+from qililab.typings import InstrumentName, OPXDriver
 
 @InstrumentFactory.register
-class OPX(QuantumMachinesOPX):
+class OPX(Instrument):
     """Class defining the Qililab OPX wrapper for Quantum Machines OPX Driver."""
 
-    def __init__(self,
-                 config: Dict,
-                 name: str,
-                 host: str,
-                 port: str,
-                 cluster_name: str,
-                 octave,
-                 close_other_machines: bool = True):
-        """Initialise the instrument.
+    name = InstrumentName.OPX
 
-        Args:
-            parent (Instrument): Parent for the sequencer instance.
-            name (str): Sequencer name
-            seq_idx (int): sequencer identifier index
-            sequence_timeout (int): timeout to retrieve sequencer state in minutes
-            acquisition_timeout (int): timeout to retrieve acquisition state in minutes
-        """
-        super().__init__(config=config,
-                         name=name,
-                         host=host,
-                         port=port,
-                         cluster_name=cluster_name,
-                         octave=octave,
-                         close_other_machines=close_other_machines)
+    @dataclass
+    class OPXSettings(Instrument.InstrumentSettings):
+        """Settings for Quantum Machines OPX instrument."""
 
-    def run(self, port: str):
+        config: Dict
+        name: str
+        host: str
+        port: str
+        cluster_name: str
+        octave: Any
+        close_other_machines: bool = True
+
+    settings: OPXSettings
+    device: OPXDriver
+
+    def execute(self, program:QProgram):
         """Run the uploaded program"""
+        self.device.execute(program=program)
 
     def to_dict(self):
         """Return a dict representation of an OPX instrument."""
