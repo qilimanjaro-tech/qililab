@@ -158,6 +158,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
                 fitted_values, x_data, y_data, figure = fit(xdata=sweep_interval, results=results)
                 plt.show()
+
             |
 
             **4) An export data cell**, that calls ``export_calibration_outputs()`` with the dictionary to retrieve from the notebook into the calibration workflow:
@@ -172,6 +173,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                         "platform_params": [(bus_alias0, param_name0, fitted_values[0]), (bus_alias1, param_name1, fitted_values[1])],
                     }
                 )
+
             where the ``check_parameters`` are a dictionary of the saved results to do comparisons against. And the ``platform_params`` are a list of parameters to set on the platform.
     """
 
