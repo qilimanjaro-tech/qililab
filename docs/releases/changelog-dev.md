@@ -4,6 +4,35 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Changed gate settings serialization so that fields with None values are not in the resulting dictionary
+  [#562](https://github.com/qilimanjaro-tech/qililab/pull/562)
+
+- Update qiboconnection to 0.12.0
+  [#559](https://github.com/qilimanjaro-tech/qililab/pull/559)
+
+- Added phase correction for CZ gates to the optimize step of translate circuit in `qililab.transpiler.transpiler`. Gates now can accept an optional dicionary with additional settings.
+  As an example, the CZ phase correction can be added at options for each qubit:
+
+  ```yml
+  CZ(0,2):
+  - bus: flux_line_q2_bus
+    pulse:
+      amplitude: 1.0
+      phase: 0
+      duration: 101
+      shape:
+        name: snz
+        t_phi: 1
+        b: 0.5
+      options:
+        q0_phase_correction: 0.1
+        q2_phase_correction: 0.2
+  ```
+
+  The default value for the `optimize` flag in qililab.transpiler.transpiler.translate_circuit has been changed from `False` to `True`
+
+  [#552](https://github.com/qilimanjaro-tech/qililab/pull/552)
+
 - build_platform() has been extended: [#533](https://github.com/qilimanjaro-tech/qililab/pull/533)
 
   Now appart from passing the runcard YAML file path, you can directly pass an already build dictionary.
@@ -321,5 +350,14 @@ This document contains the changes of the current release.
 
 ### Bug fixes
 
+- Avoid creating empty sequences for buses that are no flux lines and do for flux ones that do not have any AWG instrument.
+  [#556](https://github.com/qilimanjaro-tech/qililab/pull/bug-557)
+
 - The `threshold` and `threshold_rotation` parameters of a `QbloxQRM` can now be set using `Platform.set_parameter`.
   [#534](https://github.com/qilimanjaro-tech/qililab/pull/534)
+
+- The `QbloxQRMRF` and `QbloxQCMRF` do not save an empty list for the parameter `out_offsets` in the saved runcard.
+  [#565](https://github.com/qilimanjaro-tech/qililab/pull/565)
+
+- The `save_platform` now saves in the yaml file float values with the same precision as in the `Platform` object.
+  [#565](https://github.com/qilimanjaro-tech/qililab/pull/565)

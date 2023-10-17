@@ -92,3 +92,9 @@ class QbloxQRMRF(QbloxQRM):
         if parameter in self.parameters:
             return getattr(self.settings, parameter.value)
         return super().get(parameter, channel_id, port_id=port_id)
+
+    def to_dict(self):
+        """Return a dict representation of an `QRM-RF` instrument."""
+        dictionary = super().to_dict()
+        dictionary.pop("out_offsets")
+        return dictionary

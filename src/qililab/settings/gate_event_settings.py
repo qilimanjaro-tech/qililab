@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from dataclasses import dataclass
+from typing import Optional
 
 from qililab.typings.enums import Parameter
 
@@ -40,12 +41,14 @@ class GateEventSettings:
             phase (float): phase of the pulse
             duration (int): pulse duration
             shape (dict): pulse envelope
+            options (dict): optional gate dependant parameters
         """
 
         amplitude: float
         phase: float
         duration: int
         shape: dict
+        options: Optional[dict] = None
 
     bus: str
     pulse: GatePulseSettings

@@ -1,4 +1,5 @@
 """Tests for the QbloxQCMRF class."""
+from dataclasses import asdict
 from unittest.mock import MagicMock
 
 import pytest
@@ -198,3 +199,10 @@ class TestIntegration:
             match=f"Cannot set the LO frequency of sequencer {sequencer_idx} because it is connected to two LOs. ",
         ):
             qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=sequencer_idx)
+
+    def test_to_dict_method(self, settings):
+        """Test that the `to_dict` method does not return a dictionary containing the key 'out_offsets' for a correct serialization"""
+        qcm_rf = QbloxQCMRF(settings=settings)
+        qcm_rf.settings.out_offsets = 0.0
+        assert "out_offsets" in asdict(qcm_rf.settings)
+        assert "out_offsets" not in qcm_rf.to_dict()
