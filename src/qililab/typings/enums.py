@@ -188,7 +188,7 @@ class InstrumentName(str, Enum):
     KEYSIGHT_E5080B = "keysight_e5080b"
     AGILENT_E5071B = "agilent_e5071B"
     QCMRF = "QCM-RF"
-    OPX = "OPX"
+    QMM = "quantum_machines_manager"
 
 
 class InstrumentControllerName(str, Enum):
@@ -203,7 +203,7 @@ class InstrumentControllerName(str, Enum):
         * keithley_2600
         * keysight_e5080b
         * agilent_e5071B
-        * opx
+        * qmm
     """
 
     QBLOX_PULSAR = "qblox_pulsar"
@@ -214,7 +214,7 @@ class InstrumentControllerName(str, Enum):
     QBLOX_SPIRACK = "qblox_spi_rack"
     KEYSIGHT_E5080B = "keysight_e5080b_controller"
     AGILENT_E5071B = "agilent_e5071B_controller"
-    OPX = "opx"
+    QMM = "qmm"
 
 
 class SystemControlName(str, Enum):

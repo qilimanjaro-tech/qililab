@@ -14,40 +14,29 @@
 
 """ Quantum Machines OPX Instrument Controller """
 from dataclasses import dataclass
-from typing import Sequence
 
 from qililab.instrument_controllers.instrument_controller import InstrumentControllerSettings
 from qililab.instrument_controllers.single_instrument_controller import SingleInstrumentController
 from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
-from qililab.typings import OPXDriver
-from qililab.typings.enums import ConnectionName, InstrumentControllerName
+from qililab.typings import QMMDriver
+from qililab.typings.enums import InstrumentControllerName
 
 
 @InstrumentControllerFactory.register
-class OPXController(SingleInstrumentController):
-    """Quantum Machines OPX class
+class QMMController(SingleInstrumentController):
+    """Quantum Machines Manager class
 
     Args:
         name (InstrumentControllerName): Name of the Instrument Controller.
-        device (OPXDriver): Instance of the qcodes Quantum Machines OPX class.
-        settings (OPXControllerSettings): Settings of the instrument.
+        device (QMMDriver): Instance of the Quantum Machines Manager Driver class.
+        settings (QMMControllerSettings): Settings of the instrument.
     """
 
-    name = InstrumentControllerName.OPX
-    device: OPXDriver
+    name = InstrumentControllerName.QMM
+    device: QMMDriver
 
     @dataclass
-    class OPXControllerSettings(InstrumentControllerSettings):
-        """Contains the settings of a specific Quantum Machines OPX Controller."""
+    class QMMControllerSettings(InstrumentControllerSettings):
+        """Contains the settings of a specific Quantum Machines Manager Controller."""
 
-        def __post_init__(self):
-            super().__post_init__()
-            self.connection.name = ConnectionName.TCP_IP
-
-    settings: OPXControllerSettings
-
-    def _initialize_device(self):
-        """Initialize device attribute to the corresponding device class."""
-        self.device = OPXDriver(
-            name=f"{self.name.value}_{self.alias}", address=f"TCPIP0::{self.address}::INSTR", visalib="@py"
-        )
+    settings: QMMControllerSettings

@@ -12,14 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Instruments module """
-from .cluster import Cluster
-from .device import Device
-from .keithley_2600 import Keithley2600Driver
-from .mini_circuits import MiniCircuitsDriver
-from .pulsar import Pulsar
-from .qblox_d5a import QbloxD5a
-from .qblox_s4g import QbloxS4g
-from .qcm_qrm import QcmQrm
-from .rohde_schwarz import RohdeSchwarzSGS100A
-from .qmm_driver import QMMDriver
+"""Class Quantum Machines Manager"""
+from qm.QuantumMachinesManager import QuantumMachinesManager as QMM
+from qililab.typings.instruments.device import Device
+
+
+class QMMDriver(QMM, Device):
+    """Typing class of the Quantum Machine Manager class defined by Quantum Machines."""

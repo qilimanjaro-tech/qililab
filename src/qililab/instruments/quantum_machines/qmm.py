@@ -30,36 +30,42 @@
 from dataclasses import dataclass
 import numpy as np
 from typing import Any, Dict
+from qm.QuantumMachinesManager import QuantumMachinesManager
 from qililab.constants import RUNCARD
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
 from qililab.qprogram import QProgram
-from qililab.typings import InstrumentName, OPXDriver
+from qililab.typings import InstrumentName, QMMDriver
 
 @InstrumentFactory.register
-class OPX(Instrument):
-    """Class defining the Qililab OPX wrapper for Quantum Machines OPX Driver."""
+class QMM(Instrument):
+    """Class defining the Qililab Quantum Machines Manager."""
 
-    name = InstrumentName.OPX
+    name = InstrumentName.QMM
 
     @dataclass
-    class OPXSettings(Instrument.InstrumentSettings):
-        """Settings for Quantum Machines OPX instrument."""
+    class QMMSettings(Instrument.InstrumentSettings):
+        """Settings for Quantum Machines Manager instrument."""
 
+        qop_ip: str
+        qop_port: int
         config: Dict
-        name: str
-        host: str
-        port: str
-        cluster_name: str
-        octave: Any
-        close_other_machines: bool = True
 
-    settings: OPXSettings
-    device: OPXDriver
+    settings: QMMSettings
+    device: QMMDriver
 
-    def execute(self, program:QProgram):
-        """Run the uploaded program"""
-        self.device.execute(program=program)
+    def __init__(self, settings: dict):
+        # It creates a new instance of the Quantum Machines Manager
+        self.qmm = QuantumMachinesManager(host=self.settings.qop_ip, port=self.settings.qop_port)
+        self.qm = self.qmm.open_qm(self.settings.config)
+
+        super().__init__(settings=settings)
+
+    def run(self, program:QProgram) -> Any:
+        """Run the QProgram"""
+        job = self.qm.execute(program)
+        res_handles = job.result_handles
+        res_handles.wait_for_all_values()
 
     def to_dict(self):
         """Return a dict representation of an OPX instrument."""

@@ -41,6 +41,6 @@ from .instruments import (
     QbloxS4g,
     QcmQrm,
     RohdeSchwarzSGS100A,
-    OPXDriver,
+    QMMDriver,
 )
 from .yaml_type import yaml
