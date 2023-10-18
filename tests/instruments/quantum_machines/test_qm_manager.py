@@ -29,5 +29,4 @@ class TestQMM:
     def test_settings(self, qmm: QMM):
         """Test QMMSettings have been set correctly"""
 
-        expected_keys = []
         assert isinstance(qmm.settings, Settings)
