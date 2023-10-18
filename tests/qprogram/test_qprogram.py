@@ -231,7 +231,7 @@ class TestQProgram:
         # Test magic methods
         int_value = 2
         other_value = 5
-        int_variable.value = int_value
+        int_variable._value = int_value
         assert str(int_variable) == str(int_value)
         assert int(int_variable) == int(int_value)
         assert float(int_variable) == float(int_value)

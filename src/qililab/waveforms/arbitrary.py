@@ -21,7 +21,7 @@ class Arbitrary(Waveform):  # pylint: disable=too-few-public-methods, disable=mi
     def __init__(self, envelope: np.ndarray):
         self.samples = envelope
 
-    def envelope(self) -> np.ndarray:
+    def envelope(self, resolution: float = 1) -> np.ndarray:
         """Returns the pulse matrix
 
         Returns:

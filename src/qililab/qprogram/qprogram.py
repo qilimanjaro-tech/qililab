@@ -20,6 +20,7 @@ from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.decorators import requires_domain
 from qililab.qprogram.operations import (
     Acquire,
+    Measure,
     Play,
     ResetPhase,
     SetFrequency,
@@ -205,6 +206,25 @@ class QProgram:
             weights (IQPair): Weights used during acquisition.
         """
         operation = Acquire(bus=bus, weights=weights)
+        self._active_block.append(operation)
+
+    def measure(
+        self,
+        bus: str,
+        waveforms: IQPair,
+        weights: IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair] | None = None,
+        demodulation: bool = True,
+        save_raw_adc: bool = True,
+    ):
+        """Play a pulse and acquire results.
+
+        Args:
+            bus (str): Unique identifier of the bus.
+            weights (IQPair): Weights used during acquisition.
+        """
+        operation = Measure(
+            bus=bus, waveforms=waveforms, weights=weights, demodulation=demodulation, save_raw_adc=save_raw_adc
+        )
         self._active_block.append(operation)
 
     def sync(self, buses: list[str] | None = None):

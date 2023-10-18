@@ -26,12 +26,26 @@ class Domain(Enum):
     Voltage = 4
 
 
+class ValueSource(Enum):
+    Free = (0,)
+    Dependent = 1
+
+
 class Variable:
     """Variable class used to define variables inside a QProgram."""
 
     _uuid: UUID
-    value: int | float
+    _value: int | float
     domain: Domain
+    source: ValueSource = ValueSource.Free
+
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        self._value = value
 
     def __init__(self):
         self._uuid = uuid4()
@@ -46,97 +60,97 @@ class Variable:
         return hash(self._uuid)
 
     def __format__(self, formatstr):
-        return self.value.__format__(formatstr)
+        return self._value.__format__(formatstr)
 
     def __pos__(self):
-        return +self.value
+        return +self._value
 
     def __neg__(self):
-        return -self.value
+        return -self._value
 
     def __abs__(self):
-        return abs(self.value)
+        return abs(self._value)
 
     def __round__(self, ndigits=None):
-        return round(self.value, ndigits)
+        return round(self._value, ndigits)
 
     def __floor__(self):
-        return math.floor(self.value)
+        return math.floor(self._value)
 
     def __ceil__(self):
-        return math.ceil(self.value)
+        return math.ceil(self._value)
 
     def __trunc__(self):
-        return math.trunc(self.value)
+        return math.trunc(self._value)
 
     def __int__(self):
-        return int(self.value)
+        return int(self._value)
 
     def __float__(self):
-        return float(self.value)
+        return float(self._value)
 
     def __complex__(self):
-        return complex(self.value)
+        return complex(self._value)
 
     def __add__(self, other):
-        return self.value + other
+        return self._value + other
 
     def __sub__(self, other):
-        return self.value - other
+        return self._value - other
 
     def __mul__(self, other):
-        return self.value * other
+        return self._value * other
 
     def __truediv__(self, other):
-        return self.value / other
+        return self._value / other
 
     def __floordiv__(self, other):
-        return self.value // other
+        return self._value // other
 
     def __mod__(self, other):
-        return self.value % other
+        return self._value % other
 
     def __pow__(self, other):
-        return self.value**other
+        return self._value**other
 
     def __radd__(self, other):
-        return other + self.value
+        return other + self._value
 
     def __rsub__(self, other):
-        return other - self.value
+        return other - self._value
 
     def __rmul__(self, other):
-        return other * self.value
+        return other * self._value
 
     def __rtruediv__(self, other):
-        return other / self.value
+        return other / self._value
 
     def __rfloordiv__(self, other):
-        return other // self.value
+        return other // self._value
 
     def __rmod__(self, other):
-        return other % self.value
+        return other % self._value
 
     def __rpow__(self, other):
-        return other**self.value
+        return other**self._value
 
     def __eq__(self, other):
-        return self.value == other
+        return self._value == other
 
     def __ne__(self, other):
-        return self.value != other
+        return self._value != other
 
     def __lt__(self, other):
-        return self.value < other
+        return self._value < other
 
     def __gt__(self, other):
-        return self.value > other
+        return self._value > other
 
     def __le__(self, other):
-        return self.value <= other
+        return self._value <= other
 
     def __ge__(self, other):
-        return self.value >= other
+        return self._value >= other
 
 
 # class TimeVariable(Variable, int):  # type: ignore
