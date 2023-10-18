@@ -3,7 +3,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from qililab.instruments.quantum_machines import QMM
-    
+from qililab.settings import Settings
+
 @patch("qm.QuantumMachinesManager", autospec=True)
 @pytest.fixture(name="qmm")
 def fixture_qmm():
@@ -25,6 +26,8 @@ def fixture_qmm():
 class TestQMM:
     """This class contains the unit tests for the ``QMM`` class."""
 
-    def test_run(self, qmm: QMM):
-        """Test initial_setup method"""
-        qmm.run()
+    def test_settings(self, qmm: QMM):
+        """Test QMMSettings have been set correctly"""
+
+        expected_keys = []
+        assert isinstance(qmm.settings, Settings)
