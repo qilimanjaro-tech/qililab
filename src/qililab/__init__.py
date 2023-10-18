@@ -24,6 +24,6 @@ from .qprogram import QProgram, QuantumMachinesCompiler
 from .result import Results
 from .transpiler import Drag, Park, translate_circuit
 from .typings import ExperimentOptions, ExperimentSettings, Parameter
-from .utils import Loop
+from .utils import Loop, Wait
 from .utils.load_data import load
 from .waveforms import *

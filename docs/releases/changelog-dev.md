@@ -4,6 +4,12 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Changed gate settings serialization so that fields with None values are not in the resulting dictionary
+  [#562](https://github.com/qilimanjaro-tech/qililab/pull/562)
+
+- Update qiboconnection to 0.12.0
+  [#559](https://github.com/qilimanjaro-tech/qililab/pull/559)
+
 - Added phase correction for CZ gates to the optimize step of translate circuit in `qililab.transpiler.transpiler`. Gates now can accept an optional dicionary with additional settings.
   As an example, the CZ phase correction can be added at options for each qubit:
 
@@ -342,7 +348,18 @@ This document contains the changes of the current release.
 
   Includes documentation for all public features of the Pulse module
 
+- Added documentation for platform module and the tutorial sections of Platform and Runcards: [#531](https://github.com/qilimanjaro-tech/qililab/pull/531/files)
+
 ### Bug fixes
+
+- Avoid creating empty sequences for buses that are no flux lines and do for flux ones that do not have any AWG instrument.
+  [#556](https://github.com/qilimanjaro-tech/qililab/pull/bug-557)
 
 - The `threshold` and `threshold_rotation` parameters of a `QbloxQRM` can now be set using `Platform.set_parameter`.
   [#534](https://github.com/qilimanjaro-tech/qililab/pull/534)
+
+- The `QbloxQRMRF` and `QbloxQCMRF` do not save an empty list for the parameter `out_offsets` in the saved runcard.
+  [#565](https://github.com/qilimanjaro-tech/qililab/pull/565)
+
+- The `save_platform` now saves in the yaml file float values with the same precision as in the `Platform` object.
+  [#565](https://github.com/qilimanjaro-tech/qililab/pull/565)
