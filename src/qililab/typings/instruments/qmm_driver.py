@@ -13,9 +13,8 @@
 # limitations under the License.
 
 """Class Quantum Machines Manager"""
-from qm import QuantumMachinesManager as QMM
 from qililab.typings.instruments.device import Device
 
 
-class QMMDriver(QMM, Device):
+class QMMDriver(Device):
     """Typing class of the Quantum Machine Manager class defined by Quantum Machines."""

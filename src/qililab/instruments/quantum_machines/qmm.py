@@ -29,10 +29,10 @@
 """Quantum Machines OPX class."""
 from dataclasses import dataclass
 import numpy as np
-from typing import Any, Dict
+from typing import Dict
 from qm import SimulationConfig
 from qm.qua import Program
-from qm.QuantumMachinesManager import QuantumMachinesManager
+from qm import QuantumMachine, QuantumMachinesManager
 from qililab.constants import RUNCARD
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
@@ -55,17 +55,30 @@ class QMM(Instrument):
 
     settings: QMMSettings
     device: QMMDriver
+    qm: QuantumMachine
 
-    def __init__(self, settings: dict):
-        # It creates a new instance of the Quantum Machines Manager
+    @Instrument.CheckDeviceInitialized
+    def initial_setup(self):
+        """Set initial instrument settings."""
+        super().initial_setup()
         qmm = QuantumMachinesManager(host=self.settings.qop_ip, port=self.settings.qop_port)
-        self.device = qmm.open_qm(self.settings.config)
+        self.qm = qmm.open_qm(self.settings.config)
 
-        super().__init__(settings=settings)
+    @Instrument.CheckDeviceInitialized
+    def turn_on(self):
+        """Turn on an instrument."""
+
+    @Instrument.CheckDeviceInitialized   
+    def reset(self):
+        """Reset instrument settings."""
+
+    @Instrument.CheckDeviceInitialized
+    def turn_off(self):
+        """Turn off an instrument."""
 
     def run(self, program:Program) -> Result:
         """Run the QUA Program"""
-        job = self.device.execute(program)
+        job = self.qm.execute(program)
         res_handles = job.result_handles
         res_handles.wait_for_all_values()
 
@@ -73,7 +86,7 @@ class QMM(Instrument):
 
     def simulate(self, program:Program) -> Result:
         """Run the QProgram"""
-        job = self.device.simulate(program, SimulationConfig(40_000))
+        job = self.qm.simulate(program, SimulationConfig(40_000))
         return job.result_handles
 
 
