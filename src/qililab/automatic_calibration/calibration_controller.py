@@ -83,7 +83,7 @@ class CalibrationController:
         highest_level_nodes = [node for node, in_degree in self.calibration_graph.in_degree() if in_degree == 0]
 
         for n in highest_level_nodes:
-            self.maintain(n)
+            self.maintain(self.node_sequence[n])
 
         print(
             "#############################################\n"
