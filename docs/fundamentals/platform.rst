@@ -184,8 +184,8 @@ array with shape `(2, N)`, where N is the number of elements inside the loop:
 
 >>> results = np.hstack(results)
 >>> results
-array([[5, 4, 3, 2, 1, 2, 3],
-        [5, 4, 3, 2, 1, 2, 3]])
+array([[5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3],
+        [5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3]])
 
 You can see how the integrated I/Q values oscillated, indicating that qubit 0 oscillates between ground and
 excited state!
@@ -221,8 +221,8 @@ This approach yields to similar results, but much faster!
 
 >>> results = np.hstack(results)
 >>> results
-array([[5, 4, 3, 2, 1, 2, 3],
-        [5, 4, 3, 2, 1, 2, 3]])
+array([[5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3],
+        [5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3]])
 
 |
 
@@ -273,7 +273,7 @@ you want to set in the order they appear in the circuit construction:
 .. code-block:: python3
 
     results = []
-    wait_times = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    wait_times = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
     for wait in wait_times:
         circuit.set_parameters([np.pi/2, wait, np.pi/2])
@@ -287,5 +287,5 @@ And finally, if you print the results, you obtain the sinusoidal expected behavi
 
 >>> results = np.hstack(results)
 >>> results
-array([[5, 4, 3, 2, 1, 2, 3],
-        [5, 4, 3, 2, 1, 2, 3]])
+array([[5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3],
+        [5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3]])
