@@ -195,16 +195,33 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         # Retrieve the logger info and extract the output from it:
         logger_string = self.stream.getvalue()
-        if logger_string is None:
+        logger_splitted = logger_string.split("RAND_INT:47102512880765720413 - OUTPUTS: ")
+        logger_outputs_string = logger_splitted[-1].split("\n")[0]
+        if len(logger_splitted) < 2:
             logger.info(
                 "Aborting execution. No output found, chek the autocalibration output cell is implemented in %s",
                 input_path,
             )
-            raise ValueError
-
-        logger_outputs_string = logger_string.split("RAND_INT:47102512880765720413 - OUTPUTS: ")[-1].split("\n")[0]
+            raise IncorrectCalibrationOutput(f"No output found, check autocalibation notebook in {input_path}")
+        if len(logger_splitted) > 2:
+            logger.info(
+                "Aborting execution. More than one output found, please output the results once in %s",
+                input_path,
+            )
+            raise IncorrectCalibrationOutput(f"More than one output found in {input_path}")
         # In case something unexpected happened with the output we raise an error
-        return json.loads(logger_outputs_string)
+        out_dict = json.loads(logger_outputs_string)
+
+        if "check_parameters" not in out_dict:
+            raise IncorrectCalibrationOutput(
+                f"Calibration output must have key 'check_parameters' in notebook {input_path}"
+            )
+        if out_dict["check_parameters"] == {}:
+            raise IncorrectCalibrationOutput(
+                f"Calibration output value for 'check_parameters' can not be empty in notebook {input_path}"
+            )
+
+        return out_dict
 
     def _get_last_calibrated_timestamp(self) -> float | None:
         """Gets the last executed timestamp if there exist any previous execution of the same notebook.
@@ -321,11 +338,11 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         name, folder_path = cls._path_to_name_and_folder(original_path)
         os.makedirs(folder_path, exist_ok=True)
 
-        if dirty:  # return the path of the execution
+        if dirty and not error:  # return the path of the execution
             return f"{folder_path}/{name}_{now_path}_dirty.ipynb"
         elif error:
             os.makedirs(f"{folder_path}/error_executions", exist_ok=True)
-            return f"{folder_path}/error_executions/{name}_{now_path}.ipynb"
+            return f"{folder_path}/error_executions/{name}_{now_path}_error.ipynb"
         # return the string where saved
         return f"{folder_path}/{name}_{now_path}.ipynb"
 
@@ -379,3 +396,14 @@ def export_calibration_outputs(outputs: dict):
         outputs (dict): Outputs from the notebook to export into the CalibrationController/CalibrationNode workflow.
     """
     print(f"RAND_INT:47102512880765720413 - OUTPUTS: {json.dumps(outputs)}")
+
+
+class IncorrectCalibrationOutput(Exception):
+    """Error raised when the output of a calibration node is incorrect."""
+
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
+
+    def __str__(self):
+        return f"IncorrectCalibrationOutput: {self.message}"
