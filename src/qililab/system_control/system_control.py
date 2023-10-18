@@ -47,7 +47,17 @@ class SystemControl(FactoryElement, ABC):
 
         def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
             # ``self.instruments`` contains a list of instrument aliases
-            self.instruments = [platform_instruments.get_instrument(alias=i) for i in self.instruments]  # type: ignore
+            instruments = []
+            for inst_alias in self.instruments:
+                inst_class = platform_instruments.get_instrument(alias=inst_alias)  # type: ignore
+                if inst_class is None:
+                    raise NameError(
+                        f"The instrument with alias {inst_alias} could not be found within the instruments of the "
+                        "platform. The available instrument aliases are: "
+                        f"{[inst.alias for inst in platform_instruments.elements]}."
+                    )
+                instruments.append(inst_class)
+            self.instruments = instruments
             super().__post_init__()
 
     settings: SystemControlSettings

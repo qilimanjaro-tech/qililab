@@ -15,7 +15,7 @@
 """Runcard class."""
 import ast
 import re
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Literal
 
 from qililab.constants import GATE_ALIAS_REGEX
@@ -121,6 +121,18 @@ class Runcard:
                 gate: [GateEventSettings(**event) for event in schedule] for gate, schedule in self.gates.items()
             }
 
+        def to_dict(self):
+            """Serializes gate settings to dictionary and removes fields with None values"""
+
+            def remove_none_values(data):
+                if isinstance(data, dict):
+                    data = {key: remove_none_values(item) for key, item in data.items() if item is not None}
+                elif isinstance(data, list):
+                    data = [remove_none_values(item) for item in data if item is not None]
+                return data
+
+            return remove_none_values(data=asdict(self))
+
         def get_operation_settings(self, name: str) -> OperationSettings:
             """Get OperationSettings by operation's name.
 
@@ -159,12 +171,17 @@ class Runcard:
                 (qubits,) if isinstance(qubits, int) else qubits
             )  # tuplify so that the join method below is general
             gate_name = f"{name}({', '.join(map(str, gate_qubits))})"
+            gate_name_t = f"{name}({', '.join(map(str, gate_qubits[::-1]))})"
 
             # parse spaces in tuple if needed, check first case with spaces since it is more common
             if gate_name.replace(" ", "") in self.gates.keys():
                 return self.gates[gate_name.replace(" ", "")]
             if gate_name in self.gates.keys():
                 return self.gates[gate_name]
+            if gate_name_t.replace(" ", "") in self.gates.keys():
+                return self.gates[gate_name_t.replace(" ", "")]
+            if gate_name_t in self.gates.keys():
+                return self.gates[gate_name_t]
             raise KeyError(f"Gate {name} for qubits {qubits} not found in settings.")
 
         @property

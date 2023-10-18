@@ -60,7 +60,7 @@ class FlippingSequence(ExperimentAnalysis, Cos):
             circuit.add(M(qubit))
             circuits.append(circuit)
 
-        _, control_bus, readout_bus = platform.get_bus_by_qubit_index(qubit)
+        _, control_bus, readout_bus = platform._get_bus_by_qubit_index(qubit)
 
         experiment_options = ExperimentOptions(
             name="Flipping Sequence",
