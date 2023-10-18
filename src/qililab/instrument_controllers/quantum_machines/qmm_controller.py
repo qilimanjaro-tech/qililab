@@ -40,3 +40,7 @@ class QMMController(SingleInstrumentController):
         """Contains the settings of a specific Quantum Machines Manager Controller."""
 
     settings: QMMControllerSettings
+
+    def _initialize_device(self):
+        """Initialize device controller."""
+        self.device = QMMDriver(name=f"{self.name.value}_{self.alias}", identifier=self.address)
