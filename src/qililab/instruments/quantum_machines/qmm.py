@@ -76,13 +76,6 @@ class QMM(Instrument):
     def turn_off(self):
         """Turn off an instrument."""
 
-    def format_results(self, res_handles):
-        """Format results."""
-        result = res_handles.fetch_all()
-        result = [res.flatten() for res in result]
-
-        return result
-
     def run(self, program:Program) -> QuantumMachinesResult:
         """Run the QUA Program"""
         job = self.qm.execute(program)
