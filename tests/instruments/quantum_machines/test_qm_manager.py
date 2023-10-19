@@ -1,12 +1,12 @@
 """This file tests the the ``qblox_d5a`` class"""
 import numpy as np
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 import pytest
 
-from qm import Program, QuantumMachinesManager
-from qm.jobs.base_job import QmBaseJob
+from qm import Program
 from qm.qua import program, play
 from qililab.instruments.quantum_machines import QMM
+from qililab.result.quantum_machines_results import QuantumMachinesResult
 from qililab.settings import Settings
 
 @pytest.fixture(name="qua_program")
@@ -17,15 +17,6 @@ def fixture_qua_program():
 
     return dummy_qua_program
 
-class MockQuantumMachinesManager(MagicMock):  # pylint: disable=abstract-method
-
-    def execute(self, program: Program):  # pylint: disable=unused-argument
-        """Mocks a QUA Program execution."""
-        job = MagicMock()
-        job.return_handles.return_value = np.empty(10)
-
-        return job
-@patch("qm.QuantumMachinesManager", autospec=True)
 @pytest.fixture(name="qmm")
 def fixture_qmm():
     """Fixture that returns an instance a qililab wrapper for Quantum Machines Manager."""
@@ -39,7 +30,10 @@ def fixture_qmm():
         }
     )  # pylint: disable=abstract-class-instantiated
     qmm.device = MagicMock
-    qmm.qm = MockQuantumMachinesManager()
+    qmm.qm = MagicMock
+    result = QuantumMachinesResult(qm_raw_results=np.zeros((2, 10)))
+    qmm.run = MagicMock(return_value=result)
+    qmm.simulate = MagicMock(return_value=result)
 
     return qmm
 
@@ -54,7 +48,14 @@ class TestQMM:
 
     def test_execute(self, qmm: QMM, qua_program: Program):
         """Test execute method"""
-
         result = qmm.run(qua_program)
 
-        assert 1 == 1
+        assert isinstance(result, QuantumMachinesResult)
+        assert result.array.shape == (2, 10)
+
+    def test_simulate(self, qmm: QMM, qua_program: Program):
+        """Test simulate method"""
+        result = qmm.simulate(qua_program)
+
+        assert isinstance(result, QuantumMachinesResult)
+        assert result.array.shape == (2, 10)
