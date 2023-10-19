@@ -117,13 +117,14 @@ class CalibrationController:
             return
         if result == "bad_data":
             for n in self._dependents(node):
+                print(f"diagnosing {n.node_id} from maintain({node.node_id})!!!\n")
                 self.diagnose(n)
 
         # calibrate
         self.calibrate(node)
 
         # GALADRIEL: uncomment when platform is connected
-        self._update_parameters(node=node)
+        self._update_parameters(node)
 
     def diagnose(self, node: CalibrationNode) -> bool:
         """This is a method called by `maintain` in the special case that its call of `check_data` finds bad data.
@@ -161,7 +162,7 @@ class CalibrationController:
         self.calibrate(node)
 
         # GALADRIEL: uncomment when platform is connected
-        self._update_parameters(node=node)
+        self._update_parameters(node)
 
         print(f"{node.node_id} diagnose: True\n")
         return True
