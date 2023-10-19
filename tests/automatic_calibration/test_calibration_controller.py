@@ -1,6 +1,6 @@
 import itertools
 import os
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock, call, patch
 from datetime import datetime
 
 import networkx as nx
@@ -387,7 +387,6 @@ class TestCalibrationController:
     #####################
     ### TEST DIAGNOSE ###
     #####################
-
 #         def test_diagnose():
 #         # Arrange
 #         node = CalibrationNode("node1")
@@ -420,42 +419,85 @@ class TestCalibrationController:
 #         assert not controller.calibrate.called
 #         assert not controller._update_parameters.called
 
+    ########################
+    ### TEST CHECK STATE ###
+    ########################
+    @pytest.mark.parametrize(
+        "controller",
+        [
+            CalibrationController(node_sequence=nodes, calibration_graph=graph, runcard=path_runcard)
+            for graph in good_graphs
+        ],
+    )
+    def test_check_state_for_nodes_with_no_dependencies(self, controller):
+        """Test that check_state work correctly for the nodes without dependencies."""
+        zeroth.previous_timestamp = datetime.now().timestamp() - 10
+        zeroth.drift_timeout = 20
+        result = controller.check_state(zeroth)
+        assert result is True
 
-#     # Tests for check_state()
-#     def test_check_state_true():
-#         # Arrange
-#         node = CalibrationNode("node1")
-#         node.previous_timestamp = 10
-#         node.drift_timeout = 20
-#         controller = CalibrationController(nx.DiGraph(), {"node1": node}, "runcard.yml")
+        zeroth.previous_timestamp = datetime.now().timestamp() - 20
+        zeroth.drift_timeout = 10
+        result = controller.check_state(zeroth)
+        assert result is False
+        
+    @pytest.mark.parametrize(
+        "controller",
+        [
+            CalibrationController(node_sequence=nodes, calibration_graph=graph, runcard=path_runcard)
+            for graph in good_graphs
+        ],
+    )
+    def test_check_state_for_nodes_with_dependencies(self, controller):
+        """Test that check_state work correctly for the nodes with dependencies."""
+        # Case where dependent nodes have an older timestamps, and all are passing -> True:
+        for node in controller.node_sequence.values():
+            node.previous_timestamp = datetime.now().timestamp() - 1000
+            node.drift_timeout = 1800
+        fourth.previous_timestamp = datetime.now().timestamp() - 500
+        result = controller.check_state(fourth)
+        assert result is True
+        
+        # Case where dependent nodes have an newer timestamps, and all are passing -> False:
+        fourth.previous_timestamp = datetime.now().timestamp() - 1500
+        result = controller.check_state(fourth)
+        assert result is False
 
-#         # Act
-#         result = controller.check_state(node)
+        # Case where dependent nodes have an older timestamps, but fourth not passing -> False:
+        fourth.previous_timestamp = datetime.now().timestamp() - 5
+        fourth.drift_timeout = 2
+        result = controller.check_state(fourth)
+        assert result is False
 
-#         # Assert
-#         assert result == True
-
-#     def test_check_state_false():
-#         # Arrange
-#         node = CalibrationNode("node1")
-#         node.previous_timestamp = None
-#         controller = CalibrationController(nx.DiGraph(), {"node1": node}, "runcard.yml")
-
-#         # Act
-#         result = controller.check_state(node)
-
-#         # Assert
-#         assert result == False
-
-
+    #######################
+    ### TEST CHECK DATA ###
+    #######################
 #     # Tests for check_data()
-#     # Mock implementation
 
-#     # Tests for calibrate()
-#     # Mock implementation
+    ######################
+    ### TEST CALIBRATE ###
+    ######################
+    @pytest.mark.parametrize(
+        "controller",
+        [
+            CalibrationController(node_sequence=nodes, calibration_graph=graph, runcard=path_runcard)
+            for graph in good_graphs
+        ],
+    )
+    @patch('qililab.automatic_calibration.calibration_node.CalibrationNode.run_notebook')
+    @patch('qililab.automatic_calibration.calibration_node.CalibrationNode.add_string_to_checked_nb_name')
+    def test_calibrate(self, mock_run, mock_add_str, controller):
+        """Test that the calibration method, calls node.run_notebook()."""
+        for node in controller.node_sequence.values():
+            controller.calibrate(node)
+        assert mock_run.call_count == len(controller.node_sequence)
+        assert mock_add_str.call_count == len(controller.node_sequence)
+        
 
+    ##############################
+    ### TEST UPDATE PARAMETERS ###
+    ##############################
 #     # Tests for _update_parameters()
-#     # Mock implementation
 
     #######################
     ### TEST DEPENDENTS ###
@@ -488,6 +530,25 @@ class TestCalibrationController:
         elif controller[0] in [G8, G9]:
             assert third in result and second in result and first in result
             assert len(result) == 3
+
+    ##############################
+    ### TEST OBTAIN COMPARISON ###
+    ############################## 
+    def test_obtain_comparison(self):
+        """Test that obtain_comparison calls comparison_model correctly."""
+        def test_error(obtained: dict, comparison: dict) -> float:
+            return sum(obtained["y"]) - sum(comparison["y"])
+        
+        controller = CalibrationController(node_sequence=nodes, calibration_graph=G1, runcard=path_runcard)
+        
+        obtained = {'x': [1,2,3], 'y': [4,5,6]} 
+        comparison = {'x': [2,3,4], 'y': [5,6,7]}
+        
+        for node in controller.node_sequence.values():
+            node.comparison_model = test_error
+            result = controller._obtain_comparison(node, obtained, comparison)
+
+            assert result == 4+5+6-5-6-7
 
     ###############################
     ### TEST IS TIMEOUT EXPIRED ###
