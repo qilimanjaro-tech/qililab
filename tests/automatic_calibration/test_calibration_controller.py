@@ -1,6 +1,7 @@
 import itertools
 import os
 from unittest.mock import MagicMock, call
+from datetime import datetime
 
 import networkx as nx
 import pytest
@@ -8,6 +9,11 @@ import pytest
 from qililab.automatic_calibration import CalibrationController, CalibrationNode, norm_root_mean_sqrt_error
 from qililab.data_management import build_platform
 from qililab.platform.platform import Platform
+
+
+#################################################################################
+#################################### SET UPS ####################################
+#################################################################################
 
 ########################
 ### DIRECTORY CHANGE ###
@@ -60,101 +66,106 @@ fourth = CalibrationNode(
 # NODE MAPPING TO THE GRAPH (key = name in graph, value = node object):
 nodes = {"zeroth": zeroth, "first": first, "second": second, "third": third, "fourth": fourth}
 
-# GOOD GRAPH CREATION:
-G0 = nx.DiGraph()  #       3 <--\
-G0.add_edge("fourth", "third")  #             \
-G0.add_edge("fourth", "second")  # 0 <-- 2 <-- 4
-G0.add_edge("second", "zeroth")  # ^\
-G0.add_edge("first", "zeroth")  #   \---1
+
+#######################
+### GRAPHS CREATION ###
+#######################
 
 # GOOD GRAPH CREATION:
-G1 = nx.DiGraph()  #       3 <--\
-G1.add_edge("fourth", "third")  #       v     \
-G1.add_edge("fourth", "second")  # 0 <-- 2 <--- 4
-G1.add_edge("second", "zeroth")  # ^\    v
-G1.add_edge("first", "zeroth")  #   \---1
+G0 = nx.DiGraph()                   #       3 <--\
+G0.add_edge("fourth", "third")      #             \
+G0.add_edge("fourth", "second")     # 0 <-- 2 <-- 4
+G0.add_edge("second", "zeroth")     # ^\
+G0.add_edge("first", "zeroth")      #   \---1
+
+# GOOD GRAPH CREATION:
+G1 = nx.DiGraph()                   #       3 <--\
+G1.add_edge("fourth", "third")      #       v     \
+G1.add_edge("fourth", "second")     # 0 <-- 2 <--- 4
+G1.add_edge("second", "zeroth")     # ^\    v
+G1.add_edge("first", "zeroth")      #   \---1
 G1.add_edge("third", "second")
 G1.add_edge("second", "first")
 
 # GOOD GRAPH CREATION:
-G2 = nx.DiGraph()  #   /-- 3 <-- 4
-G2.add_edge("fourth", "third")  #  /
-G2.add_edge("third", "zeroth")  # 0 <-- 2
-G2.add_edge("second", "zeroth")  #  \
-G2.add_edge("first", "zeroth")  #   \-- 1
+G2 = nx.DiGraph()                   #   /-- 3 <-- 4
+G2.add_edge("fourth", "third")      #  /
+G2.add_edge("third", "zeroth")      # 0 <-- 2
+G2.add_edge("second", "zeroth")     #  \
+G2.add_edge("first", "zeroth")      #   \-- 1
 
 # GOOD GRAPH CREATION:
 G3 = nx.DiGraph()
-G3.add_edge("fourth", "third")  #   /-- 3 <-- 4
-G3.add_edge("third", "zeroth")  #  /    v
-G3.add_edge("third", "second")  # 0 <-- 2
-G3.add_edge("second", "zeroth")  #  \
-G3.add_edge("first", "zeroth")  #   \-- 1
+G3.add_edge("fourth", "third")      #   /-- 3 <-- 4
+G3.add_edge("third", "zeroth")      #  /    v
+G3.add_edge("third", "second")      # 0 <-- 2
+G3.add_edge("second", "zeroth")     #  \
+G3.add_edge("first", "zeroth")      #   \-- 1
 
 # GOOD GRAPH CREATION:
 G4 = nx.DiGraph()
-G4.add_edge("fourth", "third")  #   /-- 2 <--\
-G4.add_edge("third", "second")  #  /          \
-G4.add_edge("third", "first")  # 0            3 <-- 4
-G4.add_edge("second", "zeroth")  #  \          /
-G4.add_edge("first", "zeroth")  #   \-- 1 <--/
+G4.add_edge("fourth", "third")      #   /-- 2 <--\
+G4.add_edge("third", "second")      #  /          \
+G4.add_edge("third", "first")       # 0            3 <-- 4
+G4.add_edge("second", "zeroth")     #  \          /
+G4.add_edge("first", "zeroth")      #   \-- 1 <--/
 
 # GOOD GRAPH CREATION:
 G5 = nx.DiGraph()
-G5.add_edge("fourth", "third")  #   /-- 2 <--\
-G5.add_edge("third", "second")  #  /    |     \
-G5.add_edge("third", "first")  # 0     |      3 <-- 4
-G5.add_edge("second", "zeroth")  #  \    v     /
-G5.add_edge("second", "first")  #   \-- 1 <--/
+G5.add_edge("fourth", "third")      #   /-- 2 <--\
+G5.add_edge("third", "second")      #  /    |     \
+G5.add_edge("third", "first")       # 0     |      3 <-- 4
+G5.add_edge("second", "zeroth")     #  \    v     /
+G5.add_edge("second", "first")      #   \-- 1 <--/
 G5.add_edge("first", "zeroth")
 
 # GOOD GRAPH CREATION:
 G6 = nx.DiGraph()
-G6.add_edge("fourth", "third")  #   /-- 3 <--\
-G6.add_edge("third", "second")  #  /    v     \
-G6.add_edge("third", "zeroth")  # 0 <-- 2      4
-G6.add_edge("second", "zeroth")  #  \    ^     /
-G6.add_edge("first", "second")  #   \-- 1 <--/
+G6.add_edge("fourth", "third")      #   /-- 3 <--\
+G6.add_edge("third", "second")      #  /    v     \
+G6.add_edge("third", "zeroth")      # 0 <-- 2      4
+G6.add_edge("second", "zeroth")     #  \    ^     /
+G6.add_edge("first", "second")      #   \-- 1 <--/
 G6.add_edge("first", "zeroth")
 G6.add_edge("fourth", "first")
 
 # GOOD GRAPH CREATION:
 G7 = nx.DiGraph()
-G7.add_edge("fourth", "third")  #   /-- 3 <--\
-G7.add_edge("third", "second")  #  /    v     \
-G7.add_edge("third", "zeroth")  # 0 <-- 2      4
-G7.add_edge("second", "zeroth")  #  \    v     /
-G7.add_edge("second", "first")  #   \-- 1 <--/
+G7.add_edge("fourth", "third")      #   /-- 3 <--\
+G7.add_edge("third", "second")      #  /    v     \
+G7.add_edge("third", "zeroth")      # 0 <-- 2      4
+G7.add_edge("second", "zeroth")     #  \    v     /
+G7.add_edge("second", "first")      #   \-- 1 <--/
 G7.add_edge("first", "zeroth")
 G7.add_edge("fourth", "first")
 
 # GOOD GRAPH CREATION:
 G8 = nx.DiGraph()
-G8.add_edge("fourth", "third")  #   /-- 3 <--\
-G8.add_edge("third", "second")  #  /    v     \
-G8.add_edge("third", "zeroth")  # 0 <-- 2 <--- 4
-G8.add_edge("second", "zeroth")  #  \    ^     /
-G8.add_edge("first", "second")  #   \-- 1 <--/
+G8.add_edge("fourth", "third")      #   /-- 3 <--\
+G8.add_edge("third", "second")      #  /    v     \
+G8.add_edge("third", "zeroth")      # 0 <-- 2 <--- 4
+G8.add_edge("second", "zeroth")     #  \    ^     /
+G8.add_edge("first", "second")      #   \-- 1 <--/
 G8.add_edge("first", "zeroth")
 G8.add_edge("fourth", "second")
 G8.add_edge("fourth", "first")
 
 # GOOD GRAPH CREATION:              #       ^
-G9 = nx.DiGraph()  #       |
-G9.add_edge("fourth", "third")  #   /-- 3 <--\
-G9.add_edge("third", "second")  #  /    v     \
-G9.add_edge("third", "zeroth")  # 0 <-- 2 <--- 4
-G9.add_edge("second", "zeroth")  #  \    ^     /
-G9.add_edge("first", "second")  #   \-- 1 <--/
-G9.add_edge("first", "zeroth")  #       ^
-G9.add_edge("fourth", "second")  #       |
+G9 = nx.DiGraph()                   #       |
+G9.add_edge("fourth", "third")      #   /-- 3 <--\
+G9.add_edge("third", "second")      #  /    v     \
+G9.add_edge("third", "zeroth")      # 0 <-- 2 <--- 4
+G9.add_edge("second", "zeroth")     #  \    ^     /
+G9.add_edge("first", "second")      #   \-- 1 <--/
+G9.add_edge("first", "zeroth")      #       ^
+G9.add_edge("fourth", "second")     #       |
 G9.add_edge("fourth", "first")
 G9.add_edge("third", "first")
 
 # BAD GRAPH CREATION:
-B = nx.DiGraph()  #         /--->---\
-B.add_edge("fourth", "third")  #        /         \
-B.add_edge("third", "second")  # 0 <-- 1 <-- 2 <-- 3 <-- 4
+B = nx.DiGraph()                    #         /--->---\
+B.add_edge("fourth", "third")       #        /         \
+B.add_edge("third", "second")       # 0 <-- 1 <-- 2 <-- 3 <-- 4
 B.add_edge("second", "first")
 B.add_edge("first", "zeroth")
 B.add_edge("first", "third")
@@ -163,87 +174,17 @@ good_graphs = [G0, G1, G2, G3, G4, G5, G6, G7, G8, G9]
 
 # Recursive calls of each graph, when you maintain node 4.
 G0_calls = [call(third), call(zeroth), call(second), call(fourth)]
-G1_calls = [
-    call(zeroth),
-    call(zeroth),
-    call(first),
-    call(second),
-    call(third),
-    call(zeroth),
-    call(zeroth),
-    call(first),
-    call(second),
-    call(fourth),
-]
+G1_calls = [call(zeroth),call(zeroth),call(first),call(second),call(third),call(zeroth),call(zeroth),call(first),call(second),call(fourth)]
 G2_calls = [call(zeroth), call(third), call(fourth)]
 G3_calls = [call(zeroth), call(zeroth), call(second), call(third), call(fourth)]
 G4_calls = [call(zeroth), call(second), call(zeroth), call(first), call(third), call(fourth)]
 G5_calls = [call(zeroth), call(zeroth), call(first), call(second), call(zeroth), call(first), call(third), call(fourth)]
-G6_calls = [
-    call(zeroth),
-    call(second),
-    call(zeroth),
-    call(third),
-    call(zeroth),
-    call(second),
-    call(zeroth),
-    call(first),
-    call(fourth),
-]
-G7_calls = [
-    call(zeroth),
-    call(zeroth),
-    call(first),
-    call(second),
-    call(zeroth),
-    call(third),
-    call(zeroth),
-    call(first),
-    call(fourth),
-]
-G8_calls = [
-    call(zeroth),
-    call(second),
-    call(zeroth),
-    call(third),
-    call(zeroth),
-    call(second),
-    call(zeroth),
-    call(second),
-    call(zeroth),
-    call(first),
-    call(fourth),
-]
-G9_calls = [
-    call(zeroth),
-    call(second),
-    call(zeroth),
-    call(zeroth),
-    call(second),
-    call(zeroth),
-    call(first),
-    call(third),
-    call(zeroth),
-    call(second),
-    call(zeroth),
-    call(second),
-    call(zeroth),
-    call(first),
-    call(fourth),
-]
+G6_calls = [call(zeroth),call(second),call(zeroth),call(third),call(zeroth),call(second),call(zeroth),call(first),call(fourth)]
+G7_calls = [call(zeroth),call(zeroth),call(first),call(second),call(zeroth),call(third),call(zeroth),call(first),call(fourth)]
+G8_calls = [call(zeroth),call(second),call(zeroth),call(third),call(zeroth),call(second),call(zeroth),call(second),call(zeroth),call(first),call(fourth)]
+G9_calls = [call(zeroth),call(second),call(zeroth),call(zeroth),call(second),call(zeroth),call(first),call(third),call(zeroth),call(second),call(zeroth),call(second),call(zeroth),call(first),call(fourth)]
 
-good_graphs_calls_for_maintain4 = [
-    G0_calls,
-    G1_calls,
-    G2_calls,
-    G3_calls,
-    G4_calls,
-    G5_calls,
-    G6_calls,
-    G7_calls,
-    G8_calls,
-    G9_calls,
-]
+good_graphs_calls_for_maintain4 = [G0_calls,G1_calls,G2_calls,G3_calls,G4_calls,G5_calls,G6_calls,G7_calls,G8_calls,G9_calls]
 
 
 ##########################
@@ -269,12 +210,15 @@ class RunAutomaticCalibrationMockedController(CalibrationController):
         self.maintain = MagicMock(return_value=None)
 
 
-###################
-### TESTS START ###
-###################
+#################################################################################
+############################## TESTS FOR THE CLASS ##############################
+#################################################################################
 class TestCalibrationControllerInitialization:
     """Unit tests for the CalibrationController class initialization"""
 
+    ###########################
+    ### TEST INITIALIZATION ###
+    ###########################
     @pytest.mark.parametrize(
         "controller",
         [
@@ -305,6 +249,9 @@ class TestCalibrationControllerInitialization:
 class TestCalibrationController:
     """Test CalibrationController behaves well for any returns of the `check_sate()` and `check_data()`."""
 
+    ######################################
+    ### TEST RUN AUTOMATIC CALIBRATION ###
+    ######################################
     @pytest.mark.parametrize(
         "controller",
         [
@@ -336,6 +283,9 @@ class TestCalibrationController:
             controller[1].maintain.assert_any_call(fourth)
             assert controller[1].maintain.call_count == 1
 
+    #####################
+    ### TEST MAINTAIN ###
+    #####################
     @pytest.mark.parametrize(
         "controller",
         [
@@ -434,28 +384,9 @@ class TestCalibrationController:
                     dependants_calls.append(call(controller[3].node_sequence[node_name]))
             controller[3].diagnose.assert_has_calls(dependants_calls)
 
-
-#     # Test _is_timeout_expired
-#     @pytest.mark.parametrize(
-#         "timestamp, timeout, expected",
-#         [
-#             (10, 20, True),
-#             (100, 50, False)
-#         ],
-#         ids=["expired", "not expired"]
-#     )
-#     def test_is_timeout_expired(timestamp, timeout, expected):
-
-#         # Arrange
-#         with patch("qililab.automatic_calibration.calibration_controller.datetime") as mock_datetime:
-#             mock_datetime.now.return_value = datetime(2022, 1, 1, 0, 0, 0)
-#             mock_datetime.fromtimestamp.return_value = datetime(1970, 1, 1, 0, 0, timestamp)
-
-#             # Act
-#             result = CalibrationController._is_timeout_expired(timestamp, timeout)
-
-#         # Assert
-#         assert result == expected
+    #####################
+    ### TEST DIAGNOSE ###
+    #####################
 
 #         def test_diagnose():
 #         # Arrange
@@ -526,19 +457,55 @@ class TestCalibrationController:
 #     # Tests for _update_parameters()
 #     # Mock implementation
 
-#     # Tests for _dependents()
-#     def test_dependents():
-#         # Arrange
-#         graph = nx.DiGraph()
-#         graph.add_edges_from([("A", "B"), ("B", "C")])
-#         nodes = {"A": "nodeA", "B": "nodeB", "C": "nodeC"}
-#         controller = CalibrationController(graph, nodes, "runcard.yml")
+    #######################
+    ### TEST DEPENDENTS ###
+    #######################
+    @pytest.mark.parametrize(
+        "controller",
+        [
+            (graph, CalibrationController(node_sequence=nodes, calibration_graph=graph, runcard=path_runcard))
+            for graph in good_graphs
+        ],
+    )
+    def test_dependents(self, controller):
+        """Test that dependents return the correct dependencies."""
+        result = controller[1]._dependents(nodes["zeroth"])
+        assert result == []
+        
+        result = controller[1]._dependents(nodes["fourth"])
+        if controller[0] in [G0, G1]:
+            assert third in result and second in result
+            assert len(result) == 2
 
-#         # Act
-#         result = controller._dependents(nodes["B"])
+        elif controller[0] in [G2, G3, G4, G5]:
+            assert third in result
+            assert len(result) == 1
 
-#         # Assert
-#         assert result == [nodes["C"]]
+        elif controller[0] in [G6, G7]:
+            assert third in result and first in result
+            assert len(result) == 2
+            
+        elif controller[0] in [G8, G9]:
+            assert third in result and second in result and first in result
+            assert len(result) == 3
 
-#     # Tests for _is_timeout_expired()
-#     # (already shown in previous example)
+    ###############################
+    ### TEST IS TIMEOUT EXPIRED ###
+    ###############################
+    @pytest.mark.parametrize(
+        "timestamp",
+        [datetime(2023, 1, 1).timestamp(), datetime.now().timestamp()-3600, datetime.now().timestamp()-3600*23],
+    )
+    def test_timeout_expired(self, timestamp):
+        """Tests cases where timeout should be expired."""
+        timeout = 1800
+        assert CalibrationController._is_timeout_expired(timestamp, timeout) is True
+    
+    @pytest.mark.parametrize(
+        "timestamp",
+        [datetime.now().timestamp(), datetime.now().timestamp()-1700],
+    )
+    def test_timeout_not_expired(self, timestamp):
+        """Test cases where timeout should not be expired."""
+        timeout = 1800
+        assert CalibrationController._is_timeout_expired(timestamp, timeout) is False
