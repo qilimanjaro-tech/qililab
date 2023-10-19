@@ -30,13 +30,12 @@
 from dataclasses import dataclass
 import numpy as np
 from typing import Dict
-from qm import SimulationConfig
+from qm import QuantumMachine, QuantumMachinesManager, SimulationConfig
 from qm.qua import Program
-from qm import QuantumMachine, QuantumMachinesManager
+
 from qililab.constants import RUNCARD
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
-from qililab.result import Result
 from qililab.typings import InstrumentName, QMMDriver
 
 @InstrumentFactory.register
@@ -68,7 +67,7 @@ class QMM(Instrument):
     def turn_on(self):
         """Turn on an instrument."""
 
-    @Instrument.CheckDeviceInitialized   
+    @Instrument.CheckDeviceInitialized
     def reset(self):
         """Reset instrument settings."""
 
@@ -76,19 +75,29 @@ class QMM(Instrument):
     def turn_off(self):
         """Turn off an instrument."""
 
-    def run(self, program:Program) -> Result:
+    def format_results(self, res_handles):
+        """Format results."""
+        result = res_handles.fetch_all()
+        result = [res.flatten() for res in result]
+
+        return result
+
+    def run(self, program:Program) -> list[np.ndarray]:
         """Run the QUA Program"""
         job = self.qm.execute(program)
         res_handles = job.result_handles
         res_handles.wait_for_all_values()
 
-        return res_handles
+        result = res_handles.fetch_all()
 
-    def simulate(self, program:Program) -> Result:
+        return self.format_results(res_handles)
+
+    def simulate(self, program:Program) -> list[np.ndarray]:
         """Run the QProgram"""
         job = self.qm.simulate(program, SimulationConfig(40_000))
-        return job.result_handles
+        res_handles = job.result_handles
 
+        return self.format_results(res_handles)
 
     def to_dict(self):
         """Return a dict representation of an OPX instrument."""
