@@ -36,6 +36,7 @@ from qm.qua import Program
 from qililab.constants import RUNCARD
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
+from qililab.result.quantum_machines_results import QuantumMachinesResult
 from qililab.typings import InstrumentName, QMMDriver
 
 @InstrumentFactory.register
@@ -82,22 +83,19 @@ class QMM(Instrument):
 
         return result
 
-    def run(self, program:Program) -> list[np.ndarray]:
+    def run(self, program:Program) -> QuantumMachinesResult:
         """Run the QUA Program"""
         job = self.qm.execute(program)
         res_handles = job.result_handles
         res_handles.wait_for_all_values()
+        return QuantumMachinesResult(res_handles.fetch_all())
 
-        result = res_handles.fetch_all()
-
-        return self.format_results(res_handles)
-
-    def simulate(self, program:Program) -> list[np.ndarray]:
+    def simulate(self, program:Program) -> QuantumMachinesResult:
         """Run the QProgram"""
         job = self.qm.simulate(program, SimulationConfig(40_000))
         res_handles = job.result_handles
 
-        return self.format_results(res_handles)
+        return QuantumMachinesResult(res_handles.fetch_all())
 
     def to_dict(self):
         """Return a dict representation of an OPX instrument."""
