@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from collections import deque
+from typing import overload
 
 import numpy as np
 
@@ -291,7 +292,9 @@ class QProgram:
         operation = SetOffset(bus=bus, offset_path0=offset_path0, offset_path1=offset_path1)
         self._active_block.append(operation)
 
-    def variable(self, type: type[int | float], domain: Domain = Domain.Unitless):  # pylint: disable=redefined-builtin
+    def variable(
+        self, domain: Domain = Domain.Scalar, type: type[int | float] | None = None
+    ):  # pylint: disable=redefined-builtin
         """Declare a variable.
 
         Args:
@@ -304,19 +307,28 @@ class QProgram:
             IntVariable | FloatVariable: The variable.
         """
 
-        def _int_variable(domain: Domain = Domain.Unitless) -> IntVariable:
+        def _int_variable(domain: Domain = Domain.Scalar) -> IntVariable:
             variable = IntVariable(domain)
             self._variables.append(variable)
             return variable
 
-        def _float_variable(domain: Domain = Domain.Unitless) -> FloatVariable:
+        def _float_variable(domain: Domain = Domain.Scalar) -> FloatVariable:
             variable = FloatVariable(domain)
             self._variables.append(variable)
             return variable
 
-        if type == int:
+        if domain is Domain.Scalar and type is None:
+            raise ValueError("You must specify a type in a scalar variable.")
+
+        if domain is Domain.Scalar:
+            if type == int:
+                return _int_variable(domain)
+            if type == float:
+                return _float_variable(domain)
+
+        if domain == Domain.Time:
             return _int_variable(domain)
-        if type == float:
+        if domain in [Domain.Frequency, Domain.Phase, Domain.Voltage]:
             return _float_variable(domain)
         raise NotImplementedError
 

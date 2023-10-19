@@ -28,19 +28,9 @@ from qililab.qprogram.variable import Domain, Variable
 from qililab.waveforms import IQPair, Square, Waveform
 
 
-# pylint: disable=protected-access
-class CompilationInfo:  # pylint: disable=too-many-instance-attributes, too-few-public-methods
-    """Class representing the information stored by QBloxCompiler for a bus."""
-
-    def __init__(self):
-        # The generated Sequence
-        self.qua_program = qua.program()
-
-
 class BusCompilationInfo:
     def __init__(self):
         self.current_gain: float | qua.QuaVariableType | None = None
-        self.current_frequency: float | None = None
 
 
 class MeasurementInfo:
@@ -89,23 +79,18 @@ class QuantumMachinesCompiler:
             Sync: self._handle_sync,
         }
 
+        self._qprogram: QProgram
+        self._bus_mappings: dict[str, str] | None
+        self._qprogram_block_stack: deque[Block]
+        self._qprogram_to_qua_variables: dict[Variable, qua.QuaVariableType]
+        self._measurements: list[MeasurementInfo]
+        self._averages: list[AveragingInfo]
+        self._configuration: dict
         self._buses: dict[str, BusCompilationInfo]
 
-        self._qprogram: QProgram
-        self._qprogram_block_stack: deque[Block] = deque()
-        self._qprogram_to_qua_variables: dict[Variable, qua.QuaVariableType] = {}
-        self._measurements: list[MeasurementInfo] = []
-        self._averages: list[AveragingInfo] = []
-
-        self._configuration: dict = {
-            "waveforms": {},
-            "pulses": {},
-            "integration_weights": {},
-            "digital_waveforms": {"ON": {"samples": [(1, 0)]}},
-            "operations": {},
-        }
-
-    def compile(self, qprogram: QProgram) -> tuple[qua.Program, dict, list[str]]:
+    def compile(
+        self, qprogram: QProgram, bus_mappings: dict[str, str] | None = None
+    ) -> tuple[qua.Program, dict, list[str]]:
         """Compile QProgram to QUA's Program.
 
         Args:
@@ -120,7 +105,9 @@ class QuantumMachinesCompiler:
             for element in block.elements:
                 handler = self._handlers.get(type(element))
                 if not handler:
-                    raise NotImplementedError(f"{element.__class__} is currently not supported in Quantum Machines.")
+                    raise NotImplementedError(
+                        f"{element.__class__} operation is currently not supported in Quantum Machines."
+                    )
                 if isinstance(element, (ForLoop, Loop, Average, Parallel)):
                     with handler(element):
                         traverse(element)
@@ -133,7 +120,21 @@ class QuantumMachinesCompiler:
             self._qprogram_block_stack.pop()
 
         self._qprogram = qprogram
-        self._buses = self._populate_buses()
+        self._bus_mappings = bus_mappings
+
+        self._qprogram_block_stack = deque()
+        self._qprogram_to_qua_variables = {}
+        self._measurements = []
+        self._averages = []
+        self._configuration = {
+            "waveforms": {},
+            "pulses": {},
+            "integration_weights": {},
+            "digital_waveforms": {"ON": {"samples": [(1, 0)]}, "OFF": {"samples": [(0, 0)]}},
+            "elements": {},
+        }
+
+        self._populate_buses()
 
         with qua.program() as qua_program:
             # Declare variables
@@ -205,10 +206,11 @@ class QuantumMachinesCompiler:
                 if isinstance(element, Operation):
                     bus = getattr(element, "bus", None)
                     if bus:
-                        yield bus
+                        yield self._bus_mappings[bus] if self._bus_mappings and bus in self._bus_mappings else bus
 
         buses = set(collect_buses(self._qprogram._program))
-        return {bus: BusCompilationInfo() for bus in buses}
+        self._configuration["elements"] = {bus: {"operations": {}} for bus in buses}
+        self._buses = {bus: BusCompilationInfo() for bus in buses}
 
     def _handle_for_loop(self, element: ForLoop):
         qua_variable = self._qprogram_to_qua_variables[element.variable]
@@ -216,8 +218,14 @@ class QuantumMachinesCompiler:
         if element.variable.domain is Domain.Phase:
             start, stop, step = start / 360.0, stop / 360.0, step / 360.0
         if element.variable.domain is Domain.Frequency:
-            start, stop, step = start * 1e3, stop * 1e3, step * 1e3
-        return qua.for_(qua_variable, start, qua_variable <= stop, qua_variable + step)
+            start, stop, step = int(start * 1e3), int(stop * 1e3), int(step * 1e3)
+        if element.variable.domain is Domain.Time:
+            start, stop, step = max(start, 4), stop, step
+        to_positive = stop >= start
+        if to_positive:
+            return qua.for_(qua_variable, start, qua_variable <= stop, qua_variable + step)
+        else:
+            return qua.for_(qua_variable, start, qua_variable >= stop, qua_variable + step)
 
     def _handle_loop(self, element: Loop):
         qua_variable = self._qprogram_to_qua_variables[element.variable]
@@ -225,7 +233,7 @@ class QuantumMachinesCompiler:
         if element.variable.domain is Domain.Phase:
             values = values / 360.0
         if element.variable.domain is Domain.Frequency:
-            values = values * 1e3
+            values = (values * 1e3).astype(int)
         return qua.for_each_(qua_variable, values)
 
     def _handle_average(self, element: Average):
@@ -235,78 +243,67 @@ class QuantumMachinesCompiler:
         return qua.for_(variable, 0, variable < element.shots, variable + 1)
 
     def _handle_set_frequency(self, element: SetFrequency):
+        bus = (
+            self._bus_mappings[element.bus] if self._bus_mappings and element.bus in self._bus_mappings else element.bus
+        )
         frequency = (
             self._qprogram_to_qua_variables[element.frequency]
             if isinstance(element.frequency, Variable)
             else element.frequency * 1e3
         )
-        qua.update_frequency(element=element.bus, new_frequency=frequency, units="mHz")
+        qua.update_frequency(element=bus, new_frequency=frequency, units="mHz")
 
     def _handle_set_phase(self, element: SetPhase):
+        bus = (
+            self._bus_mappings[element.bus] if self._bus_mappings and element.bus in self._bus_mappings else element.bus
+        )
         phase = (
             self._qprogram_to_qua_variables[element.phase]
             if isinstance(element.phase, Variable)
             else element.phase / 360.0
         )
-        qua.frame_rotation_2pi(phase, element.bus)
+        qua.frame_rotation_2pi(phase, bus)
 
     def _handle_reset_phase(self, element: ResetPhase):
-        qua.reset_frame(element.bus)
+        bus = (
+            self._bus_mappings[element.bus] if self._bus_mappings and element.bus in self._bus_mappings else element.bus
+        )
+        qua.reset_frame(bus)
 
     def _handle_set_gain(self, element: SetGain):
+        bus = (
+            self._bus_mappings[element.bus] if self._bus_mappings and element.bus in self._bus_mappings else element.bus
+        )
         gain = self._qprogram_to_qua_variables[element.gain] if isinstance(element.gain, Variable) else element.gain
         # QUA doesn't have a method for setting the gain directly.
         # Instead, it uses an amplitude multiplication with `amp()`.
         # Thus, we store the current gain to multiply with in the next play instructions.
-        self._buses[element.bus].current_gain = gain
+        self._buses[bus].current_gain = gain
 
     def _handle_play(self, element: Play):
+        bus = (
+            self._bus_mappings[element.bus] if self._bus_mappings and element.bus in self._bus_mappings else element.bus
+        )
         waveform_I, waveform_Q = element.get_waveforms()
         waveform_variables = element.get_waveform_variables()
+        if waveform_Q and (duration := waveform_I.get_duration()) != waveform_Q.get_duration():
+            raise ValueError()
         if not waveform_variables:
-            hash_I = QuantumMachinesCompiler.__hash_waveform(waveform=waveform_I)
-            if hash_I not in self._configuration["waveforms"]:
-                self._configuration["waveforms"][hash_I] = QuantumMachinesCompiler.__waveform_to_config(
-                    waveform=waveform_I
-                )
-            if waveform_Q:
-                hash_Q = QuantumMachinesCompiler.__hash_waveform(waveform=waveform_Q)
-                if hash_Q not in self._configuration["waveforms"]:
-                    self._configuration["waveforms"][hash_Q] = QuantumMachinesCompiler.__waveform_to_config(
-                        waveform=waveform_Q
-                    )
-                pulse_hash = f"control_{hash_I}_{hash_Q}_{waveform_I.get_duration()}"
-                if pulse_hash not in self._configuration["pulses"]:
-                    self._configuration["pulses"][pulse_hash] = {
-                        "operation": "control",
-                        "length": waveform_I.get_duration(),
-                        "waveforms": {
-                            "I": hash_I,
-                            "Q": hash_Q,
-                        },
-                    }
-            else:
-                pulse_hash = f"control_{hash_I}_{waveform_I.get_duration()}"
-                if pulse_hash not in self._configuration["pulses"]:
-                    self._configuration["pulses"][pulse_hash] = {
-                        "operation": "control",
-                        "length": waveform_I.get_duration(),
-                        "waveforms": {
-                            "single": hash_I,
-                        },
-                    }
-
-            if element.bus not in self._configuration["operations"]:
-                self._configuration["operations"][element.bus] = {}
-            if pulse_hash not in self._configuration["operations"][element.bus]:
-                self._configuration["operations"][element.bus][pulse_hash] = pulse_hash
-
-            if self._buses[element.bus].current_gain is not None:
-                qua.play(pulse=pulse_hash * qua.amp(self._buses[element.bus].current_gain), element=element.bus)
-            else:
-                qua.play(pulse=pulse_hash, element=element.bus)
+            waveform_I_name = self.__add_waveform_to_configuration(waveform_I)
+            waveform_Q_name = self.__add_waveform_to_configuration(waveform_Q) if waveform_Q else None
+            pulse_name = self.__add_or_update_control_pulse_to_configuration(waveform_I_name, waveform_Q_name, duration)
+            operation_name = self.__add_pulse_to_element_operations(bus, pulse_name)
+            pulse = (
+                operation_name * qua.amp(self._buses[bus].current_gain)
+                if self._buses[bus].current_gain is not None
+                else operation_name
+            )
+            qua.play(pulse, bus)
 
     def _handle_measure(self, element: Measure):
+        bus = (
+            self._bus_mappings[element.bus] if self._bus_mappings and element.bus in self._bus_mappings else element.bus
+        )
         waveform_I, waveform_Q = element.get_waveforms()
         if (measurement_duration := waveform_I.get_duration()) != waveform_Q.get_duration():
             raise ValueError()
@@ -323,10 +320,10 @@ class QuantumMachinesCompiler:
             pulse_name = self.__add_or_update_measurement_pulse_to_configuration(
                 waveform_I_name, waveform_Q_name, duration=measurement_duration, integration_weights=[]
             )
-            operation_name = self.__add_pulse_to_element_operations(element.bus, pulse_name)
+            operation_name = self.__add_pulse_to_element_operations(bus, pulse_name)
             pulse = (
-                operation_name * qua.amp(self._buses[element.bus].current_gain)
-                if self._buses[element.bus].current_gain is not None
+                operation_name * qua.amp(self._buses[bus].current_gain)
+                if self._buses[bus].current_gain is not None
                 else operation_name
             )
             qua.measure(pulse, element.bus, stream_raw_adc)
@@ -337,16 +334,16 @@ class QuantumMachinesCompiler:
             pulse_name = self.__add_or_update_measurement_pulse_to_configuration(
                 waveform_I_name, waveform_Q_name, duration=measurement_duration, integration_weights=[weight_I]
             )
-            operation_name = self.__add_pulse_to_element_operations(element.bus, pulse_name)
+            operation_name = self.__add_pulse_to_element_operations(bus, pulse_name)
             pulse = (
-                operation_name * qua.amp(self._buses[element.bus].current_gain)
-                if self._buses[element.bus].current_gain is not None
+                operation_name * qua.amp(self._buses[bus].current_gain)
+                if self._buses[bus].current_gain is not None
                 else operation_name
             )
             if element.demodulation:
-                qua.measure(pulse, element.bus, stream_raw_adc, qua.demod.full(weight_I, variable_I))
+                qua.measure(pulse, bus, stream_raw_adc, qua.demod.full(weight_I, variable_I))
             else:
-                qua.measure(pulse, element.bus, stream_raw_adc, qua.integration.full(weight_I, variable_I))
+                qua.measure(pulse, bus, stream_raw_adc, qua.integration.full(weight_I, variable_I))
             qua.save(variable_I, stream_I)
         elif isinstance(element.weights, tuple) and len(element.weights) == 2:
             variable_I = qua.declare(qua.fixed)
@@ -361,16 +358,16 @@ class QuantumMachinesCompiler:
                 duration=measurement_duration,
                 integration_weights=[weight_I, weight_Q],
             )
-            operation_name = self.__add_pulse_to_element_operations(element.bus, pulse_name)
+            operation_name = self.__add_pulse_to_element_operations(bus, pulse_name)
             pulse = (
-                operation_name * qua.amp(self._buses[element.bus].current_gain)
-                if self._buses[element.bus].current_gain is not None
+                operation_name * qua.amp(self._buses[bus].current_gain)
+                if self._buses[bus].current_gain is not None
                 else operation_name
             )
             if element.demodulation:
                 qua.measure(
                     pulse,
-                    element.bus,
+                    bus,
                     stream_raw_adc,
                     qua.demod.full(weight_I, variable_I),
                     qua.demod.full(weight_Q, variable_Q),
@@ -378,7 +375,7 @@ class QuantumMachinesCompiler:
             else:
                 qua.measure(
                     pulse,
-                    element.bus,
+                    bus,
                     stream_raw_adc,
                     qua.integration.full(weight_I, variable_I),
                     qua.integration.full(weight_Q, variable_Q),
@@ -399,16 +396,16 @@ class QuantumMachinesCompiler:
                 duration=measurement_duration,
                 integration_weights=[weight_A, weight_B, weight_C],
             )
-            operation_name = self.__add_pulse_to_element_operations(element.bus, pulse_name)
+            operation_name = self.__add_pulse_to_element_operations(bus, pulse_name)
             pulse = (
-                operation_name * qua.amp(self._buses[element.bus].current_gain)
-                if self._buses[element.bus].current_gain is not None
+                operation_name * qua.amp(self._buses[bus].current_gain)
+                if self._buses[bus].current_gain is not None
                 else operation_name
             )
             if element.demodulation:
                 qua.measure(
                     pulse,
-                    element.bus,
+                    bus,
                     stream_raw_adc,
                     qua.dual_demod.full(weight_A, "out_1", weight_B, "out_2", variable_I),
                     qua.dual_demod.full(weight_C, "out_1", weight_A, "out_2", variable_Q),
@@ -416,7 +413,7 @@ class QuantumMachinesCompiler:
             else:
                 qua.measure(
                     pulse,
-                    element.bus,
+                    bus,
                     stream_raw_adc,
                     qua.dual_integration.full(weight_A, "out_1", weight_B, "out_2", variable_I),
                     qua.dual_demod.full(weight_C, "out_1", weight_A, "out_2", variable_Q),
@@ -436,25 +433,49 @@ class QuantumMachinesCompiler:
         self._measurements.append(measurement_info)
 
     def _handle_wait(self, element: Wait):
+        bus = (
+            self._bus_mappings[element.bus] if self._bus_mappings and element.bus in self._bus_mappings else element.bus
+        )
         duration = (
             self._qprogram_to_qua_variables[element.duration]
             if isinstance(element.duration, Variable)
-            else element.duration
+            else max(element.duration, 4)
         )
-        qua.wait(duration, element.bus)
+        qua.wait(duration, bus)
 
     def _handle_sync(self, element: Sync):
         if element.buses:
-            qua.align(*element.buses)
+            buses = [
+                self._bus_mappings[bus] if self._bus_mappings and bus in self._bus_mappings else bus
+                for bus in element.buses
+            ]
+            qua.align(*buses)
         else:
             qua.align()
 
     def __add_pulse_to_element_operations(self, element: str, pulse: str):
-        if element not in self._configuration["operations"]:
-            self._configuration["operations"][element] = {}
-        if pulse not in self._configuration["operations"][element]:
-            self._configuration["operations"][element][pulse] = pulse
+        if pulse not in self._configuration["elements"][element]["operations"]:
+            self._configuration["elements"][element]["operations"][pulse] = pulse
         return pulse
+
+    def __add_or_update_control_pulse_to_configuration(
+        self, waveform_I_name: str, waveform_Q_name: str | None, duration: int
+    ):
+        pulse_name = (
+            f"control_{waveform_I_name}_{waveform_Q_name}_{duration}"
+            if waveform_Q_name
+            else f"control_{waveform_I_name}_{duration}"
+        )
+        if pulse_name not in self._configuration["pulses"]:
+            configuration = {
+                "operation": "control",
+                "length": duration,
+                "waveforms": {"I": waveform_I_name, "Q": waveform_Q_name}
+                if waveform_Q_name
+                else {"single": waveform_I_name},
+            }
+            self._configuration["pulses"][pulse_name] = configuration
+        return pulse_name
 
     def __add_or_update_measurement_pulse_to_configuration(
         self, waveform_I_name: str, waveform_Q_name: str, duration: int, integration_weights: list[str]
@@ -530,3 +551,13 @@ class QuantumMachinesCompiler:
         else:
             # Otherwise, if we're incrementing, take the ceiling, and if we're decrementing, take the floor
             return math.floor(raw_iterations) if step > 0 else math.ceil(raw_iterations)
+
+    @staticmethod
+    def merge_configurations(origin: dict, new: dict):
+        """Recursively merge `new` into `origin`."""
+        for key, value in new.items():
+            if key in origin and isinstance(origin[key], dict) and isinstance(value, dict):
+                QuantumMachinesCompiler.merge_configurations(origin[key], value)
+            else:
+                origin[key] = value
+        return origin
