@@ -167,8 +167,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         >>> import numpy as np
         >>> np.hstack(results)
-        array([[5, 4, 3, 2, 1, 2, 3],
-                [5, 4, 3, 2, 1, 2, 3]])
+        array([[5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3],
+                [5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3]])
 
         You can see how the integrated I/Q values oscillate, indicating that qubit ``q`` oscillates between the ground and
         excited states!
@@ -202,8 +202,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         If you now stack and print the results, you will obtain similar results, but much faster!
 
         >>> np.hstack(results)
-        array([[5, 4, 3, 2, 1, 2, 3],
-                [5, 4, 3, 2, 1, 2, 3]])
+        array([[5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3],
+                [5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3]])
         TODO: !!! Change this results for the actual ones !!!
 
         |
@@ -240,7 +240,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
             # Looping over the wait time t to execute the Ramsey:
             results = []
-            wait_times = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+            wait_times = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
             for wait in wait_times:
                 circuit.set_parameters([np.pi/2, wait, np.pi/2])
@@ -254,8 +254,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         >>> results = np.hstack(results)
         >>> results
-        array([[5, 4, 3, 2, 1, 2, 3],
-                [5, 4, 3, 2, 1, 2, 3]])
+        array([[5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3],
+                [5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3]])
         TODO: !!! Change this results for the actual sinusoidal ones (change wait_times of execution if needed) !!!
     """
 
