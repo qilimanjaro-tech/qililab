@@ -78,11 +78,15 @@ class QuantumMachinesCompiler:
         self._handlers: dict[type, Callable] = {
             ForLoop: self._handle_for_loop,
             Loop: self._handle_loop,
+            Average: self._handle_average,
             Measure: self._handle_measure,
             Play: self._handle_play,
             SetFrequency: self._handle_set_frequency,
+            SetPhase: self._handle_set_phase,
             SetGain: self._handle_set_gain,
+            ResetPhase: self._handle_reset_phase,
             Wait: self._handle_wait,
+            Sync: self._handle_sync,
         }
 
         self._buses: dict[str, BusCompilationInfo]
@@ -208,11 +212,21 @@ class QuantumMachinesCompiler:
 
     def _handle_for_loop(self, element: ForLoop):
         qua_variable = self._qprogram_to_qua_variables[element.variable]
-        return qua.for_(qua_variable, element.start, qua_variable <= element.stop, qua_variable + element.step)
+        start, stop, step = element.start, element.stop, element.step
+        if element.variable.domain is Domain.Phase:
+            start, stop, step = start / 360.0, stop / 360.0, step / 360.0
+        if element.variable.domain is Domain.Frequency:
+            start, stop, step = start * 1e3, stop * 1e3, step * 1e3
+        return qua.for_(qua_variable, start, qua_variable <= stop, qua_variable + step)
 
     def _handle_loop(self, element: Loop):
         qua_variable = self._qprogram_to_qua_variables[element.variable]
-        return qua.for_each_(qua_variable, element.values)
+        values = element.values
+        if element.variable.domain is Domain.Phase:
+            values = values / 360.0
+        if element.variable.domain is Domain.Frequency:
+            values = values * 1e3
+        return qua.for_each_(qua_variable, values)
 
     def _handle_average(self, element: Average):
         variable = qua.declare(int)
@@ -224,9 +238,20 @@ class QuantumMachinesCompiler:
         frequency = (
             self._qprogram_to_qua_variables[element.frequency]
             if isinstance(element.frequency, Variable)
-            else element.frequency
+            else element.frequency * 1e3
         )
-        qua.update_frequency(element=element.bus, new_frequency=frequency * 1e3, units="mHz")
+        qua.update_frequency(element=element.bus, new_frequency=frequency, units="mHz")
+
+    def _handle_set_phase(self, element: SetPhase):
+        phase = (
+            self._qprogram_to_qua_variables[element.phase]
+            if isinstance(element.phase, Variable)
+            else element.phase / 360.0
+        )
+        qua.frame_rotation_2pi(phase, element.bus)
+
+    def _handle_reset_phase(self, element: ResetPhase):
+        qua.reset_frame(element.bus)
 
     def _handle_set_gain(self, element: SetGain):
         gain = self._qprogram_to_qua_variables[element.gain] if isinstance(element.gain, Variable) else element.gain
@@ -417,6 +442,12 @@ class QuantumMachinesCompiler:
             else element.duration
         )
         qua.wait(duration, element.bus)
+
+    def _handle_sync(self, element: Sync):
+        if element.buses:
+            qua.align(*element.buses)
+        else:
+            qua.align()
 
     def __add_pulse_to_element_operations(self, element: str, pulse: str):
         if element not in self._configuration["operations"]:

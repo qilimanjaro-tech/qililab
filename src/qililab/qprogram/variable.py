@@ -153,15 +153,6 @@ class Variable:
         return self._value >= other
 
 
-# class TimeVariable(Variable, int):  # type: ignore
-#     """Integer variable. This class is used to define a variable of type int, such that Python recognizes this class
-#     as an integer."""
-
-#     def __init__(self, domain: Domain):
-#         self.domain: Domain = Domain.Time
-#         super().__init__()
-
-
 class IntVariable(Variable, int):  # type: ignore
     """Integer variable. This class is used to define a variable of type int, such that Python recognizes this class
     as an integer."""

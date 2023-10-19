@@ -30,7 +30,7 @@ class Square(Waveform):  # pylint: disable=too-few-public-methods
         self.amplitude = amplitude
         self.duration = duration
 
-    def envelope(self, resolution: float = 1):
+    def envelope(self, resolution: int = 1):
         """Returns the pulse matrix
 
         Args:

@@ -18,13 +18,28 @@ from .waveform import Waveform
 
 
 class Arbitrary(Waveform):  # pylint: disable=too-few-public-methods, disable=missing-class-docstring
-    def __init__(self, envelope: np.ndarray):
-        self.samples = envelope
+    def __init__(self, samples: np.ndarray):
+        self.samples = samples
 
-    def envelope(self, resolution: float = 1) -> np.ndarray:
+    def envelope(self, resolution: int = 1) -> np.ndarray:
         """Returns the pulse matrix
 
         Returns:
             np.ndarray: pulse matrix
         """
-        return self.samples
+        if resolution == 1:
+            return self.samples
+        else:
+            cumsum = np.cumsum(self.samples)
+            cumsum[resolution:] = cumsum[resolution:] - cumsum[:-resolution]
+            moving_avg = cumsum[resolution - 1 :] / resolution
+
+            # Scaling and shifting
+            scale_factor = (self.samples.max() - self.samples.min()) / (moving_avg.max() - moving_avg.min())
+            shift = self.samples.max() - moving_avg.max() * scale_factor
+            scaled_avg = moving_avg * scale_factor + shift
+
+            # Clamping
+            clamped_avg = np.clip(scaled_avg, self.samples.min(), self.samples.max())
+
+            return clamped_avg

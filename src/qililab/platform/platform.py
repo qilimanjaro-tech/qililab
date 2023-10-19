@@ -545,7 +545,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """
         qblox_compiler = QbloxCompiler()
         sequences = qblox_compiler.compile(qprogram=qprogram)
-        buses = {bus_alias: self.get_bus_by_alias(alias=bus_alias) for bus_alias in sequences}
+        buses = {bus_alias: self._get_bus_by_alias(alias=bus_alias) for bus_alias in sequences}
 
         # Upload sequences
         for bus_alias in sequences:

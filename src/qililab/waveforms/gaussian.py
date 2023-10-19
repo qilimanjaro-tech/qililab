@@ -37,7 +37,7 @@ class Gaussian(Waveform):  # pylint: disable=too-few-public-methods
         self.duration = duration
         self.num_sigmas = num_sigmas
 
-    def envelope(self, resolution: float = 1):
+    def envelope(self, resolution: int = 1):
         """Returns the pulse matrix
 
         Args:

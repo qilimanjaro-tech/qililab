@@ -33,7 +33,7 @@ class DragCorrection(Waveform):  # pylint: disable=too-few-public-methods
         self.drag_coefficient = drag_coefficient
         self.waveform = waveform
 
-    def envelope(self, resolution: float = 1):
+    def envelope(self, resolution: int = 1):
         """Returns the envelope corresponding to the drag correction
 
         Args:
