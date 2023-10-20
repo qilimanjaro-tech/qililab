@@ -29,6 +29,7 @@
 """Quantum Machines OPX class."""
 from dataclasses import dataclass
 from typing import Dict
+
 from qm import QuantumMachine, QuantumMachinesManager, SimulationConfig
 from qm.qua import Program
 
