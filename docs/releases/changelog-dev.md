@@ -4,6 +4,9 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Added the driver for Quantum Machines Manager and a new QuantumMachinesResult class to handle Quantum Machines instruments.
+  [#568](https://github.com/qilimanjaro-tech/qililab/pull/568)
+
 - Update qiboconnection to 0.12.0
   [#559](https://github.com/qilimanjaro-tech/qililab/pull/559)
 
