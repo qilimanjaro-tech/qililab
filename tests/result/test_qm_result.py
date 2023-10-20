@@ -8,13 +8,10 @@ from qililab.result.quantum_machines_results import QuantumMachinesResult
 
 @pytest.fixture(name="qm_result")
 def fixture_qm_result():
-    """fixture_qblox_result_scope
-
-    Args:
-        dummy_qrm (Pulsar): _description_
+    """fixture_qm_result
 
     Returns:
-        _type_: _description_
+        qm_result: QuantumMachinesResult
     """
     return QuantumMachinesResult(raw_results=np.zeros((2, 10)))
 
