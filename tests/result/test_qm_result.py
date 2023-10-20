@@ -6,6 +6,7 @@ import pytest
 from qililab.constants import QMRESULT, RUNCARD
 from qililab.result.quantum_machines_results import QuantumMachinesResult
 
+
 @pytest.fixture(name="qm_result")
 def fixture_qm_result():
     """fixture_qm_result

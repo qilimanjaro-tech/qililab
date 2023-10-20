@@ -1,13 +1,15 @@
 """This file tests the the ``qblox_d5a`` class"""
-import numpy as np
 from unittest.mock import MagicMock
-import pytest
 
+import numpy as np
+import pytest
 from qm import Program
-from qm.qua import program, play
+from qm.qua import play, program
+
 from qililab.instruments.quantum_machines import QMM
 from qililab.result.quantum_machines_results import QuantumMachinesResult
 from qililab.settings import Settings
+
 
 @pytest.fixture(name="qua_program")
 def fixture_qua_program():
