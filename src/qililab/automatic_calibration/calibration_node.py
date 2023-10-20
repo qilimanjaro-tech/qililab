@@ -372,15 +372,10 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         # In case something unexpected happened with the output we raise an error
         out_dict = json.loads(logger_outputs_string)
 
-        if "check_parameters" not in out_dict:
+        if "check_parameters" not in out_dict or out_dict["check_parameters"] == {}:
             raise IncorrectCalibrationOutput(
-                f"Calibration output must have key 'check_parameters' in notebook {input_path}"
+                f"Calibration output must have key and value 'check_parameters' in notebook {input_path}"
             )
-        if out_dict["check_parameters"] == {}:
-            raise IncorrectCalibrationOutput(
-                f"Calibration output value for 'check_parameters' can not be empty in notebook {input_path}"
-            )
-
         return out_dict
 
     def _get_last_calibrated_timestamp(self) -> float | None:
@@ -514,7 +509,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         The part of the string after the last "/" will be considered the file name, and the part before its directory.
 
-        Args:
+        Args
             original_path (str): The original path to add the datetime to. Can have the ``.ipynb`` extension or not.
                 The part of the string after the last "/" will be considered the file name, and the part before it's directory.
 
