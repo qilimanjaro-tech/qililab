@@ -28,7 +28,7 @@ def fixture_qmm():
     )  # pylint: disable=abstract-class-instantiated
     qmm.device = MagicMock
     qmm.qm = MagicMock
-    result = QuantumMachinesResult(qm_raw_results=np.zeros((2, 10)))
+    result = QuantumMachinesResult(raw_results=np.zeros((2, 10)))
     qmm.run = MagicMock(return_value=result)
     qmm.simulate = MagicMock(return_value=result)
 
