@@ -15,6 +15,51 @@ class CalibrationController:
         calibration_graph (nx.DiGraph): The calibration graph. This is a directed acyclic graph where each node is a string.
         node_sequence (dict): Mapping for the dodes of the graph, from strings into the actual initialized nodes.
         runcard (str): The runcard path, containing the serialized platform where the experiments will be run.
+
+    Examples:
+        In this example, you will create 2 nodes, and pass them to a :class:`.CalibrationController`, in order to run the maintain algorithm on the second one:
+
+        .. code-block:: python
+
+            personalized_sweep_interval = {
+                "start": 10,
+                "stop": 50,
+                "step": 2,
+            }
+
+            # CREATE NODES :
+            first = CalibrationNode(
+                nb_path="notebooks/first.ipynb",
+                in_spec_threshold=4,
+                bad_data_threshold=8,
+                comparison_model=norm_root_mean_sqrt_error,
+                drift_timeout=1800.0,
+            )
+            second = CalibrationNode(
+                nb_path="notebooks/second.ipynb",
+                in_spec_threshold=2,
+                bad_data_threshold=4,
+                comparison_model=norm_root_mean_sqrt_error,
+                drift_timeout=1.0,
+                sweep_interval=personalized_sweep_interval,
+            )
+
+            # NODE MAPPING TO THE GRAPH (key = name in graph, value = node object):
+            nodes = {"first": first, "second": second}
+
+            # GRAPH CREATION:
+            G = nx.DiGraph()
+            G.add_edge("second", "first")
+
+            # CREATE CALIBRATION CONTROLLER:
+            controller = CalibrationController(node_sequence=nodes, calibration_graph=G, runcard=path_runcard)
+
+            ### EXECUTIONS TO DO:
+            controller.maintain(third)
+
+        .. note::
+
+            Find information about how these nodes and their notebooks need to be in the :class:`CalibrationNode` class documentation.
     """
 
     def __init__(self, calibration_graph: nx.DiGraph, node_sequence: dict, runcard: str):
@@ -32,6 +77,19 @@ class CalibrationController:
 
         self.platform: Platform = build_platform(runcard)
         """The initialized platform, where the experiments will be run."""
+
+    def run_automatic_calibration(self) -> None:
+        """Run the automatic calibration procedure."""
+        highest_level_nodes = [node for node, in_degree in self.calibration_graph.in_degree() if in_degree == 0]
+
+        for n in highest_level_nodes:
+            self.maintain(self.node_sequence[n])
+
+        print(
+            "#############################################\n"
+            "Automatic calibration completed successfully!\n"
+            "#############################################\n"
+        )
 
     def maintain(self, node: CalibrationNode) -> None:
         """This is primary interface for our calibration procedure and it's the highest level algorithm.
@@ -59,13 +117,14 @@ class CalibrationController:
             return
         if result == "bad_data":
             for n in self._dependents(node):
+                print(f"diagnosing {n.node_id} from maintain({node.node_id})!!!\n")
                 self.diagnose(n)
 
         # calibrate
         self.calibrate(node)
 
         # GALADRIEL: uncomment when platform is connected
-        self._update_parameters(node=node)
+        self._update_parameters(node)
 
     def diagnose(self, node: CalibrationNode) -> bool:
         """This is a method called by `maintain` in the special case that its call of `check_data` finds bad data.
@@ -103,7 +162,7 @@ class CalibrationController:
         self.calibrate(node)
 
         # GALADRIEL: uncomment when platform is connected
-        self._update_parameters(node=node)
+        self._update_parameters(node)
 
         print(f"{node.node_id} diagnose: True\n")
         return True
@@ -222,10 +281,6 @@ class CalibrationController:
         node.previous_timestamp = node.run_notebook()
         node.add_string_to_checked_nb_name("calibrated", node.previous_timestamp)
 
-        # TODO: Remove this threshold change when the good notebooks are created.
-        node.bad_data_threshold = 9.0
-        node.in_spec_threshold = 10.0
-
     def _update_parameters(self, node: CalibrationNode) -> None:
         """Update a parameter value in the platform.
         If the node does not have an associated parameter, or the parameter attribute of the node is None,
@@ -239,10 +294,9 @@ class CalibrationController:
         if node.output_parameters is not None and "platform_params" in node.output_parameters:
             for bus_alias, param_name, param_value in node.output_parameters["platform_params"]:
                 print(f"Platform updated with: ({bus_alias}, {param_name}, {param_value})")
-                # self.platform.set_parameter(alias=bus_alias, parameter=param_name, value=param_value)
+                self.platform.set_parameter(alias=bus_alias, parameter=param_name, value=param_value)
 
-            # TODO: Solve the platform serialization problem and change the bottom expression to ``self.runcard``!!!
-            save_platform(self.runcard.split(".yml")[0] + "_test.yml", self.platform)
+            save_platform(self.runcard, self.platform)
 
     def _dependents(self, node: CalibrationNode) -> list:
         """Find the nodes that a node depends on.
@@ -267,8 +321,7 @@ class CalibrationController:
         Returns:
             float: difference/error between the two samples.
         """
-        # TODO: Remove this 3.0 when the good notebooks are created.
-        return node.comparison_model(obtained, comparison) + 3
+        return node.comparison_model(obtained, comparison)
 
     @staticmethod
     def _is_timeout_expired(timestamp: float, timeout: float) -> bool:

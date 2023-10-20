@@ -28,6 +28,7 @@ class PulseDistortion(FactoryElement):
 
     Every child of this interface needs to contain an `apply` and `to/from_dict` methods (for serialization).
 
+
     The `apply` method will apply the distortion correction to the respective passed envelope, and then will call `normalize_envelope` method of this base class.
 
     Whenever you call a `PulseDistortion` interface child, apart than their respective arguments you can also pass the `norm_factor` & `auto_norm` arguments, to

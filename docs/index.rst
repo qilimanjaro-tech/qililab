@@ -81,7 +81,6 @@ Qililab Documentation
    :hidden:
 
    code/ql
-   code/automatic_calibration
    code/chip
    code/drivers
    code/experiment

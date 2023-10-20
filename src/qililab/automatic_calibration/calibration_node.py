@@ -11,19 +11,172 @@ import papermill as pm
 
 from qililab.config import logger
 
+logger_output_start = "RAND_INT:47102512880765720413 - OUTPUTS: "
+
 
 class CalibrationNode:  # pylint: disable=too-many-instance-attributes
-    """Automatic-calibration Node class, which works with notebooks as nodes.
+    """Automatic-calibration Node class, which represent a node in the calibration graph.
+
+    The calibration graph represents a calibration procedure, so each node represent a step of this calibration procedure.
+    Each of these steps consists of:
+
+    - **A Jupyter Notebook** to calibrate or check the data with (and its metadata to do execution times checks). Such notebook would contain the following:
+
+        **1) An input parameters cell** (tagged as `parameters`). These parameters are the ones to be overwritten by the ``input_parameters``:
+
+        **2) An experiment/circuit** with its corresponding loops for the sweep given by ``sweep_interval``.
+
+        **3) An analysis procedure**, that plots and fits the obtained data to the expected theoretical behaviour and finds the optimal desired parameters.
+
+        **4) An export data cell**, that calls ``export_calibration_outputs()`` with the dictionary to retrieve from the notebook into the calibration workflow.
+        Such dictionary contains a ``check_parameters`` dictionary of the obtained results to do comparisons against, and a ``platform_params`` list of parameters to set on the platform.
+
+        .. note::
+
+            More information about the notebook contents can be found in the examples below.
+
+    - **Thresholds and Models for the Comparisons** of data, and metadata, of this notebook. Arguments on this category:
+        - ``in_spec_threshold``
+        - ``bad_data_threshold``
+        - ``comparison_model``
+        - ``drift_timeout``
+
+    - **Inputs to pass to this notebook (optional)**, which might vary for different calls of the same notebook. Arguments on this category:
+        - ``sweep_interval`` (optional)
+        - ``numeber_of_random_datapoints`` (optional)
+        - ``input_parameters`` (optional kwargs, to be interpreted by the notebook)
 
     Args:
         nb_path (str): Full notebook path, with folder, nb_name and ``.ipynb`` extension.
         in_spec_threshold (float): Threshold such that the ``check_data()`` methods return `in_spec` or `out_of_spec`.
         bad_data_threshold (float): Threshold such that the ``check_data()`` methods return `out_of_spec` or `bad_data`.
         comparison_model (Callable): Comparison model used, to compare data in this node.
-        drift_timeout (float): Time for which we believe the parameters of this node should still be considered calibrated, without checking the data.
-        input_parameters (dict | None): Extra input parameters to pass to the notebook, a part than the ``sweep_interval`` and the ``number_of_random_datapoints``. Defaults to None.
-        sweep_interval (dict | None): Sweep interval to pass to the notebook. If not specified, the default one written in the notebook will be used. Defaults to None.
-        number_of_random_datapoints (int): Random number of points to do the ``check_data()``. Defaults to 10.
+        drift_timeout (float): A durations in seconds, representing an estimate of how long it takes for the parameter to drift. During that time the parameters of
+            this node should be considered calibrated, without the need to check the data.
+        input_parameters (dict | None, optional): Kwargs for input parameters, to pass and then be interpreted by the notebook. Defaults to None.
+        sweep_interval (dict | None, optional): Dictionary with 3 keys describing the sweep values of the experiment. The keys are: ``start``, ``stop`` and ``step``.
+            The sweep values are all the numbers between 'start' and 'stop', separated from each other by the distance 'step'. Defaults to None, which means the one
+            specified in the notebook will be used.
+        number_of_random_datapoints (int, optional): The number of points, chosen randomly within the sweep interval, to check with ``check_data()`` if the experiment
+            gets the same outcome as during the last calibration that was run. Default value is 10.
+
+    Examples:
+
+        In this example, you will create 2 nodes, and pass them to a :class:`.CalibrationController`:
+
+        .. code-block:: python
+
+            personalized_sweep_interval = {
+                "start": 10,
+                "stop": 50,
+                "step": 2,
+            }
+
+            # CREATE NODES :
+            first = CalibrationNode(
+                nb_path="notebooks/example.ipynb",
+                in_spec_threshold=4,
+                bad_data_threshold=8,
+                comparison_model=norm_root_mean_sqrt_error,
+                drift_timeout=1800.0,
+            )
+            second = CalibrationNode(
+                nb_path="notebooks/example.ipynb",
+                in_spec_threshold=2,
+                bad_data_threshold=4,
+                comparison_model=norm_root_mean_sqrt_error,
+                drift_timeout=1.0,
+                sweep_interval=personalized_sweep_interval,
+                number_of_random_datapoints=5,
+            )
+
+            # NODE MAPPING TO THE GRAPH (key = name in graph, value = node object):
+            nodes = {"first": first, "second": second}
+
+            # GRAPH CREATION:
+            G = nx.DiGraph()
+            G.add_edge("second", "first")
+
+            # CREATE CALIBRATION CONTROLLER:
+            controller = CalibrationController(node_sequence=nodes, calibration_graph=G, runcard=runcard_path)
+
+        |
+
+        where the notebook ``example.ipynb``, would contain the following:
+
+            **1) An input parameters cell** (tagged as `parameters`). These parameters are the ones to be overwritten by the ``input_parameters``:
+
+            .. code-block:: python
+
+                # ``check_data()`` parameters:
+                check = False
+                number_of_random_datapoints = 10
+
+                # Sweep interval:
+                start = 0
+                stop = 19
+                step = 1
+
+                # Extra parameters for this concrete notebook:
+                param1=0
+                param2=0
+                ...
+
+            |
+
+            **2) An experiment/circuit** with its corresponding loops for the sweep given by ``sweep_interval``.
+
+            .. code-block:: python
+
+                # Set the enviorement and paths:
+                ...
+
+                # Set the platform:
+                platform = ql.build_platform(path=platform_path)
+                platform.connect()
+                platform.initial_setup()
+                platform.turn_on_instruments()
+
+                # Define circuit
+                circuit = ...
+
+                # Loop over the sweeps executing the platform:
+                results_list = []
+                for X in sweep_interval:
+                    platform.set_parameter(alias=alias, parameter=ql.Parameter.X, value=X)
+                    result = platform.execute(program=circuit, num_avg=hw_avg, repetition_duration=repetition_duration)
+                    results_list.append(result.array)
+
+                results = np.hstack(results_list)
+
+            |
+
+            **3) An analysis procedure**, that plots and fits the obtained data to the expected theoretical behaviour and finds the optimal desired parameters.
+
+            .. code-block:: python
+
+                def fit(xdata, results):
+                    ...
+
+                fitted_values, x_data, y_data, figure = fit(xdata=sweep_interval, results=results)
+                plt.show()
+
+            |
+
+            **4) An export data cell**, that calls ``export_calibration_outputs()`` with the dictionary to retrieve from the notebook into the calibration workflow:
+
+            .. code-block:: python
+
+                from qililab.automatic_calibration.calibration_node import export_calibration_outputs
+
+                export_calibration_outputs(
+                    {
+                        "check_parameters": {"x": sweep_interval, "y": results},
+                        "platform_params": [(bus_alias0, param_name0, fitted_values[0]), (bus_alias1, param_name1, fitted_values[1])],
+                    }
+                )
+
+            where the ``check_parameters`` are a dictionary of the saved results to do comparisons against. And the ``platform_params`` are a list of parameters to set on the platform.
     """
 
     def __init__(
@@ -53,16 +206,23 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         """Comparison model used, to compare data in this node."""
 
         self.drift_timeout: float = drift_timeout
-        """Time for which we believe the parameters of this node should still be considered calibrated, without checking the data."""
+        """A durations in seconds, representing an estimate of how long it takes for the parameter to drift. During that time the parameters of
+        this node should be considered calibrated, without the need to check the data.
+        """
 
         self.input_parameters: dict | None = input_parameters
-        """Extra input parameters to pass to the notebook, a part than the ``sweep_interval`` and the ``number_of_random_datapoints``."""
+        """Kwargs for input parameters, to pass and then be interpreted by the notebook. Defaults to None."""
 
         self.sweep_interval: dict | None = sweep_interval
-        """Sweep interval dict to pass to the notebook. It has to contain a start, a stop and a step. If not specified, the default one written in the notebook will be used."""
+        """Dictionary with 3 keys describing the sweep values of the experiment. The keys are ``start``, ``stop`` and ``step``. The sweep values
+        are all the numbers between ``start`` and ``stop``, separated from each other by the distance ``step``. Defaults to None, which means the one
+        specified in the notebook will be used.
+        """
 
         self.number_of_random_datapoints: int = number_of_random_datapoints
-        """Random number of points to do the ``check_data()``."""
+        """The number of points, chosen randomly within the sweep interval, to check with ``check_data()`` if the experiment
+        gets the same outcome as during the last calibration that was run. Default value is 10.
+        """
 
         self.output_parameters: dict | None = self._get_last_calibrated_output_parameters()
         """Output parameters dictionary from the notebook execution, which get extracted with ``ql.export_calibration_putputs()``, normally contains
@@ -195,7 +355,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         # Retrieve the logger info and extract the output from it:
         logger_string = self.stream.getvalue()
-        logger_splitted = logger_string.split("RAND_INT:47102512880765720413 - OUTPUTS: ")
+        logger_splitted = logger_string.split(logger_output_start)
         logger_outputs_string = logger_splitted[-1].split("\n")[0]
         if len(logger_splitted) < 2:
             logger.info(
@@ -265,7 +425,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             lines = file.readlines()
             start = False
             for line in lines:
-                if line.find("RAND_INT:47102512880765720413 - OUTPUTS: ") != -1:
+                if line.find(logger_output_start) != -1:
                     raw_string += line
                     start = True
                 if start and line.find("\n") == -1:
@@ -277,7 +437,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         # TODO: Make sure that the encoding of special characters (i.e. \\“) doesn’t depend on the OS because
         # Windows uses UTF-16LE and Linux (UNIX based like MacOS) uses UTF-8
         # Postprocessing file
-        data = raw_string.split("RAND_INT:47102512880765720413 - OUTPUTS: ")
+        data = raw_string.split(logger_output_start)
         clean_data = data[1].split('\\n"')
         dict_as_string = clean_data[0].replace('\\"', '"')
 
@@ -389,13 +549,13 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         return datetime.timestamp(now)
 
 
-def export_calibration_outputs(outputs: dict):
+def export_calibration_outputs(outputs: dict) -> None:
     """Function to export notebook outputs into a stream, later collected by the CalibrationNode class.
 
     Args:
         outputs (dict): Outputs from the notebook to export into the CalibrationController/CalibrationNode workflow.
     """
-    print(f"RAND_INT:47102512880765720413 - OUTPUTS: {json.dumps(outputs)}")
+    print(f"{logger_output_start}{json.dumps(outputs)}")
 
 
 class IncorrectCalibrationOutput(Exception):

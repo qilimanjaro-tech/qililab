@@ -107,7 +107,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
                 # apply gate schedule
                 for gate_event in gate_schedule:
                     # find bus
-                    bus = self.platform.get_bus_by_alias(gate_event.bus)
+                    bus = self.platform._get_bus_by_alias(gate_event.bus)  # pylint: disable=protected-access
                     # add control gate schedule
                     pulse_event = self._gate_element_to_pulse_event(
                         time=start_time, gate=gate, gate_event=gate_event, bus=bus
@@ -209,7 +209,9 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
             [
                 target.qubit_index
                 for schedule_element in schedule
-                for target in self.platform.get_bus_by_alias(schedule_element.bus).targets
+                for target in self.platform._get_bus_by_alias(  # pylint: disable=protected-access
+                    schedule_element.bus
+                ).targets
                 if isinstance(target, Qubit)
             ]
             if schedule is not None
