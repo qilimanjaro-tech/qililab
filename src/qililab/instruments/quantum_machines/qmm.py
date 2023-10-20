@@ -101,8 +101,9 @@ class QMM(Instrument):
         job = self.qm.execute(program)
         res_handles = job.result_handles
         res_handles.wait_for_all_values()
+        res_handles.fetch_all()
 
-        return QuantumMachinesResult(raw_results=res_handles.fetch_all())
+        return QuantumMachinesResult(raw_results=res_handles)
 
     def simulate(self, program: Program) -> QuantumMachinesResult:
         """Simulate the QUA Program.
