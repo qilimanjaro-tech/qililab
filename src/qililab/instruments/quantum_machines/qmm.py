@@ -41,7 +41,13 @@ from qililab.typings import InstrumentName, QMMDriver
 
 @InstrumentFactory.register
 class QMM(Instrument):
-    """Class defining the Qililab Quantum Machines Manager."""
+    """Class defining the Qililab Quantum Machines Manager instrument in Qililab.
+
+       This class allows Qililab control and communication with an instance of the 
+       Quantum Machines Manager, which is the central class to interact with Quantum Machines instruments.
+       The manager is responsible, through the use of QUA sequences, of setting the Quantum Machines instruments
+       in the right manner for Quantum Control.
+    """
 
     name = InstrumentName.QMM
 
@@ -59,7 +65,11 @@ class QMM(Instrument):
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
-        """Set initial instrument settings."""
+        """Set initial instrument settings.
+
+        Creates an instance of the Qilililab Quantum Machines Manager, and the Quantum Machine, opening
+        a connection to the Quantum Machine by the use of the Quantum Machines Manager.
+        """
         super().initial_setup()
         qmm = QuantumMachinesManager(host=self.settings.qop_ip, port=self.settings.qop_port)
         self.qm = qmm.open_qm(self.settings.config)
@@ -77,7 +87,11 @@ class QMM(Instrument):
         """Turn off an instrument."""
 
     def run(self, program:Program) -> QuantumMachinesResult:
-        """Run the QUA Program"""
+        """Run the QUA Program.
+
+        Args:
+            program (Program): QUA Program to be run on Quantum Machines instruments.
+        """
         job = self.qm.execute(program)
         res_handles = job.result_handles
         res_handles.wait_for_all_values()
@@ -85,12 +99,20 @@ class QMM(Instrument):
         return QuantumMachinesResult(raw_results=res_handles.fetch_all())
 
     def simulate(self, program:Program) -> QuantumMachinesResult:
-        """Run the QProgram"""
+        """Simulate the QUA Program.
+
+        Args:
+            program (Program): QUA Program to be simulated on Quantum Machines instruments.
+        """
         job = self.qm.simulate(program, SimulationConfig(40_000))
         res_handles = job.result_handles
 
         return QuantumMachinesResult(raw_results=res_handles.fetch_all())
 
     def to_dict(self):
-        """Return a dict representation of an OPX instrument."""
+        """Return a dict representation of a Quantum Machines Manager instrument.
+
+        Returns:
+            dict{str: str | dict]: Dictionary containing the runcard name and the instrument settings.
+        """
         return {RUNCARD.NAME: self.name.value} | self.settings.to_dict()
