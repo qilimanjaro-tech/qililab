@@ -13,7 +13,7 @@
 - Added phase correction for CZ gates to the optimize step of translate circuit in `qililab.transpiler.transpiler`. Gates now can accept an optional dicionary with additional settings.
   As an example, the CZ phase correction can be added at options for each qubit:
 
-  ```yml
+  ```yaml
   CZ(0,2):
   - bus: flux_line_q2_bus
     pulse:
@@ -119,7 +119,7 @@
   as the circuit gate's name and qubits match those of the gate in the runcard.
   An example of a custom gate for the circuit X gate at qubit 0 and a CZ gate at (0,1)
 
-  ```yml
+  ```yaml
   X(0):
   - bus: drive_line_q0_bus  # alias of the bus
     wait_time: 200
@@ -268,7 +268,7 @@
 
 - Added `threshold_rotation` parameter to `AWGADCSequencer`. This adds a new parameter to the runcard of sequencers of that type, QRM sequencers in the case of Qblox. This value is an angle expressed in degrees from 0.0 to 360.0.
 
-  ```yml
+  ```yaml
   awg_sequencers:
     - identifier: 0
       chip_port_id: 1
