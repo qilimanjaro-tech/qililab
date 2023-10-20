@@ -1,4 +1,4 @@
-"""This file tests the the ``qblox_d5a`` class"""
+"""This file tests the the ``qm_manager`` class"""
 from unittest.mock import MagicMock
 
 import numpy as np

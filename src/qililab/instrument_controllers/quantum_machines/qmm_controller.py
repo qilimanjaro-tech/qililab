@@ -46,3 +46,9 @@ class QMMController(SingleInstrumentController):
     def _initialize_device(self):
         """Initialize device controller."""
         self.device = QMMDriver(name=f"{self.name.value}_{self.alias}", identifier=self.address)
+
+    def _check_supported_modules(self):
+        """check if all instrument modules loaded are supported modules for the controller."""
+
+    def _set_device_to_all_modules(self):
+        """Sets the initialized device to all modules."""
