@@ -21,7 +21,7 @@ from qililab.platform.platform import Platform
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
-path_runcard = abspath.split("qililab")[0] + "qililab/examples/runcards/galadriel.yml"
+path_runcard = abspath.split("qililab")[0] + "qililab/src/qililab/examples/runcards/galadriel.yml"
 
 
 ######################
