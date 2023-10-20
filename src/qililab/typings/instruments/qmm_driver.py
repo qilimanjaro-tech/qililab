@@ -16,5 +16,5 @@
 from qililab.typings.instruments.device import Device
 
 
-class QMMDriver(Device): # pylint: disable=too-few-public-methods
+class QMMDriver(Device):  # pylint: disable=too-few-public-methods
     """Typing class of the Quantum Machine Manager class defined by Quantum Machines."""
