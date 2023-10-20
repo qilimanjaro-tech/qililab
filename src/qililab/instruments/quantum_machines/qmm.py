@@ -118,6 +118,6 @@ class QMM(Instrument):
         """Return a dict representation of a Quantum Machines Manager instrument.
 
         Returns:
-            dict{str: str | dict]: Dictionary containing the runcard name and the instrument settings.
+            dict[str: str | dict]: Dictionary containing the runcard name and the instrument settings.
         """
         return {RUNCARD.NAME: self.name.value} | self.settings.to_dict()

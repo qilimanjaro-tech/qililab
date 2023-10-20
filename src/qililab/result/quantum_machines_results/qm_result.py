@@ -48,7 +48,7 @@ class QuantumMachinesResult(Result):
     def to_dict(self) -> dict:
         """
         Returns:
-            dict: Dictionary containing all the class information.
+            dict[str: str | np.ndarray]: Dictionary containing all the class information.
         """
         return {
             RUNCARD.NAME: self.name.value,
