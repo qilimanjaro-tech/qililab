@@ -147,3 +147,9 @@ class QbloxQCMRF(QbloxQCM):
         if parameter in self.parameters:
             return getattr(self.settings, parameter.value)
         return super().get(parameter, channel_id)
+
+    def to_dict(self):
+        """Return a dict representation of an `QCM-RF` instrument."""
+        dictionary = super().to_dict()
+        dictionary.pop("out_offsets")
+        return dictionary

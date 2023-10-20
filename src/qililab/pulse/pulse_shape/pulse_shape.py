@@ -25,9 +25,13 @@ from qililab.utils import Factory
 
 @dataclass(frozen=True, eq=True)
 class PulseShape(FactoryElement):
-    """Pulse shape abstract base class.
+    """Pulse shapes describe the shape of the :class:`Pulse`'s envelopes. ``PulseShape`` is their abstract base class.
 
-    Pulse shapes, describe the shape of the :class:`Pulse`'s envelopes.
+    Every child of this interface needs to contain an `envelope` and `to/from_dict` methods (for serialization).
+
+    The `envelope` method will create the corresponding array of each shape.
+
+    Derived: :class:`Rectangular`, :class:`Gaussian`, :class:`Drag`, :class:`Cosine` and :class:`SNZ`
     """
 
     name: PulseShapeName = field(init=False)  #: Name of the pulse shape.
@@ -63,5 +67,5 @@ class PulseShape(FactoryElement):
         """Returns dictionary representation of the pulse shape.
 
         Returns:
-        dict: Dictionary representation of the pulse shape including the name and attributes of the pulse shape.
+            dict: Dictionary representation of the pulse shape including the name and attributes of the pulse shape.
         """

@@ -19,6 +19,7 @@ from warnings import warn
 
 import h5py
 import numpy as np
+import ruamel.yaml
 import yaml
 from qiboconnection.api import API
 
@@ -163,7 +164,7 @@ def save_platform(path: str, platform: Platform) -> str:
         new_path = Path(path)
 
     with open(file=new_path, mode="w", encoding="utf-8") as file:
-        yaml.dump(data=platform.to_dict(), stream=file, sort_keys=False)
+        ruamel.yaml.round_trip_dump(data=platform.to_dict(), stream=file)
 
     return str(new_path)
 
@@ -171,7 +172,9 @@ def save_platform(path: str, platform: Platform) -> str:
 def build_platform(
     runcard: str | dict | None = None, path: str | None = None, connection: API | None = None, new_drivers: bool = False
 ) -> Platform:
-    """Build `Platform` object given one of two things:
+    """Builds a :class:`.Platform` object, given a :ref:`runcard <runcards>`.
+
+    Such runcard can be passed in one of the following two ways:
         - a path to a YAML file containing a dictionary of the serialized platform (runcard).
         - directly a dictionary of the serialized platform (runcard).
 
@@ -191,6 +194,12 @@ def build_platform(
             "instrument_controllers": instrument_controllers        # list[dict]
         }
 
+    which contains the information the :class:`.Platform` class uses to connect, setup and control the actual chip, buses and instruments of the laboratory.
+
+    .. note::
+
+        You can find more information about the complete structure of such dictionary, in the :ref:`Runcards <runcards>` section of the documentation.
+
     Args:
         path (str): Path to the platform's runcard YAML file. This argument is deprecated and will be removed soon.
         runcard (str | dict): Path to the platform's runcard YAML file, or direct dictionary of the platform's runcard info.
@@ -202,13 +211,13 @@ def build_platform(
         Platform: Platform object.
 
     Examples:
-        Passing the path of YAML file containing the serialized platform, in the `runcard` argument:
+        Passing the path of a YAML file containing a dictionary of the serialized platform, in the `runcard` argument:
 
         >>> platform = ql.build_platform(runcard="runcards/galadriel.yml")
         >>> platform.name
         galadriel
 
-        Passing a dictionary containing the serialized platform, in the `runcard` argument:
+        Passing a dictionary of the serialized platform, in the `runcard` argument:
 
         >>> platform = ql.build_platform(runcard=galadriel_dict)
         >>> platform.name

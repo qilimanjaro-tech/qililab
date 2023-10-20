@@ -108,7 +108,7 @@ class TestPlatform:
         assert isinstance(element, AWGAnalogDigitalConverter)
 
     @patch("qililab.data_management.open")
-    @patch("qililab.data_management.yaml.dump")
+    @patch("qililab.data_management.ruamel.yaml.round_trip_dump")
     def test_platform_manager_dump_method(self, mock_dump: MagicMock, mock_open: MagicMock, platform: Platform):
         """Test PlatformManager dump method."""
         save_platform(path="runcard.yml", platform=platform)
@@ -117,7 +117,7 @@ class TestPlatform:
 
     def test_get_bus_by_qubit_index(self, platform: Platform):
         """Test get_bus_by_qubit_index method."""
-        _, control_bus, readout_bus = platform.get_bus_by_qubit_index(0)
+        _, control_bus, readout_bus = platform._get_bus_by_qubit_index(0)
         assert isinstance(control_bus, Bus)
         assert isinstance(readout_bus, Bus)
         assert not isinstance(control_bus.system_control, ReadoutSystemControl)
@@ -131,13 +131,13 @@ class TestPlatform:
             ValueError,
             match="There can only be one bus connected to a port. There are 0 buses connected to port drive_q0",
         ):
-            platform.get_bus_by_qubit_index(0)
+            platform._get_bus_by_qubit_index(0)
         platform.buses[0].settings.port = 0  # Setting it back to normal to not disrupt future tests
 
     @pytest.mark.parametrize("alias", ["drive_line_bus", "feedline_input_output_bus", "foobar"])
     def test_get_bus_by_alias(self, platform: Platform, alias):
         """Test get_bus_by_alias method"""
-        bus = platform.get_bus_by_alias(alias)
+        bus = platform._get_bus_by_alias(alias)
         if alias == "foobar":
             assert bus is None
         if bus is not None:
@@ -319,7 +319,7 @@ class TestMethods:
 
     def test_get_parameter_with_delay(self, platform: Platform):
         """Test the ``get_parameter`` method with the delay of a bus."""
-        bus = platform.get_bus_by_alias(alias="drive_line_q0_bus")
+        bus = platform._get_bus_by_alias(alias="drive_line_q0_bus")
         assert bus is not None
         assert bus.delay == platform.get_parameter(parameter=Parameter.DELAY, alias="drive_line_q0_bus")
 
@@ -330,7 +330,7 @@ class TestMethods:
     def test_get_parameter_of_bus(self, parameter, platform: Platform):
         """Test the ``get_parameter`` method with the parameters of a bus."""
         CHANNEL_ID = 0
-        bus = platform.get_bus_by_alias(alias="drive_line_q0_bus")
+        bus = platform._get_bus_by_alias(alias="drive_line_q0_bus")
         assert bus is not None
         assert bus.get_parameter(parameter=parameter, channel_id=CHANNEL_ID) == platform.get_parameter(
             parameter=parameter, alias="drive_line_q0_bus", channel_id=CHANNEL_ID
@@ -339,7 +339,7 @@ class TestMethods:
     def test_get_parameter_of_qblox_module_without_channel_id(self, platform: Platform):
         """Test that getting a parameter of a ``QbloxModule`` with multiple sequencers without specifying a channel
         id still works."""
-        bus = platform.get_bus_by_alias(alias="drive_line_q0_bus")
+        bus = platform._get_bus_by_alias(alias="drive_line_q0_bus")
         awg = bus.system_control.instruments[0]
         assert isinstance(awg, QbloxModule)
         sequencer = awg.get_sequencers_from_chip_port_id(bus.port)[0]
@@ -350,7 +350,7 @@ class TestMethods:
     def test_get_parameter_of_qblox_module_without_channel_id_and_1_sequencer(self, platform: Platform):
         """Test that we can get a parameter of a ``QbloxModule`` with one sequencers without specifying a channel
         id."""
-        bus = platform.get_bus_by_alias(alias="drive_line_q0_bus")
+        bus = platform._get_bus_by_alias(alias="drive_line_q0_bus")
         assert isinstance(bus, Bus)
         qblox_module = bus.system_control.instruments[0]
         assert isinstance(qblox_module, QbloxModule)

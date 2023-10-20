@@ -22,6 +22,7 @@ from qibo.models.circuit import Circuit
 
 from qililab.chip.nodes import Coupler, Qubit
 from qililab.constants import RUNCARD
+from qililab.instruments import AWG
 from qililab.platform import Bus, Platform
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.transpiler import Drag
@@ -106,7 +107,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
                 # apply gate schedule
                 for gate_event in gate_schedule:
                     # find bus
-                    bus = self.platform.get_bus_by_alias(gate_event.bus)
+                    bus = self.platform._get_bus_by_alias(gate_event.bus)  # pylint: disable=protected-access
                     # add control gate schedule
                     pulse_event = self._gate_element_to_pulse_event(
                         time=start_time, gate=gate, gate_event=gate_event, bus=bus
@@ -123,7 +124,11 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
                     # If we find a flux port, create empty schedule for that port
                     flux_port = self.platform.chip.get_port_from_qubit_idx(idx=qubit, line=Line.FLUX)
                     if flux_port is not None:
-                        pulse_schedule.create_schedule(port=flux_port)
+                        flux_bus = next((bus for bus in self.platform.buses if bus.port == flux_port), None)
+                        if flux_bus and any(
+                            isinstance(instrument, AWG) for instrument in flux_bus.system_control.instruments
+                        ):
+                            pulse_schedule.create_schedule(port=flux_port)
 
             pulse_schedule_list.append(pulse_schedule)
 
@@ -204,7 +209,9 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
             [
                 target.qubit_index
                 for schedule_element in schedule
-                for target in self.platform.get_bus_by_alias(schedule_element.bus).targets
+                for target in self.platform._get_bus_by_alias(  # pylint: disable=protected-access
+                    schedule_element.bus
+                ).targets
                 if isinstance(target, Qubit)
             ]
             if schedule is not None
