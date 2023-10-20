@@ -28,8 +28,9 @@
 
 """Quantum Machines OPX class."""
 from dataclasses import dataclass
-import numpy as np
 from typing import Dict
+
+import numpy as np
 from qm import QuantumMachine, QuantumMachinesManager, SimulationConfig
 from qm.qua import Program
 
@@ -38,6 +39,7 @@ from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
 from qililab.result.quantum_machines_results import QuantumMachinesResult
 from qililab.typings import InstrumentName, QMMDriver
+
 
 @InstrumentFactory.register
 class QMM(Instrument):

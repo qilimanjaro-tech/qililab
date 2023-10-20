@@ -40,7 +40,7 @@ from .instruments import (
     QbloxD5a,
     QbloxS4g,
     QcmQrm,
-    RohdeSchwarzSGS100A,
     QMMDriver,
+    RohdeSchwarzSGS100A,
 )
 from .yaml_type import yaml

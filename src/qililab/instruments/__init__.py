@@ -18,7 +18,7 @@ from .awg_analog_digital_converter import AWGAnalogDigitalConverter
 from .instrument import Instrument, ParameterNotFound
 from .instruments import Instruments
 from .mini_circuits import Attenuator
+from .quantum_machines import QMM
 from .rohde_schwarz import SGS100A
 from .signal_generator import SignalGenerator
-from .quantum_machines import QMM
 from .utils import InstrumentFactory

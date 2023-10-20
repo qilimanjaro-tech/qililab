@@ -14,12 +14,14 @@
 
 """QuantumMachinesResult class."""
 from copy import deepcopy
+
 import numpy as np
 
 from qililab.constants import QMRESULT, RUNCARD
 from qililab.result.result import Result
 from qililab.typings.enums import ResultName
 from qililab.utils.factory import Factory
+
 
 @Factory.register
 class QuantumMachinesResult(Result):
