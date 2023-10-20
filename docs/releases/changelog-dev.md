@@ -344,6 +344,10 @@ This document contains the changes of the current release.
 
 ### Documentation
 
+- Documentation for the Chip module: [#553] (https://github.com/qilimanjaro-tech/qililab/pull/553)
+
+  Includes documentation for all public features of the Chip module
+
 - Documentation for the Pulse module: [#532](https://github.com/qilimanjaro-tech/qililab/pull/532)
 
   Includes documentation for all public features of the Pulse module
