@@ -30,4 +30,4 @@ class Resonator(Node):
     """
 
     name = NodeName.RESONATOR
-    frequency: float #: frequency of the resonator
+    frequency: float  #: frequency of the resonator

@@ -34,5 +34,5 @@ class Port(Node):
         line (Line): The type of line associated with the port
     """
 
-    name = NodeName.PORT #: Name for the port
-    line: Line #: The type of line associated with the port
+    name = NodeName.PORT  #: Name for the port
+    line: Line  #: The type of line associated with the port

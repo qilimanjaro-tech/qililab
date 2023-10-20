@@ -28,5 +28,6 @@ class Coupler(Node):
     Args:
         frequency (float): frequency of the coupler
     """
+
     name = NodeName.COUPLER
-    frequency: float #: frequency of the coupler
+    frequency: float  #: frequency of the coupler

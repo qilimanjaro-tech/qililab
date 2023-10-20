@@ -29,8 +29,9 @@ class Node(Settings, FactoryElement):
         alias (str): Alias of the node
         nodes (list[str]): List of nodes within the node
     """
-    alias: str #: Alias of the node
-    nodes: list[str] #: List of nodes within the node
+
+    alias: str  #: Alias of the node
+    nodes: list[str]  #: List of nodes within the node
 
     def __str__(self):
         """String representation of a node."""

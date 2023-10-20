@@ -33,5 +33,5 @@ class Qubit(Node):
     """
 
     name = NodeName.QUBIT
-    frequency: float #: frequency of the qubit
-    qubit_index: int #: index of the qubit
+    frequency: float  #: frequency of the qubit
+    qubit_index: int  #: index of the qubit
