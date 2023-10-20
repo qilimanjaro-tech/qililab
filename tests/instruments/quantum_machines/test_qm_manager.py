@@ -15,21 +15,16 @@ from qililab.settings import Settings
 def fixture_qua_program():
     """Dummy QUA Program"""
     with program() as dummy_qua_program:
-        play('pulse1', 'element1')
+        play("pulse1", "element1")
 
     return dummy_qua_program
+
 
 @pytest.fixture(name="qmm")
 def fixture_qmm():
     """Fixture that returns an instance a qililab wrapper for Quantum Machines Manager."""
     qmm = QMM(
-        {
-            "alias": "qmm",
-            "qop_ip": "192.168.0.1",
-            "qop_port": 80,
-            "config": {},
-            "firmware": "3.10.2"
-        }
+        {"alias": "qmm", "qop_ip": "192.168.0.1", "qop_port": 80, "config": {}, "firmware": "3.10.2"}
     )  # pylint: disable=abstract-class-instantiated
     qmm.device = MagicMock
     qmm.qm = MagicMock
