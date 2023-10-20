@@ -47,6 +47,11 @@ class QMM(Instrument):
        Quantum Machines Manager, which is the central class to interact with Quantum Machines instruments.
        The manager is responsible, through the use of QUA sequences, of setting the Quantum Machines instruments
        in the right manner for Quantum Control.
+
+       Args:
+        name (InstrumentName): Name of the Instrument.
+        device (QMMDriver): Instance of the Quantum Machines Manager Driver class.
+        settings (QMMSettings): Settings of the instrument.
     """
 
     name = InstrumentName.QMM
