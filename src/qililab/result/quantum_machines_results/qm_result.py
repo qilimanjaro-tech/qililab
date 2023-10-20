@@ -13,8 +13,6 @@
 # limitations under the License.
 
 """QuantumMachinesResult class."""
-from copy import deepcopy
-
 import numpy as np
 
 from qililab.constants import QMRESULT, RUNCARD
