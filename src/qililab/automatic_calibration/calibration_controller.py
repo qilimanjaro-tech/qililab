@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import networkx as nx
 
 from qililab.automatic_calibration.calibration_node import CalibrationNode
+from qililab.config import logger
 from qililab.data_management import build_platform, save_platform
 from qililab.platform.platform import Platform
 
@@ -156,6 +157,10 @@ class CalibrationController:
         if recalibrated != [] and not any(recalibrated):
             print(f"{node.node_id} diagnose: False\n")
             return False
+        if recalibrated == []:
+            logger.warning(
+                f"No nodes 'out_specs' encountered in the branch of dependants for node {node.node_id} when expected one, it is possible some ajustments on the thresholds of dependant nodes would be needed for a better classification. A root node was classified as 'bad_data' when should have been 'out_spec'"
+            )
 
         # calibrate
         self.calibrate(node)
