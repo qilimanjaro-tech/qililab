@@ -32,18 +32,18 @@ class QuantumMachinesResult(Result):
         - path_1: input path 1 integration result bin list.
 
     Args:
-        qm_raw_results (list[dict]): Raw results obtained from a Quantum Machines Manager.
+        raw_results (list[dict]): Raw results obtained from a Quantum Machines Manager.
     """
 
     name = ResultName.QM
 
-    def __init__(self, qm_raw_results: np.ndarray):
-        self.qm_raw_results = qm_raw_results
+    def __init__(self, raw_results: np.ndarray):
+        self.raw_results = raw_results
 
     @property
     def array(self) -> np.ndarray:
         """Returns data as acquired from Quantum Machines Manager."""
-        return self.qm_raw_results
+        return self.raw_results
 
     def to_dict(self) -> dict:
         """
@@ -52,5 +52,5 @@ class QuantumMachinesResult(Result):
         """
         return {
             RUNCARD.NAME: self.name.value,
-            QMRESULT.QM_RAW_RESULTS: self.qm_raw_results,
+            QMRESULT.QM_RAW_RESULTS: self.raw_results,
         }

@@ -82,14 +82,14 @@ class QMM(Instrument):
         res_handles = job.result_handles
         res_handles.wait_for_all_values()
 
-        return QuantumMachinesResult(res_handles.fetch_all())
+        return QuantumMachinesResult(raw_results=res_handles.fetch_all())
 
     def simulate(self, program:Program) -> QuantumMachinesResult:
         """Run the QProgram"""
         job = self.qm.simulate(program, SimulationConfig(40_000))
         res_handles = job.result_handles
 
-        return QuantumMachinesResult(res_handles.fetch_all())
+        return QuantumMachinesResult(raw_results=res_handles.fetch_all())
 
     def to_dict(self):
         """Return a dict representation of an OPX instrument."""
