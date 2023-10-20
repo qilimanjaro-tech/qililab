@@ -25,7 +25,7 @@ from qililab.typings.enums import InstrumentControllerName
 @InstrumentControllerFactory.register
 class QMMController(SingleInstrumentController):
     """Quantum Machines Manager class.
-    
+
     This class implements the instrument controller for the Quantum Machines Manager instrument wrapper in Qililab.
 
     Args:

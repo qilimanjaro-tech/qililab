@@ -45,15 +45,15 @@ from qililab.typings import InstrumentName, QMMDriver
 class QMM(Instrument):
     """Class defining the Qililab Quantum Machines Manager instrument in Qililab.
 
-       This class allows Qililab control and communication with an instance of the 
-       Quantum Machines Manager, which is the central class to interact with Quantum Machines instruments.
-       The manager is responsible, through the use of QUA sequences, of setting the Quantum Machines instruments
-       in the right manner for Quantum Control.
+    This class allows Qililab control and communication with an instance of the
+    Quantum Machines Manager, which is the central class to interact with Quantum Machines instruments.
+    The manager is responsible, through the use of QUA sequences, of setting the Quantum Machines instruments
+    in the right manner for Quantum Control.
 
-       Args:
-        name (InstrumentName): Name of the Instrument.
-        device (QMMDriver): Instance of the Quantum Machines Manager Driver class.
-        settings (QMMSettings): Settings of the instrument.
+    Args:
+     name (InstrumentName): Name of the Instrument.
+     device (QMMDriver): Instance of the Quantum Machines Manager Driver class.
+     settings (QMMSettings): Settings of the instrument.
     """
 
     name = InstrumentName.QMM
@@ -93,7 +93,7 @@ class QMM(Instrument):
     def turn_off(self):
         """Turn off an instrument."""
 
-    def run(self, program:Program) -> QuantumMachinesResult:
+    def run(self, program: Program) -> QuantumMachinesResult:
         """Run the QUA Program.
 
         Args:
@@ -105,7 +105,7 @@ class QMM(Instrument):
 
         return QuantumMachinesResult(raw_results=res_handles.fetch_all())
 
-    def simulate(self, program:Program) -> QuantumMachinesResult:
+    def simulate(self, program: Program) -> QuantumMachinesResult:
         """Simulate the QUA Program.
 
         Args:

@@ -216,6 +216,7 @@ class QBLOXRESULT:
 
 class QMRESULT:
     """Quantum Machines Results attribute names."""
+
     QM_RAW_RESULTS = "qm_raw_results"
 
 
