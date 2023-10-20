@@ -17,7 +17,7 @@ from typing import overload
 
 import numpy as np
 
-from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
+from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.decorators import requires_domain
 from qililab.qprogram.operations import (
     Acquire,
@@ -133,6 +133,9 @@ class QProgram:
             >>>    # operations that shall be executed in the acquire_loop block
         """
         return QProgram._AverageContext(qprogram=self, iterations=shots)
+
+    def infinite_loop(self):
+        return QProgram._InfiniteLoopContext(qprogram=self)
 
     def loop(self, variable: Variable, values: np.ndarray):
         """Define a loop block to iterate values over a variable.
@@ -344,6 +347,15 @@ class QProgram:
         def __exit__(self, exc_type, exc_value, exc_tb):
             block = self.qprogram._pop_from_block_stack()
             self.qprogram._active_block.append(block)
+
+    class _InfiniteLoopContext(_BlockContext):  # pylint: disable=too-few-public-methods
+        def __init__(self, qprogram: "QProgram"):  # pylint: disable=super-init-not-called
+            self.qprogram = qprogram
+            self.block: InfiniteLoop = InfiniteLoop()
+
+        def __enter__(self) -> InfiniteLoop:
+            self.qprogram._append_to_block_stack(block=self.block)
+            return self.block
 
     class _ParallelContext(_BlockContext):  # pylint: disable=too-few-public-methods
         def __init__(self, qprogram: "QProgram", loops: list[ForLoop]):  # pylint: disable=super-init-not-called

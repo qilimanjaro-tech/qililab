@@ -10,6 +10,7 @@ from qm.qua import _dsl as qua_dsl
 from qualang_tools.config.integration_weights_tools import convert_integration_weights
 
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
+from qililab.qprogram.blocks.infinite_loop import InfiniteLoop
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
@@ -66,6 +67,7 @@ class QuantumMachinesCompiler:
     def __init__(self):
         # Handlers to map each operation to a corresponding handler function
         self._handlers: dict[type, Callable] = {
+            InfiniteLoop: self._handle_infinite_loop,
             ForLoop: self._handle_for_loop,
             Loop: self._handle_loop,
             Average: self._handle_average,
@@ -108,7 +110,7 @@ class QuantumMachinesCompiler:
                     raise NotImplementedError(
                         f"{element.__class__} operation is currently not supported in Quantum Machines."
                     )
-                if isinstance(element, (ForLoop, Loop, Average, Parallel)):
+                if isinstance(element, (InfiniteLoop, ForLoop, Loop, Average, Parallel)):
                     with handler(element):
                         traverse(element)
                         if isinstance(element, Average):
@@ -212,6 +214,9 @@ class QuantumMachinesCompiler:
         self._configuration["elements"] = {bus: {"operations": {}} for bus in buses}
         self._buses = {bus: BusCompilationInfo() for bus in buses}
 
+    def _handle_infinite_loop(self, _: InfiniteLoop):
+        return qua.infinite_loop_()
+
     def _handle_for_loop(self, element: ForLoop):
         qua_variable = self._qprogram_to_qua_variables[element.variable]
         start, stop, step = element.start, element.stop, element.step
@@ -286,7 +291,8 @@ class QuantumMachinesCompiler:
         )
         waveform_I, waveform_Q = element.get_waveforms()
         waveform_variables = element.get_waveform_variables()
-        if waveform_Q and (duration := waveform_I.get_duration()) != waveform_Q.get_duration():
+        duration = waveform_I.get_duration()
+        if waveform_Q and duration != waveform_Q.get_duration():
             raise ValueError()
         if not waveform_variables:
             waveform_I_name = self.__add_waveform_to_configuration(waveform_I)
@@ -407,16 +413,16 @@ class QuantumMachinesCompiler:
                     pulse,
                     bus,
                     stream_raw_adc,
-                    qua.dual_demod.full(weight_A, "out_1", weight_B, "out_2", variable_I),
-                    qua.dual_demod.full(weight_C, "out_1", weight_A, "out_2", variable_Q),
+                    qua.dual_demod.full(weight_A, "out1", weight_B, "out2", variable_I),
+                    qua.dual_demod.full(weight_C, "out1", weight_A, "out2", variable_Q),
                 )
             else:
                 qua.measure(
                     pulse,
                     bus,
                     stream_raw_adc,
-                    qua.dual_integration.full(weight_A, "out_1", weight_B, "out_2", variable_I),
-                    qua.dual_demod.full(weight_C, "out_1", weight_A, "out_2", variable_Q),
+                    qua.dual_integration.full(weight_A, "out1", weight_B, "out2", variable_I),
+                    qua.dual_demod.full(weight_C, "out1", weight_A, "out2", variable_Q),
                 )
             qua.save(variable_I, stream_I)
             qua.save(variable_Q, stream_Q)

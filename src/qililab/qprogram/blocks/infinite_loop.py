@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .average import Average
-from .block import Block
-from .for_loop import ForLoop
-from .infinite_loop import InfiniteLoop
-from .loop import Loop
-from .parallel import Parallel
+from dataclasses import dataclass
+
+from qililab.qprogram.blocks.block import Block
+from qililab.qprogram.variable import Variable
+
+
+@dataclass(frozen=True)
+class InfiniteLoop(Block):  # pylint: disable=missing-class-docstring
+    ...
