@@ -17,7 +17,7 @@ The chip class contains information about the chip and its conections. This info
 
 Each node in the chip can be a Coil, Coupler, Port, Qubit or Resonator. Each node also has an alias assigned to it. For example, the alias for Qubit nodes is typically ``qubit_n`` where n is the qubit index.
 
-The qubit connectivity (chip topology) can be accessed by calling chip.get_topology(), which returns a networkx graph of the qubits Eg.
+The qubit connectivity (chip topology) can be accessed by calling chip.get_topology(), which returns a networkx graph of the qubits, e.g.
 
 .. code-block:: python
 
