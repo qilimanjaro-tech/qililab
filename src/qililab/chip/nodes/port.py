@@ -24,7 +24,15 @@ from qililab.utils import Factory
 @Factory.register
 @dataclass
 class Port(Node):
-    """Port class."""
+    """This class is used to represent a port connected to the chip.
 
-    name = NodeName.PORT
-    line: Line
+    Each port has a line associated to communicate with the chip. The different types of lines supported
+    are flux, drive, feedline input and feedline output lines.
+
+    Args:
+        name (str): Name for the port
+        line (Line): The type of line associated with the port
+    """
+
+    name = NodeName.PORT #: Name for the port
+    line: Line #: The type of line associated with the port

@@ -23,7 +23,11 @@ from qililab.utils import Factory
 @Factory.register
 @dataclass(kw_only=True)
 class Resonator(Node):
-    """Resonator class"""
+    """This class is used to represent each resonator connected to each of the qubits within a chip.
+
+    Args:
+        frequency (float): frequency of the resonator
+    """
 
     name = NodeName.RESONATOR
-    frequency: float
+    frequency: float #: frequency of the resonator
