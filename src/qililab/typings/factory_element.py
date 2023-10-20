@@ -37,4 +37,4 @@ class FactoryElement:  # pylint: disable=too-few-public-methods
         | NodeName
         | ConnectionName
         | InstrumentControllerName
-    ) #: Enumerate for name
+    )  #: Enumerate for name
