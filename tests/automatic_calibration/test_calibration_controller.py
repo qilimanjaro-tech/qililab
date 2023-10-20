@@ -29,35 +29,35 @@ path_runcard = "examples/runcards/galadriel.yml"
 ### NODES CREATION ###
 ######################
 zeroth = CalibrationNode(
-    nb_path="notebook_test/zeroth.ipynb",
+    nb_path="tests/automatic_calibration/notebook_test/zeroth.ipynb",
     in_spec_threshold=4,
     bad_data_threshold=8,
     comparison_model=norm_root_mean_sqrt_error,
     drift_timeout=1.0,
 )
 first = CalibrationNode(
-    nb_path="notebook_test/first.ipynb",
+    nb_path="tests/automatic_calibration/notebook_test/first.ipynb",
     in_spec_threshold=4,
     bad_data_threshold=8,
     comparison_model=norm_root_mean_sqrt_error,
     drift_timeout=1800.0,
 )
 second = CalibrationNode(
-    nb_path="notebook_test/second.ipynb",
+    nb_path="tests/automatic_calibration/notebook_test/second.ipynb",
     in_spec_threshold=2,
     bad_data_threshold=4,
     comparison_model=norm_root_mean_sqrt_error,
     drift_timeout=1.0,
 )
 third = CalibrationNode(
-    nb_path="notebook_test/third.ipynb",
+    nb_path="tests/automatic_calibration/notebook_test/third.ipynb",
     in_spec_threshold=1,
     bad_data_threshold=2,
     comparison_model=norm_root_mean_sqrt_error,
     drift_timeout=1.0,
 )
 fourth = CalibrationNode(
-    nb_path="notebook_test/fourth.ipynb",
+    nb_path="tests/automatic_calibration/notebook_test/fourth.ipynb",
     in_spec_threshold=1,
     bad_data_threshold=2,
     comparison_model=norm_root_mean_sqrt_error,
