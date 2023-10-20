@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Quantum Machines OPX Instrument Controller """
+""" Quantum Machines Manager Instrument Controller """
 from dataclasses import dataclass
 
 from qililab.instrument_controllers.instrument_controller import InstrumentControllerSettings
