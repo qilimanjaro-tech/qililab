@@ -68,6 +68,7 @@ class QuantumMachinesCompiler:
         # Handlers to map each operation to a corresponding handler function
         self._handlers: dict[type, Callable] = {
             InfiniteLoop: self._handle_infinite_loop,
+            Parallel: self._handle_parallel_loop,
             ForLoop: self._handle_for_loop,
             Loop: self._handle_loop,
             Average: self._handle_average,
@@ -91,7 +92,7 @@ class QuantumMachinesCompiler:
         self._buses: dict[str, BusCompilationInfo]
 
     def compile(
-        self, qprogram: QProgram, bus_mappings: dict[str, str] | None = None
+        self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None
     ) -> tuple[qua.Program, dict, list[str]]:
         """Compile QProgram to QUA's Program.
 
@@ -122,7 +123,7 @@ class QuantumMachinesCompiler:
             self._qprogram_block_stack.pop()
 
         self._qprogram = qprogram
-        self._bus_mappings = bus_mappings
+        self._bus_mappings = bus_mapping
 
         self._qprogram_block_stack = deque()
         self._qprogram_to_qua_variables = {}
@@ -217,6 +218,27 @@ class QuantumMachinesCompiler:
     def _handle_infinite_loop(self, _: InfiniteLoop):
         return qua.infinite_loop_()
 
+    def _handle_parallel_loop(self, element: Parallel):
+        variables = []
+        loops = []
+        for loop in element.loops:
+            qua_variable = self._qprogram_to_qua_variables[loop.variable]
+            values = (
+                np.arange(loop.start, loop.stop + loop.step / 2, loop.step)
+                if isinstance(loop, ForLoop)
+                else loop.values
+            )
+            if loop.variable.domain is Domain.Phase:
+                values = values / 360.0
+            if loop.variable.domain is Domain.Frequency:
+                values = (values * 1e3).astype(int)
+            if loop.variable.domain is Domain.Time:
+                values = np.maximum(values, 0)
+
+            variables.append(qua_variable)
+            loops.append(values)
+        return qua.for_each_(tuple(variables), tuple(loops))
+
     def _handle_for_loop(self, element: ForLoop):
         qua_variable = self._qprogram_to_qua_variables[element.variable]
         start, stop, step = element.start, element.stop, element.step
@@ -239,6 +261,8 @@ class QuantumMachinesCompiler:
             values = values / 360.0
         if element.variable.domain is Domain.Frequency:
             values = (values * 1e3).astype(int)
+        if element.variable.domain is Domain.Time:
+            values = np.maximum(values, 0)
         return qua.for_each_(qua_variable, values)
 
     def _handle_average(self, element: Average):

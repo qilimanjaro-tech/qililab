@@ -96,7 +96,7 @@ class QProgram:
         """
         return QProgram._BlockContext(qprogram=self)
 
-    def parallel(self, loops: list[ForLoop]):
+    def parallel(self, loops: list[Loop | ForLoop]):
         """Define a block for running multiple loops in parallel.
 
         Blocks need to open a scope.
@@ -132,7 +132,7 @@ class QProgram:
             >>> with qp.acquire_loop(iterations=1000):
             >>>    # operations that shall be executed in the acquire_loop block
         """
-        return QProgram._AverageContext(qprogram=self, iterations=shots)
+        return QProgram._AverageContext(qprogram=self, shots=shots)
 
     def infinite_loop(self):
         return QProgram._InfiniteLoopContext(qprogram=self)
@@ -358,7 +358,7 @@ class QProgram:
             return self.block
 
     class _ParallelContext(_BlockContext):  # pylint: disable=too-few-public-methods
-        def __init__(self, qprogram: "QProgram", loops: list[ForLoop]):  # pylint: disable=super-init-not-called
+        def __init__(self, qprogram: "QProgram", loops: list[Loop | ForLoop]):  # pylint: disable=super-init-not-called
             self.qprogram = qprogram
             self.block: Parallel = Parallel(loops=loops)
 
@@ -389,9 +389,9 @@ class QProgram:
             return self.block
 
     class _AverageContext(_BlockContext):  # pylint: disable=too-few-public-methods
-        def __init__(self, qprogram: "QProgram", iterations: int):  # pylint: disable=super-init-not-called
+        def __init__(self, qprogram: "QProgram", shots: int):  # pylint: disable=super-init-not-called
             self.qprogram = qprogram
-            self.block: Average = Average(shots=iterations)
+            self.block: Average = Average(shots=shots)
 
         def __enter__(self) -> Average:
             self.qprogram._append_to_block_stack(block=self.block)

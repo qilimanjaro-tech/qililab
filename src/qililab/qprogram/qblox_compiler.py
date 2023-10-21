@@ -226,6 +226,8 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
     def _handle_parallel(self, element: Parallel):
         if not element.loops:
             raise NotImplementedError("Parallel block should contain loops.")
+        if any(isinstance(loop, Loop) for loop in element.loops):
+            raise NotImplementedError("Loops with arbitrary numpy arrays are not currently supported for QBlox.")
 
         loops = []
         iterations = []
@@ -233,7 +235,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             operation = QbloxCompiler._get_reference_operation_of_loop(loop=loop, starting_block=element)
             if not operation:
                 raise NotImplementedError("Variables referenced in loops should be used in at least one operation.")
-            start, step, iters = QbloxCompiler._convert_for_loop_values(loop, operation)
+            start, step, iters = QbloxCompiler._convert_for_loop_values(loop, operation)  # type: ignore[arg-type]
             loops.append((start, step))
             iterations.append(iters)
         iterations = min(iterations)
@@ -593,7 +595,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             self._buses[element.bus].marked_for_sync = True
 
     @staticmethod
-    def _get_reference_operation_of_loop(loop: ForLoop, starting_block: Block | None = None):
+    def _get_reference_operation_of_loop(loop: Loop | ForLoop, starting_block: Block | None = None):
         def collect_operations(block: Block):
             for element in block.elements:
                 if isinstance(element, Block):
