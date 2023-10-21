@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""IQPair dataclass."""
 from dataclasses import dataclass
 
 from qililab.waveforms.waveform import Waveform
@@ -19,5 +20,7 @@ from qililab.waveforms.waveform import Waveform
 
 @dataclass
 class IQPair:  # pylint: disable=missing-class-docstring
+    """IQPair dataclass, containing the real (I) and imaginary (Q) parts of a signal."""
+
     I: Waveform
     Q: Waveform

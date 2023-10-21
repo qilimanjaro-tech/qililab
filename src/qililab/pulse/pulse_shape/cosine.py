@@ -45,14 +45,21 @@ class Cosine(PulseShape):
     Check the following graph from Wolframalpha, where y is the lambda_2 parameter: [https://imgur.com/a/tjatZsg].
 
     Examples:
-        The envelope of a Cosine with ``lambda_2`` equal to ``0.2`` and ``0.5``, look respectively like:
+        To get the envelope of a Cosine shape, with ``lambda_2`` equal to ``X``, you need to do:
+
+        .. code-block:: python
+
+            from qililab.pulse.pulse_shape import Cosine
+            rectangular_envelope = Cosine(lambda_2=X).envelope(amplitude=1., duration=50)
+
+        which for ``X`` being ``0.2`` and ``0.5``, look respectively like:
 
         .. image:: /classes_images/cosines.png
             :width: 800
             :align: center
 
     References:
-        - Supplemental material B. "Flux pulse parametrization": [https://arxiv.org/abs/1903.02492].
+        - Supplement. material B. "Flux pulse parametrization": [https://arxiv.org/abs/1903.02492].
         - OPTIMAL SOLUTION: SMALL CHANGE IN θ: [https://arxiv.org/abs/1402.5467].
 
     Args:
@@ -63,12 +70,13 @@ class Cosine(PulseShape):
     name = PulseShapeName.COSINE
     lambda_2: float = 0.0  # between 0 and 1
 
-    def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
+    def envelope(self, duration: int, amplitude: float, resolution: float = 1.0) -> np.ndarray:
         """Modified sinusoidal-gaussian envelope.
 
         Args:
             duration (int): Duration of the pulse (ns).
             amplitude (float): Maximum amplitude of the pulse.
+            resolution (float, optional): Resolution of the pulse. Defaults to 1.
 
         Returns:
             ndarray: Amplitude of the envelope for each time step.
@@ -91,7 +99,7 @@ class Cosine(PulseShape):
         local_dictionary.pop("name", None)
         return cls(**local_dictionary)
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         """Returns dictionary representation of the Cosine object/shape.
 
         Returns:

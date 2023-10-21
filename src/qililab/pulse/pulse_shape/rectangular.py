@@ -29,7 +29,14 @@ class Rectangular(PulseShape):
     """Rectangular/square pulse shape. Given by a constant height line.
 
     Examples:
-        The envelope of a rectangular with ``amplitude`` equal to ``1.`` and ``0.75``, look respectively like:
+        To get the envelope of a rectangular shape, with ``amplitude`` equal to ``X``, you need to do:
+
+        .. code-block:: python
+
+            from qililab.pulse.pulse_shape import Rectangular
+            rectangular_envelope = Rectangular().envelope(amplitude=X, duration=50)
+
+        which for ``X`` being ``1.`` and ``0.75``, look respectively like:
 
         .. image:: /classes_images/rectangulars.png
             :width: 800
@@ -38,12 +45,13 @@ class Rectangular(PulseShape):
 
     name = PulseShapeName.RECTANGULAR  #: Name of the rectangular pulse shape.
 
-    def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
+    def envelope(self, duration: int, amplitude: float, resolution: float = 1.0) -> np.ndarray:
         """Constant amplitude envelope.
 
         Args:
             duration (int): Duration of the pulse (ns).
             amplitude (float): Maximum amplitude of the pulse.
+            resolution (float, optional): Resolution of the pulse. Defaults to 1.
 
         Returns:
             ndarray: Amplitude of the envelope for each time step.
@@ -64,7 +72,7 @@ class Rectangular(PulseShape):
         local_dictionary.pop("name", None)
         return cls(**local_dictionary)
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         """Returns dictionary representation of the Rectangular object/shape.
 
         Returns:
