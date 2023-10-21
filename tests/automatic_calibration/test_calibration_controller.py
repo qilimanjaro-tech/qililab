@@ -1,5 +1,4 @@
 import itertools
-import os
 from unittest.mock import MagicMock, call, patch
 from datetime import datetime
 
@@ -15,15 +14,7 @@ from qililab.platform.platform import Platform
 #################################### SET UPS ####################################
 #################################################################################
 
-########################
-### DIRECTORY CHANGE ###
-########################
-# abspath = os.path.abspath(__file__)
-# dname = os.path.dirname(abspath)
-# os.chdir(dname)
-# path_runcard = abspath.split("qililab")[0] + "qililab/examples/runcards/galadriel.yml"
 path_runcard = "examples/runcards/galadriel.yml"
-
 
 ######################
 ### NODES CREATION ###
