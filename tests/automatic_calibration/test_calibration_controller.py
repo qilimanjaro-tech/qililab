@@ -62,6 +62,7 @@ nodes = {"zeroth": zeroth, "first": first, "second": second, "third": third, "fo
 ### GRAPHS CREATION ###
 #######################
 
+# fmt: off
 # GOOD GRAPH CREATION:
 G0 = nx.DiGraph()                   #       3 <--\
 G0.add_edge("fourth", "third")      #             \
@@ -176,6 +177,7 @@ G8_calls = [call(zeroth),call(second),call(zeroth),call(third),call(zeroth),call
 G9_calls = [call(zeroth),call(second),call(zeroth),call(zeroth),call(second),call(zeroth),call(first),call(third),call(zeroth),call(second),call(zeroth),call(second),call(zeroth),call(first),call(fourth)]
 
 good_graphs_calls_for_maintain4 = [G0_calls,G1_calls,G2_calls,G3_calls,G4_calls,G5_calls,G6_calls,G7_calls,G8_calls,G9_calls]
+# fmt: on
 
 
 ##########################
@@ -378,37 +380,37 @@ class TestCalibrationController:
     #####################
     ### TEST DIAGNOSE ###
     #####################
-#         def test_diagnose():
-#         # Arrange
-#         node = CalibrationNode("node1")
-#         controller = CalibrationController(nx.DiGraph(), {"node1": node}, "runcard.yml")
-#         controller.check_data = MagicMock(return_value="bad_data")
-#         controller.calibrate = MagicMock()
-#         controller._update_parameters = MagicMock()
+    #         def test_diagnose():
+    #         # Arrange
+    #         node = CalibrationNode("node1")
+    #         controller = CalibrationController(nx.DiGraph(), {"node1": node}, "runcard.yml")
+    #         controller.check_data = MagicMock(return_value="bad_data")
+    #         controller.calibrate = MagicMock()
+    #         controller._update_parameters = MagicMock()
 
-#         # Act
-#         result = controller.diagnose(node)
+    #         # Act
+    #         result = controller.diagnose(node)
 
-#         # Assert
-#         assert result == True
-#         controller.check_data.assert_called_once_with(node)
-#         controller.calibrate.assert_called_once_with(node)
-#         controller._update_parameters.assert_called_once_with(node=node)
+    #         # Assert
+    #         assert result == True
+    #         controller.check_data.assert_called_once_with(node)
+    #         controller.calibrate.assert_called_once_with(node)
+    #         controller._update_parameters.assert_called_once_with(node=node)
 
-#     def test_diagnose_in_spec():
-#         # Arrange
-#         node = CalibrationNode("node1")
-#         controller = CalibrationController(nx.DiGraph(), {"node1": node}, "runcard.yml")
-#         controller.check_data = MagicMock(return_value="in_spec")
+    #     def test_diagnose_in_spec():
+    #         # Arrange
+    #         node = CalibrationNode("node1")
+    #         controller = CalibrationController(nx.DiGraph(), {"node1": node}, "runcard.yml")
+    #         controller.check_data = MagicMock(return_value="in_spec")
 
-#         # Act
-#         result = controller.diagnose(node)
+    #         # Act
+    #         result = controller.diagnose(node)
 
-#         # Assert
-#         assert result == False
-#         controller.check_data.assert_called_once_with(node)
-#         assert not controller.calibrate.called
-#         assert not controller._update_parameters.called
+    #         # Assert
+    #         assert result == False
+    #         controller.check_data.assert_called_once_with(node)
+    #         assert not controller.calibrate.called
+    #         assert not controller._update_parameters.called
 
     ########################
     ### TEST CHECK STATE ###
@@ -431,7 +433,7 @@ class TestCalibrationController:
         zeroth.drift_timeout = 10
         result = controller.check_state(zeroth)
         assert result is False
-        
+
     @pytest.mark.parametrize(
         "controller",
         [
@@ -448,7 +450,7 @@ class TestCalibrationController:
         fourth.previous_timestamp = datetime.now().timestamp() - 500
         result = controller.check_state(fourth)
         assert result is True
-        
+
         # Case where dependent nodes have an newer timestamps, and all are passing -> False:
         fourth.previous_timestamp = datetime.now().timestamp() - 1500
         result = controller.check_state(fourth)
@@ -463,7 +465,7 @@ class TestCalibrationController:
     #######################
     ### TEST CHECK DATA ###
     #######################
-#     # Tests for check_data()
+    #     # Tests for check_data()
 
     ######################
     ### TEST CALIBRATE ###
@@ -475,20 +477,19 @@ class TestCalibrationController:
             for graph in good_graphs
         ],
     )
-    @patch('qililab.automatic_calibration.calibration_node.CalibrationNode.run_notebook')
-    @patch('qililab.automatic_calibration.calibration_node.CalibrationNode.add_string_to_checked_nb_name')
+    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.run_notebook")
+    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.add_string_to_checked_nb_name")
     def test_calibrate(self, mock_run, mock_add_str, controller):
         """Test that the calibration method, calls node.run_notebook()."""
         for node in controller.node_sequence.values():
             controller.calibrate(node)
         assert mock_run.call_count == len(controller.node_sequence)
         assert mock_add_str.call_count == len(controller.node_sequence)
-        
 
     ##############################
     ### TEST UPDATE PARAMETERS ###
     ##############################
-#     # Tests for _update_parameters()
+    #     # Tests for _update_parameters()
 
     #######################
     ### TEST DEPENDENTS ###
@@ -504,7 +505,7 @@ class TestCalibrationController:
         """Test that dependents return the correct dependencies."""
         result = controller[1]._dependents(nodes["zeroth"])
         assert result == []
-        
+
         result = controller[1]._dependents(nodes["fourth"])
         if controller[0] in [G0, G1]:
             assert third in result and second in result
@@ -517,45 +518,46 @@ class TestCalibrationController:
         elif controller[0] in [G6, G7]:
             assert third in result and first in result
             assert len(result) == 2
-            
+
         elif controller[0] in [G8, G9]:
             assert third in result and second in result and first in result
             assert len(result) == 3
 
     ##############################
     ### TEST OBTAIN COMPARISON ###
-    ############################## 
+    ##############################
     def test_obtain_comparison(self):
         """Test that obtain_comparison calls comparison_model correctly."""
+
         def test_error(obtained: dict, comparison: dict) -> float:
             return sum(obtained["y"]) - sum(comparison["y"])
-        
+
         controller = CalibrationController(node_sequence=nodes, calibration_graph=G1, runcard=path_runcard)
-        
-        obtained = {'x': [1,2,3], 'y': [4,5,6]} 
-        comparison = {'x': [2,3,4], 'y': [5,6,7]}
-        
+
+        obtained = {"x": [1, 2, 3], "y": [4, 5, 6]}
+        comparison = {"x": [2, 3, 4], "y": [5, 6, 7]}
+
         for node in controller.node_sequence.values():
             node.comparison_model = test_error
             result = controller._obtain_comparison(node, obtained, comparison)
 
-            assert result == 4+5+6-5-6-7
+            assert result == 4 + 5 + 6 - 5 - 6 - 7
 
     ###############################
     ### TEST IS TIMEOUT EXPIRED ###
     ###############################
     @pytest.mark.parametrize(
         "timestamp",
-        [datetime(2023, 1, 1).timestamp(), datetime.now().timestamp()-3600, datetime.now().timestamp()-3600*23],
+        [datetime(2023, 1, 1).timestamp(), datetime.now().timestamp() - 3600, datetime.now().timestamp() - 3600 * 23],
     )
     def test_timeout_expired(self, timestamp):
         """Tests cases where timeout should be expired."""
         timeout = 1800
         assert CalibrationController._is_timeout_expired(timestamp, timeout) is True
-    
+
     @pytest.mark.parametrize(
         "timestamp",
-        [datetime.now().timestamp(), datetime.now().timestamp()-1700],
+        [datetime.now().timestamp(), datetime.now().timestamp() - 1700],
     )
     def test_timeout_not_expired(self, timestamp):
         """Test cases where timeout should not be expired."""
