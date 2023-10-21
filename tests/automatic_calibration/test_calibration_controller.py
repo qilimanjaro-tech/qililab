@@ -1,6 +1,6 @@
 import itertools
-from unittest.mock import MagicMock, call, patch
 from datetime import datetime
+from unittest.mock import MagicMock, call, patch
 
 import networkx as nx
 import pytest
@@ -8,7 +8,6 @@ import pytest
 from qililab.automatic_calibration import CalibrationController, CalibrationNode, norm_root_mean_sqrt_error
 from qililab.data_management import build_platform
 from qililab.platform.platform import Platform
-
 
 #################################################################################
 #################################### SET UPS ####################################
