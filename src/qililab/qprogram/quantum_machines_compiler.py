@@ -21,6 +21,7 @@ from qililab.qprogram.operations import (
     SetGain,
     SetOffset,
     SetPhase,
+    SetVariable,
     Sync,
     Wait,
 )
@@ -214,6 +215,17 @@ class QuantumMachinesCompiler:
         buses = set(collect_buses(self._qprogram._program))
         self._configuration["elements"] = {bus: {"operations": {}} for bus in buses}
         self._buses = {bus: BusCompilationInfo() for bus in buses}
+
+    def _handle_set_variable(self, element: SetVariable):
+        qua_variable = self._qprogram_to_qua_variables[element.variable]
+        value = element.value
+        if element.variable.domain is Domain.Phase:
+            value = value / 360.0
+        if element.variable.domain is Domain.Frequency:
+            value = value * 1e3
+        if element.variable.domain is Domain.Time:
+            value = max(value, 0)
+        qua.assign(qua_variable, value)
 
     def _handle_infinite_loop(self, _: InfiniteLoop):
         return qua.infinite_loop_()

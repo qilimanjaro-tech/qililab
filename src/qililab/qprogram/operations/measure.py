@@ -22,7 +22,7 @@ from qililab.waveforms import IQPair, Waveform
 @dataclass(frozen=True)
 class Measure(Operation):  # pylint: disable=missing-class-docstring
     bus: str
-    waveforms: IQPair
+    waveform: IQPair
     weights: IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair] | None
     demodulation: bool
     save_raw_adc: bool
@@ -33,8 +33,8 @@ class Measure(Operation):  # pylint: disable=missing-class-docstring
         Returns:
             tuple[Waveform, Waveform | None]: The waveforms as tuple. The second waveform can be None.
         """
-        wf_I: Waveform = self.waveforms.I
-        wf_Q: Waveform = self.waveforms.Q
+        wf_I: Waveform = self.waveform.I
+        wf_Q: Waveform = self.waveform.Q
         return wf_I, wf_Q
 
     def get_waveform_variables(self) -> set[Variable]:

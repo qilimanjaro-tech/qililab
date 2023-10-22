@@ -12,15 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .acquire import Acquire
-from .measure import Measure
-from .operation import Operation
-from .play import Play
-from .reset_phase import ResetPhase
-from .set_frequency import SetFrequency
-from .set_gain import SetGain
-from .set_offset import SetOffset
-from .set_phase import SetPhase
-from .set_variable import SetVariable
-from .sync import Sync
-from .wait import Wait
+from dataclasses import dataclass
+
+from qililab.qprogram.operations.operation import Operation
+from qililab.qprogram.variable import Variable
+
+
+@dataclass(frozen=True)
+class SetVariable(Operation):  # pylint: disable=missing-class-docstring
+    variable: Variable
+    value: int | float

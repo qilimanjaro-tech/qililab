@@ -28,10 +28,11 @@ from qililab.qprogram.operations import (
     SetGain,
     SetOffset,
     SetPhase,
+    SetVariable,
     Sync,
     Wait,
 )
-from qililab.qprogram.variable import Domain, FloatVariable, IntVariable, Variable
+from qililab.qprogram.variable import Domain, FloatVariable, IntVariable, ValueSource, Variable
 from qililab.waveforms import IQPair, Waveform
 
 
@@ -215,7 +216,7 @@ class QProgram:
     def measure(
         self,
         bus: str,
-        waveforms: IQPair,
+        waveform: IQPair,
         weights: IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair] | None = None,
         demodulation: bool = True,
         save_raw_adc: bool = True,
@@ -227,7 +228,7 @@ class QProgram:
             weights (IQPair): Weights used during acquisition.
         """
         operation = Measure(
-            bus=bus, waveforms=waveforms, weights=weights, demodulation=demodulation, save_raw_adc=save_raw_adc
+            bus=bus, waveform=waveform, weights=weights, demodulation=demodulation, save_raw_adc=save_raw_adc
         )
         self._active_block.append(operation)
 
@@ -295,9 +296,7 @@ class QProgram:
         operation = SetOffset(bus=bus, offset_path0=offset_path0, offset_path1=offset_path1)
         self._active_block.append(operation)
 
-    def variable(
-        self, domain: Domain = Domain.Scalar, type: type[int | float] | None = None
-    ):  # pylint: disable=redefined-builtin
+    def variable(self, domain: Domain, type: type[int | float] | None = None):  # pylint: disable=redefined-builtin
         """Declare a variable.
 
         Args:
@@ -322,6 +321,8 @@ class QProgram:
 
         if domain is Domain.Scalar and type is None:
             raise ValueError("You must specify a type in a scalar variable.")
+        if domain is not Domain.Scalar and type is not None:
+            raise ValueError("When declaring a variable of a specific domain, its type is inferred by its domain.")
 
         if domain is Domain.Scalar:
             if type == int:
@@ -334,6 +335,16 @@ class QProgram:
         if domain in [Domain.Frequency, Domain.Phase, Domain.Voltage]:
             return _float_variable(domain)
         raise NotImplementedError
+
+    def set_variable(self, variable: Variable, value: int | float):
+        if variable._source is ValueSource.Dependent:
+            raise ValueError("You cannot set the value of the variable, since it is dependent on a loop structure.")
+        if isinstance(variable, int) and isinstance(value, float):
+            raise ValueError("Trying to change an integer variable to float.")
+
+        variable._value = value
+        operation = SetVariable(variable=variable, value=value)
+        self._active_block.append(operation)
 
     class _BlockContext:
         def __init__(self, qprogram: "QProgram"):
@@ -354,8 +365,7 @@ class QProgram:
             self.block: InfiniteLoop = InfiniteLoop()
 
         def __enter__(self) -> InfiniteLoop:
-            self.qprogram._append_to_block_stack(block=self.block)
-            return self.block
+            return super().__enter__()
 
     class _ParallelContext(_BlockContext):  # pylint: disable=too-few-public-methods
         def __init__(self, qprogram: "QProgram", loops: list[Loop | ForLoop]):  # pylint: disable=super-init-not-called
@@ -363,8 +373,15 @@ class QProgram:
             self.block: Parallel = Parallel(loops=loops)
 
         def __enter__(self) -> Parallel:
-            self.qprogram._append_to_block_stack(block=self.block)
-            return self.block
+            for loop in self.block.loops:
+                loop.variable._source = ValueSource.Dependent
+                loop.variable._value = None
+            return super().__enter__()
+
+        def __exit__(self, exc_type, exc_value, exc_tb):
+            for loop in self.block.loops:
+                loop.variable._source = ValueSource.Free
+            super().__exit__(exc_type, exc_value, exc_tb)
 
     class _LoopContext(_BlockContext):  # pylint: disable=too-few-public-methods
         def __init__(  # pylint: disable=super-init-not-called
@@ -374,8 +391,13 @@ class QProgram:
             self.block: Loop = Loop(variable=variable, values=values)
 
         def __enter__(self) -> Loop:
-            self.qprogram._append_to_block_stack(block=self.block)
-            return self.block
+            self.block.variable._source = ValueSource.Dependent
+            self.block.variable._value = None
+            return super().__enter__()
+
+        def __exit__(self, exc_type, exc_value, exc_tb):
+            self.block.variable._source = ValueSource.Free
+            super().__exit__(exc_type, exc_value, exc_tb)
 
     class _ForLoopContext(_BlockContext):  # pylint: disable=too-few-public-methods
         def __init__(  # pylint: disable=super-init-not-called
@@ -385,8 +407,13 @@ class QProgram:
             self.block: ForLoop = ForLoop(variable=variable, start=start, stop=stop, step=step)
 
         def __enter__(self) -> ForLoop:
-            self.qprogram._append_to_block_stack(block=self.block)
-            return self.block
+            self.block.variable._source = ValueSource.Dependent
+            self.block.variable._value = None
+            return super().__enter__()
+
+        def __exit__(self, exc_type, exc_value, exc_tb):
+            self.block.variable._source = ValueSource.Free
+            super().__exit__(exc_type, exc_value, exc_tb)
 
     class _AverageContext(_BlockContext):  # pylint: disable=too-few-public-methods
         def __init__(self, qprogram: "QProgram", shots: int):  # pylint: disable=super-init-not-called
@@ -394,5 +421,4 @@ class QProgram:
             self.block: Average = Average(shots=shots)
 
         def __enter__(self) -> Average:
-            self.qprogram._append_to_block_stack(block=self.block)
-            return self.block
+            return super().__enter__()

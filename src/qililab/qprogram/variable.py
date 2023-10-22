@@ -35,9 +35,9 @@ class Variable:
     """Variable class used to define variables inside a QProgram."""
 
     _uuid: UUID
-    _value: int | float
+    _value: int | float | None = None
+    _source: ValueSource = ValueSource.Free
     domain: Domain
-    source: ValueSource = ValueSource.Free
 
     @property
     def value(self):
@@ -63,10 +63,10 @@ class Variable:
         return self._value.__format__(formatstr)
 
     def __pos__(self):
-        return +self._value
+        return +self._value if self._value is not None else None  # pylint: disable=invalid-unary-operand-type
 
     def __neg__(self):
-        return -self._value
+        return -self._value if self._value is not None else None  # pylint: disable=invalid-unary-operand-type
 
     def __abs__(self):
         return abs(self._value)
@@ -164,6 +164,7 @@ class IntVariable(Variable, int):  # type: ignore
 
     def __init__(self, domain: Domain = Domain.Scalar):
         Variable.__init__(self)
+        self._value = None
         self.domain = domain
 
 
@@ -178,4 +179,5 @@ class FloatVariable(Variable, float):  # type: ignore
 
     def __init__(self, domain: Domain = Domain.Scalar):
         Variable.__init__(self)
+        self._value = None
         self.domain = domain
