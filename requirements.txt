@@ -12,3 +12,4 @@ qpysequence==0.9.3
 lmfit==1.1.0
 rustworkx==0.12.1
 h5py==3.9.0
+networkx==3.1
