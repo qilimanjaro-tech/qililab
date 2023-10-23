@@ -23,7 +23,11 @@ from qililab.utils import Factory
 @Factory.register
 @dataclass
 class Coupler(Node):
-    """Coupler class"""
+    """This class is used to represent each coupler within the chip.
+
+    Args:
+        frequency (float): frequency of the coupler
+    """
 
     name = NodeName.COUPLER
-    frequency: float
+    frequency: float  #: frequency of the coupler
