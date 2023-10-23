@@ -21,15 +21,62 @@ class TestCalibrationNodeInitialization:
     """Unit tests for the CalibrationNode class initialization"""
 
 
-# class TestCalibrationNode:
-#    """Unit tests for the CalibrationNode class methods"""
-#    def test_add_string_to_checked_nb_name():
-#    def test_run_notebook():
-#    def test_invert_output_and_previous_output():
-#    def test_export_calibration_outputs():
-#
-# class TestCalibrationNodePrivate:
-#    """Unit tests for the CalibrationNode class private methods"""
+@pytest.fixture(name="ccnode")
+@patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_output_parameters")
+@patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_timestamp")
+def fixture_ccnode(mocked_last_cal_params, mocked_last_cal_time) -> CalibrationNode:
+    """Return a simple CalibrationNode object"""
+
+    def dummy():
+        pass
+
+    dummy_cmp_model = dummy
+    return CalibrationNode(
+        nb_path="./foobar.ipynb",
+        in_spec_threshold=0.6,
+        bad_data_threshold=0.9,
+        comparison_model=dummy_cmp_model,
+        drift_timeout=100,
+    )
+class TestCalibrationNode:
+    """Unit tests for the CalibrationNode class methods"""
+
+    def test_add_string_to_checked_nb_name(self, ccnode: CalibrationNode):
+        with patch("qililab.automatic_calibration.calibration_node.os.rename") as mocked_rename:
+            path = f"{ccnode.nb_folder}/{ccnode.node_id}"
+            timestamp_path = ccnode._create_notebook_datetime_path(path, 0).split(".ipynb")[0]
+            string_to_add = "test_succesfull"
+            ccnode.add_string_to_checked_nb_name(string_to_add, 0)
+            mocked_rename.assert_called_once_with(f"{timestamp_path}.ipynb", f"{timestamp_path}_{string_to_add}.ipynb")
+
+    def test_run_notebook():
+        pass
+    def test_invert_output_and_previous_output():
+        pass
+    def test_export_calibration_outputs():
+        pass
+    
+@pytest.fixture(name="cnode")
+@patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_output_parameters")
+@patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_timestamp")
+def fixture_cnode(mocked_last_cal_params, mocked_last_cal_time) -> CalibrationNode:
+    """Return a simple CalibrationNode object"""
+
+    def dummy():
+        pass
+
+    dummy_cmp_model = dummy
+    return CalibrationNode(
+        nb_path="./foobar.ipynb",
+        in_spec_threshold=0.6,
+        bad_data_threshold=0.9,
+        comparison_model=dummy_cmp_model,
+        drift_timeout=100,
+    )
+
+
+class TestCalibrationNodePrivate:
+    """Unit tests for the CalibrationNode class private methods"""
 #    @pytest.mark.parametrize(
 #        "sweep_interval","expected",
 #        [(None, None), ({"start":0, "stop":5, "step":1}, [0,1,2,3,4])],
@@ -93,9 +140,87 @@ class TestCalibrationNodeInitialization:
 #            assert msg == f"Calibration output must have key and value 'check_parameters' in notebook {input_path}"
 #
 #    def test_get_last_calibrated_timestamp():
+#        pass
+#    
 #    def test_get_last_calibrated_output_parameters():
-#    def test_parse_output_from_execution_file():
-#    def test_find_last_executed_calibration():
+#        pass
+
+    def test_parse_output_from_execution_file(self, cnode: CalibrationNode):
+        #building a fixed dictionary for the test
+        sweep_interval = [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48]
+        y = [i**2 for i in sweep_interval]
+        results = {"x":sweep_interval, "y":y}
+        expected_dict = {"check_parameters": results, "platform_params": [["bus_alias", "param_name", 1]]}
+
+        # Dumping the raw string of the expected dictionary on a temporary file
+        raw_file_contents = 'RAND_INT:47102512880765720413 - OUTPUTS: {\"check_parameters\": {\"x\": [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48], \"y\": [100, 144, 196, 256, 324, 400, 484, 576, 676, 784, 900, 1024, 1156, 1296, 1444, 1600, 1764, 1936, 2116, 2304]}, \"platform_params\": [[\"bus_alias\", \"param_name\", 1]]}\n'
+        filename = "tmp_test_file.ipynb"
+        with open(f'{cnode.nb_folder}/{filename}', "w") as file:
+            file.write(raw_file_contents)
+
+        test_dict = cnode._parse_output_from_execution_file(filename)
+        assert test_dict == expected_dict
+        os.remove(f'{cnode.nb_folder}/{filename}')
+
+    def test_find_last_executed_calibration(self, cnode: CalibrationNode):
+        filename1 = "tmp_test_foobar_dirty.ipynb"
+        filename2 = "tmp_test_foobar_error.ipynb"
+        filename3 = "tmp_test_foo_calibrated.ipynb"
+        filename4 = "tmp_test_bar_calibrated.ipynb"
+        filename5 = "tmp_test_foobar_.ipynb"
+        filename_expected = "tmp_test_foobar_calibrated.ipynb"
+
+        f = open(f'{cnode.nb_folder}/{filename1}', "w")
+        f.close()
+        f = open(f'{cnode.nb_folder}/{filename2}', "w")
+        f.close()
+        f = open(f'{cnode.nb_folder}/{filename3}', "w")
+        f.close()
+        f = open(f'{cnode.nb_folder}/{filename4}', "w")
+        f.close()
+        f = open(f'{cnode.nb_folder}/{filename5}', "w")
+        f.close()
+        f = open(f'{cnode.nb_folder}/{filename_expected}', "w")
+        f.close()
+
+        test_filename = cnode._find_last_executed_calibration()
+
+        assert filename_expected == test_filename
+
+        os.remove(f'{cnode.nb_folder}/{filename1}')
+        os.remove(f'{cnode.nb_folder}/{filename2}')
+        os.remove(f'{cnode.nb_folder}/{filename3}')
+        os.remove(f'{cnode.nb_folder}/{filename4}')
+        os.remove(f'{cnode.nb_folder}/{filename5}')
+        os.remove(f'{cnode.nb_folder}/{filename_expected}')
+
+    def test_find_last_executed_calibration_does_not_find_file(self, cnode: CalibrationNode):
+        filename1 = "tmp_test_foobar_dirty.ipynb"
+        filename2 = "tmp_test_foobar_error.ipynb"
+        filename3 = "tmp_test_foo_calibrated.ipynb"
+        filename4 = "tmp_test_bar_calibrated.ipynb"
+        filename5 = "tmp_test_foobar_.ipynb"
+
+        f = open(f'{cnode.nb_folder}/{filename1}', "w")
+        f.close()
+        f = open(f'{cnode.nb_folder}/{filename2}', "w")
+        f.close()
+        f = open(f'{cnode.nb_folder}/{filename3}', "w")
+        f.close()
+        f = open(f'{cnode.nb_folder}/{filename4}', "w")
+        f.close()
+        f = open(f'{cnode.nb_folder}/{filename5}', "w")
+        f.close()
+
+        test_filename = cnode._find_last_executed_calibration()
+
+        assert test_filename is None
+
+        os.remove(f'{cnode.nb_folder}/{filename1}')
+        os.remove(f'{cnode.nb_folder}/{filename2}')
+        os.remove(f'{cnode.nb_folder}/{filename3}')
+        os.remove(f'{cnode.nb_folder}/{filename4}')
+        os.remove(f'{cnode.nb_folder}/{filename5}')
 
 
 @pytest.fixture(name="node_class")
