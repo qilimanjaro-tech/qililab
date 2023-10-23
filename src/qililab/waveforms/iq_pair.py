@@ -20,7 +20,7 @@ from qililab.waveforms.waveform import Waveform
 
 @dataclass
 class IQPair:  # pylint: disable=missing-class-docstring
-    """IQPair dataclass, containing the real (I) and imaginary (Q) parts of a signal."""
+    """IQPair dataclass, containing the 'in-phase' (I) and 'quadrature' (Q) parts of a signal."""
 
     I: Waveform
     Q: Waveform

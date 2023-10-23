@@ -21,7 +21,7 @@ from .iq_pair import IQPair
 
 class Drag(IQPair):  # pylint: disable=too-few-public-methods
     """Drag pulse. This is a gaussian drive pulse with an IQ pair where the I channel corresponds to the gaussian wave
-    and the Q is the drag correction, which corresponds to the derivative of the I channel times a drag_coefficient.
+    and the Q is the drag correction, which corresponds to the derivative of the I channel times a ``drag_coefficient``.
 
     Args:
         num_sigmas (float): Sigma number of the gaussian pulse shape. Defines the width of the gaussian pulse.
