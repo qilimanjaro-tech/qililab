@@ -405,7 +405,31 @@ class Galadriel:
         Parameter.MAX_VOLTAGE.value: 20.0,
     }
 
-    instruments: list[dict] = [qblox_qcm_0, qblox_qrm_0, rohde_schwarz_0, rohde_schwarz_1, attenuator, keithley_2600]
+    qmm_controller_0: dict[str, Any] = {
+        "name": InstrumentControllerName.QMM,
+        "alias": "qmm_controller_0",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            "name": ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.0.111",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "qmm_0",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    qmm_0: dict[str, Any] = {
+        "name": InstrumentName.QMM,
+        "alias": "qmm_0",
+        RUNCARD.FIRMWARE: "4.30.046.295",
+        "qop_ip": "192.168.0.1",
+        "qop_port": 80,
+        "config": {}
+    }
+
+    instruments: list[dict] = [qblox_qcm_0, qblox_qrm_0, rohde_schwarz_0, rohde_schwarz_1, attenuator, keithley_2600, qmm_0]
     instrument_controllers: list[dict] = [
         pulsar_controller_qcm_0,
         pulsar_controller_qrm_0,
@@ -413,6 +437,7 @@ class Galadriel:
         rohde_schwarz_controller_1,
         attenuator_controller_0,
         keithley_2600_controller_0,
+        qmm_controller_0,
     ]
 
     chip: dict[str, Any] = {
