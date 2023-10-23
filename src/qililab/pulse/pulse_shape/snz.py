@@ -38,7 +38,14 @@ class SNZ(PulseShape):
         - half-duration negative rectangular pulse.
 
     Examples:
-        The envelope of a SNZ with ``b=0.2``, ``t_phi=2`` and ``b=0.5``, ``t_phi=10``, look respectively like:
+        To get the envelope of a SNZ shape, with ``b`` and ``t_phi`` equal to ``B`` and ``T``, you need to do:
+
+        .. code-block:: python
+
+            from qililab.pulse.pulse_shape import SNZ
+            snz_envelope = SNZ(b=B, t_phi=T).envelope(amplitude=1, duration=50)
+
+        which for ``b=0.2``, ``t_phi=2`` and ``b=0.5``, ``t_phi=10``, look respectively like:
 
         .. image:: /classes_images/snzs.png
             :width: 800
@@ -62,13 +69,13 @@ class SNZ(PulseShape):
         if not isinstance(self.t_phi, int):
             raise TypeError("t_phi for pulse SNZ has to be an integer. Since min time resolution is 1ns")
 
-    def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
+    def envelope(self, duration: int, amplitude: float, resolution: float = 1.0) -> np.ndarray:
         """Constant amplitude envelope.
 
         Args:
-            duration (int): total pulse duration (ns).
+            duration (int): Duration of the pulse (ns).
             amplitude (float): Maximum amplitude of the pulse
-            resolution (float): Pulse resolution
+            resolution (float, optional): Resolution of the pulse. Defaults to 1.
 
         Returns:
             ndarray: Amplitude of the envelope for each time step.
@@ -110,7 +117,7 @@ class SNZ(PulseShape):
         local_dictionary.pop("name", None)
         return cls(**local_dictionary)
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         """Returns dictionary representation of the Rectangular object/shape.
 
         Returns:
