@@ -51,10 +51,25 @@ class TestCalibrationNode:
 
     def test_run_notebook():
         pass
-    def test_invert_output_and_previous_output():
-        pass
-    def test_export_calibration_outputs():
-        pass
+    def test_invert_output_and_previous_output(self, ccnode: CalibrationNode):
+        test_output_params = {"test_output_params":"foo"}
+        test_previous_output_params = {"test_previous_output_params":"bar"}
+        ccnode.output_parameters, ccnode.previous_output_parameters = (
+            test_output_params,
+            test_previous_output_params,
+        )
+        ccnode.invert_output_and_previous_output()
+        assert ccnode.output_parameters == test_previous_output_params
+        assert ccnode.previous_output_parameters == test_output_params
+
+    @patch("qililab.automatic_calibration.calibration_node.json.dumps", autospec=True)
+    def test_export_calibration_outputs(self, ccnode: CalibrationNode, mocked_dumps):
+        test_outputs = {"this_is":"a_test_dict", "foo":"bar"}
+        test_dumped_outputs = '{"this_is": "a_test_dict", "foo": "bar"}'
+        with patch('builtins.print') as mocked_print:
+            ccnode.export_calibration_outputs(test_outputs)
+            mocked_dumps.assert_called_with(test_outputs)
+            mocked_print.assert_called_with(f"{logger_output_start}{test_dumped_outputs}")
     
 @pytest.fixture(name="cnode")
 @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_output_parameters")
