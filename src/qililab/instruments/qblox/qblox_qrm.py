@@ -287,6 +287,9 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 self.device.sequencers[sequencer.identifier].sync_en(False)
                 integration_lengths.append(sequencer.used_integration_length)
 
+                # clear acquisition data
+                self.device.delete_acquisition_data(sequencer=sequencer_id, all=True)
+
         return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
 
     def _append_acquire_instruction(
