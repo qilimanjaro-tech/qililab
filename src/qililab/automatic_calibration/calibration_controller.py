@@ -27,7 +27,7 @@ class CalibrationController:
 
     Args:
         calibration_graph (nx.DiGraph): The calibration graph. This is a directed acyclic graph where each node is a string.
-        node_sequence (dict): Mapping for the dodes of the graph, from strings into the actual initialized nodes.
+        node_sequence (dict[str, CalibrationNode]): Mapping for the nodes of the graph, from strings into the actual initialized nodes.
         runcard (str): The runcard path, containing the serialized platform where the experiments will be run.
 
     Examples:
@@ -76,15 +76,15 @@ class CalibrationController:
             Find information about how these nodes and their notebooks need to be in the :class:`CalibrationNode` class documentation.
     """
 
-    def __init__(self, calibration_graph: nx.DiGraph, node_sequence: dict, runcard: str):
+    def __init__(self, calibration_graph: nx.DiGraph, node_sequence: dict[str, CalibrationNode], runcard: str):
         if not nx.is_directed_acyclic_graph(calibration_graph):
             raise ValueError("The calibration graph must be a Directed Acyclic Graph (DAG).")
 
         self.calibration_graph: nx.DiGraph = calibration_graph
         """The calibration graph. This is a directed acyclic graph where each node is a string."""
 
-        self.node_sequence: dict = node_sequence
-        """Mapping for the dodes of the graph, from strings into the actual initialized nodes."""
+        self.node_sequence: dict[str, CalibrationNode] = node_sequence
+        """Mapping for the nodes of the graph, from strings into the actual initialized nodes."""
 
         self.runcard: str = runcard
         """The runcard path, containing the serialized platform where the experiments will be run."""
@@ -92,8 +92,29 @@ class CalibrationController:
         self.platform: Platform = build_platform(runcard)
         """The initialized platform, where the experiments will be run."""
 
-    def run_automatic_calibration(self) -> None:
-        """Run the automatic calibration procedure."""
+    def run_automatic_calibration(self) -> dict[str, dict]:
+        """Run the automatic calibration procedure and retrieve the final set parameters and achieved fidelities dictionaries.
+        
+        Returns:
+            dict[str, dict]: Dictionary for the last set parameters and the last achieved fidelities. It contains two dictionaries in the keys:
+                - "set_parameters"
+                - "fidelities"
+            The two dictionaries have the following structure:
+            
+            
+            Fidelities dictionary (dict[str, tuple]): key being the fidelity name (str), and the value being a tuple that contains in this order:
+                - (float) value of fidelity.
+                - (str) node_id where this fidelity was computed.
+                - (datetime) updated time of the fidelity.
+                
+            Set parameters dictionary (dict[tuple, tuple]): key being a tuple containing:
+                - (str) the the parameter name.
+                - (str) the bus alias where its been set.
+            and the dict value being a tuple that contains in this order:
+                - (float) value of parameter.
+                - (str) node_id where this parameter was computed.
+                - (datetime) updated time of the parameter.
+        """
         highest_level_nodes = [node for node, in_degree in self.calibration_graph.in_degree() if in_degree == 0]
 
         for n in highest_level_nodes:
@@ -104,6 +125,8 @@ class CalibrationController:
             "Automatic calibration completed successfully!\n"
             "#############################################\n"
         )
+        
+        return {"set_parameters": self.get_last_set_paramers(), "fidelities": self.get_last_fidelities()}
 
     def maintain(self, node: CalibrationNode) -> None:
         """This is primary interface for our calibration procedure and it's the highest level algorithm.
@@ -311,6 +334,47 @@ class CalibrationController:
                 self.platform.set_parameter(alias=bus_alias, parameter=param_name, value=param_value)
 
             save_platform(self.runcard, self.platform)
+            
+    def get_last_set_paramers(self) -> dict[tuple, tuple]:
+        """Retrieve the last set parameters of the graph.
+
+        Returns:
+            dict[tuple, tuple]: Set parameters dictionary, with the dict key being a tuple containing:
+                - (str) the the parameter name.
+                - (str) the bus alias where its been set.
+            and the dict value being a tuple that contains in this order:
+                - (float) value of parameter.
+                - (str) node_id where this parameter was computed.
+                - (datetime) updated time of the parameter.
+        """
+        parameters: dict[tuple, tuple] = {}
+        print("LAST SET PARAMETERS:")
+        for node in self.node_sequence.values(): 
+            if node.output_parameters is not None and node.previous_timestamp is not None and "platform_params" in node.output_parameters:
+                for bus , parameter, value in node.output_parameters["platform_params"]:
+                    print(f"Last set {parameter} in bus {bus}: {value} (updated in {node.node_id} at {datetime.fromtimestamp(node.previous_timestamp)})")
+                    parameters = {(parameter, bus): (value, node.node_id, datetime.fromtimestamp(node.previous_timestamp))}
+                    
+        return parameters
+    
+    def get_last_fidelities(self) -> dict[str, tuple]:
+        """Retrieve the last updated fidelities of the graph.
+
+        Returns:
+            dict[str, tuple]: Fidelities dictionary, with key being the fidelity name (str), and the value being a tuple that contains in this order:
+                - (float) value of fidelity.
+                - (str) node_id where this fidelity was computed.
+                - (datetime) updated time of the fidelity.
+        """
+        fidelities: dict[str, tuple] = {}
+        print("LAST RETRIEVED FIDELITIES:")
+        for node in self.node_sequence.values(): 
+            if node.output_parameters is not None and node.previous_timestamp is not None and "fidelities" in node.output_parameters:
+                for fidelity, value in node.output_parameters["fidelities"]:
+                    print(f"Last fidelity of {fidelity}: {value} (updated in {node.node_id} at {datetime.fromtimestamp(node.previous_timestamp)})")
+                    fidelities = {fidelity: (value, node.node_id, datetime.fromtimestamp(node.previous_timestamp))}
+                    
+        return fidelities
 
     def _dependents(self, node: CalibrationNode) -> list:
         """Find the nodes that a node depends on.
