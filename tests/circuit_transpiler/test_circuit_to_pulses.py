@@ -10,7 +10,7 @@ from qibo.models import Circuit
 from qililab.chip import Chip
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import PulseEvent, PulseSchedule
-from qililab.pulse.circuit_to_pulses import CircuitToPulses
+from qililab.circuit_transpiler.circuit_to_pulses import CircuitToPulses
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_shape import SNZ
 from qililab.pulse.pulse_shape import Drag as Drag_pulse
