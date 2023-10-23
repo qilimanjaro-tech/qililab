@@ -12,58 +12,151 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Class that translates a Qibo Circuit into a PulseSequence"""
+"""This file contains the functions used to decompose a circuit into native gates and to compute virtual-Z gates."""
+from qibo import gates
+from qibo.models import Circuit
+
+from qililab.settings.runcard import Runcard
+from qililab.circuit_transpiler.gate_decompositions import translate_gates
+
+from .native_gates import Drag, Wait
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from qililab.platform import Platform, Bus
+
 import contextlib
 from dataclasses import asdict
 
 import numpy as np
 from qibo.gates import Gate, M
-from qibo.models.circuit import Circuit
 
 from qililab.chip.nodes import Coupler, Qubit
 from qililab.constants import RUNCARD
 from qililab.instruments import AWG
-from qililab.platform import Bus, Platform
 from qililab.settings.gate_event_settings import GateEventSettings
-from qililab.transpiler import Drag
 from qililab.typings.enums import Line
-from qililab.utils import Factory, qibo_gates
+from qililab.utils import Factory
 
-from .pulse import Pulse
-from .pulse_event import PulseEvent
-from .pulse_schedule import PulseSchedule
+from ..pulse.pulse import Pulse
+from ..pulse.pulse_event import PulseEvent
+from ..pulse.pulse_schedule import PulseSchedule
 
 
-class CircuitToPulses:  # pylint: disable=too-few-public-methods
-    """Translates a list of circuits into a list of pulse sequences (each circuit to an independent pulse sequence)
-    For each circuit gate we look up for its corresponding gates settings in the runcard (the name of the class of the circuit
-    gate and the name of the gate in the runcard should match) and load its schedule of GateEvents.
-    Each gate event corresponds to a concrete pulse applied at a certain time w.r.t the gate's start time and through a specific bus
-    (see gates settings docstrings for more details).
-
-    Measurement gates are handled in a slightly different manner. For a circuit gate M(0,1,2) the settings for each M(0), M(1), M(2)
-    will be looked up and will be applied in sync. Note that thus a circuit gate for M(0,1,2) is different from the circuit sequence
-    M(0)M(1)M(2) since the later will not be necessarily applied at the same time for all the qubits involved.
-
-    Times for each qubit are kept track of with the dictionary `time`.
-    The times at which each pulse is applied are padded if they are not multiples of the minimum clock time. This means that if min clock
-    time is 4 and a pulse applied to qubit k lasts 17ns, the next pulse at qubit k will be at t=20ns
-
-    Arguments:
-        platform (Platform): :class:`Platform` with gate and hardware settings
-
-    Attributes:
-        platform (Platform): same as above
-    """
-
-    def __init__(self, platform: Platform):
+class CircuitTranspiler:
+    def __init__(self, platform: Platform):  # pylint: disable=used-before-assignment
         self.platform = platform
 
-    def translate(  # pylint: disable=too-many-locals, too-many-branches
-        self, circuits: list[Circuit]
-    ) -> list[PulseSchedule]:
-        """Translates each circuit to a PulseSequences class, which is a list of PulseSequence classes for
-        each different port and pulse name (control/readout).
+    def transpile_circuit(self, circuits: list[Circuit]) -> list[PulseSchedule]:
+        """Transpiles a list of qibo.models.Circuit to a list of pulse schedules.
+        First translates the circuit to a native gate circuit and applies virtual Z gates and phase corrections for CZ gates.
+        Then it converts the native gate circuit to a pulse schedule using calibrated settings from the runcard.
+
+        Args:
+            circuits (list[Circuit]): list of qibo circuits
+        """
+        native_circuits = (self.circuit_to_native(circuit) for circuit in circuits)
+        return self.circuit_to_pulses(list(native_circuits))
+
+    def circuit_to_native(self, circuit: Circuit, optimize: bool = True) -> Circuit:
+        """Converts circuit with qibo gates to circuit with native gates
+
+        Args:
+            circuit (Circuit): circuit with qibo gates
+            optimize (bool): optimize the transpiled circuit using otpimize_transpilation
+
+        Returns:
+            new_circuit (Circuit): circuit with transpiled gates
+        """
+        # get list of gates from circuit
+        ngates = circuit.queue
+        # init new circuit
+        new_circuit = Circuit(circuit.nqubits)
+        # add transpiled gates to new circuit, optimize if needed
+        if optimize:
+            gates_to_optimize = translate_gates(ngates)
+            new_circuit.add(self.optimize_transpilation(circuit.nqubits, ngates=gates_to_optimize))
+        else:
+            new_circuit.add(translate_gates(ngates))
+
+        return new_circuit
+
+    def optimize_transpilation(self, nqubits: int, ngates: list[gates.Gate]) -> list[gates.Gate]:
+        """Optimizes transpiled circuit by applying virtual Z gates.
+        This is done by moving all RZ to the left of all operators as a single RZ. The corresponding cumulative rotation
+        from each RZ is carried on as phase in all drag pulses left of the RZ operator.
+        Virtual Z gates are also applied to correct phase errors from CZ gates.
+        The final RZ operator left to be applied as the last operator in the circuit can afterwards be removed since the last
+        operation is going to be a measurement, which is performed on the Z basis and is therefore invariant under rotations
+        around the Z axis.
+        This last step can also be seen from the fact that an RZ operator applied on a single qubit, with no operations carried
+        on afterwards induces a phase rotation. Since phase is an imaginary unitary component, its absolute value will be 1
+        independent on any (unitary) operations carried on it.
+
+        Mind that moving an operator to the left is equivalent to applying this operator last so
+        it is actually moved to the _right_ of Circuit.queue (last element of list).
+
+        For more information on virtual Z gates, see https://arxiv.org/abs/1612.00858
+
+        Args:
+            nqubits (int) : number of qubits in the circuit
+            ngates (list[gates.Gate]) : list of gates in the circuit
+
+        Returns:
+            list[gates.Gate] : list of re-ordered gates
+        """
+        supported_gates = ["rz", "drag", "cz", "wait", "measure"]
+        new_gates = []
+        shift = {qubit: 0 for qubit in range(nqubits)}
+        for gate in ngates:
+            if gate.name not in supported_gates:
+                raise NotImplementedError(f"{gate.name} not part of native supported gates {supported_gates}")
+            if isinstance(gate, gates.RZ):
+                shift[gate.qubits[0]] += gate.parameters[0]
+            # add CZ phase correction
+            elif isinstance(gate, gates.CZ):
+                gate_settings = self.platform.gates_settings.get_gate(name=gate.__class__.__name__, qubits=gate.qubits)
+                control_qubit, target_qubit = gate.qubits
+                corrections = next(
+                    (
+                        event.pulse.options
+                        for event in gate_settings
+                        if (
+                            event.pulse.options is not None
+                            and f"q{control_qubit}_phase_correction" in event.pulse.options
+                        )
+                    ),
+                    None,
+                )
+                if corrections is not None:
+                    shift[control_qubit] += corrections[f"q{control_qubit}_phase_correction"]
+                    shift[target_qubit] += corrections[f"q{target_qubit}_phase_correction"]
+                new_gates.append(gate)
+            else:
+                # if gate is drag pulse, shift parameters by accumulated Zs
+                if isinstance(gate, Drag):
+                    # create new drag pulse rather than modify parameters of the old one
+                    gate = Drag(gate.qubits[0], gate.parameters[0], gate.parameters[1] - shift[gate.qubits[0]])
+
+                # append gate to optimized list
+                new_gates.append(gate)
+
+        return new_gates
+
+    def circuit_to_pulses(self, circuits: list[Circuit]) -> list[PulseSchedule]:
+        """Translates a list of circuits into a list of pulse sequences (each circuit to an independent pulse sequence)
+        For each circuit gate we look up for its corresponding gates settings in the runcard (the name of the class of the circuit
+        gate and the name of the gate in the runcard should match) and load its schedule of GateEvents.
+        Each gate event corresponds to a concrete pulse applied at a certain time w.r.t the gate's start time and through a specific bus
+        (see gates settings docstrings for more details).
+
+        Measurement gates are handled in a slightly different manner. For a circuit gate M(0,1,2) the settings for each M(0), M(1), M(2)
+        will be looked up and will be applied in sync. Note that thus a circuit gate for M(0,1,2) is different from the circuit sequence
+        M(0)M(1)M(2) since the later will not be necessarily applied at the same time for all the qubits involved.
+
+        Times for each qubit are kept track of with the dictionary `time`.
+        The times at which each pulse is applied are padded if they are not multiples of the minimum clock time. This means that if min clock
+        time is 4 and a pulse applied to qubit k lasts 17ns, the next pulse at qubit k will be at t=20ns
 
         Args:
             circuits (List[Circuit]): List of Qibo Circuit classes.
@@ -71,13 +164,14 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
         Returns:
             list[PulseSequences]: List of :class:`PulseSequences` classes.
         """
+
         pulse_schedule_list: list[PulseSchedule] = []
         for circuit in circuits:
             pulse_schedule = PulseSchedule()
             time: dict[int, int] = {}  # init/restart time
             for gate in circuit.queue:
                 # handle wait gates
-                if isinstance(gate, qibo_gates.Wait):
+                if isinstance(gate, Wait):
                     self._update_time(time=time, qubit=gate.qubits[0], gate_time=gate.parameters[0])
                     continue
 
@@ -107,7 +201,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
                 # apply gate schedule
                 for gate_event in gate_schedule:
                     # find bus
-                    bus = self.platform._get_bus_by_alias(gate_event.bus)  # pylint: disable=protected-access
+                    bus = self.platform.get_bus_by_alias(gate_event.bus)  # pylint: disable=protected-access
                     # add control gate schedule
                     pulse_event = self._gate_element_to_pulse_event(
                         time=start_time, gate=gate, gate_event=gate_event, bus=bus
@@ -158,17 +252,17 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
         drag_schedule = GateEventSettings(
             **asdict(gate_schedule[0])
         )  # make new object so that gate_schedule is not overwritten
-        theta = self.normalize_angle(angle=gate.parameters[0])
+        theta = self._normalize_angle(angle=gate.parameters[0])
         amplitude = drag_schedule.pulse.amplitude * theta / np.pi
-        phase = self.normalize_angle(angle=gate.parameters[1])
+        phase = self._normalize_angle(angle=gate.parameters[1])
         if amplitude < 0:
             amplitude = -amplitude
-            phase = self.normalize_angle(angle=gate.parameters[1] + np.pi)
+            phase = self._normalize_angle(angle=gate.parameters[1] + np.pi)
         drag_schedule.pulse.amplitude = amplitude
         drag_schedule.pulse.phase = phase
         return [drag_schedule]
 
-    def normalize_angle(self, angle: float):
+    def _normalize_angle(self, angle: float):
         """Normalizes angle in range [-pi, pi].
 
         Args:
@@ -209,9 +303,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
             [
                 target.qubit_index
                 for schedule_element in schedule
-                for target in self.platform._get_bus_by_alias(  # pylint: disable=protected-access
-                    schedule_element.bus
-                ).targets
+                for target in self.platform.get_bus_by_alias(schedule_element.bus).targets
                 if isinstance(target, Qubit)
             ]
             if schedule is not None
@@ -223,7 +315,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
         return list(set(schedule_qubits + gate_qubits))  # converto to set and back to list to remove repeated items
 
     def _gate_element_to_pulse_event(
-        self, time: int, gate: Gate, gate_event: GateEventSettings, bus: Bus
+        self, time: int, gate: Gate, gate_event: GateEventSettings, bus: Bus  # pylint: disable=used-before-assignment
     ) -> PulseEvent:
         """Translates a gate element into a pulse.
 

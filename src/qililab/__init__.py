@@ -22,8 +22,8 @@ from .execute_circuit import execute
 from .experiment import Experiment
 from .qprogram import QProgram
 from .result import Results
-from .transpiler import Drag, Park, translate_circuit
+from .circuit_transpiler import Drag, Wait, CircuitTranspiler
 from .typings import ExperimentOptions, ExperimentSettings, Parameter
-from .utils import Loop, Wait
+from .utils import Loop
 from .utils.load_data import load
 from .waveforms import *

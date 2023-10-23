@@ -17,7 +17,7 @@ from qililab.pulse.pulse_shape import Drag as Drag_pulse
 from qililab.pulse.pulse_shape import Gaussian, Rectangular
 from qililab.settings import Runcard
 from qililab.settings.gate_event_settings import GateEventSettings
-from qililab.transpiler import Drag
+from qililab.circuit_transpiler import Drag
 from qililab.utils import Wait
 from tests.data import Galadriel
 from tests.test_utils import build_platform

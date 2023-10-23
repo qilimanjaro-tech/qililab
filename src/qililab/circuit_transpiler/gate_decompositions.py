@@ -18,9 +18,7 @@ from collections.abc import Callable
 import numpy as np
 from qibo import gates
 
-from qililab.utils import Wait
-
-from .native_gates import Drag
+from .native_gates import Drag, Wait
 
 
 class GateDecompositions:

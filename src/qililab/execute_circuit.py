@@ -19,7 +19,6 @@ from tqdm.auto import tqdm
 from qililab.result import Result
 
 from .data_management import build_platform
-from .transpiler import translate_circuit
 
 
 def execute(program: Circuit | list[Circuit], runcard: str | dict, nshots: int = 1) -> Result | list[Result]:
@@ -71,10 +70,8 @@ def execute(program: Circuit | list[Circuit], runcard: str | dict, nshots: int =
         platform.turn_on_instruments()
         results = []
         for circuit in tqdm(program, total=len(program)):
-            # Transpile and optimize circuit
-            native_circuit = translate_circuit(circuit, gates_settings=platform.gates_settings)
             # Execute circuit
-            results.append(platform.execute(native_circuit, num_avg=1, repetition_duration=200_000, num_bins=nshots))
+            results.append(platform.execute(circuit, num_avg=1, repetition_duration=200_000, num_bins=nshots))
         platform.disconnect()
         return results[0] if len(results) == 1 else results
     except Exception as e:

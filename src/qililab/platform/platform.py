@@ -37,6 +37,7 @@ from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import Line, Parameter
 from qililab.typings.yaml_type import yaml
+from qililab.circuit_transpiler import CircuitTranspiler
 
 from .components import Bus, Buses
 
@@ -379,7 +380,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         if element is None:
             element = self.instrument_controllers.get_instrument_controller(alias=alias)
         if element is None:
-            element = self._get_bus_by_alias(alias=alias)
+            element = self.get_bus_by_alias(alias=alias)
         if element is None:
             element = self.chip.get_node_from_alias(alias=alias)
         return element
@@ -406,7 +407,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             )
         return flux_bus, control_bus, readout_bus
 
-    def _get_bus_by_alias(self, alias: str | None = None):
+    def get_bus_by_alias(self, alias: str | None = None):
         """Gets buses given their alias.
 
         Args:
@@ -561,12 +562,12 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         # Upload pulse schedule
         for bus_alias in programs:
-            bus = self._get_bus_by_alias(alias=bus_alias)
+            bus = self.get_bus_by_alias(alias=bus_alias)
             bus.upload()
 
         # Execute pulse schedule
         for bus_alias in programs:
-            bus = self._get_bus_by_alias(alias=bus_alias)
+            bus = self.get_bus_by_alias(alias=bus_alias)
             bus.run()
 
         # Acquire results
@@ -608,13 +609,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             dict: Dictionary of compiled assembly programs. The key is the bus alias (``str``), and the value is the assembly compilation (``list``).
         """
         # We have a circular import because Platform uses CircuitToPulses and vice versa
-        from qililab.pulse.circuit_to_pulses import (  # pylint: disable=import-outside-toplevel, cyclic-import
-            CircuitToPulses,
-        )
 
         if isinstance(program, Circuit):
-            translator = CircuitToPulses(platform=self)
-            pulse_schedule = translator.translate(circuits=[program])[0]
+            transpiler = CircuitTranspiler(platform=self)
+            pulse_schedule = transpiler.transpile_circuit(circuits=[program])[0]
         else:
             pulse_schedule = program
 
