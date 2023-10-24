@@ -68,6 +68,7 @@ class QuantumMachinesCompiler:
     def __init__(self):
         # Handlers to map each operation to a corresponding handler function
         self._handlers: dict[type, Callable] = {
+            SetVariable: self._handle_set_variable,
             InfiniteLoop: self._handle_infinite_loop,
             Parallel: self._handle_parallel_loop,
             ForLoop: self._handle_for_loop,
@@ -383,9 +384,9 @@ class QuantumMachinesCompiler:
                 else operation_name
             )
             if element.demodulation:
-                qua.measure(pulse, bus, stream_raw_adc, qua.demod.full(weight_I, variable_I))
+                qua.measure(pulse, bus, stream_raw_adc, qua.demod.full(weight_I, variable_I, "out1"))
             else:
-                qua.measure(pulse, bus, stream_raw_adc, qua.integration.full(weight_I, variable_I))
+                qua.measure(pulse, bus, stream_raw_adc, qua.integration.full(weight_I, variable_I, "out2"))
             qua.save(variable_I, stream_I)
         elif isinstance(element.weights, tuple) and len(element.weights) == 2:
             variable_I = qua.declare(qua.fixed)
@@ -411,16 +412,16 @@ class QuantumMachinesCompiler:
                     pulse,
                     bus,
                     stream_raw_adc,
-                    qua.demod.full(weight_I, variable_I),
-                    qua.demod.full(weight_Q, variable_Q),
+                    qua.demod.full(weight_I, variable_I, "out1"),
+                    qua.demod.full(weight_Q, variable_Q, "out2"),
                 )
             else:
                 qua.measure(
                     pulse,
                     bus,
                     stream_raw_adc,
-                    qua.integration.full(weight_I, variable_I),
-                    qua.integration.full(weight_Q, variable_Q),
+                    qua.integration.full(weight_I, variable_I, "out1"),
+                    qua.integration.full(weight_Q, variable_Q, "out2"),
                 )
             qua.save(variable_I, stream_I)
             qua.save(variable_Q, stream_Q)
@@ -458,7 +459,7 @@ class QuantumMachinesCompiler:
                     bus,
                     stream_raw_adc,
                     qua.dual_integration.full(weight_A, "out1", weight_B, "out2", variable_I),
-                    qua.dual_demod.full(weight_C, "out1", weight_A, "out2", variable_Q),
+                    qua.dual_integration.full(weight_C, "out1", weight_A, "out2", variable_Q),
                 )
             qua.save(variable_I, stream_I)
             qua.save(variable_Q, stream_Q)
@@ -469,7 +470,7 @@ class QuantumMachinesCompiler:
                 iterations = QuantumMachinesCompiler.__calculate_iterations(block.start, block.stop, block.step)
                 measurement_info.loops_iterations.append(iterations)
             if isinstance(block, Loop):
-                iterations = len(block.elements)
+                iterations = len(block.values)
                 measurement_info.loops_iterations.append(iterations)
 
         self._measurements.append(measurement_info)

@@ -22,7 +22,7 @@ import qpysequence as QPy
 import qpysequence.program as QPyProgram
 import qpysequence.program.instructions as QPyInstructions
 
-from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
+from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.operations import (
     Acquire,
     Operation,
@@ -86,6 +86,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
     def __init__(self):
         # Handlers to map each operation to a corresponding handler function
         self._handlers: dict[type, Callable] = {
+            InfiniteLoop: self._handle_infinite_loop,
             Parallel: self._handle_parallel,
             Average: self._handle_average,
             ForLoop: self._handle_for_loop,
@@ -262,6 +263,13 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             self._buses[bus].average_counter += 1
         return True
 
+    def _handle_infinite_loop(self, _: InfiniteLoop):
+        for bus in self._buses:
+            qpy_loop = QPyProgram.InfiniteLoop(name=f"infinite_loop_{self._buses[bus].loop_counter}")
+            self._buses[bus].qpy_block_stack.append(qpy_loop)
+            self._buses[bus].loop_counter += 1
+        return True
+
     def _handle_for_loop(self, element: ForLoop):
         operation = QbloxCompiler._get_reference_operation_of_loop(element)
         if not operation:
@@ -277,7 +285,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             self._buses[bus].loop_counter += 1
         return True
 
-    def _handle_loop(self, element: Loop):
+    def _handle_loop(self, _: Loop):
         raise NotImplementedError("Loops with arbitrary numpy arrays are not currently supported for QBlox.")
 
     def _handle_set_frequency(self, element: SetFrequency):

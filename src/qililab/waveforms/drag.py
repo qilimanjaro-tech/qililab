@@ -23,7 +23,7 @@ class Drag(IQPair):  # pylint: disable=too-few-public-methods
     and the Q is the drag correction, which corresponds to the derivative of the I channel times a drag_coefficient
     """
 
-    def __init__(self, drag_coefficient: float, amplitude: float, duration: int, num_sigmas: float):
+    def __init__(self, amplitude: float, duration: int, num_sigmas: float, drag_coefficient: float):
         """Init method
 
         Args:
