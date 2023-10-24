@@ -90,3 +90,4 @@ Qililab Documentation
    code/result
    code/transpiler
    code/waveforms
+   code/automatic_calibration
