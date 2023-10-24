@@ -13,9 +13,10 @@
 # limitations under the License.
 
 """Instrument Controllers class"""
+import io
 from dataclasses import dataclass
 
-import yaml
+import ruamel.yaml
 
 from qililab.instrument_controllers.instrument_controller import InstrumentController
 
@@ -64,4 +65,4 @@ class InstrumentControllers:
         Returns:
             str: String representation of the Instrument Controllers class.
         """
-        return str(yaml.dump(self.to_dict(), sort_keys=False))
+        return str(ruamel.yaml.YAML().dump(self.to_dict(), io.BytesIO()))

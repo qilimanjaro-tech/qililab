@@ -14,11 +14,13 @@
 
 """Platform class."""
 import ast
+import io
 import re
 from copy import deepcopy
 from dataclasses import asdict
 from queue import Queue
 
+import ruamel.yaml
 from qibo.models import Circuit
 from qiboconnection.api import API
 
@@ -36,7 +38,6 @@ from qililab.result import Result
 from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import Line, Parameter
-from qililab.typings.yaml_type import yaml
 
 from .components import Bus, Buses
 
@@ -523,7 +524,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         Returns:
             str: Name of the platform.
         """
-        return str(yaml.dump(self.to_dict(), sort_keys=False))
+        return str(ruamel.yaml.YAML().dump(self.to_dict(), io.BytesIO()))
 
     def execute(
         self,

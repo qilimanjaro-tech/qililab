@@ -1,6 +1,8 @@
 """This file tests the the ``InstrumentController`` class"""
+import io
+
 import pytest
-import yaml
+import ruamel.yaml
 
 from qililab.constants import CONNECTION, INSTRUMENTCONTROLLER, RUNCARD
 from qililab.instrument_controllers.rohde_schwarz import SGS100AController
@@ -77,4 +79,4 @@ class TestConnection:
     def test_print_instrument_controllers(self, platform: Platform):
         """Test print instruments."""
         instr_cont = platform.instrument_controllers
-        assert str(instr_cont) == str(yaml.dump(instr_cont.to_dict(), sort_keys=False))
+        assert str(instr_cont) == str(ruamel.yaml.YAML().dump(instr_cont.to_dict(), io.BytesIO()))
