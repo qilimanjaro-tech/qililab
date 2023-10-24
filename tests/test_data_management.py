@@ -203,4 +203,5 @@ class TestPlatformSerializationWithRuamelYaml:
         saved_firmware = self.saved_platform.instruments.elements[4].firmware
         saved_firmware_from_dict = self.saved_platform.to_dict()["instruments"][4]["firmware"]
 
-        assert original_firmware == original_firmware_from_dict == saved_firmware == saved_firmware_from_dict is None
+        assert original_firmware == original_firmware_from_dict == saved_firmware == saved_firmware_from_dict
+        assert saved_firmware is None
