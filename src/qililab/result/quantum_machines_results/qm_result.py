@@ -46,7 +46,8 @@ class QuantumMachinesResult(Result):
         return self.raw_results
 
     def to_dict(self) -> dict:
-        """
+        """Returns a serialized dictionary of the QuantumMachinesResult class.
+
         Returns:
             dict[str: str | np.ndarray]: Dictionary containing all the class information.
         """

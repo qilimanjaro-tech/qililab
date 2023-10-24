@@ -50,16 +50,22 @@ class QMM(Instrument):
     in the right manner for Quantum Control.
 
     Args:
-     name (InstrumentName): Name of the Instrument.
-     device (QMMDriver): Instance of the Quantum Machines Manager Driver class.
-     settings (QMMSettings): Settings of the instrument.
+        name (InstrumentName): Name of the Instrument.
+        device (QMMDriver): Instance of the Quantum Machines Manager Driver class.
+        settings (QMMSettings): Settings of the instrument.
     """
 
     name = InstrumentName.QMM
 
     @dataclass
     class QMMSettings(Instrument.InstrumentSettings):
-        """Settings for Quantum Machines Manager instrument."""
+        """Settings for Quantum Machines Manager instrument.
+
+        Args:
+            qop_ip (str): I.P. address to connect to the Quantum Machines instruments.
+            qop_port (int): Port to connect to the Quantum Machines instruments.
+            config (Dict): Configuration dictionary for the Quantum Machines instruments.
+        """
 
         qop_ip: str
         qop_port: int
@@ -67,38 +73,41 @@ class QMM(Instrument):
 
     settings: QMMSettings
     device: QMMDriver
-    qm: QuantumMachine
+    qmm: QuantumMachinesManager
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
-        """Set initial instrument settings.
+        """Sets initial instrument settings.
 
         Creates an instance of the Qilililab Quantum Machines Manager, and the Quantum Machine, opening
         a connection to the Quantum Machine by the use of the Quantum Machines Manager.
         """
         super().initial_setup()
-        qmm = QuantumMachinesManager(host=self.settings.qop_ip, port=self.settings.qop_port)
-        self.qm = qmm.open_qm(self.settings.config)
+        self.qmm = QuantumMachinesManager(host=self.settings.qop_ip, port=self.settings.qop_port)
 
     @Instrument.CheckDeviceInitialized
     def turn_on(self):
-        """Turn on an instrument."""
+        """Turns on an instrument."""
 
     @Instrument.CheckDeviceInitialized
     def reset(self):
-        """Reset instrument settings."""
+        """Resets instrument settings."""
 
     @Instrument.CheckDeviceInitialized
     def turn_off(self):
-        """Turn off an instrument."""
+        """Turns off an instrument."""
 
     def run(self, program: Program) -> QuantumMachinesResult:
-        """Run the QUA Program.
+        """Runs the QUA Program.
+
+        Creates, for every execution, an instance of a QuantumMachine class and executes the QUA program on it.
+        After execution, the results are fetched through the fetcher tool from the qm library.
 
         Args:
             program (Program): QUA Program to be run on Quantum Machines instruments.
         """
-        job = self.qm.execute(program)
+        qm = self.qmm.open_qm(self.settings.config)
+        job = qm.execute(program)
         res_handles = job.result_handles
         res_handles.wait_for_all_values()
         res_handles.fetch_all()
@@ -106,18 +115,22 @@ class QMM(Instrument):
         return QuantumMachinesResult(raw_results=res_handles)
 
     def simulate(self, program: Program) -> QuantumMachinesResult:
-        """Simulate the QUA Program.
+        """Simulates the QUA Program.
+
+        Creates, for every simulation, an instance of a QuantumMachine class and executes the QUA program on it.
+        After simulation, the results are fetched through the fetcher tool from the qm library.
 
         Args:
             program (Program): QUA Program to be simulated on Quantum Machines instruments.
         """
-        job = self.qm.simulate(program, SimulationConfig(40_000))
+        qm = self.qmm.open_qm(self.settings.config)
+        job = qm.simulate(program, SimulationConfig(40_000))
         res_handles = job.result_handles
 
         return QuantumMachinesResult(raw_results=res_handles.fetch_all())
 
     def to_dict(self):
-        """Return a dict representation of a Quantum Machines Manager instrument.
+        """Returns a dict representation of a Quantum Machines Manager instrument.
 
         Returns:
             dict[str: str | dict]: Dictionary containing the runcard name and the instrument settings.
