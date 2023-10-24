@@ -9,7 +9,7 @@ from qililab.automatic_calibration import CalibrationController, CalibrationNode
 from qililab.data_management import build_platform
 from qililab.platform.platform import Platform
 
-# flake8: noqa: E262
+# flake8: noqa
 
 #################################################################################
 #################################### SET UPS ####################################
