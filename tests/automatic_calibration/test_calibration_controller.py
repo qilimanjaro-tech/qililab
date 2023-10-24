@@ -165,7 +165,7 @@ B.add_edge("first", "third")
 
 good_graphs = [G0, G1, G2, G3, G4, G5, G6, G7, G8, G9]
 
-# Recursive calls of each graph, when you maintain node 4.
+# Leaves to Roots recursive calls of each graph. Examples: Maintain(fourth), or calibrate and update_param in Diagnose(fourth).
 G0_calls = [call(third), call(zeroth), call(second), call(fourth)]
 G1_calls = [call(zeroth),call(zeroth),call(first),call(second),call(third),call(zeroth),call(zeroth),call(first),call(second),call(fourth)]
 G2_calls = [call(zeroth), call(third), call(fourth)]
@@ -177,27 +177,30 @@ G7_calls = [call(zeroth),call(zeroth),call(first),call(second),call(zeroth),call
 G8_calls = [call(zeroth),call(second),call(zeroth),call(third),call(zeroth),call(second),call(zeroth),call(second),call(zeroth),call(first),call(fourth)]
 G9_calls = [call(zeroth),call(second),call(zeroth),call(zeroth),call(second),call(zeroth),call(first),call(third),call(zeroth),call(second),call(zeroth),call(second),call(zeroth),call(first),call(fourth)]
 
-good_graphs_calls_for_maintain4 = [G0_calls,G1_calls,G2_calls,G3_calls,G4_calls,G5_calls,G6_calls,G7_calls,G8_calls,G9_calls]
+leaves_to_roots_good_graphs_calls = [G0_calls,G1_calls,G2_calls,G3_calls,G4_calls,G5_calls,G6_calls,G7_calls,G8_calls,G9_calls]
+
+# Roots to Leaves recursive calls of each graph. Examples: Diagnose(fourth) recursive check_data calls.
+G0_calls = [call(fourth), call(third), call(second), call(zeroth)]
+G1_calls = [call(fourth), call(third), call(second), call(zeroth), call(first), call(zeroth), call(second), call(zeroth)]
+G2_calls = [call(fourth), call(third), call(zeroth)]
+G3_calls = [call(fourth), call(third), call(zeroth), call(second), call(zeroth)]
+G4_calls = [call(fourth), call(third), call(second), call(zeroth), call(first), call(zeroth)]
+G5_calls = [call(fourth), call(third), call(second), call(zeroth), call(first), call(zeroth), call(first), call(zeroth)]
+G6_calls = [call(fourth),call(third),call(second),call(zeroth),call(zeroth),call(first),call(second),call(zeroth),call(zeroth)]
+G7_calls = [call(fourth),call(third),call(second),call(zeroth),call(first),call(zeroth),call(zeroth),call(first),call(zeroth)]
+G8_calls = [call(fourth),call(third),call(second),call(zeroth),call(zeroth),call(second),call(zeroth),call(first),call(second),call(zeroth),call(zeroth)]
+G9_calls = [call(fourth),call(third),call(second),call(zeroth),call(zeroth),call(first),call(second),call(zeroth),call(zeroth),call(second),call(zeroth),call(first),call(second),call(zeroth),call(zeroth)]
+
+roots_to_leaves_good_graphs_calls = [G0_calls,G1_calls,G2_calls,G3_calls,G4_calls,G5_calls,G6_calls,G7_calls,G8_calls,G9_calls]
+
 # fmt: on
 
 
 ##########################
 ### MOCKED CONTROLLERS ###
 ##########################
-class MaintainMockedController(CalibrationController):
-    """`CalibrationController` to test the workflow of `maintain()` where we mocked `check_state()`, `check_data()`, `diagnose()`, `calibrate()` and `update_parameters()`."""
-
-    def __init__(self, node_sequence, calibration_graph, runcard, check_state: bool, check_data: str):
-        super().__init__(node_sequence=node_sequence, calibration_graph=calibration_graph, runcard=runcard)
-        self.check_state = MagicMock(return_value=check_state)  # type: ignore[method-assign]
-        self.check_data = MagicMock(return_value=check_data)  # type: ignore[method-assign]
-        self.diagnose = MagicMock(return_value=None)  # type: ignore[method-assign]
-        self.calibrate = MagicMock(return_value=None)  # type: ignore[method-assign]
-        self._update_parameters = MagicMock(return_value=None)  # type: ignore[method-assign]
-
-
 class RunAutomaticCalibrationMockedController(CalibrationController):
-    """`CalibrationController` to test the workflow of `run_automatic_calibration()`, with `maintain()`, `get_last_set_parameters()` and `get_last_fidelities()` mocked."""
+    """``CalibrationController`` to test the workflow of ``run_automatic_calibration()``, where its mocked ``maintain()``, ``get_last_set_parameters()`` and ``get_last_fidelities()``."""
 
     def __init__(self, node_sequence, calibration_graph, runcard):
         super().__init__(node_sequence=node_sequence, calibration_graph=calibration_graph, runcard=runcard)
@@ -208,15 +211,39 @@ class RunAutomaticCalibrationMockedController(CalibrationController):
         self.get_last_fidelities = MagicMock(return_value={"test": (0.0, "test", datetime.fromtimestamp(1999))})
 
 
+class MaintainMockedController(CalibrationController):
+    """``CalibrationController`` to test the workflow of ``maintain()`` where its mocked ``check_state()``, ``check_data()``, ``diagnose()``, ``calibrate()`` and ``update_parameters()``."""
+
+    def __init__(self, node_sequence, calibration_graph, runcard, check_state: bool, check_data: str):
+        super().__init__(node_sequence=node_sequence, calibration_graph=calibration_graph, runcard=runcard)
+        self.check_state = MagicMock(return_value=check_state)  # type: ignore[method-assign]
+        self.check_data = MagicMock(return_value=check_data)  # type: ignore[method-assign]
+        self.diagnose = MagicMock(return_value=None)  # type: ignore[method-assign]
+        self.calibrate = MagicMock(return_value=None)  # type: ignore[method-assign]
+        self._update_parameters = MagicMock(return_value=None)  # type: ignore[method-assign]
+
+
+class DiagnoseMockedController(CalibrationController):
+    """`CalibrationController` to test the workflow of `diagnose()` where its mocked ``check_data()``, ``calibrate()`` and ``update_parameters()``."""
+
+    def __init__(self, node_sequence, calibration_graph, runcard, check_data: str):
+        super().__init__(node_sequence=node_sequence, calibration_graph=calibration_graph, runcard=runcard)
+        self.check_data = MagicMock(return_value=check_data)  # type: ignore[method-assign]
+        self.calibrate = MagicMock(return_value=None)  # type: ignore[method-assign]
+        self._update_parameters = MagicMock(return_value=None)  # type: ignore[method-assign]
+
+
 #################################################################################
 ############################## TESTS FOR THE CLASS ##############################
 #################################################################################
+
+
+###########################
+### TEST INITIALIZATION ###
+###########################
 class TestCalibrationControllerInitialization:
     """Unit tests for the CalibrationController class initialization"""
 
-    ###########################
-    ### TEST INITIALIZATION ###
-    ###########################
     @pytest.mark.parametrize(
         "controller",
         [
@@ -226,7 +253,7 @@ class TestCalibrationControllerInitialization:
     )
     def test_good_init_method(self, controller):
         """Test a valid initialization of the class"""
-
+        # Assert:
         assert controller[1].calibration_graph == controller[0]
         assert isinstance(controller[1].calibration_graph, nx.DiGraph)
         assert controller[1].node_sequence == nodes
@@ -238,12 +265,16 @@ class TestCalibrationControllerInitialization:
 
     def test_bad_init_method(self):
         """Test an invalid initialization of the class"""
+        # Assert:
         with pytest.raises(ValueError) as error:
             _ = CalibrationController(node_sequence=nodes, calibration_graph=B, runcard=path_runcard)
 
         assert str(error.value) == "The calibration graph must be a Directed Acyclic Graph (DAG)."
 
 
+######################################
+### TEST RUN AUTOMATIC CALIBRATION ###
+######################################
 @pytest.mark.parametrize(
     "controller",
     [
@@ -254,13 +285,12 @@ class TestCalibrationControllerInitialization:
 class TestRunAutomaticCalibrationFromCalibrationController:
     """Test that ``run_autoamtic_calibration()`` of ``CalibrationController`` behaves well."""
 
-    ######################################
-    ### TEST RUN AUTOMATIC CALIBRATION ###
-    ######################################
     def test_run_automatic_calibration(self, controller):
         """Test that `run_automatic_calibration()` gets the proper nodes to maintain."""
+        # Act:
         output_dict = controller.run_automatic_calibration()
 
+        # Asserts:
         controller.get_last_set_parameters.assert_called_once_with()
         controller.get_last_fidelities.assert_called_once_with()
         assert output_dict == {
@@ -284,6 +314,9 @@ class TestRunAutomaticCalibrationFromCalibrationController:
             assert controller.maintain.call_count == 1
 
 
+#####################
+### TEST MAINTAIN ###
+#####################
 @pytest.mark.parametrize(
     "controller",
     [
@@ -301,74 +334,245 @@ class TestRunAutomaticCalibrationFromCalibrationController:
 class TestMaintainFromCalibrationController:
     """Test that ``maintain()`` of ``CalibrationController`` behaves well."""
 
-    #####################
-    ### TEST MAINTAIN ###
-    #####################
     def test_low_level_mockings_working_properly(self, controller):
         """Test that the mockings are working properly."""
+        # Assert:
         assert controller[3].check_state() == controller[0]
         assert controller[3].check_data() == controller[1]
         assert controller[3].diagnose() is None
         assert controller[3].calibrate() is None
         assert controller[3]._update_parameters() is None
 
-    def test_maintain_recursive_maintain_and_check_status_calls(self, controller):
-        """Test that maintain follows the correct logic for each graph, starting from node 4.
+    def test_maintain_same_node_functions_calls_from_leave(self, controller):
+        """Test that ``maintain`` follows the correct logic for each graph, starting from node zeroth "leave".
 
-        The check status shouldn't change the recursive workflow, they would just create diagnoses & calibrates in the middle.
+        This "leave" case should not have recursive calls.
         """
-        # Reset mock calls
-        controller[3].check_state.reset_mock()
-
-        controller[3].maintain(fourth)
-        # Assert workflow if we start maintain in the fourth node for each graph!
-        controller[3].check_state.assert_has_calls(good_graphs_calls_for_maintain4[good_graphs.index(controller[2])])
-
-    def test_maintain_recursive_check_data_diagnose_calibrate_and_update_params_calls(self, controller):
-        """Test that maintain arrives to check_data or not, the correct quantity of times for each graph, starting from node 4."""
-        # Reset mock calls
+        # Reset mock calls:
         controller[3].check_state.reset_mock()
         controller[3].check_data.reset_mock()
         controller[3].diagnose.reset_mock()
         controller[3].calibrate.reset_mock()
         controller[3]._update_parameters.reset_mock()
 
+        # Act:
+        controller[3].maintain(zeroth)
+
+        # Assert workflow if we start maintain in the zeroth node for each graph!
+        controller[3].check_state.assert_called_once_with(zeroth)
+        controller[3].diagnose.assert_not_called()
+
+        # if check_status is True
+        if controller[0] is True:
+            controller[3].check_data.assert_not_called()
+            controller[3].calibrate.assert_not_called()
+            controller[3]._update_parameters.assert_not_called()
+
+        # elif check_data is in_spec
+        elif controller[1] == "in_spec":
+            controller[3].check_data.assert_called_once_with(zeroth)
+            controller[3].calibrate.assert_not_called()
+            controller[3]._update_parameters.assert_not_called()
+
+        # elif check_data is out_of_spec or bad_data
+        elif controller[1] in ["out_of_spec", "bad_data"]:
+            controller[3].check_data.assert_called_once_with(zeroth)
+            controller[3].calibrate.assert_called_once_with(zeroth)
+            controller[3]._update_parameters.assert_called_once_with(zeroth)
+
+    def test_maintain_recursive_maintain_and_check_status_calls_from_root(self, controller):
+        """Test that ``maintain`` recursive calls work correctly for each graph, starting from node fourth "root".
+
+        The check status shouldn't change the recursive workflow, they would just create diagnoses & calibrates in the middle.
+        """
+        # Reset mock calls:
+        controller[3].check_state.reset_mock()
+
+        # Act:
         controller[3].maintain(fourth)
 
         # Assert workflow if we start maintain in the fourth node for each graph!
-        if controller[3].check_state() is True:
+        controller[3].check_state.assert_has_calls(leaves_to_roots_good_graphs_calls[good_graphs.index(controller[2])])
+
+    def test_maintain_recursive_functions_calls_from_root(self, controller):
+        """Test that ``maintain`` follows the correct logic for each graph, starting from node fourth "root".
+
+        This "root" case should have recursive calls.
+        """
+        # Reset mock calls:
+        controller[3].check_state.reset_mock()
+        controller[3].check_data.reset_mock()
+        controller[3].diagnose.reset_mock()
+        controller[3].calibrate.reset_mock()
+        controller[3]._update_parameters.reset_mock()
+
+        # Act:
+        controller[3].maintain(fourth)
+
+        # Assert workflow if we start maintain in the fourth node for each graph!
+        controller[3].check_state.assert_has_calls(leaves_to_roots_good_graphs_calls[good_graphs.index(controller[2])])
+
+        # if check_state is False
+        if controller[0] is True:
             controller[3].check_data.assert_not_called()
             controller[3].diagnose.assert_not_called()
             controller[3].calibrate.assert_not_called()
             controller[3]._update_parameters.assert_not_called()
 
-        elif controller[3].check_data() == "in_spec":
+        # elif check_data is in_spec
+        elif controller[1] == "in_spec":
             controller[3].diagnose.assert_not_called()
             controller[3].calibrate.assert_not_called()
             controller[3]._update_parameters.assert_not_called()
-            controller[3].check_data.assert_has_calls(good_graphs_calls_for_maintain4[good_graphs.index(controller[2])])
-
-        elif controller[3].check_data() == "out_of_spec":
-            controller[3].diagnose.assert_not_called()
-            controller[3].check_data.assert_has_calls(good_graphs_calls_for_maintain4[good_graphs.index(controller[2])])
-            controller[3].calibrate.assert_has_calls(good_graphs_calls_for_maintain4[good_graphs.index(controller[2])])
-            controller[3]._update_parameters.assert_has_calls(
-                good_graphs_calls_for_maintain4[good_graphs.index(controller[2])]
+            controller[3].check_data.assert_has_calls(
+                leaves_to_roots_good_graphs_calls[good_graphs.index(controller[2])]
             )
 
-        elif controller[3].check_data() == "bad_data":
-            controller[3].check_data.assert_has_calls(good_graphs_calls_for_maintain4[good_graphs.index(controller[2])])
-            controller[3].calibrate.assert_has_calls(good_graphs_calls_for_maintain4[good_graphs.index(controller[2])])
+        # elif check_data is out_of_spec
+        elif controller[1] == "out_of_spec":
+            controller[3].diagnose.assert_not_called()
+            controller[3].check_data.assert_has_calls(
+                leaves_to_roots_good_graphs_calls[good_graphs.index(controller[2])]
+            )
+            controller[3].calibrate.assert_has_calls(
+                leaves_to_roots_good_graphs_calls[good_graphs.index(controller[2])]
+            )
             controller[3]._update_parameters.assert_has_calls(
-                good_graphs_calls_for_maintain4[good_graphs.index(controller[2])]
+                leaves_to_roots_good_graphs_calls[good_graphs.index(controller[2])]
+            )
+
+        # elif check_data is bad_data
+        elif controller[1] == "bad_data":
+            controller[3].check_data.assert_has_calls(
+                leaves_to_roots_good_graphs_calls[good_graphs.index(controller[2])]
+            )
+            controller[3].calibrate.assert_has_calls(
+                leaves_to_roots_good_graphs_calls[good_graphs.index(controller[2])]
+            )
+            controller[3]._update_parameters.assert_has_calls(
+                leaves_to_roots_good_graphs_calls[good_graphs.index(controller[2])]
             )
 
             # Check diagnose for each dependant:
             dependants_calls = []
-            for node_call in good_graphs_calls_for_maintain4[good_graphs.index(controller[2])]:
+            for node_call in leaves_to_roots_good_graphs_calls[good_graphs.index(controller[2])]:
                 for node_name in controller[2].successors(node_call.args[0].node_id):
                     dependants_calls.append(call(controller[3].node_sequence[node_name]))
             controller[3].diagnose.assert_has_calls(dependants_calls)
+
+
+#####################
+### TEST DIAGNOSE ###
+#####################
+@pytest.mark.parametrize(
+    "controller",
+    [
+        (
+            i,
+            graph,
+            DiagnoseMockedController(node_sequence=nodes, calibration_graph=graph, runcard=path_runcard, check_data=i),
+        )
+        for i, graph in itertools.product(["bad_data", "in_spec", "out_of_spec"], good_graphs)
+    ],
+)
+class TestDiagnoseFromCalibrationController:
+    """Test that the ``Diagnose`` method of ``CalibrationController`` behave well."""
+
+    def test_low_level_mockings_working_properly(self, controller):
+        """Test that the mockings are working properly."""
+        # Assert:
+        assert controller[2].check_data() == controller[0]
+        assert controller[2].calibrate() is None
+        assert controller[2]._update_parameters() is None
+
+    def test_diagnose_functions_calls_from_leaves(self, controller):
+        """Test that ``diagnose`` follows the correct logic for each graph, starting from node zeroth "leave".
+
+        This "leave" case should not have recursive calls.
+        """
+        # Reset mock calls:
+        controller[2].check_data.reset_mock()
+        controller[2].calibrate.reset_mock()
+        controller[2]._update_parameters.reset_mock()
+
+        # Act:
+        result = controller[2].diagnose(zeroth)
+
+        # Assert workflow:
+        controller[2].check_data.assert_called_once_with(zeroth)
+
+        # elif check_data is in_spec
+        if controller[0] == "in_spec":
+            assert result is False
+            controller[2].calibrate.assert_not_called()
+            controller[2]._update_parameters.assert_not_called()
+
+        # elif check_data is out_of_spec or bad_data
+        elif controller[0] in ["out_of_spec", "bad_data"]:
+            assert result is True
+            controller[2].calibrate.assert_called_once_with(zeroth)
+            controller[2]._update_parameters.assert_called_once_with(zeroth)
+
+    def test_diagnose_recursive_diagnose_and_check_data_calls_from_root(self, controller):
+        """Test that ``diagnose`` recursive calls work correctly for each graph, starting from node 4.
+
+        The result ``from check_data`` should change the recursivity.
+        """
+        # Reset mock calls
+        controller[2].check_data.reset_mock()
+
+        # Act
+        controller[2].diagnose(fourth)
+
+        # Assert workflow if we start maintain in the fourth node for each graph!
+        if controller[0] in ["in_spec", "out_of_spec"]:
+            controller[2].check_data.assert_called_once_with(fourth)
+
+        if controller[0] == "bad_data":
+            controller[2].check_data.assert_has_calls(
+                roots_to_leaves_good_graphs_calls[good_graphs.index(controller[1])]
+            )
+
+    def test_diagnose_recursive_functions_calls_from_root(self, controller):
+        """Test that ``diagnose`` follows the correct logic for each graph, starting from node fourth "root".
+
+        This "root" case should have recursive calls.
+        """
+        # Reset mock calls
+        controller[2].check_data.reset_mock()
+        controller[2].calibrate.reset_mock()
+        controller[2]._update_parameters.reset_mock()
+
+        # Act
+        result = controller[2].diagnose(fourth)
+
+        # Assert workflow:
+
+        # elif check_data is in_spec
+        if controller[0] == "in_spec":
+            assert result is False
+            controller[2].check_data.assert_called_once_with(fourth)
+            controller[2].calibrate.assert_not_called()
+            controller[2]._update_parameters.assert_not_called()
+
+        # elif check_data is out_of_spec or bad_data
+        elif controller[0] == "out_of_spec":
+            assert result is True
+            controller[2].check_data.assert_called_once_with(fourth)
+            controller[2].calibrate.assert_called_once_with(fourth)
+            controller[2]._update_parameters.assert_called_once_with(fourth)
+
+        elif controller[0] == "bad_data":
+            assert result is True
+            controller[2].check_data.assert_has_calls(
+                roots_to_leaves_good_graphs_calls[good_graphs.index(controller[1])]
+            )
+            controller[2].calibrate.assert_has_calls(
+                leaves_to_roots_good_graphs_calls[good_graphs.index(controller[1])]
+            )
+            controller[2]._update_parameters.assert_has_calls(
+                leaves_to_roots_good_graphs_calls[good_graphs.index(controller[1])]
+            )
 
 
 @pytest.mark.parametrize(
@@ -380,41 +584,6 @@ class TestMaintainFromCalibrationController:
 )
 class TestCalibrationController:
     """Test that the rest of ``CalibrationController`` methods behave well."""
-
-    #####################
-    ### TEST DIAGNOSE ###
-    #####################
-    #         def test_diagnose():
-    #         # Arrange
-    #         node = CalibrationNode("node1")
-    #         controller = CalibrationController(nx.DiGraph(), {"node1": node}, "runcard.yml")
-    #         controller.check_data = MagicMock(return_value="bad_data")
-    #         controller.calibrate = MagicMock()
-    #         controller._update_parameters = MagicMock()
-
-    #         # Act
-    #         result = controller.diagnose(node)
-
-    #         # Assert
-    #         assert result == True
-    #         controller.check_data.assert_called_once_with(node)
-    #         controller.calibrate.assert_called_once_with(node)
-    #         controller._update_parameters.assert_called_once_with(node=node)
-
-    #     def test_diagnose_in_spec():
-    #         # Arrange
-    #         node = CalibrationNode("node1")
-    #         controller = CalibrationController(nx.DiGraph(), {"node1": node}, "runcard.yml")
-    #         controller.check_data = MagicMock(return_value="in_spec")
-
-    #         # Act
-    #         result = controller.diagnose(node)
-
-    #         # Assert
-    #         assert result == False
-    #         controller.check_data.assert_called_once_with(node)
-    #         assert not controller.calibrate.called
-    #         assert not controller._update_parameters.called
 
     ########################
     ### TEST CHECK STATE ###
