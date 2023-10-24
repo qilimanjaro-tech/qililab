@@ -19,7 +19,6 @@ from warnings import warn
 
 import h5py
 import numpy as np
-import ruamel.yaml
 import yaml
 from qiboconnection.api import API
 
