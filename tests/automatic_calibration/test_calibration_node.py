@@ -62,6 +62,7 @@ class TestCalibrationNode:
         assert ccnode.output_parameters == test_previous_output_params
         assert ccnode.previous_output_parameters == test_output_params
 
+    # This tests fails as the patch is currently not working :(
     @patch("qililab.automatic_calibration.calibration_node.json.dumps", autospec=True)
     def test_export_calibration_outputs(self, ccnode: CalibrationNode, mocked_dumps):
         test_outputs = {"this_is":"a_test_dict", "foo":"bar"}
@@ -74,7 +75,8 @@ class TestCalibrationNode:
 @pytest.fixture(name="cnode")
 @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_output_parameters")
 @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_timestamp")
-def fixture_cnode(mocked_last_cal_params, mocked_last_cal_time) -> CalibrationNode:
+@patch("qililab.automatic_calibration.calibration_node.StringIO",autospec=True)
+def fixture_cnode(mocked_last_cal_params, mocked_last_cal_time, mocked_stringio) -> CalibrationNode:
     """Return a simple CalibrationNode object"""
 
     def dummy():
@@ -92,32 +94,43 @@ def fixture_cnode(mocked_last_cal_params, mocked_last_cal_time) -> CalibrationNo
 
 class TestCalibrationNodePrivate:
     """Unit tests for the CalibrationNode class private methods"""
-#    @pytest.mark.parametrize(
-#        "sweep_interval","expected",
-#        [(None, None), ({"start":0, "stop":5, "step":1}, [0,1,2,3,4])],
-#    )
-#    def test_sweep_interval_as_array(self, cnode, sweep_interval, expected):
-#        cnode.sweep_interval = sweep_interval
-#        test_value = cnode._sweep_interval()
-#        assert test_value == expected
-#
-#
-#    def test_build_check_data_interval(self, cnode, sweep_interval):
-#        cnode.sweep_interval = sweep_interval
-#        sweep_interval_range = np.arange(sweep_interval['start'],sweep_interval['stop'],sweep_interval['step'])
-#        test_value = cnode._build_check_data_interval()
-#        assert len(test_value) == cnode.number_of_random_datapoints
-#        for value in test_value:
-#            assert value in sweep_interval_range
-#
-#    @patch("qililab.automatic_calibration.calibration_node.papermill",autospec=True)
-#    @patch("qililab.automatic_calibration.calibration_node.io.StringIO",autospec=True)
-#    def test_execute_notebook(self, cnode, input_path, output_path, parameters, mocked_papermill, mocked_stream, output, expected):
-#        mocked_stream.return_value = output
-#        test_value = cnode._execute_notebook(self, input_path, output_path, parameters)
-#        mocked_papermill.execute_notebook.assert_called_once()
-#        assert test_value == expected
-#
+    @pytest.mark.parametrize(
+        "sweep_interval, expected",
+        [(None, None), ({"start":0, "stop":5, "step":1}, [0,1,2,3,4])],
+    )
+    def test_sweep_interval_as_array(self, cnode: CalibrationNode, sweep_interval, expected):
+        cnode.sweep_interval = sweep_interval
+        test_value = cnode._sweep_interval_as_array()
+        assert test_value == expected
+
+    @pytest.mark.parametrize(
+        "sweep_interval, number_of_random_datapoints",
+        [({"start":0, "stop":5, "step":1}, 10), ({"start":10, "stop":1000, "step":20}, 200)],
+    )
+    def test_build_check_data_interval(self, cnode: CalibrationNode, sweep_interval, number_of_random_datapoints):
+        cnode.sweep_interval = sweep_interval
+        cnode.number_of_random_datapoints = number_of_random_datapoints
+        sweep_interval_range = np.arange(sweep_interval['start'],sweep_interval['stop'],sweep_interval['step'])
+        test_value = cnode._build_check_data_interval()
+        assert len(test_value) == cnode.number_of_random_datapoints
+        for value in test_value:
+            assert value in sweep_interval_range
+
+    # This tests fails as the patch is currently not working :(
+    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.papermill")
+    def test_execute_notebook(self, cnode: CalibrationNode, mocked_pm):
+        raw_file_contents = 'RAND_INT:47102512880765720413 - OUTPUTS: {check_parameters: {x: [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48], y: [100, 144, 196, 256, 324, 400, 484, 576, 676, 784, 900, 1024, 1156, 1296, 1444, 1600, 1764, 1936, 2116, 2304]}, platform_params: [[bus_alias, param_name, 1]]}'
+
+        sweep_interval = [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48]
+        y = [i**2 for i in sweep_interval]
+        results = {"x":sweep_interval, "y":y}
+        expected = {"check_parameters": results, "platform_params": [["bus_alias", "param_name", 1]]}
+
+        cnode.stream.getvalue.return_value = raw_file_contents
+        test_value = cnode._execute_notebook(cnode.nb_path, "", {})
+        mocked_pm.execute_notebook.assert_called_once()
+        assert test_value == expected
+
 #    @patch("qililab.automatic_calibration.calibration_node.papermill",autospec=True)
 #    @patch("qililab.automatic_calibration.calibration_node.io.StringIO",autospec=True)
 #    @patch("qililab.automatic_calibration.calibration_node.logger",autospec=True)
@@ -178,23 +191,12 @@ class TestCalibrationNodePrivate:
         os.remove(f'{cnode.nb_folder}/{filename}')
 
     def test_find_last_executed_calibration(self, cnode: CalibrationNode):
-        filename1 = "tmp_test_foobar_dirty.ipynb"
-        filename2 = "tmp_test_foobar_error.ipynb"
-        filename3 = "tmp_test_foo_calibrated.ipynb"
-        filename4 = "tmp_test_bar_calibrated.ipynb"
-        filename5 = "tmp_test_foobar_.ipynb"
+        test_filenames = ["tmp_test_foobar_dirty.ipynb", "tmp_test_foobar_error.ipynb", "tmp_test_foo_calibrated.ipynb", "tmp_test_bar_calibrated.ipynb", "tmp_test_foobar_.ipynb"]
         filename_expected = "tmp_test_foobar_calibrated.ipynb"
 
-        f = open(f'{cnode.nb_folder}/{filename1}', "w")
-        f.close()
-        f = open(f'{cnode.nb_folder}/{filename2}', "w")
-        f.close()
-        f = open(f'{cnode.nb_folder}/{filename3}', "w")
-        f.close()
-        f = open(f'{cnode.nb_folder}/{filename4}', "w")
-        f.close()
-        f = open(f'{cnode.nb_folder}/{filename5}', "w")
-        f.close()
+        for test_filename in test_filenames:
+            f = open(f'{cnode.nb_folder}/{test_filename}', "w")
+            f.close()
         f = open(f'{cnode.nb_folder}/{filename_expected}', "w")
         f.close()
 
@@ -202,40 +204,23 @@ class TestCalibrationNodePrivate:
 
         assert filename_expected == test_filename
 
-        os.remove(f'{cnode.nb_folder}/{filename1}')
-        os.remove(f'{cnode.nb_folder}/{filename2}')
-        os.remove(f'{cnode.nb_folder}/{filename3}')
-        os.remove(f'{cnode.nb_folder}/{filename4}')
-        os.remove(f'{cnode.nb_folder}/{filename5}')
+        for test_filename in test_filenames:
+            os.remove(f'{cnode.nb_folder}/{test_filename}')
         os.remove(f'{cnode.nb_folder}/{filename_expected}')
 
     def test_find_last_executed_calibration_does_not_find_file(self, cnode: CalibrationNode):
-        filename1 = "tmp_test_foobar_dirty.ipynb"
-        filename2 = "tmp_test_foobar_error.ipynb"
-        filename3 = "tmp_test_foo_calibrated.ipynb"
-        filename4 = "tmp_test_bar_calibrated.ipynb"
-        filename5 = "tmp_test_foobar_.ipynb"
+        test_filenames = ["tmp_test_foobar_dirty.ipynb", "tmp_test_foobar_error.ipynb", "tmp_test_foo_calibrated.ipynb", "tmp_test_bar_calibrated.ipynb", "tmp_test_foobar_.ipynb"]
 
-        f = open(f'{cnode.nb_folder}/{filename1}', "w")
-        f.close()
-        f = open(f'{cnode.nb_folder}/{filename2}', "w")
-        f.close()
-        f = open(f'{cnode.nb_folder}/{filename3}', "w")
-        f.close()
-        f = open(f'{cnode.nb_folder}/{filename4}', "w")
-        f.close()
-        f = open(f'{cnode.nb_folder}/{filename5}', "w")
-        f.close()
+        for test_filename in test_filenames:
+            f = open(f'{cnode.nb_folder}/{test_filename}', "w")
+            f.close()
 
         test_filename = cnode._find_last_executed_calibration()
 
         assert test_filename is None
 
-        os.remove(f'{cnode.nb_folder}/{filename1}')
-        os.remove(f'{cnode.nb_folder}/{filename2}')
-        os.remove(f'{cnode.nb_folder}/{filename3}')
-        os.remove(f'{cnode.nb_folder}/{filename4}')
-        os.remove(f'{cnode.nb_folder}/{filename5}')
+        for test_filename in test_filenames:
+            os.remove(f'{cnode.nb_folder}/{test_filename}')
 
 
 @pytest.fixture(name="node_class")
