@@ -233,6 +233,22 @@ class DiagnoseMockedController(CalibrationController):
         self._update_parameters = MagicMock(return_value=None)  # type: ignore[method-assign]
 
 
+class DiagnoseFixedMockedController(CalibrationController):
+    """`CalibrationController` to test the workflow of `diagnose()` where its mocked ``check_data()``, ``calibrate()`` and ``update_parameters()``."""
+
+    def __init__(self, node_sequence, calibration_graph, runcard, check_data):
+        super().__init__(node_sequence=node_sequence, calibration_graph=calibration_graph, runcard=runcard)
+        self.calibrate = MagicMock(return_value=None)  # type: ignore[method-assign]
+        self._update_parameters = MagicMock(return_value=None)  # type: ignore[method-assign]
+        self.check_data_string = check_data
+
+    def check_data(self, node):
+        if node == zeroth:
+            return self.check_data_string
+        else:
+            return "bad_data"
+
+
 #################################################################################
 ############################## TESTS FOR THE CLASS ##############################
 #################################################################################
@@ -524,7 +540,7 @@ class TestDiagnoseFromCalibrationController:
         # Act
         controller[2].diagnose(fourth)
 
-        # Assert workflow if we start maintain in the fourth node for each graph!
+        # Assert workflow if we start diagnose in the fourth node for each graph!
         if controller[0] in ["in_spec", "out_of_spec"]:
             controller[2].check_data.assert_called_once_with(fourth)
 
@@ -573,6 +589,29 @@ class TestDiagnoseFromCalibrationController:
             controller[2]._update_parameters.assert_has_calls(
                 leaves_to_roots_good_graphs_calls[good_graphs.index(controller[1])]
             )
+
+    def test_diagnose_recursive_recalibrate_doesnt_find_true_from_root(self, controller):
+        """Test that ``diagnose`` returns True correctly for when all is bad data, except a leave tested for the three options."""
+        # Leave in out_of_spec
+        controller = DiagnoseFixedMockedController(
+            node_sequence=nodes, calibration_graph=G0, runcard=path_runcard, check_data="out_of_spec"
+        )
+        result = controller.diagnose(fourth)
+        assert result is True
+
+        # Leave in bad_data
+        controller = DiagnoseFixedMockedController(
+            node_sequence=nodes, calibration_graph=G0, runcard=path_runcard, check_data="bad_data"
+        )
+        result = controller.diagnose(fourth)
+        assert result is True
+
+        # Leave in in_spec
+        controller = DiagnoseFixedMockedController(
+            node_sequence=nodes, calibration_graph=G0, runcard=path_runcard, check_data="in_spec"
+        )
+        result = controller.diagnose(fourth)
+        assert result is True
 
 
 @pytest.mark.parametrize(

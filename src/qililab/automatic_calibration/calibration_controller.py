@@ -191,6 +191,7 @@ class CalibrationController:
         if result == "bad_data":
             recalibrated = [self.diagnose(n) for n in self._dependents(node)]
             print(f"Dependencies diagnoses of {node.node_id}: {recalibrated}\n")
+        # If not empty and only filled with False's (not any True).
         if recalibrated != [] and not any(recalibrated):
             print(f"{node.node_id} diagnose: False\n")
             return False
