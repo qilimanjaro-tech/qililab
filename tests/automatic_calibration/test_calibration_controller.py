@@ -9,6 +9,8 @@ from qililab.automatic_calibration import CalibrationController, CalibrationNode
 from qililab.data_management import build_platform
 from qililab.platform.platform import Platform
 
+# flake8: noqa: E262
+
 #################################################################################
 #################################### SET UPS ####################################
 #################################################################################
@@ -188,19 +190,23 @@ class MaintainMockedController(CalibrationController):
 
     def __init__(self, node_sequence, calibration_graph, runcard, check_state: bool, check_data: str):
         super().__init__(node_sequence=node_sequence, calibration_graph=calibration_graph, runcard=runcard)
-        self.check_state = MagicMock(return_value=check_state)
-        self.check_data = MagicMock(return_value=check_data)
-        self.diagnose = MagicMock(return_value=None)
-        self.calibrate = MagicMock(return_value=None)
-        self._update_parameters = MagicMock(return_value=None)
+        self.check_state = MagicMock(return_value=check_state)  # type: ignore[method-assign]
+        self.check_data = MagicMock(return_value=check_data)  # type: ignore[method-assign]
+        self.diagnose = MagicMock(return_value=None)  # type: ignore[method-assign]
+        self.calibrate = MagicMock(return_value=None)  # type: ignore[method-assign]
+        self._update_parameters = MagicMock(return_value=None)  # type: ignore[method-assign]
 
 
 class RunAutomaticCalibrationMockedController(CalibrationController):
-    """`CalibrationController` to test the workflow of `run_automatic_calibration()`, with `maintain()` mocked."""
+    """`CalibrationController` to test the workflow of `run_automatic_calibration()`, with `maintain()`, `get_last_set_parameters()` and `get_last_fidelities()` mocked."""
 
     def __init__(self, node_sequence, calibration_graph, runcard):
         super().__init__(node_sequence=node_sequence, calibration_graph=calibration_graph, runcard=runcard)
         self.maintain = MagicMock(return_value=None)
+        self.get_last_set_parameters = MagicMock(
+            return_value={("test", "test"): (0.0, "test", datetime.fromtimestamp(1999))}
+        )
+        self.get_last_fidelities = MagicMock(return_value={"test": (0.0, "test", datetime.fromtimestamp(1999))})
 
 
 #################################################################################
@@ -239,60 +245,66 @@ class TestCalibrationControllerInitialization:
         assert str(error.value) == "The calibration graph must be a Directed Acyclic Graph (DAG)."
 
 
-class TestCalibrationController:
-    """Test CalibrationController behaves well for any returns of the `check_sate()` and `check_data()`."""
+@pytest.mark.parametrize(
+    "controller",
+    [
+        RunAutomaticCalibrationMockedController(node_sequence=nodes, calibration_graph=graph, runcard=path_runcard)
+        for graph in good_graphs
+    ],
+)
+class TestRunAutomaticCalibrationFromCalibrationController:
+    """Test that ``run_autoamtic_calibration()`` of ``CalibrationController`` behaves well."""
 
     ######################################
     ### TEST RUN AUTOMATIC CALIBRATION ###
     ######################################
-    @pytest.mark.parametrize(
-        "controller",
-        [
-            (
-                graph,
-                RunAutomaticCalibrationMockedController(
-                    node_sequence=nodes, calibration_graph=graph, runcard=path_runcard
-                ),
-            )
-            for graph in good_graphs
-        ],
-    )
     def test_run_automatic_calibration(self, controller):
         """Test that `run_automatic_calibration()` gets the proper nodes to maintain."""
-        controller[1].run_automatic_calibration()
+        output_dict = controller.run_automatic_calibration()
 
-        if controller[0] in [G0, G3]:
-            controller[1].maintain.assert_any_call(fourth)
-            controller[1].maintain.assert_any_call(first)
-            assert controller[1].maintain.call_count == 2
+        controller.get_last_set_parameters.assert_called_once_with()
+        controller.get_last_fidelities.assert_called_once_with()
+        assert output_dict == {
+            "set_parameters": {("test", "test"): (0.0, "test", datetime.fromtimestamp(1999))},
+            "fidelities": {"test": (0.0, "test", datetime.fromtimestamp(1999))},
+        }
 
-        elif controller[0] == G2:
-            controller[1].maintain.assert_any_call(fourth)
-            controller[1].maintain.assert_any_call(second)
-            controller[1].maintain.assert_any_call(first)
-            assert controller[1].maintain.call_count == 3
+        if controller.calibration_graph in [G0, G3]:
+            controller.maintain.assert_any_call(fourth)
+            controller.maintain.assert_any_call(first)
+            assert controller.maintain.call_count == 2
 
-        elif controller[0] in [G1, G4, G5, G6, G7, G8, G9]:
-            controller[1].maintain.assert_any_call(fourth)
-            assert controller[1].maintain.call_count == 1
+        elif controller.calibration_graph == G2:
+            controller.maintain.assert_any_call(fourth)
+            controller.maintain.assert_any_call(second)
+            controller.maintain.assert_any_call(first)
+            assert controller.maintain.call_count == 3
+
+        elif controller.calibration_graph in [G1, G4, G5, G6, G7, G8, G9]:
+            controller.maintain.assert_any_call(fourth)
+            assert controller.maintain.call_count == 1
+
+
+@pytest.mark.parametrize(
+    "controller",
+    [
+        (
+            i,
+            j,
+            graph,
+            MaintainMockedController(
+                node_sequence=nodes, calibration_graph=graph, runcard=path_runcard, check_state=i, check_data=j
+            ),
+        )
+        for i, j, graph in itertools.product([True, False], ["bad_data", "in_spec", "out_of_spec"], good_graphs)
+    ],
+)
+class TestMaintainFromCalibrationController:
+    """Test that ``maintain()`` of ``CalibrationController`` behaves well."""
 
     #####################
     ### TEST MAINTAIN ###
     #####################
-    @pytest.mark.parametrize(
-        "controller",
-        [
-            (
-                i,
-                j,
-                graph,
-                MaintainMockedController(
-                    node_sequence=nodes, calibration_graph=graph, runcard=path_runcard, check_state=i, check_data=j
-                ),
-            )
-            for i, j, graph in itertools.product([True, False], ["bad_data", "in_spec", "out_of_spec"], good_graphs)
-        ],
-    )
     def test_low_level_mockings_working_properly(self, controller):
         """Test that the mockings are working properly."""
         assert controller[3].check_state() == controller[0]
@@ -301,45 +313,27 @@ class TestCalibrationController:
         assert controller[3].calibrate() is None
         assert controller[3]._update_parameters() is None
 
-    @pytest.mark.parametrize(
-        "controller",
-        [
-            (
-                i,
-                j,
-                graph,
-                MaintainMockedController(
-                    node_sequence=nodes, calibration_graph=graph, runcard=path_runcard, check_state=i, check_data=j
-                ),
-            )
-            for i, j, graph in itertools.product([True, False], ["bad_data", "in_spec", "out_of_spec"], good_graphs)
-        ],
-    )
     def test_maintain_recursive_maintain_and_check_status_calls(self, controller):
         """Test that maintain follows the correct logic for each graph, starting from node 4.
 
         The check status shouldn't change the recursive workflow, they would just create diagnoses & calibrates in the middle.
         """
+        # Reset mock calls
+        controller[3].check_state.reset_mock()
+
         controller[3].maintain(fourth)
         # Assert workflow if we start maintain in the fourth node for each graph!
         controller[3].check_state.assert_has_calls(good_graphs_calls_for_maintain4[good_graphs.index(controller[2])])
 
-    @pytest.mark.parametrize(
-        "controller",
-        [
-            (
-                i,
-                j,
-                graph,
-                MaintainMockedController(
-                    node_sequence=nodes, calibration_graph=graph, runcard=path_runcard, check_state=i, check_data=j
-                ),
-            )
-            for i, j, graph in itertools.product([True, False], ["bad_data", "in_spec", "out_of_spec"], good_graphs)
-        ],
-    )
     def test_maintain_recursive_check_data_diagnose_calibrate_and_update_params_calls(self, controller):
         """Test that maintain arrives to check_data or not, the correct quantity of times for each graph, starting from node 4."""
+        # Reset mock calls
+        controller[3].check_state.reset_mock()
+        controller[3].check_data.reset_mock()
+        controller[3].diagnose.reset_mock()
+        controller[3].calibrate.reset_mock()
+        controller[3]._update_parameters.reset_mock()
+
         controller[3].maintain(fourth)
 
         # Assert workflow if we start maintain in the fourth node for each graph!
@@ -376,6 +370,17 @@ class TestCalibrationController:
                 for node_name in controller[2].successors(node_call.args[0].node_id):
                     dependants_calls.append(call(controller[3].node_sequence[node_name]))
             controller[3].diagnose.assert_has_calls(dependants_calls)
+
+
+@pytest.mark.parametrize(
+    "controller",
+    [
+        CalibrationController(node_sequence=nodes, calibration_graph=graph, runcard=path_runcard)
+        for graph in good_graphs
+    ],
+)
+class TestCalibrationController:
+    """Test that the rest of ``CalibrationController`` methods behave well."""
 
     #####################
     ### TEST DIAGNOSE ###
@@ -415,13 +420,6 @@ class TestCalibrationController:
     ########################
     ### TEST CHECK STATE ###
     ########################
-    @pytest.mark.parametrize(
-        "controller",
-        [
-            CalibrationController(node_sequence=nodes, calibration_graph=graph, runcard=path_runcard)
-            for graph in good_graphs
-        ],
-    )
     def test_check_state_for_nodes_with_no_dependencies(self, controller):
         """Test that check_state work correctly for the nodes without dependencies."""
         zeroth.previous_timestamp = datetime.now().timestamp() - 10
@@ -434,13 +432,6 @@ class TestCalibrationController:
         result = controller.check_state(zeroth)
         assert result is False
 
-    @pytest.mark.parametrize(
-        "controller",
-        [
-            CalibrationController(node_sequence=nodes, calibration_graph=graph, runcard=path_runcard)
-            for graph in good_graphs
-        ],
-    )
     def test_check_state_for_nodes_with_dependencies(self, controller):
         """Test that check_state work correctly for the nodes with dependencies."""
         # Case where dependent nodes have an older timestamps, and all are passing -> True:
@@ -470,16 +461,9 @@ class TestCalibrationController:
     ######################
     ### TEST CALIBRATE ###
     ######################
-    @pytest.mark.parametrize(
-        "controller",
-        [
-            CalibrationController(node_sequence=nodes, calibration_graph=graph, runcard=path_runcard)
-            for graph in good_graphs
-        ],
-    )
     @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.run_notebook")
     @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.add_string_to_checked_nb_name")
-    def test_calibrate(self, mock_run, mock_add_str, controller):
+    def test_calibrate(self, mock_add_str, mock_run, controller):
         """Test that the calibration method, calls node.run_notebook()."""
         for node in controller.node_sequence.values():
             controller.calibrate(node)
@@ -489,39 +473,104 @@ class TestCalibrationController:
     ##############################
     ### TEST UPDATE PARAMETERS ###
     ##############################
-    #     # Tests for _update_parameters()
+    @patch("qililab.automatic_calibration.calibration_controller.Platform.set_parameter")
+    @patch("qililab.automatic_calibration.calibration_controller.save_platform")
+    def test_update_parameters(self, mock_save_platform, mock_set_params, controller):
+        """Test that the update parameters method, calls ``platform.set_parameter()`` and ``save_platform()``."""
+        for node in controller.node_sequence.values():
+            node.output_parameters = {"platform_params": [("test_bus", "param", 0), ("test_bus2", "param2", 1)]}
+            controller._update_parameters(node)
+
+            mock_set_params.assert_called_with(
+                alias="test_bus2", parameter="param2", value=1
+            )  # Checking the last call of the 2 there are.
+            mock_save_platform.assert_called_with(controller.runcard, controller.platform)  # Checking the save call
+
+        assert mock_set_params.call_count == 2 * len(controller.node_sequence)
+        assert mock_save_platform.call_count == len(controller.node_sequence)
+
+    ####################################
+    ### TEST GET LAST SET PARAMETERS ###
+    ####################################
+    def test_get_last_set_parameters(self, controller):
+        """Test that the ``get_last_set_parameters()`` method, gets the correct parameters."""
+        for i, node in controller.node_sequence.items():
+            node.output_parameters = {
+                "check_parameters": {"x": [0, 1, 2, 3, 4, 5], "y": [0, 1, 2, 3, 4, 5]},
+                "platform_params": [(f"test_bus_{i}", "param", 0), (f"test_bus_{i}", "param2", 1)],
+                "fidelities": {f"param1_{i}": 1, f"param2_{i}": 0.967},
+            }
+            node.previous_timestamp = 1999
+
+        dictionary = controller.get_last_set_parameters()
+        assert dictionary == {
+            ("param", "test_bus_zeroth"): (0, "zeroth", datetime.fromtimestamp(1999)),
+            ("param2", "test_bus_zeroth"): (1, "zeroth", datetime.fromtimestamp(1999)),
+            ("param", "test_bus_first"): (0, "first", datetime.fromtimestamp(1999)),
+            ("param2", "test_bus_first"): (1, "first", datetime.fromtimestamp(1999)),
+            ("param", "test_bus_second"): (0, "second", datetime.fromtimestamp(1999)),
+            ("param2", "test_bus_second"): (1, "second", datetime.fromtimestamp(1999)),
+            ("param", "test_bus_third"): (0, "third", datetime.fromtimestamp(1999)),
+            ("param2", "test_bus_third"): (1, "third", datetime.fromtimestamp(1999)),
+            ("param", "test_bus_fourth"): (0, "fourth", datetime.fromtimestamp(1999)),
+            ("param2", "test_bus_fourth"): (1, "fourth", datetime.fromtimestamp(1999)),
+        }
+
+    ################################
+    ### TEST GET LAST FIDELITIES ###
+    ################################
+    def test_get_last_fidelities(self, controller):
+        """Test that the ``get_last_fidelities()`` method, gets the correct parameters."""
+        for i, node in controller.node_sequence.items():
+            node.output_parameters = {
+                "check_parameters": {"x": [0, 1, 2, 3, 4, 5], "y": [0, 1, 2, 3, 4, 5]},
+                "platform_params": [(f"test_bus_{i}", "param", 0), (f"test_bus_{i}", "param2", 1)],
+                "fidelities": {f"param1_{i}": 1, f"param2_{i}": 0.967},
+            }
+            node.previous_timestamp = 1999
+
+        dictionary = controller.get_last_fidelities()
+        assert dictionary == {
+            "param1_zeroth": (1, "zeroth", datetime.fromtimestamp(1999)),
+            "param2_zeroth": (0.967, "zeroth", datetime.fromtimestamp(1999)),
+            "param1_first": (1, "first", datetime.fromtimestamp(1999)),
+            "param2_first": (0.967, "first", datetime.fromtimestamp(1999)),
+            "param1_second": (1, "second", datetime.fromtimestamp(1999)),
+            "param2_second": (0.967, "second", datetime.fromtimestamp(1999)),
+            "param1_third": (1, "third", datetime.fromtimestamp(1999)),
+            "param2_third": (0.967, "third", datetime.fromtimestamp(1999)),
+            "param1_fourth": (1, "fourth", datetime.fromtimestamp(1999)),
+            "param2_fourth": (0.967, "fourth", datetime.fromtimestamp(1999)),
+        }
 
     #######################
     ### TEST DEPENDENTS ###
     #######################
-    @pytest.mark.parametrize(
-        "controller",
-        [
-            (graph, CalibrationController(node_sequence=nodes, calibration_graph=graph, runcard=path_runcard))
-            for graph in good_graphs
-        ],
-    )
     def test_dependents(self, controller):
         """Test that dependents return the correct dependencies."""
-        result = controller[1]._dependents(nodes["zeroth"])
+        result = controller._dependents(nodes["zeroth"])
         assert result == []
 
-        result = controller[1]._dependents(nodes["fourth"])
-        if controller[0] in [G0, G1]:
+        result = controller._dependents(nodes["fourth"])
+        if controller.calibration_graph in [G0, G1]:
             assert third in result and second in result
             assert len(result) == 2
 
-        elif controller[0] in [G2, G3, G4, G5]:
+        elif controller.calibration_graph in [G2, G3, G4, G5]:
             assert third in result
             assert len(result) == 1
 
-        elif controller[0] in [G6, G7]:
+        elif controller.calibration_graph in [G6, G7]:
             assert third in result and first in result
             assert len(result) == 2
 
-        elif controller[0] in [G8, G9]:
+        elif controller.calibration_graph in [G8, G9]:
             assert third in result and second in result and first in result
             assert len(result) == 3
+
+
+class TestStaticMethodsFromCalibrationController:
+    """Test that the static methods of ``CalibrationController`` behave well."""
 
     ##############################
     ### TEST OBTAIN COMPARISON ###
