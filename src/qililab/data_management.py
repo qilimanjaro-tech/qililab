@@ -164,7 +164,7 @@ def save_platform(path: str, platform: Platform) -> str:
         new_path = Path(path)
 
     with open(file=new_path, mode="w", encoding="utf-8") as file:
-        ruamel.yaml.dump(data=platform.to_dict(), stream=file)
+        ruamel.yaml.round_trip_dump(data=platform.to_dict(), stream=file)
 
     return str(new_path)
 
