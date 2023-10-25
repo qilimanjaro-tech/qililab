@@ -23,6 +23,6 @@ from qililab.utils import Factory
 @Factory.register
 @dataclass
 class Coil(Node):
-    """Coil class"""
+    """This class is used to represent a coil within the chip."""
 
     name = NodeName.COIL

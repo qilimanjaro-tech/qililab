@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Automatic-calibration Node module, which works with notebooks as nodes."""
 import json
 import logging
@@ -190,6 +204,9 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         sweep_interval: dict | None = None,
         number_of_random_datapoints: int = 10,
     ):
+        if in_spec_threshold > bad_data_threshold:
+            raise ValueError("`in_spec_threshold` must be smaller or equal than `bad_data_threshold`.")
+
         self.nb_path: str = nb_path
         """Full notebook path, with folder, nb_name and ``.ipynb`` extension"""
 
@@ -309,13 +326,17 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             self.output_parameters = self._execute_notebook(self.nb_path, output_path, params)
             print("Platform output parameters:", self.output_parameters["platform_params"])
             print("Check output parameters:", self.output_parameters["check_parameters"])
+            if "fidelities" in self.output_parameters:
+                print("Fidelities:", self.output_parameters["fidelities"])
 
             timestamp = self._get_timestamp()
             os.rename(output_path, self._create_notebook_datetime_path(self.nb_path, timestamp))
             return timestamp
+          
         except KeyboardInterrupt:
             logger.info("Interrupted autocalibration notebook execution of %s", self.nb_path)
             exit()
+            
         except Exception as e:
             # Generate error folder and move there the notebook
             timestamp = self._get_timestamp()
