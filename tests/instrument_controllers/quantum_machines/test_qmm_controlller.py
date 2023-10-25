@@ -1,5 +1,6 @@
 """This file tests the the ``qmm_controller`` class"""
 from unittest.mock import MagicMock
+
 import pytest
 
 from qililab.instrument_controllers.quantum_machines import QMMController
@@ -10,6 +11,7 @@ from qililab.typings import QMMDriver
 from qililab.typings.enums import InstrumentControllerName
 from tests.data import Galadriel
 from tests.test_utils import build_platform
+
 
 @pytest.fixture(name="platform")
 def fixture_platform() -> Platform:

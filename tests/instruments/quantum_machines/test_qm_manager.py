@@ -4,7 +4,6 @@ from unittest.mock import MagicMock
 import numpy as np
 import pytest
 from qm import Program
-from qm.jobs.qm_job import QmJob
 from qm.qua import play, program
 
 from qililab.instruments.quantum_machines import QMM
