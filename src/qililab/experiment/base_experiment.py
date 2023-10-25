@@ -21,8 +21,8 @@ from queue import Empty, Queue
 from threading import Thread
 
 import numpy as np
-import ruamel.yaml
 from qcodes.instrument import Instrument as QcodesInstrument
+from ruamel.yaml import YAML
 from tqdm.auto import tqdm
 
 from qililab.chip import Node
@@ -127,7 +127,7 @@ class BaseExperiment(ABC):
                 if self.results_path is not None:
                     with open(file=self.results_path / "results.yml", mode="a", encoding="utf8") as data_file:
                         result_dict = result.to_dict()
-                        ruamel.yaml.YAML().dump(data=[result_dict], stream=data_file)
+                        YAML().dump(data=[result_dict], stream=data_file)
 
         thread = Thread(target=_threaded_function)
         thread.start()
@@ -357,7 +357,7 @@ class BaseExperiment(ABC):
             if save_experiment:
                 # Dump the experiment data into the created file
                 with open(file=results_path / EXPERIMENT_FILENAME, mode="w", encoding="utf-8") as experiment_file:
-                    ruamel.yaml.YAML().dump(data=self.to_dict(), stream=experiment_file)
+                    YAML().dump(data=self.to_dict(), stream=experiment_file)
         else:
             results_path = None
 
@@ -414,4 +414,4 @@ class BaseExperiment(ABC):
             EXPERIMENT.RESULTS: None,
         }
         with open(file=path / RESULTS_FILENAME, mode="w", encoding="utf-8") as results_file:
-            ruamel.yaml.YAML().dump(data=data, stream=results_file)
+            YAML().dump(data=data, stream=results_file)

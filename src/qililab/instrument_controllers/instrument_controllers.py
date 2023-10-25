@@ -16,7 +16,7 @@
 import io
 from dataclasses import dataclass
 
-import ruamel.yaml
+from ruamel.yaml import YAML
 
 from qililab.instrument_controllers.instrument_controller import InstrumentController
 
@@ -65,4 +65,4 @@ class InstrumentControllers:
         Returns:
             str: String representation of the Instrument Controllers class.
         """
-        return str(ruamel.yaml.YAML().dump(self.to_dict(), io.BytesIO()))
+        return str(YAML().dump(self.to_dict(), io.BytesIO()))

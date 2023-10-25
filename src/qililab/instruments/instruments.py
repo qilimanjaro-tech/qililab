@@ -16,7 +16,7 @@
 import io
 from dataclasses import dataclass
 
-import ruamel.yaml
+from ruamel.yaml import YAML
 
 from qililab.instruments.instrument import Instrument
 
@@ -40,7 +40,7 @@ class Instruments:
         Returns:
             str: String representation of the Instruments class.
         """
-        return str(ruamel.yaml.YAML().dump(self._short_dict(), io.BytesIO()))
+        return str(YAML().dump(self._short_dict(), io.BytesIO()))
 
     def _short_dict(self):
         """Return a dict representation of the Instruments class discarding all static elements."""

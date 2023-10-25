@@ -20,9 +20,9 @@ from copy import deepcopy
 from dataclasses import asdict
 from queue import Queue
 
-import ruamel.yaml
 from qibo.models import Circuit
 from qiboconnection.api import API
+from ruamel.yaml import YAML
 
 from qililab.chip import Chip
 from qililab.config import logger
@@ -524,7 +524,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         Returns:
             str: Name of the platform.
         """
-        return str(ruamel.yaml.YAML().dump(self.to_dict(), io.BytesIO()))
+        return str(YAML().dump(self.to_dict(), io.BytesIO()))
 
     def execute(
         self,

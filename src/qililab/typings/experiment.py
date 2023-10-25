@@ -16,7 +16,7 @@
 import io
 from dataclasses import asdict, dataclass, field
 
-import ruamel.yaml
+from ruamel.yaml import YAML
 
 from qililab.constants import EXPERIMENT, RUNCARD
 from qililab.utils.loop import Loop
@@ -35,7 +35,7 @@ class ExperimentSettings:
 
     def __str__(self):
         """Returns a string representation of the experiment settings."""
-        return str(ruamel.yaml.YAML().dump(asdict(self), io.BytesIO()))
+        return str(YAML().dump(asdict(self), io.BytesIO()))
 
 
 @dataclass

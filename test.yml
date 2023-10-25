@@ -1,0 +1,402 @@
+name: galadriel
+device_id: 9
+gates_settings:
+  minimum_clock_time: 4
+  delay_between_pulses: 0
+  delay_before_readout: 0
+  timings_calculation_method: as_soon_as_possible
+  reset_method: passive
+  passive_reset_duration: 100
+  operations:
+  - name: Rxy
+    pulse:
+      name: Gaussian
+      amplitude: 1.0
+      duration: 40
+      parameters:
+        sigma: 2
+  - name: R180
+    pulse:
+      name: Gaussian
+      amplitude: 1.0
+      duration: 40
+      parameters:
+        sigma: 2
+  - name: X
+    pulse:
+      name: Gaussian
+      amplitude: 1.0
+      duration: 40
+      parameters:
+        sigma: 2
+  - name: Measure
+    pulse:
+      name: Square
+      amplitude: 1.0
+      duration: 6000
+      parameters: {}
+  gates:
+    M(0):
+    - bus: feedline_input_output_bus
+      pulse:
+        amplitude: 1.0
+        phase: 0
+        duration: 2000
+        shape:
+          name: rectangular
+      wait_time: 0
+    I(0):
+    - bus: drive_line_q0_bus
+      pulse:
+        amplitude: 1.0
+        phase: 0
+        duration: 100
+        shape:
+          name: rectangular
+      wait_time: 0
+    X(0):
+    - bus: drive_line_q0_bus
+      pulse:
+        amplitude: 1.0
+        phase: 0
+        duration: 50
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: 0
+      wait_time: 0
+    Y(0):
+    - bus: drive_line_q0_bus
+      pulse:
+        amplitude: 1.0
+        phase: 1.5707963267948966
+        duration: 20
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: 0
+      wait_time: 0
+    RY(0):
+    - bus: drive_line_q0_bus
+      pulse:
+        amplitude: 1.0
+        phase: 1.5707963267948966
+        duration: 20
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: 0
+      wait_time: 0
+    RX(0):
+    - bus: drive_line_q0_bus
+      pulse:
+        amplitude: 1.0
+        phase: 1.5707963267948966
+        duration: 20
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: 0
+      wait_time: 0
+    CZ(0,1):
+    - bus: flux_line_q1_bus
+      pulse:
+        amplitude: 1.0
+        phase: 1.5707963267948966
+        duration: 20
+        shape:
+          name: rectangular
+        options:
+          q0_phase_correction: 0.1
+          q2_phase_correction: 0.2
+      wait_time: 0
+    CZ(0, 2):
+    - bus: flux_line_q0_bus
+      pulse:
+        amplitude: 1.0
+        phase: 1.5707963267948966
+        duration: 20
+        shape:
+          name: rectangular
+      wait_time: 0
+chip:
+  nodes:
+  - name: port
+    alias: flux_q0
+    nodes:
+    - q0
+    line: flux
+  - name: port
+    alias: drive_q0
+    nodes:
+    - q0
+    line: drive
+  - name: port
+    alias: feedline_input
+    nodes:
+    - resonator_q0
+    line: feedline_input
+  - name: port
+    alias: feedline_output
+    nodes:
+    - resonator_q0
+    line: feedline_output
+  - name: resonator
+    alias: resonator_q0
+    nodes:
+    - feedline_input
+    - feedline_output
+    - q0
+    frequency: 7347300000.0
+  - name: qubit
+    alias: q0
+    nodes:
+    - flux_q0
+    - drive_q0
+    - resonator_q0
+    frequency: 3451000000.0
+    qubit_index: 0
+buses:
+- alias: drive_line_q0_bus
+  system_control:
+    name: system_control
+    instruments:
+    - QCM
+    - rs_0
+  port: drive_q0
+  distortions: []
+  delay: 0
+- alias: feedline_input_output_bus
+  system_control:
+    name: readout_system_control
+    instruments:
+    - QRM
+    - rs_1
+  port: feedline_input
+  distortions: []
+  delay: 0
+- alias: flux_line_q0_bus
+  system_control:
+    name: system_control
+    instruments:
+    - QCM
+    - rs_0
+  port: flux_q0
+  distortions: []
+  delay: 0
+instruments:
+- name: QCM
+  alias: QCM
+  firmware: 0.7.0
+  num_sequencers: 2
+  out_offsets:
+  - 0
+  - 0.5
+  - 0.7
+  - 0.8
+  awg_sequencers:
+  - identifier: 0
+    chip_port_id: drive_q0
+    output_i: 0
+    output_q: 1
+    intermediate_frequency: 100000000
+    gain_imbalance: 0
+    phase_imbalance: 0
+    hardware_modulation: false
+    gain_i: 1
+    gain_q: 1
+    offset_i: 0
+    offset_q: 0
+    num_bins: 1
+  - identifier: 1
+    chip_port_id: flux_q0
+    output_i: 0
+    output_q: 1
+    intermediate_frequency: 100000000
+    gain_imbalance: 0
+    phase_imbalance: 0
+    hardware_modulation: false
+    gain_i: 1
+    gain_q: 1
+    offset_i: 0
+    offset_q: 0
+    num_bins: 1
+- name: QRM
+  alias: QRM
+  firmware: 0.7.0
+  num_sequencers: 2
+  acquisition_delay_time: 100
+  out_offsets:
+  - 0.123
+  - 1.23
+  awg_sequencers:
+  - identifier: 0
+    chip_port_id: feedline_input
+    output_i: 0
+    output_q: 1
+    intermediate_frequency: 100000000
+    gain_imbalance: 0
+    phase_imbalance: 0
+    hardware_modulation: false
+    gain_i: 1
+    gain_q: 1
+    offset_i: 0
+    offset_q: 0
+    scope_acquire_trigger_mode: sequencer
+    scope_hardware_averaging: true
+    sampling_rate: 1000000000.0
+    hardware_demodulation: true
+    integration_length: 2123
+    integration_mode: ssb
+    sequence_timeout: 1
+    acquisition_timeout: 1
+    scope_store_enabled: true
+    threshold: 0.5
+    threshold_rotation: 45.0
+    num_bins: 1
+    qubit: 0
+    weights_i:
+    - 0.1
+    - 0.2
+    - 0.3
+    - 0.4
+    - 0.5
+    - 0.6
+    - 0.7
+    - 0.8
+    - 0.9
+    - 1.0
+    weights_q:
+    - 1.0
+    - 0.9
+    - 0.8
+    - 0.7
+    - 0.6
+    - 0.5
+    - 0.4
+    - 0.3
+    - 0.2
+    - 0.1
+    weighed_acq_enabled: true
+  - identifier: 1
+    chip_port_id: feedline_input
+    output_i: 0
+    output_q: 1
+    intermediate_frequency: 200000000
+    gain_imbalance: 0
+    phase_imbalance: 0
+    hardware_modulation: false
+    gain_i: 1
+    gain_q: 1
+    offset_i: 0
+    offset_q: 0
+    scope_acquire_trigger_mode: sequencer
+    scope_hardware_averaging: true
+    sampling_rate: 1000000000.0
+    hardware_demodulation: true
+    integration_length: 2000
+    integration_mode: ssb
+    sequence_timeout: 1
+    acquisition_timeout: 1
+    scope_store_enabled: false
+    threshold: 0.5
+    threshold_rotation: 45.0
+    num_bins: 1
+    qubit: 1
+    weights_i:
+    - 1.0
+    - 0.9
+    - 0.8
+    - 0.7
+    - 0.6
+    - 0.5
+    - 0.4
+    - 0.3
+    - 0.2
+    - 0.1
+    weights_q:
+    - 0.1
+    - 0.2
+    - 0.3
+    - 0.4
+    - 0.5
+    - 0.6
+    - 0.7
+    - 0.8
+    - 0.9
+    - 1.0
+    weighed_acq_enabled: false
+- name: rohde_schwarz
+  alias: rs_0
+  firmware: 4.30.046.295
+  power: 15
+  frequency: 7247300000.0
+  rf_on: true
+- name: rohde_schwarz
+  alias: rs_1
+  firmware: 4.30.046.295
+  power: 15
+  frequency: 3351000000.0
+  rf_on: true
+- name: mini_circuits
+  alias: attenuator
+  firmware:
+  attenuation: 30
+- name: keithley_2600
+  alias: keithley_2600
+  firmware:
+  max_current: 0.1
+  max_voltage: 20.0
+instrument_controllers:
+- name: qblox_pulsar
+  alias: pulsar_controller_qcm_0
+  connection:
+    name: tcp_ip
+    address: 192.168.0.3
+  modules:
+  - alias: QCM
+    slot_id: 0
+  reference_clock: internal
+- name: qblox_pulsar
+  alias: pulsar_controller_qrm_0
+  connection:
+    name: tcp_ip
+    address: 192.168.0.4
+  modules:
+  - alias: QRM
+    slot_id: 0
+  reference_clock: external
+- name: rohde_schwarz
+  alias: rohde_schwarz_controller_0
+  connection:
+    name: tcp_ip
+    address: 192.168.0.10
+  modules:
+  - alias: rs_0
+    slot_id: 0
+  reference_clock: EXT
+- name: rohde_schwarz
+  alias: rohde_schwarz_controller_1
+  connection:
+    name: tcp_ip
+    address: 192.168.0.7
+  modules:
+  - alias: rs_1
+    slot_id: 0
+  reference_clock: EXT
+- name: mini_circuits
+  alias: attenuator_controller_0
+  connection:
+    name: tcp_ip
+    address: 192.168.0.222
+  modules:
+  - alias: attenuator
+    slot_id: 0
+- name: keithley_2600
+  alias: keithley_2600_controller_0
+  connection:
+    name: tcp_ip
+    address: 192.168.0.112
+  modules:
+  - alias: keithley_2600
+    slot_id: 0

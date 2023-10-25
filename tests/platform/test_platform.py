@@ -6,10 +6,10 @@ from queue import Queue
 from unittest.mock import MagicMock, patch
 
 import pytest
-import ruamel.yaml
 from qibo import gates
 from qibo.models import Circuit
 from qpysequence import Sequence
+from ruamel.yaml import YAML
 
 from qililab import save_platform
 from qililab.chip import Chip, Qubit
@@ -146,14 +146,12 @@ class TestPlatform:
 
     def test_print_platform(self, platform: Platform):
         """Test print platform."""
-        assert str(platform) == str(ruamel.yaml.YAML().dump(platform.to_dict(), io.BytesIO()))
+        assert str(platform) == str(YAML().dump(platform.to_dict(), io.BytesIO()))
 
     # I'm leaving this test here, because there is no test_instruments.py, but should be moved there when created
     def test_print_instruments(self, platform: Platform):
         """Test print instruments."""
-        assert str(platform.instruments) == str(
-            ruamel.yaml.YAML().dump(platform.instruments._short_dict(), io.BytesIO())
-        )
+        assert str(platform.instruments) == str(YAML().dump(platform.instruments._short_dict(), io.BytesIO()))
 
     def test_serialization(self, platform: Platform):
         """Test that a serialization of the Platform is possible"""

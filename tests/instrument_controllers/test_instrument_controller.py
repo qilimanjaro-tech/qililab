@@ -2,7 +2,7 @@
 import io
 
 import pytest
-import ruamel.yaml
+from ruamel.yaml import YAML
 
 from qililab.constants import CONNECTION, INSTRUMENTCONTROLLER, RUNCARD
 from qililab.instrument_controllers.rohde_schwarz import SGS100AController
@@ -79,4 +79,4 @@ class TestConnection:
     def test_print_instrument_controllers(self, platform: Platform):
         """Test print instruments."""
         instr_cont = platform.instrument_controllers
-        assert str(instr_cont) == str(ruamel.yaml.YAML().dump(instr_cont.to_dict(), io.BytesIO()))
+        assert str(instr_cont) == str(YAML().dump(instr_cont.to_dict(), io.BytesIO()))
