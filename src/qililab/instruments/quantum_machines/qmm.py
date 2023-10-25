@@ -131,7 +131,7 @@ class QMM(Instrument):
         result_handles_fetchers = job.result_handles
         result_handles_fetchers.wait_for_all_values()
         for result_handle in job.result_handles:
-            results.append(result_handles_fetchers.get(result_handle).fetch_all())
+            results.append(result_handles_fetchers.get(result_handle[0]).fetch_all())
 
         return QuantumMachinesResult(raw_results=results)
 
