@@ -18,6 +18,7 @@ def fixture_platform() -> Platform:
     """Return Platform object."""
     return build_platform(runcard=Galadriel.runcard)
 
+
 class TestQMM:
     """This class contains the unit tests for the ``QMMController`` class."""
 
@@ -32,5 +33,5 @@ class TestQMM:
         assert isinstance(controller_settings, Settings)
 
         controller_modules = controller_instance.modules
-        assert len(controller_modules)==1
+        assert len(controller_modules) == 1
         assert isinstance(controller_modules[0], QMM)

@@ -426,10 +426,18 @@ class Galadriel:
         RUNCARD.FIRMWARE: "4.30.046.295",
         "qop_ip": "192.168.0.1",
         "qop_port": 80,
-        "config": {}
+        "config": {},
     }
 
-    instruments: list[dict] = [qblox_qcm_0, qblox_qrm_0, rohde_schwarz_0, rohde_schwarz_1, attenuator, keithley_2600, qmm_0]
+    instruments: list[dict] = [
+        qblox_qcm_0,
+        qblox_qrm_0,
+        rohde_schwarz_0,
+        rohde_schwarz_1,
+        attenuator,
+        keithley_2600,
+        qmm_0,
+    ]
     instrument_controllers: list[dict] = [
         pulsar_controller_qcm_0,
         pulsar_controller_qrm_0,
