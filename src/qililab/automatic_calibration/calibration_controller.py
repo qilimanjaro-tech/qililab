@@ -299,9 +299,9 @@ class CalibrationController:
 
             if self._obtain_comparison(node, obtain_params, compar_params) <= node.bad_data_threshold:
                 print(f"check_data of {node.node_id}: out_of_spec!!!\n")
-                node.add_string_to_checked_nb_name("out_spec", timestamp)
+                node.add_string_to_checked_nb_name("out_of_spec", timestamp)
                 node.invert_output_and_previous_output()
-                return "out_spec"
+                return "out_of_spec"
 
         print(f"check_data of {node.node_id}: bad_data!!!\n")
         node.add_string_to_checked_nb_name("bad_data", timestamp)

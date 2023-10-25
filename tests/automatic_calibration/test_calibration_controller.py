@@ -243,10 +243,7 @@ class DiagnoseFixedMockedController(CalibrationController):
         self.check_data_string = check_data
 
     def check_data(self, node):
-        if node == zeroth:
-            return self.check_data_string
-        else:
-            return "bad_data"
+        return self.check_data_string if node == zeroth else "bad_data"
 
 
 #################################################################################
@@ -667,7 +664,31 @@ class TestCalibrationController:
     #######################
     ### TEST CHECK DATA ###
     #######################
-    #     # Tests for check_data()
+    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.run_notebook")
+    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.add_string_to_checked_nb_name")
+    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.invert_output_and_previous_output")
+    def test_check_data(self, mock_invert, mock_add_str, mock_run, controller):
+        """Test that the check_data method, works correctly."""
+
+        def test_error(obtained: dict, comparison: dict) -> float:
+            return abs(sum(obtained["y"]) - sum(comparison["y"]))
+
+        for node in controller.node_sequence.values():
+            node.previous_output_parameters = {"check_parameters": {"x": [1, 2, 3], "y": [5, 6, 7]}}
+            node.output_parameters = {"check_parameters": {"x": [1, 2, 3], "y": [4, 5, 6]}}
+            node.comparison_model = test_error
+            result = controller.check_data(node)
+            if node in [zeroth, first]:
+                assert result == "in_spec"
+            elif node == second:
+                assert result == "out_of_spec"
+            elif node in [third, fourth]:
+                assert result == "bad_data"
+
+        # TODO: Maybe add the individual calls inside the foor loop???
+        assert mock_run.call_count == len(controller.node_sequence)
+        assert mock_add_str.call_count == len(controller.node_sequence)
+        assert mock_invert.call_count == len(controller.node_sequence)
 
     ######################
     ### TEST CALIBRATE ###
