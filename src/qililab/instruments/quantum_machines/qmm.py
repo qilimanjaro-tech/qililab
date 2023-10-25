@@ -31,7 +31,7 @@ from dataclasses import dataclass
 from typing import Dict
 
 from qm import QuantumMachine, QuantumMachinesManager, SimulationConfig
-from qm.jobs.qm_job import QmJob
+from qm.jobs.running_qm_job import RunningQmJob
 from qm.qua import Program
 
 from qililab.instruments.instrument import Instrument
@@ -101,7 +101,7 @@ class QMM(Instrument):
     def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         raise NotImplementedError("Setting a parameter is not supported for Quantum Machines yet.")
 
-    def run(self, program: Program) -> QmJob:
+    def run(self, program: Program) -> RunningQmJob:
         """Runs the QUA Program.
 
         Creates, for every execution, an instance of a QuantumMachine class and executes the QUA program on it.
@@ -116,7 +116,7 @@ class QMM(Instrument):
 
         return self.qm.execute(program)
 
-    def get_acquisitions(self, job: QmJob) -> QuantumMachinesResult:
+    def get_acquisitions(self, job: RunningQmJob) -> QuantumMachinesResult:
         """Fetches the results from the execution of a QUA Program.
 
         Once the results have been fetched, they are returned wrapped in a QuantumMachinesResult instance.
