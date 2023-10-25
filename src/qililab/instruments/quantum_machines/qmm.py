@@ -30,13 +30,10 @@
 from dataclasses import dataclass
 from typing import Dict
 
-import numpy as np
 from qm import QuantumMachine, QuantumMachinesManager, SimulationConfig
 from qm.jobs.qm_job import QmJob
 from qm.qua import Program
-from qualang_tools.results import fetching_tool
 
-from qililab.constants import RUNCARD
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
 from qililab.result.quantum_machines_results import QuantumMachinesResult
