@@ -128,12 +128,10 @@ class QMM(Instrument):
         Returns:
             QuantumMachinesResult: Quantum Machines result instance.
         """
-        results = []
         result_handles_fetchers = job.result_handles
         result_handles_fetchers.wait_for_all_values()
-        for result_handle in job.result_handles:
-            if isinstance(result_handles_fetchers.get(result_handle[0]), BaseStreamingResultFetcher):
-                results.append(result_handles_fetchers.get(result_handle[0]).fetch_all())
+        # TODO: we might need to use 'name' in 'name, handle in job.result_handles' in the future
+        results = [handle.fetch_all() for _, handle in job.result_handles if handle is not None]
 
         return QuantumMachinesResult(raw_results=results)
 
