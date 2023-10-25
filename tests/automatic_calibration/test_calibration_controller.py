@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, call, patch
 import networkx as nx
 import pytest
 
-from qililab.automatic_calibration import CalibrationController, CalibrationNode, norm_root_mean_sqrt_error
+from qililab.automatic_calibration import CalibrationController, CalibrationNode
 from qililab.data_management import build_platform
 from qililab.platform.platform import Platform
 
@@ -16,6 +16,12 @@ from qililab.platform.platform import Platform
 
 path_runcard = "examples/runcards/galadriel.yml"
 
+
+def comparison_model_test(obtained: dict, comparison: dict) -> float:
+    """Basic comparison model for testing."""
+    return abs(sum(obtained["y"]) - sum(comparison["y"]))
+
+
 ######################
 ### NODES CREATION ###
 ######################
@@ -23,35 +29,35 @@ zeroth = CalibrationNode(
     nb_path="tests/automatic_calibration/notebook_test/zeroth.ipynb",
     in_spec_threshold=4,
     bad_data_threshold=8,
-    comparison_model=norm_root_mean_sqrt_error,
+    comparison_model=comparison_model_test,
     drift_timeout=1.0,
 )
 first = CalibrationNode(
     nb_path="tests/automatic_calibration/notebook_test/first.ipynb",
     in_spec_threshold=4,
     bad_data_threshold=8,
-    comparison_model=norm_root_mean_sqrt_error,
+    comparison_model=comparison_model_test,
     drift_timeout=1800.0,
 )
 second = CalibrationNode(
     nb_path="tests/automatic_calibration/notebook_test/second.ipynb",
     in_spec_threshold=2,
     bad_data_threshold=4,
-    comparison_model=norm_root_mean_sqrt_error,
+    comparison_model=comparison_model_test,
     drift_timeout=1.0,
 )
 third = CalibrationNode(
     nb_path="tests/automatic_calibration/notebook_test/third.ipynb",
     in_spec_threshold=1,
     bad_data_threshold=2,
-    comparison_model=norm_root_mean_sqrt_error,
+    comparison_model=comparison_model_test,
     drift_timeout=1.0,
 )
 fourth = CalibrationNode(
     nb_path="tests/automatic_calibration/notebook_test/fourth.ipynb",
     in_spec_threshold=1,
     bad_data_threshold=2,
-    comparison_model=norm_root_mean_sqrt_error,
+    comparison_model=comparison_model_test,
     drift_timeout=1.0,
 )
 
@@ -669,14 +675,10 @@ class TestCalibrationController:
     @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.invert_output_and_previous_output")
     def test_check_data(self, mock_invert, mock_add_str, mock_run, controller):
         """Test that the check_data method, works correctly."""
-
-        def test_error(obtained: dict, comparison: dict) -> float:
-            return abs(sum(obtained["y"]) - sum(comparison["y"]))
-
         for node in controller.node_sequence.values():
             node.previous_output_parameters = {"check_parameters": {"x": [1, 2, 3], "y": [5, 6, 7]}}
             node.output_parameters = {"check_parameters": {"x": [1, 2, 3], "y": [4, 5, 6]}}
-            node.comparison_model = test_error
+            node.comparison_model = comparison_model_test
             result = controller.check_data(node)
             if node in [zeroth, first]:
                 assert result == "in_spec"
@@ -809,20 +811,16 @@ class TestStaticMethodsFromCalibrationController:
     ##############################
     def test_obtain_comparison(self):
         """Test that obtain_comparison calls comparison_model correctly."""
-
-        def test_error(obtained: dict, comparison: dict) -> float:
-            return sum(obtained["y"]) - sum(comparison["y"])
-
         controller = CalibrationController(node_sequence=nodes, calibration_graph=G1, runcard=path_runcard)
 
         obtained = {"x": [1, 2, 3], "y": [4, 5, 6]}
         comparison = {"x": [2, 3, 4], "y": [5, 6, 7]}
 
         for node in controller.node_sequence.values():
-            node.comparison_model = test_error
+            node.comparison_model = comparison_model_test
             result = controller._obtain_comparison(node, obtained, comparison)
 
-            assert result == 4 + 5 + 6 - 5 - 6 - 7
+            assert result == abs(4 + 5 + 6 - 5 - 6 - 7)
 
     ###############################
     ### TEST IS TIMEOUT EXPIRED ###

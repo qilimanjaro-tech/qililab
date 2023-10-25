@@ -202,6 +202,9 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         sweep_interval: dict | None = None,
         number_of_random_datapoints: int = 10,
     ):
+        if in_spec_threshold > bad_data_threshold:
+            raise ValueError("`in_spec_threshold` must be smaller or equal than `bad_data_threshold`.")
+
         self.nb_path: str = nb_path
         """Full notebook path, with folder, nb_name and ``.ipynb`` extension"""
 
