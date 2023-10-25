@@ -14,37 +14,79 @@ import pytest
 from qililab.automatic_calibration.calibration_node import CalibrationNode, IncorrectCalibrationOutput
 from qililab.config import logger
 
+#################################################################################
+#################################### SET UPS ####################################
+#################################################################################
+
 logger_output_start = "RAND_INT:47102512880765720413 - OUTPUTS: "
 
 
-class TestCalibrationNodeInitialization:
-    """Unit tests for the CalibrationNode class initialization"""
-
-    # TODO: Init test, mockear init fucntions calls and check their calls
+def dummy_comparison_model():
+    pass
 
 
-@pytest.fixture(name="ccnode")
+####################
+### MOCKED NODES ###
+####################
+@pytest.fixture(name="public_methods_node")
 @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_output_parameters")
 @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_timestamp")
-def fixture_ccnode(mocked_last_cal_params, mocked_last_cal_time) -> CalibrationNode:
-    """Return a simple CalibrationNode object"""
-
-    # TODO: rename to public methods fixture
-    def dummy():
-        pass
-
-    dummy_cmp_model = dummy
+def fixture_public_methods_node(mocked_last_cal_params, mocked_last_cal_time) -> CalibrationNode:
+    """Return a mocked CalibrationNode object."""
     return CalibrationNode(
         nb_path="./foobar.ipynb",
         in_spec_threshold=0.6,
         bad_data_threshold=0.9,
-        comparison_model=dummy_cmp_model,
+        comparison_model=dummy_comparison_model,
         drift_timeout=100,
     )
 
 
-class TestCalibrationNode:
-    """Unit tests for the CalibrationNode class methods"""
+@pytest.fixture(name="private_methods_node")
+@patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_output_parameters")
+@patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_timestamp")
+@patch("qililab.automatic_calibration.calibration_node.StringIO", autospec=True)
+def fixture_private_methods_node(mocked_last_cal_params, mocked_last_cal_time, mocked_stringio) -> CalibrationNode:
+    """Return a mocked CalibrationNode object.."""
+    return CalibrationNode(
+        nb_path="./foobar.ipynb",
+        in_spec_threshold=0.6,
+        bad_data_threshold=0.9,
+        comparison_model=dummy_comparison_model,
+        drift_timeout=100,
+    )
+
+
+@pytest.fixture(name="class_methods_node")
+@patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_output_parameters")
+@patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_timestamp")
+def fixture_class_methods_node(mocked_last_cal_params, mocked_last_cal_time) -> CalibrationNode:
+    """Return a mocked CalibrationNode object."""
+    return CalibrationNode(
+        nb_path="foo/bar.ipynb",
+        in_spec_threshold=0.6,
+        bad_data_threshold=0.9,
+        comparison_model=dummy_comparison_model,
+        drift_timeout=100,
+    )
+
+
+#################################################################################
+############################## TESTS FOR THE CLASS ##############################
+#################################################################################
+
+
+###########################
+### TEST INITIALIZATION ###
+###########################
+class TestInitializationCalibrationNode:
+    """Unit tests for the CalibrationNode class initialization."""
+
+    # TODO: Init test, mockear init fucntions calls and check their calls
+
+
+class TestPublicMethodsFromCalibrationNode:
+    """Unit tests for the CalibrationNode class public methods."""
 
     def test_add_string_to_checked_nb_name(self, ccnode: CalibrationNode):
         with patch("qililab.automatic_calibration.calibration_node.os.rename") as mocked_rename:
@@ -79,29 +121,8 @@ class TestCalibrationNode:
             mocked_print.assert_called_with(f"{logger_output_start}{test_dumped_outputs}")
 
 
-@pytest.fixture(name="cnode")
-@patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_output_parameters")
-@patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_timestamp")
-@patch("qililab.automatic_calibration.calibration_node.StringIO", autospec=True)
-def fixture_cnode(mocked_last_cal_params, mocked_last_cal_time, mocked_stringio) -> CalibrationNode:
-    """Return a simple CalibrationNode object"""
-
-    # TODO: rename to private methods fixture
-    def dummy():
-        pass
-
-    dummy_cmp_model = dummy
-    return CalibrationNode(
-        nb_path="./foobar.ipynb",
-        in_spec_threshold=0.6,
-        bad_data_threshold=0.9,
-        comparison_model=dummy_cmp_model,
-        drift_timeout=100,
-    )
-
-
-class TestCalibrationNodePrivate:
-    """Unit tests for the CalibrationNode class private methods"""
+class TestPrivateMethodsFromCalibrationNode:
+    """Unit tests for the CalibrationNode class private methods."""
 
     @pytest.mark.parametrize(
         "sweep_interval, expected",
@@ -246,29 +267,8 @@ class TestCalibrationNodePrivate:
             os.remove(f"{cnode.nb_folder}/{test_filename}")
 
 
-@pytest.fixture(name="node_class")
-@patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_output_parameters")
-@patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_timestamp")
-def fixture_node_class(mocked_last_cal_params, mocked_last_cal_time) -> CalibrationNode:
-    """Return a simple CalibrationNode object"""
-
-    # TODO: change name to class and static methods
-    def dummy():
-        pass
-
-    dummy_cmp_model = dummy
-    return CalibrationNode(
-        nb_path="foo/bar.ipynb",
-        in_spec_threshold=0.6,
-        bad_data_threshold=0.9,
-        comparison_model=dummy_cmp_model,
-        drift_timeout=100,
-    )
-
-
-# TODO: Change name to class and static
-class TestCalibrationNodeClass:
-    """Test the class methods of the `CalibrationNode`class"""
+class TestClassMethodsFromCalibrationNode:
+    """Test the class methods of the `CalibrationNode`class."""
 
     @pytest.mark.parametrize(
         "timestamp, dirty, error",
@@ -298,9 +298,8 @@ class TestCalibrationNodeClass:
                 assert "_error.ipynb" in test_value
 
 
-# TODO: rename static methods
-class TestCalibrationNodeStatic:
-    """Test static methods of the `CalibrationNode` class"""
+class TestStaticMethodsFromCalibrationNode:
+    """Test static methods of the `CalibrationNode` class."""
 
     @patch("qililab.automatic_calibration.calibration_node.logging", autospec=True)
     def test_build_notebooks_logger_stream(self, mocked_logging):

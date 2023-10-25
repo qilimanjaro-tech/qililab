@@ -17,7 +17,7 @@ from qililab.platform.platform import Platform
 path_runcard = "examples/runcards/galadriel.yml"
 
 
-def comparison_model_test(obtained: dict, comparison: dict) -> float:
+def dummy_comparison_model(obtained: dict, comparison: dict) -> float:
     """Basic comparison model for testing."""
     return abs(sum(obtained["y"]) - sum(comparison["y"]))
 
@@ -29,35 +29,35 @@ zeroth = CalibrationNode(
     nb_path="tests/automatic_calibration/notebook_test/zeroth.ipynb",
     in_spec_threshold=4,
     bad_data_threshold=8,
-    comparison_model=comparison_model_test,
+    comparison_model=dummy_comparison_model,
     drift_timeout=1.0,
 )
 first = CalibrationNode(
     nb_path="tests/automatic_calibration/notebook_test/first.ipynb",
     in_spec_threshold=4,
     bad_data_threshold=8,
-    comparison_model=comparison_model_test,
+    comparison_model=dummy_comparison_model,
     drift_timeout=1800.0,
 )
 second = CalibrationNode(
     nb_path="tests/automatic_calibration/notebook_test/second.ipynb",
     in_spec_threshold=2,
     bad_data_threshold=4,
-    comparison_model=comparison_model_test,
+    comparison_model=dummy_comparison_model,
     drift_timeout=1.0,
 )
 third = CalibrationNode(
     nb_path="tests/automatic_calibration/notebook_test/third.ipynb",
     in_spec_threshold=1,
     bad_data_threshold=2,
-    comparison_model=comparison_model_test,
+    comparison_model=dummy_comparison_model,
     drift_timeout=1.0,
 )
 fourth = CalibrationNode(
     nb_path="tests/automatic_calibration/notebook_test/fourth.ipynb",
     in_spec_threshold=1,
     bad_data_threshold=2,
-    comparison_model=comparison_model_test,
+    comparison_model=dummy_comparison_model,
     drift_timeout=1.0,
 )
 
@@ -680,7 +680,7 @@ class TestCalibrationController:
         for node in controller.node_sequence.values():
             node.previous_output_parameters = {"check_parameters": {"x": [1, 2, 3], "y": [5, 6, 7]}}
             node.output_parameters = {"check_parameters": {"x": [1, 2, 3], "y": [4, 5, 6]}}
-            node.comparison_model = comparison_model_test
+            node.comparison_model = dummy_comparison_model
             result = controller.check_data(node)
             if node in [zeroth, first]:
                 assert result == "in_spec"
@@ -819,7 +819,7 @@ class TestStaticMethodsFromCalibrationController:
         comparison = {"x": [2, 3, 4], "y": [5, 6, 7]}
 
         for node in controller.node_sequence.values():
-            node.comparison_model = comparison_model_test
+            node.comparison_model = dummy_comparison_model
             result = controller._obtain_comparison(node, obtained, comparison)
 
             assert result == abs(4 + 5 + 6 - 5 - 6 - 7)
