@@ -20,6 +20,8 @@ logger_output_start = "RAND_INT:47102512880765720413 - OUTPUTS: "
 class TestCalibrationNodeInitialization:
     """Unit tests for the CalibrationNode class initialization"""
 
+    # TODO: Init test, mockear init fucntions calls and check their calls
+
 
 @pytest.fixture(name="ccnode")
 @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_output_parameters")
@@ -27,6 +29,7 @@ class TestCalibrationNodeInitialization:
 def fixture_ccnode(mocked_last_cal_params, mocked_last_cal_time) -> CalibrationNode:
     """Return a simple CalibrationNode object"""
 
+    # TODO: rename to public methods fixture
     def dummy():
         pass
 
@@ -38,6 +41,8 @@ def fixture_ccnode(mocked_last_cal_params, mocked_last_cal_time) -> CalibrationN
         comparison_model=dummy_cmp_model,
         drift_timeout=100,
     )
+
+
 class TestCalibrationNode:
     """Unit tests for the CalibrationNode class methods"""
 
@@ -49,11 +54,12 @@ class TestCalibrationNode:
             ccnode.add_string_to_checked_nb_name(string_to_add, 0)
             mocked_rename.assert_called_once_with(f"{timestamp_path}.ipynb", f"{timestamp_path}_{string_to_add}.ipynb")
 
-    def test_run_notebook():
-        pass
+    # def test_run_notebook():
+    #     #TODO: do all
+
     def test_invert_output_and_previous_output(self, ccnode: CalibrationNode):
-        test_output_params = {"test_output_params":"foo"}
-        test_previous_output_params = {"test_previous_output_params":"bar"}
+        test_output_params = {"test_output_params": "foo"}
+        test_previous_output_params = {"test_previous_output_params": "bar"}
         ccnode.output_parameters, ccnode.previous_output_parameters = (
             test_output_params,
             test_previous_output_params,
@@ -62,23 +68,25 @@ class TestCalibrationNode:
         assert ccnode.output_parameters == test_previous_output_params
         assert ccnode.previous_output_parameters == test_output_params
 
-    # This tests fails as the patch is currently not working :(
+    # TODO: This tests fails as the patch is currently not working :(
     @patch("qililab.automatic_calibration.calibration_node.json.dumps", autospec=True)
     def test_export_calibration_outputs(self, ccnode: CalibrationNode, mocked_dumps):
-        test_outputs = {"this_is":"a_test_dict", "foo":"bar"}
+        test_outputs = {"this_is": "a_test_dict", "foo": "bar"}
         test_dumped_outputs = '{"this_is": "a_test_dict", "foo": "bar"}'
-        with patch('builtins.print') as mocked_print:
+        with patch("builtins.print") as mocked_print:
             ccnode.export_calibration_outputs(test_outputs)
             mocked_dumps.assert_called_with(test_outputs)
             mocked_print.assert_called_with(f"{logger_output_start}{test_dumped_outputs}")
-    
+
+
 @pytest.fixture(name="cnode")
 @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_output_parameters")
 @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_timestamp")
-@patch("qililab.automatic_calibration.calibration_node.StringIO",autospec=True)
+@patch("qililab.automatic_calibration.calibration_node.StringIO", autospec=True)
 def fixture_cnode(mocked_last_cal_params, mocked_last_cal_time, mocked_stringio) -> CalibrationNode:
     """Return a simple CalibrationNode object"""
 
+    # TODO: rename to private methods fixture
     def dummy():
         pass
 
@@ -94,9 +102,10 @@ def fixture_cnode(mocked_last_cal_params, mocked_last_cal_time, mocked_stringio)
 
 class TestCalibrationNodePrivate:
     """Unit tests for the CalibrationNode class private methods"""
+
     @pytest.mark.parametrize(
         "sweep_interval, expected",
-        [(None, None), ({"start":0, "stop":5, "step":1}, [0,1,2,3,4])],
+        [(None, None), ({"start": 0, "stop": 5, "step": 1}, [0, 1, 2, 3, 4])],
     )
     def test_sweep_interval_as_array(self, cnode: CalibrationNode, sweep_interval, expected):
         cnode.sweep_interval = sweep_interval
@@ -105,25 +114,25 @@ class TestCalibrationNodePrivate:
 
     @pytest.mark.parametrize(
         "sweep_interval, number_of_random_datapoints",
-        [({"start":0, "stop":5, "step":1}, 10), ({"start":10, "stop":1000, "step":20}, 200)],
+        [({"start": 0, "stop": 5, "step": 1}, 10), ({"start": 10, "stop": 1000, "step": 20}, 200)],
     )
     def test_build_check_data_interval(self, cnode: CalibrationNode, sweep_interval, number_of_random_datapoints):
         cnode.sweep_interval = sweep_interval
         cnode.number_of_random_datapoints = number_of_random_datapoints
-        sweep_interval_range = np.arange(sweep_interval['start'],sweep_interval['stop'],sweep_interval['step'])
+        sweep_interval_range = np.arange(sweep_interval["start"], sweep_interval["stop"], sweep_interval["step"])
         test_value = cnode._build_check_data_interval()
         assert len(test_value) == cnode.number_of_random_datapoints
         for value in test_value:
             assert value in sweep_interval_range
 
-    # This tests fails as the patch is currently not working :(
-    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.papermill")
+    # TODO: This tests fails as the papermill patch is currently not working :(
+    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.pm.execute_notebook")
     def test_execute_notebook(self, cnode: CalibrationNode, mocked_pm):
-        raw_file_contents = 'RAND_INT:47102512880765720413 - OUTPUTS: {check_parameters: {x: [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48], y: [100, 144, 196, 256, 324, 400, 484, 576, 676, 784, 900, 1024, 1156, 1296, 1444, 1600, 1764, 1936, 2116, 2304]}, platform_params: [[bus_alias, param_name, 1]]}'
+        raw_file_contents = "RAND_INT:47102512880765720413 - OUTPUTS: {check_parameters: {x: [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48], y: [100, 144, 196, 256, 324, 400, 484, 576, 676, 784, 900, 1024, 1156, 1296, 1444, 1600, 1764, 1936, 2116, 2304]}, platform_params: [[bus_alias, param_name, 1]]}"
 
         sweep_interval = [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48]
         y = [i**2 for i in sweep_interval]
-        results = {"x":sweep_interval, "y":y}
+        results = {"x": sweep_interval, "y": y}
         expected = {"check_parameters": results, "platform_params": [["bus_alias", "param_name", 1]]}
 
         cnode.stream.getvalue.return_value = raw_file_contents
@@ -131,73 +140,81 @@ class TestCalibrationNodePrivate:
         mocked_pm.execute_notebook.assert_called_once()
         assert test_value == expected
 
-#    @patch("qililab.automatic_calibration.calibration_node.papermill",autospec=True)
-#    @patch("qililab.automatic_calibration.calibration_node.io.StringIO",autospec=True)
-#    @patch("qililab.automatic_calibration.calibration_node.logger",autospec=True)
-#    def test_execute_notebook_raises_no_output(self, cnode, input_path, output_path, parameters, mocked_papermill, mocked_stream, mocked_logger, output):
-#        mocked_stream.return_value = output
-#        with pytest.raises(IncorrectCalibrationOutput) as no_out_err:
-#            cnode._execute_notebook(self, input_path, output_path, parameters)
-#
-#            mocked_logger.info.assert_called_with("Aborting execution. More than one output found, please output the results once in %s",
-#                input_path)
-#            (msg,) = no_out_err.value.args
-#            assert msg == f"No output found, check autocalibation notebook in {input_path}"
-#
-#    @patch("qililab.automatic_calibration.calibration_node.papermill",autospec=True)
-#    @patch("qililab.automatic_calibration.calibration_node.io.StringIO",autospec=True)
-#    @patch("qililab.automatic_calibration.calibration_node.logger",autospec=True)
-#    def test_execute_notebook_raises_multiple_output(self, cnode, input_path, output_path, parameters, mocked_papermill, mocked_stream, mocked_logger, output):
-#        mocked_stream.return_value = output
-#        with pytest.raises(IncorrectCalibrationOutput) as multiple_out_err:
-#            cnode._execute_notebook(self, input_path, output_path, parameters)
-#
-#            mocked_logger.info.assert_called_with("Aborting execution. More than one output found, please output the results once in %s",
-#                input_path)
-#            (msg,) = multiple_out_err.value.args
-#            assert msg == f"More than one output found in {input_path}"
-#
-#    @patch("qililab.automatic_calibration.calibration_node.papermill",autospec=True)
-#    @patch("qililab.automatic_calibration.calibration_node.io.StringIO",autospec=True)
-#    def test_execute_notebook_raises_incorrect_output(self, cnode, input_path, output_path, parameters, mocked_papermill, mocked_stream, output):
-#        mocked_stream.return_value = output
-#        with pytest.raises(IncorrectCalibrationOutput) as incorrect_out_err:
-#            cnode._execute_notebook(self, input_path, output_path, parameters)
-#
-#            (msg,) = incorrect_out_err.value.args
-#            assert msg == f"Calibration output must have key and value 'check_parameters' in notebook {input_path}"
-#
-#    def test_get_last_calibrated_timestamp():
-#        pass
-#    
-#    def test_get_last_calibrated_output_parameters():
-#        pass
+    #    @patch("qililab.automatic_calibration.calibration_node.papermill",autospec=True)
+    #    @patch("qililab.automatic_calibration.calibration_node.io.StringIO",autospec=True)
+    #    @patch("qililab.automatic_calibration.calibration_node.logger",autospec=True)
+    #    def test_execute_notebook_raises_no_output(self, cnode, input_path, output_path, parameters, mocked_papermill, mocked_stream, mocked_logger, output):
+    #        mocked_stream.return_value = output
+    #        with pytest.raises(IncorrectCalibrationOutput) as no_out_err:
+    #            cnode._execute_notebook(self, input_path, output_path, parameters)
+    #
+    #            mocked_logger.info.assert_called_with("Aborting execution. More than one output found, please output the results once in %s",
+    #                input_path)
+    #            (msg,) = no_out_err.value.args
+    #            assert msg == f"No output found, check autocalibation notebook in {input_path}"
+    #
+    #    @patch("qililab.automatic_calibration.calibration_node.papermill",autospec=True)
+    #    @patch("qililab.automatic_calibration.calibration_node.io.StringIO",autospec=True)
+    #    @patch("qililab.automatic_calibration.calibration_node.logger",autospec=True)
+    #    def test_execute_notebook_raises_multiple_output(self, cnode, input_path, output_path, parameters, mocked_papermill, mocked_stream, mocked_logger, output):
+    #        mocked_stream.return_value = output
+    #        with pytest.raises(IncorrectCalibrationOutput) as multiple_out_err:
+    #            cnode._execute_notebook(self, input_path, output_path, parameters)
+    #               # TODO: define multipleoutputs
+    #            mocked_logger.info.assert_called_with("Aborting execution. More than one output found, please output the results once in %s",
+    #                input_path)
+    #            (msg,) = multiple_out_err.value.args
+    #            assert msg == f"More than one output found in {input_path}"
+    #
+    #    @patch("qililab.automatic_calibration.calibration_node.papermill",autospec=True)
+    #    @patch("qililab.automatic_calibration.calibration_node.io.StringIO",autospec=True)
+    #    def test_execute_notebook_raises_incorrect_output(self, cnode, input_path, output_path, parameters, mocked_papermill, mocked_stream, output):
+    #        mocked_stream.return_value = output
+    # TODO: Output without check_parameter in it, or is empty. (Do both cases)
+    #        with pytest.raises(IncorrectCalibrationOutput) as incorrect_out_err:
+    #            cnode._execute_notebook(self, input_path, output_path, parameters)
+    #
+    #            (msg,) = incorrect_out_err.value.args
+    #            assert msg == f"Calibration output must have key and value 'check_parameters' in notebook {input_path}"
+    #
+    #    def test_get_last_calibrated_timestamp():
+    #        pass
+    #
+    #    def test_get_last_calibrated_output_parameters():
+    #        pass
 
     def test_parse_output_from_execution_file(self, cnode: CalibrationNode):
-        #building a fixed dictionary for the test
+        # building a fixed dictionary for the test
         sweep_interval = [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48]
         y = [i**2 for i in sweep_interval]
-        results = {"x":sweep_interval, "y":y}
+        results = {"x": sweep_interval, "y": y}
         expected_dict = {"check_parameters": results, "platform_params": [["bus_alias", "param_name", 1]]}
 
         # Dumping the raw string of the expected dictionary on a temporary file
-        raw_file_contents = 'RAND_INT:47102512880765720413 - OUTPUTS: {\"check_parameters\": {\"x\": [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48], \"y\": [100, 144, 196, 256, 324, 400, 484, 576, 676, 784, 900, 1024, 1156, 1296, 1444, 1600, 1764, 1936, 2116, 2304]}, \"platform_params\": [[\"bus_alias\", \"param_name\", 1]]}\n'
+        raw_file_contents = 'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48], "y": [100, 144, 196, 256, 324, 400, 484, 576, 676, 784, 900, 1024, 1156, 1296, 1444, 1600, 1764, 1936, 2116, 2304]}, "platform_params": [["bus_alias", "param_name", 1]]}\n'
         filename = "tmp_test_file.ipynb"
-        with open(f'{cnode.nb_folder}/{filename}', "w") as file:
+        with open(f"{cnode.nb_folder}/{filename}", "w") as file:
             file.write(raw_file_contents)
 
         test_dict = cnode._parse_output_from_execution_file(filename)
         assert test_dict == expected_dict
-        os.remove(f'{cnode.nb_folder}/{filename}')
+        os.remove(f"{cnode.nb_folder}/{filename}")
 
+    # TODO: add here comment staring new method testing, and same for all methods
     def test_find_last_executed_calibration(self, cnode: CalibrationNode):
-        test_filenames = ["tmp_test_foobar_dirty.ipynb", "tmp_test_foobar_error.ipynb", "tmp_test_foo_calibrated.ipynb", "tmp_test_bar_calibrated.ipynb", "tmp_test_foobar_.ipynb"]
+        test_filenames = [
+            "tmp_test_foobar_dirty.ipynb",
+            "tmp_test_foobar_error.ipynb",
+            "tmp_test_foo_calibrated.ipynb",
+            "tmp_test_bar_calibrated.ipynb",
+            "tmp_test_foobar_.ipynb",
+        ]
         filename_expected = "tmp_test_foobar_calibrated.ipynb"
 
         for test_filename in test_filenames:
-            f = open(f'{cnode.nb_folder}/{test_filename}', "w")
+            f = open(f"{cnode.nb_folder}/{test_filename}", "w")
             f.close()
-        f = open(f'{cnode.nb_folder}/{filename_expected}', "w")
+        f = open(f"{cnode.nb_folder}/{filename_expected}", "w")
         f.close()
 
         test_filename = cnode._find_last_executed_calibration()
@@ -205,14 +222,20 @@ class TestCalibrationNodePrivate:
         assert filename_expected == test_filename
 
         for test_filename in test_filenames:
-            os.remove(f'{cnode.nb_folder}/{test_filename}')
-        os.remove(f'{cnode.nb_folder}/{filename_expected}')
+            os.remove(f"{cnode.nb_folder}/{test_filename}")
+        os.remove(f"{cnode.nb_folder}/{filename_expected}")
 
     def test_find_last_executed_calibration_does_not_find_file(self, cnode: CalibrationNode):
-        test_filenames = ["tmp_test_foobar_dirty.ipynb", "tmp_test_foobar_error.ipynb", "tmp_test_foo_calibrated.ipynb", "tmp_test_bar_calibrated.ipynb", "tmp_test_foobar_.ipynb"]
+        test_filenames = [
+            "tmp_test_foobar_dirty.ipynb",
+            "tmp_test_foobar_error.ipynb",
+            "tmp_test_foo_calibrated.ipynb",
+            "tmp_test_bar_calibrated.ipynb",
+            "tmp_test_foobar_.ipynb",
+        ]
 
         for test_filename in test_filenames:
-            f = open(f'{cnode.nb_folder}/{test_filename}', "w")
+            f = open(f"{cnode.nb_folder}/{test_filename}", "w")
             f.close()
 
         test_filename = cnode._find_last_executed_calibration()
@@ -220,7 +243,7 @@ class TestCalibrationNodePrivate:
         assert test_filename is None
 
         for test_filename in test_filenames:
-            os.remove(f'{cnode.nb_folder}/{test_filename}')
+            os.remove(f"{cnode.nb_folder}/{test_filename}")
 
 
 @pytest.fixture(name="node_class")
@@ -229,6 +252,7 @@ class TestCalibrationNodePrivate:
 def fixture_node_class(mocked_last_cal_params, mocked_last_cal_time) -> CalibrationNode:
     """Return a simple CalibrationNode object"""
 
+    # TODO: change name to class and static methods
     def dummy():
         pass
 
@@ -242,6 +266,7 @@ def fixture_node_class(mocked_last_cal_params, mocked_last_cal_time) -> Calibrat
     )
 
 
+# TODO: Change name to class and static
 class TestCalibrationNodeClass:
     """Test the class methods of the `CalibrationNode`class"""
 
@@ -273,6 +298,7 @@ class TestCalibrationNodeClass:
                 assert "_error.ipynb" in test_value
 
 
+# TODO: rename static methods
 class TestCalibrationNodeStatic:
     """Test static methods of the `CalibrationNode` class"""
 

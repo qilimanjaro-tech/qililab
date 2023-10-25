@@ -620,6 +620,8 @@ class TestDiagnoseFromCalibrationController:
         assert controller.diagnose(second) is False  # No calibrate <<< WARNING, this should be calibrated!
         assert controller.diagnose(fourth) is True  # Calibrate (because of third)
 
+        # TODO: DO same case with everyhting at in_spec and out_spec except zeroth
+
 
 @pytest.mark.parametrize(
     "controller",
