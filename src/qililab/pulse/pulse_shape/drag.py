@@ -45,7 +45,14 @@ class Drag(PulseShape):
     more information about the gaussian can be found in the :class:`Gaussian` documentation.
 
     Examples:
-        The envelope of a drag with ``num_sigmas = 8`` and ``drag_coefficient`` (`alpha`) is ``1`` and ``10``, look respectively like:
+        To get the envelope of a drag shape, with ``num_sigmas = 8`` and ``drag_coefficient`` (`alpha`) equal to ``X``, you need to do:
+
+        .. code-block:: python
+
+            from qililab.pulse.pulse_shape import Drag
+            rectangular_envelope = Drag(num_sigmas=8, drag_coefficient=X).envelope(amplitude=1., duration=50)
+
+        which for ``X`` being ``1`` and ``10``, look respectively like:
 
         .. image:: /classes_images/drags.png
             :width: 800
@@ -56,15 +63,15 @@ class Drag(PulseShape):
         - Simple Pulses for Elimination of Leakage in Weakly Nonlinear Qubits: https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.103.110501.
 
     Args:
-        num_sigmas (float): Sigma number of the gaussian.
-        drag_coefficient (float): Drag coefficient that give the DRAG its imaginary components.
+        num_sigmas (float): Sigma number of the gaussian pulse shape. Defines the width of the gaussian pulse.
+        drag_coefficient (float): Drag coefficient that gives the DRAG its imaginary components.
     """
 
     name = PulseShapeName.DRAG  #: Name of the drag pulse shape.
     num_sigmas: float
     drag_coefficient: float
 
-    def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
+    def envelope(self, duration: int, amplitude: float, resolution: float = 1.0) -> np.ndarray:
         """DRAG envelope centered with respect to the pulse.
 
         The first point of the gaussian in the envelope is shifted to avoid introducing noise at time 0.
@@ -72,6 +79,7 @@ class Drag(PulseShape):
         Args:
             duration (int): Duration of the pulse (ns).
             amplitude (float): Maximum amplitude of the pulse.
+            resolution (float, optional): Resolution of the pulse. Defaults to 1.
 
         Returns:
             ndarray: Amplitude of the envelope for each time step.
@@ -105,7 +113,7 @@ class Drag(PulseShape):
         local_dictionary.pop("name", None)
         return cls(**local_dictionary)
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         """Returns dictionary representation of the Drag object/shape.
 
         Returns:

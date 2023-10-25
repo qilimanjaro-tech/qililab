@@ -287,82 +287,10 @@ This document contains the changes of the current release.
 
 ### Improvements
 
-- Add `ForLoop` iteration method to QProgram.
-  [481](https://github.com/qilimanjaro-tech/qililab/pull/481)
-
-- Add `Parallel` block to QProgram to allow parallel loops, and compilation support to QBloxCompiler.
-  [496](https://github.com/qilimanjaro-tech/qililab/pull/496)
-
-- Allow CZ gates to use different pulse shapes
-  [#406](https://github.com/qilimanjaro-tech/qililab/pull/406)
-
-- Add support for the `Wait` gate
-
-- Addeds support for the `Wait` gate
-  [#405](https://github.com/qilimanjaro-tech/qililab/pull/405)
-
-- Added support for `Parameter.Gate_Parameter` in `experiment.set_parameter()` method. In this case, alias is a, convertable to integer, string that denotes the index of the parameter to change, as returned by `circuit.get_parameters()` method.
-  [#404](https://github.com/qilimanjaro-tech/qililab/pull/404)
-
-- The `Chip` class now uses the `alias` of each node to define node connections.
-  [#494](https://github.com/qilimanjaro-tech/qililab/pull/494)
-
-  Before:
-
-  ```yaml
-  chip:
-  nodes:
-    - name: qubit
-      alias: qubit_0
-      id_: 0
-      qubit_index: 0
-      frequency: 4.92e+09
-      nodes: [2, 10, 20, 30]
-  ```
-
-  Now:
-
-  ```yaml
-  chip:
-  nodes:
-    - name: qubit
-      alias: qubit_0
-      qubit_index: 0
-      frequency: 4.92e+09
-      nodes: [qubit_2, resonator_q0, drive_line_q0, flux_line_q0]
-  ```
-
-- `ql.execute` now accepts a list of circuits!
-  [#549](https://github.com/qilimanjaro-tech/qililab/pull/549)
-
 ### Breaking changes
-
-- Old scripts using `Experiment` with circuits should be changed and use `CircuitExperiment` instead.
-  [#334](https://github.com/qilimanjaro-tech/qililab/pull/334)
 
 ### Deprecations / Removals
 
-- `id` and `category` attributes have been removed from `qililab`.
-  [#494](https://github.com/qilimanjaro-tech/qililab/pull/494)
-
 ### Documentation
 
-- Documentation for the Pulse module: [#532](https://github.com/qilimanjaro-tech/qililab/pull/532)
-
-  Includes documentation for all public features of the Pulse module
-
-- Added documentation for platform module and the tutorial sections of Platform and Runcards: [#531](https://github.com/qilimanjaro-tech/qililab/pull/531/files)
-
 ### Bug fixes
-
-- Avoid creating empty sequences for buses that are no flux lines and do for flux ones that do not have any AWG instrument.
-  [#556](https://github.com/qilimanjaro-tech/qililab/pull/bug-557)
-
-- The `threshold` and `threshold_rotation` parameters of a `QbloxQRM` can now be set using `Platform.set_parameter`.
-  [#534](https://github.com/qilimanjaro-tech/qililab/pull/534)
-
-- The `QbloxQRMRF` and `QbloxQCMRF` do not save an empty list for the parameter `out_offsets` in the saved runcard.
-  [#565](https://github.com/qilimanjaro-tech/qililab/pull/565)
-
-- The `save_platform` now saves in the yaml file float values with the same precision as in the `Platform` object.
-  [#565](https://github.com/qilimanjaro-tech/qililab/pull/565)

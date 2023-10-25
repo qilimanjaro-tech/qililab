@@ -23,8 +23,15 @@ from qililab.utils import Factory
 @Factory.register
 @dataclass
 class Qubit(Node):
-    """Qubit class"""
+    """This class is used to represent each of the qubits in a chip.
+
+    Each qubit has a frequency associated to it and an index within the chip.
+
+    Args:
+        frequency (float): frequency of the qubit
+        qubit_index (int): qubit index
+    """
 
     name = NodeName.QUBIT
-    frequency: float
-    qubit_index: int
+    frequency: float  #: frequency of the qubit
+    qubit_index: int  #: index of the qubit
