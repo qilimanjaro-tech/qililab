@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 import numpy as np
 import pytest
 from qm import Program
+from qm.jobs.qm_job import QmJob
 from qm.qua import play, program
 
 from qililab.instruments.quantum_machines import QMM
@@ -29,7 +30,8 @@ def fixture_qmm():
     qmm.device = MagicMock
     qmm.qm = MagicMock
     result = QuantumMachinesResult(raw_results=np.zeros((2, 10)))
-    qmm.run = MagicMock(return_value=result)
+    qmm.run = MagicMock
+    qmm.get_acquisitions = MagicMock(return_value=result)
     qmm.simulate = MagicMock(return_value=result)
 
     return qmm
@@ -45,7 +47,14 @@ class TestQMM:
 
     def test_execute(self, qmm: QMM, qua_program: Program):
         """Test execute method"""
-        result = qmm.run(qua_program)
+        job = qmm.run(qua_program)
+
+        assert isinstance(job, MagicMock)
+
+    def test_get_acquisitions(self, qmm: QMM, qua_program: Program):
+        """Test get_acquisition method"""
+        job = qmm.run(qua_program)
+        result = qmm.get_acquisitions(job)
 
         assert isinstance(result, QuantumMachinesResult)
         assert result.array.shape == (2, 10)

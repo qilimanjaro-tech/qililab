@@ -40,7 +40,7 @@ from qililab.constants import RUNCARD
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
 from qililab.result.quantum_machines_results import QuantumMachinesResult
-from qililab.typings import InstrumentName, QMMDriver
+from qililab.typings import InstrumentName, Parameter, QMMDriver
 
 
 @InstrumentFactory.register
@@ -76,7 +76,7 @@ class QMM(Instrument):
 
     settings: QMMSettings
     device: QMMDriver
-    qmm: QuantumMachinesManager
+    qm: QuantumMachine
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
@@ -86,7 +86,9 @@ class QMM(Instrument):
         a connection to the Quantum Machine by the use of the Quantum Machines Manager.
         """
         super().initial_setup()
-        self.qmm = QuantumMachinesManager(host=self.settings.qop_ip, port=self.settings.qop_port)
+        qmm = QuantumMachinesManager(host=self.settings.qop_ip, port=self.settings.qop_port)
+        self.qm = qmm.open_qm(config=self.settings.config,
+                              close_other_machines=True)
 
     @Instrument.CheckDeviceInitialized
     def turn_on(self):
@@ -100,6 +102,9 @@ class QMM(Instrument):
     def turn_off(self):
         """Turns off an instrument."""
 
+    def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+        raise NotImplementedError("Setting a parameter is not supported for Quantum Machines yet.")
+
     def run(self, program: Program) -> QmJob:
         """Runs the QUA Program.
 
@@ -112,9 +117,8 @@ class QMM(Instrument):
         Returns:
             job: Quantum Machines job.
         """
-        qm = self.qmm.open_qm(self.settings.config)
 
-        return qm.execute(program)
+        return self.qm.execute(program)
 
     def get_acquisitions(self, job: QmJob) -> QuantumMachinesResult:
         """Fetches the results from the execution of a QUA Program.
@@ -127,11 +131,12 @@ class QMM(Instrument):
         Returns:
             QuantumMachinesResult: Quantum Machines result instance.
         """
-        results = fetching_tool(job, data_list=["I", "Q"], mode="live")
-        i, q = results.fetch_all()
-        raw_results = np.asarray([list(i),list(q)], dtype = 'O')
+        result_handles_fetchers = job.result_handles
+        result_handles_fetchers.wait_for_all_values()
+        for result_handle in result_handles_fetchers:
+            data = result_handles_fetchers.get(result_handle).fetch_all()
 
-        return QuantumMachinesResult(raw_results=raw_results)
+        return QuantumMachinesResult(raw_results=data)
 
 
     def simulate(self, program: Program) -> QuantumMachinesResult:
@@ -143,8 +148,7 @@ class QMM(Instrument):
         Args:
             program (Program): QUA Program to be simulated on Quantum Machines instruments.
         """
-        qm = self.qmm.open_qm(self.settings.config)
-        job = qm.simulate(program, SimulationConfig(40_000))
+        job = self.qm.simulate(program, SimulationConfig(40_000))
         res_handles = job.result_handles
 
         return QuantumMachinesResult(raw_results=res_handles.fetch_all())
