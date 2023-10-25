@@ -150,11 +150,3 @@ class QMM(Instrument):
         res_handles = job.result_handles
 
         return QuantumMachinesResult(raw_results=res_handles.fetch_all())
-
-    def to_dict(self):
-        """Returns a dict representation of a Quantum Machines Manager instrument.
-
-        Returns:
-            dict[str: str | dict]: Dictionary containing the runcard name and the instrument settings.
-        """
-        return {RUNCARD.NAME: self.name.value} | self.settings.to_dict()
