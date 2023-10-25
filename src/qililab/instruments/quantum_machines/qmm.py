@@ -28,9 +28,9 @@
 
 """Quantum Machines OPX class."""
 from dataclasses import dataclass
-import numpy as np
 from typing import Dict
 
+import numpy as np
 from qm import QuantumMachine, QuantumMachinesManager, SimulationConfig
 from qm.jobs.qm_job import QmJob
 from qm.qua import Program
