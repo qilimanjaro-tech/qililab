@@ -154,38 +154,43 @@ class QuantumMachinesCompiler:
         return qua_program, self._configuration, result_handles
 
     def _save_average(self):
-        average = next(average for average in self._averages if average.save_pending)
-        average.save_pending = False
-        qua.save(average.variable, average.stream)
+        # average = next(average for average in self._averages if average.save_pending)
+        # average.save_pending = False
+        # qua.save(average.variable, average.stream)
+        ...
 
     def _process_streams(self):
         result_handles: list[str] = []
 
         measurements = [measurement for measurement in self._measurements if measurement.stream_processing_pending]
-        if len(measurements) == 1:
-            measurement = measurements[0]
+        is_single_measurement = len(measurements) == 1
+        for i, measurement in enumerate(measurements):
             if measurement.stream_I is not None:
                 for loop_iteration in measurement.loops_iterations:
                     measurement.stream_I = measurement.stream_I.buffer(loop_iteration)
                 measurement.stream_I = measurement.stream_I.average()
-                measurement.stream_I.save_all("I")
-                result_handles.append("I")
+                measurement.stream_I.save("I" if is_single_measurement else f"I_{i}")
+                result_handles.append("I" if is_single_measurement else f"I_{i}")
             if measurement.stream_Q is not None:
                 for loop_iteration in measurement.loops_iterations:
                     measurement.stream_Q = measurement.stream_Q.buffer(loop_iteration)
                 measurement.stream_Q = measurement.stream_Q.average()
-                measurement.stream_Q.save_all("Q")
-                result_handles.append("Q")
+                measurement.stream_Q.save("Q" if is_single_measurement else f"Q_{i}")
+                result_handles.append("Q" if is_single_measurement else f"Q_{i}")
             if measurement.stream_raw_adc is not None:
-                measurement.stream_raw_adc.input1().average().save_all("adc1")
-                measurement.stream_raw_adc.input2().average().save_all("adc2")
-                result_handles.append("adc1")
-                result_handles.append("adc2")
+                input1 = measurement.stream_raw_adc.input1()
+                input2 = measurement.stream_raw_adc.input2()
+                for loop_iteration in measurement.loops_iterations:
+                    input1 = input1.buffer(loop_iteration)
+                    input2 = input2.buffer(loop_iteration)
+                input1.average().save("adc1" if is_single_measurement else f"adc1_{i}")
+                input2.average().save("adc2" if is_single_measurement else f"adc2_{i}")
+                result_handles.append("adc1" if is_single_measurement else f"adc1_{i}")
+                result_handles.append("adc2" if is_single_measurement else f"adc2_{i}")
 
-        averages = [average for average in self._averages if average.stream_processing_pending]
-        if len(averages) == 1:
-            average = averages[0]
-            average.stream.save_all("iteration")
+        # averages = [average for average in self._averages if average.stream_processing_pending]
+        # for i, average in enumerate(averages):
+        #     average.stream.save("iteration" if len(averages) == 1 else f"iteration_{i}")
 
         return result_handles
 
@@ -225,7 +230,7 @@ class QuantumMachinesCompiler:
         if element.variable.domain is Domain.Frequency:
             value = value * 1e3
         if element.variable.domain is Domain.Time:
-            value = max(value, 0)
+            value = max(value, 4)
         qua.assign(qua_variable, value)
 
     def _handle_infinite_loop(self, _: InfiniteLoop):
@@ -246,7 +251,7 @@ class QuantumMachinesCompiler:
             if loop.variable.domain is Domain.Frequency:
                 values = (values * 1e3).astype(int)
             if loop.variable.domain is Domain.Time:
-                values = np.maximum(values, 0)
+                values = np.maximum(values, 4).astype(int)
 
             variables.append(qua_variable)
             loops.append(values)
@@ -275,7 +280,7 @@ class QuantumMachinesCompiler:
         if element.variable.domain is Domain.Frequency:
             values = (values * 1e3).astype(int)
         if element.variable.domain is Domain.Time:
-            values = np.maximum(values, 0)
+            values = np.maximum(values, 4).astype(int)
         return qua.for_each_(qua_variable, values)
 
     def _handle_average(self, element: Average):
@@ -331,16 +336,15 @@ class QuantumMachinesCompiler:
         duration = waveform_I.get_duration()
         if waveform_Q and duration != waveform_Q.get_duration():
             raise ValueError()
+
+        gain = qua.amp(self._buses[bus].current_gain * 2) if self._buses[bus].current_gain is not None else None
+
         if not waveform_variables:
             waveform_I_name = self.__add_waveform_to_configuration(waveform_I)
             waveform_Q_name = self.__add_waveform_to_configuration(waveform_Q) if waveform_Q else None
             pulse_name = self.__add_or_update_control_pulse_to_configuration(waveform_I_name, waveform_Q_name, duration)
             operation_name = self.__add_pulse_to_element_operations(bus, pulse_name)
-            pulse = (
-                operation_name * qua.amp(self._buses[bus].current_gain)
-                if self._buses[bus].current_gain is not None
-                else operation_name
-            )
+            pulse = operation_name * gain if gain is not None else operation_name
             qua.play(pulse, bus)
 
     def _handle_measure(self, element: Measure):
@@ -354,6 +358,8 @@ class QuantumMachinesCompiler:
         waveform_I_name = self.__add_waveform_to_configuration(waveform_I)
         waveform_Q_name = self.__add_waveform_to_configuration(waveform_Q)
 
+        gain = qua.amp(self._buses[bus].current_gain * 2) if self._buses[bus].current_gain is not None else None
+
         variable_I, variable_Q, stream_I, stream_Q, stream_raw_adc = None, None, None, None, None
 
         if element.save_raw_adc:
@@ -364,11 +370,7 @@ class QuantumMachinesCompiler:
                 waveform_I_name, waveform_Q_name, duration=measurement_duration, integration_weights=[]
             )
             operation_name = self.__add_pulse_to_element_operations(bus, pulse_name)
-            pulse = (
-                operation_name * qua.amp(self._buses[bus].current_gain)
-                if self._buses[bus].current_gain is not None
-                else operation_name
-            )
+            pulse = operation_name * gain if gain is not None else operation_name
             qua.measure(pulse, element.bus, stream_raw_adc)
         elif isinstance(element.weights, IQPair):
             variable_I = qua.declare(qua.fixed)
@@ -378,11 +380,7 @@ class QuantumMachinesCompiler:
                 waveform_I_name, waveform_Q_name, duration=measurement_duration, integration_weights=[weight_I]
             )
             operation_name = self.__add_pulse_to_element_operations(bus, pulse_name)
-            pulse = (
-                operation_name * qua.amp(self._buses[bus].current_gain)
-                if self._buses[bus].current_gain is not None
-                else operation_name
-            )
+            pulse = operation_name * gain if gain is not None else operation_name
             if element.demodulation:
                 qua.measure(pulse, bus, stream_raw_adc, qua.demod.full(weight_I, variable_I, "out1"))
             else:
@@ -402,11 +400,7 @@ class QuantumMachinesCompiler:
                 integration_weights=[weight_I, weight_Q],
             )
             operation_name = self.__add_pulse_to_element_operations(bus, pulse_name)
-            pulse = (
-                operation_name * qua.amp(self._buses[bus].current_gain)
-                if self._buses[bus].current_gain is not None
-                else operation_name
-            )
+            pulse = operation_name * gain if gain is not None else operation_name
             if element.demodulation:
                 qua.measure(
                     pulse,
@@ -440,11 +434,7 @@ class QuantumMachinesCompiler:
                 integration_weights=[weight_A, weight_B, weight_C],
             )
             operation_name = self.__add_pulse_to_element_operations(bus, pulse_name)
-            pulse = (
-                operation_name * qua.amp(self._buses[bus].current_gain)
-                if self._buses[bus].current_gain is not None
-                else operation_name
-            )
+            pulse = operation_name * gain if gain is not None else operation_name
             if element.demodulation:
                 qua.measure(
                     pulse,
@@ -471,6 +461,14 @@ class QuantumMachinesCompiler:
                 measurement_info.loops_iterations.append(iterations)
             if isinstance(block, Loop):
                 iterations = len(block.values)
+                measurement_info.loops_iterations.append(iterations)
+            if isinstance(block, Parallel):
+                iterations = min(
+                    len(loop.values)
+                    if isinstance(loop, Loop)
+                    else QuantumMachinesCompiler.__calculate_iterations(loop.start, loop.stop, loop.step)
+                    for loop in block.loops
+                )
                 measurement_info.loops_iterations.append(iterations)
 
         self._measurements.append(measurement_info)
@@ -536,7 +534,9 @@ class QuantumMachinesCompiler:
                 "digital_marker": "ON",
             }
         else:
-            self._configuration["pulses"][pulse_name]["integration_weights"].update(integration_weights)
+            self._configuration["pulses"][pulse_name]["integration_weights"].update(
+                {weight: weight for weight in integration_weights}
+            )
         return pulse_name
 
     def __add_integration_weight_to_configuration(self, cosine_part: Waveform, sine_part: Waveform):
@@ -567,9 +567,11 @@ class QuantumMachinesCompiler:
     @staticmethod
     def __waveform_to_config(waveform: Waveform):
         if isinstance(waveform, Square):
-            return {"type": "constant", "sample": waveform.amplitude}
+            amplitude = waveform.amplitude / 2
+            return {"type": "constant", "sample": amplitude}
         else:
-            return {"type": "arbitrary", "samples": waveform.envelope().tolist()}
+            envelope = waveform.envelope() / 2
+            return {"type": "arbitrary", "samples": envelope.tolist()}
 
     @staticmethod
     def __integration_weight_to_config(cosine_part: Waveform, sine_part: Waveform):
