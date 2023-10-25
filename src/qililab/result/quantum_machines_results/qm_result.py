@@ -26,18 +26,18 @@ class QuantumMachinesResult(Result):
     """QuantumMachinesResult class. Contains the binning acquisition results obtained from Quantum Machines Manager execute() method.
 
     Args:
-        raw_results (list[dict]): Raw results obtained from a Quantum Machines Manager.
+        raw_results (list): Raw results obtained from a Quantum Machines Manager.
     """
 
     name = ResultName.QM
 
-    def __init__(self, raw_results: np.ndarray):
+    def __init__(self, raw_results: list):
         self.raw_results = raw_results
 
     @property
     def array(self) -> np.ndarray:
         """Returns data as acquired from Quantum Machines Manager."""
-        return self.raw_results
+        return np.array(self.raw_results)
 
     def to_dict(self) -> dict:
         """Returns a serialized dictionary of the QuantumMachinesResult class.

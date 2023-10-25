@@ -127,12 +127,13 @@ class QMM(Instrument):
         Returns:
             QuantumMachinesResult: Quantum Machines result instance.
         """
+        results = []
         result_handles_fetchers = job.result_handles
         result_handles_fetchers.wait_for_all_values()
-        for result_handle in result_handles_fetchers:
-            data = result_handles_fetchers.get(result_handle).fetch_all()
+        for result_handle in job.result_handles:
+            results.append(result_handles_fetchers.get(result_handle).fetch_all())
 
-        return QuantumMachinesResult(raw_results=data)
+        return QuantumMachinesResult(raw_results=results)
 
     def simulate(self, program: Program) -> RunningQmJob:
         """Simulates the QUA Program.
