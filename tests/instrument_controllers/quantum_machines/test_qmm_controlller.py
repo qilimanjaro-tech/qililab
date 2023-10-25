@@ -1,14 +1,10 @@
 """This file tests the the ``qmm_controller`` class"""
-from unittest.mock import MagicMock
-
 import pytest
 
 from qililab.instrument_controllers.quantum_machines import QMMController
 from qililab.instruments.quantum_machines import QMM
 from qililab.platform import Platform
 from qililab.settings import Settings
-from qililab.typings import QMMDriver
-from qililab.typings.enums import InstrumentControllerName
 from tests.data import Galadriel
 from tests.test_utils import build_platform
 
