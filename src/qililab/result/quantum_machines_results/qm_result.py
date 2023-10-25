@@ -25,12 +25,6 @@ from qililab.utils.factory import Factory
 class QuantumMachinesResult(Result):
     """QuantumMachinesResult class. Contains the binning acquisition results obtained from Quantum Machines Manager execute() method.
 
-    The input to the constructor should be a dictionary with the following structure:
-
-    - integration: integration data.
-        - path_0: input path 0 integration result bin list.
-        - path_1: input path 1 integration result bin list.
-
     Args:
         raw_results (list[dict]): Raw results obtained from a Quantum Machines Manager.
     """
