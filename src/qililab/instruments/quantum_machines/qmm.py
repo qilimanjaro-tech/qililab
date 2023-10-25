@@ -87,8 +87,7 @@ class QMM(Instrument):
         """
         super().initial_setup()
         qmm = QuantumMachinesManager(host=self.settings.qop_ip, port=self.settings.qop_port)
-        self.qm = qmm.open_qm(config=self.settings.config,
-                              close_other_machines=True)
+        self.qm = qmm.open_qm(config=self.settings.config, close_other_machines=True)
 
     @Instrument.CheckDeviceInitialized
     def turn_on(self):
@@ -137,7 +136,6 @@ class QMM(Instrument):
             data = result_handles_fetchers.get(result_handle).fetch_all()
 
         return QuantumMachinesResult(raw_results=data)
-
 
     def simulate(self, program: Program) -> QuantumMachinesResult:
         """Simulates the QUA Program.
