@@ -134,16 +134,16 @@ class QMM(Instrument):
 
         return QuantumMachinesResult(raw_results=data)
 
-    def simulate(self, program: Program) -> QuantumMachinesResult:
+    def simulate(self, program: Program) -> RunningQmJob:
         """Simulates the QUA Program.
 
         Creates, for every simulation, an instance of a QuantumMachine class and executes the QUA program on it.
-        After simulation, the results are fetched through the fetcher tool from the qm library.
+        It returns the running job instance.
 
         Args:
             program (Program): QUA Program to be simulated on Quantum Machines instruments.
-        """
-        job = self.qm.simulate(program, SimulationConfig(40_000))
-        res_handles = job.result_handles
 
-        return QuantumMachinesResult(raw_results=res_handles.fetch_all())
+        Returns:
+            job: Quantum Machines job.
+        """
+        return self.qm.simulate(program, SimulationConfig(40_000))
