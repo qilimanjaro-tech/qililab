@@ -33,6 +33,7 @@ from typing import Dict
 from qm import QuantumMachine, QuantumMachinesManager, SimulationConfig
 from qm.jobs.running_qm_job import RunningQmJob
 from qm.qua import Program
+from qm.results.single_streaming_result_fetcher import BaseStreamingResultFetcher
 
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
@@ -131,7 +132,7 @@ class QMM(Instrument):
         result_handles_fetchers = job.result_handles
         result_handles_fetchers.wait_for_all_values()
         for result_handle in job.result_handles:
-            if result_handles_fetchers.get(result_handle[0]):
+            if isinstance(result_handles_fetchers.get(result_handle[0]), BaseStreamingResultFetcher):
                 results.append(result_handles_fetchers.get(result_handle[0]).fetch_all())
 
         return QuantumMachinesResult(raw_results=results)
