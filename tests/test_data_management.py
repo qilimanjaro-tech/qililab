@@ -161,7 +161,9 @@ class TestPlatformSerializationWithRuamelYaml:
     """Unit tests to check the serialization is keeping all we want to keep."""
 
     original_platform = ql.build_platform(Galadriel.runcard)
-    saved_platform = ql.build_platform(save_platform(path="./test.yml", platform=original_platform))
+    path = save_platform(path="./test.yml", platform=original_platform)
+    saved_platform = ql.build_platform(path)
+    os.remove(path)
 
     def test_long_decimal_in_serialization(self):
         """Test that long decimals are correctly dumped in serialization."""
