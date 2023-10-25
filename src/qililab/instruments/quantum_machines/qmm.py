@@ -33,7 +33,6 @@ from typing import Dict
 from qm import QuantumMachine, QuantumMachinesManager, SimulationConfig
 from qm.jobs.running_qm_job import RunningQmJob
 from qm.qua import Program
-from qm.results.single_streaming_result_fetcher import BaseStreamingResultFetcher
 
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
