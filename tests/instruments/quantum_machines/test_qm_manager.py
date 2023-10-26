@@ -1,5 +1,5 @@
 """This file tests the the ``qm_manager`` class"""
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
@@ -29,7 +29,6 @@ def fixture_qmm():
     qmm.device = MagicMock
     qmm.qm = MagicMock
     result = QuantumMachinesResult(raw_results=np.zeros((2, 10)))
-    qmm.initial_setup = MagicMock
     qmm.run = MagicMock
     qmm.get_acquisitions = MagicMock(return_value=result)
     qmm.simulate = MagicMock(return_value=result)
@@ -40,10 +39,11 @@ def fixture_qmm():
 class TestQMM:
     """This class contains the unit tests for the ``QMM`` class."""
 
-    def test_initial_setup(self, qmm: QMM):
+    @patch("qililab.instruments.quantum_machines.qmm.QMM.initial_setup")
+    def test_initial_setup(self, mock_init: MagicMock, qmm: QMM):
         """Test QMM class initialization."""
         qmm.initial_setup()
-        assert hasattr(qmm, "qm")
+        mock_init.assert_called()
 
     def test_settings(self, qmm: QMM):
         """Test QMMSettings have been set correctly"""
