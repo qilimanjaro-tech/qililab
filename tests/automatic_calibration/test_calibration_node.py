@@ -642,22 +642,77 @@ class TestPrivateMethodsFromCalibrationNode:
     #############################################
     ### TEST PARSE OUTPUT FROM EXECUTION FILE ###
     #############################################
-    def test_parse_output_from_execution_file(self, private_methods_node: CalibrationNode):
+    @pytest.mark.parametrize(
+        "type, raw_file_contents",
+        [
+            (
+                "good",
+                'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_params": [["bus_alias", "param_name", 1]]}\n',
+            ),
+            ("two", "RAND_INT:47102512880765720413 - OUTPUTS: /n {} RAND_INT:47102512880765720413 - OUTPUTS: {}"),
+            (
+                "two",
+                'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"a":2}}RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"a":2}}/n',
+            ),
+            ("none", '"check_parameters": {"x": [10, 12, 14, 16,]}'),
+            ("empty", "RAND_INT:47102512880765720413 - OUTPUTS: {}"),
+            ("empty", 'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters":{},"y":1}'),
+        ],
+    )
+    @patch("qililab.automatic_calibration.calibration_node.logger", autospec=True)
+    def test_parse_output_from_execution_file(
+        self, mocked_logger, type, raw_file_contents, private_methods_node: CalibrationNode
+    ):
         """Test that ``parse_output_from_execution_file`` works correctly."""
         # building a fixed dictionary for the test
-        sweep_interval = [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48]
-        y = [i**2 for i in sweep_interval]
-        results = {"x": sweep_interval, "y": y}
+        results = {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}
         expected_dict = {"check_parameters": results, "platform_params": [["bus_alias", "param_name", 1]]}
 
         # Dumping the raw string of the expected dictionary on a temporary file
-        raw_file_contents = 'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48], "y": [100, 144, 196, 256, 324, 400, 484, 576, 676, 784, 900, 1024, 1156, 1296, 1444, 1600, 1764, 1936, 2116, 2304]}, "platform_params": [["bus_alias", "param_name", 1]]}\n'
         filename = "tmp_test_file.ipynb"
         with open(f"{private_methods_node.nb_folder}/{filename}", "w") as file:
             file.write(raw_file_contents)
 
-        test_dict = private_methods_node._parse_output_from_execution_file(filename)
-        assert test_dict == expected_dict
+        if type == "good":
+            test_dict = private_methods_node._parse_output_from_execution_file(filename)
+            assert test_dict == expected_dict
+
+        if type == "none":
+            with pytest.raises(
+                IncorrectCalibrationOutput,
+                match=f"No output found, check automatic-calibration notebook in {private_methods_node.nb_path}",
+            ):
+                private_methods_node._parse_output_from_execution_file(filename)
+
+            mocked_logger.info.assert_called_with(
+                "Aborting execution. No output found, check the automatic-calibration output cell is implemented in %s",
+                private_methods_node.nb_path,
+            )
+
+        if type == "two":
+            with pytest.raises(
+                IncorrectCalibrationOutput,
+                match=f"More than one output found in {private_methods_node.nb_path}",
+            ):
+                private_methods_node._parse_output_from_execution_file(filename)
+
+            mocked_logger.info.assert_called_with(
+                "Aborting execution. More than one output found, please output the results once in %s",
+                private_methods_node.nb_path,
+            )
+
+        if type == "empty":
+            with pytest.raises(
+                IncorrectCalibrationOutput,
+                match=f"Empty output found in {private_methods_node.nb_path}, output must have key and value 'check_parameters'.",
+            ):
+                private_methods_node._parse_output_from_execution_file(filename)
+
+            mocked_logger.info.assert_called_with(
+                "Aborting execution. No 'check_parameters' dictionary or its empty in the output cell implemented in %s",
+                private_methods_node.nb_path,
+            )
+
         os.remove(f"{private_methods_node.nb_folder}/{filename}")
 
     ###########################################

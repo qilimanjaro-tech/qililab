@@ -443,30 +443,45 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             dict: outputs of the executed notebook file.
         """
         # Parsing file
-        raw_string = ""
+        outputs: list[str] = []
         with open(f"{self.nb_folder}/{file_name}") as file:  # pylint: disable=unspecified-encoding
             lines = file.readlines()
-            start = False
-            for line in lines:
-                if line.find(logger_output_start) != -1:
-                    raw_string += line
-                    start = True
-                if start and line.find("\n") == -1:
-                    raw_string += line
-                elif start:
-                    raw_string += line
-                    start = False
+            outputs.extend(line for line in lines if line.find(logger_output_start) != -1)
+
+        if not outputs:
+            logger.info(
+                "Aborting execution. No output found, check the automatic-calibration output cell is implemented in %s",
+                self.nb_path,
+            )
+            raise IncorrectCalibrationOutput(f"No output found, check automatic-calibration notebook in {self.nb_path}")
+
+        data = outputs[0].split(logger_output_start)
+
+        if len(outputs) > 1 or len(data) > 2:
+            logger.info(
+                "Aborting execution. More than one output found, please output the results once in %s",
+                self.nb_path,
+            )
+            raise IncorrectCalibrationOutput(f"More than one output found in {self.nb_path}")
 
         # TODO: Make sure that the encoding of special characters (i.e. \\“) doesn’t depend on the OS because
         # Windows uses UTF-16LE and Linux (UNIX based like MacOS) uses UTF-8
-        # Postprocessing file
-        data = raw_string.split(logger_output_start)
         clean_data = data[1].split('\\n"')
         dict_as_string = clean_data[0].replace('\\"', '"')
 
         # converting list into one single string
         output_string = "".join(dict_as_string)
-        return json.loads(output_string)
+        out_dict = json.loads(output_string)
+
+        if "check_parameters" not in out_dict or out_dict["check_parameters"] == {}:
+            logger.info(
+                "Aborting execution. No 'check_parameters' dictionary or its empty in the output cell implemented in %s",
+                self.nb_path,
+            )
+            raise IncorrectCalibrationOutput(
+                f"Empty output found in {self.nb_path}, output must have key and value 'check_parameters'."
+            )
+        return out_dict
 
     def _find_last_executed_calibration(self) -> str | None:
         """Returns the filename of the last calibration execution with the same node_id.
