@@ -400,7 +400,7 @@ class TestPrivateMethodsFromCalibrationNode:
     ######################################
     @pytest.mark.parametrize(
         "sweep_interval, number_of_random_datapoints",
-        [({"start": 0, "stop": 5, "step": 1}, 10), ({"start": 10, "stop": 1000, "step": 20}, 200)],
+        [({"start": 0, "stop": 5, "step": 1}, 10), ({"start": 10, "stop": 1000, "step": 20}, 200), (None, 1)],
     )
     def test_build_check_data_interval(
         self, private_methods_node: CalibrationNode, sweep_interval, number_of_random_datapoints
@@ -408,11 +408,12 @@ class TestPrivateMethodsFromCalibrationNode:
         """Test that ``build_check_data_interval()`` works correctly."""
         private_methods_node.sweep_interval = sweep_interval
         private_methods_node.number_of_random_datapoints = number_of_random_datapoints
-        sweep_interval_range = np.arange(sweep_interval["start"], sweep_interval["stop"], sweep_interval["step"])
         test_value = private_methods_node._build_check_data_interval()
-        assert len(test_value) == private_methods_node.number_of_random_datapoints
-        for value in test_value:
-            assert value in sweep_interval_range
+        if sweep_interval is not None:
+            sweep_interval_range = np.arange(sweep_interval["start"], sweep_interval["stop"], sweep_interval["step"])
+            for value in test_value:
+                assert value in sweep_interval_range
+            assert len(test_value) == private_methods_node.number_of_random_datapoints
 
     #############################
     ### TEST EXECUTE NOTEBOOK ###

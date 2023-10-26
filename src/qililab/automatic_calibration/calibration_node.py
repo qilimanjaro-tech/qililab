@@ -311,9 +311,9 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                 "stop": self.sweep_interval["stop"],
                 "step": self.sweep_interval["step"],
             }
-            if check:
+            if check and self._build_check_data_interval() is not None:
                 params |= {"sweep_interval": self._build_check_data_interval()}
-            else:
+            elif self._sweep_interval_as_array() is not None:
                 params |= {"sweep_interval": self._sweep_interval_as_array()}
 
         if self.input_parameters is not None:
