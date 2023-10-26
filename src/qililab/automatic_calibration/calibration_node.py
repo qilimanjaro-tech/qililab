@@ -378,6 +378,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         logger_string = self.stream.getvalue()
         logger_splitted = logger_string.split(logger_output_start)
         logger_outputs_string = logger_splitted[-1].split("\n")[0]
+
+        # In case something unexpected happened with the output we raise an error
         if len(logger_splitted) < 2:
             logger.info(
                 "Aborting execution. No output found, check the automatic-calibration output cell is implemented in %s",
@@ -390,12 +392,16 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                 input_path,
             )
             raise IncorrectCalibrationOutput(f"More than one output found in {input_path}")
-        # In case something unexpected happened with the output we raise an error
+
         out_dict = json.loads(logger_outputs_string)
 
         if "check_parameters" not in out_dict or out_dict["check_parameters"] == {}:
+            logger.info(
+                "Aborting execution. No 'check_parameters' dictionary or its empty in the output cell implemented in %s",
+                input_path,
+            )
             raise IncorrectCalibrationOutput(
-                f"Calibration output must have key and value 'check_parameters' in notebook {input_path}"
+                f"Empty output found in {input_path}, output must have key and value 'check_parameters'."
             )
         return out_dict
 
