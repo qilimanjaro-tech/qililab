@@ -12,24 +12,48 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Arbitrary waveform."""
 import numpy as np
 
 from .waveform import Waveform
 
 
 class Arbitrary(Waveform):  # pylint: disable=too-few-public-methods, disable=missing-class-docstring
-    def __init__(self, samples: np.ndarray):
-        self.samples = samples
+    """Arbitrary waveform. Creates a waveform with the passed envelope.
+
+    Args:
+        envelope(np.ndarray): Passed envelope to base the waveform on.
+
+    Examples:
+        If you want to create a waveform with an envelope given by:
+
+        .. code-block:: python
+
+            import numpy as np
+            original_envelope = np.ones(50)
+
+        You would just need to do:
+
+        .. code-block:: python
+
+            import qililab as ql
+            arbitrary_envelope = ql.Arbitrary(envelope=original_envelope)
+    """
+
+    def __init__(self, envelope: np.ndarray):
+        """Initialization of the class."""
+        self.samples = envelope
 
     def envelope(self, resolution: int = 1) -> np.ndarray:
-        """Returns the pulse matrix
+        """Returns the originally passed envelope.
 
         Returns:
-            np.ndarray: pulse matrix
+            np.ndarray: Height of the envelope for each time step.
         """
         if resolution == 1:
             return self.samples
         else:
+            # Moving average
             cumsum = np.cumsum(self.samples)
             cumsum[resolution:] = cumsum[resolution:] - cumsum[:-resolution]
             moving_avg = cumsum[resolution - 1 :] / resolution

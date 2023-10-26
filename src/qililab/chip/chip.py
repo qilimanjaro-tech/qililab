@@ -15,6 +15,9 @@
 """Chip class."""
 from dataclasses import asdict, dataclass
 
+import networkx as nx
+from networkx import Graph
+
 from qililab.chip.node import Node
 from qililab.chip.nodes import Coil, Coupler, Port, Qubit, Resonator
 from qililab.constants import RUNCARD
@@ -24,7 +27,10 @@ from qililab.utils import Factory, dict_factory
 
 @dataclass
 class Chip:
-    """Chip representation as a graph."""
+    """Chip representation as a graph.
+    This class represents the chip structure of in the runcard and contains all the connectivity information of
+    the chip.
+    """
 
     nodes: list[Node]
 
@@ -59,6 +65,25 @@ class Chip:
             list[Node | None]: List containing all adjacent nodes.
         """
         return [self.get_node_from_alias(alias=alias) for alias in node.nodes]
+
+    def get_topology(self) -> Graph:
+        """Returns a networkx Graph with the qubit connectivity of the chip
+
+        Returns:
+            Graph: graph showing the qubit topology
+        """
+        g = nx.Graph()
+
+        for qubit in self.qubits:
+            neighs = [
+                neigh
+                for neigh in self._get_adjacent_nodes(self.get_node_from_qubit_idx(qubit, readout=False))
+                if isinstance(neigh, Qubit)
+            ]
+            neigh_qubits = [neigh.qubit_index for neigh in neighs if isinstance(neigh, Qubit)]
+            edges = [(qubit, neigh_qubit) for neigh_qubit in neigh_qubits]
+            g.add_edges_from(edges)
+        return g
 
     def get_node_from_qubit_idx(self, idx: int, readout: bool) -> Qubit | Resonator:
         """Get node class from qubit index.

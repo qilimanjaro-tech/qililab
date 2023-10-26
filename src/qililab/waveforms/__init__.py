@@ -25,9 +25,9 @@ Waveforms
     ~Waveform
     ~Arbitrary
     ~Gaussian
-    ~DragPair
     ~Square
     ~IQPair
+    ~DragPair
 """
 
 from .arbitrary import Arbitrary

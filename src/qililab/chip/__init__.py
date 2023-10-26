@@ -13,7 +13,24 @@
 # limitations under the License.
 
 """
-This module contains the classes needed to define a quantum chip.
+The chip class contains information about the chip and its conections. This information can be reached through the Platform class through a platform object by accessing platform.chip.
+
+Each node in the chip can be a Coil, Coupler, Port, Qubit or Resonator. Each node also has an alias assigned to it. For example, the alias for Qubit nodes is typically ``qubit_n`` where n is the qubit index.
+
+The qubit connectivity (chip topology) can be accessed by calling chip.get_topology(), which returns a networkx graph of the qubits, e.g.
+
+.. code-block:: python
+
+    import networkx as nx
+    platform = ql.build_platform(runcard="runcard.yml")
+    g = platform.chip.get_topology()
+    nx.draw(g, with_labels=True)
+
+
+.. image:: chip_images/chip_topo.png
+   :scale: 60 %
+   :alt: alternate text
+   :align: center
 
 .. currentmodule:: qililab.chip
 

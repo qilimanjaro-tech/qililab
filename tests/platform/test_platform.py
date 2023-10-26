@@ -110,7 +110,7 @@ class TestPlatform:
         assert isinstance(element, AWGAnalogDigitalConverter)
 
     @patch("qililab.data_management.open")
-    @patch("qililab.data_management.ruamel.yaml.round_trip_dump")
+    @patch("qililab.data_management.ruamel.yaml.YAML.dump")
     def test_platform_manager_dump_method(self, mock_dump: MagicMock, mock_open: MagicMock, platform: Platform):
         """Test PlatformManager dump method."""
         save_platform(path="runcard.yml", platform=platform)

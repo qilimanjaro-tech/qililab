@@ -12,34 +12,54 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Square waveform."""
 import numpy as np
 
 from .waveform import Waveform
 
 
 class Square(Waveform):  # pylint: disable=too-few-public-methods
-    """Square (rectangular) waveform"""
+    """Square (rectangular) waveform. Given by a constant height line.
+
+    Args:
+        duration (int): Duration of the pulse (ns).
+        amplitude (float): Maximum amplitude of the pulse.
+
+    Examples:
+        To get the envelope of a square waveform, with ``amplitude`` equal to ``X``, you need to do:
+
+        .. code-block:: python
+
+            import qililab as ql
+            square_envelope = ql.Square( amplitude=X, duration=50).envelope()
+
+        which for ``X`` being ``1.`` and ``0.75``, look respectively like:
+
+        .. image:: /classes_images/rectangulars.png
+            :width: 800
+            :align: center
+    """
 
     def __init__(self, amplitude: float, duration: int):
-        """Init method
-
-        Args:
-            amplitude (float): pulse amplitude
-            duration (int): pulse duration
-        """
+        """Initialization of the class."""
         self.amplitude = amplitude
         self.duration = duration
 
-    def envelope(self, resolution: int = 1):
-        """Returns the pulse matrix
+    def envelope(self, resolution: int = 1) -> np.ndarray:
+        """Constant amplitude envelope.
 
         Args:
-            resolution (int, optional): Pulse resolution. Defaults to 1.
+            resolution (float, optional): Resolution of the pulse. Defaults to 1.
 
         Returns:
-            np.ndarray: pulse matrix
+            np.ndarray: Height of the envelope for each time step.
         """
         return self.amplitude * np.ones(round(self.duration / resolution))
 
     def get_duration(self) -> int:
+        """Get the duration of the waveform.
+
+        Returns:
+            int: The duration of the waveform in ns.
+        """
         return self.duration
