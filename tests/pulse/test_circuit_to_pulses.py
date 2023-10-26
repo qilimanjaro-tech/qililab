@@ -272,7 +272,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "feedline_bus",
             "system_control": {
                 "name": "readout_system_control",
-                "instruments": ["QRM1", "rs_1"],
+                "instruments": ["QRM", "rs_1"],
             },
             "port": "feedline_input",
             "distortions": [],
@@ -282,7 +282,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "drive_q0_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM-RF1"],
+                "instruments": ["QCM"],
             },
             "port": "drive_q0",
             "distortions": [],
@@ -292,7 +292,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "flux_q0_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM1"],
+                "instruments": ["QCM"],
             },
             "port": "flux_q0",
             "distortions": [],
@@ -302,7 +302,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "drive_q1_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM-RF1"],
+                "instruments": ["QCM"],
             },
             "port": "drive_q1",
             "distortions": [],
@@ -312,7 +312,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "flux_q1_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM1"],
+                "instruments": ["QCM"],
             },
             "port": "flux_q1",
             "distortions": [],
@@ -322,7 +322,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "drive_q2_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM-RF2"],
+                "instruments": ["QCM"],
             },
             "port": "drive_q2",
             "distortions": [],
@@ -332,7 +332,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "flux_q2_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM2"],
+                "instruments": ["QCM"],
             },
             "port": "flux_q2",
             "distortions": [],
@@ -342,7 +342,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "flux_c2_bus",  # c2 coupler
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM1"],
+                "instruments": ["QCM"],
             },
             "port": "flux_c2",
             "distortions": [],
@@ -352,7 +352,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "drive_q3_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM-RF3"],
+                "instruments": ["QCM"],
             },
             "port": "drive_q3",
             "distortions": [],
@@ -362,7 +362,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "flux_q3_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM1"],
+                "instruments": ["QCM"],
             },
             "port": "flux_q3",
             "distortions": [],
@@ -372,7 +372,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "drive_q4_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM-RF3"],
+                "instruments": ["QCM"],
             },
             "port": "drive_q4",
             "distortions": [],
@@ -382,7 +382,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "flux_q4_bus",
             "system_control": {
                 "name": "system_control",
-                "instruments": ["QCM1"],
+                "instruments": ["QCM"],
             },
             "port": "flux_q4",
             "distortions": [],
@@ -438,6 +438,54 @@ class TestTranslation:
             {**asdict(schedule)["pulse"], "start_time": schedule.start_time, "qubit": schedule.qubit}
             for schedule in pulse_bus_schedule[port]
         ]
+
+    def test_translate_for_no_awg(self, platform):
+        """Test translate method adding/removing AWG instruments to test empty schedules"""
+        translator = CircuitToPulses(platform=platform)
+        # test circuit
+        circuit = Circuit(5)
+        circuit.add(X(0))
+        circuit.add(Drag(0, 1, 0.5))
+        circuit.add(CZ(3, 2))
+        circuit.add(M(0))
+        circuit.add(CZ(2, 3))
+        circuit.add(CZ(4, 0))
+        circuit.add(M(*range(4)))
+        circuit.add(Wait(0, t=10))
+        circuit.add(Drag(0, 2, 0.5))
+
+        pulse_schedules = translator.translate(circuits=[circuit])
+        pulse_schedule = pulse_schedules[0]
+        # there should be 9 pulse_schedules in this configuration
+        assert len(pulse_schedule) == 9
+
+        buses_elements = [bus for bus in platform.buses.elements if bus.settings.alias != "flux_q4_bus"]
+        buses = Buses(elements=buses_elements)
+        platform.buses = buses
+        pulse_schedules = translator.translate(circuits=[circuit])
+
+        pulse_schedule = pulse_schedules[0]
+        # there should be a pulse_schedule removed
+        assert len(pulse_schedule) == 8
+
+        flux_bus_no_awg_settings = {
+            "alias": "flux_q1_bus",
+            "system_control": {
+                "name": "system_control",
+                "instruments": ["rs_1"],
+            },
+            "port": "flux_q1",
+            "distortions": [],
+            "delay": 0,
+        }
+
+        platform.buses.add(
+            Bus(settings=flux_bus_no_awg_settings, platform_instruments=platform.instruments, chip=platform.chip)
+        )
+        pulse_schedules = translator.translate(circuits=[circuit])
+        pulse_schedule = pulse_schedules[0]
+        # there should not be any extra pulse schedule added
+        assert len(pulse_schedule) == 8
 
     def test_translate(self, platform):  # pylint: disable=R0914 # disable pyling too many variables
         """Test translate method"""
@@ -662,7 +710,16 @@ class TestTranslation:
         c.add(Drag(0, np.pi + 0.1, 0))
         translator = CircuitToPulses(platform=platform)
         pulse_schedules = translator.translate(circuits=[c])
-        assert np.allclose(pulse_schedules[0].elements[0].timeline[0].pulse.amplitude, -0.7745352091052967)
+        assert np.allclose(pulse_schedules[0].elements[0].timeline[0].pulse.amplitude, abs(-0.7745352091052967))
+
+    def test_negative_amplitudes_add_extra_phase(self, platform):
+        """Test that transpiling negative amplitudes results in an added PI phase."""
+        c = Circuit(1)
+        c.add(Drag(0, -np.pi / 2, 0))
+        translator = CircuitToPulses(platform=platform)
+        pulse_schedule = translator.translate(circuits=[c])[0]
+        assert np.allclose(pulse_schedule.elements[0].timeline[0].pulse.amplitude, (np.pi / 2) * 0.8 / np.pi)
+        assert np.allclose(pulse_schedule.elements[0].timeline[0].pulse.phase, 0 + np.pi)
 
     def test_drag_schedule_error(self, platform: Platform):
         """Test error is raised if len(drag schedule) > 1"""

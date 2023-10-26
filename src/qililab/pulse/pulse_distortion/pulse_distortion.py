@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """PulseDistortion abstract base class."""
 from abc import abstractmethod
 from dataclasses import dataclass
@@ -10,7 +24,10 @@ from qililab.utils import Factory
 
 @dataclass(frozen=True, eq=True, kw_only=True)
 class PulseDistortion(FactoryElement):
-    """Base class for the pulse distortions. Every child of this interface needs to contain an `apply` and `to/from_dict` methods (for serialization).
+    """Pulse distortions applied to the :class:`PulseShape`'s envelopes, in order to pre-correct our pulses from future lab physical modifications. ``PulseDistortion`` is their abstract base class.
+
+    Every child of this interface needs to contain an `apply` and `to/from_dict` methods (for serialization).
+
 
     The `apply` method will apply the distortion correction to the respective passed envelope, and then will call `normalize_envelope` method of this base class.
 
@@ -42,6 +59,8 @@ class PulseDistortion(FactoryElement):
     .. code-block:: python3
 
         final_envelope = almost_final_envelope * self.norm_factor
+
+    Derived: :class:`BiasTeeCorrection`, :class:`ExponentialCorrection` and :class:`LFilterCorrection`
 
     Args:
         norm_factor (float): The manual normalization factor that multiplies the envelope in the apply() method. Defaults to 1 (no effect).
@@ -80,12 +99,12 @@ class PulseDistortion(FactoryElement):
         True
     """
 
-    norm_factor: float = 1.0
-    auto_norm: bool = True
+    norm_factor: float = 1.0  #: Normalization factor.
+    auto_norm: bool = True  #: Auto-normalization flag. Defaults to True.
 
     @abstractmethod
     def apply(self, envelope: np.ndarray) -> np.ndarray:
-        """Method for applying the distortion to the given envelope.
+        """Applies the distortion to the given envelope.
 
         Args:
             envelope (np.ndarray): Original pulse envelope to be distorted.
@@ -96,10 +115,11 @@ class PulseDistortion(FactoryElement):
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "PulseDistortion":
-        """Load PulseDistortion object from dictionary.
+        """Loads PulseDistortion object from dictionary.
 
         Args:
-            dictionary (dict): Dictionary representation of the PulseDistortion object.
+            dictionary (dict): Dictionary representation of the PulseDistortion object. It must include the name of the
+            correction.
 
         Returns:
             PulseDistortion: Loaded class.
@@ -109,7 +129,7 @@ class PulseDistortion(FactoryElement):
 
     @abstractmethod
     def to_dict(self) -> dict:
-        """Return dictionary of PulseDistortion.
+        """Returns dictionary of PulseDistortion.
 
         Returns:
             dict: Dictionary describing the pulse distortion.

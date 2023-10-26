@@ -132,7 +132,7 @@ def fixture_experiment_reset(request: pytest.FixtureRequest):
     with patch("qililab.data_management.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.data_management.open") as mock_open:
             mock_load.return_value[RUNCARD.INSTRUMENT_CONTROLLERS][0] |= {"reset": False}
-            platform = ql.build_platform(path="sauron.yml")
+            platform = ql.build_platform(runcard="sauron.yml")
             mock_load.assert_called()
             mock_open.assert_called()
     loop = Loop(
@@ -322,7 +322,7 @@ class TestSetParameter:
         alias = Galadriel.buses[0][RUNCARD.ALIAS]
         element = exp.platform.get_element(alias)  # type: ignore
         exp.set_parameter(element=element, alias=alias, parameter=Parameter.DELAY, value=bus_delay)  # type: ignore
-        assert exp.platform.get_bus_by_alias(alias).delay == bus_delay  # type: ignore
+        assert exp.platform._get_bus_by_alias(alias).delay == bus_delay  # type: ignore
         exp.build_execution.assert_called_once_with()
 
 

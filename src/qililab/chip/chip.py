@@ -1,5 +1,22 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Chip class."""
 from dataclasses import asdict, dataclass
+
+import networkx as nx
+from networkx import Graph
 
 from qililab.chip.node import Node
 from qililab.chip.nodes import Coil, Coupler, Port, Qubit, Resonator
@@ -10,7 +27,10 @@ from qililab.utils import Factory, dict_factory
 
 @dataclass
 class Chip:
-    """Chip representation as a graph."""
+    """Chip representation as a graph.
+    This class represents the chip structure of in the runcard and contains all the connectivity information of
+    the chip.
+    """
 
     nodes: list[Node]
 
@@ -45,6 +65,25 @@ class Chip:
             list[Node | None]: List containing all adjacent nodes.
         """
         return [self.get_node_from_alias(alias=alias) for alias in node.nodes]
+
+    def get_topology(self) -> Graph:
+        """Returns a networkx Graph with the qubit connectivity of the chip
+
+        Returns:
+            Graph: graph showing the qubit topology
+        """
+        g = nx.Graph()
+
+        for qubit in self.qubits:
+            neighs = [
+                neigh
+                for neigh in self._get_adjacent_nodes(self.get_node_from_qubit_idx(qubit, readout=False))
+                if isinstance(neigh, Qubit)
+            ]
+            neigh_qubits = [neigh.qubit_index for neigh in neighs if isinstance(neigh, Qubit)]
+            edges = [(qubit, neigh_qubit) for neigh_qubit in neigh_qubits]
+            g.add_edges_from(edges)
+        return g
 
     def get_node_from_qubit_idx(self, idx: int, readout: bool) -> Qubit | Resonator:
         """Get node class from qubit index.

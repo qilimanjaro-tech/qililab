@@ -1,4 +1,19 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from dataclasses import dataclass
+from typing import Optional
 
 from qililab.typings.enums import Parameter
 
@@ -26,12 +41,14 @@ class GateEventSettings:
             phase (float): phase of the pulse
             duration (int): pulse duration
             shape (dict): pulse envelope
+            options (dict): optional gate dependant parameters
         """
 
         amplitude: float
         phase: float
         duration: int
         shape: dict
+        options: Optional[dict] = None
 
     bus: str
     pulse: GatePulseSettings
@@ -55,3 +72,16 @@ class GateEventSettings:
             setattr(self.pulse, param, value)
         else:
             self.pulse.shape[param] = value
+
+    def get_parameter(self, parameter: Parameter):
+        """Get a parameter from settings. Will look up into subclasses.
+
+        Args:
+            parameter (Parameter): Parameter to get.
+        """
+        param = parameter.value
+        if hasattr(self, param):
+            return getattr(self, param)
+        if hasattr(self.pulse, param):
+            return getattr(self.pulse, param)
+        return self.pulse.shape[param]

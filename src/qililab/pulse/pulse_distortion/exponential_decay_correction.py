@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Exponential decay correction."""
 from copy import deepcopy
 from dataclasses import dataclass
@@ -14,12 +28,14 @@ from .pulse_distortion import PulseDistortion
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class ExponentialCorrection(PulseDistortion):
-    """Exponential decay distortion
+    """Exponential decay distortion. Corrects an exponential decay using a linear IIR filter.
 
-    For more info, check SUPLEMENTAL MATERIAL IV. B. in [https://arxiv.org/abs/1907.04818].
+    Fitting should be done to y = g*(1+amp*exp(-t/tau)), where g is ignored in the corrections.
+
+    For more info, check `SUPLEMENTAL MATERIAL IV. B. <https://arxiv.org/abs/1907.04818>`_.
 
     Args:
-        tau_bias_tee (float): Time constant
+        tau_exponential (float): Tau exponential factor
         amp (float): Amplitude constant
         sampling_rate (float, optional): Sampling rate. Defaults to 1.
         norm_factor (float, optional): The manual normalization factor that multiplies the envelope in the apply() method. Defaults to 1 (no effect).
@@ -31,7 +47,7 @@ class ExponentialCorrection(PulseDistortion):
 
     Examples:
 
-        Imagine you want to distort a `Rectangular` envelope with an `ExponentialCorrection`. You could do:
+        Imagine you want to distort a :class:`Rectangular` envelope with an `ExponentialCorrection`. You could do:
 
         >>> from qililab.pulse import Rectangular, BiasTeeCorrection
         >>> envelope = Rectangular().envelope(duration=50, amplitude=1.0)
@@ -43,18 +59,21 @@ class ExponentialCorrection(PulseDistortion):
         True
 
         .. note::
-            You can find more examples in the docstring of the :class:`PulseDistortion` class.
+            You can find more examples in the docstring of the :class:`PulseDistortion` base class.
     """
 
-    name = PulseDistortionName.EXPONENTIAL_CORRECTION
-    tau_exponential: float
-    amp: float
-    sampling_rate: float = 1.0
+    name = (
+        PulseDistortionName.EXPONENTIAL_CORRECTION
+    )  #: Type of the correction. Enum type of PulseDistortionName class.
+    tau_exponential: float  #: Tau exponential factor.
+    amp: float  #: Amplitude constant. Value between 0 and 1.
+    sampling_rate: float = 1.0  #: Sampling rate. Defaults to 1.
 
     def apply(self, envelope: np.ndarray) -> np.ndarray:
         """Distorts envelopes (originally created to distort square envelopes).
 
         Corrects an exponential decay using a linear IIR filter.
+
         Fitting should be done to y = g*(1+amp*exp(-t/tau)), where g is ignored in the corrections.
 
         If `self.auto_norm` is True (default) normalizes the resulting envelope to have the same real max height than the starting one.
@@ -96,10 +115,12 @@ class ExponentialCorrection(PulseDistortion):
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "ExponentialCorrection":
-        """Load ExponentialCorrection object from dictionary.
+        """Loads ExponentialCorrection object from dictionary.
 
         Args:
-            dictionary (dict): Dictionary representation of the ExponentialCorrection object.
+            dictionary (dict): Dictionary object of the ExponentialCorrection object. It must include the name of the
+            correction, the tau exponential factor, the amplitude, the sampling rate, the normalization factor and
+            the auto normalization flag value.
 
         Returns:
             ExponentialCorrection: Loaded class.
@@ -109,10 +130,11 @@ class ExponentialCorrection(PulseDistortion):
         return cls(**local_dictionary)
 
     def to_dict(self) -> dict:
-        """Return dictionary representation of the distortion.
+        """Returns dictionary representation of the distortion.
 
         Returns:
-            dict: Dictionary.
+            dict: Dictionary representation including the name of the correction, the tau exponential factor, the
+            amplitude, the sampling rate, the normalization factor and the auto normalization flag value.
         """
         return {
             "name": self.name.value,

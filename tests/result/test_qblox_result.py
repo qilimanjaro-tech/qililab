@@ -3,8 +3,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from dummy_qblox import DummyPulsar
-from qblox_instruments import PulsarType
+from qblox_instruments import DummyBinnedAcquisitionData, DummyScopeAcquisitionData, Pulsar, PulsarType
 from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 
 from qililab.constants import QBLOXCONSTANTS, RESULTSDATAFRAME
@@ -32,24 +31,16 @@ def fixture_qrm_sequence() -> Sequence:
 
 
 @pytest.fixture(name="dummy_qrm")
-def fixture_dummy_qrm(qrm_sequence: Sequence) -> DummyPulsar:
+def fixture_dummy_qrm(qrm_sequence: Sequence) -> Pulsar:
     """dummy QRM
 
     Args:
         qrm_sequence (Sequence): _description_
 
     Returns:
-        DummyPulsar: _description_
+        Pulsar: _description_
     """
-    qrm = DummyPulsar(name=next(dummy_qrm_name_generator), pulsar_type=PulsarType.PULSAR_QRM)
-    waveform_length = 1000
-    zeros = np.zeros(waveform_length, dtype=np.float32)
-    ones = np.ones(waveform_length, dtype=np.float32)
-    sim_in_0, sim_in_1 = modulate(i=ones, q=zeros, frequency=10e6, phase_offset=0.0)
-    filler = [0.0] * (16380 - waveform_length)
-    sim_in_0 = np.append(sim_in_0, filler)
-    sim_in_1 = np.append(sim_in_1, filler)
-    qrm.feed_input_data(input_path0=sim_in_0, input_path1=sim_in_1)
+    qrm = Pulsar(name=next(dummy_qrm_name_generator), dummy_type=PulsarType.PULSAR_QRM)
     qrm.sequencers[0].sequence(qrm_sequence.todict())
     qrm.sequencers[0].nco_freq(10e6)
     qrm.sequencers[0].demod_en_acq(True)
@@ -58,33 +49,52 @@ def fixture_dummy_qrm(qrm_sequence: Sequence) -> DummyPulsar:
     qrm.scope_acq_trigger_mode_path1("sequencer")
     qrm.get_sequencer_state(0)
     qrm.get_acquisition_state(0, 1)
+
+    waveform_length = 1000
+    zeros = np.zeros(waveform_length, dtype=np.float32)
+    ones = np.ones(waveform_length, dtype=np.float32)
+    mod_i, mod_q = modulate(i=ones, q=zeros, frequency=10e6, phase_offset=0.0)
+    filler = [0.0] * (16380 - waveform_length)
+    mod_i = np.append(mod_i, filler)
+    mod_q = np.append(mod_q, filler)
+    qrm.set_dummy_scope_acquisition_data(
+        sequencer=0,
+        data=DummyScopeAcquisitionData(data=list(zip(mod_i, mod_q)), out_of_range=(False, False), avg_cnt=(1000, 1000)),
+    )
+    qrm.set_dummy_binned_acquisition_data(
+        sequencer=0,
+        acq_index_name="single",
+        data=[DummyBinnedAcquisitionData(data=(sum(ones[:1000]), sum(zeros[:1000])), thres=0, avg_cnt=1000)],
+    )
     return qrm
 
 
 @pytest.fixture(name="qblox_result_noscope")
-def fixture_qblox_result_noscope(dummy_qrm: DummyPulsar):
+def fixture_qblox_result_noscope(dummy_qrm: Pulsar):
     """fixture_qblox_result_noscope
 
     Args:
-        dummy_qrm (DummyPulsar): _description_
+        dummy_qrm (Pulsar): _description_
 
     Returns:
         _type_: _description_
     """
+    dummy_qrm.start_sequencer(0)
     acquisition = dummy_qrm.get_acquisitions(0)["single"]["acquisition"]
     return QbloxResult(integration_lengths=[1000], qblox_raw_results=[acquisition])
 
 
 @pytest.fixture(name="qblox_result_scope")
-def fixture_qblox_result_scope(dummy_qrm: DummyPulsar):
+def fixture_qblox_result_scope(dummy_qrm: Pulsar):
     """fixture_qblox_result_scope
 
     Args:
-        dummy_qrm (DummyPulsar): _description_
+        dummy_qrm (Pulsar): _description_
 
     Returns:
         _type_: _description_
     """
+    dummy_qrm.start_sequencer(0)
     dummy_qrm.store_scope_acquisition(0, "single")
     acquisition = dummy_qrm.get_acquisitions(0)["single"]["acquisition"]
     return QbloxResult(integration_lengths=[1000], qblox_raw_results=[acquisition])
@@ -261,20 +271,27 @@ class TestsQbloxResult:
             qblox_asymmetric_bins_result (QbloxResult): QbloxResult instance with different number of bins on each sequencer.
         """
         with pytest.raises(IndexError, match="Sequencers must have the same number of bins."):
-            qblox_asymmetric_bins_result.counts()
+            qblox_asymmetric_bins_result.counts_object()
 
-    def test_array_property_of_scope(self, dummy_qrm: DummyPulsar, qblox_result_scope: QbloxResult):
+    def test_array_property_of_scope(self, dummy_qrm: Pulsar, qblox_result_scope: QbloxResult):
         """Test the array property of the QbloxResult class."""
         array = qblox_result_scope.array
+        dummy_qrm.start_sequencer()
+        dummy_qrm.store_scope_acquisition(0, "single")
+        scope_data = dummy_qrm.get_acquisitions(0)["single"]["acquisition"]["scope"]
+        path0, path1 = scope_data["path0"]["data"], scope_data["path1"]["data"]
         assert np.shape(array) == (2, 16380)  # I/Q values of the whole scope
-        assert np.allclose(array, np.array([dummy_qrm._input_path0, dummy_qrm._input_path1]))
+        assert np.allclose(array, np.array([path0, path1]))
 
-    def test_array_property_of_binned_data(self, dummy_qrm: DummyPulsar, qblox_result_noscope: QbloxResult):
+    def test_array_property_of_binned_data(self, dummy_qrm: Pulsar, qblox_result_noscope: QbloxResult):
         """Test the array property of the QbloxResult class."""
         array = qblox_result_noscope.array
         assert np.shape(array) == (2, 1)  # (1 sequencer, I/Q, 1 bin)
-        path0, path1 = dummy_qrm._dummy_sequencers[0].demodulate(dummy_qrm._input_path0, dummy_qrm._input_path1)
-        assert np.allclose(array, np.array([[sum(path0[:1000])], [sum(path1[:1000])]]))
+        dummy_qrm.start_sequencer(0)
+        dummy_qrm.store_scope_acquisition(0, "single")
+        bin_data = dummy_qrm.get_acquisitions(0)["single"]["acquisition"]["bins"]["integration"]
+        path0, path1 = bin_data["path0"], bin_data["path1"]
+        assert np.allclose(array, [path0, path1])
 
     def test_array_property_asymmetric_bins_raise_error(self, qblox_asymmetric_bins_result: QbloxResult):
         """Tests if IndexError exception is raised when sequencers have different number of bins.

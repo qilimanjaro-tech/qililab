@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Qblox SPI Rack Controller class"""
 from dataclasses import dataclass
 from typing import Sequence
@@ -47,9 +61,8 @@ class QbloxSPIRackController(InstrumentController):
         """Sets the initialized device to all attached modules,
         taking it from the Qblox Cluster device modules
         """
-        for module, slot_id, reference in zip(self.modules, self.connected_modules_slot_ids, self.settings.modules):
-            # FIXME: use the instrument name instead of the alias (it requires to save the name)
-            self.device.add_spi_module(address=slot_id, module_type=reference.alias)
+        for module, slot_id in zip(self.modules, self.connected_modules_slot_ids):
+            self.device.add_spi_module(address=slot_id, module_type=module.name)
             module.device = self._module(module_id=slot_id)  # slot_id represents the number displayed in the cluster
 
     def _check_supported_modules(self):

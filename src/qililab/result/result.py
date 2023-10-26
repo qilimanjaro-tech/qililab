@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Result class."""
 from abc import ABC, abstractmethod
 
@@ -23,9 +37,9 @@ class Result(FactoryElement, ABC):
             dict[str, float]: Dictionary containing the quantum states as the keys of the dictionary, and the
                 probabilities obtained for each state as the values of the dictionary.
         """
-        return self.counts().probabilities()
+        return self.counts_object().probabilities()
 
-    def counts(self) -> Counts:
+    def counts_object(self) -> Counts:
         """Returns a Counts object containing the amount of times each state was measured.
 
         Raises:

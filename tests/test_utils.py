@@ -20,13 +20,13 @@ def mock_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock, mock_keithley: 
                 "index": 0,
                 "acquisition": {
                     "scope": {
-                        "path0": {"data": [1, 1, 1, 1, 1, 1, 1, 1], "out-of-range": False, "avg_cnt": 1000},
-                        "path1": {"data": [0, 0, 0, 0, 0, 0, 0, 0], "out-of-range": False, "avg_cnt": 1000},
+                        "path0": {"data": [1, 1, 1, 1, 1, 1, 1, 1], "out-of-range": False, "avg_cnt": 1},
+                        "path1": {"data": [0, 0, 0, 0, 0, 0, 0, 0], "out-of-range": False, "avg_cnt": 1},
                     },
                     "bins": {
                         "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-                        "threshold": [0.48046875],
-                        "avg_cnt": [1024],
+                        "threshold": [0],
+                        "avg_cnt": [1],
                     },
                 },
             }
@@ -128,7 +128,7 @@ def build_platform(runcard: dict) -> Platform:
     runcard = copy.deepcopy(runcard)
     with patch("qililab.data_management.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.data_management.open") as mock_open:
-            pl = ql.build_platform(path="_")
+            pl = ql.build_platform(runcard="_")
             mock_load.assert_called()
             mock_open.assert_called()
     return pl

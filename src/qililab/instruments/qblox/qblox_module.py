@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Qblox module class"""
 import itertools
 from abc import abstractmethod
@@ -109,6 +123,11 @@ class QbloxModule(AWG):
         for idx, offset in enumerate(self.out_offsets):
             self._set_out_offset(output=idx, value=offset)
 
+    def desync_sequencers(self) -> None:
+        """Desyncs all sequencers."""
+        for sequencer in self.awg_sequencers:
+            self.device.sequencers[sequencer.identifier].sync_en(False)
+
     @property
     def module_type(self):
         """returns the qblox module type. Options: QCM or QRM"""
@@ -202,6 +221,9 @@ class QbloxModule(AWG):
 
         # Define program's blocks
         program = Program()
+        start = Block(name="start")
+        start.append_component(ResetPh())
+        program.append_block(block=start)
         # Create registers with 0 and 1 (necessary for qblox)
         weight_registers = Register(), Register()
         self._init_weights_registers(registers=weight_registers, values=(0, 1), program=program)
@@ -219,10 +241,9 @@ class QbloxModule(AWG):
         for i, pulse_event in enumerate(timeline):
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
             wait_time = timeline[i + 1].start_time - pulse_event.start_time if (i < (len(timeline) - 1)) else 4
-            bin_loop.append_component(ResetPh())
+            phase = int((pulse_event.pulse.phase % (2 * np.pi)) * 1e9 / (2 * np.pi))
             gain = int(np.abs(pulse_event.pulse.amplitude) * AWG_MAX_GAIN)  # np.abs() needed for negative pulses
             bin_loop.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
-            phase = int((pulse_event.pulse.phase % (2 * np.pi)) * 1e9 / (2 * np.pi))
             bin_loop.append_component(SetPh(phase=phase))
             bin_loop.append_component(
                 Play(
@@ -299,21 +320,24 @@ class QbloxModule(AWG):
 
     @Instrument.CheckDeviceInitialized
     def setup(  # pylint: disable=too-many-branches, too-many-return-statements
-        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None
+        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
     ):
         """Set Qblox instrument calibration settings."""
         if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
             output = int(parameter.value[-1])
             self._set_out_offset(output=output, value=value)
             return
+
         if channel_id is None:
-            if self.num_sequencers == 1:
+            if port_id is not None:
+                channel_id = self.get_sequencers_from_chip_port_id(chip_port_id=port_id)[0].identifier
+            elif self.num_sequencers == 1:
                 channel_id = 0
             else:
-                raise ValueError("channel not specified to update instrument")
+                raise ParameterNotFound(f"Cannot update parameter {parameter.value} without specifying a channel_id.")
 
         if channel_id > self.num_sequencers - 1:
-            raise ValueError(
+            raise ParameterNotFound(
                 f"the specified channel id:{channel_id} is out of range. Number of sequencers is {self.num_sequencers}"
             )
         if parameter == Parameter.GAIN:
@@ -347,6 +371,35 @@ class QbloxModule(AWG):
             self._set_phase_imbalance(value=value, sequencer_id=channel_id)
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
+
+    def get(self, parameter: Parameter, channel_id: int | None = None, port_id: str | None = None):
+        """Get instrument parameter.
+
+        Args:
+            parameter (Parameter): Name of the parameter to get.
+            channel_id (int | None): Channel identifier of the parameter to update.
+        """
+        if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
+            output = int(parameter.value[-1])
+            return self.out_offsets[output]
+
+        if channel_id is None:
+            if port_id is not None:
+                channel_id = self.get_sequencers_from_chip_port_id(chip_port_id=port_id)[0].identifier
+            elif self.num_sequencers == 1:
+                channel_id = 0
+            else:
+                raise ParameterNotFound(f"Cannot update parameter {parameter.value} without specifying a channel_id.")
+
+        sequencer = self._get_sequencer_by_id(id=channel_id)
+
+        if parameter == Parameter.GAIN:
+            return sequencer.gain_i, sequencer.gain_q
+
+        if hasattr(sequencer, parameter.value):
+            return getattr(sequencer, parameter.value)
+
+        raise ParameterNotFound(f"Cannot find parameter {parameter.value} in instrument {self.alias}")
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_num_bins(self, value: float | str | bool, sequencer_id: int):

@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """This file contains a pre-defined version of a rabi experiment."""
 import numpy as np
 from qibo.gates import M, X
@@ -36,7 +50,7 @@ class Rabi(ExperimentAnalysis, Cos):
         circuit.add(X(qubit))
         circuit.add(M(qubit))
 
-        _, control_bus, readout_bus = platform.get_bus_by_qubit_index(qubit)
+        _, control_bus, readout_bus = platform._get_bus_by_qubit_index(qubit)
 
         # Define loop used in the experiment
         loop = Loop(alias="X", parameter=Parameter.AMPLITUDE, values=loop_values)

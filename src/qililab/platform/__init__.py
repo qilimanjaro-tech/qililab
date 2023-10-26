@@ -1,5 +1,19 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
-This module contains all the methods and classes used to define a Platform, which is a representation
+This module contains all the methods and the class used to define a platform, which is a representation
 of a laboratory.
 
 Platform Class
@@ -12,14 +26,6 @@ Platform Class
 
     ~Platform
 
-
-Platform Components
-~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~Bus
 """
-from .components import Bus, BusElement, Buses
+from .components import Bus, BusDriver, BusElement, Buses, DriveBus, FluxBus, ReadoutBus
 from .platform import Platform

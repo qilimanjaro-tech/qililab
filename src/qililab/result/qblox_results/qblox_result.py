@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """QbloxResult class."""
 from copy import deepcopy
 
@@ -120,13 +134,29 @@ class QbloxResult(Result):
             )
         return acquisitions.scope.path0.data, acquisitions.scope.path1.data
 
-    def counts(self) -> Counts:
+    def counts_object(self) -> Counts:
         """Returns a Counts object containing the counts of each state.
 
         Returns:
             Counts: Counts object containing the counts of each state.
         """
         return self.qblox_bins_acquisitions.counts()
+
+    def counts(self) -> dict:
+        """Returns a Counts object containing the counts of each state.
+
+        Returns:
+            Counts: Counts object containing the counts of each state.
+        """
+        return self.qblox_bins_acquisitions.counts().as_dict()
+
+    def samples(self) -> np.ndarray:
+        """Returns an array containing the measured samples.
+
+        Returns:
+            np.ndarray: An array containing the measured samples (0 or 1).
+        """
+        return self.qblox_bins_acquisitions.samples()
 
     @property
     def array(self) -> np.ndarray:
@@ -151,7 +181,7 @@ class QbloxResult(Result):
             for sequencer in self.qblox_bins_acquisitions.bins
         ]
 
-        return np.concatenate(bins)
+        return np.array(bins[0] if len(bins) == 1 else bins)
 
     @property
     def shape(self) -> list[int]:

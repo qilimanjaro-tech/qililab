@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """LFilter correction."""
 from copy import deepcopy
 from dataclasses import dataclass
@@ -14,22 +28,16 @@ from .pulse_distortion import PulseDistortion
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class LFilterCorrection(PulseDistortion):
-    """LFilter correction from scipy.signal.lfilter
-    [https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.lfilter.html]
+    """LFilter from `scipy.signal.lfilter
+    <https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.lfilter.html>`_.
 
-    Filter data along one-dimension with an IIR or FIR filter.
+    Filters data along one-dimension with an IIR or FIR filter.
 
-    Filter a data sequence, `x`, using a digital filter.  This works for many
+    Filters a data sequence, `x`, using a digital filter.  This works for many
     fundamental data types (including Object type).  The filter is a direct
     form II transposed implementation of the standard difference equation
     (see Notes).
 
-    The function `sosfilt` (and filter design using ``output='sos'``) should be
-    preferred over `lfilter` for most filtering tasks, as second-order sections
-    have fewer numerical problems.
-
-    Notes
-    -----
     The filter function is implemented as a direct II transposed structure.
     This means that the filter implements::
 
@@ -69,12 +77,12 @@ class LFilterCorrection(PulseDistortion):
         True
 
         .. note::
-            You can find more examples in the docstring of the :class:`PulseDistortion` class.
+            You can find more examples in the docstring of the :class:`PulseDistortion` base class.
     """
 
-    name = PulseDistortionName.LFILTER
-    a: list[float]
-    b: list[float]
+    name = PulseDistortionName.LFILTER  #: Type of the correction.
+    a: list[float]  #: The denominator coefficient vector in a 1-D sequence.
+    b: list[float]  #: The numerator coefficient vector in a 1-D sequence.
 
     def apply(self, envelope: np.ndarray) -> np.ndarray:
         """Distorts envelopes (which normally get calibrated with square envelopes).
@@ -101,10 +109,11 @@ class LFilterCorrection(PulseDistortion):
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "LFilterCorrection":
-        """Load LFilterCorrection object from dictionary.
+        """Loads LFilterCorrection object from dictionary.
 
         Args:
-            dictionary (dict): Dictionary representation of the LFilterCorrection object.
+            dictionary (dict): Dictionary representation of the LFilterCorrection object. It must include the name of the
+            correction, the a and b parameters, the normalization factor and the auto normalization flag value.
 
         Returns:
             LFilterCorrection: Loaded class.
@@ -114,10 +123,11 @@ class LFilterCorrection(PulseDistortion):
         return cls(**local_dictionary)
 
     def to_dict(self) -> dict:
-        """Return dictionary representation of the distortion.
+        """Returns dictionary representation of the distortion.
 
         Returns:
-            dict: Dictionary.
+            dict: Dictionary representation includes the name of the correction, the a and b parameters, the normalization
+            factor and the auto normalization flag value..
         """
         return {
             "name": self.name.value,

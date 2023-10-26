@@ -41,13 +41,19 @@ jobs:
           python -m pip install .
 
       - name: Isort
-        run: isort . -l 120 --check
+        run: |
+          isort src -l 120 --check
+          isort tests -l 120 --check
 
       - name: Black
-        run: black . -l 120 --check
+        run: |
+          black src -l 120 --check
+          black tests -l 120 --check
 
       - name: Flake8
-        run: flake8
+        run: |
+          flake8 src
+          flake8 tests
 
       - name: Pylint
         run: |
@@ -55,7 +61,7 @@ jobs:
           pylint tests --rcfile tests/.pylintrc
 
       - name: Mypy
-        run: mypy src
+        run: mypy src --ignore-missing-imports
 
       - name: Bandit
         run: bandit -r src -c .bandit
@@ -68,5 +74,5 @@ jobs:
           nbqa black .
           nbqa isort .
           nbqa flake8 .
-          nbqa mypy .
+          nbqa mypy . --ignore-missing-imports
           nbqa mdformat .

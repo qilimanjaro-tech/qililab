@@ -1,5 +1,5 @@
-{{ fullname | replace("qililab", "ql") }}
-{{ underline }}
+{{ objname | escape | underline }}
+
 
 .. automodule:: {{ fullname }}
 

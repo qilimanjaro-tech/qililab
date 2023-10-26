@@ -1,22 +1,39 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Execute function used to execute a qibo Circuit using the given runcard."""
 from qibo.models import Circuit
+from tqdm.auto import tqdm
+
+from qililab.result import Result
 
 from .data_management import build_platform
-from .experiment.experiment import Experiment
 from .transpiler import translate_circuit
-from .typings import ExperimentOptions, ExperimentSettings
 
 
-def execute(circuit: Circuit, platform_path: str, nshots: int = 1):
-    """Execute a qibo with qililab and native gates
+def execute(program: Circuit | list[Circuit], runcard: str | dict, nshots: int = 1) -> Result | list[Result]:
+    """Executes a Qibo circuit (or a list of circuits) with qililab and returns the results.
 
     Args:
-        circuit (Circuit): Qibo Circuit.
-        platform_path (str): Path to the YAML file containing the serialization of the Platform to be used.
+        circuit (Circuit | list[Circuit]): Qibo Circuit.
+        runcard (str | dict): If a string, path to the YAML file containing the serialization of the Platform to be
+            used. If a dictionary, the serialized platform to be used.
         nshots (int, optional): Number of shots to execute. Defaults to 1.
 
     Returns:
-        Results: ``Results`` class containing the experiment results
+        Result | list[Result]: :class:`Result` class (or list of :class:`Result` classes) containing the results of the
+            execution.
 
     Example Usage:
 
@@ -40,20 +57,26 @@ def execute(circuit: Circuit, platform_path: str, nshots: int = 1):
         c.add(gates.SWAP(4,2))
         c.add(gates.RX(1, 3*np.pi/2))
 
-        probabilities = ql.execute(c, platform_path="./runcards/galadriel.yml")
-
-
+        probabilities = ql.execute(c, runcard="./runcards/galadriel.yml")
     """
-    # transpile and optimize circuit
-    circuit = translate_circuit(circuit, optimize=True)
+    if isinstance(program, Circuit):
+        program = [program]
 
-    # create platform
-    platform = build_platform(path=platform_path)
+    # Initialize platform and connect to the instruments
+    platform = build_platform(runcard=runcard)
+    platform.connect()
 
-    settings = ExperimentSettings(hardware_average=1, repetition_duration=200000, software_average=1, num_bins=nshots)
-    options = ExperimentOptions(settings=settings)
-
-    # create experiment with options
-    sample_experiment = Experiment(platform=platform, circuits=[circuit], options=options)
-
-    return sample_experiment.execute(save_experiment=False, save_results=False)
+    try:
+        platform.initial_setup()
+        platform.turn_on_instruments()
+        results = []
+        for circuit in tqdm(program, total=len(program)):
+            # Transpile and optimize circuit
+            native_circuit = translate_circuit(circuit, gates_settings=platform.gates_settings)
+            # Execute circuit
+            results.append(platform.execute(native_circuit, num_avg=1, repetition_duration=200_000, num_bins=nshots))
+        platform.disconnect()
+        return results[0] if len(results) == 1 else results
+    except Exception as e:
+        platform.disconnect()
+        raise e

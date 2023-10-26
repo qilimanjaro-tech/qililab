@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """SNZ pulse shape."""
 from copy import deepcopy
 from dataclasses import dataclass
@@ -14,13 +28,28 @@ from qililab.utils import Factory
 @dataclass(frozen=True, eq=True)
 class SNZ(PulseShape):
     """Sudden net zero pulse shape. It is composed of a half-duration positive rectangular pulse, followed
-    by three stops to cross height = 0, to then have another half-duration negative rectangular pulse.\
+    by three stops to cross height = 0, to then have another half-duration negative rectangular pulse.
 
-    |   --------------                      <- half-duration positive rectangular pulse
-    |                 -                     <- instantaneous stop at height b
-    0                  ---                  <- t-phi duration at height = 0
-    |                     -                 <- instantaneous stop at height -b
-    |                      -------------    <- half-duration negative rectangular pulse
+    More concretely, the shape from left to right is composed by:
+        - half-duration positive rectangular pulse.
+        - instantaneous stop at height b.
+        - t-phi duration at height = 0.
+        - instantaneous stop at height -b.
+        - half-duration negative rectangular pulse.
+
+    Examples:
+        To get the envelope of a SNZ shape, with ``b`` and ``t_phi`` equal to ``B`` and ``T``, you need to do:
+
+        .. code-block:: python
+
+            from qililab.pulse.pulse_shape import SNZ
+            snz_envelope = SNZ(b=B, t_phi=T).envelope(amplitude=1, duration=50)
+
+        which for ``b=0.2``, ``t_phi=2`` and ``b=0.5``, ``t_phi=10``, look respectively like:
+
+        .. image:: /classes_images/snzs.png
+            :width: 800
+            :align: center
 
     References:
         High-fidelity controlled-Z gate with maximal intermediate leakage operating at the speed
@@ -31,22 +60,22 @@ class SNZ(PulseShape):
         t_phi (int): Time at `height = 0`, in the middle of the positive and negative rectangular pulses.
     """
 
-    name = PulseShapeName.SNZ
-    b: float
-    t_phi: int
+    name = PulseShapeName.SNZ  #: Name of the snz pulse shape.
+    b: float  #: Instant stops height.
+    t_phi: int  #: Time at `height = 0`.
 
     def __post_init__(self):
         # ensure t_phi is an int
         if not isinstance(self.t_phi, int):
             raise TypeError("t_phi for pulse SNZ has to be an integer. Since min time resolution is 1ns")
 
-    def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
+    def envelope(self, duration: int, amplitude: float, resolution: float = 1.0) -> np.ndarray:
         """Constant amplitude envelope.
 
         Args:
-            duration (int): total pulse duration (ns).
+            duration (int): Duration of the pulse (ns).
             amplitude (float): Maximum amplitude of the pulse
-            resolution (float): Pulse resolution
+            resolution (float, optional): Resolution of the pulse. Defaults to 1.
 
         Returns:
             ndarray: Amplitude of the envelope for each time step.
@@ -75,10 +104,11 @@ class SNZ(PulseShape):
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "SNZ":
-        """Load SNZ object/shape from dictionary.
+        """Loads SNZ object/shape from dictionary.
 
         Args:
-            dictionary (dict): Dictionary representation of the SNZ object/shape.
+            dictionary (dict): Dictionary representation of the SNZ object/shape, including the name of the pulse shape, the
+            b parameter and the t_phi parameter.
 
         Returns:
             Rectangular: Loaded class.
@@ -87,13 +117,12 @@ class SNZ(PulseShape):
         local_dictionary.pop("name", None)
         return cls(**local_dictionary)
 
-    def to_dict(self):
-        """Return dictionary representation of the Rectangular object/shape.
+    def to_dict(self) -> dict:
+        """Returns dictionary representation of the Rectangular object/shape.
 
         Returns:
-            dict: Dictionary.
+            dict: Dictionary representation including the name of the pulse shape, the b parameter and the t_phi parameter..
         """
-
         return {
             "name": self.name.value,
             "b": self.b,

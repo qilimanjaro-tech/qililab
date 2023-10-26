@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Bias tee correction."""
 from copy import deepcopy
 from dataclasses import dataclass
@@ -14,9 +28,9 @@ from .pulse_distortion import PulseDistortion
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class BiasTeeCorrection(PulseDistortion):
-    """Bias tee distortion.
+    """Bias tee distortion. Corrects for a bias tee using a linear IIR filter with time constant tau.
 
-    For more info, check SUPLEMENTAL MATERIAL in [https://arxiv.org/abs/1907.04818].
+    For more info, check `SUPLEMENTAL MATERIAL <https://arxiv.org/abs/1907.04818>`_.
 
     Args:
         tau_bias_tee (float): Time constant.
@@ -26,11 +40,11 @@ class BiasTeeCorrection(PulseDistortion):
             (The max height is the furthest number from 0 in the envelope, only checking the real axis/part). Defaults to True.
 
     Returns:
-        PulseDistortion: Distortion to apply to given envelopes in PulseEvent.
+        PulseDistortion: Distortion to apply to given envelopes in :class:`PulseEvent`.
 
     Examples:
 
-        Imagine you want to distort a `Rectangular` envelope with a `BiasTeeCorrection`. You could do:
+        Imagine you want to distort a :class:`Rectangular` envelope with a BiasTeeCorrection. You could do:
 
         >>> from qililab.pulse import Rectangular, BiasTeeCorrection
         >>> envelope = Rectangular().envelope(duration=50, amplitude=1.0)
@@ -42,12 +56,12 @@ class BiasTeeCorrection(PulseDistortion):
         True
 
         .. note::
-            You can find more examples in the docstring of the :class:`PulseDistortion` class.
+            You can find more examples in the docstring of the :class:`PulseDistortion` base class.
     """
 
-    name = PulseDistortionName.BIAS_TEE_CORRECTION
-    tau_bias_tee: float
-    sampling_rate: float = 1.0
+    name = PulseDistortionName.BIAS_TEE_CORRECTION  #: Type of the correction. Enum type of PulseDistortionName class.
+    tau_bias_tee: float  #: Time constant.
+    sampling_rate: float = 1.0  #: Sampling rate. Defaults to 1.
 
     def apply(self, envelope: np.ndarray) -> np.ndarray:
         """Distorts envelopes (originally created to distort square envelopes).
@@ -84,7 +98,9 @@ class BiasTeeCorrection(PulseDistortion):
         """Load BiasTeeCorrection object from dictionary.
 
         Args:
-            dictionary (dict): Dictionary representation of the BiasTeeCorrection object.
+            dictionary (dict): Dictionary representation of the BiasTeeCorrection object. It must include the name of the
+            correction, the tau bias tee factor, the sampling rate, the normalization factor and the
+            auto normalization flag value.
 
         Returns:
             BiasTeeCorrection: Loaded class.
@@ -97,7 +113,8 @@ class BiasTeeCorrection(PulseDistortion):
         """Return dictionary representation of the distortion.
 
         Returns:
-            dict: Dictionary.
+            dict: Dictionary representation including the name of the correction, the tau bias tee factor,
+            the sampling rate, the normalization factor and the auto normalization flag value.
         """
         return {
             "name": self.name.value,

@@ -1,10 +1,12 @@
 """Tests for the QbloxQCMRF class."""
+from dataclasses import asdict
 from unittest.mock import MagicMock
 
 import pytest
 from qblox_instruments.qcodes_drivers.cluster import Cluster
 from qblox_instruments.types import ClusterType
 
+from qililab.instruments import ParameterNotFound
 from qililab.instruments.qblox import QbloxQCMRF
 from qililab.typings import Parameter
 
@@ -162,12 +164,25 @@ class TestIntegration:
         qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=sequencer_idx)
         qcm_rf.device.set.assert_called_once_with("out1_lo_freq", 2e9)
 
+    def test_setup_with_lo_frequency_with_port_id(self, settings):
+        """Test the `setup` method when using the `Parameter.LO_FREQUENCY` generic parameter."""
+        sequencer_idx = 0
+        qcm_rf = QbloxQCMRF(settings=settings)
+        sequencer = qcm_rf._get_sequencer_by_id(sequencer_idx)
+        sequencer.output_i = 3
+        sequencer.output_q = 2
+        qcm_rf.device = MagicMock()
+        qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, port_id=sequencer.chip_port_id)
+        qcm_rf.device.set.assert_called_once_with("out1_lo_freq", 2e9)
+
     def test_setup_with_lo_frequency_without_channel_id_raises_error(self, settings):
         """Test that calling `setup` when using the `Parameter.LO_FREQUENCY` generic parameter without
         a channel id raises an error."""
         qcm_rf = QbloxQCMRF(settings=settings)
         qcm_rf.device = MagicMock()
-        with pytest.raises(ValueError, match="`channel_id` cannot be None when setting the `LO_FREQUENCY` parameter"):
+        with pytest.raises(
+            ParameterNotFound, match="`channel_id` cannot be None when setting the `LO_FREQUENCY` parameter"
+        ):
             qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9)
 
     def test_setup_with_lo_frequency_with_2_los(self, settings):
@@ -184,3 +199,10 @@ class TestIntegration:
             match=f"Cannot set the LO frequency of sequencer {sequencer_idx} because it is connected to two LOs. ",
         ):
             qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=sequencer_idx)
+
+    def test_to_dict_method(self, settings):
+        """Test that the `to_dict` method does not return a dictionary containing the key 'out_offsets' for a correct serialization"""
+        qcm_rf = QbloxQCMRF(settings=settings)
+        qcm_rf.settings.out_offsets = 0.0
+        assert "out_offsets" in asdict(qcm_rf.settings)
+        assert "out_offsets" not in qcm_rf.to_dict()

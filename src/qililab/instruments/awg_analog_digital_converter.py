@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """ AWG with Digital To Analog Conversion (DAC) capabilities."""
 from abc import abstractmethod
 from dataclasses import dataclass
@@ -74,6 +88,12 @@ class AWGAnalogDigitalConverter(AWG):
             return
         if parameter == Parameter.SCOPE_STORE_ENABLED:
             self._set_scope_store_enabled(value=value, sequencer_id=channel_id)
+            return
+        if parameter == Parameter.THRESHOLD:
+            self._set_threshold(value=value, sequencer_id=channel_id)
+            return
+        if parameter == Parameter.THRESHOLD_ROTATION:
+            self._set_threshold_rotation(value=value, sequencer_id=channel_id)
             return
 
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")

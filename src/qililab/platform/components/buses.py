@@ -1,16 +1,35 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Buses class."""
 from dataclasses import dataclass
 
 from qililab.platform.components.bus import Bus
-from qililab.system_control import ReadoutSystemControl, SimulatedSystemControl
+from qililab.system_control import ReadoutSystemControl
 
 
 @dataclass
 class Buses:
-    """Class used as a container of Bus objects.
+    """Class used as a container of :class:`Bus` objects, these are inside the `elements` attribute, as a list.
+
+    You can add more :class:`Bus` objects to the list, you can get the :class:`Bus` object connected to a concrete port
+    through the `add()` or `get()` methods respectively.
+
+    And you can also get all the :class:`Bus` objects containing system controls used for readout via the `readout_buses` property.
 
     Args:
-        buses (list[Bus]): List of Bus objects.
+        buses (list[Bus]): List of :class:`Bus` objects.
     """
 
     elements: list[Bus]
@@ -63,5 +82,4 @@ class Buses:
     @property
     def readout_buses(self) -> list[Bus]:
         """Returns a list of buses containing system controls used for readout."""
-        readout_sc = (ReadoutSystemControl, SimulatedSystemControl)
-        return [bus for bus in self.elements if isinstance(bus.system_control, readout_sc)]
+        return [bus for bus in self.elements if isinstance(bus.system_control, ReadoutSystemControl)]

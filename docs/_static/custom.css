@@ -1,12 +1,9 @@
-@layer base {
+:root {
+    --code-block-color: rgb(250, 250, 250);
+}
 
-    :root {
-        --code-block-color: rgb(250, 250, 250);
-    }
-
-    .dark {
-        --code-block-color: rgb(5, 5, 5);
-    }
+.dark {
+    --code-block-color: rgb(5, 5, 5);
 }
 
 pre {

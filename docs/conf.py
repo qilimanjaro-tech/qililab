@@ -47,6 +47,9 @@ automodapi_toctreedirnm = "code/api"  # location where the automodapi rst files 
 
 autoclass_content = "class"  # only show class docstrings (hide init docstrings)
 
+autodoc_typehints = "none"
+autodoc_member_order = "bysource"
+
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
@@ -55,12 +58,17 @@ html_permalinks_icon = Icons.permalinks_icon
 html_favicon = "_static/q_light.jpeg"
 html_baseurl = "https://qililab.com/"
 html_theme = "sphinxawesome_theme"
+html_sidebars = {"**": ["sidebar_main_nav_links.html", "sidebar_toc.html"]}
 html_theme_options = {
     "logo_light": "_static/q_light.jpeg",
     "logo_dark": "_static/q_dark.jpeg",
     "show_prev_next": True,
     "awesome_external_links": True,
-    "main_nav_links": {"Docs": "index", "Changelog": "changelog"},
+    "main_nav_links": {
+        "QaaS": "https://qaas.readthedocs.io/en/latest/",
+        "Qiboconnection": "https://qaas.readthedocs.io/projects/qiboconnection/en/latest/",
+        "Qililab": "index",
+    },
     "extra_header_link_icons": {
         "repository on GitHub": {
             "link": "https://github.com/qilimanjaro-tech/qililab",

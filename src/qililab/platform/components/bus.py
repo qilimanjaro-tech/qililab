@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Bus class."""
 from dataclasses import InitVar, dataclass
 
@@ -20,10 +34,12 @@ class Bus:
     which is connected to one or multiple qubits.
 
     Args:
+        targets (list[Qubit | Resonator | Coupler | Coil]): Port target (or targets in case of multiple resonators).
         settings (BusSettings): Bus settings.
     """
 
-    targets: list[Qubit | Resonator | Coupler | Coil]  # port target (or targets in case of multiple resonators)
+    targets: list[Qubit | Resonator | Coupler | Coil]
+    """Port target (or targets in case of multiple resonators)."""
 
     @dataclass
     class BusSettings(Settings):
@@ -57,6 +73,9 @@ class Bus:
             ]
 
     settings: BusSettings
+    """Bus settings. Containing the alias of the bus, the system control used to control and readout its qubits, the alias
+    of the port where it's connected, the list of the distortions to apply, and its delay.
+    """
 
     def __init__(self, settings: dict, platform_instruments: Instruments, chip: Chip):
         self.settings = self.BusSettings(**settings, platform_instruments=platform_instruments)  # type: ignore
@@ -143,7 +162,7 @@ class Bus:
         }
 
     def set_parameter(self, parameter: Parameter, value: int | float | str | bool, channel_id: int | None = None):
-        """_summary_
+        """Set a parameter to the bus.
 
         Args:
             parameter (Parameter): parameter settings of the instrument to update
@@ -154,11 +173,30 @@ class Bus:
             self.settings.delay = int(value)
         else:
             try:
-                self.system_control.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+                self.system_control.set_parameter(
+                    parameter=parameter, value=value, channel_id=channel_id, port_id=self.port
+                )
             except ParameterNotFound as error:
                 raise ParameterNotFound(
                     f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
                 ) from error
+
+    def get_parameter(self, parameter: Parameter, channel_id: int | None = None):
+        """Gets a parameter of the bus.
+
+        Args:
+            parameter (Parameter): parameter settings of the instrument to update
+            value (int | float | str | bool): value to update
+            channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
+        """
+        if parameter == Parameter.DELAY:
+            return self.settings.delay
+        try:
+            return self.system_control.get_parameter(parameter=parameter, channel_id=channel_id, port_id=self.port)
+        except ParameterNotFound as error:
+            raise ParameterNotFound(
+                f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
+            ) from error
 
     def compile(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int

@@ -1,7 +1,21 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Runcard class."""
 import ast
 import re
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Literal
 
 from qililab.constants import GATE_ALIAS_REGEX
@@ -107,6 +121,18 @@ class Runcard:
                 gate: [GateEventSettings(**event) for event in schedule] for gate, schedule in self.gates.items()
             }
 
+        def to_dict(self):
+            """Serializes gate settings to dictionary and removes fields with None values"""
+
+            def remove_none_values(data):
+                if isinstance(data, dict):
+                    data = {key: remove_none_values(item) for key, item in data.items() if item is not None}
+                elif isinstance(data, list):
+                    data = [remove_none_values(item) for item in data if item is not None]
+                return data
+
+            return remove_none_values(data=asdict(self))
+
         def get_operation_settings(self, name: str) -> OperationSettings:
             """Get OperationSettings by operation's name.
 
@@ -145,12 +171,17 @@ class Runcard:
                 (qubits,) if isinstance(qubits, int) else qubits
             )  # tuplify so that the join method below is general
             gate_name = f"{name}({', '.join(map(str, gate_qubits))})"
+            gate_name_t = f"{name}({', '.join(map(str, gate_qubits[::-1]))})"
 
             # parse spaces in tuple if needed, check first case with spaces since it is more common
             if gate_name.replace(" ", "") in self.gates.keys():
                 return self.gates[gate_name.replace(" ", "")]
             if gate_name in self.gates.keys():
                 return self.gates[gate_name]
+            if gate_name_t.replace(" ", "") in self.gates.keys():
+                return self.gates[gate_name_t.replace(" ", "")]
+            if gate_name_t in self.gates.keys():
+                return self.gates[gate_name_t]
             raise KeyError(f"Gate {name} for qubits {qubits} not found in settings.")
 
         @property
@@ -182,6 +213,31 @@ class Runcard:
             gates_settings = self.get_gate(name=name, qubits=qubits)
             schedule_element = 0 if len(alias.split("_")) == 1 else int(alias.split("_")[1])
             gates_settings[schedule_element].set_parameter(parameter, value)
+
+        def get_parameter(
+            self,
+            parameter: Parameter,
+            channel_id: int | None = None,
+            alias: str | None = None,
+        ):
+            """Get parameter from gate settings.
+
+            Args:
+                parameter (Parameter): Name of the parameter to get.
+                channel_id (int | None, optional): Channel id. Defaults to None.
+                alias (str): String which specifies where the parameter can be found.
+            """
+            if alias is None or alias == "platform":
+                return super().get_parameter(parameter=parameter, channel_id=channel_id)
+            regex_match = re.search(GATE_ALIAS_REGEX, alias)
+            if regex_match is None:
+                raise ValueError(f"Could not find gate {alias} in gate settings.")
+            name = regex_match["gate"]
+            qubits_str = regex_match["qubits"]
+            qubits = ast.literal_eval(qubits_str)
+            gates_settings = self.get_gate(name=name, qubits=qubits)
+            schedule_element = 0 if len(alias.split("_")) == 1 else int(alias.split("_")[1])
+            return gates_settings[schedule_element].get_parameter(parameter)
 
     # Runcard class actual initialization
     name: str

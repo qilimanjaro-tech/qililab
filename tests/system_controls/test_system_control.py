@@ -4,7 +4,9 @@ from unittest.mock import MagicMock
 import pytest
 from qpysequence import Sequence
 
+import qililab as ql
 from qililab.instruments import AWG, Instrument
+from qililab.instruments.rohde_schwarz import SGS100A
 from qililab.platform import Platform
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
 from qililab.system_control import SystemControl
@@ -51,6 +53,18 @@ class TestInitialization:
         for instrument in system_control.settings.instruments:
             assert isinstance(instrument, Instrument)
         assert not hasattr(system_control.settings, "platform_instruments")
+
+    def test_init_with_a_wrong_instrument_alias_raises_an_error(self, platform: Platform):
+        """Test that an error is raised when initializing a SystemControl with an instrument alias that is not
+        present in the platform.
+        """
+        alias = "UnknownInstrument"
+        wrong_system_control_settings = {"instruments": [alias]}
+        with pytest.raises(
+            NameError,
+            match=f"The instrument with alias {alias} could not be found within the instruments of the platform",
+        ):
+            SystemControl(settings=wrong_system_control_settings, platform_instruments=platform.instruments)
 
 
 @pytest.fixture(name="base_system_control")
@@ -116,6 +130,17 @@ class TestMethods:
             match="The system control doesn't have any AWG to run a program",
         ):
             system_control_without_awg.run(port="drive_q0")
+
+    def test_set_parameter(self, system_control: SystemControl):
+        """Test the ``set_parameter`` method with a Rohde & Schwarz instrument."""
+        for instrument in system_control.instruments:
+            instrument.device = MagicMock()
+        system_control.set_parameter(parameter=ql.Parameter.LO_FREQUENCY, value=1e9)
+        for instrument in system_control.instruments:
+            if isinstance(instrument, SGS100A):
+                instrument.device.frequency.assert_called_once_with(1e9)  # type: ignore
+            else:
+                instrument.device.frequency.assert_not_called()  # type: ignore
 
 
 class TestProperties:

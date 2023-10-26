@@ -1,8 +1,24 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """This file contains the needed classes/methods to decompose gates into native gates."""
 from collections.abc import Callable
 
 import numpy as np
 from qibo import gates
+
+from qililab.utils import Wait
 
 from .native_gates import Drag
 
@@ -48,7 +64,12 @@ class GateDecompositions:
 
 
 def translate_gates(ngates: list[gates.Gate]) -> list[gates.Gate]:
-    """Maps Qibo gates to a hardware native implementation (CZ, RZ, Drag and M (Measurement))
+    """Maps Qibo gates to a hardware native implementation (CZ, RZ, Drag, Wait and M (Measurement))
+    - CZ gates are our 2 qubit gates
+    - RZ gates are applied as virtual Z gates if optimize=True in the transpiler
+    - Drag gates are our single qubit gates
+    - Wait gates add wait time at a single qubit
+    - Measurement gates measure the circuit
 
     Args:
         ngates (list[gates.Gate]): list of gates to be decomposed.
@@ -58,7 +79,7 @@ def translate_gates(ngates: list[gates.Gate]) -> list[gates.Gate]:
     """
 
     # define supported gates (native qpu gates + virtual z + measurement)
-    supported_gates = native_gates() + (gates.RZ, gates.M)
+    supported_gates = native_gates() + (gates.RZ, gates.M, Wait)
 
     # check which gates are native gates and if not all of them are so, translate
     to_translate = [not isinstance(gate, supported_gates) for gate in ngates]

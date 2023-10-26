@@ -1,13 +1,28 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Class that translates a Qibo Circuit into a PulseSequence"""
 import contextlib
 from dataclasses import asdict
 
 import numpy as np
-from qibo.gates import CZ, Gate, M
+from qibo.gates import Gate, M
 from qibo.models.circuit import Circuit
 
 from qililab.chip.nodes import Coupler, Qubit
 from qililab.constants import RUNCARD
+from qililab.instruments import AWG
 from qililab.platform import Bus, Platform
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.transpiler import Drag
@@ -35,7 +50,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
     time is 4 and a pulse applied to qubit k lasts 17ns, the next pulse at qubit k will be at t=20ns
 
     Arguments:
-        platform (Platform): platform with gate and hardware settings
+        platform (Platform): :class:`Platform` with gate and hardware settings
 
     Attributes:
         platform (Platform): same as above
@@ -47,14 +62,14 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
     def translate(  # pylint: disable=too-many-locals, too-many-branches
         self, circuits: list[Circuit]
     ) -> list[PulseSchedule]:
-        """Translate each circuit to a PulseSequences class, which is a list of PulseSequence classes for
+        """Translates each circuit to a PulseSequences class, which is a list of PulseSequence classes for
         each different port and pulse name (control/readout).
 
         Args:
             circuits (List[Circuit]): List of Qibo Circuit classes.
 
         Returns:
-            list[PulseSequences]: List of PulseSequences classes.
+            list[PulseSequences]: List of :class:`PulseSequences` classes.
         """
         pulse_schedule_list: list[PulseSchedule] = []
         for circuit in circuits:
@@ -76,9 +91,6 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
 
                 # handle control gates
                 else:
-                    # parse symmetry in CZ gates
-                    if isinstance(gate, CZ):
-                        gate = self._parse_check_cz(gate)
                     # extract gate schedule
                     gate_schedule = self._gate_schedule_from_settings(gate)
                     gate_qubits = self._get_gate_qubits(gate, gate_schedule)
@@ -95,7 +107,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
                 # apply gate schedule
                 for gate_event in gate_schedule:
                     # find bus
-                    bus = self.platform.get_bus_by_alias(gate_event.bus)
+                    bus = self.platform._get_bus_by_alias(gate_event.bus)  # pylint: disable=protected-access
                     # add control gate schedule
                     pulse_event = self._gate_element_to_pulse_event(
                         time=start_time, gate=gate, gate_event=gate_event, bus=bus
@@ -112,14 +124,18 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
                     # If we find a flux port, create empty schedule for that port
                     flux_port = self.platform.chip.get_port_from_qubit_idx(idx=qubit, line=Line.FLUX)
                     if flux_port is not None:
-                        pulse_schedule.create_schedule(port=flux_port)
+                        flux_bus = next((bus for bus in self.platform.buses if bus.port == flux_port), None)
+                        if flux_bus and any(
+                            isinstance(instrument, AWG) for instrument in flux_bus.system_control.instruments
+                        ):
+                            pulse_schedule.create_schedule(port=flux_port)
 
             pulse_schedule_list.append(pulse_schedule)
 
         return pulse_schedule_list
 
     def _gate_schedule_from_settings(self, gate: Gate) -> list[GateEventSettings]:
-        """Get the gate schedule. The gate schedule is the list of pulses to apply
+        """Gets the gate schedule. The gate schedule is the list of pulses to apply
         to a given bus for a given gate
 
         Args:
@@ -145,12 +161,15 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
         theta = self.normalize_angle(angle=gate.parameters[0])
         amplitude = drag_schedule.pulse.amplitude * theta / np.pi
         phase = self.normalize_angle(angle=gate.parameters[1])
+        if amplitude < 0:
+            amplitude = -amplitude
+            phase = self.normalize_angle(angle=gate.parameters[1] + np.pi)
         drag_schedule.pulse.amplitude = amplitude
         drag_schedule.pulse.phase = phase
         return [drag_schedule]
 
     def normalize_angle(self, angle: float):
-        """Normalize angle in range [-pi, pi].
+        """Normalizes angle in range [-pi, pi].
 
         Args:
             angle (float): Normalized angle.
@@ -161,7 +180,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
         return angle
 
     def _get_total_schedule_duration(self, schedule: list[GateEventSettings]) -> int:
-        """Return total time for a gate schedule. This is done by taking the max of (init + duration)
+        """Returns total time for a gate schedule. This is done by taking the max of (init + duration)
         for all the elements in the schedule
 
         Args:
@@ -176,7 +195,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
         return time
 
     def _get_gate_qubits(self, gate: Gate, schedule: list[GateEventSettings] | None = None) -> list[int]:
-        """Get qubits involved in gate. This includes gate.qubits but also qubits which are targets of
+        """Gets qubits involved in gate. This includes gate.qubits but also qubits which are targets of
         buses in the gate schedule
 
         Args:
@@ -190,7 +209,9 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
             [
                 target.qubit_index
                 for schedule_element in schedule
-                for target in self.platform.get_bus_by_alias(schedule_element.bus).targets
+                for target in self.platform._get_bus_by_alias(  # pylint: disable=protected-access
+                    schedule_element.bus
+                ).targets
                 if isinstance(target, Qubit)
             ]
             if schedule is not None
@@ -204,21 +225,17 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
     def _gate_element_to_pulse_event(
         self, time: int, gate: Gate, gate_event: GateEventSettings, bus: Bus
     ) -> PulseEvent:
-        """Translate a gate element into a pulse.
+        """Translates a gate element into a pulse.
 
-                Args:
-                    time (dict[int, int]): dictionary containing qubit indices as keys and current time (ns) as values
-                    gate (gate): circuit gate. This is used only to know the qubit target of measurement gates
-                    gate_event (GateEventSettings): gate event, a single element of a gate schedule containing information
-                    about the pulse to be applied
-                    bus (bus): bus through which the pulse is sent
+        Args:
+            time (dict[int, int]): dictionary containing qubit indices as keys and current time (ns) as values
+            gate (gate): circuit gate. This is used only to know the qubit target of measurement gates
+            gate_event (GateEventSettings): gate event, a single element of a gate schedule containing information
+            about the pulse to be applied
+            bus (bus): bus through which the pulse is sent
 
-                Returns:
-        <<<<<<< HEAD
-                    tuple[PulseEvent | None, str]: (PulseEvent or None, port_id).
-        =======
-                    PulseEvent: pulse event corresponding to the input gate event
-        >>>>>>> main
+        Returns:
+            PulseEvent: pulse event corresponding to the input gate event
         """
 
         # copy to avoid modifying runcard settings
@@ -249,26 +266,8 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
             qubit=qubit,
         )
 
-    def _parse_check_cz(self, cz: CZ):
-        """Checks if CZ is defined in the runcard, otherwise returns its symmetric gate (with flipped qubits)
-        If none of those are defined in the runcard, a KeyError will be raised by platform.settings on trying
-        to find the gate with qubits flipped
-
-        Args:
-            cz (CZ): qibo CZ gate
-
-        Returns:
-            CZ: qibo CZ gate
-        """
-        cz_qubits = cz.qubits
-        try:
-            self.platform.gates_settings.get_gate(name=cz.__class__.__name__, qubits=cz_qubits)
-            return cz
-        except KeyError:
-            return CZ(cz_qubits[1], cz_qubits[0])
-
     def _update_time(self, time: dict[int, int], qubit: int, gate_time: int):
-        """Create new timeline if not already created and update time.
+        """Creates new timeline if not already created and update time.
 
         Args:
             time (Dict[int, int]): Dictionary with the time of each qubit.
