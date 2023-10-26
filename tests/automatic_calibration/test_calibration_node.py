@@ -414,6 +414,8 @@ class TestPrivateMethodsFromCalibrationNode:
             for value in test_value:
                 assert value in sweep_interval_range
             assert len(test_value) == private_methods_node.number_of_random_datapoints
+        else:
+            assert test_value is None
 
     #############################
     ### TEST EXECUTE NOTEBOOK ###
