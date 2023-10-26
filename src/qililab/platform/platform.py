@@ -19,7 +19,6 @@ from copy import deepcopy
 from dataclasses import asdict
 from queue import Queue
 
-from numpy import isin
 from qibo.models import Circuit
 from qiboconnection.api import API
 

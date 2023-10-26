@@ -366,6 +366,16 @@ class QProgram:
         raise NotImplementedError
 
     def set_variable(self, variable: Variable, value: int | float):
+        """Set the value of a variable.
+
+        Args:
+            variable (Variable): The variable.
+            value (int | float): The new value.
+
+        Raises:
+            ValueError: Raised if the variable is dependent on an external loop structure.
+            ValueError: Raised if incopatible types.
+        """
         if variable._source is ValueSource.Dependent:
             raise ValueError("You cannot set the value of the variable, since it is dependent on a loop structure.")
         if isinstance(variable, int) and isinstance(value, float):
@@ -445,6 +455,3 @@ class QProgram:
         def __init__(self, qprogram: "QProgram", shots: int):  # pylint: disable=super-init-not-called
             self.qprogram = qprogram
             self.block: Average = Average(shots=shots)
-
-        def __enter__(self) -> Average:
-            return super().__enter__()
