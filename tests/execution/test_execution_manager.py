@@ -235,7 +235,7 @@ class TestExecutionManagerPlatform:
         mock_qmm: MagicMock,  # pylint: disable=unused-argument
         mock_qmm_controller: MagicMock,  # pylint: disable=unused-argument
         nested_experiment: Experiment,
-    ):
+    ):  # pylint: disable=too-many-locals
         """Test run method."""
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
         nested_experiment_dict = nested_experiment.to_dict()
@@ -265,7 +265,7 @@ class TestExecutionManagerPlatform:
         mock_pulsar: MagicMock,
         mock_urllib: MagicMock,
         mock_keithley: MagicMock,
-        mock_qmm: MagicMock,
+        mock_qmm: MagicMock,  # pylint: disable=unused-argument
         mock_qmm_controller: MagicMock,  # pylint: disable=unused-argument
         experiment: Experiment,
     ):
