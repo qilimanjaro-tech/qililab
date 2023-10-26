@@ -102,6 +102,7 @@ class TestExecutionManager:
 
         plt.close()
 
+
 @patch("qililab.instrument_controllers.quantum_machines.qmm_controller.QMMController", autospec=True)
 @patch("qililab.instruments.quantum_machines.qmm.QMM.initial_setup")
 @patch("qililab.instrument_controllers.keithley.keithley_2600_controller.Keithley2600Driver", autospec=True)
