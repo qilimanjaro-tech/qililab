@@ -294,7 +294,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         os.rename(f"{timestamp_path}.ipynb", f"{timestamp_path}_{string_to_add}.ipynb")
 
-    def run_notebook(self, check: bool = False) -> float | None:
+    def run_notebook(self, check: bool = False) -> float:
         """Runs notebook with the parameters and paths of the Node. Also can be chosen to only check.
 
         Args:
