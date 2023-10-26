@@ -261,7 +261,7 @@ class DiagnoseFixedMockedController(CalibrationController):
 ### TEST INITIALIZATION ###
 ###########################
 class TestInitializationCalibrationController:
-    """Unit tests for the CalibrationController class initialization"""
+    """Unit tests for the CalibrationController class initialization."""
 
     @pytest.mark.parametrize(
         "controller",
@@ -271,7 +271,7 @@ class TestInitializationCalibrationController:
         ],
     )
     def test_good_init_method(self, controller):
-        """Test a valid initialization of the class"""
+        """Test a valid initialization of the class."""
         # Assert:
         assert controller[1].calibration_graph == controller[0]
         assert isinstance(controller[1].calibration_graph, nx.DiGraph)
@@ -283,7 +283,10 @@ class TestInitializationCalibrationController:
         assert isinstance(controller[1].platform, Platform)
 
     def test_bad_init_method(self):
-        """Test an invalid initialization of the class"""
+        """Test an invalid initialization of the class.
+
+        This happens when the graph is not a Direct Acyclic Graph.
+        """
         # Assert:
         with pytest.raises(ValueError) as error:
             _ = CalibrationController(node_sequence=nodes, calibration_graph=B, runcard=path_runcard)

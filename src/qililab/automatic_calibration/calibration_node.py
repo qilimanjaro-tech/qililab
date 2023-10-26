@@ -213,13 +213,13 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         self.node_id, self.nb_folder = self._path_to_name_and_folder(nb_path)
         """Node name and folder, separated, and without the ``.ipynb`` extension"""
 
-        self.in_spec_threshold = in_spec_threshold
+        self.in_spec_threshold: float = in_spec_threshold
         """Threshold such that the ``check_data()`` methods return `in_spec` or `out_of_spec`."""
 
-        self.bad_data_threshold = bad_data_threshold
+        self.bad_data_threshold: float = bad_data_threshold
         """Threshold such that the ``check_data()`` methods return `out_of_spec` or `bad_data`."""
 
-        self.comparison_model = comparison_model
+        self.comparison_model: Callable = comparison_model
         """Comparison model used, to compare data in this node."""
 
         self.drift_timeout: float = drift_timeout
@@ -251,7 +251,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         self.previous_timestamp: float | None = self._get_last_calibrated_timestamp()
         """Last calibrated timestamp."""
 
-        self.stream = self._build_notebooks_logger_stream()
+        self.stream: StringIO = self._build_notebooks_logger_stream()
         """Stream object to which the notebooks logger output will be written, to posterior retrieval."""
 
     def _sweep_interval_as_array(self) -> list | None:

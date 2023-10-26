@@ -2,6 +2,7 @@
 import os
 from datetime import datetime
 from io import StringIO
+from typing import Callable
 from unittest.mock import patch
 
 import numpy as np
@@ -27,17 +28,65 @@ def dummy_comparison_model():
 ####################
 ### MOCKED NODES ###
 ####################
+@pytest.fixture(name="initialize_node_no_optional")
+@patch(
+    "qililab.automatic_calibration.calibration_node.CalibrationNode._build_notebooks_logger_stream",
+    return_value=StringIO(),
+)
+def fixture_initialize_node_no_optional(mocked_build_stream) -> CalibrationNode:
+    """Return a mocked CalibrationNode object for initialization, with the minimum number of things specified or mocked."""
+    return CalibrationNode(
+        nb_path="tests/automatic_calibration/notebook_test/zeroth.ipynb",
+        in_spec_threshold=0.6,
+        bad_data_threshold=0.9,
+        comparison_model=dummy_comparison_model,
+        drift_timeout=100.0,
+    )
+
+
+@pytest.fixture(name="initialize_node_optional")
+@patch(
+    "qililab.automatic_calibration.calibration_node.CalibrationNode._path_to_name_and_folder",
+    return_value=("node_id", "nb_folder"),
+)
+@patch(
+    "qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_output_parameters",
+    return_value={},
+)
+@patch(
+    "qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_timestamp", return_value=0.0
+)
+@patch(
+    "qililab.automatic_calibration.calibration_node.CalibrationNode._build_notebooks_logger_stream",
+    return_value=StringIO(),
+)
+def fixture_initialize_node_optional(
+    mocked_build_stream, mocked_last_cal_time, mocked_last_cal_params, mocked_path_to_folder
+) -> CalibrationNode:
+    """Return a mocked CalibrationNode object for initialization, with everything specified or mocked."""
+    return CalibrationNode(
+        nb_path="tests/automatic_calibration/notebook_test/zeroth.ipynb",
+        in_spec_threshold=0.6,
+        bad_data_threshold=0.9,
+        comparison_model=dummy_comparison_model,
+        drift_timeout=100.0,
+        input_parameters={"a": 0, "b": 1},
+        sweep_interval={"a": 0, "b": 1},
+        number_of_random_datapoints=1,
+    )
+
+
 @pytest.fixture(name="public_methods_node")
 @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_output_parameters")
 @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_timestamp")
-def fixture_public_methods_node(mocked_last_cal_params, mocked_last_cal_time) -> CalibrationNode:
+def fixture_public_methods_node(mocked_last_cal_time, mocked_last_cal_params) -> CalibrationNode:
     """Return a mocked CalibrationNode object."""
     return CalibrationNode(
         nb_path="./foobar.ipynb",
         in_spec_threshold=0.6,
         bad_data_threshold=0.9,
         comparison_model=dummy_comparison_model,
-        drift_timeout=100,
+        drift_timeout=100.0,
     )
 
 
@@ -45,28 +94,28 @@ def fixture_public_methods_node(mocked_last_cal_params, mocked_last_cal_time) ->
 @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_output_parameters")
 @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_timestamp")
 @patch("qililab.automatic_calibration.calibration_node.StringIO", autospec=True)
-def fixture_private_methods_node(mocked_last_cal_params, mocked_last_cal_time, mocked_stringio) -> CalibrationNode:
+def fixture_private_methods_node(mocked_stringio, mocked_last_cal_time, mocked_last_cal_params) -> CalibrationNode:
     """Return a mocked CalibrationNode object.."""
     return CalibrationNode(
         nb_path="./foobar.ipynb",
         in_spec_threshold=0.6,
         bad_data_threshold=0.9,
         comparison_model=dummy_comparison_model,
-        drift_timeout=100,
+        drift_timeout=100.0,
     )
 
 
 @pytest.fixture(name="class_methods_node")
 @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_output_parameters")
 @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_timestamp")
-def fixture_class_methods_node(mocked_last_cal_params, mocked_last_cal_time) -> CalibrationNode:
+def fixture_class_methods_node(mocked_last_cal_time, mocked_last_cal_params) -> CalibrationNode:
     """Return a mocked CalibrationNode object."""
     return CalibrationNode(
         nb_path="foo/bar.ipynb",
         in_spec_threshold=0.6,
         bad_data_threshold=0.9,
         comparison_model=dummy_comparison_model,
-        drift_timeout=100,
+        drift_timeout=100.0,
     )
 
 
@@ -81,7 +130,83 @@ def fixture_class_methods_node(mocked_last_cal_params, mocked_last_cal_time) -> 
 class TestInitializationCalibrationNode:
     """Unit tests for the CalibrationNode class initialization."""
 
-    # TODO: Init test, mockear init fucntions calls and check their calls
+    def test_good_init_method_without_optional(self, initialize_node_no_optional):
+        """Test a valid initialization of the class, without passing optional arguments."""
+        # Assert:
+        assert initialize_node_no_optional.nb_path == "tests/automatic_calibration/notebook_test/zeroth.ipynb"
+        assert isinstance(initialize_node_no_optional.nb_path, str)
+        assert initialize_node_no_optional.node_id == "zeroth"
+        assert isinstance(initialize_node_no_optional.nb_path, str)
+        assert initialize_node_no_optional.nb_folder == "tests/automatic_calibration/notebook_test"
+        assert isinstance(initialize_node_no_optional.nb_path, str)
+        assert initialize_node_no_optional.in_spec_threshold == 0.6
+        assert isinstance(initialize_node_no_optional.in_spec_threshold, float)
+        assert initialize_node_no_optional.bad_data_threshold == 0.9
+        assert isinstance(initialize_node_no_optional.bad_data_threshold, float)
+        assert initialize_node_no_optional.comparison_model == dummy_comparison_model
+        assert isinstance(initialize_node_no_optional.comparison_model, Callable)
+        assert initialize_node_no_optional.drift_timeout == 100
+        assert isinstance(initialize_node_no_optional.drift_timeout, float)
+        assert initialize_node_no_optional.input_parameters is None
+        assert isinstance(initialize_node_no_optional.input_parameters, dict | None)
+        assert initialize_node_no_optional.sweep_interval is None
+        assert isinstance(initialize_node_no_optional.sweep_interval, dict | None)
+        assert initialize_node_no_optional.number_of_random_datapoints == 10
+        assert isinstance(initialize_node_no_optional.number_of_random_datapoints, int)
+        assert initialize_node_no_optional.output_parameters is None
+        assert isinstance(initialize_node_no_optional.output_parameters, dict | None)
+        assert initialize_node_no_optional.previous_output_parameters is None
+        assert isinstance(initialize_node_no_optional.previous_output_parameters, dict | None)
+        assert initialize_node_no_optional.previous_timestamp is None
+        assert isinstance(initialize_node_no_optional.previous_timestamp, float | None)
+        assert isinstance(initialize_node_no_optional.stream, StringIO)
+
+    def test_good_init_method_with_optional(self, initialize_node_optional):
+        """Test a valid initialization of the class, passing all optional arguments."""
+        # Assert:
+        assert initialize_node_optional.nb_path == "tests/automatic_calibration/notebook_test/zeroth.ipynb"
+        assert isinstance(initialize_node_optional.nb_path, str)
+        assert initialize_node_optional.node_id == "node_id"
+        assert isinstance(initialize_node_optional.nb_path, str)
+        assert initialize_node_optional.nb_folder == "nb_folder"
+        assert isinstance(initialize_node_optional.nb_path, str)
+        assert initialize_node_optional.in_spec_threshold == 0.6
+        assert isinstance(initialize_node_optional.in_spec_threshold, float)
+        assert initialize_node_optional.bad_data_threshold == 0.9
+        assert isinstance(initialize_node_optional.bad_data_threshold, float)
+        assert initialize_node_optional.comparison_model == dummy_comparison_model
+        assert isinstance(initialize_node_optional.comparison_model, Callable)
+        assert initialize_node_optional.drift_timeout == 100
+        assert isinstance(initialize_node_optional.drift_timeout, float)
+        assert initialize_node_optional.input_parameters == {"a": 0, "b": 1}
+        assert isinstance(initialize_node_optional.input_parameters, dict | None)
+        assert initialize_node_optional.sweep_interval == {"a": 0, "b": 1}
+        assert isinstance(initialize_node_optional.sweep_interval, dict | None)
+        assert initialize_node_optional.number_of_random_datapoints == 1
+        assert isinstance(initialize_node_optional.number_of_random_datapoints, int)
+        assert initialize_node_optional.output_parameters == {}
+        assert isinstance(initialize_node_optional.output_parameters, dict | None)
+        assert initialize_node_optional.previous_output_parameters is None
+        assert isinstance(initialize_node_optional.previous_output_parameters, dict | None)
+        assert initialize_node_optional.previous_timestamp == 0.0
+        assert isinstance(initialize_node_optional.previous_timestamp, float | None)
+        assert isinstance(initialize_node_optional.stream, StringIO)
+
+    def test_bad_init_method(self):
+        """Test an invalid initialization of the class.
+
+        This happens when ``bad_data_threshold`` is smaller than ``in_spec`` one.
+        """
+        # Assert:
+        with pytest.raises(ValueError) as error:
+            _ = CalibrationNode(
+                nb_path="./foobar.ipynb",
+                in_spec_threshold=0.6,
+                bad_data_threshold=0.5,
+                comparison_model=dummy_comparison_model,
+                drift_timeout=100,
+            )
+        assert str(error.value) == "`in_spec_threshold` must be smaller or equal than `bad_data_threshold`."
 
 
 class TestPublicMethodsFromCalibrationNode:
