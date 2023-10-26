@@ -296,7 +296,7 @@ class TestPublicMethodsFromCalibrationNode:
     ):
         """Test that run_notebook works properly when a keyboard interrupt is raised."""
         mock_execute.side_effect = KeyboardInterrupt()
-        with patch("builtins.exit") as mocked_exit:
+        with patch("qililab.automatic_calibration.calibration_node.sys.exit") as mocked_exit:
             public_methods_node.sweep_interval = sweep_interval
             public_methods_node.run_notebook(check)
             mocked_exit.called_once()
@@ -342,7 +342,7 @@ class TestPublicMethodsFromCalibrationNode:
     ):
         """Test that run_notebook works properly when an exception is raised."""
         mock_execute.side_effect = ValueError("Test error")
-        with patch("builtins.exit") as mocked_exit:
+        with patch("qililab.automatic_calibration.calibration_node.sys.exit") as mocked_exit:
             public_methods_node.sweep_interval = sweep_interval
             public_methods_node.run_notebook(check)
             mocked_exit.called_once()

@@ -16,6 +16,7 @@
 import json
 import logging
 import os
+import sys
 from datetime import datetime
 from io import StringIO
 from typing import Callable
@@ -293,7 +294,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         os.rename(f"{timestamp_path}.ipynb", f"{timestamp_path}_{string_to_add}.ipynb")
 
-    def run_notebook(self, check: bool = False) -> float:
+    def run_notebook(self, check: bool = False) -> float | None:
         """Runs notebook with the parameters and paths of the Node. Also can be chosen to only check.
 
         Args:
@@ -335,7 +336,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         except KeyboardInterrupt:
             logger.info("Interrupted autocalibration notebook execution of %s", self.nb_path)
-            exit()
+            return sys.exit()
 
         except Exception as e:
             # Generate error folder and move there the notebook
@@ -347,7 +348,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                 str(e),
                 error_path,
             )
-            exit()
+            return sys.exit()
 
     @staticmethod
     def _build_notebooks_logger_stream() -> StringIO:
@@ -522,7 +523,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         if dirty and not error:  # return the path of the execution
             return f"{folder_path}/{name}_{now_path}_dirty.ipynb"
-        elif error:
+        if error:
             os.makedirs(f"{folder_path}/error_executions", exist_ok=True)
             return f"{folder_path}/error_executions/{name}_{now_path}_error.ipynb"
         # return the string where saved
