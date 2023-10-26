@@ -17,7 +17,7 @@ from qililab.platform.platform import Platform
 path_runcard = "examples/runcards/galadriel.yml"
 
 
-def comparison_model_test(obtained: dict, comparison: dict) -> float:
+def dummy_comparison_model(obtained: dict, comparison: dict) -> float:
     """Basic comparison model for testing."""
     return abs(sum(obtained["y"]) - sum(comparison["y"]))
 
@@ -29,35 +29,35 @@ zeroth = CalibrationNode(
     nb_path="tests/automatic_calibration/notebook_test/zeroth.ipynb",
     in_spec_threshold=4,
     bad_data_threshold=8,
-    comparison_model=comparison_model_test,
+    comparison_model=dummy_comparison_model,
     drift_timeout=1.0,
 )
 first = CalibrationNode(
     nb_path="tests/automatic_calibration/notebook_test/first.ipynb",
     in_spec_threshold=4,
     bad_data_threshold=8,
-    comparison_model=comparison_model_test,
+    comparison_model=dummy_comparison_model,
     drift_timeout=1800.0,
 )
 second = CalibrationNode(
     nb_path="tests/automatic_calibration/notebook_test/second.ipynb",
     in_spec_threshold=2,
     bad_data_threshold=4,
-    comparison_model=comparison_model_test,
+    comparison_model=dummy_comparison_model,
     drift_timeout=1.0,
 )
 third = CalibrationNode(
     nb_path="tests/automatic_calibration/notebook_test/third.ipynb",
     in_spec_threshold=1,
     bad_data_threshold=2,
-    comparison_model=comparison_model_test,
+    comparison_model=dummy_comparison_model,
     drift_timeout=1.0,
 )
 fourth = CalibrationNode(
     nb_path="tests/automatic_calibration/notebook_test/fourth.ipynb",
     in_spec_threshold=1,
     bad_data_threshold=2,
-    comparison_model=comparison_model_test,
+    comparison_model=dummy_comparison_model,
     drift_timeout=1.0,
 )
 
@@ -260,8 +260,8 @@ class DiagnoseFixedMockedController(CalibrationController):
 ###########################
 ### TEST INITIALIZATION ###
 ###########################
-class TestCalibrationControllerInitialization:
-    """Unit tests for the CalibrationController class initialization"""
+class TestInitializationCalibrationController:
+    """Unit tests for the CalibrationController class initialization."""
 
     @pytest.mark.parametrize(
         "controller",
@@ -271,7 +271,7 @@ class TestCalibrationControllerInitialization:
         ],
     )
     def test_good_init_method(self, controller):
-        """Test a valid initialization of the class"""
+        """Test a valid initialization of the class."""
         # Assert:
         assert controller[1].calibration_graph == controller[0]
         assert isinstance(controller[1].calibration_graph, nx.DiGraph)
@@ -283,7 +283,10 @@ class TestCalibrationControllerInitialization:
         assert isinstance(controller[1].platform, Platform)
 
     def test_bad_init_method(self):
-        """Test an invalid initialization of the class"""
+        """Test an invalid initialization of the class.
+
+        This happens when the graph is not a Direct Acyclic Graph.
+        """
         # Assert:
         with pytest.raises(ValueError) as error:
             _ = CalibrationController(node_sequence=nodes, calibration_graph=B, runcard=path_runcard)
@@ -620,6 +623,8 @@ class TestDiagnoseFromCalibrationController:
         assert controller.diagnose(second) is False  # No calibrate <<< WARNING, this should be calibrated!
         assert controller.diagnose(fourth) is True  # Calibrate (because of third)
 
+        # TODO: DO same case with everyhting at in_spec and out_spec except zeroth
+
 
 @pytest.mark.parametrize(
     "controller",
@@ -678,7 +683,7 @@ class TestCalibrationController:
         for node in controller.node_sequence.values():
             node.previous_output_parameters = {"check_parameters": {"x": [1, 2, 3], "y": [5, 6, 7]}}
             node.output_parameters = {"check_parameters": {"x": [1, 2, 3], "y": [4, 5, 6]}}
-            node.comparison_model = comparison_model_test
+            node.comparison_model = dummy_comparison_model
             result = controller.check_data(node)
             if node in [zeroth, first]:
                 assert result == "in_spec"
@@ -817,7 +822,7 @@ class TestStaticMethodsFromCalibrationController:
         comparison = {"x": [2, 3, 4], "y": [5, 6, 7]}
 
         for node in controller.node_sequence.values():
-            node.comparison_model = comparison_model_test
+            node.comparison_model = dummy_comparison_model
             result = controller._obtain_comparison(node, obtained, comparison)
 
             assert result == abs(4 + 5 + 6 - 5 - 6 - 7)
