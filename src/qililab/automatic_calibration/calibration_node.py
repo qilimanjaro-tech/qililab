@@ -57,7 +57,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
     - **Inputs to pass to this notebook (optional)**, which might vary for different calls of the same notebook. Arguments on this category:
         - ``sweep_interval`` (optional)
-        - ``numeber_of_random_datapoints`` (optional)
+        - ``number_of_random_datapoints`` (optional)
         - ``input_parameters`` (optional kwargs, to be interpreted by the notebook)
 
     Args:
@@ -142,7 +142,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
             .. code-block:: python
 
-                # Set the enviorement and paths:
+                # Set the environment and paths:
                 ...
 
                 # Set the platform:
@@ -246,13 +246,13 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         a ``check_params`` to do the ``check_data()`` and the ``platform_params`` which will be the calibrated parameters to set in the platform. """
 
         self.previous_output_parameters: dict | None = None
-        """Same output_parameters, but from the previous excecution of the Node."""
+        """Same output_parameters, but from the previous execution of the Node."""
 
         self.previous_timestamp: float | None = self._get_last_calibrated_timestamp()
         """Last calibrated timestamp."""
 
         self.stream = self._build_notebooks_logger_stream()
-        """Stream object to which the notbooks logger output will be written, to posterior retrieval."""
+        """Stream object to which the notebooks logger output will be written, to posterior retrieval."""
 
     def _sweep_interval_as_array(self) -> list | None:
         """Transforms the sweep interval start, stop and step into a list.
@@ -286,7 +286,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         Args:
             string_to_add (str): The string to add in the end of the name.
-            timestamp (float): Timestamp to identify the desired notebook excecution.
+            timestamp (float): Timestamp to identify the desired notebook execution.
         """
         path = f"{self.nb_folder}/{self.node_id}"
         timestamp_path = self._create_notebook_datetime_path(path, timestamp).split(".ipynb")[0]
@@ -300,7 +300,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             check (bool): Flag to make a ``calibrate()`` or a ``check_data()`` in the notebook.
 
         Returns:
-            float: Timestamp to identify the notebook excecution.
+            float: Timestamp to identify the notebook execution.
         """
         params: dict = {"check": check} | {"number_of_random_datapoints": self.number_of_random_datapoints}
 
@@ -332,18 +332,18 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             timestamp = self._get_timestamp()
             os.rename(output_path, self._create_notebook_datetime_path(self.nb_path, timestamp))
             return timestamp
-          
+
         except KeyboardInterrupt:
             logger.info("Interrupted autocalibration notebook execution of %s", self.nb_path)
             exit()
-            
+
         except Exception as e:
             # Generate error folder and move there the notebook
             timestamp = self._get_timestamp()
             error_path = self._create_notebook_datetime_path(self.nb_path, timestamp, error=True)
             os.rename(output_path, error_path)
             logger.info(
-                "Aborting execution. Exception %s during autocalibration notebook execution, trace of the error can be found in %s",
+                "Aborting execution. Exception %s during automatic calibration notebook execution, trace of the error can be found in %s",
                 str(e),
                 error_path,
             )
@@ -354,7 +354,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         """Build the stream object to save the logger outputs of the notebooks:
 
         Returns:
-            StringIO: stream object where all the notebook outputs are saved and retrived from.
+            StringIO: stream object where all the notebook outputs are saved and retrieved from.
         """
         stream = StringIO()
         logging.basicConfig(stream=stream, level=logging.INFO)
@@ -362,7 +362,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         return stream
 
     def _execute_notebook(self, input_path: str, output_path: str, parameters: dict | None = None) -> dict:
-        """Executes python notebooks overwritting the parameters of the "parameters" cells and then returns the `output` parameters of such notebook.
+        """Executes python notebooks overwriting the parameters of the "parameters" cells and then returns the `output` parameters of such notebook.
 
         Args
             input_path (str): Path to input notebook or NotebookNode object of notebook.
@@ -380,10 +380,10 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         logger_outputs_string = logger_splitted[-1].split("\n")[0]
         if len(logger_splitted) < 2:
             logger.info(
-                "Aborting execution. No output found, chek the autocalibration output cell is implemented in %s",
+                "Aborting execution. No output found, check the automatic-calibration output cell is implemented in %s",
                 input_path,
             )
-            raise IncorrectCalibrationOutput(f"No output found, check autocalibation notebook in {input_path}")
+            raise IncorrectCalibrationOutput(f"No output found, check automatic-calibration notebook in {input_path}")
         if len(logger_splitted) > 2:
             logger.info(
                 "Aborting execution. More than one output found, please output the results once in %s",
@@ -427,7 +427,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         )
 
     def _parse_output_from_execution_file(self, file_name) -> dict | None:
-        """Parses a expected notebook file and gets the output from the exectution converted as python dictionary.
+        """Parses a expected notebook file and gets the output from the execution converted as python dictionary.
 
         Args:
             file_name (str): filename of the notebook file.

@@ -11,7 +11,11 @@ import numpy as np
 import papermill as pm
 import pytest
 
-from qililab.automatic_calibration.calibration_node import CalibrationNode, IncorrectCalibrationOutput
+from qililab.automatic_calibration.calibration_node import (
+    CalibrationNode,
+    IncorrectCalibrationOutput,
+    export_calibration_outputs,
+)
 from qililab.config import logger
 
 #################################################################################
@@ -122,20 +126,6 @@ class TestPublicMethodsFromCalibrationNode:
         assert public_methods_node.output_parameters == test_previous_output_params
         assert public_methods_node.previous_output_parameters == test_output_params
 
-    #######################################
-    ### TEST EXPORT CALIBRATION OUTPUTS ###
-    #######################################
-    # TODO: This tests fails as the patch is currently not working :(
-    @patch("qililab.automatic_calibration.calibration_node.json.dumps", autospec=True)
-    def test_export_calibration_outputs(self, mocked_dumps, public_methods_node: CalibrationNode):
-        """Test that ``export_calibration_outputs()`` works properly."""
-        test_outputs = {"this_is": "a_test_dict", "foo": "bar"}
-        test_dumped_outputs = '{"this_is": "a_test_dict", "foo": "bar"}'
-        with patch("builtins.print") as mocked_print:
-            public_methods_node.export_calibration_outputs(test_outputs)
-            mocked_dumps.assert_called_with(test_outputs)
-            mocked_print.assert_called_with(f"{logger_output_start}{test_dumped_outputs}")
-
 
 class TestPrivateMethodsFromCalibrationNode:
     """Unit tests for the CalibrationNode class private methods."""
@@ -175,58 +165,72 @@ class TestPrivateMethodsFromCalibrationNode:
     #############################
     ### TEST EXECUTE NOTEBOOK ###
     #############################
-    # TODO: This tests fails as the papermill patch is currently not working :(
-    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.pm.execute_notebook")
-    def test_execute_notebook(self, private_methods_node: CalibrationNode, mocked_pm):
-        # TODO: THink which docstring should go into each fo this tests.
-        raw_file_contents = "RAND_INT:47102512880765720413 - OUTPUTS: {check_parameters: {x: [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48], y: [100, 144, 196, 256, 324, 400, 484, 576, 676, 784, 900, 1024, 1156, 1296, 1444, 1600, 1764, 1936, 2116, 2304]}, platform_params: [[bus_alias, param_name, 1]]}"
-
+    @patch("qililab.automatic_calibration.calibration_node.pm.execute_notebook")
+    def test_execute_notebook(self, mocked_pm_exec, private_methods_node: CalibrationNode):
+        """Testing general behavior of ``execute_notebook()``."""
+        # Creating expected values for assert
         sweep_interval = [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48]
         y = [i**2 for i in sweep_interval]
         results = {"x": sweep_interval, "y": y}
         expected = {"check_parameters": results, "platform_params": [["bus_alias", "param_name", 1]]}
 
-        private_methods_node.stream.getvalue.return_value = raw_file_contents
+        # Mocking return value of stream and calling execute_notebook
+        raw_file_contents = 'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48], "y": [100, 144, 196, 256, 324, 400, 484, 576, 676, 784, 900, 1024, 1156, 1296, 1444, 1600, 1764, 1936, 2116, 2304]}, "platform_params": [["bus_alias", "param_name", 1]]}\n'
+        private_methods_node.stream.getvalue.return_value = raw_file_contents  # type: ignore [attr-defined]
         test_value = private_methods_node._execute_notebook(private_methods_node.nb_path, "", {})
-        mocked_pm.execute_notebook.assert_called_once()
+
+        # Asserts
+        mocked_pm_exec.assert_called_once()
         assert test_value == expected
 
-    #    @patch("qililab.automatic_calibration.calibration_node.papermill",autospec=True)
-    #    @patch("qililab.automatic_calibration.calibration_node.io.StringIO",autospec=True)
-    #    @patch("qililab.automatic_calibration.calibration_node.logger",autospec=True)
-    #    def test_execute_notebook_raises_no_output(self, private_methods_node, input_path, output_path, parameters, mocked_papermill, mocked_stream, mocked_logger, output):
-    #        mocked_stream.return_value = output
-    #        with pytest.raises(IncorrectCalibrationOutput) as no_out_err:
-    #            private_methods_node._execute_notebook(self, input_path, output_path, parameters)
-    #
-    #            mocked_logger.info.assert_called_with("Aborting execution. More than one output found, please output the results once in %s",
-    #                input_path)
-    #            (msg,) = no_out_err.value.args
-    #            assert msg == f"No output found, check autocalibation notebook in {input_path}"
-    #
-    #    @patch("qililab.automatic_calibration.calibration_node.papermill",autospec=True)
-    #    @patch("qililab.automatic_calibration.calibration_node.io.StringIO",autospec=True)
-    #    @patch("qililab.automatic_calibration.calibration_node.logger",autospec=True)
-    #    def test_execute_notebook_raises_multiple_output(self, private_methods_node, input_path, output_path, parameters, mocked_papermill, mocked_stream, mocked_logger, output):
-    #        mocked_stream.return_value = output
-    #        with pytest.raises(IncorrectCalibrationOutput) as multiple_out_err:
-    #            private_methods_node._execute_notebook(self, input_path, output_path, parameters)
-    #               # TODO: define multipleoutputs
-    #            mocked_logger.info.assert_called_with("Aborting execution. More than one output found, please output the results once in %s",
-    #                input_path)
-    #            (msg,) = multiple_out_err.value.args
-    #            assert msg == f"More than one output found in {input_path}"
-    #
-    #    @patch("qililab.automatic_calibration.calibration_node.papermill",autospec=True)
-    #    @patch("qililab.automatic_calibration.calibration_node.io.StringIO",autospec=True)
-    #    def test_execute_notebook_raises_incorrect_output(self, private_methods_node, input_path, output_path, parameters, mocked_papermill, mocked_stream, output):
-    #        mocked_stream.return_value = output
+    @pytest.mark.parametrize("output", ["", "a", "RAND_INT:4320765720413 - OUTPUTS: {'check_parameters': {'a':2}}/n"])
+    @patch("qililab.automatic_calibration.calibration_node.pm.execute_notebook")
+    @patch("qililab.automatic_calibration.calibration_node.logger", autospec=True)
+    def test_execute_notebook_raises_no_output(self, mocked_logger, mocked_pm_exec, output, private_methods_node):
+        """Testing when no outputs received for ``private_methods_node.nb_path()``."""
+        private_methods_node.stream.getvalue.return_value = output  # type: ignore [attr-defined]
+        with pytest.raises(IncorrectCalibrationOutput) as no_out_err:
+            private_methods_node._execute_notebook(private_methods_node.nb_path, "", {})
+
+            mocked_logger.info.assert_called_with(
+                "Aborting execution. No output found, check the automatic-calibration output cell is implemented in %s",
+                private_methods_node.nb_path,
+            )
+            (msg,) = no_out_err.value.args
+            assert msg == f"No output found, check automatic-calibration notebook in {private_methods_node.nb_path}"
+
+    # @patch("qililab.automatic_calibration.calibration_node.pm.execute_notebook")
+    # @patch("qililab.automatic_calibration.calibration_node.logger", autospec=True)
+    # def test_execute_notebook_raises_multiple_output(
+    #     self,
+    #     private_methods_node,
+    #     input_path,
+    #     output_path,
+    #     parameters,
+    #     mocked_papermill,
+    #     mocked_stream,
+    #     mocked_logger,
+    #     output,
+    # ):
+    #     mocked_stream.return_value = output
+    #     with pytest.raises(IncorrectCalibrationOutput) as multiple_out_err:
+    #         private_methods_node._execute_notebook(self, input_path, output_path, parameters)
+    #         # TODO: define multipleoutputs
+    #         mocked_logger.info.assert_called_with(
+    #             "Aborting execution. More than one output found, please output the results once in %s", input_path
+    #         )
+    #         (msg,) = multiple_out_err.value.args
+    #         assert msg == f"More than one output found in {input_path}"
+
+    #     @patch("qililab.automatic_calibration.calibration_node.pm.execute_notebook")
+    #     def test_execute_notebook_raises_incorrect_output(self, private_methods_node, input_path, output_path, parameters, mocked_papermill, mocked_stream, output):
+    #         mocked_stream.return_value = output
     # TODO: Output without check_parameter in it, or is empty. (Do both cases)
-    #        with pytest.raises(IncorrectCalibrationOutput) as incorrect_out_err:
-    #            private_methods_node._execute_notebook(self, input_path, output_path, parameters)
-    #
-    #            (msg,) = incorrect_out_err.value.args
-    #            assert msg == f"Calibration output must have key and value 'check_parameters' in notebook {input_path}"
+    #         with pytest.raises(IncorrectCalibrationOutput) as incorrect_out_err:
+    #             private_methods_node._execute_notebook(self, input_path, output_path, parameters)
+
+    #             (msg,) = incorrect_out_err.value.args
+    #             assert msg == f"Calibration output must have key and value 'check_parameters' in notebook {input_path}"
     #
     #    def test_get_last_calibrated_timestamp():
     #        pass
@@ -379,3 +383,23 @@ class TestStaticMethodsFromCalibrationNode:
         CalibrationNode._get_timestamp()
         modked_datetime.now.assert_called_once()
         modked_datetime.timestamp.assert_called_once()
+
+
+#################################################################################
+######################## TESTS FOR THE EXTERNAL FUNCTIONS #######################
+#################################################################################
+
+
+#######################################
+### TEST EXPORT CALIBRATION OUTPUTS ###
+#######################################
+@patch("qililab.automatic_calibration.calibration_node.json.dumps", autospec=True)
+def test_export_calibration_outputs(mocked_dumps):
+    """Test that ``export_calibration_outputs()`` works properly."""
+    test_outputs = {"this_is": "a_test_dict", "foo": "bar"}
+    test_dumped_outputs = '{"this_is": "a_test_dict", "foo": "bar"}'
+    mocked_dumps.return_value = test_dumped_outputs
+    with patch("builtins.print") as mocked_print:
+        export_calibration_outputs(test_outputs)
+        mocked_dumps.assert_called_with(test_outputs)
+        mocked_print.assert_called_with(f"{logger_output_start}{test_dumped_outputs}")
