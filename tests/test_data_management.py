@@ -73,7 +73,7 @@ class TestBuildPlatformCornerCases:
         """Test build method with the new drivers."""
         with pytest.raises(ValueError) as no_arg_error:
             ql.build_platform()
-
+        # We do it like this only for this case, best practice is to use match=... like in the following tests.
         (msg,) = no_arg_error.value.args
         assert msg == "`runcard` argument (str | dict) has not been passed to the `build_platform()` function."
 
