@@ -71,10 +71,11 @@ class TestBuildPlatformCornerCases:
 
     def test_build_method_with_no_arguments(self):
         """Test build method with the new drivers."""
-        with pytest.raises(
-            ValueError, match="`runcard` argument (str | dict) has not been passed to the `build_platform()` function."
-        ):
-            _ = ql.build_platform()
+        with pytest.raises(ValueError) as no_arg_error:
+            ql.build_platform()
+
+        (msg,) = no_arg_error.value.args
+        assert msg == "`runcard` argument (str | dict) has not been passed to the `build_platform()` function."
 
     def test_build_method_with_old_path_and_new_runcard_arguments(self):
         """Test build method with the new drivers."""

@@ -338,7 +338,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             logger.info("Interrupted autocalibration notebook execution of %s", self.nb_path)
             return sys.exit()
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable = broad-exception-caught
             # Generate error folder and move there the notebook
             timestamp = self._get_timestamp()
             error_path = self._create_notebook_datetime_path(self.nb_path, timestamp, error=True)
