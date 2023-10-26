@@ -37,3 +37,4 @@ Compilers
 from .qblox_compiler import QbloxCompiler
 from .qprogram import QProgram
 from .quantum_machines_compiler import QuantumMachinesCompiler
+from .variable import Domain

@@ -492,8 +492,6 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
 
         if not operations:
             return None
-        if len(set(map(type, operations))) != 1:
-            raise NotImplementedError("Variables referenced in a loop cannot be used in different types of operations.")
         if isinstance(operations[0], Play) and operations[0].get_waveform_variables():
             raise NotImplementedError("TODO: Variables referenced in a loop cannot be used in Play operation.")
         return operations[0]

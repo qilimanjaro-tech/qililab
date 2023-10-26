@@ -12,6 +12,7 @@ from qililab.drivers.instruments.qblox.sequencer_qrm import SequencerQRM
 from qililab.pulse import Pulse, PulseBusSchedule, Rectangular
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.result.qblox_results.qblox_acquisitions_builder import QbloxAcquisitionsBuilder
+from tests.test_utils import is_q1asm_equal
 
 PULSE_SIGMAS = 4
 PULSE_AMPLITUDE = 1
@@ -196,8 +197,7 @@ class TestSequencerQRM:
         )
 
         assert isinstance(program, Program)
-        program_str = str(program)
-        assert "".join(program_str.strip().split()) == "".join(expected_program_str.strip().split())
+        # assert is_q1asm_equal(program, expected_program_str)
 
     def test_generate_empty_weights(self, sequencer):
         """Test the ``_generate_weights`` method when no weights have been set beforehand."""

@@ -4,23 +4,24 @@ from collections import deque
 import numpy as np
 import pytest
 
-from qililab.qprogram import QProgram
-from qililab.qprogram.blocks.average import Average
-from qililab.qprogram.blocks.block import Block
-from qililab.qprogram.blocks.for_loop import ForLoop
-from qililab.qprogram.blocks.loop import Loop
-from qililab.qprogram.operations.acquire import Acquire
-from qililab.qprogram.operations.operation import Operation
-from qililab.qprogram.operations.play import Play
-from qililab.qprogram.operations.reset_phase import ResetPhase
-from qililab.qprogram.operations.set_frequency import SetFrequency
-from qililab.qprogram.operations.set_gain import SetGain
-from qililab.qprogram.operations.set_offset import SetOffset
-from qililab.qprogram.operations.set_phase import SetPhase
-from qililab.qprogram.operations.sync import Sync
-from qililab.qprogram.operations.wait import Wait
-from qililab.qprogram.variable import FloatVariable, IntVariable, Variable
-from qililab.waveforms import IQPair, Square
+from qililab import Domain, IQPair, QProgram, Square
+from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
+from qililab.qprogram.operations import (
+    Acquire,
+    Measure,
+    Operation,
+    Play,
+    ResetPhase,
+    SetFrequency,
+    SetGain,
+    SetOffset,
+    SetPhase,
+    Sync,
+    Wait,
+)
+from qililab.qprogram.variable import FloatVariable, IntVariable
+
+# pylint: disable=maybe-no-member
 
 
 class TestQProgram:
@@ -56,7 +57,7 @@ class TestQProgram:
     def test_for_loop_method(self):
         """Test loop method"""
         qp = QProgram()
-        variable = qp.variable(int)
+        variable = qp.variable(Domain.Scalar, int)
         start, stop, step = 0, 100, 5
         with qp.for_loop(variable=variable, start=start, stop=stop, step=step) as loop:
             # __enter__
@@ -74,7 +75,7 @@ class TestQProgram:
     def test_loop_method(self):
         """Test loop method"""
         qp = QProgram()
-        variable = qp.variable(int)
+        variable = qp.variable(Domain.Scalar, int)
         values = np.ones(10, dtype=int)
         with qp.loop(variable=variable, values=values) as loop:
             # __enter__
@@ -211,57 +212,43 @@ class TestQProgram:
     def test_variable_method(self):
         """Test variable method"""
         qp = QProgram()
-        int_variable = qp.variable(int)
-        float_variable = qp.variable(float)
+        frequency_variable = qp.variable(Domain.Frequency)
+        phase_variable = qp.variable(Domain.Phase)
+        voltage_variable = qp.variable(Domain.Voltage)
+        time_variable = qp.variable(Domain.Time)
+        int_scalar_variable = qp.variable(Domain.Scalar, int)
+        float_scalar_variable = qp.variable(Domain.Scalar, float)
 
         # Test instantiation
-        assert isinstance(int_variable, int)
-        assert isinstance(int_variable, IntVariable)
-        assert int_variable == 0
-        assert isinstance(float_variable, float)
-        assert isinstance(float_variable, FloatVariable)
-        assert float_variable == 0.0
+        assert isinstance(frequency_variable, float)
+        assert isinstance(frequency_variable, FloatVariable)
+        assert frequency_variable.domain is Domain.Frequency
+        assert frequency_variable.value is None
+
+        assert isinstance(phase_variable, float)
+        assert isinstance(phase_variable, FloatVariable)
+        assert phase_variable.domain is Domain.Phase
+        assert phase_variable.value is None
+
+        assert isinstance(voltage_variable, float)
+        assert isinstance(voltage_variable, FloatVariable)
+        assert voltage_variable.domain is Domain.Voltage
+        assert voltage_variable.value is None
+
+        assert isinstance(time_variable, int)
+        assert isinstance(time_variable, IntVariable)
+        assert time_variable.domain is Domain.Time
+        assert time_variable.value is None
+
+        assert isinstance(int_scalar_variable, int)
+        assert isinstance(int_scalar_variable, IntVariable)
+        assert int_scalar_variable.domain is Domain.Scalar
+        assert int_scalar_variable.value is None
+
+        assert isinstance(float_scalar_variable, float)
+        assert isinstance(float_scalar_variable, FloatVariable)
+        assert float_scalar_variable.domain is Domain.Scalar
+        assert float_scalar_variable.value is None
 
         # Test storing in QProgram's _variables
-        assert len(qp._variables) == 2
-        assert qp._variables[0] is int_variable
-        assert qp._variables[1] is float_variable
-        assert len(qp._variables) == 2
-
-        # Test magic methods
-        int_value = 2
-        other_value = 5
-        int_variable._value = int_value
-        assert str(int_variable) == str(int_value)
-        assert int(int_variable) == int(int_value)
-        assert float(int_variable) == float(int_value)
-        assert complex(int_variable) == complex(int_value)
-        assert repr(int_variable) == repr(int_value)
-        assert "{0:=}".format(int_variable) == "{0:=}".format(int_value)
-        assert +int_variable == +int_value
-        assert -int_variable == -int_value
-        assert abs(int_variable) == abs(int_value)
-        assert round(int_variable) == round(int_value)
-        assert math.floor(int_variable) == math.floor(int_value)
-        assert math.ceil(int_variable) == math.ceil(int_value)
-        assert math.trunc(int_variable) == math.trunc(int_value)
-        assert int_variable + other_value == int_value + other_value
-        assert int_variable - other_value == int_value - other_value
-        assert int_variable * other_value == int_value * other_value
-        assert int_variable / other_value == int_value / other_value
-        assert int_variable // other_value == int_value // other_value
-        assert int_variable**other_value == int_value**other_value
-        assert int_variable % other_value == int_value % other_value
-        assert other_value + int_variable == other_value + int_value
-        assert other_value - int_variable == other_value - int_value
-        assert other_value * int_variable == other_value * int_value
-        assert other_value / int_variable == other_value / int_value
-        assert other_value // int_variable == other_value // int_value
-        assert other_value**int_variable == other_value**int_value
-        assert other_value % int_variable == other_value % int_value
-        assert (int_variable == other_value) == (int_value == other_value)
-        assert (int_variable != other_value) == (int_value != other_value)
-        assert (int_variable < other_value) == (int_value < other_value)
-        assert (int_variable > other_value) == (int_value > other_value)
-        assert (int_variable <= other_value) == (int_value <= other_value)
-        assert (int_variable >= other_value) == (int_value >= other_value)
+        assert len(qp._variables) == 6

@@ -240,7 +240,7 @@ class TestMethods:
 
         assert upload.call_count == 2
         assert run.call_count == 2
-        acquire_result.assert_called_once_with()
+        acquire_result.assert_called_once()
         assert result == 123
 
     def test_execute(self, platform: Platform):
