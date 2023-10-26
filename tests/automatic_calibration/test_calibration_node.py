@@ -179,58 +179,91 @@ class TestPrivateMethodsFromCalibrationNode:
         test_value = private_methods_node._execute_notebook(private_methods_node.nb_path, "", {})
 
         # Asserts
-        mocked_pm_exec.assert_called_once()
+        mocked_pm_exec.assert_called_once_with(
+            private_methods_node.nb_path, "", {}, log_output=True, stdout_file=private_methods_node.stream
+        )
         assert test_value == expected
 
     @pytest.mark.parametrize("output", ["", "a", "RAND_INT:4320765720413 - OUTPUTS: {'check_parameters': {'a':2}}/n"])
     @patch("qililab.automatic_calibration.calibration_node.pm.execute_notebook")
     @patch("qililab.automatic_calibration.calibration_node.logger", autospec=True)
     def test_execute_notebook_raises_no_output(self, mocked_logger, mocked_pm_exec, output, private_methods_node):
-        """Testing when no outputs received for ``private_methods_node.nb_path()``."""
+        """Testing when no outputs received from ``execute_notebook()``."""
         private_methods_node.stream.getvalue.return_value = output  # type: ignore [attr-defined]
-        with pytest.raises(IncorrectCalibrationOutput) as no_out_err:
+
+        with pytest.raises(
+            IncorrectCalibrationOutput,
+            match=f"No output found, check automatic-calibration notebook in {private_methods_node.nb_path}",
+        ):
             private_methods_node._execute_notebook(private_methods_node.nb_path, "", {})
 
-            mocked_logger.info.assert_called_with(
-                "Aborting execution. No output found, check the automatic-calibration output cell is implemented in %s",
-                private_methods_node.nb_path,
-            )
-            (msg,) = no_out_err.value.args
-            assert msg == f"No output found, check automatic-calibration notebook in {private_methods_node.nb_path}"
+        mocked_logger.info.assert_called_with(
+            "Aborting execution. No output found, check the automatic-calibration output cell is implemented in %s",
+            private_methods_node.nb_path,
+        )
 
-    # @patch("qililab.automatic_calibration.calibration_node.pm.execute_notebook")
-    # @patch("qililab.automatic_calibration.calibration_node.logger", autospec=True)
-    # def test_execute_notebook_raises_multiple_output(
-    #     self,
-    #     private_methods_node,
-    #     input_path,
-    #     output_path,
-    #     parameters,
-    #     mocked_papermill,
-    #     mocked_stream,
-    #     mocked_logger,
-    #     output,
-    # ):
-    #     mocked_stream.return_value = output
-    #     with pytest.raises(IncorrectCalibrationOutput) as multiple_out_err:
-    #         private_methods_node._execute_notebook(self, input_path, output_path, parameters)
-    #         # TODO: define multipleoutputs
-    #         mocked_logger.info.assert_called_with(
-    #             "Aborting execution. More than one output found, please output the results once in %s", input_path
-    #         )
-    #         (msg,) = multiple_out_err.value.args
-    #         assert msg == f"More than one output found in {input_path}"
+        mocked_pm_exec.assert_called_once_with(
+            private_methods_node.nb_path, "", {}, log_output=True, stdout_file=private_methods_node.stream
+        )
 
-    #     @patch("qililab.automatic_calibration.calibration_node.pm.execute_notebook")
-    #     def test_execute_notebook_raises_incorrect_output(self, private_methods_node, input_path, output_path, parameters, mocked_papermill, mocked_stream, output):
-    #         mocked_stream.return_value = output
-    # TODO: Output without check_parameter in it, or is empty. (Do both cases)
-    #         with pytest.raises(IncorrectCalibrationOutput) as incorrect_out_err:
-    #             private_methods_node._execute_notebook(self, input_path, output_path, parameters)
+    @pytest.mark.parametrize(
+        "output",
+        [
+            "RAND_INT:47102512880765720413 - OUTPUTS: {} RAND_INT:47102512880765720413 - OUTPUTS: {}",
+            "RAND_INT:47102512880765720413 - OUTPUTS: {'check_parameters': {'a':2}}RAND_INT:47102512880765720413 - OUTPUTS: {'check_parameters': {'a':2}}/n",
+        ],
+    )
+    @patch("qililab.automatic_calibration.calibration_node.pm.execute_notebook")
+    @patch("qililab.automatic_calibration.calibration_node.logger", autospec=True)
+    def test_execute_notebook_raises_more_than_one_output(
+        self, mocked_logger, mocked_pm_exec, output, private_methods_node
+    ):
+        """Testing when more than one outputs are received from ``execute_notebook()`."""
+        private_methods_node.stream.getvalue.return_value = output  # type: ignore [attr-defined]
 
-    #             (msg,) = incorrect_out_err.value.args
-    #             assert msg == f"Calibration output must have key and value 'check_parameters' in notebook {input_path}"
-    #
+        with pytest.raises(
+            IncorrectCalibrationOutput,
+            match=f"More than one output found in {private_methods_node.nb_path}",
+        ):
+            private_methods_node._execute_notebook(private_methods_node.nb_path, "", {})
+
+        mocked_logger.info.assert_called_with(
+            "Aborting execution. More than one output found, please output the results once in %s",
+            private_methods_node.nb_path,
+        )
+
+        mocked_pm_exec.assert_called_once_with(
+            private_methods_node.nb_path, "", {}, log_output=True, stdout_file=private_methods_node.stream
+        )
+
+    @pytest.mark.parametrize(
+        "output",
+        [
+            "RAND_INT:47102512880765720413 - OUTPUTS: {}",
+            'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters":{}}',
+        ],
+    )
+    @patch("qililab.automatic_calibration.calibration_node.pm.execute_notebook")
+    @patch("qililab.automatic_calibration.calibration_node.logger", autospec=True)
+    def test_execute_notebook_raises_empty_output(self, mocked_logger, mocked_pm_exec, output, private_methods_node):
+        """Testing when outputs are empty received from ``execute_notebook()`."""
+        private_methods_node.stream.getvalue.return_value = output  # type: ignore [attr-defined]
+
+        with pytest.raises(
+            IncorrectCalibrationOutput,
+            match=f"Empty output found in {private_methods_node.nb_path}, output must have key and value 'check_parameters'.",
+        ):
+            private_methods_node._execute_notebook(private_methods_node.nb_path, "", {})
+
+        mocked_logger.info.assert_called_with(
+            "Aborting execution. No 'check_parameters' dictionary or its empty in the output cell implemented in %s",
+            private_methods_node.nb_path,
+        )
+
+        mocked_pm_exec.assert_called_once_with(
+            private_methods_node.nb_path, "", {}, log_output=True, stdout_file=private_methods_node.stream
+        )
+
     @pytest.mark.parametrize("last_exec_output", [None, "tmp_test_foobar.ipynb"])
     @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._find_last_executed_calibration")
     @patch("qililab.automatic_calibration.calibration_node.os.path.getmtime")
