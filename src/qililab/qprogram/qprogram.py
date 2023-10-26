@@ -68,15 +68,23 @@ class QProgram:
     """
 
     def __init__(self):
-        self._program: Block = Block()
+        self._body: Block = Block()
         self._variables: list[Variable] = []
-        self._block_stack: deque[Block] = deque([self._program])
+        self._block_stack: deque[Block] = deque([self._body])
 
     def _append_to_block_stack(self, block: Block):
         self._block_stack.append(block)
 
     def _pop_from_block_stack(self):
         return self._block_stack.pop()
+
+    @property
+    def body(self) -> Block:
+        return self._body
+
+    @property
+    def variables(self) -> list[Variable]:
+        return self._variables
 
     @property
     def _active_block(self) -> Block:
@@ -342,7 +350,7 @@ class QProgram:
         if isinstance(variable, int) and isinstance(value, float):
             raise ValueError("Trying to change an integer variable to float.")
 
-        variable._value = value
+        variable.value = value
         operation = SetVariable(variable=variable, value=value)
         self._active_block.append(operation)
 
@@ -363,9 +371,6 @@ class QProgram:
         def __init__(self, qprogram: "QProgram"):  # pylint: disable=super-init-not-called
             self.qprogram = qprogram
             self.block: InfiniteLoop = InfiniteLoop()
-
-        def __enter__(self) -> InfiniteLoop:
-            return super().__enter__()
 
     class _ParallelContext(_BlockContext):  # pylint: disable=too-few-public-methods
         def __init__(self, qprogram: "QProgram", loops: list[Loop | ForLoop]):  # pylint: disable=super-init-not-called

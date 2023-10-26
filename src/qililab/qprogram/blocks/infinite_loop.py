@@ -15,7 +15,6 @@
 from dataclasses import dataclass
 
 from qililab.qprogram.blocks.block import Block
-from qililab.qprogram.variable import Variable
 
 
 @dataclass(frozen=True)

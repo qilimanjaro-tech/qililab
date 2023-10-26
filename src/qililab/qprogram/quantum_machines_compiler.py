@@ -1,25 +1,22 @@
 import hashlib
 import math
 from collections import deque
-from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Callable
 
 import numpy as np
-import qm.qua as qua
+from qm import qua
 from qm.qua import _dsl as qua_dsl
 from qualang_tools.config.integration_weights_tools import convert_integration_weights
 
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.blocks.infinite_loop import InfiniteLoop
 from qililab.qprogram.operations import (
-    Acquire,
     Measure,
     Operation,
     Play,
     ResetPhase,
     SetFrequency,
     SetGain,
-    SetOffset,
     SetPhase,
     SetVariable,
     Sync,
@@ -30,12 +27,12 @@ from qililab.qprogram.variable import Domain, Variable
 from qililab.waveforms import IQPair, Square, Waveform
 
 
-class BusCompilationInfo:
+class _BusCompilationInfo:  # pylint: disable=too-few-public-methods
     def __init__(self):
         self.current_gain: float | qua.QuaVariableType | None = None
 
 
-class MeasurementInfo:
+class _MeasurementInfo:  # pylint: disable=too-few-public-methods
     def __init__(
         self,
         variable_I: qua.QuaVariableType | None = None,
@@ -53,7 +50,7 @@ class MeasurementInfo:
         self.stream_processing_pending: bool = True
 
 
-class AveragingInfo:
+class _AveragingInfo:  # pylint: disable=too-few-public-methods
     def __init__(self, shots: int, variable: qua.QuaVariableType, stream: qua_dsl._ResultSource):
         self.shots: int = shots
         self.variable: qua.QuaVariableType = variable
@@ -62,7 +59,7 @@ class AveragingInfo:
         self.stream_processing_pending: bool = True
 
 
-class QuantumMachinesCompiler:
+class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
     """_summary_"""
 
     def __init__(self):
@@ -88,10 +85,10 @@ class QuantumMachinesCompiler:
         self._bus_mappings: dict[str, str] | None
         self._qprogram_block_stack: deque[Block]
         self._qprogram_to_qua_variables: dict[Variable, qua.QuaVariableType]
-        self._measurements: list[MeasurementInfo]
-        self._averages: list[AveragingInfo]
+        self._measurements: list[_MeasurementInfo]
+        self._averages: list[_AveragingInfo]
         self._configuration: dict
-        self._buses: dict[str, BusCompilationInfo]
+        self._buses: dict[str, _BusCompilationInfo]
 
     def compile(
         self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None
@@ -145,7 +142,7 @@ class QuantumMachinesCompiler:
             # Declare variables
             self._declare_variables()
             # Recursive traversal to convert QProgram blocks to Sequence
-            traverse(self._qprogram._program)
+            traverse(self._qprogram.body)
             # Stream Processing
             with qua.stream_processing():
                 result_handles = self._process_streams()
@@ -218,9 +215,9 @@ class QuantumMachinesCompiler:
                     if bus:
                         yield self._bus_mappings[bus] if self._bus_mappings and bus in self._bus_mappings else bus
 
-        buses = set(collect_buses(self._qprogram._program))
+        buses = set(collect_buses(self._qprogram.body))
         self._configuration["elements"] = {bus: {"operations": {}} for bus in buses}
-        self._buses = {bus: BusCompilationInfo() for bus in buses}
+        self._buses = {bus: _BusCompilationInfo() for bus in buses}
 
     def _handle_set_variable(self, element: SetVariable):
         qua_variable = self._qprogram_to_qua_variables[element.variable]
@@ -265,12 +262,12 @@ class QuantumMachinesCompiler:
         if element.variable.domain is Domain.Frequency:
             start, stop, step = int(start * 1e3), int(stop * 1e3), int(step * 1e3)
         if element.variable.domain is Domain.Time:
-            start, stop, step = max(start, 4), stop, step
+            start = max(start, 4)
+
         to_positive = stop >= start
         if to_positive:
             return qua.for_(qua_variable, start, qua_variable <= stop, qua_variable + step)
-        else:
-            return qua.for_(qua_variable, start, qua_variable >= stop, qua_variable + step)
+        return qua.for_(qua_variable, start, qua_variable >= stop, qua_variable + step)
 
     def _handle_loop(self, element: Loop):
         qua_variable = self._qprogram_to_qua_variables[element.variable]
@@ -286,7 +283,7 @@ class QuantumMachinesCompiler:
     def _handle_average(self, element: Average):
         variable = qua.declare(int)
         stream = qua.declare_stream()
-        self._averages.append(AveragingInfo(shots=element.shots, variable=variable, stream=stream))
+        self._averages.append(_AveragingInfo(shots=element.shots, variable=variable, stream=stream))
         return qua.for_(variable, 0, variable < element.shots, variable + 1)
 
     def _handle_set_frequency(self, element: SetFrequency):
@@ -347,7 +344,9 @@ class QuantumMachinesCompiler:
             pulse = operation_name * gain if gain is not None else operation_name
             qua.play(pulse, bus)
 
-    def _handle_measure(self, element: Measure):
+    def _handle_measure(
+        self, element: Measure
+    ):  # pylint: disable=too-many-locals, too-many-branches, too-many-statements
         bus = (
             self._bus_mappings[element.bus] if self._bus_mappings and element.bus in self._bus_mappings else element.bus
         )
@@ -454,7 +453,7 @@ class QuantumMachinesCompiler:
             qua.save(variable_I, stream_I)
             qua.save(variable_Q, stream_Q)
 
-        measurement_info = MeasurementInfo(variable_I, variable_Q, stream_I, stream_Q, stream_raw_adc)
+        measurement_info = _MeasurementInfo(variable_I, variable_Q, stream_I, stream_Q, stream_raw_adc)
         for block in reversed(self._qprogram_block_stack):
             if isinstance(block, ForLoop):
                 iterations = QuantumMachinesCompiler.__calculate_iterations(block.start, block.stop, block.step)
@@ -569,9 +568,9 @@ class QuantumMachinesCompiler:
         if isinstance(waveform, Square):
             amplitude = waveform.amplitude / 2
             return {"type": "constant", "sample": amplitude}
-        else:
-            envelope = waveform.envelope() / 2
-            return {"type": "arbitrary", "samples": envelope.tolist()}
+
+        envelope = waveform.envelope() / 2
+        return {"type": "arbitrary", "samples": envelope.tolist()}
 
     @staticmethod
     def __integration_weight_to_config(cosine_part: Waveform, sine_part: Waveform):
@@ -593,9 +592,9 @@ class QuantumMachinesCompiler:
         # This accounts for potential floating-point inaccuracies
         if abs(raw_iterations - round(raw_iterations)) < 1e-9:
             return round(raw_iterations)
-        else:
-            # Otherwise, if we're incrementing, take the ceiling, and if we're decrementing, take the floor
-            return math.floor(raw_iterations) if step > 0 else math.ceil(raw_iterations)
+
+        # Otherwise, if we're incrementing, take the ceiling, and if we're decrementing, take the floor
+        return math.floor(raw_iterations) if step > 0 else math.ceil(raw_iterations)
 
     @staticmethod
     def merge_configurations(origin: dict, new: dict):

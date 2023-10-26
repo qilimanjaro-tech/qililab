@@ -139,7 +139,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         self._buses = self._populate_buses()
 
         # Recursive traversal to convert QProgram blocks to Sequence
-        traverse(self._qprogram._program)
+        traverse(self._qprogram._body)
 
         # Post-processing: Add stop instructions and compile
         for bus in self._buses:
@@ -165,7 +165,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                     if bus:
                         yield bus
 
-        buses = set(collect_buses(self._qprogram._program))
+        buses = set(collect_buses(self._qprogram._body))
         return {bus: BusCompilationInfo() for bus in buses}
 
     def _append_to_waveforms_of_bus(self, bus: str, waveform_I: Waveform, waveform_Q: Waveform | None):
@@ -508,9 +508,9 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         # This accounts for potential floating-point inaccuracies
         if abs(raw_iterations - round(raw_iterations)) < 1e-9:
             return round(raw_iterations)
-        else:
-            # Otherwise, if we're incrementing, take the ceiling, and if we're decrementing, take the floor
-            return math.floor(raw_iterations) if step > 0 else math.ceil(raw_iterations)
+
+        # Otherwise, if we're incrementing, take the ceiling, and if we're decrementing, take the floor
+        return math.floor(raw_iterations) if step > 0 else math.ceil(raw_iterations)
 
     @staticmethod
     def _convert_for_loop_values(for_loop: ForLoop, operation: Operation):
@@ -531,7 +531,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             Wait: lambda x: int(max(x, QbloxCompiler.minimum_wait_duration)),
             Play: lambda x: int(max(x, QbloxCompiler.minimum_wait_duration)),
         }
-        return conversion_map.get(type(operation), lambda x: int(x))
+        return conversion_map.get(type(operation), lambda x: int(x))  # pylint: disable=unnecessary-lambda
 
     @staticmethod
     def _hash_waveform(waveform: Waveform):

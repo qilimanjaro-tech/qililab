@@ -13,12 +13,13 @@
 # limitations under the License.
 
 """This file contains all the variables used inside a QProgram."""
-import math
 from enum import Enum
 from uuid import UUID, uuid4
 
 
 class Domain(Enum):
+    """Domain class."""
+
     Scalar = (0,)
     Time = (1,)
     Frequency = (2,)
@@ -27,6 +28,8 @@ class Domain(Enum):
 
 
 class ValueSource(Enum):
+    """ValueSource class"""
+
     Free = (0,)
     Dependent = 1
 
@@ -41,6 +44,11 @@ class Variable:
 
     @property
     def value(self):
+        """Get the value of the variable
+
+        Returns:
+            int | float | None: The value of the variable
+        """
         return self._value
 
     @value.setter
