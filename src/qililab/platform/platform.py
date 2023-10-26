@@ -564,7 +564,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         results: list[Result] = []
         for bus_alias in buses:
             if isinstance(buses[bus_alias].system_control, ReadoutSystemControl):
-                acquisitions = [acquisition for acquisition in sequences[bus_alias].todict()["acquisitions"]]
+                acquisitions = list(sequences[bus_alias].todict()["acquisitions"])
                 result = buses[bus_alias].acquire_result(acquisitions=acquisitions)
                 results.append(result)
 
