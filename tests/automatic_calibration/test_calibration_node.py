@@ -107,9 +107,8 @@ class TestPublicMethodsFromCalibrationNode:
     #########################
     ### TEST RUN NOTEBOOK ###
     #########################
-    # def test_run_notebook():
-    """Test that run_notebook works properly."""
-    #     #TODO: do all
+    #    def test_run_notebook(self, public_methods_node: CalibrationNode):
+    #        """Test that run_notebook works properly."""
 
     ##############################################
     ### TEST INVERT OUTPUT AND PREVIOUS OUTPUT ###
@@ -232,11 +231,33 @@ class TestPrivateMethodsFromCalibrationNode:
     #             (msg,) = incorrect_out_err.value.args
     #             assert msg == f"Calibration output must have key and value 'check_parameters' in notebook {input_path}"
     #
-    #    def test_get_last_calibrated_timestamp():
-    #        pass
-    #
-    #    def test_get_last_calibrated_output_parameters():
-    #        pass
+    @pytest.mark.parametrize("last_exec_output", [None, "tmp_test_foobar.ipynb"])
+    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._find_last_executed_calibration")
+    @patch("qililab.automatic_calibration.calibration_node.os.path.getmtime")
+    def test_get_last_calibrated_timestamp(
+        self, mocked_os, mock_last_exec, last_exec_output, private_methods_node: CalibrationNode
+    ):
+        mock_last_exec.return_value = last_exec_output
+        test_output = private_methods_node._get_last_calibrated_timestamp()
+        mock_last_exec.assert_called_once()
+        if last_exec_output is not None:
+            mocked_os.assert_called_once()
+        else:
+            assert test_output is None
+
+    @pytest.mark.parametrize("last_exec_output", [None, "tmp_test_foobar.ipynb"])
+    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._parse_output_from_execution_file")
+    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._find_last_executed_calibration")
+    def test_get_last_calibrated_output_parameters(
+        self, mock_last_exec, mocked_parse, last_exec_output, private_methods_node: CalibrationNode
+    ):
+        mock_last_exec.return_value = last_exec_output
+        test_output = private_methods_node._get_last_calibrated_output_parameters()
+        mock_last_exec.assert_called_once()
+        if last_exec_output is not None:
+            mocked_parse.assert_called_once()
+        else:
+            assert test_output is None
 
     #############################################
     ### TEST PARSE OUTPUT FROM EXECUTION FILE ###
