@@ -88,35 +88,51 @@ class TestInitializationCalibrationNode:
 class TestPublicMethodsFromCalibrationNode:
     """Unit tests for the CalibrationNode class public methods."""
 
-    def test_add_string_to_checked_nb_name(self, ccnode: CalibrationNode):
+    ##########################################
+    ### TEST ADD STRING TO CHECKED NB NAME ###
+    ##########################################
+    def test_add_string_to_checked_nb_name(self, public_methods_node: CalibrationNode):
+        """Test that ``add_string_to_checked_nb_name()`` works properly."""
         with patch("qililab.automatic_calibration.calibration_node.os.rename") as mocked_rename:
-            path = f"{ccnode.nb_folder}/{ccnode.node_id}"
-            timestamp_path = ccnode._create_notebook_datetime_path(path, 0).split(".ipynb")[0]
+            path = f"{public_methods_node.nb_folder}/{public_methods_node.node_id}"
+            timestamp_path = public_methods_node._create_notebook_datetime_path(path, 0).split(".ipynb")[0]
             string_to_add = "test_succesfull"
-            ccnode.add_string_to_checked_nb_name(string_to_add, 0)
+            public_methods_node.add_string_to_checked_nb_name(string_to_add, 0)
             mocked_rename.assert_called_once_with(f"{timestamp_path}.ipynb", f"{timestamp_path}_{string_to_add}.ipynb")
 
+    #########################
+    ### TEST RUN NOTEBOOK ###
+    #########################
     # def test_run_notebook():
+    """Test that run_notebook works properly."""
     #     #TODO: do all
 
-    def test_invert_output_and_previous_output(self, ccnode: CalibrationNode):
+    ##############################################
+    ### TEST INVERT OUTPUT AND PREVIOUS OUTPUT ###
+    ##############################################
+    def test_invert_output_and_previous_output(self, public_methods_node: CalibrationNode):
+        """Test that ``invert_output_and_previous_output()`` work properly."""
         test_output_params = {"test_output_params": "foo"}
         test_previous_output_params = {"test_previous_output_params": "bar"}
-        ccnode.output_parameters, ccnode.previous_output_parameters = (
+        public_methods_node.output_parameters, public_methods_node.previous_output_parameters = (
             test_output_params,
             test_previous_output_params,
         )
-        ccnode.invert_output_and_previous_output()
-        assert ccnode.output_parameters == test_previous_output_params
-        assert ccnode.previous_output_parameters == test_output_params
+        public_methods_node.invert_output_and_previous_output()
+        assert public_methods_node.output_parameters == test_previous_output_params
+        assert public_methods_node.previous_output_parameters == test_output_params
 
+    #######################################
+    ### TEST EXPORT CALIBRATION OUTPUTS ###
+    #######################################
     # TODO: This tests fails as the patch is currently not working :(
     @patch("qililab.automatic_calibration.calibration_node.json.dumps", autospec=True)
-    def test_export_calibration_outputs(self, ccnode: CalibrationNode, mocked_dumps):
+    def test_export_calibration_outputs(self, mocked_dumps, public_methods_node: CalibrationNode):
+        """Test that ``export_calibration_outputs()`` works properly."""
         test_outputs = {"this_is": "a_test_dict", "foo": "bar"}
         test_dumped_outputs = '{"this_is": "a_test_dict", "foo": "bar"}'
         with patch("builtins.print") as mocked_print:
-            ccnode.export_calibration_outputs(test_outputs)
+            public_methods_node.export_calibration_outputs(test_outputs)
             mocked_dumps.assert_called_with(test_outputs)
             mocked_print.assert_called_with(f"{logger_output_start}{test_dumped_outputs}")
 
@@ -124,31 +140,45 @@ class TestPublicMethodsFromCalibrationNode:
 class TestPrivateMethodsFromCalibrationNode:
     """Unit tests for the CalibrationNode class private methods."""
 
+    ####################################
+    ### TEST SWEEP INTERVAL AS ARRAY ###
+    ####################################
     @pytest.mark.parametrize(
         "sweep_interval, expected",
         [(None, None), ({"start": 0, "stop": 5, "step": 1}, [0, 1, 2, 3, 4])],
     )
-    def test_sweep_interval_as_array(self, cnode: CalibrationNode, sweep_interval, expected):
-        cnode.sweep_interval = sweep_interval
-        test_value = cnode._sweep_interval_as_array()
+    def test_sweep_interval_as_array(self, private_methods_node: CalibrationNode, sweep_interval, expected):
+        """Test that ``sweep_interval_as_array()`` works as expected."""
+        private_methods_node.sweep_interval = sweep_interval
+        test_value = private_methods_node._sweep_interval_as_array()
         assert test_value == expected
 
+    ######################################
+    ### TEST BUILD CHECK DATA INTERVAL ###
+    ######################################
     @pytest.mark.parametrize(
         "sweep_interval, number_of_random_datapoints",
         [({"start": 0, "stop": 5, "step": 1}, 10), ({"start": 10, "stop": 1000, "step": 20}, 200)],
     )
-    def test_build_check_data_interval(self, cnode: CalibrationNode, sweep_interval, number_of_random_datapoints):
-        cnode.sweep_interval = sweep_interval
-        cnode.number_of_random_datapoints = number_of_random_datapoints
+    def test_build_check_data_interval(
+        self, private_methods_node: CalibrationNode, sweep_interval, number_of_random_datapoints
+    ):
+        """Test that ``build_check_data_interval()`` works correctly."""
+        private_methods_node.sweep_interval = sweep_interval
+        private_methods_node.number_of_random_datapoints = number_of_random_datapoints
         sweep_interval_range = np.arange(sweep_interval["start"], sweep_interval["stop"], sweep_interval["step"])
-        test_value = cnode._build_check_data_interval()
-        assert len(test_value) == cnode.number_of_random_datapoints
+        test_value = private_methods_node._build_check_data_interval()
+        assert len(test_value) == private_methods_node.number_of_random_datapoints
         for value in test_value:
             assert value in sweep_interval_range
 
+    #############################
+    ### TEST EXECUTE NOTEBOOK ###
+    #############################
     # TODO: This tests fails as the papermill patch is currently not working :(
     @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.pm.execute_notebook")
-    def test_execute_notebook(self, cnode: CalibrationNode, mocked_pm):
+    def test_execute_notebook(self, private_methods_node: CalibrationNode, mocked_pm):
+        # TODO: THink which docstring should go into each fo this tests.
         raw_file_contents = "RAND_INT:47102512880765720413 - OUTPUTS: {check_parameters: {x: [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48], y: [100, 144, 196, 256, 324, 400, 484, 576, 676, 784, 900, 1024, 1156, 1296, 1444, 1600, 1764, 1936, 2116, 2304]}, platform_params: [[bus_alias, param_name, 1]]}"
 
         sweep_interval = [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48]
@@ -156,18 +186,18 @@ class TestPrivateMethodsFromCalibrationNode:
         results = {"x": sweep_interval, "y": y}
         expected = {"check_parameters": results, "platform_params": [["bus_alias", "param_name", 1]]}
 
-        cnode.stream.getvalue.return_value = raw_file_contents
-        test_value = cnode._execute_notebook(cnode.nb_path, "", {})
+        private_methods_node.stream.getvalue.return_value = raw_file_contents
+        test_value = private_methods_node._execute_notebook(private_methods_node.nb_path, "", {})
         mocked_pm.execute_notebook.assert_called_once()
         assert test_value == expected
 
     #    @patch("qililab.automatic_calibration.calibration_node.papermill",autospec=True)
     #    @patch("qililab.automatic_calibration.calibration_node.io.StringIO",autospec=True)
     #    @patch("qililab.automatic_calibration.calibration_node.logger",autospec=True)
-    #    def test_execute_notebook_raises_no_output(self, cnode, input_path, output_path, parameters, mocked_papermill, mocked_stream, mocked_logger, output):
+    #    def test_execute_notebook_raises_no_output(self, private_methods_node, input_path, output_path, parameters, mocked_papermill, mocked_stream, mocked_logger, output):
     #        mocked_stream.return_value = output
     #        with pytest.raises(IncorrectCalibrationOutput) as no_out_err:
-    #            cnode._execute_notebook(self, input_path, output_path, parameters)
+    #            private_methods_node._execute_notebook(self, input_path, output_path, parameters)
     #
     #            mocked_logger.info.assert_called_with("Aborting execution. More than one output found, please output the results once in %s",
     #                input_path)
@@ -177,10 +207,10 @@ class TestPrivateMethodsFromCalibrationNode:
     #    @patch("qililab.automatic_calibration.calibration_node.papermill",autospec=True)
     #    @patch("qililab.automatic_calibration.calibration_node.io.StringIO",autospec=True)
     #    @patch("qililab.automatic_calibration.calibration_node.logger",autospec=True)
-    #    def test_execute_notebook_raises_multiple_output(self, cnode, input_path, output_path, parameters, mocked_papermill, mocked_stream, mocked_logger, output):
+    #    def test_execute_notebook_raises_multiple_output(self, private_methods_node, input_path, output_path, parameters, mocked_papermill, mocked_stream, mocked_logger, output):
     #        mocked_stream.return_value = output
     #        with pytest.raises(IncorrectCalibrationOutput) as multiple_out_err:
-    #            cnode._execute_notebook(self, input_path, output_path, parameters)
+    #            private_methods_node._execute_notebook(self, input_path, output_path, parameters)
     #               # TODO: define multipleoutputs
     #            mocked_logger.info.assert_called_with("Aborting execution. More than one output found, please output the results once in %s",
     #                input_path)
@@ -189,11 +219,11 @@ class TestPrivateMethodsFromCalibrationNode:
     #
     #    @patch("qililab.automatic_calibration.calibration_node.papermill",autospec=True)
     #    @patch("qililab.automatic_calibration.calibration_node.io.StringIO",autospec=True)
-    #    def test_execute_notebook_raises_incorrect_output(self, cnode, input_path, output_path, parameters, mocked_papermill, mocked_stream, output):
+    #    def test_execute_notebook_raises_incorrect_output(self, private_methods_node, input_path, output_path, parameters, mocked_papermill, mocked_stream, output):
     #        mocked_stream.return_value = output
     # TODO: Output without check_parameter in it, or is empty. (Do both cases)
     #        with pytest.raises(IncorrectCalibrationOutput) as incorrect_out_err:
-    #            cnode._execute_notebook(self, input_path, output_path, parameters)
+    #            private_methods_node._execute_notebook(self, input_path, output_path, parameters)
     #
     #            (msg,) = incorrect_out_err.value.args
     #            assert msg == f"Calibration output must have key and value 'check_parameters' in notebook {input_path}"
@@ -204,7 +234,11 @@ class TestPrivateMethodsFromCalibrationNode:
     #    def test_get_last_calibrated_output_parameters():
     #        pass
 
-    def test_parse_output_from_execution_file(self, cnode: CalibrationNode):
+    #############################################
+    ### TEST PARSE OUTPUT FROM EXECUTION FILE ###
+    #############################################
+    def test_parse_output_from_execution_file(self, private_methods_node: CalibrationNode):
+        """Test that ``parse_output_from_execution_file`` works correctly."""
         # building a fixed dictionary for the test
         sweep_interval = [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48]
         y = [i**2 for i in sweep_interval]
@@ -214,15 +248,18 @@ class TestPrivateMethodsFromCalibrationNode:
         # Dumping the raw string of the expected dictionary on a temporary file
         raw_file_contents = 'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48], "y": [100, 144, 196, 256, 324, 400, 484, 576, 676, 784, 900, 1024, 1156, 1296, 1444, 1600, 1764, 1936, 2116, 2304]}, "platform_params": [["bus_alias", "param_name", 1]]}\n'
         filename = "tmp_test_file.ipynb"
-        with open(f"{cnode.nb_folder}/{filename}", "w") as file:
+        with open(f"{private_methods_node.nb_folder}/{filename}", "w") as file:
             file.write(raw_file_contents)
 
-        test_dict = cnode._parse_output_from_execution_file(filename)
+        test_dict = private_methods_node._parse_output_from_execution_file(filename)
         assert test_dict == expected_dict
-        os.remove(f"{cnode.nb_folder}/{filename}")
+        os.remove(f"{private_methods_node.nb_folder}/{filename}")
 
-    # TODO: add here comment staring new method testing, and same for all methods
-    def test_find_last_executed_calibration(self, cnode: CalibrationNode):
+    ###########################################
+    ### TEST FIND LAST EXECUTED CALIBRATION ###
+    ###########################################
+    def test_find_last_executed_calibration(self, private_methods_node: CalibrationNode):
+        """Test that ``find_last_executed_calibration()`` works correctly."""
         test_filenames = [
             "tmp_test_foobar_dirty.ipynb",
             "tmp_test_foobar_error.ipynb",
@@ -233,20 +270,21 @@ class TestPrivateMethodsFromCalibrationNode:
         filename_expected = "tmp_test_foobar_calibrated.ipynb"
 
         for test_filename in test_filenames:
-            f = open(f"{cnode.nb_folder}/{test_filename}", "w")
+            f = open(f"{private_methods_node.nb_folder}/{test_filename}", "w")
             f.close()
-        f = open(f"{cnode.nb_folder}/{filename_expected}", "w")
+        f = open(f"{private_methods_node.nb_folder}/{filename_expected}", "w")
         f.close()
 
-        test_filename = cnode._find_last_executed_calibration()
+        test_filename = private_methods_node._find_last_executed_calibration()
 
         assert filename_expected == test_filename
 
         for test_filename in test_filenames:
-            os.remove(f"{cnode.nb_folder}/{test_filename}")
-        os.remove(f"{cnode.nb_folder}/{filename_expected}")
+            os.remove(f"{private_methods_node.nb_folder}/{test_filename}")
+        os.remove(f"{private_methods_node.nb_folder}/{filename_expected}")
 
-    def test_find_last_executed_calibration_does_not_find_file(self, cnode: CalibrationNode):
+    def test_find_last_executed_calibration_does_not_find_file(self, private_methods_node: CalibrationNode):
+        # TODO: docstring, and check what do this test do, and if it makes sense?.
         test_filenames = [
             "tmp_test_foobar_dirty.ipynb",
             "tmp_test_foobar_error.ipynb",
@@ -256,29 +294,33 @@ class TestPrivateMethodsFromCalibrationNode:
         ]
 
         for test_filename in test_filenames:
-            f = open(f"{cnode.nb_folder}/{test_filename}", "w")
+            f = open(f"{private_methods_node.nb_folder}/{test_filename}", "w")
             f.close()
 
-        test_filename = cnode._find_last_executed_calibration()
+        test_filename = private_methods_node._find_last_executed_calibration()
 
         assert test_filename is None
 
         for test_filename in test_filenames:
-            os.remove(f"{cnode.nb_folder}/{test_filename}")
+            os.remove(f"{private_methods_node.nb_folder}/{test_filename}")
 
 
 class TestClassMethodsFromCalibrationNode:
     """Test the class methods of the `CalibrationNode`class."""
 
+    ##########################################
+    ### TEST CREATE NOTEBOOK DATETIME PATH ###
+    ##########################################
     @pytest.mark.parametrize(
         "timestamp, dirty, error",
         [(None, True, True), (145783952598, False, True), (145783959532, False, False), (None, True, False)],
     )
     def test_create_notebook_datetime_path(
-        self, node_class: CalibrationNode, timestamp, dirty, error, original_path="foo/bar.ipynb"
+        self, timestamp, dirty, error, class_methods_node: CalibrationNode, original_path="foo/bar.ipynb"
     ):
+        """Test ``that create_notebook_datetime_path()`` works correctly."""
         with patch("qililab.automatic_calibration.calibration_node.os") as mocked_os:
-            test_value = node_class._create_notebook_datetime_path(original_path, timestamp, dirty, error)
+            test_value = class_methods_node._create_notebook_datetime_path(original_path, timestamp, dirty, error)
             mocked_os.makedirs.assert_called()
             if timestamp is not None:
                 test_timestamp = datetime.fromtimestamp(timestamp)
@@ -301,12 +343,19 @@ class TestClassMethodsFromCalibrationNode:
 class TestStaticMethodsFromCalibrationNode:
     """Test static methods of the `CalibrationNode` class."""
 
+    ##########################################
+    ### TEST BUILD NOTEBOOKS LOGGER STREAM ###
+    ##########################################
     @patch("qililab.automatic_calibration.calibration_node.logging", autospec=True)
     def test_build_notebooks_logger_stream(self, mocked_logging):
+        """Test that ``build_notebooks_logger_stream()`` works properly."""
         stream = CalibrationNode._build_notebooks_logger_stream()
         mocked_logging.basicConfig.assert_called_once()
         assert isinstance(stream, StringIO)
 
+    ####################################
+    ### TEST PATH TO NAME AND FOLDER ###
+    ####################################
     @pytest.mark.parametrize(
         "original_path, expected",
         [
@@ -315,13 +364,18 @@ class TestStaticMethodsFromCalibrationNode:
         ],
     )
     def test_path_to_name_and_folder(self, original_path, expected):
+        """Test that ``path_to_name_and_folder()`` works properly."""
         test_values = CalibrationNode._path_to_name_and_folder(original_path)
         assert len(test_values) == 2
         assert test_values[0] == expected[0]
         assert test_values[1] == expected[1]
 
+    ###########################
+    ### TEST GET TIMESTAMPS ###
+    ###########################
     @patch("qililab.automatic_calibration.calibration_node.datetime", autospec=True)
     def test_get_timestamp(self, modked_datetime):
+        """Test that ``get_timestamp()`` works properly."""
         CalibrationNode._get_timestamp()
         modked_datetime.now.assert_called_once()
         modked_datetime.timestamp.assert_called_once()

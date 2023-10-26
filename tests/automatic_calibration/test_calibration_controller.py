@@ -260,7 +260,7 @@ class DiagnoseFixedMockedController(CalibrationController):
 ###########################
 ### TEST INITIALIZATION ###
 ###########################
-class TestCalibrationControllerInitialization:
+class TestInitializationCalibrationController:
     """Unit tests for the CalibrationController class initialization"""
 
     @pytest.mark.parametrize(
