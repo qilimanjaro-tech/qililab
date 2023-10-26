@@ -393,12 +393,16 @@ class TestPrivateMethodsFromCalibrationNode:
             private_methods_node.nb_path, "", {}, log_output=True, stdout_file=private_methods_node.stream
         )
 
+    ##########################################
+    ### TEST GET LAST CALIBRATED TIMESTAMP ###
+    ##########################################
     @pytest.mark.parametrize("last_exec_output", [None, "tmp_test_foobar.ipynb"])
     @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._find_last_executed_calibration")
     @patch("qililab.automatic_calibration.calibration_node.os.path.getmtime")
     def test_get_last_calibrated_timestamp(
         self, mocked_os, mock_last_exec, last_exec_output, private_methods_node: CalibrationNode
     ):
+        """Test that ``get_last_executed_calibration()`` works correctly."""
         mock_last_exec.return_value = last_exec_output
         test_output = private_methods_node._get_last_calibrated_timestamp()
         mock_last_exec.assert_called_once()
@@ -407,12 +411,16 @@ class TestPrivateMethodsFromCalibrationNode:
         else:
             assert test_output is None
 
+    ##################################################
+    ### TEST GET LAST CALIBRATED OUTPUT PARAMETERS ###
+    ##################################################
     @pytest.mark.parametrize("last_exec_output", [None, "tmp_test_foobar.ipynb"])
     @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._parse_output_from_execution_file")
     @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._find_last_executed_calibration")
     def test_get_last_calibrated_output_parameters(
         self, mock_last_exec, mocked_parse, last_exec_output, private_methods_node: CalibrationNode
     ):
+        """Test that ``get_last_calibrated_output_parameters()`` works correctly."""
         mock_last_exec.return_value = last_exec_output
         test_output = private_methods_node._get_last_calibrated_output_parameters()
         mock_last_exec.assert_called_once()
@@ -471,7 +479,7 @@ class TestPrivateMethodsFromCalibrationNode:
         os.remove(f"{private_methods_node.nb_folder}/{filename_expected}")
 
     def test_find_last_executed_calibration_does_not_find_file(self, private_methods_node: CalibrationNode):
-        # TODO: docstring, and check what do this test do, and if it makes sense?.
+        """Test ``find_last_executed_calibration()`` works properly, when there is nothing to find."""
         test_filenames = [
             "tmp_test_foobar_dirty.ipynb",
             "tmp_test_foobar_error.ipynb",
