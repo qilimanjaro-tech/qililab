@@ -220,7 +220,7 @@ class TestPublicMethodsFromCalibrationNode:
         with patch("qililab.automatic_calibration.calibration_node.os.rename") as mocked_rename:
             path = f"{public_methods_node.nb_folder}/{public_methods_node.node_id}"
             timestamp_path = public_methods_node._create_notebook_datetime_path(path, 0).split(".ipynb")[0]
-            string_to_add = "test_succesfull"
+            string_to_add = "test_succesful"
             public_methods_node.add_string_to_checked_nb_name(string_to_add, 0)
             mocked_rename.assert_called_once_with(f"{timestamp_path}.ipynb", f"{timestamp_path}_{string_to_add}.ipynb")
 
@@ -228,70 +228,108 @@ class TestPublicMethodsFromCalibrationNode:
     ### TEST RUN NOTEBOOK ###
     #########################
     @pytest.mark.parametrize(
-        "check, sweep_interval",
+        "check, sweep_interval, input_parameters",
         [
-            (True, None),
-            (False, None),
-            (True, {"start": 0, "stop": 10, "step": 1}),
-            (False, {"start": 0, "stop": 10, "step": 1}),
+            (True, None, None),
+            (False, None, None),
+            (True, {"start": 0, "stop": 10, "step": 1}, {"start": 0, "stop": 10, "step": 1}),
+            (False, {"start": 0, "stop": 10, "step": 1}, {"start": 0, "stop": 10, "step": 1}),
         ],
     )
-    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._sweep_interval_as_array")
-    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._build_check_data_interval")
-    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._execute_notebook")
-    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._create_notebook_datetime_path")
+    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._sweep_interval_as_array", return_value=[])
+    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._build_check_data_interval", return_value=[])
+    @patch(
+        "qililab.automatic_calibration.calibration_node.CalibrationNode._execute_notebook",
+        return_value={
+            "check_parameters": {"x": 0, "y": 1},
+            "platform_params": {"x": 0, "y": 1},
+            "fidelities": {"x": 0, "y": 1},
+        },
+    )
+    @patch(
+        "qililab.automatic_calibration.calibration_node.CalibrationNode._create_notebook_datetime_path", return_value=""
+    )
     @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_timestamp")
     @patch("qililab.automatic_calibration.calibration_node.os.rename")
+    @patch("qililab.automatic_calibration.calibration_node.logger.info")
     def test_run_notebook(
         self,
+        mock_logger,
         mock_os,
         mock_time,
-        mmock_create,
+        mock_create,
         mock_execute,
         mock_build,
         mock_sweep,
         check,
         sweep_interval,
+        input_parameters,
         public_methods_node: CalibrationNode,
     ):
         """Test that run_notebook works properly."""
         public_methods_node.sweep_interval = sweep_interval
         public_methods_node.run_notebook(check)
+
+        params_dict = {"check": check} | {
+            "number_of_random_datapoints": public_methods_node.number_of_random_datapoints
+        }
+
         if sweep_interval is not None:
+            params_dict |= {
+                "start": sweep_interval["start"],
+                "stop": sweep_interval["stop"],
+                "step": sweep_interval["step"],
+                "sweep_interval": [],
+            }
             if check:
-                mock_build.assert_called_once()
+                mock_build.calls_count(2)
+                mock_build.assert_called_with()
+                mock_sweep.assert_not_called()
             else:
-                mock_sweep.assert_called_once()
+                mock_sweep.calls_count(2)
+                mock_sweep.assert_called_with()
+                mock_build.assert_not_called()
 
-        mock_execute.assert_called_once()
-        mock_time.assert_called_once()
+        if input_parameters is not None:
+            params_dict |= input_parameters
+
+        mock_execute.assert_called_with(public_methods_node.nb_path, "", params_dict)
+        mock_time.assert_called_once_with()
         mock_os.assert_called_once()
+        mock_logger.assert_not_called()
 
-        assert mmock_create.call_count == 2
+        assert mock_create.call_count == 2
 
     @pytest.mark.parametrize(
-        "check, sweep_interval",
+        "check, sweep_interval, input_parameters",
         [
-            (True, None),
-            (False, None),
-            (True, {"start": 0, "stop": 10, "step": 1}),
-            (False, {"start": 0, "stop": 10, "step": 1}),
+            (True, None, None),
+            (False, None, None),
+            (True, {"start": 0, "stop": 10, "step": 1}, {"start": 0, "stop": 10, "step": 1}),
+            (False, {"start": 0, "stop": 10, "step": 1}, {"start": 0, "stop": 10, "step": 1}),
         ],
     )
-    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._sweep_interval_as_array")
-    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._build_check_data_interval")
+    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._sweep_interval_as_array", return_value=[])
+    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._build_check_data_interval", return_value=[])
     @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._execute_notebook")
-    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._create_notebook_datetime_path")
+    @patch(
+        "qililab.automatic_calibration.calibration_node.CalibrationNode._create_notebook_datetime_path", return_value=""
+    )
+    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_timestamp")
+    @patch("qililab.automatic_calibration.calibration_node.os.rename")
     @patch("qililab.automatic_calibration.calibration_node.logger.info")
     def test_run_notebook_interrupt(
         self,
         mock_logger,
-        mmock_create,
+        mock_os,
+        mock_time,
+        mock_create,
         mock_execute,
         mock_build,
         mock_sweep,
         check,
         sweep_interval,
+        input_parameters,
         public_methods_node: CalibrationNode,
     ):
         """Test that run_notebook works properly when a keyboard interrupt is raised."""
@@ -300,14 +338,34 @@ class TestPublicMethodsFromCalibrationNode:
             public_methods_node.sweep_interval = sweep_interval
             public_methods_node.run_notebook(check)
             mocked_exit.called_once()
-        if sweep_interval is not None:
-            if check:
-                mock_build.assert_called_once()
-            else:
-                mock_sweep.assert_called_once()
 
-        mmock_create.assert_called_once()
-        mock_execute.assert_called_once()
+        params_dict = {"check": check} | {
+            "number_of_random_datapoints": public_methods_node.number_of_random_datapoints
+        }
+
+        if sweep_interval is not None:
+            params_dict |= {
+                "start": sweep_interval["start"],
+                "stop": sweep_interval["stop"],
+                "step": sweep_interval["step"],
+                "sweep_interval": [],
+            }
+            if check:
+                mock_build.calls_count(2)
+                mock_build.assert_called_with()
+                mock_sweep.assert_not_called()
+            else:
+                mock_sweep.calls_count(2)
+                mock_sweep.assert_called_with()
+                mock_build.assert_not_called()
+
+        if input_parameters is not None:
+            params_dict |= input_parameters
+
+        mock_execute.assert_called_with(public_methods_node.nb_path, "", params_dict)
+        mock_create.assert_called_once()
+        mock_time.assert_not_called()
+        mock_os.assert_not_called()
 
         mock_logger.called_with("Interrupted autocalibration notebook execution of %s", public_methods_node.nb_path)
 
@@ -320,12 +378,8 @@ class TestPublicMethodsFromCalibrationNode:
             (False, {"start": 0, "stop": 10, "step": 1}, {"start": 0, "stop": 10, "step": 1}),
         ],
     )
-    @patch(
-        "qililab.automatic_calibration.calibration_node.CalibrationNode._sweep_interval_as_array", return_value=[0, 1]
-    )
-    @patch(
-        "qililab.automatic_calibration.calibration_node.CalibrationNode._build_check_data_interval", return_value=[0, 1]
-    )
+    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._sweep_interval_as_array", return_value=[])
+    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._build_check_data_interval", return_value=[])
     @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._execute_notebook")
     @patch(
         "qililab.automatic_calibration.calibration_node.CalibrationNode._create_notebook_datetime_path", return_value=""
@@ -338,7 +392,7 @@ class TestPublicMethodsFromCalibrationNode:
         mock_logger,
         mock_os,
         mock_time,
-        mmock_create,
+        mock_create,
         mock_execute,
         mock_build,
         mock_sweep,
@@ -363,15 +417,16 @@ class TestPublicMethodsFromCalibrationNode:
                 "start": sweep_interval["start"],
                 "stop": sweep_interval["stop"],
                 "step": sweep_interval["step"],
+                "sweep_interval": [],
             }
             if check:
                 mock_build.calls_count(2)
                 mock_build.assert_called_with()
-                params_dict |= {"sweep_interval": [0, 1]}
+                mock_sweep.assert_not_called()
             else:
                 mock_sweep.calls_count(2)
                 mock_sweep.assert_called_with()
-                params_dict |= {"sweep_interval": [0, 1]}
+                mock_build.assert_not_called()
 
         if input_parameters is not None:
             params_dict |= input_parameters
@@ -380,7 +435,7 @@ class TestPublicMethodsFromCalibrationNode:
         mock_time.assert_called_once()
         mock_os.assert_called_once()
 
-        assert mmock_create.call_count == 2
+        assert mock_create.call_count == 2
 
         mock_logger.called_with(
             "Aborting execution. Exception %s during automatic calibration notebook execution, trace of the error can be found in %s",
