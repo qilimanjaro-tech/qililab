@@ -79,7 +79,7 @@ class E5071B(VectorNetworkAnalyzer):
         measurementsend_commandplex = v_data.reshape((number_points, 2))
         return measurementsend_commandplex[:, 0] + 1j * measurementsend_commandplex[:, 1]
 
-    def acquire_result(self, acquisitons: list[str] | None = None):
+    def acquire_result(self, acquisitions: list[str] | None = None):
         """Convert the data received from the device to a Result object."""
         return VNAResult(data=self.get_data())
 

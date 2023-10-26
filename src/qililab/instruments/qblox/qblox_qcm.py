@@ -54,7 +54,7 @@ class QbloxQCM(QbloxModule):
     ):
         """Append an acquire instruction to the loop."""
 
-    def acquire_result(self, acquisitons: list[str] | None = None) -> QbloxResult:
+    def acquire_result(self, acquisitions: list[str] | None = None) -> QbloxResult:
         """Read the result from the AWG instrument
 
         Returns:

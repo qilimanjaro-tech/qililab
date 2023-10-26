@@ -192,7 +192,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
         return result_handles
 
     def _declare_variables(self):
-        for variable in self._qprogram._variables:
+        for variable in self._qprogram.variables:
             if variable.domain in [Domain.Time, Domain.Frequency]:
                 qua_variable = qua.declare(int)
             else:

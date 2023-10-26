@@ -220,6 +220,6 @@ class E5080B(VectorNetworkAnalyzer):
             return trace
         raise TimeoutError("Timeout waiting for trace data")
 
-    def acquire_result(self, acquisitons: list[str] | None = None):
+    def acquire_result(self, acquisitions: list[str] | None = None):
         """Convert the data received from the device to a Result object."""
         return VNAResult(data=self.read_tracedata())

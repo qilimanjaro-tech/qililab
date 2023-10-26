@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from collections import deque
-from typing import overload
 
 import numpy as np
 
@@ -80,10 +79,20 @@ class QProgram:
 
     @property
     def body(self) -> Block:
+        """Get the body of the QProgram
+
+        Returns:
+            Block: The block of the body
+        """
         return self._body
 
     @property
     def variables(self) -> list[Variable]:
+        """Get the variables
+
+        Returns:
+            list[Variable]: A list of variables
+        """
         return self._variables
 
     @property
@@ -144,6 +153,18 @@ class QProgram:
         return QProgram._AverageContext(qprogram=self, shots=shots)
 
     def infinite_loop(self):
+        """Define an infinite loop.
+
+        Blocks need to open a scope.
+
+        Examples:
+
+            >>> with qp.infinite_loop():
+            >>>    # operations that shall be executed in the infinite loop block
+
+        Returns:
+            InfiniteLoop: The infinite loop block.
+        """
         return QProgram._InfiniteLoopContext(qprogram=self)
 
     def loop(self, variable: Variable, values: np.ndarray):

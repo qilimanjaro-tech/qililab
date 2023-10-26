@@ -4,6 +4,13 @@ from .variable import Domain, Variable
 
 
 def requires_domain(parameter: str, domain: Domain):
+    """Decorator to denote that a parameter requires a variable of a specific domain
+
+    Args:
+        parameter (str): The parameter name.
+        domain (Domain): The variable's domain.
+    """
+
     def get_nested_attr(obj, attrs):
         """Recursively get nested attributes."""
         if not attrs:
