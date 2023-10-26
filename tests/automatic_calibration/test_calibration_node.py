@@ -12,7 +12,6 @@ from qililab.automatic_calibration.calibration_node import (
     IncorrectCalibrationOutput,
     export_calibration_outputs,
 )
-from qililab.config import logger
 
 #################################################################################
 #################################### SET UPS ####################################
@@ -231,7 +230,7 @@ class TestPublicMethodsFromCalibrationNode:
         mock_time.assert_called_once()
         mock_os.assert_called_once()
 
-        mmock_create.call_count == 2
+        assert mmock_create.call_count == 2
 
         mock_logger.called_with(
             "Aborting execution. Exception %s during automatic calibration notebook execution, trace of the error can be found in %s",
