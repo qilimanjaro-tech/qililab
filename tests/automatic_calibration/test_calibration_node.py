@@ -230,9 +230,9 @@ class TestPublicMethodsFromCalibrationNode:
     @pytest.mark.parametrize(
         "check, sweep_interval, input_parameters",
         [
-            (True, None, None),
+            (True, None, {"start": 0, "stop": 10, "step": 1}),
             (False, None, None),
-            (True, {"start": 0, "stop": 10, "step": 1}, {"start": 0, "stop": 10, "step": 1}),
+            (True, {"start": 0, "stop": 10, "step": 1}, None),
             (False, {"start": 0, "stop": 10, "step": 1}, {"start": 0, "stop": 10, "step": 1}),
         ],
     )
@@ -268,6 +268,7 @@ class TestPublicMethodsFromCalibrationNode:
     ):
         """Test that run_notebook works properly."""
         public_methods_node.sweep_interval = sweep_interval
+        public_methods_node.input_parameters = input_parameters
         public_methods_node.run_notebook(check)
 
         params_dict = {"check": check} | {
@@ -304,8 +305,8 @@ class TestPublicMethodsFromCalibrationNode:
         "check, sweep_interval, input_parameters",
         [
             (True, None, None),
-            (False, None, None),
-            (True, {"start": 0, "stop": 10, "step": 1}, {"start": 0, "stop": 10, "step": 1}),
+            (False, None, {"start": 0, "stop": 10, "step": 1}),
+            (True, {"start": 0, "stop": 10, "step": 1}, None),
             (False, {"start": 0, "stop": 10, "step": 1}, {"start": 0, "stop": 10, "step": 1}),
         ],
     )
@@ -336,6 +337,7 @@ class TestPublicMethodsFromCalibrationNode:
         mock_execute.side_effect = KeyboardInterrupt()
         with patch("qililab.automatic_calibration.calibration_node.sys.exit") as mocked_exit:
             public_methods_node.sweep_interval = sweep_interval
+            public_methods_node.input_parameters = input_parameters
             public_methods_node.run_notebook(check)
             mocked_exit.called_once()
 
@@ -372,10 +374,10 @@ class TestPublicMethodsFromCalibrationNode:
     @pytest.mark.parametrize(
         "check, sweep_interval, input_parameters",
         [
-            (True, None, None),
+            (True, None, {"start": 0, "stop": 10, "step": 1}),
             (False, None, None),
             (True, {"start": 0, "stop": 10, "step": 1}, {"start": 0, "stop": 10, "step": 1}),
-            (False, {"start": 0, "stop": 10, "step": 1}, {"start": 0, "stop": 10, "step": 1}),
+            (False, {"start": 0, "stop": 10, "step": 1}, None),
         ],
     )
     @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._sweep_interval_as_array", return_value=[])
@@ -405,6 +407,7 @@ class TestPublicMethodsFromCalibrationNode:
         mock_execute.side_effect = ValueError("Test error")
         with patch("qililab.automatic_calibration.calibration_node.sys.exit") as mocked_exit:
             public_methods_node.sweep_interval = sweep_interval
+            public_methods_node.input_parameters = input_parameters
             public_methods_node.run_notebook(check)
             mocked_exit.called_once()
 
