@@ -61,6 +61,28 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         - ``number_of_random_datapoints`` (optional)
         - ``input_parameters`` (optional kwargs, to be interpreted by the notebook)
 
+    The execution of a notebook is the key functionality of this class. This is implemented in the ``run_notebook()`` method.
+    The workflow of the method is the following:
+
+        1) Prepare any input parameters needed for the notebook. This includes extra parameters defined by the user and essential ones such as the targeted qubit or the sweep intervals.
+
+        2) Create the temporary filename. This filename is used to create the execution file where we will save the execution of the notebook with the following format:
+                "NameOfTheNode_TimeExecutionStarted_dirty.ipynb"
+           The "_dirty" flag is added to the execution files in order to identify the executions that are not completed. So we know that the data we find if we open that file is "dirty", not completed.
+
+        3) Imediately afterwards, we start execution. We can expect 3 possible outcomes from the execution:
+
+            3.1) The execution succeds. If the execution succeds, we rename the execution file by updating the timestamp and removing the dirty flag:
+                "NameOfTheNode_TimeExecutionEnded.ipynb"
+
+            3.2) The execution is interrupted. If the execution is interrupted, the "_dirty" flag will remain in the filename for ever. Notice after an interruption the program exits.
+
+            3.2) An exception is thrown. This case is not controlled by the user like the interruptions, instead those exceptions are automatically thrown when an error is detected. When an execution error is found, the execution file is moved to a new subfolder ``/error_executions`` and renamed with the time that the error ocurred and adding the flag "_error":
+                "NameOfTheNode_TimeExecutionFoundError_error.ipynb"
+
+                A more detailed explanation of the error is reported and also described inside the notebook (see `papermill documentation <https://papermill.readthedocs.io/en/latest/>`_ for more detailed information).
+                Then after we post-processed the file, the program exits.
+
     Args:
         nb_path (str): Full notebook path, with folder, nb_name and ``.ipynb`` extension.
         in_spec_threshold (float): Threshold such that the ``check_data()`` methods return `in_spec` or `out_of_spec`.
@@ -303,6 +325,9 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         Returns:
             float: Timestamp to identify the notebook execution.
+
+        Exits:
+            In case of a keyboard interruption or any exception during the execution of the notebook.
         """
         params: dict = {"check": check} | {"number_of_random_datapoints": self.number_of_random_datapoints}
 
@@ -373,6 +398,9 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         Returns:
             dict: Kwargs for the output parameters of the notebook.
+
+        Raises:
+            IncorrectCalibrationOutput: In case no outputs, incorrect outputs or multiple outputs where found. Incorrect outputs are those that do not contain `check_parameters` or is empty.
         """
         pm.execute_notebook(input_path, output_path, parameters, log_output=True, stdout_file=self.stream)
 
