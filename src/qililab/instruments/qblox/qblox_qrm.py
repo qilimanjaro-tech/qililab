@@ -171,6 +171,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                     self.device.delete_acquisition_data(sequencer=sequencer.identifier, name="default")
                 compiled_sequences.append(self.sequences[sequencer.identifier][0])
 
+        # We remove from the cache all sequences that are not in the compiled schedule
         for sequencer_idx in self.sequences.keys():
             if sequencer_idx != sequencer_idxs_used:
                 _ = self.sequences.pop(sequencer_idx)
