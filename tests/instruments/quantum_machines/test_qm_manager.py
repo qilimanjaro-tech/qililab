@@ -29,7 +29,6 @@ def fixture_qmm():
     qmm.device = MagicMock
     result = QuantumMachinesResult(raw_results=np.zeros((2, 10)))
     qmm.get_acquisitions = MagicMock(return_value=result)
-    qmm.simulate = MagicMock(return_value=result)
 
     return qmm
 
@@ -72,10 +71,11 @@ class TestQMM:
         assert isinstance(result, QuantumMachinesResult)
         assert result.array.shape == (2, 10)
 
-    def test_simulate(self, qmm: QMM, qua_program: Program):
-        """Test simulate method"""
-        qmm.qm = MagicMock
-        result = qmm.simulate(qua_program)
+    @patch("qm.QuantumMachine")
+    def test_simulate(self, mock_qm: MagicMock, qmm: QMM, qua_program: Program):  # pylint: disable=unused-argument
+        """Test execute method"""
+        mock_qm.return_value.simulate.return_value = MagicMock
+        qmm.qm = mock_qm
+        job = qmm.simulate(qua_program)
 
-        assert isinstance(result, QuantumMachinesResult)
-        assert result.array.shape == (2, 10)
+        assert isinstance(job, MagicMock)
