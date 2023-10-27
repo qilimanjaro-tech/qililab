@@ -39,11 +39,13 @@ def fixture_qmm():
 class TestQMM:
     """This class contains the unit tests for the ``QMM`` class."""
 
+    @patch("qm.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.qmm.QMM.initial_setup")
-    def test_initial_setup(self, mock_init: MagicMock, qmm: QMM):
+    def test_initial_setup(self, qmm: QMM, mock_init: MagicMock):  # pylint: disable=unused-argument
         """Test QMM class initialization."""
         qmm.initial_setup()
-        mock_init.assert_called()
+
+        qmm.initial_setup.assert_called()
 
     def test_settings(self, qmm: QMM):
         """Test QMMSettings have been set correctly"""
