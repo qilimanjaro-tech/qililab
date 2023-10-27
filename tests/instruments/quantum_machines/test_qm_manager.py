@@ -41,7 +41,9 @@ class TestQMM:
 
     @patch("qililab.instruments.quantum_machines.qmm.QuantumMachinesManager", autospec=True)
     @patch("qililab.instruments.Instrument.initial_setup")
-    def test_initial_setup(self, mock_instrument_init: MagicMock, mock_init: MagicMock, qmm: QMM):  # pylint: disable=unused-argument
+    def test_initial_setup(
+        self, mock_instrument_init: MagicMock, mock_init: MagicMock, qmm: QMM
+    ):  # pylint: disable=unused-argument
         """Test QMM class initialization."""
         qmm.initial_setup()
         mock_instrument_init.assert_called()
