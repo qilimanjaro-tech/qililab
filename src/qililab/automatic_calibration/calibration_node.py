@@ -69,7 +69,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         The "_dirty" flag is added to the execution files in order to identify the executions that are not completed. So we know that the data we find if we open that file is "dirty", not completed.
 
-    3) Imediately afterwards, we start execution. We can expect 3 possible outcomes from the execution:
+    3) Start execution of the notebook. From where we can expect 3 possible outcomes from the execution:
 
         3.1) The execution succeds. If the execution succeds, we rename the execution file by updating the timestamp and removing the dirty flag:
 
@@ -85,6 +85,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
             A more detailed explanation of the error is reported and also described inside the notebook (see `papermill documentation <https://papermill.readthedocs.io/en/latest/>`_ for more detailed information).
             Then after we post-processed the file, the program exits.
+
+    at the end, from all of this, you will obtain, a executed and saved notebook to manually check, and the optimal parameters to set in the runcard, together with the  achieved fidelities.
 
     |
 

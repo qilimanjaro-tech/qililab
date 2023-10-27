@@ -25,6 +25,24 @@ from qililab.platform.platform import Platform
 class CalibrationController:
     """Class that controls the automatic calibration sequence.
 
+    Using this class, you normally would run:
+        - ``CalibrationController.run_automatic_calibration()`` for calibrating the full graph.
+        - ``CalibrationController.maintain(node)`` for targeting and making sure a node works.
+
+    |
+
+    **The calibration workflow, has three levels of methods that manage it:**
+
+    The highest level method to apply, is ``run_automatic_calibration()`` which finds all the final nodes (don't have others past them), and runs ``CalibrationController.maintain()`` on those.
+
+    The two mid-level methods are ``maintain()`` and ``diagnose()``, the first one goes back to all the nodes dependencies starts, and working
+    from them up, checks their last time executions and their data, searching for problematic cases. In such cases, the ``maintain()`` would call
+    the other mid-level method, ``diagnose()``, which is responsible for working in reverse, from the problematic one, going down to all its
+    dependencies, until finds the root of the problem, then passes such information back to the ``maintain()`` method, so it can calibrate accordingly and finish its job.
+
+    And finally, during all this process, the mid-level methods would be calling these low-level methods, that act on the nodes:
+        ``calibrate()``, ``check_status()`` and ``check_data()``.
+
     Args:
         calibration_graph (nx.DiGraph): The calibration graph. This is a directed acyclic graph where each node is a string.
         node_sequence (dict[str, CalibrationNode]): Mapping for the nodes of the graph, from strings into the actual initialized nodes.
