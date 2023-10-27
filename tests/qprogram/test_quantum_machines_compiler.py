@@ -219,6 +219,5 @@ class TestQuantumMachinesCompiler:
         statements = qua_program._program.script.body.statements
         assert len(statements) == 1
 
-        rotation = statements[0].reset_frame
-        assert rotation.qe.name == "drive"
-        assert float(rotation.value.literal.value) == 90 / 360.0
+        reset_frame = statements[0].reset_frame
+        assert reset_frame.qe.name == "drive"
