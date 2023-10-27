@@ -43,7 +43,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         **3) An analysis procedure**, that plots and fits the obtained data to the expected theoretical behaviour and finds the optimal desired parameters.
 
         **4) An export data cell**, that calls ``export_calibration_outputs()`` with the dictionary to retrieve from the notebook into the calibration workflow.
-        Such dictionary contains a ``check_parameters`` dictionary of the obtained results to do comparisons against, and a ``platform_params`` list of parameters to set on the platform.
+        Such dictionary contains a ``check_parameters`` dictionary of the obtained results to do comparisons against, and a ``platform_params`` list of
+        parameters to set on the platform.
 
         .. note::
 
@@ -61,32 +62,37 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
     **The execution of a notebook is the key functionality of this class,** this is implemented in the ``run_notebook()`` method, whose workflow is the following:
 
-    1) Prepare any input parameters needed for the notebook. This includes extra parameters defined by the user and essential ones such as the targeted qubit or the sweep intervals.
+    1. Prepare any input parameters needed for the notebook. This includes extra parameters defined by the user and essential ones such as the targeted qubit or the sweep intervals.
 
-    2) Create the temporary filename. This filename is used to create the execution file where we will save the execution of the notebook with the following format:
+    2. Create a file with a temporary name. This file will be used to save the execution of the notebook, and at this stage has the following format:
 
         ``NameOfTheNode_TimeExecutionStarted_dirty.ipynb``
 
-        The "_dirty" flag is added to the execution files in order to identify the executions that are not completed. So we know that the data we find if we open that file is "dirty", not completed.
+        The "_dirty" flag is added to the execution files in order to identify the executions that are not completed. So we know that the data we find if we
+        open that file is "dirty", not completed.
 
-    3) Start execution of the notebook. From where we can expect 3 possible outcomes from the execution:
+    3. Start execution of the notebook. From where we can expect 3 possible outcomes from the execution:
 
         3.1) The execution succeds. If the execution succeds, we rename the execution file by updating the timestamp and removing the dirty flag:
 
             ``NameOfTheNode_TimeExecutionEnded.ipynb``
 
-        3.2) The execution is interrupted. If the execution is interrupted, the "_dirty" flag will remain in the filename for ever. Notice after an interruption the program exits.
+        3.2) The execution is interrupted. If the execution is interrupted, the "_dirty" flag will remain in the filename for ever. Notice after an interruption
+        the program exits.
 
             ``NameOfTheNode_TimeExecutionStarted_dirty.ipynb``
 
-        3.2) An exception is thrown. This case is not controlled by the user like the interruptions, instead those exceptions are automatically thrown when an error is detected. When an execution error is found, the execution file is moved to a new subfolder ``/error_executions`` and renamed with the time that the error ocurred and adding the flag "_error":
+        3.2) An exception is thrown. This case is not controlled by the user like the interruptions, instead those exceptions are automatically thrown when
+        an error is detected. When an execution error is found, the execution file is moved to a new subfolder ``/error_executions`` and renamed with the
+        time that the error ocurred and adding the flag "_error":
 
             ``NameOfTheNode_TimeExecutionFoundError_error.ipynb``
 
-            A more detailed explanation of the error is reported and also described inside the notebook (see `papermill documentation <https://papermill.readthedocs.io/en/latest/>`_ for more detailed information).
-            Then after we post-processed the file, the program exits.
+        A more detailed explanation of the error is reported and also described inside the notebook (see `papermill documentation
+        <https://papermill.readthedocs.io/en/latest/>`_ for more detailed information). Then after we post-processed the file, the program exits.
 
-    at the end, from all of this, you will obtain, a executed and saved notebook to manually check, and the optimal parameters to set in the runcard, together with the  achieved fidelities.
+    at the end, from all of this, you will obtain, a executed and saved notebook to manually check, and the optimal parameters to set in the runcard,
+    together with the  achieved fidelities.
 
     |
 
@@ -272,14 +278,14 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         gets the same outcome as during the last calibration that was run. Default value is 10.
         """
 
-        self.output_parameters: dict | None = self._get_last_calibrated_output_parameters()
+        self.output_parameters: dict | None = self.get_last_calibrated_output_parameters()
         """Output parameters dictionary from the notebook execution, which get extracted with ``ql.export_calibration_outputs()``, normally contains
         a ``check_params`` to do the ``check_data()`` and the ``platform_params`` which will be the calibrated parameters to set in the platform. """
 
         self.previous_output_parameters: dict | None = None
         """Same output_parameters, but from the previous execution of the Node."""
 
-        self.previous_timestamp: float | None = self._get_last_calibrated_timestamp()
+        self.previous_timestamp: float | None = self.get_last_calibrated_timestamp()
         """Last calibrated timestamp."""
 
         self._stream: StringIO = self._build_notebooks_logger_stream()
@@ -325,10 +331,45 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         os.rename(f"{timestamp_path}.ipynb", f"{timestamp_path}_{string_to_add}.ipynb")
 
     def run_notebook(self, check: bool = False) -> float:
-        """Runs notebook with the parameters and paths of the Node. Also can be chosen to only check.
+        """Executes the notebook, passing the needed parameters and flags. Also it can be chosen to only check certain values of the sweep interval for
+        when checking data.
+
+        **Its workflow is the following:**
+
+        1. Prepare any input parameters needed for the notebook. This includes extra parameters defined by the user and essential ones such as the targeted qubit or the sweep intervals.
+
+        2. Create a file with a temporary name. This file will be used to save the execution of the notebook, and at this stage has the following format:
+
+            ``NameOfTheNode_TimeExecutionStarted_dirty.ipynb``
+
+            The "_dirty" flag is added to the execution files in order to identify the executions that are not completed. So we know that the data we find
+            if we open that file is "dirty", not completed.
+
+        3. Start execution of the notebook. From where we can expect 3 possible outcomes from the execution:
+
+            3.1) The execution succeds. If the execution succeds, we rename the execution file by updating the timestamp and removing the dirty flag:
+
+                ``NameOfTheNode_TimeExecutionEnded.ipynb``
+
+            3.2) The execution is interrupted. If the execution is interrupted, the "_dirty" flag will remain in the filename for ever. Notice after an
+            interruption the program exits.
+
+                ``NameOfTheNode_TimeExecutionStarted_dirty.ipynb``
+
+            3.2) An exception is thrown. This case is not controlled by the user like the interruptions, instead those exceptions are automatically
+            thrown when an error is detected. When an execution error is found, the execution file is moved to a new subfolder ``/error_executions``
+            and renamed with the time that the error ocurred and adding the flag "_error":
+
+                ``NameOfTheNode_TimeExecutionFoundError_error.ipynb``
+
+            A more detailed explanation of the error is reported and also described inside the notebook (see `papermill documentation
+            <https://papermill.readthedocs.io/en/latest/>`_ for more detailed information).Then after we post-processed the file, the program exits.
+
+        at the end, from all of this, you will obtain, a executed and saved notebook to manually check, and an outputs dictionary, containing the optimal
+        parameters to set in the runcard, together with the achieved fidelities, and the data for future comparisons.
 
         Args:
-            check (bool): Flag to make a ``calibrate()`` or a ``check_data()`` in the notebook.
+            check (bool, optional): Flag to make a ``check_data()`` instead than a normal ``calibrate()`` with the notebook. Defaults to ``False`` (normal calibrate).
 
         Returns:
             float: Timestamp to identify the notebook execution.
@@ -442,7 +483,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             )
         return out_dict
 
-    def _get_last_calibrated_timestamp(self) -> float | None:
+    def get_last_calibrated_timestamp(self) -> float | None:
         """Gets the last executed timestamp if there exist any previous execution of the same notebook.
 
         Returns:
@@ -456,7 +497,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             else None
         )
 
-    def _get_last_calibrated_output_parameters(self) -> dict | None:
+    def get_last_calibrated_output_parameters(self) -> dict | None:
         """Gets the last output of the previous calibration execution of the same notebook if there exist any.
 
         Returns:

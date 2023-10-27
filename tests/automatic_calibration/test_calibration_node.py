@@ -51,11 +51,11 @@ def fixture_initialize_node_no_optional(mocked_build_stream) -> CalibrationNode:
     return_value=("node_id", "nb_folder"),
 )
 @patch(
-    "qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_output_parameters",
+    "qililab.automatic_calibration.calibration_node.CalibrationNode.get_last_calibrated_output_parameters",
     return_value={},
 )
 @patch(
-    "qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_timestamp",
+    "qililab.automatic_calibration.calibration_node.CalibrationNode.get_last_calibrated_timestamp",
     return_value=0.0,
 )
 @patch(
@@ -79,8 +79,8 @@ def fixture_initialize_node_optional(
 
 
 @pytest.fixture(name="public_methods_node")
-@patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_output_parameters")
-@patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_timestamp")
+@patch("qililab.automatic_calibration.calibration_node.CalibrationNode.get_last_calibrated_output_parameters")
+@patch("qililab.automatic_calibration.calibration_node.CalibrationNode.get_last_calibrated_timestamp")
 def fixture_public_methods_node(mocked_last_cal_time, mocked_last_cal_params) -> CalibrationNode:
     """Return a mocked CalibrationNode object."""
     return CalibrationNode(
@@ -93,8 +93,8 @@ def fixture_public_methods_node(mocked_last_cal_time, mocked_last_cal_params) ->
 
 
 @pytest.fixture(name="private_methods_node")
-@patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_output_parameters")
-@patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_timestamp")
+@patch("qililab.automatic_calibration.calibration_node.CalibrationNode.get_last_calibrated_output_parameters")
+@patch("qililab.automatic_calibration.calibration_node.CalibrationNode.get_last_calibrated_timestamp")
 @patch("qililab.automatic_calibration.calibration_node.StringIO", autospec=True)
 def fixture_private_methods_node(mocked_stringio, mocked_last_cal_time, mocked_last_cal_params) -> CalibrationNode:
     """Return a mocked CalibrationNode object.."""
@@ -108,8 +108,8 @@ def fixture_private_methods_node(mocked_stringio, mocked_last_cal_time, mocked_l
 
 
 @pytest.fixture(name="class_methods_node")
-@patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_output_parameters")
-@patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_timestamp")
+@patch("qililab.automatic_calibration.calibration_node.CalibrationNode.get_last_calibrated_output_parameters")
+@patch("qililab.automatic_calibration.calibration_node.CalibrationNode.get_last_calibrated_timestamp")
 def fixture_class_methods_node(mocked_last_cal_time, mocked_last_cal_params) -> CalibrationNode:
     """Return a mocked CalibrationNode object."""
     return CalibrationNode(
@@ -620,7 +620,7 @@ class TestPrivateMethodsFromCalibrationNode:
     ):
         """Test that ``get_last_executed_calibration()`` works correctly."""
         mock_last_exec.return_value = last_exec_output
-        test_output = private_methods_node._get_last_calibrated_timestamp()
+        test_output = private_methods_node.get_last_calibrated_timestamp()
         mock_last_exec.assert_called_once()
         if last_exec_output is not None:
             mocked_os.assert_called_once()
@@ -638,7 +638,7 @@ class TestPrivateMethodsFromCalibrationNode:
     ):
         """Test that ``get_last_calibrated_output_parameters()`` works correctly."""
         mock_last_exec.return_value = last_exec_output
-        test_output = private_methods_node._get_last_calibrated_output_parameters()
+        test_output = private_methods_node.get_last_calibrated_output_parameters()
         mock_last_exec.assert_called_once()
         if last_exec_output is not None:
             mocked_parse.assert_called_once()
