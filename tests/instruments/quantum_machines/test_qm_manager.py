@@ -39,7 +39,7 @@ def fixture_qmm():
 class TestQMM:
     """This class contains the unit tests for the ``QMM`` class."""
 
-    @patch("qililab.instruments.quantum_machines.qmm.QuantumMachinesManager", autospec=True)
+    @patch("qililab.instruments.quantum_machines.qmm.QuantumMachinesManager")
     @patch("qililab.instruments.Instrument.initial_setup")
     def test_initial_setup(
         self, mock_instrument_init: MagicMock, mock_init: MagicMock, qmm: QMM
