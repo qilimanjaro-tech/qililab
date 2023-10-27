@@ -470,6 +470,9 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         Returns:
             dict: outputs of the executed notebook file.
+
+        Raises:
+            IncorrectCalibrationOutput: In case no outputs, incorrect outputs or multiple outputs where found. Incorrect outputs are those that do not contain `check_parameters` or is empty.
         """
         # Parsing file
         outputs: list[str] = []
