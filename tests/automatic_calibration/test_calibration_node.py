@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from io import StringIO
 from typing import Callable
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -22,6 +22,7 @@ logger_output_start = "RAND_INT:47102512880765720413 - OUTPUTS: "
 
 
 def dummy_comparison_model():
+    """Dummy comparison model, to provide to the fixtures."""
     pass
 
 
@@ -54,7 +55,8 @@ def fixture_initialize_node_no_optional(mocked_build_stream) -> CalibrationNode:
     return_value={},
 )
 @patch(
-    "qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_timestamp", return_value=0.0
+    "qililab.automatic_calibration.calibration_node.CalibrationNode._get_last_calibrated_timestamp",
+    return_value=0.0,
 )
 @patch(
     "qililab.automatic_calibration.calibration_node.CalibrationNode._build_notebooks_logger_stream",
@@ -247,7 +249,8 @@ class TestPublicMethodsFromCalibrationNode:
         },
     )
     @patch(
-        "qililab.automatic_calibration.calibration_node.CalibrationNode._create_notebook_datetime_path", return_value=""
+        "qililab.automatic_calibration.calibration_node.CalibrationNode._create_notebook_datetime_path",
+        return_value="",
     )
     @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_timestamp")
     @patch("qililab.automatic_calibration.calibration_node.os.rename")
@@ -314,7 +317,8 @@ class TestPublicMethodsFromCalibrationNode:
     @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._build_check_data_interval", return_value=[])
     @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._execute_notebook")
     @patch(
-        "qililab.automatic_calibration.calibration_node.CalibrationNode._create_notebook_datetime_path", return_value=""
+        "qililab.automatic_calibration.calibration_node.CalibrationNode._create_notebook_datetime_path",
+        return_value="",
     )
     @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_timestamp")
     @patch("qililab.automatic_calibration.calibration_node.os.rename")
@@ -369,7 +373,9 @@ class TestPublicMethodsFromCalibrationNode:
         mock_time.assert_not_called()
         mock_os.assert_not_called()
 
-        mock_logger.called_with("Interrupted autocalibration notebook execution of %s", public_methods_node.nb_path)
+        mock_logger.called_with(
+            "Interrupted automatic calibration notebook execution of %s", public_methods_node.nb_path
+        )
 
     @pytest.mark.parametrize(
         "check, sweep_interval, input_parameters",

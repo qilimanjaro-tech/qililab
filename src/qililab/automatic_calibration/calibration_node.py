@@ -335,7 +335,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             return timestamp
 
         except KeyboardInterrupt:
-            logger.info("Interrupted autocalibration notebook execution of %s", self.nb_path)
+            logger.info("Interrupted automatic calibration notebook execution of %s", self.nb_path)
             return sys.exit()
 
         except Exception as e:  # pylint: disable = broad-exception-caught
