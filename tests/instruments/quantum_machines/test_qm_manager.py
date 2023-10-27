@@ -28,7 +28,6 @@ def fixture_qmm():
     )  # pylint: disable=abstract-class-instantiated
     qmm.device = MagicMock
     result = QuantumMachinesResult(raw_results=np.zeros((2, 10)))
-    qmm.run = MagicMock
     qmm.get_acquisitions = MagicMock(return_value=result)
     qmm.simulate = MagicMock(return_value=result)
 
@@ -54,26 +53,21 @@ class TestQMM:
 
         assert isinstance(qmm.settings, Settings)
 
-    @patch("qililab.instruments.quantum_machines.qmm.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.qmm.QuantumMachine.execute")
-    @patch("qililab.instruments.Instrument.initial_setup")
+    @patch("qm.QuantumMachine")
     def test_execute(
-        self,
-        mock_execute: MagicMock,
-        mock_init: MagicMock,
-        mock_instrument_init: MagicMock,
-        qmm: QMM,
-        qua_program: Program,
+        self, mock_qm: MagicMock, qmm: QMM, qua_program: Program
     ):  # pylint: disable=unused-argument
         """Test execute method"""
-        qmm.initial_setup()
+        mock_qm.return_value.execute.return_value = MagicMock
+        qmm.qm = mock_qm
         job = qmm.run(qua_program)
 
         assert isinstance(job, MagicMock)
 
-    def test_get_acquisitions(self, qmm: QMM, qua_program: Program):
+    def test_get_acquisitions(self, qmm: QMM):
         """Test get_acquisition method"""
-        job = qmm.run(qua_program)
+        qmm.qm = MagicMock
+        job = MagicMock
         result = qmm.get_acquisitions(job)
 
         assert isinstance(result, QuantumMachinesResult)
@@ -81,6 +75,7 @@ class TestQMM:
 
     def test_simulate(self, qmm: QMM, qua_program: Program):
         """Test simulate method"""
+        qmm.qm = MagicMock
         result = qmm.simulate(qua_program)
 
         assert isinstance(result, QuantumMachinesResult)
