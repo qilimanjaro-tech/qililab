@@ -22,7 +22,7 @@ class Arbitrary(Waveform):  # pylint: disable=too-few-public-methods, disable=mi
     """Arbitrary waveform. Creates a waveform with the passed envelope.
 
     Args:
-        envelope(np.ndarray): Passed envelope to base the waveform on.
+        samples(np.ndarray): Passed envelope to base the waveform on.
 
     Examples:
         If you want to create a waveform with an envelope given by:
@@ -30,22 +30,22 @@ class Arbitrary(Waveform):  # pylint: disable=too-few-public-methods, disable=mi
         .. code-block:: python
 
             import numpy as np
-            original_envelope = np.ones(50)
+            samples = np.ones(50)
 
         You would just need to do:
 
         .. code-block:: python
 
             import qililab as ql
-            arbitrary_envelope = ql.Arbitrary(envelope=original_envelope)
+            arbitrary_envelope = ql.Arbitrary(samples=samples)
     """
 
-    def __init__(self, envelope: np.ndarray):
+    def __init__(self, samples: np.ndarray):
         """Initialization of the class."""
-        self.samples = envelope
+        self.samples = samples
 
     def envelope(self, resolution: int = 1) -> np.ndarray:
-        """Returns the originally passed envelope.
+        """Returns the originally passed envelope if resolution is 1.
 
         Returns:
             np.ndarray: Height of the envelope for each time step.

@@ -1,6 +1,5 @@
 """Tests for the SequencerQRM class."""
 # pylint: disable=protected-access
-import re
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -197,7 +196,7 @@ class TestSequencerQRM:
         )
 
         assert isinstance(program, Program)
-        # assert is_q1asm_equal(program, expected_program_str)
+        is_q1asm_equal(program, expected_program_str)
 
     def test_generate_empty_weights(self, sequencer):
         """Test the ``_generate_weights`` method when no weights have been set beforehand."""

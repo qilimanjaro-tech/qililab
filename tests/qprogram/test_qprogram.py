@@ -54,6 +54,39 @@ class TestQProgram:
         assert len(qp._body.elements) == 1
         assert qp._body.elements[0] is block
 
+    def test_infinite_loop_method(self):
+        """Test infinite_loop method"""
+
+        qp = QProgram()
+        with qp.infinite_loop() as loop:
+            # __enter__
+            assert isinstance(loop, InfiniteLoop)
+            assert qp._active_block is loop
+        # __exit__
+        assert len(qp._body.elements) == 1
+        assert qp._body.elements[0] is loop
+        assert qp._active_block is qp._body
+
+    def test_parallel_method(self):
+        """Test parallel method"""
+        qp = QProgram()
+        var1 = qp.variable(Domain.Scalar, int)
+        var2 = qp.variable(Domain.Scalar, float)
+        with qp.parallel(
+            loops=[
+                ForLoop(variable=var1, start=0, stop=10, step=1),
+                ForLoop(variable=var2, start=0.0, stop=1.0, step=0.1),
+            ]
+        ) as loop:
+            # __enter__
+            assert isinstance(loop, Parallel)
+            assert len(loop.loops) == 2
+            assert qp._active_block is loop
+        # __exit__
+        assert len(qp._body.elements) == 1
+        assert qp._body.elements[0] is loop
+        assert qp._active_block is qp._body
+
     def test_for_loop_method(self):
         """Test loop method"""
         qp = QProgram()
@@ -130,17 +163,33 @@ class TestQProgram:
         assert qp._body.elements[0].bus == "drive"
         assert qp._body.elements[0].duration == 100
 
-    def test_acquire_method_with_weights(self):
+    def test_measure_method(self):
+        """Test measure method"""
+        one_wf = Square(amplitude=1.0, duration=40)
+        zero_wf = Square(amplitude=0.0, duration=40)
+        qp = QProgram()
+        qp.measure(bus="readout", waveform=IQPair(one_wf, zero_wf), weights=IQPair(one_wf, zero_wf))
+
+        assert len(qp._active_block.elements) == 1
+        assert len(qp._body.elements) == 1
+        assert isinstance(qp._body.elements[0], Measure)
+        assert qp._body.elements[0].bus == "readout"
+        assert np.equal(qp._body.elements[0].waveform.I, one_wf)
+        assert np.equal(qp._body.elements[0].waveform.Q, zero_wf)
+        assert np.equal(qp._body.elements[0].weights.I, one_wf)
+        assert np.equal(qp._body.elements[0].weights.Q, zero_wf)
+
+    def test_acquire_method(self):
         """Test acquire method"""
         one_wf = Square(amplitude=1.0, duration=40)
         zero_wf = Square(amplitude=0.0, duration=40)
         qp = QProgram()
-        qp.acquire(bus="drive", weights=IQPair(I=one_wf, Q=zero_wf))
+        qp.acquire(bus="readout", weights=IQPair(I=one_wf, Q=zero_wf))
 
         assert len(qp._active_block.elements) == 1
         assert len(qp._body.elements) == 1
         assert isinstance(qp._body.elements[0], Acquire)
-        assert qp._body.elements[0].bus == "drive"
+        assert qp._body.elements[0].bus == "readout"
         assert np.equal(qp._body.elements[0].weights.I, one_wf)
         assert np.equal(qp._body.elements[0].weights.Q, zero_wf)
 

@@ -28,7 +28,7 @@ class DummyAWG(AWGAnalogDigitalConverter):
     def upload_qpysequence(self, qpysequence: QpySequence, port: str):
         pass
 
-    def acquire_result(self):
+    def acquire_result(self, acquisitions: list[str] | None = None):
         return []
 
     def _set_device_scope_hardware_averaging(self, value: bool, sequencer_id: int):

@@ -1,6 +1,5 @@
 """Tests for the SequencerQCM class."""
 # pylint: disable=protected-access
-from textwrap import dedent
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -260,7 +259,7 @@ class TestSequencer:
             pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, nshots=1, repetition_duration=1000, num_bins=1
         )
         assert isinstance(program, Program)
-        # assert is_q1asm_equal(program, expected_program_str)
+        is_q1asm_equal(program, expected_program_str)
 
     def test_execute(self, pulse_bus_schedule: PulseBusSchedule):
         """Unit tests for execute method"""
