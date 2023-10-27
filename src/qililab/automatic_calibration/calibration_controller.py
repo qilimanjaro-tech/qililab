@@ -36,9 +36,10 @@ class CalibrationController:
     The highest level method to apply, is ``run_automatic_calibration()`` which finds all the final nodes (don't have others past them), and runs ``CalibrationController.maintain()`` on those.
 
     The two mid-level methods are ``maintain()`` and ``diagnose()``, the first one goes back to all the nodes dependencies starts, and working
-    from them up, checks their last time executions and their data, searching for problematic cases. In such cases, the ``maintain()`` would call
-    the other mid-level method, ``diagnose()``, which is responsible for working in reverse, from the problematic one, going down to all its
-    dependencies, until finds the root of the problem, then passes such information back to the ``maintain()`` method, so it can calibrate accordingly and finish its job.
+    from them up, checking their last time executions and their data, searching for problematic cases. In such cases, depending on the severity,
+    ``maintain()`` would directly calibrate or call the other mid-level method, ``diagnose()``, which is responsible for working in reverse,
+    from the problematic one, going  down to all their dependencies, until finds the root of the problem, then passes such information back to
+    the ``maintain()`` method, so it can calibrate accordingly, and finish its job.
 
     And finally, during all this process, the mid-level methods would be calling these low-level methods, that act on the nodes:
         ``calibrate()``, ``check_status()`` and ``check_data()``.
@@ -111,7 +112,9 @@ class CalibrationController:
         """The initialized platform, where the experiments will be run."""
 
     def run_automatic_calibration(self) -> dict[str, dict]:
-        """Run the automatic calibration procedure and retrieve the final set parameters and achieved fidelities dictionaries.
+        """Run the full automatic calibration procedure and retrieve the final set parameters and achieved fidelities dictionaries.
+
+        This is primary interface for our calibration procedure and it's the highest level algorithm.
 
         Returns:
             dict[str, dict]: Dictionary for the last set parameters and the last achieved fidelities. It contains two dictionaries in the keys:
@@ -147,12 +150,23 @@ class CalibrationController:
         return {"set_parameters": self.get_last_set_parameters(), "fidelities": self.get_last_fidelities()}
 
     def maintain(self, node: CalibrationNode) -> None:
-        """This is primary interface for our calibration procedure and it's the highest level algorithm.
-        We call maintain on the node that we want in spec, and maintain will call all the subroutines necessary to do that.
-        We design 'maintain' to start actually acquiring data (by calling 'check_data' or 'calibrate') in the optimal location
-        in the graph to avoid extra work: for example if node A depends on node B, before trying to calibrate node A we check
+        """Maintain should be called on the node that we want in spec, and maintain will call all the necessary subroutines to
+        achieve that. Maintain contains the main workflow for our calibration procedure, and it's what is called from
+        ``run_automatic_calibration()`` into each of the final nodes of our graph.
+
+        It is designed to start actually acquiring data (by calling 'check_data' or 'calibrate') in the optimal location
+        of the graph, to avoid extra work: for example if node A depends on node B, before trying to calibrate node A we check
         the state of node B. If node B is out of spec or has bad data, calibrating A will be a waste of resource because we
         will be doing so based on faulty data.
+
+        The algorithm goes back to the start of all the nodes dependencies, and working from them up, checking their last time executions
+        and their data, searching for problematic cases. In such cases, depending on the severity, ``maintain()`` would directly calibrate
+        or call the other mid-level method, ``diagnose()``, which is responsible for working in reverse, from the problematic one, going
+        down to all their dependencies, until finds the root of the problem, then passes such information back to the ``maintain()``
+        method, so it can calibrate accordingly, and finish its job.
+
+        Finally, during all this process, the mid-level methods would be calling these low-level methods, that act on the nodes:
+        ``calibrate()``, ``check_status()`` and ``check_data()``.
 
         Args:
             node (CalibrationNode): The node where we want to start the algorithm. At the beginning of the calibration procedure,
@@ -183,11 +197,13 @@ class CalibrationController:
 
     def diagnose(self, node: CalibrationNode) -> bool:
         """This is a method called by `maintain` in the special case that its call of `check_data` finds bad data.
+
         `maintain` assumes that our knowledge of the state of the system matches the actual state of the
         system: if we knew a node would return bad data, we wouldn't bother running experiments on it.
-        The fact that check_data returns bad data means that that's not the case: out knowledge of the state
-        of the system is inaccurate. The purpose of diagnose is to repair inaccuracies in our knowledge of the
-        state of the system so that maintain can resume.
+        The fact that check_data returns bad data means that that's not the case: our knowledge of the
+        systems's state is inaccurate.
+
+        The purpose of diagnose is to repair inaccuracies in our knowledge of the state of the system so that maintain can resume.
 
         Args:
             node (CalibrationNode): The node where we want to start the algorithm.
@@ -264,10 +280,9 @@ class CalibrationController:
         return not self._is_timeout_expired(node.previous_timestamp, node.drift_timeout)
 
     def check_data(self, node: CalibrationNode) -> str:
-        """
-        Check if the parameters found in the last calibration are still valid. To do this, this function runs the experiment only in a few
-        points, randomly chosen within the sweep interval, and compares the results with the data obtained in the same points whe the
-        experiment was last run on the entire sweep interval (full calibration).
+        """Check if the parameters found in the last calibration are still valid, doing a reduced execution of the notebook. To do this,
+        this function runs the experiment only in a few points, randomly chosen within the sweep interval, and compares the results with
+        the data obtained in the same points when the experiment was last run on the entire sweep interval (``calibrate()``).
 
         Args:
             node: The node whose parameters need to be checked.
@@ -311,31 +326,30 @@ class CalibrationController:
 
             if self._obtain_comparison(node, obtain_params, compar_params) <= node.in_spec_threshold:
                 print(f"check_data of {node.node_id}: in_spec!!!\n")
-                node.add_string_to_checked_nb_name("in_spec", timestamp)
-                node.invert_output_and_previous_output()
+                node._add_string_to_checked_nb_name("in_spec", timestamp)  # pylint: disable=protected-access
+                node._invert_output_and_previous_output()  # pylint: disable=protected-access
                 return "in_spec"
 
             if self._obtain_comparison(node, obtain_params, compar_params) <= node.bad_data_threshold:
                 print(f"check_data of {node.node_id}: out_of_spec!!!\n")
-                node.add_string_to_checked_nb_name("out_of_spec", timestamp)
-                node.invert_output_and_previous_output()
+                node._add_string_to_checked_nb_name("out_of_spec", timestamp)  # pylint: disable=protected-access
+                node._invert_output_and_previous_output()  # pylint: disable=protected-access
                 return "out_of_spec"
 
         print(f"check_data of {node.node_id}: bad_data!!!\n")
-        node.add_string_to_checked_nb_name("bad_data", timestamp)
-        node.invert_output_and_previous_output()
+        node._add_string_to_checked_nb_name("bad_data", timestamp)  # pylint: disable=protected-access
+        node._invert_output_and_previous_output()  # pylint: disable=protected-access
         return "bad_data"
 
     def calibrate(self, node: CalibrationNode) -> None:
-        """
-        Run a node's calibration experiment on its default interval of sweep values.
+        """Run a node's calibration experiment on its default interval of sweep values.
 
         Args:
             node (CalibrationNode): The node where the calibration experiment is run.
         """
         print(f'Calibrating node "{node.node_id}"\n')
         node.previous_timestamp = node.run_notebook()
-        node.add_string_to_checked_nb_name("calibrated", node.previous_timestamp)
+        node._add_string_to_checked_nb_name("calibrated", node.previous_timestamp)  # pylint: disable=protected-access
 
     def _update_parameters(self, node: CalibrationNode) -> None:
         """Update a parameter value in the platform.

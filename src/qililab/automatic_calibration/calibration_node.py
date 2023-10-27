@@ -273,7 +273,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         """
 
         self.output_parameters: dict | None = self._get_last_calibrated_output_parameters()
-        """Output parameters dictionary from the notebook execution, which get extracted with ``ql.export_calibration_putputs()``, normally contains
+        """Output parameters dictionary from the notebook execution, which get extracted with ``ql.export_calibration_outputs()``, normally contains
         a ``check_params`` to do the ``check_data()`` and the ``platform_params`` which will be the calibrated parameters to set in the platform. """
 
         self.previous_output_parameters: dict | None = None
@@ -282,7 +282,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         self.previous_timestamp: float | None = self._get_last_calibrated_timestamp()
         """Last calibrated timestamp."""
 
-        self.stream: StringIO = self._build_notebooks_logger_stream()
+        self._stream: StringIO = self._build_notebooks_logger_stream()
         """Stream object to which the notebooks logger output will be written, to posterior retrieval."""
 
     def _sweep_interval_as_array(self) -> list | None:
@@ -312,7 +312,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             ]
         return None
 
-    def add_string_to_checked_nb_name(self, string_to_add: str, timestamp: float) -> None:
+    def _add_string_to_checked_nb_name(self, string_to_add: str, timestamp: float) -> None:
         """Adds a string to the notebook name and returns it.
 
         Args:
@@ -409,10 +409,10 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         Raises:
             IncorrectCalibrationOutput: In case no outputs, incorrect outputs or multiple outputs where found. Incorrect outputs are those that do not contain `check_parameters` or is empty.
         """
-        pm.execute_notebook(input_path, output_path, parameters, log_output=True, stdout_file=self.stream)
+        pm.execute_notebook(input_path, output_path, parameters, log_output=True, stdout_file=self._stream)
 
         # Retrieve the logger info and extract the output from it:
-        logger_string = self.stream.getvalue()
+        logger_string = self._stream.getvalue()
         logger_splitted = logger_string.split(logger_output_start)
         logger_outputs_string = logger_splitted[-1].split("\n")[0]
 
@@ -608,7 +608,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         return name, folder_path
 
-    def invert_output_and_previous_output(self) -> None:
+    def _invert_output_and_previous_output(self) -> None:
         """Reverts the output and previous output, for when we run notebook in a ``check_data()``."""
         self.output_parameters, self.previous_output_parameters = (
             self.previous_output_parameters,

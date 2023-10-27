@@ -161,7 +161,7 @@ class TestInitializationCalibrationNode:
         assert isinstance(initialize_node_no_optional.previous_output_parameters, dict | None)
         assert initialize_node_no_optional.previous_timestamp is None
         assert isinstance(initialize_node_no_optional.previous_timestamp, float | None)
-        assert isinstance(initialize_node_no_optional.stream, StringIO)
+        assert isinstance(initialize_node_no_optional._stream, StringIO)
 
     def test_good_init_method_with_optional(self, initialize_node_optional):
         """Test a valid initialization of the class, passing all optional arguments."""
@@ -192,7 +192,7 @@ class TestInitializationCalibrationNode:
         assert isinstance(initialize_node_optional.previous_output_parameters, dict | None)
         assert initialize_node_optional.previous_timestamp == 0.0
         assert isinstance(initialize_node_optional.previous_timestamp, float | None)
-        assert isinstance(initialize_node_optional.stream, StringIO)
+        assert isinstance(initialize_node_optional._stream, StringIO)
 
     def test_bad_init_method(self):
         """Test an invalid initialization of the class.
@@ -223,7 +223,7 @@ class TestPublicMethodsFromCalibrationNode:
             path = f"{public_methods_node.nb_folder}/{public_methods_node.node_id}"
             timestamp_path = public_methods_node._create_notebook_datetime_path(path, 0).split(".ipynb")[0]
             string_to_add = "test_succesful"
-            public_methods_node.add_string_to_checked_nb_name(string_to_add, 0)
+            public_methods_node._add_string_to_checked_nb_name(string_to_add, 0)
             mocked_rename.assert_called_once_with(f"{timestamp_path}.ipynb", f"{timestamp_path}_{string_to_add}.ipynb")
 
     #########################
@@ -463,7 +463,7 @@ class TestPublicMethodsFromCalibrationNode:
             test_output_params,
             test_previous_output_params,
         )
-        public_methods_node.invert_output_and_previous_output()
+        public_methods_node._invert_output_and_previous_output()
         assert public_methods_node.output_parameters == test_previous_output_params
         assert public_methods_node.previous_output_parameters == test_output_params
 
@@ -520,12 +520,12 @@ class TestPrivateMethodsFromCalibrationNode:
 
         # Mocking return value of stream and calling execute_notebook
         raw_file_contents = 'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48], "y": [100, 144, 196, 256, 324, 400, 484, 576, 676, 784, 900, 1024, 1156, 1296, 1444, 1600, 1764, 1936, 2116, 2304]}, "platform_params": [["bus_alias", "param_name", 1]]}\n'
-        private_methods_node.stream.getvalue.return_value = raw_file_contents  # type: ignore [attr-defined]
+        private_methods_node._stream.getvalue.return_value = raw_file_contents  # type: ignore [attr-defined]
         test_value = private_methods_node._execute_notebook(private_methods_node.nb_path, "", {})
 
         # Asserts
         mocked_pm_exec.assert_called_once_with(
-            private_methods_node.nb_path, "", {}, log_output=True, stdout_file=private_methods_node.stream
+            private_methods_node.nb_path, "", {}, log_output=True, stdout_file=private_methods_node._stream
         )
         assert test_value == expected
 
@@ -534,7 +534,7 @@ class TestPrivateMethodsFromCalibrationNode:
     @patch("qililab.automatic_calibration.calibration_node.logger", autospec=True)
     def test_execute_notebook_raises_no_output(self, mocked_logger, mocked_pm_exec, output, private_methods_node):
         """Testing when no outputs received from ``execute_notebook()``."""
-        private_methods_node.stream.getvalue.return_value = output  # type: ignore [attr-defined]
+        private_methods_node._stream.getvalue.return_value = output  # type: ignore [attr-defined]
 
         with pytest.raises(
             IncorrectCalibrationOutput,
@@ -548,7 +548,7 @@ class TestPrivateMethodsFromCalibrationNode:
         )
 
         mocked_pm_exec.assert_called_once_with(
-            private_methods_node.nb_path, "", {}, log_output=True, stdout_file=private_methods_node.stream
+            private_methods_node.nb_path, "", {}, log_output=True, stdout_file=private_methods_node._stream
         )
 
     @pytest.mark.parametrize(
@@ -564,7 +564,7 @@ class TestPrivateMethodsFromCalibrationNode:
         self, mocked_logger, mocked_pm_exec, output, private_methods_node
     ):
         """Testing when more than one outputs are received from ``execute_notebook()`."""
-        private_methods_node.stream.getvalue.return_value = output  # type: ignore [attr-defined]
+        private_methods_node._stream.getvalue.return_value = output  # type: ignore [attr-defined]
 
         with pytest.raises(
             IncorrectCalibrationOutput,
@@ -578,7 +578,7 @@ class TestPrivateMethodsFromCalibrationNode:
         )
 
         mocked_pm_exec.assert_called_once_with(
-            private_methods_node.nb_path, "", {}, log_output=True, stdout_file=private_methods_node.stream
+            private_methods_node.nb_path, "", {}, log_output=True, stdout_file=private_methods_node._stream
         )
 
     @pytest.mark.parametrize(
@@ -592,7 +592,7 @@ class TestPrivateMethodsFromCalibrationNode:
     @patch("qililab.automatic_calibration.calibration_node.logger", autospec=True)
     def test_execute_notebook_raises_empty_output(self, mocked_logger, mocked_pm_exec, output, private_methods_node):
         """Testing when outputs are empty received from ``execute_notebook()`."""
-        private_methods_node.stream.getvalue.return_value = output  # type: ignore [attr-defined]
+        private_methods_node._stream.getvalue.return_value = output  # type: ignore [attr-defined]
 
         with pytest.raises(
             IncorrectCalibrationOutput,
@@ -606,7 +606,7 @@ class TestPrivateMethodsFromCalibrationNode:
         )
 
         mocked_pm_exec.assert_called_once_with(
-            private_methods_node.nb_path, "", {}, log_output=True, stdout_file=private_methods_node.stream
+            private_methods_node.nb_path, "", {}, log_output=True, stdout_file=private_methods_node._stream
         )
 
     ##########################################

@@ -676,8 +676,8 @@ class TestCalibrationController:
     ### TEST CHECK DATA ###
     #######################
     @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.run_notebook")
-    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.add_string_to_checked_nb_name")
-    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.invert_output_and_previous_output")
+    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._add_string_to_checked_nb_name")
+    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._invert_output_and_previous_output")
     def test_check_data(self, mock_invert, mock_add_str, mock_run, controller):
         """Test that the check_data method, works correctly."""
         for node in controller.node_sequence.values():
@@ -701,7 +701,7 @@ class TestCalibrationController:
     ### TEST CALIBRATE ###
     ######################
     @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.run_notebook")
-    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.add_string_to_checked_nb_name")
+    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._add_string_to_checked_nb_name")
     def test_calibrate(self, mock_add_str, mock_run, controller):
         """Test that the calibration method, calls node.run_notebook()."""
         for node in controller.node_sequence.values():
