@@ -26,6 +26,8 @@ from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable import Domain, Variable
 from qililab.waveforms import IQPair, Square, Waveform
 
+# mypy: disable-error-code="operator"
+
 
 class _BusCompilationInfo:  # pylint: disable=too-few-public-methods
     def __init__(self):
