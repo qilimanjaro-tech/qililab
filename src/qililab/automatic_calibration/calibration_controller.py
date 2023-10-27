@@ -69,7 +69,7 @@ class CalibrationController:
             controller = CalibrationController(node_sequence=nodes, calibration_graph=G, runcard=path_runcard)
 
             ### EXECUTIONS TO DO:
-            controller.maintain(third)
+            controller.maintain(second)
 
         .. note::
 
