@@ -32,4 +32,3 @@ Calibration-related methods
 
 from .calibration_controller import CalibrationController
 from .calibration_node import CalibrationNode, export_calibration_outputs
-from .comparison_models import norm_root_mean_sqrt_error
