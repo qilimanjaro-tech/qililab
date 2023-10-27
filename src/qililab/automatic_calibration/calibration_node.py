@@ -188,6 +188,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                     {
                         "check_parameters": {"x": sweep_interval, "y": results},
                         "platform_params": [(bus_alias0, param_name0, fitted_values[0]), (bus_alias1, param_name1, fitted_values[1])],
+                        "fidelities": {"fidelity1": 0.9, "fidelity2": 0.95}  # This key in the dictionary is optional
                     }
                 )
 
