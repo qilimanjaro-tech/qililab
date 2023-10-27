@@ -27,7 +27,6 @@ def fixture_qmm():
         {"alias": "qmm", "qop_ip": "192.168.0.1", "qop_port": 80, "config": {}, "firmware": "3.10.2"}
     )  # pylint: disable=abstract-class-instantiated
     qmm.device = MagicMock
-    qmm.qm = MagicMock
     result = QuantumMachinesResult(raw_results=np.zeros((2, 10)))
     qmm.run = MagicMock
     qmm.get_acquisitions = MagicMock(return_value=result)
@@ -55,8 +54,19 @@ class TestQMM:
 
         assert isinstance(qmm.settings, Settings)
 
-    def test_execute(self, qmm: QMM, qua_program: Program):
+    @patch("qililab.instruments.quantum_machines.qmm.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.qmm.QuantumMachine.execute")
+    @patch("qililab.instruments.Instrument.initial_setup")
+    def test_execute(
+        self,
+        mock_execute: MagicMock,
+        mock_init: MagicMock,
+        mock_instrument_init: MagicMock,
+        qmm: QMM,
+        qua_program: Program,
+    ):  # pylint: disable=unused-argument
         """Test execute method"""
+        qmm.initial_setup()
         job = qmm.run(qua_program)
 
         assert isinstance(job, MagicMock)
