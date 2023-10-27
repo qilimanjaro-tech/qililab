@@ -148,6 +148,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         # Separate the readout schedules by the qubit they act on
         qubit_schedules = pulse_bus_schedule.qubit_schedules()
         compiled_sequences = []
+        sequencer_idxs_used = []
         for schedule in qubit_schedules:
             # Get the sequencer that acts on the same qubit as the schedule
             qubit_sequencers = [sequencer for sequencer in sequencers if sequencer.qubit == schedule.qubit]
@@ -157,6 +158,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                     f"got {len(qubit_sequencers)}"
                 )
             sequencer = qubit_sequencers[0]
+            sequencer_idxs_used.append(sequencer.identifier)
             if schedule != self._cache.get(sequencer.identifier):
                 # If the schedule is not in the cache, compile it and add it to the cache
                 sequence = self._compile(schedule, sequencer)
@@ -168,6 +170,12 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 if sequence_uploaded:
                     self.device.delete_acquisition_data(sequencer=sequencer.identifier, name="default")
                 compiled_sequences.append(self.sequences[sequencer.identifier][0])
+
+        for sequencer_idx in self.sequences.keys():
+            if sequencer_idx != sequencer_idxs_used:
+                _ = self.sequences.pop(sequencer_idx)
+                _ = self._cache.pop(sequencer_idx)
+
         return compiled_sequences
 
     def acquire_result(self) -> QbloxResult:
