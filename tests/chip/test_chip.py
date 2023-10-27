@@ -1,3 +1,4 @@
+import networkx as nx
 import pytest
 
 from qililab.chip import Chip, Port, Qubit, Resonator
@@ -25,6 +26,37 @@ def fixture_chip():
                 "qubit_index": 0,
                 "frequency": 6532800000,
                 "nodes": ["flux_q0", "drive_q0", "resonator"],
+            },
+        ],
+    }
+    return Chip(**settings)
+
+
+@pytest.fixture(name="chip_topo")
+def fixture_chip_topology():
+    """Fixture that returns an instance of a ``Chip`` class for test_get_topology."""
+    settings = {
+        "nodes": [
+            {
+                "name": "qubit",
+                "alias": "q0",
+                "qubit_index": 0,
+                "frequency": 6532800000,
+                "nodes": ["q1", "q3"],
+            },
+            {
+                "name": "qubit",
+                "alias": "q1",
+                "qubit_index": 1,
+                "frequency": 6532800000,
+                "nodes": ["q3"],
+            },
+            {
+                "name": "qubit",
+                "alias": "q3",
+                "qubit_index": 3,
+                "frequency": 6532800000,
+                "nodes": ["q0", "q1"],
             },
         ],
     }
@@ -72,6 +104,17 @@ class TestChip:
                 gotten_string += "--\n"
 
         assert str(chip) == gotten_string
+
+    def test_get_topology(self, chip_topo: Chip):
+        """Tests that get_topology works as expected"""
+        g = nx.Graph()
+        g.add_nodes_from([0, 1, 3])
+        g.add_edges_from([(0, 1), (0, 3), (1, 3)])
+
+        g2 = chip_topo.get_topology()
+
+        assert g.nodes == g2.nodes
+        assert g.edges == g2.edges
 
     def test_get_qubit_raises_error(self, chip: Chip):
         """Test that the `_get_qubit` method raises an error if qubit is not in chip."""
