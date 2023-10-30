@@ -45,7 +45,6 @@ class DriveBus(BusDriver):
         attenuator: Attenuator | None,
         distortions: list,
     ):
-        """Initialise the bus."""
         super().__init__(alias=alias, port=port, awg=awg, distortions=distortions)
         if local_oscillator:
             self.instruments["local_oscillator"] = local_oscillator
