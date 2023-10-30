@@ -195,10 +195,7 @@ class QbloxModule(AWG):
             Sequence: Qblox Sequence object containing the program and waveforms.
         """
         waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule, sequencer=sequencer)
-        if pulse_bus_schedule.port != "feedline_input":
-            acquisitions = self._generate_acquisitions()
-        else:  # handle qrm measurements
-            acquisitions = self._generate_qrm_acquisitions(timeline=pulse_bus_schedule.timeline)
+        acquisitions = self._generate_acquisitions(timeline=pulse_bus_schedule.timeline)
         program = self._generate_program(
             pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, sequencer=sequencer.identifier
         )
@@ -283,24 +280,14 @@ class QbloxModule(AWG):
         """Initialize the weights `registers` to the `values` specified and place the required instructions in the
         setup block of the `program`."""
 
-    def _generate_acquisitions(self) -> Acquisitions:
+    @abstractmethod
+    def _generate_acquisitions(self, timeline: list[PulseEvent] | None = None) -> Acquisitions:
         """Generate Acquisitions object, currently containing a single acquisition named "default", with num_bins = 1
         and index = 0.
 
         Returns:
             Acquisitions: Acquisitions object.
         """
-        # FIXME: is it really necessary to generate acquisitions for a QCM??
-        acquisitions = Acquisitions()
-        acquisitions.add(name="default", num_bins=self.num_bins, index=0)
-        return acquisitions
-
-    def _generate_qrm_acquisitions(self, timeline: list[PulseEvent]) -> Acquisitions:
-        # Temp method to generate qrm acquisitions for multiple readouts of same qubit
-        acquisitions = Acquisitions()
-        for index, pulse_event in enumerate(timeline):
-            acquisitions.add(name=f"q{pulse_event.qubit}_{index}", num_bins=self.num_bins, index=index)
-        return acquisitions
 
     @abstractmethod
     def _generate_weights(self, sequencer: AWGQbloxSequencer) -> Weights:
@@ -331,7 +318,11 @@ class QbloxModule(AWG):
 
     @Instrument.CheckDeviceInitialized
     def setup(  # pylint: disable=too-many-branches, too-many-return-statements
-        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
+        self,
+        parameter: Parameter,
+        value: float | str | bool,
+        channel_id: int | None = None,
+        port_id: str | None = None,
     ):
         """Set Qblox instrument calibration settings."""
         if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:

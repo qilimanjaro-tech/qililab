@@ -15,12 +15,14 @@
 """Qblox QCM class"""
 from dataclasses import dataclass
 
+from qpysequence import Acquisitions
 from qpysequence.program import Loop, Register
 from qpysequence.weights import Weights
 
 from qililab.instruments.awg_settings import AWGQbloxSequencer
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.utils.instrument_factory import InstrumentFactory
+from qililab.pulse import PulseEvent
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.typings.enums import InstrumentName
 
@@ -58,6 +60,14 @@ class QbloxQCM(QbloxModule):
         acq_index: int,
     ):
         """Append an acquire instruction to the loop."""
+
+    def _generate_acquisitions(self, timeline: list[PulseEvent] | None = None) -> Acquisitions:
+        """Generate Acquisitions dummy method for the QCM
+
+        Returns:
+            Acquisitions: Empty Aquisitions object.
+        """
+        return Acquisitions()
 
     def acquire_result(self) -> QbloxResult:
         """Read the result from the AWG instrument

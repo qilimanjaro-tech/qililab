@@ -16,7 +16,7 @@
 from dataclasses import dataclass
 from typing import Sequence, cast
 
-from qpysequence import Program
+from qpysequence import Acquisitions, Program
 from qpysequence import Sequence as QpySequence
 from qpysequence import Weights
 from qpysequence.program import Loop, Register
@@ -28,7 +28,7 @@ from qililab.instruments.awg_settings import AWGQbloxADCSequencer
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
-from qililab.pulse import PulseBusSchedule
+from qililab.pulse import PulseBusSchedule, PulseEvent
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.typings.enums import AcquireTriggerMode, InstrumentName, Parameter
 
@@ -167,7 +167,9 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 sequence_uploaded = self.sequences[sequencer.identifier][1]
                 if sequence_uploaded:
                     # self.device.delete_acquisition_data(sequencer=sequencer.identifier, name="default")
-                    self.device.delete_acquisition_data(sequencer=sequencer.identifier, all=True) # TODO: we were already deleting all acq data for the sequencer with the line above
+                    self.device.delete_acquisition_data(
+                        sequencer=sequencer.identifier, all=True
+                    )  # TODO: we were already deleting all acq data for the sequencer with the line above
                 compiled_sequences.append(self.sequences[sequencer.identifier][0])
         return compiled_sequences
 
@@ -290,7 +292,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                     acquisitions["qubit"] = int(qubit_measure[0])
                     acquisitions["measurement"] = int(qubit_measure[1])
                     results.append(acquisitions)
-                
+
                 # results.append(self.device.get_acquisitions(sequencer=sequencer.identifier)["default"]["acquisition"])
                 self.device.sequencers[sequencer.identifier].sync_en(False)
                 integration_lengths.append(sequencer.used_integration_length)
@@ -298,7 +300,12 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
 
     def _append_acquire_instruction(
-        self, loop: Loop, bin_index: Register | int, sequencer_id: int, weight_regs: tuple[Register, Register], acq_index: int
+        self,
+        loop: Loop,
+        bin_index: Register | int,
+        sequencer_id: int,
+        weight_regs: tuple[Register, Register],
+        acq_index: int,
     ):
         """Append an acquire instruction to the loop."""
         weighed_acq = self._get_sequencer_by_id(id=sequencer_id).weighed_acq_enabled
@@ -324,6 +331,20 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         setup_block = program.get_block(name="setup")
         setup_block.append_components([move_0, move_1], bot_position=1)
 
+    def _generate_acquisitions(self, timeline: list[PulseEvent] | None = None) -> Acquisitions:
+        """Generate acquisitions as a dictionary of #qubit #measurement
+
+        Args:
+            timeline (list[PulseEvent]): _description_
+
+        Returns:
+            Acquisitions: _description_
+        """
+        acquisitions = Acquisitions()
+        for index, pulse_event in enumerate(timeline):
+            acquisitions.add(name=f"q{pulse_event.qubit}_{index}", num_bins=self.num_bins, index=index)
+        return acquisitions
+
     def _generate_weights(self, sequencer: AWGQbloxADCSequencer) -> Weights:  # type: ignore
         """Generate acquisition weights.
 
@@ -346,7 +367,11 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
 
     @Instrument.CheckDeviceInitialized
     def setup(
-        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
+        self,
+        parameter: Parameter,
+        value: float | str | bool,
+        channel_id: int | None = None,
+        port_id: str | None = None,
     ):
         """set a specific parameter to the instrument"""
         try:
