@@ -140,6 +140,8 @@ class QbloxResult(Result):
         Returns:
             Counts: Counts object containing the counts of each state.
         """
+        if sum(result["measurement"] for result in self.qblox_raw_results) != 0:
+            raise (NotImplementedError("Counts for multiple measurements on a single qubit are not supported"))
         return self.qblox_bins_acquisitions.counts()
 
     def counts(self) -> dict:
@@ -148,6 +150,8 @@ class QbloxResult(Result):
         Returns:
             Counts: Counts object containing the counts of each state.
         """
+        if sum(result["measurement"] for result in self.qblox_raw_results) != 0:
+            raise (NotImplementedError("Counts for multiple measurements on a single qubit are not supported"))
         return self.qblox_bins_acquisitions.counts().as_dict()
 
     def samples(self) -> np.ndarray:
@@ -162,6 +166,12 @@ class QbloxResult(Result):
     def array(self) -> np.ndarray:
         # Save array data
         if self.qblox_scope_acquisitions is not None:
+            if sum(result["measurement"] for result in self.qblox_raw_results) != 0:
+                raise (
+                    NotImplementedError(
+                        "Scope acquisition for multiple measurements on a single qubit are not supported"
+                    )
+                )
             # The dimensions of the array are: (2, N) where N is the length of the scope.
             path0 = self.qblox_scope_acquisitions.scope.path0.data
             path1 = self.qblox_scope_acquisitions.scope.path1.data
@@ -174,12 +184,10 @@ class QbloxResult(Result):
                 f"All sequencers must have the same number of bins to return an array. Obtained {len(bins_len)} "
                 f"sequencers with {bins_len} bins respectively."
             )
-        # The dimensions of the array are the following: (#sequencers, 2, #bins)
+        # The dimensions of the array are the following: (#sequencers*#measurements, 2, #bins)
+        # #measurements are the number of measurements done for a particular single qubit
         # Where the 2 corresponds to path0 (I) and path1 (Q) of the sequencer
-        bins = [
-            [sequencer.integration.path0, sequencer.integration.path1]
-            for sequencer in self.qblox_bins_acquisitions.bins
-        ]
+        bins = [[result.integration.path0, result.integration.path1] for result in self.qblox_bins_acquisitions.bins]
 
         return np.array(bins[0] if len(bins) == 1 else bins)
 
@@ -202,3 +210,11 @@ class QbloxResult(Result):
             QBLOXRESULT.INTEGRATION_LENGTHS: self.integration_lengths,
             QBLOXRESULT.QBLOX_RAW_RESULTS: self.qblox_raw_results,
         }
+
+    def array_order(self) -> list[str]:
+        """Helper function returning the order (#qubit, #measurement) for binned results
+
+        Returns:
+            list[str]: _description_
+        """
+        return [f"(Q {result['qubit']}, M {result['measurement']})" for result in self.qblox_raw_results]

@@ -588,8 +588,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         if not results:
             raise ValueError("There are no readout buses in the platform.")
 
-        multi_measure_order = [(qblox_result['qubit'], qblox_result['measurement']) for qblox_result in results[0].qblox_raw_results]
-        logger.warning(f"Outputing results with order {multi_measure_order}")
         return results[0]
 
     def compile(self, program: PulseSchedule | Circuit, num_avg: int, repetition_duration: int, num_bins: int) -> dict:
