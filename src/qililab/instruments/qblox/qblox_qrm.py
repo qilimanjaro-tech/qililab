@@ -332,13 +332,10 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         setup_block.append_components([move_0, move_1], bot_position=1)
 
     def _generate_acquisitions(self, timeline: list[PulseEvent] | None = None) -> Acquisitions:
-        """Generate acquisitions as a dictionary of #qubit #measurement
-
-        Args:
-            timeline (list[PulseEvent]): _description_
+        """Generate Acquisitions object as a dictionary with keys q#qubit_#measurement
 
         Returns:
-            Acquisitions: _description_
+            Acquisitions: Acquisitions object.
         """
         acquisitions = Acquisitions()
         for index, pulse_event in enumerate(timeline):

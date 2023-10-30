@@ -249,7 +249,6 @@ class QbloxModule(AWG):
                     wait_time=int(wait_time),
                 )
             )
-            # TODO: added to test multi measurements on same qubit
             if pulse_bus_schedule.port == "feedline_input":
                 self._append_acquire_instruction(
                     loop=bin_loop,
@@ -258,7 +257,7 @@ class QbloxModule(AWG):
                     weight_regs=weight_registers,
                     acq_index=i,
                 )
-        # TODO: added to test multi measurements on same qubit
+        # FIXME: can we safely remove this?
         if pulse_bus_schedule.port != "feedline_input":
             self._append_acquire_instruction(
                 loop=bin_loop,
@@ -282,8 +281,7 @@ class QbloxModule(AWG):
 
     @abstractmethod
     def _generate_acquisitions(self, timeline: list[PulseEvent] | None = None) -> Acquisitions:
-        """Generate Acquisitions object, currently containing a single acquisition named "default", with num_bins = 1
-        and index = 0.
+        """Generate Acquisitions object. Abstract method handled at each module (qrm / qcm)
 
         Returns:
             Acquisitions: Acquisitions object.
