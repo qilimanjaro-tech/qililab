@@ -150,7 +150,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
 
         # empty cache and sequence for specific qubits if they are not in the schedule
         for cached_qubit, seq_id in (
-            (timeline.qubit, key) for key, element in self._cache.items() for timeline in element.timeline
+            (timeline.qubit, key) for key, element in list(self._cache.items()) for timeline in element.timeline
         ):
             if cached_qubit not in (schedule.qubit for schedule in qubit_schedules):
                 _ = self.sequences.pop(seq_id)
