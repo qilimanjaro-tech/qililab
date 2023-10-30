@@ -149,15 +149,12 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         qubit_schedules = pulse_bus_schedule.qubit_schedules()
 
         # empty cache and sequence for specific qubits if they are not in the schedule
-        unused_seq = []
         for cached_qubit, seq_id in (
             (timeline.qubit, key) for key, element in self._cache.items() for timeline in element.timeline
         ):
             if cached_qubit not in (schedule.qubit for schedule in qubit_schedules):
-                unused_seq.append(seq_id)
                 _ = self.sequences.pop(seq_id)
                 _ = self._cache.pop(seq_id)
-        self._cache = {key: items for key, items in self._cache.items() if key not in unused_seq}
 
         compiled_sequences = []
         for schedule in qubit_schedules:
