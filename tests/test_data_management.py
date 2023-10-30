@@ -92,20 +92,32 @@ class TestBuildPlatformCornerCases:
 
     def test_platform_serialization_from_imported_dict(self):
         """Test platform serialization by building a platform, saving it and then load it back again twice. Starting from a given dict."""
-        original_platform = ql.build_platform(Galadriel.runcard)
+        original_dict = Galadriel.runcard
+        # Check that the new serialization with ruamel.yaml.YAML().dump works for different formats...
+        original_dict["gates_settings"]["gates"]["Y(0)"][0]["pulse"]["phase"] = 1.6707963267948966  # Test long decimals
+        original_dict["instruments"][0]["awg_sequencers"][0][
+            "intermediate_frequency"
+        ] = 100_000_000  # Test underscore notation
+        original_dict["instruments"][1]["awg_sequencers"][0]["sampling_rate"] = 7.24730e09  # Test scientific notation
+        original_dict["instruments"][4]["firmware"] = None  # Test None values
+
+        original_platform = ql.build_platform(original_dict)
+
         path = save_platform(path="./test.yml", platform=original_platform)
         saved_platform = ql.build_platform(path)
+
         new_path = save_platform(path="./test.yml", platform=saved_platform)
         new_saved_platform = ql.build_platform(new_path)
 
-        with open(file="examples/runcards/galadriel.yml", mode="r", encoding="utf8") as yaml_f:
-            yaml_f_dict = yaml.safe_load(stream=yaml_f)
         with open(file="./test.yml", mode="r", encoding="utf8") as generated_f:
             generated_f_dict = yaml.safe_load(stream=generated_f)
 
-        assert yaml_f_dict != generated_f_dict == Galadriel.runcard
         assert (
-            original_platform.to_dict() == saved_platform.to_dict() == new_saved_platform.to_dict() == generated_f_dict
+            original_platform.to_dict()
+            == saved_platform.to_dict()
+            == new_saved_platform.to_dict()
+            == generated_f_dict
+            == original_dict
         )
         os.remove(path)  # Cleaning generated file
 
@@ -124,7 +136,7 @@ class TestBuildPlatformCornerCases:
 
         for i in ["name", "device_id", "chip", "instruments", "instrument_controllers"]:
             assert yaml_f_dict[i] == generated_f_dict[i]
-        assert generated_f_dict != Galadriel.runcard
+
         assert (
             original_platform.to_dict() == saved_platform.to_dict() == new_saved_platform.to_dict() == generated_f_dict
         )
@@ -155,55 +167,3 @@ class TestResultsData:
 
         mock_file.assert_called_once_with(path, "r")
         mock_makedirs.assert_not_called()
-
-
-class TestPlatformSerializationWithRuamelYaml:
-    """Unit tests to check the serialization is keeping all we want to keep."""
-
-    original_platform = ql.build_platform(Galadriel.runcard)
-    path = save_platform(path="./test.yml", platform=original_platform)
-    saved_platform = ql.build_platform(path)
-    os.remove(path)
-
-    def test_long_decimal_in_serialization(self):
-        """Test that long decimals are correctly dumped in serialization."""
-        original_phase = self.original_platform.gates_settings.gates["Y(0)"][0].pulse.phase
-        original_phase_from_dict = self.original_platform.to_dict()["gates_settings"]["gates"]["Y(0)"][0]["pulse"][
-            "phase"
-        ]
-        saved_phase = self.saved_platform.gates_settings.gates["Y(0)"][0].pulse.phase
-        saved_phase_from_dict = self.saved_platform.to_dict()["gates_settings"]["gates"]["Y(0)"][0]["pulse"]["phase"]
-
-        assert original_phase == original_phase_from_dict == saved_phase == saved_phase_from_dict == 1.5707963267948966
-
-    def test_underscore_notation_in_serialization(self):
-        """Test that underscore notations are correctly dumped in serialization."""
-        original_if = self.original_platform.instruments.elements[0].awg_sequencers[0].intermediate_frequency
-        original_phase_from_dict = self.original_platform.to_dict()["instruments"][0]["awg_sequencers"][0][
-            "intermediate_frequency"
-        ]
-        saved_if = self.saved_platform.instruments.elements[0].awg_sequencers[0].intermediate_frequency
-        saved_phase_from_dict = self.saved_platform.to_dict()["instruments"][0]["awg_sequencers"][0][
-            "intermediate_frequency"
-        ]
-
-        assert original_if == original_phase_from_dict == saved_if == saved_phase_from_dict == 100_000_000
-
-    def test_scientific_notation_in_serialization(self):
-        """Test that scientific notations are correctly dumped in serialization."""
-        original_lo_freq = self.original_platform.instruments.elements[2].frequency
-        original_lo_freq_from_dict = self.original_platform.to_dict()["instruments"][2]["frequency"]
-        saved_lo_freq = self.saved_platform.instruments.elements[2].frequency
-        saved_lo_freq_from_dict = self.saved_platform.to_dict()["instruments"][2]["frequency"]
-
-        assert original_lo_freq == original_lo_freq_from_dict == saved_lo_freq_from_dict == saved_lo_freq == 7.24730e09
-
-    def test_None_in_serialization(self):
-        """Test that None's are correctly dumped in serialization."""
-        original_firmware = self.original_platform.instruments.elements[4].firmware
-        original_firmware_from_dict = self.original_platform.to_dict()["instruments"][4]["firmware"]
-        saved_firmware = self.saved_platform.instruments.elements[4].firmware
-        saved_firmware_from_dict = self.saved_platform.to_dict()["instruments"][4]["firmware"]
-
-        assert original_firmware == original_firmware_from_dict == saved_firmware == saved_firmware_from_dict
-        assert saved_firmware is None
