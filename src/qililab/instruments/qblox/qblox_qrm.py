@@ -156,6 +156,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             if cached_qubit not in (schedule.qubit for schedule in qubit_schedules):
                 unused_seq.append(seq_id)
                 _ = self.sequences.pop(seq_id)
+                _ = self._cache.pop(seq_id)
         self._cache = {key: items for key, items in self._cache.items() if key not in unused_seq}
 
         compiled_sequences = []
