@@ -237,6 +237,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         bad_data_threshold: float,
         comparison_model: Callable,
         drift_timeout: float,
+        qubit_index: int | list[int] | None = None,
         input_parameters: dict | None = None,
         sweep_interval: dict | None = None,
         number_of_random_datapoints: int = 10,
@@ -245,10 +246,13 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             raise ValueError("`in_spec_threshold` must be smaller or equal than `bad_data_threshold`.")
 
         self.nb_path: str = nb_path
-        """Full notebook path, with folder, nb_name and ``.ipynb`` extension"""
+        """Full notebook path, with folder, nb_name and ``.ipynb`` extension."""
+
+        self.qubit_index: int | list[int] | None = qubit_index
+        """Qubit which this notebook will be executed on."""
 
         self.node_id, self.nb_folder = self._path_to_name_and_folder(nb_path)
-        """Node name and folder, separated, and without the ``.ipynb`` extension"""
+        """Node name and folder, separated, and without the ``.ipynb`` extension."""
 
         self.in_spec_threshold: float = in_spec_threshold
         """Threshold such that the ``check_data()`` methods return `in_spec` or `out_of_spec`."""
@@ -587,9 +591,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         return last_modified_file_name if last_modified_file_time != -1.0 else None
 
-    @classmethod
     def _create_notebook_datetime_path(
-        cls, original_path: str, timestamp: float | None = None, dirty: bool = False, error: bool = False
+        self, original_path: str, timestamp: float | None = None, dirty: bool = False, error: bool = False
     ) -> str:
         """Adds the datetime to the file name end, just before the ``.ipynb``.
 
@@ -613,7 +616,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         now_path = f"{daily_path}-" + f"{now.hour:02d}:{now.minute:02d}:{now.second:02d}"
 
         # If doesn't exist, create the needed folder for the path
-        name, folder_path = cls._path_to_name_and_folder(original_path)
+        name, folder_path = self._path_to_name_and_folder(original_path)
         os.makedirs(folder_path, exist_ok=True)
 
         if dirty and not error:  # return the path of the execution
@@ -624,9 +627,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         # return the string where saved
         return f"{folder_path}/{name}_{now_path}.ipynb"
 
-    @staticmethod
-    def _path_to_name_and_folder(original_path: str) -> tuple[str, str]:
-        """Transforms a path into name and folder.
+    def _path_to_name_and_folder(self, original_path: str) -> tuple[str, str]:
+        """Transforms a path into name and folder. Name will be extended with the qubit it acts on.
 
         The passed path can have the ``.ipynb`` extension or not.
 
@@ -644,7 +646,14 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         # remove anything after the last "/":
         folder_path_list = shorted_path.split("/")
-        name = folder_path_list.pop()
+        if isinstance(self.qubit_index, int):
+            qubit_str = f"_q{str(self.qubit_index)}"
+        if isinstance(self.qubit_index, list):
+            qubit_str = "_"
+            for q in self.qubit_index:
+                qubit_str += f"q{str(q)}"
+
+        name = folder_path_list.pop() + qubit_str
         folder_path = "/".join(folder_path_list)
 
         return name, folder_path
