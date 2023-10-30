@@ -41,7 +41,6 @@ class Square(Waveform):  # pylint: disable=too-few-public-methods
     """
 
     def __init__(self, amplitude: float, duration: int):
-        """Initialization of the class."""
         self.amplitude = amplitude
         self.duration = duration
 

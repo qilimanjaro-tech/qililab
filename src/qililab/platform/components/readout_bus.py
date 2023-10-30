@@ -46,7 +46,6 @@ class ReadoutBus(BusDriver):
         attenuator: Attenuator | None,
         distortions: list,
     ):
-        """Initialise the bus."""
         super().__init__(alias=alias, port=port, awg=awg, distortions=distortions)
         self._digitiser = digitiser
         self.instruments["digitiser"] = self._digitiser

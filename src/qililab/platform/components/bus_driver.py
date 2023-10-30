@@ -35,7 +35,6 @@ class BusDriver(ABC):
     """
 
     def __init__(self, alias: str, port: int, awg: AWG | None, distortions: list):
-        """Initialise the base of a bus."""
         self.alias = alias
         self.port = port
         self._awg = awg
