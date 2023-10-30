@@ -377,7 +377,7 @@ class CalibrationController:
                 - (str) node_id where this fidelity was computed.
                 - (datetime) updated time of the fidelity.
         """
-        fidelities: dict[str, tuple] = {}
+        fidelities: dict[tuple, tuple] = {}
         print("LAST RETRIEVED FIDELITIES:")
         for node in self.node_sequence.values():
             if (
@@ -389,7 +389,7 @@ class CalibrationController:
                     print(
                         f"Last fidelity of {fidelities} in qubit {qubit}: {value} (updated in {node.node_id} at {datetime.fromtimestamp(node.previous_timestamp)})"
                     )
-                    fidelities[fidelities, qubit] = (
+                    fidelities[(fidelities, qubit)] = (
                         value,
                         node.node_id,
                         datetime.fromtimestamp(node.previous_timestamp),
