@@ -36,7 +36,7 @@ from qililab.typings.enums import AcquireTriggerMode, InstrumentName, Parameter
 @InstrumentFactory.register
 class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
     """Qblox QRM class.
-
+    TODO: remove this line
     Args:
         settings (QBloxQRMSettings): Settings of the instrument.
     """
