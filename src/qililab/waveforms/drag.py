@@ -31,7 +31,6 @@ class Drag(IQPair):  # pylint: disable=too-few-public-methods
     """
 
     def __init__(self, amplitude: float, duration: int, num_sigmas: float, drag_coefficient: float):
-        """Initialization of the class."""
         waveform_i = Gaussian(amplitude=amplitude, duration=duration, num_sigmas=num_sigmas)
         waveform_q = DragCorrection(drag_coefficient=drag_coefficient, waveform=waveform_i)
 
