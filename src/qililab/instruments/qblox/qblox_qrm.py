@@ -46,7 +46,8 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
 
     @dataclass
     class QbloxQRMSettings(
-        QbloxModule.QbloxModuleSettings, AWGAnalogDigitalConverter.AWGAnalogDigitalConverterSettings
+        QbloxModule.QbloxModuleSettings,
+        AWGAnalogDigitalConverter.AWGAnalogDigitalConverterSettings,
     ):
         """Contains the settings of a specific QRM."""
 
@@ -88,20 +89,28 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             # Remove all acquisition data
             self.device.delete_acquisition_data(sequencer=sequencer_id, all=True)
             self._set_integration_length(
-                value=cast(AWGQbloxADCSequencer, sequencer).integration_length, sequencer_id=sequencer_id
+                value=cast(AWGQbloxADCSequencer, sequencer).integration_length,
+                sequencer_id=sequencer_id,
             )
             self._set_acquisition_mode(
-                value=cast(AWGQbloxADCSequencer, sequencer).scope_acquire_trigger_mode, sequencer_id=sequencer_id
+                value=cast(AWGQbloxADCSequencer, sequencer).scope_acquire_trigger_mode,
+                sequencer_id=sequencer_id,
             )
             self._set_scope_hardware_averaging(
-                value=cast(AWGQbloxADCSequencer, sequencer).scope_hardware_averaging, sequencer_id=sequencer_id
+                value=cast(AWGQbloxADCSequencer, sequencer).scope_hardware_averaging,
+                sequencer_id=sequencer_id,
             )
             self._set_hardware_demodulation(
-                value=cast(AWGQbloxADCSequencer, sequencer).hardware_demodulation, sequencer_id=sequencer_id
+                value=cast(AWGQbloxADCSequencer, sequencer).hardware_demodulation,
+                sequencer_id=sequencer_id,
             )
-            self._set_threshold(value=cast(AWGQbloxADCSequencer, sequencer).threshold, sequencer_id=sequencer_id)
+            self._set_threshold(
+                value=cast(AWGQbloxADCSequencer, sequencer).threshold,
+                sequencer_id=sequencer_id,
+            )
             self._set_threshold_rotation(
-                value=cast(AWGQbloxADCSequencer, sequencer).threshold_rotation, sequencer_id=sequencer_id
+                value=cast(AWGQbloxADCSequencer, sequencer).threshold_rotation,
+                sequencer_id=sequencer_id,
             )
 
     def _obtain_scope_sequencer(self):
@@ -118,7 +127,11 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                     raise ValueError("The scope can only be stored in one sequencer at a time.")
 
     def compile(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
+        self,
+        pulse_bus_schedule: PulseBusSchedule,
+        nshots: int,
+        repetition_duration: int,
+        num_bins: int,
     ) -> list[QpySequence]:
         """Deletes the old acquisition data and compiles the ``PulseBusSchedule`` into an assembly program.
 
@@ -147,8 +160,18 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
         # Separate the readout schedules by the qubit they act on
         qubit_schedules = pulse_bus_schedule.qubit_schedules()
+
+        # empty cache and sequence for specific qubits if they are not in the schedule
+        unused_seq = []
+        for cached_qubit, seq_id in (
+            (timeline.qubit, key) for key, element in self._cache.items() for timeline in element.timeline
+        ):
+            if cached_qubit not in (schedule.qubit for schedule in qubit_schedules):
+                unused_seq.append(seq_id)
+                _ = self.sequences.pop(seq_id)
+        self._cache = {key: items for key, items in self._cache.items() if key not in unused_seq}
+
         compiled_sequences = []
-        sequencer_idxs_used = []
         for schedule in qubit_schedules:
             # Get the sequencer that acts on the same qubit as the schedule
             qubit_sequencers = [sequencer for sequencer in sequencers if sequencer.qubit == schedule.qubit]
@@ -158,7 +181,6 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                     f"got {len(qubit_sequencers)}"
                 )
             sequencer = qubit_sequencers[0]
-            sequencer_idxs_used.append(sequencer.identifier)
             if schedule != self._cache.get(sequencer.identifier):
                 # If the schedule is not in the cache, compile it and add it to the cache
                 sequence = self._compile(schedule, sequencer)
@@ -170,12 +192,6 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 if sequence_uploaded:
                     self.device.delete_acquisition_data(sequencer=sequencer.identifier, name="default")
                 compiled_sequences.append(self.sequences[sequencer.identifier][0])
-
-        # We remove from the cache all sequences that are not in the compiled schedule
-        for sequencer_idx in self.sequences.keys():
-            if sequencer_idx != sequencer_idxs_used:
-                _ = self.sequences.pop(sequencer_idx)
-                _ = self._cache.pop(sequencer_idx)
 
         return compiled_sequences
 
@@ -264,7 +280,8 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         super()._set_nco(sequencer_id=sequencer_id)
         if cast(AWGQbloxADCSequencer, self.get_sequencer(sequencer_id)).hardware_demodulation:
             self._set_hardware_demodulation(
-                value=self.get_sequencer(sequencer_id).hardware_modulation, sequencer_id=sequencer_id
+                value=self.get_sequencer(sequencer_id).hardware_modulation,
+                sequencer_id=sequencer_id,
             )
 
     @Instrument.CheckDeviceInitialized
@@ -282,11 +299,13 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             if sequencer.identifier in self.sequences:
                 sequencer_id = sequencer.identifier
                 flags = self.device.get_sequencer_state(
-                    sequencer=sequencer_id, timeout=cast(AWGQbloxADCSequencer, sequencer).sequence_timeout
+                    sequencer=sequencer_id,
+                    timeout=cast(AWGQbloxADCSequencer, sequencer).sequence_timeout,
                 )
                 logger.info("Sequencer[%d] flags: \n%s", sequencer_id, flags)
                 self.device.get_acquisition_state(
-                    sequencer=sequencer_id, timeout=cast(AWGQbloxADCSequencer, sequencer).acquisition_timeout
+                    sequencer=sequencer_id,
+                    timeout=cast(AWGQbloxADCSequencer, sequencer).acquisition_timeout,
                 )
 
                 if sequencer.scope_store_enabled:
@@ -302,7 +321,11 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
 
     def _append_acquire_instruction(
-        self, loop: Loop, bin_index: Register | int, sequencer_id: int, weight_regs: tuple[Register, Register]
+        self,
+        loop: Loop,
+        bin_index: Register | int,
+        sequencer_id: int,
+        weight_regs: tuple[Register, Register],
     ):
         """Append an acquire instruction to the loop."""
         weighed_acq = self._get_sequencer_by_id(id=sequencer_id).weighed_acq_enabled
@@ -320,7 +343,12 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         )
         loop.append_component(acq_instruction)
 
-    def _init_weights_registers(self, registers: tuple[Register, Register], values: tuple[int, int], program: Program):
+    def _init_weights_registers(
+        self,
+        registers: tuple[Register, Register],
+        values: tuple[int, int],
+        program: Program,
+    ):
         """Initialize the weights `registers` to the `values` specified and place the required instructions in the
         setup block of the `program`."""
         move_0 = Move(0, registers[0])
@@ -335,7 +363,10 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             Weights: Acquisition weights.
         """
         weights = Weights()
-        pair = ([float(w) for w in sequencer.weights_i], [float(w) for w in sequencer.weights_q])
+        pair = (
+            [float(w) for w in sequencer.weights_i],
+            [float(w) for w in sequencer.weights_q],
+        )
         if (sequencer.path_i, sequencer.path_q) == (1, 0):
             pair = pair[::-1]  # swap paths
         weights.add_pair(pair=pair, indices=(0, 1))
@@ -350,10 +381,20 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
 
     @Instrument.CheckDeviceInitialized
     def setup(
-        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
+        self,
+        parameter: Parameter,
+        value: float | str | bool,
+        channel_id: int | None = None,
+        port_id: str | None = None,
     ):
         """set a specific parameter to the instrument"""
         try:
             AWGAnalogDigitalConverter.setup(self, parameter=parameter, value=value, channel_id=channel_id)
         except ParameterNotFound:
-            QbloxModule.setup(self, parameter=parameter, value=value, channel_id=channel_id, port_id=port_id)
+            QbloxModule.setup(
+                self,
+                parameter=parameter,
+                value=value,
+                channel_id=channel_id,
+                port_id=port_id,
+            )
