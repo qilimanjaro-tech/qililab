@@ -301,3 +301,17 @@ class TestQProgram:
 
         # Test storing in QProgram's _variables
         assert len(qp._variables) == 6
+
+    def test_variable_method_raises_error_if_domain_is_scalar_and_type_is_none(self):
+        """Test variable method"""
+        qp = QProgram()
+        with pytest.raises(ValueError, match="You must specify a type in a scalar variable."):
+            qp.variable(Domain.Scalar)
+
+    def test_variable_method_raises_error_if_domain_is_not_scalar_and_type_is_set(self):
+        """Test variable method"""
+        qp = QProgram()
+        with pytest.raises(
+            ValueError, match="When declaring a variable of a specific domain, its type is inferred by its domain."
+        ):
+            qp.variable(Domain.Frequency, int)

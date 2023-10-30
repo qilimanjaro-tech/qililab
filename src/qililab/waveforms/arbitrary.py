@@ -52,17 +52,20 @@ class Arbitrary(Waveform):  # pylint: disable=too-few-public-methods, disable=mi
         if resolution == 1:
             return self.samples
 
-        # Moving average
-        cumsum = np.cumsum(self.samples)
-        cumsum[resolution:] = cumsum[resolution:] - cumsum[:-resolution]
-        moving_avg = cumsum[resolution - 1 :] / resolution
+        # Calculate the averaging window
+        averaging_window = int(len(self.samples) / resolution)
 
-        # Scaling and shifting
+        # Calculate the moving average
+        cumsum = np.cumsum(self.samples)
+        cumsum[averaging_window:] = cumsum[averaging_window:] - cumsum[:-averaging_window]
+        moving_avg = cumsum[averaging_window:] / averaging_window
+
+        # Apply scaling and shifting
         scale_factor = (self.samples.max() - self.samples.min()) / (moving_avg.max() - moving_avg.min())
         shift = self.samples.max() - moving_avg.max() * scale_factor
         scaled_avg = moving_avg * scale_factor + shift
 
-        # Clamping
+        # Apply clamping
         clamped_avg = np.clip(scaled_avg, self.samples.min(), self.samples.max())
 
         return clamped_avg

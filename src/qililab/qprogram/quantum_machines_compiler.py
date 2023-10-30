@@ -18,7 +18,6 @@ from qililab.qprogram.operations import (
     SetFrequency,
     SetGain,
     SetPhase,
-    SetVariable,
     Sync,
     Wait,
 )
@@ -67,7 +66,6 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
     def __init__(self):
         # Handlers to map each operation to a corresponding handler function
         self._handlers: dict[type, Callable] = {
-            SetVariable: self._handle_set_variable,
             InfiniteLoop: self._handle_infinite_loop,
             Parallel: self._handle_parallel_loop,
             ForLoop: self._handle_for_loop,
@@ -220,17 +218,6 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
         buses = set(collect_buses(self._qprogram.body))
         self._configuration["elements"] = {bus: {"operations": {}} for bus in buses}
         self._buses = {bus: _BusCompilationInfo() for bus in buses}
-
-    def _handle_set_variable(self, element: SetVariable):
-        qua_variable = self._qprogram_to_qua_variables[element.variable]
-        value = element.value
-        if element.variable.domain is Domain.Phase:
-            value = value / 360.0
-        if element.variable.domain is Domain.Frequency:
-            value = value * 1e3
-        if element.variable.domain is Domain.Time:
-            value = max(value, 4)
-        qua.assign(qua_variable, value)
 
     def _handle_infinite_loop(self, _: InfiniteLoop):
         return qua.infinite_loop_()

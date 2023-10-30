@@ -6,7 +6,7 @@ from qililab.waveforms.drag_correction import DragCorrection
 
 class TestDrag:
     def test_init(self):
-        # test init method
+        """Test __init__ method"""
         drag = DragPair(drag_coefficient=0.4, amplitude=0.7, duration=40, num_sigmas=2)
         gaus = Gaussian(amplitude=0.7, duration=40, num_sigmas=2)
         corr = DragCorrection(drag_coefficient=0.4, waveform=gaus)

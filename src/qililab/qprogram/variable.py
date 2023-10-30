@@ -67,9 +67,6 @@ class Variable:
     def __hash__(self):
         return hash(self._uuid)
 
-    def __format__(self, formatstr):
-        return self._value.__format__(formatstr)
-
 
 class IntVariable(Variable, int):  # type: ignore
     """Integer variable. This class is used to define a variable of type int, such that Python recognizes this class

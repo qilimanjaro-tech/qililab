@@ -21,6 +21,5 @@ from .set_frequency import SetFrequency
 from .set_gain import SetGain
 from .set_offset import SetOffset
 from .set_phase import SetPhase
-from .set_variable import SetVariable
 from .sync import Sync
 from .wait import Wait

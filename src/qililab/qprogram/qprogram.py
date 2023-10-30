@@ -27,7 +27,6 @@ from qililab.qprogram.operations import (
     SetGain,
     SetOffset,
     SetPhase,
-    SetVariable,
     Sync,
     Wait,
 )
@@ -364,26 +363,6 @@ class QProgram:
         if domain in [Domain.Frequency, Domain.Phase, Domain.Voltage]:
             return _float_variable(domain)
         raise NotImplementedError
-
-    def set_variable(self, variable: Variable, value: int | float):
-        """Set the value of a variable.
-
-        Args:
-            variable (Variable): The variable.
-            value (int | float): The new value.
-
-        Raises:
-            ValueError: Raised if the variable is dependent on an external loop structure.
-            ValueError: Raised if incopatible types.
-        """
-        if variable._source is ValueSource.Dependent:
-            raise ValueError("You cannot set the value of the variable, since it is dependent on a loop structure.")
-        if isinstance(variable, int) and isinstance(value, float):
-            raise ValueError("Trying to change an integer variable to float.")
-
-        variable.value = value
-        operation = SetVariable(variable=variable, value=value)
-        self._active_block.append(operation)
 
     class _BlockContext:
         def __init__(self, qprogram: "QProgram"):
