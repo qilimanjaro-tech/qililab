@@ -50,7 +50,7 @@ class CalibrationController:
         runcard (str): The runcard path, containing the serialized platform where the experiments will be run.
 
     Examples:
-        In this example, you will create 2 nodes, and pass them to a :class:`.CalibrationController`, in order to run the maintain algorithm on the second one:
+        In this example, you will create 2 nodes twice, one for each qubit, and pass them to a :class:`.CalibrationController`, in order to run the maintain algorithm on the second one:
 
         .. code-block:: python
 
@@ -60,29 +60,35 @@ class CalibrationController:
                 "step": 2,
             }
 
-            # CREATE NODES :
-            first = CalibrationNode(
-                nb_path="notebooks/first.ipynb",
-                in_spec_threshold=4,
-                bad_data_threshold=8,
-                comparison_model=norm_root_mean_sqrt_error,
-                drift_timeout=1800.0,
-            )
-            second = CalibrationNode(
-                nb_path="notebooks/second.ipynb",
-                in_spec_threshold=2,
-                bad_data_threshold=4,
-                comparison_model=norm_root_mean_sqrt_error,
-                drift_timeout=1.0,
-                sweep_interval=personalized_sweep_interval,
-            )
-
-            # NODE MAPPING TO THE GRAPH (key = name in graph, value = node object):
-            nodes = {"first": first, "second": second}
-
-            # GRAPH CREATION:
+            # GRAPH CREATION AND NODE MAPPING (key = name in graph, value = node object):
+            nodes = {}
             G = nx.DiGraph()
-            G.add_edge("second", "first")
+
+            # CREATE NODES :
+            for qubit in [0, 1]:
+                first = CalibrationNode(
+                    nb_path="notebooks/first.ipynb",
+                    qubit_index=qubit,
+                    in_spec_threshold=4,
+                    bad_data_threshold=8,
+                    comparison_model=norm_root_mean_sqrt_error,
+                    drift_timeout=1800.0,
+                )
+                nodes[first.node_id] = first
+
+                second = CalibrationNode(
+                    nb_path="notebooks/second.ipynb",
+                    qubit_index=qubit,
+                    in_spec_threshold=2,
+                    bad_data_threshold=4,
+                    comparison_model=norm_root_mean_sqrt_error,
+                    drift_timeout=1.0,
+                    sweep_interval=personalized_sweep_interval,
+                )
+                nodes[second.node_id] = second
+
+                # GRAPH BUILDING:
+                G.add_edge(second.node_id, first.node_id)
 
             # CREATE CALIBRATION CONTROLLER:
             controller = CalibrationController(node_sequence=nodes, calibration_graph=G, runcard=path_runcard)
@@ -362,9 +368,9 @@ class CalibrationController:
             parameter_value (float | bool | str): The optimal value of the parameter found by the experiment.
         """
         if node.output_parameters is not None and "platform_params" in node.output_parameters:
-            for bus_alias, param_name, param_value in node.output_parameters["platform_params"]:
-                print(f"Platform updated with: ({bus_alias}, {param_name}, {param_value})")
-                self.platform.set_parameter(alias=bus_alias, parameter=param_name, value=param_value)
+            for bus_alias, qubit, param_name, param_value in node.output_parameters["platform_params"]:
+                print(f"Platform updated with: (bus:{bus_alias}, q:{qubit}, {param_name}, {param_value})")
+                self.platform.set_parameter(alias=bus_alias, parameter=param_name, value=param_value, channel_id=qubit)
 
             save_platform(self.runcard, self.platform)
 
@@ -373,8 +379,9 @@ class CalibrationController:
 
         Returns:
             dict[tuple, tuple]: Set parameters dictionary, with the dict key being a tuple containing:
-                - (str) the the parameter name.
+                - (str) the parameter name.
                 - (str) the bus alias where its been set.
+                - (int) the qubit where its been set.
             and the dict value being a tuple that contains in this order:
                 - (float) value of parameter.
                 - (str) node_id where this parameter was computed.
@@ -388,11 +395,11 @@ class CalibrationController:
                 and node.previous_timestamp is not None
                 and "platform_params" in node.output_parameters
             ):
-                for bus, parameter, value in node.output_parameters["platform_params"]:
+                for bus, qubit, parameter, value in node.output_parameters["platform_params"]:
                     print(
-                        f"Last set {parameter} in bus {bus}: {value} (updated in {node.node_id} at {datetime.fromtimestamp(node.previous_timestamp)})"
+                        f"Last set {parameter} in bus {bus} and qubit {qubit}: {value} (updated in {node.node_id} at {datetime.fromtimestamp(node.previous_timestamp)})"
                     )
-                    parameters[(parameter, bus)] = (
+                    parameters[(parameter, bus, qubit)] = (
                         value,
                         node.node_id,
                         datetime.fromtimestamp(node.previous_timestamp),
@@ -400,16 +407,19 @@ class CalibrationController:
 
         return parameters
 
-    def get_last_fidelities(self) -> dict[str, tuple]:
+    def get_last_fidelities(self) -> dict[tuple, tuple]:
         """Retrieve the last updated fidelities of the graph.
 
         Returns:
-            dict[str, tuple]: Fidelities dictionary, with key being the fidelity name (str), and the value being a tuple that contains in this order:
+            dict[tuple, tuple]: Fidelities dictionary, with the dict key being a tuple containing:
+                - (str) the fidelity name.
+                - (int) the qubit where its been set.
+            and the dict value being a tuple that contains in this order:
                 - (float) value of fidelity.
                 - (str) node_id where this fidelity was computed.
                 - (datetime) updated time of the fidelity.
         """
-        fidelities: dict[str, tuple] = {}
+        fidelities: dict[tuple, tuple] = {}
         print("LAST RETRIEVED FIDELITIES:")
         for node in self.node_sequence.values():
             if (
@@ -417,11 +427,15 @@ class CalibrationController:
                 and node.previous_timestamp is not None
                 and "fidelities" in node.output_parameters
             ):
-                for fidelity, value in node.output_parameters["fidelities"].items():
+                for qubit, fidelity, value in node.output_parameters["fidelities"]:
                     print(
-                        f"Last fidelity of {fidelity}: {value} (updated in {node.node_id} at {datetime.fromtimestamp(node.previous_timestamp)})"
+                        f"Last fidelity of {fidelity} in qubit {qubit}: {value} (updated in {node.node_id} at {datetime.fromtimestamp(node.previous_timestamp)})"
                     )
-                    fidelities[fidelity] = (value, node.node_id, datetime.fromtimestamp(node.previous_timestamp))
+                    fidelities[(fidelity, qubit)] = (
+                        value,
+                        node.node_id,
+                        datetime.fromtimestamp(node.previous_timestamp),
+                    )
 
         return fidelities
 

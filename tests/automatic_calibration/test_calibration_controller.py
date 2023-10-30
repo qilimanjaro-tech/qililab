@@ -27,6 +27,7 @@ def dummy_comparison_model(obtained: dict, comparison: dict) -> float:
 ######################
 zeroth = CalibrationNode(
     nb_path="tests/automatic_calibration/notebook_test/zeroth.ipynb",
+    qubit_index=[0, 1],
     in_spec_threshold=4,
     bad_data_threshold=8,
     comparison_model=dummy_comparison_model,
@@ -34,6 +35,7 @@ zeroth = CalibrationNode(
 )
 first = CalibrationNode(
     nb_path="tests/automatic_calibration/notebook_test/first.ipynb",
+    qubit_index=0,
     in_spec_threshold=4,
     bad_data_threshold=8,
     comparison_model=dummy_comparison_model,
@@ -41,6 +43,7 @@ first = CalibrationNode(
 )
 second = CalibrationNode(
     nb_path="tests/automatic_calibration/notebook_test/second.ipynb",
+    qubit_index=0,
     in_spec_threshold=2,
     bad_data_threshold=4,
     comparison_model=dummy_comparison_model,
@@ -48,6 +51,7 @@ second = CalibrationNode(
 )
 third = CalibrationNode(
     nb_path="tests/automatic_calibration/notebook_test/third.ipynb",
+    qubit_index=0,
     in_spec_threshold=1,
     bad_data_threshold=2,
     comparison_model=dummy_comparison_model,
@@ -55,6 +59,7 @@ third = CalibrationNode(
 )
 fourth = CalibrationNode(
     nb_path="tests/automatic_calibration/notebook_test/fourth.ipynb",
+    qubit_index=0,
     in_spec_threshold=1,
     bad_data_threshold=2,
     comparison_model=dummy_comparison_model,
@@ -62,7 +67,7 @@ fourth = CalibrationNode(
 )
 
 # NODE MAPPING TO THE GRAPH (key = name in graph, value = node object):
-nodes = {"zeroth": zeroth, "first": first, "second": second, "third": third, "fourth": fourth}
+nodes = {"zeroth_q0q1": zeroth, "first_q0": first, "second_q0": second, "third_q0": third, "fourth_q0": fourth}
 
 
 #######################
@@ -71,103 +76,103 @@ nodes = {"zeroth": zeroth, "first": first, "second": second, "third": third, "fo
 
 # fmt: off
 # GOOD GRAPH CREATION:
-G0 = nx.DiGraph()                   #       3 <--\
-G0.add_edge("fourth", "third")      #             \
-G0.add_edge("fourth", "second")     # 0 <-- 2 <-- 4
-G0.add_edge("second", "zeroth")     # ^\
-G0.add_edge("first", "zeroth")      #   \---1
+G0 = nx.DiGraph()                           #       3 <--\
+G0.add_edge("fourth_q0", "third_q0")        #             \
+G0.add_edge("fourth_q0", "second_q0")       # 0 <-- 2 <-- 4
+G0.add_edge("second_q0", "zeroth_q0q1")     # ^\
+G0.add_edge("first_q0", "zeroth_q0q1")      #   \---1
 
 # GOOD GRAPH CREATION:
-G1 = nx.DiGraph()                   #       3 <--\
-G1.add_edge("fourth", "third")      #       v     \
-G1.add_edge("fourth", "second")     # 0 <-- 2 <--- 4
-G1.add_edge("second", "zeroth")     # ^\    v
-G1.add_edge("first", "zeroth")      #   \---1
-G1.add_edge("third", "second")
-G1.add_edge("second", "first")
+G1 = nx.DiGraph()                           #       3 <--\
+G1.add_edge("fourth_q0", "third_q0")        #       v     \
+G1.add_edge("fourth_q0", "second_q0")       # 0 <-- 2 <--- 4
+G1.add_edge("second_q0", "zeroth_q0q1")     # ^\    v
+G1.add_edge("first_q0", "zeroth_q0q1")      #   \---1
+G1.add_edge("third_q0", "second_q0")
+G1.add_edge("second_q0", "first_q0")
 
 # GOOD GRAPH CREATION:
-G2 = nx.DiGraph()                   #   /-- 3 <-- 4
-G2.add_edge("fourth", "third")      #  /
-G2.add_edge("third", "zeroth")      # 0 <-- 2
-G2.add_edge("second", "zeroth")     #  \
-G2.add_edge("first", "zeroth")      #   \-- 1
+G2 = nx.DiGraph()                           #   /-- 3 <-- 4
+G2.add_edge("fourth_q0", "third_q0")        #  /
+G2.add_edge("third_q0", "zeroth_q0q1")      # 0 <-- 2
+G2.add_edge("second_q0", "zeroth_q0q1")     #  \
+G2.add_edge("first_q0", "zeroth_q0q1")      #   \-- 1
 
 # GOOD GRAPH CREATION:
 G3 = nx.DiGraph()
-G3.add_edge("fourth", "third")      #   /-- 3 <-- 4
-G3.add_edge("third", "zeroth")      #  /    v
-G3.add_edge("third", "second")      # 0 <-- 2
-G3.add_edge("second", "zeroth")     #  \
-G3.add_edge("first", "zeroth")      #   \-- 1
+G3.add_edge("fourth_q0", "third_q0")        #   /-- 3 <-- 4
+G3.add_edge("third_q0", "zeroth_q0q1")      #  /    v
+G3.add_edge("third_q0", "second_q0")        # 0 <-- 2
+G3.add_edge("second_q0", "zeroth_q0q1")     #  \
+G3.add_edge("first_q0", "zeroth_q0q1")      #   \-- 1
 
 # GOOD GRAPH CREATION:
 G4 = nx.DiGraph()
-G4.add_edge("fourth", "third")      #   /-- 2 <--\
-G4.add_edge("third", "second")      #  /          \
-G4.add_edge("third", "first")       # 0            3 <-- 4
-G4.add_edge("second", "zeroth")     #  \          /
-G4.add_edge("first", "zeroth")      #   \-- 1 <--/
+G4.add_edge("fourth_q0", "third_q0")        #   /-- 2 <--\
+G4.add_edge("third_q0", "second_q0")        #  /          \
+G4.add_edge("third_q0", "first_q0")         # 0            3 <-- 4
+G4.add_edge("second_q0", "zeroth_q0q1")     #  \          /
+G4.add_edge("first_q0", "zeroth_q0q1")      #   \-- 1 <--/
 
 # GOOD GRAPH CREATION:
 G5 = nx.DiGraph()
-G5.add_edge("fourth", "third")      #   /-- 2 <--\
-G5.add_edge("third", "second")      #  /    |     \
-G5.add_edge("third", "first")       # 0     |      3 <-- 4
-G5.add_edge("second", "zeroth")     #  \    v     /
-G5.add_edge("second", "first")      #   \-- 1 <--/
-G5.add_edge("first", "zeroth")
+G5.add_edge("fourth_q0", "third_q0")        #   /-- 2 <--\
+G5.add_edge("third_q0", "second_q0")        #  /    |     \
+G5.add_edge("third_q0", "first_q0")         # 0     |      3 <-- 4
+G5.add_edge("second_q0", "zeroth_q0q1")     #  \    v     /
+G5.add_edge("second_q0", "first_q0")        #   \-- 1 <--/
+G5.add_edge("first_q0", "zeroth_q0q1")
 
 # GOOD GRAPH CREATION:
 G6 = nx.DiGraph()
-G6.add_edge("fourth", "third")      #   /-- 3 <--\
-G6.add_edge("third", "second")      #  /    v     \
-G6.add_edge("third", "zeroth")      # 0 <-- 2      4
-G6.add_edge("second", "zeroth")     #  \    ^     /
-G6.add_edge("first", "second")      #   \-- 1 <--/
-G6.add_edge("first", "zeroth")
-G6.add_edge("fourth", "first")
+G6.add_edge("fourth_q0", "third_q0")        #   /-- 3 <--\
+G6.add_edge("third_q0", "second_q0")        #  /    v     \
+G6.add_edge("third_q0", "zeroth_q0q1")      # 0 <-- 2      4
+G6.add_edge("second_q0", "zeroth_q0q1")     #  \    ^     /
+G6.add_edge("first_q0", "second_q0")        #   \-- 1 <--/
+G6.add_edge("first_q0", "zeroth_q0q1")
+G6.add_edge("fourth_q0", "first_q0")
 
 # GOOD GRAPH CREATION:
 G7 = nx.DiGraph()
-G7.add_edge("fourth", "third")      #   /-- 3 <--\
-G7.add_edge("third", "second")      #  /    v     \
-G7.add_edge("third", "zeroth")      # 0 <-- 2      4
-G7.add_edge("second", "zeroth")     #  \    v     /
-G7.add_edge("second", "first")      #   \-- 1 <--/
-G7.add_edge("first", "zeroth")
-G7.add_edge("fourth", "first")
+G7.add_edge("fourth_q0", "third_q0")        #   /-- 3 <--\
+G7.add_edge("third_q0", "second_q0")        #  /    v     \
+G7.add_edge("third_q0", "zeroth_q0q1")      # 0 <-- 2      4
+G7.add_edge("second_q0", "zeroth_q0q1")     #  \    v     /
+G7.add_edge("second_q0", "first_q0")        #   \-- 1 <--/
+G7.add_edge("first_q0", "zeroth_q0q1")
+G7.add_edge("fourth_q0", "first_q0")
 
 # GOOD GRAPH CREATION:
 G8 = nx.DiGraph()
-G8.add_edge("fourth", "third")      #   /-- 3 <--\
-G8.add_edge("third", "second")      #  /    v     \
-G8.add_edge("third", "zeroth")      # 0 <-- 2 <--- 4
-G8.add_edge("second", "zeroth")     #  \    ^     /
-G8.add_edge("first", "second")      #   \-- 1 <--/
-G8.add_edge("first", "zeroth")
-G8.add_edge("fourth", "second")
-G8.add_edge("fourth", "first")
+G8.add_edge("fourth_q0", "third_q0")        #   /-- 3 <--\
+G8.add_edge("third_q0", "second_q0")        #  /    v     \
+G8.add_edge("third_q0", "zeroth_q0q1")      # 0 <-- 2 <--- 4
+G8.add_edge("second_q0", "zeroth_q0q1")     #  \    ^     /
+G8.add_edge("first_q0", "second_q0")        #   \-- 1 <--/
+G8.add_edge("first_q0", "zeroth_q0q1")
+G8.add_edge("fourth_q0", "second_q0")
+G8.add_edge("fourth_q0", "first_q0")
 
-# GOOD GRAPH CREATION:              #       ^
-G9 = nx.DiGraph()                   #       |
-G9.add_edge("fourth", "third")      #   /-- 3 <--\
-G9.add_edge("third", "second")      #  /    v     \
-G9.add_edge("third", "zeroth")      # 0 <-- 2 <--- 4
-G9.add_edge("second", "zeroth")     #  \    ^     /
-G9.add_edge("first", "second")      #   \-- 1 <--/
-G9.add_edge("first", "zeroth")      #       ^
-G9.add_edge("fourth", "second")     #       |
-G9.add_edge("fourth", "first")
-G9.add_edge("third", "first")
+# GOOD GRAPH CREATION:                      #       ^
+G9 = nx.DiGraph()                           #       |
+G9.add_edge("fourth_q0", "third_q0")        #   /-- 3 <--\
+G9.add_edge("third_q0", "second_q0")        #  /    v     \
+G9.add_edge("third_q0", "zeroth_q0q1")      # 0 <-- 2 <--- 4
+G9.add_edge("second_q0", "zeroth_q0q1")     #  \    ^     /
+G9.add_edge("first_q0", "second_q0")        #   \-- 1 <--/
+G9.add_edge("first_q0", "zeroth_q0q1")      #       ^
+G9.add_edge("fourth_q0", "second_q0")       #       |
+G9.add_edge("fourth_q0", "first_q0")
+G9.add_edge("third_q0", "first_q0")
 
 # BAD GRAPH CREATION:
-B = nx.DiGraph()                    #         /--->---\
-B.add_edge("fourth", "third")       #        /         \
-B.add_edge("third", "second")       # 0 <-- 1 <-- 2 <-- 3 <-- 4
-B.add_edge("second", "first")
-B.add_edge("first", "zeroth")
-B.add_edge("first", "third")
+B = nx.DiGraph()                            #         /--->---\
+B.add_edge("fourth_q0", "third_q0")         #        /         \
+B.add_edge("third_q0", "second_q0")         # 0 <-- 1 <-- 2 <-- 3 <-- 4
+B.add_edge("second_q0", "first_q0")
+B.add_edge("first_q0", "zeroth_q0q1")
+B.add_edge("first_q0", "third_q0")
 
 good_graphs = [G0, G1, G2, G3, G4, G5, G6, G7, G8, G9]
 
@@ -717,11 +722,16 @@ class TestCalibrationController:
     def test_update_parameters(self, mock_save_platform, mock_set_params, controller):
         """Test that the update parameters method, calls ``platform.set_parameter()`` and ``save_platform()``."""
         for node in controller.node_sequence.values():
-            node.output_parameters = {"platform_params": [("test_bus", "param", 0), ("test_bus2", "param2", 1)]}
+            node.output_parameters = {
+                "platform_params": [
+                    ("test_bus", node.qubit_index, "param", 0),
+                    ("test_bus2", node.qubit_index, "param2", 1),
+                ]
+            }
             controller._update_parameters(node)
 
             mock_set_params.assert_called_with(
-                alias="test_bus2", parameter="param2", value=1
+                alias="test_bus2", parameter="param2", value=1, channel_id=node.qubit_index
             )  # Checking the last call of the 2 there are.
             mock_save_platform.assert_called_with(controller.runcard, controller.platform)  # Checking the save call
 
@@ -736,23 +746,23 @@ class TestCalibrationController:
         for i, node in controller.node_sequence.items():
             node.output_parameters = {
                 "check_parameters": {"x": [0, 1, 2, 3, 4, 5], "y": [0, 1, 2, 3, 4, 5]},
-                "platform_params": [(f"test_bus_{i}", "param", 0), (f"test_bus_{i}", "param2", 1)],
-                "fidelities": {f"param1_{i}": 1, f"param2_{i}": 0.967},
+                "platform_params": [(f"test_bus_{i}", 0, "param", 0), (f"test_bus_{i}", 1, "param2", 1)],
+                "fidelities": [(0, f"param1_{i}", 1), (1, f"param2_{i}", 0.967)],
             }
             node.previous_timestamp = 1999
 
         dictionary = controller.get_last_set_parameters()
         assert dictionary == {
-            ("param", "test_bus_zeroth"): (0, "zeroth", datetime.fromtimestamp(1999)),
-            ("param2", "test_bus_zeroth"): (1, "zeroth", datetime.fromtimestamp(1999)),
-            ("param", "test_bus_first"): (0, "first", datetime.fromtimestamp(1999)),
-            ("param2", "test_bus_first"): (1, "first", datetime.fromtimestamp(1999)),
-            ("param", "test_bus_second"): (0, "second", datetime.fromtimestamp(1999)),
-            ("param2", "test_bus_second"): (1, "second", datetime.fromtimestamp(1999)),
-            ("param", "test_bus_third"): (0, "third", datetime.fromtimestamp(1999)),
-            ("param2", "test_bus_third"): (1, "third", datetime.fromtimestamp(1999)),
-            ("param", "test_bus_fourth"): (0, "fourth", datetime.fromtimestamp(1999)),
-            ("param2", "test_bus_fourth"): (1, "fourth", datetime.fromtimestamp(1999)),
+            ("param", "test_bus_zeroth_q0q1", 0): (0, "zeroth_q0q1", datetime.fromtimestamp(1999)),
+            ("param2", "test_bus_zeroth_q0q1", 1): (1, "zeroth_q0q1", datetime.fromtimestamp(1999)),
+            ("param", "test_bus_first_q0", 0): (0, "first_q0", datetime.fromtimestamp(1999)),
+            ("param2", "test_bus_first_q0", 1): (1, "first_q0", datetime.fromtimestamp(1999)),
+            ("param", "test_bus_second_q0", 0): (0, "second_q0", datetime.fromtimestamp(1999)),
+            ("param2", "test_bus_second_q0", 1): (1, "second_q0", datetime.fromtimestamp(1999)),
+            ("param", "test_bus_third_q0", 0): (0, "third_q0", datetime.fromtimestamp(1999)),
+            ("param2", "test_bus_third_q0", 1): (1, "third_q0", datetime.fromtimestamp(1999)),
+            ("param", "test_bus_fourth_q0", 0): (0, "fourth_q0", datetime.fromtimestamp(1999)),
+            ("param2", "test_bus_fourth_q0", 1): (1, "fourth_q0", datetime.fromtimestamp(1999)),
         }
 
     ################################
@@ -763,23 +773,23 @@ class TestCalibrationController:
         for i, node in controller.node_sequence.items():
             node.output_parameters = {
                 "check_parameters": {"x": [0, 1, 2, 3, 4, 5], "y": [0, 1, 2, 3, 4, 5]},
-                "platform_params": [(f"test_bus_{i}", "param", 0), (f"test_bus_{i}", "param2", 1)],
-                "fidelities": {f"param1_{i}": 1, f"param2_{i}": 0.967},
+                "platform_params": [(f"test_bus_{i}", 0, "param", 0), (f"test_bus_{i}", 1, "param2", 1)],
+                "fidelities": [(0, f"param1_{i}", 1), (1, f"param2_{i}", 0.967)],
             }
             node.previous_timestamp = 1999
 
         dictionary = controller.get_last_fidelities()
         assert dictionary == {
-            "param1_zeroth": (1, "zeroth", datetime.fromtimestamp(1999)),
-            "param2_zeroth": (0.967, "zeroth", datetime.fromtimestamp(1999)),
-            "param1_first": (1, "first", datetime.fromtimestamp(1999)),
-            "param2_first": (0.967, "first", datetime.fromtimestamp(1999)),
-            "param1_second": (1, "second", datetime.fromtimestamp(1999)),
-            "param2_second": (0.967, "second", datetime.fromtimestamp(1999)),
-            "param1_third": (1, "third", datetime.fromtimestamp(1999)),
-            "param2_third": (0.967, "third", datetime.fromtimestamp(1999)),
-            "param1_fourth": (1, "fourth", datetime.fromtimestamp(1999)),
-            "param2_fourth": (0.967, "fourth", datetime.fromtimestamp(1999)),
+            ("param1_zeroth_q0q1", 0): (1, "zeroth_q0q1", datetime.fromtimestamp(1999)),
+            ("param2_zeroth_q0q1", 1): (0.967, "zeroth_q0q1", datetime.fromtimestamp(1999)),
+            ("param1_first_q0", 0): (1, "first_q0", datetime.fromtimestamp(1999)),
+            ("param2_first_q0", 1): (0.967, "first_q0", datetime.fromtimestamp(1999)),
+            ("param1_second_q0", 0): (1, "second_q0", datetime.fromtimestamp(1999)),
+            ("param2_second_q0", 1): (0.967, "second_q0", datetime.fromtimestamp(1999)),
+            ("param1_third_q0", 0): (1, "third_q0", datetime.fromtimestamp(1999)),
+            ("param2_third_q0", 1): (0.967, "third_q0", datetime.fromtimestamp(1999)),
+            ("param1_fourth_q0", 0): (1, "fourth_q0", datetime.fromtimestamp(1999)),
+            ("param2_fourth_q0", 1): (0.967, "fourth_q0", datetime.fromtimestamp(1999)),
         }
 
     #######################
@@ -787,10 +797,10 @@ class TestCalibrationController:
     #######################
     def test_dependents(self, controller):
         """Test that dependents return the correct dependencies."""
-        result = controller._dependents(nodes["zeroth"])
+        result = controller._dependents(nodes["zeroth_q0q1"])
         assert result == []
 
-        result = controller._dependents(nodes["fourth"])
+        result = controller._dependents(nodes["fourth_q0"])
         if controller.calibration_graph in [G0, G1]:
             assert third in result and second in result
             assert len(result) == 2

@@ -38,6 +38,7 @@ def fixture_initialize_node_no_optional(mocked_build_stream) -> CalibrationNode:
     """Return a mocked CalibrationNode object for initialization, with the minimum number of things specified or mocked."""
     return CalibrationNode(
         nb_path="tests/automatic_calibration/notebook_test/zeroth.ipynb",
+        qubit_index=0,
         in_spec_threshold=0.6,
         bad_data_threshold=0.9,
         comparison_model=dummy_comparison_model,
@@ -68,6 +69,7 @@ def fixture_initialize_node_optional(
     """Return a mocked CalibrationNode object for initialization, with everything specified or mocked."""
     return CalibrationNode(
         nb_path="tests/automatic_calibration/notebook_test/zeroth.ipynb",
+        qubit_index=[0, 1],
         in_spec_threshold=0.6,
         bad_data_threshold=0.9,
         comparison_model=dummy_comparison_model,
@@ -85,6 +87,7 @@ def fixture_public_methods_node(mocked_last_cal_time, mocked_last_cal_params) ->
     """Return a mocked CalibrationNode object."""
     return CalibrationNode(
         nb_path="./foobar.ipynb",
+        qubit_index=0,
         in_spec_threshold=0.6,
         bad_data_threshold=0.9,
         comparison_model=dummy_comparison_model,
@@ -97,23 +100,10 @@ def fixture_public_methods_node(mocked_last_cal_time, mocked_last_cal_params) ->
 @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.get_last_calibrated_timestamp")
 @patch("qililab.automatic_calibration.calibration_node.StringIO", autospec=True)
 def fixture_private_methods_node(mocked_stringio, mocked_last_cal_time, mocked_last_cal_params) -> CalibrationNode:
-    """Return a mocked CalibrationNode object.."""
-    return CalibrationNode(
-        nb_path="./foobar.ipynb",
-        in_spec_threshold=0.6,
-        bad_data_threshold=0.9,
-        comparison_model=dummy_comparison_model,
-        drift_timeout=100.0,
-    )
-
-
-@pytest.fixture(name="class_methods_node")
-@patch("qililab.automatic_calibration.calibration_node.CalibrationNode.get_last_calibrated_output_parameters")
-@patch("qililab.automatic_calibration.calibration_node.CalibrationNode.get_last_calibrated_timestamp")
-def fixture_class_methods_node(mocked_last_cal_time, mocked_last_cal_params) -> CalibrationNode:
     """Return a mocked CalibrationNode object."""
     return CalibrationNode(
-        nb_path="foo/bar.ipynb",
+        nb_path="./foobar.ipynb",
+        qubit_index=0,
         in_spec_threshold=0.6,
         bad_data_threshold=0.9,
         comparison_model=dummy_comparison_model,
@@ -137,7 +127,9 @@ class TestInitializationCalibrationNode:
         # Assert:
         assert initialize_node_no_optional.nb_path == "tests/automatic_calibration/notebook_test/zeroth.ipynb"
         assert isinstance(initialize_node_no_optional.nb_path, str)
-        assert initialize_node_no_optional.node_id == "zeroth"
+        assert initialize_node_no_optional.qubit_index == 0
+        assert isinstance(initialize_node_no_optional.qubit_index, int | list | None)
+        assert initialize_node_no_optional.node_id == "zeroth_q0"
         assert isinstance(initialize_node_no_optional.nb_path, str)
         assert initialize_node_no_optional.nb_folder == "tests/automatic_calibration/notebook_test"
         assert isinstance(initialize_node_no_optional.nb_path, str)
@@ -168,6 +160,8 @@ class TestInitializationCalibrationNode:
         # Assert:
         assert initialize_node_optional.nb_path == "tests/automatic_calibration/notebook_test/zeroth.ipynb"
         assert isinstance(initialize_node_optional.nb_path, str)
+        assert initialize_node_optional.qubit_index == [0, 1]
+        assert isinstance(initialize_node_optional.qubit_index, int | list | None)
         assert initialize_node_optional.node_id == "node_id"
         assert isinstance(initialize_node_optional.nb_path, str)
         assert initialize_node_optional.nb_folder == "nb_folder"
@@ -203,6 +197,7 @@ class TestInitializationCalibrationNode:
         with pytest.raises(ValueError) as error:
             _ = CalibrationNode(
                 nb_path="./foobar.ipynb",
+                qubit_index=0,
                 in_spec_threshold=0.6,
                 bad_data_threshold=0.5,
                 comparison_model=dummy_comparison_model,
@@ -274,9 +269,11 @@ class TestPublicMethodsFromCalibrationNode:
         public_methods_node.input_parameters = input_parameters
         public_methods_node.run_notebook(check)
 
-        params_dict = {"check": check} | {
-            "number_of_random_datapoints": public_methods_node.number_of_random_datapoints
-        }
+        params_dict = (
+            {"check": check}
+            | {"number_of_random_datapoints": public_methods_node.number_of_random_datapoints}
+            | {"qubit": public_methods_node.qubit_index}
+        )
 
         if sweep_interval is not None:
             params_dict |= {
@@ -345,9 +342,11 @@ class TestPublicMethodsFromCalibrationNode:
             public_methods_node.run_notebook(check)
             mocked_exit.called_once()
 
-        params_dict = {"check": check} | {
-            "number_of_random_datapoints": public_methods_node.number_of_random_datapoints
-        }
+        params_dict = (
+            {"check": check}
+            | {"number_of_random_datapoints": public_methods_node.number_of_random_datapoints}
+            | {"qubit": public_methods_node.qubit_index}
+        )
 
         if sweep_interval is not None:
             params_dict |= {
@@ -417,9 +416,11 @@ class TestPublicMethodsFromCalibrationNode:
             public_methods_node.run_notebook(check)
             mocked_exit.called_once()
 
-        params_dict = {"check": check} | {
-            "number_of_random_datapoints": public_methods_node.number_of_random_datapoints
-        }
+        params_dict = (
+            {"check": check}
+            | {"number_of_random_datapoints": public_methods_node.number_of_random_datapoints}
+            | {"qubit": public_methods_node.qubit_index}
+        )
 
         if sweep_interval is not None:
             params_dict |= {
@@ -727,13 +728,13 @@ class TestPrivateMethodsFromCalibrationNode:
     def test_find_last_executed_calibration(self, private_methods_node: CalibrationNode):
         """Test that ``find_last_executed_calibration()`` works correctly."""
         test_filenames = [
-            "tmp_test_foobar_dirty.ipynb",
-            "tmp_test_foobar_error.ipynb",
-            "tmp_test_foo_calibrated.ipynb",
-            "tmp_test_bar_calibrated.ipynb",
-            "tmp_test_foobar_.ipynb",
+            "tmp_test_foobar_q0_dirty.ipynb",
+            "tmp_test_foobar_q0_error.ipynb",
+            "tmp_test_foo_q0_calibrated.ipynb",
+            "tmp_test_bar_q0_calibrated.ipynb",
+            "tmp_test_foobar_q0_.ipynb",
         ]
-        filename_expected = "tmp_test_foobar_calibrated.ipynb"
+        filename_expected = "tmp_test_foobar_q0_calibrated.ipynb"
 
         for test_filename in test_filenames:
             f = open(f"{private_methods_node.nb_folder}/{test_filename}", "w")
@@ -752,11 +753,11 @@ class TestPrivateMethodsFromCalibrationNode:
     def test_find_last_executed_calibration_does_not_find_file(self, private_methods_node: CalibrationNode):
         """Test ``find_last_executed_calibration()`` works properly, when there is nothing to find."""
         test_filenames = [
-            "tmp_test_foobar_dirty.ipynb",
-            "tmp_test_foobar_error.ipynb",
-            "tmp_test_foo_calibrated.ipynb",
-            "tmp_test_bar_calibrated.ipynb",
-            "tmp_test_foobar_.ipynb",
+            "tmp_test_foobar_dirty_q0.ipynb",
+            "tmp_test_foobar_error_q0.ipynb",
+            "tmp_test_foo_calibrated_q0.ipynb",
+            "tmp_test_bar_calibrated_q0.ipynb",
+            "tmp_test_foobar_.ipynb_q0",
         ]
 
         for test_filename in test_filenames:
@@ -770,10 +771,6 @@ class TestPrivateMethodsFromCalibrationNode:
         for test_filename in test_filenames:
             os.remove(f"{private_methods_node.nb_folder}/{test_filename}")
 
-
-class TestClassMethodsFromCalibrationNode:
-    """Test the class methods of the `CalibrationNode`class."""
-
     ##########################################
     ### TEST CREATE NOTEBOOK DATETIME PATH ###
     ##########################################
@@ -782,11 +779,11 @@ class TestClassMethodsFromCalibrationNode:
         [(None, True, True), (145783952598, False, True), (145783959532, False, False), (None, True, False)],
     )
     def test_create_notebook_datetime_path(
-        self, timestamp, dirty, error, class_methods_node: CalibrationNode, original_path="foo/bar.ipynb"
+        self, timestamp, dirty, error, private_methods_node: CalibrationNode, original_path="foo/bar.ipynb"
     ):
         """Test ``that create_notebook_datetime_path()`` works correctly."""
         with patch("qililab.automatic_calibration.calibration_node.os") as mocked_os:
-            test_value = class_methods_node._create_notebook_datetime_path(original_path, timestamp, dirty, error)
+            test_value = private_methods_node._create_notebook_datetime_path(original_path, timestamp, dirty, error)
             mocked_os.makedirs.assert_called()
             if timestamp is not None:
                 test_timestamp = datetime.fromtimestamp(timestamp)
@@ -805,6 +802,24 @@ class TestClassMethodsFromCalibrationNode:
                 assert "foo/error_executions/bar" in test_value
                 assert "_error.ipynb" in test_value
 
+    ####################################
+    ### TEST PATH TO NAME AND FOLDER ###
+    ####################################
+    @pytest.mark.parametrize(
+        "qubit, original_path, expected",
+        [
+            (0, "foo/bar/foobar.ipynb", ("foobar_q0", "foo/bar")),
+            ([0, 1], "this/is/a/long/path/to/notebook.ipynb", ("notebook_q0q1", "this/is/a/long/path/to")),
+        ],
+    )
+    def test_path_to_name_and_folder(self, private_methods_node: CalibrationNode, qubit, original_path, expected):
+        """Test that ``path_to_name_and_folder()`` works properly."""
+        private_methods_node.qubit_index = qubit
+        test_values = private_methods_node._path_to_name_and_folder(original_path)
+        assert len(test_values) == 2
+        assert test_values[0] == expected[0]
+        assert test_values[1] == expected[1]
+
 
 class TestStaticMethodsFromCalibrationNode:
     """Test static methods of the `CalibrationNode` class."""
@@ -818,23 +833,6 @@ class TestStaticMethodsFromCalibrationNode:
         stream = CalibrationNode._build_notebooks_logger_stream()
         mocked_logging.basicConfig.assert_called_once()
         assert isinstance(stream, StringIO)
-
-    ####################################
-    ### TEST PATH TO NAME AND FOLDER ###
-    ####################################
-    @pytest.mark.parametrize(
-        "original_path, expected",
-        [
-            ("foo/bar/foobar.ipynb", ("foobar", "foo/bar")),
-            ("this/is/a/long/path/to/notebook.ipynb", ("notebook", "this/is/a/long/path/to")),
-        ],
-    )
-    def test_path_to_name_and_folder(self, original_path, expected):
-        """Test that ``path_to_name_and_folder()`` works properly."""
-        test_values = CalibrationNode._path_to_name_and_folder(original_path)
-        assert len(test_values) == 2
-        assert test_values[0] == expected[0]
-        assert test_values[1] == expected[1]
 
     ###########################
     ### TEST GET TIMESTAMPS ###

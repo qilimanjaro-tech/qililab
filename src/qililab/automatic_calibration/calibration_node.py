@@ -112,7 +112,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
     Examples:
 
-        In this example, you will create 2 nodes, and pass them to a :class:`.CalibrationController`:
+        In this example, you will create 2 linked nodes twice, one for each qubit, and pass them to a :class:`.CalibrationController`:
 
         .. code-block:: python
 
@@ -122,33 +122,38 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                 "step": 2,
             }
 
-            # CREATE NODES :
-            first = CalibrationNode(
-                nb_path="notebooks/example.ipynb",
-                in_spec_threshold=4,
-                bad_data_threshold=8,
-                comparison_model=norm_root_mean_sqrt_error,
-                drift_timeout=1800.0,
-            )
-            second = CalibrationNode(
-                nb_path="notebooks/example.ipynb",
-                in_spec_threshold=2,
-                bad_data_threshold=4,
-                comparison_model=norm_root_mean_sqrt_error,
-                drift_timeout=1.0,
-                sweep_interval=personalized_sweep_interval,
-                number_of_random_datapoints=5,
-            )
-
-            # NODE MAPPING TO THE GRAPH (key = name in graph, value = node object):
-            nodes = {"first": first, "second": second}
-
-            # GRAPH CREATION:
+            # GRAPH CREATION AND NODE MAPPING (key = name in graph, value = node object):
+            nodes = {}
             G = nx.DiGraph()
-            G.add_edge("second", "first")
+
+            # CREATE NODES :
+            for qubit in [0, 1]:
+                first = CalibrationNode(
+                    nb_path="notebooks/first.ipynb",
+                    qubit_index=qubit,
+                    in_spec_threshold=4,
+                    bad_data_threshold=8,
+                    comparison_model=norm_root_mean_sqrt_error,
+                    drift_timeout=1800.0,
+                )
+                nodes[first.node_id] = first
+
+                second = CalibrationNode(
+                    nb_path="notebooks/second.ipynb",
+                    qubit_index=qubit,
+                    in_spec_threshold=2,
+                    bad_data_threshold=4,
+                    comparison_model=norm_root_mean_sqrt_error,
+                    drift_timeout=1.0,
+                    sweep_interval=personalized_sweep_interval,
+                )
+                nodes[second.node_id] = second
+
+                # GRAPH BUILDING:
+                G.add_edge(second.node_id, first.node_id)
 
             # CREATE CALIBRATION CONTROLLER:
-            controller = CalibrationController(node_sequence=nodes, calibration_graph=G, runcard=runcard_path)
+            controller = CalibrationController(node_sequence=nodes, calibration_graph=G, runcard=path_runcard)
 
         |
 
@@ -161,6 +166,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                 # ``check_data()`` parameters:
                 check = False
                 number_of_random_datapoints = 10
+                qubit=0
 
                 # Sweep interval:
                 start = 0
@@ -222,8 +228,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                 export_calibration_outputs(
                     {
                         "check_parameters": {"x": sweep_interval, "y": results},
-                        "platform_params": [(bus_alias0, param_name0, fitted_values[0]), (bus_alias1, param_name1, fitted_values[1])],
-                        "fidelities": {"fidelity1": 0.9, "fidelity2": 0.95}  # This key in the dictionary is optional
+                        "platform_params": [(bus_alias0, qubit, param_name0, fitted_values[0]), (bus_alias1, qubit, param_name1, fitted_values[1])],
+                        "fidelities": [(qubit, "fidelity1", 0.9), (qubit, "fidelity2", 0.95)]  # Fidelities in the output dictionary are optional.
                     }
                 )
 
@@ -237,6 +243,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         bad_data_threshold: float,
         comparison_model: Callable,
         drift_timeout: float,
+        qubit_index: int | list[int] | None = None,
         input_parameters: dict | None = None,
         sweep_interval: dict | None = None,
         number_of_random_datapoints: int = 10,
@@ -245,10 +252,13 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             raise ValueError("`in_spec_threshold` must be smaller or equal than `bad_data_threshold`.")
 
         self.nb_path: str = nb_path
-        """Full notebook path, with folder, nb_name and ``.ipynb`` extension"""
+        """Full notebook path, with folder, nb_name and ``.ipynb`` extension."""
+
+        self.qubit_index: int | list[int] | None = qubit_index
+        """Qubit which this notebook will be executed on."""
 
         self.node_id, self.nb_folder = self._path_to_name_and_folder(nb_path)
-        """Node name and folder, separated, and without the ``.ipynb`` extension"""
+        """Node name and folder, separated, and without the ``.ipynb`` extension."""
 
         self.in_spec_threshold: float = in_spec_threshold
         """Threshold such that the ``check_data()`` methods return `in_spec` or `out_of_spec`."""
@@ -377,7 +387,11 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         Exits:
             In case of a keyboard interruption or any exception during the execution of the notebook.
         """
-        params: dict = {"check": check} | {"number_of_random_datapoints": self.number_of_random_datapoints}
+        params: dict = (
+            {"check": check}
+            | {"number_of_random_datapoints": self.number_of_random_datapoints}
+            | {"qubit": self.qubit_index}
+        )
 
         if self.sweep_interval is not None:
             params |= {
@@ -587,9 +601,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         return last_modified_file_name if last_modified_file_time != -1.0 else None
 
-    @classmethod
     def _create_notebook_datetime_path(
-        cls, original_path: str, timestamp: float | None = None, dirty: bool = False, error: bool = False
+        self, original_path: str, timestamp: float | None = None, dirty: bool = False, error: bool = False
     ) -> str:
         """Adds the datetime to the file name end, just before the ``.ipynb``.
 
@@ -613,7 +626,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         now_path = f"{daily_path}-" + f"{now.hour:02d}:{now.minute:02d}:{now.second:02d}"
 
         # If doesn't exist, create the needed folder for the path
-        name, folder_path = cls._path_to_name_and_folder(original_path)
+        name, folder_path = self._path_to_name_and_folder(original_path)
         os.makedirs(folder_path, exist_ok=True)
 
         if dirty and not error:  # return the path of the execution
@@ -624,9 +637,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         # return the string where saved
         return f"{folder_path}/{name}_{now_path}.ipynb"
 
-    @staticmethod
-    def _path_to_name_and_folder(original_path: str) -> tuple[str, str]:
-        """Transforms a path into name and folder.
+    def _path_to_name_and_folder(self, original_path: str) -> tuple[str, str]:
+        """Transforms a path into name and folder. Name will be extended with the qubit it acts on.
 
         The passed path can have the ``.ipynb`` extension or not.
 
@@ -644,7 +656,16 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         # remove anything after the last "/":
         folder_path_list = shorted_path.split("/")
-        name = folder_path_list.pop()
+        if isinstance(self.qubit_index, int):
+            qubit_str = f"_q{str(self.qubit_index)}"
+        elif isinstance(self.qubit_index, list):
+            qubit_str = "_"
+            for q in self.qubit_index:
+                qubit_str += f"q{str(q)}"
+        else:
+            qubit_str = ""
+
+        name = folder_path_list.pop() + qubit_str
         folder_path = "/".join(folder_path_list)
 
         return name, folder_path
