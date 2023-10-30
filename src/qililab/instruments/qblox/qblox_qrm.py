@@ -126,7 +126,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 else:
                     raise ValueError("The scope can only be stored in one sequencer at a time.")
 
-    def compile(
+    def compile(  # pylint: disable=too-many-locals
         self,
         pulse_bus_schedule: PulseBusSchedule,
         nshots: int,
