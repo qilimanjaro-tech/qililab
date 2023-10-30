@@ -1,7 +1,8 @@
+import numpy as np
 import pytest
 
 from qililab import Domain, DragPair, Gaussian, IQPair, QProgram, QuantumMachinesCompiler, Square
-from qililab.qprogram.blocks import ForLoop
+from qililab.qprogram.blocks import ForLoop, Loop
 
 
 @pytest.fixture(name="runcard_configuration")
@@ -246,6 +247,86 @@ def fixture_measure_operation_with_four_weights_no_demodulation() -> QProgram:
     weight_D = weight_A
     qp = QProgram()
     qp.measure(bus="drive", waveform=drag_wf, weights=(weight_A, weight_B, weight_C, weight_D), demodulation=False)
+
+    return qp
+
+
+@pytest.fixture(name="for_loop")
+def fixture_for_loop() -> QProgram:
+    qp = QProgram()
+    gain = qp.variable(Domain.Voltage)
+    frequency = qp.variable(Domain.Frequency)
+    phase = qp.variable(Domain.Phase)
+    time = qp.variable(Domain.Time)
+
+    with qp.for_loop(variable=gain, start=0, stop=1.0, step=0.1):
+        qp.set_gain(bus="drive", gain=gain)
+
+    with qp.for_loop(variable=frequency, start=100, stop=200, step=10):
+        qp.set_frequency(bus="drive", frequency=frequency)
+
+    with qp.for_loop(variable=phase, start=0, stop=90, step=10):
+        qp.set_phase(bus="drive", phase=phase)
+
+    with qp.for_loop(variable=time, start=100, stop=200, step=10):
+        qp.wait(bus="drive", duration=time)
+
+    return qp
+
+
+@pytest.fixture(name="loop")
+def fixture_loop() -> QProgram:
+    qp = QProgram()
+    gain = qp.variable(Domain.Voltage)
+    frequency = qp.variable(Domain.Frequency)
+    phase = qp.variable(Domain.Phase)
+    time = qp.variable(Domain.Time)
+
+    with qp.loop(variable=gain, values=np.arange(start=0, stop=1.05, step=0.1)):
+        qp.set_gain(bus="drive", gain=gain)
+
+    with qp.loop(variable=frequency, values=np.arange(start=100, stop=205, step=10)):
+        qp.set_frequency(bus="drive", frequency=frequency)
+
+    with qp.loop(variable=phase, values=np.arange(start=0, stop=95, step=10)):
+        qp.set_phase(bus="drive", phase=phase)
+
+    with qp.loop(variable=time, values=np.arange(start=100, stop=205, step=10)):
+        qp.wait(bus="drive", duration=time)
+
+    return qp
+
+
+@pytest.fixture(name="parallel")
+def fixture_parallel() -> QProgram:
+    qp = QProgram()
+    gain = qp.variable(Domain.Voltage)
+    frequency = qp.variable(Domain.Frequency)
+    phase = qp.variable(Domain.Phase)
+    time = qp.variable(Domain.Time)
+
+    with qp.parallel(
+        loops=[
+            ForLoop(variable=gain, start=0, stop=1.0, step=0.1),
+            Loop(variable=frequency, values=np.arange(start=100, stop=205, step=10)),
+            ForLoop(variable=phase, start=0, stop=90, step=10),
+            Loop(variable=time, values=np.arange(start=100, stop=205, step=10)),
+        ]
+    ):
+        qp.set_gain(bus="drive", gain=gain)
+        qp.set_frequency(bus="drive", frequency=frequency)
+        qp.set_phase(bus="drive", phase=phase)
+        qp.wait(bus="drive", duration=time)
+
+    return qp
+
+
+@pytest.fixture(name="infinite_loop")
+def fixture_infinite_loop() -> QProgram:
+    drag_wf = DragPair(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
+    qp = QProgram()
+    with qp.infinite_loop():
+        qp.play(bus="drive", waveform=drag_wf)
 
     return qp
 
@@ -529,3 +610,66 @@ class TestQuantumMachinesCompiler:
         assert "adc2" in result_handles
         assert "I" in result_handles
         assert "Q" in result_handles
+
+    def test_for_loop(self, for_loop: QProgram):
+        compiler = QuantumMachinesCompiler()
+        qua_program, _, _ = compiler.compile(for_loop)
+
+        statements = qua_program._program.script.body.statements
+        assert len(statements) == 4
+
+        # Voltage
+        assert float(statements[0].for_.init.statements[0].assign.expression.literal.value) == 0
+        assert float(statements[0].for_.condition.binary_operation.right.literal.value) == 1.0
+        assert (
+            float(statements[0].for_.update.statements[0].assign.expression.binary_operation.right.literal.value) == 0.1
+        )
+
+        # Frequency
+        assert float(statements[1].for_.init.statements[0].assign.expression.literal.value) == int(100 * 1e3)
+        assert float(statements[1].for_.condition.binary_operation.right.literal.value) == int(200 * 1e3)
+        assert float(
+            statements[1].for_.update.statements[0].assign.expression.binary_operation.right.literal.value
+        ) == int(10 * 1e3)
+
+        # Phase
+        assert float(statements[2].for_.init.statements[0].assign.expression.literal.value) == 0 / 360.0
+        assert float(statements[2].for_.condition.binary_operation.right.literal.value) == 90 / 360.0
+        assert (
+            float(statements[2].for_.update.statements[0].assign.expression.binary_operation.right.literal.value)
+            == 10 / 360.0
+        )
+
+        # Time
+        assert float(statements[3].for_.init.statements[0].assign.expression.literal.value) == 100
+        assert float(statements[3].for_.condition.binary_operation.right.literal.value) == 200
+        assert (
+            float(statements[3].for_.update.statements[0].assign.expression.binary_operation.right.literal.value) == 10
+        )
+
+    def test_loop(self, loop: QProgram):
+        compiler = QuantumMachinesCompiler()
+        qua_program, _, _ = compiler.compile(loop)
+
+        statements = qua_program._program.script.body.statements
+        assert len(statements) == 4
+        assert len(statements[0].for_each.iterator) == 1
+        assert len(statements[1].for_each.iterator) == 1
+        assert len(statements[2].for_each.iterator) == 1
+        assert len(statements[3].for_each.iterator) == 1
+
+    def test_parallel(self, parallel: QProgram):
+        compiler = QuantumMachinesCompiler()
+        qua_program, _, _ = compiler.compile(parallel)
+
+        statements = qua_program._program.script.body.statements
+        assert len(statements) == 1
+        assert len(statements[0].for_each.iterator) == 4
+
+    def test_infinite_loop(self, infinite_loop: QProgram):
+        compiler = QuantumMachinesCompiler()
+        qua_program, _, _ = compiler.compile(infinite_loop)
+
+        statements = qua_program._program.script.body.statements
+        assert len(statements) == 1
+        assert bool(statements[0].for_.condition.literal.value) is True
