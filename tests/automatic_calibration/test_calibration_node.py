@@ -254,7 +254,7 @@ class TestPublicMethodsFromCalibrationNode:
     )
     @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_timestamp")
     @patch("qililab.automatic_calibration.calibration_node.os.rename")
-    @patch("qililab.automatic_calibration.calibration_node.logger.info")
+    @patch("qililab.automatic_calibration.calibration_node.logger.error")
     def test_run_notebook(
         self,
         mock_logger,
@@ -322,7 +322,7 @@ class TestPublicMethodsFromCalibrationNode:
     )
     @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_timestamp")
     @patch("qililab.automatic_calibration.calibration_node.os.rename")
-    @patch("qililab.automatic_calibration.calibration_node.logger.info")
+    @patch("qililab.automatic_calibration.calibration_node.logger.error")
     def test_run_notebook_interrupt(
         self,
         mock_logger,
@@ -394,7 +394,7 @@ class TestPublicMethodsFromCalibrationNode:
     )
     @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._get_timestamp")
     @patch("qililab.automatic_calibration.calibration_node.os.rename")
-    @patch("qililab.automatic_calibration.calibration_node.logger.info")
+    @patch("qililab.automatic_calibration.calibration_node.logger.error")
     def test_run_notebook_raises(
         self,
         mock_logger,
@@ -542,7 +542,7 @@ class TestPrivateMethodsFromCalibrationNode:
         ):
             private_methods_node._execute_notebook(private_methods_node.nb_path, "", {})
 
-        mocked_logger.info.assert_called_with(
+        mocked_logger.error.assert_called_with(
             "Aborting execution. No output found, check the automatic-calibration output cell is implemented in %s",
             private_methods_node.nb_path,
         )
@@ -572,7 +572,7 @@ class TestPrivateMethodsFromCalibrationNode:
         ):
             private_methods_node._execute_notebook(private_methods_node.nb_path, "", {})
 
-        mocked_logger.info.assert_called_with(
+        mocked_logger.error.assert_called_with(
             "Aborting execution. More than one output found, please output the results once in %s",
             private_methods_node.nb_path,
         )
@@ -600,7 +600,7 @@ class TestPrivateMethodsFromCalibrationNode:
         ):
             private_methods_node._execute_notebook(private_methods_node.nb_path, "", {})
 
-        mocked_logger.info.assert_called_with(
+        mocked_logger.error.assert_called_with(
             "Aborting execution. No 'check_parameters' dictionary or its empty in the output cell implemented in %s",
             private_methods_node.nb_path,
         )
@@ -690,7 +690,7 @@ class TestPrivateMethodsFromCalibrationNode:
             ):
                 private_methods_node._parse_output_from_execution_file(filename)
 
-            mocked_logger.info.assert_called_with(
+            mocked_logger.error.assert_called_with(
                 "Aborting execution. No output found, check the automatic-calibration output cell is implemented in %s",
                 private_methods_node.nb_path,
             )
@@ -702,7 +702,7 @@ class TestPrivateMethodsFromCalibrationNode:
             ):
                 private_methods_node._parse_output_from_execution_file(filename)
 
-            mocked_logger.info.assert_called_with(
+            mocked_logger.error.assert_called_with(
                 "Aborting execution. More than one output found, please output the results once in %s",
                 private_methods_node.nb_path,
             )
@@ -714,7 +714,7 @@ class TestPrivateMethodsFromCalibrationNode:
             ):
                 private_methods_node._parse_output_from_execution_file(filename)
 
-            mocked_logger.info.assert_called_with(
+            mocked_logger.error.assert_called_with(
                 "Aborting execution. No 'check_parameters' dictionary or its empty in the output cell implemented in %s",
                 private_methods_node.nb_path,
             )

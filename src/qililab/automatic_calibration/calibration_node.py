@@ -409,7 +409,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             return timestamp
 
         except KeyboardInterrupt:
-            logger.info("Interrupted automatic calibration notebook execution of %s", self.nb_path)
+            logger.error("Interrupted automatic calibration notebook execution of %s", self.nb_path)
             return sys.exit()
 
         except Exception as e:  # pylint: disable = broad-exception-caught
@@ -417,7 +417,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             timestamp = self._get_timestamp()
             error_path = self._create_notebook_datetime_path(self.nb_path, timestamp, error=True)
             os.rename(output_path, error_path)
-            logger.info(
+            logger.error(
                 "Aborting execution. Exception %s during automatic calibration notebook execution, trace of the error can be found in %s",
                 str(e),
                 error_path,
@@ -459,13 +459,13 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         # In case something unexpected happened with the output we raise an error
         if len(logger_splitted) < 2:
-            logger.info(
+            logger.error(
                 "Aborting execution. No output found, check the automatic-calibration output cell is implemented in %s",
                 input_path,
             )
             raise IncorrectCalibrationOutput(f"No output found, check automatic-calibration notebook in {input_path}")
         if len(logger_splitted) > 2:
-            logger.info(
+            logger.error(
                 "Aborting execution. More than one output found, please output the results once in %s",
                 input_path,
             )
@@ -474,7 +474,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         out_dict = json.loads(logger_outputs_string)
 
         if "check_parameters" not in out_dict or out_dict["check_parameters"] == {}:
-            logger.info(
+            logger.error(
                 "Aborting execution. No 'check_parameters' dictionary or its empty in the output cell implemented in %s",
                 input_path,
             )
@@ -529,7 +529,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             outputs.extend(line for line in lines if line.find(logger_output_start) != -1)
 
         if not outputs:
-            logger.info(
+            logger.error(
                 "Aborting execution. No output found, check the automatic-calibration output cell is implemented in %s",
                 self.nb_path,
             )
@@ -538,7 +538,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         data = outputs[0].split(logger_output_start)
 
         if len(outputs) > 1 or len(data) > 2:
-            logger.info(
+            logger.error(
                 "Aborting execution. More than one output found, please output the results once in %s",
                 self.nb_path,
             )
@@ -554,7 +554,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         out_dict = json.loads(output_string)
 
         if "check_parameters" not in out_dict or out_dict["check_parameters"] == {}:
-            logger.info(
+            logger.error(
                 "Aborting execution. No 'check_parameters' dictionary or its empty in the output cell implemented in %s",
                 self.nb_path,
             )
