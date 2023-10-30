@@ -1,6 +1,8 @@
 # Release dev (development release)
 
-This document contains the changes of the current release.
+- Fixed [bug](https://github.com/qilimanjaro-tech/qililab/issues/584) where executing multiple circuits with each measuring different qubits would launch measurements for previously measured
+  qubits even if those did not have measurements on the circuit currently being executed.
+  [#576](https://github.com/qilimanjaro-tech/qililab/pull/576)
 
 ### New features since last release
 
