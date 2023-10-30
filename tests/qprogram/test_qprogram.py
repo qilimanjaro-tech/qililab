@@ -203,7 +203,7 @@ class TestQProgram:
         assert isinstance(qp._body.elements[0], Sync)
         assert qp._body.elements[0].buses == ["drive", "flux"]
 
-    def test_reset_nco_phase(self):
+    def test_reset_phase(self):
         """Test reset_nco_phase method"""
         qp = QProgram()
         qp.reset_phase(bus="drive")
@@ -213,7 +213,7 @@ class TestQProgram:
         assert isinstance(qp._body.elements[0], ResetPhase)
         assert qp._body.elements[0].bus == "drive"
 
-    def test_set_nco_phase(self):
+    def test_set_phase(self):
         """Test set_nco_phase method"""
         qp = QProgram()
         qp.set_phase(bus="drive", phase=2 * np.pi)
@@ -224,7 +224,7 @@ class TestQProgram:
         assert qp._body.elements[0].bus == "drive"
         assert qp._body.elements[0].phase == 2 * np.pi
 
-    def test_set_nco_frequency(self):
+    def test_set_frequency(self):
         """Test set_nco_frequency method"""
         qp = QProgram()
         qp.set_frequency(bus="drive", frequency=1e6)
@@ -235,7 +235,7 @@ class TestQProgram:
         assert qp._body.elements[0].bus == "drive"
         assert qp._body.elements[0].frequency == 1e6
 
-    def test_set_awg_gain(self):
+    def test_set_gain(self):
         """Test set_awg_gain method"""
         qp = QProgram()
         qp.set_gain(bus="drive", gain=1.0)
@@ -246,7 +246,7 @@ class TestQProgram:
         assert qp._body.elements[0].bus == "drive"
         assert qp._body.elements[0].gain == 1.0
 
-    def test_set_awg_offset(self):
+    def test_set_offset(self):
         """Test set_awg_offset method"""
         qp = QProgram()
         qp.set_offset(bus="drive", offset_path0=1.0, offset_path1=0.0)
@@ -315,3 +315,18 @@ class TestQProgram:
             ValueError, match="When declaring a variable of a specific domain, its type is inferred by its domain."
         ):
             qp.variable(Domain.Frequency, int)
+
+    def test_operation_with_variable_of_wrong_domain_raises_error(self):
+        """Test that any operation when used with a variable of wrong domain raises an error."""
+        qp = QProgram()
+        float_scalar = qp.variable(Domain.Scalar, float)
+        int_scalar = qp.variable(Domain.Scalar, int)
+
+        with pytest.raises(ValueError):
+            qp.set_frequency(bus="drive", frequency=float_scalar)
+
+        with pytest.raises(ValueError):
+            qp.set_gain(bus="drive", gain=float_scalar)
+
+        with pytest.raises(ValueError):
+            qp.wait(bus="drive", duration=int_scalar)

@@ -15,6 +15,9 @@
 """Square waveform."""
 import numpy as np
 
+from qililab.qprogram.decorators import requires_domain
+from qililab.qprogram.variable import Domain
+
 from .waveform import Waveform
 
 
@@ -40,6 +43,8 @@ class Square(Waveform):  # pylint: disable=too-few-public-methods
             :align: center
     """
 
+    @requires_domain("amplitude", Domain.Voltage)
+    @requires_domain("duration", Domain.Time)
     def __init__(self, amplitude: float, duration: int):
         self.amplitude = amplitude
         self.duration = duration
