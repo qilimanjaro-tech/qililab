@@ -36,6 +36,5 @@ class FluxBus(BusDriver):
     def __init__(
         self, alias: str, port: int, awg: AWG | None, source: CurrentSource | VoltageSource | None, distortions: list
     ):
-        """Initialise the bus."""
         super().__init__(alias=alias, port=port, awg=awg, distortions=distortions)
         self.instruments["source"] = source
