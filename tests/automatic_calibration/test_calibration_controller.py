@@ -59,7 +59,6 @@ third = CalibrationNode(
 )
 fourth = CalibrationNode(
     nb_path="tests/automatic_calibration/notebook_test/fourth.ipynb",
-    qubit_index=0,
     in_spec_threshold=1,
     bad_data_threshold=2,
     comparison_model=dummy_comparison_model,
@@ -67,7 +66,7 @@ fourth = CalibrationNode(
 )
 
 # NODE MAPPING TO THE GRAPH (key = name in graph, value = node object):
-nodes = {"zeroth_q0q1": zeroth, "first_q0": first, "second_q0": second, "third_q0": third, "fourth_q0": fourth}
+nodes = {"zeroth_q0q1": zeroth, "first_q0": first, "second_q0": second, "third_q0": third, "fourth": fourth}
 
 
 #######################
@@ -77,15 +76,15 @@ nodes = {"zeroth_q0q1": zeroth, "first_q0": first, "second_q0": second, "third_q
 # fmt: off
 # GOOD GRAPH CREATION:
 G0 = nx.DiGraph()                           #       3 <--\
-G0.add_edge("fourth_q0", "third_q0")        #             \
-G0.add_edge("fourth_q0", "second_q0")       # 0 <-- 2 <-- 4
+G0.add_edge("fourth", "third_q0")        #             \
+G0.add_edge("fourth", "second_q0")       # 0 <-- 2 <-- 4
 G0.add_edge("second_q0", "zeroth_q0q1")     # ^\
 G0.add_edge("first_q0", "zeroth_q0q1")      #   \---1
 
 # GOOD GRAPH CREATION:
 G1 = nx.DiGraph()                           #       3 <--\
-G1.add_edge("fourth_q0", "third_q0")        #       v     \
-G1.add_edge("fourth_q0", "second_q0")       # 0 <-- 2 <--- 4
+G1.add_edge("fourth", "third_q0")        #       v     \
+G1.add_edge("fourth", "second_q0")       # 0 <-- 2 <--- 4
 G1.add_edge("second_q0", "zeroth_q0q1")     # ^\    v
 G1.add_edge("first_q0", "zeroth_q0q1")      #   \---1
 G1.add_edge("third_q0", "second_q0")
@@ -93,14 +92,14 @@ G1.add_edge("second_q0", "first_q0")
 
 # GOOD GRAPH CREATION:
 G2 = nx.DiGraph()                           #   /-- 3 <-- 4
-G2.add_edge("fourth_q0", "third_q0")        #  /
+G2.add_edge("fourth", "third_q0")        #  /
 G2.add_edge("third_q0", "zeroth_q0q1")      # 0 <-- 2
 G2.add_edge("second_q0", "zeroth_q0q1")     #  \
 G2.add_edge("first_q0", "zeroth_q0q1")      #   \-- 1
 
 # GOOD GRAPH CREATION:
 G3 = nx.DiGraph()
-G3.add_edge("fourth_q0", "third_q0")        #   /-- 3 <-- 4
+G3.add_edge("fourth", "third_q0")        #   /-- 3 <-- 4
 G3.add_edge("third_q0", "zeroth_q0q1")      #  /    v
 G3.add_edge("third_q0", "second_q0")        # 0 <-- 2
 G3.add_edge("second_q0", "zeroth_q0q1")     #  \
@@ -108,7 +107,7 @@ G3.add_edge("first_q0", "zeroth_q0q1")      #   \-- 1
 
 # GOOD GRAPH CREATION:
 G4 = nx.DiGraph()
-G4.add_edge("fourth_q0", "third_q0")        #   /-- 2 <--\
+G4.add_edge("fourth", "third_q0")        #   /-- 2 <--\
 G4.add_edge("third_q0", "second_q0")        #  /          \
 G4.add_edge("third_q0", "first_q0")         # 0            3 <-- 4
 G4.add_edge("second_q0", "zeroth_q0q1")     #  \          /
@@ -116,7 +115,7 @@ G4.add_edge("first_q0", "zeroth_q0q1")      #   \-- 1 <--/
 
 # GOOD GRAPH CREATION:
 G5 = nx.DiGraph()
-G5.add_edge("fourth_q0", "third_q0")        #   /-- 2 <--\
+G5.add_edge("fourth", "third_q0")        #   /-- 2 <--\
 G5.add_edge("third_q0", "second_q0")        #  /    |     \
 G5.add_edge("third_q0", "first_q0")         # 0     |      3 <-- 4
 G5.add_edge("second_q0", "zeroth_q0q1")     #  \    v     /
@@ -125,50 +124,50 @@ G5.add_edge("first_q0", "zeroth_q0q1")
 
 # GOOD GRAPH CREATION:
 G6 = nx.DiGraph()
-G6.add_edge("fourth_q0", "third_q0")        #   /-- 3 <--\
+G6.add_edge("fourth", "third_q0")        #   /-- 3 <--\
 G6.add_edge("third_q0", "second_q0")        #  /    v     \
 G6.add_edge("third_q0", "zeroth_q0q1")      # 0 <-- 2      4
 G6.add_edge("second_q0", "zeroth_q0q1")     #  \    ^     /
 G6.add_edge("first_q0", "second_q0")        #   \-- 1 <--/
 G6.add_edge("first_q0", "zeroth_q0q1")
-G6.add_edge("fourth_q0", "first_q0")
+G6.add_edge("fourth", "first_q0")
 
 # GOOD GRAPH CREATION:
 G7 = nx.DiGraph()
-G7.add_edge("fourth_q0", "third_q0")        #   /-- 3 <--\
+G7.add_edge("fourth", "third_q0")        #   /-- 3 <--\
 G7.add_edge("third_q0", "second_q0")        #  /    v     \
 G7.add_edge("third_q0", "zeroth_q0q1")      # 0 <-- 2      4
 G7.add_edge("second_q0", "zeroth_q0q1")     #  \    v     /
 G7.add_edge("second_q0", "first_q0")        #   \-- 1 <--/
 G7.add_edge("first_q0", "zeroth_q0q1")
-G7.add_edge("fourth_q0", "first_q0")
+G7.add_edge("fourth", "first_q0")
 
 # GOOD GRAPH CREATION:
 G8 = nx.DiGraph()
-G8.add_edge("fourth_q0", "third_q0")        #   /-- 3 <--\
+G8.add_edge("fourth", "third_q0")        #   /-- 3 <--\
 G8.add_edge("third_q0", "second_q0")        #  /    v     \
 G8.add_edge("third_q0", "zeroth_q0q1")      # 0 <-- 2 <--- 4
 G8.add_edge("second_q0", "zeroth_q0q1")     #  \    ^     /
 G8.add_edge("first_q0", "second_q0")        #   \-- 1 <--/
 G8.add_edge("first_q0", "zeroth_q0q1")
-G8.add_edge("fourth_q0", "second_q0")
-G8.add_edge("fourth_q0", "first_q0")
+G8.add_edge("fourth", "second_q0")
+G8.add_edge("fourth", "first_q0")
 
 # GOOD GRAPH CREATION:                      #       ^
 G9 = nx.DiGraph()                           #       |
-G9.add_edge("fourth_q0", "third_q0")        #   /-- 3 <--\
+G9.add_edge("fourth", "third_q0")        #   /-- 3 <--\
 G9.add_edge("third_q0", "second_q0")        #  /    v     \
 G9.add_edge("third_q0", "zeroth_q0q1")      # 0 <-- 2 <--- 4
 G9.add_edge("second_q0", "zeroth_q0q1")     #  \    ^     /
 G9.add_edge("first_q0", "second_q0")        #   \-- 1 <--/
 G9.add_edge("first_q0", "zeroth_q0q1")      #       ^
-G9.add_edge("fourth_q0", "second_q0")       #       |
-G9.add_edge("fourth_q0", "first_q0")
+G9.add_edge("fourth", "second_q0")       #       |
+G9.add_edge("fourth", "first_q0")
 G9.add_edge("third_q0", "first_q0")
 
 # BAD GRAPH CREATION:
 B = nx.DiGraph()                            #         /--->---\
-B.add_edge("fourth_q0", "third_q0")         #        /         \
+B.add_edge("fourth", "third_q0")         #        /         \
 B.add_edge("third_q0", "second_q0")         # 0 <-- 1 <-- 2 <-- 3 <-- 4
 B.add_edge("second_q0", "first_q0")
 B.add_edge("first_q0", "zeroth_q0q1")
@@ -761,8 +760,8 @@ class TestCalibrationController:
             ("param2", "test_bus_second_q0", 1): (1, "second_q0", datetime.fromtimestamp(1999)),
             ("param", "test_bus_third_q0", 0): (0, "third_q0", datetime.fromtimestamp(1999)),
             ("param2", "test_bus_third_q0", 1): (1, "third_q0", datetime.fromtimestamp(1999)),
-            ("param", "test_bus_fourth_q0", 0): (0, "fourth_q0", datetime.fromtimestamp(1999)),
-            ("param2", "test_bus_fourth_q0", 1): (1, "fourth_q0", datetime.fromtimestamp(1999)),
+            ("param", "test_bus_fourth", 0): (0, "fourth", datetime.fromtimestamp(1999)),
+            ("param2", "test_bus_fourth", 1): (1, "fourth", datetime.fromtimestamp(1999)),
         }
 
     ################################
@@ -788,8 +787,8 @@ class TestCalibrationController:
             ("param2_second_q0", 1): (0.967, "second_q0", datetime.fromtimestamp(1999)),
             ("param1_third_q0", 0): (1, "third_q0", datetime.fromtimestamp(1999)),
             ("param2_third_q0", 1): (0.967, "third_q0", datetime.fromtimestamp(1999)),
-            ("param1_fourth_q0", 0): (1, "fourth_q0", datetime.fromtimestamp(1999)),
-            ("param2_fourth_q0", 1): (0.967, "fourth_q0", datetime.fromtimestamp(1999)),
+            ("param1_fourth", 0): (1, "fourth", datetime.fromtimestamp(1999)),
+            ("param2_fourth", 1): (0.967, "fourth", datetime.fromtimestamp(1999)),
         }
 
     #######################
@@ -800,7 +799,7 @@ class TestCalibrationController:
         result = controller._dependents(nodes["zeroth_q0q1"])
         assert result == []
 
-        result = controller._dependents(nodes["fourth_q0"])
+        result = controller._dependents(nodes["fourth"])
         if controller.calibration_graph in [G0, G1]:
             assert third in result and second in result
             assert len(result) == 2
