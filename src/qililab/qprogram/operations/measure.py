@@ -23,7 +23,7 @@ from qililab.waveforms import IQPair, Waveform
 class Measure(Operation):  # pylint: disable=missing-class-docstring
     bus: str
     waveform: IQPair
-    weights: IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair] | None
+    weights: IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair, IQPair] | None
     demodulation: bool
     save_raw_adc: bool
 

@@ -385,7 +385,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
             if element.demodulation:
                 qua.measure(pulse, bus, stream_raw_adc, qua.demod.full(weight_I, variable_I, "out1"))
             else:
-                qua.measure(pulse, bus, stream_raw_adc, qua.integration.full(weight_I, variable_I, "out2"))
+                qua.measure(pulse, bus, stream_raw_adc, qua.integration.full(weight_I, variable_I, "out1"))
             qua.save(variable_I, stream_I)
         elif isinstance(element.weights, tuple) and len(element.weights) == 2:
             variable_I = qua.declare(qua.fixed)
@@ -420,7 +420,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
                 )
             qua.save(variable_I, stream_I)
             qua.save(variable_Q, stream_Q)
-        elif isinstance(element.weights, tuple) and len(element.weights) == 3:
+        elif isinstance(element.weights, tuple) and len(element.weights) == 4:
             variable_I = qua.declare(qua.fixed)
             variable_Q = qua.declare(qua.fixed)
             stream_I = qua.declare_stream()
@@ -428,6 +428,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
             weight_A = self.__add_integration_weight_to_configuration(element.weights[0].I, element.weights[0].Q)
             weight_B = self.__add_integration_weight_to_configuration(element.weights[1].I, element.weights[1].Q)
             weight_C = self.__add_integration_weight_to_configuration(element.weights[2].I, element.weights[2].Q)  # type: ignore[misc]
+            weight_D = self.__add_integration_weight_to_configuration(element.weights[3].I, element.weights[3].Q)  # type: ignore[misc]
             pulse_name = self.__add_or_update_measurement_pulse_to_configuration(
                 waveform_I_name,
                 waveform_Q_name,
@@ -442,7 +443,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
                     bus,
                     stream_raw_adc,
                     qua.dual_demod.full(weight_A, "out1", weight_B, "out2", variable_I),
-                    qua.dual_demod.full(weight_C, "out1", weight_A, "out2", variable_Q),
+                    qua.dual_demod.full(weight_C, "out1", weight_D, "out2", variable_Q),
                 )
             else:
                 qua.measure(
@@ -450,7 +451,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
                     bus,
                     stream_raw_adc,
                     qua.dual_integration.full(weight_A, "out1", weight_B, "out2", variable_I),
-                    qua.dual_integration.full(weight_C, "out1", weight_A, "out2", variable_Q),
+                    qua.dual_integration.full(weight_C, "out1", weight_D, "out2", variable_Q),
                 )
             qua.save(variable_I, stream_I)
             qua.save(variable_Q, stream_Q)

@@ -246,7 +246,7 @@ class QProgram:
         self,
         bus: str,
         waveform: IQPair,
-        weights: IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair] | None = None,
+        weights: IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair, IQPair] | None = None,
         demodulation: bool = True,
         save_raw_adc: bool = True,
     ):
