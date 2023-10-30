@@ -141,7 +141,7 @@ class QbloxResult(Result):
             Counts: Counts object containing the counts of each state.
         """
         if sum(result["measurement"] for result in self.qblox_raw_results) != 0:
-            raise (NotImplementedError("Counts for multiple measurements on a single qubit are not supported"))
+            raise NotImplementedError("Counts for multiple measurements on a single qubit are not supported")
         return self.qblox_bins_acquisitions.counts()
 
     def counts(self) -> dict:
@@ -151,7 +151,7 @@ class QbloxResult(Result):
             Counts: Counts object containing the counts of each state.
         """
         if sum(result["measurement"] for result in self.qblox_raw_results) != 0:
-            raise (NotImplementedError("Counts for multiple measurements on a single qubit are not supported"))
+            raise NotImplementedError("Counts for multiple measurements on a single qubit are not supported")
         return self.qblox_bins_acquisitions.counts().as_dict()
 
     def samples(self) -> np.ndarray:
@@ -167,10 +167,8 @@ class QbloxResult(Result):
         # Save array data
         if self.qblox_scope_acquisitions is not None:
             if sum(result["measurement"] for result in self.qblox_raw_results) != 0:
-                raise (
-                    NotImplementedError(
-                        "Scope acquisition for multiple measurements on a single qubit are not supported"
-                    )
+                raise NotImplementedError(
+                    "Scope acquisition for multiple measurements on a single qubit are not supported"
                 )
             # The dimensions of the array are: (2, N) where N is the length of the scope.
             path0 = self.qblox_scope_acquisitions.scope.path0.data
