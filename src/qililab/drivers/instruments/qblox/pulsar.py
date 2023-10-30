@@ -26,6 +26,7 @@ from .sequencer_qrm import SequencerQRM
 @InstrumentDriverFactory.register
 class Pulsar(QcodesPulsar, BaseInstrument):  # pylint: disable=abstract-method
     """Qililab's driver for QBlox-instruments Pulsar
+
     Args:
         name (str): Sequencer name
         address (str): Instrument address
