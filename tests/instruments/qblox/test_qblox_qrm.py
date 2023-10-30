@@ -137,13 +137,7 @@ def fixture_pulse_bus_schedule2() -> PulseBusSchedule:
 @pytest.fixture(name="pulse_bus_schedule_odd_qubits")
 def fixture_pulse_bus_schedule_odd_qubits() -> PulseBusSchedule:
     """Returns a PulseBusSchedule with readout pulses for qubits 1, 3 and 5."""
-    pulse = Pulse(
-        amplitude=1.0,
-        phase=0,
-        duration=1000,
-        frequency=7.0e9,
-        pulse_shape=Rectangular(),
-    )
+    pulse = Pulse(amplitude=1.0, phase=0, duration=1000, frequency=7.0e9, pulse_shape=Rectangular())
     timeline = [PulseEvent(pulse=pulse, start_time=0, qubit=qubit) for qubit in [3, 1, 5]]
     return PulseBusSchedule(timeline=timeline, port="feedline_input")
 
@@ -401,12 +395,7 @@ class TestQbloxQRM:
             assert qrm.awg_sequencers[channel_id].acquisition_timeout == value
         if parameter == Parameter.ACQUISITION_DELAY_TIME:
             assert qrm.acquisition_delay_time == value
-        if parameter in {
-            Parameter.OFFSET_OUT0,
-            Parameter.OFFSET_OUT1,
-            Parameter.OFFSET_OUT2,
-            Parameter.OFFSET_OUT3,
-        }:
+        if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
             output = int(parameter.value[-1])
             assert qrm.out_offsets[output] == value
 
@@ -414,8 +403,7 @@ class TestQbloxQRM:
         """Test that the ``setup`` method raises an error when called with a channel id bigger than the number of
         sequencers."""
         with pytest.raises(
-            ParameterNotFound,
-            match="the specified channel id:9 is out of range. Number of sequencers is 2",
+            ParameterNotFound, match="the specified channel id:9 is out of range. Number of sequencers is 2"
         ):
             qrm.setup(parameter=Parameter.GAIN, value=1, channel_id=9)
 
@@ -460,12 +448,7 @@ class TestQbloxQRM:
 
     def test_compile_multiplexing(self, qrm, multiplexed_pulse_bus_schedule: PulseBusSchedule):
         """Test compile method with a multiplexed pulse bus schedule."""
-        sequences = qrm.compile(
-            multiplexed_pulse_bus_schedule,
-            nshots=1000,
-            repetition_duration=2000,
-            num_bins=1,
-        )
+        sequences = qrm.compile(multiplexed_pulse_bus_schedule, nshots=1000, repetition_duration=2000, num_bins=1)
         assert isinstance(sequences, list)
         assert len(sequences) == 2
         for sequence in sequences:
@@ -475,12 +458,7 @@ class TestQbloxQRM:
 
     def test_cache_multiplexing(self, qrm, multiplexed_pulse_bus_schedule: PulseBusSchedule):
         """Checks the cache after compiling a multiplexed pulse bus schedule."""
-        qrm.compile(
-            multiplexed_pulse_bus_schedule,
-            nshots=1000,
-            repetition_duration=2000,
-            num_bins=1,
-        )
+        qrm.compile(multiplexed_pulse_bus_schedule, nshots=1000, repetition_duration=2000, num_bins=1)
         single_freq_schedules = multiplexed_pulse_bus_schedule.qubit_schedules()
         assert len(qrm._cache) == len(single_freq_schedules)
         for cache_schedule, expected_schedule in zip(qrm._cache.values(), single_freq_schedules):
@@ -498,10 +476,7 @@ class TestQbloxQRM:
 
     def test_upload_raises_error(self, qrm):
         """Test upload method raises error."""
-        with pytest.raises(
-            ValueError,
-            match="Please compile the circuit before uploading it to the device",
-        ):
+        with pytest.raises(ValueError, match="Please compile the circuit before uploading it to the device"):
             qrm.upload(port=1)
 
     def test_upload_method(self, qrm, pulse_bus_schedule):
@@ -519,16 +494,8 @@ class TestQbloxQRM:
                 "index": 0,
                 "acquisition": {
                     "scope": {
-                        "path0": {
-                            "data": [1, 1, 1, 1, 1, 1, 1, 1],
-                            "out-of-range": False,
-                            "avg_cnt": 1000,
-                        },
-                        "path1": {
-                            "data": [0, 0, 0, 0, 0, 0, 0, 0],
-                            "out-of-range": False,
-                            "avg_cnt": 1000,
-                        },
+                        "path0": {"data": [1, 1, 1, 1, 1, 1, 1, 1], "out-of-range": False, "avg_cnt": 1000},
+                        "path1": {"data": [0, 0, 0, 0, 0, 0, 0, 0], "out-of-range": False, "avg_cnt": 1000},
                     },
                     "bins": {
                         "integration": {"path0": [1, 1, 1, 1], "path1": [0, 0, 0, 0]},
@@ -568,16 +535,9 @@ class TestQbloxQRM:
         qrm_settings["awg_sequencers"][0]["weights_q"] = [4, 5, 6]
         new_qrm = QbloxQRM(settings=qrm_settings)
         # We create a pulse bus schedule
-        pulse = Pulse(
-            amplitude=1,
-            phase=0,
-            duration=50,
-            frequency=1e9,
-            pulse_shape=Gaussian(num_sigmas=4),
-        )
+        pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=Gaussian(num_sigmas=4))
         pulse_bus_schedule = PulseBusSchedule(
-            timeline=[PulseEvent(pulse=pulse, start_time=0, qubit=0)],
-            port="feedline_input",
+            timeline=[PulseEvent(pulse=pulse, start_time=0, qubit=0)], port="feedline_input"
         )
         sequences = new_qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000, num_bins=1)
         # We assert that the waveform/weights of the first path is all zeros and the waveform of the second path is the gaussian
@@ -591,10 +551,7 @@ class TestQbloxQRM:
     def test_qubit_to_sequencer_mapping(self, local_cfg_qrm: QbloxQRM, pulse_bus_schedule_odd_qubits):
         """Test that the pulses to odd qubits are mapped to odd sequencers."""
         local_cfg_qrm.compile(
-            pulse_bus_schedule=pulse_bus_schedule_odd_qubits,
-            nshots=1,
-            repetition_duration=5000,
-            num_bins=1,
+            pulse_bus_schedule=pulse_bus_schedule_odd_qubits, nshots=1, repetition_duration=5000, num_bins=1
         )
         assert list(local_cfg_qrm.sequences.keys()) == [4, 2, 0]
 
