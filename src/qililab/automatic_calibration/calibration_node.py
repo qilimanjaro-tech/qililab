@@ -32,8 +32,7 @@ logger_output_start = "RAND_INT:47102512880765720413 - OUTPUTS: "
 class CalibrationNode:  # pylint: disable=too-many-instance-attributes
     """Automatic-calibration Node class, which represent a node in the calibration graph.
 
-    The calibration graph represents a calibration procedure, so each node represent a step of this calibration procedure.
-    Each of these steps consists of:
+    The calibration graph represents a calibration procedure, so each node represent a step of this calibration procedure. **Each of these steps consists of:**
 
     - **A Jupyter Notebook** to calibrate or check the data with (and its metadata to do execution times checks). Such notebook would contain the following:
 
@@ -44,22 +43,58 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         **3) An analysis procedure**, that plots and fits the obtained data to the expected theoretical behaviour and finds the optimal desired parameters.
 
         **4) An export data cell**, that calls ``export_calibration_outputs()`` with the dictionary to retrieve from the notebook into the calibration workflow.
-        Such dictionary contains a ``check_parameters`` dictionary of the obtained results to do comparisons against, and a ``platform_params`` list of parameters to set on the platform.
+        Such dictionary contains a ``check_parameters`` dictionary of the obtained results to do comparisons against, and a ``platform_params`` list of
+        parameters to set on the platform.
 
         .. note::
 
             More information about the notebook contents can be found in the examples below.
 
     - **Thresholds and Models for the Comparisons** of data, and metadata, of this notebook. Arguments on this category:
-        - ``in_spec_threshold``
-        - ``bad_data_threshold``
-        - ``comparison_model``
-        - ``drift_timeout``
+        ``in_spec_threshold``, ``bad_data_threshold``, ``comparison_model``, ``drift_timeout``
 
     - **Inputs to pass to this notebook (optional)**, which might vary for different calls of the same notebook. Arguments on this category:
-        - ``sweep_interval`` (optional)
-        - ``number_of_random_datapoints`` (optional)
-        - ``input_parameters`` (optional kwargs, to be interpreted by the notebook)
+        ``sweep_interval``, ``number_of_random_datapoints``, ``input_parameters`` (kwargs)
+
+    --------------------------------
+
+    |
+
+    **The execution of a notebook is the key functionality of this class,** this is implemented in the ``run_notebook()`` method, whose workflow is the following:
+
+    1. Prepare any input parameters needed for the notebook. This includes extra parameters defined by the user and essential ones such as the targeted qubit or the sweep intervals.
+
+    2. Create a file with a temporary name. This file will be used to save the execution of the notebook, and at this stage has the following format:
+
+        ``NameOfTheNode_TimeExecutionStarted_dirty.ipynb``
+
+        The "_dirty" flag is added to the execution files in order to identify the executions that are not completed. So we know that the data we find if we
+        open that file is "dirty", not completed.
+
+    3. Start execution of the notebook. From where we can expect 3 possible outcomes from the execution:
+
+        3.1) The execution succeds. If the execution succeds, we rename the execution file by updating the timestamp and removing the dirty flag:
+
+            ``NameOfTheNode_TimeExecutionEnded.ipynb``
+
+        3.2) The execution is interrupted. If the execution is interrupted, the "_dirty" flag will remain in the filename for ever. Notice after an interruption
+        the program exits.
+
+            ``NameOfTheNode_TimeExecutionStarted_dirty.ipynb``
+
+        3.2) An exception is thrown. This case is not controlled by the user like the interruptions, instead those exceptions are automatically thrown when
+        an error is detected. When an execution error is found, the execution file is moved to a new subfolder ``/error_executions`` and renamed with the
+        time that the error ocurred and adding the flag "_error":
+
+            ``NameOfTheNode_TimeExecutionFoundError_error.ipynb``
+
+        A more detailed explanation of the error is reported and also described inside the notebook (see `papermill documentation
+        <https://papermill.readthedocs.io/en/latest/>`_ for more detailed information). Then after we post-processed the file, the program exits.
+
+    at the end, from all of this, you will obtain, a executed and saved notebook to manually check, and the optimal parameters to set in the runcard,
+    together with the  achieved fidelities.
+
+    |
 
     Args:
         nb_path (str): Full notebook path, with folder, nb_name and ``.ipynb`` extension.
@@ -188,6 +223,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                     {
                         "check_parameters": {"x": sweep_interval, "y": results},
                         "platform_params": [(bus_alias0, param_name0, fitted_values[0]), (bus_alias1, param_name1, fitted_values[1])],
+                        "fidelities": {"fidelity1": 0.9, "fidelity2": 0.95}  # This key in the dictionary is optional
                     }
                 )
 
@@ -201,6 +237,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         bad_data_threshold: float,
         comparison_model: Callable,
         drift_timeout: float,
+        qubit_index: int | list[int] | None = None,
         input_parameters: dict | None = None,
         sweep_interval: dict | None = None,
         number_of_random_datapoints: int = 10,
@@ -209,10 +246,13 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             raise ValueError("`in_spec_threshold` must be smaller or equal than `bad_data_threshold`.")
 
         self.nb_path: str = nb_path
-        """Full notebook path, with folder, nb_name and ``.ipynb`` extension"""
+        """Full notebook path, with folder, nb_name and ``.ipynb`` extension."""
+
+        self.qubit_index: int | list[int] | None = qubit_index
+        """Qubit which this notebook will be executed on."""
 
         self.node_id, self.nb_folder = self._path_to_name_and_folder(nb_path)
-        """Node name and folder, separated, and without the ``.ipynb`` extension"""
+        """Node name and folder, separated, and without the ``.ipynb`` extension."""
 
         self.in_spec_threshold: float = in_spec_threshold
         """Threshold such that the ``check_data()`` methods return `in_spec` or `out_of_spec`."""
@@ -242,17 +282,17 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         gets the same outcome as during the last calibration that was run. Default value is 10.
         """
 
-        self.output_parameters: dict | None = self._get_last_calibrated_output_parameters()
-        """Output parameters dictionary from the notebook execution, which get extracted with ``ql.export_calibration_putputs()``, normally contains
+        self.output_parameters: dict | None = self.get_last_calibrated_output_parameters()
+        """Output parameters dictionary from the notebook execution, which get extracted with ``ql.export_calibration_outputs()``, normally contains
         a ``check_params`` to do the ``check_data()`` and the ``platform_params`` which will be the calibrated parameters to set in the platform. """
 
         self.previous_output_parameters: dict | None = None
         """Same output_parameters, but from the previous execution of the Node."""
 
-        self.previous_timestamp: float | None = self._get_last_calibrated_timestamp()
+        self.previous_timestamp: float | None = self.get_last_calibrated_timestamp()
         """Last calibrated timestamp."""
 
-        self.stream: StringIO = self._build_notebooks_logger_stream()
+        self._stream: StringIO = self._build_notebooks_logger_stream()
         """Stream object to which the notebooks logger output will be written, to posterior retrieval."""
 
     def _sweep_interval_as_array(self) -> list | None:
@@ -282,7 +322,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             ]
         return None
 
-    def add_string_to_checked_nb_name(self, string_to_add: str, timestamp: float) -> None:
+    def _add_string_to_checked_nb_name(self, string_to_add: str, timestamp: float) -> None:
         """Adds a string to the notebook name and returns it.
 
         Args:
@@ -295,15 +335,57 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         os.rename(f"{timestamp_path}.ipynb", f"{timestamp_path}_{string_to_add}.ipynb")
 
     def run_notebook(self, check: bool = False) -> float:
-        """Runs notebook with the parameters and paths of the Node. Also can be chosen to only check.
+        """Executes the notebook, passing the needed parameters and flags. Also it can be chosen to only check certain values of the sweep interval for
+        when checking data.
+
+        **Its workflow is the following:**
+
+        1. Prepare any input parameters needed for the notebook. This includes extra parameters defined by the user and essential ones such as the targeted qubit or the sweep intervals.
+
+        2. Create a file with a temporary name. This file will be used to save the execution of the notebook, and at this stage has the following format:
+
+            ``NameOfTheNode_TimeExecutionStarted_dirty.ipynb``
+
+            The "_dirty" flag is added to the execution files in order to identify the executions that are not completed. So we know that the data we find
+            if we open that file is "dirty", not completed.
+
+        3. Start execution of the notebook. From where we can expect 3 possible outcomes from the execution:
+
+            3.1) The execution succeds. If the execution succeds, we rename the execution file by updating the timestamp and removing the dirty flag:
+
+                ``NameOfTheNode_TimeExecutionEnded.ipynb``
+
+            3.2) The execution is interrupted. If the execution is interrupted, the "_dirty" flag will remain in the filename for ever. Notice after an
+            interruption the program exits.
+
+                ``NameOfTheNode_TimeExecutionStarted_dirty.ipynb``
+
+            3.2) An exception is thrown. This case is not controlled by the user like the interruptions, instead those exceptions are automatically
+            thrown when an error is detected. When an execution error is found, the execution file is moved to a new subfolder ``/error_executions``
+            and renamed with the time that the error ocurred and adding the flag "_error":
+
+                ``NameOfTheNode_TimeExecutionFoundError_error.ipynb``
+
+            A more detailed explanation of the error is reported and also described inside the notebook (see `papermill documentation
+            <https://papermill.readthedocs.io/en/latest/>`_ for more detailed information).Then after we post-processed the file, the program exits.
+
+        at the end, from all of this, you will obtain, a executed and saved notebook to manually check, and an outputs dictionary, containing the optimal
+        parameters to set in the runcard, together with the achieved fidelities, and the data for future comparisons.
 
         Args:
-            check (bool): Flag to make a ``calibrate()`` or a ``check_data()`` in the notebook.
+            check (bool, optional): Flag to make a ``check_data()`` instead than a normal ``calibrate()`` with the notebook. Defaults to ``False`` (normal calibrate).
 
         Returns:
             float: Timestamp to identify the notebook execution.
+
+        Exits:
+            In case of a keyboard interruption or any exception during the execution of the notebook.
         """
-        params: dict = {"check": check} | {"number_of_random_datapoints": self.number_of_random_datapoints}
+        params: dict = (
+            {"check": check}
+            | {"number_of_random_datapoints": self.number_of_random_datapoints}
+            | {"qubit": self.qubit_index}
+        )
 
         if self.sweep_interval is not None:
             params |= {
@@ -335,7 +417,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             return timestamp
 
         except KeyboardInterrupt:
-            logger.info("Interrupted autocalibration notebook execution of %s", self.nb_path)
+            logger.error("Interrupted automatic calibration notebook execution of %s", self.nb_path)
             return sys.exit()
 
         except Exception as e:  # pylint: disable = broad-exception-caught
@@ -343,7 +425,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             timestamp = self._get_timestamp()
             error_path = self._create_notebook_datetime_path(self.nb_path, timestamp, error=True)
             os.rename(output_path, error_path)
-            logger.info(
+            logger.error(
                 "Aborting execution. Exception %s during automatic calibration notebook execution, trace of the error can be found in %s",
                 str(e),
                 error_path,
@@ -372,23 +454,26 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         Returns:
             dict: Kwargs for the output parameters of the notebook.
+
+        Raises:
+            IncorrectCalibrationOutput: In case no outputs, incorrect outputs or multiple outputs where found. Incorrect outputs are those that do not contain `check_parameters` or is empty.
         """
-        pm.execute_notebook(input_path, output_path, parameters, log_output=True, stdout_file=self.stream)
+        pm.execute_notebook(input_path, output_path, parameters, log_output=True, stdout_file=self._stream)
 
         # Retrieve the logger info and extract the output from it:
-        logger_string = self.stream.getvalue()
+        logger_string = self._stream.getvalue()
         logger_splitted = logger_string.split(logger_output_start)
         logger_outputs_string = logger_splitted[-1].split("\n")[0]
 
         # In case something unexpected happened with the output we raise an error
         if len(logger_splitted) < 2:
-            logger.info(
+            logger.error(
                 "Aborting execution. No output found, check the automatic-calibration output cell is implemented in %s",
                 input_path,
             )
             raise IncorrectCalibrationOutput(f"No output found, check automatic-calibration notebook in {input_path}")
         if len(logger_splitted) > 2:
-            logger.info(
+            logger.error(
                 "Aborting execution. More than one output found, please output the results once in %s",
                 input_path,
             )
@@ -397,7 +482,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         out_dict = json.loads(logger_outputs_string)
 
         if "check_parameters" not in out_dict or out_dict["check_parameters"] == {}:
-            logger.info(
+            logger.error(
                 "Aborting execution. No 'check_parameters' dictionary or its empty in the output cell implemented in %s",
                 input_path,
             )
@@ -406,7 +491,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             )
         return out_dict
 
-    def _get_last_calibrated_timestamp(self) -> float | None:
+    def get_last_calibrated_timestamp(self) -> float | None:
         """Gets the last executed timestamp if there exist any previous execution of the same notebook.
 
         Returns:
@@ -420,7 +505,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             else None
         )
 
-    def _get_last_calibrated_output_parameters(self) -> dict | None:
+    def get_last_calibrated_output_parameters(self) -> dict | None:
         """Gets the last output of the previous calibration execution of the same notebook if there exist any.
 
         Returns:
@@ -441,6 +526,9 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         Returns:
             dict: outputs of the executed notebook file.
+
+        Raises:
+            IncorrectCalibrationOutput: In case no outputs, incorrect outputs or multiple outputs where found. Incorrect outputs are those that do not contain `check_parameters` or is empty.
         """
         # Parsing file
         outputs: list[str] = []
@@ -449,7 +537,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             outputs.extend(line for line in lines if line.find(logger_output_start) != -1)
 
         if not outputs:
-            logger.info(
+            logger.error(
                 "Aborting execution. No output found, check the automatic-calibration output cell is implemented in %s",
                 self.nb_path,
             )
@@ -458,7 +546,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         data = outputs[0].split(logger_output_start)
 
         if len(outputs) > 1 or len(data) > 2:
-            logger.info(
+            logger.error(
                 "Aborting execution. More than one output found, please output the results once in %s",
                 self.nb_path,
             )
@@ -474,7 +562,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         out_dict = json.loads(output_string)
 
         if "check_parameters" not in out_dict or out_dict["check_parameters"] == {}:
-            logger.info(
+            logger.error(
                 "Aborting execution. No 'check_parameters' dictionary or its empty in the output cell implemented in %s",
                 self.nb_path,
             )
@@ -507,9 +595,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         return last_modified_file_name if last_modified_file_time != -1.0 else None
 
-    @classmethod
     def _create_notebook_datetime_path(
-        cls, original_path: str, timestamp: float | None = None, dirty: bool = False, error: bool = False
+        self, original_path: str, timestamp: float | None = None, dirty: bool = False, error: bool = False
     ) -> str:
         """Adds the datetime to the file name end, just before the ``.ipynb``.
 
@@ -533,7 +620,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         now_path = f"{daily_path}-" + f"{now.hour:02d}:{now.minute:02d}:{now.second:02d}"
 
         # If doesn't exist, create the needed folder for the path
-        name, folder_path = cls._path_to_name_and_folder(original_path)
+        name, folder_path = self._path_to_name_and_folder(original_path)
         os.makedirs(folder_path, exist_ok=True)
 
         if dirty and not error:  # return the path of the execution
@@ -544,9 +631,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         # return the string where saved
         return f"{folder_path}/{name}_{now_path}.ipynb"
 
-    @staticmethod
-    def _path_to_name_and_folder(original_path: str) -> tuple[str, str]:
-        """Transforms a path into name and folder.
+    def _path_to_name_and_folder(self, original_path: str) -> tuple[str, str]:
+        """Transforms a path into name and folder. Name will be extended with the qubit it acts on.
 
         The passed path can have the ``.ipynb`` extension or not.
 
@@ -564,12 +650,19 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         # remove anything after the last "/":
         folder_path_list = shorted_path.split("/")
-        name = folder_path_list.pop()
+        if isinstance(self.qubit_index, int):
+            qubit_str = f"_q{str(self.qubit_index)}"
+        if isinstance(self.qubit_index, list):
+            qubit_str = "_"
+            for q in self.qubit_index:
+                qubit_str += f"q{str(q)}"
+
+        name = folder_path_list.pop() + qubit_str
         folder_path = "/".join(folder_path_list)
 
         return name, folder_path
 
-    def invert_output_and_previous_output(self) -> None:
+    def _invert_output_and_previous_output(self) -> None:
         """Reverts the output and previous output, for when we run notebook in a ``check_data()``."""
         self.output_parameters, self.previous_output_parameters = (
             self.previous_output_parameters,

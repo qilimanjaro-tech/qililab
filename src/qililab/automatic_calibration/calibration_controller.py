@@ -317,7 +317,7 @@ class CalibrationController:
         """
         print(f'Calibrating node "{node.node_id}"\n')
         node.previous_timestamp = node.run_notebook()
-        node.add_string_to_checked_nb_name("calibrated", node.previous_timestamp)
+        node._add_string_to_checked_nb_name("calibrated", node.previous_timestamp)
 
     def _update_parameters(self, node: CalibrationNode) -> None:
         """Update a parameter value in the platform.
@@ -330,9 +330,9 @@ class CalibrationController:
             parameter_value (float | bool | str): The optimal value of the parameter found by the experiment.
         """
         if node.output_parameters is not None and "platform_params" in node.output_parameters:
-            for bus_alias, param_name, param_value in node.output_parameters["platform_params"]:
-                print(f"Platform updated with: ({bus_alias}, {param_name}, {param_value})")
-                self.platform.set_parameter(alias=bus_alias, parameter=param_name, value=param_value)
+            for bus_alias, qubit, param_name, param_value in node.output_parameters["platform_params"]:
+                print(f"Platform updated with: (bus:{bus_alias}, q:{qubit}, {param_name}, {param_value})")
+                self.platform.set_parameter(alias=bus_alias, parameter=param_name, value=param_value, channel_id=qubit)
 
             save_platform(self.runcard, self.platform)
 
@@ -356,11 +356,11 @@ class CalibrationController:
                 and node.previous_timestamp is not None
                 and "platform_params" in node.output_parameters
             ):
-                for bus, parameter, value in node.output_parameters["platform_params"]:
+                for bus, qubit, parameter, value in node.output_parameters["platform_params"]:
                     print(
-                        f"Last set {parameter} in bus {bus}: {value} (updated in {node.node_id} at {datetime.fromtimestamp(node.previous_timestamp)})"
+                        f"Last set {parameter} in bus {bus}, and in qubit {qubit}: {value} (updated in {node.node_id} at {datetime.fromtimestamp(node.previous_timestamp)})"
                     )
-                    parameters[(parameter, bus)] = (
+                    parameters[(parameter, bus, qubit)] = (
                         value,
                         node.node_id,
                         datetime.fromtimestamp(node.previous_timestamp),
@@ -385,11 +385,15 @@ class CalibrationController:
                 and node.previous_timestamp is not None
                 and "fidelities" in node.output_parameters
             ):
-                for fidelity, value in node.output_parameters["fidelities"].items():
+                for qubit, fidelities, value in node.output_parameters["fidelities"]:
                     print(
-                        f"Last fidelity of {fidelity}: {value} (updated in {node.node_id} at {datetime.fromtimestamp(node.previous_timestamp)})"
+                        f"Last fidelity of {fidelities} in qubit {qubit}: {value} (updated in {node.node_id} at {datetime.fromtimestamp(node.previous_timestamp)})"
                     )
-                    fidelities[fidelity] = (value, node.node_id, datetime.fromtimestamp(node.previous_timestamp))
+                    fidelities[fidelities, qubit] = (
+                        value,
+                        node.node_id,
+                        datetime.fromtimestamp(node.previous_timestamp),
+                    )
 
         return fidelities
 
