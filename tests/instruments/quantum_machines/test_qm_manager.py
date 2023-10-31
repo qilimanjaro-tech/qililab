@@ -32,7 +32,9 @@ def fixture_qmm():
 
     return qmm
 
-
+class MockJob:
+    def __init__(self):
+        self.result_handles = MockStreamingFetcher()
 class MockStreamingFetcher:
     def __init__(self):
         self.values = np.zeros((2, 10))
@@ -51,7 +53,6 @@ class MockStreamingFetcher:
             return result
         else:
             raise StopIteration
-
 
 class TestQMM:
     """This class contains the unit tests for the ``QMM`` class."""
@@ -82,11 +83,9 @@ class TestQMM:
         assert isinstance(job, MagicMock)
 
     @patch("qililab.instruments.quantum_machines.qmm.RunningQmJob")
-    def test_get_acquisitions(self, mock_job: MagicMock, qmm: QMM):
+    def test_get_acquisitions(self, mock_job: MockJob, qmm: QMM):
         """Test get_acquisition method"""
         qmm.qm = MagicMock
-        result_handles = MockStreamingFetcher()
-        mock_job.result_handles = result_handles
         result = qmm.get_acquisitions(mock_job)
 
         assert isinstance(result, QuantumMachinesResult)
