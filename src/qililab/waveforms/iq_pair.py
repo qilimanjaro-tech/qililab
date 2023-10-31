@@ -24,3 +24,10 @@ class IQPair:  # pylint: disable=missing-class-docstring
 
     I: Waveform
     Q: Waveform
+
+    def __post_init__(self):
+        if self.I.get_duration() != self.Q.get_duration():
+            raise ValueError("Waveforms of an IQ pair must have the same duration.")
+
+    def get_duration(self):
+        return self.I.get_duration()

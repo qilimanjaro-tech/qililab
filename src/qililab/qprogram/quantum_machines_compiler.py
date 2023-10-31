@@ -51,7 +51,9 @@ class _MeasurementCompilationInfo:  # pylint: disable=too-few-public-methods
         self.average: bool = False
 
 
-class MeasurementInfo:
+class MeasurementInfo:  # pylint: disable=too-few-public-methods
+    """Class representing information about the measurements taking place."""
+
     def __init__(self):
         self.result_handles: list[str] = []
 
@@ -186,11 +188,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
             self._qprogram_to_qua_variables[variable] = qua_variable
 
     def _populate_buses(self):
-        """Map each bus in the QProgram to a BusCompilationInfo instance.
-
-        Returns:
-            A dictionary where the keys are bus names and the values are BusCompilationInfo objects.
-        """
+        """Map each bus in the QProgram to a BusCompilationInfo instance."""
 
         def collect_buses(block: Block):
             for element in block.elements:
@@ -294,8 +292,6 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
         waveform_I, waveform_Q = element.get_waveforms()
         waveform_variables = element.get_waveform_variables()
         duration = waveform_I.get_duration()
-        if waveform_Q and duration != waveform_Q.get_duration():
-            raise ValueError()
 
         gain = qua.amp(self._buses[bus].current_gain * 2) if self._buses[bus].current_gain is not None else None
 
@@ -312,8 +308,6 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
     ):  # pylint: disable=too-many-locals, too-many-branches, too-many-statements
         bus = self._bus_mapping[element.bus] if self._bus_mapping and element.bus in self._bus_mapping else element.bus
         waveform_I, waveform_Q = element.get_waveforms()
-        if (measurement_duration := waveform_I.get_duration()) != waveform_Q.get_duration():
-            raise ValueError()
 
         waveform_I_name = self.__add_waveform_to_configuration(waveform_I)
         waveform_Q_name = self.__add_waveform_to_configuration(waveform_Q)
@@ -327,7 +321,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
 
         if element.weights is None:
             pulse_name = self.__add_or_update_measurement_pulse_to_configuration(
-                waveform_I_name, waveform_Q_name, duration=measurement_duration, integration_weights=[]
+                waveform_I_name, waveform_Q_name, duration=waveform_I.get_duration(), integration_weights=[]
             )
             operation_name = self.__add_pulse_to_element_operations(bus, pulse_name)
             pulse = operation_name * gain if gain is not None else operation_name
@@ -337,7 +331,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
             stream_I = qua.declare_stream()
             weight_I = self.__add_integration_weight_to_configuration(element.weights.I, element.weights.Q)
             pulse_name = self.__add_or_update_measurement_pulse_to_configuration(
-                waveform_I_name, waveform_Q_name, duration=measurement_duration, integration_weights=[weight_I]
+                waveform_I_name, waveform_Q_name, duration=waveform_I.get_duration(), integration_weights=[weight_I]
             )
             operation_name = self.__add_pulse_to_element_operations(bus, pulse_name)
             pulse = operation_name * gain if gain is not None else operation_name
@@ -356,7 +350,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
             pulse_name = self.__add_or_update_measurement_pulse_to_configuration(
                 waveform_I_name,
                 waveform_Q_name,
-                duration=measurement_duration,
+                duration=waveform_I.get_duration(),
                 integration_weights=[weight_I, weight_Q],
             )
             operation_name = self.__add_pulse_to_element_operations(bus, pulse_name)
@@ -391,7 +385,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
             pulse_name = self.__add_or_update_measurement_pulse_to_configuration(
                 waveform_I_name,
                 waveform_Q_name,
-                duration=measurement_duration,
+                duration=waveform_I.get_duration(),
                 integration_weights=[weight_A, weight_B, weight_C, weight_D],
             )
             operation_name = self.__add_pulse_to_element_operations(bus, pulse_name)

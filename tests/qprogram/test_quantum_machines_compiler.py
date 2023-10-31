@@ -98,9 +98,9 @@ def fixture_runcard_configuration() -> dict:
 
 @pytest.fixture(name="play_operation")
 def fixture_play_operation() -> QProgram:
-    drag_wf = DragPair(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
+    ones_zeros_pair = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
     qp = QProgram()
-    qp.play(bus="drive", waveform=drag_wf)
+    qp.play(bus="drive", waveform=ones_zeros_pair)
 
     return qp
 
@@ -260,6 +260,54 @@ def fixture_measure_operation_with_average() -> QProgram:
     weight_D = weight_A
     qp = QProgram()
     with qp.average(shots=1000):
+        qp.measure(bus="drive", waveform=drag_wf, weights=(weight_A, weight_B, weight_C, weight_D))
+
+    return qp
+
+
+@pytest.fixture(name="measure_operation_in_for_loop")
+def fixture_measure_operation_in_for_loop() -> QProgram:
+    drag_wf = DragPair(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
+    weight_A = IQPair(I=Square(1.0, duration=200), Q=Square(0.0, duration=200))
+    weight_B = IQPair(I=Square(0.5, duration=200), Q=Square(0.5, duration=200))
+    weight_C = IQPair(I=Square(0.0, duration=200), Q=Square(1.0, duration=200))
+    weight_D = weight_A
+    qp = QProgram()
+    gain = qp.variable(Domain.Voltage)
+    with qp.for_loop(variable=gain, start=0, stop=1.0, step=0.1):
+        qp.set_gain(bus="drive", gain=gain)
+        qp.measure(bus="drive", waveform=drag_wf, weights=(weight_A, weight_B, weight_C, weight_D))
+
+    return qp
+
+
+@pytest.fixture(name="measure_operation_in_loop")
+def fixture_measure_operation_in_loop() -> QProgram:
+    drag_wf = DragPair(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
+    weight_A = IQPair(I=Square(1.0, duration=200), Q=Square(0.0, duration=200))
+    weight_B = IQPair(I=Square(0.5, duration=200), Q=Square(0.5, duration=200))
+    weight_C = IQPair(I=Square(0.0, duration=200), Q=Square(1.0, duration=200))
+    weight_D = weight_A
+    qp = QProgram()
+    gain = qp.variable(Domain.Voltage)
+    with qp.loop(variable=gain, values=np.arange(start=0, stop=1.05, step=0.1)):
+        qp.set_gain(bus="drive", gain=gain)
+        qp.measure(bus="drive", waveform=drag_wf, weights=(weight_A, weight_B, weight_C, weight_D))
+
+    return qp
+
+
+@pytest.fixture(name="measure_operation_in_parallel")
+def fixture_measure_operation_in_parallel() -> QProgram:
+    drag_wf = DragPair(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
+    weight_A = IQPair(I=Square(1.0, duration=200), Q=Square(0.0, duration=200))
+    weight_B = IQPair(I=Square(0.5, duration=200), Q=Square(0.5, duration=200))
+    weight_C = IQPair(I=Square(0.0, duration=200), Q=Square(1.0, duration=200))
+    weight_D = weight_A
+    qp = QProgram()
+    gain = qp.variable(Domain.Voltage)
+    with qp.loop(variable=gain, values=np.arange(start=0, stop=1.05, step=0.1)):
+        qp.set_gain(bus="drive", gain=gain)
         qp.measure(bus="drive", waveform=drag_wf, weights=(weight_A, weight_B, weight_C, weight_D))
 
     return qp
@@ -666,6 +714,39 @@ class TestQuantumMachinesCompiler:
         assert "I" in measurements[0].result_handles
         assert "Q" in measurements[0].result_handles
 
+    def test_measure_operation_in_for_loop(self, measure_operation_in_for_loop: QProgram):
+        compiler = QuantumMachinesCompiler()
+        _, _, measurements = compiler.compile(measure_operation_in_for_loop)
+
+        assert len(measurements) == 1
+        assert len(measurements[0].result_handles) == 4
+        assert "adc1" in measurements[0].result_handles
+        assert "adc2" in measurements[0].result_handles
+        assert "I" in measurements[0].result_handles
+        assert "Q" in measurements[0].result_handles
+
+    def test_measure_operation_in_loop(self, measure_operation_in_loop: QProgram):
+        compiler = QuantumMachinesCompiler()
+        _, _, measurements = compiler.compile(measure_operation_in_loop)
+
+        assert len(measurements) == 1
+        assert len(measurements[0].result_handles) == 4
+        assert "adc1" in measurements[0].result_handles
+        assert "adc2" in measurements[0].result_handles
+        assert "I" in measurements[0].result_handles
+        assert "Q" in measurements[0].result_handles
+
+    def test_measure_operation_in_parallel(self, measure_operation_in_parallel: QProgram):
+        compiler = QuantumMachinesCompiler()
+        _, _, measurements = compiler.compile(measure_operation_in_parallel)
+
+        assert len(measurements) == 1
+        assert len(measurements[0].result_handles) == 4
+        assert "adc1" in measurements[0].result_handles
+        assert "adc2" in measurements[0].result_handles
+        assert "I" in measurements[0].result_handles
+        assert "Q" in measurements[0].result_handles
+
     def test_for_loop(self, for_loop: QProgram):
         compiler = QuantumMachinesCompiler()
         qua_program, _, _ = compiler.compile(for_loop)
@@ -765,3 +846,14 @@ class TestQuantumMachinesCompiler:
         statements = qua_program._program.script.body.statements
         assert len(statements) == 1
         assert bool(statements[0].for_.condition.literal.value) is True
+
+    def test_merge_configurations(self, runcard_configuration: dict, play_operation: QProgram):
+        compiler = QuantumMachinesCompiler()
+        _, configuration, _ = compiler.compile(play_operation)
+
+        merged_configuration = QuantumMachinesCompiler.merge_configurations(runcard_configuration, configuration)
+
+        assert "pulses" in merged_configuration
+        assert "waveforms" in merged_configuration
+        assert "integration_weights" in merged_configuration
+        assert "digital_waveforms" in merged_configuration
