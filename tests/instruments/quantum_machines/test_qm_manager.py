@@ -33,6 +33,26 @@ def fixture_qmm():
     return qmm
 
 
+class MockStreamingFetcher:
+    def __init__(self):
+        self.values = np.zeros((2, 10))
+        self.index = 0
+
+    def wait_for_all_values(self):
+        return MagicMock
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.index < len(self.values):
+            result = self.values[self.index]
+            self.index += 1
+            return result
+        else:
+            raise StopIteration
+
+
 class TestQMM:
     """This class contains the unit tests for the ``QMM`` class."""
 
@@ -65,7 +85,8 @@ class TestQMM:
     def test_get_acquisitions(self, mock_job: MagicMock, qmm: QMM):
         """Test get_acquisition method"""
         qmm.qm = MagicMock
-        mock_job.result_handles = MagicMock
+        result_handles = MockStreamingFetcher()
+        mock_job.result_handles = result_handles
         result = qmm.get_acquisitions(mock_job)
 
         assert isinstance(result, QuantumMachinesResult)
