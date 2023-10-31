@@ -4,7 +4,7 @@ import qpysequence as QPy
 
 from qililab import Domain, DragPair, Gaussian, IQPair, QbloxCompiler, QProgram, Square
 from qililab.qprogram.blocks import ForLoop
-from tests.test_utils import is_q1asm_equal
+from tests.test_utils import is_q1asm_equal  # pylint: disable=import-error, no-name-in-module
 
 
 @pytest.fixture(name="no_loops_all_operations")
@@ -304,13 +304,6 @@ class TestQBloxCompiler:
                             stop
         """
         assert is_q1asm_equal(sequences["readout"], readout_str)
-
-    def test_acquire_with_weights_of_different_length_throws_exception(
-        self, acquire_with_weights_of_different_length: QProgram
-    ):
-        with pytest.raises(NotImplementedError, match="Weights should have equal lengths."):
-            compiler = QbloxCompiler()
-            _ = compiler.compile(qprogram=acquire_with_weights_of_different_length)
 
     def test_average_with_for_loop(self, average_with_for_loop: QProgram):
         compiler = QbloxCompiler()
@@ -655,13 +648,6 @@ class TestQBloxCompiler:
         ):
             compiler = QbloxCompiler()
             _ = compiler.compile(qprogram=for_loop_variable_with_no_target)
-
-    def test_play_operation_with_waveforms_of_different_length_throws_exception(
-        self, play_operation_with_waveforms_of_different_length: QProgram
-    ):
-        with pytest.raises(NotImplementedError, match="Waveforms should have equal lengths."):
-            compiler = QbloxCompiler()
-            _ = compiler.compile(qprogram=play_operation_with_waveforms_of_different_length)
 
     def test_multiple_play_operations_with_same_waveform(self, multiple_play_operations_with_same_waveform: QProgram):
         compiler = QbloxCompiler()

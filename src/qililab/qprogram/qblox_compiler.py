@@ -196,8 +196,6 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
 
         index_I, length_I = handle_waveform(waveform_I, 0)
         index_Q, length_Q = handle_waveform(waveform_Q, len(waveform_I.envelope()))
-        if length_I != length_Q:
-            raise NotImplementedError("Waveforms should have equal lengths.")
         return index_I, index_Q, length_I
 
     def _append_to_weights_of_bus(self, bus: str, weights: IQPair):
@@ -220,9 +218,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             return index, length
 
         index_I, length_I = handle_waveform(weights.I)
-        index_Q, length_Q = handle_waveform(weights.Q)
-        if length_I != length_Q:
-            raise NotImplementedError("Weights should have equal lengths.")
+        index_Q, _ = handle_waveform(weights.Q)
         return index_I, index_Q, length_I
 
     def _handle_parallel(self, element: Parallel):
