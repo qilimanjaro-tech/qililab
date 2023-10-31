@@ -32,9 +32,12 @@ def fixture_qmm():
 
     return qmm
 
+
 class MockJob:
     def __init__(self):
         self.result_handles = MockStreamingFetcher()
+
+
 class MockStreamingFetcher:
     def __init__(self):
         self.values = np.zeros((2, 10))
@@ -53,6 +56,7 @@ class MockStreamingFetcher:
             return result
         else:
             raise StopIteration
+
 
 class TestQMM:
     """This class contains the unit tests for the ``QMM`` class."""
