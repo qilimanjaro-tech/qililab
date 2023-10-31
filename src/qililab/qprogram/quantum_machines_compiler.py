@@ -48,6 +48,7 @@ class _MeasurementInfo:  # pylint: disable=too-few-public-methods
         self.stream_Q: qua_dsl._ResultSource | None = stream_Q
         self.stream_raw_adc: qua_dsl._ResultSource | None = stream_raw_adc
         self.loops_iterations: list[int] = []
+        self.average: bool = False
         self.stream_processing_pending: bool = True
 
 
@@ -82,7 +83,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
         }
 
         self._qprogram: QProgram
-        self._bus_mappings: dict[str, str] | None
+        self._bus_mapping: dict[str, str] | None
         self._qprogram_block_stack: deque[Block]
         self._qprogram_to_qua_variables: dict[Variable, qua.QuaVariableType]
         self._measurements: list[_MeasurementInfo]
@@ -122,7 +123,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
             self._qprogram_block_stack.pop()
 
         self._qprogram = qprogram
-        self._bus_mappings = bus_mapping
+        self._bus_mapping = bus_mapping
 
         self._qprogram_block_stack = deque()
         self._qprogram_to_qua_variables = {}
@@ -151,10 +152,9 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
         return qua_program, self._configuration, result_handles
 
     def _save_average(self):
-        # average = next(average for average in self._averages if average.save_pending)
-        # average.save_pending = False
-        # qua.save(average.variable, average.stream)
-        ...
+        average = next(average for average in self._averages if average.save_pending)
+        average.save_pending = False
+        qua.save(average.variable, average.stream)
 
     def _process_streams(self):
         result_handles: list[str] = []
@@ -165,14 +165,16 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
             if measurement.stream_I is not None:
                 for loop_iteration in measurement.loops_iterations:
                     measurement.stream_I = measurement.stream_I.buffer(loop_iteration)
-                measurement.stream_I = measurement.stream_I.average()
-                measurement.stream_I.save("I" if is_single_measurement else f"I_{i}")
+                if measurement.average:
+                    measurement.stream_I = measurement.stream_I.average()
+                measurement.stream_I.save_all("I" if is_single_measurement else f"I_{i}")
                 result_handles.append("I" if is_single_measurement else f"I_{i}")
             if measurement.stream_Q is not None:
                 for loop_iteration in measurement.loops_iterations:
                     measurement.stream_Q = measurement.stream_Q.buffer(loop_iteration)
-                measurement.stream_Q = measurement.stream_Q.average()
-                measurement.stream_Q.save("Q" if is_single_measurement else f"Q_{i}")
+                if measurement.average:
+                    measurement.stream_Q = measurement.stream_Q.average()
+                measurement.stream_Q.save_all("Q" if is_single_measurement else f"Q_{i}")
                 result_handles.append("Q" if is_single_measurement else f"Q_{i}")
             if measurement.stream_raw_adc is not None:
                 input1 = measurement.stream_raw_adc.input1()
@@ -180,14 +182,13 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
                 for loop_iteration in measurement.loops_iterations:
                     input1 = input1.buffer(loop_iteration)
                     input2 = input2.buffer(loop_iteration)
-                input1.average().save("adc1" if is_single_measurement else f"adc1_{i}")
-                input2.average().save("adc2" if is_single_measurement else f"adc2_{i}")
+                if measurement.average:
+                    input1 = input1.average()
+                    input2 = input2.average()
+                input2.save_all("adc1" if is_single_measurement else f"adc1_{i}")
+                input2.save_all("adc2" if is_single_measurement else f"adc2_{i}")
                 result_handles.append("adc1" if is_single_measurement else f"adc1_{i}")
                 result_handles.append("adc2" if is_single_measurement else f"adc2_{i}")
-
-        # averages = [average for average in self._averages if average.stream_processing_pending]
-        # for i, average in enumerate(averages):
-        #     average.stream.save("iteration" if len(averages) == 1 else f"iteration_{i}")
 
         return result_handles
 
@@ -213,7 +214,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
                 if isinstance(element, Operation):
                     bus = getattr(element, "bus", None)
                     if bus:
-                        yield self._bus_mappings[bus] if self._bus_mappings and bus in self._bus_mappings else bus
+                        yield self._bus_mapping[bus] if self._bus_mapping and bus in self._bus_mapping else bus
 
         buses = set(collect_buses(self._qprogram.body))
         self._configuration["elements"] = {bus: {"operations": {}} for bus in buses}
@@ -276,9 +277,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
         return qua.for_(variable, 0, variable < element.shots, variable + 1)
 
     def _handle_set_frequency(self, element: SetFrequency):
-        bus = (
-            self._bus_mappings[element.bus] if self._bus_mappings and element.bus in self._bus_mappings else element.bus
-        )
+        bus = self._bus_mapping[element.bus] if self._bus_mapping and element.bus in self._bus_mapping else element.bus
         frequency = (
             self._qprogram_to_qua_variables[element.frequency]
             if isinstance(element.frequency, Variable)
@@ -287,9 +286,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
         qua.update_frequency(element=bus, new_frequency=frequency, units="mHz")
 
     def _handle_set_phase(self, element: SetPhase):
-        bus = (
-            self._bus_mappings[element.bus] if self._bus_mappings and element.bus in self._bus_mappings else element.bus
-        )
+        bus = self._bus_mapping[element.bus] if self._bus_mapping and element.bus in self._bus_mapping else element.bus
         phase = (
             self._qprogram_to_qua_variables[element.phase]
             if isinstance(element.phase, Variable)
@@ -298,15 +295,11 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
         qua.frame_rotation_2pi(phase, bus)
 
     def _handle_reset_phase(self, element: ResetPhase):
-        bus = (
-            self._bus_mappings[element.bus] if self._bus_mappings and element.bus in self._bus_mappings else element.bus
-        )
+        bus = self._bus_mapping[element.bus] if self._bus_mapping and element.bus in self._bus_mapping else element.bus
         qua.reset_frame(bus)
 
     def _handle_set_gain(self, element: SetGain):
-        bus = (
-            self._bus_mappings[element.bus] if self._bus_mappings and element.bus in self._bus_mappings else element.bus
-        )
+        bus = self._bus_mapping[element.bus] if self._bus_mapping and element.bus in self._bus_mapping else element.bus
         gain = self._qprogram_to_qua_variables[element.gain] if isinstance(element.gain, Variable) else element.gain
         # QUA doesn't have a method for setting the gain directly.
         # Instead, it uses an amplitude multiplication with `amp()`.
@@ -314,9 +307,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
         self._buses[bus].current_gain = gain
 
     def _handle_play(self, element: Play):
-        bus = (
-            self._bus_mappings[element.bus] if self._bus_mappings and element.bus in self._bus_mappings else element.bus
-        )
+        bus = self._bus_mapping[element.bus] if self._bus_mapping and element.bus in self._bus_mapping else element.bus
         waveform_I, waveform_Q = element.get_waveforms()
         waveform_variables = element.get_waveform_variables()
         duration = waveform_I.get_duration()
@@ -336,9 +327,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
     def _handle_measure(
         self, element: Measure
     ):  # pylint: disable=too-many-locals, too-many-branches, too-many-statements
-        bus = (
-            self._bus_mappings[element.bus] if self._bus_mappings and element.bus in self._bus_mappings else element.bus
-        )
+        bus = self._bus_mapping[element.bus] if self._bus_mapping and element.bus in self._bus_mapping else element.bus
         waveform_I, waveform_Q = element.get_waveforms()
         if (measurement_duration := waveform_I.get_duration()) != waveform_Q.get_duration():
             raise ValueError()
@@ -459,13 +448,13 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
                     for loop in block.loops
                 )
                 measurement_info.loops_iterations.append(iterations)
+            if isinstance(block, Average):
+                measurement_info.average = True
 
         self._measurements.append(measurement_info)
 
     def _handle_wait(self, element: Wait):
-        bus = (
-            self._bus_mappings[element.bus] if self._bus_mappings and element.bus in self._bus_mappings else element.bus
-        )
+        bus = self._bus_mapping[element.bus] if self._bus_mapping and element.bus in self._bus_mapping else element.bus
         duration = (
             self._qprogram_to_qua_variables[element.duration]
             if isinstance(element.duration, Variable)
@@ -476,7 +465,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
     def _handle_sync(self, element: Sync):
         if element.buses:
             buses = [
-                self._bus_mappings[bus] if self._bus_mappings and bus in self._bus_mappings else bus
+                self._bus_mapping[bus] if self._bus_mapping and bus in self._bus_mapping else bus
                 for bus in element.buses
             ]
             qua.align(*buses)
