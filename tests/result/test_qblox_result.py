@@ -1,5 +1,7 @@
 """ Test Results """
 
+import re
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -97,6 +99,8 @@ def fixture_qblox_result_scope(dummy_qrm: Pulsar):
     dummy_qrm.start_sequencer(0)
     dummy_qrm.store_scope_acquisition(0, "single")
     acquisition = dummy_qrm.get_acquisitions(0)["single"]["acquisition"]
+    acquisition["qubit"] = 0
+    acquisition["measurement"] = 0
     return QbloxResult(integration_lengths=[1000], qblox_raw_results=[acquisition])
 
 
@@ -274,7 +278,14 @@ class TestsQbloxResult:
         Args:
             qblox_asymmetric_bins_result (QbloxResult): QbloxResult instance with different number of bins on each sequencer.
         """
-        with pytest.raises(IndexError, match="Sequencers must have the same number of bins."):
+        bins = [len(result["bins"]["threshold"]) for result in qblox_asymmetric_bins_result.qblox_raw_results]
+        measurements = len(bins)
+        with pytest.raises(
+            IndexError,
+            match=re.escape(
+                f"All measurements must have the same number of bins to return an array. Obtained {measurements} measurements with {bins} bins respectively."
+            ),
+        ):
             qblox_asymmetric_bins_result.array()
 
     def test_array_property_of_scope(self, dummy_qrm: Pulsar, qblox_result_scope: QbloxResult):

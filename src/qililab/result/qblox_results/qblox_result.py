@@ -179,8 +179,8 @@ class QbloxResult(Result):
         # Check that all sequencers have the same number of bins.
         if len(set(bins_len)) != 1:
             raise IndexError(
-                f"All sequencers must have the same number of bins to return an array. Obtained {len(bins_len)} "
-                f"sequencers with {bins_len} bins respectively."
+                f"All measurements must have the same number of bins to return an array. Obtained {len(bins_len)} "
+                f"measurements with {bins_len} bins respectively."
             )
         # The dimensions of the array are the following: (#sequencers*#measurements, 2, #bins)
         # #measurements are the number of measurements done for a particular single qubit
