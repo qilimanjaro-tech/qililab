@@ -20,12 +20,6 @@ class DummyQbloxModule(QbloxModule):
     def _generate_weights(self, sequencer: AWGQbloxSequencer):  # pylint: disable=unused-argument
         return Weights()
 
-    def _append_acquire_instruction(  # pylint: disable=unused-argument
-        self, loop: Loop, bin_index: Register, sequencer_id: int, weight_regs: tuple[Register, Register]
-    ):
-        """Append an acquire instruction to the loop."""
-
-
 @pytest.fixture(name="qblox_module")
 def fixture_qblox_module():
     """Return an instance of QbloxModule class"""
