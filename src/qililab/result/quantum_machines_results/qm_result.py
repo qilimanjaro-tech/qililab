@@ -16,6 +16,7 @@
 import numpy as np
 
 from qililab.constants import QMRESULT, RUNCARD
+from qililab.result.counts import Counts
 from qililab.result.result import Result
 from qililab.typings.enums import ResultName
 from qililab.utils.factory import Factory
@@ -49,3 +50,23 @@ class QuantumMachinesResult(Result):
             RUNCARD.NAME: self.name.value,
             QMRESULT.QM_RAW_RESULTS: self.raw_results,
         }
+
+    def probabilities(self) -> dict[str, float]:
+        """Return probabilities of being in the ground and excited state.
+
+        Returns:
+            dict[str, float]: Dictionary containing the quantum states as the keys of the dictionary, and the
+                probabilities obtained for each state as the values of the dictionary.
+        """
+        raise NotImplementedError("Probabilities are not yet supported for Quantum Machines instruments.")
+
+    def counts_object(self) -> Counts:
+        """Returns a Counts object containing the amount of times each state was measured.
+
+        Raises:
+            NotImplementedError: Not implemented.
+
+        Returns:
+            Counts: Counts object containing the amount of times each state was measured.
+        """
+        raise NotImplementedError("Counts are not yet supported for Quantum Machines instruments.")

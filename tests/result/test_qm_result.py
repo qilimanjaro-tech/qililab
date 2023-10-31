@@ -48,3 +48,12 @@ class TestsQMResult:
         assert QMRESULT.QM_RAW_RESULTS in qm_result_dict
         assert isinstance(qm_result_dict[RUNCARD.NAME], str)
         assert isinstance(qm_result_dict[QMRESULT.QM_RAW_RESULTS], np.ndarray)
+        
+    def test_probabilities(self, qm_result: QuantumMachinesResult):
+        """Tests that probabilities method raises a not implemented error.
+
+        Args:
+            qm_result (QuantumMachinesResult): QuantumMachinesResult instance.
+        """
+        with pytest.raises(NotImplementedError, match="Probabilities are not yet supported for Quantum Machines instruments."):
+            _ = qm_result.probabilities()
