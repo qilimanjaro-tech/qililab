@@ -28,8 +28,6 @@ def fixture_qmm():
         {"alias": "qmm", "qop_ip": "192.168.0.1", "qop_port": 80, "config": {}, "firmware": "3.10.2"}
     )  # pylint: disable=abstract-class-instantiated
     qmm.device = MagicMock
-    result = QuantumMachinesResult(raw_results=np.zeros((2, 10)))
-    # qmm.get_acquisitions = MagicMock(return_value=result)
 
     return qmm
 
