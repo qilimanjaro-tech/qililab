@@ -6,6 +6,9 @@
 
 ### New features since last release
 
+- Enums for gate options
+  [#589](https://github.com/qilimanjaro-tech/qililab/pull/589)
+
 - Two new enums for SNZ gate
   [#587](https://github.com/qilimanjaro-tech/qililab/pull/587)
 
