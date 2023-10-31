@@ -321,6 +321,7 @@ class Parameter(str, Enum):
     DELAY = "delay"
     B = "b"
     T_PHI = "t_phi"
+    GATE_OPTIONS = "options"
 
 
 class ResultName(str, Enum):
