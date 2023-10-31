@@ -147,6 +147,15 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
         # Separate the readout schedules by the qubit they act on
         qubit_schedules = pulse_bus_schedule.qubit_schedules()
+
+        # empty cache and sequence for specific qubits if they are not in the schedule
+        for cached_qubit, seq_id in (
+            (timeline.qubit, key) for key, element in list(self._cache.items()) for timeline in element.timeline
+        ):
+            if cached_qubit not in (schedule.qubit for schedule in qubit_schedules):
+                _ = self.sequences.pop(seq_id)
+                _ = self._cache.pop(seq_id)
+
         compiled_sequences = []
         for schedule in qubit_schedules:
             # Get the sequencer that acts on the same qubit as the schedule
