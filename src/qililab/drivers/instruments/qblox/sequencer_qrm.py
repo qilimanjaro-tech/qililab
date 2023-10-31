@@ -30,18 +30,17 @@ from .sequencer_qcm import SequencerQCM
 
 @InstrumentDriverFactory.register
 class SequencerQRM(SequencerQCM, Digitiser):
-    """Qililab's driver for QBlox-instruments digitiser Sequencer"""
+    """Qililab's driver for QBlox-instruments digitiser Sequencer
+
+    Args:
+        parent (Instrument): Parent for the sequencer instance.
+        name (str): Sequencer name
+        seq_idx (int): sequencer identifier index
+        sequence_timeout (int): timeout to retrieve sequencer state in minutes
+        acquisition_timeout (int): timeout to retrieve acquisition state in minutes
+    """
 
     def __init__(self, parent: Instrument, name: str, seq_idx: int):
-        """Initialise the instrument.
-
-        Args:
-            parent (Instrument): Parent for the sequencer instance.
-            name (str): Sequencer name
-            seq_idx (int): sequencer identifier index
-            sequence_timeout (int): timeout to retrieve sequencer state in minutes
-            acquisition_timeout (int): timeout to retrieve acquisition state in minutes
-        """
         super().__init__(parent=parent, name=name, seq_idx=seq_idx)
         self.add_parameter(name="sequence_timeout", vals=vals.Ints(), set_cmd=None, initial_value=1)
         self.add_parameter(name="acquisition_timeout", vals=vals.Ints(), set_cmd=None, initial_value=1)

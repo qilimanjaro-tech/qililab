@@ -28,20 +28,20 @@ from qililab.typings.enums import OperationTimingsCalculationMethod, Qubits
 
 
 class Circuit:
-    """The Circuit class"""
+    """The Circuit class
+
+    Args:
+        num_qubits (int): The number of qubits of the circuit
+
+    Raises:
+        ValueError: If num_qubits is not integer.
+        ValueError: If num_qubits is not positive.
+    """
 
     def __init__(self, num_qubits: int):
-        """Constructor of Circuit
-
-        Args:
-            num_qubits (int): The number of qubits of the circuit
-
-        Raises:
-            ValueError: If num_qubits is not integer.
-            ValueError: If num_qubits is not positive.
-        """
         if not isinstance(num_qubits, int):
             raise ValueError("Number of qubits should be integer.")
+
         if num_qubits <= 0:
             raise ValueError("Number of qubits should be positive.")
 

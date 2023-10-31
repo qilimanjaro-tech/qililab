@@ -34,16 +34,15 @@ class SpiRack(QcodesSpiRack, BaseInstrument):  # pylint: disable=abstract-method
     Qililab's driver for the Qblox SpiRack.
 
     SPI rack driver class based on `QCoDeS <https://qcodes.github.io/Qcodes/>`_.
+
+    This class is initialize as in Qblox but changing the references to qililab classes instead.
+
+    Args:
+        name (str): Instrument name.
+        address (str): COM port used by SPI rack controller unit (e.g. "COM4")
     """
 
     def __init__(self, name: str, address: str, **kwargs):
-        """
-        Initialize the class, as in Qblox but changing the references to qililab classes instead.
-
-        Args:
-            name (str): Instrument name.
-            address (str): COM port used by SPI rack controller unit (e.g. "COM4")
-        """
         super().__init__(name, address, **kwargs)
 
         self._MODULES_MAP["S4g"] = S4gModule
@@ -66,18 +65,17 @@ class D5aModule(QcodesD5aModule, BaseInstrument):
     Qililab's driver for the Qblox D5a Module.
 
     `QCoDeS <https://qcodes.github.io/Qcodes/>`_ style instrument channel driver for the D5a SPI module.
+
+    Args:
+        parent(SpiRack): Reference to the :class:`~qblox_instruments.SpiRack` parent object. This is handled by
+            the :func:`~qblox_instruments.SpiRack.add_spi_module` function.
+        name (str): Name given to the InstrumentChannel.
+        address (int): Module number set on the hardware.
+    Raises: ValueError: Length of the dac names list does not match the number of dacs.
+        is_dummy (bool, optional): _description_. Defaults to False.
     """
 
     def __init__(self, parent: Instrument, name: str, address: int, **kwargs):
-        """
-        Args:
-            parent(SpiRack): Reference to the :class:`~qblox_instruments.SpiRack` parent object. This is handled by
-                the :func:`~qblox_instruments.SpiRack.add_spi_module` function.
-            name (str): Name given to the InstrumentChannel.
-            address (int): Module number set on the hardware.
-        Raises: ValueError: Length of the dac names list does not match the number of dacs.
-            is_dummy (bool, optional): _description_. Defaults to False.
-        """
         super().__init__(parent, name, address, **kwargs)
 
         self.submodules: dict[str, Union[InstrumentModule, ChannelTuple]] = {}  # resetting superclass submodules
@@ -104,19 +102,18 @@ class S4gModule(QcodesS4gModule, BaseInstrument):
     Qililab's driver for the Qblox S4g Module.
 
     `QCoDeS <https://qcodes.github.io/Qcodes/>`_ style instrument channel driver for the S4g SPI module.
+
+    Args:
+        parent(SpiRack): Reference to the :class:`~qblox_instruments.SpiRack` parent object. This is handled by
+            the :func:`~qblox_instruments.SpiRack.add_spi_module` function.
+        name (str): Name given to the InstrumentChannel.
+        address (int): Module number set on the hardware.
+
+    Raises:
+        ValueError: Length of the dac names list does not match the number of dacs.
     """
 
     def __init__(self, parent: Instrument, name: str, address: int, **kwargs):
-        """
-        Args:
-            parent(SpiRack): Reference to the :class:`~qblox_instruments.SpiRack` parent object. This is handled by
-                the :func:`~qblox_instruments.SpiRack.add_spi_module` function.
-            name (str): Name given to the InstrumentChannel.
-            address (int): Module number set on the hardware.
-
-        Raises:
-            ValueError: Length of the dac names list does not match the number of dacs.
-        """
         super().__init__(parent, name, address, **kwargs)
 
         self.submodules: dict[str, Union[InstrumentModule, ChannelTuple]] = {}  # resetting superclass submodules

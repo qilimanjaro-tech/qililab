@@ -29,13 +29,14 @@ class ExecutionManager:  # pylint: disable=too-few-public-methods
     This class only contains drawing capabilities. The `ExecutionManager` name is maintained for backwards
     compatibility.
 
+    At init checks that the number of schedules matches all the schedules for each bus.
+
     Args:
         num_schedules (int): Number of pulse schedules used in the experiment.
         buses (list[BusExecution] | None): List of buses used in the experiment.
     """
 
     def __init__(self, num_schedules: int, buses: list[BusExecution] | None = None):
-        """check that the number of schedules matches all the schedules for each bus"""
         self.num_schedules = num_schedules
         self.buses = buses if buses is not None else []
         for bus in self.buses:
