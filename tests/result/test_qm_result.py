@@ -66,7 +66,5 @@ class TestsQMResult:
         Args:
             qm_result (QuantumMachinesResult): QuantumMachinesResult instance.
         """
-        with pytest.raises(
-            NotImplementedError, match="Counts are not yet supported for Quantum Machines instruments."
-        ):
+        with pytest.raises(NotImplementedError, match="Counts are not yet supported for Quantum Machines instruments."):
             _ = qm_result.counts_object()
