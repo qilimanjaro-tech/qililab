@@ -113,8 +113,6 @@ def fixture_qblox_asymmetric_bins_result():
                 "threshold": [0.0, 1.0],
                 "avg_cnt": [1, 1],
             },
-            "qubit": 0,
-            "measurement": 0,
         },
         {
             "scope": {
@@ -126,8 +124,6 @@ def fixture_qblox_asymmetric_bins_result():
                 "threshold": [1.0, 0.0, 1.0],
                 "avg_cnt": [1, 1, 1],
             },
-            "qubit": 0,
-            "measurement": 1,
         },
     ]
     return QbloxResult(integration_lengths=[1000, 1000], qblox_raw_results=qblox_raw_results)
@@ -275,7 +271,7 @@ class TestsQbloxResult:
             qblox_asymmetric_bins_result (QbloxResult): QbloxResult instance with different number of bins on each sequencer.
         """
         with pytest.raises(IndexError, match="Sequencers must have the same number of bins."):
-            qblox_asymmetric_bins_result.array()
+            qblox_asymmetric_bins_result.counts_object()
 
     def test_array_property_of_scope(self, dummy_qrm: Pulsar, qblox_result_scope: QbloxResult):
         """Test the array property of the QbloxResult class."""
