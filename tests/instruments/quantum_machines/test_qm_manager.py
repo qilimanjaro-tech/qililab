@@ -29,23 +29,27 @@ def fixture_qmm():
     )  # pylint: disable=abstract-class-instantiated
     qmm.device = MagicMock
     result = QuantumMachinesResult(raw_results=np.zeros((2, 10)))
-    qmm.get_acquisitions = MagicMock(return_value=result)
+    # qmm.get_acquisitions = MagicMock(return_value=result)
 
     return qmm
 
 
 class MockJob:
+    """Mocks a running job from Quantum Machines"""
+
     def __init__(self):
         self.result_handles = MockStreamingFetcher()
 
 
 class MockStreamingFetcher:
+    """Mocks the StreamingFetcher class from Quantum Machines."""
+
     def __init__(self):
-        print("init streamer")
-        self.values = np.zeros((2, 10))
+        self.values = [("", MockSingleHandle()), ("", MockSingleHandle())]
         self.index = 0
 
     def wait_for_all_values(self):
+        """Mocks waiting for all values method from streamer"""
         return MagicMock
 
     def __iter__(self):
@@ -53,12 +57,23 @@ class MockStreamingFetcher:
 
     def __next__(self):
         if self.index < len(self.values):
-            print("returning a result")
             result = self.values[self.index]
             self.index += 1
             return result
         else:
             raise StopIteration
+
+
+class MockSingleHandle:
+    """Mocks a single result handle from quantum machines results module."""
+
+    def __init__(self):
+        self.values = np.zeros((10))
+        self.index = 0
+
+    def fetch_all(self):
+        """Mocks fetching all values from the result handle."""
+        return self.values
 
 
 class TestQMM:
@@ -89,10 +104,10 @@ class TestQMM:
 
         assert isinstance(job, MagicMock)
 
-    @patch("qililab.instruments.quantum_machines.qmm.RunningQmJob")
-    def test_get_acquisitions(self, mock_job: MockJob, qmm: QMM):
+    def test_get_acquisitions(self, qmm: QMM):
         """Test get_acquisition method"""
-        result = qmm.get_acquisitions(mock_job)
+        job = MockJob()
+        result = qmm.get_acquisitions(job)
 
         assert isinstance(result, QuantumMachinesResult)
         assert result.array.shape == (2, 10)
