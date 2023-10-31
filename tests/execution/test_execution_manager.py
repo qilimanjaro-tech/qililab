@@ -273,7 +273,7 @@ class TestExecutionManagerPlatform:
 
 
 qblox_acquisition = {
-    "default": {
+    "q0_0": {
         "index": 0,
         "acquisition": {
             "scope": {
