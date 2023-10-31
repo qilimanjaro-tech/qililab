@@ -92,7 +92,6 @@ class TestQMM:
     @patch("qililab.instruments.quantum_machines.qmm.RunningQmJob")
     def test_get_acquisitions(self, mock_job: MockJob, qmm: QMM):
         """Test get_acquisition method"""
-        qmm.qm = MagicMock
         result = qmm.get_acquisitions(mock_job)
 
         assert isinstance(result, QuantumMachinesResult)
