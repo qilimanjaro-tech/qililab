@@ -468,7 +468,7 @@ class TestQuantumMachinesCompiler:
 
     def test_measure_operation_with_no_weights(self, measure_operation_with_no_weights: QProgram):
         compiler = QuantumMachinesCompiler()
-        qua_program, configuration, result_handles = compiler.compile(measure_operation_with_no_weights)
+        qua_program, configuration, measurements = compiler.compile(measure_operation_with_no_weights)
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 1
@@ -477,13 +477,14 @@ class TestQuantumMachinesCompiler:
         assert measure.qe.name == "drive"
         assert measure.pulse.name in configuration["pulses"]
 
-        assert len(result_handles) == 2
-        assert "adc1" in result_handles
-        assert "adc2" in result_handles
+        assert len(measurements) == 1
+        assert len(measurements[0].result_handles) == 2
+        assert "adc1" in measurements[0].result_handles
+        assert "adc2" in measurements[0].result_handles
 
     def test_measure_operation_with_no_raw_adc(self, measure_operation_with_no_raw_adc: QProgram):
         compiler = QuantumMachinesCompiler()
-        qua_program, configuration, result_handles = compiler.compile(measure_operation_with_no_raw_adc)
+        qua_program, configuration, measurements = compiler.compile(measure_operation_with_no_raw_adc)
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 1
@@ -492,11 +493,12 @@ class TestQuantumMachinesCompiler:
         assert measure.qe.name == "drive"
         assert measure.pulse.name in configuration["pulses"]
 
-        assert len(result_handles) == 0
+        assert len(measurements) == 1
+        assert len(measurements[0].result_handles) == 0
 
     def test_measure_operation_with_one_weight(self, measure_operation_with_one_weight: QProgram):
         compiler = QuantumMachinesCompiler()
-        qua_program, configuration, result_handles = compiler.compile(measure_operation_with_one_weight)
+        qua_program, configuration, measurements = compiler.compile(measure_operation_with_one_weight)
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 2
@@ -511,14 +513,15 @@ class TestQuantumMachinesCompiler:
         measurement_pulse = configuration["pulses"][measure.pulse.name]
         assert len(measurement_pulse["integration_weights"]) == 1
 
-        assert len(result_handles) == 3
-        assert "adc1" in result_handles
-        assert "adc2" in result_handles
-        assert "I" in result_handles
+        assert len(measurements) == 1
+        assert len(measurements[0].result_handles) == 3
+        assert "adc1" in measurements[0].result_handles
+        assert "adc2" in measurements[0].result_handles
+        assert "I" in measurements[0].result_handles
 
     def test_measure_operation_with_two_weights(self, measure_operation_with_two_weights: QProgram):
         compiler = QuantumMachinesCompiler()
-        qua_program, configuration, result_handles = compiler.compile(measure_operation_with_two_weights)
+        qua_program, configuration, measurements = compiler.compile(measure_operation_with_two_weights)
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 3
@@ -534,15 +537,16 @@ class TestQuantumMachinesCompiler:
         measurement_pulse = configuration["pulses"][measure.pulse.name]
         assert len(measurement_pulse["integration_weights"]) == 2
 
-        assert len(result_handles) == 4
-        assert "adc1" in result_handles
-        assert "adc2" in result_handles
-        assert "I" in result_handles
-        assert "Q" in result_handles
+        assert len(measurements) == 1
+        assert len(measurements[0].result_handles) == 4
+        assert "adc1" in measurements[0].result_handles
+        assert "adc2" in measurements[0].result_handles
+        assert "I" in measurements[0].result_handles
+        assert "Q" in measurements[0].result_handles
 
     def test_measure_operation_with_four_weights(self, measure_operation_with_four_weights: QProgram):
         compiler = QuantumMachinesCompiler()
-        qua_program, configuration, result_handles = compiler.compile(measure_operation_with_four_weights)
+        qua_program, configuration, measurements = compiler.compile(measure_operation_with_four_weights)
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 3
@@ -560,17 +564,18 @@ class TestQuantumMachinesCompiler:
         measurement_pulse = configuration["pulses"][measure.pulse.name]
         assert len(measurement_pulse["integration_weights"]) == 3
 
-        assert len(result_handles) == 4
-        assert "adc1" in result_handles
-        assert "adc2" in result_handles
-        assert "I" in result_handles
-        assert "Q" in result_handles
+        assert len(measurements) == 1
+        assert len(measurements[0].result_handles) == 4
+        assert "adc1" in measurements[0].result_handles
+        assert "adc2" in measurements[0].result_handles
+        assert "I" in measurements[0].result_handles
+        assert "Q" in measurements[0].result_handles
 
     def test_measure_operation_with_one_weight_no_demodulation(
         self, measure_operation_with_one_weight_no_demodulation: QProgram
     ):
         compiler = QuantumMachinesCompiler()
-        qua_program, configuration, result_handles = compiler.compile(measure_operation_with_one_weight_no_demodulation)
+        qua_program, configuration, measurements = compiler.compile(measure_operation_with_one_weight_no_demodulation)
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 2
@@ -585,18 +590,17 @@ class TestQuantumMachinesCompiler:
         measurement_pulse = configuration["pulses"][measure.pulse.name]
         assert len(measurement_pulse["integration_weights"]) == 1
 
-        assert len(result_handles) == 3
-        assert "adc1" in result_handles
-        assert "adc2" in result_handles
-        assert "I" in result_handles
+        assert len(measurements) == 1
+        assert len(measurements[0].result_handles) == 3
+        assert "adc1" in measurements[0].result_handles
+        assert "adc2" in measurements[0].result_handles
+        assert "I" in measurements[0].result_handles
 
     def test_measure_operation_with_two_weights_no_demodulation(
         self, measure_operation_with_two_weights_no_demodulation: QProgram
     ):
         compiler = QuantumMachinesCompiler()
-        qua_program, configuration, result_handles = compiler.compile(
-            measure_operation_with_two_weights_no_demodulation
-        )
+        qua_program, configuration, measurements = compiler.compile(measure_operation_with_two_weights_no_demodulation)
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 3
@@ -612,19 +616,18 @@ class TestQuantumMachinesCompiler:
         measurement_pulse = configuration["pulses"][measure.pulse.name]
         assert len(measurement_pulse["integration_weights"]) == 2
 
-        assert len(result_handles) == 4
-        assert "adc1" in result_handles
-        assert "adc2" in result_handles
-        assert "I" in result_handles
-        assert "Q" in result_handles
+        assert len(measurements) == 1
+        assert len(measurements[0].result_handles) == 4
+        assert "adc1" in measurements[0].result_handles
+        assert "adc2" in measurements[0].result_handles
+        assert "I" in measurements[0].result_handles
+        assert "Q" in measurements[0].result_handles
 
     def test_measure_operation_with_four_weights_no_demodulation(
         self, measure_operation_with_four_weights_no_demodulation: QProgram
     ):
         compiler = QuantumMachinesCompiler()
-        qua_program, configuration, result_handles = compiler.compile(
-            measure_operation_with_four_weights_no_demodulation
-        )
+        qua_program, configuration, measurements = compiler.compile(measure_operation_with_four_weights_no_demodulation)
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 3
@@ -642,22 +645,26 @@ class TestQuantumMachinesCompiler:
         measurement_pulse = configuration["pulses"][measure.pulse.name]
         assert len(measurement_pulse["integration_weights"]) == 3
 
-        assert len(result_handles) == 4
-        assert "adc1" in result_handles
-        assert "adc2" in result_handles
-        assert "I" in result_handles
-        assert "Q" in result_handles
+        assert len(measurements) == 1
+        assert len(measurements[0].result_handles) == 4
+        assert "adc1" in measurements[0].result_handles
+        assert "adc2" in measurements[0].result_handles
+        assert "I" in measurements[0].result_handles
+        assert "Q" in measurements[0].result_handles
 
     def test_measure_operation_with_average(self, measure_operation_with_average: QProgram):
         compiler = QuantumMachinesCompiler()
-        qua_program, configuration, result_handles = compiler.compile(measure_operation_with_average)
-
-        assert len(compiler._averages) == 1
-        assert compiler._averages[0].shots == 1000
-        assert compiler._averages[0].save_pending is False
+        qua_program, _, measurements = compiler.compile(measure_operation_with_average)
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 1
+
+        assert len(measurements) == 1
+        assert len(measurements[0].result_handles) == 4
+        assert "adc1" in measurements[0].result_handles
+        assert "adc2" in measurements[0].result_handles
+        assert "I" in measurements[0].result_handles
+        assert "Q" in measurements[0].result_handles
 
     def test_for_loop(self, for_loop: QProgram):
         compiler = QuantumMachinesCompiler()

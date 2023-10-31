@@ -33,7 +33,7 @@ class _BusCompilationInfo:  # pylint: disable=too-few-public-methods
         self.current_gain: float | qua.QuaVariableType | None = None
 
 
-class _MeasurementInfo:  # pylint: disable=too-few-public-methods
+class _MeasurementCompilationInfo:  # pylint: disable=too-few-public-methods
     def __init__(
         self,
         variable_I: qua.QuaVariableType | None = None,
@@ -49,16 +49,11 @@ class _MeasurementInfo:  # pylint: disable=too-few-public-methods
         self.stream_raw_adc: qua_dsl._ResultSource | None = stream_raw_adc
         self.loops_iterations: list[int] = []
         self.average: bool = False
-        self.stream_processing_pending: bool = True
 
 
-class _AveragingInfo:  # pylint: disable=too-few-public-methods
-    def __init__(self, shots: int, variable: qua.QuaVariableType, stream: qua_dsl._ResultSource):
-        self.shots: int = shots
-        self.variable: qua.QuaVariableType = variable
-        self.stream: qua_dsl._ResultSource = stream
-        self.save_pending: bool = True
-        self.stream_processing_pending: bool = True
+class MeasurementInfo:
+    def __init__(self):
+        self.result_handles: list[str] = []
 
 
 class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
@@ -86,14 +81,13 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
         self._bus_mapping: dict[str, str] | None
         self._qprogram_block_stack: deque[Block]
         self._qprogram_to_qua_variables: dict[Variable, qua.QuaVariableType]
-        self._measurements: list[_MeasurementInfo]
-        self._averages: list[_AveragingInfo]
+        self._measurements: list[_MeasurementCompilationInfo]
         self._configuration: dict
         self._buses: dict[str, _BusCompilationInfo]
 
     def compile(
         self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None
-    ) -> tuple[qua.Program, dict, list[str]]:
+    ) -> tuple[qua.Program, dict, list[MeasurementInfo]]:
         """Compile QProgram to QUA's Program.
 
         Args:
@@ -114,8 +108,6 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
                 if isinstance(element, (InfiniteLoop, ForLoop, Loop, Average, Parallel)):
                     with handler(element):
                         traverse(element)
-                        if isinstance(element, Average):
-                            self._save_average()
                 elif isinstance(element, Block):
                     traverse(element)
                 else:
@@ -128,7 +120,6 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
         self._qprogram_block_stack = deque()
         self._qprogram_to_qua_variables = {}
         self._measurements = []
-        self._averages = []
         self._configuration = {
             "waveforms": {},
             "pulses": {},
@@ -142,7 +133,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
         with qua.program() as qua_program:
             # Declare variables
             self._declare_variables()
-            # Recursive traversal to convert QProgram blocks to Sequence
+            # Recursive traversal to convert QProgram to QUA program.
             traverse(self._qprogram.body)
             # Stream Processing
             with qua.stream_processing():
@@ -151,46 +142,40 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
         # Return a dictionary with bus names as keys and the compiled Sequence as values.
         return qua_program, self._configuration, result_handles
 
-    def _save_average(self):
-        average = next(average for average in self._averages if average.save_pending)
-        average.save_pending = False
-        qua.save(average.variable, average.stream)
-
     def _process_streams(self):
-        result_handles: list[str] = []
+        measurements = []
 
-        measurements = [measurement for measurement in self._measurements if measurement.stream_processing_pending]
-        is_single_measurement = len(measurements) == 1
-        for i, measurement in enumerate(measurements):
-            if measurement.stream_I is not None:
-                for loop_iteration in measurement.loops_iterations:
-                    measurement.stream_I = measurement.stream_I.buffer(loop_iteration)
-                if measurement.average:
-                    measurement.stream_I = measurement.stream_I.average()
-                measurement.stream_I.save_all("I" if is_single_measurement else f"I_{i}")
-                result_handles.append("I" if is_single_measurement else f"I_{i}")
-            if measurement.stream_Q is not None:
-                for loop_iteration in measurement.loops_iterations:
-                    measurement.stream_Q = measurement.stream_Q.buffer(loop_iteration)
-                if measurement.average:
-                    measurement.stream_Q = measurement.stream_Q.average()
-                measurement.stream_Q.save_all("Q" if is_single_measurement else f"Q_{i}")
-                result_handles.append("Q" if is_single_measurement else f"Q_{i}")
-            if measurement.stream_raw_adc is not None:
-                input1 = measurement.stream_raw_adc.input1()
-                input2 = measurement.stream_raw_adc.input2()
-                for loop_iteration in measurement.loops_iterations:
+        for measurement_compilation_info in self._measurements:
+            measurement = MeasurementInfo()
+            if (stream_I := measurement_compilation_info.stream_I) is not None:
+                stream_I = measurement_compilation_info.stream_I
+                for loop_iteration in measurement_compilation_info.loops_iterations:
+                    stream_I = stream_I.buffer(loop_iteration)
+                if measurement_compilation_info.average:
+                    stream_I = stream_I.average()
+                stream_I.save("I")
+                measurement.result_handles.append("I")
+            if (stream_Q := measurement_compilation_info.stream_Q) is not None:
+                for loop_iteration in measurement_compilation_info.loops_iterations:
+                    stream_Q = stream_Q.buffer(loop_iteration)
+                if measurement_compilation_info.average:
+                    stream_Q = stream_Q.average()
+                stream_Q.save("Q")
+                measurement.result_handles.append("Q")
+            if measurement_compilation_info.stream_raw_adc is not None:
+                input1 = measurement_compilation_info.stream_raw_adc.input1()
+                input2 = measurement_compilation_info.stream_raw_adc.input2()
+                for loop_iteration in measurement_compilation_info.loops_iterations:
                     input1 = input1.buffer(loop_iteration)
                     input2 = input2.buffer(loop_iteration)
-                if measurement.average:
-                    input1 = input1.average()
-                    input2 = input2.average()
-                input2.save_all("adc1" if is_single_measurement else f"adc1_{i}")
-                input2.save_all("adc2" if is_single_measurement else f"adc2_{i}")
-                result_handles.append("adc1" if is_single_measurement else f"adc1_{i}")
-                result_handles.append("adc2" if is_single_measurement else f"adc2_{i}")
+                input2.save_all("adc1")
+                input2.save_all("adc2")
+                measurement.result_handles.append("adc1")
+                measurement.result_handles.append("adc2")
 
-        return result_handles
+            measurements.append(measurement)
+
+        return measurements
 
     def _declare_variables(self):
         for variable in self._qprogram.variables:
@@ -272,8 +257,6 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
 
     def _handle_average(self, element: Average):
         variable = qua.declare(int)
-        stream = qua.declare_stream()
-        self._averages.append(_AveragingInfo(shots=element.shots, variable=variable, stream=stream))
         return qua.for_(variable, 0, variable < element.shots, variable + 1)
 
     def _handle_set_frequency(self, element: SetFrequency):
@@ -409,7 +392,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
                 waveform_I_name,
                 waveform_Q_name,
                 duration=measurement_duration,
-                integration_weights=[weight_A, weight_B, weight_C],
+                integration_weights=[weight_A, weight_B, weight_C, weight_D],
             )
             operation_name = self.__add_pulse_to_element_operations(bus, pulse_name)
             pulse = operation_name * gain if gain is not None else operation_name
@@ -432,7 +415,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
             qua.save(variable_I, stream_I)
             qua.save(variable_Q, stream_Q)
 
-        measurement_info = _MeasurementInfo(variable_I, variable_Q, stream_I, stream_Q, stream_raw_adc)
+        measurement_info = _MeasurementCompilationInfo(variable_I, variable_Q, stream_I, stream_Q, stream_raw_adc)
         for block in reversed(self._qprogram_block_stack):
             if isinstance(block, ForLoop):
                 iterations = QuantumMachinesCompiler.__calculate_iterations(block.start, block.stop, block.step)
