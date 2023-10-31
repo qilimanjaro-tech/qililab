@@ -60,7 +60,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
     |
 
-    **The execution of a notebook is the key functionality of this class,** this is implemented in the ``run_notebook()`` method, whose workflow is the following:
+    **The execution of a notebook is the key functionality of this class,** this is implemented in the ``run_node()`` method, whose workflow is the following:
 
     1. Prepare any input parameters needed for the notebook. This includes extra parameters defined by the user and essential ones such as the targeted qubit or the sweep intervals.
 
@@ -245,7 +245,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         drift_timeout: float,
         qubit_index: int | list[int] | None = None,
         input_parameters: dict | None = None,
-        sweep_interval: dict | None = None,
+        sweep_interval: np.ndarray | None = None,
         number_of_random_datapoints: int = 10,
     ):
         if in_spec_threshold > bad_data_threshold:
@@ -277,7 +277,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         self.input_parameters: dict | None = input_parameters
         """Kwargs for input parameters, to pass and then be interpreted by the notebook. Defaults to None."""
 
-        self.sweep_interval: dict | None = sweep_interval
+        self.sweep_interval: np.ndarray | None = sweep_interval
         """Dictionary with 3 keys describing the sweep values of the experiment. The keys are ``start``, ``stop`` and ``step``. The sweep values
         are all the numbers between ``start`` and ``stop``, separated from each other by the distance ``step``. Defaults to None, which means the one
         specified in the notebook will be used.
@@ -289,58 +289,22 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         """
 
         self.output_parameters: dict | None = self.get_last_calibrated_output_parameters()
-        """Output parameters dictionary from the notebook execution, which get extracted with ``ql.export_calibration_outputs()``, normally contains
-        a ``check_params`` to do the ``check_data()`` and the ``platform_params`` which will be the calibrated parameters to set in the platform. """
+        """Output parameters dictionary from the notebook execution, which was extracted with ``ql.export_calibration_outputs()``, normally contains
+        a ``check_params`` to do the ``check_data()`` and the ``platform_params`` which will be the calibrated parameters to set in the platform.
+
+        If no previous successful calibration, then is None.
+        """
 
         self.previous_output_parameters: dict | None = None
-        """Same output_parameters, but from the previous execution of the Node."""
+        """Same output_parameters, but from the previous execution of the Node. Starts at None."""
 
         self.previous_timestamp: float | None = self.get_last_calibrated_timestamp()
-        """Last calibrated timestamp."""
+        """Last calibrated timestamp. If no previous successful calibration, then is None."""
 
         self._stream: StringIO = self._build_notebooks_logger_stream()
         """Stream object to which the notebooks logger output will be written, to posterior retrieval."""
 
-    def _sweep_interval_as_array(self) -> list | None:
-        """Transforms the sweep interval start, stop and step into a list.
-
-        Returns:
-            list: sweep interval list.
-        """
-        if self.sweep_interval is not None:
-            return np.arange(
-                self.sweep_interval["start"], self.sweep_interval["stop"], self.sweep_interval["step"]
-            ).tolist()
-        return None
-
-    def _build_check_data_interval(self) -> list | None:
-        """Build ``check_data()`` sweep interval with ``number_of_random_datapoints`` data points.
-
-        Returns:
-            list: ``check_data()`` sweep interval list.
-        """
-        if self.sweep_interval is not None:
-            amp_values = np.arange(
-                self.sweep_interval["start"], self.sweep_interval["stop"], self.sweep_interval["step"]
-            )
-            return [
-                int(amp_values[np.random.randint(0, len(amp_values))]) for _ in range(self.number_of_random_datapoints)
-            ]
-        return None
-
-    def _add_string_to_checked_nb_name(self, string_to_add: str, timestamp: float) -> None:
-        """Adds a string to the notebook name and returns it.
-
-        Args:
-            string_to_add (str): The string to add in the end of the name.
-            timestamp (float): Timestamp to identify the desired notebook execution.
-        """
-        path = f"{self.nb_folder}/{self.node_id}"
-        timestamp_path = self._create_notebook_datetime_path(path, timestamp).split(".ipynb")[0]
-
-        os.rename(f"{timestamp_path}.ipynb", f"{timestamp_path}_{string_to_add}.ipynb")
-
-    def run_notebook(self, check: bool = False) -> float:
+    def run_node(self, check: bool = False) -> float:
         """Executes the notebook, passing the needed parameters and flags. Also it can be chosen to only check certain values of the sweep interval for
         when checking data.
 
@@ -394,15 +358,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         )
 
         if self.sweep_interval is not None:
-            params |= {
-                "start": self.sweep_interval["start"],
-                "stop": self.sweep_interval["stop"],
-                "step": self.sweep_interval["step"],
-            }
-            if check and self._build_check_data_interval() is not None:
-                params |= {"sweep_interval": self._build_check_data_interval()}
-            elif self._sweep_interval_as_array() is not None:
-                params |= {"sweep_interval": self._sweep_interval_as_array()}
+            params |= {"sweep_interval": self._build_check_data_interval() if check else self.sweep_interval}
 
         if self.input_parameters is not None:
             params |= self.input_parameters
@@ -418,7 +374,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             if "fidelities" in self.output_parameters:
                 print("Fidelities:", self.output_parameters["fidelities"])
 
-            timestamp = self._get_timestamp()
+            timestamp = datetime.timestamp(datetime.now())
             os.rename(output_path, self._create_notebook_datetime_path(self.nb_path, timestamp))
             return timestamp
 
@@ -428,7 +384,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         except Exception as e:  # pylint: disable = broad-exception-caught
             # Generate error folder and move there the notebook
-            timestamp = self._get_timestamp()
+            timestamp = datetime.timestamp(datetime.now())
             error_path = self._create_notebook_datetime_path(self.nb_path, timestamp, error=True)
             os.rename(output_path, error_path)
             logger.error(
@@ -497,109 +453,17 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             )
         return out_dict
 
-    def get_last_calibrated_timestamp(self) -> float | None:
-        """Gets the last executed timestamp if there exist any previous execution of the same notebook.
+    def _build_check_data_interval(self) -> np.ndarray | None:
+        """Build ``check_data()`` sweep interval with ``number_of_random_datapoints`` data points.
 
         Returns:
-            float: The last execution timestamp if exists, None otherwise.
+            list: ``check_data()`` sweep interval list.
         """
-        # get all elems in that folder starting with self.node_id+“_” and get the last modiffied one file name, convert string into datetime
-        last_modified_file_name = self._find_last_executed_calibration()
-        return (
-            os.path.getmtime(f"{self.nb_folder}/{last_modified_file_name}")
-            if last_modified_file_name is not None
-            else None
-        )
-
-    def get_last_calibrated_output_parameters(self) -> dict | None:
-        """Gets the last output of the previous calibration execution of the same notebook if there exist any.
-
-        Returns:
-            dict: The last calibration execution output if exists, None otherwise.
-        """
-        last_modified_file_name = self._find_last_executed_calibration()
-        return (
-            self._parse_output_from_execution_file(last_modified_file_name)
-            if last_modified_file_name is not None
-            else None
-        )
-
-    def _parse_output_from_execution_file(self, file_name) -> dict | None:
-        """Parses a expected notebook file and gets the output from the execution converted as python dictionary.
-
-        Args:
-            file_name (str): filename of the notebook file.
-
-        Returns:
-            dict: outputs of the executed notebook file.
-
-        Raises:
-            IncorrectCalibrationOutput: In case no outputs, incorrect outputs or multiple outputs where found. Incorrect outputs are those that do not contain `check_parameters` or is empty.
-        """
-        # Parsing file
-        outputs: list[str] = []
-        with open(f"{self.nb_folder}/{file_name}") as file:  # pylint: disable=unspecified-encoding
-            lines = file.readlines()
-            outputs.extend(line for line in lines if line.find(logger_output_start) != -1)
-
-        if not outputs:
-            logger.error(
-                "Aborting execution. No output found, check the automatic-calibration output cell is implemented in %s",
-                self.nb_path,
+        if (interval := self.sweep_interval) is not None:
+            return np.array(
+                [int(interval[np.random.randint(0, len(interval))]) for _ in range(self.number_of_random_datapoints)]
             )
-            raise IncorrectCalibrationOutput(f"No output found, check automatic-calibration notebook in {self.nb_path}")
-
-        data = outputs[0].split(logger_output_start)
-
-        if len(outputs) > 1 or len(data) > 2:
-            logger.error(
-                "Aborting execution. More than one output found, please output the results once in %s",
-                self.nb_path,
-            )
-            raise IncorrectCalibrationOutput(f"More than one output found in {self.nb_path}")
-
-        # TODO: Make sure that the encoding of special characters (i.e. \\“) doesn’t depend on the OS because
-        # Windows uses UTF-16LE and Linux (UNIX based like MacOS) uses UTF-8
-        clean_data = data[1].split('\\n"')
-        dict_as_string = clean_data[0].replace('\\"', '"')
-
-        # converting list into one single string
-        output_string = "".join(dict_as_string)
-        out_dict = json.loads(output_string)
-
-        if "check_parameters" not in out_dict or out_dict["check_parameters"] == {}:
-            logger.error(
-                "Aborting execution. No 'check_parameters' dictionary or its empty in the output cell implemented in %s",
-                self.nb_path,
-            )
-            raise IncorrectCalibrationOutput(
-                f"Empty output found in {self.nb_path}, output must have key and value 'check_parameters'."
-            )
-        return out_dict
-
-    def _find_last_executed_calibration(self) -> str | None:
-        """Returns the filename of the last calibration execution with the same node_id.
-
-        Returns:
-            str: Name of the file.
-        """
-        # Filtering by node_id and calibrations
-        entries = os.scandir(self.nb_folder)
-        file_names = []
-        for val in entries:
-            if val.is_file():
-                same_node_fnames = val.name.split(f"{self.node_id}_")
-                if len(same_node_fnames) == 2 and len(val.name.split("_calibrated")) == 2:
-                    file_names.append(val.name)
-
-        # Get the last created file, most recent one
-        last_modified_file_time, last_modified_file_name = -1.0, ""
-        for fname in file_names:
-            ftime = os.path.getctime(f"{self.nb_folder}/{fname}")
-            if ftime > last_modified_file_time:
-                last_modified_file_time, last_modified_file_name = ftime, fname
-
-        return last_modified_file_name if last_modified_file_time != -1.0 else None
+        return None
 
     def _create_notebook_datetime_path(
         self, original_path: str, timestamp: float | None = None, dirty: bool = False, error: bool = False
@@ -670,22 +534,128 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         return name, folder_path
 
+    def get_last_calibrated_timestamp(self) -> float | None:
+        """Gets the last executed timestamp if there exist any previous execution of the same notebook.
+
+        Returns:
+            float: The last execution timestamp if exists, None otherwise.
+        """
+        # get all elements in that folder starting with self.node_id+“_” and get the last modified one file name, convert string into datetime
+        last_modified_file_name = self._find_last_executed_calibration()
+        return (
+            os.path.getmtime(f"{self.nb_folder}/{last_modified_file_name}")
+            if last_modified_file_name is not None
+            else None
+        )
+
+    def get_last_calibrated_output_parameters(self) -> dict | None:
+        """Gets the last output of the previous calibration execution of the same notebook if there exist any.
+
+        Returns:
+            dict: The last calibration execution output if exists, None otherwise.
+        """
+        last_modified_file_name = self._find_last_executed_calibration()
+        return (
+            self._parse_output_from_execution_file(last_modified_file_name)
+            if last_modified_file_name is not None
+            else None
+        )
+
+    def _find_last_executed_calibration(self) -> str | None:
+        """Returns the filename of the last calibration execution with the same node_id.
+
+        Returns:
+            str: Name of the file.
+        """
+        # Filtering by node_id and calibrations
+        entries = os.scandir(self.nb_folder)
+        file_names = []
+        for val in entries:
+            if val.is_file():
+                same_node_fnames = val.name.split(f"{self.node_id}_")
+                if len(same_node_fnames) == 2 and len(val.name.split("_calibrated")) == 2:
+                    file_names.append(val.name)
+
+        # Get the last created file, most recent one
+        last_modified_file_time, last_modified_file_name = -1.0, ""
+        for fname in file_names:
+            ftime = os.path.getctime(f"{self.nb_folder}/{fname}")
+            if ftime > last_modified_file_time:
+                last_modified_file_time, last_modified_file_name = ftime, fname
+
+        return last_modified_file_name if last_modified_file_time != -1.0 else None
+
+    def _parse_output_from_execution_file(self, file_name) -> dict | None:
+        """Parses a expected notebook file and gets the output from the execution converted as python dictionary.
+
+        Args:
+            file_name (str): filename of the notebook file.
+
+        Returns:
+            dict: outputs of the executed notebook file.
+
+        Raises:
+            IncorrectCalibrationOutput: In case no outputs, incorrect outputs or multiple outputs where found. Incorrect outputs are those that do not contain `check_parameters` or is empty.
+        """
+        # Parsing file
+        outputs: list[str] = []
+        with open(f"{self.nb_folder}/{file_name}") as file:  # pylint: disable=unspecified-encoding
+            lines = file.readlines()
+            outputs.extend(line for line in lines if line.find(logger_output_start) != -1)
+
+        if not outputs:
+            logger.error(
+                "Aborting execution. No output found, check the automatic-calibration output cell is implemented in %s",
+                self.nb_path,
+            )
+            raise IncorrectCalibrationOutput(f"No output found, check automatic-calibration notebook in {self.nb_path}")
+
+        data = outputs[0].split(logger_output_start)
+
+        if len(outputs) > 1 or len(data) > 2:
+            logger.error(
+                "Aborting execution. More than one output found, please output the results once in %s",
+                self.nb_path,
+            )
+            raise IncorrectCalibrationOutput(f"More than one output found in {self.nb_path}")
+
+        # TODO: Make sure that the encoding of special characters (i.e. \\“) doesn’t depend on the OS because
+        # Windows uses UTF-16LE and Linux (UNIX based like MacOS) uses UTF-8
+        clean_data = data[1].split('\\n"')
+        dict_as_string = clean_data[0].replace('\\"', '"')
+
+        # converting list into one single string
+        output_string = "".join(dict_as_string)
+        out_dict = json.loads(output_string)
+
+        if "check_parameters" not in out_dict or out_dict["check_parameters"] == {}:
+            logger.error(
+                "Aborting execution. No 'check_parameters' dictionary or its empty in the output cell implemented in %s",
+                self.nb_path,
+            )
+            raise IncorrectCalibrationOutput(
+                f"Empty output found in {self.nb_path}, output must have key and value 'check_parameters'."
+            )
+        return out_dict
+
+    def _add_string_to_checked_nb_name(self, string_to_add: str, timestamp: float) -> None:
+        """Adds a string to the notebook name and returns it.
+
+        Args:
+            string_to_add (str): The string to add in the end of the name.
+            timestamp (float): Timestamp to identify the desired notebook execution.
+        """
+        path = f"{self.nb_folder}/{self.node_id}"
+        timestamp_path = self._create_notebook_datetime_path(path, timestamp).split(".ipynb")[0]
+
+        os.rename(f"{timestamp_path}.ipynb", f"{timestamp_path}_{string_to_add}.ipynb")
+
     def _invert_output_and_previous_output(self) -> None:
         """Reverts the output and previous output, for when we run notebook in a ``check_data()``."""
         self.output_parameters, self.previous_output_parameters = (
             self.previous_output_parameters,
             self.output_parameters,
         )
-
-    @staticmethod
-    def _get_timestamp() -> float:
-        """Generate a UNIX timestamp.
-
-        Returns:
-            float: UNIX timestamp of the time when the function is called.
-        """
-        now = datetime.now()
-        return datetime.timestamp(now)
 
 
 def export_calibration_outputs(outputs: dict) -> None:

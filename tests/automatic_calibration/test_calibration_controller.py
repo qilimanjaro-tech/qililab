@@ -679,7 +679,7 @@ class TestCalibrationController:
     #######################
     ### TEST CHECK DATA ###
     #######################
-    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.run_notebook")
+    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.run_node")
     @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._add_string_to_checked_nb_name")
     @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._invert_output_and_previous_output")
     def test_check_data(self, mock_invert, mock_add_str, mock_run, controller):
@@ -704,10 +704,10 @@ class TestCalibrationController:
     ######################
     ### TEST CALIBRATE ###
     ######################
-    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.run_notebook")
+    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.run_node")
     @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._add_string_to_checked_nb_name")
     def test_calibrate(self, mock_add_str, mock_run, controller):
-        """Test that the calibration method, calls node.run_notebook()."""
+        """Test that the calibration method, calls node.run_node()."""
         for node in controller.node_sequence.values():
             controller.calibrate(node)
         assert mock_run.call_count == len(controller.node_sequence)
