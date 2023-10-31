@@ -99,6 +99,16 @@ class QMM(Instrument):
         """Turns off an instrument."""
 
     def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+        """Sets the parameter of a specific instrument.
+
+        Args:
+            parameter (Parameter): parameter settings of the instrument to update
+            value (float | str | bool): value to update
+            channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
+
+        Returns:
+            bool: True if the parameter is set correctly, False otherwise
+        """
         raise NotImplementedError("Setting a parameter is not supported for Quantum Machines yet.")
 
     def run(self, program: Program) -> RunningQmJob:

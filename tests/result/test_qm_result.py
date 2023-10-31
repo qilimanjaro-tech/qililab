@@ -59,3 +59,14 @@ class TestsQMResult:
             NotImplementedError, match="Probabilities are not yet supported for Quantum Machines instruments."
         ):
             _ = qm_result.probabilities()
+
+    def test_counts_object(self, qm_result: QuantumMachinesResult):
+        """Tests that counts_object method raises a not implemented error.
+
+        Args:
+            qm_result (QuantumMachinesResult): QuantumMachinesResult instance.
+        """
+        with pytest.raises(
+            NotImplementedError, match="Counts are not yet supported for Quantum Machines instruments."
+        ):
+            _ = qm_result.counts_object()

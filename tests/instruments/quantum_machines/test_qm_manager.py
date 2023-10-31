@@ -9,6 +9,7 @@ from qm.qua import play, program
 from qililab.instruments.quantum_machines import QMM
 from qililab.result.quantum_machines_results import QuantumMachinesResult
 from qililab.settings import Settings
+from qililab.typings import Parameter
 
 
 @pytest.fixture(name="qua_program")
@@ -40,6 +41,7 @@ class MockJob:
 
 class MockStreamingFetcher:
     def __init__(self):
+        print("init streamer")
         self.values = np.zeros((2, 10))
         self.index = 0
 
@@ -51,6 +53,7 @@ class MockStreamingFetcher:
 
     def __next__(self):
         if self.index < len(self.values):
+            print("returning a result")
             result = self.values[self.index]
             self.index += 1
             return result
@@ -103,3 +106,8 @@ class TestQMM:
         job = qmm.simulate(qua_program)
 
         assert isinstance(job, MagicMock)
+
+    def test_set_parameter(self, qmm: QMM):
+        """Tests that set_parameter method raises a not implemented error."""
+        with pytest.raises(NotImplementedError, match="Setting a parameter is not supported for Quantum Machines yet."):
+            _ = qmm.set_parameter(parameter=Parameter.LO_FREQUENCY, value=0.0)
