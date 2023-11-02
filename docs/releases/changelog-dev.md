@@ -1,13 +1,6 @@
 # Release dev (development release)
 
-- Fixed [bug](https://github.com/qilimanjaro-tech/qililab/issues/584) where executing multiple circuits with each measuring different qubits would launch measurements for previously measured
-  qubits even if those did not have measurements on the circuit currently being executed.
-  [#576](https://github.com/qilimanjaro-tech/qililab/pull/576)
-
 ### New features since last release
-
-- Two new enums for SNZ gate
-  [#587](https://github.com/qilimanjaro-tech/qililab/pull/587)
 
 ### Improvements
 
@@ -18,3 +11,5 @@
 ### Documentation
 
 ### Bug fixes
+
+- Fixed [bug #579](https://github.com/qilimanjaro-tech/qililab/issues/579), were now all `yaml.dumps` are done with [ruamel](https://yaml.readthedocs.io/en/latest/#changelog), for not losing decimals precisons, and also following the previous bug due to the elimination of `ruamel.yaml.round_trip_dump`, the version of ruamel in qililab got fixed, and imports where rewritten for more clarity, [#577](https://github.com/qilimanjaro-tech/qililab/pull/578)

@@ -13,9 +13,10 @@
 # limitations under the License.
 
 """Instruments class"""
+import io
 from dataclasses import dataclass
 
-import yaml
+from ruamel.yaml import YAML
 
 from qililab.instruments.instrument import Instrument
 
@@ -39,7 +40,7 @@ class Instruments:
         Returns:
             str: String representation of the Instruments class.
         """
-        return str(yaml.dump(self._short_dict(), sort_keys=False))
+        return str(YAML().dump(self._short_dict(), io.BytesIO()))
 
     def _short_dict(self):
         """Return a dict representation of the Instruments class discarding all static elements."""

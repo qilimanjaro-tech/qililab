@@ -22,6 +22,7 @@ from threading import Thread
 
 import numpy as np
 from qcodes.instrument import Instrument as QcodesInstrument
+from ruamel.yaml import YAML
 from tqdm.auto import tqdm
 
 from qililab.chip import Node
@@ -34,7 +35,6 @@ from qililab.settings import Runcard
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.typings.enums import Instrument, Parameter
 from qililab.typings.experiment import ExperimentOptions
-from qililab.typings.yaml_type import yaml
 from qililab.utils.live_plot import LivePlot
 from qililab.utils.loop import Loop
 from qililab.utils.util_loops import compute_shapes_from_loops
@@ -127,7 +127,7 @@ class BaseExperiment(ABC):
                 if self.results_path is not None:
                     with open(file=self.results_path / "results.yml", mode="a", encoding="utf8") as data_file:
                         result_dict = result.to_dict()
-                        yaml.safe_dump(data=[result_dict], stream=data_file, sort_keys=False)
+                        YAML().dump(data=[result_dict], stream=data_file)
 
         thread = Thread(target=_threaded_function)
         thread.start()
@@ -357,7 +357,7 @@ class BaseExperiment(ABC):
             if save_experiment:
                 # Dump the experiment data into the created file
                 with open(file=results_path / EXPERIMENT_FILENAME, mode="w", encoding="utf-8") as experiment_file:
-                    yaml.dump(data=self.to_dict(), stream=experiment_file, sort_keys=False)
+                    YAML().dump(data=self.to_dict(), stream=experiment_file)
         else:
             results_path = None
 
@@ -414,4 +414,4 @@ class BaseExperiment(ABC):
             EXPERIMENT.RESULTS: None,
         }
         with open(file=path / RESULTS_FILENAME, mode="w", encoding="utf-8") as results_file:
-            yaml.dump(data=data, stream=results_file, sort_keys=False)
+            YAML().dump(data=data, stream=results_file)
