@@ -38,7 +38,7 @@ from ..pulse.pulse_schedule import PulseSchedule
 from .native_gates import Drag, Wait
 
 if TYPE_CHECKING:
-    from qililab.platform import Bus, Platform
+    from qililab.platform import Bus, Platform  # pragma: no cover
 
 
 class CircuitTranspiler:
