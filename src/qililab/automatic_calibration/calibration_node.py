@@ -104,9 +104,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         drift_timeout (float): A durations in seconds, representing an estimate of how long it takes for the parameter to drift. During that time the parameters of
             this node should be considered calibrated, without the need to check the data.
         input_parameters (dict | None, optional): Kwargs for input parameters, to pass and then be interpreted by the notebook. Defaults to None.
-        sweep_interval (dict | None, optional): Dictionary with 3 keys describing the sweep values of the experiment. The keys are: ``start``, ``stop`` and ``step``.
-            The sweep values are all the numbers between 'start' and 'stop', separated from each other by the distance 'step'. Defaults to None, which means the one
-            specified in the notebook will be used.
+        sweep_interval (dict | None, optional): Array describing the sweep values of the experiment. Defaults to None, which means the one specified in the notebook will be used.
         number_of_random_datapoints (int, optional): The number of points, chosen randomly within the sweep interval, to check with ``check_data()`` if the experiment
             gets the same outcome as during the last calibration that was run. Default value is 10.
 
@@ -116,11 +114,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         .. code-block:: python
 
-            personalized_sweep_interval = {
-                "start": 10,
-                "stop": 50,
-                "step": 2,
-            }
+            sweep_interval = np.arange(start= 10, stop=50, step=2)
 
             # GRAPH CREATION AND NODE MAPPING (key = name in graph, value = node object):
             nodes = {}
@@ -169,9 +163,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                 qubit=0
 
                 # Sweep interval:
-                start = 0
-                stop = 19
-                step = 1
+                sweep_interval = np.arange(start=0, stop=19, step=1)
 
                 # Extra parameters for this concrete notebook:
                 param1=0
@@ -281,10 +273,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         """Kwargs for input parameters, to pass and then be interpreted by the notebook. Defaults to None."""
 
         self.sweep_interval: np.ndarray | None = sweep_interval
-        """Dictionary with 3 keys describing the sweep values of the experiment. The keys are ``start``, ``stop`` and ``step``. The sweep values
-        are all the numbers between ``start`` and ``stop``, separated from each other by the distance ``step``. Defaults to None, which means the one
-        specified in the notebook will be used.
-        """
+        """Array describing the sweep values of the experiment. Defaults to None, which means the one specified in the notebook will be used."""
 
         self.number_of_random_datapoints: int = number_of_random_datapoints
         """The number of points, chosen randomly within the sweep interval, to check with ``check_data()`` if the experiment

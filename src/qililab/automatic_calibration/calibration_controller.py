@@ -54,11 +54,7 @@ class CalibrationController:
 
         .. code-block:: python
 
-            personalized_sweep_interval = {
-                "start": 10,
-                "stop": 50,
-                "step": 2,
-            }
+            sweep_interval = np.arange(start= 10, stop=50, step=2)
 
             # GRAPH CREATION AND NODE MAPPING (key = name in graph, value = node object):
             nodes = {}
