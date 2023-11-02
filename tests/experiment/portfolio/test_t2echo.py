@@ -5,10 +5,9 @@ import numpy as np
 import pytest
 from qibo.gates import M
 
+from qililab.circuit_transpiler.native_gates import Drag, Wait
 from qililab.experiment import T2Echo
-from qililab.circuit_transpiler.native_gates import Drag
 from qililab.typings.enums import Parameter
-from qililab.utils import Wait
 from tests.data import Galadriel
 from tests.test_utils import build_platform
 

@@ -45,7 +45,7 @@ from ..pulse.pulse_schedule import PulseSchedule
 
 
 class CircuitTranspiler:
-    def __init__(self, platform: Platform):  # pylint: disable=used-before-assignment
+    def __init__(self, platform: "Platform"):  # pylint: disable=used-before-assignment
         self.platform = platform
 
     def transpile_circuit(self, circuits: list[Circuit]) -> list[PulseSchedule]:
@@ -316,7 +316,7 @@ class CircuitTranspiler:
         return list(set(schedule_qubits + gate_qubits))  # converto to set and back to list to remove repeated items
 
     def _gate_element_to_pulse_event(
-        self, time: int, gate: Gate, gate_event: GateEventSettings, bus: Bus  # pylint: disable=used-before-assignment
+        self, time: int, gate: Gate, gate_event: GateEventSettings, bus: "Bus"  # pylint: disable=used-before-assignment
     ) -> PulseEvent:
         """Translates a gate element into a pulse.
 
