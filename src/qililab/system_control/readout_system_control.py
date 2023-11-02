@@ -13,8 +13,6 @@
 # limitations under the License.
 
 """ReadoutSystemControl class."""
-from typing import Sequence
-
 from qililab.instruments import AWGAnalogDigitalConverter
 from qililab.result import Result
 from qililab.typings.enums import SystemControlName
