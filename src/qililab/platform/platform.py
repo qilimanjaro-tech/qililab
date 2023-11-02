@@ -33,6 +33,7 @@ from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSchedule
 from qililab.result import Result
+from qililab.result.qblox_results import QbloxResult
 from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import Line, Parameter
@@ -574,6 +575,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         results: list[Result] = []
         for bus in readout_buses:
             result = bus.acquire_result()
+            if isinstance(program, Circuit):
+                result = self._order_result(result, program)
             if queue is not None:
                 queue.put_nowait(item=result)
             results.append(result)
@@ -589,6 +592,33 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             raise ValueError("There are no readout buses in the platform.")
 
         return results[0]
+
+    def _order_result(self, result: Result, circuit: Circuit) -> Result:
+        """Order the results of the execution as they are ordered in the input circuit
+
+        Args:
+            result (Result): Result obtained from the execution
+            order (dict[tuple]): dictionary of index #measurement and keys (#qubit, #qubit_measurement)
+
+        Returns:
+            Result: Result obtained from the execution, with each measurement in the same order as in circuit.queue
+        """
+        if not isinstance(result, QbloxResult):
+            raise NotImplementedError("Result ordering is only implemented for qblox results")
+        # get the order of each qubit measured as they appear in the circuit
+        order = (qubit for gate in circuit.queue for qubit in gate.qubits)
+        integration_lengths = result.integration_lengths
+
+        results = []
+        # iterate through results and save measurement for each qubit as soon as they are found
+        # this relies on the measurements for a single qubit always being ordered in time
+        for qubit in order:
+            for i, qblox_result in enumerate(list(result.qblox_raw_results)):
+                if qblox_result["qubit"] == qubit:
+                    results.append(qblox_result)
+                    del result.qblox_raw_results[i]
+                    break
+        return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
 
     def compile(self, program: PulseSchedule | Circuit, num_avg: int, repetition_duration: int, num_bins: int) -> dict:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
