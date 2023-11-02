@@ -110,8 +110,6 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
                 if isinstance(element, (InfiniteLoop, ForLoop, Loop, Average, Parallel)):
                     with handler(element):
                         traverse(element)
-                elif isinstance(element, Block):
-                    traverse(element)
                 else:
                     handler(element)
             self._qprogram_block_stack.pop()
