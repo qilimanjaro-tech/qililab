@@ -42,4 +42,3 @@ from .instruments import (
     QcmQrm,
     RohdeSchwarzSGS100A,
 )
-from .yaml_type import yaml

@@ -319,6 +319,9 @@ class Parameter(str, Enum):
     OUT0_OFFSET_PATH1 = "out0_offset_path1"
     OUT1_OFFSET_PATH1 = "out1_offset_path1"
     DELAY = "delay"
+    B = "b"
+    T_PHI = "t_phi"
+    GATE_OPTIONS = "options"
 
 
 class ResultName(str, Enum):
