@@ -16,6 +16,8 @@
   qubits even if those did not have measurements on the circuit currently being executed.
   [#576](https://github.com/qilimanjaro-tech/qililab/pull/576)
 
+- [ruamel 0.18.0](https://yaml.readthedocs.io/en/latest/#changelog) eliminated `ruamel.yaml.round_trip_dump`, so we changed its usage to the recommended version:  `ruamel.yaml.YAML().dump` [#577](https://github.com/qilimanjaro-tech/qililab/pull/577)
+
 ## 0.21.0 (2023-10-20)
 
 ### New features since last release

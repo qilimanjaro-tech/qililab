@@ -43,4 +43,3 @@ from .instruments import (
     QMMDriver,
     RohdeSchwarzSGS100A,
 )
-from .yaml_type import yaml
