@@ -691,6 +691,12 @@ class TestPrivateMethodsFromCalibrationNode:
                 'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"a":2}}RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"a":2}}/n',
             ),
             ("none", '"check_parameters": {"x": [10, 12, 14, 16,]}'),
+            (
+                "two",
+                'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_params": [["bus_alias", "param_name", 1]]}\n'
+                "\n"
+                + 'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_params": [["bus_alias", "param_name", 1]]}\n',
+            ),
             ("empty", "RAND_INT:47102512880765720413 - OUTPUTS: {}"),
             ("empty", 'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters":{},"y":1}'),
         ],
