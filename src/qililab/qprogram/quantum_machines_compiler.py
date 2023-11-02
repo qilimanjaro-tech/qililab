@@ -147,7 +147,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
     def _process_streams(self):
         measurements = []
 
-        for measurement_compilation_info in self._measurements:
+        for i, measurement_compilation_info in enumerate(self._measurements):
             measurement = MeasurementInfo()
             if (stream_I := measurement_compilation_info.stream_I) is not None:
                 stream_I = measurement_compilation_info.stream_I
@@ -155,25 +155,25 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
                     stream_I = stream_I.buffer(loop_iteration)
                 if measurement_compilation_info.average:
                     stream_I = stream_I.average()
-                stream_I.save("I")
-                measurement.result_handles.append("I")
+                stream_I.save(f"I_{i}")
+                measurement.result_handles.append(f"I_{i}")
             if (stream_Q := measurement_compilation_info.stream_Q) is not None:
                 for loop_iteration in measurement_compilation_info.loops_iterations:
                     stream_Q = stream_Q.buffer(loop_iteration)
                 if measurement_compilation_info.average:
                     stream_Q = stream_Q.average()
-                stream_Q.save("Q")
-                measurement.result_handles.append("Q")
+                stream_Q.save(f"Q_{i}")
+                measurement.result_handles.append(f"Q_{i}")
             if measurement_compilation_info.stream_raw_adc is not None:
                 input1 = measurement_compilation_info.stream_raw_adc.input1()
                 input2 = measurement_compilation_info.stream_raw_adc.input2()
                 for loop_iteration in measurement_compilation_info.loops_iterations:
                     input1 = input1.buffer(loop_iteration)
                     input2 = input2.buffer(loop_iteration)
-                input2.save_all("adc1")
-                input2.save_all("adc2")
-                measurement.result_handles.append("adc1")
-                measurement.result_handles.append("adc2")
+                input2.save_all(f"adc1_{i}")
+                input2.save_all(f"adc2_{i}")
+                measurement.result_handles.append(f"adc1_{i}")
+                measurement.result_handles.append(f"adc2_{i}")
 
             measurements.append(measurement)
 
@@ -412,7 +412,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
         measurement_info = _MeasurementCompilationInfo(variable_I, variable_Q, stream_I, stream_Q, stream_raw_adc)
         for block in reversed(self._qprogram_block_stack):
             if isinstance(block, ForLoop):
-                iterations = QuantumMachinesCompiler.__calculate_iterations(block.start, block.stop, block.step)
+                iterations = QuantumMachinesCompiler._calculate_iterations(block.start, block.stop, block.step)
                 measurement_info.loops_iterations.append(iterations)
             if isinstance(block, Loop):
                 iterations = len(block.values)
@@ -421,7 +421,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
                 iterations = min(
                     len(loop.values)
                     if isinstance(loop, Loop)
-                    else QuantumMachinesCompiler.__calculate_iterations(loop.start, loop.stop, loop.step)
+                    else QuantumMachinesCompiler._calculate_iterations(loop.start, loop.stop, loop.step)
                     for loop in block.loops
                 )
                 measurement_info.loops_iterations.append(iterations)
@@ -537,7 +537,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
         return {"cosine": converted_cosine_part, "sine": converted_sine_part}
 
     @staticmethod
-    def __calculate_iterations(start: int | float, stop: int | float, step: int | float):
+    def _calculate_iterations(start: int | float, stop: int | float, step: int | float):
         if step == 0:
             raise ValueError("Step value cannot be zero")
 

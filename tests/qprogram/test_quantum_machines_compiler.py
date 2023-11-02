@@ -33,8 +33,8 @@ def fixture_runcard_configuration() -> dict:
         "elements": {
             "qubit_0": {
                 "mixInputs": {
-                    "I": ("con1", 1),
-                    "Q": ("con1", 2),
+                    "I_0": ("con1", 1),
+                    "Q_0": ("con1", 2),
                     "lo_frequency": 100e6,
                     "mixer": "mixer_qubit",
                 },
@@ -42,8 +42,8 @@ def fixture_runcard_configuration() -> dict:
             },
             "qubit_1": {
                 "mixInputs": {
-                    "I": ("con1", 3),
-                    "Q": ("con1", 4),
+                    "I_0": ("con1", 3),
+                    "Q_0": ("con1", 4),
                     "lo_frequency": 100e6,
                     "mixer": "mixer_qubit",
                 },
@@ -61,8 +61,8 @@ def fixture_runcard_configuration() -> dict:
             },
             "resonator": {
                 "mixInputs": {
-                    "I": ("con1", 7),
-                    "Q": ("con1", 8),
+                    "I_0": ("con1", 7),
+                    "Q_0": ("con1", 8),
                     "lo_frequency": 150e6,
                     "mixer": "mixer_resonator",
                 },
@@ -165,6 +165,16 @@ def fixture_sync_operation() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="sync_operation_no_parameters")
+def fixture_sync_operation_no_parameters() -> QProgram:
+    qp = QProgram()
+    qp.wait(bus="drive", duration=100)
+    qp.wait(bus="readout", duration=200)
+    qp.sync()
+
+    return qp
+
+
 @pytest.fixture(name="measure_operation_with_no_weights")
 def fixture_measure_operation_with_no_weights() -> QProgram:
     drag_wf = DragPair(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
@@ -251,6 +261,22 @@ def fixture_measure_operation_with_four_weights_no_demodulation() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="measure_operation_with_same_pulse")
+def fixture_measure_operation_with_same_pulse() -> QProgram:
+    drag_wf = DragPair(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
+    weight_A = IQPair(I=Square(1.0, duration=200), Q=Square(0.0, duration=200))
+    weight_B = IQPair(I=Square(0.5, duration=200), Q=Square(0.5, duration=200))
+    weight_C = IQPair(I=Square(0.0, duration=200), Q=Square(1.0, duration=200))
+    weight_D = weight_A
+
+    weight_E = IQPair(I=Square(1.0, 200), Q=Square(1.0, 200))
+    qp = QProgram()
+    qp.measure(bus="drive", waveform=drag_wf, weights=(weight_A, weight_B, weight_C, weight_D), demodulation=False)
+    qp.measure(bus="drive", waveform=drag_wf, weights=(weight_E, weight_B, weight_C, weight_E), demodulation=False)
+
+    return qp
+
+
 @pytest.fixture(name="measure_operation_with_average")
 def fixture_measure_operation_with_average() -> QProgram:
     drag_wf = DragPair(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
@@ -306,7 +332,14 @@ def fixture_measure_operation_in_parallel() -> QProgram:
     weight_D = weight_A
     qp = QProgram()
     gain = qp.variable(Domain.Voltage)
-    with qp.loop(variable=gain, values=np.arange(start=0, stop=1.05, step=0.1)):
+    frequency = qp.variable(Domain.Frequency)
+    with qp.parallel(
+        loops=[
+            Loop(variable=gain, values=np.arange(start=0, stop=1.05, step=0.1)),
+            Loop(variable=frequency, values=np.arange(start=100, stop=205, step=10)),
+        ]
+    ):
+        qp.set_frequency(bus="drive", frequency=frequency)
         qp.set_gain(bus="drive", gain=gain)
         qp.measure(bus="drive", waveform=drag_wf, weights=(weight_A, weight_B, weight_C, weight_D))
 
@@ -514,6 +547,16 @@ class TestQuantumMachinesCompiler:
         assert align.qe[0].name == "drive"
         assert align.qe[1].name == "readout"
 
+    def test_sync_operation_no_parameters(self, sync_operation_no_parameters: QProgram):
+        compiler = QuantumMachinesCompiler()
+        qua_program, _, _ = compiler.compile(sync_operation_no_parameters)
+
+        statements = qua_program._program.script.body.statements
+        assert len(statements) == 3
+
+        align = statements[2].align
+        assert len(align.qe) == 0
+
     def test_measure_operation_with_no_weights(self, measure_operation_with_no_weights: QProgram):
         compiler = QuantumMachinesCompiler()
         qua_program, configuration, measurements = compiler.compile(measure_operation_with_no_weights)
@@ -527,8 +570,8 @@ class TestQuantumMachinesCompiler:
 
         assert len(measurements) == 1
         assert len(measurements[0].result_handles) == 2
-        assert "adc1" in measurements[0].result_handles
-        assert "adc2" in measurements[0].result_handles
+        assert "adc1_0" in measurements[0].result_handles
+        assert "adc2_0" in measurements[0].result_handles
 
     def test_measure_operation_with_no_raw_adc(self, measure_operation_with_no_raw_adc: QProgram):
         compiler = QuantumMachinesCompiler()
@@ -563,9 +606,9 @@ class TestQuantumMachinesCompiler:
 
         assert len(measurements) == 1
         assert len(measurements[0].result_handles) == 3
-        assert "adc1" in measurements[0].result_handles
-        assert "adc2" in measurements[0].result_handles
-        assert "I" in measurements[0].result_handles
+        assert "adc1_0" in measurements[0].result_handles
+        assert "adc2_0" in measurements[0].result_handles
+        assert "I_0" in measurements[0].result_handles
 
     def test_measure_operation_with_two_weights(self, measure_operation_with_two_weights: QProgram):
         compiler = QuantumMachinesCompiler()
@@ -587,10 +630,10 @@ class TestQuantumMachinesCompiler:
 
         assert len(measurements) == 1
         assert len(measurements[0].result_handles) == 4
-        assert "adc1" in measurements[0].result_handles
-        assert "adc2" in measurements[0].result_handles
-        assert "I" in measurements[0].result_handles
-        assert "Q" in measurements[0].result_handles
+        assert "adc1_0" in measurements[0].result_handles
+        assert "adc2_0" in measurements[0].result_handles
+        assert "I_0" in measurements[0].result_handles
+        assert "Q_0" in measurements[0].result_handles
 
     def test_measure_operation_with_four_weights(self, measure_operation_with_four_weights: QProgram):
         compiler = QuantumMachinesCompiler()
@@ -614,10 +657,10 @@ class TestQuantumMachinesCompiler:
 
         assert len(measurements) == 1
         assert len(measurements[0].result_handles) == 4
-        assert "adc1" in measurements[0].result_handles
-        assert "adc2" in measurements[0].result_handles
-        assert "I" in measurements[0].result_handles
-        assert "Q" in measurements[0].result_handles
+        assert "adc1_0" in measurements[0].result_handles
+        assert "adc2_0" in measurements[0].result_handles
+        assert "I_0" in measurements[0].result_handles
+        assert "Q_0" in measurements[0].result_handles
 
     def test_measure_operation_with_one_weight_no_demodulation(
         self, measure_operation_with_one_weight_no_demodulation: QProgram
@@ -640,9 +683,9 @@ class TestQuantumMachinesCompiler:
 
         assert len(measurements) == 1
         assert len(measurements[0].result_handles) == 3
-        assert "adc1" in measurements[0].result_handles
-        assert "adc2" in measurements[0].result_handles
-        assert "I" in measurements[0].result_handles
+        assert "adc1_0" in measurements[0].result_handles
+        assert "adc2_0" in measurements[0].result_handles
+        assert "I_0" in measurements[0].result_handles
 
     def test_measure_operation_with_two_weights_no_demodulation(
         self, measure_operation_with_two_weights_no_demodulation: QProgram
@@ -666,10 +709,10 @@ class TestQuantumMachinesCompiler:
 
         assert len(measurements) == 1
         assert len(measurements[0].result_handles) == 4
-        assert "adc1" in measurements[0].result_handles
-        assert "adc2" in measurements[0].result_handles
-        assert "I" in measurements[0].result_handles
-        assert "Q" in measurements[0].result_handles
+        assert "adc1_0" in measurements[0].result_handles
+        assert "adc2_0" in measurements[0].result_handles
+        assert "I_0" in measurements[0].result_handles
+        assert "Q_0" in measurements[0].result_handles
 
     def test_measure_operation_with_four_weights_no_demodulation(
         self, measure_operation_with_four_weights_no_demodulation: QProgram
@@ -695,10 +738,10 @@ class TestQuantumMachinesCompiler:
 
         assert len(measurements) == 1
         assert len(measurements[0].result_handles) == 4
-        assert "adc1" in measurements[0].result_handles
-        assert "adc2" in measurements[0].result_handles
-        assert "I" in measurements[0].result_handles
-        assert "Q" in measurements[0].result_handles
+        assert "adc1_0" in measurements[0].result_handles
+        assert "adc2_0" in measurements[0].result_handles
+        assert "I_0" in measurements[0].result_handles
+        assert "Q_0" in measurements[0].result_handles
 
     def test_measure_operation_with_average(self, measure_operation_with_average: QProgram):
         compiler = QuantumMachinesCompiler()
@@ -709,10 +752,27 @@ class TestQuantumMachinesCompiler:
 
         assert len(measurements) == 1
         assert len(measurements[0].result_handles) == 4
-        assert "adc1" in measurements[0].result_handles
-        assert "adc2" in measurements[0].result_handles
-        assert "I" in measurements[0].result_handles
-        assert "Q" in measurements[0].result_handles
+        assert "adc1_0" in measurements[0].result_handles
+        assert "adc2_0" in measurements[0].result_handles
+        assert "I_0" in measurements[0].result_handles
+        assert "Q_0" in measurements[0].result_handles
+
+    def test_measure_operation_with_same_pulse_updates_it_correctly(self, measure_operation_with_same_pulse: QProgram):
+        compiler = QuantumMachinesCompiler()
+        qua_program, configuration, measurements = compiler.compile(measure_operation_with_same_pulse)
+
+        statements = qua_program._program.script.body.statements
+        assert len(statements) == 6
+
+        measure_0 = statements[0].measure
+        assert measure_0.qe.name == "drive"
+        assert measure_0.pulse.name in configuration["pulses"]
+
+        measure_1 = statements[3].measure
+        assert measure_1.qe.name == "drive"
+        assert measure_1.pulse.name in configuration["pulses"]
+
+        assert measure_0.pulse.name == measure_1.pulse.name
 
     def test_measure_operation_in_for_loop(self, measure_operation_in_for_loop: QProgram):
         compiler = QuantumMachinesCompiler()
@@ -720,10 +780,10 @@ class TestQuantumMachinesCompiler:
 
         assert len(measurements) == 1
         assert len(measurements[0].result_handles) == 4
-        assert "adc1" in measurements[0].result_handles
-        assert "adc2" in measurements[0].result_handles
-        assert "I" in measurements[0].result_handles
-        assert "Q" in measurements[0].result_handles
+        assert "adc1_0" in measurements[0].result_handles
+        assert "adc2_0" in measurements[0].result_handles
+        assert "I_0" in measurements[0].result_handles
+        assert "Q_0" in measurements[0].result_handles
 
     def test_measure_operation_in_loop(self, measure_operation_in_loop: QProgram):
         compiler = QuantumMachinesCompiler()
@@ -731,10 +791,10 @@ class TestQuantumMachinesCompiler:
 
         assert len(measurements) == 1
         assert len(measurements[0].result_handles) == 4
-        assert "adc1" in measurements[0].result_handles
-        assert "adc2" in measurements[0].result_handles
-        assert "I" in measurements[0].result_handles
-        assert "Q" in measurements[0].result_handles
+        assert "adc1_0" in measurements[0].result_handles
+        assert "adc2_0" in measurements[0].result_handles
+        assert "I_0" in measurements[0].result_handles
+        assert "Q_0" in measurements[0].result_handles
 
     def test_measure_operation_in_parallel(self, measure_operation_in_parallel: QProgram):
         compiler = QuantumMachinesCompiler()
@@ -742,10 +802,10 @@ class TestQuantumMachinesCompiler:
 
         assert len(measurements) == 1
         assert len(measurements[0].result_handles) == 4
-        assert "adc1" in measurements[0].result_handles
-        assert "adc2" in measurements[0].result_handles
-        assert "I" in measurements[0].result_handles
-        assert "Q" in measurements[0].result_handles
+        assert "adc1_0" in measurements[0].result_handles
+        assert "adc2_0" in measurements[0].result_handles
+        assert "I_0" in measurements[0].result_handles
+        assert "Q_0" in measurements[0].result_handles
 
     def test_for_loop(self, for_loop: QProgram):
         compiler = QuantumMachinesCompiler()
@@ -857,3 +917,15 @@ class TestQuantumMachinesCompiler:
         assert "waveforms" in merged_configuration
         assert "integration_weights" in merged_configuration
         assert "digital_waveforms" in merged_configuration
+
+    @pytest.mark.parametrize(
+        "start,stop,step,expected_result",
+        [(0, 10, 1, 11), (10, 0, -1, 11), (1, 2.05, 0.1, 11)],
+    )
+    def test_calculate_iterations(self, start, stop, step, expected_result):
+        result = QuantumMachinesCompiler._calculate_iterations(start, stop, step)
+        assert result == expected_result
+
+    def test_calculate_iterations_with_zero_step_throws_error(self):
+        with pytest.raises(ValueError, match="Step value cannot be zero"):
+            QuantumMachinesCompiler._calculate_iterations(100, 200, 0)
