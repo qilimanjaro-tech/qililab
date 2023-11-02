@@ -2,9 +2,30 @@
 
 ### New features since last release
 
+- Implemented `QuantumMachinesCompiler` class to compile QPrograms to QUA programs.
+  [#563](https://github.com/qilimanjaro-tech/qililab/pull/563)
+
+- Implemented `platform.execute_qprogram()` method to execute a qprogram on Qblox hardware.
+  [#563](https://github.com/qilimanjaro-tech/qililab/pull/563)
+
 ### Improvements
 
+- Added `infinite_loop()` method to QProgram.
+  [#563](https://github.com/qilimanjaro-tech/qililab/pull/563)
+
+- Added `measure()` method to QProgram.
+  [#563](https://github.com/qilimanjaro-tech/qililab/pull/563)
+
+- Various improvements in the compilation flow of `QbloxCompiler`.
+  [#563](https://github.com/qilimanjaro-tech/qililab/pull/563)
+
 ### Breaking changes
+
+- Changed `resolution` parameter of waveforms' `envelope()` method to integer.
+  [#563](https://github.com/qilimanjaro-tech/qililab/pull/563)
+
+- Changed the way variables work within a QProgram. Variables are now instantiated based on the physical domain they affect.
+  [#563](https://github.com/qilimanjaro-tech/qililab/pull/563)
 
 ### Deprecations / Removals
 
