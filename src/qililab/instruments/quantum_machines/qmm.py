@@ -16,8 +16,9 @@
 from dataclasses import dataclass
 from typing import Dict
 
-from qm import QuantumMachine, SimulationConfig
+from qm import QuantumMachine
 from qm import QuantumMachinesManager as QMM
+from qm import SimulationConfig
 from qm.jobs.running_qm_job import RunningQmJob
 from qm.qua import Program
 
