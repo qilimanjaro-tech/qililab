@@ -627,7 +627,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             raise IncorrectCalibrationOutput(f"More than one output found in {input_path}")
 
         # This next line is for taking into account other encodings, where special characters get `\\` in front.
-        clean_data = logger_splitted[1].split('\\n"')[0].replace('\\"', '"')
+        clean_data = logger_splitted[1].split("\\n")[0].replace('\\"', '"')
 
         logger_outputs_string = clean_data.split("\n")[0]
         out_dict = json.loads(logger_outputs_string)
