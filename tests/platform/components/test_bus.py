@@ -73,12 +73,11 @@ class TestBus:
 
     def test_acquire_qprogram_results(self, bus: Bus):
         """Test acquire_qprogram_results method."""
-        # bus.settings.system_control = MagicMock()
         if isinstance(bus.system_control, ReadoutSystemControl):
             with patch.object(ReadoutSystemControl, "acquire_qprogram_results") as acquire_qprogram_results:
                 bus.acquire_qprogram_results(acquisitions=["acquisition_0", "acquisition_1"])
 
-            acquire_qprogram_results.assert_called_once()
+            acquire_qprogram_results.assert_called_once_with(acquisitions=["acquisition_0", "acquisition_1"])
 
 
 class TestErrors:
