@@ -605,20 +605,24 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """
         if not isinstance(result, QbloxResult):
             raise NotImplementedError("Result ordering is only implemented for qblox results")
-        # get the order of each qubit measured as they appear in the circuit
-        order = (qubit for gate in circuit.queue for qubit in gate.qubits)
-        integration_lengths = result.integration_lengths
+        qubits_m = {}
+        order = {}
+        for i, qubit in enumerate(qubit for gate in circuit.queue for qubit in gate.qubits):
+            if qubit not in qubits_m:
+                qubits_m[qubit] = 0
+            order[(qubit, qubits_m[qubit])] = i
+            qubits_m[qubit] += 1
 
-        results = []
-        # iterate through results and save measurement for each qubit as soon as they are found
-        # this relies on the measurements for a single qubit always being ordered in time
-        for qubit in order:
-            for i, qblox_result in enumerate(list(result.qblox_raw_results)):
-                if qblox_result["qubit"] == qubit:
-                    results.append(qblox_result)
-                    del result.qblox_raw_results[i]
-                    break
-        return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
+        results = [*range(len(order.keys()))]
+        for qblox_result in result.qblox_raw_results:
+            measurement = qblox_result["measurement"]
+            qubit = qblox_result["qubit"]
+            results[order[(qubit, measurement)]] = qblox_result
+
+        if sum((isinstance(res, int) for res in results)) != 0:
+            raise ValueError("Not all results were parsed during result ordering")
+
+        return QbloxResult(integration_lengths=result.integration_lengths, qblox_raw_results=results)
 
     def compile(self, program: PulseSchedule | Circuit, num_avg: int, repetition_duration: int, num_bins: int) -> dict:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
