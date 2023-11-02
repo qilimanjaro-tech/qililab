@@ -101,4 +101,4 @@ class TestErrors:
             AttributeError,
             match=f"The bus {control_bus.alias} cannot acquire results because it doesn't have a readout system control",
         ):
-            control_bus.acquire_qprogram_results()
+            control_bus.acquire_qprogram_results(acquisitions=["acquisition_0", "acquisition_1"])
