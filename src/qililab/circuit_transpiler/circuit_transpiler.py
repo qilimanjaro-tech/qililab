@@ -13,14 +13,15 @@
 # limitations under the License.
 
 """This file contains the functions used to decompose a circuit into native gates and to compute virtual-Z gates."""
+from typing import TYPE_CHECKING
+
 from qibo import gates
 from qibo.models import Circuit
 
-from qililab.settings.runcard import Runcard
 from qililab.circuit_transpiler.gate_decompositions import translate_gates
+from qililab.settings.runcard import Runcard
 
 from .native_gates import Drag, Wait
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from qililab.platform import Platform, Bus

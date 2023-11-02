@@ -36,6 +36,5 @@ Gate Decomposition
     ~translate_gates
 """
 
-from .gate_decompositions import translate_gates
+from .circuit_transpiler import CircuitTranspiler
 from .native_gates import Drag, Wait
-from .transpiler import CircuitTranspiler
