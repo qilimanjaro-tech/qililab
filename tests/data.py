@@ -406,7 +406,7 @@ class Galadriel:
     }
 
     qmm_controller_0: dict[str, Any] = {
-        "name": InstrumentControllerName.QMM,
+        "name": InstrumentControllerName.QUANTUM_MACHINES_MANAGER,
         "alias": "qmm_controller_0",
         INSTRUMENTCONTROLLER.CONNECTION: {
             "name": ConnectionName.TCP_IP.value,
@@ -421,7 +421,7 @@ class Galadriel:
     }
 
     qmm_0: dict[str, Any] = {
-        "name": InstrumentName.QMM,
+        "name": InstrumentName.QUANTUM_MACHINES_MANAGER,
         "alias": "qmm_0",
         RUNCARD.FIRMWARE: "4.30.046.295",
         "qop_ip": "192.168.0.1",
