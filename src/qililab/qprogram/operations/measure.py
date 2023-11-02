@@ -15,7 +15,6 @@
 from dataclasses import dataclass
 
 from qililab.qprogram.operations.operation import Operation
-from qililab.qprogram.variable import Variable
 from qililab.waveforms import IQPair, Waveform
 
 
