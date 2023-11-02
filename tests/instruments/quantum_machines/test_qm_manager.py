@@ -94,7 +94,9 @@ class TestQMM:
         assert isinstance(qmm.settings, Settings)
 
     @patch("qm.QuantumMachine")
-    def test_execute(self, mock_qm: MagicMock, qmm: QuantumMachinesManager, qua_program: Program):  # pylint: disable=unused-argument
+    def test_execute(
+        self, mock_qm: MagicMock, qmm: QuantumMachinesManager, qua_program: Program
+    ):  # pylint: disable=unused-argument
         """Test execute method"""
         mock_qm.return_value.execute.return_value = MagicMock
         qmm.qm = mock_qm
@@ -111,7 +113,9 @@ class TestQMM:
         assert result.array.shape == (2, 10)
 
     @patch("qm.QuantumMachine")
-    def test_simulate(self, mock_qm: MagicMock, qmm: QuantumMachinesManager, qua_program: Program):  # pylint: disable=unused-argument
+    def test_simulate(
+        self, mock_qm: MagicMock, qmm: QuantumMachinesManager, qua_program: Program
+    ):  # pylint: disable=unused-argument
         """Test execute method"""
         mock_qm.return_value.simulate.return_value = MagicMock
         qmm.qm = mock_qm
