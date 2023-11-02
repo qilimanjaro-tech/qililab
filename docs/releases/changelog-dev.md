@@ -8,6 +8,9 @@
 - Implemented `platform.execute_qprogram()` method to execute a qprogram on Qblox hardware.
   [#563](https://github.com/qilimanjaro-tech/qililab/pull/563)
 
+- Added the driver for Quantum Machines Manager and a new QuantumMachinesResult class to handle Quantum Machines instruments.
+  [#568](https://github.com/qilimanjaro-tech/qililab/pull/568)
+
 ### Improvements
 
 - Added `infinite_loop()` method to QProgram.

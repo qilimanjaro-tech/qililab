@@ -14,5 +14,7 @@ qpysequence==0.10.0
 lmfit==1.1.0
 rustworkx==0.12.1
 h5py==3.9.0
+qm-qua==1.1.4
+qualang-tools==0.15.2
 networkx==3.1
 ruamel.yaml==0.18.2
