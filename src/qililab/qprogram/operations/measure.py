@@ -36,14 +36,3 @@ class Measure(Operation):  # pylint: disable=missing-class-docstring
         wf_I: Waveform = self.waveform.I
         wf_Q: Waveform = self.waveform.Q
         return wf_I, wf_Q
-
-    def get_waveform_variables(self) -> set[Variable]:
-        """Get a set of the variables used in the waveforms, if any.
-
-        Returns:
-            set[Variable]: The set of variables used in the waveforms.
-        """
-        wf_I, wf_Q = self.get_waveforms()
-        variables_I = [attribute for attribute in wf_I.__dict__.values() if isinstance(attribute, Variable)]
-        variables_Q = [attribute for attribute in wf_Q.__dict__.values() if isinstance(attribute, Variable)]
-        return set(variables_I + variables_Q)

@@ -14,7 +14,7 @@ from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.instruments.qblox import QbloxQRM
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent, Rectangular
-from qililab.result.results import QbloxResult
+from qililab.result.qblox_results import QbloxQProgramResult, QbloxResult
 from qililab.typings import InstrumentName
 from qililab.typings.enums import AcquireTriggerMode, IntegrationMode, Parameter
 from tests.data import Galadriel
@@ -309,12 +309,6 @@ class TestQbloxQRM:
         with pytest.raises(ValueError, match="The scope can only be stored in one sequencer at a time."):
             qrm_two_scopes._obtain_scope_sequencer()
 
-    def test_start_sequencer_method(self, qrm: QbloxQRM):
-        """Test start_sequencer method"""
-        qrm.start_sequencer(port="feedline_input")
-        qrm.device.arm_sequencer.assert_not_called()
-        qrm.device.start_sequencer.assert_not_called()
-
     @pytest.mark.parametrize(
         "parameter, value, channel_id",
         [
@@ -507,6 +501,37 @@ class TestQbloxQRM:
         }
         acquisitions = qrm.get_acquisitions()
         assert isinstance(acquisitions, QbloxResult)
+        # Assert device calls
+        qrm.device.get_sequencer_state.assert_not_called()
+        qrm.device.get_acquisition_state.assert_not_called()
+        qrm.device.get_acquisitions.assert_not_called()
+
+    def test_acquire_qprogram_results_method(self, qrm: QbloxQRM):
+        """Test start_sequencer method"""
+        qrm.acquire_qprogram_results(acquisitions=["default"])
+        qrm.device.arm_sequencer.assert_not_called()
+        qrm.device.start_sequencer.assert_not_called()
+
+    def test_get_qprogram_acquisitions_method(self, qrm: QbloxQRM):
+        """Test get_acquisitions_method"""
+        qrm.device.get_acquisitions.return_value = {
+            "default": {
+                "index": 0,
+                "acquisition": {
+                    "scope": {
+                        "path0": {"data": [1, 1, 1, 1, 1, 1, 1, 1], "out-of-range": False, "avg_cnt": 1000},
+                        "path1": {"data": [0, 0, 0, 0, 0, 0, 0, 0], "out-of-range": False, "avg_cnt": 1000},
+                    },
+                    "bins": {
+                        "integration": {"path0": [1, 1, 1, 1], "path1": [0, 0, 0, 0]},
+                        "threshold": [0.5, 0.5, 0.5, 0.5],
+                        "avg_cnt": [1000, 1000, 1000, 1000],
+                    },
+                },
+            }
+        }
+        acquisitions = qrm.get_qprogram_acquisitions(acquisitions=["default"])
+        assert isinstance(acquisitions, QbloxQProgramResult)
         # Assert device calls
         qrm.device.get_sequencer_state.assert_not_called()
         qrm.device.get_acquisition_state.assert_not_called()
