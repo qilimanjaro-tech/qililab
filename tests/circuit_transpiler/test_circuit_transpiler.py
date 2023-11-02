@@ -1,4 +1,4 @@
-import re
+import re  # pylint: disable=too-many-lines
 from dataclasses import asdict
 from unittest.mock import MagicMock
 
@@ -638,8 +638,10 @@ def get_bus_schedule(pulse_bus_schedule: dict, port: str) -> list[dict]:
     ]
 
 
-class TestTranspiler:
-    def test_circuit_to_native(self, platform):
+class TestCircuitTranspiler:
+    """Tests for the circuit transpiler class"""
+
+    def test_circuit_to_native(self):
         """Tests the circuit to native gates function without/with optimization
         Does not test phase corrections.
         Test that the transpiled circuit outputs same result if

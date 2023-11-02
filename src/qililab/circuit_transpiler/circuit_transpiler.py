@@ -12,27 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This file contains the functions used to decompose a circuit into native gates and to compute virtual-Z gates."""
-from typing import TYPE_CHECKING
+"""Circuit Transpiler class"""
 
-from qibo import gates
-from qibo.models import Circuit
-
-from qililab.circuit_transpiler.gate_decompositions import translate_gates
-from qililab.settings.runcard import Runcard
-
-from .native_gates import Drag, Wait
-
-if TYPE_CHECKING:
-    from qililab.platform import Platform, Bus
 
 import contextlib
 from dataclasses import asdict
+from typing import TYPE_CHECKING
 
 import numpy as np
+from qibo import gates
 from qibo.gates import Gate, M
+from qibo.models import Circuit
 
 from qililab.chip.nodes import Coupler, Qubit
+from qililab.circuit_transpiler.gate_decompositions import translate_gates
 from qililab.constants import RUNCARD
 from qililab.instruments import AWG
 from qililab.settings.gate_event_settings import GateEventSettings
@@ -42,9 +35,19 @@ from qililab.utils import Factory
 from ..pulse.pulse import Pulse
 from ..pulse.pulse_event import PulseEvent
 from ..pulse.pulse_schedule import PulseSchedule
+from .native_gates import Drag, Wait
+
+if TYPE_CHECKING:
+    from qililab.platform import Bus, Platform
 
 
 class CircuitTranspiler:
+    """Handles circuit transpilation. It has 3 accessible methods:
+    - `circuit_to_native`: transpiles a qibo circuit to native gates (Drag, CZ, Wait, M) and optionally RZ if optimize=False (optimize=True by default)
+    - `circuit_to_pulses`: transpiles a native gate circuit to a `PulseSchedule`
+    - `transpile_circuit`: runs both of the methods above sequentially
+    """
+
     def __init__(self, platform: "Platform"):  # pylint: disable=used-before-assignment
         self.platform = platform
 
@@ -69,16 +72,14 @@ class CircuitTranspiler:
         Returns:
             new_circuit (Circuit): circuit with transpiled gates
         """
-        # get list of gates from circuit
-        ngates = circuit.queue
         # init new circuit
         new_circuit = Circuit(circuit.nqubits)
         # add transpiled gates to new circuit, optimize if needed
         if optimize:
-            gates_to_optimize = translate_gates(ngates)
+            gates_to_optimize = translate_gates(circuit.queue)
             new_circuit.add(self.optimize_transpilation(circuit.nqubits, ngates=gates_to_optimize))
         else:
-            new_circuit.add(translate_gates(ngates))
+            new_circuit.add(translate_gates(circuit.queue))
 
         return new_circuit
 
@@ -144,7 +145,7 @@ class CircuitTranspiler:
 
         return new_gates
 
-    def circuit_to_pulses(self, circuits: list[Circuit]) -> list[PulseSchedule]:
+    def circuit_to_pulses(self, circuits: list[Circuit]) -> list[PulseSchedule]:  # pylint: disable=too-many-locals
         """Translates a list of circuits into a list of pulse sequences (each circuit to an independent pulse sequence)
         For each circuit gate we look up for its corresponding gates settings in the runcard (the name of the class of the circuit
         gate and the name of the gate in the runcard should match) and load its schedule of GateEvents.
