@@ -1,9 +1,5 @@
 # Release dev (development release)
 
-- Fixed [bug](https://github.com/qilimanjaro-tech/qililab/issues/584) where executing multiple circuits with each measuring different qubits would launch measurements for previously measured
-  qubits even if those did not have measurements on the circuit currently being executed.
-  [#576](https://github.com/qilimanjaro-tech/qililab/pull/576)
-
 ### New features since last release
 
 - Added the driver for Quantum Machines Manager and a new QuantumMachinesResult class to handle Quantum Machines instruments.
