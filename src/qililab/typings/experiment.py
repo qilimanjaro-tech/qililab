@@ -13,11 +13,12 @@
 # limitations under the License.
 
 """ Experiment Options Typings """
-
+import io
 from dataclasses import asdict, dataclass, field
 
+from ruamel.yaml import YAML
+
 from qililab.constants import EXPERIMENT, RUNCARD
-from qililab.typings.yaml_type import yaml
 from qililab.utils.loop import Loop
 
 DEFAULT_EXPERIMENT_NAME = "experiment"
@@ -34,7 +35,7 @@ class ExperimentSettings:
 
     def __str__(self):
         """Returns a string representation of the experiment settings."""
-        return yaml.dump(asdict(self), sort_keys=False)
+        return str(YAML().dump(asdict(self), io.BytesIO()))
 
 
 @dataclass

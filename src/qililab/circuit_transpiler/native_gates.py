@@ -13,8 +13,8 @@
 # limitations under the License.
 
 """File containing the supported native gates."""
-from qibo.gates.gates import _Un_
 from qibo.gates.abstract import ParametrizedGate
+from qibo.gates.gates import _Un_
 
 
 class Drag(_Un_):
@@ -39,17 +39,15 @@ class Drag(_Un_):
 
         U(\theta,\phi,\lambda) = Z_\phi X_\theta Z_\lambda &= R_{MW}(\theta, \phi)Z_{\lambda+\phi} &=
         Z_{\phi+\lambda}R_{MW}(\theta, -\lambda)
+
+    Args:
+        q (int): qubit where the gate is applied
+        theta (float): theta angle of rotation in radians
+        phase (float): phase of  the Drag pulse
+        trainable (bool): whether parameters are trainable (set to false)
     """
 
     def __init__(self, q: int, theta: float, phase: float, trainable: bool = True):
-        """init method
-
-        Args:
-            q (int): qubit where the gate is applied
-            theta (float): theta angle of rotation in radians
-            phase (float): phase of  the Drag pulse
-            trainable (bool): whether parameters are trainable (set to false)
-        """
         super().__init__(q, trainable=trainable)
         self.name = "drag"
         self.nparams = 2

@@ -32,7 +32,6 @@ class Keithley2600(QCodesKeithley2600, BaseInstrument):
     """
 
     def __init__(self, name: str, address: str, **kwargs):
-        """Initialize the instrument driver."""
         super().__init__(name, address, **kwargs)
         self.submodules: dict[str, InstrumentModule | ChannelTuple] = {}  # resetting superclass submodules
         self.instrument_modules: dict[str, InstrumentModule] = {}  # resetting superclass instrument modules

@@ -1,5 +1,6 @@
 """Tests for the Platform class."""
 import copy
+import io
 from pathlib import Path
 from queue import Queue
 from unittest.mock import MagicMock, patch
@@ -8,6 +9,7 @@ import pytest
 from qibo import gates
 from qibo.models import Circuit
 from qpysequence import Sequence
+from ruamel.yaml import YAML
 
 from qililab import save_platform
 from qililab.chip import Chip, Qubit
@@ -22,7 +24,6 @@ from qililab.settings import Runcard
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName, Parameter
-from qililab.typings.yaml_type import yaml
 from tests.data import Galadriel
 from tests.test_utils import build_platform
 
@@ -108,7 +109,7 @@ class TestPlatform:
         assert isinstance(element, AWGAnalogDigitalConverter)
 
     @patch("qililab.data_management.open")
-    @patch("qililab.data_management.ruamel.yaml.YAML.dump")
+    @patch("qililab.data_management.YAML.dump")
     def test_platform_manager_dump_method(self, mock_dump: MagicMock, mock_open: MagicMock, platform: Platform):
         """Test PlatformManager dump method."""
         save_platform(path="runcard.yml", platform=platform)
@@ -145,12 +146,12 @@ class TestPlatform:
 
     def test_print_platform(self, platform: Platform):
         """Test print platform."""
-        assert str(platform) == str(yaml.dump(platform.to_dict(), sort_keys=False))
+        assert str(platform) == str(YAML().dump(platform.to_dict(), io.BytesIO()))
 
     # I'm leaving this test here, because there is no test_instruments.py, but should be moved there when created
     def test_print_instruments(self, platform: Platform):
         """Test print instruments."""
-        assert str(platform.instruments) == str(yaml.dump(platform.instruments._short_dict(), sort_keys=False))
+        assert str(platform.instruments) == str(YAML().dump(platform.instruments._short_dict(), io.BytesIO()))
 
     def test_serialization(self, platform: Platform):
         """Test that a serialization of the Platform is possible"""

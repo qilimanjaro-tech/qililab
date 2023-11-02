@@ -35,18 +35,17 @@ from qililab.pulse import PulseBusSchedule, PulseShape
 
 @InstrumentDriverFactory.register
 class SequencerQCM(Sequencer, AWG):
-    """Qililab's driver for QBlox-instruments Sequencer"""
+    """Qililab's driver for QBlox-instruments Sequencer
+
+    Args:
+        parent (Instrument): Parent for the sequencer instance.
+        name (str): Sequencer name
+        seq_idx (int): sequencer identifier index
+    """
 
     _MIN_WAIT_TIME: int = 4
 
     def __init__(self, parent: Instrument, name: str, seq_idx: int):
-        """Initialise the instrument.
-
-        Args:
-            parent (Instrument): Parent for the sequencer instance.
-            name (str): Sequencer name
-            seq_idx (int): sequencer identifier index
-        """
         super().__init__(parent=parent, name=name, seq_idx=seq_idx)
         self.add_parameter(name="swap_paths", set_cmd=None, vals=vals.Bool(), initial_value=False)
 

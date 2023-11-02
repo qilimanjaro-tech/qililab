@@ -12,5 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Version number (major.minor.patch[-label])"""
-__version__ = "0.21.1"
+""" Quantum Machines Results format """
+from .quantum_machines_result import QuantumMachinesResult
