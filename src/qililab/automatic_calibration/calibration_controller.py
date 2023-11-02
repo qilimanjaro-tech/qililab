@@ -329,13 +329,15 @@ class CalibrationController:
             print("y:", compar_params["y"])
             print("x:", compar_params["x"])
 
-            if self._obtain_comparison(node, obtain_params, compar_params) <= node.in_spec_threshold:
+            comparison_result = self._obtain_comparison(node, obtain_params, compar_params)
+
+            if comparison_result <= node.in_spec_threshold:
                 print(f"check_data of {node.node_id}: in_spec!!!\n")
                 node._add_string_to_checked_nb_name("in_spec", timestamp)  # pylint: disable=protected-access
                 node._invert_output_and_previous_output()  # pylint: disable=protected-access
                 return "in_spec"
 
-            if self._obtain_comparison(node, obtain_params, compar_params) <= node.bad_data_threshold:
+            if comparison_result <= node.bad_data_threshold:
                 print(f"check_data of {node.node_id}: out_of_spec!!!\n")
                 node._add_string_to_checked_nb_name("out_of_spec", timestamp)  # pylint: disable=protected-access
                 node._invert_output_and_previous_output()  # pylint: disable=protected-access

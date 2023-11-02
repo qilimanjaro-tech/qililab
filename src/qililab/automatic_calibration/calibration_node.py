@@ -574,20 +574,20 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             IncorrectCalibrationOutput: In case no outputs, incorrect outputs or multiple outputs where found. Incorrect outputs are those that do not contain `check_parameters` or is empty.
         """
         # Parsing file
-        outputs: list[str] = []
+        outputs_lines: list[str] = []
         with open(f"{self.nb_folder}/{file_name}") as file:  # pylint: disable=unspecified-encoding
             lines = file.readlines()
-            outputs.extend(line for line in lines if line.find(logger_output_start) != -1)
+            outputs_lines.extend(line for line in lines if line.find(logger_output_start) != -1)
 
         # Check how many lines contain the outputs, to raise the corresponding errors:
-        if not outputs:
+        if not outputs_lines:
             logger.error(
                 "Aborting execution. No output found, check the automatic-calibration output cell is implemented in %s",
                 self.nb_path,
             )
             raise IncorrectCalibrationOutput(f"No output found, check automatic-calibration notebook in {self.nb_path}")
 
-        if len(outputs) > 1:
+        if len(outputs_lines) > 1:
             logger.error(
                 "Aborting execution. More than one output found, please output the results once in %s",
                 self.nb_path,
@@ -595,10 +595,10 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             raise IncorrectCalibrationOutput(f"More than one output found in {self.nb_path}")
 
         # When only one line of outputs, use that one:
-        return self._from_logger_string_to_output_dict(outputs[0], self.nb_path)
+        return self._from_logger_string_to_output_dict(outputs_lines[0], self.nb_path)
 
     def _from_logger_string_to_output_dict(self, logger_string, input_path):
-        """Returns the output dictionary from the logger string, or raises errors if logger_string doesn't follow the expected format.
+        """Returns the output dictionary from the logger string, or raises errors if ``logger_string`` doesn't follow the expected format.
 
         Args
             logger_string (str): The logger string containing the output dictionary to extract.
