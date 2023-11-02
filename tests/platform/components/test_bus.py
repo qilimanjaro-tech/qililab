@@ -1,6 +1,6 @@
 """Tests for the Bus class."""
 from types import NoneType
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
@@ -71,6 +71,15 @@ class TestBus:
         bus.upload_qpysequence(qpysequence=qpysequence)
         bus.system_control.upload_qpysequence.assert_called_once_with(qpysequence=qpysequence, port=bus.port)
 
+    def test_acquire_qprogram_results(self, bus: Bus):
+        """Test acquire_qprogram_results method."""
+        # bus.settings.system_control = MagicMock()
+        if isinstance(bus.system_control, ReadoutSystemControl):
+            with patch.object(ReadoutSystemControl, "acquire_qprogram_results") as acquire_qprogram_results:
+                bus.acquire_qprogram_results(acquisitions=["acquisition_0", "acquisition_1"])
+
+            acquire_qprogram_results.assert_called_once()
+
 
 class TestErrors:
     """Unit tests for the errors raised by the Bus class."""
@@ -84,3 +93,13 @@ class TestErrors:
             match=f"The bus {control_bus.alias} cannot acquire results because it doesn't have a readout system control",
         ):
             control_bus.acquire_result()
+
+    def test_control_bus_raises_error_when_acquiring_qprogram_results(self):
+        """Test that an error is raised when calling acquire_result with a drive bus."""
+        buses = load_buses()
+        control_bus = [bus for bus in buses if not isinstance(bus.system_control, ReadoutSystemControl)][0]
+        with pytest.raises(
+            AttributeError,
+            match=f"The bus {control_bus.alias} cannot acquire results because it doesn't have a readout system control",
+        ):
+            control_bus.acquire_qprogram_results()

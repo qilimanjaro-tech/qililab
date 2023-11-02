@@ -51,15 +51,8 @@ class Variable:
         """
         return self._value
 
-    @value.setter
-    def value(self, value):
-        self._value = value
-
     def __init__(self):
         self._uuid = uuid4()
-
-    def __str__(self):
-        return str(self._uuid)
 
     def __repr__(self):
         return repr(self._uuid)
