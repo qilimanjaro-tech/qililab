@@ -58,8 +58,8 @@ class MockStreamingFetcher:
             result = self.values[self.index]
             self.index += 1
             return result
-        else:
-            raise StopIteration
+
+        raise StopIteration
 
 
 class MockSingleHandle:
