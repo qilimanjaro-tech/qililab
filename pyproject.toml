@@ -38,6 +38,7 @@ tag_format = "$version"
     exclude_lines = [
         # Have to re-enable the standard pragma
         'pragma: no cover',
+        if TYPE_CHECKING:
 
         # Don't complain about missing debug-only code:
         'def __repr__',
