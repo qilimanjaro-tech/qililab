@@ -594,35 +594,45 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         return results[0]
 
     def _order_result(self, result: Result, circuit: Circuit) -> Result:
-        """Order the results of the execution as they are ordered in the input circuit
+        """Order the results of the execution as they are ordered in the input circuit.
+        Finds the absolute order of each measurement for each qubit and its corresponding key in the
+        same format as in qblox's aqcuisitions dictionary (#qubit, #qubit_measurement).
+        Then it orders results in the same measurement order as the one in circuit.queue.
 
         Args:
             result (Result): Result obtained from the execution
-            order (dict[tuple]): dictionary of index #measurement and keys (#qubit, #qubit_measurement)
+            circuit (Circuit): qibo circuit being executed
 
         Returns:
             Result: Result obtained from the execution, with each measurement in the same order as in circuit.queue
         """
         if not isinstance(result, QbloxResult):
             raise NotImplementedError("Result ordering is only implemented for qblox results")
+
+        # register the overall order of all qubit measurements.
         qubits_m = {}
         order = {}
+        # iterate over qubits measured in same order as they appear in the circuit
         for i, qubit in enumerate(qubit for gate in circuit.queue for qubit in gate.qubits):
             if qubit not in qubits_m:
                 qubits_m[qubit] = 0
             order[(qubit, qubits_m[qubit])] = i
             qubits_m[qubit] += 1
 
-        results = [*range(len(order.keys()))]
+        # allocate each measurement its corresponding index in the results list
+        results = [None] * len(order)
         for qblox_result in result.qblox_raw_results:
             measurement = qblox_result["measurement"]
             qubit = qblox_result["qubit"]
-            results[order[(qubit, measurement)]] = qblox_result
+            results[order[(qubit, measurement)]] = qblox_result  # type: ignore[call-overload]
 
-        if sum((isinstance(res, int) for res in results)) != 0:
+        # safeguard for inconsistencies
+        if any(res is None for res in results):
             raise ValueError("Not all results were parsed during result ordering")
 
-        return QbloxResult(integration_lengths=result.integration_lengths, qblox_raw_results=results)
+        return QbloxResult(
+            integration_lengths=result.integration_lengths, qblox_raw_results=results  # type: ignore[arg-type]
+        )
 
     def compile(self, program: PulseSchedule | Circuit, num_avg: int, repetition_duration: int, num_bins: int) -> dict:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
