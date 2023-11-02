@@ -2,7 +2,7 @@
 import pytest
 
 from qililab.instrument_controllers.quantum_machines import QMMController
-from qililab.instruments.quantum_machines import QMM
+from qililab.instruments.quantum_machines import QuantumMachinesManager
 from qililab.platform import Platform
 from qililab.settings import Settings
 from tests.data import Galadriel
@@ -30,4 +30,4 @@ class TestQMM:
 
         controller_modules = controller_instance.modules
         assert len(controller_modules) == 1
-        assert isinstance(controller_modules[0], QMM)
+        assert isinstance(controller_modules[0], QuantumMachinesManager)
