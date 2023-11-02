@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import hashlib
 import math
 from collections import deque
@@ -59,7 +73,7 @@ class MeasurementInfo:  # pylint: disable=too-few-public-methods
 
 
 class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
-    """_summary_"""
+    """A class for compiling QProgram to Quantum Machines hardware."""
 
     def __init__(self):
         # Handlers to map each operation to a corresponding handler function
@@ -94,9 +108,10 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
 
         Args:
             qprogram (QProgram): The QProgram to be compiled
+            bus_mapping (dict[str, str] | None, optional): Optional mapping of bus names. Defaults to None.
 
         Returns:
-            qua.Program: The compiled program.
+            tuple[qua.Program, dict, list[MeasurementInfo]]: A tuple consisting of the generated QUA program, the generated configuration and a list of measurements' information.
         """
 
         def traverse(block: Block):
