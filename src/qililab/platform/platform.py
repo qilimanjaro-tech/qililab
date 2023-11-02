@@ -555,19 +555,16 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         for bus_alias in sequences:
             buses[bus_alias].run()
 
-        # Acquire results
-        # readout_buses = [self.get_bus_by_alias(alias=bus_alias) for bus_alias in sequences if isinstance(bus.system_control, ReadoutSystemControl)]
-        # results: list[Result] = []
-        # for bus in readout_buses:
-        #     result = bus.acquire_result()
-        #     results.append(result)
-
         results: list[Result] = []
         for bus_alias in buses:
             if isinstance(buses[bus_alias].system_control, ReadoutSystemControl):
                 acquisitions = list(sequences[bus_alias].todict()["acquisitions"])
                 result = buses[bus_alias].acquire_qprogram_results(acquisitions=acquisitions)
                 results.append(result)
+
+        for instrument in self.instruments.elements:
+            if isinstance(instrument, QbloxModule):
+                instrument.desync_sequencers()
 
         return results
 
