@@ -13,4 +13,4 @@
 # limitations under the License.
 
 """__init__.py"""
-from .qmm import QMM
+from .qmm import QuantumMachinesManager

@@ -30,7 +30,7 @@ class QuantumMachinesResult(Result):
         raw_results (list): Raw results obtained from a Quantum Machines Manager.
     """
 
-    name = ResultName.QM
+    name = ResultName.QUANTUM_MACHINES
 
     def __init__(self, raw_results: list):
         self.raw_results = raw_results

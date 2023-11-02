@@ -12,25 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Copyright 2023 Qilimanjaro Quantum Tech
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 """Quantum Machines OPX class."""
 from dataclasses import dataclass
 from typing import Dict
 
-from qm import QuantumMachine, QuantumMachinesManager, SimulationConfig
+from qm import QuantumMachine, SimulationConfig
+from qm import QuantumMachinesManager as QMM
 from qm.jobs.running_qm_job import RunningQmJob
 from qm.qua import Program
 
@@ -41,7 +28,7 @@ from qililab.typings import InstrumentName, Parameter, QMMDriver
 
 
 @InstrumentFactory.register
-class QMM(Instrument):
+class QuantumMachinesManager(Instrument):
     """Class defining the Qililab Quantum Machines Manager instrument in Qililab.
 
     This class allows Qililab control and communication with an instance of the
@@ -55,7 +42,7 @@ class QMM(Instrument):
         settings (QMMSettings): Settings of the instrument.
     """
 
-    name = InstrumentName.QMM
+    name = InstrumentName.QUANTUM_MACHINES_MANAGER
 
     @dataclass
     class QMMSettings(Instrument.InstrumentSettings):
@@ -83,7 +70,7 @@ class QMM(Instrument):
         a connection to the Quantum Machine by the use of the Quantum Machines Manager.
         """
         super().initial_setup()
-        qmm = QuantumMachinesManager(host=self.settings.qop_ip, port=self.settings.qop_port)
+        qmm = QMM(host=self.settings.qop_ip, port=self.settings.qop_port)
         self.qm = qmm.open_qm(config=self.settings.config, close_other_machines=True)
 
     @Instrument.CheckDeviceInitialized

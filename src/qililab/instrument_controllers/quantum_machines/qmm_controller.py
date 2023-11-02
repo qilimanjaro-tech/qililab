@@ -19,7 +19,7 @@ from typing import Sequence
 from qililab.instrument_controllers.instrument_controller import InstrumentControllerSettings
 from qililab.instrument_controllers.single_instrument_controller import SingleInstrumentController
 from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
-from qililab.instruments.quantum_machines import QMM
+from qililab.instruments.quantum_machines import QuantumMachinesManager
 from qililab.typings import QMMDriver
 from qililab.typings.enums import InstrumentControllerName
 
@@ -36,9 +36,9 @@ class QMMController(SingleInstrumentController):
         settings (QMMControllerSettings): Settings of the instrument.
     """
 
-    name = InstrumentControllerName.QMM
+    name = InstrumentControllerName.QUANTUM_MACHINES_MANAGER
     device: QMMDriver
-    modules: Sequence[QMM]
+    modules: Sequence[QuantumMachinesManager]
 
     @dataclass
     class QMMControllerSettings(InstrumentControllerSettings):

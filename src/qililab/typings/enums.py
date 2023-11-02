@@ -188,7 +188,7 @@ class InstrumentName(str, Enum):
     KEYSIGHT_E5080B = "keysight_e5080b"
     AGILENT_E5071B = "agilent_e5071B"
     QCMRF = "QCM-RF"
-    QMM = "quantum_machines_manager"
+    QUANTUM_MACHINES_MANAGER = "quantum_machines_manager"
 
 
 class InstrumentControllerName(str, Enum):
@@ -214,7 +214,7 @@ class InstrumentControllerName(str, Enum):
     QBLOX_SPIRACK = "qblox_spi_rack"
     KEYSIGHT_E5080B = "keysight_e5080b_controller"
     AGILENT_E5071B = "agilent_e5071B_controller"
-    QMM = "qmm"
+    QUANTUM_MACHINES_MANAGER = "quantum_machines_manager"
 
 
 class SystemControlName(str, Enum):
@@ -338,7 +338,7 @@ class ResultName(str, Enum):
 
     QBLOX = "qblox"
     VECTOR_NETWORK_ANALYZER = "vector_network_analyzer"
-    QM = "quantum_machines"
+    QUANTUM_MACHINES = "quantum_machines"
 
 
 class ConnectionName(str, Enum):

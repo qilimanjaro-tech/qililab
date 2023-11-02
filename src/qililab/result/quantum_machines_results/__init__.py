@@ -13,4 +13,4 @@
 # limitations under the License.
 
 """ Quantum Machines Results format """
-from .qm_result import QuantumMachinesResult
+from .quantum_machines_result import QuantumMachinesResult

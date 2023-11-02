@@ -6,7 +6,7 @@ import pytest
 from qm import Program
 from qm.qua import play, program
 
-from qililab.instruments.quantum_machines import QMM
+from qililab.instruments.quantum_machines import QuantumMachinesManager
 from qililab.result.quantum_machines_results import QuantumMachinesResult
 from qililab.settings import Settings
 from qililab.typings import Parameter
@@ -24,7 +24,7 @@ def fixture_qua_program():
 @pytest.fixture(name="qmm")
 def fixture_qmm():
     """Fixture that returns an instance a qililab wrapper for Quantum Machines Manager."""
-    qmm = QMM(
+    qmm = QuantumMachinesManager(
         {"alias": "qmm", "qop_ip": "192.168.0.1", "qop_port": 80, "config": {}, "firmware": "3.10.2"}
     )  # pylint: disable=abstract-class-instantiated
     qmm.device = MagicMock
@@ -77,10 +77,10 @@ class MockSingleHandle:
 class TestQMM:
     """This class contains the unit tests for the ``QMM`` class."""
 
-    @patch("qililab.instruments.quantum_machines.qmm.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.qmm.QMM")
     @patch("qililab.instruments.Instrument.initial_setup")
     def test_initial_setup(
-        self, mock_instrument_init: MagicMock, mock_init: MagicMock, qmm: QMM
+        self, mock_instrument_init: MagicMock, mock_init: MagicMock, qmm: QuantumMachinesManager
     ):  # pylint: disable=unused-argument
         """Test QMM class initialization."""
         qmm.initial_setup()
@@ -88,13 +88,13 @@ class TestQMM:
 
         assert isinstance(qmm.qm, MagicMock)
 
-    def test_settings(self, qmm: QMM):
+    def test_settings(self, qmm: QuantumMachinesManager):
         """Test QMMSettings have been set correctly"""
 
         assert isinstance(qmm.settings, Settings)
 
     @patch("qm.QuantumMachine")
-    def test_execute(self, mock_qm: MagicMock, qmm: QMM, qua_program: Program):  # pylint: disable=unused-argument
+    def test_execute(self, mock_qm: MagicMock, qmm: QuantumMachinesManager, qua_program: Program):  # pylint: disable=unused-argument
         """Test execute method"""
         mock_qm.return_value.execute.return_value = MagicMock
         qmm.qm = mock_qm
@@ -102,7 +102,7 @@ class TestQMM:
 
         assert isinstance(job, MagicMock)
 
-    def test_get_acquisitions(self, qmm: QMM):
+    def test_get_acquisitions(self, qmm: QuantumMachinesManager):
         """Test get_acquisition method"""
         job = MockJob()
         result = qmm.get_acquisitions(job)
@@ -111,7 +111,7 @@ class TestQMM:
         assert result.array.shape == (2, 10)
 
     @patch("qm.QuantumMachine")
-    def test_simulate(self, mock_qm: MagicMock, qmm: QMM, qua_program: Program):  # pylint: disable=unused-argument
+    def test_simulate(self, mock_qm: MagicMock, qmm: QuantumMachinesManager, qua_program: Program):  # pylint: disable=unused-argument
         """Test execute method"""
         mock_qm.return_value.simulate.return_value = MagicMock
         qmm.qm = mock_qm
@@ -119,7 +119,7 @@ class TestQMM:
 
         assert isinstance(job, MagicMock)
 
-    def test_set_parameter(self, qmm: QMM):
+    def test_set_parameter(self, qmm: QuantumMachinesManager):
         """Tests that set_parameter method raises a not implemented error."""
         with pytest.raises(NotImplementedError, match="Setting a parameter is not supported for Quantum Machines yet."):
             _ = qmm.set_parameter(parameter=Parameter.LO_FREQUENCY, value=0.0)
