@@ -97,7 +97,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
     |
 
     Args:
-        nb_path (str): Full notebook path, with folder, nb_name and ``.ipynb`` extension.
+        nb_path (str): Full notebook path, with folder, nb_name and ``.ipynb`` extension. The path should be written in unix format: `folder/subfolder/.../file.ipynb`.
         in_spec_threshold (float): Threshold such that the ``check_data()`` methods return `in_spec` or `out_of_spec`.
         bad_data_threshold (float): Threshold such that the ``check_data()`` methods return `out_of_spec` or `bad_data`.
         comparison_model (Callable): Comparison model used, to compare data in this node.
@@ -250,6 +250,9 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
     ):
         if in_spec_threshold > bad_data_threshold:
             raise ValueError("`in_spec_threshold` must be smaller or equal than `bad_data_threshold`.")
+
+        if len(nb_path.split("\\")) > 1:
+            raise ValueError("`nb_path` must be written in unix format: `folder/subfolder/.../file.ipynb`")
 
         self.nb_path: str = nb_path
         """Full notebook path, with folder, nb_name and ``.ipynb`` extension."""
@@ -410,7 +413,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         """Executes python notebooks overwriting the parameters of the "parameters" cells and then returns the `output` parameters of such notebook.
 
         Args
-            input_path (str): Path to input notebook or NotebookNode object of notebook.
+            input_path (str): Path to input notebook to execute.
             output_path (str): Path to save executed notebook. If None, no file will be saved.
             parameters (dict): Arbitrary keyword arguments to pass to the notebook parameters. It will overwrite the "parameters" cell of the notebook.
 
@@ -424,34 +427,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         # Retrieve the logger info and extract the output from it:
         logger_string = self._stream.getvalue()
-        logger_splitted = logger_string.split(logger_output_start)
-        logger_outputs_string = logger_splitted[-1].split("\n")[0]
-
-        # In case something unexpected happened with the output we raise an error
-        if len(logger_splitted) < 2:
-            logger.error(
-                "Aborting execution. No output found, check the automatic-calibration output cell is implemented in %s",
-                input_path,
-            )
-            raise IncorrectCalibrationOutput(f"No output found, check automatic-calibration notebook in {input_path}")
-        if len(logger_splitted) > 2:
-            logger.error(
-                "Aborting execution. More than one output found, please output the results once in %s",
-                input_path,
-            )
-            raise IncorrectCalibrationOutput(f"More than one output found in {input_path}")
-
-        out_dict = json.loads(logger_outputs_string)
-
-        if "check_parameters" not in out_dict or out_dict["check_parameters"] == {}:
-            logger.error(
-                "Aborting execution. No 'check_parameters' dictionary or its empty in the output cell implemented in %s",
-                input_path,
-            )
-            raise IncorrectCalibrationOutput(
-                f"Empty output found in {input_path}, output must have key and value 'check_parameters'."
-            )
-        return out_dict
+        return self._from_logger_string_to_output_dict(logger_string, input_path)
 
     def _build_check_data_interval(self) -> np.ndarray | None:
         """Build ``check_data()`` sweep interval with ``number_of_random_datapoints`` data points.
@@ -603,6 +579,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             lines = file.readlines()
             outputs.extend(line for line in lines if line.find(logger_output_start) != -1)
 
+        # Check how many lines contain the outputs, to raise the corresponding errors:
         if not outputs:
             logger.error(
                 "Aborting execution. No output found, check the automatic-calibration output cell is implemented in %s",
@@ -610,31 +587,58 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             )
             raise IncorrectCalibrationOutput(f"No output found, check automatic-calibration notebook in {self.nb_path}")
 
-        data = outputs[0].split(logger_output_start)
-
-        if len(outputs) > 1 or len(data) > 2:
+        if len(outputs) > 1:
             logger.error(
                 "Aborting execution. More than one output found, please output the results once in %s",
                 self.nb_path,
             )
             raise IncorrectCalibrationOutput(f"More than one output found in {self.nb_path}")
 
-        # TODO: Make sure that the encoding of special characters (i.e. \\“) doesn’t depend on the OS because
-        # Windows uses UTF-16LE and Linux (UNIX based like MacOS) uses UTF-8
-        clean_data = data[1].split('\\n"')
-        dict_as_string = clean_data[0].replace('\\"', '"')
+        # When only one line of outputs, use that one:
+        return self._from_logger_string_to_output_dict(outputs[0], self.nb_path)
 
-        # converting list into one single string
-        output_string = "".join(dict_as_string)
-        out_dict = json.loads(output_string)
+    def _from_logger_string_to_output_dict(self, logger_string, input_path):
+        """Returns the output dictionary from the logger string, or raises errors if logger_string doesn't follow the expected format.
+
+        Args
+            logger_string (str): The logger string containing the output dictionary to extract.
+            input_path (str): Path of the notebook that generated the output, to raise errors.
+
+        Returns:
+            dict: Kwargs for the output parameters of the notebook.
+
+        Raises:
+            IncorrectCalibrationOutput: In case no outputs, incorrect outputs or multiple outputs where found. Incorrect outputs are those that do not contain `check_parameters` or is empty.
+        """
+        logger_splitted = logger_string.split(logger_output_start)
+
+        # In case something unexpected happened with the output we raise an error
+        if len(logger_splitted) < 2:
+            logger.error(
+                "Aborting execution. No output found, check the automatic-calibration output cell is implemented in %s",
+                input_path,
+            )
+            raise IncorrectCalibrationOutput(f"No output found, check automatic-calibration notebook in {input_path}")
+        if len(logger_splitted) > 2:
+            logger.error(
+                "Aborting execution. More than one output found, please output the results once in %s",
+                input_path,
+            )
+            raise IncorrectCalibrationOutput(f"More than one output found in {input_path}")
+
+        # This next line is for taking into account other encodings, where special characters get `\\` in front.
+        clean_data = logger_splitted[1].split('\\n"')[0].replace('\\"', '"')
+
+        logger_outputs_string = clean_data.split("\n")[0]
+        out_dict = json.loads(logger_outputs_string)
 
         if "check_parameters" not in out_dict or out_dict["check_parameters"] == {}:
             logger.error(
                 "Aborting execution. No 'check_parameters' dictionary or its empty in the output cell implemented in %s",
-                self.nb_path,
+                input_path,
             )
             raise IncorrectCalibrationOutput(
-                f"Empty output found in {self.nb_path}, output must have key and value 'check_parameters'."
+                f"Empty output found in {input_path}, output must have key and value 'check_parameters'."
             )
         return out_dict
 
