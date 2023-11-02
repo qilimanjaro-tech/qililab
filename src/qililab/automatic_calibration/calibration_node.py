@@ -252,7 +252,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             raise ValueError("`in_spec_threshold` must be smaller or equal than `bad_data_threshold`.")
 
         if len(nb_path.split("\\")) > 1:
-            raise ValueError("`nb_path` must be written in unix format: `folder/subfolder/.../file.ipynb`")
+            raise ValueError("`nb_path` must be written in unix format: `folder/subfolder/.../file.ipynb`.")
 
         self.nb_path: str = nb_path
         """Full notebook path, with folder, nb_name and ``.ipynb`` extension."""

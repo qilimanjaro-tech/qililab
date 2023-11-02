@@ -172,8 +172,8 @@ class TestInitializationCalibrationNode:
         assert isinstance(initialize_node_optional.previous_timestamp, float | None)
         assert isinstance(initialize_node_optional._stream, StringIO)
 
-    def test_bad_init_method(self):
-        """Test an invalid initialization of the class.
+    def test_bad_thresholds_initialization(self):
+        """Test an invalid initialization of the class due to the thresholds.
 
         This happens when ``bad_data_threshold`` is smaller than ``in_spec`` one.
         """
@@ -188,6 +188,23 @@ class TestInitializationCalibrationNode:
                 drift_timeout=100,
             )
         assert str(error.value) == "`in_spec_threshold` must be smaller or equal than `bad_data_threshold`."
+
+    def test_bad_nb_path_initialization(self):
+        """Test an invalid initialization of the class due to the nb_path.
+
+        This happens when the path doesn't follow Unix format.
+        """
+        # Assert:
+        with pytest.raises(ValueError) as error:
+            _ = CalibrationNode(
+                nb_path=".bizzfuzz\\foobar.ipynb",
+                qubit_index=0,
+                in_spec_threshold=0.6,
+                bad_data_threshold=0.7,
+                comparison_model=dummy_comparison_model,
+                drift_timeout=100,
+            )
+        assert str(error.value) == "`nb_path` must be written in unix format: `folder/subfolder/.../file.ipynb`."
 
 
 class TestPublicMethodsFromCalibrationNode:
