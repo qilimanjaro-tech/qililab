@@ -104,7 +104,7 @@ class TestExecutionManager:
 
 
 @patch("qililab.instrument_controllers.quantum_machines.qmm_controller.QMMController", autospec=True)
-@patch("qililab.instruments.quantum_machines.qmm.QMM.initial_setup")
+@patch("qililab.instruments.quantum_machines.qmm.QuantumMachinesManager.initial_setup")
 @patch("qililab.instrument_controllers.keithley.keithley_2600_controller.Keithley2600Driver", autospec=True)
 @patch("qililab.typings.instruments.mini_circuits.urllib", autospec=True)
 @patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
