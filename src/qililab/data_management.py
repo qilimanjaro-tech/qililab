@@ -19,9 +19,9 @@ from warnings import warn
 
 import h5py
 import numpy as np
-import ruamel.yaml
 import yaml
 from qiboconnection.api import API
+from ruamel.yaml import YAML
 
 from .platform import Platform
 from .settings import Runcard
@@ -164,7 +164,7 @@ def save_platform(path: str, platform: Platform) -> str:
         new_path = Path(path)
 
     with open(file=new_path, mode="w", encoding="utf-8") as file:
-        ruamel.yaml.YAML().dump(data=platform.to_dict(), stream=file)
+        YAML().dump(data=platform.to_dict(), stream=file)
 
     return str(new_path)
 
