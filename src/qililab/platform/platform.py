@@ -565,11 +565,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         for bus_alias in buses:
             if isinstance(buses[bus_alias].system_control, ReadoutSystemControl):
                 acquisitions = list(sequences[bus_alias].todict()["acquisitions"])
-                result = buses[bus_alias].acquire_result(acquisitions=acquisitions)
+                result = buses[bus_alias].acquire_qprogram_results(acquisitions=acquisitions)
                 results.append(result)
 
-        # FIXME: allow multiple readout buses
-        return results[0] if results else None
+        return results
 
     def execute(
         self,

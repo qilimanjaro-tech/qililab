@@ -13,4 +13,5 @@
 # limitations under the License.
 
 """ Qblox Results format """
+from .qblox_qprogram_result import QbloxQProgramResult
 from .qblox_result import QbloxResult

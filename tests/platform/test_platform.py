@@ -234,14 +234,14 @@ class TestMethods:
 
         with patch.object(Bus, "upload_qpysequence") as upload:
             with patch.object(Bus, "run") as run:
-                with patch.object(Bus, "acquire_result") as acquire_result:
-                    acquire_result.return_value = 123
+                with patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results:
+                    acquire_qprogram_results.return_value = 123
                     result = platform.execute_qprogram(qprogram=qprogram)
 
         assert upload.call_count == 2
         assert run.call_count == 2
-        acquire_result.assert_called_once()
-        assert result == 123
+        acquire_qprogram_results.assert_called_once()
+        assert result == [123]
 
     def test_execute(self, platform: Platform):
         """Test that the execute method calls the buses to run and return the results."""

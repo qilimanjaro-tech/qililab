@@ -225,14 +225,22 @@ class Bus:
         """Runs any previously uploaded program into the instrument."""
         self.system_control.run(port=self.port)
 
-    def acquire_result(self, acquisitions: list[str] | None = None) -> Result:
+    def acquire_result(self) -> Result:
         """Read the result from the vector network analyzer instrument
 
         Returns:
             Result: Acquired result
         """
         if isinstance(self.system_control, ReadoutSystemControl):
-            return self.system_control.acquire_result(acquisitions=acquisitions)
+            return self.system_control.acquire_result()
+
+        raise AttributeError(
+            f"The bus {self.alias} cannot acquire results because it doesn't have a readout system control."
+        )
+
+    def acquire_qprogram_results(self, acquisitions: list[str]) -> list[Result]:
+        if isinstance(self.system_control, ReadoutSystemControl):
+            return self.system_control.acquire_qprogram_results(acquisitions=acquisitions)
 
         raise AttributeError(
             f"The bus {self.alias} cannot acquire results because it doesn't have a readout system control."

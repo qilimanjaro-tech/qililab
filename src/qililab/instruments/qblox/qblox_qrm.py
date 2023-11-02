@@ -29,7 +29,7 @@ from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseBusSchedule
-from qililab.result.qblox_results.qblox_result import QbloxResult
+from qililab.result.qblox_results import QbloxQProgramResult, QbloxResult
 from qililab.typings.enums import AcquireTriggerMode, InstrumentName, Parameter
 
 
@@ -179,13 +179,21 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 compiled_sequences.append(self.sequences[sequencer.identifier][0])
         return compiled_sequences
 
-    def acquire_result(self, acquisitions: list[str] | None = None) -> QbloxResult:
+    def acquire_result(self) -> QbloxResult:
         """Read the result from the AWG instrument
 
         Returns:
             QbloxResult: Acquired Qblox result
         """
-        return self.get_acquisitions(acquisitions=acquisitions)
+        return self.get_acquisitions()
+
+    def acquire_qprogram_results(self, acquisitions: list[str]) -> QbloxQProgramResult:
+        """Read the result from the AWG instrument
+
+        Returns:
+            QbloxResult: Acquired Qblox result
+        """
+        return self.get_qprogram_acquisitions(acquisitions=acquisitions)
 
     def _set_device_hardware_demodulation(self, value: bool, sequencer_id: int):
         """set hardware demodulation
@@ -268,7 +276,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             )
 
     @Instrument.CheckDeviceInitialized
-    def get_acquisitions(self, acquisitions: list[str] | None = None) -> QbloxResult:
+    def get_acquisitions(self) -> QbloxResult:
         """Wait for sequencer to finish sequence, wait for acquisition to finish and get the acquisition results.
         If any of the timeouts is reached, a TimeoutError is raised.
 
@@ -290,25 +298,46 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 )
 
                 if sequencer.scope_store_enabled:
-                    if acquisitions is None:
-                        self.device.store_scope_acquisition(sequencer=sequencer_id, name="default")
-                    else:
-                        for acquisition in acquisitions:
-                            self.device.store_scope_acquisition(sequencer=sequencer_id, name=acquisition)
+                    self.device.store_scope_acquisition(sequencer=sequencer_id, name="default")
 
-                if acquisitions is None:
-                    results.append(
-                        self.device.get_acquisitions(sequencer=sequencer.identifier)["default"]["acquisition"]
-                    )
-                else:
-                    for acquisition in acquisitions:
-                        results.append(
-                            self.device.get_acquisitions(sequencer=sequencer.identifier)[acquisition]["acquisition"]
-                        )
+                results.append(self.device.get_acquisitions(sequencer=sequencer.identifier)["default"]["acquisition"])
                 self.device.sequencers[sequencer.identifier].sync_en(False)
                 integration_lengths.append(sequencer.used_integration_length)
 
         return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
+
+    @Instrument.CheckDeviceInitialized
+    def get_qprogram_acquisitions(self, acquisitions: list[str]) -> QbloxQProgramResult:
+        """Wait for sequencer to finish sequence, wait for acquisition to finish and get the acquisition results.
+        If any of the timeouts is reached, a TimeoutError is raised.
+
+        Returns:
+            QbloxResult: Class containing the acquisition results.
+
+        """
+        results = []
+        integration_lengths: list[int] = []
+        for sequencer in self.awg_sequencers:
+            if sequencer.identifier in self.sequences:
+                sequencer_id = sequencer.identifier
+                flags = self.device.get_sequencer_state(
+                    sequencer=sequencer_id, timeout=cast(AWGQbloxADCSequencer, sequencer).sequence_timeout
+                )
+                logger.info("Sequencer[%d] flags: \n%s", sequencer_id, flags)
+                self.device.get_acquisition_state(
+                    sequencer=sequencer_id, timeout=cast(AWGQbloxADCSequencer, sequencer).acquisition_timeout
+                )
+
+                if sequencer.scope_store_enabled:
+                    for acquisition in acquisitions:
+                        self.device.store_scope_acquisition(sequencer=sequencer_id, name=acquisition)
+
+                for acquisition in acquisitions:
+                    results.append(
+                        self.device.get_acquisitions(sequencer=sequencer.identifier)[acquisition]["acquisition"]
+                    )
+
+        return QbloxQProgramResult(integration_lengths=integration_lengths, qblox_raw_results=results)
 
     def _append_acquire_instruction(
         self, loop: Loop, bin_index: Register | int, sequencer_id: int, weight_regs: tuple[Register, Register]

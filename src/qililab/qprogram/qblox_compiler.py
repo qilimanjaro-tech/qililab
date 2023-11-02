@@ -195,7 +195,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             return index, len(envelope)
 
         index_I, length_I = handle_waveform(waveform_I, 0)
-        index_Q, length_Q = handle_waveform(waveform_Q, len(waveform_I.envelope()))
+        index_Q, _ = handle_waveform(waveform_Q, len(waveform_I.envelope()))
         return index_I, index_Q, length_I
 
     def _append_to_weights_of_bus(self, bus: str, weights: IQPair):

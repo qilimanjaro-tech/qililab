@@ -13,6 +13,8 @@
 # limitations under the License.
 
 """ReadoutSystemControl class."""
+from typing import Sequence
+
 from qililab.instruments import AWGAnalogDigitalConverter
 from qililab.result import Result
 from qililab.typings.enums import SystemControlName
@@ -27,7 +29,7 @@ class ReadoutSystemControl(SystemControl):
 
     name = SystemControlName.READOUT_SYSTEM_CONTROL
 
-    def acquire_result(self, acquisitions: list[str] | None = None) -> Result:
+    def acquire_result(self) -> Result:
         """Read the result from the vector network analyzer instrument
 
         Returns:
@@ -36,7 +38,7 @@ class ReadoutSystemControl(SystemControl):
         # TODO: Support acquisition from multiple instruments
         results: list[Result] = []
         for instrument in self.instruments:
-            result = instrument.acquire_result(acquisitions=acquisitions)
+            result = instrument.acquire_result()
             if result is not None:
                 results.append(result)
 
@@ -46,6 +48,21 @@ class ReadoutSystemControl(SystemControl):
             )
 
         return results[0]
+
+    def acquire_qprogram_results(self, acquisitions: list[str]) -> list[Result]:
+        """Read the result from the vector network analyzer instrument
+
+        Returns:
+            Result: Acquired result
+        """
+        # TODO: Support acquisition from multiple instruments
+        results: list[Result] = []
+        for instrument in self.instruments:
+            result = instrument.acquire_qprogram_results(acquisitions=acquisitions)
+            if result is not None:
+                results.append(result)
+
+        return results
 
     @property
     def acquisition_delay_time(self) -> int:
