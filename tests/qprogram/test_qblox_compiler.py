@@ -792,3 +792,7 @@ class TestQBloxCompiler:
     def test_calculate_iterations(self, start, stop, step, expected_result):
         result = QbloxCompiler._calculate_iterations(start, stop, step)
         assert result == expected_result
+
+    def test_calculate_iterations_with_zero_step_throws_error(self):
+        with pytest.raises(ValueError, match="Step value cannot be zero"):
+            QbloxCompiler._calculate_iterations(100, 200, 0)
