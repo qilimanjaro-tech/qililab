@@ -7,9 +7,19 @@
 
 ### Improvements
 
+- Improved the UX for circuit transpilation by unifying the native gate and pulse transpiler under one `CircuitTranspiler` class, which has 3 methods:
+  - `circuit_to_native`: transpiles a qibo circuit to native gates (Drag, CZ, Wait, M) and optionally RZ if optimize=False (optimize=True by default)
+  - `circuit_to_pulses`: transpiles a native gate circuit to a `PulseSchedule`
+  - `transpile_circuit`: runs both of the methods above sequentially
+    `Wait` gate moved from the `utils` module to `circuit_transpilation_native_gates`
+    [#575](https://github.com/qilimanjaro-tech/qililab/pull/575)
+
 ### Breaking changes
 
 ### Deprecations / Removals
+
+- Removed the park gate since it is no longer needed
+  [#575](https://github.com/qilimanjaro-tech/qililab/pull/575)
 
 ### Documentation
 
