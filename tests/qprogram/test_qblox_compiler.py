@@ -26,6 +26,39 @@ def fixture_no_loops_all_operations() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="dynamic_wait")
+def fixture_dynamic_wait() -> QProgram:
+    drag_pair = DragPair(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    qp = QProgram()
+    duration = qp.variable(Domain.Time)
+    with qp.for_loop(variable=duration, start=100, stop=200, step=10):
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.wait(bus="drive", duration=duration)
+    return qp
+
+
+@pytest.fixture(name="sync_with_dynamic_wait")
+def fixture_sync_with_dynamic_wait() -> QProgram:
+    drag_pair = DragPair(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    qp = QProgram()
+    duration = qp.variable(Domain.Time)
+    with qp.for_loop(variable=duration, start=100, stop=200, step=10):
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.wait(bus="drive", duration=duration)
+        qp.sync()
+        qp.play(bus="readout", waveform=drag_pair)
+    return qp
+
+
+@pytest.fixture(name="infinite_loop")
+def fixture_infinite_loop() -> QProgram:
+    drag_pair = DragPair(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    qp = QProgram()
+    with qp.infinite_loop():
+        qp.play(bus="drive", waveform=drag_pair)
+    return qp
+
+
 @pytest.fixture(name="average_loop")
 def fixture_average_loop() -> QProgram:
     drag_pair = DragPair(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
@@ -252,6 +285,50 @@ class TestQBloxCompiler:
                             stop
         """
         assert is_q1asm_equal(sequences["readout"], readout_str)
+
+    def test_dynamic_wait(self, dynamic_wait: QProgram):
+        compiler = QbloxCompiler()
+        sequences = compiler.compile(qprogram=dynamic_wait)
+
+        assert len(sequences) == 1
+        assert "drive" in sequences
+
+        drive_str = """
+            setup:
+                wait_sync        4
+
+            main:
+                            move             11, R0
+                            move             100, R1
+            loop_0:
+                            play             0, 1, 40
+                            wait             R1
+                            add              R1, 10, R1
+                            loop             R0, @loop_0
+                            stop
+        """
+
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+
+    def test_infinite_loop(self, infinite_loop: QProgram):
+        compiler = QbloxCompiler()
+        sequences = compiler.compile(qprogram=infinite_loop)
+
+        assert len(sequences) == 1
+        assert "drive" in sequences
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+
+            main:
+            infinite_loop_0:
+                            play             0, 1, 40
+                            jmp              @infinite_loop_0
+                            stop
+        """
+
+        assert is_q1asm_equal(sequences["drive"], drive_str)
 
     def test_average_loop(self, average_loop: QProgram):
         compiler = QbloxCompiler()
@@ -649,6 +726,11 @@ class TestQBloxCompiler:
             compiler = QbloxCompiler()
             _ = compiler.compile(qprogram=for_loop_variable_with_no_target)
 
+    def test_sync_operation_with_dynamic_timings_throws_exception(self, sync_with_dynamic_wait: QProgram):
+        with pytest.raises(NotImplementedError, match="Dynamic syncing is not implemented yet."):
+            compiler = QbloxCompiler()
+            _ = compiler.compile(qprogram=sync_with_dynamic_wait)
+
     def test_multiple_play_operations_with_same_waveform(self, multiple_play_operations_with_same_waveform: QProgram):
         compiler = QbloxCompiler()
         sequences = compiler.compile(qprogram=multiple_play_operations_with_same_waveform)
@@ -702,3 +784,11 @@ class TestQBloxCompiler:
                             stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
+
+    @pytest.mark.parametrize(
+        "start,stop,step,expected_result",
+        [(0, 10, 1, 11), (10, 0, -1, 11), (1, 2.05, 0.1, 11)],
+    )
+    def test_calculate_iterations(self, start, stop, step, expected_result):
+        result = QbloxCompiler._calculate_iterations(start, stop, step)
+        assert result == expected_result

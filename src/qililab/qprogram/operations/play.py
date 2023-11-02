@@ -23,7 +23,6 @@ from qililab.waveforms import IQPair, Waveform
 class Play(Operation):  # pylint: disable=missing-class-docstring
     bus: str
     waveform: Waveform | IQPair
-    duration: int | None = None
 
     def get_waveforms(self) -> tuple[Waveform, Waveform | None]:
         """Get the waveforms.

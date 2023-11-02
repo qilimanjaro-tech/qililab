@@ -263,6 +263,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
     def _handle_infinite_loop(self, _: InfiniteLoop):
         for bus in self._buses:
             qpy_loop = QPyProgram.InfiniteLoop(name=f"infinite_loop_{self._buses[bus].loop_counter}")
+            self._buses[bus].qpy_block_stack[-1].append_component(qpy_loop)
             self._buses[bus].qpy_block_stack.append(qpy_loop)
             self._buses[bus].loop_counter += 1
         return True
@@ -450,27 +451,15 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         waveform_I, waveform_Q = element.get_waveforms()
         waveform_variables = element.get_waveform_variables()
         if not waveform_variables:
-            index_I, index_Q, wf_duration = self._append_to_waveforms_of_bus(
+            index_I, index_Q, duration = self._append_to_waveforms_of_bus(
                 bus=element.bus, waveform_I=waveform_I, waveform_Q=waveform_Q
             )
-            if element.duration is not None and isinstance(element.duration, Variable):
-                duration = self._buses[element.bus].variable_to_register[element.duration]
-                self._buses[element.bus].static_duration += QbloxCompiler.minimum_wait_duration
-                self._buses[element.bus].dynamic_durations.append(element.duration)
-                self._buses[element.bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.Play(index_I, index_Q, wait_time=QbloxCompiler.minimum_wait_duration)
-                )
-                self._buses[element.bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.Wait(wait_time=duration)
-                )
-            else:
-                convert = QbloxCompiler._convert_value(element)
-                duration = element.duration if element.duration is not None else wf_duration
-                duration = convert(duration)
-                self._buses[element.bus].static_duration += duration
-                self._buses[element.bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.Play(index_I, index_Q, wait_time=duration)
-                )
+            convert = QbloxCompiler._convert_value(element)
+            duration = convert(duration)
+            self._buses[element.bus].static_duration += duration
+            self._buses[element.bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.Play(index_I, index_Q, wait_time=duration)
+            )
             self._buses[element.bus].marked_for_sync = True
 
     @staticmethod

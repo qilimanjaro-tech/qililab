@@ -210,14 +210,14 @@ class QProgram:
 
         return QProgram._ForLoopContext(qprogram=self, variable=variable, start=start, stop=stop, step=step)
 
-    def play(self, bus: str, waveform: Waveform | IQPair, duration: int | None = None):
+    def play(self, bus: str, waveform: Waveform | IQPair):
         """Play a single waveform or an I/Q pair of waveforms on the bus.
 
         Args:
             bus (str): Unique identifier of the bus.
             waveform (Waveform | IQPair): A single waveform or an I/Q pair of waveforms
         """
-        operation = Play(bus=bus, waveform=waveform, duration=duration)
+        operation = Play(bus=bus, waveform=waveform)
         self._active_block.append(operation)
 
     @requires_domain("duration", Domain.Time)
