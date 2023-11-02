@@ -236,13 +236,15 @@ class TestMethods:
         with patch.object(Bus, "upload_qpysequence") as upload:
             with patch.object(Bus, "run") as run:
                 with patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results:
-                    acquire_qprogram_results.return_value = 123
-                    result = platform.execute_qprogram(qprogram=qprogram)
+                    with patch.object(QbloxModule, "desync_sequencers") as desync:
+                        acquire_qprogram_results.return_value = 123
+                        result = platform.execute_qprogram(qprogram=qprogram)
 
         assert upload.call_count == 2
         assert run.call_count == 2
         acquire_qprogram_results.assert_called_once()
         assert result == [123]
+        desync.assert_called()
 
     def test_execute(self, platform: Platform):
         """Test that the execute method calls the buses to run and return the results."""
