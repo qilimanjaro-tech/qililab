@@ -10,6 +10,8 @@ from qililab.data_management import build_platform
 from qililab.platform.platform import Platform
 
 # flake8: noqa
+# pylint: disable=protected-access
+
 #################################################################################
 #################################### SET UPS ####################################
 #################################################################################
@@ -324,6 +326,7 @@ class TestRunAutomaticCalibrationFromCalibrationController:
             "fidelities": {"test": (0.0, "test", datetime.fromtimestamp(1999))},
         }
 
+        # sourcery skip: extract-duplicate-method
         if controller.calibration_graph in [G0, G3]:
             controller.maintain.assert_any_call(fourth)
             controller.maintain.assert_any_call(first)
@@ -482,7 +485,9 @@ class TestMaintainFromCalibrationController:
             # Check diagnose for each dependant:
             dependants_calls = []
             for node_call in leaves_to_roots_good_graphs_calls[good_graphs.index(controller[2])]:
-                for node_name in controller[2].successors(node_call.args[0].node_id):
+                for node_name in controller[2].successors(
+                    node_call.args[0].node_id
+                ):  # sourcery skip: for-append-to-extend
                     dependants_calls.append(call(controller[3].node_sequence[node_name]))
             controller[3].diagnose.assert_has_calls(dependants_calls)
 
@@ -602,6 +607,7 @@ class TestDiagnoseFromCalibrationController:
 
     def test_diagnose_recursive_recalibrate_doesnt_find_true_from_root(self, controller):
         """Test that ``diagnose`` returns True correctly for when all is bad data, except a leave tested for the three options."""
+        # sourcery skip: extract-duplicate-method
         # Leave in out_of_spec
         controller = DiagnoseFixedMockedController(
             node_sequence=nodes, calibration_graph=G0, runcard=path_runcard, check_data="out_of_spec"
@@ -661,6 +667,8 @@ class TestCalibrationController:
         for node in controller.node_sequence.values():
             node.previous_timestamp = datetime.now().timestamp() - 1000
             node.drift_timeout = 1800
+
+        # sourcery skip: extract-duplicate-method
         fourth.previous_timestamp = datetime.now().timestamp() - 500
         result = controller.check_state(fourth)
         assert result is True
@@ -679,7 +687,7 @@ class TestCalibrationController:
     #######################
     ### TEST CHECK DATA ###
     #######################
-    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.run_notebook")
+    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.run_node")
     @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._add_string_to_checked_nb_name")
     @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._invert_output_and_previous_output")
     def test_check_data(self, mock_invert, mock_add_str, mock_run, controller):
@@ -704,10 +712,10 @@ class TestCalibrationController:
     ######################
     ### TEST CALIBRATE ###
     ######################
-    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.run_notebook")
+    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.run_node")
     @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._add_string_to_checked_nb_name")
     def test_calibrate(self, mock_add_str, mock_run, controller):
-        """Test that the calibration method, calls node.run_notebook()."""
+        """Test that the calibration method, calls node.run_node()."""
         for node in controller.node_sequence.values():
             controller.calibrate(node)
         assert mock_run.call_count == len(controller.node_sequence)

@@ -246,8 +246,7 @@ class CalibrationController:
         return True
 
     def check_state(self, node: CalibrationNode) -> bool:
-        """
-        Check if the node's parameters drift timeouts have passed since the last calibration or data validation (a call of check_data).
+        """Checks if the node's parameters drift timeouts have passed since the last calibration or data validation (a call of check_data).
         These timeouts represent how long it usually takes for the parameters to drift, specified by the user.
 
         Conditions for check state to pass:
@@ -286,7 +285,7 @@ class CalibrationController:
         return not self._is_timeout_expired(node.previous_timestamp, node.drift_timeout)
 
     def check_data(self, node: CalibrationNode) -> str:
-        """Check if the parameters found in the last calibration are still valid, doing a reduced execution of the notebook. To do this,
+        """Checks if the parameters found in the last calibration are still valid, doing a reduced execution of the notebook. To do this,
         this function runs the experiment only in a few points, randomly chosen within the sweep interval, and compares the results with
         the data obtained in the same points when the experiment was last run on the entire sweep interval (``calibrate()``).
 
@@ -308,7 +307,7 @@ class CalibrationController:
         """
 
         print(f'Checking data of node "{node.node_id}"\n')
-        timestamp = node.run_notebook(check=True)
+        timestamp = node.run_node(check=True)
 
         # Comparison and obtained parameters:
         comparison_outputs = node.previous_output_parameters
@@ -330,13 +329,15 @@ class CalibrationController:
             print("y:", compar_params["y"])
             print("x:", compar_params["x"])
 
-            if self._obtain_comparison(node, obtain_params, compar_params) <= node.in_spec_threshold:
+            comparison_result = self._obtain_comparison(node, obtain_params, compar_params)
+
+            if comparison_result <= node.in_spec_threshold:
                 print(f"check_data of {node.node_id}: in_spec!!!\n")
                 node._add_string_to_checked_nb_name("in_spec", timestamp)  # pylint: disable=protected-access
                 node._invert_output_and_previous_output()  # pylint: disable=protected-access
                 return "in_spec"
 
-            if self._obtain_comparison(node, obtain_params, compar_params) <= node.bad_data_threshold:
+            if comparison_result <= node.bad_data_threshold:
                 print(f"check_data of {node.node_id}: out_of_spec!!!\n")
                 node._add_string_to_checked_nb_name("out_of_spec", timestamp)  # pylint: disable=protected-access
                 node._invert_output_and_previous_output()  # pylint: disable=protected-access
@@ -348,17 +349,17 @@ class CalibrationController:
         return "bad_data"
 
     def calibrate(self, node: CalibrationNode) -> None:
-        """Run a node's calibration experiment on its default interval of sweep values.
+        """Runs a node's calibration experiment on its default interval of sweep values.
 
         Args:
             node (CalibrationNode): The node where the calibration experiment is run.
         """
         print(f'Calibrating node "{node.node_id}"\n')
-        node.previous_timestamp = node.run_notebook()
+        node.previous_timestamp = node.run_node()
         node._add_string_to_checked_nb_name("calibrated", node.previous_timestamp)  # pylint: disable=protected-access
 
     def _update_parameters(self, node: CalibrationNode) -> None:
-        """Update a parameter value in the platform.
+        """Updates a parameter value in the platform.
         If the node does not have an associated parameter, or the parameter attribute of the node is None,
         this function does nothing. That is because some nodes, such as those associated with the AllXY
         experiment, don't compute the value of a parameter.
@@ -375,7 +376,7 @@ class CalibrationController:
             save_platform(self.runcard, self.platform)
 
     def get_last_set_parameters(self) -> dict[tuple, tuple]:
-        """Retrieve the last set parameters of the graph.
+        """Retrieves the last set parameters of the graph.
 
         Returns:
             dict[tuple, tuple]: Set parameters dictionary, with the dict key being a tuple containing:
@@ -408,7 +409,7 @@ class CalibrationController:
         return parameters
 
     def get_last_fidelities(self) -> dict[tuple, tuple]:
-        """Retrieve the last updated fidelities of the graph.
+        """Retrieves the last updated fidelities of the graph.
 
         Returns:
             dict[tuple, tuple]: Fidelities dictionary, with the dict key being a tuple containing:
@@ -440,7 +441,7 @@ class CalibrationController:
         return fidelities
 
     def _dependents(self, node: CalibrationNode) -> list:
-        """Find the nodes that a node depends on.
+        """Finds the nodes that a node depends on.
         In this graph, if an edge goes from node A to node B, then node A depends on node B. Thus the nodes that A depends on are its successors.
 
         Args:
@@ -466,8 +467,7 @@ class CalibrationController:
 
     @staticmethod
     def _is_timeout_expired(timestamp: float, timeout: float) -> bool:
-        """
-        Check if the time passed since the timestamp is greater than the timeout duration.
+        """Check if the time passed since the timestamp is greater than the timeout duration.
 
         Args:
             timestamp (float): Timestamp from which the time should be checked, described in UNIX timestamp format.
