@@ -174,6 +174,7 @@ class InstrumentName(str, Enum):
         * qblox_S4g
         * keysight_e5080b
         * agilent_e5071B
+        * OPX -> Exactly as Quantum Machines InstrumentType
     """
 
     QBLOX_QCM = "QCM"
@@ -187,6 +188,7 @@ class InstrumentName(str, Enum):
     KEYSIGHT_E5080B = "keysight_e5080b"
     AGILENT_E5071B = "agilent_e5071B"
     QCMRF = "QCM-RF"
+    QUANTUM_MACHINES_MANAGER = "quantum_machines_manager"
 
 
 class InstrumentControllerName(str, Enum):
@@ -201,6 +203,7 @@ class InstrumentControllerName(str, Enum):
         * keithley_2600
         * keysight_e5080b
         * agilent_e5071B
+        * qmm
     """
 
     QBLOX_PULSAR = "qblox_pulsar"
@@ -211,6 +214,7 @@ class InstrumentControllerName(str, Enum):
     QBLOX_SPIRACK = "qblox_spi_rack"
     KEYSIGHT_E5080B = "keysight_e5080b_controller"
     AGILENT_E5071B = "agilent_e5071B_controller"
+    QUANTUM_MACHINES_MANAGER = "quantum_machines_manager"
 
 
 class SystemControlName(str, Enum):
@@ -334,6 +338,7 @@ class ResultName(str, Enum):
 
     QBLOX = "qblox"
     VECTOR_NETWORK_ANALYZER = "vector_network_analyzer"
+    QUANTUM_MACHINES = "quantum_machines"
 
 
 class ConnectionName(str, Enum):
