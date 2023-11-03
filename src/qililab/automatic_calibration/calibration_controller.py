@@ -213,7 +213,7 @@ class CalibrationController:
         self.calibrate(node)
         self._update_parameters(node)
 
-    def diagnose(self, node: CalibrationNode) -> bool:
+    def diagnose(self, node: CalibrationNode) -> None:
         """Checks the data of all the dependencies of a `bad_data` node, until finds the root of the problem with its data.
 
         This is a method called by `maintain` in the special case that its call of `check_data` finds bad data.
