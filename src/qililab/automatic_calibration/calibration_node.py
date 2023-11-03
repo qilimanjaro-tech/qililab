@@ -379,7 +379,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         # When keyboard interrupt (Ctrl+C), generate error, and leave `_dirty`` in the name:
         except KeyboardInterrupt:
             logger.error("Interrupted automatic calibration notebook execution of %s", self.nb_path)
-            return sys.exit()
+            raise
 
         # When notebook execution fails, generate error folder and move there the notebook:
         except Exception as e:  # pylint: disable = broad-exception-caught
@@ -391,7 +391,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                 str(e),
                 error_path,
             )
-            return sys.exit()
+            raise
 
     @staticmethod
     def _build_notebooks_logger_stream() -> StringIO:
@@ -513,7 +513,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         """
         last_modified_file_name = self._find_last_executed_calibration()
         return (
-            os.path.getmtime(f"{self.nb_folder}/{last_modified_file_name}")
+            os.path.getmtime(os.path.join(self.nb_folder, last_modified_file_name))
             if last_modified_file_name is not None
             else None
         )
@@ -551,7 +551,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         # Get the last created file, most recent one
         last_modified_file_time, last_modified_file_name = -1.0, ""
         for fname in file_names:
-            ftime = os.path.getctime(f"{self.nb_folder}/{fname}")
+            ftime = os.path.getctime(os.path.join(self.nb_folder, fname))
             if ftime > last_modified_file_time:
                 last_modified_file_time, last_modified_file_name = ftime, fname
 
@@ -571,11 +571,15 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         """
         # Parsing file
         outputs_lines: list[str] = []
-        with open(f"{self.nb_folder}/{file_name}") as file:  # pylint: disable=unspecified-encoding
-            lines = file.readlines()
-            outputs_lines.extend(line for line in lines if line.find(logger_output_start) != -1)
+        try:
+            with open(os.path.join(self.nb_folder, file_name), encoding="utf-8") as file:
+                lines = file.readlines()
+                outputs_lines.extend(line for line in lines if line.find(logger_output_start) != -1)
+        except Exception as exc:
+            logger.error("No previous execution found of notebook %s.", self.nb_path)
+            raise FileNotFoundError(f"No previous execution found of notebook {self.nb_path}.") from exc
 
-        # Check how many lines contain the outputs, to raise the corresponding errors:
+        # Check how many lines contain an output, to raise the corresponding errors:
         if len(outputs_lines) != 1:
             logger.error("No output or various outputs found in notebook %s.", self.nb_path)
             raise IncorrectCalibrationOutput(f"No output or various outputs found in notebook {self.nb_path}.")
@@ -600,13 +604,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         # In case something unexpected happened with the output we raise an error
         if len(logger_splitted) != 2:
-            logger.error(
-                "No output or various outputs found, check that the output cell is correctly implemented once, in notebook %s.",
-                input_path,
-            )
-            raise IncorrectCalibrationOutput(
-                f"No output or various outputs found, check that the output cell is correctly implemented once, in notebook {input_path}."
-            )
+            logger.error("No output or various outputs found in notebook %s.", input_path)
+            raise IncorrectCalibrationOutput(f"No output or various outputs found in notebook {input_path}.")
 
         # This next line is for taking into account other encodings, where special characters get `\\` in front.
         clean_data = logger_splitted[1].split("\\n")[0].replace('\\"', '"')
@@ -631,7 +630,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             string_to_add (str): The string to add in the end of the name.
             timestamp (float): Timestamp to identify the desired notebook execution.
         """
-        path = f"{self.nb_folder}/{self.node_id}"
+        path = os.path.join(self.nb_folder, self.node_id)
         timestamp_path = self._create_notebook_datetime_path(path, timestamp).split(".ipynb")[0]
 
         os.rename(f"{timestamp_path}.ipynb", f"{timestamp_path}_{string_to_add}.ipynb")
