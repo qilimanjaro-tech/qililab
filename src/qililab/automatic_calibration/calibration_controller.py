@@ -195,10 +195,7 @@ class CalibrationController:
                 print(f"diagnosing {n.node_id} from maintain({node.node_id})!!!\n")
                 self.diagnose(n)
 
-        # calibrate
         self.calibrate(node)
-
-        # GALADRIEL: uncomment when platform is connected
         self._update_parameters(node)
 
     def diagnose(self, node: CalibrationNode) -> bool:
@@ -218,8 +215,6 @@ class CalibrationController:
             bool: True is there have been recalibrations, False otherwise. The return value is only used by recursive calls.
         """
         print(f"diagnosing {node.node_id}!!!\n")
-
-        # check_data
         result = self.check_data(node)
 
         # in spec case
@@ -238,10 +233,7 @@ class CalibrationController:
 
         # calibrate
         self.calibrate(node)
-
-        # GALADRIEL: uncomment when platform is connected
         self._update_parameters(node)
-
         print(f"{node.node_id} diagnose: True\n")
         return True
 
@@ -262,12 +254,6 @@ class CalibrationController:
             bool: True if the parameter's drift timeout has not yet expired, False otherwise.
         """
         print(f'Checking state of node "{node.node_id}"\n')
-
-        ### WE THINK WE CAN COMMENT THIS AND THE ALGORITHM WILL GO QUICKER, WITHOUT LOSSING ANYTHING !!!
-        ### SINCE EVERY TIME YOU CHECK_STATE YOU COME FROM THE PREVIOUS DEPENDENCES !!!
-        # Get dependencies status, all of the dependancies should return True.
-        # dependencies_status = [self.check_state(n) for n in self.dependents(node)]
-        # print(f"Dependencies status of {node.node_id}: {dependencies_status}\n")
 
         # Get the list of the dependencies that have been calibrated before this node, all of them should be True
         dependencies_timestamps_previous = [
@@ -305,6 +291,7 @@ class CalibrationController:
 
             See the source code for details on how these metrics are used to decide what string to return.
         """
+        # pylint: disable=protected-access
 
         print(f'Checking data of node "{node.node_id}"\n')
         timestamp = node.run_node(check=True)
@@ -333,19 +320,19 @@ class CalibrationController:
 
             if comparison_result <= node.in_spec_threshold:
                 print(f"check_data of {node.node_id}: in_spec!!!\n")
-                node._add_string_to_checked_nb_name("in_spec", timestamp)  # pylint: disable=protected-access
-                node._invert_output_and_previous_output()  # pylint: disable=protected-access
+                node._add_string_to_checked_nb_name("in_spec", timestamp)
+                node._invert_output_and_previous_output()
                 return "in_spec"
 
             if comparison_result <= node.bad_data_threshold:
                 print(f"check_data of {node.node_id}: out_of_spec!!!\n")
-                node._add_string_to_checked_nb_name("out_of_spec", timestamp)  # pylint: disable=protected-access
-                node._invert_output_and_previous_output()  # pylint: disable=protected-access
+                node._add_string_to_checked_nb_name("out_of_spec", timestamp)
+                node._invert_output_and_previous_output()
                 return "out_of_spec"
 
         print(f"check_data of {node.node_id}: bad_data!!!\n")
-        node._add_string_to_checked_nb_name("bad_data", timestamp)  # pylint: disable=protected-access
-        node._invert_output_and_previous_output()  # pylint: disable=protected-access
+        node._add_string_to_checked_nb_name("bad_data", timestamp)
+        node._invert_output_and_previous_output()
         return "bad_data"
 
     def calibrate(self, node: CalibrationNode) -> None:
@@ -476,15 +463,11 @@ class CalibrationController:
         Returns:
             bool: True if the timeout has expired, False otherwise.
         """
-        # Convert the timestamp and timeout to datetime objects
+        # Calculate the time that should have passed (timestamp + timeout duration), convert them to datetime objects:
         timestamp_dt = datetime.fromtimestamp(timestamp)
         timeout_duration = timedelta(seconds=timeout)
-
-        # Get the current time
-        current_time = datetime.now()
-
-        # Calculate the time that should have passed (timestamp + timeout duration)
         timeout_time = timestamp_dt + timeout_duration
 
         # Check if the current time is greater than the timeout time
+        current_time = datetime.now()
         return current_time > timeout_time

@@ -354,6 +354,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         Exits:
             In case of a keyboard interruption or any exception during the execution of the notebook.
         """
+        # Create the input parameters for the notebook:)
         params: dict = (
             {"check": check}
             | {"number_of_random_datapoints": self.number_of_random_datapoints}
@@ -370,6 +371,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         output_path = self._create_notebook_datetime_path(self.nb_path, dirty=True)
         self.previous_output_parameters = self.output_parameters
 
+        # Execute notebook without problems:
         try:
             self.output_parameters = self._execute_notebook(self.nb_path, output_path, params)
             print("Platform output parameters:", self.output_parameters["platform_params"])
@@ -381,12 +383,13 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             os.rename(output_path, self._create_notebook_datetime_path(self.nb_path, timestamp))
             return timestamp
 
+        # When keyboard interrupt (Ctrl+C), generate error, and leave `_dirty`` in the name:
         except KeyboardInterrupt:
             logger.error("Interrupted automatic calibration notebook execution of %s", self.nb_path)
             return sys.exit()
 
+        # When notebook execution fails, generate error folder and move there the notebook:
         except Exception as e:  # pylint: disable = broad-exception-caught
-            # Generate error folder and move there the notebook
             timestamp = datetime.timestamp(datetime.now())
             error_path = self._create_notebook_datetime_path(self.nb_path, timestamp, error=True)
             os.rename(output_path, error_path)
@@ -474,6 +477,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         if error:
             os.makedirs(f"{folder_path}/error_executions", exist_ok=True)
             return f"{folder_path}/error_executions/{name}_{now_path}_error.ipynb"
+
         # return the string where saved
         return f"{folder_path}/{name}_{now_path}.ipynb"
 
@@ -491,11 +495,10 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         Returns:
             tuple[str, str]: Node name and folder, separated, and without the ``.ipynb`` extension.
         """
-        # Remove .ipynb from end if it has:
+        # Remove .ipynb from end if it has one:
         shorted_path = original_path.split(".ipynb")[0]
 
-        # remove anything after the last "/":
-        folder_path_list = shorted_path.split("/")
+        # Create qubit_string to add:
         if isinstance(self.qubit_index, int):
             qubit_str = f"_q{str(self.qubit_index)}"
         elif isinstance(self.qubit_index, list):
@@ -505,18 +508,21 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         else:
             qubit_str = ""
 
+        # separate the string with the last "/":
+        folder_path_list = shorted_path.split("/")
         name = folder_path_list.pop() + qubit_str
         folder_path = "/".join(folder_path_list)
 
         return name, folder_path
 
     def get_last_calibrated_timestamp(self) -> float | None:
-        """Gets the last executed timestamp if there exist any previous execution of the same notebook.
+        """Gets the last calibration timestamp if there exist any previous execution of the same notebook.
+
+        Searches the directory for self.node_id+“_calibrated” and gets the latest creation time.
 
         Returns:
             float: The last execution timestamp if exists, None otherwise.
         """
-        # get all elements in that folder starting with self.node_id+“_” and get the last modified one file name, convert string into datetime
         last_modified_file_name = self._find_last_executed_calibration()
         return (
             os.path.getmtime(f"{self.nb_folder}/{last_modified_file_name}")
@@ -526,6 +532,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
     def get_last_calibrated_output_parameters(self) -> dict | None:
         """Gets the last output of the previous calibration execution of the same notebook if there exist any.
+
+        Searches the directory for self.node_id+“_calibrated” and gets the outputs from the latest creation time one.
 
         Returns:
             dict: The last calibration execution output if exists, None otherwise.
