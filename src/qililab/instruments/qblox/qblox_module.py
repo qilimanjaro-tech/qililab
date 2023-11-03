@@ -316,11 +316,7 @@ class QbloxModule(AWG):
 
     @Instrument.CheckDeviceInitialized
     def setup(  # pylint: disable=too-many-branches, too-many-return-statements
-        self,
-        parameter: Parameter,
-        value: float | str | bool,
-        channel_id: int | None = None,
-        port_id: str | None = None,
+        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
     ):
         """Set Qblox instrument calibration settings."""
         if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:

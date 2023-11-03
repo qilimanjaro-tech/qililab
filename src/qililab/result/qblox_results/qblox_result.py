@@ -160,6 +160,8 @@ class QbloxResult(Result):
         Returns:
             np.ndarray: An array containing the measured samples (0 or 1).
         """
+        if sum(result["measurement"] for result in self.qblox_raw_results) != 0:
+            raise NotImplementedError("Samples for multiple measurements on a single qubit are not supported")
         return self.qblox_bins_acquisitions.samples()
 
     @property
@@ -208,11 +210,3 @@ class QbloxResult(Result):
             QBLOXRESULT.INTEGRATION_LENGTHS: self.integration_lengths,
             QBLOXRESULT.QBLOX_RAW_RESULTS: self.qblox_raw_results,
         }
-
-    def array_order(self) -> list[str]:
-        """Helper function returning the order (#qubit, #measurement) for binned results
-
-        Returns:
-            list[str]: _description_
-        """
-        return [f"(Q {result['qubit']}, M {result['measurement']})" for result in self.qblox_raw_results]

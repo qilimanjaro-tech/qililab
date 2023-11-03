@@ -36,14 +36,10 @@ class QbloxBinsAcquisitions(Acquisitions):  # pylint: disable=abstract-method
 
     def __post_init__(self):
         """Create acquisitions"""
-        # TODO: make sure this works
-        # self._acquisitions = [
-        #     self._build_bin_acquisition(bins_data=bins_data, integration_length=self.integration_lengths[sequencer_id])
-        #     for sequencer_id, bins_data in enumerate(self.bins)
-        # ]
+
         self._acquisitions = [
-            self._build_bin_acquisition(bins_data=bins_data, integration_length=self.integration_lengths[0])
-            for bins_data in self.bins
+            self._build_bin_acquisition(bins_data=bins_data, integration_length=self.integration_lengths[sequencer_id])
+            for sequencer_id, bins_data in enumerate(self.bins)
         ]
 
         self.data_dataframe_indices = set().union(*[acq.data_dataframe_indices for acq in self._acquisitions])

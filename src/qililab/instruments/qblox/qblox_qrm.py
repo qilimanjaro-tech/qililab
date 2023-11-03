@@ -175,10 +175,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 # compiled sequences
                 sequence_uploaded = self.sequences[sequencer.identifier][1]
                 if sequence_uploaded:
-                    # self.device.delete_acquisition_data(sequencer=sequencer.identifier, name="default")
-                    self.device.delete_acquisition_data(
-                        sequencer=sequencer.identifier, all=True
-                    )  # TODO: we were already deleting all acq data for the sequencer with the line above
+                    self.device.delete_acquisition_data(sequencer=sequencer.identifier, all=True)
                 compiled_sequences.append(self.sequences[sequencer.identifier][0])
         return compiled_sequences
 
@@ -301,10 +298,10 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                     acquisitions["qubit"] = int(qubit_measure[0])
                     acquisitions["measurement"] = int(qubit_measure[1])
                     results.append(acquisitions)
+                    integration_lengths.append(sequencer.used_integration_length)
 
                 # results.append(self.device.get_acquisitions(sequencer=sequencer.identifier)["default"]["acquisition"])
                 self.device.sequencers[sequencer.identifier].sync_en(False)
-                integration_lengths.append(sequencer.used_integration_length)
 
         return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
 
@@ -373,11 +370,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
 
     @Instrument.CheckDeviceInitialized
     def setup(
-        self,
-        parameter: Parameter,
-        value: float | str | bool,
-        channel_id: int | None = None,
-        port_id: str | None = None,
+        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
     ):
         """set a specific parameter to the instrument"""
         try:
