@@ -492,7 +492,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         qubit_str = (
             f"_q{self.qubit_index}"
             if isinstance(self.qubit_index, int)
-            else "".join(f"_q{q}" for q in self.qubit_index)
+            else "_" + "".join(f"q{q}" for q in self.qubit_index)
             if isinstance(self.qubit_index, list)
             else ""
         )
