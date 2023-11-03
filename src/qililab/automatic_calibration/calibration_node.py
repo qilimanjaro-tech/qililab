@@ -576,19 +576,9 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             outputs_lines.extend(line for line in lines if line.find(logger_output_start) != -1)
 
         # Check how many lines contain the outputs, to raise the corresponding errors:
-        if not outputs_lines:
-            logger.error(
-                "Aborting execution. No output found, check the automatic-calibration output cell is implemented in %s",
-                self.nb_path,
-            )
-            raise IncorrectCalibrationOutput(f"No output found, check automatic-calibration notebook in {self.nb_path}")
-
-        if len(outputs_lines) > 1:
-            logger.error(
-                "Aborting execution. More than one output found, please output the results once in %s",
-                self.nb_path,
-            )
-            raise IncorrectCalibrationOutput(f"More than one output found in {self.nb_path}")
+        if len(outputs_lines) != 1:
+            logger.error("No output or various outputs found in notebook %s.", self.nb_path)
+            raise IncorrectCalibrationOutput(f"No output or various outputs found in notebook {self.nb_path}.")
 
         # When only one line of outputs, use that one:
         return self._from_logger_string_to_output_dict(outputs_lines[0], self.nb_path)
@@ -609,18 +599,14 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         logger_splitted = logger_string.split(logger_output_start)
 
         # In case something unexpected happened with the output we raise an error
-        if len(logger_splitted) < 2:
+        if len(logger_splitted) != 2:
             logger.error(
-                "Aborting execution. No output found, check the automatic-calibration output cell is implemented in %s",
+                "No output or various outputs found, check that the output cell is correctly implemented once, in notebook %s.",
                 input_path,
             )
-            raise IncorrectCalibrationOutput(f"No output found, check automatic-calibration notebook in {input_path}")
-        if len(logger_splitted) > 2:
-            logger.error(
-                "Aborting execution. More than one output found, please output the results once in %s",
-                input_path,
+            raise IncorrectCalibrationOutput(
+                f"No output or various outputs found, check that the output cell is correctly implemented once, in notebook {input_path}."
             )
-            raise IncorrectCalibrationOutput(f"More than one output found in {input_path}")
 
         # This next line is for taking into account other encodings, where special characters get `\\` in front.
         clean_data = logger_splitted[1].split("\\n")[0].replace('\\"', '"')
