@@ -15,7 +15,7 @@
 import hashlib
 import math
 from collections import deque
-from typing import Callable
+from typing import Any, Callable
 
 import numpy as np
 from qm import qua
@@ -74,6 +74,11 @@ class MeasurementInfo:  # pylint: disable=too-few-public-methods
 
 class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
     """A class for compiling QProgram to Quantum Machines hardware."""
+
+    FREQUENCY_COEFF = 1e3
+    PHASE_COEFF = 360.0
+    VOLTAGE_COEFF = 2
+    MINIMUM_TIME = 4
 
     def __init__(self):
         # Handlers to map each operation to a corresponding handler function
@@ -230,11 +235,11 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
                 else loop.values
             )
             if loop.variable.domain is Domain.Phase:
-                values = values / 360.0
+                values = values / self.PHASE_COEFF
             if loop.variable.domain is Domain.Frequency:
-                values = (values * 1e3).astype(int)
+                values = (values * self.FREQUENCY_COEFF).astype(int)
             if loop.variable.domain is Domain.Time:
-                values = np.maximum(values, 4).astype(int)
+                values = np.maximum(values, self.MINIMUM_TIME).astype(int)
 
             variables.append(qua_variable)
             loops.append(values)
@@ -244,11 +249,15 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
         qua_variable = self._qprogram_to_qua_variables[element.variable]
         start, stop, step = element.start, element.stop, element.step
         if element.variable.domain is Domain.Phase:
-            start, stop, step = start / 360.0, stop / 360.0, step / 360.0
+            start, stop, step = start / self.PHASE_COEFF, stop / self.PHASE_COEFF, step / self.PHASE_COEFF
         if element.variable.domain is Domain.Frequency:
-            start, stop, step = int(start * 1e3), int(stop * 1e3), int(step * 1e3)
+            start, stop, step = (
+                int(start * self.FREQUENCY_COEFF),
+                int(stop * self.FREQUENCY_COEFF),
+                int(step * self.FREQUENCY_COEFF),
+            )
         if element.variable.domain is Domain.Time:
-            start = max(start, 4)
+            start = max(start, self.MINIMUM_TIME)
 
         to_positive = stop >= start
         if to_positive:
@@ -259,11 +268,11 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
         qua_variable = self._qprogram_to_qua_variables[element.variable]
         values = element.values
         if element.variable.domain is Domain.Phase:
-            values = values / 360.0
+            values = values / self.PHASE_COEFF
         if element.variable.domain is Domain.Frequency:
-            values = (values * 1e3).astype(int)
+            values = (values * self.FREQUENCY_COEFF).astype(int)
         if element.variable.domain is Domain.Time:
-            values = np.maximum(values, 4).astype(int)
+            values = np.maximum(values, self.MINIMUM_TIME).astype(int)
         return qua.for_each_(qua_variable, values)
 
     def _handle_average(self, element: Average):
@@ -275,7 +284,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
         frequency = (
             self._qprogram_to_qua_variables[element.frequency]
             if isinstance(element.frequency, Variable)
-            else element.frequency * 1e3
+            else element.frequency * self.FREQUENCY_COEFF
         )
         qua.update_frequency(element=bus, new_frequency=frequency, units="mHz")
 
@@ -284,7 +293,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
         phase = (
             self._qprogram_to_qua_variables[element.phase]
             if isinstance(element.phase, Variable)
-            else element.phase / 360.0
+            else element.phase / self.FREQUENCY_COEFF
         )
         qua.frame_rotation_2pi(phase, bus)
 
@@ -306,7 +315,11 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
         waveform_variables = element.get_waveform_variables()
         duration = waveform_I.get_duration()
 
-        gain = qua.amp(self._buses[bus].current_gain * 2) if self._buses[bus].current_gain is not None else None
+        gain = (
+            qua.amp(self._buses[bus].current_gain * self.VOLTAGE_COEFF)
+            if self._buses[bus].current_gain is not None
+            else None
+        )
 
         if not waveform_variables:
             waveform_I_name = self.__add_waveform_to_configuration(waveform_I)
@@ -325,7 +338,11 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
         waveform_I_name = self.__add_waveform_to_configuration(waveform_I)
         waveform_Q_name = self.__add_waveform_to_configuration(waveform_Q)
 
-        gain = qua.amp(self._buses[bus].current_gain * 2) if self._buses[bus].current_gain is not None else None
+        gain = (
+            qua.amp(self._buses[bus].current_gain * self.VOLTAGE_COEFF)
+            if self._buses[bus].current_gain is not None
+            else None
+        )
 
         variable_I, variable_Q, stream_I, stream_Q, stream_raw_adc = None, None, None, None, None
 
@@ -448,7 +465,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
         duration = (
             self._qprogram_to_qua_variables[element.duration]
             if isinstance(element.duration, Variable)
-            else max(element.duration, 4)
+            else max(element.duration, self.MINIMUM_TIME)
         )
         qua.wait(duration, bus)
 
@@ -535,10 +552,10 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def __waveform_to_config(waveform: Waveform):
         if isinstance(waveform, Square):
-            amplitude = waveform.amplitude / 2
+            amplitude = waveform.amplitude / QuantumMachinesCompiler.VOLTAGE_COEFF
             return {"type": "constant", "sample": amplitude}
 
-        envelope = waveform.envelope() / 2
+        envelope = waveform.envelope() / QuantumMachinesCompiler.VOLTAGE_COEFF
         return {"type": "arbitrary", "samples": envelope.tolist()}
 
     @staticmethod
