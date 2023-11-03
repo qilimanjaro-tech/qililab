@@ -15,7 +15,7 @@
 import hashlib
 import math
 from collections import deque
-from typing import Any, Callable
+from typing import Callable
 
 import numpy as np
 from qm import qua
