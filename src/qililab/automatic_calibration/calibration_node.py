@@ -347,7 +347,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             In case of a keyboard interruption or any exception during the execution of the notebook.
         """
         # Create the input parameters for the notebook:)
-        params = {
+        params: dict = {
             "check": check,
             "number_of_random_datapoints": self.number_of_random_datapoints,
             "qubit": self.qubit_index,
