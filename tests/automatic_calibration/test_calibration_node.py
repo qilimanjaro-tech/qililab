@@ -625,9 +625,9 @@ class TestPrivateMethodsFromCalibrationNode:
         filename_expected = "tmp_test_foobar_q0_calibrated.ipynb"
 
         for test_filename in test_filenames:
-            f = open(f"{methods_node.nb_folder}/{test_filename}", "w")
+            f = open(os.path.join(methods_node.nb_folder, test_filename), "w")
             f.close()
-        f = open(f"{methods_node.nb_folder}/{filename_expected}", "w")
+        f = open(os.path.join(methods_node.nb_folder, filename_expected), "w")
         f.close()
 
         test_filename = methods_node._find_last_executed_calibration()
@@ -635,8 +635,8 @@ class TestPrivateMethodsFromCalibrationNode:
         assert filename_expected == test_filename
 
         for test_filename in test_filenames:
-            os.remove(f"{methods_node.nb_folder}/{test_filename}")
-        os.remove(f"{methods_node.nb_folder}/{filename_expected}")
+            os.remove(os.path.join(methods_node.nb_folder, test_filename))
+        os.remove(os.path.join(methods_node.nb_folder, filename_expected))
 
     def test_find_last_executed_calibration_does_not_find_file(self, methods_node: CalibrationNode):
         """Test ``find_last_executed_calibration()`` works properly, when there is nothing to find."""
@@ -649,7 +649,7 @@ class TestPrivateMethodsFromCalibrationNode:
         ]
 
         for test_filename in test_filenames:
-            f = open(f"{methods_node.nb_folder}/{test_filename}", "w")
+            f = open(os.path.join(methods_node.nb_folder, test_filename), "w")
             f.close()
 
         test_filename = methods_node._find_last_executed_calibration()
@@ -657,7 +657,7 @@ class TestPrivateMethodsFromCalibrationNode:
         assert test_filename is None
 
         for test_filename in test_filenames:
-            os.remove(f"{methods_node.nb_folder}/{test_filename}")
+            os.remove(os.path.join(methods_node.nb_folder, test_filename))
 
     #############################################
     ### TEST PARSE OUTPUT FROM EXECUTION FILE ###
@@ -665,6 +665,7 @@ class TestPrivateMethodsFromCalibrationNode:
     @pytest.mark.parametrize(
         "type_content, raw_file_contents",
         [
+            ("no_file", ""),
             (
                 "good",
                 'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_params": [["bus_alias", "param_name", 1]]}\n',
@@ -692,8 +693,21 @@ class TestPrivateMethodsFromCalibrationNode:
         """Test that ``parse_output_from_execution_file`` works correctly."""
         # Dumping the raw string of the expected dictionary on a temporary file
         filename = "tmp_test_file.ipynb"
-        with open(f"{methods_node.nb_folder}/{filename}", "w") as file:
-            file.write(raw_file_contents)
+        if type_content != "no_file":
+            with open(os.path.join(methods_node.nb_folder, filename), "w", encoding="utf-8") as file:
+                file.write(raw_file_contents)
+
+        else:
+            with pytest.raises(
+                FileNotFoundError,
+                match=f"No previous execution found of notebook {methods_node.nb_path}.",
+            ):
+                methods_node._parse_output_from_execution_file(filename)
+
+            mocked_logger.error.assert_called_with(
+                "No previous execution found of notebook %s.",
+                methods_node.nb_path,
+            )
 
         if type_content == "good":
             # building a fixed dictionary for the test
@@ -727,7 +741,8 @@ class TestPrivateMethodsFromCalibrationNode:
                 methods_node.nb_path,
             )
 
-        os.remove(f"{methods_node.nb_folder}/{filename}")
+        if type_content != "no_file":
+            os.remove(os.path.join(methods_node.nb_folder, filename))
 
     ##########################################
     ### TEST ADD STRING TO CHECKED NB NAME ###
@@ -735,7 +750,7 @@ class TestPrivateMethodsFromCalibrationNode:
     def test_add_string_to_checked_nb_name(self, methods_node: CalibrationNode):
         """Test that ``add_string_to_checked_nb_name()`` works properly."""
         with patch("qililab.automatic_calibration.calibration_node.os.rename") as mocked_rename:
-            path = f"{methods_node.nb_folder}/{methods_node.node_id}"
+            path = os.path.join(methods_node.nb_folder, methods_node.node_id)
             timestamp_path = methods_node._create_notebook_datetime_path(path, 0).split(".ipynb")[0]
             string_to_add = "test_succesful"
             methods_node._add_string_to_checked_nb_name(string_to_add, 0)
