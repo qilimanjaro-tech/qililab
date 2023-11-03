@@ -377,7 +377,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                 print("Fidelities:", self.output_parameters["fidelities"])
 
             timestamp = datetime.timestamp(datetime.now())
-            os.rename(output_path, self._create_notebook_datetime_path(self.nb_path, timestamp))
+            new_output_path = self._create_notebook_datetime_path(self.nb_path, timestamp)
+            os.rename(output_path, new_output_path)
             return timestamp
 
         # When keyboard interrupt (Ctrl+C), generate error, and leave `_dirty`` in the name:
