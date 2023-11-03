@@ -16,7 +16,6 @@
 import json
 import logging
 import os
-import sys
 from datetime import datetime
 from io import StringIO
 from typing import Callable
