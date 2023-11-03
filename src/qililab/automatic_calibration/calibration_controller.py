@@ -93,8 +93,14 @@ class CalibrationController:
         self.platform: Platform = build_platform(runcard)
         """The initialized platform, where the experiments will be run."""
 
-    def run_automatic_calibration(self) -> dict[str, dict]:
+    def run_automatic_calibration(self, force_maintain_timeout_ratio: float = 0.0) -> dict[str, dict]:
         """Run the automatic calibration procedure and retrieve the final set parameters and achieved fidelities dictionaries.
+        This method performs a call to maintain to all nodes with no dependants (nodes with zero in-degree in the calibration grah).
+        The calls to mainain can skip the `check_status` method if they are forced, the flag `force_maintain` is computed based on the conditions of mentioned nodes,
+        the computation of this condition is performed by the method CalibrationController._get_forced_maintain_condition().
+
+        Args:
+            force_maintain_timeout_ratio (float, optional): Argument needed to compute the force maintain condition. Defaults to 0.0.
 
         Returns:
             dict[str, dict]: Dictionary for the last set parameters and the last achieved fidelities. It contains two dictionaries in the keys:
@@ -119,7 +125,8 @@ class CalibrationController:
         highest_level_nodes = [node for node, in_degree in self.calibration_graph.in_degree() if in_degree == 0]
 
         for n in highest_level_nodes:
-            self.maintain(self.node_sequence[n])
+            force_mantain = CalibrationController._get_forced_maintain_condition(n, force_maintain_timeout_ratio)
+            self.maintain(self.node_sequence[n], force_mantain=force_mantain)
 
         print(
             "#############################################\n"
@@ -129,7 +136,7 @@ class CalibrationController:
 
         return {"set_parameters": self.get_last_set_parameters(), "fidelities": self.get_last_fidelities()}
 
-    def maintain(self, node: CalibrationNode) -> None:
+    def maintain(self, node: CalibrationNode, force_mantain: bool = False) -> None:
         """This is primary interface for our calibration procedure and it's the highest level algorithm.
         We call maintain on the node that we want in spec, and maintain will call all the subroutines necessary to do that.
         We design 'maintain' to start actually acquiring data (by calling 'check_data' or 'calibrate') in the optimal location
@@ -140,6 +147,8 @@ class CalibrationController:
         Args:
             node (CalibrationNode): The node where we want to start the algorithm. At the beginning of the calibration procedure,
                                 this node will be the highest level node in the calibration graph.
+            force_mantain (bool, optional): Flag to force the method to not considerate `check_status` output value,
+                                meaning it allways perform a call to `check_data`. Default to False.
         """
         print(f"maintaining {node.node_id}!!!\n")
         # Recursion over all the nodes that the current node depends on.
@@ -147,7 +156,8 @@ class CalibrationController:
             print(f"maintaining {n.node_id} from maintain({node.node_id})!!!\n")
             self.maintain(n)
 
-        if self.check_state(node):
+        node_status = self.check_state(node)
+        if not force_mantain and node_status:
             return
 
         result = self.check_data(node)
@@ -158,13 +168,18 @@ class CalibrationController:
                 print(f"diagnosing {n.node_id} from maintain({node.node_id})!!!\n")
                 self.diagnose(n)
 
+        # implicit out_spec case
+        if force_mantain and node_status:
+            logger.info(
+                "Force maintaining node %s. `Check satus` has passed but the real state of the node was not `in_spec', perhaps drift timeouts shall be updated.",
+                node.node_id,
+            )
+
         # calibrate
         self.calibrate(node)
-
-        # GALADRIEL: uncomment when platform is connected
         self._update_parameters(node)
 
-    def diagnose(self, node: CalibrationNode) -> bool:
+    def diagnose(self, node: CalibrationNode) -> None:
         """This is a method called by `maintain` in the special case that its call of `check_data` finds bad data.
         `maintain` assumes that our knowledge of the state of the system matches the actual state of the
         system: if we knew a node would return bad data, we wouldn't bother running experiments on it.
@@ -180,35 +195,18 @@ class CalibrationController:
         """
         print(f"diagnosing {node.node_id}!!!\n")
 
-        # check_data
-        result = self.check_data(node)
-
         # in spec case
-        if result == "in_spec":
-            return False
+        if self.check_data(node) == "in_spec":
+            return
 
-        # bad data case
-        recalibrated = []
-        if result == "bad_data":
-            recalibrated = [self.diagnose(n) for n in self._dependents(node)]
-            print(f"Dependencies diagnoses of {node.node_id}: {recalibrated}\n")
-        # If not empty and only filled with False's (not any True).
-        if recalibrated != [] and not any(recalibrated):
-            print(f"{node.node_id} diagnose: False\n")
-            return False
-        if recalibrated == []:
-            logger.warning(
-                f"No nodes 'out_specs' encountered in the branch of dependants for node {node.node_id} when expected one, it is possible some ajustments on the thresholds of dependant nodes would be needed for a better classification. A root node was classified as 'bad_data' when should have been 'out_spec'"
-            )
+        # bad_data/out_spec case
+        for n in self._dependents(node):
+            self.diagnose(n)
 
         # calibrate
         self.calibrate(node)
-
-        # GALADRIEL: uncomment when platform is connected
         self._update_parameters(node)
-
         print(f"{node.node_id} diagnose: True\n")
-        return True
 
     def check_state(self, node: CalibrationNode) -> bool:
         """
@@ -447,3 +445,19 @@ class CalibrationController:
 
         # Check if the current time is greater than the timeout time
         return current_time > timeout_time
+
+    @staticmethod
+    def _get_forced_maintain_condition(node: CalibrationNode, ratio: float = 0.0) -> bool:
+        """Method to return if a Calibration Node should be force maintained or not.
+        The condition checks if the time trancurred from the last calibration is greater than a ratio of the drift timeout of the node.
+
+        Args:
+            node (CalibrationNode): Calibration Node to get the the forced maintain condition
+            ratio(flat, optional): Ratio used for the condition. Default to 0.0.
+
+        Returns:
+            bool: Returns True if the condition is met. Otherwise returns False.
+        """
+        comp = node.drift_timeout * ratio if ratio != 0 else 600
+        now = datetime.timestamp(datetime.now())
+        return now - node.previous_timestamp > comp if node.previous_timestamp is not None else False
