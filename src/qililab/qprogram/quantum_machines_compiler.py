@@ -157,18 +157,17 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
             traverse(self._qprogram.body)
             # Stream Processing
             with qua.stream_processing():
-                result_handles = self._process_streams()
+                measurements = self._process_measurements()
 
         # Return a dictionary with bus names as keys and the compiled Sequence as values.
-        return qua_program, self._configuration, result_handles
+        return qua_program, self._configuration, measurements
 
-    def _process_streams(self):
+    def _process_measurements(self):
         measurements = []
 
         for i, measurement_compilation_info in enumerate(self._measurements):
             measurement = MeasurementInfo()
             if (stream_I := measurement_compilation_info.stream_I) is not None:
-                stream_I = measurement_compilation_info.stream_I
                 for loop_iteration in measurement_compilation_info.loops_iterations:
                     stream_I = stream_I.buffer(loop_iteration)
                 if measurement_compilation_info.average:
@@ -293,7 +292,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
         phase = (
             self._qprogram_to_qua_variables[element.phase]
             if isinstance(element.phase, Variable)
-            else element.phase / self.FREQUENCY_COEFF
+            else element.phase / self.PHASE_COEFF
         )
         qua.frame_rotation_2pi(phase, bus)
 
