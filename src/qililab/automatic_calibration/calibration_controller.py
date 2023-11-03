@@ -54,11 +54,8 @@ class CalibrationController:
 
         .. code-block:: python
 
-            personalized_sweep_interval = {
-                "start": 10,
-                "stop": 50,
-                "step": 2,
-            }
+            import numpy as np
+            sweep_interval = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
 
             # GRAPH CREATION AND NODE MAPPING (key = name in graph, value = node object):
             nodes = {}
@@ -83,7 +80,7 @@ class CalibrationController:
                     bad_data_threshold=4,
                     comparison_model=norm_root_mean_sqrt_error,
                     drift_timeout=1.0,
-                    sweep_interval=personalized_sweep_interval,
+                    sweep_interval=sweep_interval,
                 )
                 nodes[second.node_id] = second
 

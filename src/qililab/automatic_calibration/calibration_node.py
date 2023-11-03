@@ -104,7 +104,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         drift_timeout (float): A durations in seconds, representing an estimate of how long it takes for the parameter to drift. During that time the parameters of
             this node should be considered calibrated, without the need to check the data.
         input_parameters (dict | None, optional): Kwargs for input parameters, to pass and then be interpreted by the notebook. Defaults to None.
-        sweep_interval (dict | None, optional): Dictionary with 3 keys describing the sweep values of the experiment. The keys are: ``start``, ``stop`` and ``step``.
+        sweep_interval (np.ndarray | None, optional): Dictionary with 3 keys describing the sweep values of the experiment. The keys are: ``start``, ``stop`` and ``step``.
             The sweep values are all the numbers between 'start' and 'stop', separated from each other by the distance 'step'. Defaults to None, which means the one
             specified in the notebook will be used.
         number_of_random_datapoints (int, optional): The number of points, chosen randomly within the sweep interval, to check with ``check_data()`` if the experiment
@@ -116,11 +116,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         .. code-block:: python
 
-            personalized_sweep_interval = {
-                "start": 10,
-                "stop": 50,
-                "step": 2,
-            }
+            import numpy as np
+            sweep_interval = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
 
             # GRAPH CREATION AND NODE MAPPING (key = name in graph, value = node object):
             nodes = {}
@@ -145,7 +142,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                     bad_data_threshold=4,
                     comparison_model=norm_root_mean_sqrt_error,
                     drift_timeout=1.0,
-                    sweep_interval=personalized_sweep_interval,
+                    sweep_interval=sweep_interval,
                 )
                 nodes[second.node_id] = second
 
@@ -163,15 +160,15 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
             .. code-block:: python
 
+                import numpy as np
+
                 # ``check_data()`` parameters:
                 check = False
                 number_of_random_datapoints = 10
                 qubit=0
 
                 # Sweep interval:
-                start = 0
-                stop = 19
-                step = 1
+                sweep_interval = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
 
                 # Extra parameters for this concrete notebook:
                 param1=0
