@@ -376,21 +376,23 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             return timestamp
 
         # When keyboard interrupt (Ctrl+C), generate error, and leave `_dirty`` in the name:
-        except KeyboardInterrupt:
+        except KeyboardInterrupt as exc:
             logger.error("Interrupted automatic calibration notebook execution of %s", self.nb_path)
-            raise
+            raise KeyboardInterrupt(f"Interrupted automatic calibration notebook execution of {self.nb_path}") from exc
 
         # When notebook execution fails, generate error folder and move there the notebook:
-        except Exception as e:  # pylint: disable = broad-exception-caught
+        except Exception as exc:  # pylint: disable = broad-exception-caught
             timestamp = datetime.timestamp(datetime.now())
             error_path = self._create_notebook_datetime_path(self.nb_path, timestamp, error=True)
             os.rename(output_path, error_path)
             logger.error(
                 "Aborting execution. Exception %s during automatic calibration notebook execution, trace of the error can be found in %s",
-                str(e),
+                str(exc),
                 error_path,
             )
-            raise
+            raise Exception(
+                f"Aborting execution. Exception {str(exc)} during automatic calibration notebook execution, trace of the error can be found in {error_path}"
+            ) from exc  # pylint: disable = broad-exception-raised
 
     @staticmethod
     def _build_notebooks_logger_stream() -> StringIO:

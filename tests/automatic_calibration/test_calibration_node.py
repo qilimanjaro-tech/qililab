@@ -313,7 +313,10 @@ class TestPublicMethodsFromCalibrationNode:
     ):
         """Test that run_node works properly when a keyboard interrupt is raised."""
         mock_execute.side_effect = KeyboardInterrupt()
-        with patch("qililab.automatic_calibration.calibration_node.sys.exit") as mocked_exit:
+        with pytest.raises(
+            KeyboardInterrupt,
+            match=f"Interrupted automatic calibration notebook execution of {methods_node.nb_path}",
+        ):
             methods_node.sweep_interval = sweep_interval
             methods_node.input_parameters = input_parameters
             methods_node.run_node(check)
@@ -340,7 +343,6 @@ class TestPublicMethodsFromCalibrationNode:
         mock_os.assert_not_called()
 
         mock_logger.called_with("Interrupted automatic calibration notebook execution of %s", methods_node.nb_path)
-        mocked_exit.assert_called_once_with()
 
     @pytest.mark.parametrize(
         "check, sweep_interval, input_parameters",
@@ -375,7 +377,7 @@ class TestPublicMethodsFromCalibrationNode:
     ):
         """Test that run_node works properly when an exception is raised."""
         mock_execute.side_effect = ValueError("Test error")
-        with patch("qililab.automatic_calibration.calibration_node.sys.exit") as mocked_exit:
+        with pytest.raises(Exception):
             methods_node.sweep_interval = sweep_interval
             methods_node.input_parameters = input_parameters
             methods_node.run_node(check)
@@ -406,7 +408,6 @@ class TestPublicMethodsFromCalibrationNode:
             "Test error",
             "error_path/foobar_error.ipynb",
         )
-        mocked_exit.assert_called_once_with()
 
     ##########################################
     ### TEST GET LAST CALIBRATED TIMESTAMP ###
@@ -478,49 +479,32 @@ class TestPrivateMethodsFromCalibrationNode:
         )
         assert test_value == expected
 
-    @pytest.mark.parametrize("output", ["", "a", "RAND_INT:4320765720413 - OUTPUTS: {'check_parameters': {'a':2}}/n"])
-    @patch("qililab.automatic_calibration.calibration_node.pm.execute_notebook")
-    @patch("qililab.automatic_calibration.calibration_node.logger", autospec=True)
-    def test_execute_notebook_raises_no_output(self, mocked_logger, mocked_pm_exec, output, methods_node):
-        """Testing when no outputs received from ``execute_notebook()``."""
-        methods_node._stream.getvalue.return_value = output  # type: ignore [attr-defined]
-
-        with pytest.raises(
-            IncorrectCalibrationOutput,
-            match=f"No output found, check automatic-calibration notebook in {methods_node.nb_path}",
-        ):
-            methods_node._execute_notebook(methods_node.nb_path, "", {})
-
-        mocked_logger.error.assert_called_with(
-            "Aborting execution. No output found, check the automatic-calibration output cell is implemented in %s",
-            methods_node.nb_path,
-        )
-
-        mocked_pm_exec.assert_called_once_with(
-            methods_node.nb_path, "", {}, log_output=True, stdout_file=methods_node._stream
-        )
-
     @pytest.mark.parametrize(
         "output",
         [
+            "",
+            "a",
+            "RAND_INT:4320765720413 - OUTPUTS: {'check_parameters': {'a':2}}/n",
             "RAND_INT:47102512880765720413 - OUTPUTS: {} RAND_INT:47102512880765720413 - OUTPUTS: {}",
             "RAND_INT:47102512880765720413 - OUTPUTS: {'check_parameters': {'a':2}}RAND_INT:47102512880765720413 - OUTPUTS: {'check_parameters': {'a':2}}/n",
         ],
     )
     @patch("qililab.automatic_calibration.calibration_node.pm.execute_notebook")
     @patch("qililab.automatic_calibration.calibration_node.logger", autospec=True)
-    def test_execute_notebook_raises_more_than_one_output(self, mocked_logger, mocked_pm_exec, output, methods_node):
-        """Testing when more than one outputs are received from ``execute_notebook()`."""
+    def test_execute_notebook_raises_no_output_or_more_than_one_output(
+        self, mocked_logger, mocked_pm_exec, output, methods_node
+    ):
+        """Testing when no outputs or more than one outputs are received from ``execute_notebook()``."""
         methods_node._stream.getvalue.return_value = output  # type: ignore [attr-defined]
 
         with pytest.raises(
             IncorrectCalibrationOutput,
-            match=f"More than one output found in {methods_node.nb_path}",
+            match=f"No output or various outputs found in notebook {methods_node.nb_path}.",
         ):
             methods_node._execute_notebook(methods_node.nb_path, "", {})
 
         mocked_logger.error.assert_called_with(
-            "Aborting execution. More than one output found, please output the results once in %s",
+            "No output or various outputs found in notebook %s.",
             methods_node.nb_path,
         )
 
@@ -719,27 +703,15 @@ class TestPrivateMethodsFromCalibrationNode:
             test_dict = methods_node._parse_output_from_execution_file(filename)
             assert test_dict == expected_dict
 
-        if type_content == "none":
+        if type_content in ["none", "two"]:
             with pytest.raises(
                 IncorrectCalibrationOutput,
-                match=f"No output found, check automatic-calibration notebook in {methods_node.nb_path}",
+                match=f"No output or various outputs found in notebook {methods_node.nb_path}.",
             ):
                 methods_node._parse_output_from_execution_file(filename)
 
             mocked_logger.error.assert_called_with(
-                "Aborting execution. No output found, check the automatic-calibration output cell is implemented in %s",
-                methods_node.nb_path,
-            )
-
-        if type_content == "two":
-            with pytest.raises(
-                IncorrectCalibrationOutput,
-                match=f"More than one output found in {methods_node.nb_path}",
-            ):
-                methods_node._parse_output_from_execution_file(filename)
-
-            mocked_logger.error.assert_called_with(
-                "Aborting execution. More than one output found, please output the results once in %s",
+                "No output or various outputs found in notebook %s.",
                 methods_node.nb_path,
             )
 
