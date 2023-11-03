@@ -390,9 +390,10 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                 str(exc),
                 error_path,
             )
+            # pylint: disable = broad-exception-raised
             raise Exception(
                 f"Aborting execution. Exception {str(exc)} during automatic calibration notebook execution, trace of the error can be found in {error_path}"
-            ) from exc  # pylint: disable = broad-exception-raised
+            ) from exc
 
     @staticmethod
     def _build_notebooks_logger_stream() -> StringIO:
