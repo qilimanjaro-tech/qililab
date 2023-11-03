@@ -125,8 +125,10 @@ class CalibrationController:
                 - "fidelities"
             The two dictionaries have the following structure:
 
-
-            Fidelities dictionary (dict[str, tuple]): key being the fidelity name (str), and the value being a tuple that contains in this order:
+            Fidelities dictionary (dict[tuple, tuple]): with the dict key being a tuple containing:
+                - (str) the fidelity name.
+                - (int) the qubit where its been set.
+            and the dict value being a tuple that contains in this order:
                 - (float) value of fidelity.
                 - (str) node_id where this fidelity was computed.
                 - (datetime) updated time of the fidelity.
@@ -134,6 +136,7 @@ class CalibrationController:
             Set parameters dictionary (dict[tuple, tuple]): key being a tuple containing:
                 - (str) the the parameter name.
                 - (str) the bus alias where its been set.
+                - (int) the qubit where its been set.
             and the dict value being a tuple that contains in this order:
                 - (float) value of parameter.
                 - (str) node_id where this parameter was computed.
