@@ -104,9 +104,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         drift_timeout (float): A durations in seconds, representing an estimate of how long it takes for the parameter to drift. During that time the parameters of
             this node should be considered calibrated, without the need to check the data.
         input_parameters (dict | None, optional): Kwargs for input parameters, to pass and then be interpreted by the notebook. Defaults to None.
-        sweep_interval (np.ndarray | None, optional): Dictionary with 3 keys describing the sweep values of the experiment. The keys are: ``start``, ``stop`` and ``step``.
-            The sweep values are all the numbers between 'start' and 'stop', separated from each other by the distance 'step'. Defaults to None, which means the one
-            specified in the notebook will be used.
+        sweep_interval (np.ndarray | None, optional): Array describing the sweep values of the experiment. Defaults to None, which means the one specified in the notebook will be used.
         number_of_random_datapoints (int, optional): The number of points, chosen randomly within the sweep interval, to check with ``check_data()`` if the experiment
             gets the same outcome as during the last calibration that was run. Default value is 10.
 
@@ -117,7 +115,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         .. code-block:: python
 
             import numpy as np
-            sweep_interval = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
+            sweep_interval = np.arange(start=0, stop=19, step=1)
 
             # GRAPH CREATION AND NODE MAPPING (key = name in graph, value = node object):
             nodes = {}
@@ -168,7 +166,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                 qubit=0
 
                 # Sweep interval:
-                sweep_interval = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
+                sweep_interval = np.arange(start=0, stop=19, step=1)
 
                 # Extra parameters for this concrete notebook:
                 param1=0
@@ -278,10 +276,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         """Kwargs for input parameters, to pass and then be interpreted by the notebook. Defaults to None."""
 
         self.sweep_interval: np.ndarray | None = sweep_interval
-        """Dictionary with 3 keys describing the sweep values of the experiment. The keys are ``start``, ``stop`` and ``step``. The sweep values
-        are all the numbers between ``start`` and ``stop``, separated from each other by the distance ``step``. Defaults to None, which means the one
-        specified in the notebook will be used.
-        """
+        """Array describing the sweep values of the experiment. Defaults to None, which means the one specified in the notebook will be used."""
 
         self.number_of_random_datapoints: int = number_of_random_datapoints
         """The number of points, chosen randomly within the sweep interval, to check with ``check_data()`` if the experiment
@@ -355,7 +350,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         params = {
             "check": check,
             "number_of_random_datapoints": self.number_of_random_datapoints,
-            "qubit": self.qubit_index
+            "qubit": self.qubit_index,
         }
 
         if self.sweep_interval is not None:
@@ -493,24 +488,20 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         Returns:
             tuple[str, str]: Node name and folder, separated, and without the ``.ipynb`` extension.
         """
-        # Remove .ipynb from end if it has one:
-        shorted_path = original_path.split(".ipynb")[0]
-
         # Create qubit_string to add:
-        if isinstance(self.qubit_index, int):
-            qubit_str = f"_q{str(self.qubit_index)}"
-        elif isinstance(self.qubit_index, list):
-            qubit_str = "_"
-            for q in self.qubit_index:
-                qubit_str += f"q{str(q)}"
-        else:
-            qubit_str = ""
+        qubit_str = (
+            f"_q{self.qubit_index}"
+            if isinstance(self.qubit_index, int)
+            else "".join(f"_q{q}" for q in self.qubit_index)
+            if isinstance(self.qubit_index, list)
+            else ""
+        )
 
-        # separate the string with the last "/":
-        folder_path_list = shorted_path.split("/")
-        name = folder_path_list.pop() + qubit_str
-        folder_path = "/".join(folder_path_list)
+        # Remove .ipynb from end if it has one, and separate the folder and name with the last "/":
+        path_list = original_path.split(".ipynb")[0].split("/")
 
+        name = path_list.pop() + qubit_str
+        folder_path = "/".join(path_list)
         return name, folder_path
 
     def get_last_calibrated_timestamp(self) -> float | None:

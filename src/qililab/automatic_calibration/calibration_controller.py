@@ -55,7 +55,7 @@ class CalibrationController:
         .. code-block:: python
 
             import numpy as np
-            sweep_interval = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
+            sweep_interval = np.arange(start=0, stop=19, step=1)
 
             # GRAPH CREATION AND NODE MAPPING (key = name in graph, value = node object):
             nodes = {}
@@ -115,7 +115,7 @@ class CalibrationController:
         """The initialized platform, where the experiments will be run."""
 
     def run_automatic_calibration(self) -> dict[str, dict]:
-        """Run the full automatic calibration procedure and retrieve the final set parameters and achieved fidelities dictionaries.
+        """Runs the full automatic calibration procedure and retrieve the final set parameters and achieved fidelities dictionaries.
 
         This is primary interface for our calibration procedure and it's the highest level algorithm.
 
@@ -153,9 +153,8 @@ class CalibrationController:
         return {"set_parameters": self.get_last_set_parameters(), "fidelities": self.get_last_fidelities()}
 
     def maintain(self, node: CalibrationNode) -> None:
-        """Maintain should be called on the node that we want in spec, and maintain will call all the necessary subroutines to
-        achieve that. Maintain contains the main workflow for our calibration procedure, and it's what is called from
-        ``run_automatic_calibration()`` into each of the final nodes of our graph.
+        """Calls all the necessary subroutines in the respective dependencies to get a node in spec. Maintain contains the main workflow for
+        our calibration procedure, and it's what is called from ``run_automatic_calibration()`` into each of the final nodes of our graph.
 
         It is designed to start actually acquiring data (by calling 'check_data' or 'calibrate') in the optimal location
         of the graph, to avoid extra work: for example if node A depends on node B, before trying to calibrate node A we check
@@ -196,7 +195,9 @@ class CalibrationController:
         self._update_parameters(node)
 
     def diagnose(self, node: CalibrationNode) -> bool:
-        """This is a method called by `maintain` in the special case that its call of `check_data` finds bad data.
+        """Checks the data of all the dependencies of a `bad_data` node, until finds the root of the problem with its data.
+
+        This is a method called by `maintain` in the special case that its call of `check_data` finds bad data.
 
         `maintain` assumes that our knowledge of the state of the system matches the actual state of the
         system: if we knew a node would return bad data, we wouldn't bother running experiments on it.
@@ -451,7 +452,7 @@ class CalibrationController:
 
     @staticmethod
     def _is_timeout_expired(timestamp: float, timeout: float) -> bool:
-        """Check if the time passed since the timestamp is greater than the timeout duration.
+        """Checks if the time passed since the timestamp is greater than the timeout duration.
 
         Args:
             timestamp (float): Timestamp from which the time should be checked, described in UNIX timestamp format.
