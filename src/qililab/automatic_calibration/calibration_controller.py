@@ -25,27 +25,57 @@ from qililab.platform.platform import Platform
 class CalibrationController:
     """Class that controls the automatic calibration sequence.
 
-    Using this class, you normally would run:
-        - ``CalibrationController.run_automatic_calibration()`` for calibrating the full graph.
-        - ``CalibrationController.maintain(node)`` for targeting and making sure a node works.
+    **Usage:**
+        - To calibrate the full graph, use ``run_automatic_calibration()``.
+        - To target and ensure a node works, use ``maintain(node)``.
 
     |
 
-    **The calibration workflow, has three levels of methods that manage it:**
+    **Graph structure:**
 
-    The highest level method to apply, is ``run_automatic_calibration()`` which finds all the final nodes (don't have others past them), and runs ``CalibrationController.maintain()`` on those.
+    In the graph, directions should be given by, `nodes` pointing to their next `dependents` (natural temporal flow for the calibration),
+    this makes that our `starts` and `ends` of the calibration, are:
 
-    The two mid-level methods are ``maintain()`` and ``diagnose()``, the first one goes back to all the nodes dependencies starts, and working
-    from them up, checking their last time executions and their data, searching for problematic cases. In such cases, depending on the severity,
-    ``maintain()`` would directly calibrate or call the other mid-level method, ``diagnose()``, which is responsible for working in reverse,
-    from the problematic one, going  down to all their dependencies, until finds the root of the problem, then passes such information back to
-    the ``maintain()`` method, so it can calibrate accordingly, and finish its job.
+    - `starts`: `roots` (``in_degree=0``, no arrows pointing in, no `dependencies`) of the graph, where all its arrows leave the node.
 
-    And finally, during all this process, the mid-level methods would be calling these low-level methods, that act on the nodes:
-        ``calibrate()``, ``check_status()`` and ``check_data()``.
+    - `ends`: `leaves` (``out_degree=0``, no arrows pointing out, no `dependants`) of the graph, where all its arrows enter the node.
+
+    .. code-block:: python
+
+        #                     /--> 2 -->\\
+        #                    /     |     \\
+        #    (start, root)  0      |      3 --> 4 (end, leave)
+        #                    \     v     /
+        #                     \--> 1 -->/
+
+    |
+
+    **Calibration Workflow:**
+
+    This calibration process is structured into three levels of methods:
+
+        1. **Highest Level Method**: ``run_automatic_calibration()`` finds all the end nodes of the graph (`leaves`, those without further `dependents`) and runs ``maintain()`` on them.
+
+        2. **Mid-Level Methods**: ``maintain()`` and ``diagnose()``.
+            - ``maintain(node)`` starts from the `roots` that ``node`` depends on, and moves forwards (`dependency -> dependant`) until ``node``, checking the last time executions and data at each step. If a problem (``bad_data``) is found, it calls ``diagnose()`` for solving it.
+            - ``diagnose(node)`` does more strict checks, fixing inaccuracies in the system's state to allow ``maintain()`` to continue. It works in reverse, starting from the problematic (``bad_data``) node, it goes back (`dependency <- dependant`) until finds the origin of the problem.
+
+        3. **Low-Level Methods**: ``check_status()``, ``check_data()``, and ``calibrate()`` are the methods you would be calling during all this process to interact with the ``nodes``.
 
     Args:
-        calibration_graph (nx.DiGraph): The calibration graph. This is a directed acyclic graph where each node is a string.
+        calibration_graph (nx.DiGraph): The calibration graph. This is a directed acyclic graph where each node is a ``string`` corresponding to a ``CalibrationNode.node_id``.
+
+            In the graph, directions should be given by, `nodes` pointing to their next `dependents` (natural temporal flow for the calibration),
+            this makes that our `starts` and `ends` of the calibration, are respectively the `roots` (``in_degree=0``) and `leaves` (``out_degree=0``) of the graph.
+
+                .. code-block:: python
+
+                    #                     /--> 2 -->\\
+                    #                    /     |     \\
+                    #    (start, root)  0      |      3 --> 4 (end, leave)
+                    #                    \     v     /
+                    #                     \--> 1 -->/
+
         node_sequence (dict[str, CalibrationNode]): Mapping for the nodes of the graph, from strings into the actual initialized nodes.
         runcard (str): The runcard path, containing the serialized platform where the experiments will be run.
 
@@ -84,8 +114,8 @@ class CalibrationController:
                 )
                 nodes[second.node_id] = second
 
-                # GRAPH BUILDING:
-                G.add_edge(second.node_id, first.node_id)
+                # GRAPH BUILDING (1 --> 2):
+                G.add_edge(first.node_id, second.node_id)
 
             # CREATE CALIBRATION CONTROLLER:
             controller = CalibrationController(node_sequence=nodes, calibration_graph=G, runcard=path_runcard)
@@ -103,21 +133,34 @@ class CalibrationController:
             raise ValueError("The calibration graph must be a Directed Acyclic Graph (DAG).")
 
         self.calibration_graph: nx.DiGraph = calibration_graph
-        """The calibration graph. This is a directed acyclic graph where each node is a string."""
+        """The calibration graph (nx.DiGraph). This is a directed acyclic graph where each node is a ``string`` corresponding to a ``CalibrationNode.node_id``.
+
+        In the graph, directions should be given by, `nodes` pointing to their next `dependents` (natural temporal flow for the calibration),
+        this makes that our `starts` and `ends` of the calibration, are respectively the `roots` (``in_degree=0``) and `leaves` (``out_degree=0``) of the graph.
+
+        .. code-block:: python
+
+            #                     /--> 2 -->\\
+            #                    /     |     \\
+            #    (start, root)  0      |      3 --> 4 (end, leave)
+            #                    \     v     /
+            #                     \--> 1 -->/
+        """
 
         self.node_sequence: dict[str, CalibrationNode] = node_sequence
-        """Mapping for the nodes of the graph, from strings into the actual initialized nodes."""
+        """Mapping for the nodes of the graph, from strings into the actual initialized nodes (dict)."""
 
         self.runcard: str = runcard
-        """The runcard path, containing the serialized platform where the experiments will be run."""
+        """The runcard path, containing the serialized platform where the experiments will be run (str)."""
 
         self.platform: Platform = build_platform(runcard)
-        """The initialized platform, where the experiments will be run."""
+        """The initialized platform, where the experiments will be run (Platform)."""
 
     def run_automatic_calibration(self) -> dict[str, dict]:
         """Runs the full automatic calibration procedure and retrieve the final set parameters and achieved fidelities dictionaries.
 
-        This is primary interface for our calibration procedure and it's the highest level algorithm.
+        This is primary interface for our calibration procedure and it's the highest level algorithm, which finds all the end nodes of the graph
+        (`leaves`, those without further `dependents`) and runs ``maintain()`` on them
 
         Returns:
             dict[str, dict]: Dictionary for the last set parameters and the last achieved fidelities. It contains two dictionaries in the keys:
@@ -142,7 +185,7 @@ class CalibrationController:
                 - (str) node_id where this parameter was computed.
                 - (datetime) updated time of the parameter.
         """
-        highest_level_nodes = [node for node, in_degree in self.calibration_graph.in_degree() if in_degree == 0]
+        highest_level_nodes = [node for node, out_degree in self.calibration_graph.out_degree() if out_degree == 0]
 
         for n in highest_level_nodes:
             self.maintain(self.node_sequence[n])
@@ -157,18 +200,15 @@ class CalibrationController:
 
     def maintain(self, node: CalibrationNode) -> None:
         """Calls all the necessary subroutines in the respective dependencies to get a node in spec. Maintain contains the main workflow for
-        our calibration procedure, and it's what is called from ``run_automatic_calibration()`` into each of the final nodes of our graph.
+        our calibration procedure, and it's what is called from ``run_automatic_calibration()`` into each of the final ``nodes`` of our graph.
 
-        It is designed to start actually acquiring data (by calling 'check_data' or 'calibrate') in the optimal location
+        It is designed to start actually acquiring data (by calling ``check_data()`` or ``calibrate()``) in the optimal location
         of the graph, to avoid extra work: for example if node A depends on node B, before trying to calibrate node A we check
         the state of node B. If node B is out of spec or has bad data, calibrating A will be a waste of resource because we
         will be doing so based on faulty data.
 
-        The algorithm goes back to the start of all the nodes dependencies, and working from them up, checking their last time executions
-        and their data, searching for problematic cases. In such cases, depending on the severity, ``maintain()`` would directly calibrate
-        or call the other mid-level method, ``diagnose()``, which is responsible for working in reverse, from the problematic one, going
-        down to all their dependencies, until finds the root of the problem, then passes such information back to the ``maintain()``
-        method, so it can calibrate accordingly, and finish its job.
+        The algorithm starts from the `roots` that ``node`` depends on, and moves forwards (`dependency -> dependant`) until ``node``,
+        checking the last time executions and data at each step. If a problem (``bad_data``) is found, it calls ``diagnose()`` for solving it.
 
         Finally, during all this process, the mid-level methods would be calling these low-level methods, that act on the nodes:
         ``calibrate()``, ``check_status()`` and ``check_data()``.
@@ -198,16 +238,20 @@ class CalibrationController:
         self._update_parameters(node)
 
     def diagnose(self, node: CalibrationNode) -> bool:
-        """Checks the data of all the dependencies of a `bad_data` node, until finds the root of the problem with its data.
+        """Checks the data of all the dependencies of a ``bad_data`` node, until finds the root of the problem with its data.
 
-        This is a method called by `maintain` in the special case that its call of `check_data` finds bad data.
+        This is a method called by ``maintain()`` in the special case that its call of ``check_data()`` finds bad data.
 
-        `maintain` assumes that our knowledge of the state of the system matches the actual state of the
+        ``maintain()`` assumes that our knowledge of the state of the system matches the actual state of the
         system: if we knew a node would return bad data, we wouldn't bother running experiments on it.
-        The fact that check_data returns bad data means that that's not the case: our knowledge of the
+        The fact that ``check_data()`` returns bad data means that that's not the case: our knowledge of the
         systems's state is inaccurate.
 
-        The purpose of diagnose is to repair inaccuracies in our knowledge of the state of the system so that maintain can resume.
+        That why ``diagnose()`` does more strict checks, fixing inaccuracies in the system's state to allow ``maintain()``
+        to continue. It works in reverse, starting from the problematic (``bad_data``) node, it goes back (`dependency <- dependant`)
+        until finds the origin of the problem.
+
+        The purpose of ``diagnose()`` is to repair inaccuracies in our knowledge of the state of the system so that ``maintain()`` can resume.
 
         Args:
             node (CalibrationNode): The node where we want to start the algorithm.
@@ -429,8 +473,9 @@ class CalibrationController:
         return fidelities
 
     def _dependents(self, node: CalibrationNode) -> list:
-        """Finds the nodes that a node depends on.
-        In this graph, if an edge goes from node A to node B, then node A depends on node B. Thus the nodes that A depends on are its successors.
+        """Finds the dependencies of a node.
+
+        If in our graph we have `A -> B`, then node B depends on node A. Thus calling this method on B would return A.
 
         Args:
             node (CalibrationNode): The nodes of which we need the dependencies
@@ -438,7 +483,7 @@ class CalibrationController:
         Returns:
             list: The nodes that the argument node depends on
         """
-        return [self.node_sequence[node_name] for node_name in self.calibration_graph.successors(node.node_id)]
+        return [self.node_sequence[node_name] for node_name in self.calibration_graph.predecessors(node.node_id)]
 
     @staticmethod
     def _obtain_comparison(node: CalibrationNode, obtained: dict[str, list], comparison: dict[str, list]) -> float:

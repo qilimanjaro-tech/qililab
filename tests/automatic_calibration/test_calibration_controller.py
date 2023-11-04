@@ -77,103 +77,103 @@ nodes = {"zeroth_q0q1": zeroth, "first_q0": first, "second_q0": second, "third_q
 
 # fmt: off
 # GOOD GRAPH CREATION:
-G0 = nx.DiGraph()                           #       3 <--\
-G0.add_edge("fourth", "third_q0")           #             \
-G0.add_edge("fourth", "second_q0")           # 0 <-- 2 <-- 4
-G0.add_edge("second_q0", "zeroth_q0q1")     # ^\
-G0.add_edge("first_q0", "zeroth_q0q1")      #   \---1
+G0 = nx.DiGraph()                           #        3 -->\
+G0.add_edge("third_q0", "fourth")           #              \
+G0.add_edge("second_q0", "fourth")          # 0 ---> 2 ---> 4
+G0.add_edge("zeroth_q0q1", "second_q0")     #  \
+G0.add_edge( "zeroth_q0q1", "first_q0")     #   \--> 1
 
 # GOOD GRAPH CREATION:
-G1 = nx.DiGraph()                           #       3 <--\
-G1.add_edge("fourth", "third_q0")           #       v     \
-G1.add_edge("fourth", "second_q0")          # 0 <-- 2 <--- 4
-G1.add_edge("second_q0", "zeroth_q0q1")     # ^\    v
-G1.add_edge("first_q0", "zeroth_q0q1")      #   \---1
-G1.add_edge("third_q0", "second_q0")
-G1.add_edge("second_q0", "first_q0")
+G1 = nx.DiGraph()                           #        3 -->\
+G1.add_edge("third_q0", "fourth")           #        ^     \
+G1.add_edge("second_q0", "fourth")          # 0 ---> 2 ---> 4
+G1.add_edge("zeroth_q0q1", "second_q0")     #  \     ^
+G1.add_edge("zeroth_q0q1", "first_q0")      #   \--> 1
+G1.add_edge("second_q0", "third_q0")
+G1.add_edge("first_q0", "second_q0")
 
 # GOOD GRAPH CREATION:
-G2 = nx.DiGraph()                           #   /-- 3 <-- 4
-G2.add_edge("fourth", "third_q0")           #  /
-G2.add_edge("third_q0", "zeroth_q0q1")      # 0 <-- 2
-G2.add_edge("second_q0", "zeroth_q0q1")     #  \
-G2.add_edge("first_q0", "zeroth_q0q1")      #   \-- 1
+G2 = nx.DiGraph()                           #   /--> 3 ---> 4
+G2.add_edge("third_q0", "fourth")           #  /
+G2.add_edge("zeroth_q0q1", "third_q0")      # 0 ---> 2
+G2.add_edge("zeroth_q0q1", "second_q0")     #  \
+G2.add_edge("zeroth_q0q1", "first_q0")      #   \--> 1
 
 # GOOD GRAPH CREATION:
 G3 = nx.DiGraph()
-G3.add_edge("fourth", "third_q0")           #   /-- 3 <-- 4
-G3.add_edge("third_q0", "zeroth_q0q1")      #  /    v
-G3.add_edge("third_q0", "second_q0")        # 0 <-- 2
-G3.add_edge("second_q0", "zeroth_q0q1")     #  \
-G3.add_edge("first_q0", "zeroth_q0q1")      #   \-- 1
+G3.add_edge("third_q0", "fourth")           #   /--> 3 ---> 4
+G3.add_edge("zeroth_q0q1", "third_q0")      #  /     ^
+G3.add_edge("second_q0", "third_q0")        # 0 ---> 2
+G3.add_edge("zeroth_q0q1", "second_q0")     #  \
+G3.add_edge("zeroth_q0q1", "first_q0")      #   \--> 1
 
 # GOOD GRAPH CREATION:
 G4 = nx.DiGraph()
-G4.add_edge("fourth", "third_q0")           #   /-- 2 <--\
-G4.add_edge("third_q0", "second_q0")        #  /          \
-G4.add_edge("third_q0", "first_q0")         # 0            3 <-- 4
-G4.add_edge("second_q0", "zeroth_q0q1")     #  \          /
-G4.add_edge("first_q0", "zeroth_q0q1")      #   \-- 1 <--/
+G4.add_edge("third_q0", "fourth")           #   /--> 2 -->\
+G4.add_edge("second_q0", "third_q0")        #  /           \
+G4.add_edge("first_q0", "third_q0")         # 0             3 ---> 4
+G4.add_edge("zeroth_q0q1", "second_q0")     #  \           /
+G4.add_edge("zeroth_q0q1", "first_q0")      #   \--> 1 -->/
 
 # GOOD GRAPH CREATION:
 G5 = nx.DiGraph()
-G5.add_edge("fourth", "third_q0")           #   /-- 2 <--\
-G5.add_edge("third_q0", "second_q0")        #  /    |     \
-G5.add_edge("third_q0", "first_q0")         # 0     |      3 <-- 4
-G5.add_edge("second_q0", "zeroth_q0q1")     #  \    v     /
-G5.add_edge("second_q0", "first_q0")        #   \-- 1 <--/
-G5.add_edge("first_q0", "zeroth_q0q1")
+G5.add_edge("third_q0", "fourth")           #   /--> 2 -->\
+G5.add_edge("second_q0", "third_q0")        #  /     ^     \
+G5.add_edge("first_q0", "third_q0")         # 0      |      3 ---> 4
+G5.add_edge("zeroth_q0q1", "second_q0")     #  \     |     /
+G5.add_edge("first_q0", "second_q0")        #   \--> 1 -->/
+G5.add_edge("zeroth_q0q1", "first_q0")
 
 # GOOD GRAPH CREATION:
 G6 = nx.DiGraph()
-G6.add_edge("fourth", "third_q0")           #   /-- 3 <--\
-G6.add_edge("third_q0", "second_q0")        #  /    v     \
-G6.add_edge("third_q0", "zeroth_q0q1")      # 0 <-- 2      4
-G6.add_edge("second_q0", "zeroth_q0q1")     #  \    ^     /
-G6.add_edge("first_q0", "second_q0")        #   \-- 1 <--/
-G6.add_edge("first_q0", "zeroth_q0q1")
-G6.add_edge("fourth", "first_q0")
+G6.add_edge("third_q0", "fourth")           #   /--> 3 -->\
+G6.add_edge("second_q0", "third_q0")        #  /     ^     \
+G6.add_edge("zeroth_q0q1", "third_q0")      # 0 ---> 2      4
+G6.add_edge("zeroth_q0q1", "second_q0")     #  \     v     /
+G6.add_edge("second_q0", "first_q0")        #   \--> 1 -->/
+G6.add_edge("zeroth_q0q1", "first_q0")
+G6.add_edge("first_q0", "fourth")
 
 # GOOD GRAPH CREATION:
 G7 = nx.DiGraph()
-G7.add_edge("fourth", "third_q0")           #   /-- 3 <--\
-G7.add_edge("third_q0", "second_q0")        #  /    v     \
-G7.add_edge("third_q0", "zeroth_q0q1")      # 0 <-- 2      4
-G7.add_edge("second_q0", "zeroth_q0q1")     #  \    v     /
-G7.add_edge("second_q0", "first_q0")        #   \-- 1 <--/
-G7.add_edge("first_q0", "zeroth_q0q1")
-G7.add_edge("fourth", "first_q0")
+G7.add_edge("third_q0", "fourth")           #   /--> 3 -->\
+G7.add_edge("second_q0", "third_q0")        #  /     ^     \
+G7.add_edge("zeroth_q0q1", "third_q0")      # 0 ---> 2      4
+G7.add_edge("zeroth_q0q1", "second_q0")     #  \     ^     /
+G7.add_edge("first_q0", "second_q0")        #   \--> 1 -->/
+G7.add_edge("zeroth_q0q1", "first_q0")
+G7.add_edge("first_q0", "fourth")
 
 # GOOD GRAPH CREATION:
 G8 = nx.DiGraph()
-G8.add_edge("fourth", "third_q0")           #   /-- 3 <--\
-G8.add_edge("third_q0", "second_q0")        #  /    v     \
-G8.add_edge("third_q0", "zeroth_q0q1")      # 0 <-- 2 <--- 4
-G8.add_edge("second_q0", "zeroth_q0q1")     #  \    ^     /
-G8.add_edge("first_q0", "second_q0")        #   \-- 1 <--/
-G8.add_edge("first_q0", "zeroth_q0q1")
-G8.add_edge("fourth", "second_q0")
-G8.add_edge("fourth", "first_q0")
+G8.add_edge("third_q0", "fourth")           #   /--> 3 -->\
+G8.add_edge("second_q0", "third_q0")        #  /     ^     \
+G8.add_edge("zeroth_q0q1", "third_q0")      # 0 ---> 2 ---> 4
+G8.add_edge("zeroth_q0q1", "second_q0")     #  \     v     /
+G8.add_edge("second_q0", "first_q0")        #   \--> 1 -->/
+G8.add_edge("zeroth_q0q1", "first_q0")
+G8.add_edge("second_q0", "fourth")
+G8.add_edge("first_q0", "fourth")
 
-# GOOD GRAPH CREATION:                      #       ^
-G9 = nx.DiGraph()                           #       |
-G9.add_edge("fourth", "third_q0")           #   /-- 3 <--\
-G9.add_edge("third_q0", "second_q0")        #  /    v     \
-G9.add_edge("third_q0", "zeroth_q0q1")      # 0 <-- 2 <--- 4
-G9.add_edge("second_q0", "zeroth_q0q1")     #  \    ^     /
-G9.add_edge("first_q0", "second_q0")        #   \-- 1 <--/
-G9.add_edge("first_q0", "zeroth_q0q1")      #       ^
-G9.add_edge("fourth", "second_q0")          #       |
-G9.add_edge("fourth", "first_q0")
-G9.add_edge("third_q0", "first_q0")
+# GOOD GRAPH CREATION:                      #        |
+G9 = nx.DiGraph()                           #        v
+G9.add_edge("third_q0", "fourth")           #   /--> 3 -->\
+G9.add_edge("second_q0", "third_q0")        #  /     ^     \
+G9.add_edge("zeroth_q0q1", "third_q0")      # 0 ---> 2 ---> 4
+G9.add_edge("zeroth_q0q1", "second_q0")     #  \     v     /
+G9.add_edge("second_q0", "first_q0")        #   \--> 1 -->/
+G9.add_edge("zeroth_q0q1", "first_q0")      #        |
+G9.add_edge("second_q0", "fourth")          #        v
+G9.add_edge("first_q0", "fourth")
+G9.add_edge("first_q0", "third_q0")
 
 # BAD GRAPH CREATION:
-B = nx.DiGraph()                            #         /--->---\
-B.add_edge("fourth", "third_q0")            #        /         \
-B.add_edge("third_q0", "second_q0")         # 0 <-- 1 <-- 2 <-- 3 <-- 4
-B.add_edge("second_q0", "first_q0")
-B.add_edge("first_q0", "zeroth_q0q1")
-B.add_edge("first_q0", "third_q0")
+B = nx.DiGraph()                            #         /---<---\
+B.add_edge("third_q0", "fourth")            #        /         \
+B.add_edge("second_q0", "third_q0")         # 0 --> 1 --> 2 --> 3 --> 4
+B.add_edge("first_q0", "second_q0")
+B.add_edge("zeroth_q0q1", "first_q0")
+B.add_edge("third_q0", "first_q0")
 
 good_graphs = [G0, G1, G2, G3, G4, G5, G6, G7, G8, G9]
 
@@ -485,7 +485,7 @@ class TestMaintainFromCalibrationController:
             # Check diagnose for each dependant:
             dependants_calls = []
             for node_call in leaves_to_roots_good_graphs_calls[good_graphs.index(controller[2])]:
-                for node_name in controller[2].successors(
+                for node_name in controller[2].predecessors(
                     node_call.args[0].node_id
                 ):  # sourcery skip: for-append-to-extend
                     dependants_calls.append(call(controller[3].node_sequence[node_name]))

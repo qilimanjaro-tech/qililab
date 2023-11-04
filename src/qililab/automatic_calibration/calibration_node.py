@@ -143,8 +143,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                 )
                 nodes[second.node_id] = second
 
-                # GRAPH BUILDING:
-                G.add_edge(second.node_id, first.node_id)
+                # GRAPH BUILDING (1 --> 2):
+                G.add_edge(first.node_id, second.node_id)
 
             # CREATE CALIBRATION CONTROLLER:
             controller = CalibrationController(node_sequence=nodes, calibration_graph=G, runcard=path_runcard)
