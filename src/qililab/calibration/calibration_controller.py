@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=anomalous-backslash-in-string
 """Automatic-calibration Controller module, which works with notebooks as nodes."""
 from datetime import datetime, timedelta
 
 import networkx as nx
 
-from qililab.automatic_calibration.calibration_node import CalibrationNode
+from qililab.calibration.calibration_node import CalibrationNode
 from qililab.data_management import build_platform, save_platform
 from qililab.platform.platform import Platform
 
@@ -62,19 +63,12 @@ class CalibrationController:
 
         3. **Low-Level Methods**: ``check_status()``, ``check_data()``, and ``calibrate()`` are the methods you would be calling during all this process to interact with the ``nodes``.
 
+    .. note:: Find more information about the automatic calibration workflow at https://arxiv.org/abs/1803.03226.
+
     Args:
-        calibration_graph (nx.DiGraph): The calibration graph. This is a directed acyclic graph where each node is a ``string`` corresponding to a ``CalibrationNode.node_id``.
-
-            In the graph, directions should be given by, `nodes` pointing to their next `dependents` (natural temporal flow for the calibration),
-            this makes that our `starts` and `ends` of the calibration, are respectively the `roots` (``in_degree=0``) and `leaves` (``out_degree=0``) of the graph.
-
-                .. code-block:: python
-
-                    #                     /--> 2 -->\\
-                    #                    /     |     \\
-                    #    (start, root)  0      |      3 --> 4 (end, leave)
-                    #                    \     v     /
-                    #                     \--> 1 -->/
+        calibration_graph (nx.DiGraph): The calibration (directed acyclic) graph. Where each node is a ``string`` corresponding to a ``CalibrationNode.node_id``. Directions should be given
+            by, `nodes` pointing to their next `dependents` (natural flow for the calibration), this makes that our `starts` and `ends` of the calibration, are respectively the `roots`
+            (``in_degree=0``) and `leaves` (``out_degree=0``) of the graph.
 
         node_sequence (dict[str, CalibrationNode]): Mapping for the nodes of the graph, from strings into the actual initialized nodes.
         runcard (str): The runcard path, containing the serialized platform where the experiments will be run.
@@ -133,10 +127,14 @@ class CalibrationController:
             raise ValueError("The calibration graph must be a Directed Acyclic Graph (DAG).")
 
         self.calibration_graph: nx.DiGraph = calibration_graph
-        """The calibration graph (nx.DiGraph). This is a directed acyclic graph where each node is a ``string`` corresponding to a ``CalibrationNode.node_id``.
+        """The calibration (directed acyclic) graph. Where each node is a ``string`` corresponding to a ``CalibrationNode.node_id``.
 
-        In the graph, directions should be given by, `nodes` pointing to their next `dependents` (natural temporal flow for the calibration),
-        this makes that our `starts` and `ends` of the calibration, are respectively the `roots` (``in_degree=0``) and `leaves` (``out_degree=0``) of the graph.
+        Directions should be given by, `nodes` pointing to their next `dependents` (natural temporal flow for the calibration),
+        this makes that our `starts` and `ends` of the calibration, are:
+
+        - `starts`: `roots` (``in_degree=0``, no arrows pointing in, no `dependencies`) of the graph, where all its arrows leave the node.
+
+        - `ends`: `leaves` (``out_degree=0``, no arrows pointing out, no `dependants`) of the graph, where all its arrows enter the node.
 
         .. code-block:: python
 
@@ -163,27 +161,14 @@ class CalibrationController:
         (`leaves`, those without further `dependents`) and runs ``maintain()`` on them
 
         Returns:
-            dict[str, dict]: Dictionary for the last set parameters and the last achieved fidelities. It contains two dictionaries in the keys:
-                - "set_parameters"
-                - "fidelities"
-            The two dictionaries have the following structure:
+            dict[str, dict]: Dictionary for the last set parameters and the last achieved fidelities. It contains two dictionaries (dict[tuple, tuple]) in the keys:
+                - "set_parameters": Set parameters dictionary, with the key and values being tuples containing:
+                    - key: (``str``: parameter name, ``str``: bus alias, int: qubit).
+                    - value: (``float``: parameter value, ``str``: ``node_id`` where computed, ``datetime``: updated time).
 
-            Fidelities dictionary (dict[tuple, tuple]): with the dict key being a tuple containing:
-                - (str) the fidelity name.
-                - (int) the qubit where its been set.
-            and the dict value being a tuple that contains in this order:
-                - (float) value of fidelity.
-                - (str) node_id where this fidelity was computed.
-                - (datetime) updated time of the fidelity.
-
-            Set parameters dictionary (dict[tuple, tuple]): key being a tuple containing:
-                - (str) the the parameter name.
-                - (str) the bus alias where its been set.
-                - (int) the qubit where its been set.
-            and the dict value being a tuple that contains in this order:
-                - (float) value of parameter.
-                - (str) node_id where this parameter was computed.
-                - (datetime) updated time of the parameter.
+                - "fidelities": Fidelities dictionary, with the key and values being tuples containing:
+                    - key: (``str``: parameter name, ``int``: qubit).
+                    - value: (``float``: parameter value, ``str``: node_id where computed, ``datetime``: updated time).
         """
         highest_level_nodes = [node for node, out_degree in self.calibration_graph.out_degree() if out_degree == 0]
 
@@ -200,22 +185,24 @@ class CalibrationController:
 
     def maintain(self, node: CalibrationNode) -> None:
         """Calls all the necessary subroutines in the respective dependencies to get a node in spec. Maintain contains the main workflow for
-        our calibration procedure, and it's what is called from ``run_automatic_calibration()`` into each of the final ``nodes`` of our graph.
+        our calibration procedure, and it's what is called from ``run_automatic_calibration()`` into each of the end ``nodes`` (leaves) of our graph.
 
-        It is designed to start actually acquiring data (by calling ``check_data()`` or ``calibrate()``) in the optimal location
-        of the graph, to avoid extra work: for example if node A depends on node B, before trying to calibrate node A we check
-        the state of node B. If node B is out of spec or has bad data, calibrating A will be a waste of resource because we
-        will be doing so based on faulty data.
-
-        The algorithm starts from the `roots` that ``node`` depends on, and moves forwards (`dependency -> dependant`) until ``node``,
+        The algorithm starts from the `roots` that the passed ``node`` depends on, and moves forwards (`dependency -> dependant`) until ``node``,
         checking the last time executions and data at each step. If a problem (``bad_data``) is found, it calls ``diagnose()`` for solving it.
 
-        Finally, during all this process, the mid-level methods would be calling these low-level methods, that act on the nodes:
+        During all this process, the mid-level methods would be calling these low-level methods, that act on the nodes:
         ``calibrate()``, ``check_status()`` and ``check_data()``.
 
+        Finally, ``maintain`` is designed to start acquiring data or calibrating in the optimal location of the graph, to avoid extra work:
+
+        - if node A has been calibrated very recently, it would be waste of resources to check its data, so its skipped (``check_state``).
+        - if node A depends on node B, before calibrating node A we check the data of node B, calibrating A would be a waste of resources if we were doing so based on faulty data, so it goes to its dependencies first.
+
+        .. note:: Find more information about the ``maintain()`` idea at https://arxiv.org/abs/1803.03226.
+
         Args:
-            node (CalibrationNode): The node where we want to start the algorithm. At the beginning of the calibration procedure,
-                                this node will be the highest level node in the calibration graph.
+            node (CalibrationNode): The node where we want to start the algorithm on, getting it in spec. Normally you would want
+                this node, to be the furthest node in the calibration graph.
         """
         print(f"maintaining {node.node_id}!!!\n")
         # Recursion over all the nodes that the current node depends on.
@@ -238,20 +225,20 @@ class CalibrationController:
         self._update_parameters(node)
 
     def diagnose(self, node: CalibrationNode) -> bool:
-        """Checks the data of all the dependencies of a ``bad_data`` node, until finds the root of the problem with its data.
+        """Checks the data of all the dependencies of a node, until finds the root of the problem with their data.
 
         This is a method called by ``maintain()`` in the special case that its call of ``check_data()`` finds bad data.
 
-        ``maintain()`` assumes that our knowledge of the state of the system matches the actual state of the
-        system: if we knew a node would return bad data, we wouldn't bother running experiments on it.
-        The fact that ``check_data()`` returns bad data means that that's not the case: our knowledge of the
-        systems's state is inaccurate.
-
-        That why ``diagnose()`` does more strict checks, fixing inaccuracies in the system's state to allow ``maintain()``
-        to continue. It works in reverse, starting from the problematic (``bad_data``) node, it goes back (`dependency <- dependant`)
+        ``diagnose()`` workflow works in reverse, starting from the problematic (``bad_data``) node, it goes back (`dependency <- dependant`)
         until finds the origin of the problem.
 
-        The purpose of ``diagnose()`` is to repair inaccuracies in our knowledge of the state of the system so that ``maintain()`` can resume.
+        ``maintain()`` assumes that our knowledge of the state of the system matches the actual state of the
+        system: if we knew a node would return bad data, we wouldn't bother ``calibrating`` it. The fact that
+        ``check_data()`` returns ``bad_data`` means that that's not the case, our knowledge of the systems's
+        state is inaccurate. That why ``diagnose()`` does more strict checks, fixing inaccuracies in our knowledge
+        the of the system's state, to allow ``maintain()`` to continue.
+
+        .. note:: Find more information about the ``diagnose()`` idea at https://arxiv.org/abs/1803.03226.
 
         Args:
             node (CalibrationNode): The node where we want to start the algorithm.
@@ -283,14 +270,17 @@ class CalibrationController:
         return True
 
     def check_state(self, node: CalibrationNode) -> bool:
-        """Checks if the node's parameters drift timeouts have passed since the last calibration or data validation (a call of check_data).
+        """Checks if the node's drift timeouts have passed since the last calibration or data check.
+
         These timeouts represent how long it usually takes for the parameters to drift, specified by the user.
 
-        Conditions for check state to pass:
-            - The cal has had check data or calibrate pass within the timeout period.
-            - The cal has not failed calibrate without resolution.
-            - No dependencies have been recalibrated since the last time check data or calibrate was run on this cal
-            - All dependencies pass check state
+        Conditions for ``check_state()`` to pass:
+            - The cal has had ``check_data()`` or ``calibrate()`` pass within the timeout period.
+            - The cal has not failed ``calibrate()`` without resolution.
+            - No dependencies have been recalibrated since the last time ``check_data()`` or ``calibrate()`` was run on this cal.
+            - All dependencies pass ``check_state()``.
+
+        .. note:: Find more information about the ``check_state()`` idea at https://arxiv.org/abs/1803.03226.
 
         Args:
             node: The node whose parameters need to be checked.
@@ -316,9 +306,13 @@ class CalibrationController:
         return not self._is_timeout_expired(node.previous_timestamp, node.drift_timeout)
 
     def check_data(self, node: CalibrationNode) -> str:
-        """Checks if the parameters found in the last calibration are still valid, doing a reduced execution of the notebook. To do this,
-        this function runs the experiment only in a few points, randomly chosen within the sweep interval, and compares the results with
-        the data obtained in the same points when the experiment was last run on the entire sweep interval (``calibrate()``).
+        """Checks if the parameters found in the last calibration are still valid, doing a reduced execution of the notebook.
+
+        To do this, ``check_data()`` runs the experiment only in a few points, randomly chosen within the ``sweep_interval``,
+        and compares the results with the data obtained in the same points when the experiment was last ``calibrate()`` with the
+        entire ``sweep_interval``.
+
+        .. note:: Find more information about the ``check_data()`` idea at https://arxiv.org/abs/1803.03226.
 
         Args:
             node: The node whose parameters need to be checked.
@@ -326,15 +320,13 @@ class CalibrationController:
         Returns:
             str: Three possible few words description, of how the experiment results compare with the results obtained during the last full calibration.
 
-            Concretely, depending on the provided threshold and comparison method, it will return:
-                - "in_spec" if the results are similar. Similarity is determined using the `check_data_confidence_level` argument of the :obj:`~automatic_calibration.CalibrationNode`.
-                - "out_of_spec" if the results are not similar enough, but close.
-                - "bad_data" if the results are not closely similar.
+            Concretely, depending on the provided thresholds and comparison models, it will return:
+                - ``in_spec`` if the results are still acceptable.
+                - ``out_of_spec`` if the results are not acceptable enough, but close.
+                - ``bad_data`` if the results are not closely similar.
 
-                The comparison used is indicated by the `comparison_model` attribute of :obj:`~automatic_calibration.CalibrationNode`, which decides if the data fits the model well enough.
-                The tolerances for the comparison is indicated in the `in_spec_threshold` and `bad_data_threshold` attributes of :obj:`~automatic_calibration.CalibrationNode`.
-
-            See the source code for details on how these metrics are used to decide what string to return.
+                The comparison used is indicated by the ``comparison_model`` attribute of :class:`.CalibrationNode`, which decides if the data fits the model well enough.
+                The tolerances for the comparison is indicated in the ``in_spec_threshold`` and ``bad_data_threshold`` attributes of :class:`.CalibrationNode`.
         """
         # pylint: disable=protected-access
 
@@ -381,7 +373,9 @@ class CalibrationController:
         return "bad_data"
 
     def calibrate(self, node: CalibrationNode) -> None:
-        """Runs a node's calibration experiment on its default interval of sweep values.
+        """Runs a node's calibration experiment on its default values of ``sweep_interval``.
+
+        .. note:: Find more information about the ``calibrate()`` idea at https://arxiv.org/abs/1803.03226.
 
         Args:
             node (CalibrationNode): The node where the calibration experiment is run.
@@ -392,9 +386,9 @@ class CalibrationController:
 
     def _update_parameters(self, node: CalibrationNode) -> None:
         """Updates a parameter value in the platform.
+
         If the node does not have an associated parameter, or the parameter attribute of the node is None,
-        this function does nothing. That is because some nodes, such as those associated with the AllXY
-        experiment, don't compute the value of a parameter.
+        this function does nothing.
 
         Args:
             node (CalibrationNode): The node that contains the experiment that gives the optimal value of the parameter.
@@ -411,14 +405,9 @@ class CalibrationController:
         """Retrieves the last set parameters of the graph.
 
         Returns:
-            dict[tuple, tuple]: Set parameters dictionary, with the dict key being a tuple containing:
-                - (str) the parameter name.
-                - (str) the bus alias where its been set.
-                - (int) the qubit where its been set.
-            and the dict value being a tuple that contains in this order:
-                - (float) value of parameter.
-                - (str) node_id where this parameter was computed.
-                - (datetime) updated time of the parameter.
+            dict[tuple, tuple]: Set parameters dictionary, with the key and values being tuples containing:
+                - ``key``: (``str``: parameter name, ``str``: bus alias, ``int``: qubit).
+                - ``value``: (``float``: parameter value, ``str``: node_id where computed, ``datetime``: updated time).
         """
         parameters: dict[tuple, tuple] = {}
         print("LAST SET PARAMETERS:")
@@ -444,13 +433,9 @@ class CalibrationController:
         """Retrieves the last updated fidelities of the graph.
 
         Returns:
-            dict[tuple, tuple]: Fidelities dictionary, with the dict key being a tuple containing:
-                - (str) the fidelity name.
-                - (int) the qubit where its been set.
-            and the dict value being a tuple that contains in this order:
-                - (float) value of fidelity.
-                - (str) node_id where this fidelity was computed.
-                - (datetime) updated time of the fidelity.
+            dict[tuple, tuple]: Fidelities dictionary, with the key and values being tuples containing:
+                - ``key``: (``str``: parameter name, ``int``: qubit).
+                - ``value``: (``float``: parameter value, ``str``: node_id where computed, ``datetime``: updated time).
         """
         fidelities: dict[tuple, tuple] = {}
         print("LAST RETRIEVED FIDELITIES:")
@@ -500,14 +485,14 @@ class CalibrationController:
 
     @staticmethod
     def _is_timeout_expired(timestamp: float, timeout: float) -> bool:
-        """Checks if the time passed since the timestamp is greater than the timeout duration.
+        """Checks if the time passed since the ``timestamp`` is greater than the ``timeout`` duration.
 
         Args:
             timestamp (float): Timestamp from which the time should be checked, described in UNIX timestamp format.
             timeout (float): The timeout duration in seconds.
 
         Returns:
-            bool: True if the timeout has expired, False otherwise.
+            bool: True if the ``timeout`` has expired, False otherwise.
         """
         # Calculate the time that should have passed (timestamp + timeout duration), convert them to datetime objects:
         timestamp_dt = datetime.fromtimestamp(timestamp)

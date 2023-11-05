@@ -408,12 +408,12 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         return stream
 
     def _execute_notebook(self, input_path: str, output_path: str, parameters: dict | None = None) -> dict:
-        """Executes python notebooks overwriting the parameters of the "parameters" cells and then returns the `output` parameters of such notebook.
+        """Executes python notebooks overwriting the parameters of the `parameters` cells and then returns the ``output`` parameters of such notebook.
 
         Args
             input_path (str): Path to input notebook to execute.
             output_path (str): Path to save executed notebook. If None, no file will be saved.
-            parameters (dict): Arbitrary keyword arguments to pass to the notebook parameters. It will overwrite the "parameters" cell of the notebook.
+            parameters (dict): Arbitrary keyword arguments to pass to the notebook parameters. It will overwrite the `parameters` cell of the notebook.
 
         Returns:
             dict: Kwargs for the output parameters of the notebook.
@@ -646,10 +646,10 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
 
 def export_calibration_outputs(outputs: dict) -> None:
-    """Function to export notebook outputs into a stream, later collected by the CalibrationNode class.
+    """Function to export notebook outputs into a stream, later collected by the :class:`CalibrationNode` class.
 
     Args:
-        outputs (dict): Outputs from the notebook to export into the CalibrationController/CalibrationNode workflow.
+        outputs (dict): Outputs from the notebook to export into the automatic calibration workflow.
     """
     print(f"{logger_output_start}{json.dumps(outputs)}")
 

@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, call, patch
 import networkx as nx
 import pytest
 
-from qililab.automatic_calibration import CalibrationController, CalibrationNode
+from qililab.calibration import CalibrationController, CalibrationNode
 from qililab.data_management import build_platform
 from qililab.platform.platform import Platform
 
@@ -28,7 +28,7 @@ def dummy_comparison_model(obtained: dict, comparison: dict) -> float:
 ### NODES CREATION ###
 ######################
 zeroth = CalibrationNode(
-    nb_path="tests/automatic_calibration/notebook_test/zeroth.ipynb",
+    nb_path="tests/calibration/notebook_test/zeroth.ipynb",
     qubit_index=[0, 1],
     in_spec_threshold=4,
     bad_data_threshold=8,
@@ -36,7 +36,7 @@ zeroth = CalibrationNode(
     drift_timeout=1.0,
 )
 first = CalibrationNode(
-    nb_path="tests/automatic_calibration/notebook_test/first.ipynb",
+    nb_path="tests/calibration/notebook_test/first.ipynb",
     qubit_index=0,
     in_spec_threshold=4,
     bad_data_threshold=8,
@@ -44,7 +44,7 @@ first = CalibrationNode(
     drift_timeout=1800.0,
 )
 second = CalibrationNode(
-    nb_path="tests/automatic_calibration/notebook_test/second.ipynb",
+    nb_path="tests/calibration/notebook_test/second.ipynb",
     qubit_index=0,
     in_spec_threshold=2,
     bad_data_threshold=4,
@@ -52,7 +52,7 @@ second = CalibrationNode(
     drift_timeout=1.0,
 )
 third = CalibrationNode(
-    nb_path="tests/automatic_calibration/notebook_test/third.ipynb",
+    nb_path="tests/calibration/notebook_test/third.ipynb",
     qubit_index=0,
     in_spec_threshold=1,
     bad_data_threshold=2,
@@ -60,7 +60,7 @@ third = CalibrationNode(
     drift_timeout=1.0,
 )
 fourth = CalibrationNode(
-    nb_path="tests/automatic_calibration/notebook_test/fourth.ipynb",
+    nb_path="tests/calibration/notebook_test/fourth.ipynb",
     in_spec_threshold=1,
     bad_data_threshold=2,
     comparison_model=dummy_comparison_model,
@@ -687,9 +687,9 @@ class TestCalibrationController:
     #######################
     ### TEST CHECK DATA ###
     #######################
-    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.run_node")
-    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._add_string_to_checked_nb_name")
-    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._invert_output_and_previous_output")
+    @patch("qililab.calibration.calibration_node.CalibrationNode.run_node")
+    @patch("qililab.calibration.calibration_node.CalibrationNode._add_string_to_checked_nb_name")
+    @patch("qililab.calibration.calibration_node.CalibrationNode._invert_output_and_previous_output")
     def test_check_data(self, mock_invert, mock_add_str, mock_run, controller):
         """Test that the check_data method, works correctly."""
         for node in controller.node_sequence.values():
@@ -712,8 +712,8 @@ class TestCalibrationController:
     ######################
     ### TEST CALIBRATE ###
     ######################
-    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode.run_node")
-    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._add_string_to_checked_nb_name")
+    @patch("qililab.calibration.calibration_node.CalibrationNode.run_node")
+    @patch("qililab.calibration.calibration_node.CalibrationNode._add_string_to_checked_nb_name")
     def test_calibrate(self, mock_add_str, mock_run, controller):
         """Test that the calibration method, calls node.run_node()."""
         for node in controller.node_sequence.values():
@@ -724,8 +724,8 @@ class TestCalibrationController:
     ##############################
     ### TEST UPDATE PARAMETERS ###
     ##############################
-    @patch("qililab.automatic_calibration.calibration_controller.Platform.set_parameter")
-    @patch("qililab.automatic_calibration.calibration_controller.save_platform")
+    @patch("qililab.calibration.calibration_controller.Platform.set_parameter")
+    @patch("qililab.calibration.calibration_controller.save_platform")
     def test_update_parameters(self, mock_save_platform, mock_set_params, controller):
         """Test that the update parameters method, calls ``platform.set_parameter()`` and ``save_platform()``."""
         for node in controller.node_sequence.values():

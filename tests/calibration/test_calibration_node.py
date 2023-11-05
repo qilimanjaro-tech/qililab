@@ -8,11 +8,7 @@ from unittest.mock import MagicMock, call, patch
 import numpy as np
 import pytest
 
-from qililab.automatic_calibration.calibration_node import (
-    CalibrationNode,
-    IncorrectCalibrationOutput,
-    export_calibration_outputs,
-)
+from qililab.calibration.calibration_node import CalibrationNode, IncorrectCalibrationOutput, export_calibration_outputs
 
 # pylint: disable=protected-access, unspecified-encoding
 
@@ -29,13 +25,13 @@ dummy_comparison_model = MagicMock()  # Dummy comparison model, to provide to th
 ####################
 @pytest.fixture(name="initialize_node_no_optional")
 @patch(
-    "qililab.automatic_calibration.calibration_node.CalibrationNode._build_notebooks_logger_stream",
+    "qililab.calibration.calibration_node.CalibrationNode._build_notebooks_logger_stream",
     return_value=StringIO(),
 )
 def fixture_initialize_node_no_optional(_) -> CalibrationNode:
     """Return a mocked CalibrationNode object for initialization, with the minimum number of things specified or mocked."""
     return CalibrationNode(
-        nb_path="tests/automatic_calibration/notebook_test/zeroth.ipynb",
+        nb_path="tests/calibration/notebook_test/zeroth.ipynb",
         qubit_index=0,
         in_spec_threshold=0.6,
         bad_data_threshold=0.9,
@@ -46,25 +42,25 @@ def fixture_initialize_node_no_optional(_) -> CalibrationNode:
 
 @pytest.fixture(name="initialize_node_optional")
 @patch(
-    "qililab.automatic_calibration.calibration_node.CalibrationNode._path_to_name_and_folder",
+    "qililab.calibration.calibration_node.CalibrationNode._path_to_name_and_folder",
     return_value=("node_id", "nb_folder"),
 )
 @patch(
-    "qililab.automatic_calibration.calibration_node.CalibrationNode.get_last_calibrated_output_parameters",
+    "qililab.calibration.calibration_node.CalibrationNode.get_last_calibrated_output_parameters",
     return_value={},
 )
 @patch(
-    "qililab.automatic_calibration.calibration_node.CalibrationNode.get_last_calibrated_timestamp",
+    "qililab.calibration.calibration_node.CalibrationNode.get_last_calibrated_timestamp",
     return_value=0.0,
 )
 @patch(
-    "qililab.automatic_calibration.calibration_node.CalibrationNode._build_notebooks_logger_stream",
+    "qililab.calibration.calibration_node.CalibrationNode._build_notebooks_logger_stream",
     return_value=StringIO(),
 )
 def fixture_initialize_node_optional(_, __, ____, _____) -> CalibrationNode:
     """Return a mocked CalibrationNode object for initialization, with everything specified or mocked."""
     return CalibrationNode(
-        nb_path="tests/automatic_calibration/notebook_test/zeroth.ipynb",
+        nb_path="tests/calibration/notebook_test/zeroth.ipynb",
         qubit_index=[0, 1],
         in_spec_threshold=0.6,
         bad_data_threshold=0.9,
@@ -77,11 +73,9 @@ def fixture_initialize_node_optional(_, __, ____, _____) -> CalibrationNode:
 
 
 @pytest.fixture(name="methods_node")
-@patch("qililab.automatic_calibration.calibration_node.CalibrationNode.get_last_calibrated_output_parameters")
-@patch(
-    "qililab.automatic_calibration.calibration_node.CalibrationNode.get_last_calibrated_timestamp", return_value=1111
-)
-@patch("qililab.automatic_calibration.calibration_node.StringIO", autospec=True)
+@patch("qililab.calibration.calibration_node.CalibrationNode.get_last_calibrated_output_parameters")
+@patch("qililab.calibration.calibration_node.CalibrationNode.get_last_calibrated_timestamp", return_value=1111)
+@patch("qililab.calibration.calibration_node.StringIO", autospec=True)
 def fixture_methods_node(_, __, ____) -> CalibrationNode:
     """Return a mocked CalibrationNode object."""
     return CalibrationNode(
@@ -109,13 +103,13 @@ class TestInitializationCalibrationNode:
         """Test a valid initialization of the class, without passing optional arguments."""
         # sourcery skip: class-extract-method
         # Assert:
-        assert initialize_node_no_optional.nb_path == "tests/automatic_calibration/notebook_test/zeroth.ipynb"
+        assert initialize_node_no_optional.nb_path == "tests/calibration/notebook_test/zeroth.ipynb"
         assert isinstance(initialize_node_no_optional.nb_path, str)
         assert initialize_node_no_optional.qubit_index == 0
         assert isinstance(initialize_node_no_optional.qubit_index, int | list | None)
         assert initialize_node_no_optional.node_id == "zeroth_q0"
         assert isinstance(initialize_node_no_optional.nb_path, str)
-        assert initialize_node_no_optional.nb_folder == "tests/automatic_calibration/notebook_test"
+        assert initialize_node_no_optional.nb_folder == "tests/calibration/notebook_test"
         assert isinstance(initialize_node_no_optional.nb_path, str)
         assert initialize_node_no_optional.in_spec_threshold == 0.6
         assert isinstance(initialize_node_no_optional.in_spec_threshold, float)
@@ -142,7 +136,7 @@ class TestInitializationCalibrationNode:
     def test_good_init_method_with_optional(self, initialize_node_optional):
         """Test a valid initialization of the class, passing all optional arguments."""
         # Assert:
-        assert initialize_node_optional.nb_path == "tests/automatic_calibration/notebook_test/zeroth.ipynb"
+        assert initialize_node_optional.nb_path == "tests/calibration/notebook_test/zeroth.ipynb"
         assert isinstance(initialize_node_optional.nb_path, str)
         assert initialize_node_optional.qubit_index == [0, 1]
         assert isinstance(initialize_node_optional.qubit_index, int | list | None)
@@ -223,11 +217,11 @@ class TestPublicMethodsFromCalibrationNode:
         ],
     )
     @patch(
-        "qililab.automatic_calibration.calibration_node.CalibrationNode._build_check_data_interval",
+        "qililab.calibration.calibration_node.CalibrationNode._build_check_data_interval",
         return_value=np.array([0]),
     )
     @patch(
-        "qililab.automatic_calibration.calibration_node.CalibrationNode._execute_notebook",
+        "qililab.calibration.calibration_node.CalibrationNode._execute_notebook",
         return_value={
             "check_parameters": {"x": 0, "y": 1},
             "platform_params": {"x": 0, "y": 1},
@@ -235,11 +229,11 @@ class TestPublicMethodsFromCalibrationNode:
         },
     )
     @patch(
-        "qililab.automatic_calibration.calibration_node.CalibrationNode._create_notebook_datetime_path",
+        "qililab.calibration.calibration_node.CalibrationNode._create_notebook_datetime_path",
         return_value="",
     )
-    @patch("qililab.automatic_calibration.calibration_node.os.rename")
-    @patch("qililab.automatic_calibration.calibration_node.logger.error")
+    @patch("qililab.calibration.calibration_node.os.rename")
+    @patch("qililab.calibration.calibration_node.logger.error")
     def test_run_node(
         self,
         mock_logger,
@@ -289,16 +283,16 @@ class TestPublicMethodsFromCalibrationNode:
         ],
     )
     @patch(
-        "qililab.automatic_calibration.calibration_node.CalibrationNode._build_check_data_interval",
+        "qililab.calibration.calibration_node.CalibrationNode._build_check_data_interval",
         return_value=np.array([0]),
     )
-    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._execute_notebook")
+    @patch("qililab.calibration.calibration_node.CalibrationNode._execute_notebook")
     @patch(
-        "qililab.automatic_calibration.calibration_node.CalibrationNode._create_notebook_datetime_path",
+        "qililab.calibration.calibration_node.CalibrationNode._create_notebook_datetime_path",
         return_value="",
     )
-    @patch("qililab.automatic_calibration.calibration_node.os.rename")
-    @patch("qililab.automatic_calibration.calibration_node.logger.error")
+    @patch("qililab.calibration.calibration_node.os.rename")
+    @patch("qililab.calibration.calibration_node.logger.error")
     def test_run_node_interrupt(
         self,
         mock_logger,
@@ -354,15 +348,13 @@ class TestPublicMethodsFromCalibrationNode:
         ],
     )
     @patch(
-        "qililab.automatic_calibration.calibration_node.CalibrationNode._build_check_data_interval",
+        "qililab.calibration.calibration_node.CalibrationNode._build_check_data_interval",
         return_value=np.array([0]),
     )
-    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._execute_notebook")
-    @patch(
-        "qililab.automatic_calibration.calibration_node.CalibrationNode._create_notebook_datetime_path", return_value=""
-    )
-    @patch("qililab.automatic_calibration.calibration_node.os.rename")
-    @patch("qililab.automatic_calibration.calibration_node.logger.error")
+    @patch("qililab.calibration.calibration_node.CalibrationNode._execute_notebook")
+    @patch("qililab.calibration.calibration_node.CalibrationNode._create_notebook_datetime_path", return_value="")
+    @patch("qililab.calibration.calibration_node.os.rename")
+    @patch("qililab.calibration.calibration_node.logger.error")
     def test_run_node_raises(
         self,
         mock_logger,
@@ -413,8 +405,8 @@ class TestPublicMethodsFromCalibrationNode:
     ### TEST GET LAST CALIBRATED TIMESTAMP ###
     ##########################################
     @pytest.mark.parametrize("last_exec_output", [None, "tmp_test_foobar.ipynb"])
-    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._find_last_executed_calibration")
-    @patch("qililab.automatic_calibration.calibration_node.os.path.getmtime")
+    @patch("qililab.calibration.calibration_node.CalibrationNode._find_last_executed_calibration")
+    @patch("qililab.calibration.calibration_node.os.path.getmtime")
     def test_get_last_calibrated_timestamp(
         self, mocked_os, mock_last_exec, last_exec_output, methods_node: CalibrationNode
     ):
@@ -431,8 +423,8 @@ class TestPublicMethodsFromCalibrationNode:
     ### TEST GET LAST CALIBRATED OUTPUT PARAMETERS ###
     ##################################################
     @pytest.mark.parametrize("last_exec_output", [None, "tmp_test_foobar.ipynb"])
-    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._parse_output_from_execution_file")
-    @patch("qililab.automatic_calibration.calibration_node.CalibrationNode._find_last_executed_calibration")
+    @patch("qililab.calibration.calibration_node.CalibrationNode._parse_output_from_execution_file")
+    @patch("qililab.calibration.calibration_node.CalibrationNode._find_last_executed_calibration")
     def test_get_last_calibrated_output_parameters(
         self, mock_last_exec, mocked_parse, last_exec_output, methods_node: CalibrationNode
     ):
@@ -460,7 +452,7 @@ class TestPrivateMethodsFromCalibrationNode:
             'RAND_INT:47102512880765720413 - OUTPUTS: {\\"check_parameters\\": {\\"x\\": [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48], \\"y\\": [100, 144, 196, 256, 324, 400, 484, 576, 676, 784, 900, 1024, 1156, 1296, 1444, 1600, 1764, 1936, 2116, 2304]}, \\"platform_params\\": [[\\"bus_alias\\", \\"param_name\\", 1]]}\\n"',
         ],
     )
-    @patch("qililab.automatic_calibration.calibration_node.pm.execute_notebook")
+    @patch("qililab.calibration.calibration_node.pm.execute_notebook")
     def test_execute_notebook(self, mocked_pm_exec, output, methods_node: CalibrationNode):
         """Testing general behavior of ``execute_notebook()``."""
         # Creating expected values for assert
@@ -489,8 +481,8 @@ class TestPrivateMethodsFromCalibrationNode:
             "RAND_INT:47102512880765720413 - OUTPUTS: {'check_parameters': {'a':2}}RAND_INT:47102512880765720413 - OUTPUTS: {'check_parameters': {'a':2}}/n",
         ],
     )
-    @patch("qililab.automatic_calibration.calibration_node.pm.execute_notebook")
-    @patch("qililab.automatic_calibration.calibration_node.logger", autospec=True)
+    @patch("qililab.calibration.calibration_node.pm.execute_notebook")
+    @patch("qililab.calibration.calibration_node.logger", autospec=True)
     def test_execute_notebook_raises_no_output_or_more_than_one_output(
         self, mocked_logger, mocked_pm_exec, output, methods_node
     ):
@@ -519,8 +511,8 @@ class TestPrivateMethodsFromCalibrationNode:
             'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters":{}}',
         ],
     )
-    @patch("qililab.automatic_calibration.calibration_node.pm.execute_notebook")
-    @patch("qililab.automatic_calibration.calibration_node.logger", autospec=True)
+    @patch("qililab.calibration.calibration_node.pm.execute_notebook")
+    @patch("qililab.calibration.calibration_node.logger", autospec=True)
     def test_execute_notebook_raises_empty_output(self, mocked_logger, mocked_pm_exec, output, methods_node):
         """Testing when outputs are empty received from ``execute_notebook()`."""
         methods_node._stream.getvalue.return_value = output  # type: ignore [attr-defined]
@@ -572,7 +564,7 @@ class TestPrivateMethodsFromCalibrationNode:
         self, timestamp, dirty, error, methods_node: CalibrationNode, original_path="foo/bar.ipynb"
     ):
         """Test ``that create_notebook_datetime_path()`` works correctly."""
-        with patch("qililab.automatic_calibration.calibration_node.os") as mocked_os:
+        with patch("qililab.calibration.calibration_node.os") as mocked_os:
             test_value = methods_node._create_notebook_datetime_path(original_path, timestamp, dirty, error)
             mocked_os.makedirs.assert_called()
             if timestamp is not None:
@@ -686,7 +678,7 @@ class TestPrivateMethodsFromCalibrationNode:
             ("empty", 'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters":{},"y":1}'),
         ],
     )
-    @patch("qililab.automatic_calibration.calibration_node.logger", autospec=True)
+    @patch("qililab.calibration.calibration_node.logger", autospec=True)
     def test_parse_output_from_execution_file(
         self, mocked_logger, type_content, raw_file_contents, methods_node: CalibrationNode
     ):
@@ -749,7 +741,7 @@ class TestPrivateMethodsFromCalibrationNode:
     ##########################################
     def test_add_string_to_checked_nb_name(self, methods_node: CalibrationNode):
         """Test that ``add_string_to_checked_nb_name()`` works properly."""
-        with patch("qililab.automatic_calibration.calibration_node.os.rename") as mocked_rename:
+        with patch("qililab.calibration.calibration_node.os.rename") as mocked_rename:
             path = os.path.join(methods_node.nb_folder, methods_node.node_id)
             timestamp_path = methods_node._create_notebook_datetime_path(path, 0).split(".ipynb")[0]
             string_to_add = "test_succesful"
@@ -778,7 +770,7 @@ class TestStaticMethodsFromCalibrationNode:
     ##########################################
     ### TEST BUILD NOTEBOOKS LOGGER STREAM ###
     ##########################################
-    @patch("qililab.automatic_calibration.calibration_node.logging", autospec=True)
+    @patch("qililab.calibration.calibration_node.logging", autospec=True)
     def test_build_notebooks_logger_stream(self, mocked_logging):
         """Test that ``build_notebooks_logger_stream()`` works properly."""
         stream = CalibrationNode._build_notebooks_logger_stream()
@@ -794,7 +786,7 @@ class TestStaticMethodsFromCalibrationNode:
 #######################################
 ### TEST EXPORT CALIBRATION OUTPUTS ###
 #######################################
-@patch("qililab.automatic_calibration.calibration_node.json.dumps", autospec=True)
+@patch("qililab.calibration.calibration_node.json.dumps", autospec=True)
 def test_export_calibration_outputs(mocked_dumps):
     """Test that ``export_calibration_outputs()`` works properly."""
     test_outputs = {"this_is": "a_test_dict", "foo": "bar"}
