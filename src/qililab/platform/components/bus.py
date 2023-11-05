@@ -52,6 +52,7 @@ class Bus:
         platform_instruments: InitVar[Instruments]
         distortions: list[PulseDistortion]
         delay: int
+        qubit: int | None = None
 
         def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
             if isinstance(self.system_control, dict):
@@ -81,6 +82,15 @@ class Bus:
             str: alias of the bus
         """
         return self.settings.alias
+
+    @property
+    def qubit(self):
+        """
+
+        Returns:
+            str: Qubit the bus is connected to.
+        """
+        return self.settings.qubit
 
     @property
     def system_control(self):

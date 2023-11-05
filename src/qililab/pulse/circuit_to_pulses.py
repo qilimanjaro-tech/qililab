@@ -115,18 +115,14 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
                     if isinstance(gate, M):
                         gate = M(*gate.qubits[1:])
                     # add event
-                    pulse_schedule.add_event(pulse_event=pulse_event, bus_alias=bus.port, delay=bus.settings.delay)  # type: ignore
+                    pulse_schedule.add_event(pulse_event=pulse_event, bus_alias=bus.alias, delay=bus.settings.delay)  # type: ignore
 
-            for qubit in self.platform.chip.qubits:
-                with contextlib.suppress(ValueError):
-                    # If we find a flux port, create empty schedule for that port
-                    flux_port = self.platform.chip.get_port_from_qubit_idx(idx=qubit, line=Line.FLUX)
-                    if flux_port is not None:
-                        flux_bus = next((bus for bus in self.platform.buses if bus.port == flux_port), None)
-                        if flux_bus and any(
-                            isinstance(instrument, AWG) for instrument in flux_bus.system_control.instruments
-                        ):
-                            pulse_schedule.create_schedule(bus_alias=flux_port)
+            # We make sure to create a schedule for all buses containing an AWG
+            # This is to ensure that all offsets of the AWGs are activated when executing the algorithm
+            for bus in self.platform.buses:
+                if any(isinstance(instrument, AWG) for instrument in bus.system_control.instruments):
+                    # We create an empty schedule (or do nothing if an schedule already exists)
+                    pulse_schedule.create_schedule(bus_alias=bus.alias)
 
             pulse_schedule_list.append(pulse_schedule)
 
@@ -206,7 +202,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
         if schedule is not None:
             for schedule_element in schedule:
                 bus = self.platform._get_bus_by_alias(schedule_element.bus)
-                qubit = bus.qubit
+                qubit = bus.qubit if bus is not None else None
                 if qubit is not None:
                     schedule_qubits.append(qubit)
 

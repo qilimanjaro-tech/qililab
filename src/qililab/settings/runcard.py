@@ -69,6 +69,7 @@ class Runcard:
         system_control: dict
         distortions: list[dict]
         delay: int = 0
+        qubit: int | None = None
 
     @nested_dataclass
     class GatesSettings(Settings):

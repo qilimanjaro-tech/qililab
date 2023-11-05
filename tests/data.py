@@ -457,6 +457,7 @@ class Galadriel:
             },
             RUNCARD.DISTORTIONS: [],
             RUNCARD.DELAY: 0,
+            "qubit": 0,
         },
         {
             "alias": "feedline_input_output_bus",
@@ -475,6 +476,7 @@ class Galadriel:
             },
             RUNCARD.DISTORTIONS: [],
             RUNCARD.DELAY: 0,
+            "qubit": 0,
         },
     ]
 
