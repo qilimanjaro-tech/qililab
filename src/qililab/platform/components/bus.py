@@ -60,6 +60,7 @@ class Bus:
         platform_instruments: InitVar[Instruments]
         distortions: list[PulseDistortion]
         delay: int
+        qubit: None | int
 
         def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
             if isinstance(self.system_control, dict):
@@ -126,6 +127,15 @@ class Bus:
             int: settings.delay.
         """
         return self.settings.delay
+
+    @property
+    def qubit(self) -> int | None:
+        """Bus 'qubit' property.
+
+        Returns:
+            int | None: Qubit index.
+        """
+        return self.settings.qubit
 
     def __str__(self):
         """String representation of a bus. Prints a drawing of the bus elements."""

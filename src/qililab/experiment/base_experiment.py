@@ -25,7 +25,6 @@ from qcodes.instrument import Instrument as QcodesInstrument
 from ruamel.yaml import YAML
 from tqdm.auto import tqdm
 
-from qililab.chip import Node
 from qililab.config import __version__, logger
 from qililab.constants import DATA, EXPERIMENT, EXPERIMENT_FILENAME, RESULTS_FILENAME, RUNCARD
 from qililab.execution import EXECUTION_BUILDER, ExecutionManager
@@ -250,7 +249,7 @@ class BaseExperiment(ABC):
         parameter: Parameter,
         value: float | str | bool,
         alias: str,
-        element: Runcard.GatesSettings | Node | Instrument | None = None,
+        element: Runcard.GatesSettings | Instrument | None = None,
         channel_id: int | None = None,
     ):
         """Set parameter of a platform element.

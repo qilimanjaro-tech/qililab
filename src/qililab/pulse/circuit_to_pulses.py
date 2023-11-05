@@ -20,7 +20,6 @@ import numpy as np
 from qibo.gates import Gate, M
 from qibo.models.circuit import Circuit
 
-from qililab.chip.nodes import Coupler, Qubit
 from qililab.constants import RUNCARD
 from qililab.instruments import AWG
 from qililab.platform import Bus, Platform
@@ -204,23 +203,17 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
         Returns:
             list[int]: list of qubits
         """
-
-        schedule_qubits = (
-            [
-                target.qubit_index
-                for schedule_element in schedule
-                for target in self.platform._get_bus_by_alias(  # pylint: disable=protected-access
-                    schedule_element.bus
-                ).targets
-                if isinstance(target, Qubit)
-            ]
-            if schedule is not None
-            else []
-        )
+        schedule_qubits = []
+        if schedule is not None:
+            for schedule_element in schedule:
+                bus = self.platform._get_bus_by_alias(schedule_element.bus)
+                qubit = bus.qubit
+                if qubit is not None:
+                    schedule_qubits.append(qubit)
 
         gate_qubits = list(gate.qubits)
 
-        return list(set(schedule_qubits + gate_qubits))  # converto to set and back to list to remove repeated items
+        return list(set(schedule_qubits + gate_qubits))  # convert to set and back to list to remove repeated items
 
     def _gate_element_to_pulse_event(
         self, time: int, gate: Gate, gate_event: GateEventSettings, bus: Bus
@@ -244,15 +237,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
         pulse_shape = Factory.get(pulse_shape_copy.pop(RUNCARD.NAME))(**pulse_shape_copy)
 
         # handle measurement gates and target qubits for control gates which might have multi-qubit schedules
-        if isinstance(gate, M):
-            qubit = gate.qubits[0]
-        # for couplers we don't need to set the target qubit
-        elif isinstance(bus.targets[0], Coupler):
-            qubit = None
-        # handle control gates, target should be the qubit target of the bus
-        else:
-            qubit = next(target.qubit_index for target in bus.targets if isinstance(target, Qubit))
-
+        qubit = gate.qubits[0] if isinstance(gate, M) else bus.qubit
         return PulseEvent(
             pulse=Pulse(
                 amplitude=pulse.amplitude,

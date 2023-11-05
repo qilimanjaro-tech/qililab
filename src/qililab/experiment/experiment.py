@@ -20,7 +20,6 @@ from queue import Queue
 from qibo.models.circuit import Circuit
 from tqdm.auto import tqdm
 
-from qililab.chip import Node
 from qililab.config import __version__
 from qililab.constants import EXPERIMENT, RUNCARD
 from qililab.execution import EXECUTION_BUILDER
@@ -268,7 +267,7 @@ class Experiment(BaseExperiment):
         parameter: Parameter,
         value: float | str | bool,
         alias: str,
-        element: Runcard.GatesSettings | Node | Instrument | None = None,
+        element: Runcard.GatesSettings | Instrument | None = None,
         channel_id: int | None = None,
     ):
         """Set parameter of a platform element.
