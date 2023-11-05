@@ -309,7 +309,7 @@ class TestMethods:
         bus = platform._get_bus_by_alias(alias="drive_line_q0_bus")
         awg = bus.system_control.instruments[0]
         assert isinstance(awg, QbloxModule)
-        sequencer = awg.get_sequencers_from_bus_alias(bus.port)[0]
+        sequencer = awg.get_sequencers_from_bus_alias(bus.alias)[0]
         assert (sequencer.gain_i, sequencer.gain_q) == platform.get_parameter(
             parameter=Parameter.GAIN, alias="drive_line_q0_bus"
         )

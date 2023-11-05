@@ -195,7 +195,6 @@ def fixture_platform() -> Platform:
                 "name": "readout_system_control",
                 "instruments": ["QRM", "rs_1"],
             },
-            "port": "feedline_input",
             "distortions": [],
             "delay": 0,
         },
@@ -205,7 +204,6 @@ def fixture_platform() -> Platform:
                 "name": "system_control",
                 "instruments": ["QCM"],
             },
-            "port": "drive_q0",
             "distortions": [],
             "delay": 0,
         },
@@ -215,7 +213,6 @@ def fixture_platform() -> Platform:
                 "name": "system_control",
                 "instruments": ["QCM"],
             },
-            "port": "flux_q0",
             "distortions": [],
             "delay": 0,
         },
@@ -225,7 +222,6 @@ def fixture_platform() -> Platform:
                 "name": "system_control",
                 "instruments": ["QCM"],
             },
-            "port": "drive_q1",
             "distortions": [],
             "delay": 0,
         },
@@ -235,7 +231,6 @@ def fixture_platform() -> Platform:
                 "name": "system_control",
                 "instruments": ["QCM"],
             },
-            "port": "flux_q1",
             "distortions": [],
             "delay": 0,
         },
@@ -245,7 +240,6 @@ def fixture_platform() -> Platform:
                 "name": "system_control",
                 "instruments": ["QCM"],
             },
-            "port": "drive_q2",
             "distortions": [],
             "delay": 0,
         },
@@ -255,7 +249,6 @@ def fixture_platform() -> Platform:
                 "name": "system_control",
                 "instruments": ["QCM"],
             },
-            "port": "flux_q2",
             "distortions": [],
             "delay": 0,
         },
@@ -265,7 +258,6 @@ def fixture_platform() -> Platform:
                 "name": "system_control",
                 "instruments": ["QCM"],
             },
-            "port": "flux_c2",
             "distortions": [],
             "delay": 0,
         },
@@ -275,7 +267,6 @@ def fixture_platform() -> Platform:
                 "name": "system_control",
                 "instruments": ["QCM"],
             },
-            "port": "drive_q3",
             "distortions": [],
             "delay": 0,
         },
@@ -285,7 +276,6 @@ def fixture_platform() -> Platform:
                 "name": "system_control",
                 "instruments": ["QCM"],
             },
-            "port": "flux_q3",
             "distortions": [],
             "delay": 0,
         },
@@ -295,7 +285,6 @@ def fixture_platform() -> Platform:
                 "name": "system_control",
                 "instruments": ["QCM"],
             },
-            "port": "drive_q4",
             "distortions": [],
             "delay": 0,
         },
@@ -305,7 +294,6 @@ def fixture_platform() -> Platform:
                 "name": "system_control",
                 "instruments": ["QCM"],
             },
-            "port": "flux_q4",
             "distortions": [],
             "delay": 0,
         },
@@ -349,12 +337,12 @@ class TestTranslation:
             qubit=qubit,
         )
 
-    def get_bus_schedule(self, pulse_bus_schedule: dict, port: str) -> list[dict]:
+    def get_bus_schedule(self, pulse_bus_schedule: dict, bus_alias: str) -> list[dict]:
         """Helper function for bus schedule data"""
 
         return [
             {**asdict(schedule)["pulse"], "start_time": schedule.start_time, "qubit": schedule.qubit}
-            for schedule in pulse_bus_schedule[port]
+            for schedule in pulse_bus_schedule[bus_alias]
         ]
 
     def test_translate_for_no_awg(self, platform):
@@ -392,7 +380,6 @@ class TestTranslation:
                 "name": "system_control",
                 "instruments": ["rs_1"],
             },
-            "port": "flux_q1",
             "distortions": [],
             "delay": 0,
         }
@@ -461,7 +448,7 @@ class TestTranslation:
         )
         assert m_schedule[-1] == m_pulse1
 
-        # assert wait gate delayed drive pulse at port 8 for 10ns (time should be 930+200+10=1140)
+        # assert wait gate delayed drive pulse of bus "drive_q0" for 10ns (time should be 930+200+10=1140)
         assert pulse_bus_schedule["drive_q0"][-1].start_time == 1140
 
         # test actions for control gates

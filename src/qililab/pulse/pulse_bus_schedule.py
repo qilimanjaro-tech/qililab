@@ -227,7 +227,7 @@ class PulseBusSchedule:
         """
         return {
             PULSEBUSSCHEDULE.TIMELINE: [pulse_event.to_dict() for pulse_event in self.timeline],
-            PULSEBUSSCHEDULE.PORT: self.bus_alias,
+            "bus_alias": self.bus_alias,
         }
 
     @classmethod

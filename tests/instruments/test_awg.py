@@ -18,7 +18,7 @@ class DummyAWG(AWG):
     def run(self):  # pylint: disable=arguments-differ
         pass
 
-    def upload(self, port: str):
+    def upload(self, bus_alias: str):
         pass
 
 

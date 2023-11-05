@@ -481,9 +481,9 @@ class TestQbloxQRM:
 
     def test_upload_method(self, qrm, pulse_bus_schedule):
         """Test upload method"""
-        pulse_bus_schedule.port = "feedline_input"
+        pulse_bus_schedule.bus_alias = "feedline_input"
         qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100, num_bins=1)
-        qrm.upload(bus_alias=pulse_bus_schedule.port)
+        qrm.upload(bus_alias=pulse_bus_schedule.bus_alias)
         qrm.device.sequencers[0].sync_en.assert_called_once_with(True)
         qrm.device.sequencers[1].sequence.assert_not_called()
 
