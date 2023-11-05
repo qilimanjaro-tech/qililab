@@ -206,6 +206,7 @@ def fixture_platform() -> Platform:
             },
             "distortions": [],
             "delay": 0,
+            "qubit": 0,
         },
         {
             "alias": "flux_q0_bus",
@@ -215,6 +216,7 @@ def fixture_platform() -> Platform:
             },
             "distortions": [],
             "delay": 0,
+            "qubit": 0,
         },
         {
             "alias": "drive_q1_bus",
@@ -224,6 +226,7 @@ def fixture_platform() -> Platform:
             },
             "distortions": [],
             "delay": 0,
+            "qubit": 0,
         },
         {
             "alias": "flux_q1_bus",
@@ -363,7 +366,7 @@ class TestTranslation:
         pulse_schedules = translator.translate(circuits=[circuit])
         pulse_schedule = pulse_schedules[0]
         # there should be 9 pulse_schedules in this configuration
-        assert len(pulse_schedule) == 9
+        assert len(pulse_schedule) == 12
 
         buses_elements = [bus for bus in platform.buses.elements if bus.settings.alias != "flux_q4_bus"]
         buses = Buses(elements=buses_elements)
@@ -414,7 +417,7 @@ class TestTranslation:
 
         pulse_schedule = pulse_schedules[0]
         # there are 6 different buses + 3 empty for unused flux lines
-        assert len(pulse_schedule) == 9
+        assert len(pulse_schedule) == 12
         assert all(len(schedule_element.timeline) == 0 for schedule_element in pulse_schedule.elements[-3:])
 
         # we can ignore empty elements from here on

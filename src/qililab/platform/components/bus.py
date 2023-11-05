@@ -121,7 +121,7 @@ class Bus:
 
     def __str__(self):
         """String representation of a bus. Prints a drawing of the bus elements."""
-        return f"Bus {self.alias}:  ----{self.system_control}---"
+        return f"Bus {self.alias}:  ----{self.system_control}----{self.qubit}----"
 
     def __eq__(self, other: object) -> bool:
         """compare two Bus objects"""
