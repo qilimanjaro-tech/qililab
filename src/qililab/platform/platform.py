@@ -20,11 +20,11 @@ from copy import deepcopy
 from dataclasses import asdict
 from queue import Queue
 
+import networkx as nx
 from qibo.models import Circuit
 from qiboconnection.api import API
 from ruamel.yaml import YAML
 
-from qililab.chip import Chip
 from qililab.config import logger
 from qililab.constants import GATE_ALIAS_REGEX, RUNCARD
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
@@ -278,7 +278,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         )
         """All the instrument controllers of the platform and their necessary settings (``dataclass``). Each individual instrument controller is contained in a list within the dataclass."""
 
-        self.chip = Chip(**asdict(runcard.chip))
+        self.chip = nx.from_dict_of_lists(asdict(runcard.chip))
         """Chip and nodes settings of the platform (:class:`.Chip` dataclass). Each individual node is contained in a list within the :class:`.Chip` class."""
 
         self.buses = Buses(
@@ -381,31 +381,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             element = self.instrument_controllers.get_instrument_controller(alias=alias)
         if element is None:
             element = self._get_bus_by_alias(alias=alias)
-        if element is None:
-            element = self.chip.get_node_from_alias(alias=alias)
         return element
-
-    def _get_bus_by_qubit_index(self, qubit_index: int) -> tuple[Bus, Bus, Bus]:
-        """Finds buses associated with the given qubit index.
-
-        Args:
-            qubit_index (int): Qubit index to get the buses from.
-
-        Returns:
-            tuple[:class:`Bus`, :class:`Bus`, :class:`Bus`]: Tuple of Bus objects containing the flux, control and readout buses of the given qubit.
-        """
-        flux_port = self.chip.get_port_from_qubit_idx(idx=qubit_index, line=Line.FLUX)
-        control_port = self.chip.get_port_from_qubit_idx(idx=qubit_index, line=Line.DRIVE)
-        readout_port = self.chip.get_port_from_qubit_idx(idx=qubit_index, line=Line.FEEDLINE_INPUT)
-        flux_bus = self.buses.get(port=flux_port)
-        control_bus = self.buses.get(port=control_port)
-        readout_bus = self.buses.get(port=readout_port)
-        if flux_bus is None or control_bus is None or readout_bus is None:
-            raise ValueError(
-                f"Could not find buses for qubit {qubit_index} connected to the ports "
-                f"{flux_port}, {control_port} and {readout_port}."
-            )
-        return flux_bus, control_bus, readout_bus
 
     def _get_bus_by_alias(self, alias: str | None = None):
         """Gets buses given their alias.
@@ -499,7 +475,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         name_dict = {RUNCARD.NAME: self.name}
         device_id = {RUNCARD.DEVICE_ID: self.device_id}
         gates_settings_dict = {RUNCARD.GATES_SETTINGS: self.gates_settings.to_dict()}
-        chip_dict = {RUNCARD.CHIP: self.chip.to_dict() if self.chip is not None else None}
+        chip_dict = {RUNCARD.CHIP: nx.to_dict_of_lists(self.chip) if self.chip is not None else None}
         buses_dict = {RUNCARD.BUSES: self.buses.to_dict() if self.buses is not None else None}
         instrument_dict = {RUNCARD.INSTRUMENTS: self.instruments.to_dict() if self.instruments is not None else None}
         instrument_controllers_dict = {

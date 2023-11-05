@@ -15,7 +15,8 @@
 """Bus class."""
 from dataclasses import InitVar, dataclass
 
-from qililab.chip import Chip, Coil, Coupler, Qubit, Resonator
+import networkx as nx
+
 from qililab.constants import BUS, NODE, RUNCARD
 from qililab.instruments import Instruments, ParameterNotFound
 from qililab.pulse import PulseBusSchedule, PulseDistortion
@@ -34,11 +35,11 @@ class Bus:
     which is connected to one or multiple qubits.
 
     Args:
-        targets (list[Qubit | Resonator | Coupler | Coil]): Port target (or targets in case of multiple resonators).
+        targets (list[str]): Port target (or targets in case of multiple resonators).
         settings (BusSettings): Bus settings.
     """
 
-    targets: list[Qubit | Resonator | Coupler | Coil]
+    targets: list[str]
     """Port target (or targets in case of multiple resonators)."""
 
     @dataclass
@@ -77,9 +78,9 @@ class Bus:
     of the port where it's connected, the list of the distortions to apply, and its delay.
     """
 
-    def __init__(self, settings: dict, platform_instruments: Instruments, chip: Chip):
+    def __init__(self, settings: dict, platform_instruments: Instruments, chip: nx.Graph):
         self.settings = self.BusSettings(**settings, platform_instruments=platform_instruments)  # type: ignore
-        self.targets = chip.get_port_nodes(alias=self.port)
+        self.targets = list(chip[self.port].keys())
 
     @property
     def alias(self):
@@ -135,17 +136,6 @@ class Bus:
     def __eq__(self, other: object) -> bool:
         """compare two Bus objects"""
         return str(self) == str(other) if isinstance(other, Bus) else False
-
-    @property
-    def target_freqs(self):
-        """Bus 'target_freqs' property.
-
-        Returns:
-            list[float]: Frequencies of the nodes that have frequencies
-        """
-        return list(
-            filter(None, [target.frequency if hasattr(target, NODE.FREQUENCY) else None for target in self.targets])
-        )
 
     def __iter__(self):
         """Redirect __iter__ magic method."""
