@@ -74,7 +74,7 @@ class CalibrationController:
         runcard (str): The runcard path, containing the serialized platform where the experiments will be run.
 
     Examples:
-        In this example, you will create 2 nodes twice, one for each qubit, and pass them to a :class:`.CalibrationController`, in order to run the maintain algorithm on the second one:
+        This example shows how to create 2 nodes twice, one for each qubit, and pass them to a :class:`.CalibrationController`, in order to then run the ``maintain()`` algorithm on the second one:
 
         .. code-block:: python
 
