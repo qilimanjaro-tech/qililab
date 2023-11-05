@@ -63,6 +63,20 @@ class CalibrationController:
 
         3. **Low-Level Methods**: ``check_status()``, ``check_data()``, and ``calibrate()`` are the methods you would be calling during all this process to interact with the ``nodes``.
 
+    Finally, ``run_automatic_calibration()`` is designed to start acquiring data or calibrating in the optimal location of the graph, to avoid extra work:
+
+    - if node A has been calibrated very recently (before the ``drift_timeout`` of the :class:`.CalibrationNode`), it would be waste of resources to check its data, so ``check_state()`` makes ``maintain()`` skip it.
+    - if node A depends on node B, before calibrating node A we check the data of node B, calibrating A would be a waste of resources if we were doing so based on faulty data, so it goes to its dependencies first.
+
+    |
+
+    **Dangerous Behaviours:**
+
+    Note that depending on your ``CalibrationController`` construction, you can have dangerous behaviours in the workflow, you need to watch out for:
+
+    - if you give bad ``comparison_thresholds`` or have bad ``comparison_models``, returning ``out_of_spec`` when you actually have ``bad_data`` or the other way around, making ``diagnose()`` not being able to work properly. Since for ``diagnose()`` to work, you need to have a single layer node separation (``out_of_spec``) between the ``in_spec`` and the ``bad_data`` nodes.
+    - if you give too long ``drift_timeout``'s, since ``maintain()`` will assume the node is 100% working, you will go to further dependants, when maybe you shouldn't without recalibrating (in the end ``diagnose()`` saves the day here, since it doesn't do ``check_state()``, but in a less efficient way).
+
     .. note:: Find more information about the automatic calibration workflow at https://arxiv.org/abs/1803.03226.
 
     Args:
@@ -184,19 +198,29 @@ class CalibrationController:
         return {"set_parameters": self.get_last_set_parameters(), "fidelities": self.get_last_fidelities()}
 
     def maintain(self, node: CalibrationNode) -> None:
-        """Calls all the necessary subroutines in the respective dependencies to get a node in spec. Maintain contains the main workflow for
-        our calibration procedure, and it's what is called from ``run_automatic_calibration()`` into each of the end ``nodes`` (leaves) of our graph.
+        """Calls all the necessary subroutines (``check_state()``, ``check_data()`` and ``calibrate()``) in the respective dependencies to get a node
+        in spec. Maintain contains the main workflow for our calibration procedure, and it's what is called from ``run_automatic_calibration()`` into
+        each of the end ``nodes`` (leaves) of our graph.
 
-        The algorithm starts from the `roots` that the passed ``node`` depends on, and moves forwards (`dependency -> dependant`) until ``node``,
-        checking the last time executions and data at each step. If a problem (``bad_data``) is found, it calls ``diagnose()`` for solving it.
+        The algorithm starts from the `roots` that the passed ``node`` depends on, and moves forwards (`dependency -> dependant`) up to ``node``,
+        at each step, first efficiently checking the last time executions (``check_state()``) until some fails, and then passes to check the data
+        (``check_data()``, less efficient). If a problematic node is found, meaning, it doesn't pass ``check_state()`` and gives
+        ``bad_data`` in ``check_data()``, then ``maintain()`` calls ``diagnose()`` for solving it.
 
         During all this process, the mid-level methods would be calling these low-level methods, that act on the nodes:
         ``calibrate()``, ``check_status()`` and ``check_data()``.
 
         Finally, ``maintain`` is designed to start acquiring data or calibrating in the optimal location of the graph, to avoid extra work:
 
-        - if node A has been calibrated very recently, it would be waste of resources to check its data, so its skipped (``check_state``).
+        - if node A has been calibrated very recently (before the ``drift_timeout`` of the :class:`.CalibrationNode`), it would be waste of resources to check its data, so ``check_state()`` makes ``maintain()`` skip it.
         - if node A depends on node B, before calibrating node A we check the data of node B, calibrating A would be a waste of resources if we were doing so based on faulty data, so it goes to its dependencies first.
+
+        |
+
+        Note that due to this, we can have dangerous behaviours in ``maintain()``, for example:
+
+        - if you give bad ``comparison_thresholds`` or have bad ``comparison_models``, returning ``out_of_spec`` when you actually have ``bad_data`` or the other way around, making ``diagnose()`` not being able to work properly. Since for ``diagnose()`` to work, you need to have a single layer node separation (``out_of_spec``) between the ``in_spec`` and the ``bad_data`` nodes.
+        - if you give too long ``drift_timeout``'s, since ``maintain()`` will assume the node is 100% working, you will go to further dependants, when maybe you shouldn't without recalibrating (in the end ``diagnose()`` saves the day here, since it doesn't do ``check_state()``, but in a less efficient way).
 
         .. note:: Find more information about the ``maintain()`` idea at https://arxiv.org/abs/1803.03226.
 
@@ -230,13 +254,19 @@ class CalibrationController:
         This is a method called by ``maintain()`` in the special case that its call of ``check_data()`` finds bad data.
 
         ``diagnose()`` workflow works in reverse, starting from the problematic (``bad_data``) node, it goes back (`dependency <- dependant`)
-        until finds the origin of the problem.
+        until finds the origin of the problem (the first and only ``out_of_spec`` of that path, since the previous will be ``in_spec`` and the
+        followings in ``bad_data``).
 
         ``maintain()`` assumes that our knowledge of the state of the system matches the actual state of the
         system: if we knew a node would return bad data, we wouldn't bother ``calibrating`` it. The fact that
         ``check_data()`` returns ``bad_data`` means that that's not the case, our knowledge of the systems's
         state is inaccurate. That why ``diagnose()`` does more strict checks, fixing inaccuracies in our knowledge
         the of the system's state, to allow ``maintain()`` to continue.
+
+        Finally mention, two important thing to have in mind:
+
+        - if you give bad ``comparison_thresholds`` or have bad ``comparison_models``, which return ``out_of_spec`` when you actually have ``bad_data`` or the other way around, it will make your full calibration fail. Since for ``diagnose()`` to work, you need to have a single node separation (``out_of_spec``) between the ``in_spec`` and the ``bad_data`` ones.
+        - if you have wrong ``drift_timeout``, the algorithm will be slower, but in the end ``diagnose()`` saves the day, achieving the full calibration, since it doesn't do ``check_state()``.
 
         .. note:: Find more information about the ``diagnose()`` idea at https://arxiv.org/abs/1803.03226.
 
@@ -312,6 +342,12 @@ class CalibrationController:
         and compares the results with the data obtained in the same points when the experiment was last ``calibrate()`` with the
         entire ``sweep_interval``.
 
+        The comparison is done with the model is indicated by the ``comparison_model`` attribute of :class:`.CalibrationNode`,
+        which returns a value indicating how well the data fits the model.
+
+        This comparison is then classified as ``in_spec`` (still valid), ``out_of_spec`` (drifted, but close) or ``bad_data``
+        (noise/doesn't follow the desired fit) given the ``in_spec_threshold`` and ``bad_data_threshold`` attributes of :class:`.CalibrationNode`.
+
         .. note:: Find more information about the ``check_data()`` idea at https://arxiv.org/abs/1803.03226.
 
         Args:
@@ -321,12 +357,9 @@ class CalibrationController:
             str: Three possible few words description, of how the experiment results compare with the results obtained during the last full calibration.
 
             Concretely, depending on the provided thresholds and comparison models, it will return:
-                - ``in_spec`` if the results are still acceptable.
-                - ``out_of_spec`` if the results are not acceptable enough, but close.
-                - ``bad_data`` if the results are not closely similar.
-
-                The comparison used is indicated by the ``comparison_model`` attribute of :class:`.CalibrationNode`, which decides if the data fits the model well enough.
-                The tolerances for the comparison is indicated in the ``in_spec_threshold`` and ``bad_data_threshold`` attributes of :class:`.CalibrationNode`.
+                - ``in_spec`` if the results are still acceptable to use.
+                - ``out_of_spec`` if the results have drifted are not acceptable enough, but they are close, and still follow the desired fit.
+                - ``bad_data`` if the results don't follow the desired fit, or are noisy, which should happen when dependencies have drifted.
         """
         # pylint: disable=protected-access
 
