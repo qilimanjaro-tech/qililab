@@ -22,7 +22,7 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     pulse_shape = Gaussian(num_sigmas=4)
     pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
     pulse_event = PulseEvent(pulse=pulse, start_time=0)
-    return PulseBusSchedule(timeline=[pulse_event], port="drive_q0")
+    return PulseBusSchedule(timeline=[pulse_event], bus_alias="drive_q0")
 
 
 @pytest.fixture(name="pulsar_controller_qcm")
@@ -111,7 +111,7 @@ def fixture_big_pulse_bus_schedule() -> PulseBusSchedule:
         )
         for n in range(10)
     ]
-    return PulseBusSchedule(timeline=timeline, port="drive_q0")
+    return PulseBusSchedule(timeline=timeline, bus_alias="drive_q0")
 
 
 class TestQbloxQCM:
@@ -133,7 +133,7 @@ class TestQbloxQCM:
 
     def test_start_sequencer_method(self, qcm: QbloxQCM):
         """Test start_sequencer method"""
-        qcm.start_sequencer(port="drive_q0")
+        qcm.start_sequencer(bus_alias="drive_q0")
         qcm.device.arm_sequencer.assert_not_called()
         qcm.device.start_sequencer.assert_not_called()
 
@@ -186,7 +186,7 @@ class TestQbloxQCM:
             assert qcm.out_offsets[output] == value
 
     @pytest.mark.parametrize(
-        "parameter, value, port_id",
+        "parameter, value, bus_alias",
         [
             (Parameter.GAIN, 0.02, "drive_q0"),
             (Parameter.GAIN_I, 0.03, "drive_q0"),
@@ -206,12 +206,12 @@ class TestQbloxQCM:
         ],
     )
     def test_setup_method_with_port_id(
-        self, parameter: Parameter, value: float | bool | int, port_id: str | None, qcm: QbloxQCM
+        self, parameter: Parameter, value: float | bool | int, bus_alias: str | None, qcm: QbloxQCM
     ):
         """Test setup method"""
-        qcm.setup(parameter=parameter, value=value, port_id=port_id)
-        if port_id is not None:
-            channel_id = qcm.get_sequencers_from_chip_port_id(port_id)[0].identifier
+        qcm.setup(parameter=parameter, value=value, port_id=bus_alias)
+        if bus_alias is not None:
+            channel_id = qcm.get_sequencers_from_bus_alias(bus_alias)[0].identifier
         else:
             channel_id = None
         if parameter == Parameter.GAIN:
@@ -293,7 +293,7 @@ class TestQbloxQCM:
         new_qcm = QbloxQCM(settings=qcm_settings)
         # We create a pulse bus schedule
         pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=Gaussian(num_sigmas=4))
-        pulse_bus_schedule = PulseBusSchedule(timeline=[PulseEvent(pulse=pulse, start_time=0)], port="drive_q0")
+        pulse_bus_schedule = PulseBusSchedule(timeline=[PulseEvent(pulse=pulse, start_time=0)], bus_alias="drive_q0")
         sequences = new_qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000, num_bins=1)
         # We assert that the waveform of the first path is all zeros and the waveform of the second path is the gaussian
         waveforms = sequences[0]._waveforms._waveforms

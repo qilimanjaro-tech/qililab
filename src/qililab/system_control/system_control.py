@@ -85,20 +85,20 @@ class SystemControl(FactoryElement, ABC):
                 )
         raise AttributeError("The system control doesn't have any AWG to compile the given pulse sequence.")
 
-    def upload(self, port: str):
+    def upload(self, bus_alias: str):
         """Uploads any previously compiled program into the instrument."""
         for instrument in self.instruments:
             if isinstance(instrument, AWG):
-                instrument.upload(port=port)
+                instrument.upload(bus_alias=bus_alias)
                 return
 
         raise AttributeError("The system control doesn't have any AWG to upload a program.")
 
-    def run(self, port: str) -> None:
+    def run(self, bus_alias: str) -> None:
         """Runs any previously uploaded program into the instrument."""
         for instrument in self.instruments:
             if isinstance(instrument, AWG):
-                instrument.run(port=port)
+                instrument.run(bus_alias=bus_alias)
                 return
 
         raise AttributeError("The system control doesn't have any AWG to run a program.")
@@ -121,7 +121,11 @@ class SystemControl(FactoryElement, ABC):
         return self.settings.instruments
 
     def set_parameter(
-        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
+        self,
+        parameter: Parameter,
+        value: float | str | bool,
+        channel_id: int | None = None,
+        bus_alias: str | None = None,
     ):
         """Sets the parameter of a specific instrument.
 
@@ -129,19 +133,19 @@ class SystemControl(FactoryElement, ABC):
             parameter (Parameter): parameter settings of the instrument to update
             value (float | str | bool): value to update
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
-            port_id (str | None, optional): The ``port_id`` argument can be used when setting a parameter of a
+            bus_alias (str | None, optional): The ``bus_alias`` argument can be used when setting a parameter of a
                 QbloxModule, to avoid having to look which sequencer corresponds to which bus.
         """
         for instrument in self.instruments:
             with contextlib.suppress(ParameterNotFound):
                 if isinstance(instrument, QbloxModule):
-                    instrument.setup(parameter, value, channel_id, port_id=port_id)
+                    instrument.setup(parameter, value, channel_id, bus_alias=bus_alias)
                 else:
                     instrument.set_parameter(parameter, value, channel_id)
                 return
         raise ParameterNotFound(f"Could not find parameter {parameter.value} in the system control {self.name}")
 
-    def get_parameter(self, parameter: Parameter, channel_id: int | None = None, port_id: str | None = None):
+    def get_parameter(self, parameter: Parameter, channel_id: int | None = None, bus_alias: str | None = None):
         """Gets a parameter of a specific instrument.
 
         Args:
@@ -151,6 +155,6 @@ class SystemControl(FactoryElement, ABC):
         for instrument in self.instruments:
             with contextlib.suppress(ParameterNotFound):
                 if isinstance(instrument, QbloxModule):
-                    return instrument.get(parameter, channel_id, port_id=port_id)
+                    return instrument.get(parameter, channel_id, bus_alias=bus_alias)
                 return instrument.get_parameter(parameter, channel_id)
         raise ParameterNotFound(f"Could not find parameter {parameter.value} in the system control {self.name}")

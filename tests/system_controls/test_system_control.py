@@ -26,7 +26,7 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     pulse_shape = Gaussian(num_sigmas=4)
     pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
     pulse_event = PulseEvent(pulse=pulse, start_time=0)
-    return PulseBusSchedule(timeline=[pulse_event], port="drive_q0")
+    return PulseBusSchedule(timeline=[pulse_event], bus_alias="drive_q0")
 
 
 @pytest.fixture(name="system_control")
@@ -92,7 +92,7 @@ class TestMethods:
             match="The system control doesn't have any AWG to compile the given pulse sequence",
         ):
             system_control_without_awg.compile(
-                PulseBusSchedule(port="drive_q0"), nshots=1000, repetition_duration=1000, num_bins=1
+                PulseBusSchedule(bus_alias="drive_q0"), nshots=1000, repetition_duration=1000, num_bins=1
             )
 
     def test_compile(self, system_control: SystemControl, pulse_bus_schedule: PulseBusSchedule):
@@ -111,7 +111,7 @@ class TestMethods:
             AttributeError,
             match="The system control doesn't have any AWG to upload a program",
         ):
-            system_control_without_awg.upload(port="drive_q0")
+            system_control_without_awg.upload(bus_alias="drive_q0")
 
     def test_upload(self, system_control: SystemControl, pulse_bus_schedule: PulseBusSchedule):
         """Test upload method."""
@@ -119,7 +119,7 @@ class TestMethods:
         assert isinstance(awg, AWG)
         awg.device = MagicMock()
         _ = system_control.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000, num_bins=1)
-        system_control.upload(port=pulse_bus_schedule.port)
+        system_control.upload(bus_alias=pulse_bus_schedule.bus_alias)
         for seq_idx in range(awg.num_sequencers):
             awg.device.sequencers[seq_idx].sequence.assert_called_once()
 
@@ -129,7 +129,7 @@ class TestMethods:
             AttributeError,
             match="The system control doesn't have any AWG to run a program",
         ):
-            system_control_without_awg.run(port="drive_q0")
+            system_control_without_awg.run(bus_alias="drive_q0")
 
     def test_set_parameter(self, system_control: SystemControl):
         """Test the ``set_parameter`` method with a Rohde & Schwarz instrument."""

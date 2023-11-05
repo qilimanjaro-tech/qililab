@@ -23,7 +23,7 @@ from qililab.system_control import ReadoutSystemControl
 class Buses:
     """Class used as a container of :class:`Bus` objects, these are inside the `elements` attribute, as a list.
 
-    You can add more :class:`Bus` objects to the list, you can get the :class:`Bus` object connected to a concrete port
+    You can add more :class:`Bus` objects to the list and you can get the :class:`Bus` object
     through the `add()` or `get()` methods respectively.
 
     And you can also get all the :class:`Bus` objects containing system controls used for readout via the `readout_buses` property.
@@ -41,18 +41,18 @@ class Buses:
             bus (Bus): Bus object to append."""
         self.elements.append(bus)
 
-    def get(self, port: str):
-        """Get bus connected to the specified port.
+    def get(self, alias: str):
+        """Get bus with the given alias.
 
         Args:
-            port (int): Port of the Chip where the bus is connected to.
+            bus_alias (str): Alias of the bus we want to get.
         """
-        bus = [bus for bus in self.elements if bus.port == port]
+        bus = [bus for bus in self.elements if bus.alias == alias]
         if len(bus) == 1:
             return bus[0]
 
         raise ValueError(
-            f"There can only be one bus connected to a port. There are {len(bus)} buses connected to port {port}."
+            f"There can only be one bus with a specific alias. There are {len(bus)} buses with alias {alias}."
         )
 
     def __iter__(self):

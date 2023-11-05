@@ -17,7 +17,6 @@ from qililab.typings.enums import (
     ConnectionName,
     InstrumentControllerName,
     InstrumentName,
-    NodeName,
     PulseDistortionName,
     PulseShapeName,
     ResultName,
@@ -34,7 +33,6 @@ class FactoryElement:  # pylint: disable=too-few-public-methods
         | PulseShapeName
         | ResultName
         | InstrumentName
-        | NodeName
         | ConnectionName
         | InstrumentControllerName
     )  #: Enumerate for name

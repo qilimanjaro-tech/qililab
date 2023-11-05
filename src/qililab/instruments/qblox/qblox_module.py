@@ -159,7 +159,7 @@ class QbloxModule(AWG):
             self.clear_cache()
 
         compiled_sequences = []
-        sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
+        sequencers = self.get_sequencers_from_bus_alias(bus_alias=pulse_bus_schedule.bus_alias)
         for sequencer in sequencers:
             if pulse_bus_schedule != self._cache.get(sequencer.identifier):
                 sequence = self._compile(pulse_bus_schedule, sequencer)
@@ -180,9 +180,9 @@ class QbloxModule(AWG):
         self.sequences[sequencer.identifier] = (sequence, False)
         return sequence
 
-    def run(self, port: str):
+    def run(self, bus_alias: str):
         """Run the uploaded program"""
-        self.start_sequencer(port=port)
+        self.start_sequencer(bus_alias=bus_alias)
 
     def _translate_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule, sequencer: AWGQbloxSequencer):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
@@ -290,9 +290,9 @@ class QbloxModule(AWG):
     ):
         """Append an acquire instruction to the loop."""
 
-    def start_sequencer(self, port: str):
+    def start_sequencer(self, bus_alias: str):
         """Start sequencer and execute the uploaded instructions."""
-        sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
+        sequencers = self.get_sequencers_from_bus_alias(bus_alias=bus_alias)
         for sequencer in sequencers:
             if sequencer.identifier in self.sequences:
                 self.device.arm_sequencer(sequencer=sequencer.identifier)
@@ -300,7 +300,11 @@ class QbloxModule(AWG):
 
     @Instrument.CheckDeviceInitialized
     def setup(  # pylint: disable=too-many-branches, too-many-return-statements
-        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
+        self,
+        parameter: Parameter,
+        value: float | str | bool,
+        channel_id: int | None = None,
+        bus_alias: str | None = None,
     ):
         """Set Qblox instrument calibration settings."""
         if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
@@ -309,8 +313,8 @@ class QbloxModule(AWG):
             return
 
         if channel_id is None:
-            if port_id is not None:
-                channel_id = self.get_sequencers_from_chip_port_id(chip_port_id=port_id)[0].identifier
+            if bus_alias is not None:
+                channel_id = self.get_sequencers_from_bus_alias(bus_alias=bus_alias)[0].identifier
             elif self.num_sequencers == 1:
                 channel_id = 0
             else:
@@ -352,7 +356,7 @@ class QbloxModule(AWG):
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
-    def get(self, parameter: Parameter, channel_id: int | None = None, port_id: str | None = None):
+    def get(self, parameter: Parameter, channel_id: int | None = None, bus_alias: str | None = None):
         """Get instrument parameter.
 
         Args:
@@ -364,8 +368,8 @@ class QbloxModule(AWG):
             return self.out_offsets[output]
 
         if channel_id is None:
-            if port_id is not None:
-                channel_id = self.get_sequencers_from_chip_port_id(chip_port_id=port_id)[0].identifier
+            if bus_alias is not None:
+                channel_id = self.get_sequencers_from_bus_alias(bus_alias=bus_alias)[0].identifier
             elif self.num_sequencers == 1:
                 channel_id = 0
             else:
@@ -551,13 +555,13 @@ class QbloxModule(AWG):
         self.clear_cache()
         self.device.reset()
 
-    def upload(self, port: str):
+    def upload(self, bus_alias: str):
         """Upload all the previously compiled programs to its corresponding sequencers.
 
         This method must be called after the method ``compile``."""
         if self.nshots is None or self.repetition_duration is None:
             raise ValueError("Please compile the circuit before uploading it to the device.")
-        sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
+        sequencers = self.get_sequencers_from_bus_alias(bus_alias=bus_alias)
         for sequencer in sequencers:
             if (seq_idx := sequencer.identifier) in self.sequences:
                 sequence, uploaded = self.sequences[seq_idx]

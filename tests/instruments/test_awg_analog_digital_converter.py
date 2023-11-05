@@ -57,7 +57,7 @@ def fixture_awg():
         AWGTypes.AWG_SEQUENCERS.value: [
             {
                 AWGSequencerTypes.IDENTIFIER.value: 0,
-                AWGSequencerTypes.CHIP_PORT_ID.value: 0,
+                "bus_alias": "drive_q0",
                 "output_i": 0,
                 "output_q": 1,
                 Parameter.IF.value: 100_000_000,

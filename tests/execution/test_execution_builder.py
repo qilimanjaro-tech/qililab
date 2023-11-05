@@ -71,7 +71,7 @@ class TestExecutionBuilder:
         """Test build method."""
         platform_bus_executions = []
         for pulse_bus_schedule in pulse_schedule.elements:
-            bus = platform.buses.get(pulse_bus_schedule.port)
+            bus = platform.buses.get(pulse_bus_schedule.bus_alias)
             platform_bus_executions.append(BusExecution(bus=bus, pulse_bus_schedules=[pulse_bus_schedule]))
 
         execution_manager = EXECUTION_BUILDER.build(platform=platform, pulse_schedules=[pulse_schedule])
@@ -85,7 +85,7 @@ class TestExecutionBuilder:
         """Test build method with wrong pulse sequence."""
         test_port = "qubit_1000"
         delay = 0
-        pulse_schedule.add_event(pulse_event=pulse_event, port=test_port, port_delay=delay)
+        pulse_schedule.add_event(pulse_event=pulse_event, bus_alias=test_port, delay=delay)
         with pytest.raises(
             ValueError,
             match=f"There can only be one bus connected to a port. There are 0 buses connected to port {test_port}.",

@@ -31,7 +31,6 @@ class AWGSequencerTypes(Enum):
     INTERMEDIATE_FREQUENCY = "intermediate_frequency"
     OFFSET_I = "offset_i"
     OFFSET_Q = "offset_q"
-    CHIP_PORT_ID = "chip_port_id"
 
 
 class AWGIQChannelTypes(Enum):

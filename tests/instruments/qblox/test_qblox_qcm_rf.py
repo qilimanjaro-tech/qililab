@@ -30,7 +30,7 @@ def fixture_settings():
         "awg_sequencers": [
             {
                 "identifier": 0,
-                "chip_port_id": "drive_q0",
+                "bus_alias": "drive_q0",
                 "output_i": 0,
                 "output_q": 1,
                 "num_bins": 1,
@@ -172,7 +172,7 @@ class TestIntegration:
         sequencer.output_i = 3
         sequencer.output_q = 2
         qcm_rf.device = MagicMock()
-        qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, port_id=sequencer.chip_port_id)
+        qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, bus_alias=sequencer.bus_alias)
         qcm_rf.device.set.assert_called_once_with("out1_lo_freq", 2e9)
 
     def test_setup_with_lo_frequency_without_channel_id_raises_error(self, settings):

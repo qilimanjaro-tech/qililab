@@ -143,23 +143,6 @@ class PulseShapeName(str, Enum):
     COSINE = "cosine"
 
 
-class NodeName(str, Enum):
-    """Node names.
-
-    Args:
-        enum (str): Available node names:
-        * qubit
-        * resonator
-        * coupler
-    """
-
-    QUBIT = "qubit"
-    RESONATOR = "resonator"
-    COUPLER = "coupler"
-    COIL = "coil"
-    PORT = "port"
-
-
 class InstrumentName(str, Enum):
     """Instrument names.
 
@@ -437,15 +420,6 @@ class VNASweepModes(str, Enum):
     CONT = "cont"
     SING = "single"
     GRO = "group"
-
-
-class Line(str, Enum):
-    """Chip line"""
-
-    FLUX = "flux"
-    DRIVE = "drive"
-    FEEDLINE_INPUT = "feedline_input"
-    FEEDLINE_OUTPUT = "feedline_output"
 
 
 class Qubits(str, Enum):  # pylint: disable=missing-class-docstring

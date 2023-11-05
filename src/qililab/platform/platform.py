@@ -37,7 +37,7 @@ from qililab.pulse import PulseSchedule
 from qililab.result import Result
 from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
-from qililab.typings.enums import Line, Parameter
+from qililab.typings.enums import Parameter
 
 from .components import Bus, Buses
 
@@ -46,8 +46,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
     """Platform object representing the laboratory setup used to control quantum devices.
 
     The platform is responsible for managing the initializations, connections, setups, and executions of the laboratory, which mainly consists of:
-
-    - :class:`.Chip`
 
     - Buses
 
@@ -72,7 +70,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
     >>> result = platform.execute(...) # Executes the platform.
 
     Args:
-        runcard (Runcard): Dataclass containing the serialized platform (chip, instruments, buses...), created during :meth:`ql.build_platform()` with the given runcard dictionary.
+        runcard (Runcard): Dataclass containing the serialized platform (instruments, buses...), created during :meth:`ql.build_platform()` with the given runcard dictionary.
         connection (API | None = None): `Qiboconnection's <https://pypi.org/project/qiboconnection>`_ API class used to block access to other users when connected to the platform.
 
     Examples:
@@ -91,7 +89,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
             - ``platform.turn_on_instruments()`` is used to turn on the signal output of all the sources defined in the runcard (RF, Voltage and Current sources).
 
-            - You can print ``platform.chip`` and ``platform.buses`` at any time to check the platform's structure.
+            - You can print ``platform.buses`` at any time to check the platform's structure.
 
         **1. Executing a circuit with Platform:**
 
@@ -278,14 +276,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         )
         """All the instrument controllers of the platform and their necessary settings (``dataclass``). Each individual instrument controller is contained in a list within the dataclass."""
 
-        self.chip = nx.from_dict_of_lists(asdict(runcard.chip))
-        """Chip and nodes settings of the platform (:class:`.Chip` dataclass). Each individual node is contained in a list within the :class:`.Chip` class."""
-
         self.buses = Buses(
-            elements=[
-                Bus(settings=asdict(bus), platform_instruments=self.instruments, chip=self.chip)
-                for bus in runcard.buses
-            ]
+            elements=[Bus(settings=asdict(bus), platform_instruments=self.instruments) for bus in runcard.buses]
         )
         """All the buses of the platform and their necessary settings (``dataclass``). Each individual bus is contained in a list within the dataclass."""
 
@@ -475,7 +467,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         name_dict = {RUNCARD.NAME: self.name}
         device_id = {RUNCARD.DEVICE_ID: self.device_id}
         gates_settings_dict = {RUNCARD.GATES_SETTINGS: self.gates_settings.to_dict()}
-        chip_dict = {RUNCARD.CHIP: nx.to_dict_of_lists(self.chip) if self.chip is not None else None}
         buses_dict = {RUNCARD.BUSES: self.buses.to_dict() if self.buses is not None else None}
         instrument_dict = {RUNCARD.INSTRUMENTS: self.instruments.to_dict() if self.instruments is not None else None}
         instrument_controllers_dict = {
@@ -484,15 +475,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             else None,
         }
 
-        return (
-            name_dict
-            | device_id
-            | gates_settings_dict
-            | chip_dict
-            | buses_dict
-            | instrument_dict
-            | instrument_controllers_dict
-        )
+        return name_dict | device_id | gates_settings_dict | buses_dict | instrument_dict | instrument_controllers_dict
 
     def __str__(self) -> str:
         """String representation of the platform.
@@ -597,7 +580,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         programs = {}
         for pulse_bus_schedule in pulse_schedule.elements:
-            bus = self.buses.get(port=pulse_bus_schedule.port)
+            bus = self.buses.get(alias=pulse_bus_schedule.bus_alias)
             bus_programs = bus.compile(pulse_bus_schedule, num_avg, repetition_duration, num_bins)
             programs[bus.alias] = bus_programs
 

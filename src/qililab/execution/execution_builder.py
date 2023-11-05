@@ -84,9 +84,9 @@ class ExecutionBuilder(metaclass=Singleton):
             bus_idx: index of the bus
             bus: Bus object
         """
-        port = pulse_bus_schedule.port
-        bus = platform.buses.get(port=port)
-        return port, bus
+        alias = pulse_bus_schedule.bus_alias
+        bus = platform.buses.get(alias=pulse_bus_schedule.bus_alias)
+        return alias, bus
 
     def _get_bus_info_from_loop_alias(self, platform: Platform, loop: Loop):
         """get the bus information that it is connected to the port from the loop alias. Loop alias has to be the same as the bus alias

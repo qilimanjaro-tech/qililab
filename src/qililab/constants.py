@@ -45,7 +45,6 @@ class RUNCARD:
     GATES_SETTINGS = "gates_settings"
     PLATFORM = "platform"
     BUSES = "buses"
-    CHIP = "chip"
     AWG = "awg"
     SIGNAL_GENERATOR = "signal_generator"
     ATTENUATOR = "attenuator"
@@ -120,7 +119,6 @@ class EXPERIMENT:
 class BUS:
     """Bus constants."""
 
-    PORT = "port"
     SYSTEM_CONTROL = "system_control"
     ATTENUATOR = "attenuator"
     SCHEDULES = "schedules"
@@ -140,15 +138,6 @@ class LOOP:
     VALUES = "values"
 
 
-class NODE:
-    """Chip node class and attribute names"""
-
-    NODES = "nodes"
-    FREQUENCY = "frequency"
-    QUBIT_INDEX = "qubit_index"
-    LINE = "line"
-
-
 class PULSESCHEDULES:
     """Pulse Schedules attribute names."""
 
@@ -159,7 +148,6 @@ class PULSEBUSSCHEDULE:
     """PULSE BUS SCHEDULE attribute names."""
 
     TIMELINE = "timeline"
-    PORT = "port"
 
 
 class PULSE:
@@ -170,7 +158,6 @@ class PULSE:
     FREQUENCY = "frequency"
     PHASE = "phase"
     DURATION = "duration"
-    PORT = "port"
     PULSE_SHAPE = "pulse_shape"
 
 

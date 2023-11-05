@@ -143,8 +143,8 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             self.num_bins = num_bins
             self.clear_cache()
 
-        # Get all sequencers connected to port the schedule acts on
-        sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
+        # Get all sequencers connected to the bus the schedule acts on
+        sequencers = self.get_sequencers_from_bus_alias(bus_alias=pulse_bus_schedule.bus_alias)
         # Separate the readout schedules by the qubit they act on
         qubit_schedules = pulse_bus_schedule.qubit_schedules()
 
@@ -162,7 +162,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             qubit_sequencers = [sequencer for sequencer in sequencers if sequencer.qubit == schedule.qubit]
             if len(qubit_sequencers) != 1:
                 raise IndexError(
-                    f"Expected 1 sequencer connected to port {schedule.port} and qubit {schedule.qubit}, "
+                    f"Expected 1 sequencer connected to bus {schedule.bus_alias} and qubit {schedule.qubit}, "
                     f"got {len(qubit_sequencers)}"
                 )
             sequencer = qubit_sequencers[0]
@@ -347,10 +347,14 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
 
     @Instrument.CheckDeviceInitialized
     def setup(
-        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
+        self,
+        parameter: Parameter,
+        value: float | str | bool,
+        channel_id: int | None = None,
+        bus_alias: str | None = None,
     ):
         """set a specific parameter to the instrument"""
         try:
             AWGAnalogDigitalConverter.setup(self, parameter=parameter, value=value, channel_id=channel_id)
         except ParameterNotFound:
-            QbloxModule.setup(self, parameter=parameter, value=value, channel_id=channel_id, port_id=port_id)
+            QbloxModule.setup(self, parameter=parameter, value=value, channel_id=channel_id, bus_alias=bus_alias)

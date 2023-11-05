@@ -35,7 +35,7 @@ def get_pulse_bus_schedule(start_time):
     )
     pulse_event = PulseEvent(pulse=pulse, start_time=start_time)
 
-    return PulseBusSchedule(timeline=[pulse_event], port=0)
+    return PulseBusSchedule(timeline=[pulse_event], bus_alias=0)
 
 
 expected_program_str_0 = r"setup:\n    move             0, R0\n    move             1, R1\n    move             1, R2\n    wait_sync        4\n    \naverage:\n    move             0, R3\n    bin:\n        reset_ph\n        set_awg_gain     32767, 32767\n        set_ph           0\n        play             0, 1, 4\n        acquire          0, R3, 4\n        long_wait_\d+:\n            wait             992\n            \n        add              R3, 1, R3\n        nop\n        jlt              R3, 1, @bin\n    loop             R2, @average\nstop:\n    stop\n    \n"

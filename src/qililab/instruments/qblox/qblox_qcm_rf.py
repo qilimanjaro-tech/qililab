@@ -72,7 +72,11 @@ class QbloxQCMRF(QbloxQCM):
 
     @Instrument.CheckDeviceInitialized
     def setup(
-        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
+        self,
+        parameter: Parameter,
+        value: float | str | bool,
+        channel_id: int | None = None,
+        bus_alias: str | None = None,
     ):
         """Set a parameter of the Qblox QCM-RF module.
 
@@ -84,8 +88,8 @@ class QbloxQCMRF(QbloxQCM):
         if parameter == Parameter.LO_FREQUENCY:
             if channel_id is not None:
                 sequencer: AWGQbloxSequencer = self._get_sequencer_by_id(channel_id)
-            elif port_id is not None:
-                sequencer = self.get_sequencers_from_chip_port_id(chip_port_id=port_id)[0]
+            elif bus_alias is not None:
+                sequencer = self.get_sequencers_from_bus_alias(bus_alias=bus_alias)[0]
             else:
                 raise ParameterNotFound(
                     "`channel_id` cannot be None when setting the `LO_FREQUENCY` parameter."
@@ -112,7 +116,7 @@ class QbloxQCMRF(QbloxQCM):
             return
         super().setup(parameter, value, channel_id)
 
-    def get(self, parameter: Parameter, channel_id: int | None = None, port_id: str | None = None):
+    def get(self, parameter: Parameter, channel_id: int | None = None, bus_alias: str | None = None):
         """Set a parameter of the Qblox QCM-RF module.
 
         Args:
@@ -123,8 +127,8 @@ class QbloxQCMRF(QbloxQCM):
         if parameter == Parameter.LO_FREQUENCY:
             if channel_id is not None:
                 sequencer: AWGQbloxSequencer = self._get_sequencer_by_id(channel_id)
-            elif port_id is not None:
-                sequencer = self.get_sequencers_from_chip_port_id(chip_port_id=port_id)[0]
+            elif bus_alias is not None:
+                sequencer = self.get_sequencers_from_bus_alias(bus_alias=bus_alias)[0]
             else:
                 raise ParameterNotFound(
                     "`channel_id` cannot be None when setting the `LO_FREQUENCY` parameter."

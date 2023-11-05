@@ -26,7 +26,7 @@ def fixture_settings():
         "awg_sequencers": [
             {
                 "identifier": 0,
-                "chip_port_id": "feedline_input",
+                "bus_alias": "feedline_input",
                 "qubit": 0,
                 "output_i": 1,
                 "output_q": 0,

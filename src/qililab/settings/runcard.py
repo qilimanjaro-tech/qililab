@@ -34,20 +34,18 @@ class Runcard:
 
     The input to the constructor should be a dictionary of the desired runcard with the following structure:
     - gates_settings:
-    - chip:
     - buses:
     - instruments: List of "instruments" dictionaries
     - instrument_controllers: List of "instrument_controllers" dictionaries
 
-    The gates_settings, chip and bus dictionaries will be passed to their corresponding Runcard.GatesSettings,
-    Runcard.Chip or Runcard.Bus classes here, meanwhile the instruments and instrument_controllers will remain dictionaries.
+    The gates_settings and bus dictionaries will be passed to their corresponding Runcard.GatesSettings and Runcard.Bus
+    classes here, meanwhile the instruments and instrument_controllers will remain dictionaries.
 
-    Then this full class gets passed to the Platform who will instantiate the actual qililab Chip, Buses/Bus and the
+    Then this full class gets passed to the Platform who will instantiate the actual Buses/Bus and the
     corresponding Instrument classes with the settings attributes of this class.
 
     Args:
         gates_settings (dict): Gates settings dictionary -> Runcard.GatesSettings inner dataclass
-        chip (dict): Chip settings dictionary -> Runcard.Chip settings inner dataclass
         buses (list[dict]): List of Bus settings dictionaries -> list[Runcard.Bus] settings inner dataclass
         instruments (list[dict]): List of dictionaries containing the "instruments" information (does not transform)
         instruments_controllers (list[dict]): List of dictionaries containing the "instrument_controllers" information
@@ -62,7 +60,6 @@ class Runcard:
         Args:
             alias (str): Alias of the bus.
             system_control (dict): Dictionary containing the settings of the system control of the bus.
-            port (str): Alias of the port of the chip the bus is connected to.
             distortions (list[dict]): List of dictionaries containing the settings of the distortions applied to each
                 bus.
             delay (int, optional): Delay applied to all pulses sent in this bus. Defaults to 0.
@@ -70,19 +67,8 @@ class Runcard:
 
         alias: str
         system_control: dict
-        port: str
         distortions: list[dict]
         delay: int = 0
-
-    @dataclass
-    class Chip:
-        """Dataclass with all the settings/nodes the chip of the platform needs.
-
-        Args:
-            nodes (list[dict]): List of dictionaries containing the settings of all the nodes of the chip.
-        """
-
-        nodes: list[dict]
 
     @nested_dataclass
     class GatesSettings(Settings):
@@ -242,7 +228,6 @@ class Runcard:
     # Runcard class actual initialization
     name: str
     device_id: int
-    chip: Chip
     buses: list[Bus]  # This actually is a list[dict] until the post_init is called
     instruments: list[dict]
     instrument_controllers: list[dict]

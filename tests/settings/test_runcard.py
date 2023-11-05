@@ -39,9 +39,6 @@ class TestRuncard:
         assert isinstance(runcard.gates_settings, runcard.GatesSettings)
         assert runcard.gates_settings.to_dict() == Galadriel.runcard["gates_settings"]
 
-        assert isinstance(runcard.chip, runcard.Chip)
-        assert asdict(runcard.chip) == Galadriel.runcard["chip"]
-
         assert isinstance(runcard.buses, list)
         assert isinstance(runcard.buses[0], runcard.Bus)
         for index, bus in enumerate(runcard.buses):
@@ -69,7 +66,6 @@ class TestRuncard:
         assert str(new_runcard.name) == str(runcard.name)
         assert str(new_runcard.device_id) == str(runcard.device_id)
         assert str(new_runcard.buses) == str(runcard.buses)
-        assert str(new_runcard.chip) == str(runcard.chip)
         assert str(new_runcard.instruments) == str(runcard.instruments)
         assert str(new_runcard.instrument_controllers) == str(runcard.instrument_controllers)
 

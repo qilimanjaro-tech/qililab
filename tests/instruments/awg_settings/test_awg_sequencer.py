@@ -7,7 +7,7 @@ from qililab.instruments.awg_settings import AWGSequencer
 def awg_settings(output_i: int = 0, output_q: int = 1):
     return {
         "identifier": 0,
-        "chip_port_id": 1,
+        "bus_alias": 1,
         "output_i": output_i,
         "output_q": output_q,
         "intermediate_frequency": 20000000,
@@ -29,7 +29,7 @@ class TestInitialization:
         settings = awg_settings()
         awg_sequencer = AWGSequencer(**settings)
         assert awg_sequencer.identifier == settings["identifier"]
-        assert awg_sequencer.chip_port_id == settings["chip_port_id"]
+        assert awg_sequencer.bus_alias == settings["bus_alias"]
         assert awg_sequencer.output_i == settings["output_i"]
         assert awg_sequencer.output_q == settings["output_q"]
         assert awg_sequencer.intermediate_frequency == settings["intermediate_frequency"]

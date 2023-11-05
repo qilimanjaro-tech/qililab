@@ -192,7 +192,7 @@ class Galadriel:
         AWGTypes.AWG_SEQUENCERS.value: [
             {
                 "identifier": 0,
-                "chip_port_id": "drive_q0",
+                "bus_alias": "drive_q0",
                 "output_i": 0,
                 "output_q": 1,
                 Parameter.NUM_BINS.value: 1,
@@ -207,7 +207,7 @@ class Galadriel:
             },
             {
                 "identifier": 1,
-                "chip_port_id": "flux_q0",
+                "bus_alias": "flux_q0",
                 "output_i": 0,
                 "output_q": 1,
                 Parameter.NUM_BINS.value: 1,
@@ -249,7 +249,7 @@ class Galadriel:
         AWGTypes.AWG_SEQUENCERS.value: [
             {
                 "identifier": 0,
-                "chip_port_id": "feedline_input",
+                "bus_alias": "feedline_input",
                 "qubit": 0,
                 "output_i": 0,
                 "output_q": 1,
@@ -279,7 +279,7 @@ class Galadriel:
             },
             {
                 "identifier": 1,
-                "chip_port_id": "feedline_input",
+                "bus_alias": "feedline_input",
                 "qubit": 1,
                 "output_i": 0,
                 "output_q": 1,
@@ -448,28 +448,6 @@ class Galadriel:
         qmm_controller_0,
     ]
 
-    chip: dict[str, Any] = {
-        "nodes": [
-            {"name": "port", "alias": "flux_q0", "line": "flux", "nodes": ["q0"]},
-            {"name": "port", "alias": "drive_q0", "line": "drive", "nodes": ["q0"]},
-            {"name": "port", "alias": "feedline_input", "line": "feedline_input", "nodes": ["resonator_q0"]},
-            {"name": "port", "alias": "feedline_output", "line": "feedline_output", "nodes": ["resonator_q0"]},
-            {
-                "name": "resonator",
-                "alias": "resonator_q0",
-                "frequency": 7.34730e09,
-                "nodes": ["feedline_input", "feedline_output", "q0"],
-            },
-            {
-                "name": "qubit",
-                "alias": "q0",
-                "qubit_index": 0,
-                "frequency": 3.451e09,
-                "nodes": ["flux_q0", "drive_q0", "resonator_q0"],
-            },
-        ],
-    }
-
     buses: list[dict[str, Any]] = [
         {
             RUNCARD.ALIAS: "drive_line_q0_bus",
@@ -477,7 +455,6 @@ class Galadriel:
                 RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
                 RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
             },
-            "port": "drive_q0",
             RUNCARD.DISTORTIONS: [],
             RUNCARD.DELAY: 0,
         },
@@ -487,7 +464,6 @@ class Galadriel:
                 "name": SystemControlName.READOUT_SYSTEM_CONTROL,
                 RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QRM.value, "rs_1"],
             },
-            "port": "feedline_input",
             RUNCARD.DISTORTIONS: [],
             RUNCARD.DELAY: 0,
         },
@@ -497,7 +473,6 @@ class Galadriel:
                 RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
                 RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
             },
-            "port": "flux_q0",
             RUNCARD.DISTORTIONS: [],
             RUNCARD.DELAY: 0,
         },
@@ -507,7 +482,6 @@ class Galadriel:
         RUNCARD.NAME: name,
         RUNCARD.DEVICE_ID: device_id,
         RUNCARD.GATES_SETTINGS: gates_settings,
-        RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,
         RUNCARD.INSTRUMENTS: instruments,
         RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
@@ -720,7 +694,7 @@ experiment: dict[str, Any] = {
                             PULSEEVENT.START_TIME: 40,
                         }
                     ],
-                    PULSEBUSSCHEDULE.PORT: 1,
+                    "bus_alias": "drive_q0",
                 }
             ],
         }
@@ -795,21 +769,6 @@ class SauronVNA:
     instruments: list[dict] = [keysight_e5080b, agilent_e5071b]
     instrument_controllers: list[dict] = [keysight_e5080b_controller, agilent_e5071b_controller]
 
-    chip: dict[str, Any] = {
-        "nodes": [
-            {"name": "port", "alias": "drive_q0", "line": "drive", "nodes": ["q0"]},
-            {"name": "port", "alias": "feedline_input", "line": "feedline_input", "nodes": ["resonator_q0"]},
-            {"name": "resonator", "alias": "resonator_q0", "frequency": 8.0726e09, "nodes": ["feedline_input", "q0"]},
-            {
-                "name": "qubit",
-                "alias": "q0",
-                "qubit_index": 0,
-                "frequency": 6.5328e09,
-                "nodes": ["drive_q0", "resonator_q0"],
-            },
-        ],
-    }
-
     buses: list[dict[str, Any]] = [
         {
             "alias": "keysight_e5080b_readout_bus",
@@ -817,7 +776,6 @@ class SauronVNA:
                 "name": SystemControlName.READOUT_SYSTEM_CONTROL,
                 RUNCARD.INSTRUMENTS: [InstrumentName.KEYSIGHT_E5080B.value],
             },
-            "port": "drive_q0",
             RUNCARD.DISTORTIONS: [],
         },
         {
@@ -826,7 +784,6 @@ class SauronVNA:
                 "name": SystemControlName.READOUT_SYSTEM_CONTROL,
                 RUNCARD.INSTRUMENTS: [InstrumentName.AGILENT_E5071B.value],
             },
-            "port": "feedline_input",
             RUNCARD.DISTORTIONS: [],
         },
     ]
@@ -836,7 +793,6 @@ class SauronVNA:
         RUNCARD.DEVICE_ID: device_id,
         RUNCARD.GATES_SETTINGS: gates_settings,
         RUNCARD.INSTRUMENTS: instruments,
-        RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,
         RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
     }

@@ -188,13 +188,12 @@ def build_platform(
             "name": name,                                           # str
             "device_id": device_id,                                 # int
             "gates_settings": gates_settings,                       # dict
-            "chip": chip,                                           # dict
             "buses": buses,                                         # list[dict]
             "instruments": instruments,                             # list[dict]
             "instrument_controllers": instrument_controllers        # list[dict]
         }
 
-    which contains the information the :class:`.Platform` class uses to connect, setup and control the actual chip, buses and instruments of the laboratory.
+    which contains the information the :class:`.Platform` class uses to connect, setup and control the actual buses and instruments of the laboratory.
 
     .. note::
 

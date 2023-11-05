@@ -41,4 +41,3 @@ Experiment Portfolio
     ~T2Echo
 """
 from .experiment import Experiment
-from .portfolio import T1, ExperimentAnalysis, FlippingSequence, Rabi, T2Echo

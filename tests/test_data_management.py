@@ -132,7 +132,7 @@ class TestBuildPlatformCornerCases:
         with open(file="./test.yml", mode="r", encoding="utf8") as generated_f:
             generated_f_dict = yaml.safe_load(stream=generated_f)
 
-        for i in ["name", "device_id", "chip", "instruments", "instrument_controllers"]:
+        for i in ["name", "device_id", "instruments", "instrument_controllers"]:
             assert yaml_f_dict[i] == generated_f_dict[i]
 
         assert (

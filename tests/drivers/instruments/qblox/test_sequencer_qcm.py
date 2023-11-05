@@ -39,7 +39,7 @@ def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, nu
     pulse_event = PulseEvent(pulse=pulse, start_time=start_time)
     timeline = [pulse_event for _ in range(number_pulses)]
 
-    return PulseBusSchedule(timeline=timeline, port=0)
+    return PulseBusSchedule(timeline=timeline, bus_alias="drive_q0")
 
 
 def get_envelope():

@@ -12,7 +12,6 @@ from qpysequence import Sequence
 from ruamel.yaml import YAML
 
 from qililab import save_platform
-from qililab.chip import Chip, Qubit
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.instrument_controllers import InstrumentControllers
 from qililab.instruments import AWG, AWGAnalogDigitalConverter, SignalGenerator
@@ -53,7 +52,6 @@ class TestPlatformInitialization:
         assert isinstance(platform.gates_settings, Runcard.GatesSettings)
         assert isinstance(platform.instruments, Instruments)
         assert isinstance(platform.instrument_controllers, InstrumentControllers)
-        assert isinstance(platform.chip, Chip)
         assert isinstance(platform.buses, Buses)
         assert platform.connection is None
         assert platform._connected_to_instruments is False
@@ -93,11 +91,6 @@ class TestPlatform:
         element = platform.get_element(alias="rs_0")
         assert isinstance(element, SignalGenerator)
 
-    def test_qubit_0_instance(self, platform: Platform):
-        """Test qubit 0 instance."""
-        element = platform.get_element(alias="q0")
-        assert isinstance(element, Qubit)
-
     def test_bus_0_awg_instance(self, platform: Platform):
         """Test bus 0 qubit control instance."""
         element = platform.get_element(alias=InstrumentName.QBLOX_QCM.value)
@@ -115,25 +108,6 @@ class TestPlatform:
         save_platform(path="runcard.yml", platform=platform)
         mock_open.assert_called_once_with(file=Path("runcard.yml"), mode="w", encoding="utf-8")
         mock_dump.assert_called_once()
-
-    def test_get_bus_by_qubit_index(self, platform: Platform):
-        """Test get_bus_by_qubit_index method."""
-        _, control_bus, readout_bus = platform._get_bus_by_qubit_index(0)
-        assert isinstance(control_bus, Bus)
-        assert isinstance(readout_bus, Bus)
-        assert not isinstance(control_bus.system_control, ReadoutSystemControl)
-        assert isinstance(readout_bus.system_control, ReadoutSystemControl)
-
-    def test_get_bus_by_qubit_index_raises_error(self, platform: Platform):
-        """Test that the get_bus_by_qubit_index method raises an error when there is no bus connected to the port
-        of the given qubit."""
-        platform.buses[0].settings.port = 100
-        with pytest.raises(
-            ValueError,
-            match="There can only be one bus connected to a port. There are 0 buses connected to port drive_q0",
-        ):
-            platform._get_bus_by_qubit_index(0)
-        platform.buses[0].settings.port = 0  # Setting it back to normal to not disrupt future tests
 
     @pytest.mark.parametrize("alias", ["drive_line_bus", "feedline_input_output_bus", "foobar"])
     def test_get_bus_by_alias(self, platform: Platform, alias):
@@ -164,7 +138,6 @@ class TestPlatform:
         assert str(new_platform.name) == str(platform.name)
         assert str(new_platform.device_id) == str(platform.device_id)
         assert str(new_platform.buses) == str(platform.buses)
-        assert str(new_platform.chip) == str(platform.chip)
         assert str(new_platform.instruments) == str(platform.instruments)
         assert str(new_platform.instrument_controllers) == str(platform.instrument_controllers)
 
@@ -178,7 +151,6 @@ class TestPlatform:
         assert str(newest_platform.name) == str(new_platform.name)
         assert str(newest_platform.device_id) == str(new_platform.device_id)
         assert str(newest_platform.buses) == str(new_platform.buses)
-        assert str(newest_platform.chip) == str(new_platform.chip)
         assert str(newest_platform.instruments) == str(new_platform.instruments)
         assert str(newest_platform.instrument_controllers) == str(new_platform.instrument_controllers)
 
@@ -202,9 +174,9 @@ class TestMethods:
             amplitude=1, phase=0.5, duration=200, frequency=1e9, pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
         )
         readout_pulse = Pulse(amplitude=1, phase=0.5, duration=1500, frequency=1e9, pulse_shape=Rectangular())
-        pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), port="drive_q0", port_delay=0)
+        pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), bus_alias="drive_q0", delay=0)
         pulse_schedule.add_event(
-            PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), port="feedline_input", port_delay=0
+            PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), bus_alias="feedline_input", delay=0
         )
 
         self._compile_and_assert(platform, pulse_schedule, 2)
@@ -228,9 +200,9 @@ class TestMethods:
             amplitude=1, phase=0.5, duration=200, frequency=1e9, pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
         )
         readout_pulse = Pulse(amplitude=1, phase=0.5, duration=1500, frequency=1e9, pulse_shape=Rectangular())
-        pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), port="drive_q0", port_delay=0)
+        pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), bus_alias="drive_q0", delay=0)
         pulse_schedule.add_event(
-            PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), port="feedline_input", port_delay=0
+            PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), bus_alias="feedline_input", delay=0
         )
         with patch.object(Bus, "upload") as upload:
             with patch.object(Bus, "run") as run:
@@ -273,13 +245,7 @@ class TestMethods:
 
     def test_execute_raises_error_if_more_than_one_readout_bus_present(self, platform: Platform):
         """Test that `Platform.execute` raises an error when the platform contains more than one readout bus."""
-        platform.buses.add(
-            Bus(
-                settings=copy.deepcopy(Galadriel.buses[1]),
-                platform_instruments=platform.instruments,
-                chip=platform.chip,
-            )
-        )
+        platform.buses.add(Bus(settings=copy.deepcopy(Galadriel.buses[1]), platform_instruments=platform.instruments))
 
         with patch.object(Bus, "upload"):
             with patch.object(Bus, "run"):
@@ -343,7 +309,7 @@ class TestMethods:
         bus = platform._get_bus_by_alias(alias="drive_line_q0_bus")
         awg = bus.system_control.instruments[0]
         assert isinstance(awg, QbloxModule)
-        sequencer = awg.get_sequencers_from_chip_port_id(bus.port)[0]
+        sequencer = awg.get_sequencers_from_bus_alias(bus.port)[0]
         assert (sequencer.gain_i, sequencer.gain_q) == platform.get_parameter(
             parameter=Parameter.GAIN, alias="drive_line_q0_bus"
         )

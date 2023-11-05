@@ -141,7 +141,7 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
         pulse_shape=pulse_shape,
     )
     pulse_event = PulseEvent(pulse=pulse, start_time=0)
-    return PulseBusSchedule(timeline=[pulse_event], port=0)
+    return PulseBusSchedule(timeline=[pulse_event], bus_alias="drive_q0")
 
 
 @pytest.fixture(name="cluster")

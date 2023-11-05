@@ -25,7 +25,6 @@ from qililab.instruments import AWG
 from qililab.platform import Bus, Platform
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.transpiler import Drag
-from qililab.typings.enums import Line
 from qililab.utils import Factory, qibo_gates
 
 from .pulse import Pulse
@@ -62,7 +61,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
         self, circuits: list[Circuit]
     ) -> list[PulseSchedule]:
         """Translates each circuit to a PulseSequences class, which is a list of PulseSequence classes for
-        each different port and pulse name (control/readout).
+        each different bus and pulse name (control/readout).
 
         Args:
             circuits (List[Circuit]): List of Qibo Circuit classes.
@@ -116,7 +115,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
                     if isinstance(gate, M):
                         gate = M(*gate.qubits[1:])
                     # add event
-                    pulse_schedule.add_event(pulse_event=pulse_event, port=bus.port, port_delay=bus.settings.delay)  # type: ignore
+                    pulse_schedule.add_event(pulse_event=pulse_event, bus_alias=bus.port, delay=bus.settings.delay)  # type: ignore
 
             for qubit in self.platform.chip.qubits:
                 with contextlib.suppress(ValueError):
@@ -127,7 +126,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
                         if flux_bus and any(
                             isinstance(instrument, AWG) for instrument in flux_bus.system_control.instruments
                         ):
-                            pulse_schedule.create_schedule(port=flux_port)
+                            pulse_schedule.create_schedule(bus_alias=flux_port)
 
             pulse_schedule_list.append(pulse_schedule)
 
@@ -193,7 +192,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
             time = max(time, schedule_element.pulse.duration + schedule_element.wait_time)
         return time
 
-    def _get_gate_qubits(self, gate: Gate, schedule: list[GateEventSettings] | None = None) -> list[int]:
+    def _get_gate_qubits(self, gate: Gate, schedule: list[GateEventSettings] | None = None) -> tuple[int, ...]:
         """Gets qubits involved in gate. This includes gate.qubits but also qubits which are targets of
         buses in the gate schedule
 
@@ -203,7 +202,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
         Returns:
             list[int]: list of qubits
         """
-        schedule_qubits = []
+        schedule_qubits: list[int] = []
         if schedule is not None:
             for schedule_element in schedule:
                 bus = self.platform._get_bus_by_alias(schedule_element.bus)
@@ -213,7 +212,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
 
         gate_qubits = list(gate.qubits)
 
-        return list(set(schedule_qubits + gate_qubits))  # convert to set and back to list to remove repeated items
+        return tuple(set(schedule_qubits + gate_qubits))  # convert to set and back to list to remove repeated items
 
     def _gate_element_to_pulse_event(
         self, time: int, gate: Gate, gate_event: GateEventSettings, bus: Bus

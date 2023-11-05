@@ -15,9 +15,7 @@
 """Bus class."""
 from dataclasses import InitVar, dataclass
 
-import networkx as nx
-
-from qililab.constants import BUS, NODE, RUNCARD
+from qililab.constants import BUS, RUNCARD
 from qililab.instruments import Instruments, ParameterNotFound
 from qililab.pulse import PulseBusSchedule, PulseDistortion
 from qililab.result import Result
@@ -35,12 +33,8 @@ class Bus:
     which is connected to one or multiple qubits.
 
     Args:
-        targets (list[str]): Port target (or targets in case of multiple resonators).
         settings (BusSettings): Bus settings.
     """
-
-    targets: list[str]
-    """Port target (or targets in case of multiple resonators)."""
 
     @dataclass
     class BusSettings(Settings):
@@ -49,18 +43,15 @@ class Bus:
         Args:
             alias (str): Alias of the bus.
             system_control (SystemControl): System control used to control and readout the qubits of the bus.
-            port (str): Alias of the port where bus is connected.
             distortions (list[PulseDistotion]): List of the distortions to apply to the Bus.
             delay (int): Bus delay
         """
 
         alias: str
         system_control: SystemControl
-        port: str
         platform_instruments: InitVar[Instruments]
         distortions: list[PulseDistortion]
         delay: int
-        qubit: None | int
 
         def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
             if isinstance(self.system_control, dict):
@@ -75,13 +66,12 @@ class Bus:
             ]
 
     settings: BusSettings
-    """Bus settings. Containing the alias of the bus, the system control used to control and readout its qubits, the alias
-    of the port where it's connected, the list of the distortions to apply, and its delay.
+    """Bus settings. Containing the alias of the bus, the system control used to control and readout its qubits, the
+    list of the distortions to apply, and its delay.
     """
 
-    def __init__(self, settings: dict, platform_instruments: Instruments, chip: nx.Graph):
+    def __init__(self, settings: dict, platform_instruments: Instruments):
         self.settings = self.BusSettings(**settings, platform_instruments=platform_instruments)  # type: ignore
-        self.targets = list(chip[self.port].keys())
 
     @property
     def alias(self):
@@ -102,15 +92,6 @@ class Bus:
         return self.settings.system_control
 
     @property
-    def port(self):
-        """Bus 'resonator' property.
-
-        Returns:
-            Resonator: settings.resonator.
-        """
-        return self.settings.port
-
-    @property
     def distortions(self):
         """Bus 'distortions' property.
 
@@ -128,20 +109,9 @@ class Bus:
         """
         return self.settings.delay
 
-    @property
-    def qubit(self) -> int | None:
-        """Bus 'qubit' property.
-
-        Returns:
-            int | None: Qubit index.
-        """
-        return self.settings.qubit
-
     def __str__(self):
         """String representation of a bus. Prints a drawing of the bus elements."""
-        return f"Bus {self.alias}:  ----{self.system_control}---" + "".join(
-            f"--|{target}|----" for target in self.targets
-        )
+        return f"Bus {self.alias}:  ----{self.system_control}---"
 
     def __eq__(self, other: object) -> bool:
         """compare two Bus objects"""
@@ -174,7 +144,7 @@ class Bus:
         else:
             try:
                 self.system_control.set_parameter(
-                    parameter=parameter, value=value, channel_id=channel_id, port_id=self.port
+                    parameter=parameter, value=value, channel_id=channel_id, bus_alias=self.alias
                 )
             except ParameterNotFound as error:
                 raise ParameterNotFound(
@@ -192,7 +162,7 @@ class Bus:
         if parameter == Parameter.DELAY:
             return self.settings.delay
         try:
-            return self.system_control.get_parameter(parameter=parameter, channel_id=channel_id, port_id=self.port)
+            return self.system_control.get_parameter(parameter=parameter, channel_id=channel_id, bus_alias=self.alias)
         except ParameterNotFound as error:
             raise ParameterNotFound(
                 f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
@@ -213,11 +183,11 @@ class Bus:
 
     def upload(self):
         """Uploads any previously compiled program into the instrument."""
-        self.system_control.upload(port=self.port)
+        self.system_control.upload(bus_alias=self.alias)
 
     def run(self) -> None:
         """Runs any previously uploaded program into the instrument."""
-        self.system_control.run(port=self.port)
+        self.system_control.run(bus_alias=self.alias)
 
     def acquire_result(self) -> Result:
         """Read the result from the vector network analyzer instrument
