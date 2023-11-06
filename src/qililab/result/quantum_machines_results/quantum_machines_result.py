@@ -32,13 +32,16 @@ class QuantumMachinesResult(Result):
 
     name = ResultName.QUANTUM_MACHINES
 
-    def __init__(self, raw_results: list):
-        self.raw_results = raw_results
+    def __init__(self, I: np.ndarray, Q: np.ndarray, adc1: np.ndarray, adc2: np.ndarray):
+        self.I = I
+        self.Q = Q
+        self.adc1 = adc1
+        self.adc2 = adc2
 
     @property
     def array(self) -> np.ndarray:
         """Returns data as acquired from Quantum Machines Manager."""
-        return np.array(self.raw_results)
+        return np.concatenate((self.I.reshape(1, *self.I.shape), self.Q.reshape(1, *self.Q.shape)), axis=0)
 
     def to_dict(self) -> dict:
         """Returns a serialized dictionary of the QuantumMachinesResult class.
@@ -48,7 +51,10 @@ class QuantumMachinesResult(Result):
         """
         return {
             RUNCARD.NAME: self.name.value,
-            QMRESULT.QM_RAW_RESULTS: self.raw_results,
+            QMRESULT.I: self.I,
+            QMRESULT.Q: self.Q,
+            QMRESULT.ADC1: self.adc1,
+            QMRESULT.ADC2: self.adc2,
         }
 
     def probabilities(self) -> dict[str, float]:
