@@ -62,3 +62,7 @@ class TestStreamArray:
             stream_array[1][1] = 4
         
         assert (stream_array.results == [[1, 2], [3, 4]]).all
+        
+        # test that file attribute is None and dataset object is empty 
+        assert stream_array.file is None
+        assert stream_array.dataset is None
