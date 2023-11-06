@@ -543,22 +543,19 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             str: Name of the file.
         """
         # Filtering by node_id and calibrations
-        entries = os.scandir(self.nb_folder)
-        file_names = []
-        for val in entries:
-            if val.is_file():
-                same_node_fnames = val.name.split(f"{self.node_id}_")
-                if len(same_node_fnames) == 2 and len(val.name.split("_calibrated")) == 2:
-                    file_names.append(val.name)
-
+        file_names = [
+            entry.name
+            for entry in os.scandir(self.nb_folder)
+            if entry.is_file()
+            and f"{self.node_id}_" in entry.name
+            and "_calibrated" in entry.name.split(f"{self.node_id}_")[1]
+        ]
         # Get the last created file, most recent one
-        last_modified_file_time, last_modified_file_name = -1.0, ""
-        for fname in file_names:
-            ftime = os.path.getctime(os.path.join(self.nb_folder, fname))
-            if ftime > last_modified_file_time:
-                last_modified_file_time, last_modified_file_name = ftime, fname
-
-        return last_modified_file_name if last_modified_file_time != -1.0 else None
+        return (
+            max(file_names, key=lambda fname: os.path.getctime(os.path.join(self.nb_folder, fname)))
+            if file_names != []
+            else None
+        )
 
     def _parse_output_from_execution_file(self, file_name) -> dict | None:
         """Parses a expected notebook file and gets the output from the execution converted as python dictionary.
