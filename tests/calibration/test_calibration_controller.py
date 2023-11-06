@@ -29,8 +29,8 @@ def dummy_comparison_model(obtained: dict, comparison: dict) -> float:
 ######################
 zeroth = CalibrationNode(
     nb_path="tests/calibration/notebook_test/zeroth.ipynb",
-    qubit_index=[0, 1],
-    in_spec_threshold=4,
+    qubit_index=[0, 1],  # qubit_index as list
+    in_spec_threshold=4,  # in_spec thresholds
     bad_data_threshold=8,
     comparison_model=dummy_comparison_model,
     drift_timeout=1.0,
@@ -38,15 +38,15 @@ zeroth = CalibrationNode(
 first = CalibrationNode(
     nb_path="tests/calibration/notebook_test/first.ipynb",
     qubit_index=0,
-    in_spec_threshold=4,
+    in_spec_threshold=4,  # in_spec thresholds
     bad_data_threshold=8,
     comparison_model=dummy_comparison_model,
-    drift_timeout=1800.0,
+    drift_timeout=1.0,  # long drift timeout
 )
 second = CalibrationNode(
     nb_path="tests/calibration/notebook_test/second.ipynb",
     qubit_index=0,
-    in_spec_threshold=2,
+    in_spec_threshold=2,  # out_of_spec thresholds
     bad_data_threshold=4,
     comparison_model=dummy_comparison_model,
     drift_timeout=1.0,
@@ -54,14 +54,15 @@ second = CalibrationNode(
 third = CalibrationNode(
     nb_path="tests/calibration/notebook_test/third.ipynb",
     qubit_index=0,
-    in_spec_threshold=1,
+    in_spec_threshold=1,  # bad_data thresholds
     bad_data_threshold=2,
     comparison_model=dummy_comparison_model,
     drift_timeout=1.0,
 )
 fourth = CalibrationNode(
     nb_path="tests/calibration/notebook_test/fourth.ipynb",
-    in_spec_threshold=1,
+    # no qubit index
+    in_spec_threshold=1,  # bad_data thresholds
     bad_data_threshold=2,
     comparison_model=dummy_comparison_model,
     drift_timeout=1.0,
