@@ -3,14 +3,14 @@ import copy
 
 import numpy as np
 import pytest
+from qpysequence import Acquisitions
 from qpysequence.program import Loop, Register
 from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.weights import Weights
 
 from qililab.instruments.awg_settings import AWGQbloxSequencer
 from qililab.instruments.qblox.qblox_module import QbloxModule
-from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
-from qililab.pulse.pulse_event import PulseEvent
+from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
 from tests.data import Galadriel
 
 
@@ -19,6 +19,15 @@ class DummyQbloxModule(QbloxModule):
 
     def _generate_weights(self, sequencer: AWGQbloxSequencer):  # pylint: disable=unused-argument
         return Weights()
+
+    def _generate_acquisitions(self, timeline: list[PulseEvent] | None = None) -> Acquisitions:
+        return Acquisitions()
+
+    def _append_acquire_instruction(  # pylint: disable=unused-argument
+        self, loop: Loop, bin_index: Register, sequencer_id: int, weight_regs: tuple[Register, Register], acq_index: int
+    ):
+        """Append an acquire instruction to the loop."""
+
 
 @pytest.fixture(name="qblox_module")
 def fixture_qblox_module():

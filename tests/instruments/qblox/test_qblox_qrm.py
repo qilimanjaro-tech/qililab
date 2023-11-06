@@ -472,7 +472,7 @@ class TestQbloxQRM:
         assert len(sequences) == 1
         assert len(sequences2) == 1
         assert sequences[0] is sequences2[0]
-        qrm.device.delete_acquisition_data.assert_called_once_with(sequencer=0, name="default")
+        qrm.device.delete_acquisition_data.assert_called_once_with(sequencer=0, all=True)
 
     def test_upload_raises_error(self, qrm):
         """Test upload method raises error."""

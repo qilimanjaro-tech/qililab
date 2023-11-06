@@ -314,7 +314,13 @@ class TestsQbloxResult:
         Args:
             qblox_asymmetric_bins_result (QbloxResult): QbloxResult instance with different number of bins on each sequencer.
         """
-        with pytest.raises(IndexError, match="All sequencers must have the same number of bins to return an array"):
+        bin_shape = [len(bin_s["bins"]["threshold"]) for bin_s in qblox_asymmetric_bins_result.qblox_raw_results]
+        with pytest.raises(
+            IndexError,
+            match=re.escape(
+                f"All measurements must have the same number of bins to return an array. Obtained {len(bin_shape)} measurements with {bin_shape} bins respectively."
+            ),
+        ):
             _ = qblox_asymmetric_bins_result.array
 
     def test_to_dataframe(self, qblox_result_noscope: QbloxResult):
