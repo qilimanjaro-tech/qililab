@@ -13,6 +13,7 @@ class StreamArray:
         path (str): path to save results.
         loops (dict[str, ndarray]): dictionary with each loop name in the experiment as key and numpy array as values.
     """
+
     def __init__(self, shape, path, loops):
         self.results = np.empty(shape=shape)
         self.path = path
