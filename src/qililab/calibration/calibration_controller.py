@@ -24,7 +24,7 @@ from qililab.platform.platform import Platform
 
 
 class CalibrationController:
-    """Class that controls the automatic calibration sequence.
+    """Controls the automatic calibration sequence.
 
     **Usage:**
         - To calibrate the full graph, use ``run_automatic_calibration()``.
@@ -34,12 +34,12 @@ class CalibrationController:
 
     **Graph structure:**
 
-    In the graph, directions should be given by, `nodes` pointing to their next `dependents` (natural temporal flow for the calibration),
-    this makes that our `starts` and `ends` of the calibration, are:
+    In the graph, directions should be given by, `nodes` pointing to their next `dependents` (natural time flow for calibration),
+    this defines our `starts` and `ends` of the calibration:
 
-    - `starts`: `roots` (``in_degree=0``, no arrows pointing in, no `dependencies`) of the graph, where all its arrows leave the node.
+    - `starts`: `Roots` (``in_degree=0``, no arrows pointing in, no `dependencies`) of the graph, where all its arrows leave the node.
 
-    - `ends`: `leaves` (``out_degree=0``, no arrows pointing out, no `dependants`) of the graph, where all its arrows enter the node.
+    - `ends`: `Leaves` (``out_degree=0``, no arrows pointing out, no `dependants`) of the graph, where all its arrows enter the node.
 
     .. code-block:: python
 
@@ -81,7 +81,7 @@ class CalibrationController:
 
     Args:
         calibration_graph (nx.DiGraph): The calibration (directed acyclic) graph. Where each node is a ``string`` corresponding to a ``CalibrationNode.node_id``. Directions should be given
-            by, `nodes` pointing to their next `dependents` (natural flow for the calibration), this makes that our `starts` and `ends` of the calibration, are respectively the `roots`
+            by, `nodes` pointing to their next `dependents` (natural time flow for calibration), this makes that our `starts` and `ends` of the calibration, are respectively the `roots`
             (``in_degree=0``) and `leaves` (``out_degree=0``) of the graph.
 
         node_sequence (dict[str, CalibrationNode]): Mapping for the nodes of the graph, from strings into the actual initialized nodes.
@@ -143,7 +143,7 @@ class CalibrationController:
         self.calibration_graph: nx.DiGraph = calibration_graph
         """The calibration (directed acyclic) graph. Where each node is a ``string`` corresponding to a ``CalibrationNode.node_id``.
 
-        Directions should be given by, `nodes` pointing to their next `dependents` (natural temporal flow for the calibration),
+        Directions should be given by, `nodes` pointing to their next `dependents` (natural time flow for calibration),
         this makes that our `starts` and `ends` of the calibration, are:
 
         - `starts`: `roots` (``in_degree=0``, no arrows pointing in, no `dependencies`) of the graph, where all its arrows leave the node.
@@ -169,18 +169,18 @@ class CalibrationController:
         """The initialized platform, where the experiments will be run (Platform)."""
 
     def run_automatic_calibration(self) -> dict[str, dict]:
-        """Runs the full automatic calibration procedure and retrieve the final set parameters and achieved fidelities dictionaries.
+        """Runs the full automatic calibration procedure and retrieves the final set parameters and achieved fidelities dictionaries.
 
         This is primary interface for our calibration procedure and it's the highest level algorithm, which finds all the end nodes of the graph
         (`leaves`, those without further `dependents`) and runs ``maintain()`` on them
 
         Returns:
             dict[str, dict]: Dictionary for the last set parameters and the last achieved fidelities. It contains two dictionaries (dict[tuple, tuple]) in the keys:
-                - "set_parameters": Set parameters dictionary, with the key and values being tuples containing:
+                - "set_parameters": Set parameters dictionary, with the key and values being tuples containing, in this order:
                     - key: (``str``: parameter name, ``str``: bus alias, int: qubit).
                     - value: (``float``: parameter value, ``str``: ``node_id`` where computed, ``datetime``: updated time).
 
-                - "fidelities": Fidelities dictionary, with the key and values being tuples containing:
+                - "fidelities": Fidelities dictionary, with the key and values being tuples containing, in this order:
                     - key: (``str``: parameter name, ``int``: qubit).
                     - value: (``float``: parameter value, ``str``: node_id where computed, ``datetime``: updated time).
         """
@@ -438,7 +438,7 @@ class CalibrationController:
         """Retrieves the last set parameters of the graph.
 
         Returns:
-            dict[tuple, tuple]: Set parameters dictionary, with the key and values being tuples containing:
+            dict[tuple, tuple]: Set parameters dictionary, with the key and values being tuples containing, in this order:
                 - ``key``: (``str``: parameter name, ``str``: bus alias, ``int``: qubit).
                 - ``value``: (``float``: parameter value, ``str``: node_id where computed, ``datetime``: updated time).
         """
@@ -466,7 +466,7 @@ class CalibrationController:
         """Retrieves the last updated fidelities of the graph.
 
         Returns:
-            dict[tuple, tuple]: Fidelities dictionary, with the key and values being tuples containing:
+            dict[tuple, tuple]: Fidelities dictionary, with the key and values being tuples containing, in this order:
                 - ``key``: (``str``: parameter name, ``int``: qubit).
                 - ``value``: (``float``: parameter value, ``str``: node_id where computed, ``datetime``: updated time).
         """
