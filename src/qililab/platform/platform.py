@@ -532,16 +532,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """Execute a QProgram using the platform instruments.
 
         Args:
-            qprogram (QProgram): The QProgram to run
+            qprogram (QProgram): The QProgram to execute.
 
         Returns:
-            Result: Result obtained from the execution. This corresponds to a numpy array that depending on the
-                platform configuration may contain the following:
-
-                - Scope acquisition is enabled: An array with dimension `(2, N)` which contain the scope data for
-                    path0 (I) and path1 (Q). N corresponds to the length of the scope measured.
-
-                - Scope acquisition disabled: An array with dimension `(#sequencers, 2, #bins)`.
+            list[Result]: Result list obtained from the execution.
         """
         qblox_compiler = QbloxCompiler()
         sequences = qblox_compiler.compile(qprogram=qprogram)

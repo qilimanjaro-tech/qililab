@@ -190,6 +190,9 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
     def acquire_qprogram_results(self, acquisitions: list[str]) -> QbloxQProgramResult:
         """Read the result from the AWG instrument
 
+        Args:
+            acquisitions (list[str]): A list of acquisitions names.
+
         Returns:
             QbloxResult: Acquired Qblox result
         """

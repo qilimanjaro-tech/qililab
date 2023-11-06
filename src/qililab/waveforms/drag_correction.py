@@ -37,7 +37,7 @@ class DragCorrection(Waveform):  # pylint: disable=too-few-public-methods
         """Returns the envelope corresponding to the drag correction.
 
         Args:
-            resolution (float, optional): Pulse resolution. Defaults to 1.
+            resolution (int, optional): Pulse resolution. Defaults to 1.
 
         Returns:
             np.ndarray: Height of the envelope for each time step.

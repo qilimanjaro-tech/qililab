@@ -195,7 +195,14 @@ class Instrument(BusElement, ABC):
     def acquire_qprogram_results(self, acquisitions: list[str]) -> Result | None:
         """Acquire results of the measurement.
 
-        In some cases this method might do nothing."""
+        In some cases this method might do nothing.
+
+        Args:
+            acquisitions (list[str]): A list of acquisitions names.
+
+        Returns:
+            Result | None: The result.
+        """
 
     @CheckDeviceInitialized
     @abstractmethod
