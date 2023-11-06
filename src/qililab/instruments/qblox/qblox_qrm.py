@@ -344,7 +344,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             Acquisitions: Acquisitions object.
         """
         acquisitions = Acquisitions()
-        for index, pulse_event in enumerate(timeline):
+        for index, pulse_event in enumerate(timeline):  # type: ignore
             acquisitions.add(name=f"q{pulse_event.qubit}_{index}", num_bins=self.num_bins, index=index)
         return acquisitions
 
