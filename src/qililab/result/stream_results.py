@@ -1,6 +1,7 @@
 import h5py
 import numpy as np
 
+
 class StreamArray:
     """Allows for real time saving of results from an experiment.
 
