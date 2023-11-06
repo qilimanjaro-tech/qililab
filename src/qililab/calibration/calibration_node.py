@@ -547,7 +547,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             entry.name
             for entry in os.scandir(self.nb_folder)
             if entry.is_file()
-            and f"{self.node_id}_" in entry.name
+            and f"{self.node_id}" in entry.name
             and "_calibrated" in entry.name.split(f"{self.node_id}_")[1]
         ]
         # Get the last created file, most recent one
