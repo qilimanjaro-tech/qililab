@@ -2,6 +2,9 @@
 
 ### New features since last release
 
+- Added real time results saving capability.
+  [#598](https://github.com/qilimanjaro-tech/qililab/pull/598)
+
 - Added the driver for Quantum Machines Manager and a new QuantumMachinesResult class to handle Quantum Machines instruments.
   [#568](https://github.com/qilimanjaro-tech/qililab/pull/568)
 
