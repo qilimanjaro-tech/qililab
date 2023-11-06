@@ -26,3 +26,4 @@ Results Class
 """
 from .result import Result
 from .results import Results
+from .stream_results import StreamArray
