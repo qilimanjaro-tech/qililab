@@ -491,12 +491,13 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             tuple[str, str]: Node name and folder, separated, and without the ``.ipynb`` extension.
         """
         # Create qubit_string to add:
-        if isinstance(self.qubit_index, int):
-            qubit_str = f"_q{str(self.qubit_index)}"
-        elif isinstance(self.qubit_index, list):
-            qubit_str = "_" + "".join(f"q{q}" for q in self.qubit_index)
-        else:
-            qubit_str = ""
+        qubit_str = (
+            f"_q{str(self.qubit_index)}"
+            if isinstance(self.qubit_index, int)
+            else "_" + "".join(f"q{q}" for q in self.qubit_index)
+            if isinstance(self.qubit_index, list)
+            else ""
+        )
 
         # Remove .ipynb from end if it has one, and separate the folder and name with the last "/":
         path_list = original_path.split(".ipynb")[0].split("/")
