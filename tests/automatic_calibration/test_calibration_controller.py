@@ -316,7 +316,10 @@ class TestRunAutomaticCalibrationFromCalibrationController:
     def test_run_automatic_calibration(self, controller):
         """Test that `run_automatic_calibration()` gets the proper nodes to maintain."""
         # Act:
-        output_dict = controller.run_automatic_calibration()
+        with patch(
+            "qililab.automatic_calibration.calibration_controller._get_forced_maintain_condition"
+        ) as mock_force_condition:
+            output_dict = controller.run_automatic_calibration()
 
         # Asserts:
         controller.get_last_set_parameters.assert_called_once_with()
@@ -331,16 +334,19 @@ class TestRunAutomaticCalibrationFromCalibrationController:
             controller.maintain.assert_any_call(fourth)
             controller.maintain.assert_any_call(first)
             assert controller.maintain.call_count == 2
+            assert mock_force_condition.call_count == 2
 
         elif controller.calibration_graph == G2:
             controller.maintain.assert_any_call(fourth)
             controller.maintain.assert_any_call(second)
             controller.maintain.assert_any_call(first)
             assert controller.maintain.call_count == 3
+            assert mock_force_condition.call_count == 3
 
         elif controller.calibration_graph in [G1, G4, G5, G6, G7, G8, G9]:
             controller.maintain.assert_any_call(fourth)
             assert controller.maintain.call_count == 1
+            assert mock_force_condition.call_count == 1
 
 
 #####################
@@ -392,7 +398,7 @@ class TestMaintainFromCalibrationController:
         controller[3].diagnose.assert_not_called()
 
         # if check_status is True
-        if controller[0] is True:
+        if controller[0]:
             controller[3].check_data.assert_not_called()
             controller[3].calibrate.assert_not_called()
             controller[3]._update_parameters.assert_not_called()
@@ -868,21 +874,21 @@ class TestStaticMethodsFromCalibrationController:
     ######################################
     #### TEST FORCE MAINTAIN CONDITION ###
     ######################################
-    #@pytest.mark.parametrize(
-    #    "ratio, drift_timeout, delta_previous_timestamp, expected",
-    #    [(0, 200, 800, True), (0, 5000, 400, False), (0.5, 1000, 800, True), (0.2, 1000, 100, False)],
-    #)
-    #def test_get_forced_maintain_condition(self, ratio, drift_timeout, delta_previous_timestamp, expected):
-    #    """Test conditions are computed properly"""
-    #    node = CalibrationNode(
-    #        nb_path="tests/automatic_calibration/notebook_test/fourth.ipynb",
-    #        in_spec_threshold=1,
-    #        bad_data_threshold=2,
-    #        comparison_model=dummy_comparison_model,
-    #        drift_timeout=drift_timeout,
-    #        )
-#
-    #    now = datetime.timestamp(datetime.now())
-    #    node.previous_timestamp = now - delta_previous_timestamp
-#
-    #    assert CalibrationController._get_forced_maintain_condition(node, ratio) == expected
+    @pytest.mark.parametrize(
+        "ratio, drift_timeout, delta_previous_timestamp, expected",
+        [(0, 200, 800, True), (0, 5000, 400, False), (0.5, 1000, 800, True), (0.2, 1000, 100, False)],
+    )
+    def test_get_forced_maintain_condition(self, ratio, drift_timeout, delta_previous_timestamp, expected):
+        """Test conditions are computed properly"""
+        node = CalibrationNode(
+            nb_path="tests/automatic_calibration/notebook_test/fourth.ipynb",
+            in_spec_threshold=1,
+            bad_data_threshold=2,
+            comparison_model=dummy_comparison_model,
+            drift_timeout=drift_timeout,
+        )
+
+        now = datetime.timestamp(datetime.now())
+        node.previous_timestamp = now - delta_previous_timestamp
+
+        assert CalibrationController._get_forced_maintain_condition(node, ratio) == expected

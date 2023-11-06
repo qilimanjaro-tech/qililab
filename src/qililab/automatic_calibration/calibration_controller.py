@@ -213,7 +213,7 @@ class CalibrationController:
         self.calibrate(node)
         self._update_parameters(node)
 
-    def diagnose(self, node: CalibrationNode) -> None:
+    def diagnose(self, node: CalibrationNode, safe_check: bool = False):
         """Checks the data of all the dependencies of a `bad_data` node, until finds the root of the problem with its data.
 
         This is a method called by `maintain` in the special case that its call of `check_data` finds bad data.
@@ -225,26 +225,56 @@ class CalibrationController:
 
         The purpose of diagnose is to repair inaccuracies in our knowledge of the state of the system so that maintain can resume.
 
+
+        Diagnose called with flag `safe_check` will make sure `out_spec` nodes are detected by reliying on actuall information of dependant nodes.
+        Otherwise the algorithm will rely on `out_spec` classification method provided by the user via comparison model chosen.
+        Note that `safe_check` will avoid corner cases that may be caused by user choices in exchange for time complexity as the number of
+        calls to `check_data` will be higher on average.
+
         Args:
             node (CalibrationNode): The node where we want to start the algorithm.
+            safe_check (bool, optional): Flag to specify if we want to make sure we avoid corner cases.
 
         Returns:
             bool: True is there have been recalibrations, False otherwise. The return value is only used by recursive calls.
         """
         print(f"diagnosing {node.node_id}!!!\n")
 
-        # in spec case
-        if self.check_data(node) == "in_spec":
-            return
+        if safe_check:
+            # in spec case
+            if self.check_data(node) == "in_spec":
+                return
 
-        # bad_data/out_spec case
-        for n in self._dependents(node):
-            self.diagnose(n)
+            # bad_data/out_spec case
+            for n in self._dependents(node):
+                self.diagnose(n, safe_check)
 
-        # calibrate
-        self.calibrate(node)
-        self._update_parameters(node)
-        print(f"{node.node_id} diagnose: True\n")
+            # calibrate
+            self.calibrate(node)
+            self._update_parameters(node)
+            print(f"{node.node_id} diagnose: True\n")
+        else:
+            result = self.check_data(node)
+
+            # in spec case
+            if result == "in_spec":
+                return False
+
+            # bad data case
+            recalibrated = []
+            if result == "bad_data":
+                recalibrated = [self.diagnose(n, safe_check) for n in self._dependents(node)]
+                print(f"Dependencies diagnoses of {node.node_id}: {recalibrated}\n")
+            # If not empty and only filled with False's (not any True).
+            if recalibrated != [] and not any(recalibrated):
+                print(f"{node.node_id} diagnose: False\n")
+                return False
+
+            # calibrate
+            self.calibrate(node)
+            self._update_parameters(node)
+            print(f"{node.node_id} diagnose: True\n")
+            return True
 
     def check_state(self, node: CalibrationNode) -> bool:
         """Checks if the node's parameters drift timeouts have passed since the last calibration or data validation (a call of check_data).
