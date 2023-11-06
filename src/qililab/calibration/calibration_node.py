@@ -365,10 +365,6 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         # Execute notebook without problems:
         try:
             self.output_parameters = self._execute_notebook(self.nb_path, output_path, params)
-            print("Platform output parameters:", self.output_parameters["platform_params"])
-            print("Check output parameters:", self.output_parameters["check_parameters"])
-            if "fidelities" in self.output_parameters:
-                print("Fidelities:", self.output_parameters["fidelities"])
 
             timestamp = datetime.timestamp(datetime.now())
             new_output_path = self._create_notebook_datetime_path(self.nb_path, timestamp)

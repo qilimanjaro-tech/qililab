@@ -19,6 +19,7 @@ from datetime import datetime, timedelta
 import networkx as nx
 
 from qililab.calibration.calibration_node import CalibrationNode
+from qililab.config import logger
 from qililab.data_management import build_platform, save_platform
 from qililab.platform.platform import Platform
 
@@ -189,7 +190,7 @@ class CalibrationController:
         for n in highest_level_nodes:
             self.maintain(self.node_sequence[n])
 
-        print(
+        logger.info(
             "#############################################\n"
             "Automatic calibration completed successfully!\n"
             "#############################################\n"
@@ -228,10 +229,10 @@ class CalibrationController:
             node (CalibrationNode): The node where we want to start the algorithm on, getting it in spec. Normally you would want
                 this node, to be the furthest node in the calibration graph.
         """
-        print(f"maintaining {node.node_id}!!!\n")
+        logger.info("Maintaining %s.\n", node.node_id)
         # Recursion over all the nodes that the current node depends on.
         for n in self._dependents(node):
-            print(f"maintaining {n.node_id} from maintain({node.node_id})!!!\n")
+            logger.info("Maintaining %s from maintain(%s).\n", n.node_id, node.node_id)
             self.maintain(n)
 
         if self.check_state(node):
@@ -242,7 +243,7 @@ class CalibrationController:
             return
         if result == "bad_data":
             for n in self._dependents(node):
-                print(f"diagnosing {n.node_id} from maintain({node.node_id})!!!\n")
+                logger.info("Diagnosing %s from maintain(%s).\n", n.node_id, node.node_id)
                 self.diagnose(n)
 
         self.calibrate(node)
@@ -276,7 +277,7 @@ class CalibrationController:
         Returns:
             bool: True is there have been recalibrations, False otherwise. The return value is only used by recursive calls.
         """
-        print(f"diagnosing {node.node_id}!!!\n")
+        logger.info("diagnosing %s.\n", node.node_id)
         result = self.check_data(node)
 
         # in spec case
@@ -287,16 +288,14 @@ class CalibrationController:
         recalibrated = []
         if result == "bad_data":
             recalibrated = [self.diagnose(n) for n in self._dependents(node)]
-            print(f"Dependencies diagnoses of {node.node_id}: {recalibrated}\n")
+            logger.info("Dependencies diagnoses of %s: %s\n", node.node_id, str(recalibrated))
         # If not empty and only filled with False's (not any True).
         if recalibrated != [] and not any(recalibrated):
-            print(f"{node.node_id} diagnose: False\n")
             return False
 
         # calibrate
         self.calibrate(node)
         self._update_parameters(node)
-        print(f"{node.node_id} diagnose: True\n")
         return True
 
     def check_state(self, node: CalibrationNode) -> bool:
@@ -318,7 +317,7 @@ class CalibrationController:
         Returns:
             bool: True if the parameter's drift timeout has not yet expired, False otherwise.
         """
-        print(f'Checking state of node "{node.node_id}"\n')
+        logger.info('Checking state of node "%s".\n', node.node_id)
 
         # Get the list of the dependencies that have been calibrated before this node, all of them should be True
         dependencies_timestamps_previous = [
@@ -328,10 +327,12 @@ class CalibrationController:
         if node.previous_timestamp is None or not all(
             dependencies_timestamps_previous
         ):  # or not all(dependencies_status)
-            print(f"check_state of {node.node_id} with False!!! \n")
+            logger.info("check_state of %s: False.\n", node.node_id)
             return False
-        print(
-            f"check_state of {node.node_id} with {not self._is_timeout_expired(node.previous_timestamp, node.drift_timeout)}!!! \n"
+        logger.info(
+            "check_state of %s: %r.\n",
+            node.node_id,
+            (not self._is_timeout_expired(node.previous_timestamp, node.drift_timeout)),
         )
         return not self._is_timeout_expired(node.previous_timestamp, node.drift_timeout)
 
@@ -346,7 +347,8 @@ class CalibrationController:
         which returns a value indicating how well the data fits the model.
 
         This comparison is then classified as ``in_spec`` (still valid), ``out_of_spec`` (drifted, but close) or ``bad_data``
-        (noise/doesn't follow the desired fit) given the ``in_spec_threshold`` and ``bad_data_threshold`` attributes of :class:`.CalibrationNode`.
+        (noise/doesn't follow the desired fit, or no previous execution) given the ``in_spec_threshold`` and ``bad_data_threshold``
+        attributes of :class:`.CalibrationNode`.
 
         .. note:: Find more information about the ``check_data()`` idea at https://arxiv.org/abs/1803.03226.
 
@@ -359,51 +361,41 @@ class CalibrationController:
             Concretely, depending on the provided thresholds and comparison models, it will return:
                 - ``in_spec`` if the results are still acceptable to use.
                 - ``out_of_spec`` if the results have drifted are not acceptable enough, but they are close, and still follow the desired fit.
-                - ``bad_data`` if the results don't follow the desired fit, or are noisy, which should happen when dependencies have drifted.
+                - ``bad_data`` if the results don't follow the desired fit, or are noisy, which should happen when dependencies have drifted. Or also if there are no previous executions.
         """
         # pylint: disable=protected-access
 
-        print(f'Checking data of node "{node.node_id}"\n')
+        logger.info('Checking data of node "%s".\n', node.node_id)
         timestamp = node.run_node(check=True)
 
         # Comparison and obtained parameters:
         comparison_outputs = node.previous_output_parameters
         obtained_outputs = node.output_parameters
 
+        # Do comparison and return the result:
+        comparison_result = "bad_data"  # if no previous result, return bad_data
         if (
             comparison_outputs is not None and obtained_outputs is not None
-        ):  # obtained_outputs will never be None, since we just run the notebook.
-            # Get params from last notebook
+        ):  # obtained_outputs should never be None, since we just run the notebook.
+            # Get comparison from last notebook and the new obtained parameters.
             compar_params = comparison_outputs["check_parameters"]
-
-            # Get obtained parameters:
             obtain_params = obtained_outputs["check_parameters"]
+            logger.info("obtained: %s ", str(obtain_params))
+            logger.info("comparison: %s", str(compar_params))
 
-            print("The obtained results are:")
-            print("y:", obtain_params["y"])
-            print("x:", obtain_params["x"])
-            print("The comparison results are:")
-            print("y:", compar_params["y"])
-            print("x:", compar_params["x"])
+            comparison_number = self._obtain_comparison(node, obtain_params, compar_params)
 
-            comparison_result = self._obtain_comparison(node, obtain_params, compar_params)
+            if comparison_number <= node.in_spec_threshold:
+                comparison_result = "in_spec"
 
-            if comparison_result <= node.in_spec_threshold:
-                print(f"check_data of {node.node_id}: in_spec!!!\n")
-                node._add_string_to_checked_nb_name("in_spec", timestamp)
-                node._invert_output_and_previous_output()
-                return "in_spec"
+            elif comparison_number <= node.bad_data_threshold:
+                comparison_result = "out_of_spec"
 
-            if comparison_result <= node.bad_data_threshold:
-                print(f"check_data of {node.node_id}: out_of_spec!!!\n")
-                node._add_string_to_checked_nb_name("out_of_spec", timestamp)
-                node._invert_output_and_previous_output()
-                return "out_of_spec"
-
-        print(f"check_data of {node.node_id}: bad_data!!!\n")
-        node._add_string_to_checked_nb_name("bad_data", timestamp)
+        # Do the necessary following changes:
+        logger.info("check_data of %s: %s.\n", node.node_id, comparison_result)
+        node._add_string_to_checked_nb_name(comparison_result, timestamp)
         node._invert_output_and_previous_output()
-        return "bad_data"
+        return comparison_result
 
     def calibrate(self, node: CalibrationNode) -> None:
         """Runs a node's calibration experiment on its default values of ``sweep_interval``.
@@ -413,7 +405,7 @@ class CalibrationController:
         Args:
             node (CalibrationNode): The node where the calibration experiment is run.
         """
-        print(f'Calibrating node "{node.node_id}"\n')
+        logger.info('Calibrating node "%s".\n', node.node_id)
         node.previous_timestamp = node.run_node()
         node._add_string_to_checked_nb_name("calibrated", node.previous_timestamp)  # pylint: disable=protected-access
 
@@ -429,7 +421,9 @@ class CalibrationController:
         """
         if node.output_parameters is not None and "platform_params" in node.output_parameters:
             for bus_alias, qubit, param_name, param_value in node.output_parameters["platform_params"]:
-                print(f"Platform updated with: (bus:{bus_alias}, q:{qubit}, {param_name}, {param_value})")
+                logger.info(
+                    "Platform updated with: (bus: %s, q: %d, %s, %f).", bus_alias, qubit, param_name, param_value
+                )
                 self.platform.set_parameter(alias=bus_alias, parameter=param_name, value=param_value, channel_id=qubit)
 
             save_platform(self.runcard, self.platform)
@@ -443,7 +437,6 @@ class CalibrationController:
                 - ``value``: (``float``: parameter value, ``str``: node_id where computed, ``datetime``: updated time).
         """
         parameters: dict[tuple, tuple] = {}
-        print("LAST SET PARAMETERS:")
         for node in self.node_sequence.values():
             if (
                 node.output_parameters is not None
@@ -451,9 +444,6 @@ class CalibrationController:
                 and "platform_params" in node.output_parameters
             ):
                 for bus, qubit, parameter, value in node.output_parameters["platform_params"]:
-                    print(
-                        f"Last set {parameter} in bus {bus} and qubit {qubit}: {value} (updated in {node.node_id} at {datetime.fromtimestamp(node.previous_timestamp)})"
-                    )
                     parameters[(parameter, bus, qubit)] = (
                         value,
                         node.node_id,
@@ -471,7 +461,6 @@ class CalibrationController:
                 - ``value``: (``float``: parameter value, ``str``: node_id where computed, ``datetime``: updated time).
         """
         fidelities: dict[tuple, tuple] = {}
-        print("LAST RETRIEVED FIDELITIES:")
         for node in self.node_sequence.values():
             if (
                 node.output_parameters is not None
@@ -479,9 +468,6 @@ class CalibrationController:
                 and "fidelities" in node.output_parameters
             ):
                 for qubit, fidelity, value in node.output_parameters["fidelities"]:
-                    print(
-                        f"Last fidelity of {fidelity} in qubit {qubit}: {value} (updated in {node.node_id} at {datetime.fromtimestamp(node.previous_timestamp)})"
-                    )
                     fidelities[(fidelity, qubit)] = (
                         value,
                         node.node_id,
