@@ -32,7 +32,7 @@ class QuantumMachinesResult(Result):
 
     name = ResultName.QUANTUM_MACHINES
 
-    def __init__(self, I: np.ndarray, Q: np.ndarray, adc1: np.ndarray, adc2: np.ndarray):
+    def __init__(self, I: np.ndarray, Q: np.ndarray, adc1: np.ndarray | None, adc2: np.ndarray | None):
         self.I = I
         self.Q = Q
         self.adc1 = adc1
