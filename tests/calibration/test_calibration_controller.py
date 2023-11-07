@@ -803,12 +803,12 @@ class TestCalibrationController:
     #######################
     ### TEST DEPENDENTS ###
     #######################
-    def test_dependents(self, controller):
-        """Test that dependents return the correct dependencies."""
-        result = controller._dependents(nodes["zeroth_q0q1"])
+    def test_dependencies(self, controller):
+        """Test that dependencies return the correct dependencies."""
+        result = controller._dependencies(nodes["zeroth_q0q1"])
         assert result == []
 
-        result = controller._dependents(nodes["fourth"])
+        result = controller._dependencies(nodes["fourth"])
         if controller.calibration_graph in [G0, G1]:
             assert third in result and second in result
             assert len(result) == 2
