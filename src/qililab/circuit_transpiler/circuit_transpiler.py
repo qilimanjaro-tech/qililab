@@ -17,24 +17,20 @@
 
 import contextlib
 from dataclasses import asdict
-from typing import TYPE_CHECKING
 
 import numpy as np
 from qibo import gates
 from qibo.gates import Gate, M
 from qibo.models import Circuit
 
+from qililab import Drag, Wait
 from qililab.chip.nodes import Coupler, Qubit
 from qililab.circuit_transpiler.gate_decompositions import translate_gates
 from qililab.constants import RUNCARD
+from qililab.pulse import Pulse, PulseEvent, PulseSchedule
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.typings.enums import Line
 from qililab.utils import Factory
-
-from ..pulse.pulse import Pulse
-from ..pulse.pulse_event import PulseEvent
-from ..pulse.pulse_schedule import PulseSchedule
-from .native_gates import Drag, Wait
 
 
 class CircuitTranspiler:
