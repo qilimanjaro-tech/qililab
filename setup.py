@@ -1,5 +1,6 @@
 """Installation script for python"""
 import os
+import site
 
 from setuptools import find_packages, setup
 
@@ -54,3 +55,21 @@ setup(
     long_description_content_type="text/markdown",
     license="Apache License 2.0",
 )
+
+
+def _postprocess_setup():
+    site_packages_path = site.getsitepackages()
+    qm_init_path = os.path.join(site_packages_path[0], "qm", "__init__.py")
+
+    if os.path.exists(qm_init_path):
+        with open(qm_init_path, "r", encoding="utf-8") as file:
+            lines = file.readlines()
+
+        if lines and lines[-1].startswith("logger.info"):
+            lines = lines[:-1]
+
+            with open(qm_init_path, "w", encoding="utf-8") as file:
+                file.writelines(lines)
+
+
+_postprocess_setup()
