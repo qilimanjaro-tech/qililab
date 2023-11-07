@@ -372,11 +372,12 @@ class CalibrationController:
         comparison_outputs = node.previous_output_parameters
         obtained_outputs = node.output_parameters
 
+        # If no previous result, return bad_data:
+        comparison_result = "bad_data"
+
         # Do comparison and return the result:
-        comparison_result = "bad_data"  # if no previous result, return bad_data
-        if (
-            comparison_outputs is not None and obtained_outputs is not None
-        ):  # obtained_outputs should never be None, since we just run the notebook.
+        # (obtained_outputs should never be None, since we just run the notebook)
+        if comparison_outputs is not None and obtained_outputs is not None:
             # Get comparison from last notebook and the new obtained parameters.
             compar_params = comparison_outputs["check_parameters"]
             obtain_params = obtained_outputs["check_parameters"]
