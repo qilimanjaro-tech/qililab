@@ -401,11 +401,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         flux_bus = self.buses.get(port=flux_port)
         control_bus = self.buses.get(port=control_port)
         readout_bus = self.buses.get(port=readout_port)
-        if flux_bus is None or control_bus is None or readout_bus is None:
-            raise ValueError(
-                f"Could not find buses for qubit {qubit_index} connected to the ports "
-                f"{flux_port}, {control_port} and {readout_port}."
-            )
         return flux_bus, control_bus, readout_bus
 
     def get_bus_by_alias(self, alias: str | None = None):

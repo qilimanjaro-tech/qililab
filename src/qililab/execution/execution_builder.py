@@ -38,8 +38,6 @@ class ExecutionBuilder(metaclass=Singleton):
         for pulse_schedule in pulse_schedules:
             for pulse_bus_schedule in pulse_schedule.elements:
                 port, bus = self._get_bus_info_from_pulse_bus_schedule_port(platform, pulse_bus_schedule)
-                if bus is None:
-                    raise ValueError(f"There is no bus connected to port {port}.")
                 if port not in buses:
                     buses[port] = BusExecution(bus=bus, pulse_bus_schedules=[pulse_bus_schedule])
                     continue

@@ -66,6 +66,20 @@ class TestPlatform:
         """Test platform name."""
         assert platform.name == DEFAULT_PLATFORM_NAME
 
+    def test_connect_logger(self, platform: Platform):
+        platform._connected_to_instruments = True
+        platform.instrument_controllers = MagicMock()
+        with patch("qililab.platform.platform.logger", autospec=True) as mock_logger:
+            platform.connect()
+        mock_logger.info.assert_called_once_with("Already connected to the instruments")
+
+    def test_disconnect_logger(self, platform: Platform):
+        platform._connected_to_instruments = False
+        platform.instrument_controllers = MagicMock()
+        with patch("qililab.platform.platform.logger", autospec=True) as mock_logger:
+            platform.disconnect()
+        mock_logger.info.assert_called_once_with("Already disconnected from the instruments")
+
     def test_get_element_method_unknown_returns_none(self, platform: Platform):
         """Test get_element method with unknown element."""
         element = platform.get_element(alias="ABC")
