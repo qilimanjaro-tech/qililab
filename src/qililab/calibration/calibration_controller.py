@@ -394,7 +394,7 @@ class CalibrationController:
         # Do the necessary following changes:
         logger.info("check_data of %s: %s.\n", node.node_id, comparison_result)
         node._add_string_to_checked_nb_name(comparison_result, timestamp)
-        node._invert_output_and_previous_output()
+        node.previous_output_parameters = node.output_parameters
         return comparison_result
 
     def calibrate(self, node: CalibrationNode) -> None:

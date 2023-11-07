@@ -690,8 +690,7 @@ class TestCalibrationController:
     #######################
     @patch("qililab.calibration.calibration_node.CalibrationNode.run_node")
     @patch("qililab.calibration.calibration_node.CalibrationNode._add_string_to_checked_nb_name")
-    @patch("qililab.calibration.calibration_node.CalibrationNode._invert_output_and_previous_output")
-    def test_check_data(self, mock_invert, mock_add_str, mock_run, controller):
+    def test_check_data(self, mock_add_str, mock_run, controller):
         """Test that the check_data method, works correctly."""
         for node in controller.node_sequence.values():
             node.previous_output_parameters = {"check_parameters": {"x": [1, 2, 3], "y": [5, 6, 7]}}
@@ -708,7 +707,6 @@ class TestCalibrationController:
         # TODO: Maybe add the individual calls inside the foor loop???
         assert mock_run.call_count == len(controller.node_sequence)
         assert mock_add_str.call_count == len(controller.node_sequence)
-        assert mock_invert.call_count == len(controller.node_sequence)
 
     ######################
     ### TEST CALIBRATE ###
