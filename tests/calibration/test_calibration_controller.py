@@ -29,8 +29,8 @@ def dummy_comparison_model(obtained: dict, comparison: dict) -> float:
 ######################
 zeroth = CalibrationNode(
     nb_path="tests/calibration/notebook_test/zeroth.ipynb",
-    qubit_index=[0, 1],
-    in_spec_threshold=4,
+    qubit_index=[0, 1],  # qubit_index as list
+    in_spec_threshold=4,  # in_spec thresholds
     bad_data_threshold=8,
     comparison_model=dummy_comparison_model,
     drift_timeout=1.0,
@@ -38,15 +38,15 @@ zeroth = CalibrationNode(
 first = CalibrationNode(
     nb_path="tests/calibration/notebook_test/first.ipynb",
     qubit_index=0,
-    in_spec_threshold=4,
+    in_spec_threshold=4,  # in_spec thresholds
     bad_data_threshold=8,
     comparison_model=dummy_comparison_model,
-    drift_timeout=1800.0,
+    drift_timeout=1.0,  # long drift timeout
 )
 second = CalibrationNode(
     nb_path="tests/calibration/notebook_test/second.ipynb",
     qubit_index=0,
-    in_spec_threshold=2,
+    in_spec_threshold=2,  # out_of_spec thresholds
     bad_data_threshold=4,
     comparison_model=dummy_comparison_model,
     drift_timeout=1.0,
@@ -54,14 +54,15 @@ second = CalibrationNode(
 third = CalibrationNode(
     nb_path="tests/calibration/notebook_test/third.ipynb",
     qubit_index=0,
-    in_spec_threshold=1,
+    in_spec_threshold=1,  # bad_data thresholds
     bad_data_threshold=2,
     comparison_model=dummy_comparison_model,
     drift_timeout=1.0,
 )
 fourth = CalibrationNode(
     nb_path="tests/calibration/notebook_test/fourth.ipynb",
-    in_spec_threshold=1,
+    # no qubit index
+    in_spec_threshold=1,  # bad_data thresholds
     bad_data_threshold=2,
     comparison_model=dummy_comparison_model,
     drift_timeout=1.0,
@@ -695,8 +696,7 @@ class TestCalibrationController:
     #######################
     @patch("qililab.calibration.calibration_node.CalibrationNode.run_node")
     @patch("qililab.calibration.calibration_node.CalibrationNode._add_string_to_checked_nb_name")
-    @patch("qililab.calibration.calibration_node.CalibrationNode._invert_output_and_previous_output")
-    def test_check_data(self, mock_invert, mock_add_str, mock_run, controller):
+    def test_check_data(self, mock_add_str, mock_run, controller):
         """Test that the check_data method, works correctly."""
         for node in controller.node_sequence.values():
             node.previous_output_parameters = {"check_parameters": {"x": [1, 2, 3], "y": [5, 6, 7]}}
@@ -713,7 +713,6 @@ class TestCalibrationController:
         # TODO: Maybe add the individual calls inside the foor loop???
         assert mock_run.call_count == len(controller.node_sequence)
         assert mock_add_str.call_count == len(controller.node_sequence)
-        assert mock_invert.call_count == len(controller.node_sequence)
 
     ######################
     ### TEST CALIBRATE ###
@@ -808,12 +807,12 @@ class TestCalibrationController:
     #######################
     ### TEST DEPENDENTS ###
     #######################
-    def test_dependents(self, controller):
-        """Test that dependents return the correct dependencies."""
-        result = controller._dependents(nodes["zeroth_q0q1"])
+    def test_dependencies(self, controller):
+        """Test that dependencies return the correct dependencies."""
+        result = controller._dependencies(nodes["zeroth_q0q1"])
         assert result == []
 
-        result = controller._dependents(nodes["fourth"])
+        result = controller._dependencies(nodes["fourth"])
         if controller.calibration_graph in [G0, G1]:
             assert third in result and second in result
             assert len(result) == 2

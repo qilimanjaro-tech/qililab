@@ -748,21 +748,6 @@ class TestPrivateMethodsFromCalibrationNode:
             methods_node._add_string_to_checked_nb_name(string_to_add, 0)
             mocked_rename.assert_called_once_with(f"{timestamp_path}.ipynb", f"{timestamp_path}_{string_to_add}.ipynb")
 
-    ##############################################
-    ### TEST INVERT OUTPUT AND PREVIOUS OUTPUT ###
-    ##############################################
-    def test_invert_output_and_previous_output(self, methods_node: CalibrationNode):
-        """Test that ``invert_output_and_previous_output()`` work properly."""
-        test_output_params = {"test_output_params": "foo"}
-        test_previous_output_params = {"test_previous_output_params": "bar"}
-        methods_node.output_parameters, methods_node.previous_output_parameters = (
-            test_output_params,
-            test_previous_output_params,
-        )
-        methods_node._invert_output_and_previous_output()
-        assert methods_node.output_parameters == test_previous_output_params
-        assert methods_node.previous_output_parameters == test_output_params
-
 
 class TestStaticMethodsFromCalibrationNode:
     """Test static methods of the `CalibrationNode` class."""
