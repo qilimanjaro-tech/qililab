@@ -46,6 +46,11 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         .. note::
 
+            If the same notebook is going to be used multiple times for the same ``qubit``, then you need to pass a ``node_distinguisher`` argument, for the :class:`.CalibrationController`
+            to make the graph mapping correctly.
+
+        .. note::
+
             More information about the notebook contents can be found in the examples below.
 
     - **Thresholds and Models for the Comparison** of the data and metadata of this notebook, such:
@@ -100,6 +105,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         drift_timeout (float): Duration in seconds, representing an estimate of how long it takes for the parameter to drift. During that time the parameters of
             this node should be considered calibrated without the need to check the data.
         qubit_index (int | list[int] | None, optional): Qubit on which this notebook will be executed. Defaults to None.
+        node_distinguishier (int | str | None, optional): Distinguisher for when the same notebook its used multiple times in the same qubit. Mandatory to use in such case, or
+            the :class:`.CalibrationController` won't do the graph mapping properly, and the calibration will fail. Defaults to None.
         input_parameters (dict | None, optional): Kwargs for input parameters to pass and be interpreted by the notebook. Defaults to None.
         sweep_interval (np.ndarray | None, optional): Array describing the sweep values of the experiment. Defaults to None, which means the one specified in the notebook will be used.
         number_of_random_datapoints (int, optional): The number of points randomly choose within the sweep interval, to run ``check_data()`` with. Default value is 10.
@@ -235,6 +242,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         comparison_model: Callable,
         drift_timeout: float,
         qubit_index: int | list[int] | None = None,
+        node_distinguisher: int | str | None = None,
         input_parameters: dict | None = None,
         sweep_interval: np.ndarray | None = None,
         number_of_random_datapoints: int = 10,
@@ -246,10 +254,15 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             raise ValueError("`nb_path` must be written in unix format: `folder/subfolder/.../file.ipynb`.")
 
         self.nb_path: str = nb_path
-        """Full notebook path, with folder, nb_name and ``.ipynb`` extension."""
+        """Absolute notebook path, with folder, nb_name and ``.ipynb`` extension."""
 
         self.qubit_index: int | list[int] | None = qubit_index
         """Qubit which this notebook will be executed on."""
+
+        self.node_distinguisher: int | str | None = node_distinguisher
+        """Distinguisher for when the same notebook its used multiple times in the same qubit. Mandatory to use in such case, or
+        the :class:`.CalibrationController` won't do the graph mapping properly, and the calibration will fail. Defaults to None.
+        """
 
         self.node_id, self.nb_folder = self._path_to_name_and_folder(nb_path)
         """Node name and folder, separated, and without the ``.ipynb`` extension."""
@@ -495,10 +508,13 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             else ""
         )
 
+        # Create distinguish_string to differentiate multiple calls of the same node:
+        distinguish_str = f"_{str(self.node_distinguisher)}" if self.node_distinguisher is not None else ""
+
         # Remove .ipynb from end if it has one, and separate the folder and name with the last "/":
         path_list = original_path.split(".ipynb")[0].split("/")
 
-        name = path_list.pop() + qubit_str
+        name = path_list.pop() + distinguish_str + qubit_str
         folder_path = "/".join(path_list)
         return name, folder_path
 
