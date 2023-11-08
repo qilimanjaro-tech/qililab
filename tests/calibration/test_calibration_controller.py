@@ -224,35 +224,38 @@ class RunAutomaticCalibrationMockedController(CalibrationController):
         self.get_last_fidelities = MagicMock(return_value={"test": (0.0, "test", datetime.fromtimestamp(1999))})
 
 
+# type: ignore[method-assign]
 class MaintainMockedController(CalibrationController):
     """``CalibrationController`` to test the workflow of ``maintain()`` where its mocked ``check_state()``, ``check_data()``, ``diagnose()``, ``calibrate()`` and ``update_parameters()``."""
 
     def __init__(self, node_sequence, calibration_graph, runcard, check_state: bool, check_data: str):
         super().__init__(node_sequence=node_sequence, calibration_graph=calibration_graph, runcard=runcard)
-        self.check_state = MagicMock(return_value=check_state)  # type: ignore[method-assign]
-        self.check_data = MagicMock(return_value=check_data)  # type: ignore[method-assign]
-        self.diagnose = MagicMock(return_value=None)  # type: ignore[method-assign]
-        self.calibrate = MagicMock(return_value=None)  # type: ignore[method-assign]
-        self._update_parameters = MagicMock(return_value=None)  # type: ignore[method-assign]
+        self.check_state = MagicMock(return_value=check_state)
+        self.check_data = MagicMock(return_value=check_data)
+        self.diagnose = MagicMock(return_value=None)
+        self.calibrate = MagicMock(return_value=None)
+        self._update_parameters = MagicMock(return_value=None)
 
 
+# type: ignore[method-assign]
 class DiagnoseMockedController(CalibrationController):
     """`CalibrationController` to test the workflow of `diagnose()` where its mocked ``check_data()``, ``calibrate()`` and ``update_parameters()``."""
 
     def __init__(self, node_sequence, calibration_graph, runcard, check_data: str):
         super().__init__(node_sequence=node_sequence, calibration_graph=calibration_graph, runcard=runcard)
-        self.check_data = MagicMock(return_value=check_data)  # type: ignore[method-assign]
-        self.calibrate = MagicMock(return_value=None)  # type: ignore[method-assign]
-        self._update_parameters = MagicMock(return_value=None)  # type: ignore[method-assign]
+        self.check_data = MagicMock(return_value=check_data)
+        self.calibrate = MagicMock(return_value=None)
+        self._update_parameters = MagicMock(return_value=None)
 
 
+# type: ignore[method-assign]
 class DiagnoseFixedMockedController(CalibrationController):
     """`CalibrationController` to test the workflow of `diagnose()` where its mocked ``check_data()``, ``calibrate()`` and ``update_parameters()``."""
 
     def __init__(self, node_sequence, calibration_graph, runcard, check_data):
         super().__init__(node_sequence=node_sequence, calibration_graph=calibration_graph, runcard=runcard)
-        self.calibrate = MagicMock(return_value=None)  # type: ignore[method-assign]
-        self._update_parameters = MagicMock(return_value=None)  # type: ignore[method-assign]
+        self.calibrate = MagicMock(return_value=None)
+        self._update_parameters = MagicMock(return_value=None)
         self.check_data_string = check_data
 
     def check_data(self, node):
