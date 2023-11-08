@@ -625,7 +625,7 @@ class TestDiagnoseFromCalibrationController:
         assert controller.diagnose(second) is True  # Gets calibrated
         assert controller.diagnose(fourth) is True  # Gets calibrated
 
-        # TODO: Solve that second gets calibrated for cases like this @Isaac.
+        # TODO: Solve that second gets calibrated for cases like this in @Isaac solving worklflow errors PR.
         # Leave in in_spec
         controller = DiagnoseFixedMockedController(
             node_sequence=nodes, calibration_graph=G0, runcard=path_runcard, check_data="in_spec"
@@ -633,8 +633,6 @@ class TestDiagnoseFromCalibrationController:
         assert controller.diagnose(zeroth) is False  # No calibrate
         assert controller.diagnose(second) is False  # No calibrate <<< WARNING, this should be calibrated!
         assert controller.diagnose(fourth) is True  # Calibrate (because of third)
-
-        # TODO: DO same case with everyhting at in_spec and out_spec except zeroth
 
 
 @pytest.mark.parametrize(
@@ -688,7 +686,7 @@ class TestCalibrationController:
     #######################
     ### TEST CHECK DATA ###
     #######################
-    @patch("qililab.calibration.calibration_node.CalibrationNode.run_node")
+    @patch("qililab.calibration.calibration_node.CalibrationNode.run_node", return_value=11.11)
     @patch("qililab.calibration.calibration_node.CalibrationNode._add_string_to_checked_nb_name")
     def test_check_data(self, mock_add_str, mock_run, controller):
         """Test that the check_data method, works correctly."""
@@ -697,14 +695,19 @@ class TestCalibrationController:
             node.output_parameters = {"check_parameters": {"x": [1, 2, 3], "y": [4, 5, 6]}}
             node.comparison_model = dummy_comparison_model
             result = controller.check_data(node)
+
             if node in [zeroth, first]:
                 assert result == "in_spec"
+                mock_add_str.assert_called_with("in_spec", 11.11)
             elif node == second:
                 assert result == "out_of_spec"
+                mock_add_str.assert_called_with("out_of_spec", 11.11)
             elif node in [third, fourth]:
                 assert result == "bad_data"
+                mock_add_str.assert_called_with("bad_data", 11.11)
 
-        # TODO: Maybe add the individual calls inside the foor loop???
+            mock_run.assert_called_with(check=True)
+
         assert mock_run.call_count == len(controller.node_sequence)
         assert mock_add_str.call_count == len(controller.node_sequence)
 
