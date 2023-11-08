@@ -2,7 +2,6 @@
 import os
 from datetime import datetime
 from io import StringIO
-from typing import Callable
 from unittest.mock import MagicMock, call, patch
 
 import numpy as np
@@ -42,10 +41,6 @@ def fixture_initialize_node_no_optional(_) -> CalibrationNode:
 
 @pytest.fixture(name="initialize_node_optional")
 @patch(
-    "qililab.calibration.calibration_node.CalibrationNode._path_to_name_and_folder",
-    return_value=("node_id", "nb_folder"),
-)
-@patch(
     "qililab.calibration.calibration_node.CalibrationNode.get_last_calibrated_output_parameters",
     return_value={},
 )
@@ -57,11 +52,12 @@ def fixture_initialize_node_no_optional(_) -> CalibrationNode:
     "qililab.calibration.calibration_node.CalibrationNode._build_notebooks_logger_stream",
     return_value=StringIO(),
 )
-def fixture_initialize_node_optional(_, __, ____, _____) -> CalibrationNode:
+def fixture_initialize_node_optional(_, __, ____) -> CalibrationNode:
     """Return a mocked CalibrationNode object for initialization, with everything specified or mocked."""
     return CalibrationNode(
         nb_path="tests/calibration/notebook_test/zeroth.ipynb",
         qubit_index=[0, 1],
+        node_distinguisher=1,
         in_spec_threshold=0.6,
         bad_data_threshold=0.9,
         comparison_model=dummy_comparison_model,
@@ -104,66 +100,40 @@ class TestInitializationCalibrationNode:
         # sourcery skip: class-extract-method
         # Assert:
         assert initialize_node_no_optional.nb_path == "tests/calibration/notebook_test/zeroth.ipynb"
-        assert isinstance(initialize_node_no_optional.nb_path, str)
         assert initialize_node_no_optional.qubit_index == 0
-        assert isinstance(initialize_node_no_optional.qubit_index, int | list | None)
+        assert initialize_node_no_optional.node_distinguisher is None
         assert initialize_node_no_optional.node_id == "zeroth_q0"
-        assert isinstance(initialize_node_no_optional.nb_path, str)
         assert initialize_node_no_optional.nb_folder == "tests/calibration/notebook_test"
-        assert isinstance(initialize_node_no_optional.nb_path, str)
         assert initialize_node_no_optional.in_spec_threshold == 0.6
-        assert isinstance(initialize_node_no_optional.in_spec_threshold, float)
         assert initialize_node_no_optional.bad_data_threshold == 0.9
-        assert isinstance(initialize_node_no_optional.bad_data_threshold, float)
         assert initialize_node_no_optional.comparison_model == dummy_comparison_model
-        assert isinstance(initialize_node_no_optional.comparison_model, Callable)
         assert initialize_node_no_optional.drift_timeout == 100
-        assert isinstance(initialize_node_no_optional.drift_timeout, float)
         assert initialize_node_no_optional.input_parameters is None
-        assert isinstance(initialize_node_no_optional.input_parameters, dict | None)
         assert initialize_node_no_optional.sweep_interval is None
-        assert isinstance(initialize_node_no_optional.sweep_interval, np.ndarray | None)
         assert initialize_node_no_optional.number_of_random_datapoints == 10
-        assert isinstance(initialize_node_no_optional.number_of_random_datapoints, int)
         assert initialize_node_no_optional.output_parameters is None
-        assert isinstance(initialize_node_no_optional.output_parameters, dict | None)
         assert initialize_node_no_optional.previous_output_parameters is None
-        assert isinstance(initialize_node_no_optional.previous_output_parameters, dict | None)
         assert initialize_node_no_optional.previous_timestamp is None
-        assert isinstance(initialize_node_no_optional.previous_timestamp, float | None)
         assert isinstance(initialize_node_no_optional._stream, StringIO)
 
     def test_good_init_method_with_optional(self, initialize_node_optional):
         """Test a valid initialization of the class, passing all optional arguments."""
         # Assert:
         assert initialize_node_optional.nb_path == "tests/calibration/notebook_test/zeroth.ipynb"
-        assert isinstance(initialize_node_optional.nb_path, str)
         assert initialize_node_optional.qubit_index == [0, 1]
-        assert isinstance(initialize_node_optional.qubit_index, int | list | None)
-        assert initialize_node_optional.node_id == "node_id"
-        assert isinstance(initialize_node_optional.nb_path, str)
-        assert initialize_node_optional.nb_folder == "nb_folder"
-        assert isinstance(initialize_node_optional.nb_path, str)
+        assert initialize_node_optional.node_distinguisher == 1
+        assert initialize_node_optional.node_id == "zeroth_1_q0q1"
+        assert initialize_node_optional.nb_folder == "tests/calibration/notebook_test"
         assert initialize_node_optional.in_spec_threshold == 0.6
-        assert isinstance(initialize_node_optional.in_spec_threshold, float)
         assert initialize_node_optional.bad_data_threshold == 0.9
-        assert isinstance(initialize_node_optional.bad_data_threshold, float)
         assert initialize_node_optional.comparison_model == dummy_comparison_model
-        assert isinstance(initialize_node_optional.comparison_model, Callable)
         assert initialize_node_optional.drift_timeout == 100
-        assert isinstance(initialize_node_optional.drift_timeout, float)
         assert initialize_node_optional.input_parameters == {"a": 0, "b": 1}
-        assert isinstance(initialize_node_optional.input_parameters, dict | None)
         assert initialize_node_optional.sweep_interval.all() == np.array([0, 1, 2]).all()
-        assert isinstance(initialize_node_optional.sweep_interval, np.ndarray | None)
         assert initialize_node_optional.number_of_random_datapoints == 1
-        assert isinstance(initialize_node_optional.number_of_random_datapoints, int)
         assert initialize_node_optional.output_parameters == {}
-        assert isinstance(initialize_node_optional.output_parameters, dict | None)
         assert initialize_node_optional.previous_output_parameters is None
-        assert isinstance(initialize_node_optional.previous_output_parameters, dict | None)
         assert initialize_node_optional.previous_timestamp == 0.0
-        assert isinstance(initialize_node_optional.previous_timestamp, float | None)
         assert isinstance(initialize_node_optional._stream, StringIO)
 
     def test_bad_thresholds_initialization(self):
@@ -588,15 +558,18 @@ class TestPrivateMethodsFromCalibrationNode:
     ### TEST PATH TO NAME AND FOLDER ###
     ####################################
     @pytest.mark.parametrize(
-        "qubit, original_path, expected",
+        "qubit, node_distinguisher, original_path, expected",
         [
-            (0, "foo/bar/foobar.ipynb", ("foobar_q0", "foo/bar")),
-            ([0, 1], "this/is/a/long/path/to/notebook.ipynb", ("notebook_q0q1", "this/is/a/long/path/to")),
+            (0, 1, "foo/bar/foobar.ipynb", ("foobar_1_q0", "foo/bar")),
+            ([0, 1], "long", "this/is/a/long/path/to/notebook.ipynb", ("notebook_long_q0q1", "this/is/a/long/path/to")),
         ],
     )
-    def test_path_to_name_and_folder(self, methods_node: CalibrationNode, qubit, original_path, expected):
+    def test_path_to_name_and_folder(
+        self, methods_node: CalibrationNode, qubit, node_distinguisher, original_path, expected
+    ):
         """Test that ``path_to_name_and_folder()`` works properly."""
         methods_node.qubit_index = qubit
+        methods_node.node_distinguisher = node_distinguisher
         test_values = methods_node._path_to_name_and_folder(original_path)
         assert len(test_values) == 2
         assert test_values[0] == expected[0]
