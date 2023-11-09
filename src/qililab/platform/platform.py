@@ -16,6 +16,7 @@
 import ast
 import io
 import re
+from collections import defaultdict
 from copy import deepcopy
 from dataclasses import asdict
 from queue import Queue
@@ -549,19 +550,19 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         for bus_alias in sequences:
             buses[bus_alias].run()
 
-        results: list[list[Result]] = []
+        results: defaultdict[str, list[Result]] = defaultdict(list)
         for bus_alias in buses:
             if isinstance(buses[bus_alias].system_control, ReadoutSystemControl):
                 acquisitions = list(sequences[bus_alias].todict()["acquisitions"])
                 result = buses[bus_alias].acquire_qprogram_results(acquisitions=acquisitions)
-                results.append(result)
+                results[bus_alias].append(result)
 
         for instrument in self.instruments.elements:
             if isinstance(instrument, QbloxModule):
                 instrument.reset_sequences()
                 instrument.desync_sequencers()
 
-        return results[0]
+        return dict(results)
 
     def execute(
         self,
