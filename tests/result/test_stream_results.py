@@ -51,8 +51,8 @@ class TestStreamArray:
 
         assert (stream_array.results == [[1, 2], [3, 4]]).all
         assert stream_array.dataset is not None
-        assert (hasattr(stream_array.dataset, '0'))
-        assert (hasattr(stream_array.dataset, '1'))
+        assert hasattr(stream_array.dataset, "0")
+        assert hasattr(stream_array.dataset, "1")
 
         assert len(stream_array) == 2
         assert sum(1 for _ in iter(stream_array)) == 2
