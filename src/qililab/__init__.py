@@ -16,6 +16,9 @@
 This is the top level module from which all basic functions and classes of
 Qililab can be directly imported.
 """
+
+import contextlib
+
 from .config import __version__, logger
 from .data_management import build_platform, load_results, save_platform, save_results
 from .execute_circuit import execute
@@ -27,3 +30,7 @@ from .typings import ExperimentOptions, ExperimentSettings, Parameter
 from .utils import Loop, Wait
 from .utils.load_data import load
 from .waveforms import *
+
+with contextlib.suppress(NameError, ImportError):
+    get_ipython()  # type: ignore  # noqa: F405
+    from .slurm import queue
