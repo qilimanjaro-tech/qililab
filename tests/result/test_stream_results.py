@@ -34,7 +34,7 @@ class TestStreamArray:
         assert stream_array.loops == {"test_amp_loop": np.arange(0, 1, 2)}
 
     @patch("qililab.result.stream_results.h5py")
-    def test_context_manager(self, mock_h5py: MagicMock, stream_array: StreamArray):
+    def test_context_manager(self, mock_h5py: MagicMock, stream_array: StreamArray): # pylint: disable=unused-argument
         """Tests context manager real time saving."""
 
         # test adding outside the context manager
