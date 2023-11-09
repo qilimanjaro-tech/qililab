@@ -3,8 +3,6 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
-from h5py import Dataset
-import qililab as ql
 
 from qililab.result import StreamArray
 
