@@ -549,7 +549,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         for bus_alias in sequences:
             buses[bus_alias].run()
 
-        results: list[Result] = []
+        results: list[list[Result]] = []
         for bus_alias in buses:
             if isinstance(buses[bus_alias].system_control, ReadoutSystemControl):
                 acquisitions = list(sequences[bus_alias].todict()["acquisitions"])
@@ -560,7 +560,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             if isinstance(instrument, QbloxModule):
                 instrument.desync_sequencers()
 
-        return results
+        return results[0]
 
     def execute(
         self,

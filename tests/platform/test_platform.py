@@ -243,7 +243,7 @@ class TestMethods:
         assert upload.call_count == 2
         assert run.call_count == 2
         acquire_qprogram_results.assert_called_once()
-        assert result == [123]
+        assert result == 123
         desync.assert_called()
 
     def test_execute(self, platform: Platform):

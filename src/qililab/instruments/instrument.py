@@ -192,7 +192,7 @@ class Instrument(BusElement, ABC):
 
         In some cases this method might do nothing."""
 
-    def acquire_qprogram_results(self, acquisitions: list[str]) -> Result | None:
+    def acquire_qprogram_results(self, acquisitions: list[str]) -> list[Result]:  # type: ignore[empty-body]
         """Acquire results of the measurement.
 
         In some cases this method might do nothing.

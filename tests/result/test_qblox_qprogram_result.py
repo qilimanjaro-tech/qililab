@@ -1,16 +1,13 @@
 """ Test Results """
 
 import numpy as np
-import pandas as pd
 import pytest
 from qblox_instruments import DummyBinnedAcquisitionData, DummyScopeAcquisitionData, Pulsar, PulsarType
 from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 
-from qililab.constants import QBLOXCONSTANTS, RESULTSDATAFRAME
-from qililab.exceptions.data_unavailable import DataUnavailable
-from qililab.result.qblox_results.qblox_qprogram_result import QbloxQProgramResult
+from qililab.result.qblox_results.qblox_qprogram_measurement_result import QbloxQProgramMeasurementResult
 from qililab.utils.signal_processing import modulate
-from tests.test_utils import compare_pair_of_arrays, complete_array, dummy_qrm_name_generator
+from tests.test_utils import dummy_qrm_name_generator
 
 
 @pytest.fixture(name="qrm_sequence")
@@ -81,7 +78,7 @@ def fixture_qblox_result_noscope(dummy_qrm: Pulsar):
     """
     dummy_qrm.start_sequencer(0)
     acquisition = dummy_qrm.get_acquisitions(0)["single"]["acquisition"]
-    return QbloxQProgramResult(integration_lengths=[1000], qblox_raw_results=[acquisition])
+    return QbloxQProgramMeasurementResult(raw_measurement_data=acquisition)
 
 
 @pytest.fixture(name="qblox_result_scope")
@@ -97,7 +94,7 @@ def fixture_qblox_result_scope(dummy_qrm: Pulsar):
     dummy_qrm.start_sequencer(0)
     dummy_qrm.store_scope_acquisition(0, "single")
     acquisition = dummy_qrm.get_acquisitions(0)["single"]["acquisition"]
-    return QbloxQProgramResult(integration_lengths=[1000], qblox_raw_results=[acquisition])
+    return QbloxQProgramMeasurementResult(raw_measurement_data=acquisition)
 
 
 @pytest.fixture(name="qblox_asymmetric_bins_result")
@@ -126,164 +123,23 @@ def fixture_qblox_asymmetric_bins_result():
             },
         },
     ]
-    return QbloxQProgramResult(integration_lengths=[1000, 1000], qblox_raw_results=qblox_raw_results)
+    return QbloxQProgramMeasurementResult(raw_measurement_data=qblox_raw_results)
 
 
 class TestsQbloxQProgramResult:
     """Test `QbloxQProgramResults` functionalities."""
 
-    def test_qblox_result_instantiation(self, qblox_result_scope: QbloxQProgramResult):
+    def test_qblox_result_instantiation(self, qblox_result_scope: QbloxQProgramMeasurementResult):
         """Tests the instantiation of a QbloxQProgramResult object.
 
         Args:
             qblox_result_scope (QbloxQProgramResult): QbloxQProgramResult instance.
         """
-        assert isinstance(qblox_result_scope, QbloxQProgramResult)
+        assert isinstance(qblox_result_scope, QbloxQProgramMeasurementResult)
 
-    def test_qblox_result_scoped_has_scope_and_bins(self, qblox_result_scope: QbloxQProgramResult):
-        """Tests that a QbloxQProgramResult with scope has qblox_scope_acquisitions and qblox_bins_acquisitions.
-
-        Args:
-            qblox_result_scope (QbloxQProgramResult): QbloxQProgramResult instance with scope available.
-        """
-        assert qblox_result_scope.qblox_scope_acquisitions is not None
-        assert qblox_result_scope.qblox_bins_acquisitions is not None
-
-    def test_qblox_result_noscoped_has_no_scope_but_bins(self, qblox_result_noscope: QbloxQProgramResult):
-        """Tests that a QbloxQProgramResult without scope doesn't has qblox_scope_acquisitions but has qblox_bins_acquisitions.
-
-        Args:
-            qblox_result_noscope (QbloxQProgramResult): QbloxQProgramResult instance without scope available.
-        """
-        assert qblox_result_noscope.qblox_scope_acquisitions is None
-        assert qblox_result_noscope.qblox_bins_acquisitions is not None
-
-    def test_qblox_result_acquisitions_type(self, qblox_result_noscope: QbloxQProgramResult):
-        """Tests that a QbloxQProgramResult acquisitions method returns a Pandas Dataframe.
-
-        Args:
-            qblox_result_noscope (QbloxQProgramResult): QbloxQProgramResult instance.
-        """
-        acquisitions = qblox_result_noscope.acquisitions()
-        assert isinstance(acquisitions, pd.DataFrame)
-
-    def test_qblox_result_acquisitions(self, qblox_result_noscope: QbloxQProgramResult):
-        """Tests that the dataframe returned by QbloxQProgramResult.acquisitions is valid.
-
-        Args:
-            qblox_result_noscope (QbloxQProgramResult): QbloxQProgramResult instance.
-        """
-        acquisitions = qblox_result_noscope.acquisitions()
-        assert acquisitions.keys().tolist() == [
-            RESULTSDATAFRAME.ACQUISITION_INDEX,
-            RESULTSDATAFRAME.BINS_INDEX,
-            "i",
-            "q",
-            "amplitude",
-            "phase",
-        ]
-        assert np.isclose(acquisitions["i"].iloc[0], 1.0, 1e-10)
-        assert np.isclose(acquisitions["q"].iloc[0], 0.0, 1e-10)
-        assert np.isclose(acquisitions["amplitude"].iloc[0], 0.0, 1e-10)
-        assert np.isclose(acquisitions["phase"].iloc[0], 0.0, 1e-10)
-
-    def test_qblox_result_acquisitions_scope(self, qblox_result_scope: QbloxQProgramResult):
-        """Tests that the default acquisitions_scope method of QbloxQProgramResult returns the scope as it is.
-
-        Args:
-            qblox_result_scope (QbloxQProgramResult): QbloxQProgramResult instance with scope available and equal to a readout of 1us
-                modulated at 10MHz.
-        """
-        acquisition = qblox_result_scope.acquisitions_scope()
-        assert len(acquisition[0]) == QBLOXCONSTANTS.SCOPE_LENGTH
-        assert len(acquisition[1]) == QBLOXCONSTANTS.SCOPE_LENGTH
-        time = np.arange(0, 1e-6, 1e-9)
-        expected_i = (np.cos(2 * np.pi * 10e6 * time) / np.sqrt(2)).tolist()
-        expected_q = (np.sin(2 * np.pi * 10e6 * time) / np.sqrt(2)).tolist()
-        expected_i = complete_array(expected_i, 0.0, QBLOXCONSTANTS.SCOPE_LENGTH)
-        expected_q = complete_array(expected_q, 0.0, QBLOXCONSTANTS.SCOPE_LENGTH)
-        assert compare_pair_of_arrays(pair_a=acquisition, pair_b=(expected_i, expected_q), tolerance=1e-5)
-
-    def test_qblox_result_acquisitions_scope_demod(self, qblox_result_scope: QbloxQProgramResult):
-        """Tests the demodulation of acquisitions_scope.
-
-        Args:
-            qblox_result_scope (QbloxQProgramResult): QbloxQProgramResult instance with scope available and equal to a readout of 1us
-                modulated at 10MHz.
-        """
-        acquisition = qblox_result_scope.acquisitions_scope(demod_freq=10e6)
-        assert len(acquisition[0]) == QBLOXCONSTANTS.SCOPE_LENGTH
-        assert len(acquisition[1]) == QBLOXCONSTANTS.SCOPE_LENGTH
-        expected_i = [1.0 for _ in range(1000)]
-        expected_q = [0.0 for _ in range(1000)]
-        expected_i = complete_array(expected_i, 0.0, QBLOXCONSTANTS.SCOPE_LENGTH)
-        expected_q = complete_array(expected_q, 0.0, QBLOXCONSTANTS.SCOPE_LENGTH)
-        assert compare_pair_of_arrays(pair_a=acquisition, pair_b=(expected_i, expected_q), tolerance=1e-5)
-
-    def test_qblox_result_acquisitions_scope_integrated(self, qblox_result_scope: QbloxQProgramResult):
-        """Tests the integration of acquisitions_scope.
-
-        Args:
-            qblox_result_scope (QbloxQProgramResult): QbloxQProgramResult instance with scope available and equal to a readout of 1us
-                modulated at 10MHz.
-        """
-        acquisition = qblox_result_scope.acquisitions_scope(integrate=True, integration_range=(0, 1000))
-        assert len(acquisition[0]) == 1
-        assert len(acquisition[1]) == 1
-        assert compare_pair_of_arrays(pair_a=acquisition, pair_b=([0.0], [0.0]), tolerance=1e-5)
-
-    def test_qblox_result_acquisitions_scope_demod_integrated(self, qblox_result_scope: QbloxQProgramResult):
-        """Tests the demodulation and integration of acquisitions_scope.
-
-        Args:
-            qblox_result_scope (QbloxQProgramResult): QbloxQProgramResult instance with scope available and equal to a readout of 1us
-                modulated at 10MHz.
-        """
-        acquisition = qblox_result_scope.acquisitions_scope(
-            demod_freq=10e6, integrate=True, integration_range=(0, 1000)
-        )
-        assert compare_pair_of_arrays(pair_a=acquisition, pair_b=([1.0], [0.0]), tolerance=1e-5)
-
-    def test_qblox_result_noscoped_raises_data_unavailable(self, qblox_result_noscope: QbloxQProgramResult):
-        """Tests if DataUnavailable exception is raised
-
-        Args:
-            qblox_result_noscope (QbloxQProgramResult): QbloxQProgramResult instance with no scope available.
-        """
-        with pytest.raises(DataUnavailable):
-            qblox_result_noscope.acquisitions_scope(demod_freq=10e6, integrate=True, integration_range=(0, 1000))
-
-    def test_qblox_result_scoped_no_raises_data_unavailable(self, qblox_result_scope: QbloxQProgramResult):
-        """Tests if DataUnavailable exception is not raised
-
-        Args:
-            qblox_result_scope (QbloxQProgramResult): QbloxQProgramResult instance with scope available.
-        """
-        try:
-            qblox_result_scope.acquisitions_scope(demod_freq=10e6, integrate=True, integration_range=(0, 1000))
-        except DataUnavailable as exc:
-            assert False, f"acquisitions_scope raised an exception {exc}"
-
-    def test_qblox_result_asymmetric_bins_raise_error(self, qblox_asymmetric_bins_result: QbloxQProgramResult):
-        """Tests if IndexError exception is raised when sequencers have different number of bins.
-
-        Args:
-            qblox_asymmetric_bins_result (QbloxQProgramResult): QbloxQProgramResult instance with different number of bins on each sequencer.
-        """
-        with pytest.raises(IndexError, match="Sequencers must have the same number of bins."):
-            qblox_asymmetric_bins_result.counts_object()
-
-    def test_array_property_of_scope(self, dummy_qrm: Pulsar, qblox_result_scope: QbloxQProgramResult):
-        """Test the array property of the QbloxQProgramResult class."""
-        array = qblox_result_scope.array
-        dummy_qrm.start_sequencer()
-        dummy_qrm.store_scope_acquisition(0, "single")
-        scope_data = dummy_qrm.get_acquisitions(0)["single"]["acquisition"]["scope"]
-        path0, path1 = scope_data["path0"]["data"], scope_data["path1"]["data"]
-        assert np.shape(array) == (2, 16380)  # I/Q values of the whole scope
-        assert np.allclose(array, np.array([path0, path1]))
-
-    def test_array_property_of_binned_data(self, dummy_qrm: Pulsar, qblox_result_noscope: QbloxQProgramResult):
+    def test_array_property_of_binned_data(
+        self, dummy_qrm: Pulsar, qblox_result_noscope: QbloxQProgramMeasurementResult
+    ):
         """Test the array property of the QbloxQProgramResult class."""
         array = qblox_result_noscope.array
         assert np.shape(array) == (2, 1)  # (1 sequencer, I/Q, 1 bin)
@@ -292,17 +148,3 @@ class TestsQbloxQProgramResult:
         bin_data = dummy_qrm.get_acquisitions(0)["single"]["acquisition"]["bins"]["integration"]
         path0, path1 = bin_data["path0"], bin_data["path1"]
         assert np.allclose(array, [path0, path1])
-
-    def test_array_property_asymmetric_bins_raise_error(self, qblox_asymmetric_bins_result: QbloxQProgramResult):
-        """Tests if IndexError exception is raised when sequencers have different number of bins.
-
-        Args:
-            qblox_asymmetric_bins_result (QbloxQProgramResult): QbloxQProgramResult instance with different number of bins on each sequencer.
-        """
-        with pytest.raises(IndexError, match="All sequencers must have the same number of bins to return an array"):
-            _ = qblox_asymmetric_bins_result.array
-
-    def test_to_dataframe(self, qblox_result_noscope: QbloxQProgramResult):
-        """Test the to_dataframe method."""
-        dataframe = qblox_result_noscope.to_dataframe()
-        assert isinstance(dataframe, pd.DataFrame)

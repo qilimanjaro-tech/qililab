@@ -337,7 +337,7 @@ class ResultName(str, Enum):
     """
 
     QBLOX = "qblox"
-    QBLOX_QPROGRAM = "qblox_qprogram"
+    QBLOX_QPROGRAM_MEASUREMENT = "qblox_qprogram_measurement"
     VECTOR_NETWORK_ANALYZER = "vector_network_analyzer"
     QUANTUM_MACHINES = "quantum_machines"
 

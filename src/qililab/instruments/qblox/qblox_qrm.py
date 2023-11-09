@@ -29,7 +29,7 @@ from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseBusSchedule
-from qililab.result.qblox_results import QbloxQProgramResult, QbloxResult
+from qililab.result.qblox_results import QbloxQProgramMeasurementResult, QbloxResult
 from qililab.typings.enums import AcquireTriggerMode, InstrumentName, Parameter
 
 
@@ -187,16 +187,32 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """
         return self.get_acquisitions()
 
-    def acquire_qprogram_results(self, acquisitions: list[str]) -> QbloxQProgramResult:
+    def acquire_qprogram_results(self, acquisitions: list[str]) -> list[QbloxQProgramMeasurementResult]:  # type: ignore
         """Read the result from the AWG instrument
 
         Args:
             acquisitions (list[str]): A list of acquisitions names.
 
         Returns:
-            QbloxResult: Acquired Qblox result
+            QbloxResult: Acquired Qblox result.
         """
-        return self.get_qprogram_acquisitions(acquisitions=acquisitions)
+        return self._get_qprogram_acquisitions(acquisitions=acquisitions)
+
+    @Instrument.CheckDeviceInitialized
+    def _get_qprogram_acquisitions(self, acquisitions: list[str]) -> list[QbloxQProgramMeasurementResult]:
+        results = []
+        for acquisition in acquisitions:
+            for sequencer in self.awg_sequencers:
+                if sequencer.identifier in self.sequences:
+                    self.device.get_acquisition_state(
+                        sequencer=sequencer.identifier,
+                        timeout=cast(AWGQbloxADCSequencer, sequencer).acquisition_timeout,
+                    )
+                    data = self.device.get_acquisitions(sequencer=sequencer.identifier)[acquisition]["acquisition"]
+                    measurement_result = QbloxQProgramMeasurementResult(raw_measurement_data=data)
+                    results.append(measurement_result)
+
+        return results
 
     def _set_device_hardware_demodulation(self, value: bool, sequencer_id: int):
         """set hardware demodulation
@@ -308,39 +324,6 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 integration_lengths.append(sequencer.used_integration_length)
 
         return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
-
-    @Instrument.CheckDeviceInitialized
-    def get_qprogram_acquisitions(self, acquisitions: list[str]) -> QbloxQProgramResult:
-        """Wait for sequencer to finish sequence, wait for acquisition to finish and get the acquisition results.
-        If any of the timeouts is reached, a TimeoutError is raised.
-
-        Returns:
-            QbloxResult: Class containing the acquisition results.
-
-        """
-        results = []
-        integration_lengths: list[int] = []
-        for sequencer in self.awg_sequencers:
-            if sequencer.identifier in self.sequences:
-                sequencer_id = sequencer.identifier
-                flags = self.device.get_sequencer_state(
-                    sequencer=sequencer_id, timeout=cast(AWGQbloxADCSequencer, sequencer).sequence_timeout
-                )
-                logger.info("Sequencer[%d] flags: \n%s", sequencer_id, flags)
-                self.device.get_acquisition_state(
-                    sequencer=sequencer_id, timeout=cast(AWGQbloxADCSequencer, sequencer).acquisition_timeout
-                )
-
-                if sequencer.scope_store_enabled:
-                    for acquisition in acquisitions:
-                        self.device.store_scope_acquisition(sequencer=sequencer_id, name=acquisition)
-
-                for acquisition in acquisitions:
-                    results.append(
-                        self.device.get_acquisitions(sequencer=sequencer.identifier)[acquisition]["acquisition"]
-                    )
-
-        return QbloxQProgramResult(integration_lengths=integration_lengths, qblox_raw_results=results)
 
     def _append_acquire_instruction(
         self, loop: Loop, bin_index: Register | int, sequencer_id: int, weight_regs: tuple[Register, Register]

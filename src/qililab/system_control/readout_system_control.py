@@ -54,13 +54,12 @@ class ReadoutSystemControl(SystemControl):
             Result: Acquired result
         """
         # TODO: Support acquisition from multiple instruments
-        results: list[Result] = []
+        total_results: list[list[Result]] = []
         for instrument in self.instruments:
-            result = instrument.acquire_qprogram_results(acquisitions=acquisitions)
-            if result is not None:
-                results.append(result)
+            instrument_results = instrument.acquire_qprogram_results(acquisitions=acquisitions)
+            total_results.append(instrument_results)
 
-        return results
+        return total_results[0]
 
     @property
     def acquisition_delay_time(self) -> int:
