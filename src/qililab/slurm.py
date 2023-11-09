@@ -12,20 +12,23 @@ def queue(line: str, cell: str, local_ns: dict) -> None:
 
     Args:
         line (str): String containing the parameters of the cell magic. These are:
-            - Name of the variables used inside the cell that are not defined in the same cell.
-            - Name of the variable where we will store the output of the job.
+            - o: Name of the variable where we will store the output of the job.
+            - p: Name of the partition we want to access.
         cell (str): String containing the code of the cell to be executed.
         local_ns (dict): Dictionary containing all the local scope of the jupyter notebook.
 
+    .. warning::
+
+        Variables that start with an underscore won't be recognized in the queued job.
+
     Examples:
 
-        Imagine you want to execute a cell that uses 2 external variables (Platform and Circuit) and saves the results
-        of the computation in a variable called `results`. To execute this cell as a SLURM job you need to do the
-        following:
+        Imagine you want to execute a cell that does a computation and saves the results in a variable called `results`.
+        To execute this cell as a SLURM job in a partition called `galadriel` you need to do the following:
 
         .. code-block:: python
 
-            %%slurm -i platform circuit -o results
+            %%slurm -o results -p galadriel
             print(platform.buses)
 
             results = []
@@ -35,8 +38,9 @@ def queue(line: str, cell: str, local_ns: dict) -> None:
                 result = np.random.random(size=10)
                 results.append(result)
 
-        Inside the Jupyter Notebook, `results` will correspond to the `Job` class from the `submitit` library. To
-        retrieve the results of the actual execution, you need to call `results.result()`:
+        Inside the Jupyter Notebook, the `results` will be overriden by the `Job` class from the `submitit` library.
+
+        To retrieve the results of the actual execution, you need to call `results.result()`:
 
         >>> results.result()
         [array([0.23125418, 0.10364256, 0.24847791, 0.49476144, 0.35349929,
@@ -45,14 +49,14 @@ def queue(line: str, cell: str, local_ns: dict) -> None:
     """
     # Parse the arguments in the `line` parameter
     args = line.split()
-    output_arg_strs = args[args.index("-o") + 1 : args.index("-p")]
+    outputs = args[args.index("-o") + 1 : args.index("-p")]
 
-    if len(output_arg_strs) > 1:
+    if len(outputs) > 1:
         raise ValueError(
             "Only one output is supported. If multiple values are computed in the cell, unify them in a single variable"
         )
-    output_arg_str = output_arg_strs[0]
-    partition_arg_str = args[args.index("-p") + 1]
+    output = outputs[0]
+    partition = args[args.index("-p") + 1]
 
     # Take all the import lines and add them right before the code of the cell (to make sure all the needed libraries
     # are imported inside the SLURM job)
@@ -63,7 +67,7 @@ def queue(line: str, cell: str, local_ns: dict) -> None:
     # Create the executor that will be used to queue the SLURM job
     folder_path = ".slurm_job_data"
     executor = AutoExecutor(folder=folder_path)
-    executor.update_parameters(slurm_partition=partition_arg_str)
+    executor.update_parameters(slurm_partition=partition)
 
     # Compile the code defined above
     code = compile(executable_code, "<string>", "exec")
@@ -74,18 +78,18 @@ def queue(line: str, cell: str, local_ns: dict) -> None:
         if not (
             isinstance(v, ModuleType) or k.startswith("_") or k in {"In", "Out", "exit", "quit", "open", "get_ipython"}
         )
-    } | {output_arg_str: None}
+    } | {output: None}
 
     # Define the function that will be queued as a SLURM job
     def function():
         # Execute the code and return the output variable defined by the user
         exec(code, variables)
-        return variables[output_arg_str]
+        return variables[output]
 
     # Submit slurm job
     job = executor.submit(function)
     # Overrides the output variable with the obtained job
-    local_ns[output_arg_str] = job
+    local_ns[output] = job
 
     # Delete info from past jobs
     for filename in os.listdir(folder_path):
