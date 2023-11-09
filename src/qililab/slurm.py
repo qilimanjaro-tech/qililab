@@ -2,61 +2,24 @@ import os
 from types import ModuleType
 
 from IPython.core.magic import needs_local_scope, register_cell_magic
+from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 from submitit import AutoExecutor
 
 
+@magic_arguments()
+@argument("-o", "--output", help=("Name of the variables that will be returned from the SLURM job."))
+@argument("-d", "--device", help=("Name of the device where you want to execute the SLURM job."))
 @needs_local_scope
 @register_cell_magic
 def queue(line: str, cell: str, local_ns: dict) -> None:
     """Magic method that queues the content of a cell as a SLURM job.
 
-    Args:
-        line (str): String containing the parameters of the cell magic. These are:
-            - o: Name of the variable where we will store the output of the job.
-            - p: Name of the partition we want to access.
-        cell (str): String containing the code of the cell to be executed.
-        local_ns (dict): Dictionary containing all the local scope of the jupyter notebook.
-
-    .. warning::
-
-        Variables that start with an underscore won't be recognized in the queued job.
-
-    Examples:
-
-        Imagine you want to execute a cell that does a computation and saves the results in a variable called `results`.
-        To execute this cell as a SLURM job in a partition called `galadriel` you need to do the following:
-
-        .. code-block:: python
-
-            %%slurm -o results -p galadriel
-            print(platform.buses)
-
-            results = []
-            for i in np.arange(0, 1, step=0.001):
-                print(i)
-                platform.set_parameter(alias="Drag(0)", parameter=ql.Parameter.GAIN, value=i)
-                result = np.random.random(size=10)
-                results.append(result)
-
-        Inside the Jupyter Notebook, the `results` will be overriden by the `Job` class from the `submitit` library.
-
-        To retrieve the results of the actual execution, you need to call `results.result()`:
-
-        >>> results.result()
-        [array([0.23125418, 0.10364256, 0.24847791, 0.49476144, 0.35349929,
-        0.6723665 , 0.89654103, 0.86501083, 0.05293337, 0.05119478]),
-        ...
+    WARNING: Variables that start with an underscore (`_`) won't be recognized in the queued job.
     """
-    # Parse the arguments in the `line` parameter
-    args = line.split()
-    outputs = args[args.index("-o") + 1 : args.index("-p")]
-
-    if len(outputs) > 1:
-        raise ValueError(
-            "Only one output is supported. If multiple values are computed in the cell, unify them in a single variable"
-        )
-    output = outputs[0]
-    partition = args[args.index("-p") + 1]
+    # This method does NOT have a standard documentation because it corresponds to an Ipython magic method.
+    args = parse_argstring(queue, line)
+    output = args.output
+    partition = args.device
 
     # Take all the import lines and add them right before the code of the cell (to make sure all the needed libraries
     # are imported inside the SLURM job)
