@@ -50,35 +50,9 @@ class CalibrationController:
         #                    \     v     /
         #                     \--> 1 -->/
 
-    |
+    .. note::
 
-    **Calibration Workflow:**
-
-    The calibration process is structured into three levels of methods:
-
-        1. **Highest Level Method**: The ``run_automatic_calibration()`` method finds all the end nodes of the graph (`leaves`, those without further `dependents`) and runs ``maintain()`` on them.
-
-        2. **Mid-Level Methods**: ``maintain()`` and ``diagnose()``.
-            - ``maintain(node)`` starts from the `roots` that ``node`` depends on, and moves forwards (`dependency -> dependant`) until ``node``, checking the last time executions and data at each step. If a problem (``bad_data``) is found, it calls ``diagnose()`` to solve it.
-            - ``diagnose(node)`` does more strict checks, fixing inaccuracies in the system's state to allow ``maintain()`` to continue. It works in reverse, starting from the problematic (``bad_data``) node, it goes back (`dependency <- dependant`) until it finds the origin of the problem.
-
-        3. **Low-Level Methods**: ``check_state()``, ``check_data()``, and ``calibrate()`` are the methods you would be calling during this process to interact with the ``nodes``.
-
-    Finally, ``run_automatic_calibration()`` is designed to start acquiring data or calibrating in the optimal location of the graph to avoid extra work:
-
-    - If node A has been calibrated very recently (before the ``drift_timeout`` of the :class:`.CalibrationNode`), it would be a waste of resources to check its data, so ``check_state()`` makes ``maintain()`` skip it.
-    - If node A depends on node B, before calibrating node A, we check the data of node B. Calibrating A would be a waste of resources if we were doing so based on faulty data, so it goes to its dependencies first.
-
-    |
-
-    **Dangerous Behaviors:**
-
-    Note that depending on your ``CalibrationController`` construction, you can have dangerous behaviors in the workflow. You need to watch out for:
-
-    - If you give bad ``comparison_thresholds`` or have bad ``comparison_models``, returning ``out_of_spec`` when you actually have ``bad_data`` or the other way around, will make ``diagnose()`` not being able to work properly, since for it to work, you need to have a single layer node separation (``out_of_spec``) between the ``in_spec`` and the ``bad_data`` nodes.
-    - If you give too long ``drift_timeout``'s, since ``maintain()`` will assume the node is 100% working, you will go to further dependents when maybe you shouldn't without recalibrating. In the end ``diagnose()`` saves the day here, since it doesn't do ``check_state()``, although it will be less efficient.
-
-    .. note:: Find more information about the automatic calibration workflow at https://arxiv.org/abs/1803.03226.
+        Find information about the automatic-calibration workflow, in the examples below.
 
     Args:
         calibration_graph (nx.DiGraph): The calibration (directed acyclic) graph, where each node is a ``string`` corresponding to a ``CalibrationNode.node_id``. Directions should be given
@@ -89,20 +63,58 @@ class CalibrationController:
         runcard (str): The runcard path, containing the serialized platform where the experiments will be run.
 
     Examples:
-        This example shows how to create 2 nodes twice, one for each qubit, and pass them to a :class:`.CalibrationController` to run the ``maintain()`` algorithm on the second one.
+
+        **Calibration Workflow:**
+
+        The calibration process is structured into three levels of methods:
+
+        1. **Highest Level Method**: The ``run_automatic_calibration()`` method finds all the end nodes of the graph (`leaves`, those without further `dependents`) and runs ``maintain()`` on them.
+
+        2. **Mid-Level Methods**: ``maintain()`` and ``diagnose()``.
+            - ``maintain(node)`` starts from the `roots` that ``node`` depends on, and moves forwards (`dependency -> dependant`) until ``node``, checking the last time executions and data at each step. If a problem (``bad_data``) is found, it calls ``diagnose()`` to solve it.
+            - ``diagnose(node)`` does more strict checks, fixing inaccuracies in the system's state to allow ``maintain()`` to continue. It works in reverse, starting from the problematic (``bad_data``) node, it goes back (`dependency <- dependant`) until it finds the origin of the problem.
+
+        3. **Low-Level Methods**: ``check_state()``, ``check_data()``, and ``calibrate()`` are the methods you would be calling during this process to interact with the ``nodes``.
+
+        |
+
+        Finally, ``run_automatic_calibration()`` is designed to start acquiring data or calibrating in the optimal location of the graph to avoid extra work:
+
+        - If node A has been calibrated very recently (before the ``drift_timeout`` of the :class:`.CalibrationNode`), it would be a waste of resources to check its data, so ``check_state()`` makes ``maintain()`` skip it.
+        - If node A depends on node B, before calibrating node A, we check the data of node B. Calibrating A would be a waste of resources if we were doing so based on faulty data, so it goes to its dependencies first.
+
+        .. note:: Find more information about the automatic calibration workflow at https://arxiv.org/abs/1803.03226.
+
+        ----------
+
+        **Dangerous Behaviors:**
+
+        Note that depending on your ``CalibrationController`` construction, you can have dangerous behaviors in the workflow. You need to watch out for:
+
+        - If you give bad ``comparison_thresholds`` or have bad ``comparison_models``, returning ``out_of_spec`` when you actually have ``bad_data`` or the other way around, will make ``diagnose()`` not being able to work properly, since for it to work, you need to have a single layer node separation (``out_of_spec``) between the ``in_spec`` and the ``bad_data`` nodes.
+        - If you give too long ``drift_timeout``'s, since ``maintain()`` will assume the node is 100% working, you will go to further dependents when maybe you shouldn't without recalibrating. In the end ``diagnose()`` saves the day here, since it doesn't do ``check_state()``, although it will be less efficient.
+
+        ----------
+
+        **Practical example:**
+
+        To create two linked nodes twice, for two different qubits, and pass them to a :class:`.CalibrationController` and run a ``maintain()``, you need:
 
         .. code-block:: python
 
             import numpy as np
-            sweep_interval = np.arange(start=0, stop=19, step=1)
+            import networkx as nx
+
+            from qililab.calibration import CalibrationController, CalibrationNode, norm_root_mean_sqrt_error
 
             # GRAPH CREATION AND NODE MAPPING (key = name in graph, value = node object):
             nodes = {}
             G = nx.DiGraph()
+            first, second = [], []
 
             # CREATE NODES:
             for qubit in [0, 1]:
-                first = CalibrationNode(
+                first[qubit] = CalibrationNode(
                     nb_path="notebooks/first.ipynb",
                     qubit_index=qubit,
                     in_spec_threshold=4,
@@ -110,31 +122,33 @@ class CalibrationController:
                     comparison_model=norm_root_mean_sqrt_error,
                     drift_timeout=1800.0,
                 )
-                nodes[first.node_id] = first
+                nodes[first[qubit].node_id] = first[qubit]
 
-                second = CalibrationNode(
+                second[qubit] = CalibrationNode(
                     nb_path="notebooks/second.ipynb",
                     qubit_index=qubit,
                     in_spec_threshold=2,
                     bad_data_threshold=4,
                     comparison_model=norm_root_mean_sqrt_error,
                     drift_timeout=1.0,
-                    sweep_interval=sweep_interval,
+                    sweep_interval=np.arange(start=0, stop=19, step=1),
                 )
-                nodes[second.node_id] = second
+                nodes[second[qubit].node_id] = second[qubit]
 
                 # GRAPH BUILDING (1 --> 2):
-                G.add_edge(first.node_id, second.node_id)
+                G.add_edge(first[qubit].node_id, second[qubit].node_id)
 
             # CREATE CALIBRATION CONTROLLER:
             controller = CalibrationController(node_sequence=nodes, calibration_graph=G, runcard=path_runcard)
 
-            ### EXECUTIONS TO DO:
-            controller.maintain(second)
+            ### WORKFLOW TO DO:
+            controller.maintain(second[1]) # maintain second node for qubit 1
 
         .. note::
 
             Find information about how these nodes and their notebooks need to be in the :class:`CalibrationNode` class documentation.
+
+            There you will also find the above code, but without defining ``first`` and ``second`` as lists.
     """
 
     def __init__(self, calibration_graph: nx.DiGraph, node_sequence: dict[str, CalibrationNode], runcard: str):

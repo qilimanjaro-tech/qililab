@@ -46,12 +46,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         .. note::
 
-            If the same notebook is going to be used multiple times for the same ``qubit``, then you need to pass a ``node_distinguisher`` argument, for the :class:`.CalibrationController`
-            to make the graph mapping correctly.
-
-        .. note::
-
-            More information about the notebook contents can be found in the examples below.
+            More information about the notebooks contents and execution, can be found in the examples below.
 
     - **Thresholds and Models for the Comparison** of the data and metadata of this notebook, such:
         ``in_spec_threshold``, ``bad_data_threshold``, ``comparison_model``, ``drift_timeout``.
@@ -59,43 +54,10 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
     - **Inputs to pass to this notebook (optional)**, which might vary for different calls of the same notebook, such:
         ``sweep_interval``, ``number_of_random_datapoints``, ``input_parameters`` (kwargs).
 
-    --------------------------------
+    .. note::
 
-    |
-
-    **The execution of a notebook is the key functionality of this class,** implemented in the ``run_node()`` method. The workflow of ``run_node()`` is as follows:
-
-    1. Prepare any input parameters needed for the notebook, including extra parameters defined by the user and essential ones such as the targeted qubit or the sweep intervals.
-
-    2. Create a file with a temporary name. This file will be used to save the execution of the notebook and initially has the following format:
-
-        ``NameOfTheNode_TimeExecutionStarted_dirty.ipynb``
-
-        The "_dirty" flag is added to identify executions that are not completed. Since the data we would find such file is "dirty", not completed.
-
-    3. Start the execution of the notebook. There are three possible outcomes:
-
-        3.1) The execution succeeds. If the execution succeeds, the execution file is renamed by updating the timestamp and removing the dirty flag:
-
-            ``NameOfTheNode_TimeExecutionEnded.ipynb``
-
-        3.2) The execution is interrupted. If the execution is interrupted, the "_dirty" flag remains in the filename, and the program exits:
-
-            ``NameOfTheNode_TimeExecutionStarted_dirty.ipynb``
-
-        3.2) An exception is thrown. This case is not controlled by the user like interruptions. Instead, exceptions are automatically thrown when
-        an error is detected. When an execution error is found, the execution file is moved to a new subfolder ``/error_executions`` and renamed with the
-        time the error occurred, adding the "_error" flag, and the program exits:
-
-            ``NameOfTheNode_TimeExecutionFoundError_error.ipynb``
-
-        A more detailed explanation of the error is reported and also described inside the notebook (see `papermill documentation
-        <https://papermill.readthedocs.io/en/latest/>`_ for more detailed information).
-
-    At the end of this process, you obtain an executed and saved notebook for manual inspection, along with the optimal parameters to set in the runcard
-    and the achieved fidelities.
-
-    |
+        If the same notebook is going to be used multiple times for the same ``qubit``, then you need to pass a ``node_distinguisher`` argument, so the :class:`.CalibrationController`
+        makes the graph mapping correctly.
 
     Args:
         nb_path (str): Full notebook path with the folder, nb_name, and ``.ipynb`` extension, written in unix format: `folder/subfolder/.../file.ipynb`.
@@ -113,16 +75,57 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
     Examples:
 
-        In this example, you will create two linked nodes twice, one for each qubit, and pass them to a :class:`.CalibrationController`:
+        **Notebook execution:**
+
+        First the key functionality of this class is implemented in the ``run_node()`` method**. The workflow of ``run_node()`` is as follows:
+
+        1. Prepare any input parameters needed for the notebook, including extra parameters defined by the user and essential ones such as the targeted qubit or the sweep intervals.
+
+        2. Create a file with a temporary name. This file will be used to save the execution of the notebook and initially has the following format:
+
+            ``NameOfTheNode_TimeExecutionStarted_dirty.ipynb``
+
+            The ``_dirty`` flag is added to identify executions that are not completed. Since the data we would find such file is ``dirty``, not completed.
+
+        3. Start the execution of the notebook. There are three possible outcomes:
+
+            3.1) The execution succeeds. If the execution succeeds, the execution file is renamed by updating the timestamp and removing the dirty flag:
+
+                ``NameOfTheNode_TimeExecutionEnded.ipynb``
+
+            3.2) The execution is interrupted. If the execution is interrupted, the ``_dirty`` flag remains in the filename, and the program exits:
+
+                ``NameOfTheNode_TimeExecutionStarted_dirty.ipynb``
+
+            3.2) An exception is thrown. This case is not controlled by the user like interruptions. Instead, exceptions are automatically thrown when
+            an error is detected. When an execution error is found, the execution file is moved to a new subfolder ``/error_executions`` and renamed with the
+            time the error occurred, adding the `_error` flag, and the program exits:
+
+                ``NameOfTheNode_TimeExecutionFoundError_error.ipynb``
+
+            A more detailed explanation of the error is reported and also described inside the notebook (see `papermill documentation
+            <https://papermill.readthedocs.io/en/latest/>`_ for more detailed information).
+
+        At the end of this process, you obtain an executed and saved notebook for manual inspection, along with the optimal parameters to set in the runcard
+        and the achieved fidelities.
+
+        ----------
+
+        **Practical example:**
+
+        To create two linked nodes, and pass them to a :class:`.CalibrationController`**, you need:
 
         .. code-block:: python
 
             import numpy as np
-            sweep_interval = np.arange(start=0, stop=19, step=1)
+            import networkx as nx
+
+            from qililab.calibration import CalibrationController, CalibrationNode, norm_root_mean_sqrt_error
 
             # GRAPH CREATION AND NODE MAPPING (key = name in graph, value = node object):
             nodes = {}
             G = nx.DiGraph()
+            qubit = 0
 
             # CREATE NODES :
             for qubit in [0, 1]:
@@ -143,7 +146,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                     bad_data_threshold=4,
                     comparison_model=norm_root_mean_sqrt_error,
                     drift_timeout=1.0,
-                    sweep_interval=sweep_interval,
+                    sweep_interval=np.arange(start=0, stop=19, step=1),
                 )
                 nodes[second.node_id] = second
 
@@ -153,11 +156,21 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             # CREATE CALIBRATION CONTROLLER:
             controller = CalibrationController(node_sequence=nodes, calibration_graph=G, runcard=path_runcard)
 
+            ### WORKFLOW TO DO:
+            controller.maintain(nodes["second_q1"]) # maintain second node for qubit 1
+
+        .. note::
+
+            You can find the above code, but defining ``first`` and ``second`` as lists, in the :class:`CalibrationController` class documentation.
+
+
         |
 
-        where the notebook ``example.ipynb``, would contain the following:
+        where **the notebooks ``first/second.ipynb``, would contain** the following:
 
-            **1) An input parameters cell** (tagged as `parameters`). These parameters are the ones to be overwritten by the ``input_parameters``:
+        |
+
+        **1) An input parameters cell** (tagged as `parameters`). These parameters are the ones to be overwritten by the ``input_parameters``:
 
             .. code-block:: python
 
@@ -176,9 +189,9 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                 param2=0
                 ...
 
-            |
+        |
 
-            **2) An experiment/circuit** with its corresponding loops for the sweep given by ``sweep_interval``.
+        **2) An experiment/circuit** with its corresponding loops for the sweep given by ``sweep_interval``.
 
             .. code-block:: python
 
@@ -203,9 +216,9 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
                 results = np.hstack(results_list)
 
-            |
+        |
 
-            **3) An analysis procedure**, that plots and fits the obtained data to the expected theoretical behaviour and finds the optimal desired parameters.
+        **3) An analysis procedure**, that plots and fits the obtained data to the expected theoretical behaviour and finds the optimal desired parameters.
 
             .. code-block:: python
 
@@ -215,9 +228,9 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                 fitted_values, x_data, y_data, figure = fit(xdata=sweep_interval, results=results)
                 plt.show()
 
-            |
+        |
 
-            **4) An export data cell**, that calls ``export_nb_outputs()`` with the dictionary to retrieve from the notebook into the calibration workflow:
+        **4) An export data cell**, that calls ``export_nb_outputs()`` with the dictionary to retrieve from the notebook into the calibration workflow:
 
             .. code-block:: python
 
@@ -231,7 +244,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                     }
                 )
 
-            where the ``check_parameters`` are a dictionary of the saved results to do comparisons against. And the ``platform_params`` are a list of parameters to set on the platform.
+        where the ``check_parameters`` are a dictionary of the saved results to do comparisons against. And the ``platform_params`` are a list of parameters to set on the platform.
     """
 
     def __init__(
