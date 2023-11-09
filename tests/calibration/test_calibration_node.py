@@ -745,8 +745,8 @@ class TestStaticMethodsFromCalibrationNode:
 ### TEST EXPORT CALIBRATION OUTPUTS ###
 #######################################
 @patch("qililab.calibration.calibration_node.json.dumps", autospec=True)
-def test_export_calibration_outputs(mocked_dumps):
-    """Test that ``export_calibration_outputs()`` works properly."""
+def test_export_nb_outputs(mocked_dumps):
+    """Test that ``export_nb_outputs()`` works properly."""
     test_outputs = {"this_is": "a_test_dict", "foo": "bar"}
     test_dumped_outputs = '{"this_is": "a_test_dict", "foo": "bar"}'
     mocked_dumps.return_value = test_dumped_outputs
