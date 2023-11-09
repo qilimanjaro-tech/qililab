@@ -57,10 +57,11 @@ class StreamArray:
         return self.results[index]
 
     def __len__(self):
+        """Gets length of results."""
         return len(self.results)
 
     def __iter__(self):
-        """Gets length of results."""
+        """Gets iterator of results."""
         return iter(self.results)
 
     def __str__(self):
