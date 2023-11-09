@@ -32,5 +32,7 @@ from .utils.load_data import load
 from .waveforms import *
 
 with contextlib.suppress(NameError, ImportError):
+    # Since Ipython magic methods can only be imported from inside a Jupyter Notebook,
+    # here we first check that `get_ipython` exists (which means we are inside a Jupyter Notebook)
     get_ipython()  # type: ignore  # noqa: F405
     from .slurm import queue
