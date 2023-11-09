@@ -124,6 +124,7 @@ class QbloxModule(AWG):
             self._set_out_offset(output=idx, value=offset)
 
     def reset_sequences(self) -> None:
+        """Resets sequences dictionary."""
         self.sequences = {}
 
     def desync_sequencers(self) -> None:
