@@ -34,7 +34,7 @@ def queue(line: str, cell: str, local_ns: dict) -> None:
 
     # Compile the code defined above
     code = compile(executable_code, "<string>", "exec")
-    # Take all the variables from the Jupyter Notebook plus the output variable
+    # Take all the variables defined by the user in the Jupyter Notebook and the output variable
     variables = {
         k: v
         for k, v in local_ns.items()
