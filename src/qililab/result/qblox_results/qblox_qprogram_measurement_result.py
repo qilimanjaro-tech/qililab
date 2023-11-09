@@ -45,6 +45,11 @@ class QbloxQProgramMeasurementResult(Result):
 
     @property
     def array(self) -> np.ndarray:
+        """Get I/Q data as an np.ndarray
+
+        Returns:
+            np.ndarray: The I/Q data
+        """
         path0 = self.raw_measurement_data["bins"]["integration"]["path0"]
         path1 = self.raw_measurement_data["bins"]["integration"]["path1"]
         return np.array([path0, path1])
