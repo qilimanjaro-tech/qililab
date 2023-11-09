@@ -71,13 +71,19 @@ class TestBus:
         bus.upload_qpysequence(qpysequence=qpysequence)
         bus.system_control.upload_qpysequence.assert_called_once_with(qpysequence=qpysequence, port=bus.port)
 
-    def test_acquire_qprogram_results(self, bus: Bus):
-        """Test acquire_qprogram_results method."""
-        if isinstance(bus.system_control, ReadoutSystemControl):
-            with patch.object(ReadoutSystemControl, "acquire_qprogram_results") as acquire_qprogram_results:
-                bus.acquire_qprogram_results(acquisitions=["acquisition_0", "acquisition_1"])
 
-            acquire_qprogram_results.assert_called_once_with(acquisitions=["acquisition_0", "acquisition_1"])
+class TestAcquireResults:
+    """Unit tests for acquiring results"""
+
+    def test_acquire_qprogram_results(self):
+        """Test acquire_qprogram_results method."""
+        buses = load_buses()
+        readout_bus = [bus for bus in buses if isinstance(bus.system_control, ReadoutSystemControl)][0]
+
+        with patch.object(ReadoutSystemControl, "acquire_qprogram_results") as acquire_qprogram_results:
+            readout_bus.acquire_qprogram_results(acquisitions=["acquisition_0", "acquisition_1"])
+
+        acquire_qprogram_results.assert_called_once_with(acquisitions=["acquisition_0", "acquisition_1"])
 
 
 class TestErrors:
