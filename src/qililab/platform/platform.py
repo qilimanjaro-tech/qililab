@@ -558,6 +558,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         for instrument in self.instruments.elements:
             if isinstance(instrument, QbloxModule):
+                instrument.reset_sequences()
                 instrument.desync_sequencers()
 
         return results[0]

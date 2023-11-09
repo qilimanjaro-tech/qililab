@@ -123,6 +123,9 @@ class QbloxModule(AWG):
         for idx, offset in enumerate(self.out_offsets):
             self._set_out_offset(output=idx, value=offset)
 
+    def reset_sequences(self) -> None:
+        self.sequences = {}
+
     def desync_sequencers(self) -> None:
         """Desyncs all sequencers."""
         for sequencer in self.awg_sequencers:
