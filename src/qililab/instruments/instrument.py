@@ -201,7 +201,7 @@ class Instrument(BusElement, ABC):
             acquisitions (list[str]): A list of acquisitions names.
 
         Returns:
-            Result | None: The result.
+            list[Result]: The acquired results in chronological order.
         """
 
     @CheckDeviceInitialized

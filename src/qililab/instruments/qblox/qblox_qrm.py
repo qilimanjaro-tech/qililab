@@ -194,7 +194,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             acquisitions (list[str]): A list of acquisitions names.
 
         Returns:
-            QbloxResult: Acquired Qblox result.
+            list[QbloxQProgramMeasurementResult]: Acquired Qblox results in chronological order.
         """
         return self._get_qprogram_acquisitions(acquisitions=acquisitions)
 

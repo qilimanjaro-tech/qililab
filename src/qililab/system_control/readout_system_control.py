@@ -51,7 +51,7 @@ class ReadoutSystemControl(SystemControl):
         """Read the result from the vector network analyzer instrument
 
         Returns:
-            Result: Acquired result
+            list[Result]: Acquired results in chronological order
         """
         # TODO: Support acquisition from multiple instruments
         total_results: list[list[Result]] = []
