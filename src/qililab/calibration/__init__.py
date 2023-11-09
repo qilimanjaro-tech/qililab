@@ -27,8 +27,8 @@ Calibration-related methods
 .. autosummary::
     :toctree: api
 
-    ~export_calibration_outputs
+    ~export_nb_outputs
 """
 
 from .calibration_controller import CalibrationController
-from .calibration_node import CalibrationNode, export_calibration_outputs
+from .calibration_node import CalibrationNode, export_nb_outputs

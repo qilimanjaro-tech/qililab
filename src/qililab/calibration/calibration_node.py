@@ -41,7 +41,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         **3) An analysis procedure**, that plots and fits the obtained data to the expected theoretical behavior, finding the optimal desired parameters.
 
-        **4) An export data cell**, that calls ``export_calibration_outputs()`` with the dictionary to retrieve data from the notebook into the calibration workflow.
+        **4) An export data cell**, that calls ``export_nb_outputs()`` with the dictionary to retrieve data from the notebook into the calibration workflow.
         This dictionary contains a ``check_parameters`` dictionary of the obtained results for comparisons and a ``platform_params`` list of parameters to set on the platform.
 
         .. note::
@@ -217,13 +217,13 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
             |
 
-            **4) An export data cell**, that calls ``export_calibration_outputs()`` with the dictionary to retrieve from the notebook into the calibration workflow:
+            **4) An export data cell**, that calls ``export_nb_outputs()`` with the dictionary to retrieve from the notebook into the calibration workflow:
 
             .. code-block:: python
 
-                from qililab.automatic_calibration.calibration_node import export_calibration_outputs
+                from qililab.automatic_calibration.calibration_node import export_nb_outputs
 
-                export_calibration_outputs(
+                export_nb_outputs(
                     {
                         "check_parameters": {"x": sweep_interval, "y": results},
                         "platform_params": [(bus_alias0, qubit, param_name0, fitted_values[0]), (bus_alias1, qubit, param_name1, fitted_values[1])],
@@ -293,7 +293,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         """
 
         self.output_parameters: dict | None = self.get_last_calibrated_output_parameters()
-        """Output parameters dictionary from the notebook execution, which was extracted with ``ql.export_calibration_outputs()``, normally contains
+        """Output parameters dictionary from the notebook execution, which was extracted with ``ql.export_nb_outputs()``, normally contains
         a ``check_params`` to do the ``check_data()`` and the ``platform_params`` which will be the calibrated parameters to set in the platform.
 
         If no previous successful calibration, then is None.
@@ -648,7 +648,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         os.rename(f"{timestamp_path}.ipynb", f"{timestamp_path}_{string_to_add}.ipynb")
 
 
-def export_calibration_outputs(outputs: dict) -> None:
+def export_nb_outputs(outputs: dict) -> None:
     """Function to export notebook outputs into a stream, later collected by the :class:`CalibrationNode` class.
 
     Args:

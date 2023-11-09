@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, call, patch
 import numpy as np
 import pytest
 
-from qililab.calibration.calibration_node import CalibrationNode, IncorrectCalibrationOutput, export_calibration_outputs
+from qililab.calibration.calibration_node import CalibrationNode, IncorrectCalibrationOutput, export_nb_outputs
 
 # pylint: disable=protected-access, unspecified-encoding
 
@@ -751,6 +751,6 @@ def test_export_calibration_outputs(mocked_dumps):
     test_dumped_outputs = '{"this_is": "a_test_dict", "foo": "bar"}'
     mocked_dumps.return_value = test_dumped_outputs
     with patch("builtins.print") as mocked_print:
-        export_calibration_outputs(test_outputs)
+        export_nb_outputs(test_outputs)
         mocked_dumps.assert_called_with(test_outputs)
         mocked_print.assert_called_with(f"{logger_output_start}{test_dumped_outputs}")
