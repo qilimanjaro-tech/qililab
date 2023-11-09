@@ -536,7 +536,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             qprogram (QProgram): The QProgram to execute.
 
         Returns:
-            list[Result]: Result list obtained from the execution.
+            dict[str, list[Result]]: A dictionary of measurement results. The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
         """
         qblox_compiler = QbloxCompiler()
         sequences = qblox_compiler.compile(qprogram=qprogram)
