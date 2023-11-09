@@ -52,5 +52,5 @@ class TestStreamArray:
         assert (stream_array.results == [[1, 2], [3, 4]]).all
         assert stream_array.dataset is not None
 
-        assert stream_array.__len__() == 2
-        assert sum(1 for _ in stream_array.__iter__()) == 2
+        assert len(stream_array) == 2
+        assert sum(1 for _ in iter(stream_array)) == 2
