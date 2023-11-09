@@ -196,7 +196,7 @@ class CircuitTranspiler:
                 # apply gate schedule
                 for gate_event in gate_schedule:
                     # find bus
-                    bus = self.platform.get_bus_by_alias(gate_event.bus)  # pylint: disable=protected-access
+                    bus = self.platform.get_bus_by_alias(gate_event.bus)
                     # add control gate schedule
                     pulse_event = self._gate_element_to_pulse_event(
                         time=start_time, gate=gate, gate_event=gate_event, bus=bus

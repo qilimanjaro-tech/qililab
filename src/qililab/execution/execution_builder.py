@@ -96,5 +96,5 @@ class ExecutionBuilder(metaclass=Singleton):
             bus: Bus object
         """
         alias = loop.alias
-        bus = platform.get_bus_by_alias(alias=alias)  # pylint: disable=protected-access
+        bus = platform.get_bus_by_alias(alias=alias)
         return alias, bus
