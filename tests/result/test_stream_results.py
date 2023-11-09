@@ -8,6 +8,7 @@ from qililab.result import StreamArray
 
 AMP_VALUES = np.arange(0, 1, 2)
 
+
 @pytest.fixture(name="stream_array")
 def fixture_stream_array():
     """fixture_stream_array
@@ -21,6 +22,7 @@ def fixture_stream_array():
 
     return StreamArray(shape=shape, path=path, loops=loops)
 
+
 class TestStreamArray:
     """Test `StreamArray` functionalities."""
 
@@ -31,13 +33,13 @@ class TestStreamArray:
         assert stream_array.path == "test_stream_array.hdf5"
         assert stream_array.loops == {"test_amp_loop": np.arange(0, 1, 2)}
 
-    @patch('qililab.result.stream_results.h5py')
+    @patch("qililab.result.stream_results.h5py")
     def test_context_manager(self, mock_h5py: MagicMock, stream_array: StreamArray):
         """Tests context manager real time saving."""
 
         # test adding outside the context manager
         stream_array[0, 0] = -2
-        
+
         assert stream_array.dataset is None
 
         # test adding inside the context manager
