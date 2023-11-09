@@ -5,6 +5,7 @@ import pytest
 from qblox_instruments import DummyBinnedAcquisitionData, DummyScopeAcquisitionData, Pulsar, PulsarType
 from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 
+from qililab.constants import QBLOXMEASUREMENTRESULT, RUNCARD
 from qililab.result.qblox_results.qblox_qprogram_measurement_result import QbloxQProgramMeasurementResult
 from qililab.utils.signal_processing import modulate
 from tests.test_utils import dummy_qrm_name_generator
@@ -66,7 +67,7 @@ def fixture_dummy_qrm(qrm_sequence: Sequence) -> Pulsar:
     return qrm
 
 
-@pytest.fixture(name="qblox_result_noscope")
+@pytest.fixture(name="qblox_measurement_result")
 def fixture_qblox_result_noscope(dummy_qrm: Pulsar):
     """fixture_qblox_result_noscope
 
@@ -77,22 +78,6 @@ def fixture_qblox_result_noscope(dummy_qrm: Pulsar):
         _type_: _description_
     """
     dummy_qrm.start_sequencer(0)
-    acquisition = dummy_qrm.get_acquisitions(0)["single"]["acquisition"]
-    return QbloxQProgramMeasurementResult(raw_measurement_data=acquisition)
-
-
-@pytest.fixture(name="qblox_result_scope")
-def fixture_qblox_result_scope(dummy_qrm: Pulsar):
-    """fixture_qblox_result_scope
-
-    Args:
-        dummy_qrm (Pulsar): _description_
-
-    Returns:
-        _type_: _description_
-    """
-    dummy_qrm.start_sequencer(0)
-    dummy_qrm.store_scope_acquisition(0, "single")
     acquisition = dummy_qrm.get_acquisitions(0)["single"]["acquisition"]
     return QbloxQProgramMeasurementResult(raw_measurement_data=acquisition)
 
@@ -126,25 +111,30 @@ def fixture_qblox_asymmetric_bins_result():
     return QbloxQProgramMeasurementResult(raw_measurement_data=qblox_raw_results)
 
 
-class TestsQbloxQProgramResult:
+class TestsQbloxQProgramMeasurementResult:
     """Test `QbloxQProgramResults` functionalities."""
 
-    def test_qblox_result_instantiation(self, qblox_result_scope: QbloxQProgramMeasurementResult):
+    def test_qblox_result_instantiation(self, qblox_measurement_result: QbloxQProgramMeasurementResult):
         """Tests the instantiation of a QbloxQProgramResult object.
 
         Args:
             qblox_result_scope (QbloxQProgramResult): QbloxQProgramResult instance.
         """
-        assert isinstance(qblox_result_scope, QbloxQProgramMeasurementResult)
+        assert isinstance(qblox_measurement_result, QbloxQProgramMeasurementResult)
 
     def test_array_property_of_binned_data(
-        self, dummy_qrm: Pulsar, qblox_result_noscope: QbloxQProgramMeasurementResult
+        self, dummy_qrm: Pulsar, qblox_measurement_result: QbloxQProgramMeasurementResult
     ):
         """Test the array property of the QbloxQProgramResult class."""
-        array = qblox_result_noscope.array
+        array = qblox_measurement_result.array
         assert np.shape(array) == (2, 1)  # (1 sequencer, I/Q, 1 bin)
         dummy_qrm.start_sequencer(0)
         dummy_qrm.store_scope_acquisition(0, "single")
         bin_data = dummy_qrm.get_acquisitions(0)["single"]["acquisition"]["bins"]["integration"]
         path0, path1 = bin_data["path0"], bin_data["path1"]
         assert np.allclose(array, [path0, path1])
+
+    def test_to_dict_method(self, qblox_measurement_result: QbloxQProgramMeasurementResult):
+        dictionary = qblox_measurement_result.to_dict()
+        assert dictionary[RUNCARD.NAME] == QbloxQProgramMeasurementResult.name.value
+        assert isinstance(dictionary[QBLOXMEASUREMENTRESULT.RAW_MEASUREMENT_DATA], dict)
