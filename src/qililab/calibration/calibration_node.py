@@ -442,7 +442,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         """
         if (interval := self.sweep_interval) is not None:
             return np.array(
-                [int(interval[np.random.randint(0, len(interval))]) for _ in range(self.number_of_random_datapoints)]
+                [interval[np.random.randint(0, len(interval))] for _ in range(self.number_of_random_datapoints)]
             )
         return None
 
