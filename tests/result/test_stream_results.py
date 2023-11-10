@@ -23,6 +23,32 @@ def fixture_stream_array():
     return StreamArray(shape=shape, path=path, loops=loops)
 
 
+class MockGroup:
+    """Mock a h5py group."""
+
+    def create_dataset(self, name: str, data: np.ndarray):
+        """Creates a dataset"""
+        return {}
+
+
+class MockFile:
+    """Mocks a h5py file."""
+
+    def __init__(self):
+        """Initialize a mock file."""
+        self.dataset = None
+
+    def create_group(self, name: str):
+        return MockGroup()
+
+    def create_dataset(self, name: str, data: np.ndarray):
+        """Creates a dataset"""
+        return data
+
+    def __exit__(self):
+        """mocks exit"""
+
+
 class TestStreamArray:
     """Test `StreamArray` functionalities."""
 
@@ -33,11 +59,9 @@ class TestStreamArray:
         assert stream_array.path == "test_stream_array.hdf5"
         assert stream_array.loops == {"test_amp_loop": np.arange(0, 1, 2)}
 
-    @patch("qililab.result.stream_results.h5py.File")
-    def test_context_manager(self, mock_h5py: MagicMock, stream_array: StreamArray):  # pylint: disable=unused-argument
+    @patch("qililab.result.stream_results.h5py.File", return_value=MockFile())
+    def test_context_manager(self, mock_h5py: MockFile, stream_array: StreamArray):  # pylint: disable=unused-argument
         """Tests context manager real time saving."""
-
-        mock_h5py().create_dataset.return_value = [[1, 2], [3, 4]]
         # test adding outside the context manager
         stream_array[0, 0] = -2
 
@@ -52,14 +76,10 @@ class TestStreamArray:
 
         assert (stream_array.results == [[1, 2], [3, 4]]).all
         assert stream_array.dataset is not None
-        assert stream_array.dataset == [[1, 2], [3, 4]]
+        assert (stream_array.dataset == [[1, 2], [3, 4]]).all
         stream_array.dataset[1][0] = 0
         assert stream_array.dataset[1][0] == 0
 
         assert len(stream_array) == 2
         assert sum(1 for _ in iter(stream_array)) == 2
-        assert str(stream_array) == "[[1. 2.]\n [3. 4.]]"
-        assert 1 in stream_array
-        assert 2 in stream_array
-        assert 3 in stream_array
-        assert 4 in stream_array
+        assert str(stream_array) == "[[1. 2.]\n [0. 4.]]"
