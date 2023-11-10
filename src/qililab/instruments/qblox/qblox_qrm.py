@@ -303,7 +303,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
     ):
         """Append an acquire instruction to the loop."""
 
-        tof = self.settings.acquisition_delay_time
+        tof = self.settings.time_of_flight
         wait_tof = Wait(tof)
         loop.append_component(wait_tof)
 
