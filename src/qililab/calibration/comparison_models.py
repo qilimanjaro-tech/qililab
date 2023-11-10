@@ -28,7 +28,6 @@ def is_structure_of_check_parameters_correct(obtained: dict[str, list], comparis
         ValueError: if keys or shapes don't match the expected.
     """
     for check_data in [obtained, comparison]:
-
         if "sweep_interval" not in check_data or "results" not in check_data or "fit" not in check_data:
             raise ValueError(
                 "Keys in the `check_parameters` are not 'sweep_interval', 'results' and 'fit', as is need in for the comparison models."
@@ -114,7 +113,6 @@ def norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, l
     is_structure_of_check_parameters_correct(obtained, comparison)
 
     if obtained["results"].shape() == 1:
-
         check = "fit" if fit else "result"
 
         square_error = sum(
@@ -141,7 +139,6 @@ def IQ_norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str
     is_structure_of_check_parameters_correct(obtained, comparison)
 
     if obtained["results"].shape() == 2:
-
         # TODO: DO same as above, but for checking I and Q:
 
         check = "fit" if fit else "result"
