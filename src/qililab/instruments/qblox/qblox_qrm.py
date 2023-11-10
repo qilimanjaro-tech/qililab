@@ -20,7 +20,7 @@ from qpysequence import Program
 from qpysequence import Sequence as QpySequence
 from qpysequence import Weights
 from qpysequence.program import Loop, Register
-from qpysequence.program.instructions import Acquire, AcquireWeighed, Move
+from qpysequence.program.instructions import Acquire, AcquireWeighed, Move, Wait
 
 from qililab.config import logger
 from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
@@ -302,8 +302,12 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         self, loop: Loop, bin_index: Register | int, sequencer_id: int, weight_regs: tuple[Register, Register]
     ):
         """Append an acquire instruction to the loop."""
-        weighed_acq = self._get_sequencer_by_id(id=sequencer_id).weighed_acq_enabled
 
+        tof = self.settings.acquisition_delay_time
+        wait_tof = Wait(tof)
+        loop.append_component(wait_tof)
+
+        weighed_acq = self._get_sequencer_by_id(id=sequencer_id).weighed_acq_enabled
         acq_instruction = (
             AcquireWeighed(
                 acq_index=0,
