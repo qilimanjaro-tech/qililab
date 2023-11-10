@@ -83,3 +83,5 @@ class TestStreamArray:
         assert len(stream_array) == 2
         assert sum(1 for _ in iter(stream_array)) == 2
         assert str(stream_array) == "[[1. 2.]\n [0. 4.]]"
+
+        assert [1, 2] in stream_array
