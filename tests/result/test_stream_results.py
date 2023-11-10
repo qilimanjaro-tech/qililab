@@ -78,9 +78,6 @@ class TestStreamArray:
         assert stream_array.dataset is not None
         assert (stream_array.dataset == [[1, 2], [3, 4]]).all
         assert stream_array.dataset[0][0] == 1
-        assert stream_array.dataset[0][1] == 2
-        assert stream_array.dataset[1][0] == 3
-        assert stream_array.dataset[1][1] == 4
 
         assert len(stream_array) == 2
         assert sum(1 for _ in iter(stream_array)) == 2

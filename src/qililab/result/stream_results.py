@@ -28,8 +28,6 @@ class StreamArray:
             key (str): key for the item to save.
             value (float): value to save.
         """
-        if self.file is not None:
-            self.dataset[key] = value
         self.results[key] = value
 
     def __enter__(self):
