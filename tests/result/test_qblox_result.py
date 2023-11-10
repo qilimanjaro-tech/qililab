@@ -104,6 +104,41 @@ def fixture_qblox_result_scope(dummy_qrm: Pulsar):
     return QbloxResult(integration_lengths=[1000], qblox_raw_results=[acquisition])
 
 
+@pytest.fixture(name="qblox_multi_m_results")
+def fixture_qblox_multi_m_results():
+    return QbloxResult(
+        integration_lengths=[1, 1],
+        qblox_raw_results=[
+            {
+                "scope": {
+                    "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                    "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                },
+                "bins": {
+                    "integration": {"path0": [1], "path1": [1]},
+                    "threshold": [0],
+                    "avg_cnt": [1],
+                },
+                "qubit": 0,
+                "measurement": 0,
+            },
+            {
+                "scope": {
+                    "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                    "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                },
+                "bins": {
+                    "integration": {"path0": [1], "path1": [1]},
+                    "threshold": [1],
+                    "avg_cnt": [1],
+                },
+                "qubit": 0,
+                "measurement": 1,
+            },
+        ],
+    )
+
+
 @pytest.fixture(name="qblox_asymmetric_bins_result")
 def fixture_qblox_asymmetric_bins_result():
     qblox_raw_results = [
@@ -322,6 +357,20 @@ class TestsQbloxResult:
             ),
         ):
             _ = qblox_asymmetric_bins_result.array
+
+    def test_counts_error_multi_measurement(self, qblox_multi_m_results: QbloxResult):
+        """Test that an error is raised in counts if there is more than one result for a single qubit"""
+        with pytest.raises(
+            NotImplementedError, match="Counts for multiple measurements on a single qubit are not supported"
+        ):
+            _ = qblox_multi_m_results.counts()
+
+    def test_samples_error_multi_measurement(self, qblox_multi_m_results: QbloxResult):
+        """Test that an error is raised in counts if there is more than one result for a single qubit"""
+        with pytest.raises(
+            NotImplementedError, match="Samples for multiple measurements on a single qubit are not supported"
+        ):
+            _ = qblox_multi_m_results.samples()
 
     def test_to_dataframe(self, qblox_result_noscope: QbloxResult):
         """Test the to_dataframe method."""

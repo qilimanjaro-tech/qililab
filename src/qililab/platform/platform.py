@@ -620,6 +620,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 qubits_m[qubit] = 0
             order[(qubit, qubits_m[qubit])] = i
             qubits_m[qubit] += 1
+        if len(order) != len(result.qblox_raw_results):
+            raise ValueError(
+                f"Number of measurements in the circuit {len(order)} does not match number of acquisitions {len(result.qblox_raw_results)}"
+            )
 
         # allocate each measurement its corresponding index in the results list
         results = [None] * len(order)
