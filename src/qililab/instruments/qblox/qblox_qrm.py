@@ -304,8 +304,9 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """Append an acquire instruction to the loop."""
 
         tof = self.settings.time_of_flight
-        wait_tof = Wait(tof)
-        loop.append_component(wait_tof)
+        if tof != 0:
+            wait_tof = Wait(tof)
+            loop.append_component(wait_tof)
 
         weighed_acq = self._get_sequencer_by_id(id=sequencer_id).weighed_acq_enabled
         acq_instruction = (
