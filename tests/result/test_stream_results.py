@@ -33,10 +33,11 @@ class TestStreamArray:
         assert stream_array.path == "test_stream_array.hdf5"
         assert stream_array.loops == {"test_amp_loop": np.arange(0, 1, 2)}
 
-    @patch("qililab.result.stream_results.h5py")
+    @patch("qililab.result.stream_results.h5py.File")
     def test_context_manager(self, mock_h5py: MagicMock, stream_array: StreamArray):  # pylint: disable=unused-argument
         """Tests context manager real time saving."""
 
+        mock_h5py().create_dataset.return_value = [[1, 2], [3, 4]]
         # test adding outside the context manager
         stream_array[0, 0] = -2
 
@@ -51,8 +52,7 @@ class TestStreamArray:
 
         assert (stream_array.results == [[1, 2], [3, 4]]).all
         assert stream_array.dataset is not None
-        assert hasattr(stream_array.dataset, "0")
-        assert hasattr(stream_array.dataset, "1")
+        assert stream_array.dataset == [[1, 2], [3, 4]]
 
         assert len(stream_array) == 2
         assert sum(1 for _ in iter(stream_array)) == 2
