@@ -1,5 +1,5 @@
 """ Test StreamArray """
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -26,7 +26,7 @@ def fixture_stream_array():
 class MockGroup:
     """Mock a h5py group."""
 
-    def create_dataset(self, name: str, data: np.ndarray):
+    def create_dataset(self, name: str, data: np.ndarray):  # pylint: disable=unused-argument
         """Creates a dataset"""
         return {}
 
@@ -38,14 +38,14 @@ class MockFile:
         """Initialize a mock file."""
         self.dataset = None
 
-    def create_group(self, name: str):
+    def create_group(self, name: str):  # pylint: disable=unused-argument
         return MockGroup()
 
-    def create_dataset(self, name: str, data: np.ndarray):
+    def create_dataset(self, name: str, data: np.ndarray):  # pylint: disable=unused-argument
         """Creates a dataset"""
         return data
 
-    def __exit__(self):
+    def __exit__(self):  # pylint: disable=unexpected-special-method-signature
         """mocks exit"""
 
 
