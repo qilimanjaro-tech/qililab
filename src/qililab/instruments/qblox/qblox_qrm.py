@@ -211,6 +211,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                     data = self.device.get_acquisitions(sequencer=sequencer.identifier)[acquisition]["acquisition"]
                     measurement_result = QbloxQProgramMeasurementResult(raw_measurement_data=data)
                     results.append(measurement_result)
+                    self.device.delete_acquisition_data(sequencer=sequencer.identifier, name=acquisition)
 
         return results
 
