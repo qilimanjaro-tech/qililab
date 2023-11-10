@@ -38,7 +38,7 @@ class AWGAnalogDigitalConverter(AWG):
 
         acquisition_delay_time: int  # ns
         awg_sequencers: Sequence[AWGADCSequencer]
-        time_of_flight: int = 146
+        time_of_flight: int
 
     settings: AWGAnalogDigitalConverterSettings
 
