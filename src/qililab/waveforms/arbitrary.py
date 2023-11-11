@@ -44,7 +44,10 @@ class Arbitrary(Waveform):  # pylint: disable=too-few-public-methods, disable=mi
         self.samples = samples
 
     def envelope(self, resolution: int = 1) -> np.ndarray:
-        """Returns the originally passed envelope if resolution is 1.
+        """Returns the envelope corresponding to the arbitrary waveform.
+
+        Args:
+            resolution (int, optional): Pulse resolution. Defaults to 1.
 
         Returns:
             np.ndarray: Height of the envelope for each time step.

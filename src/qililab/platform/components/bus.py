@@ -242,7 +242,7 @@ class Bus:
         """Read the result from the instruments
 
         Returns:
-            Result: Acquired result
+            list[Result]: Acquired results in chronological order
         """
         if isinstance(self.system_control, ReadoutSystemControl):
             return self.system_control.acquire_qprogram_results(acquisitions=acquisitions)

@@ -14,7 +14,7 @@ from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.instruments.qblox import QbloxQRM
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent, Rectangular
-from qililab.result.qblox_results import QbloxQProgramResult, QbloxResult
+from qililab.result.qblox_results import QbloxResult
 from qililab.typings import InstrumentName
 from qililab.typings.enums import AcquireTriggerMode, IntegrationMode, Parameter
 from tests.data import Galadriel
@@ -506,12 +506,6 @@ class TestQbloxQRM:
         qrm.device.get_acquisition_state.assert_not_called()
         qrm.device.get_acquisitions.assert_not_called()
 
-    def test_acquire_qprogram_results_method(self, qrm: QbloxQRM):
-        """Test start_sequencer method"""
-        qrm.acquire_qprogram_results(acquisitions=["default"])
-        qrm.device.arm_sequencer.assert_not_called()
-        qrm.device.start_sequencer.assert_not_called()
-
     def test_get_qprogram_acquisitions_method(self, qrm: QbloxQRM):
         """Test get_acquisitions_method"""
         qrm.device.get_acquisitions.return_value = {
@@ -530,12 +524,11 @@ class TestQbloxQRM:
                 },
             }
         }
-        acquisitions = qrm.get_qprogram_acquisitions(acquisitions=["default"])
-        assert isinstance(acquisitions, QbloxQProgramResult)
-        # Assert device calls
-        qrm.device.get_sequencer_state.assert_not_called()
-        qrm.device.get_acquisition_state.assert_not_called()
-        qrm.device.get_acquisitions.assert_not_called()
+        qrm.sequences = {0: None, 1: None}
+        acquisitions = qrm.acquire_qprogram_results(acquisitions=["default"])
+        assert isinstance(acquisitions, list)
+        assert len(acquisitions) == 2
+        qrm.device.delete_acquisition_data.assert_called()
 
     def test_name_property(self, qrm_no_device: QbloxQRM):
         """Test name property."""

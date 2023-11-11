@@ -238,12 +238,12 @@ class TestMethods:
                 with patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results:
                     with patch.object(QbloxModule, "desync_sequencers") as desync:
                         acquire_qprogram_results.return_value = 123
-                        result = platform.execute_qprogram(qprogram=qprogram)
+                        results = platform.execute_qprogram(qprogram=qprogram)
 
         assert upload.call_count == 2
         assert run.call_count == 2
         acquire_qprogram_results.assert_called_once()
-        assert result == [123]
+        assert results == {"feedline_input_output_bus": [123]}
         desync.assert_called()
 
     def test_execute(self, platform: Platform):

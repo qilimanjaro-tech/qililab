@@ -123,6 +123,10 @@ class QbloxModule(AWG):
         for idx, offset in enumerate(self.out_offsets):
             self._set_out_offset(output=idx, value=offset)
 
+    def reset_sequences(self) -> None:
+        """Resets sequences dictionary."""
+        self.sequences = {}
+
     def desync_sequencers(self) -> None:
         """Desyncs all sequencers."""
         for sequencer in self.awg_sequencers:
@@ -552,7 +556,12 @@ class QbloxModule(AWG):
         self.device.reset()
 
     def upload_qpysequence(self, qpysequence: QpySequence, port: str):
-        """Upload the qpysequence to its corresponding sequencers."""
+        """Upload the qpysequence to its corresponding sequencer.
+
+        Args:
+            qpysequence (QpySequence): The qpysequence to upload.
+            port (str): The port of the sequencer to upload to.
+        """
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
         for sequencer in sequencers:
             logger.info("Sequence program: \n %s", repr(qpysequence._program))  # pylint: disable=protected-access

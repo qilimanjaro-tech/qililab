@@ -16,6 +16,7 @@
 import ast
 import io
 import re
+from collections import defaultdict
 from copy import deepcopy
 from dataclasses import asdict
 from queue import Queue
@@ -528,21 +529,17 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """
         return str(YAML().dump(self.to_dict(), io.BytesIO()))
 
-    def execute_qprogram(self, qprogram: QProgram):
+    def execute_qprogram(self, qprogram: QProgram) -> dict[str, list[Result]]:
         """Execute a QProgram using the platform instruments.
 
         Args:
-            qprogram (QProgram): The QProgram to run
+            qprogram (QProgram): The QProgram to execute.
 
         Returns:
-            Result: Result obtained from the execution. This corresponds to a numpy array that depending on the
-                platform configuration may contain the following:
-
-                - Scope acquisition is enabled: An array with dimension `(2, N)` which contain the scope data for
-                    path0 (I) and path1 (Q). N corresponds to the length of the scope measured.
-
-                - Scope acquisition disabled: An array with dimension `(#sequencers, 2, #bins)`.
+            dict[str, list[Result]]: A dictionary of measurement results. The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
         """
+
+        # Compile QProgram
         qblox_compiler = QbloxCompiler()
         sequences = qblox_compiler.compile(qprogram=qprogram)
         buses = {bus_alias: self._get_bus_by_alias(alias=bus_alias) for bus_alias in sequences}
@@ -555,18 +552,21 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         for bus_alias in sequences:
             buses[bus_alias].run()
 
-        results: list[Result] = []
+        # Acquire results
+        results: defaultdict[str, list[Result]] = defaultdict(list)
         for bus_alias in buses:
             if isinstance(buses[bus_alias].system_control, ReadoutSystemControl):
                 acquisitions = list(sequences[bus_alias].todict()["acquisitions"])
                 result = buses[bus_alias].acquire_qprogram_results(acquisitions=acquisitions)
-                results.append(result)
+                results[bus_alias].append(result)
 
+        # Reset instrument settings
         for instrument in self.instruments.elements:
             if isinstance(instrument, QbloxModule):
+                instrument.reset_sequences()
                 instrument.desync_sequencers()
 
-        return results
+        return dict(results)
 
     def execute(
         self,

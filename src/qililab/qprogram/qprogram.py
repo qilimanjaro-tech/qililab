@@ -253,7 +253,10 @@ class QProgram:
 
         Args:
             bus (str): Unique identifier of the bus.
-            weights (IQPair): Weights used during acquisition.
+            waveform (IQPair): Waveform played during measurement.
+            weights (IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair, IQPair] | None, optional): Weights used during acquisition. Defaults to None.
+            demodulation (bool, optional): If demodulation is enabled. Defaults to True.
+            save_raw_adc (bool, optional): If raw adc data should be saved. Defaults to True.
         """
         operation = Measure(
             bus=bus, waveform=waveform, weights=weights, demodulation=demodulation, save_raw_adc=save_raw_adc
