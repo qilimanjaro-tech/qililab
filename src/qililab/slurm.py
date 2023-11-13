@@ -94,7 +94,7 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
     # Submit slurm job
     job = executor.submit(function, code, variables)
 
-    logger.info(f"Your slurm job '{job_name}' with ID {job.job_id} has been queued!")
+    logger.info("Your slurm job '%s' with ID %s has been queued!", job_name, job.job_id)
     # Overrides the output variable with the obtained job
     local_ns[output] = job
 
