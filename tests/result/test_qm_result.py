@@ -52,8 +52,8 @@ class TestsQMResult:
         assert isinstance(qm_result_dict[RUNCARD.NAME], str)
         assert isinstance(qm_result_dict[QMRESULT.I], np.ndarray)
         assert isinstance(qm_result_dict[QMRESULT.Q], np.ndarray)
-        assert qm_result_dict[QMRESULT.I] is None
-        assert qm_result_dict[QMRESULT.I] is None
+        assert qm_result_dict[QMRESULT.ADC1] is None
+        assert qm_result_dict[QMRESULT.ADC2] is None
 
     def test_probabilities(self, qm_result: QuantumMachinesMeasurementResult):
         """Tests that probabilities method raises a not implemented error.

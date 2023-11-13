@@ -25,7 +25,6 @@ from qm.qua import Program
 
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
-from qililab.result.quantum_machines_results import QuantumMachinesMeasurementResult
 from qililab.typings import InstrumentName, Parameter, QMMDriver
 
 

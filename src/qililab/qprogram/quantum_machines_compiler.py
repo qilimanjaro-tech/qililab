@@ -47,7 +47,7 @@ class _BusCompilationInfo:  # pylint: disable=too-few-public-methods
         self.current_gain: float | qua.QuaVariableType | None = None
 
 
-class _MeasurementCompilationInfo:  # pylint: disable=too-few-public-methods
+class _MeasurementCompilationInfo:  # pylint: disable=too-few-public-methods, too-many-instance-attributes
     def __init__(
         self,
         bus: str,
