@@ -1,6 +1,8 @@
 import pytest
 from IPython.testing.globalipapp import start_ipython
 
+# pylint: disable=redefined-outer-name
+
 
 @pytest.fixture(scope="session")
 def session_ip():
