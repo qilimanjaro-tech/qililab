@@ -333,6 +333,28 @@ class TestMethods:
             (1, 1),
         ]
 
+    def test_order_results_circuit_M_neq_acquisitions(self, platform: Platform, qblox_results: list[dict]):
+        """Test that executing with some circuit returns acquisitions with multiple measurements in same order
+        as they appear in circuit"""
+
+        # Define circuit
+        c = Circuit(2)
+        c.add([gates.M(1), gates.M(0, 1)])  # without ordering, these are retrieved for each sequencer, so
+        # the order from qblox qrm will be M(0),M(1),M(1)
+        n_m = len([qubit for gate in c.queue for qubit in gate.qubits if isinstance(gate, gates.M)])
+
+        platform.compile = MagicMock()  # type: ignore # don't care about compilation
+        with patch.object(Bus, "upload"):
+            with patch.object(Bus, "run"):
+                with patch.object(Bus, "acquire_result") as acquire_result:
+                    with patch.object(QbloxModule, "desync_sequencers"):
+                        acquire_result.return_value = QbloxResult(
+                            qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1]
+                        )
+                        error_string = f"Number of measurements in the circuit {n_m} does not match number of acquisitions {len(qblox_results)}"
+                        with pytest.raises(ValueError, match=error_string):
+                            _ = platform.execute(program=c, num_avg=1000, repetition_duration=2000, num_bins=1)
+
     def test_execute_with_queue(self, platform: Platform):
         """Test that the execute method adds the obtained results to the given queue."""
         queue: Queue = Queue()

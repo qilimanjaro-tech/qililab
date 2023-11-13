@@ -632,10 +632,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             qubit = qblox_result["qubit"]
             results[order[(qubit, measurement)]] = qblox_result  # type: ignore[call-overload]
 
-        # safeguard for inconsistencies
-        if any(res is None for res in results):
-            raise ValueError("Not all results were parsed during result ordering")
-
         return QbloxResult(
             integration_lengths=result.integration_lengths, qblox_raw_results=results  # type: ignore[arg-type]
         )
