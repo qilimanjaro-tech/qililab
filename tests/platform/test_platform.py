@@ -20,10 +20,12 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
+from qililab.qprogram import QProgram
 from qililab.settings import Runcard
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName, Parameter
+from qililab.waveforms import IQPair, Square
 from tests.data import Galadriel
 from tests.test_utils import build_platform
 
@@ -152,7 +154,7 @@ class TestPlatform:
     @pytest.mark.parametrize("alias", ["drive_line_bus", "feedline_input_output_bus", "foobar"])
     def test_get_bus_by_alias(self, platform: Platform, alias):
         """Test get_bus_by_alias method"""
-        bus = platform.get_bus_by_alias(alias)
+        bus = platform._get_bus_by_alias(alias)
         if alias == "foobar":
             assert bus is None
         if bus is not None:
@@ -233,6 +235,30 @@ class TestMethods:
             assert len(sequences) == 1
             assert isinstance(sequences[0], Sequence)
             assert sequences[0]._program.duration == 2000 * 1000 + 4
+
+    def test_execute_qprogram(self, platform: Platform):
+        """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
+        qprogram.sync()
+        qprogram.play(bus="feedline_input_output_bus", waveform=readout_wf)
+        qprogram.acquire(bus="feedline_input_output_bus", weights=weights_wf)
+
+        with patch.object(Bus, "upload_qpysequence") as upload:
+            with patch.object(Bus, "run") as run:
+                with patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results:
+                    with patch.object(QbloxModule, "desync_sequencers") as desync:
+                        acquire_qprogram_results.return_value = 123
+                        results = platform.execute_qprogram(qprogram=qprogram)
+
+        assert upload.call_count == 2
+        assert run.call_count == 2
+        acquire_qprogram_results.assert_called_once()
+        assert results == {"feedline_input_output_bus": 123}
+        desync.assert_called()
 
     def test_execute(self, platform: Platform):
         """Test that the execute method calls the buses to run and return the results."""
@@ -334,7 +360,7 @@ class TestMethods:
 
     def test_get_parameter_with_delay(self, platform: Platform):
         """Test the ``get_parameter`` method with the delay of a bus."""
-        bus = platform.get_bus_by_alias(alias="drive_line_q0_bus")
+        bus = platform._get_bus_by_alias(alias="drive_line_q0_bus")
         assert bus is not None
         assert bus.delay == platform.get_parameter(parameter=Parameter.DELAY, alias="drive_line_q0_bus")
 
@@ -345,7 +371,7 @@ class TestMethods:
     def test_get_parameter_of_bus(self, parameter, platform: Platform):
         """Test the ``get_parameter`` method with the parameters of a bus."""
         CHANNEL_ID = 0
-        bus = platform.get_bus_by_alias(alias="drive_line_q0_bus")
+        bus = platform._get_bus_by_alias(alias="drive_line_q0_bus")
         assert bus is not None
         assert bus.get_parameter(parameter=parameter, channel_id=CHANNEL_ID) == platform.get_parameter(
             parameter=parameter, alias="drive_line_q0_bus", channel_id=CHANNEL_ID
@@ -354,7 +380,7 @@ class TestMethods:
     def test_get_parameter_of_qblox_module_without_channel_id(self, platform: Platform):
         """Test that getting a parameter of a ``QbloxModule`` with multiple sequencers without specifying a channel
         id still works."""
-        bus = platform.get_bus_by_alias(alias="drive_line_q0_bus")
+        bus = platform._get_bus_by_alias(alias="drive_line_q0_bus")
         awg = bus.system_control.instruments[0]
         assert isinstance(awg, QbloxModule)
         sequencer = awg.get_sequencers_from_chip_port_id(bus.port)[0]
@@ -365,7 +391,7 @@ class TestMethods:
     def test_get_parameter_of_qblox_module_without_channel_id_and_1_sequencer(self, platform: Platform):
         """Test that we can get a parameter of a ``QbloxModule`` with one sequencers without specifying a channel
         id."""
-        bus = platform.get_bus_by_alias(alias="drive_line_q0_bus")
+        bus = platform._get_bus_by_alias(alias="drive_line_q0_bus")
         assert isinstance(bus, Bus)
         qblox_module = bus.system_control.instruments[0]
         assert isinstance(qblox_module, QbloxModule)

@@ -96,5 +96,5 @@ class ExecutionBuilder(metaclass=Singleton):
             bus: Bus object
         """
         alias = loop.alias
-        bus = platform.get_bus_by_alias(alias=alias)
+        bus = platform._get_bus_by_alias(alias=alias)
         return alias, bus

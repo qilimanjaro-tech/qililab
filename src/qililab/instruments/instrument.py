@@ -192,6 +192,18 @@ class Instrument(BusElement, ABC):
 
         In some cases this method might do nothing."""
 
+    def acquire_qprogram_results(self, acquisitions: list[str]) -> list[Result]:  # type: ignore[empty-body]
+        """Acquire results of the measurement.
+
+        In some cases this method might do nothing.
+
+        Args:
+            acquisitions (list[str]): A list of acquisitions names.
+
+        Returns:
+            list[Result]: The acquired results in chronological order.
+        """
+
     @CheckDeviceInitialized
     @abstractmethod
     def reset(self):
