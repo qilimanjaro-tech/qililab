@@ -93,10 +93,8 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
         raise ValueError(f"Output variable '{output}' was not assigned to any value inside the cell!")
     # Submit slurm job
     job = executor.submit(function, code, variables)
-    if execution_env == "local":
-        logger.warning("Your slurm job '%s' with ID %s is running locally, without slurm!", job_name, job.job_id)
-    else:
-        logger.info(f"Your slurm job '{job_name}' with ID {job.job_id} was sent to {partition}!")
+
+    logger.info(f"Your slurm job '{job_name}' with ID {job.job_id} has been queued!")
     # Overrides the output variable with the obtained job
     local_ns[output] = job
 

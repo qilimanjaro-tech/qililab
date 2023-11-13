@@ -8,7 +8,7 @@ def session_ip():
     yield start_ipython()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def ip(session_ip):
     """Prepare IPython shell for running unit tests"""
     session_ip.run_cell(raw_cell="import qililab")
