@@ -85,7 +85,7 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
     # Define the function that will be queued as a SLURM job
     def function(code, variables):
         # Execute the code and return the output variable defined by the user
-        exec(code, variables)  # pylint: disable=exec-used
+        exec(code, variables)  # pylint: disable=exec-used # nosec
         return variables[output]
 
     # Check if output variables are defined or used in the magic cell
