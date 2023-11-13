@@ -12,13 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""__init__.py"""
-from .awg import AWG
-from .awg_analog_digital_converter import AWGAnalogDigitalConverter
-from .instrument import Instrument, ParameterNotFound
-from .instruments import Instruments
-from .mini_circuits import Attenuator
-from .quantum_machines import QuantumMachinesManager
-from .rohde_schwarz import SGS100A
-from .signal_generator import SignalGenerator
-from .utils import InstrumentFactory
+""" Quantum Machines Results format """
+from .quantum_machines_result import QuantumMachinesResult

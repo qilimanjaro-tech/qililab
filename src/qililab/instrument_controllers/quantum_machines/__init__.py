@@ -12,11 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Yaml with int and float representers that convrt small/big values to scientific notation."""
-import yaml
-
-from .yaml_representers import null_representer, yaml_representer
-
-yaml.add_representer(float, yaml_representer)
-yaml.add_representer(int, yaml_representer)
-yaml.add_representer(type(None), null_representer)
+""" Quantum Machines Instrument Controllers."""
+from .qmm_controller import QMMController
