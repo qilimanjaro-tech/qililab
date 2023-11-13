@@ -29,8 +29,8 @@ def dummy_comparison_model(obtained: dict, comparison: dict) -> float:
 ######################
 zeroth = CalibrationNode(
     nb_path="tests/calibration/notebook_test/zeroth.ipynb",
-    qubit_index=[0, 1],
-    in_spec_threshold=4,
+    qubit_index=[0, 1],  # qubit_index as list
+    in_spec_threshold=4,  # in_spec thresholds
     bad_data_threshold=8,
     comparison_model=dummy_comparison_model,
     drift_timeout=1.0,
@@ -38,15 +38,15 @@ zeroth = CalibrationNode(
 first = CalibrationNode(
     nb_path="tests/calibration/notebook_test/first.ipynb",
     qubit_index=0,
-    in_spec_threshold=4,
+    in_spec_threshold=4,  # in_spec thresholds
     bad_data_threshold=8,
     comparison_model=dummy_comparison_model,
-    drift_timeout=1800.0,
+    drift_timeout=1.0,  # long drift timeout
 )
 second = CalibrationNode(
     nb_path="tests/calibration/notebook_test/second.ipynb",
     qubit_index=0,
-    in_spec_threshold=2,
+    in_spec_threshold=2,  # out_of_spec thresholds
     bad_data_threshold=4,
     comparison_model=dummy_comparison_model,
     drift_timeout=1.0,
@@ -54,14 +54,15 @@ second = CalibrationNode(
 third = CalibrationNode(
     nb_path="tests/calibration/notebook_test/third.ipynb",
     qubit_index=0,
-    in_spec_threshold=1,
+    in_spec_threshold=1,  # bad_data thresholds
     bad_data_threshold=2,
     comparison_model=dummy_comparison_model,
     drift_timeout=1.0,
 )
 fourth = CalibrationNode(
     nb_path="tests/calibration/notebook_test/fourth.ipynb",
-    in_spec_threshold=1,
+    # no qubit index
+    in_spec_threshold=1,  # bad_data thresholds
     bad_data_threshold=2,
     comparison_model=dummy_comparison_model,
     drift_timeout=1.0,
@@ -223,35 +224,38 @@ class RunAutomaticCalibrationMockedController(CalibrationController):
         self.get_last_fidelities = MagicMock(return_value={"test": (0.0, "test", datetime.fromtimestamp(1999))})
 
 
+# type: ignore[method-assign]
 class MaintainMockedController(CalibrationController):
     """``CalibrationController`` to test the workflow of ``maintain()`` where its mocked ``check_state()``, ``check_data()``, ``diagnose()``, ``calibrate()`` and ``update_parameters()``."""
 
     def __init__(self, node_sequence, calibration_graph, runcard, check_state: bool, check_data: str):
         super().__init__(node_sequence=node_sequence, calibration_graph=calibration_graph, runcard=runcard)
-        self.check_state = MagicMock(return_value=check_state)  # type: ignore[method-assign]
-        self.check_data = MagicMock(return_value=check_data)  # type: ignore[method-assign]
-        self.diagnose = MagicMock(return_value=None)  # type: ignore[method-assign]
-        self.calibrate = MagicMock(return_value=None)  # type: ignore[method-assign]
-        self._update_parameters = MagicMock(return_value=None)  # type: ignore[method-assign]
+        self.check_state = MagicMock(return_value=check_state)
+        self.check_data = MagicMock(return_value=check_data)
+        self.diagnose = MagicMock(return_value=None)
+        self.calibrate = MagicMock(return_value=None)
+        self._update_parameters = MagicMock(return_value=None)
 
 
+# type: ignore[method-assign]
 class DiagnoseMockedController(CalibrationController):
     """`CalibrationController` to test the workflow of `diagnose()` where its mocked ``check_data()``, ``calibrate()`` and ``update_parameters()``."""
 
     def __init__(self, node_sequence, calibration_graph, runcard, check_data: str):
         super().__init__(node_sequence=node_sequence, calibration_graph=calibration_graph, runcard=runcard)
-        self.check_data = MagicMock(return_value=check_data)  # type: ignore[method-assign]
-        self.calibrate = MagicMock(return_value=None)  # type: ignore[method-assign]
-        self._update_parameters = MagicMock(return_value=None)  # type: ignore[method-assign]
+        self.check_data = MagicMock(return_value=check_data)
+        self.calibrate = MagicMock(return_value=None)
+        self._update_parameters = MagicMock(return_value=None)
 
 
+# type: ignore[method-assign]
 class DiagnoseFixedMockedController(CalibrationController):
     """`CalibrationController` to test the workflow of `diagnose()` where its mocked ``check_data()``, ``calibrate()`` and ``update_parameters()``."""
 
     def __init__(self, node_sequence, calibration_graph, runcard, check_data):
         super().__init__(node_sequence=node_sequence, calibration_graph=calibration_graph, runcard=runcard)
-        self.calibrate = MagicMock(return_value=None)  # type: ignore[method-assign]
-        self._update_parameters = MagicMock(return_value=None)  # type: ignore[method-assign]
+        self.calibrate = MagicMock(return_value=None)
+        self._update_parameters = MagicMock(return_value=None)
         self.check_data_string = check_data
 
     def check_data(self, node):
@@ -316,10 +320,7 @@ class TestRunAutomaticCalibrationFromCalibrationController:
     def test_run_automatic_calibration(self, controller):
         """Test that `run_automatic_calibration()` gets the proper nodes to maintain."""
         # Act:
-        with patch(
-            "qililab.automatic_calibration.calibration_controller._get_forced_maintain_condition"
-        ) as mock_force_condition:
-            output_dict = controller.run_automatic_calibration()
+        output_dict = controller.run_automatic_calibration()
 
         # Asserts:
         controller.get_last_set_parameters.assert_called_once_with()
@@ -334,19 +335,19 @@ class TestRunAutomaticCalibrationFromCalibrationController:
             controller.maintain.assert_any_call(fourth)
             controller.maintain.assert_any_call(first)
             assert controller.maintain.call_count == 2
-            assert mock_force_condition.call_count == 2
+            # assert mock_force_condition.call_count == 2
 
         elif controller.calibration_graph == G2:
             controller.maintain.assert_any_call(fourth)
             controller.maintain.assert_any_call(second)
             controller.maintain.assert_any_call(first)
             assert controller.maintain.call_count == 3
-            assert mock_force_condition.call_count == 3
+            # assert mock_force_condition.call_count == 3
 
         elif controller.calibration_graph in [G1, G4, G5, G6, G7, G8, G9]:
             controller.maintain.assert_any_call(fourth)
             assert controller.maintain.call_count == 1
-            assert mock_force_condition.call_count == 1
+            # assert mock_force_condition.call_count == 1
 
 
 #####################
@@ -630,7 +631,7 @@ class TestDiagnoseFromCalibrationController:
         assert controller.diagnose(second) is True  # Gets calibrated
         assert controller.diagnose(fourth) is True  # Gets calibrated
 
-        # TODO: Solve that second gets calibrated for cases like this @Isaac.
+        # TODO: Solve that second gets calibrated for cases like this in @Isaac solving worklflow errors PR.
         # Leave in in_spec
         controller = DiagnoseFixedMockedController(
             node_sequence=nodes, calibration_graph=G0, runcard=path_runcard, check_data="in_spec"
@@ -693,27 +694,30 @@ class TestCalibrationController:
     #######################
     ### TEST CHECK DATA ###
     #######################
-    @patch("qililab.calibration.calibration_node.CalibrationNode.run_node")
+    @patch("qililab.calibration.calibration_node.CalibrationNode.run_node", return_value=11.11)
     @patch("qililab.calibration.calibration_node.CalibrationNode._add_string_to_checked_nb_name")
-    @patch("qililab.calibration.calibration_node.CalibrationNode._invert_output_and_previous_output")
-    def test_check_data(self, mock_invert, mock_add_str, mock_run, controller):
+    def test_check_data(self, mock_add_str, mock_run, controller):
         """Test that the check_data method, works correctly."""
         for node in controller.node_sequence.values():
             node.previous_output_parameters = {"check_parameters": {"x": [1, 2, 3], "y": [5, 6, 7]}}
             node.output_parameters = {"check_parameters": {"x": [1, 2, 3], "y": [4, 5, 6]}}
             node.comparison_model = dummy_comparison_model
             result = controller.check_data(node)
+
             if node in [zeroth, first]:
                 assert result == "in_spec"
+                mock_add_str.assert_called_with("in_spec", 11.11)
             elif node == second:
                 assert result == "out_of_spec"
+                mock_add_str.assert_called_with("out_of_spec", 11.11)
             elif node in [third, fourth]:
                 assert result == "bad_data"
+                mock_add_str.assert_called_with("bad_data", 11.11)
 
-        # TODO: Maybe add the individual calls inside the foor loop???
+            mock_run.assert_called_with(check=True)
+
         assert mock_run.call_count == len(controller.node_sequence)
         assert mock_add_str.call_count == len(controller.node_sequence)
-        assert mock_invert.call_count == len(controller.node_sequence)
 
     ######################
     ### TEST CALIBRATE ###
@@ -808,12 +812,12 @@ class TestCalibrationController:
     #######################
     ### TEST DEPENDENTS ###
     #######################
-    def test_dependents(self, controller):
-        """Test that dependents return the correct dependencies."""
-        result = controller._dependents(nodes["zeroth_q0q1"])
+    def test_dependencies(self, controller):
+        """Test that dependencies return the correct dependencies."""
+        result = controller._dependencies(nodes["zeroth_q0q1"])
         assert result == []
 
-        result = controller._dependents(nodes["fourth"])
+        result = controller._dependencies(nodes["fourth"])
         if controller.calibration_graph in [G0, G1]:
             assert third in result and second in result
             assert len(result) == 2

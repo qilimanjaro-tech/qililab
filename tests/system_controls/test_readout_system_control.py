@@ -1,6 +1,9 @@
 """This file tests the the ``InstrumentController`` class"""
+from unittest.mock import patch
+
 import pytest
 
+from qililab.instruments import Instrument
 from qililab.platform import Platform
 from qililab.system_control.readout_system_control import ReadoutSystemControl
 from tests.data import Galadriel
@@ -22,6 +25,12 @@ def fixture_system_control(platform: Platform):
 
 class TestReadoutSystemControl:
     """This class contains the unit tests for the ``ReadoutSystemControl`` class."""
+
+    def test_acquire_qprogram_results_method(self, system_control):
+        with patch.object(Instrument, "acquire_qprogram_results") as acquire_qprogram_results:
+            system_control.acquire_qprogram_results(acquisitions=["acquisition_0", "acquisition_1"])
+
+        acquire_qprogram_results.assert_called_with(acquisitions=["acquisition_0", "acquisition_1"])
 
     def test_error_raises_when_no_awg(self, system_control):
         """Testing that an error raises if a readout system control does not have an AWG
