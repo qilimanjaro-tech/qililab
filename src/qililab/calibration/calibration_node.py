@@ -18,7 +18,7 @@ import logging
 import os
 from datetime import datetime
 from io import StringIO
-from typing import Callable
+from typing import Any, Callable
 
 import numpy as np
 import papermill as pm
@@ -667,6 +667,26 @@ def export_nb_outputs(outputs: dict) -> None:
     Args:
         outputs (dict): Outputs from the notebook to export into the automatic calibration workflow.
     """
+
+    def ndarray_to_list(iter_: Any):
+        if isinstance(iter_, dict):
+            for v, k in iter_.items():
+                iter_[k] = ndarray_to_list(v)
+
+        if isinstance(iter_, list):
+            for i, v in enumerate(iter_):
+                iter_[i] = ndarray_to_list(v)
+
+        if isinstance(iter_, tuple):
+            tuple_list = []
+            for i in iter_:
+                tuple_list.append(ndarray_to_list(v))
+            return tuple(tuple_list)
+
+        return v.tolist() if isinstance(v, np.ndarray) else iter_
+
+    ndarray_to_list(outputs)
+
     print(f"{logger_output_start}{json.dumps(outputs)}")
 
 
