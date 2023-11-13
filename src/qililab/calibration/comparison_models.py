@@ -112,7 +112,7 @@ def norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, l
     """
     is_structure_of_check_parameters_correct(obtained, comparison)
 
-    if obtained["results"].shape() == 1:
+    if np.asarray(obtained["results"]).shape() == (len(obtained["sweep_interval"]),):
         check = "fit" if fit else "result"
 
         square_error = sum(
@@ -122,7 +122,7 @@ def norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, l
         root_mean_square_error = np.sqrt(square_error / len(obtained["results"]))
         return root_mean_square_error / np.mean(comparison[check])  # normalize the difference with the mean values
 
-    raise ValueError("Shape too big for this comparison model.")
+    raise ValueError("Incorrect shape for this comparison model.")
 
 
 def IQ_norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, list], fit: bool = True) -> float:
@@ -138,19 +138,24 @@ def IQ_norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str
     """
     is_structure_of_check_parameters_correct(obtained, comparison)
 
-    if obtained["results"].shape() == 2:
-        # TODO: DO same as above, but for checking I and Q:
+    if np.asarray(obtained["results"]).shape() == (2, len(obtained["sweep_interval"])):
+        i, q = obtained["results"]
 
         check = "fit" if fit else "result"
 
-        square_error = sum(
-            (obtained["results"][i] - comparison[check][comparison["sweep_interval"].index(obtained_x)]) ** 2
-            for i, obtained_x in enumerate(obtained["sweep_interval"])
-        )
-        root_mean_square_error = np.sqrt(square_error / len(obtained["results"]))
-        return root_mean_square_error / np.mean(comparison[check])  # normalize the difference with the mean values
+        error = 0
+        for obtained_results in i, q:
+            square_error = sum(
+                (obtained_results[i] - comparison[check][comparison["sweep_interval"].index(obtained_x)]) ** 2
+                for i, obtained_x in enumerate(obtained["sweep_interval"])
+            )
+            root_mean_square_error = np.sqrt(square_error / len(obtained_results))
+            error += root_mean_square_error / np.mean(
+                comparison[check]
+            )  # normalize the difference with the mean values
 
-    raise ValueError("Shape too big for this comparison model.")
+        return error
+    raise ValueError("Incorrect shape for this comparison model.")
 
 
 def ssro_comparison_2D(obtained: dict[str, list], comparison: dict[str, list], fit: bool = True) -> float:
@@ -164,6 +169,20 @@ def ssro_comparison_2D(obtained: dict[str, list], comparison: dict[str, list], f
     Returns:
         float: difference/error between the two samples.
     """
-    raise NotImplementedError
+    if np.asarray(obtained["results"]).shape() == (2, len(obtained["sweep_interval"])):
+        check = "fit" if fit else "result"
 
-    # You would need to compare the 2D guassian distributions
+        obtained_i, obtained_q = obtained["results"]
+        comparison_i, comparison_q = comparison[check]
+
+        mean_diff = (np.mean(obtained_i) - np.mean(comparison_i)) ** 2 + (
+            np.mean(obtained_q) - np.mean(comparison_q)
+        ) ** 2  # Difference in means of 2d histograms
+        standard_dev = (np.std(obtained_i) - np.std(comparison_i)) ** 2 + (
+            np.std(obtained_q) - np.std(comparison_q)
+        ) ** 2  # Difference in std of 2d histograms
+
+        return np.sqrt(mean_diff * 4 + standard_dev / (5 * len(obtained["sweep_interval"])))
+        # TODO: Compare 2D guassian distributions, with a more specific function.
+
+    raise ValueError("Incorrect shape for this comparison model.")
