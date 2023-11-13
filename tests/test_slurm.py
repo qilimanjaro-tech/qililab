@@ -13,7 +13,7 @@ def session_ip():
 @pytest.fixture(scope="function")
 def ip(session_ip):
     """Prepare IPython shell for running unit tests"""
-    session_ip.run_cell(raw_cell="import qililab.slurm\nimport qililab")
+    session_ip.run_cell(raw_cell="import qililab.slurm")
     yield session_ip
 
 

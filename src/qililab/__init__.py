@@ -35,4 +35,4 @@ with contextlib.suppress(NameError, ImportError):
     # Since Ipython magic methods can only be imported from inside a Jupyter Notebook,
     # here we first check that `get_ipython` exists (which means we are inside a Jupyter Notebook)
     get_ipython()  # type: ignore  # noqa: F405 # pylint: disable=undefined-variable
-    from .slurm import submit_job
+    from .slurm import submit_job  # pragma: no cover
