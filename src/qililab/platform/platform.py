@@ -553,12 +553,12 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             buses[bus_alias].run()
 
         # Acquire results
-        results: defaultdict[str, list[Result]] = defaultdict(list)
+        results: dict[str, list[Result]] = {}
         for bus_alias in buses:
             if isinstance(buses[bus_alias].system_control, ReadoutSystemControl):
                 acquisitions = list(sequences[bus_alias].todict()["acquisitions"])
-                result = buses[bus_alias].acquire_qprogram_results(acquisitions=acquisitions)
-                results[bus_alias].append(result)
+                bus_results = buses[bus_alias].acquire_qprogram_results(acquisitions=acquisitions)
+                results[bus_alias] = bus_results
 
         # Reset instrument settings
         for instrument in self.instruments.elements:
@@ -566,7 +566,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 instrument.reset_sequences()
                 instrument.desync_sequencers()
 
-        return dict(results)
+        return results
 
     def execute(
         self,
