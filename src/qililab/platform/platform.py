@@ -16,7 +16,6 @@
 import ast
 import io
 import re
-from collections import defaultdict
 from copy import deepcopy
 from dataclasses import asdict
 from queue import Queue
