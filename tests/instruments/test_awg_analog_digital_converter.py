@@ -2,6 +2,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from qpysequence import Sequence as QpySequence
 
 from qililab.constants import RUNCARD
 from qililab.instruments import AWG, AWGAnalogDigitalConverter
@@ -22,6 +23,9 @@ class DummyAWG(AWGAnalogDigitalConverter):
         pass
 
     def upload(self, port: str):
+        pass
+
+    def upload_qpysequence(self, qpysequence: QpySequence, port: str):
         pass
 
     def acquire_result(self):

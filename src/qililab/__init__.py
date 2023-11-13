@@ -23,7 +23,7 @@ from .config import __version__, logger
 from .data_management import build_platform, load_results, save_platform, save_results
 from .execute_circuit import execute
 from .experiment import Experiment
-from .qprogram import QProgram
+from .qprogram import Domain, QbloxCompiler, QProgram, QuantumMachinesCompiler
 from .result import Results
 from .transpiler import Drag, Park, translate_circuit
 from .typings import ExperimentOptions, ExperimentSettings, Parameter

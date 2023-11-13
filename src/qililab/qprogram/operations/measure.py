@@ -15,9 +15,23 @@
 from dataclasses import dataclass
 
 from qililab.qprogram.operations.operation import Operation
+from qililab.waveforms import IQPair, Waveform
 
 
 @dataclass(frozen=True)
-class Wait(Operation):  # pylint: disable=missing-class-docstring
+class Measure(Operation):  # pylint: disable=missing-class-docstring
     bus: str
-    duration: int
+    waveform: IQPair
+    weights: IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair, IQPair] | None
+    demodulation: bool
+    save_raw_adc: bool
+
+    def get_waveforms(self) -> tuple[Waveform, Waveform]:
+        """Get the waveforms.
+
+        Returns:
+            tuple[Waveform, Waveform | None]: The waveforms as tuple. The second waveform can be None.
+        """
+        wf_I: Waveform = self.waveform.I
+        wf_Q: Waveform = self.waveform.Q
+        return wf_I, wf_Q
