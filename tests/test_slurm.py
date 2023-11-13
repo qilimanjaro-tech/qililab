@@ -16,7 +16,8 @@ def ip(session_ip):
 
 
 def test_submit_job(ip):
+    ip.run_cell(raw_cell="a=1\nb=1")
     ip.run_cell_magic(
-        magic_name="submit_job", line="-o results -d debug -l slurm_job_data_tests -n unit_test", cell="results = 1+1 "
+        magic_name="submit_job", line="-o results -d debug -l slurm_job_data_tests -n unit_test", cell="results = a+b "
     )
     assert ip.user_global_ns["results"].result() == 2

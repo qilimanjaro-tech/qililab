@@ -1,12 +1,12 @@
-import logging
 import os
 from types import ModuleType
 
 from IPython.core.magic import needs_local_scope, register_cell_magic
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
-from submitit import AutoExecutor  # pylint: disable=import-error
+from submitit import AutoExecutor
 
-logger = logging.getLogger()
+from qililab.config import logger
+
 num_jobs_to_keep = 10
 
 
@@ -20,6 +20,12 @@ num_jobs_to_keep = 10
     help=(f"Path where you want slurm to write the logs for the last {num_jobs_to_keep} jobs"),
 )
 @argument("-n", "--name", default="submitit", help=("Name of the slurm job"))
+@argument(
+    "-e",
+    "--execution_environment",
+    default=None,
+    help=("Select execution environment. Targets slurm by default but if '-e local' the job is run locally."),
+)
 @needs_local_scope
 @register_cell_magic
 def submit_job(line: str, cell: str, local_ns: dict) -> None:
@@ -34,6 +40,7 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
     partition = args.device
     folder_path = args.logs
     job_name = args.name
+    execution_env = args.execution_environment
 
     # Take all the import lines and add them right before the code of the cell (to make sure all the needed libraries
     # are imported inside the SLURM job)
@@ -42,7 +49,7 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
     executable_code = "\n".join(import_lines + [cell])
 
     # Create the executor that will be used to queue the SLURM job
-    executor = AutoExecutor(folder=folder_path)
+    executor = AutoExecutor(folder=folder_path, cluster=execution_env)
     executor.update_parameters(slurm_partition=partition, name=job_name)
 
     # Compile the code defined above
@@ -64,13 +71,21 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
 
     # Submit slurm job
     job = executor.submit(function, code, variables)
-    logger.info(print(f"Your slurm job '{job_name}' with ID {job.job_id} was sent to {partition}!"))
+    if execution_env == "local":
+        logger.warn(f"Your slurm job '{job_name}' with ID {job.job_id} is running locally, without slurm!")
+    else:
+        logger.info(f"Your slurm job '{job_name}' with ID {job.job_id} was sent to {partition}!")
     # Overrides the output variable with the obtained job
     local_ns[output] = job
 
     job_ids_to_keep = list(range(int(job.job_id) - num_jobs_to_keep, int(job.job_id) + 1))
+
     # Delete info from past jobs
     for filename in os.listdir(folder_path):
-        if int(filename.split("_")[0]) not in job_ids_to_keep:
-            file_path = os.path.join(folder_path, filename)
+        file_path = os.path.join(folder_path, filename)
+        try:
+            if int(filename.split("_")[0]) not in job_ids_to_keep:
+                os.remove(file_path)
+        except ValueError:
+            logger.warn(f"{filename} shouldn't be in {folder_path}. It has been removed!")
             os.remove(file_path)
