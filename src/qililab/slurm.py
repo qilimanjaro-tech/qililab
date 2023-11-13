@@ -11,7 +11,7 @@ num_jobs_to_keep = 10
 
 
 @magic_arguments()
-@argument("-o", "--output", help=("Name of the variables that will be returned from the SLURM job."))
+@argument("-o", "--output", help=("Output of the SLURM job. This name should correspond to a variable defined in the cell that we want to retrieve after execution. After queuing a cell, this variable will be converted to a `Job` class. To retrieve the results of the job, you need to call `variable.result()`."))
 @argument("-d", "--device", help=("Name of the device where you want to execute the SLURM job."))
 @argument(
     "-l",
