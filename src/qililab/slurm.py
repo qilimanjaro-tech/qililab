@@ -1,3 +1,4 @@
+import ast
 import os
 from types import ModuleType
 
@@ -10,8 +11,24 @@ from qililab.config import logger
 num_jobs_to_keep = 10
 
 
+def is_variable_used_or_defined(code, variable):
+    tree = ast.parse(code)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == variable:
+                    return True
+    return False
+
+
 @magic_arguments()
-@argument("-o", "--output", help=("Output of the SLURM job. This name should correspond to a variable defined in the cell that we want to retrieve after execution. After queuing a cell, this variable will be converted to a `Job` class. To retrieve the results of the job, you need to call `variable.result()`."))
+@argument(
+    "-o",
+    "--output",
+    help=(
+        "Output of the SLURM job. This name should correspond to a variable defined in the cell that we want to retrieve after execution. After queuing a cell, this variable will be converted to a `Job` class. To retrieve the results of the job, you need to call `variable.result()`."
+    ),
+)
 @argument("-d", "--device", help=("Name of the device where you want to execute the SLURM job."))
 @argument(
     "-l",
@@ -69,6 +86,9 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
         exec(code, variables)
         return variables[output]
 
+    # Check if output variables are defined or used in the magic cell
+    if not is_variable_used_or_defined(executable_code, output):
+        raise ValueError(f"Output variable '{output}' was not assigned to any value inside the cell!")
     # Submit slurm job
     job = executor.submit(function, code, variables)
     if execution_env == "local":
