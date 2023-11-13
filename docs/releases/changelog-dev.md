@@ -1,8 +1,9 @@
 # Release dev (development release)
 
 ### New features since last release
+
 - Add magic method to run python code as slurm jobs from Jupyter Notebooks.
-[#600](https://github.com/qilimanjaro-tech/qililab/pull/600)
+  [#600](https://github.com/qilimanjaro-tech/qililab/pull/600)
 
 - Implemented `QuantumMachinesCompiler` class to compile QPrograms to QUA programs.
   [#563](https://github.com/qilimanjaro-tech/qililab/pull/563)

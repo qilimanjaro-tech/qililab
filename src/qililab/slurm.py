@@ -85,12 +85,12 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
     # Define the function that will be queued as a SLURM job
     def function(code, variables):
         # Execute the code and return the output variable defined by the user
-        exec(code, variables)
+        exec(code, variables)  # pylint: disable=exec-used
         return variables[output]
 
     # Check if output variables are defined or used in the magic cell
     if not is_variable_used(executable_code, output):
-        raise ValueError(f"Output variable '{output}' was not assigned to any value inside the cell!")
+        raise ValueError("Output variable '%s' was not assigned to any value inside the cell!", output)
     # Submit slurm job
     job = executor.submit(function, code, variables)
 
