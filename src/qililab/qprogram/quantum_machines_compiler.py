@@ -168,14 +168,16 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
     def _process_measurements(self):
         def _process_measurement(measurement: _MeasurementCompilationInfo, index: int):
             result_handles: list[str] = []
-            if (stream_I := measurement.stream_I) is not None:
+            if measurement.stream_I is not None:
+                stream_I = measurement.stream_I
                 for loop_iteration in measurement.loops_iterations:
                     stream_I = stream_I.buffer(loop_iteration)
                 if measurement.average:
                     stream_I = stream_I.average()
                 stream_I.save(f"I_{index}")
                 result_handles.append(f"I_{index}")
-            if (stream_Q := measurement.stream_Q) is not None:
+            if measurement.stream_Q is not None:
+                stream_Q = measurement.stream_Q
                 for loop_iteration in measurement.loops_iterations:
                     stream_Q = stream_Q.buffer(loop_iteration)
                 if measurement.average:
