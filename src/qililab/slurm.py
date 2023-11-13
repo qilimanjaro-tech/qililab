@@ -11,7 +11,8 @@ from qililab.config import logger
 num_jobs_to_keep = 10
 
 
-def is_variable_used_or_defined(code, variable):
+def is_variable_used(code, variable):
+    """Check whether any valuea are assigned to the output variable inside the magic cell."""
     tree = ast.parse(code)
     for node in ast.walk(tree):
         if isinstance(node, ast.Assign):
@@ -87,7 +88,7 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
         return variables[output]
 
     # Check if output variables are defined or used in the magic cell
-    if not is_variable_used_or_defined(executable_code, output):
+    if not is_variable_used(executable_code, output):
         raise ValueError(f"Output variable '{output}' was not assigned to any value inside the cell!")
     # Submit slurm job
     job = executor.submit(function, code, variables)
