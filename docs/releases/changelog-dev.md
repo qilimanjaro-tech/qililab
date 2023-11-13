@@ -2,6 +2,11 @@
 
 ### New features since last release
 
+- Multiple measurements on the same qubit at arbitrary points of the circuit are now supported. So far results for this can only be obtained through the `result.array`
+  property. Results in the array will be grouped by iq pairs (same as before) and ordered in the same order as measurements in the circuit.
+  For example, if a circuit is measuring `M(1)-M(2)-M(0,1)` the first iq values will be those for `M(1)`, followed by `M(2)`, `M(0)` and `M(1)`.
+  [#524](https://github.com/qilimanjaro-tech/qililab/pull/524)
+
 - Added the two main classes need for automatic-calibration, `CalibrationController` and `CalibrationNode`: [#554](https://github.com/qilimanjaro-tech/qililab/pull/554)
 
 - Added the driver for Quantum Machines Manager and a new QuantumMachinesResult class to handle Quantum Machines instruments.
