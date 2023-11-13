@@ -12,14 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .acquire import Acquire
-from .measure import Measure
-from .operation import Operation
-from .play import Play
-from .reset_phase import ResetPhase
-from .set_frequency import SetFrequency
-from .set_gain import SetGain
-from .set_offset import SetOffset
-from .set_phase import SetPhase
-from .sync import Sync
-from .wait import Wait
+from dataclasses import dataclass
+
+from qililab.qprogram.blocks.block import Block
+
+
+@dataclass(frozen=True)
+class InfiniteLoop(Block):  # pylint: disable=missing-class-docstring
+    ...

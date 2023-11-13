@@ -20,11 +20,13 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
+from qililab.qprogram import QProgram
 from qililab.result.qblox_results import QbloxResult
 from qililab.settings import Runcard
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName, Parameter
+from qililab.waveforms import IQPair, Square
 from tests.data import Galadriel
 from tests.test_utils import build_platform
 
@@ -278,6 +280,30 @@ class TestMethods:
             assert len(sequences) == 1
             assert isinstance(sequences[0], Sequence)
             assert sequences[0]._program.duration == 2000 * 1000 + 4
+
+    def test_execute_qprogram(self, platform: Platform):
+        """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
+        qprogram.sync()
+        qprogram.play(bus="feedline_input_output_bus", waveform=readout_wf)
+        qprogram.acquire(bus="feedline_input_output_bus", weights=weights_wf)
+
+        with patch.object(Bus, "upload_qpysequence") as upload:
+            with patch.object(Bus, "run") as run:
+                with patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results:
+                    with patch.object(QbloxModule, "desync_sequencers") as desync:
+                        acquire_qprogram_results.return_value = 123
+                        results = platform.execute_qprogram(qprogram=qprogram)
+
+        assert upload.call_count == 2
+        assert run.call_count == 2
+        acquire_qprogram_results.assert_called_once()
+        assert results == {"feedline_input_output_bus": 123}
+        desync.assert_called()
 
     def test_execute(self, platform: Platform):
         """Test that the execute method calls the buses to run and return the results."""

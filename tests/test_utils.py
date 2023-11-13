@@ -4,6 +4,8 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 from qcodes.instrument_drivers.tektronix.Keithley_2600_channels import KeithleyChannel
+from qpysequence import Sequence as QPySequence
+from qpysequence.program import Program as QPyProgram
 
 import qililab as ql
 from qililab.platform import Platform
@@ -132,3 +134,16 @@ def build_platform(runcard: dict) -> Platform:
             mock_load.assert_called()
             mock_open.assert_called()
     return pl
+
+
+def is_q1asm_equal(a: str | QPySequence | QPyProgram, b: str | QPySequence | QPyProgram) -> bool:
+    if isinstance(a, QPySequence):
+        a = repr(a._program)
+    if isinstance(a, QPyProgram):
+        a = repr(a)
+
+    if isinstance(b, QPySequence):
+        b = repr(b._program)
+    if isinstance(b, QPyProgram):
+        b = repr(b)
+    return "".join(a.strip().split()) == "".join(b.strip().split())
