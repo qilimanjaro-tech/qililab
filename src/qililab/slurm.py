@@ -11,8 +11,11 @@ from qililab.config import logger
 num_jobs_to_keep = 10
 
 
+# pylint: disable=too-many-locals
+
+
 def is_variable_used(code, variable):
-    """Check whether any valuea are assigned to the output variable inside the magic cell."""
+    """Check whether any values are assigned to the output variable inside the magic cell."""
     tree = ast.parse(code)
     for node in ast.walk(tree):
         if isinstance(node, ast.Assign):
@@ -26,23 +29,21 @@ def is_variable_used(code, variable):
 @argument(
     "-o",
     "--output",
-    help=(
-        "Output of the SLURM job. This name should correspond to a variable defined in the cell that we want to retrieve after execution. After queuing a cell, this variable will be converted to a `Job` class. To retrieve the results of the job, you need to call `variable.result()`."
-    ),
+    help="Output of the SLURM job. This name should correspond to a variable defined in the cell that we want to retrieve after execution. After queuing a cell, this variable will be converted to a `Job` class. To retrieve the results of the job, you need to call `variable.result()`.",
 )
-@argument("-d", "--device", help=("Name of the device where you want to execute the SLURM job."))
+@argument("-d", "--device", help="Name of the device where you want to execute the SLURM job.")
 @argument(
     "-l",
     "--logs",
     default="./slurm_job_data",
     help=(f"Path where you want slurm to write the logs for the last {num_jobs_to_keep} jobs"),
 )
-@argument("-n", "--name", default="submitit", help=("Name of the slurm job"))
+@argument("-n", "--name", default="submitit", help="Name of the slurm job")
 @argument(
     "-e",
     "--execution_environment",
     default=None,
-    help=("Select execution environment. Targets slurm by default but if '-e local' the job is run locally."),
+    help="Select execution environment. Targets slurm by default but if '-e local' the job is run locally.",
 )
 @needs_local_scope
 @register_cell_magic
@@ -93,7 +94,7 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
     # Submit slurm job
     job = executor.submit(function, code, variables)
     if execution_env == "local":
-        logger.warn(f"Your slurm job '{job_name}' with ID {job.job_id} is running locally, without slurm!")
+        logger.warning("Your slurm job '%s' with ID %s is running locally, without slurm!", job_name, job.job_id)
     else:
         logger.info(f"Your slurm job '{job_name}' with ID {job.job_id} was sent to {partition}!")
     # Overrides the output variable with the obtained job
@@ -108,5 +109,5 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
             if int(filename.split("_")[0]) not in job_ids_to_keep:
                 os.remove(file_path)
         except ValueError:
-            logger.warn(f"{filename} shouldn't be in {folder_path}. It has been removed!")
+            logger.warning("%s shouldn't be in %s. It has been removed!", filename, file_path)
             os.remove(file_path)
