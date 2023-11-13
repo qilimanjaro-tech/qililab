@@ -528,7 +528,6 @@ class TestQbloxQRM:
         acquisitions = qrm.acquire_qprogram_results(acquisitions=["default"])
         assert isinstance(acquisitions, list)
         assert len(acquisitions) == 2
-        qrm.device.delete_acquisition_data.assert_called()
 
     def test_name_property(self, qrm_no_device: QbloxQRM):
         """Test name property."""

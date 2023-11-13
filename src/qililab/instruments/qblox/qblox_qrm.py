@@ -208,10 +208,11 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                         sequencer=sequencer.identifier,
                         timeout=cast(AWGQbloxADCSequencer, sequencer).acquisition_timeout,
                     )
-                    data = self.device.get_acquisitions(sequencer=sequencer.identifier)[acquisition]["acquisition"]
-                    measurement_result = QbloxQProgramMeasurementResult(raw_measurement_data=data)
+                    raw_measurement_data = self.device.get_acquisitions(sequencer=sequencer.identifier)[acquisition][
+                        "acquisition"
+                    ]
+                    measurement_result = QbloxQProgramMeasurementResult(raw_measurement_data=raw_measurement_data)
                     results.append(measurement_result)
-                    self.device.delete_acquisition_data(sequencer=sequencer.identifier, name=acquisition)
 
         return results
 
