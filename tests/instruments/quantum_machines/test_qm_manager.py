@@ -7,7 +7,7 @@ from qm import Program
 from qm.qua import play, program
 
 from qililab.instruments.quantum_machines import QuantumMachinesManager
-from qililab.result.quantum_machines_results import QuantumMachinesResult
+from qililab.result.quantum_machines_results import QuantumMachinesMeasurementResult
 from qililab.settings import Settings
 from qililab.typings import Parameter
 
@@ -43,7 +43,7 @@ class MockStreamingFetcher:
     """Mocks the StreamingFetcher class from Quantum Machines."""
 
     def __init__(self):
-        self.values = [("", MockSingleHandle()), ("", MockSingleHandle())]
+        self.values = [("I", MockSingleHandle()), ("Q", MockSingleHandle())]
         self.index = 0
 
     def wait_for_all_values(self):
@@ -69,7 +69,7 @@ class MockSingleHandle:
         self.values = np.zeros((10))
         self.index = 0
 
-    def fetch_all(self):
+    def fetch_all(self, flat_struct: bool):
         """Mocks fetching all values from the result handle."""
         return self.values
 
@@ -107,10 +107,11 @@ class TestQMM:
     def test_get_acquisitions(self, qmm: QuantumMachinesManager):
         """Test get_acquisition method"""
         job = MockJob()
-        result = qmm.get_acquisitions(job)
+        results = qmm.get_acquisitions(job)
 
-        assert isinstance(result, QuantumMachinesResult)
-        assert result.array.shape == (2, 10)
+        assert isinstance(results, dict)
+        assert "I" in results
+        assert "Q" in results
 
     @patch("qm.QuantumMachine")
     def test_simulate(

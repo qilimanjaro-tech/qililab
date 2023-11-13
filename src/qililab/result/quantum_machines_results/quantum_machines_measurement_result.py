@@ -23,16 +23,16 @@ from qililab.utils.factory import Factory
 
 
 @Factory.register
-class QuantumMachinesResult(Result):
+class QuantumMachinesMeasurementResult(Result):
     """QuantumMachinesResult class. Contains the binning acquisition results obtained from Quantum Machines Manager execute() method.
 
     Args:
         raw_results (list): Raw results obtained from a Quantum Machines Manager.
     """
 
-    name = ResultName.QUANTUM_MACHINES
+    name = ResultName.QUANTUM_MACHINES_MEASUREMENT
 
-    def __init__(self, I: np.ndarray, Q: np.ndarray, adc1: np.ndarray | None, adc2: np.ndarray | None):
+    def __init__(self, I: np.ndarray, Q: np.ndarray, adc1: np.ndarray | None = None, adc2: np.ndarray | None = None):
         self.I = I
         self.Q = Q
         self.adc1 = adc1
