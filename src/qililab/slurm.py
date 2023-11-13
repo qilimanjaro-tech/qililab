@@ -90,7 +90,9 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
 
     # Check if output variables are defined or used in the magic cell
     if not is_variable_used(executable_code, output):
-        raise ValueError("Output variable '%s' was not assigned to any value inside the cell!", output)
+        raise ValueError(
+            "Output variable '%s' was not assigned to any value inside the cell!", output
+        )  # pylint: disable=raising-format-tuple
     # Submit slurm job
     job = executor.submit(function, code, variables)
 
