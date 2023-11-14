@@ -85,16 +85,18 @@ def IQ_norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str
 
     check = "fit" if fit else "result"
 
-    error = 0
-    for obtained_results in i, q:
+    errors = []
+    for obtained_results in [i, q]:
         square_error = sum(
             (obtained_results[i] - comparison[check][comparison["sweep_interval"].index(obtained_x)]) ** 2
             for i, obtained_x in enumerate(obtained["sweep_interval"])
         )
         root_mean_square_error = np.sqrt(square_error / len(obtained_results))
-        error += root_mean_square_error / np.mean(comparison[check])  # normalize the difference with the mean values
+        errors.append(
+            root_mean_square_error / np.mean(comparison[check])
+        )  # normalize the difference with the mean values
 
-    return error
+    return np.min(errors)
 
 
 def ssro_comparison_2D(obtained: dict[str, list], comparison: dict[str, list], fit: bool = True) -> float:
