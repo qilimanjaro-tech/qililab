@@ -39,13 +39,23 @@ def test_submit_job_output_not_assigned(ip):
 
 
 def test_submit_job_with_random_file_in_logs_folder(ip):
-    """Checl ValueError is raised if non-submitit files are found in logs folder"""
+    """Check ValueError is raised if non-submitit files are found in logs folder"""
     ip.run_cell(
-        raw_cell="import os\nfolder_path='slurm_job_data_tests'\nfile_name='abc.py'\nfile_path = os.path.join(folder_path, file_name)\nif not os.path.exists(folder_path):\tos.makedirs(folder_path)\nopen(file_path, 'w')"
+        raw_cell="import os\nfolder_path='slurm_job_data_tests'\nfile_name='abc.py'\nfile_path = os.path.join(folder_path, file_name)\nif not os.path.exists(folder_path):\tos.makedirs(folder_path)\nopen(file_path, 'w')\na=1\nb=1"
     )
-    # with pytest.raises(ValueError):
     ip.run_cell_magic(
         magic_name="submit_job",
         line="-o results -d debug -l slurm_job_data_tests -n unit_test -e local",
         cell="results=a+b",
     )
+
+
+def test_submit_job_delete_info_from_past_jobs(ip):
+    """Check ValueError is raised if non-submitit files are found in logs folder"""
+    ip.run_cell(raw_cell="a=1\nb=1")
+    for _ in range(11):
+        ip.run_cell_magic(
+            magic_name="submit_job",
+            line="-o results -d debug -l slurm_job_data_tests -n unit_test -e local",
+            cell="results=a+b",
+        )
