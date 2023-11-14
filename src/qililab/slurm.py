@@ -8,7 +8,7 @@ from submitit import AutoExecutor
 
 from qililab.config import logger
 
-num_jobs_to_keep = 10
+num_files_to_keep = 20  # needs to be a multiple of 4 and 5: 20,40,60,80..
 
 
 # pylint: disable=too-many-locals
@@ -35,8 +35,8 @@ def is_variable_used(code, variable):
 @argument(
     "-l",
     "--logs",
-    default="./slurm_job_data",
-    help=(f"Path where you want slurm to write the logs for the last {num_jobs_to_keep} jobs"),
+    default="slurm_job_data",
+    help=(f"Path where you want slurm to write the logs for the last {num_files_to_keep} jobs"),
 )
 @argument("-n", "--name", default="submitit", help="Name of the slurm job")
 @argument(
@@ -93,19 +93,19 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
         raise ValueError(f"Output variable '{output}' was not assigned to any value inside the cell!")
     # Submit slurm job
     job = executor.submit(function, code, variables)
-
     logger.info("Your slurm job '%s' with ID %s has been queued!", job_name, job.job_id)
     # Overrides the output variable with the obtained job
     local_ns[output] = job
 
-    job_ids_to_keep = list(range(int(job.job_id) - num_jobs_to_keep, int(job.job_id) + 1))
-
     # Delete info from past jobs
-    for filename in os.listdir(folder_path):
-        file_path = os.path.join(folder_path, filename)
+    job_ids = []
+    file_paths = [os.path.join(folder_path, filename) for filename in os.listdir(folder_path)]
+    for file_path in file_paths:
         try:
-            if int(filename.split("_")[0]) not in job_ids_to_keep:
-                os.remove(file_path)  # pragma: no cover
+            job_ids.append(int(file_path.split("/")[1].split("_")[0]))
+            if len(file_paths) >= num_files_to_keep and file_path.__contains__(str(job_ids[0])):
+                os.remove(file_path)
+        # remove non-submitit files, not starting with an id
         except ValueError:
-            logger.warning("%s shouldn't be in %s. It has been removed!", filename, file_path)
+            logger.warning("%s shouldn't be in %s. It has been removed!", file_path.split("/")[1], folder_path)
             os.remove(file_path)
