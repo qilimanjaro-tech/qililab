@@ -670,20 +670,20 @@ def export_nb_outputs(outputs: dict) -> None:
 
     def ndarray_to_list(iter_: Any):
         if isinstance(iter_, dict):
-            for v, k in iter_.items():
+            for k, v in iter_.items():
                 iter_[k] = ndarray_to_list(v)
 
         if isinstance(iter_, list):
-            for i, v in enumerate(iter_):
-                iter_[i] = ndarray_to_list(v)
+            for idx, elem in enumerate(iter_):
+                iter_[idx] = ndarray_to_list(elem)
 
         if isinstance(iter_, tuple):
             tuple_list = []
-            for i in iter_:
-                tuple_list.append(ndarray_to_list(v))
+            for elem in iter_:
+                tuple_list.append(ndarray_to_list(elem))
             return tuple(tuple_list)
 
-        return v.tolist() if isinstance(v, np.ndarray) else iter_
+        return iter_.tolist() if isinstance(iter_, np.ndarray) else iter_
 
     ndarray_to_list(outputs)
 

@@ -744,11 +744,19 @@ class TestStaticMethodsFromCalibrationNode:
 #######################################
 ### TEST EXPORT CALIBRATION OUTPUTS ###
 #######################################
+@pytest.mark.parametrize(
+    "test_outputs, test_dumped_outputs",
+    [
+        ({"this_is": "a_test_dict", "foo": [1, 2, 3, 4]}, '{"this_is": "a_test_dict", "foo": [1, 2, 3, 4]}'),
+        (
+            {"this_is": np.array([1, 2, 3, 4, 5]), "foo": {"bar": "jose", "pepe": (np.array([0]), np.array([0]), "a")}},
+            '{"this_is": [1, 2, 3, 4, 5], "foo": {"bar": "jose", "pepe": [[0], [0], "a"]}}',
+        ),
+    ],
+)
 @patch("qililab.calibration.calibration_node.json.dumps", autospec=True)
-def test_export_nb_outputs(mocked_dumps):
+def test_export_nb_outputs(mocked_dumps, test_outputs, test_dumped_outputs):
     """Test that ``export_nb_outputs()`` works properly."""
-    test_outputs = {"this_is": "a_test_dict", "foo": "bar"}
-    test_dumped_outputs = '{"this_is": "a_test_dict", "foo": "bar"}'
     mocked_dumps.return_value = test_dumped_outputs
     with patch("builtins.print") as mocked_print:
         export_nb_outputs(test_outputs)

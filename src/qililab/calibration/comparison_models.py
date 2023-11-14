@@ -33,11 +33,6 @@ def is_structure_of_check_parameters_correct(obtained: dict[str, list], comparis
                 "Keys in the `check_parameters` are not 'sweep_interval', 'results' and 'fit', as is need in for the comparison models."
             )
 
-        if check_data["sweep_interval"].shape() not in [check_data["results"].shape(), check_data["fit"].shape()]:
-            raise ValueError(
-                "Shape of 'sweep_interval', 'results' and 'fit' in `check_parameters` is not the same one. Same shape is required for the comparison models."
-            )
-
         if len(check_data["sweep_interval"]) == 0 or len(check_data["results"]) == 0 or len(check_data["fit"]) == 0:
             raise ValueError(
                 "Empty 'sweep_interval', 'results' or 'fit' in  `check_parameters`. They are needed for the comparison models."
@@ -112,17 +107,17 @@ def norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, l
     """
     is_structure_of_check_parameters_correct(obtained, comparison)
 
-    if np.asarray(obtained["results"]).shape() == (len(obtained["sweep_interval"]),):
-        check = "fit" if fit else "result"
+    if np.asarray(obtained["results"]).shape() != (len(obtained["sweep_interval"]),):
+        raise ValueError("Incorrect 'results' shape for this comparison model.")
 
-        square_error = sum(
-            (obtained["results"][i] - comparison[check][comparison["sweep_interval"].index(obtained_x)]) ** 2
-            for i, obtained_x in enumerate(obtained["sweep_interval"])
-        )
-        root_mean_square_error = np.sqrt(square_error / len(obtained["results"]))
-        return root_mean_square_error / np.mean(comparison[check])  # normalize the difference with the mean values
+    check = "fit" if fit else "result"
 
-    raise ValueError("Incorrect shape for this comparison model.")
+    square_error = sum(
+        (obtained["results"][i] - comparison[check][comparison["sweep_interval"].index(obtained_x)]) ** 2
+        for i, obtained_x in enumerate(obtained["sweep_interval"])
+    )
+    root_mean_square_error = np.sqrt(square_error / len(obtained["results"]))
+    return root_mean_square_error / np.mean(comparison[check])  # normalize the difference with the mean values
 
 
 def IQ_norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, list], fit: bool = True) -> float:
@@ -138,24 +133,23 @@ def IQ_norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str
     """
     is_structure_of_check_parameters_correct(obtained, comparison)
 
-    if np.asarray(obtained["results"]).shape() == (2, len(obtained["sweep_interval"])):
-        i, q = obtained["results"]
+    if np.asarray(obtained["results"]).shape() != (2, len(obtained["sweep_interval"])):
+        raise ValueError("Incorrect 'results' shape for this comparison model.")
 
-        check = "fit" if fit else "result"
+    i, q = obtained["results"]
 
-        error = 0
-        for obtained_results in i, q:
-            square_error = sum(
-                (obtained_results[i] - comparison[check][comparison["sweep_interval"].index(obtained_x)]) ** 2
-                for i, obtained_x in enumerate(obtained["sweep_interval"])
-            )
-            root_mean_square_error = np.sqrt(square_error / len(obtained_results))
-            error += root_mean_square_error / np.mean(
-                comparison[check]
-            )  # normalize the difference with the mean values
+    check = "fit" if fit else "result"
 
-        return error
-    raise ValueError("Incorrect shape for this comparison model.")
+    error = 0
+    for obtained_results in i, q:
+        square_error = sum(
+            (obtained_results[i] - comparison[check][comparison["sweep_interval"].index(obtained_x)]) ** 2
+            for i, obtained_x in enumerate(obtained["sweep_interval"])
+        )
+        root_mean_square_error = np.sqrt(square_error / len(obtained_results))
+        error += root_mean_square_error / np.mean(comparison[check])  # normalize the difference with the mean values
+
+    return error
 
 
 def ssro_comparison_2D(obtained: dict[str, list], comparison: dict[str, list], fit: bool = True) -> float:
@@ -169,20 +163,18 @@ def ssro_comparison_2D(obtained: dict[str, list], comparison: dict[str, list], f
     Returns:
         float: difference/error between the two samples.
     """
-    if np.asarray(obtained["results"]).shape() == (2, len(obtained["sweep_interval"])):
-        check = "fit" if fit else "result"
+    if np.asarray(obtained["results"]).shape() != (2, len(obtained["sweep_interval"])):
+        raise ValueError("Incorrect shape for this comparison model.")
 
-        obtained_i, obtained_q = obtained["results"]
-        comparison_i, comparison_q = comparison[check]
+    check = "fit" if fit else "result"
 
-        mean_diff = (np.mean(obtained_i) - np.mean(comparison_i)) ** 2 + (
-            np.mean(obtained_q) - np.mean(comparison_q)
-        ) ** 2  # Difference in means of 2d histograms
-        standard_dev = (np.std(obtained_i) - np.std(comparison_i)) ** 2 + (
-            np.std(obtained_q) - np.std(comparison_q)
-        ) ** 2  # Difference in std of 2d histograms
+    obtained_i, obtained_q = obtained["results"]
+    comparison_i, comparison_q = comparison[check]
 
-        return np.sqrt(mean_diff * 4 + standard_dev / (5 * len(obtained["sweep_interval"])))
-        # TODO: Compare 2D guassian distributions, with a more specific function.
+    # Difference in means of 2d histograms
+    mean_diff = (np.mean(obtained_i) - np.mean(comparison_i)) ** 2 + (np.mean(obtained_q) - np.mean(comparison_q)) ** 2
+    # Difference in std of 2d histograms
+    standard_dev = (np.std(obtained_i) - np.std(comparison_i)) ** 2 + (np.std(obtained_q) - np.std(comparison_q)) ** 2
 
-    raise ValueError("Incorrect shape for this comparison model.")
+    return np.sqrt(mean_diff * 4 + standard_dev / (5 * len(obtained["sweep_interval"])))
+    # TODO: Compare 2D guassian distributions, with a more specific function.
