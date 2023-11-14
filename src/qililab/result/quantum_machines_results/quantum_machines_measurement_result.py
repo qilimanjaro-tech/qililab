@@ -24,15 +24,20 @@ from qililab.utils.factory import Factory
 
 @Factory.register
 class QuantumMachinesMeasurementResult(Result):
-    """QuantumMachinesResult class. Contains the binning acquisition results obtained from Quantum Machines Manager execute() method.
+    """Contains the data obtained from a single measurment in Quantum Machines hardware.
 
     Args:
-        raw_results (list): Raw results obtained from a Quantum Machines Manager.
+        I (np.ndarray): Data obtained from I stream.
+        Q (np.ndarray, Optional): Data obtained from Q stream. Defaults to None.
+        adc1 (np.ndarray, Optional): Data obtained from adc1 stream. Defaults to None.
+        adc2 (np.ndarray, Optional): Data obtained from adc2 stream. Defaults to None.
     """
 
     name = ResultName.QUANTUM_MACHINES_MEASUREMENT
 
-    def __init__(self, I: np.ndarray, Q: np.ndarray, adc1: np.ndarray | None = None, adc2: np.ndarray | None = None):
+    def __init__(
+        self, I: np.ndarray, Q: np.ndarray | None = None, adc1: np.ndarray | None = None, adc2: np.ndarray | None = None
+    ):
         self.I = I
         self.Q = Q
         self.adc1 = adc1
@@ -40,8 +45,17 @@ class QuantumMachinesMeasurementResult(Result):
 
     @property
     def array(self) -> np.ndarray:
-        """Returns data as acquired from Quantum Machines Manager."""
-        return np.concatenate((self.I.reshape(1, *self.I.shape), self.Q.reshape(1, *self.Q.shape)), axis=0)
+        """Returns I/Q data as a combined numpy array.
+
+        Returns:
+            np.ndarray: The I/Q data as a compined nummpy array.
+        """
+
+        return (
+            np.concatenate((self.I.reshape(1, *self.I.shape), self.Q.reshape(1, *self.Q.shape)), axis=0)
+            if self.Q is not None
+            else self.I.reshape(1, *self.I.shape)
+        )
 
     def to_dict(self) -> dict:
         """Returns a serialized dictionary of the QuantumMachinesResult class.
