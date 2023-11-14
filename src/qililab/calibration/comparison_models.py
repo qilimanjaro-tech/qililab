@@ -17,29 +17,6 @@ import numpy as np
 from scipy.stats import ks_2samp
 
 
-def is_structure_of_check_parameters_correct(obtained: dict[str, list], comparison: dict[str, list]):
-    """If the structure is incorrect it will raise an error.
-
-    Args:
-        obtained (dict): obtained samples to compare.
-        comparison (dict): previous samples to compare.
-        fit (bool): flag, to wether compare against the previous fit or the previous results. Defaults to True (against fit).
-
-    Raises:
-        ValueError: if keys or shapes don't match the expected.
-    """
-    for check_data in [obtained, comparison]:
-        if "sweep_interval" not in check_data or "results" not in check_data or "fit" not in check_data:
-            raise ValueError(
-                "Keys in the `check_parameters` are not 'sweep_interval', 'results' and 'fit', as is need in for the comparison models."
-            )
-
-        if len(check_data["sweep_interval"]) == 0 or len(check_data["results"]) == 0 or len(check_data["fit"]) == 0:
-            raise ValueError(
-                "Empty 'sweep_interval', 'results' or 'fit' in  `check_parameters`. They are needed for the comparison models."
-            )
-
-
 def norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, list], fit: bool = True) -> float:
     """Returns the normalized RMSE (mean absolute error) between the comparison and obtained samples.
 
@@ -115,21 +92,49 @@ def ssro_comparison_2D(obtained: dict[str, list], comparison: dict[str, list], f
     Returns:
         float: difference/error between the two samples.
     """
-    if np.asarray(obtained["results"]).shape() != (2, len(obtained["sweep_interval"])):
+    if np.asarray(obtained["results"]).shape() != np.asarray(obtained["sweep_interval"]).shape():
         raise ValueError("Incorrect shape for this comparison model.")
 
-    check = "fit" if fit else "result"
+    _ = fit  # No fit for this case.
 
-    obtained_i, obtained_q = obtained["results"]
-    comparison_i, comparison_q = comparison[check]
+    obtn_i_0, obtn_i_1 = obtained["sweep_interval"]  # first gaussian I's
+    obtn_q_0, obtn_q_1 = obtained["results"]  # second gaussian I's
+
+    comp_i_0, comp_i_1 = comparison["sweep_interval"]  # first gaussian Q's
+    comp_q_0, comp_q_1 = comparison["results"]  # second gaussian Q's
 
     # Difference in means of 2d histograms
-    mean_diff = (np.mean(obtained_i) - np.mean(comparison_i)) ** 2 + (np.mean(obtained_q) - np.mean(comparison_q)) ** 2
+    mean_diff_0 = (np.mean(obtn_i_0) - np.mean(comp_i_0)) ** 2 + (np.mean(obtn_q_0) - np.mean(comp_q_0)) ** 2
+    mean_diff_1 = (np.mean(obtn_i_1) - np.mean(comp_i_1)) ** 2 + (np.mean(obtn_q_1) - np.mean(comp_q_1)) ** 2
     # Difference in std of 2d histograms
-    standard_dev = (np.std(obtained_i) - np.std(comparison_i)) ** 2 + (np.std(obtained_q) - np.std(comparison_q)) ** 2
+    std_dev_0 = (np.std(obtn_i_0) - np.std(comp_i_0)) ** 2 + (np.std(obtn_q_0) - np.std(comp_q_0)) ** 2
+    std_dev_1 = (np.std(obtn_i_1) - np.std(comp_i_1)) ** 2 + (np.std(obtn_q_1) - np.std(comp_q_1)) ** 2
 
-    return np.sqrt(mean_diff * 4 + standard_dev / (5 * len(obtained["sweep_interval"])))
-    # TODO: Compare 2D guassian distributions, with a more specific function.
+    return np.sqrt(mean_diff_0 + mean_diff_1) * 4 + (std_dev_0 + std_dev_1) / (5 * len(obtained["sweep_interval"][0]))
+    # TODO: Compare 2D guassian distributions, with a more specific function?
+
+
+def is_structure_of_check_parameters_correct(obtained: dict[str, list], comparison: dict[str, list]):
+    """If the structure is incorrect it will raise an error.
+
+    Args:
+        obtained (dict): obtained samples to compare.
+        comparison (dict): previous samples to compare.
+        fit (bool): flag, to wether compare against the previous fit or the previous results. Defaults to True (against fit).
+
+    Raises:
+        ValueError: if keys or shapes don't match the expected.
+    """
+    for check_data in [obtained, comparison]:
+        if "sweep_interval" not in check_data or "results" not in check_data or "fit" not in check_data:
+            raise ValueError(
+                "Keys in the `check_parameters` are not 'sweep_interval', 'results' and 'fit', as is need in for the comparison models."
+            )
+
+        if len(check_data["sweep_interval"]) == 0 or len(check_data["results"]) == 0 or len(check_data["fit"]) == 0:
+            raise ValueError(
+                "Empty 'sweep_interval', 'results' or 'fit' in  `check_parameters`. They are needed for the comparison models."
+            )
 
 
 ################################################################
