@@ -14,6 +14,7 @@
 
 """Comparison models, to use in ``CalibrationController`` ``check_data()``."""
 import numpy as np
+import scipy as scp
 
 
 def is_structure_of_check_parameters_correct(obtained: dict[str, list], comparison: dict[str, list]):
@@ -37,6 +38,26 @@ def is_structure_of_check_parameters_correct(obtained: dict[str, list], comparis
             raise ValueError(
                 "Empty 'sweep_interval', 'results' or 'fit' in  `check_parameters`. They are needed for the comparison models."
             )
+
+
+def scipy_ks_2_samples_error(obtained: dict[str, list], comparison: dict[str, list], fit: bool = True) -> float:
+    """Returns the normalized RMSE (mean absolute error) between the comparison and obtained samples.
+
+    Args:
+        obtained (dict): obtained samples to compare.
+        comparison (dict): previous samples to compare.
+        fit (bool): flag, to wether compare against the previous fit or the previous results. Defaults to True (against fit).
+
+    Returns:
+        float: difference/error between the two samples.
+    """
+    is_structure_of_check_parameters_correct(obtained, comparison)
+
+    if np.asarray(obtained["results"]).shape() != (len(obtained["sweep_interval"]),):
+        raise ValueError("Incorrect 'results' shape for this comparison model.")
+
+    check = "fit" if fit else "result"
+    return scp.stats.ks_2samp(obtained["results"], comparison[check])
 
 
 def norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, list], fit: bool = True) -> float:

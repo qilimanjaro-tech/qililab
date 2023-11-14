@@ -398,7 +398,8 @@ class CalibrationController:
             logger.info("obtained: %s ", str(obtain_params))
             logger.info("comparison: %s", str(compar_params))
 
-            comparison_number = self._obtain_comparison(node, obtain_params, compar_params)
+            fit = "fit" in compar_params
+            comparison_number = self._obtain_comparison(node, obtain_params, compar_params, fit)
 
             if comparison_number <= node.in_spec_threshold:
                 comparison_result = "in_spec"
@@ -507,7 +508,9 @@ class CalibrationController:
         return [self.node_sequence[node_name] for node_name in self.calibration_graph.predecessors(node.node_id)]
 
     @staticmethod
-    def _obtain_comparison(node: CalibrationNode, obtained: dict[str, list], comparison: dict[str, list]) -> float:
+    def _obtain_comparison(
+        node: CalibrationNode, obtained: dict[str, list], comparison: dict[str, list], fit: bool = True
+    ) -> float:
         """Returns the error, given the chosen method, between the comparison and obtained samples.
 
         Args:
@@ -518,7 +521,7 @@ class CalibrationController:
         Returns:
             float: difference/error between the two samples.
         """
-        return node.comparison_model(obtained, comparison)
+        return node.comparison_model(obtained, comparison, fit)
 
     @staticmethod
     def _is_timeout_expired(timestamp: float, timeout: float) -> bool:
