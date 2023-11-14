@@ -62,6 +62,8 @@ def norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, l
         for i, obtained_x in enumerate(obtained["sweep_interval"])
     )
     root_mean_square_error = np.sqrt(square_error / len(obtained["results"]))
+    # TODO: Check which normalization we want.
+
     return root_mean_square_error / np.mean(comparison[check])  # normalize the difference with the mean values
 
 
@@ -86,16 +88,18 @@ def IQ_norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str
     check = "fit" if fit else "result"
 
     errors = []
-    for obtained_results in [i, q]:
+    for idx, obtained_results in enumerate([i, q]):
         square_error = sum(
-            (obtained_results[i] - comparison[check][comparison["sweep_interval"].index(obtained_x)]) ** 2
+            (obtained_results[i] - comparison[check][idx][comparison["sweep_interval"].index(obtained_x)]) ** 2
             for i, obtained_x in enumerate(obtained["sweep_interval"])
         )
         root_mean_square_error = np.sqrt(square_error / len(obtained_results))
-        errors.append(
-            root_mean_square_error / np.mean(comparison[check])
-        )  # normalize the difference with the mean values
+        # TODO: Check which normalization we want.
 
+        # normalize the difference with the mean values, and add it to the i or q error
+        errors.append(root_mean_square_error / np.mean(comparison[check]))
+
+    # Return the one with less errors, since it was the one used for the fitting.
     return np.min(errors)
 
 
