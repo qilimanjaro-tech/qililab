@@ -105,7 +105,7 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
         file_path = os.path.join(folder_path, filename)
         try:
             if int(filename.split("_")[0]) not in job_ids_to_keep:
-                os.remove(file_path)
+                os.remove(file_path)  # pragma: no cover
         except ValueError:
             logger.warning("%s shouldn't be in %s. It has been removed!", filename, file_path)
             os.remove(file_path)
