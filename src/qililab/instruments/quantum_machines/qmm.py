@@ -14,7 +14,7 @@
 
 """Quantum Machines OPX class."""
 from dataclasses import dataclass
-from typing import Dict
+from typing import Any, Dict
 
 from qm import QuantumMachine
 from qm import QuantumMachinesManager as QMM
@@ -55,9 +55,11 @@ class QuantumMachinesManager(Instrument):
             config (Dict): Configuration dictionary for the Quantum Machines instruments.
         """
 
-        qop_ip: str
-        qop_port: int
-        config: Dict
+        address: str
+        port: int
+        num_controllers: int
+        controllers: dict[str, Any]
+        elements: dict[str, Any]
 
     settings: QMMSettings
     device: QMMDriver
@@ -71,7 +73,7 @@ class QuantumMachinesManager(Instrument):
         a connection to the Quantum Machine by the use of the Quantum Machines Manager.
         """
         super().initial_setup()
-        qmm = QMM(host=self.settings.qop_ip, port=self.settings.qop_port)
+        qmm = QMM(host=self.settings.address, port=self.settings.port)
         self.qm = qmm.open_qm(config=self.settings.config, close_other_machines=True)
 
     @Instrument.CheckDeviceInitialized
