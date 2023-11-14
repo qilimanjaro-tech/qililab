@@ -4,9 +4,8 @@ from types import ModuleType
 
 from IPython.core.magic import needs_local_scope, register_cell_magic
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
-from submitit import AutoExecutor
-
 from qililab.config import logger
+from submitit import AutoExecutor
 
 num_files_to_keep = 20  # needs to be a multiple of 4 and 5: 20,40,60,80..
 
@@ -105,7 +104,7 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
             job_ids.append(int(file_path.split("/")[1].split("_")[0]))
             if len(file_paths) >= num_files_to_keep and (str(job_ids[0]) in file_path):
                 os.remove(file_path)
-        # remove non-submitit files, not starting with an id
+        # remove non-submitit files,not starting with an id
         except ValueError:
             logger.warning("%s shouldn't be in %s. It has been removed!", file_path.split("/")[1], folder_path)
             os.remove(file_path)
