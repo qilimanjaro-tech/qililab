@@ -1,4 +1,4 @@
-name: galadriel_soprano_master
+name: eru
 
 device_id: 9
 
@@ -149,131 +149,194 @@ instruments:
   - name: quantum_machines_manager
     alias: QMM
     firmware: 0.7.0
-    address: 192.168.1.20
-    port: 80
-    num_controllers: 2
+    ip: 192.168.1.2
+    octaves:
+      - name: octave1
+        port: 11250
+        controller: con1
+        rf_outputs:
+        - port: 1
+          lo_frequency: 6e9
+          gain: 0
+        - port: 2
+          lo_frequency: 6e9
+          gain: 0
+        - port: 3
+          lo_frequency: 6e9
+          gain: 0
+        - port: 4
+          lo_frequency: 6e9
+          gain: 0
+        - port: 5
+          lo_frequency: 6e9
+          gain: 0
+        rf_inputs:
+        - port: 0
+          lo_frequency: 6e9
+        - port: 1
+          lo_frequency: 6e9
     controllers:
-      - identifier: con1
+      - name: con1
         analog_outputs:
-        - identifier: 0
+        - port: 1
           offset: -0.0142
-        - identifier: 1
+        - port: 2
           offset: -0.0142
-        - identifier: 2
+        - port: 3
           offset: -0.0142
-        - identifier: 3
+        - port: 4
           offset: -0.0142
-        - identifier: 4
+        - port: 5
           offset: -0.0142
-        - identifier: 5
+        - port: 6
           offset: -0.0142
-        - identifier: 6
+        - port: 7
           offset: -0.0142
-        - identifier: 7
+        - port: 8
           offset: -0.0142
-        - identifier: 8
+        - port: 9
           offset: -0.0142
-        - identifier: 9
+        - port: 10
           offset: -0.0142
         analog_inputs:
-        - identifier: 0
+        - port: 1
           offset: -0.023947
           gain_db: 0
-        - identifier: 1
+        - port: 2
           offset: -0.023947
           gain_db: 0
-      - identifier: con2
+        digital_outputs:
+        - port: 1
+        - port: 2
+        - port: 3
+        - port: 4
+        - port: 5
+      - name: con2
         analog_outputs:
-        - identifier: 0
+        - port: 1
           offset: -0.0142
-        - identifier: 1
+        - port: 2
           offset: -0.0142
-        - identifier: 2
+        - port: 3
           offset: -0.0142
-        - identifier: 3
+        - port: 4
           offset: -0.0142
-        - identifier: 4
+        - port: 5
           offset: -0.0142
-        - identifier: 5
+        - port: 6
+          offset: -0.0142
+        - port: 7
+          offset: -0.0142
+        - port: 8
+          offset: -0.0142
+        - port: 9
+          offset: -0.0142
+        - port: 10
           offset: -0.0142
         analog_inputs:
-        - identifier: 0
+        - port: 1
           offset: -0.023947
           gain_db: 0
-        - identifier: 1
+        - port: 2
           offset: -0.023947
-          gain_db: 0 
+          gain_db: 0
     elements:
-      - bus: drive_line_q0_bus
-        mixInputs:
-          I:
-              controller: con1
-              output: 0
-          Q:
-              controller: con1
-              output: 0
-          lo_frequency: 6.5e+09,
-          mixer_correction: [0.0, 0.0, 0.0, 0.0]
-        intermediate_frequency: 6.5e+09
-      - bus: drive_line_q1_bus
-        mixInputs:
-          I:
-              controller: con1
-              output: 2
-          Q:
-              controller: con1
-              output: 3
-          lo_frequency: 6.5e+09,
-          mixer_correction: [0.0, 0.0, 0.0, 0.0]
-        intermediate_frequency: 6.5e+09
-      - bus: flux_line_q0_bus
-        singleInput:
-          controller: con1
-          output: 4
-      - bus: flux_line_q0_bus
-        singleInput:
-          controller: con1
-          output: 5
-      - bus: readout_line_q0_bus
-        mixInputs:
-          I:
-              controller: con1
-              output: 6
-          Q:
-              controller: con1
-              output: 7
-          lo_frequency: 6.5e+09,
-          mixer_correction: [0.0, 0.0, 0.0, 0.0]
-        intermediate_frequency: 6.5e+09
-        outputs:
-          out1:
-              controller: con1
-              output: 0
-          out2:
-              controller: con1
-              output: 1
-        time_of_flight: 300,
-        smearing: 0
-      - bus: readout_line_q1_bus
-        mixInputs:
-          I:
-              controller: con1
-              output: 8
-          Q:
-              controller: con1
-              output: 9
-          lo_frequency: 6.5e+09,
-          mixer_correction: [0.0, 0.0, 0.0, 0.0]
-        intermediate_frequency: 6.5e+09
-        outputs:
-          out1:
-              controller: con1
-              output: 0
-          out2:
-              controller: con1
-              output: 1
-        time_of_flight: 300,
-        smearing: 0
+    - bus: drive_line_q0_bus
+      mixInputs:
+        I:
+            controller: con1
+            port: 1
+        Q:
+            controller: con1
+            port: 2
+        lo_frequency: 6.5e+09,
+        mixer_correction: [0.0, 0.0, 0.0, 0.0]
+      intermediate_frequency: 6.5e+09
+    - bus: drive_line_q1_bus
+      mixInputs:
+        I:
+            controller: con1
+            port: 3
+        Q:
+            controller: con1
+            port: 4
+        lo_frequency: 6.5e+09,
+        mixer_correction: [0.0, 0.0, 0.0, 0.0]
+      intermediate_frequency: 6.5e+09
+    - bus: drive_line_q0_rf_bus
+      rf_inputs:
+        octave: octave1
+        port: 1
+      rf_outputs:
+        octave: octave1
+        port: 1
+      digital_inputs:
+        controller: con1
+        port: 1
+        delay: 87
+        buffer: 15
+      intermediate_frequency: 6.5e+09
+    - bus: drive_line_q1_rf_bus
+      rf_inputs:
+        octave: octave1
+        port: 2
+      rf_outputs:
+        octave: octave1
+        port: 2
+      digital_inputs:
+        controller: con1
+        port: 2
+        delay: 87
+        buffer: 15
+      intermediate_frequency: 6.5e+09
+    - bus: flux_line_q0_bus
+      singleInput:
+        controller: con1
+        port: 5
+    - bus: flux_line_q0_bus
+      singleInput:
+        controller: con1
+        port: 6
+    - bus: readout_line_q0_bus
+      mixInputs:
+        I:
+            controller: con1
+            port: 7
+        Q:
+            controller: con1
+            port: 8
+        lo_frequency: 6.5e+09,
+        mixer_correction: [0.0, 0.0, 0.0, 0.0]
+      intermediate_frequency: 6.5e+09
+      outputs:
+        out1:
+            controller: con1
+            port: 1
+        out2:
+            controller: con1
+            port: 2
+      time_of_flight: 300,
+      smearing: 0
+    - bus: readout_line_q1_bus
+      mixInputs:
+        I:
+            controller: con1
+            port: 9
+        Q:
+            controller: con1
+            port: 10
+        lo_frequency: 6.5e+09,
+        mixer_correction: [0.0, 0.0, 0.0, 0.0]
+      intermediate_frequency: 6.5e+09
+      outputs:
+        out1:
+            controller: con1
+            port: 1
+        out2:
+            controller: con1
+            port: 2
+      time_of_flight: 300,
+      smearing: 0
 
 instrument_controllers:
   - name: quantum_machines_manager
