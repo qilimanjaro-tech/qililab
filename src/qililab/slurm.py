@@ -103,7 +103,7 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
     for file_path in file_paths:
         try:
             job_ids.append(int(file_path.split("/")[1].split("_")[0]))
-            if len(file_paths) >= num_files_to_keep and file_path.__contains__(str(job_ids[0])):
+            if len(file_paths) >= num_files_to_keep and (str(job_ids[0]) in file_path):
                 os.remove(file_path)
         # remove non-submitit files, not starting with an id
         except ValueError:
