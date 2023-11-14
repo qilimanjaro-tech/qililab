@@ -25,7 +25,15 @@ def fixture_qua_program():
 def fixture_qmm():
     """Fixture that returns an instance a qililab wrapper for Quantum Machines Manager."""
     qmm = QuantumMachinesManager(
-        {"alias": "qmm", "qop_ip": "192.168.0.1", "qop_port": 80, "config": {}, "firmware": "3.10.2"}
+        {
+            "alias": "qmm",
+            "address": "192.168.0.1",
+            "port": 80,
+            "num_controllers": 2,
+            "controllers": {},
+            "elements": {},
+            "firmware": "3.10.2",
+        }
     )  # pylint: disable=abstract-class-instantiated
     qmm.device = MagicMock
 

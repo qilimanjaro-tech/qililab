@@ -424,9 +424,11 @@ class Galadriel:
         "name": InstrumentName.QUANTUM_MACHINES_MANAGER,
         "alias": "qmm_0",
         RUNCARD.FIRMWARE: "4.30.046.295",
-        "qop_ip": "192.168.0.1",
-        "qop_port": 80,
-        "config": {},
+        "address": "192.168.0.1",
+        "port": 80,
+        "num_controllers": 2,
+        "controllers": {},
+        "elements": {},
     }
 
     instruments: list[dict] = [

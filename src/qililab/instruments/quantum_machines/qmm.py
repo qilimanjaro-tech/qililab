@@ -50,20 +50,22 @@ class QuantumMachinesManager(Instrument):
         """Settings for Quantum Machines Manager instrument.
 
         Args:
-            qop_ip (str): I.P. address to connect to the Quantum Machines instruments.
-            qop_port (int): Port to connect to the Quantum Machines instruments.
-            config (Dict): Configuration dictionary for the Quantum Machines instruments.
+            address (str): I.P. address to connect to the Quantum Machines instruments.
+            port (int): Port to connect to the Quantum Machines instruments.
+            num_controllers (int): Number of controllers (instruments) in the quantum machines stack.
+            controllers (list[dict[str, Any]]): List of controllers (instruments) the quantum machines stack has.
+            elements (list[dict[str, Any]]): List of elements (buses) the quantum machines stack has.
         """
-
         address: str
         port: int
         num_controllers: int
-        controllers: dict[str, Any]
-        elements: dict[str, Any]
+        controllers: list[dict[str, Any]]
+        elements: list[dict[str, Any]]
 
     settings: QMMSettings
     device: QMMDriver
     qm: QuantumMachine
+    config: dict | None = None
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
@@ -73,6 +75,7 @@ class QuantumMachinesManager(Instrument):
         a connection to the Quantum Machine by the use of the Quantum Machines Manager.
         """
         super().initial_setup()
+        self.config = self.create_config()
         qmm = QMM(host=self.settings.address, port=self.settings.port)
         self.qm = qmm.open_qm(config=self.settings.config, close_other_machines=True)
 
@@ -100,6 +103,20 @@ class QuantumMachinesManager(Instrument):
             bool: True if the parameter is set correctly, False otherwise
         """
         raise NotImplementedError("Setting a parameter is not supported for Quantum Machines yet.")
+
+    def create_config(self) -> Dict[str, Any]:
+        """Creates the Quantum Machines config dictionary.
+
+        Creates, an instance of a dictionary in the format that QuantumMachines expects the config dictionary to be.
+        Controllers (instruments in the quantum machines stack) and elements (buses) are parsed from the QMMSettings
+        object of this class to generate the right output that will be added to the config dictionary generated out of the
+        QProgram compiler.
+
+        Returns:
+            config: Dict[str, Any]
+        """
+
+        return {}
 
     def run(self, program: Program) -> RunningQmJob:
         """Runs the QUA Program.
