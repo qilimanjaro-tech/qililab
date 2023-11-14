@@ -59,11 +59,6 @@ class Bus:
         platform_instruments: InitVar[Instruments]
         distortions: list[PulseDistortion]
         delay: int
-        time_of_flight: float
-        smearing: int
-        mixInputs: dict[str, tuple | str | float] | None = None
-        intermediate_frequency: float | None = None
-        outputs: dict[str, tuple] | None = None
 
         def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
             if isinstance(self.system_control, dict):
