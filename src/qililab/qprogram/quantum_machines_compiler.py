@@ -188,8 +188,8 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
                 input1 = measurement.stream_raw_adc.input1()
                 input2 = measurement.stream_raw_adc.input2()
                 for loop_iteration in measurement.loops_iterations:
-                    input1 = input1.buffer(loop_iteration)
-                    input2 = input2.buffer(loop_iteration)
+                    input1 = input1.buffer(loop_iteration)  # type: ignore[assignment]
+                    input2 = input2.buffer(loop_iteration)  # type: ignore[assignment]
                 input2.save_all(f"adc1_{index}")
                 input2.save_all(f"adc2_{index}")
                 result_handles.append(f"adc1_{index}")
