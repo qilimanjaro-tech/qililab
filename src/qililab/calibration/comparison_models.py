@@ -14,7 +14,7 @@
 
 """Comparison models, to use in ``CalibrationController`` ``check_data()``."""
 import numpy as np
-import scipy as scp
+from scipy.stats import ks_2samp
 
 
 def is_structure_of_check_parameters_correct(obtained: dict[str, list], comparison: dict[str, list]):
@@ -38,26 +38,6 @@ def is_structure_of_check_parameters_correct(obtained: dict[str, list], comparis
             raise ValueError(
                 "Empty 'sweep_interval', 'results' or 'fit' in  `check_parameters`. They are needed for the comparison models."
             )
-
-
-def scipy_ks_2_samples_error(obtained: dict[str, list], comparison: dict[str, list], fit: bool = True) -> float:
-    """Returns the normalized RMSE (mean absolute error) between the comparison and obtained samples.
-
-    Args:
-        obtained (dict): obtained samples to compare.
-        comparison (dict): previous samples to compare.
-        fit (bool): flag, to wether compare against the previous fit or the previous results. Defaults to True (against fit).
-
-    Returns:
-        float: difference/error between the two samples.
-    """
-    is_structure_of_check_parameters_correct(obtained, comparison)
-
-    if np.asarray(obtained["results"]).shape() != (len(obtained["sweep_interval"]),):
-        raise ValueError("Incorrect 'results' shape for this comparison model.")
-
-    check = "fit" if fit else "result"
-    return scp.stats.ks_2samp(obtained["results"], comparison[check])
 
 
 def norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, list], fit: bool = True) -> float:
@@ -153,59 +133,83 @@ def ssro_comparison_2D(obtained: dict[str, list], comparison: dict[str, list], f
 
 
 ################################################################
+#######################  OTHER COMPARISONS  ####################
+################################################################
+
+
+def scipy_ks_2_samples_error(obtained: dict[str, list], comparison: dict[str, list], fit: bool = True) -> float:
+    """Returns the normalized RMSE (mean absolute error) between the comparison and obtained samples.
+
+    Args:
+        obtained (dict): obtained samples to compare.
+        comparison (dict): previous samples to compare.
+        fit (bool): flag, to wether compare against the previous fit or the previous results. Defaults to True (against fit).
+
+    Returns:
+        float: difference/error between the two samples.
+    """
+    is_structure_of_check_parameters_correct(obtained, comparison)
+
+    if np.asarray(obtained["results"]).shape() != (len(obtained["sweep_interval"]),):
+        raise ValueError("Incorrect 'results' shape for this comparison model.")
+
+    check = "fit" if fit else "result"
+    return ks_2samp(obtained["results"], comparison[check])
+    # TODO: This doesn't work since ks_2samp asumes homogenous distribution in the x axis!
+
+
+################################################################
 #####################  OTHER NORMALIZATIONS  ###################
 ################################################################
 
-# def norm_mean_abs_error(obtained: dict[str, list], comparison: dict[str, list], fit: bool = True) -> float:
-#     """Returns the normalized MAE (mean absolute error) between the comparison and obtained samples.
 
-#     Args:
-#         obtained (dict): obtained samples to compare.
-#         comparison (dict): previous samples to compare.
-#         fit (bool): flag, to wether compare against the previous fit or the previous results. Defaults to True (against fit).
+def norm_mean_abs_error(obtained: dict[str, list], comparison: dict[str, list], fit: bool = True) -> float:
+    """Returns the normalized MAE (mean absolute error) between the comparison and obtained samples.
 
-#     Returns:
-#         float: difference/error between the two samples.
-#     """
-#     is_structure_of_check_parameters_correct(obtained, comparison)
+    Args:
+        obtained (dict): obtained samples to compare.
+        comparison (dict): previous samples to compare.
+        fit (bool): flag, to wether compare against the previous fit or the previous results. Defaults to True (against fit).
 
-#     if obtained["results"].shape() == 1:
+    Returns:
+        float: difference/error between the two samples.
+    """
+    is_structure_of_check_parameters_correct(obtained, comparison)
 
-#         check = "fit" if fit else "result"
+    if np.asarray(obtained["results"]).shape() != (len(obtained["sweep_interval"]),):
+        raise ValueError("Incorrect 'results' shape for this comparison model.")
 
-#         absolute_error = sum(
-#             np.abs(obtained["results"][i] - comparison[check][comparison["sweep_interval"].index(obtained_x)])
-#             for i, obtained_x in enumerate(obtained["sweep_interval"])
-#         )
+    check = "fit" if fit else "result"
 
-#         mean_absolute_error = absolute_error / len(obtained["results"])
-#         return mean_absolute_error / np.mean(comparison[check])  # normalize the difference with the mean values
+    absolute_error = sum(
+        np.abs(obtained["results"][i] - comparison[check][comparison["sweep_interval"].index(obtained_x)])
+        for i, obtained_x in enumerate(obtained["sweep_interval"])
+    )
+    mean_absolute_error = absolute_error / len(obtained["results"])
+    return mean_absolute_error / np.mean(comparison[check])
 
-#     raise ValueError("Shape too big for this comparison model.")
 
+def norm_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, list], fit: bool = True) -> float:
+    """Returns the normalized MSE (mean square error) between the comparison and obtained samples.
 
-# def norm_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, list], fit: bool = True) -> float:
-#     """Returns the normalized MSE (mean square error) between the comparison and obtained samples.
+    Args:
+        obtained (dict): obtained samples to compare.
+        comparison (dict): previous samples to compare.
+        fit (bool): flag, to wether compare against the previous fit or the previous results. Defaults to True (against fit).
 
-#     Args:
-#         obtained (dict): obtained samples to compare.
-#         comparison (dict): previous samples to compare.
-#         fit (bool): flag, to wether compare against the previous fit or the previous results. Defaults to True (against fit).
+    Returns:
+        float: difference/error between the two samples.
+    """
+    is_structure_of_check_parameters_correct(obtained, comparison)
 
-#     Returns:
-#         float: difference/error between the two samples.
-#     """
-#     is_structure_of_check_parameters_correct(obtained, comparison)
+    if np.asarray(obtained["results"]).shape() != (len(obtained["sweep_interval"]),):
+        raise ValueError("Incorrect 'results' shape for this comparison model.")
 
-#     if obtained["results"].shape() == 1:
+    check = "fit" if fit else "result"
 
-#         check = "fit" if fit else "result"
-
-#         square_error = sum(
-#             (obtained["results"][i] - comparison[check][comparison["sweep_interval"].index(obtained_x)]) ** 2
-#             for i, obtained_x in enumerate(obtained["sweep_interval"])
-#         )
-#         mean_square_error = square_error / len(obtained["results"])
-#         return mean_square_error / np.mean(comparison[check])  # normalize the difference with the mean values
-
-#     raise ValueError("Shape too big for this comparison model.")
+    square_error = sum(
+        (obtained["results"][i] - comparison[check][comparison["sweep_interval"].index(obtained_x)]) ** 2
+        for i, obtained_x in enumerate(obtained["sweep_interval"])
+    )
+    mean_square_error = square_error / len(obtained["results"])
+    return mean_square_error / np.mean(comparison[check])
