@@ -16,6 +16,9 @@
 This is the top level module from which all basic functions and classes of
 Qililab can be directly imported.
 """
+
+import contextlib
+
 from .circuit_transpiler import Drag, Wait
 from .config import __version__, logger
 from .data_management import build_platform, load_results, save_platform, save_results
@@ -27,3 +30,9 @@ from .typings import ExperimentOptions, ExperimentSettings, Parameter
 from .utils import Loop
 from .utils.load_data import load
 from .waveforms import *
+
+with contextlib.suppress(NameError, ImportError):
+    # Since Ipython magic methods can only be imported from inside a Jupyter Notebook,
+    # here we first check that `get_ipython` exists (which means we are inside a Jupyter Notebook)
+    get_ipython()  # type: ignore  # noqa: F405 # pylint: disable=undefined-variable
+    from .slurm import submit_job  # pragma: no cover
