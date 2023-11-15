@@ -277,7 +277,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         the :class:`.CalibrationController` won't do the graph mapping properly, and the calibration will fail. Defaults to None.
         """
 
-        self.node_id, self.nb_folder = self._path_to_name_and_folder_init(nb_path)
+        self.node_id, self.nb_folder = self._path_to_name_and_folder(nb_path)
         """Node name and folder, separated, and without the ``.ipynb`` extension."""
 
         self.in_spec_threshold: float = in_spec_threshold
@@ -384,7 +384,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         ndarray_to_list(params)
         # initially the file is "dirty" until we make sure the execution was not aborted
-        output_path = self._create_notebook_datetime_path(self.nb_path, dirty=True)
+        output_path = self._create_notebook_datetime_path(dirty=True)
         self.previous_output_parameters = self.output_parameters
 
         # Execute notebook without problems:
@@ -392,7 +392,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             self.output_parameters = self._execute_notebook(self.nb_path, output_path, params)
 
             timestamp = datetime.timestamp(datetime.now())
-            new_output_path = self._create_notebook_datetime_path(self.nb_path, timestamp)
+            new_output_path = self._create_notebook_datetime_path(timestamp=timestamp)
             os.rename(output_path, new_output_path)
             return timestamp
 
@@ -404,7 +404,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         # When notebook execution fails, generate error folder and move there the notebook:
         except Exception as exc:  # pylint: disable = broad-exception-caught
             timestamp = datetime.timestamp(datetime.now())
-            error_path = self._create_notebook_datetime_path(self.nb_path, timestamp, error=True)
+            error_path = self._create_notebook_datetime_path(timestamp=timestamp, error=True)
             os.rename(output_path, error_path)
             logger.error(
                 "Aborting execution. Exception %s during automatic calibration notebook execution, trace of the error can be found in %s",
@@ -461,7 +461,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         return None
 
     def _create_notebook_datetime_path(
-        self, original_path: str, timestamp: float | None = None, dirty: bool = False, error: bool = False
+        self, timestamp: float | None = None, dirty: bool = False, error: bool = False
     ) -> str:
         """Create a timestamped notebook path, adding the datetime to the file name end, just before the ``.ipynb``.
 
@@ -487,19 +487,18 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         now_path = f"{daily_path}-" + f"{now.hour:02d}:{now.minute:02d}:{now.second:02d}"
 
         # If doesn't exist, create the needed folder for the path
-        name, folder_path = self._path_to_name_and_folder(original_path)
-        os.makedirs(folder_path, exist_ok=True)
+        os.makedirs(self.nb_folder, exist_ok=True)
 
         if dirty and not error:  # return the path of the execution
-            return f"{folder_path}/{name}_{now_path}_dirty.ipynb"
+            return f"{self.nb_folder}/{self.node_id}_{now_path}_dirty.ipynb"
         if error:
-            os.makedirs(f"{folder_path}/error_executions", exist_ok=True)
-            return f"{folder_path}/error_executions/{name}_{now_path}_error.ipynb"
+            os.makedirs(f"{self.nb_folder}/error_executions", exist_ok=True)
+            return f"{self.nb_folder}/error_executions/{self.node_id}_{now_path}_error.ipynb"
 
         # return the string where saved
-        return f"{folder_path}/{name}_{now_path}.ipynb"
+        return f"{self.nb_folder}/{self.node_id}_{now_path}.ipynb"
 
-    def _path_to_name_and_folder_init(self, original_path: str) -> tuple[str, str]:
+    def _path_to_name_and_folder(self, original_path: str) -> tuple[str, str]:
         """Extract the name and folder from a notebook path. Name will be extended with the qubit it acts on.
 
         The passed path can have the ``.ipynb`` extension or not.
@@ -529,28 +528,6 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         path_list = original_path.split(".ipynb")[0].split("/")
 
         name = path_list.pop() + distinguish_str + qubit_str
-        folder_path = "/".join(path_list)
-        return name, folder_path
-
-    def _path_to_name_and_folder(self, original_path: str) -> tuple[str, str]:
-        """Extract the name and folder from a notebook path. Name will be extended with the qubit it acts on.
-
-        The passed path can have the ``.ipynb`` extension or not.
-
-        The part of the string after the last "/" will be considered the file name, and the part before its directory.
-
-        Args:
-            original_path (str): The original path of the notebook. Can have the ``.ipynb`` extension or not.
-                The part of the string after the last "/" will be considered the file name, and the part before it's directory.
-
-        Returns:
-            tuple[str, str]: A tuple containing the notebook name and its folder.
-        """
-    
-        # Remove .ipynb from end if it has one, and separate the folder and name with the last "/":
-        path_list = original_path.split(".ipynb")[0].split("/")
-
-        name = path_list.pop()
         folder_path = "/".join(path_list)
         return name, folder_path
 
@@ -678,8 +655,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             string_to_add (str): The string to append to the notebook name.
             timestamp (float): The timestamp to use for the new notebook execution name.
         """
-        path = os.path.join(self.nb_folder, self.node_id)
-        timestamp_path = self._create_notebook_datetime_path(path, timestamp).split(".ipynb")[0]
+        timestamp_path = self._create_notebook_datetime_path(timestamp=timestamp).split(".ipynb")[0]
 
         os.rename(f"{timestamp_path}.ipynb", f"{timestamp_path}_{string_to_add}.ipynb")
 

@@ -28,11 +28,12 @@ def norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, l
     Returns:
         float: difference/error between the two samples.
     """
-    is_structure_of_check_parameters_correct(obtained, comparison)
+    #TODO: Check if statements regarding 'fit' to use fit to compare results
+    #is_structure_of_check_parameters_correct(obtained, comparison)
 
-    for check_data in [obtained, comparison]:
-        if not np.shape(check_data["results"]) == np.shape(check_data["fit"]) == (len(check_data["sweep_interval"]),):
-            raise ValueError("Incorrect 'results' shape for this comparison model.")
+    #for check_data in [obtained, comparison]:
+        #if (fit and not np.shape(check_data["results"]) == np.shape(check_data["fit"]) == (len(check_data["sweep_interval"]),)) or (not fit and not np.shape(check_data["results"]) == (len(check_data["sweep_interval"]),)):
+        #    raise ValueError("Incorrect 'results' shape for this comparison model.")
 
     check = "fit" if fit else "results"
 
@@ -43,7 +44,7 @@ def norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, l
     root_mean_square_error = np.sqrt(square_error / len(obtained["results"]))
     # TODO: Check which normalization we want.
 
-    return root_mean_square_error / np.mean(comparison[check])  # normalize the difference with the mean values
+    return root_mean_square_error /(np.mean(comparison[check])+0000000000.1)  # normalize the difference with the mean values
 
 
 def IQ_norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, list], fit: bool = True) -> float:
@@ -57,11 +58,11 @@ def IQ_norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str
     Returns:
         float: difference/error between the two samples.
     """
-    is_structure_of_check_parameters_correct(obtained, comparison)
+    #is_structure_of_check_parameters_correct(obtained, comparison)
 
-    for check_data in [obtained, comparison]:
-        if not np.shape(check_data["results"]) == np.shape(check_data["fit"]) == (2, len(check_data["sweep_interval"])):
-            raise ValueError("Incorrect 'results' shape for this comparison model.")
+    #for check_data in [obtained, comparison]:
+    #    if (fit and not np.shape(check_data["results"]) == np.shape(check_data["fit"]) == (2, len(check_data["sweep_interval"]))) or (not fit and not np.shape(check_data["results"]) == (2, len(check_data["sweep_interval"]))):
+    #        raise ValueError("Incorrect 'results' shape for this comparison model.")
 
     i, q = obtained["results"]
 
@@ -77,7 +78,7 @@ def IQ_norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str
         # TODO: Check which normalization we want.
 
         # normalize the difference with the mean values, and add it to the i or q error
-        errors.append(root_mean_square_error / np.mean(comparison[check]))
+        errors.append(root_mean_square_error / (np.mean(comparison[check])+0000000000.1))
 
     # Return the one with less errors, since it was the one used for the fitting.
     return np.min(errors)
@@ -109,7 +110,7 @@ def ssro_comparison_2D(obtained: dict[str, list], comparison: dict[str, list], f
             raise ValueError("Incorrect 'results' shape for this comparison model.")
 
     _ = fit  # No fit for this case.
-
+    #TODO:Add epsilons to cancel divergences for means 0.0 aka perfect match between compt and obtained :rock:
     obtn_i_0, obtn_i_1 = obtained["sweep_interval"]  # first gaussian I's
     obtn_q_0, obtn_q_1 = obtained["results"]  # second gaussian I's
 
@@ -137,7 +138,7 @@ def ssro_comparison_2D(obtained: dict[str, list], comparison: dict[str, list], f
     # TODO: Compare 2D guassian distributions, with a more specific function?
 
 
-def is_structure_of_check_parameters_correct(obtained: dict[str, list], comparison: dict[str, list]):
+def is_structure_of_check_parameters_correct(obtained: dict[str, list], comparison: dict[str, list], fit: bool = True):
     """If the structure is incorrect it will raise an error.
 
     Args:
@@ -149,12 +150,12 @@ def is_structure_of_check_parameters_correct(obtained: dict[str, list], comparis
         ValueError: if keys or shapes don't match the expected.
     """
     for check_data in [obtained, comparison]:
-        if "sweep_interval" not in check_data or "results" not in check_data or "fit" not in check_data:
+        if "sweep_interval" not in check_data or "results" not in check_data or (fit and "fit" not in check_data):
             raise ValueError(
                 "Keys in the `check_parameters` are not 'sweep_interval', 'results' and 'fit', as is need in for the comparison models."
             )
 
-        if len(check_data["sweep_interval"]) == 0 or len(check_data["results"]) == 0 or len(check_data["fit"]) == 0:
+        if len(check_data["sweep_interval"]) == 0 or len(check_data["results"]) == 0 or (fit and len(check_data["fit"]) == 0):
             raise ValueError(
                 "Empty 'sweep_interval', 'results' or 'fit' in  `check_parameters`. They are needed for the comparison models."
             )
