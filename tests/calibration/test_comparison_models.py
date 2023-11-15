@@ -4,7 +4,6 @@ import pytest
 from qililab.calibration.comparison_models import (
     IQ_norm_root_mean_sqrt_error,
     norm_root_mean_sqrt_error,
-    scipy_ks_2_samples_error,
     ssro_comparison_2D,
 )
 
