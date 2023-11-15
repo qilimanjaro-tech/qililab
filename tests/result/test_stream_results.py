@@ -60,7 +60,7 @@ class TestStreamArray:
         assert stream_array.path == "test_stream_array.hdf5"
         assert stream_array.loops == {"test_amp_loop": np.arange(0, 1, 2)}
 
-    @patch("qililab.result.stream_results.h5py.File", return_value=MockFile())
+    @patch("h5py.File", return_value=MockFile())
     def test_context_manager(self, mock_h5py: MockFile, stream_array: StreamArray):  # pylint: disable=unused-argument
         """Tests context manager real time saving."""
         # test adding outside the context manager
