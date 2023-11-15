@@ -30,10 +30,11 @@ def norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, l
     """
     is_structure_of_check_parameters_correct(obtained, comparison)
 
-    if np.asarray(obtained["results"]).shape() != (len(obtained["sweep_interval"]),):
-        raise ValueError("Incorrect 'results' shape for this comparison model.")
+    for check_data in [obtained, comparison]:
+        if not np.shape(check_data["results"]) == np.shape(check_data["fit"]) == (len(check_data["sweep_interval"]),):
+            raise ValueError("Incorrect 'results' shape for this comparison model.")
 
-    check = "fit" if fit else "result"
+    check = "fit" if fit else "results"
 
     square_error = sum(
         (obtained["results"][i] - comparison[check][comparison["sweep_interval"].index(obtained_x)]) ** 2
@@ -58,12 +59,13 @@ def IQ_norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str
     """
     is_structure_of_check_parameters_correct(obtained, comparison)
 
-    if np.asarray(obtained["results"]).shape() != (2, len(obtained["sweep_interval"])):
-        raise ValueError("Incorrect 'results' shape for this comparison model.")
+    for check_data in [obtained, comparison]:
+        if not np.shape(check_data["results"]) == np.shape(check_data["fit"]) == (2, len(check_data["sweep_interval"])):
+            raise ValueError("Incorrect 'results' shape for this comparison model.")
 
     i, q = obtained["results"]
 
-    check = "fit" if fit else "result"
+    check = "fit" if fit else "results"
 
     errors = []
     for idx, obtained_results in enumerate([i, q]):
@@ -92,8 +94,19 @@ def ssro_comparison_2D(obtained: dict[str, list], comparison: dict[str, list], f
     Returns:
         float: difference/error between the two samples.
     """
-    if np.asarray(obtained["results"]).shape() != np.asarray(obtained["sweep_interval"]).shape():
-        raise ValueError("Incorrect shape for this comparison model.")
+    for check_data in [obtained, comparison]:
+        if "sweep_interval" not in check_data or "results" not in check_data:
+            raise ValueError(
+                "Keys in the `check_parameters` are not 'sweep_interval', 'results' and 'fit', as is need in for the comparison models."
+            )
+
+        if len(check_data["sweep_interval"]) == 0 or len(check_data["results"]) == 0:
+            raise ValueError(
+                "Empty 'sweep_interval', 'results' or 'fit' in  `check_parameters`. They are needed for the comparison models."
+            )
+
+        if np.shape(check_data["results"]) != np.shape(check_data["sweep_interval"]):
+            raise ValueError("Incorrect 'results' shape for this comparison model.")
 
     _ = fit  # No fit for this case.
 
@@ -155,10 +168,11 @@ def scipy_ks_2_samples_error(obtained: dict[str, list], comparison: dict[str, li
     """
     is_structure_of_check_parameters_correct(obtained, comparison)
 
-    if np.asarray(obtained["results"]).shape() != (len(obtained["sweep_interval"]),):
-        raise ValueError("Incorrect 'results' shape for this comparison model.")
+    for check_data in [obtained, comparison]:
+        if not np.shape(check_data["results"]) == np.shape(check_data["fit"]) == (len(check_data["sweep_interval"]),):
+            raise ValueError("Incorrect 'results' shape for this comparison model.")
 
-    check = "fit" if fit else "result"
+    check = "fit" if fit else "results"
     return ks_2samp(obtained["results"], comparison[check])
     # TODO: This doesn't work since ks_2samp asumes homogenous distribution in the x axis!
 
@@ -181,10 +195,11 @@ def norm_mean_abs_error(obtained: dict[str, list], comparison: dict[str, list], 
     """
     is_structure_of_check_parameters_correct(obtained, comparison)
 
-    if np.asarray(obtained["results"]).shape() != (len(obtained["sweep_interval"]),):
-        raise ValueError("Incorrect 'results' shape for this comparison model.")
+    for check_data in [obtained, comparison]:
+        if not np.shape(check_data["results"]) == np.shape(check_data["fit"]) == (len(check_data["sweep_interval"]),):
+            raise ValueError("Incorrect 'results' shape for this comparison model.")
 
-    check = "fit" if fit else "result"
+    check = "fit" if fit else "results"
 
     absolute_error = sum(
         np.abs(obtained["results"][i] - comparison[check][comparison["sweep_interval"].index(obtained_x)])
@@ -207,10 +222,11 @@ def norm_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, list],
     """
     is_structure_of_check_parameters_correct(obtained, comparison)
 
-    if np.asarray(obtained["results"]).shape() != (len(obtained["sweep_interval"]),):
-        raise ValueError("Incorrect 'results' shape for this comparison model.")
+    for check_data in [obtained, comparison]:
+        if not np.shape(check_data["results"]) == np.shape(check_data["fit"]) == (len(check_data["sweep_interval"]),):
+            raise ValueError("Incorrect 'results' shape for this comparison model.")
 
-    check = "fit" if fit else "result"
+    check = "fit" if fit else "results"
 
     square_error = sum(
         (obtained["results"][i] - comparison[check][comparison["sweep_interval"].index(obtained_x)]) ** 2
