@@ -95,15 +95,15 @@ class TestNormRootMeanSqrtError:
             dump_load(
                 {
                     "sweep_interval": basic_interval,
-                    "results": [changed_results, changed_results],
+                    "results": np.array([changed_results, changed_results]),
                     "fit": basic_results,
                 }
             ),
             dump_load(
                 {
-                    "sweep_interval": [basic_interval, basic_interval],
-                    "results": [changed_results, changed_results],
-                    "fit": [changed_results, changed_results],
+                    "sweep_interval": np.array([basic_interval, basic_interval]),
+                    "results": np.array([changed_results, changed_results]),
+                    "fit": np.array([changed_results, changed_results]),
                 }
             ),
         ],
@@ -135,9 +135,9 @@ class TestNormRootMeanSqrtError:
     @pytest.mark.parametrize(
         "comparison",
         [
-            dump_load({"sweep_interval": [], "results": basic_results, "fit": basic_results}),
-            dump_load({"sweep_interval": basic_interval, "results": [], "fit": basic_results}),
-            dump_load({"sweep_interval": basic_interval, "results": basic_results, "fit": []}),
+            dump_load({"sweep_interval": np.array([]), "results": basic_results, "fit": basic_results}),
+            dump_load({"sweep_interval": basic_interval, "results": np.array([]), "fit": basic_results}),
+            dump_load({"sweep_interval": basic_interval, "results": basic_results, "fit": np.array([])}),
         ],
     )
     def test_norm_root_mean_sqrt_error_empty(self, comparison):
@@ -253,18 +253,24 @@ class TestIQNormRootMeanSqrtError:
             dump_load(
                 {
                     "sweep_interval": basic_interval,
-                    "results": [basic_results],
-                    "fit": [basic_results, basic_results],
+                    "results": np.array([basic_results]),
+                    "fit": np.array([basic_results, basic_results]),
                 }
             ),
             dump_load(
                 {
                     "sweep_interval": basic_interval,
-                    "results": [changed_results, changed_results],
-                    "fit": [basic_results],
+                    "results": np.array([changed_results, changed_results]),
+                    "fit": np.array([basic_results]),
                 }
             ),
-            dump_load({"sweep_interval": basic_interval, "results": [very_changed_results], "fit": [basic_results]}),
+            dump_load(
+                {
+                    "sweep_interval": basic_interval,
+                    "results": np.array([very_changed_results]),
+                    "fit": np.array([basic_results]),
+                }
+            ),
         ],
     )
     def test_norm_root_mean_sqrt_error_bad_shape(self, comparison):
@@ -278,9 +284,13 @@ class TestIQNormRootMeanSqrtError:
     @pytest.mark.parametrize(
         "comparison",
         [
-            dump_load({"results": [basic_results, basic_results], "fit": [basic_results, basic_results]}),
-            dump_load({"sweep_interval": basic_interval, "fit": [basic_results, basic_results]}),
-            dump_load({"sweep_interval": basic_interval, "results": [very_changed_results, very_changed_results]}),
+            dump_load(
+                {"results": np.array([basic_results, basic_results]), "fit": np.array([basic_results, basic_results])}
+            ),
+            dump_load({"sweep_interval": basic_interval, "fit": np.array([basic_results, basic_results])}),
+            dump_load(
+                {"sweep_interval": basic_interval, "results": np.array([very_changed_results, very_changed_results])}
+            ),
         ],
     )
     def test_norm_root_mean_sqrt_error_not_inside(self, comparison):
@@ -296,17 +306,23 @@ class TestIQNormRootMeanSqrtError:
         [
             dump_load(
                 {
-                    "sweep_interval": [],
-                    "results": [basic_results, basic_results],
-                    "fit": [basic_results, basic_results],
+                    "sweep_interval": np.array([]),
+                    "results": np.array([basic_results, basic_results]),
+                    "fit": np.array([basic_results, basic_results]),
                 }
             ),
-            dump_load({"sweep_interval": basic_interval, "results": [], "fit": [basic_results, basic_results]}),
             dump_load(
                 {
                     "sweep_interval": basic_interval,
-                    "results": [very_changed_results, very_changed_results],
-                    "fit": [],
+                    "results": np.array([]),
+                    "fit": np.array([basic_results, basic_results]),
+                }
+            ),
+            dump_load(
+                {
+                    "sweep_interval": basic_interval,
+                    "results": np.array([very_changed_results, very_changed_results]),
+                    "fit": np.array([]),
                 }
             ),
         ],
@@ -327,8 +343,8 @@ class TestIQNormRootMeanSqrtError:
                 dump_load(
                     {
                         "sweep_interval": basic_interval,
-                        "results": [basic_results, basic_results],
-                        "fit": [basic_results, basic_results],
+                        "results": np.array([basic_results, basic_results]),
+                        "fit": np.array([basic_results, basic_results]),
                     }
                 ),
             ),
@@ -337,8 +353,8 @@ class TestIQNormRootMeanSqrtError:
                 dump_load(
                     {
                         "sweep_interval": basic_interval,
-                        "results": [changed_results, changed_results],
-                        "fit": [basic_results, basic_results],
+                        "results": np.array([changed_results, changed_results]),
+                        "fit": np.array([basic_results, basic_results]),
                     }
                 ),
             ),
@@ -347,8 +363,8 @@ class TestIQNormRootMeanSqrtError:
                 dump_load(
                     {
                         "sweep_interval": basic_interval,
-                        "results": [very_changed_results, very_changed_results],
-                        "fit": [basic_results, basic_results],
+                        "results": np.array([very_changed_results, very_changed_results]),
+                        "fit": np.array([basic_results, basic_results]),
                     }
                 ),
             ),
@@ -375,8 +391,8 @@ class TestIQNormRootMeanSqrtError:
                 dump_load(
                     {
                         "sweep_interval": basic_interval,
-                        "results": [basic_results, basic_results],
-                        "fit": [basic_results, basic_results],
+                        "results": np.array([basic_results, basic_results]),
+                        "fit": np.array([basic_results, basic_results]),
                     }
                 ),
             ),
@@ -385,8 +401,8 @@ class TestIQNormRootMeanSqrtError:
                 dump_load(
                     {
                         "sweep_interval": basic_interval,
-                        "results": [basic_results, basic_results],
-                        "fit": [changed_results, changed_results],
+                        "results": np.array([basic_results, basic_results]),
+                        "fit": np.array([changed_results, changed_results]),
                     }
                 ),
             ),
@@ -395,8 +411,8 @@ class TestIQNormRootMeanSqrtError:
                 dump_load(
                     {
                         "sweep_interval": basic_interval,
-                        "results": [basic_results, basic_results],
-                        "fit": [very_changed_results, very_changed_results],
+                        "results": np.array([basic_results, basic_results]),
+                        "fit": np.array([very_changed_results, very_changed_results]),
                     }
                 ),
             ),
@@ -429,23 +445,23 @@ class TestSSROComparison2D:
         [
             dump_load(
                 {
-                    "sweep_interval": [basic_results, basic_results],
-                    "results": [basic_results],
-                    "fit": [basic_results, basic_results],
+                    "sweep_interval": np.array([basic_results, basic_results]),
+                    "results": np.array([basic_results]),
+                    "fit": np.array([basic_results, basic_results]),
                 }
             ),
             dump_load(
                 {
-                    "sweep_interval": [basic_results, basic_results],
-                    "results": [changed_results, changed_results],
-                    "fit": [basic_results],
+                    "sweep_interval": np.array([basic_results, basic_results]),
+                    "results": np.array([changed_results]),
+                    "fit": np.array([basic_results, basic_results]),
                 }
             ),
             dump_load(
                 {
-                    "sweep_interval": [basic_results, basic_results],
-                    "results": [very_changed_results],
-                    "fit": [basic_results],
+                    "sweep_interval": np.array([basic_results, basic_results]),
+                    "results": np.array([very_changed_results]),
+                    "fit": np.array([basic_results]),
                 }
             ),
         ],
@@ -456,19 +472,21 @@ class TestSSROComparison2D:
             ValueError,
             match="Incorrect 'results' shape for this comparison model.",
         ):
-            ssro_comparison_2D(obtained=obtained, comparison=comparison, fit=False)
+            ssro_comparison_2D(obtained=obtained_2D, comparison=comparison, fit=False)
 
     @pytest.mark.parametrize(
         "comparison",
         [
-            dump_load({"results": [basic_results, basic_results], "fit": [basic_results, basic_results]}),
-            dump_load({"sweep_interval": [basic_results, basic_results], "fit": [basic_results, basic_results]}),
+            dump_load(
+                {"results": np.array([basic_results, basic_results]), "fit": np.array([basic_results, basic_results])}
+            ),
             dump_load(
                 {
-                    "sweep_interval": [basic_results, basic_results],
-                    "results": [very_changed_results, very_changed_results],
+                    "sweep_interval": np.array([basic_results, basic_results]),
+                    "fit": np.array([basic_results, basic_results]),
                 }
             ),
+            dump_load({"results": np.array([very_changed_results, very_changed_results])}),
         ],
     )
     def test_ssro_comparison_2D_not_inside(self, comparison):
@@ -477,22 +495,23 @@ class TestSSROComparison2D:
             ValueError,
             match="Keys in the `check_parameters` are not 'sweep_interval', 'results' and 'fit', as is need in for the comparison models.",
         ):
-            ssro_comparison_2D(obtained=obtained, comparison=comparison, fit=False)
+            ssro_comparison_2D(obtained=obtained_2D, comparison=comparison, fit=False)
 
     @pytest.mark.parametrize(
         "comparison",
         [
             dump_load(
-                {"sweep_interval": [], "results": [basic_results, basic_results], "fit": [basic_results, basic_results]}
-            ),
-            dump_load(
-                {"sweep_interval": [basic_results, basic_results], "results": [], "fit": [basic_results, basic_results]}
+                {
+                    "sweep_interval": np.array([]),
+                    "results": np.array([basic_results, basic_results]),
+                    "fit": np.array([basic_results, basic_results]),
+                }
             ),
             dump_load(
                 {
-                    "sweep_interval": [basic_results, basic_results],
-                    "results": [very_changed_results, very_changed_results],
-                    "fit": [],
+                    "sweep_interval": np.array([basic_results, basic_results]),
+                    "results": np.array([]),
+                    "fit": np.array([basic_results, basic_results]),
                 }
             ),
         ],
@@ -503,7 +522,7 @@ class TestSSROComparison2D:
             ValueError,
             match="Empty 'sweep_interval', 'results' or 'fit' in  `check_parameters`. They are needed for the comparison models.",
         ):
-            ssro_comparison_2D(obtained=obtained, comparison=comparison, fit=False)
+            ssro_comparison_2D(obtained=obtained_2D, comparison=comparison, fit=False)
 
     @pytest.mark.parametrize(
         "output, comparison_2D",
@@ -512,9 +531,9 @@ class TestSSROComparison2D:
                 "in_spec",
                 dump_load(
                     {
-                        "sweep_interval": [basic_results, basic_results],
-                        "results": [basic_results, basic_results],
-                        "fit": [[], []],
+                        "sweep_interval": np.array([basic_results, basic_results]),
+                        "results": np.array([basic_results, basic_results]),
+                        "fit": np.array([[], []]),
                     }
                 ),
             ),
@@ -522,9 +541,9 @@ class TestSSROComparison2D:
                 "out_of_spec",
                 dump_load(
                     {
-                        "sweep_interval": [changed_results, changed_results],
-                        "results": [changed_results, changed_results],
-                        "fit": [[], []],
+                        "sweep_interval": np.array([changed_results, changed_results]),
+                        "results": np.array([changed_results, changed_results]),
+                        "fit": np.array([[], []]),
                     }
                 ),
             ),
@@ -532,9 +551,9 @@ class TestSSROComparison2D:
                 "bad_data",
                 dump_load(
                     {
-                        "sweep_interval": [very_changed_results, very_changed_results],
-                        "results": [very_changed_results, very_changed_results],
-                        "fit": [[], []],
+                        "sweep_interval": np.array([very_changed_results, very_changed_results]),
+                        "results": np.array([very_changed_results, very_changed_results]),
+                        "fit": np.array([[], []]),
                     }
                 ),
             ),
