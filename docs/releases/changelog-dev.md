@@ -2,6 +2,9 @@
 
 ### New features since last release
 
+- Add magic method to run python code as slurm jobs from Jupyter Notebooks.
+  [#600](https://github.com/qilimanjaro-tech/qililab/pull/600)
+
 - Implemented `QuantumMachinesCompiler` class to compile QPrograms to QUA programs.
   [#563](https://github.com/qilimanjaro-tech/qililab/pull/563)
 
@@ -18,6 +21,14 @@
   [#596](https://github.com/qilimanjaro-tech/qililab/pull/596)
 
 ### Improvements
+
+- Improved the UX for circuit transpilation by unifying the native gate and pulse transpiler under one `CircuitTranspiler` class, which has 3 methods:
+
+  - `circuit_to_native`: transpiles a qibo circuit to native gates (Drag, CZ, Wait, M) and optionally RZ if optimize=False (optimize=True by default)
+  - `circuit_to_pulses`: transpiles a native gate circuit to a `PulseSchedule`
+  - `transpile_circuit`: runs both of the methods above sequentially
+    `Wait` gate moved from the `utils` module to `circuit_transpilation_native_gates`
+    [#575](https://github.com/qilimanjaro-tech/qililab/pull/575)
 
 - Added `infinite_loop()` method to QProgram.
   [#563](https://github.com/qilimanjaro-tech/qililab/pull/563)
@@ -40,6 +51,9 @@
   [#563](https://github.com/qilimanjaro-tech/qililab/pull/563)
 
 ### Deprecations / Removals
+
+- Removed the park gate since it is no longer needed
+  [#575](https://github.com/qilimanjaro-tech/qililab/pull/575)
 
 ### Documentation
 
