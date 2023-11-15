@@ -47,6 +47,14 @@ body:
       label: Tracebacks
       description: Please include the error tracebacks related to the issue here. This will be automatically formatted into code, so no need for backticks.
       render: Shell
+  - type: textarea
+    id: system_information
+    attributes:
+      label: System Information
+      description: Please post the output of `import qililab as ql; ql.about()``.
+      render: Shell
+    validations:
+      required: true
   - type: checkboxes
     id: terms
     attributes:
