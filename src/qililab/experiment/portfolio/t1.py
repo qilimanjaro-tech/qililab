@@ -21,7 +21,7 @@ from qibo.models import Circuit
 import qililab as ql
 from qililab.platform import Platform
 from qililab.typings import ExperimentOptions, ExperimentSettings, Parameter
-from qililab.utils import Loop, Wait
+from qililab.utils import Loop
 
 from .experiment_analysis import ExperimentAnalysis
 from .fitting_models import Exp
@@ -54,7 +54,7 @@ class T1(ExperimentAnalysis, Exp):
         # Define circuit used in this experiment
         circuit = Circuit(qubit + 1)
         circuit.add(ql.Drag(q=qubit, theta=np.pi, phase=0))
-        circuit.add(Wait(q=qubit, t=0))
+        circuit.add(ql.Wait(q=qubit, t=0))
         circuit.add(M(qubit))
 
         # Define loop over wait duration

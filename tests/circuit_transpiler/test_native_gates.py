@@ -1,6 +1,6 @@
 import numpy as np
 
-from qililab.transpiler.native_gates import Drag
+from qililab.circuit_transpiler.native_gates import Drag
 
 
 def test_native_gates_drag():

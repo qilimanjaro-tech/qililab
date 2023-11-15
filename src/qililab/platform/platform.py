@@ -26,6 +26,7 @@ from qiboconnection.api import API
 from ruamel.yaml import YAML
 
 from qililab.chip import Chip
+from qililab.circuit_transpiler import CircuitTranspiler
 from qililab.config import logger
 from qililab.constants import GATE_ALIAS_REGEX, RUNCARD
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
@@ -404,11 +405,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         flux_bus = self.buses.get(port=flux_port)
         control_bus = self.buses.get(port=control_port)
         readout_bus = self.buses.get(port=readout_port)
-        if flux_bus is None or control_bus is None or readout_bus is None:
-            raise ValueError(
-                f"Could not find buses for qubit {qubit_index} connected to the ports "
-                f"{flux_port}, {control_port} and {readout_port}."
-            )
         return flux_bus, control_bus, readout_bus
 
     def _get_bus_by_alias(self, alias: str | None = None):
@@ -695,13 +691,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             dict: Dictionary of compiled assembly programs. The key is the bus alias (``str``), and the value is the assembly compilation (``list``).
         """
         # We have a circular import because Platform uses CircuitToPulses and vice versa
-        from qililab.pulse.circuit_to_pulses import (  # pylint: disable=import-outside-toplevel, cyclic-import
-            CircuitToPulses,
-        )
 
         if isinstance(program, Circuit):
-            translator = CircuitToPulses(platform=self)
-            pulse_schedule = translator.translate(circuits=[program])[0]
+            transpiler = CircuitTranspiler(platform=self)
+            pulse_schedule = transpiler.transpile_circuit(circuits=[program])[0]
         else:
             pulse_schedule = program
 
