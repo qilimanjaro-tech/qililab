@@ -12,13 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Node class"""
-from abc import ABC
-from dataclasses import dataclass, field
+"""
+This module contains all the decomposition and transpilation methods used within qililab.
 
+.. currentmodule:: qililab
 
-@dataclass
-class Node(ABC):
-    """Generic node of circuit graph"""
+Transpilation
+~~~~~~~~~~~~~
 
-    index: int = field(init=False)
+.. autosummary::
+    :toctree: api
+
+    ~translate_circuit
+
+Gate Decomposition
+~~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: qililab.transpiler
+
+.. autosummary::
+    :toctree: api
+
+    ~translate_gates
+"""
+
+from .circuit_transpiler import CircuitTranspiler
+from .gate_decompositions import GateDecompositions
+from .native_gates import Drag, Wait
