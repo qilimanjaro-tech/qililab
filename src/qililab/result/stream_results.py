@@ -1,3 +1,4 @@
+from typing import Any
 import h5py
 import numpy as np
 
@@ -9,19 +10,19 @@ class StreamArray:
     the instruments.
 
     Args:
-        shape (ndarray.shape): results array shape.
+        shape (tuple): results array shape.
         path (str): path to save results.
-        loops (dict[str, ndarray]): dictionary with each loop name in the experiment as key and numpy array as values.
+        loops (dict[str, np.ndarray]): dictionary with each loop name in the experiment as key and numpy array as values.
     """
 
-    def __init__(self, shape, path, loops):
+    def __init__(self, shape: tuple, path: str, loops: dict[str, np.ndarray]):
         self.results = np.empty(shape=shape)
         self.path = path
         self.loops = loops
         self.file: h5py.File | None = None
         self.dataset = None
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: float):
         """Sets and item by key and value in the dataset.
 
         Args:
@@ -46,7 +47,7 @@ class StreamArray:
             self.file.__exit__()
             self.file = None
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int):
         """Gets item by index.
 
         Args:
@@ -70,7 +71,7 @@ class StreamArray:
         """Gets string representation of results."""
         return repr(self.results)
 
-    def __contains__(self, item):
+    def __contains__(self, item: dict[str, Any]):
         """Returns if an item is contained in results.
 
         Args:
