@@ -20,7 +20,7 @@ class StreamArray:
     """
 
     def __init__(self, shape: tuple, path: str, loops: dict[str, np.ndarray]):
-        self.results = np.empty(shape=shape)
+        self.results = np.zeros(shape=shape)
         self.path = path
         self.loops = loops
         self.file: h5py.File | None = None
