@@ -51,7 +51,7 @@ body:
     id: system_information
     attributes:
       label: System Information
-      description: Please post the output of `import qililab as ql; ql.about()``.
+      description: Please post the output of `import qililab as ql; ql.about()`.
       render: Shell
     validations:
       required: true
