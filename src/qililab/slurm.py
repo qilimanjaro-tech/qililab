@@ -8,7 +8,7 @@ from submitit import AutoExecutor
 
 from qililab.config import logger
 
-num_files_to_keep = 20  # needs to be a multiple of 4 and 5: 20,40,60,80..
+num_files_to_keep = 60  # needs to be a multiple of 4 and 5: 20,40,60,80..
 
 
 # pylint: disable=too-many-locals
