@@ -47,11 +47,20 @@ basic_results = np.array([2, 4, 6, 8, 10, 12, 14, 16, 18])
 changed_results = np.array([2, 5, 7, 8, 10, 12, 12, 16, 18])
 very_changed_results = np.array([2, 0, 16, 8, 0, 12, 10, 12, 18])
 
+twoD_gaussians = np.array([2, 2, 3, 2, 5, 6, 2, 1, 1])
+changed_twoD_gaussians = np.array([3, 4, 4, 3, 7, 7, 3, 2, 3])
+very_changed_twoD_gaussians = np.array([10, 4, 1, 0, 7, 17, 30, 29, 3])
+
+
 # fmt: off
 long_interval = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9])
 long_results = np.array([2, 4, 6, 8, 10, 12, 14, 16, 18, 2, 4, 6, 8, 10, 12, 14, 16, 18, 2, 4, 6, 8, 10, 12, 14, 16, 18, 2, 4, 6, 8, 10, 12, 14, 16, 18, 2, 4, 6, 8, 10, 12, 14, 16, 18, 2, 4, 6, 8, 10, 12, 14, 16, 18, 2, 4, 6, 8, 10, 12, 14, 16, 18, 2, 4, 6, 8, 10, 12, 14, 16, 18, 2, 4, 6, 8, 10, 12, 14, 16, 18, 2, 4, 6, 8, 10, 12, 14, 16, 18, 2, 4, 6, 8, 10, 12, 14, 16, 18, 2, 4, 6, 8, 10, 12, 14, 16, 18, 2, 4, 6, 8, 10, 12, 14, 16, 18, 2, 4, 6, 8, 10, 12, 14, 16, 18, 2, 4, 6, 8, 10, 12, 14, 16, 18])
 long_changed_results = np.array([2, 5, 7, 8, 10, 12, 12, 16, 18, 2, 5, 7, 8, 10, 12, 12, 16, 18, 2, 5, 7, 8, 10, 12, 12, 16, 18, 2, 5, 7, 8, 10, 12, 12, 16, 18, 2, 5, 7, 8, 10, 12, 12, 16, 18, 2, 5, 7, 8, 10, 12, 12, 16, 18, 2, 5, 7, 8, 10, 12, 12, 16, 18, 2, 5, 7, 8, 10, 12, 12, 16, 18, 2, 5, 7, 8, 10, 12, 12, 16, 18, 2, 5, 7, 8, 10, 12, 12, 16, 18, 2, 5, 7, 8, 10, 12, 12, 16, 18, 2, 5, 7, 8, 10, 12, 12, 16, 18, 2, 5, 7, 8, 10, 12, 12, 16, 18, 2, 5, 7, 8, 10, 12, 12, 16, 18, 2, 5, 7, 8, 10, 12, 12, 16, 18])
 long_very_changed_results = np.array([2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18])
+
+long_twoD_gaussians = np.array([2, 2, 3, 2, 5, 6, 2, 1, 1, 2, 2, 3, 2, 5, 6, 2, 1, 1, 2, 2, 3, 2, 5, 6, 2, 1, 1, 2, 2, 3, 2, 5, 6, 2, 1, 1, 2, 2, 3, 2, 5, 6, 2, 1, 1, 2, 2, 3, 2, 5, 6, 2, 1, 1, 2, 2, 3, 2, 5, 6, 2, 1, 1, 2, 2, 3, 2, 5, 6, 2, 1, 1, 2, 2, 3, 2, 5, 6, 2, 1, 1, 2, 2, 3, 2, 5, 6, 2, 1, 1, 2, 2, 3, 2, 5, 6, 2, 1, 1, 2, 2, 3, 2, 5, 6, 2, 1, 1, 2, 2, 3, 2, 5, 6, 2, 1, 1, 2, 2, 3, 2, 5, 6, 2, 1, 1, 2, 2, 3, 2, 5, 6, 2, 1, 1])
+long_changed_twoD_gaussians = np.array([3, 4, 4, 3, 7, 7, 3, 2, 3, 3, 4, 4, 3, 7, 7, 3, 2, 3, 3, 4, 4, 3, 7, 7, 3, 2, 3, 3, 4, 4, 3, 7, 7, 3, 2, 3, 3, 4, 4, 3, 7, 7, 3, 2, 3, 3, 4, 4, 3, 7, 7, 3, 2, 3, 3, 4, 4, 3, 7, 7, 3, 2, 3, 3, 4, 4, 3, 7, 7, 3, 2, 3, 3, 4, 4, 3, 7, 7, 3, 2, 3, 3, 4, 4, 3, 7, 7, 3, 2, 3, 3, 4, 4, 3, 7, 7, 3, 2, 3, 3, 4, 4, 3, 7, 7, 3, 2, 3, 3, 4, 4, 3, 7, 7, 3, 2, 3, 3, 4, 4, 3, 7, 7, 3, 2, 3, 3, 4, 4, 3, 7, 7, 3, 2, 3])
+long_very_changed_twoD_gaussians = np.array([10, 4, 1, 0, 7, 17, 30, 29, 3, 10, 4, 1, 0, 7, 17, 30, 29, 3, 10, 4, 1, 0, 7, 17, 30, 29, 3, 10, 4, 1, 0, 7, 17, 30, 29, 3, 10, 4, 1, 0, 7, 17, 30, 29, 3, 10, 4, 1, 0, 7, 17, 30, 29, 3, 10, 4, 1, 0, 7, 17, 30, 29, 3, 10, 4, 1, 0, 7, 17, 30, 29, 3, 10, 4, 1, 0, 7, 17, 30, 29, 3, 10, 4, 1, 0, 7, 17, 30, 29, 3, 10, 4, 1, 0, 7, 17, 30, 29, 3, 10, 4, 1, 0, 7, 17, 30, 29, 3, 10, 4, 1, 0, 7, 17, 30, 29, 3, 10, 4, 1, 0, 7, 17, 30, 29, 3])
 # fmt: on
 
 obtained = dump_load({"sweep_interval": basic_interval, "results": basic_results, "fit": basic_results})
@@ -67,9 +76,17 @@ obtained_IQ = dump_load(
 )
 obtained_2D = dump_load(
     {
-        "sweep_interval": np.array([basic_results, basic_results]),
-        "results": np.array([basic_results, basic_results]),
-        "fit": np.array([basic_results, basic_results]),
+        "sweep_interval": np.array([twoD_gaussians, twoD_gaussians]),
+        "results": np.array([twoD_gaussians, twoD_gaussians]),
+        "fit": np.array([twoD_gaussians, twoD_gaussians]),
+    }
+)
+
+long_obtained_2D = dump_load(
+    {
+        "sweep_interval": np.array([long_twoD_gaussians, long_twoD_gaussians]),
+        "results": np.array([long_twoD_gaussians, long_twoD_gaussians]),
+        "fit": np.array([long_twoD_gaussians, long_twoD_gaussians]),
     }
 )
 
@@ -445,23 +462,23 @@ class TestSSROComparison2D:
         [
             dump_load(
                 {
-                    "sweep_interval": np.array([basic_results, basic_results]),
-                    "results": np.array([basic_results]),
-                    "fit": np.array([basic_results, basic_results]),
+                    "sweep_interval": np.array([twoD_gaussians, twoD_gaussians]),
+                    "results": np.array([twoD_gaussians]),
+                    "fit": np.array([twoD_gaussians, twoD_gaussians]),
                 }
             ),
             dump_load(
                 {
-                    "sweep_interval": np.array([basic_results, basic_results]),
-                    "results": np.array([changed_results]),
-                    "fit": np.array([basic_results, basic_results]),
+                    "sweep_interval": np.array([twoD_gaussians, twoD_gaussians]),
+                    "results": np.array([changed_twoD_gaussians]),
+                    "fit": np.array([twoD_gaussians, twoD_gaussians]),
                 }
             ),
             dump_load(
                 {
-                    "sweep_interval": np.array([basic_results, basic_results]),
-                    "results": np.array([very_changed_results]),
-                    "fit": np.array([basic_results]),
+                    "sweep_interval": np.array([twoD_gaussians, twoD_gaussians]),
+                    "results": np.array([very_changed_twoD_gaussians]),
+                    "fit": np.array([twoD_gaussians]),
                 }
             ),
         ],
@@ -478,15 +495,18 @@ class TestSSROComparison2D:
         "comparison",
         [
             dump_load(
-                {"results": np.array([basic_results, basic_results]), "fit": np.array([basic_results, basic_results])}
+                {
+                    "results": np.array([twoD_gaussians, twoD_gaussians]),
+                    "fit": np.array([twoD_gaussians, twoD_gaussians]),
+                }
             ),
             dump_load(
                 {
-                    "sweep_interval": np.array([basic_results, basic_results]),
-                    "fit": np.array([basic_results, basic_results]),
+                    "sweep_interval": np.array([twoD_gaussians, twoD_gaussians]),
+                    "fit": np.array([twoD_gaussians, twoD_gaussians]),
                 }
             ),
-            dump_load({"results": np.array([very_changed_results, very_changed_results])}),
+            dump_load({"results": np.array([very_changed_twoD_gaussians, very_changed_twoD_gaussians])}),
         ],
     )
     def test_ssro_comparison_2D_not_inside(self, comparison):
@@ -503,15 +523,15 @@ class TestSSROComparison2D:
             dump_load(
                 {
                     "sweep_interval": np.array([]),
-                    "results": np.array([basic_results, basic_results]),
-                    "fit": np.array([basic_results, basic_results]),
+                    "results": np.array([twoD_gaussians, twoD_gaussians]),
+                    "fit": np.array([twoD_gaussians, twoD_gaussians]),
                 }
             ),
             dump_load(
                 {
-                    "sweep_interval": np.array([basic_results, basic_results]),
+                    "sweep_interval": np.array([twoD_gaussians, twoD_gaussians]),
                     "results": np.array([]),
-                    "fit": np.array([basic_results, basic_results]),
+                    "fit": np.array([twoD_gaussians, twoD_gaussians]),
                 }
             ),
         ],
@@ -531,8 +551,8 @@ class TestSSROComparison2D:
                 "in_spec",
                 dump_load(
                     {
-                        "sweep_interval": np.array([basic_results, basic_results]),
-                        "results": np.array([basic_results, basic_results]),
+                        "sweep_interval": np.array([twoD_gaussians, twoD_gaussians]),
+                        "results": np.array([twoD_gaussians, twoD_gaussians]),
                         "fit": np.array([[], []]),
                     }
                 ),
@@ -541,8 +561,8 @@ class TestSSROComparison2D:
                 "out_of_spec",
                 dump_load(
                     {
-                        "sweep_interval": np.array([changed_results, changed_results]),
-                        "results": np.array([changed_results, changed_results]),
+                        "sweep_interval": np.array([changed_twoD_gaussians, changed_twoD_gaussians]),
+                        "results": np.array([changed_twoD_gaussians, changed_twoD_gaussians]),
                         "fit": np.array([[], []]),
                     }
                 ),
@@ -551,8 +571,8 @@ class TestSSROComparison2D:
                 "bad_data",
                 dump_load(
                     {
-                        "sweep_interval": np.array([very_changed_results, very_changed_results]),
-                        "results": np.array([very_changed_results, very_changed_results]),
+                        "sweep_interval": np.array([very_changed_twoD_gaussians, very_changed_twoD_gaussians]),
+                        "results": np.array([very_changed_twoD_gaussians, very_changed_twoD_gaussians]),
                         "fit": np.array([[], []]),
                     }
                 ),
@@ -565,10 +585,61 @@ class TestSSROComparison2D:
         error2 = ssro_comparison_2D(obtained_2D, comparison_2D, fit=False)
 
         if output == "in_spec":
-            assert error == error2 < 0.005
+            assert error == error2 < 0.05
 
         elif output == "out_of_spec":
-            assert 0.005 < error == error2 < 0.3
+            assert 0.05 < error == error2 < 0.3
 
         elif output == "bad_data":
-            assert 0.3 < error == error2 < 15.0
+            assert 0.3 < error == error2 < 2.0
+
+    @pytest.mark.parametrize(
+        "output, comparison_2D",
+        [
+            (
+                "in_spec",
+                dump_load(
+                    {
+                        "sweep_interval": np.array([long_twoD_gaussians, long_twoD_gaussians]),
+                        "results": np.array([long_twoD_gaussians, long_twoD_gaussians]),
+                        "fit": np.array([[], []]),
+                    }
+                ),
+            ),
+            (
+                "out_of_spec",
+                dump_load(
+                    {
+                        "sweep_interval": np.array([long_changed_twoD_gaussians, long_changed_twoD_gaussians]),
+                        "results": np.array([long_changed_twoD_gaussians, long_changed_twoD_gaussians]),
+                        "fit": np.array([[], []]),
+                    }
+                ),
+            ),
+            (
+                "bad_data",
+                dump_load(
+                    {
+                        "sweep_interval": np.array(
+                            [long_very_changed_twoD_gaussians, long_very_changed_twoD_gaussians]
+                        ),
+                        "results": np.array([long_very_changed_twoD_gaussians, long_very_changed_twoD_gaussians]),
+                        "fit": np.array([[], []]),
+                    }
+                ),
+            ),
+        ],
+    )
+    def test_ssro_comparison_2D_long(self, output, comparison_2D):
+        """Test a valid comparison."""
+        error = ssro_comparison_2D(long_obtained_2D, comparison_2D)
+        error2 = ssro_comparison_2D(long_obtained_2D, comparison_2D, fit=False)
+
+        if output == "in_spec":
+            assert error == error2 < 0.05
+
+        elif output == "out_of_spec":
+            assert 0.05 < error == error2 < 0.3
+
+        elif output == "bad_data":
+            assert 0.3 < error == error2 < 2.0

@@ -117,13 +117,23 @@ def ssro_comparison_2D(obtained: dict[str, list], comparison: dict[str, list], f
     comp_q_0, comp_q_1 = comparison["results"]  # second gaussian Q's
 
     # Difference in means of 2d histograms
-    mean_diff_0 = (np.mean(obtn_i_0) - np.mean(comp_i_0)) ** 2 + (np.mean(obtn_q_0) - np.mean(comp_q_0)) ** 2
-    mean_diff_1 = (np.mean(obtn_i_1) - np.mean(comp_i_1)) ** 2 + (np.mean(obtn_q_1) - np.mean(comp_q_1)) ** 2
+    mean_diff_0 = ((np.mean(obtn_i_0) - np.mean(comp_i_0)) / np.mean(obtn_i_0)) ** 2 + (
+        (np.mean(obtn_q_0) - np.mean(comp_q_0)) / np.mean(obtn_q_0)
+    ) ** 2
+    mean_diff_1 = ((np.mean(obtn_i_1) - np.mean(comp_i_1)) / np.mean(obtn_i_1)) ** 2 + (
+        (np.mean(obtn_q_1) - np.mean(comp_q_1)) / np.mean(obtn_q_1)
+    ) ** 2
     # Difference in std of 2d histograms
-    std_dev_0 = (np.std(obtn_i_0) - np.std(comp_i_0)) ** 2 + (np.std(obtn_q_0) - np.std(comp_q_0)) ** 2
-    std_dev_1 = (np.std(obtn_i_1) - np.std(comp_i_1)) ** 2 + (np.std(obtn_q_1) - np.std(comp_q_1)) ** 2
+    std_dev_0 = ((np.std(obtn_i_0) - np.std(comp_i_0)) / np.std(obtn_i_0)) ** 2 + (
+        (np.std(obtn_q_0) - np.std(comp_q_0)) / np.std(obtn_q_0)
+    ) ** 2
+    std_dev_1 = ((np.std(obtn_i_1) - np.std(comp_i_1)) / np.std(obtn_i_1)) ** 2 + (
+        (np.std(obtn_q_1) - np.std(comp_q_1)) / np.std(obtn_q_1)
+    ) ** 2
 
-    return np.sqrt(mean_diff_0 + mean_diff_1) * 4 + (std_dev_0 + std_dev_1) / (5 * len(obtained["sweep_interval"][0]))
+    return (
+        np.sqrt((mean_diff_0 + mean_diff_1) * 4 + (std_dev_0 + std_dev_1) / (len(obtained["sweep_interval"][0]))) / 10
+    )
     # TODO: Compare 2D guassian distributions, with a more specific function?
 
 
