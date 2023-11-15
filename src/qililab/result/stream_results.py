@@ -4,6 +4,9 @@ import h5py
 import numpy as np
 
 
+def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):  # this is the constructor
+    return StreamArray(shape=shape, path=path, loops=loops)
+
 class StreamArray:
     """Allows for real time saving of results from an experiment.
 
