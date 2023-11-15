@@ -333,6 +333,7 @@ class CalibrationController:
         logger.info('Checking state of node "%s".\n', node.node_id)
 
         # Get the list of the dependencies that have been calibrated before this node, all of them should be True
+        #TODO: add if statement to check if previous_timestamp is None in case we dont have previous calibrations
         dependencies_timestamps_previous = [
             n.previous_timestamp < node.previous_timestamp for n in self._dependencies(node)
         ]
