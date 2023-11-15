@@ -53,12 +53,14 @@ class QuantumMachinesManager(Instrument):
             address (str): I.P. address to connect to the Quantum Machines instruments.
             port (int): Port to connect to the Quantum Machines instruments.
             num_controllers (int): Number of controllers (instruments) in the quantum machines stack.
+            octaves (list[dict[str, Any]]): List of octaves the quantum machines stack has.
             controllers (list[dict[str, Any]]): List of controllers (instruments) the quantum machines stack has.
             elements (list[dict[str, Any]]): List of elements (buses) the quantum machines stack has.
         """
         address: str
         port: int
         num_controllers: int
+        octaves: list[dict[str, Any]]
         controllers: list[dict[str, Any]]
         elements: list[dict[str, Any]]
 
@@ -75,9 +77,9 @@ class QuantumMachinesManager(Instrument):
         a connection to the Quantum Machine by the use of the Quantum Machines Manager.
         """
         super().initial_setup()
-        self.config = self.create_config()
+        self.config = self._create_config()
         qmm = QMM(host=self.settings.address, port=self.settings.port)
-        self.qm = qmm.open_qm(config=self.settings.config, close_other_machines=True)
+        self.qm = qmm.open_qm(config=self.config, close_other_machines=True)
 
     @Instrument.CheckDeviceInitialized
     def turn_on(self):
@@ -104,7 +106,7 @@ class QuantumMachinesManager(Instrument):
         """
         raise NotImplementedError("Setting a parameter is not supported for Quantum Machines yet.")
 
-    def create_config(self) -> Dict[str, Any]:
+    def _create_config(self) -> Dict[str, Any]:
         """Creates the Quantum Machines config dictionary.
 
         Creates, an instance of a dictionary in the format that QuantumMachines expects the config dictionary to be.
@@ -115,8 +117,14 @@ class QuantumMachinesManager(Instrument):
         Returns:
             config: Dict[str, Any]
         """
+        config = {
+            "version": 1,  # hardcoded for now, need to check what version really refers to
+            "octaves": self.settings.octaves,
+            "controllers": self.settings.controllers,
+            "elements": self.settings.elements
+        }
 
-        return {}
+        return config
 
     def run(self, program: Program) -> RunningQmJob:
         """Runs the QUA Program.
