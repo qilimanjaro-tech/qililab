@@ -382,7 +382,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         if self.input_parameters is not None:
             params |= self.input_parameters
 
-        ndarray_to_list(params)
+        # JSON serialize nb input, no np.ndarrays
+        ndarray_to_list(params) #TODO: UNITTEST THIS
         # initially the file is "dirty" until we make sure the execution was not aborted
         output_path = self._create_notebook_datetime_path(dirty=True)
         self.previous_output_parameters = self.output_parameters
@@ -460,6 +461,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             )
         return None
 
+    #TODO: UNITTEST THIS: we dont need original_path anymore, we are using self attributes
     def _create_notebook_datetime_path(
         self, timestamp: float | None = None, dirty: bool = False, error: bool = False
     ) -> str:
@@ -492,6 +494,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         if dirty and not error:  # return the path of the execution
             return f"{self.nb_folder}/{self.node_id}_{now_path}_dirty.ipynb"
         if error:
+            # CREATE FOLDERS FOR CALIBRATED EXECUTIONS, COMPARISONS, etc.
             os.makedirs(f"{self.nb_folder}/error_executions", exist_ok=True)
             return f"{self.nb_folder}/error_executions/{self.node_id}_{now_path}_error.ipynb"
 
@@ -626,7 +629,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             IncorrectCalibrationOutput: In case no outputs, incorrect outputs or multiple outputs where found. Incorrect outputs are those that do not contain `check_parameters` or is empty.
         """
         logger_splitted = logger_string.split(logger_output_start)
-
+        #TODO: CHECK WHY HAPPENS we got len == 3 with last elem beeing a copy of the output dict with some extra stuff at the end
         # In case something unexpected happened with the output we raise an error
         #if len(logger_splitted) != 2:
         #    logger.error("No output or various outputs found in notebook %s.", input_path)
@@ -671,6 +674,7 @@ def export_nb_outputs(outputs: dict) -> None:
 
     print(f"{logger_output_start}{json.dumps(outputs)}")
 
+#TODO: UNITTEST THIS: now its outside from export_nb_outputs
 def ndarray_to_list(iter_: Any):
         if isinstance(iter_, dict):
             for k, v in iter_.items():
