@@ -36,6 +36,11 @@ def export_nb_outputs(outputs):
     return json.dumps(outputs)
 
 
+def dump_load(outputs):
+    """Make the two functions together."""
+    return json.loads(export_nb_outputs(outputs))
+
+
 # Global constants
 basic_interval = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9])
 basic_results = np.array([2, 4, 6, 8, 10, 12, 14, 16, 18])
@@ -49,30 +54,23 @@ long_changed_results = np.array([2, 5, 7, 8, 10, 12, 12, 16, 18, 2, 5, 7, 8, 10,
 long_very_changed_results = np.array([2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18, 2, 0, 16, 8, 0, 12, 10, 12, 18])
 # fmt: on
 
-obtained = json.loads(
-    export_nb_outputs({"sweep_interval": basic_interval, "results": basic_results, "fit": basic_results})
-)
-long_obtained = obtained = json.loads(
-    export_nb_outputs({"sweep_interval": long_interval, "results": long_results, "fit": long_results})
-)
+obtained = dump_load({"sweep_interval": basic_interval, "results": basic_results, "fit": basic_results})
+long_obtained = dump_load({"sweep_interval": long_interval, "results": long_results, "fit": long_results})
 
-obtained_IQ = json.loads(
-    export_nb_outputs(
-        {
-            "sweep_interval": basic_interval,
-            "results": np.array([basic_results, basic_results]),
-            "fit": np.array([basic_results, basic_results]),
-        }
-    )
+
+obtained_IQ = dump_load(
+    {
+        "sweep_interval": basic_interval,
+        "results": np.array([basic_results, basic_results]),
+        "fit": np.array([basic_results, basic_results]),
+    }
 )
-obtained_2D = json.loads(
-    export_nb_outputs(
-        {
-            "sweep_interval": np.array([basic_results, basic_results]),
-            "results": np.array([basic_results, basic_results]),
-            "fit": np.array([basic_results, basic_results]),
-        }
-    )
+obtained_2D = dump_load(
+    {
+        "sweep_interval": np.array([basic_results, basic_results]),
+        "results": np.array([basic_results, basic_results]),
+        "fit": np.array([basic_results, basic_results]),
+    }
 )
 
 
@@ -87,32 +85,26 @@ class TestNormRootMeanSqrtError:
     @pytest.mark.parametrize(
         "comparison",
         [
-            json.loads(
-                export_nb_outputs(
-                    {
-                        "sweep_interval": np.array([basic_interval, basic_interval]),
-                        "results": basic_results,
-                        "fit": basic_results,
-                    }
-                )
+            dump_load(
+                {
+                    "sweep_interval": np.array([basic_interval, basic_interval]),
+                    "results": basic_results,
+                    "fit": basic_results,
+                }
             ),
-            json.loads(
-                export_nb_outputs(
-                    {
-                        "sweep_interval": basic_interval,
-                        "results": [changed_results, changed_results],
-                        "fit": basic_results,
-                    }
-                )
+            dump_load(
+                {
+                    "sweep_interval": basic_interval,
+                    "results": [changed_results, changed_results],
+                    "fit": basic_results,
+                }
             ),
-            json.loads(
-                export_nb_outputs(
-                    {
-                        "sweep_interval": [basic_interval, basic_interval],
-                        "results": [changed_results, changed_results],
-                        "fit": [changed_results, changed_results],
-                    }
-                )
+            dump_load(
+                {
+                    "sweep_interval": [basic_interval, basic_interval],
+                    "results": [changed_results, changed_results],
+                    "fit": [changed_results, changed_results],
+                }
             ),
         ],
     )
@@ -127,9 +119,9 @@ class TestNormRootMeanSqrtError:
     @pytest.mark.parametrize(
         "comparison",
         [
-            json.loads(export_nb_outputs({"results": basic_results, "fit": basic_results})),
-            json.loads(export_nb_outputs({"sweep_interval": basic_interval, "fit": basic_results})),
-            json.loads(export_nb_outputs({"sweep_interval": basic_interval, "results": changed_results})),
+            dump_load({"results": basic_results, "fit": basic_results}),
+            dump_load({"sweep_interval": basic_interval, "fit": basic_results}),
+            dump_load({"sweep_interval": basic_interval, "results": changed_results}),
         ],
     )
     def test_norm_root_mean_sqrt_error_not_inside(self, comparison):
@@ -143,9 +135,9 @@ class TestNormRootMeanSqrtError:
     @pytest.mark.parametrize(
         "comparison",
         [
-            json.loads(export_nb_outputs({"sweep_interval": [], "results": basic_results, "fit": basic_results})),
-            json.loads(export_nb_outputs({"sweep_interval": basic_interval, "results": [], "fit": basic_results})),
-            json.loads(export_nb_outputs({"sweep_interval": basic_interval, "results": basic_results, "fit": []})),
+            dump_load({"sweep_interval": [], "results": basic_results, "fit": basic_results}),
+            dump_load({"sweep_interval": basic_interval, "results": [], "fit": basic_results}),
+            dump_load({"sweep_interval": basic_interval, "results": basic_results, "fit": []}),
         ],
     )
     def test_norm_root_mean_sqrt_error_empty(self, comparison):
@@ -161,27 +153,15 @@ class TestNormRootMeanSqrtError:
         [
             (
                 "in_spec",
-                json.loads(
-                    export_nb_outputs(
-                        {"sweep_interval": basic_interval, "results": basic_results, "fit": basic_results}
-                    )
-                ),
+                dump_load({"sweep_interval": basic_interval, "results": basic_results, "fit": basic_results}),
             ),
             (
                 "out_of_spec",
-                json.loads(
-                    export_nb_outputs(
-                        {"sweep_interval": basic_interval, "results": changed_results, "fit": basic_results}
-                    )
-                ),
+                dump_load({"sweep_interval": basic_interval, "results": changed_results, "fit": basic_results}),
             ),
             (
                 "bad_data",
-                json.loads(
-                    export_nb_outputs(
-                        {"sweep_interval": basic_interval, "results": very_changed_results, "fit": basic_results}
-                    )
-                ),
+                dump_load({"sweep_interval": basic_interval, "results": very_changed_results, "fit": basic_results}),
             ),
         ],
     )
@@ -203,27 +183,15 @@ class TestNormRootMeanSqrtError:
         [
             (
                 "in_spec",
-                json.loads(
-                    export_nb_outputs(
-                        {"sweep_interval": basic_interval, "results": basic_results, "fit": basic_results}
-                    )
-                ),
+                dump_load({"sweep_interval": basic_interval, "results": basic_results, "fit": basic_results}),
             ),
             (
                 "out_of_spec",
-                json.loads(
-                    export_nb_outputs(
-                        {"sweep_interval": basic_interval, "results": basic_results, "fit": changed_results}
-                    )
-                ),
+                dump_load({"sweep_interval": basic_interval, "results": basic_results, "fit": changed_results}),
             ),
             (
                 "bad_data",
-                json.loads(
-                    export_nb_outputs(
-                        {"sweep_interval": basic_interval, "results": basic_results, "fit": very_changed_results}
-                    )
-                ),
+                dump_load({"sweep_interval": basic_interval, "results": basic_results, "fit": very_changed_results}),
             ),
         ],
     )
@@ -245,25 +213,15 @@ class TestNormRootMeanSqrtError:
         [
             (
                 "in_spec",
-                json.loads(
-                    export_nb_outputs({"sweep_interval": long_interval, "results": long_results, "fit": long_results})
-                ),
+                dump_load({"sweep_interval": long_interval, "results": long_results, "fit": long_results}),
             ),
             (
                 "out_of_spec",
-                json.loads(
-                    export_nb_outputs(
-                        {"sweep_interval": long_interval, "results": long_results, "fit": long_changed_results}
-                    )
-                ),
+                dump_load({"sweep_interval": long_interval, "results": long_results, "fit": long_changed_results}),
             ),
             (
                 "bad_data",
-                json.loads(
-                    export_nb_outputs(
-                        {"sweep_interval": long_interval, "results": long_results, "fit": long_very_changed_results}
-                    )
-                ),
+                dump_load({"sweep_interval": long_interval, "results": long_results, "fit": long_very_changed_results}),
             ),
         ],
     )
@@ -292,29 +250,21 @@ class TestIQNormRootMeanSqrtError:
     @pytest.mark.parametrize(
         "comparison",
         [
-            json.loads(
-                export_nb_outputs(
-                    {
-                        "sweep_interval": basic_interval,
-                        "results": [basic_results],
-                        "fit": [basic_results, basic_results],
-                    }
-                )
+            dump_load(
+                {
+                    "sweep_interval": basic_interval,
+                    "results": [basic_results],
+                    "fit": [basic_results, basic_results],
+                }
             ),
-            json.loads(
-                export_nb_outputs(
-                    {
-                        "sweep_interval": basic_interval,
-                        "results": [changed_results, changed_results],
-                        "fit": [basic_results],
-                    }
-                )
+            dump_load(
+                {
+                    "sweep_interval": basic_interval,
+                    "results": [changed_results, changed_results],
+                    "fit": [basic_results],
+                }
             ),
-            json.loads(
-                export_nb_outputs(
-                    {"sweep_interval": basic_interval, "results": [very_changed_results], "fit": [basic_results]}
-                )
-            ),
+            dump_load({"sweep_interval": basic_interval, "results": [very_changed_results], "fit": [basic_results]}),
         ],
     )
     def test_norm_root_mean_sqrt_error_bad_shape(self, comparison):
@@ -328,15 +278,9 @@ class TestIQNormRootMeanSqrtError:
     @pytest.mark.parametrize(
         "comparison",
         [
-            json.loads(
-                export_nb_outputs({"results": [basic_results, basic_results], "fit": [basic_results, basic_results]})
-            ),
-            json.loads(export_nb_outputs({"sweep_interval": basic_interval, "fit": [basic_results, basic_results]})),
-            json.loads(
-                export_nb_outputs(
-                    {"sweep_interval": basic_interval, "results": [very_changed_results, very_changed_results]}
-                )
-            ),
+            dump_load({"results": [basic_results, basic_results], "fit": [basic_results, basic_results]}),
+            dump_load({"sweep_interval": basic_interval, "fit": [basic_results, basic_results]}),
+            dump_load({"sweep_interval": basic_interval, "results": [very_changed_results, very_changed_results]}),
         ],
     )
     def test_norm_root_mean_sqrt_error_not_inside(self, comparison):
@@ -350,28 +294,20 @@ class TestIQNormRootMeanSqrtError:
     @pytest.mark.parametrize(
         "comparison",
         [
-            json.loads(
-                export_nb_outputs(
-                    {
-                        "sweep_interval": [],
-                        "results": [basic_results, basic_results],
-                        "fit": [basic_results, basic_results],
-                    }
-                )
+            dump_load(
+                {
+                    "sweep_interval": [],
+                    "results": [basic_results, basic_results],
+                    "fit": [basic_results, basic_results],
+                }
             ),
-            json.loads(
-                export_nb_outputs(
-                    {"sweep_interval": basic_interval, "results": [], "fit": [basic_results, basic_results]}
-                )
-            ),
-            json.loads(
-                export_nb_outputs(
-                    {
-                        "sweep_interval": basic_interval,
-                        "results": [very_changed_results, very_changed_results],
-                        "fit": [],
-                    }
-                )
+            dump_load({"sweep_interval": basic_interval, "results": [], "fit": [basic_results, basic_results]}),
+            dump_load(
+                {
+                    "sweep_interval": basic_interval,
+                    "results": [very_changed_results, very_changed_results],
+                    "fit": [],
+                }
             ),
         ],
     )
@@ -388,38 +324,32 @@ class TestIQNormRootMeanSqrtError:
         [
             (
                 "in_spec",
-                json.loads(
-                    export_nb_outputs(
-                        {
-                            "sweep_interval": basic_interval,
-                            "results": [basic_results, basic_results],
-                            "fit": [basic_results, basic_results],
-                        }
-                    )
+                dump_load(
+                    {
+                        "sweep_interval": basic_interval,
+                        "results": [basic_results, basic_results],
+                        "fit": [basic_results, basic_results],
+                    }
                 ),
             ),
             (
                 "out_of_spec",
-                json.loads(
-                    export_nb_outputs(
-                        {
-                            "sweep_interval": basic_interval,
-                            "results": [changed_results, changed_results],
-                            "fit": [basic_results, basic_results],
-                        }
-                    )
+                dump_load(
+                    {
+                        "sweep_interval": basic_interval,
+                        "results": [changed_results, changed_results],
+                        "fit": [basic_results, basic_results],
+                    }
                 ),
             ),
             (
                 "bad_data",
-                json.loads(
-                    export_nb_outputs(
-                        {
-                            "sweep_interval": basic_interval,
-                            "results": [very_changed_results, very_changed_results],
-                            "fit": [basic_results, basic_results],
-                        }
-                    )
+                dump_load(
+                    {
+                        "sweep_interval": basic_interval,
+                        "results": [very_changed_results, very_changed_results],
+                        "fit": [basic_results, basic_results],
+                    }
                 ),
             ),
         ],
@@ -442,38 +372,32 @@ class TestIQNormRootMeanSqrtError:
         [
             (
                 "in_spec",
-                json.loads(
-                    export_nb_outputs(
-                        {
-                            "sweep_interval": basic_interval,
-                            "results": [basic_results, basic_results],
-                            "fit": [basic_results, basic_results],
-                        }
-                    )
+                dump_load(
+                    {
+                        "sweep_interval": basic_interval,
+                        "results": [basic_results, basic_results],
+                        "fit": [basic_results, basic_results],
+                    }
                 ),
             ),
             (
                 "out_of_spec",
-                json.loads(
-                    export_nb_outputs(
-                        {
-                            "sweep_interval": basic_interval,
-                            "results": [basic_results, basic_results],
-                            "fit": [changed_results, changed_results],
-                        }
-                    )
+                dump_load(
+                    {
+                        "sweep_interval": basic_interval,
+                        "results": [basic_results, basic_results],
+                        "fit": [changed_results, changed_results],
+                    }
                 ),
             ),
             (
                 "bad_data",
-                json.loads(
-                    export_nb_outputs(
-                        {
-                            "sweep_interval": basic_interval,
-                            "results": [basic_results, basic_results],
-                            "fit": [very_changed_results, very_changed_results],
-                        }
-                    )
+                dump_load(
+                    {
+                        "sweep_interval": basic_interval,
+                        "results": [basic_results, basic_results],
+                        "fit": [very_changed_results, very_changed_results],
+                    }
                 ),
             ),
         ],
@@ -503,32 +427,26 @@ class TestSSROComparison2D:
     @pytest.mark.parametrize(
         "comparison",
         [
-            json.loads(
-                export_nb_outputs(
-                    {
-                        "sweep_interval": [basic_results, basic_results],
-                        "results": [basic_results],
-                        "fit": [basic_results, basic_results],
-                    }
-                )
+            dump_load(
+                {
+                    "sweep_interval": [basic_results, basic_results],
+                    "results": [basic_results],
+                    "fit": [basic_results, basic_results],
+                }
             ),
-            json.loads(
-                export_nb_outputs(
-                    {
-                        "sweep_interval": [basic_results, basic_results],
-                        "results": [changed_results, changed_results],
-                        "fit": [basic_results],
-                    }
-                )
+            dump_load(
+                {
+                    "sweep_interval": [basic_results, basic_results],
+                    "results": [changed_results, changed_results],
+                    "fit": [basic_results],
+                }
             ),
-            json.loads(
-                export_nb_outputs(
-                    {
-                        "sweep_interval": [basic_results, basic_results],
-                        "results": [very_changed_results],
-                        "fit": [basic_results],
-                    }
-                )
+            dump_load(
+                {
+                    "sweep_interval": [basic_results, basic_results],
+                    "results": [very_changed_results],
+                    "fit": [basic_results],
+                }
             ),
         ],
     )
@@ -543,21 +461,13 @@ class TestSSROComparison2D:
     @pytest.mark.parametrize(
         "comparison",
         [
-            json.loads(
-                export_nb_outputs({"results": [basic_results, basic_results], "fit": [basic_results, basic_results]})
-            ),
-            json.loads(
-                export_nb_outputs(
-                    {"sweep_interval": [basic_results, basic_results], "fit": [basic_results, basic_results]}
-                )
-            ),
-            json.loads(
-                export_nb_outputs(
-                    {
-                        "sweep_interval": [basic_results, basic_results],
-                        "results": [very_changed_results, very_changed_results],
-                    }
-                )
+            dump_load({"results": [basic_results, basic_results], "fit": [basic_results, basic_results]}),
+            dump_load({"sweep_interval": [basic_results, basic_results], "fit": [basic_results, basic_results]}),
+            dump_load(
+                {
+                    "sweep_interval": [basic_results, basic_results],
+                    "results": [very_changed_results, very_changed_results],
+                }
             ),
         ],
     )
@@ -572,13 +482,19 @@ class TestSSROComparison2D:
     @pytest.mark.parametrize(
         "comparison",
         [
-            {"sweep_interval": [], "results": [basic_results, basic_results], "fit": [basic_results, basic_results]},
-            {"sweep_interval": [basic_results, basic_results], "results": [], "fit": [basic_results, basic_results]},
-            {
-                "sweep_interval": [basic_results, basic_results],
-                "results": [very_changed_results, very_changed_results],
-                "fit": [],
-            },
+            dump_load(
+                {"sweep_interval": [], "results": [basic_results, basic_results], "fit": [basic_results, basic_results]}
+            ),
+            dump_load(
+                {"sweep_interval": [basic_results, basic_results], "results": [], "fit": [basic_results, basic_results]}
+            ),
+            dump_load(
+                {
+                    "sweep_interval": [basic_results, basic_results],
+                    "results": [very_changed_results, very_changed_results],
+                    "fit": [],
+                }
+            ),
         ],
     )
     def test_ssro_comparison_2D_empty(self, comparison):
@@ -594,27 +510,33 @@ class TestSSROComparison2D:
         [
             (
                 "in_spec",
-                {
-                    "sweep_interval": [basic_results, basic_results],
-                    "results": [basic_results, basic_results],
-                    "fit": [[], []],
-                },
+                dump_load(
+                    {
+                        "sweep_interval": [basic_results, basic_results],
+                        "results": [basic_results, basic_results],
+                        "fit": [[], []],
+                    }
+                ),
             ),
             (
                 "out_of_spec",
-                {
-                    "sweep_interval": [changed_results, changed_results],
-                    "results": [changed_results, changed_results],
-                    "fit": [[], []],
-                },
+                dump_load(
+                    {
+                        "sweep_interval": [changed_results, changed_results],
+                        "results": [changed_results, changed_results],
+                        "fit": [[], []],
+                    }
+                ),
             ),
             (
                 "bad_data",
-                {
-                    "sweep_interval": [very_changed_results, very_changed_results],
-                    "results": [very_changed_results, very_changed_results],
-                    "fit": [[], []],
-                },
+                dump_load(
+                    {
+                        "sweep_interval": [very_changed_results, very_changed_results],
+                        "results": [very_changed_results, very_changed_results],
+                        "fit": [[], []],
+                    }
+                ),
             ),
         ],
     )
