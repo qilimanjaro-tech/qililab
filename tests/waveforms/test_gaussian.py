@@ -11,13 +11,13 @@ def fixture_gaussian():
 
 class TestGaussian:
     def test_init(self, gaussian):
-        # test init method
+        """Test __init__ method"""
         assert gaussian.amplitude == 1
         assert gaussian.duration == 10
         assert gaussian.num_sigmas == 2.5
 
     def test_envelope(self, gaussian):
-        # test envelope method
+        """Test envelope method"""
 
         # calculate envelope
         sigma = gaussian.duration / gaussian.num_sigmas
@@ -31,6 +31,7 @@ class TestGaussian:
 
         assert np.allclose(gaussian.envelope(resolution=2), envelope)
 
-    def test_amplitude_0(self, gaussian):
+    def test_envelope_method_with_zero_amplitude(self, gaussian):
+        """Test envelope method when amplitude is zero."""
         gaussian.amplitude = 0
         assert np.allclose(gaussian.envelope(), np.zeros(10))
