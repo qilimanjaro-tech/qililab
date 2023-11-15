@@ -4,7 +4,16 @@ import h5py
 import numpy as np
 
 
-def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):  # this is the constructor
+def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
+    """Constructs a StreamArray instance.
+
+    This methods serves as a constructor for user interface of the StreamArray class.
+
+    Args:
+        shape (tuple): results array shape.
+        path (str): path to save results.
+        loops (dict[str, np.ndarray]): dictionary with each loop name in the experiment as key and numpy array as values.
+    """
     return StreamArray(shape=shape, path=path, loops=loops)
 
 
