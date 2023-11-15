@@ -277,7 +277,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         the :class:`.CalibrationController` won't do the graph mapping properly, and the calibration will fail. Defaults to None.
         """
 
-        self.node_id, self.nb_folder = self._path_to_name_and_folder(nb_path)
+        self.node_id, self.nb_folder = self._path_to_name_and_folder_init(nb_path)
         """Node name and folder, separated, and without the ``.ipynb`` extension."""
 
         self.in_spec_threshold: float = in_spec_threshold
@@ -382,6 +382,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         if self.input_parameters is not None:
             params |= self.input_parameters
 
+        ndarray_to_list(params)
         # initially the file is "dirty" until we make sure the execution was not aborted
         output_path = self._create_notebook_datetime_path(self.nb_path, dirty=True)
         self.previous_output_parameters = self.output_parameters
@@ -498,7 +499,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         # return the string where saved
         return f"{folder_path}/{name}_{now_path}.ipynb"
 
-    def _path_to_name_and_folder(self, original_path: str) -> tuple[str, str]:
+    def _path_to_name_and_folder_init(self, original_path: str) -> tuple[str, str]:
         """Extract the name and folder from a notebook path. Name will be extended with the qubit it acts on.
 
         The passed path can have the ``.ipynb`` extension or not.
@@ -528,6 +529,28 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         path_list = original_path.split(".ipynb")[0].split("/")
 
         name = path_list.pop() + distinguish_str + qubit_str
+        folder_path = "/".join(path_list)
+        return name, folder_path
+
+    def _path_to_name_and_folder(self, original_path: str) -> tuple[str, str]:
+        """Extract the name and folder from a notebook path. Name will be extended with the qubit it acts on.
+
+        The passed path can have the ``.ipynb`` extension or not.
+
+        The part of the string after the last "/" will be considered the file name, and the part before its directory.
+
+        Args:
+            original_path (str): The original path of the notebook. Can have the ``.ipynb`` extension or not.
+                The part of the string after the last "/" will be considered the file name, and the part before it's directory.
+
+        Returns:
+            tuple[str, str]: A tuple containing the notebook name and its folder.
+        """
+    
+        # Remove .ipynb from end if it has one, and separate the folder and name with the last "/":
+        path_list = original_path.split(".ipynb")[0].split("/")
+
+        name = path_list.pop()
         folder_path = "/".join(path_list)
         return name, folder_path
 
@@ -628,9 +651,9 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         logger_splitted = logger_string.split(logger_output_start)
 
         # In case something unexpected happened with the output we raise an error
-        if len(logger_splitted) != 2:
-            logger.error("No output or various outputs found in notebook %s.", input_path)
-            raise IncorrectCalibrationOutput(f"No output or various outputs found in notebook {input_path}.")
+        #if len(logger_splitted) != 2:
+        #    logger.error("No output or various outputs found in notebook %s.", input_path)
+        #    raise IncorrectCalibrationOutput(f"No output or various outputs found in notebook {input_path}.")
 
         # This next line is for taking into account other encodings, where special characters get `\\` in front.
         clean_data = logger_splitted[1].split("\\n")[0].replace('\\"', '"')
@@ -668,7 +691,11 @@ def export_nb_outputs(outputs: dict) -> None:
         outputs (dict): Outputs from the notebook to export into the automatic calibration workflow.
     """
 
-    def ndarray_to_list(iter_: Any):
+    ndarray_to_list(outputs)
+
+    print(f"{logger_output_start}{json.dumps(outputs)}")
+
+def ndarray_to_list(iter_: Any):
         if isinstance(iter_, dict):
             for k, v in iter_.items():
                 iter_[k] = ndarray_to_list(v)
@@ -684,11 +711,6 @@ def export_nb_outputs(outputs: dict) -> None:
             return tuple(tuple_list)
 
         return iter_.tolist() if isinstance(iter_, np.ndarray) else iter_
-
-    ndarray_to_list(outputs)
-
-    print(f"{logger_output_start}{json.dumps(outputs)}")
-
 
 class IncorrectCalibrationOutput(Exception):
     """Error raised when the output of a calibration node is incorrect."""
