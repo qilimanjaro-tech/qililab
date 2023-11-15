@@ -7,6 +7,9 @@
   For example, if a circuit is measuring `M(1)-M(2)-M(0,1)` the first iq values will be those for `M(1)`, followed by `M(2)`, `M(0)` and `M(1)`.
   [#524](https://github.com/qilimanjaro-tech/qililab/pull/524)
 
+- Add magic method to run python code as slurm jobs from Jupyter Notebooks.
+  [#600](https://github.com/qilimanjaro-tech/qililab/pull/600)
+
 - Implemented `QuantumMachinesCompiler` class to compile QPrograms to QUA programs.
   [#563](https://github.com/qilimanjaro-tech/qililab/pull/563)
 
