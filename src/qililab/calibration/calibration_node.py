@@ -402,6 +402,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             logger.error("Interrupted automatic calibration notebook execution of %s", self.nb_path)
             raise KeyboardInterrupt(f"Interrupted automatic calibration notebook execution of {self.nb_path}") from exc
 
+        # TODO: If execution, is cut because no notebook exists, no clear error is shown!
         # When notebook execution fails, generate error folder and move there the notebook:
         except Exception as exc:  # pylint: disable = broad-exception-caught
             timestamp = datetime.timestamp(datetime.now())
