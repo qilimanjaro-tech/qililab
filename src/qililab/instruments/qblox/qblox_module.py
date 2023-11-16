@@ -253,7 +253,7 @@ class QbloxModule(AWG):
                     wait_time=int(wait_time),
                 )
             )
-            if pulse_bus_schedule.port == "feedline_input":
+            if self.module_type == "QRM":
                 self._append_acquire_instruction(
                     loop=bin_loop,
                     bin_index=bin_loop.counter_register,
@@ -262,7 +262,7 @@ class QbloxModule(AWG):
                     acq_index=i,
                 )
         # FIXME: can we safely remove this?
-        if pulse_bus_schedule.port != "feedline_input":
+        if self.module_type != "QRM":
             self._append_acquire_instruction(
                 loop=bin_loop,
                 bin_index=bin_loop.counter_register,

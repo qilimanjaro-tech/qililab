@@ -139,6 +139,9 @@ class QbloxResult(Result):
 
         Returns:
             Counts: Counts object containing the counts of each state.
+
+        Raises:
+            NotImplementedError: this method is not implemented for n measurements on the same qubit
         """
         if sum(result["measurement"] for result in self.qblox_raw_results) != 0:
             raise NotImplementedError("Counts for multiple measurements on a single qubit are not supported")
@@ -149,6 +152,9 @@ class QbloxResult(Result):
 
         Returns:
             Counts: Counts object containing the counts of each state.
+
+        Raises:
+            NotImplementedError: this method is not implemented for n measurements on the same qubit
         """
         if sum(result["measurement"] for result in self.qblox_raw_results) != 0:
             raise NotImplementedError("Counts for multiple measurements on a single qubit are not supported")
@@ -157,8 +163,13 @@ class QbloxResult(Result):
     def samples(self) -> np.ndarray:
         """Returns an array containing the measured samples.
 
+         The shape of the returned array is ``(# sequencers, # bins)``.
+
         Returns:
             np.ndarray: An array containing the measured samples (0 or 1).
+
+        Raises:
+            NotImplementedError: this method is not implemented for n measurements on the same qubit
         """
         if sum(result["measurement"] for result in self.qblox_raw_results) != 0:
             raise NotImplementedError("Samples for multiple measurements on a single qubit are not supported")
