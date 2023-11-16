@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Quantum Machines OPX class."""
+"""Quantum Machines Manager class."""
 from dataclasses import dataclass
 from typing import Any, Dict
 
@@ -59,7 +59,6 @@ class QuantumMachinesManager(Instrument):
         """
         address: str
         port: int
-        num_controllers: int
         octaves: list[dict[str, Any]]
         controllers: list[dict[str, Any]]
         elements: list[dict[str, Any]]
@@ -77,9 +76,9 @@ class QuantumMachinesManager(Instrument):
         a connection to the Quantum Machine by the use of the Quantum Machines Manager.
         """
         super().initial_setup()
-        self.config = self._create_config()
+        self.config = self.create_config()
         qmm = QMM(host=self.settings.address, port=self.settings.port)
-        self.qm = qmm.open_qm(config=self.config, close_other_machines=True)
+        self.qm = qmm.open_qm(config=self.settings.config, close_other_machines=True)
 
     @Instrument.CheckDeviceInitialized
     def turn_on(self):
@@ -106,7 +105,7 @@ class QuantumMachinesManager(Instrument):
         """
         raise NotImplementedError("Setting a parameter is not supported for Quantum Machines yet.")
 
-    def _create_config(self) -> Dict[str, Any]:
+    def create_config(self) -> Dict[str, Any]:
         """Creates the Quantum Machines config dictionary.
 
         Creates, an instance of a dictionary in the format that QuantumMachines expects the config dictionary to be.
@@ -119,12 +118,102 @@ class QuantumMachinesManager(Instrument):
         """
         config = {
             "version": 1,  # hardcoded for now, need to check what version really refers to
-            "octaves": self.settings.octaves,
-            "controllers": self.settings.controllers,
-            "elements": self.settings.elements
+            "controllers": self._get_controllers_config(),
+            "elements": self._get_elements_config(),
+            "octaves": self._get_octaves_config(),
         }
 
         return config
+
+    def _get_controllers_config(self) -> dict[str, Any]:
+        """Returns the controllers config dictionary.
+
+        Returns:
+            controllers: Dict[str, Any]
+        """
+        controllers = {}
+        for controller in self.settings.controllers:
+            controllers[controller["name"]] = {
+                "analog_outputs": [
+                    {output["port"]: {"offset": output["offset"]}} for output in controller.get("analog_outputs", [])
+                ],
+                "analog_inputs": [
+                    {input["port"]: {"offset": input["offset"], "gain_db": input["gain_db"]}} for input in controller.get("analog_inputs", [])
+                ],
+                "digital_outputs": [
+                    {output["port"]: {}} for output in controller.get("digital_outputs", [])
+                ]
+            }
+
+        return controllers
+
+    def _get_elements_config(self) -> dict[str, Any]:
+        """Returns the elements config dictionary.
+
+        Returns:
+            elements: Dict[str, Any]
+        """
+        elements = {}
+
+        for element in self.settings.elements:
+            if "rf_bus" in element["bus"]:
+                bus_dict = {
+                    "rf_inputs": {
+                        "octave": element["rf_inputs"]["octave"],
+                        "port": element["rf_inputs"]["port"],
+                    },
+                    "rf_outputs": {
+                        "octave": element["rf_outputs"]["octave"],
+                        "port": element["rf_outputs"]["port"],
+                    },
+                    "digital_inputs": {
+                        "controller": element["digital_inputs"]["controller"],
+                        "port": element["digital_inputs"]["port"],
+                        "delay": element["digital_inputs"]["delay"],
+                        "buffer": element["digital_inputs"]["buffer"],
+                    },
+                    "intermediate_frequency": element["intermediate_frequency"]
+                }
+            elif "flux" in element["bus"]:
+                bus_dict = {
+                    "singleInput": {
+                        "controller": element["singleInput"]["controller"],
+                        "port": element["singleInput"]["port"],
+                    }
+                }
+            else:
+                bus_dict = {
+                    "mixInputs": {
+                        key: (element["mixInputs"][key]["controller"], element["mixInputs"][key]["port"])
+                        for key in ["I", "Q"]
+                    },
+                    "lo_frequency": element["mixInputs"]["lo_frequency"],
+                    "mixer_correction": element["mixInputs"]["mixer_correction"],
+                    "intermediate_frequency": element["intermediate_frequency"]
+                }
+
+            elements[element["bus"]] = bus_dict
+
+        return elements
+
+    def _get_octaves_config(self) -> dict[str, Any]:
+        """Returns the octaves config dictionary.
+
+        Returns:
+            octaves: Dict[str, Any]
+        """
+        octaves = {}
+
+        for octave in self.settings.octaves:
+            octaves[octave["name"]] = {
+                "port": octave["port"],
+                "controller": octave["controller"],
+                "rf_outputs": [
+                    {output["port"]: {"lo_frequency": output["lo_frequency"], "gain": output["gain"]}} for output in octave.get("rf_outputs", [])
+                ],
+            }
+
+        return octaves
 
     def run(self, program: Program) -> RunningQmJob:
         """Runs the QUA Program.
