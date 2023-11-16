@@ -383,7 +383,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             params |= self.input_parameters
 
         # JSON serialize nb input, no np.ndarrays
-        ndarray_to_list(params) #TODO: UNITTEST THIS
+        ndarray_to_list(params)  # TODO: UNITTEST THIS
         # initially the file is "dirty" until we make sure the execution was not aborted
         output_path = self._create_notebook_datetime_path(dirty=True)
         self.previous_output_parameters = self.output_parameters
@@ -402,6 +402,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             logger.error("Interrupted automatic calibration notebook execution of %s", self.nb_path)
             raise KeyboardInterrupt(f"Interrupted automatic calibration notebook execution of {self.nb_path}") from exc
 
+        # TODO: If execution, is cut because no notebook exists, no clear error is shown!
         # When notebook execution fails, generate error folder and move there the notebook:
         except Exception as exc:  # pylint: disable = broad-exception-caught
             timestamp = datetime.timestamp(datetime.now())
