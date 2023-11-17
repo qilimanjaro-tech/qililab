@@ -331,15 +331,23 @@ class CalibrationController:
             bool: True if the parameter's drift timeout has not yet expired, False otherwise.
         """
         logger.info('Checking state of node "%s".\n', node.node_id)
+        check = True
 
+        # Check if something happened and the timestamp could not be setted properly
+        if node.previous_timestamp is None:
+            check = False
         # Get the list of the dependencies that have been calibrated before this node, all of them should be True
-        # Check if something happened and the timestamp could not be setted properly (and the rest of conditions)
-        if node.previous_timestamp is None or any(
-            [n.previous_timestamp >= node.previous_timestamp for n in self._dependencies(node)]
-            + [not self._is_timeout_expired(n.previous_timestamp, n.drift_timeout) for n in self._dependencies(node)]
-        ):  # or not all(dependencies_status)
+        for n in self._dependencies(node):  # or not all(dependencies_status)
+            if n.previous_timestamp >= node.previous_timestamp or self._is_timeout_expired(
+                n.previous_timestamp, n.drift_timeout
+            ):
+                check = False
+            if n.drift_timeout < node.drift_timeout:
+                node.drift_timeout = n.drift_timeout
+        if not check:
             logger.info("check_state of %s: False.\n", node.node_id)
             return False
+
         logger.info(
             "check_state of %s: %r.\n",
             node.node_id,
@@ -439,9 +447,9 @@ class CalibrationController:
                 logger.info(
                     "Platform updated with: (bus: %s, q: %d, %s, %f).", bus_alias, qubit, param_name, param_value
                 )
-                self.platform.set_parameter(alias=bus_alias, parameter=param_name, value=param_value, channel_id=qubit)
+            #     self.platform.set_parameter(alias=bus_alias, parameter=param_name, value=param_value, channel_id=qubit)
 
-            save_platform(self.runcard, self.platform)
+            # save_platform(self.runcard, self.platform)
 
     def get_last_set_parameters(self) -> dict[tuple, tuple]:
         """Retrieves the last set parameters of the graph.
