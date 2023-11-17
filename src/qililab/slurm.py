@@ -33,7 +33,7 @@ def is_variable_used(code, variable):
     " retrieve after execution. After queuing a cell, this variable will be converted to a `Job` class. To retrieve"
     " the results of the job, you need to call `variable.result()`.",
 )
-@argument("-d", "--device", help="Name of the device where you want to execute the SLURM job.")
+@argument("-p", "--partition", help="Name of the partition where you want to execute the SLURM job.")
 @argument("-n", "--name", default="submitit", help="Name of the slurm job.")
 @argument("-t", "--time", default=120, help="Time limit (in minutes) of the job.")
 @argument(
@@ -59,7 +59,7 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
 
     args = parse_argstring(submit_job, line)
     output = args.output
-    partition = args.device
+    partition = args.partition
     job_name = args.name
     time_limit = int(args.time)
     folder_path = args.logs

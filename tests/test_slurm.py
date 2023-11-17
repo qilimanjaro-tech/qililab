@@ -29,7 +29,7 @@ def test_submit_job(ip):
     ip.run_cell(raw_cell="a=1\nb=1")
     ip.run_cell_magic(
         magic_name="submit_job",
-        line=f"-o results -d debug -l {slurm_job_data_test} -n unit_test -e local",
+        line=f"-o results -p debug -l {slurm_job_data_test} -n unit_test -e local",
         cell="results = a+b ",
     )
     time.sleep(4)
@@ -43,7 +43,7 @@ def test_submit_job_output_not_assigned(ip):
     with pytest.raises(ValueError, match="Output variable 'results' was not assigned to any value inside the cell!"):
         ip.run_cell_magic(
             magic_name="submit_job",
-            line=f"-o results -d debug -l {slurm_job_data_test} -n unit_test -e local",
+            line=f"-o results -p debug -l {slurm_job_data_test} -n unit_test -e local",
             cell="a+b",
         )
     shutil.rmtree(slurm_job_data_test)  # manual teardown
@@ -56,7 +56,7 @@ def test_submit_job_with_random_file_in_logs_folder(ip):
     )
     ip.run_cell_magic(
         magic_name="submit_job",
-        line=f"-o results -d debug -l {slurm_job_data_test} -n unit_test -e local",
+        line=f"-o results -p debug -l {slurm_job_data_test} -n unit_test -e local",
         cell="results=a+b",
     )
     time.sleep(4)  # give time to ensure processes are finished
@@ -70,7 +70,7 @@ def test_submit_job_delete_info_from_past_jobs(ip):
     for _ in range(int(ql.slurm.num_files_to_keep / 4)):
         ip.run_cell_magic(
             magic_name="submit_job",
-            line=f"-o results -d debug -l {slurm_job_data_test} -n unit_test -e local",
+            line=f"-o results -p debug -l {slurm_job_data_test} -n unit_test -e local",
             cell="results=a+b",
         )
         time.sleep(4)  # give time submitit to create the files
@@ -81,7 +81,7 @@ def test_submit_job_delete_info_from_past_jobs(ip):
     )
     ip.run_cell_magic(
         magic_name="submit_job",
-        line=f"-o results -d debug -l {slurm_job_data_test} -n unit_test -e local",
+        line=f"-o results -p debug -l {slurm_job_data_test} -n unit_test -e local",
         cell="results=a+b",
     )
     time.sleep(4)
@@ -102,7 +102,7 @@ def test_setting_parameters(ip):
         with patch("qililab.slurm.os"):
             ip.run_cell_magic(
                 magic_name="submit_job",
-                line=f"-o results -d debug -l {slurm_job_data_test} -n unit_test -e local -t 5",
+                line=f"-o results -p debug -l {slurm_job_data_test} -n unit_test -e local -t 5",
                 cell="results=a+b",
             )
     executor.assert_called_once_with(folder=slurm_job_data_test, cluster="local")
