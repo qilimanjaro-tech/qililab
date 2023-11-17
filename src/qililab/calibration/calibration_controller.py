@@ -331,22 +331,21 @@ class CalibrationController:
             bool: True if the parameter's drift timeout has not yet expired, False otherwise.
         """
         logger.info('Checking state of node "%s".\n', node.node_id)
-        check = True
 
         # Check if something happened and the timestamp could not be setted properly
         if node.previous_timestamp is None:
-            check = False
+            logger.info("check_state of %s: False.\n", node.node_id)
+            return False
+
         # Get the list of the dependencies that have been calibrated before this node, all of them should be True
         for n in self._dependencies(node):  # or not all(dependencies_status)
+            if n.drift_timeout < node.drift_timeout:
+                node.drift_timeout = n.drift_timeout
             if n.previous_timestamp >= node.previous_timestamp or self._is_timeout_expired(
                 n.previous_timestamp, n.drift_timeout
             ):
-                check = False
-            if n.drift_timeout < node.drift_timeout:
-                node.drift_timeout = n.drift_timeout
-        if not check:
-            logger.info("check_state of %s: False.\n", node.node_id)
-            return False
+                logger.info("check_state of %s: False.\n", node.node_id)
+                return False
 
         logger.info(
             "check_state of %s: %r.\n",
