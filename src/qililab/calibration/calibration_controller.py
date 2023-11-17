@@ -249,9 +249,11 @@ class CalibrationController:
             logger.info("Maintaining %s from maintain(%s).\n", n.node_id, node.node_id)
             self.maintain(n)
 
+        # If check_state of this node passes, don't check data, assume it works.
         if self.check_state(node):
             return
 
+        # Check data, if bad, diagnose to find the problem.
         result = self.check_data(node)
         if result == "in_spec":
             return
@@ -332,16 +334,31 @@ class CalibrationController:
         """
         logger.info('Checking state of node "%s".\n', node.node_id)
 
-        # Get the list of the dependencies that have been calibrated before this node, all of them should be True
-        dependencies_timestamps_previous = [
-            n.previous_timestamp < node.previous_timestamp for n in self._dependencies(node)
-        ]
-        # Check if something hapened and the timestamp could not be setted properly and the rest of conditions
-        if node.previous_timestamp is None or not all(
-            dependencies_timestamps_previous
-        ):  # or not all(dependencies_status)
+        # Check if something happened and the timestamp could not be setted properly
+        if node.previous_timestamp is None:
             logger.info("check_state of %s: False.\n", node.node_id)
             return False
+
+        # Get the list of the dependencies that have been calibrated before this node, all of them should be True
+        for n in self._dependencies(node):
+            # Keep the smaller drift timeout, from all its dependencies.
+            if n.drift_timeout < node.drift_timeout:
+                node.drift_timeout = n.drift_timeout
+                logger.warning(
+                    "The drift_timeout of node %s is bigger than its dependency %s, so the later will be used.",
+                    node.node_id,
+                    n.node_id,
+                )
+            # A dependency has been calibrated before this node
+            if n.previous_timestamp >= node.previous_timestamp:
+                logger.info("check_state of %s: False.\n", node.node_id)
+                return False
+            # A dependency is expired
+            if self._is_timeout_expired(n.previous_timestamp, n.drift_timeout):
+                logger.info("check_state of %s: False.\n", node.node_id)
+                return False
+
+        # If this node concretely passes check_state
         logger.info(
             "check_state of %s: %r.\n",
             node.node_id,
@@ -398,8 +415,7 @@ class CalibrationController:
             logger.info("obtained: %s ", str(obtain_params))
             logger.info("comparison: %s", str(compar_params))
 
-            fit = "fit" in compar_params
-            comparison_number = self._obtain_comparison(node, obtain_params, compar_params, fit)
+            comparison_number = self._obtain_comparison(node, obtain_params, compar_params)
 
             if comparison_number <= node.in_spec_threshold:
                 comparison_result = "in_spec"
@@ -409,7 +425,7 @@ class CalibrationController:
 
         # Do the necessary following changes:
         logger.info("check_data of %s: %s.\n", node.node_id, comparison_result)
-        node._add_string_to_checked_nb_name(comparison_result, timestamp)
+        node._add_string_to_checked_nb_name(comparison_result, timestamp)  # add comparison result tag to the file name.
         node.output_parameters = node.previous_output_parameters
         return comparison_result
 
@@ -427,6 +443,7 @@ class CalibrationController:
         logger.info('Calibrating node "%s".\n', node.node_id)
         node.previous_timestamp = node.run_node()
         node._add_string_to_checked_nb_name("calibrated", node.previous_timestamp)  # pylint: disable=protected-access
+        # add _calibrated tag to the file name, which doesn't have a tag.
 
     def _update_parameters(self, node: CalibrationNode) -> None:
         """Updates the node parameters value in the platform, after a calibration.
@@ -442,9 +459,9 @@ class CalibrationController:
                 logger.info(
                     "Platform updated with: (bus: %s, q: %d, %s, %f).", bus_alias, qubit, param_name, param_value
                 )
-                self.platform.set_parameter(alias=bus_alias, parameter=param_name, value=param_value, channel_id=qubit)
+            #     self.platform.set_parameter(alias=bus_alias, parameter=param_name, value=param_value, channel_id=qubit)
 
-            save_platform(self.runcard, self.platform)
+            # save_platform(self.runcard, self.platform)
 
     def get_last_set_parameters(self) -> dict[tuple, tuple]:
         """Retrieves the last set parameters of the graph.
@@ -508,9 +525,7 @@ class CalibrationController:
         return [self.node_sequence[node_name] for node_name in self.calibration_graph.predecessors(node.node_id)]
 
     @staticmethod
-    def _obtain_comparison(
-        node: CalibrationNode, obtained: dict[str, list], comparison: dict[str, list], fit: bool = True
-    ) -> float:
+    def _obtain_comparison(node: CalibrationNode, obtained: dict[str, list], comparison: dict[str, list]) -> float:
         """Returns the error, given the chosen method, between the comparison and obtained samples.
 
         Args:
@@ -521,7 +536,7 @@ class CalibrationController:
         Returns:
             float: difference/error between the two samples.
         """
-        return node.comparison_model(obtained, comparison, fit)
+        return node.comparison_model(obtained, comparison)
 
     @staticmethod
     def _is_timeout_expired(timestamp: float, timeout: float) -> bool:
