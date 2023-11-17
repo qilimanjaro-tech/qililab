@@ -1,4 +1,5 @@
 """Test for the `CalibrationNode` class"""
+import json
 import os
 from datetime import datetime
 from io import StringIO
@@ -7,7 +8,7 @@ from unittest.mock import MagicMock, call, patch
 import numpy as np
 import pytest
 
-from qililab.calibration.calibration_node import CalibrationNode, IncorrectCalibrationOutput, export_nb_outputs
+from qililab.calibration.calibration_node import CalibrationNode, IncorrectCalibrationOutput, export_nb_outputs, json_serialize
 
 # pylint: disable=protected-access, unspecified-encoding
 
@@ -530,12 +531,10 @@ class TestPrivateMethodsFromCalibrationNode:
         "timestamp, dirty, error",
         [(None, True, True), (145783952598, False, True), (145783959532, False, False), (None, True, False)],
     )
-    def test_create_notebook_datetime_path(
-        self, timestamp, dirty, error, methods_node: CalibrationNode, original_path="foo/bar.ipynb"
-    ):
+    def test_create_notebook_datetime_path(self, timestamp, dirty, error, methods_node: CalibrationNode):
         """Test ``that create_notebook_datetime_path()`` works correctly."""
         with patch("qililab.calibration.calibration_node.os") as mocked_os:
-            test_value = methods_node._create_notebook_datetime_path(original_path, timestamp, dirty, error)
+            test_value = methods_node._create_notebook_datetime_path(timestamp=timestamp, dirty=dirty, error=error)
             mocked_os.makedirs.assert_called()
             if timestamp is not None:
                 test_timestamp = datetime.fromtimestamp(timestamp)
@@ -544,14 +543,14 @@ class TestPrivateMethodsFromCalibrationNode:
                     f"{test_daily_path}-"
                     + f"{test_timestamp.hour:02d}:{test_timestamp.minute:02d}:{test_timestamp.second:02d}"
                 )
-
+                assert os.path.join(methods_node.nb_path, methods_node.node_id) in test_value
                 assert f"_{test_path}" in test_value
             if dirty and not error:
-                assert "foo/bar" in test_value
+                assert os.path.join(methods_node.nb_path, methods_node.node_id) in test_value
                 assert "_dirty.ipynb" in test_value
             if error:
                 assert mocked_os.makedirs.call_count == 2
-                assert "foo/error_executions/bar" in test_value
+                assert os.path.join(methods_node.nb_path, "error_executions", methods_node.node_id) in test_value
                 assert "_error.ipynb" in test_value
 
     ####################################
@@ -762,3 +761,21 @@ def test_export_nb_outputs(mocked_dumps, test_outputs, test_dumped_outputs):
         export_nb_outputs(test_outputs)
         mocked_dumps.assert_called_with(test_outputs)
         mocked_print.assert_called_with(f"{logger_output_start}{test_dumped_outputs}")
+
+
+#######################################
+######### TEST JSON SERIALIZE #########
+#######################################
+@pytest.mark.parametrize(
+    "test_outputs, test_dumped_outputs",
+    [
+        ({"this_is": "a_test_dict", "foo": [1, 2, 3, 4]}, '{"this_is": "a_test_dict", "foo": [1, 2, 3, 4]}'),
+        (
+            {"this_is": np.array([1, 2, 3, 4, 5]), "foo": {"bar": "jose", "pepe": (np.array([0]), np.array([0]), "a")}},
+            '{"this_is": [1, 2, 3, 4, 5], "foo": {"bar": "jose", "pepe": [[0], [0], "a"]}}',
+        ),
+    ],
+)
+def test_json_serialize(test_objects, expected_test_objects):
+    """Test that ``json_serialize()`` works properly."""
+        assert expected_test_objects == json_serialize(test_objects)
