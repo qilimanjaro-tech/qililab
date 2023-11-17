@@ -333,7 +333,7 @@ class CalibrationController:
         logger.info('Checking state of node "%s".\n', node.node_id)
 
         # Get the list of the dependencies that have been calibrated before this node, all of them should be True
-        #TODO: add if statement to check if previous_timestamp is None in case we dont have previous calibrations
+        # TODO: add if statement to check if previous_timestamp is None in case we dont have previous calibrations
         dependencies_timestamps_previous = [
             n.previous_timestamp < node.previous_timestamp for n in self._dependencies(node)
         ]
@@ -399,8 +399,7 @@ class CalibrationController:
             logger.info("obtained: %s ", str(obtain_params))
             logger.info("comparison: %s", str(compar_params))
 
-            fit = "fit" in compar_params
-            comparison_number = self._obtain_comparison(node, obtain_params, compar_params, fit)
+            comparison_number = self._obtain_comparison(node, obtain_params, compar_params)
 
             if comparison_number <= node.in_spec_threshold:
                 comparison_result = "in_spec"
@@ -509,9 +508,7 @@ class CalibrationController:
         return [self.node_sequence[node_name] for node_name in self.calibration_graph.predecessors(node.node_id)]
 
     @staticmethod
-    def _obtain_comparison(
-        node: CalibrationNode, obtained: dict[str, list], comparison: dict[str, list], fit: bool = True
-    ) -> float:
+    def _obtain_comparison(node: CalibrationNode, obtained: dict[str, list], comparison: dict[str, list]) -> float:
         """Returns the error, given the chosen method, between the comparison and obtained samples.
 
         Args:
@@ -522,7 +519,7 @@ class CalibrationController:
         Returns:
             float: difference/error between the two samples.
         """
-        return node.comparison_model(obtained, comparison, fit)
+        return node.comparison_model(obtained, comparison)
 
     @staticmethod
     def _is_timeout_expired(timestamp: float, timeout: float) -> bool:
