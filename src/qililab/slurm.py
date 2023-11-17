@@ -42,7 +42,7 @@ def is_variable_used(code, variable):
     default="now",
     help="Submit the batch script to the Slurm controller immediately, like normal, "
     "but tell the controller to defer the allocation of the job until the specified time. The time format can be"
-    " either `HH:MM:SS`, `now+1hour`, `now+60minutes`, `now+60` (seconds by default).",
+    " either `HH:MM:SS`, `now+1hour`, `now+60minutes`, `now+60` (seconds by default), `2010-01-20T12:34:00`.",
 )
 @argument(
     "-l",
