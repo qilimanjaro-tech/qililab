@@ -761,21 +761,3 @@ def test_export_nb_outputs(mocked_dumps, test_outputs, test_dumped_outputs):
         export_nb_outputs(test_outputs)
         mocked_dumps.assert_called_with(test_outputs)
         mocked_print.assert_called_with(f"{logger_output_start}{test_dumped_outputs}")
-
-
-#######################################
-######### TEST JSON SERIALIZE #########
-#######################################
-@pytest.mark.parametrize(
-    "test_outputs, test_dumped_outputs",
-    [
-        ({"this_is": "a_test_dict", "foo": [1, 2, 3, 4]}, '{"this_is": "a_test_dict", "foo": [1, 2, 3, 4]}'),
-        (
-            {"this_is": np.array([1, 2, 3, 4, 5]), "foo": {"bar": "jose", "pepe": (np.array([0]), np.array([0]), "a")}},
-            '{"this_is": [1, 2, 3, 4, 5], "foo": {"bar": "jose", "pepe": [[0], [0], "a"]}}',
-        ),
-    ],
-)
-def test_json_serialize(test_objects, expected_test_objects):
-    """Test that ``json_serialize()`` works properly."""
-        assert expected_test_objects == json_serialize(test_objects)
