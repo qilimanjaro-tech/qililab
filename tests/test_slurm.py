@@ -1,11 +1,13 @@
 import os
 import shutil
 import time
+from unittest.mock import MagicMock, patch
 
 import pytest
 from IPython.testing.globalipapp import start_ipython
 
 import qililab as ql
+from qililab.slurm import num_files_to_keep
 
 # pylint: disable=redefined-outer-name
 slurm_job_data_test = "slurm_job_data_test"
@@ -66,7 +68,7 @@ def test_submit_job_with_random_file_in_logs_folder(ip):
 def test_submit_job_delete_info_from_past_jobs(ip):
     """Check only 60 files are kept in the logs folder"""
     ip.run_cell(raw_cell="a=1\nb=1")
-    for _ in range(int(ql.slurm.num_files_to_keep / 4)):
+    for _ in range(int(num_files_to_keep / 4)):
         ip.run_cell_magic(
             magic_name="submit_job",
             line=f"-o results -d debug -l {slurm_job_data_test} -n unit_test -e local",
@@ -90,3 +92,21 @@ def test_submit_job_delete_info_from_past_jobs(ip):
     )
     assert ip.user_global_ns["results"].result() == 2
     shutil.rmtree(slurm_job_data_test)  # manual teardown
+
+
+def test_setting_parameters(ip):
+    """Test that the parameters of the magic method work properly."""
+    ip.run_cell(raw_cell="a=1\nb=1")
+    with patch("qililab.slurm.AutoExecutor") as executor:
+        executor_instance = MagicMock()
+        executor.return_value = executor_instance
+        with patch("qililab.slurm.os"):
+            ip.run_cell_magic(
+                magic_name="submit_job",
+                line=f"-o results -d debug -l {slurm_job_data_test} -n unit_test -e local -t 5",
+                cell="results=a+b",
+            )
+    executor.assert_called_once_with(folder=slurm_job_data_test, cluster="local")
+    executor_instance.update_parameters.assert_called_once_with(
+        slurm_partition="debug", name="unit_test", timeout_min=5
+    )
