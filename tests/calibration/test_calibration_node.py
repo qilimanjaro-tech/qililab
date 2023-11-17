@@ -1,4 +1,5 @@
 """Test for the `CalibrationNode` class"""
+import json
 import os
 from datetime import datetime
 from io import StringIO
@@ -590,6 +591,7 @@ class TestPrivateMethodsFromCalibrationNode:
         """Test ``that create_notebook_datetime_path()`` works correctly."""
         with patch("qililab.calibration.calibration_node.os") as mocked_os:
             test_value = methods_node._create_notebook_datetime_path(timestamp=timestamp, dirty=dirty, error=error)
+            test_value = methods_node._create_notebook_datetime_path(timestamp=timestamp, dirty=dirty, error=error)
             mocked_os.makedirs.assert_called()
             if timestamp is not None:
                 test_timestamp = datetime.fromtimestamp(timestamp)
@@ -598,7 +600,7 @@ class TestPrivateMethodsFromCalibrationNode:
                     f"{test_daily_path}-"
                     + f"{test_timestamp.hour:02d}:{test_timestamp.minute:02d}:{test_timestamp.second:02d}"
                 )
-
+                assert os.path.join(methods_node.nb_path, methods_node.node_id) in test_value
                 assert f"_{test_path}" in test_value
             if dirty and not error:
                 path_and_node_id = os.path.join(methods_node.nb_folder, methods_node.node_id)

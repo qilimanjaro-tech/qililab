@@ -333,19 +333,17 @@ class CalibrationController:
         logger.info('Checking state of node "%s".\n', node.node_id)
 
         # Get the list of the dependencies that have been calibrated before this node, all of them should be True
-        # Check if something hapened and the timestamp could not be setted properly and the rest of conditions
         if node.previous_timestamp is None or any(
             n.previous_timestamp >= node.previous_timestamp for n in self._dependencies(node)
         ):
             logger.info("check_state of %s: False.\n", node.node_id)
             return False
-        is_timeout_expired = self._is_timeout_expired(node.previous_timestamp, node.drift_timeout)
         logger.info(
             "check_state of %s: %r.\n",
             node.node_id,
-            (not is_timeout_expired),
+            (not self._is_timeout_expired(node.previous_timestamp, node.drift_timeout)),
         )
-        return not is_timeout_expired
+        return not self._is_timeout_expired(node.previous_timestamp, node.drift_timeout)
 
     def check_data(self, node: CalibrationNode) -> str:
         """Checks if the parameters found in the last calibration are still valid, doing a reduced execution of the notebook.
