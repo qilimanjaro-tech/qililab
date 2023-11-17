@@ -32,7 +32,7 @@ def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
 
 
         To execute an experiment you first need to define the loops and the values you want to loop for, for example, a Rabi experiment
-        where you will loop over amplitude values, measuring the results out of the amplitude in each of the steps. 
+        where you will loop over amplitude values, measuring the results out of the amplitude in each of the steps.
         Then you also need to build, connect, set up, and execute the platform, which together look like:
 
         .. code-block:: python
