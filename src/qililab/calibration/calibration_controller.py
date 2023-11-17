@@ -338,11 +338,11 @@ class CalibrationController:
             return False
 
         # Get the list of the dependencies that have been calibrated before this node, all of them should be True
-        for dependent_node in self._dependencies(node):  # or not all(dependencies_status)
-            if dependent_node.drift_timeout < node.drift_timeout:
-                node.drift_timeout = dependent_node.drift_timeout
-            if dependent_node.previous_timestamp >= node.previous_timestamp or self._is_timeout_expired(
-                dependent_node.previous_timestamp, dependent_node.drift_timeout
+        for n in self._dependencies(node):  # or not all(dependencies_status)
+            if n.drift_timeout < node.drift_timeout:
+                node.drift_timeout = n.drift_timeout
+            if n.previous_timestamp >= node.previous_timestamp or self._is_timeout_expired(
+                n.previous_timestamp, n.drift_timeout
             ):
                 logger.info("check_state of %s: False.\n", node.node_id)
                 return False
