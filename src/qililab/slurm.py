@@ -47,7 +47,7 @@ def is_variable_used(code, variable):
 @argument(
     "-l",
     "--logs",
-    default="slurm_job_data",
+    default=".slurm_job_data",
     help=(f"Path where you want slurm to write the logs for the last {num_files_to_keep} jobs."),
 )
 @argument(
