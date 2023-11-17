@@ -344,6 +344,11 @@ class CalibrationController:
             # Keep the smaller drift timeout, from all its dependencies.
             if n.drift_timeout < node.drift_timeout:
                 node.drift_timeout = n.drift_timeout
+                logger.warning(
+                    "The drift_timeout of node %s is bigger than its dependency %s, so the later will be used.",
+                    node.node_id,
+                    n.node_id,
+                )
             # A dependency has been calibrated before this node
             if n.previous_timestamp >= node.previous_timestamp:
                 logger.info("check_state of %s: False.\n", node.node_id)
