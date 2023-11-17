@@ -11,8 +11,8 @@ import pytest
 from qililab.calibration.calibration_node import (
     CalibrationNode,
     IncorrectCalibrationOutput,
+    _json_serialize,
     export_nb_outputs,
-    json_serialize,
 )
 
 # pylint: disable=protected-access, unspecified-encoding
@@ -856,8 +856,8 @@ def test_json_serialize(test_objects, expected_test_objects):
     """Test that ``json_serialize()`` works properly."""
     if isinstance(test_objects, (dict, list)):
         # No need to colect return value for objects that are referenced
-        json_serialize(test_objects)
+        _json_serialize(test_objects)
         assert test_objects == expected_test_objects
     else:
-        test_result = json_serialize(test_objects)
+        test_result = _json_serialize(test_objects)
         assert test_result == expected_test_objects

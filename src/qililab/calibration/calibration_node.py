@@ -383,8 +383,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             params |= self.input_parameters
 
         # JSON serialize nb input, no np.ndarrays
-        json_serialize(params)
-        # initially the file is "dirty" until we make sure the execution was not aborted
+        _json_serialize(params)
+        # initially the file is "dirty" until we make sure the execution was not aborted, so we add _dirty tag.
         output_path = self._create_notebook_datetime_path(dirty=True)
         self.previous_output_parameters = self.output_parameters
 
@@ -393,21 +393,24 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             self.output_parameters = self._execute_notebook(self.nb_path, output_path, params)
 
             timestamp = datetime.timestamp(datetime.now())
-            new_output_path = self._create_notebook_datetime_path(timestamp=timestamp)
+            new_output_path = self._create_notebook_datetime_path(
+                timestamp=timestamp
+            )  # remove the _dirty tag, since it finished.
             os.rename(output_path, new_output_path)
             return timestamp
 
         # When keyboard interrupt (Ctrl+C), generate error, and leave `_dirty`` in the name:
-        except KeyboardInterrupt as exc:
+        except KeyboardInterrupt as exc:  # we don't remove the _dirty tag, since it was stopped, not failed.
             logger.error("Interrupted automatic calibration notebook execution of %s", self.nb_path)
             raise KeyboardInterrupt(f"Interrupted automatic calibration notebook execution of {self.nb_path}") from exc
 
-        # TODO: If execution, is cut because no notebook exists, no clear error is shown!
         # When notebook execution fails, generate error folder and move there the notebook:
         except Exception as exc:  # pylint: disable = broad-exception-caught
             if output_path in [os.scandir(self.nb_folder)]:
                 timestamp = datetime.timestamp(datetime.now())
-                error_path = self._create_notebook_datetime_path(timestamp=timestamp, error=True)
+                error_path = self._create_notebook_datetime_path(
+                    timestamp=timestamp, error=True
+                )  # add _error tag, for failed executions.
                 os.rename(output_path, error_path)
                 logger.error(
                     "Aborting execution. Exception %s during automatic calibration notebook execution, trace of the error can be found in %s",
@@ -684,11 +687,11 @@ def export_nb_outputs(outputs: dict) -> None:
     Args:
         outputs (dict): Outputs from the notebook to export into the automatic calibration workflow.
     """
-    json_serialize(outputs)
+    _json_serialize(outputs)
     print(f"{logger_output_start}{json.dumps(outputs)}")
 
 
-def json_serialize(_object: Any):
+def _json_serialize(_object: Any):
     """Function to JSON serialize the input argument.
 
     Needed to handle input/output of notebook executions from the :class:`CalibrationNode` class.
@@ -699,14 +702,14 @@ def json_serialize(_object: Any):
     """
     if isinstance(_object, dict):
         for k, v in _object.items():
-            _object[k] = json_serialize(v)
+            _object[k] = _json_serialize(v)
 
     if isinstance(_object, list):
         for idx, elem in enumerate(_object):
-            _object[idx] = json_serialize(elem)
+            _object[idx] = _json_serialize(elem)
 
     if isinstance(_object, tuple):
-        tuple_list = [json_serialize(elem) for elem in _object]
+        tuple_list = [_json_serialize(elem) for elem in _object]
         return tuple(tuple_list)
 
     return _object.tolist() if isinstance(_object, np.ndarray) else _object

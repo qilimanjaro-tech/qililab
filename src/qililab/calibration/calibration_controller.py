@@ -249,9 +249,11 @@ class CalibrationController:
             logger.info("Maintaining %s from maintain(%s).\n", n.node_id, node.node_id)
             self.maintain(n)
 
+        # If check_state of this node passes, don't check data, assume it works.
         if self.check_state(node):
             return
 
+        # Check data, if bad, diagnose to find the problem.
         result = self.check_data(node)
         if result == "in_spec":
             return
@@ -418,7 +420,7 @@ class CalibrationController:
 
         # Do the necessary following changes:
         logger.info("check_data of %s: %s.\n", node.node_id, comparison_result)
-        node._add_string_to_checked_nb_name(comparison_result, timestamp)
+        node._add_string_to_checked_nb_name(comparison_result, timestamp)  # add comparison result tag to the file name.
         node.output_parameters = node.previous_output_parameters
         return comparison_result
 
@@ -436,6 +438,7 @@ class CalibrationController:
         logger.info('Calibrating node "%s".\n', node.node_id)
         node.previous_timestamp = node.run_node()
         node._add_string_to_checked_nb_name("calibrated", node.previous_timestamp)  # pylint: disable=protected-access
+        # add _calibrated tag to the file name, which doesn't have a tag.
 
     def _update_parameters(self, node: CalibrationNode) -> None:
         """Updates the node parameters value in the platform, after a calibration.
