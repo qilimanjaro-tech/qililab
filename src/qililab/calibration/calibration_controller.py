@@ -412,8 +412,6 @@ class CalibrationController:
             # Get comparison from last notebook and the new obtained parameters.
             compar_params = comparison_outputs["check_parameters"]
             obtain_params = obtained_outputs["check_parameters"]
-            logger.info("obtained: %s ", str(obtain_params))
-            logger.info("comparison: %s", str(compar_params))
 
             comparison_number = self._obtain_comparison(node, obtain_params, compar_params)
 
