@@ -22,8 +22,6 @@ from qm import SimulationConfig
 from qm.jobs.running_qm_job import RunningQmJob
 from qm.qua import Program
 
-from qililab.instruments.quantum_machines.config import config as config_dict_qm
-
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
 from qililab.result.quantum_machines_results import QuantumMachinesResult
@@ -79,10 +77,8 @@ class QuantumMachinesManager(Instrument):
         """
         super().initial_setup()
         self.config = self.create_config()
-        print(self.config)
         qmm = QMM(host=self.settings.address, port=self.settings.port)
         self.qm = qmm.open_qm(config=self.config, close_other_machines=True)
-        # self.qm = qmm.open_qm(config=config_dict_qm, close_other_machines=True)
 
     @Instrument.CheckDeviceInitialized
     def turn_on(self):
