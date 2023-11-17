@@ -7,7 +7,6 @@ import pytest
 from IPython.testing.globalipapp import start_ipython
 
 import qililab as ql
-from qililab.slurm import num_files_to_keep
 
 # pylint: disable=redefined-outer-name
 slurm_job_data_test = "slurm_job_data_test"
@@ -68,7 +67,7 @@ def test_submit_job_with_random_file_in_logs_folder(ip):
 def test_submit_job_delete_info_from_past_jobs(ip):
     """Check only 60 files are kept in the logs folder"""
     ip.run_cell(raw_cell="a=1\nb=1")
-    for _ in range(int(num_files_to_keep / 4)):
+    for _ in range(int(ql.slurm.num_files_to_keep / 4)):
         ip.run_cell_magic(
             magic_name="submit_job",
             line=f"-o results -d debug -l {slurm_job_data_test} -n unit_test -e local",
