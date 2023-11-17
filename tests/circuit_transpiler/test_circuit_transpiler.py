@@ -1,26 +1,211 @@
-"""This file contains unit tests for the ``CircuitToPulses`` class."""
-import re
+import re  # pylint: disable=too-many-lines
 from dataclasses import asdict
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
+import qibo
+from qibo import gates
+from qibo.backends import NumpyBackend
 from qibo.gates import CZ, M, X
 from qibo.models import Circuit
 
 from qililab.chip import Chip
+from qililab.circuit_transpiler import CircuitTranspiler
+from qililab.circuit_transpiler.native_gates import Drag, Wait
 from qililab.platform import Bus, Buses, Platform
-from qililab.pulse import PulseEvent, PulseSchedule
-from qililab.pulse.circuit_to_pulses import CircuitToPulses
-from qililab.pulse.pulse import Pulse
+from qililab.pulse import Pulse, PulseEvent, PulseSchedule
 from qililab.pulse.pulse_shape import SNZ
 from qililab.pulse.pulse_shape import Drag as Drag_pulse
 from qililab.pulse.pulse_shape import Gaussian, Rectangular
 from qililab.settings import Runcard
 from qililab.settings.gate_event_settings import GateEventSettings
-from qililab.transpiler import Drag
-from qililab.utils import Wait
 from tests.data import Galadriel
 from tests.test_utils import build_platform
+
+qibo.set_backend("numpy")  # set backend to numpy (this is the faster option for < 15 qubits)
+
+# transpilable gates
+default_gates = [
+    gates.I(0),
+    gates.X(0),
+    gates.Y(0),
+    gates.Z(0),
+    gates.H(0),
+    gates.RX(0, 0),
+    gates.RY(0, 0),
+    gates.RZ(0, 0),
+    gates.U1(0, 0),
+    gates.U2(0, 0, 0),
+    gates.U3(0, 0, 0, 0),
+    gates.S(0),
+    gates.SDG(0),
+    gates.T(0),
+    gates.TDG(0),
+    gates.CNOT(0, 1),
+    gates.CZ(0, 1),
+    gates.SWAP(0, 1),
+    gates.iSWAP(0, 1),
+    gates.CRX(0, 1, 0),
+    gates.CRY(0, 1, 0),
+    gates.CRZ(0, 1, 0),
+    gates.CU1(0, 1, 0),
+    gates.CU2(0, 1, 0, 0),
+    gates.CU3(0, 1, 0, 0, 0),
+    gates.FSWAP(0, 1),
+    gates.RXX(0, 1, 0),
+    gates.RYY(0, 1, 0),
+    gates.RZZ(0, 1, 0),
+    gates.TOFFOLI(0, 1, 2),
+]
+
+
+def random_circuit(
+    nqubits: int, ngates: int, rng: np.random.Generator, gates_list: list[qibo.gates.Gate] = None, exhaustive=False
+) -> Circuit:
+    """Generates random qibo circuit with ngates
+
+    Args:
+        nqubits (int): number of qubits in the circuit
+        ngates (int): number of gates in the circuit
+        gates_list (dict[gates:int]): dictionary with gates and amount of qubits where those should be applied
+        exhaustive (bool) : use all gates at least once (requires ngates>=len(gates))
+
+    Returns:
+        c (qibo.Circuit) : resulting circuit
+    """
+
+    # get list available gates
+    if gates_list is None:
+        gates_list = default_gates
+
+    # init circuit
+    c = Circuit(nqubits)
+
+    # get list of gates to use
+    if not exhaustive:
+        list_gates = rng.choice(gates_list, ngates)
+    # if exhaustive = True then add all the gates available
+    else:
+        if ngates < len(gates_list):
+            raise ValueError("If exhaustive is set to True then ngates must be bigger than len(gates_list)!")
+        list_gates = []
+        for _ in range(ngates // len(gates_list)):
+            list_gates.extend(gates_list)
+        list_gates.extend(rng.choice(gates_list, ngates % len(gates_list), replace=False))
+        rng.shuffle(list_gates)
+
+    # add gates iteratively
+    for gate in list_gates:
+        # apply gate to random qubits
+        new_qubits = rng.choice(list(range(nqubits)), len(gate.qubits), replace=False)
+        gate = gate.on_qubits(dict(enumerate(new_qubits)))
+        if (len(gate.parameters) != 0) and gate.name != "id":
+            new_params = tuple(1 for _ in range(len(gate.parameters)))
+            gate.parameters = new_params
+        c.add(gate)
+
+    return c
+
+
+def apply_circuit(circuit: Circuit) -> np.ndarray:
+    """Apply native gates from a transpiled circuit
+    Drag pulses are translated to supported qibo.gates RX, RZ.
+    Gates are applied onto initial state |00...0>
+    Backend is set to numpy for faster execution since circuits are small
+
+    Args:
+        circuit (Circuit): transpiled qibo circuit to be executed
+
+    Returns:
+        state (np.ndarray): resulting state
+    """
+
+    backend = NumpyBackend()
+
+    nqubits = circuit.nqubits
+    # start initial state |00...0>
+    state = np.zeros(2**nqubits)
+    state[0] = 1
+    for gate in circuit.queue:
+        if gate.name == "rz":
+            state = backend.apply_gate(gate, state, nqubits)
+        if gate.name == "drag":
+            theta = gate.parameters[0]
+            phi = gate.parameters[1]
+            qubit = gate.qubits[0]
+            # apply Drag gate as RZ and RX gates
+            state = backend.apply_gate(gates.RZ(qubit, -phi), state, nqubits)
+            state = backend.apply_gate(gates.RX(qubit, theta), state, nqubits)
+            state = backend.apply_gate(gates.RZ(qubit, phi), state, nqubits)
+
+        if gate.name == "cz":
+            state = backend.apply_gate(gate, state, nqubits)
+
+    return state
+
+
+def compare_circuits(circuit_q: Circuit, circuit_t: Circuit, nqubits: int) -> float:  # pylint: disable=unused-argument
+    """Runs same circuit using transpiled gates and qibo gates,
+    and calculates the scalar product of the 2 resulting states
+
+    Args:
+        circuit_q (Circuit): qibo circuit (not transpiled)
+        circuit_t (Circuit): transpiled qibo circuit
+        nqubits (int): number of qubits in the circuit
+
+    Returns:
+        float: absolute scalar product of the 2 resulting states from circuit execution
+    """
+
+    # get final state
+    state_q = circuit_q().state()
+    state_t = apply_circuit(circuit_t)
+
+    # if state_t = k*state_q, where k is a global phase
+    # then |state_q * state_t| = |state_q * state_q| * |k| = 1
+    return np.abs(np.dot(np.conjugate(state_t), state_q))
+
+
+def compare_exp_z(  # pylint: disable=unused-argument
+    circuit_q: Circuit, circuit_t: Circuit, nqubits: int
+) -> list[np.ndarray]:
+    r"""Runs same circuit using transpiled gates and qibo gates, applies Z operator to all qubits
+    and then calculates the modulo of each coefficient of the state vector. This last operation
+    removes the phase difference in Z so that if the state vectors have the same Z observables
+    then the state vector coefficients will be the same.
+    That is, for the state vector psi, psi' for the transpiled and qibo circuits
+    .. math:: \Psi_k == \Psi'_k \forall k
+    Where each psi_k is the coefficient of each basis of the 2^n dimensional state vector
+    representation in Z
+
+    Args:
+        circuit_q (Circuit): qibo circuit (not transpiled)
+        circuit_t (Circuit): transpiled qibo circuit
+        nqubits (int): number of qubits in the circuit
+
+    Returns:
+        list[np.ndarray]: a list with 2 arrays, one corresponding to the state vector for the
+            transpiled circuit and another one for the qibo circuit
+    """
+
+    # get final states and save them for modulo calculation
+    state_q = circuit_q().state()
+    state_q_0 = state_q.copy()
+    state_t = apply_circuit(circuit_t)
+    state_t_0 = state_t.copy()
+
+    # apply measurement in Z
+    backend = NumpyBackend()
+    for q in range(circuit_q.nqubits):
+        state_q = backend.apply_gate(gates.Z(q), state_q, circuit_q.nqubits)
+        state_t = backend.apply_gate(gates.Z(q), state_t, circuit_q.nqubits)
+
+    return [
+        np.array([i * k for i, k in zip(np.conjugate(state_t_0), state_t)]),
+        np.array([i * k for i, k in zip(np.conjugate(state_q_0), state_q)]),
+    ]
+
 
 platform_gates = {
     "M(0)": [
@@ -172,6 +357,30 @@ platform_gates = {
                 "shape": {"name": "rectangular"},
             },
         },
+    ],
+    "CZ(0,1)": [
+        {
+            "bus": "flux_line_q1",
+            "pulse": {
+                "amplitude": 0.8,
+                "phase": 0,
+                "duration": 200,
+                "shape": {"name": "rectangular"},
+                "options": {"q0_phase_correction": 1, "q1_phase_correction": 2},
+            },
+        }
+    ],
+    "CZ(0,2)": [
+        {
+            "bus": "flux_line_q2",
+            "pulse": {
+                "amplitude": 0.8,
+                "phase": 0,
+                "duration": 200,
+                "shape": {"name": "rectangular"},
+                "options": {"q1_phase_correction": 2, "q2_phase_correction": 0},
+            },
+        }
     ],
 }
 
@@ -404,44 +613,131 @@ def fixture_platform(chip: Chip) -> Platform:
     return platform
 
 
-class TestCircuitToPulses:  # pylint: disable=R0903 # disable too few public methods warning
-    """Test class for circuit_to_pulses"""
+def get_pulse0(time: int, qubit: int) -> PulseEvent:
+    """Helper function for pulse test data"""
+    return PulseEvent(
+        pulse=Pulse(
+            amplitude=0.8,
+            phase=0,
+            duration=200,
+            frequency=0,
+            pulse_shape=Rectangular(),
+        ),
+        start_time=time,
+        pulse_distortions=[],
+        qubit=qubit,
+    )
 
-    def test_init(self, platform):
-        """Test init method."""
-        circuit_to_pulses = CircuitToPulses(platform)
-        assert list(platform_gates.keys()) == circuit_to_pulses.platform.gates_settings.gate_names
+
+def get_bus_schedule(pulse_bus_schedule: dict, port: str) -> list[dict]:
+    """Helper function for bus schedule data"""
+
+    return [
+        {**asdict(schedule)["pulse"], "start_time": schedule.start_time, "qubit": schedule.qubit}
+        for schedule in pulse_bus_schedule[port]
+    ]
 
 
-class TestTranslation:
-    """Unit tests for the ``translate`` method of the ``CircuitToPulses`` class."""
+class TestCircuitTranspiler:
+    """Tests for the circuit transpiler class"""
 
-    def get_pulse0(self, time: int, qubit: int) -> PulseEvent:
-        """Helper function for pulse test data"""
-        return PulseEvent(
-            pulse=Pulse(
-                amplitude=0.8,
-                phase=0,
-                duration=200,
-                frequency=0,
-                pulse_shape=Rectangular(),
-            ),
-            start_time=time,
-            pulse_distortions=[],
-            qubit=qubit,
-        )
+    def test_circuit_to_native(self):
+        """Tests the circuit to native gates function without/with optimization
+        Does not test phase corrections.
+        Test that the transpiled circuit outputs same result if
+        circuits are the same, and different results if circuits are
+        not the same. State vectors should be the same up to a global
+        phase difference.
+        With optimization, virtual Zs are applied so there will be a phase difference
+        between each single qubit. To check that the transpiled and untranspiled circuits
+        are equal, we then check the expected value for each element of the state vector
+        """
+        # FIXME: do these equality tests for the unitary matrix resulting from the circuit rather
+        # than from the state vectors for a more full-proof test
+        transpiler = CircuitTranspiler(platform=MagicMock())
 
-    def get_bus_schedule(self, pulse_bus_schedule: dict, port: str) -> list[dict]:
-        """Helper function for bus schedule data"""
+        # Test with optimizer=False
+        rng = np.random.default_rng(seed=42)  # init random number generator
 
-        return [
-            {**asdict(schedule)["pulse"], "start_time": schedule.start_time, "qubit": schedule.qubit}
-            for schedule in pulse_bus_schedule[port]
+        # circuits are the same
+        for _ in range(500):
+            nqubits = np.random.randint(4, 10)
+            c1 = random_circuit(
+                nqubits=nqubits,
+                ngates=len(default_gates),
+                rng=rng,
+                gates_list=None,
+                exhaustive=True,
+            )
+
+            c2 = transpiler.circuit_to_native(c1, optimize=False)
+
+            # check that both c1, c2 are qibo.Circuit
+            assert isinstance(c1, Circuit)
+            assert isinstance(c2, Circuit)
+
+            # check that states are equivalent up to a global phase
+            assert np.allclose(1, compare_circuits(c1, c2, nqubits))
+
+        # test with optimizer=True
+        rng = np.random.default_rng(seed=42)  # init random number generator
+
+        # circuits are the same
+        for _ in range(500):
+            nqubits = np.random.randint(4, 10)
+            c1 = random_circuit(
+                nqubits=nqubits,
+                ngates=len(default_gates),
+                rng=rng,
+                gates_list=None,
+                exhaustive=True,
+            )
+            c2 = transpiler.circuit_to_native(c1)
+            # check that both c1, c2 are qibo.Circuit
+            assert isinstance(c1, Circuit)
+            assert isinstance(c2, Circuit)
+            # check that states have the same absolute coefficients
+            z1_exp, z2_exp = compare_exp_z(c1, c2, nqubits)
+            assert np.allclose(z1_exp, z2_exp)
+
+    def test_optimize_transpilation(self, platform):
+        """Test that optimize_transpilation behaves as expected"""
+        transpiler = CircuitTranspiler(platform=platform)
+
+        # gate list to optimize
+        test_gates = [
+            Drag(0, 1, 1),
+            gates.CZ(0, 1),
+            gates.RZ(1, 1),
+            gates.M(0),
+            gates.RZ(0, 2),
+            Drag(0, 3, 3),
+            gates.CZ(0, 2),
+            gates.CZ(1, 0),
+            Drag(1, 2, 3),
+            gates.RZ(1, 0),
         ]
+        # resulting gate list from optimization
+        result_gates = [
+            Drag(0, 1, 1),
+            gates.CZ(0, 1),
+            gates.M(0),
+            Drag(0, 3, 0),
+            gates.CZ(0, 2),
+            gates.CZ(1, 0),
+            Drag(1, 2, -2),
+        ]
+
+        # check that lists are the same
+        optimized_gates = transpiler.optimize_transpilation(3, test_gates)
+        for gate_r, gate_opt in zip(result_gates, optimized_gates):
+            assert gate_r.name == gate_opt.name
+            assert gate_r.parameters == gate_opt.parameters
+            assert gate_r.qubits == gate_opt.qubits
 
     def test_translate_for_no_awg(self, platform):
         """Test translate method adding/removing AWG instruments to test empty schedules"""
-        translator = CircuitToPulses(platform=platform)
+        transpiler = CircuitTranspiler(platform=platform)
         # test circuit
         circuit = Circuit(5)
         circuit.add(X(0))
@@ -454,7 +750,7 @@ class TestTranslation:
         circuit.add(Wait(0, t=10))
         circuit.add(Drag(0, 2, 0.5))
 
-        pulse_schedules = translator.translate(circuits=[circuit])
+        pulse_schedules = transpiler.circuit_to_pulses(circuits=[circuit])
         pulse_schedule = pulse_schedules[0]
         # there should be 9 pulse_schedules in this configuration
         assert len(pulse_schedule) == 9
@@ -462,7 +758,7 @@ class TestTranslation:
         buses_elements = [bus for bus in platform.buses.elements if bus.settings.alias != "flux_q4_bus"]
         buses = Buses(elements=buses_elements)
         platform.buses = buses
-        pulse_schedules = translator.translate(circuits=[circuit])
+        pulse_schedules = transpiler.circuit_to_pulses(circuits=[circuit])
 
         pulse_schedule = pulse_schedules[0]
         # there should be a pulse_schedule removed
@@ -482,14 +778,14 @@ class TestTranslation:
         platform.buses.add(
             Bus(settings=flux_bus_no_awg_settings, platform_instruments=platform.instruments, chip=platform.chip)
         )
-        pulse_schedules = translator.translate(circuits=[circuit])
+        pulse_schedules = transpiler.circuit_to_pulses(circuits=[circuit])
         pulse_schedule = pulse_schedules[0]
         # there should not be any extra pulse schedule added
         assert len(pulse_schedule) == 8
 
-    def test_translate(self, platform):  # pylint: disable=R0914 # disable pyling too many variables
+    def test_circuit_to_pulses(self, platform):  # pylint: disable=R0914 # disable pyling too many variables
         """Test translate method"""
-        translator = CircuitToPulses(platform=platform)
+        transpiler = CircuitTranspiler(platform=platform)
         # test circuit
         circuit = Circuit(5)
         circuit.add(X(0))
@@ -502,7 +798,7 @@ class TestTranslation:
         circuit.add(Wait(0, t=10))
         circuit.add(Drag(0, 2, 0.5))
 
-        pulse_schedules = translator.translate(circuits=[circuit])
+        pulse_schedules = transpiler.circuit_to_pulses(circuits=[circuit])
 
         # test general properties of the pulse schedule
         assert isinstance(pulse_schedules, list)
@@ -540,7 +836,7 @@ class TestTranslation:
         )
 
         assert all(
-            pulse == self.get_pulse0(time, qubit)
+            pulse == get_pulse0(time, qubit)
             for pulse, time, qubit in zip(m_schedule[:-1], [530, 930, 930, 930], [0, 0, 1, 2])
         )
         assert m_schedule[-1] == m_pulse1
@@ -675,27 +971,27 @@ class TestTranslation:
         ]
 
         # drive q0
-        transpiled_drive_q0 = self.get_bus_schedule(pulse_bus_schedule, "drive_q0")
+        transpiled_drive_q0 = get_bus_schedule(pulse_bus_schedule, "drive_q0")
         assert len(transpiled_drive_q0) == len(drive_q0)
         assert all(i == k for i, k in zip(transpiled_drive_q0, drive_q0))
 
         # flux q0
-        transpiled_flux_q0 = self.get_bus_schedule(pulse_bus_schedule, "flux_q0")
+        transpiled_flux_q0 = get_bus_schedule(pulse_bus_schedule, "flux_q0")
         assert len(transpiled_flux_q0) == len(flux_q0)
         assert all(i == k for i, k in zip(transpiled_flux_q0, flux_q0))
 
         # drive q4
-        transpiled_drive_q4 = self.get_bus_schedule(pulse_bus_schedule, "drive_q4")
+        transpiled_drive_q4 = get_bus_schedule(pulse_bus_schedule, "drive_q4")
         assert len(transpiled_drive_q4) == len(drive_q4)
         assert all(i == k for i, k in zip(transpiled_drive_q4, drive_q4))
 
         # flux q2
-        transpiled_flux_q2 = self.get_bus_schedule(pulse_bus_schedule, "flux_q2")
+        transpiled_flux_q2 = get_bus_schedule(pulse_bus_schedule, "flux_q2")
         assert len(transpiled_flux_q2) == len(flux_q2)
         assert all(i == k for i, k in zip(transpiled_flux_q2, flux_q2))
 
         # flux c2
-        transpiled_flux_c2 = self.get_bus_schedule(pulse_bus_schedule, "flux_c2")
+        transpiled_flux_c2 = get_bus_schedule(pulse_bus_schedule, "flux_c2")
         assert len(transpiled_flux_c2) == len(flux_c2)
         assert all(i == k for i, k in zip(transpiled_flux_c2, flux_c2))
 
@@ -703,21 +999,21 @@ class TestTranslation:
         """Test that the angle is normalized properly for drag pulses"""
         c = Circuit(1)
         c.add(Drag(0, 2 * np.pi + 0.1, 0))
-        translator = CircuitToPulses(platform=platform)
-        pulse_schedules = translator.translate(circuits=[c])
+        transpiler = CircuitTranspiler(platform=platform)
+        pulse_schedules = transpiler.circuit_to_pulses(circuits=[c])
         assert np.allclose(pulse_schedules[0].elements[0].timeline[0].pulse.amplitude, 0.1 * 0.8 / np.pi)
         c = Circuit(1)
         c.add(Drag(0, np.pi + 0.1, 0))
-        translator = CircuitToPulses(platform=platform)
-        pulse_schedules = translator.translate(circuits=[c])
+        transpiler = CircuitTranspiler(platform=platform)
+        pulse_schedules = transpiler.circuit_to_pulses(circuits=[c])
         assert np.allclose(pulse_schedules[0].elements[0].timeline[0].pulse.amplitude, abs(-0.7745352091052967))
 
     def test_negative_amplitudes_add_extra_phase(self, platform):
         """Test that transpiling negative amplitudes results in an added PI phase."""
         c = Circuit(1)
         c.add(Drag(0, -np.pi / 2, 0))
-        translator = CircuitToPulses(platform=platform)
-        pulse_schedule = translator.translate(circuits=[c])[0]
+        transpiler = CircuitTranspiler(platform=platform)
+        pulse_schedule = transpiler.circuit_to_pulses(circuits=[c])[0]
         assert np.allclose(pulse_schedule.elements[0].timeline[0].pulse.amplitude, (np.pi / 2) * 0.8 / np.pi)
         assert np.allclose(pulse_schedule.elements[0].timeline[0].pulse.phase, 0 + np.pi)
 
@@ -731,6 +1027,6 @@ class TestTranslation:
         )
         circuit = Circuit(1)
         circuit.add(Drag(0, 1, 1))
-        translator = CircuitToPulses(platform=platform)
+        transpiler = CircuitTranspiler(platform=platform)
         with pytest.raises(ValueError, match=error_string):
-            translator.translate(circuits=[circuit])
+            transpiler.circuit_to_pulses(circuits=[circuit])

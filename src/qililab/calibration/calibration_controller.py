@@ -457,7 +457,7 @@ class CalibrationController:
         if node.output_parameters is not None and "platform_params" in node.output_parameters:
             for bus_alias, qubit, param_name, param_value in node.output_parameters["platform_params"]:
                 logger.info(
-                    "Platform updated with: (bus: %s, q: %d, %s, %f).", bus_alias, qubit, param_name, param_value
+                    "Platform updated with: (bus: %s, q: %s, %s, %f).", bus_alias, qubit, param_name, param_value
                 )
             #     self.platform.set_parameter(alias=bus_alias, parameter=param_name, value=param_value, channel_id=qubit)
 

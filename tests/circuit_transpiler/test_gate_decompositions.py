@@ -2,14 +2,14 @@ import numpy as np
 import pytest
 from qibo import gates
 
-from qililab.transpiler.gate_decompositions import GateDecompositions, native_gates, translate_gates
-from qililab.transpiler.native_gates import Drag
+from qililab.circuit_transpiler.gate_decompositions import GateDecompositions, native_gates, translate_gates
+from qililab.circuit_transpiler.native_gates import Drag
 
 
 @pytest.fixture(name="test_gates")
 def get_gates() -> list[gates.Gate]:
-    test_gates = [gates.X(0), gates.CNOT(0, 1), gates.RY(0, 2.5)]
-    return test_gates
+    """Fixture that returns a set of gates for the test"""
+    return [gates.X(0), gates.CNOT(0, 1), gates.RY(0, 2.5)]
 
 
 def test_gatedecompositions(test_gates: list[gates.Gate]):
