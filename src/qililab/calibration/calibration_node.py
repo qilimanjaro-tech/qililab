@@ -383,7 +383,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             params |= self.input_parameters
 
         # JSON serialize nb input, no np.ndarrays
-        json_serialize(params)  # TODO: UNITTEST THIS
+        ndarray_to_list(params)  # TODO: UNITTEST THIS
         # initially the file is "dirty" until we make sure the execution was not aborted
         output_path = self._create_notebook_datetime_path(dirty=True)
         self.previous_output_parameters = self.output_parameters
@@ -402,6 +402,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             logger.error("Interrupted automatic calibration notebook execution of %s", self.nb_path)
             raise KeyboardInterrupt(f"Interrupted automatic calibration notebook execution of {self.nb_path}") from exc
 
+        # TODO: If execution, is cut because no notebook exists, no clear error is shown!
         # When notebook execution fails, generate error folder and move there the notebook:
         except Exception as exc:  # pylint: disable = broad-exception-caught
             timestamp = datetime.timestamp(datetime.now())
@@ -461,7 +462,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             )
         return None
 
-    # TODO: UNITTEST THIS: we dont need original_path anymore, we are using self attributes
+    #TODO: UNITTEST THIS: we dont need original_path anymore, we are using self attributes
     def _create_notebook_datetime_path(
         self, timestamp: float | None = None, dirty: bool = False, error: bool = False
     ) -> str:
@@ -629,9 +630,9 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             IncorrectCalibrationOutput: In case no outputs, incorrect outputs or multiple outputs where found. Incorrect outputs are those that do not contain `check_parameters` or is empty.
         """
         logger_splitted = logger_string.split(logger_output_start)
-        # TODO: CHECK WHY HAPPENS we got len == 3 with last elem beeing a copy of the output dict with some extra stuff at the end
+        #TODO: CHECK WHY HAPPENS we got len == 3 with last elem beeing a copy of the output dict with some extra stuff at the end
         # In case something unexpected happened with the output we raise an error
-        # if len(logger_splitted) != 2:
+        #if len(logger_splitted) != 2:
         #    logger.error("No output or various outputs found in notebook %s.", input_path)
         #    raise IncorrectCalibrationOutput(f"No output or various outputs found in notebook {input_path}.")
 
@@ -669,36 +670,28 @@ def export_nb_outputs(outputs: dict) -> None:
     Args:
         outputs (dict): Outputs from the notebook to export into the automatic calibration workflow.
     """
-    json_serialize(outputs)
+
+    ndarray_to_list(outputs)
 
     print(f"{logger_output_start}{json.dumps(outputs)}")
 
+#TODO: UNITTEST THIS: now its outside from export_nb_outputs
+def ndarray_to_list(iter_: Any):
+        if isinstance(iter_, dict):
+            for k, v in iter_.items():
+                iter_[k] = ndarray_to_list(v)
 
-# TODO: UNITTEST THIS: now its outside from export_nb_outputs
-def json_serialize(object: Any):
-    """Function to JSON serialize the input argument.
-    Needed to handle input/output of notebook executions from the :class:`CalibrationNode` class.
-    This method only looks for np.ndarrays objects to JSON serialize. Any other non-JSON serializable won't be serialized.
+        if isinstance(iter_, list):
+            for idx, elem in enumerate(iter_):
+                iter_[idx] = ndarray_to_list(elem)
 
-    Args:
-        object (Any): Object to serialize
-    """
-    if isinstance(object, dict):
-        for k, v in object.items():
-            object[k] = json_serialize(v)
+        if isinstance(iter_, tuple):
+            tuple_list = []
+            for elem in iter_:
+                tuple_list.append(ndarray_to_list(elem))
+            return tuple(tuple_list)
 
-    if isinstance(object, list):
-        for idx, elem in enumerate(object):
-            object[idx] = json_serialize(elem)
-
-    if isinstance(object, tuple):
-        tuple_list = []
-        for elem in object:
-            tuple_list.append(json_serialize(elem))
-        return tuple(tuple_list)
-
-    return object.tolist() if isinstance(object, np.ndarray) else object
-
+        return iter_.tolist() if isinstance(iter_, np.ndarray) else iter_
 
 class IncorrectCalibrationOutput(Exception):
     """Error raised when the output of a calibration node is incorrect."""
