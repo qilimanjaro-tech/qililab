@@ -86,3 +86,4 @@ class TestStreamArray:
         assert str(stream_array) == "[[1. 2.]\n [3. 4.]]"
 
         assert [1, 2] in stream_array
+        assert (stream_array[0] == [1, 2]).all
