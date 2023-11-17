@@ -81,7 +81,7 @@ def test_submit_job_delete_info_from_past_jobs(ip):
     )
     ip.run_cell_magic(
         magic_name="submit_job",
-        line=f"-o results -d debug -l {slurm_job_data_test} -n unit_test -e local",
+        line=f"-o results -p debug -l {slurm_job_data_test} -n unit_test -e local",
         cell="results=a+b",
     )
     time.sleep(4)
