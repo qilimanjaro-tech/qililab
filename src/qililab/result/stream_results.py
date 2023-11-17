@@ -101,7 +101,7 @@ class StreamArray:
     """
 
     def __init__(self, shape: tuple, path: str, loops: dict[str, np.ndarray]):
-        self._results = np.zeros(shape=shape)
+        self.results = np.zeros(shape=shape)
         self.path = path
         self.loops = loops
         self._file: h5py.File | None = None
@@ -116,7 +116,7 @@ class StreamArray:
         """
         if self._file is not None and self._dataset is not None:
             self._dataset[key] = value
-        self._results[key] = value
+        self.results[key] = value
 
     def __enter__(self):
         self._file = h5py.File(name=self.path, mode="w")
@@ -125,7 +125,7 @@ class StreamArray:
         for loop_name, array in self.loops.items():
             g.create_dataset(name=loop_name, data=array)
         # Save results
-        self._dataset = self._file.create_dataset("results", data=self._results)
+        self._dataset = self._file.create_dataset("results", data=self.results)
 
         return self
 
@@ -141,23 +141,23 @@ class StreamArray:
         Args:
             index (int): item's index.
         """
-        return self._results[index]
+        return self.results[index]
 
     def __len__(self):
         """Gets length of results."""
-        return len(self._results)
+        return len(self.results)
 
     def __iter__(self):
         """Gets iterator of results."""
-        return iter(self._results)
+        return iter(self.results)
 
     def __str__(self):
         """Gets string representation of results."""
-        return str(self._results)
+        return str(self.results)
 
     def __repr__(self):
         """Gets string representation of results."""
-        return repr(self._results)
+        return repr(self.results)
 
     def __contains__(self, item: dict[str, Any]):
         """Returns if an item is contained in results.
@@ -168,4 +168,4 @@ class StreamArray:
         Returns:
             bool: True if an item is contained in results.
         """
-        return item in self._results
+        return item in self.results
