@@ -13,6 +13,64 @@ def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
         shape (tuple): results array shape.
         path (str): path to save results.
         loops (dict[str, np.ndarray]): dictionary with each loop name in the experiment as key and numpy array as values.
+
+    Examples:
+
+        .. note::
+
+            All the following examples are explained in detail in the :ref:`Platform <platform>` section of the documentation. However, here are a few thing to keep in mind:
+
+            - To connect, your computer must be in the same network of the instruments specified in the runcard, with their IP's addresses. Connection is necessary for the subsequent steps.
+
+            - You might want to skip the ``platform.initial_setup()`` and the ``platform.turn_on_instruments()`` steps if you think nothing has been modified, but we recommend doing them every time.
+
+            - ``platform.turn_on_instruments()`` is used to turn on the signal output of all the sources defined in the runcard (RF, Voltage and Current sources).
+
+            - You can print ``platform.chip`` and ``platform.buses`` at any time to check the platform's structure.
+
+        **1. Executing an experiment and saving the results live time:**
+
+
+        To execute an experiment you first need to define the loops and the values you want to loop for, for example, a Rabi experiment
+        where you will loop over amplitude values, measuring the results out of the amplitude in each of the steps. 
+        Then you also need to build, connect, set up, and execute the platform, which together look like:
+
+        .. code-block:: python
+
+            import numpy as np
+            import qililab as ql
+
+            # Building the platform:
+            platform = ql.build_platform(runcard="runcards/galadriel.yml")
+
+            # Connecting and setting up the platform:
+            platform.connect()
+            platform.initial_setup()
+            platform.turn_on_instruments()
+
+            # Executing the experiment on the platform:
+            AMP_VALUES = np.arange(0, 1, 1000)
+
+            stream_array = ql.stream_results(shape=(1000, 2), loops={"amp": AMP_VALUES}, path="results.h5", name="rabi")
+
+            with stream_array:
+                for i, amp in enumerate(AMP_VALUES):
+                    platform.set_parameter(alias="drive_q0", parameter=ql.Parameter.AMPLITUDE, value=amp)
+                    results = platform.execute(circuit)
+                    stream_array[i][0] = results.array[0]
+                    stream_array[i][0] = results.array[1]
+
+        The results would look something like this:
+
+        >>> print(ql.load_results(path="results.h5"))
+        (array([[700.,   0.],
+            [  0.,   0.],
+            [  0.,   0.],
+            ...,
+            [  0.,   0.],
+            [  0.,   0.],
+            [  0.,   0.]]), {'amp': array([1, 2, 3])})
+
     """
     return StreamArray(shape=shape, path=path, loops=loops)
 
