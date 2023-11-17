@@ -68,9 +68,8 @@ def IQ_norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str
     # Structure checks:
     is_structure_of_check_parameters_correct(obtained, comparison, fit)
     for check_data in [obtained, comparison]:
-        for i in range(2):
-            if 0 in [len(check_data["sweep_interval"][i]), len(check_data["results"][i])]:
-                raise ValueError("Empty 'sweep_interval' or 'results' in `check_parameters`'s notebook output.")
+        if 0 in [len(check_data["sweep_interval"]), len(check_data["results"][0]), len(check_data["results"][1])]:
+            raise ValueError("Empty 'sweep_interval' or 'results' in `check_parameters`'s notebook output.")
         if not np.shape(check_data[check]) == np.shape(check_data["results"]) == (2, len(check_data["sweep_interval"])):
             raise ValueError("Incorrect 'check_parameters' shape for this notebook output.")
 
