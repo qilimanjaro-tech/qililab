@@ -383,7 +383,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             params |= self.input_parameters
 
         # JSON serialize nb input, no np.ndarrays
-        json_serialize(params)  # TODO: UNITTEST THIS
+        json_serialize(params)
         # initially the file is "dirty" until we make sure the execution was not aborted
         output_path = self._create_notebook_datetime_path(dirty=True)
         self.previous_output_parameters = self.output_parameters
@@ -402,21 +402,30 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             logger.error("Interrupted automatic calibration notebook execution of %s", self.nb_path)
             raise KeyboardInterrupt(f"Interrupted automatic calibration notebook execution of {self.nb_path}") from exc
 
-        # TODO: If execution, is cut because no notebook exists, no clear error is shown!
         # When notebook execution fails, generate error folder and move there the notebook:
         except Exception as exc:  # pylint: disable = broad-exception-caught
-            timestamp = datetime.timestamp(datetime.now())
-            error_path = self._create_notebook_datetime_path(timestamp=timestamp, error=True)
-            os.rename(output_path, error_path)
-            logger.error(
-                "Aborting execution. Exception %s during automatic calibration notebook execution, trace of the error can be found in %s",
-                str(exc),
-                error_path,
-            )
-            # pylint: disable = broad-exception-raised
-            raise Exception(
-                f"Aborting execution. Exception {str(exc)} during automatic calibration notebook execution, trace of the error can be found in {error_path}"
-            ) from exc
+            if output_path in [os.scandir(self.nb_folder)]:
+                timestamp = datetime.timestamp(datetime.now())
+                error_path = self._create_notebook_datetime_path(timestamp=timestamp, error=True)
+                os.rename(output_path, error_path)
+                logger.error(
+                    "Aborting execution. Exception %s during automatic calibration notebook execution, trace of the error can be found in %s",
+                    str(exc),
+                    error_path,
+                )
+                # pylint: disable = broad-exception-raised
+                raise Exception(
+                    f"Aborting execution. Exception {str(exc)} during automatic calibration notebook execution, trace of the error can be found in {error_path}"
+                ) from exc
+            else:
+                logger.error(
+                    "Aborting execution. Exception %s during automatic calibration, expected error execution file to be created but it did not",
+                    str(exc),
+                )
+                # pylint: disable = broad-exception-raised
+                raise Exception(
+                    f"Aborting execution. Exception {str(exc)} during automatic calibration, expected error execution file to be created but it did not"
+                ) from exc
 
     @staticmethod
     def _build_notebooks_logger_stream() -> StringIO:
@@ -462,7 +471,6 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             )
         return None
 
-    # TODO: UNITTEST THIS: we dont need original_path anymore, we are using self attributes
     def _create_notebook_datetime_path(
         self, timestamp: float | None = None, dirty: bool = False, error: bool = False
     ) -> str:
@@ -609,9 +617,13 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             raise FileNotFoundError(f"No previous execution found of notebook {self.nb_path}.") from exc
 
         # Check how many lines contain an output, to raise the corresponding errors:
-        if len(outputs_lines) != 1:
-            logger.error("No output or various outputs found in notebook %s.", self.nb_path)
-            raise IncorrectCalibrationOutput(f"No output or various outputs found in notebook {self.nb_path}.")
+        if len(outputs_lines) < 1:
+            logger.error("No output found in notebook %s.", self.nb_path)
+            raise IncorrectCalibrationOutput(f"No output found in notebook {self.nb_path}.")
+        elif len(outputs_lines) > 1:
+            logger.warning(
+                "If you had multiple outputs exported in %s, the first one found will be used.", self.nb_path
+            )
 
         # When only one line of outputs, use that one:
         return self._from_logger_string_to_output_dict(outputs_lines[0], self.nb_path)
@@ -630,17 +642,18 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             IncorrectCalibrationOutput: In case no outputs, incorrect outputs or multiple outputs where found. Incorrect outputs are those that do not contain `check_parameters` or is empty.
         """
         logger_splitted = logger_string.split(logger_output_start)
-        # TODO: CHECK WHY HAPPENS we got len == 3 with last elem beeing a copy of the output dict with some extra stuff at the end
         # In case something unexpected happened with the output we raise an error
-        # if len(logger_splitted) != 2:
-        #    logger.error("No output or various outputs found in notebook %s.", input_path)
-        #    raise IncorrectCalibrationOutput(f"No output or various outputs found in notebook {input_path}.")
+        if len(logger_splitted) < 2:
+            logger.error("No output found in notebook %s.", input_path)
+            raise IncorrectCalibrationOutput(f"No output found in notebook {input_path}.")
+        elif len(logger_splitted) > 2:
+            logger.warning("If you had multiple outputs exported in %s, the first one found will be used.", input_path)
 
         # This next line is for taking into account other encodings, where special characters get `\\` in front.
         clean_data = logger_splitted[1].split("\\n")[0].replace('\\"', '"')
 
         logger_outputs_string = clean_data.split("\n")[0]
-        out_dict = json.loads(logger_outputs_string)
+        out_dict = json.loads(logger_outputs_string)  # in-dictionary trings must be double-quoted "" not ''
 
         if "check_parameters" not in out_dict or out_dict["check_parameters"] == {}:
             logger.error(
@@ -675,7 +688,6 @@ def export_nb_outputs(outputs: dict) -> None:
     print(f"{logger_output_start}{json.dumps(outputs)}")
 
 
-# TODO: UNITTEST THIS: now its outside from export_nb_outputs
 def json_serialize(object: Any):
     """Function to JSON serialize the input argument.
     Needed to handle input/output of notebook executions from the :class:`CalibrationNode` class.
