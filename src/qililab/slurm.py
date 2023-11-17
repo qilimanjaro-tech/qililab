@@ -37,9 +37,17 @@ def is_variable_used(code, variable):
 @argument("-n", "--name", default="submitit", help="Name of the slurm job.")
 @argument("-t", "--time", default=120, help="Time limit (in minutes) of the job.")
 @argument(
+    "-b",
+    "--begin",
+    default="now",
+    help="Submit the batch script to the Slurm controller immediately, like normal, "
+    "but tell the controller to defer the allocation of the job until the specified time. The time format can be"
+    " either `HH:MM:SS`, `now+1hour`, `now+60minutes`, `now+60` (seconds by default), `2010-01-20T12:34:00`.",
+)
+@argument(
     "-l",
     "--logs",
-    default="slurm_job_data",
+    default=".slurm_job_data",
     help=(f"Path where you want slurm to write the logs for the last {num_files_to_keep} jobs."),
 )
 @argument(
@@ -64,6 +72,7 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
     time_limit = int(args.time)
     folder_path = args.logs
     execution_env = args.execution_environment
+    begin_time = args.begin
 
     # Take all the import lines and add them right before the code of the cell (to make sure all the needed libraries
     # are imported inside the SLURM job)
@@ -73,7 +82,12 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
 
     # Create the executor that will be used to queue the SLURM job
     executor = AutoExecutor(folder=folder_path, cluster=execution_env)
-    executor.update_parameters(slurm_partition=partition, name=job_name, timeout_min=time_limit)
+    executor.update_parameters(
+        slurm_partition=partition,
+        name=job_name,
+        timeout_min=time_limit,
+        slurm_additional_parameters={"begin": begin_time},
+    )
 
     # Compile the code defined above
     code = compile(executable_code, "<string>", "exec")
