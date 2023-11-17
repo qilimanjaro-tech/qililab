@@ -653,7 +653,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         clean_data = logger_splitted[1].split("\\n")[0].replace('\\"', '"')
 
         logger_outputs_string = clean_data.split("\n")[0]
-        out_dict = json.loads(logger_outputs_string)  # in-dictionary trings must be double-quoted "" not ''
+        out_dict = json.loads(logger_outputs_string)  # in-dictionary strings must be double-quoted "" not ''.
 
         if "check_parameters" not in out_dict or out_dict["check_parameters"] == {}:
             logger.error(
@@ -684,17 +684,17 @@ def export_nb_outputs(outputs: dict) -> None:
         outputs (dict): Outputs from the notebook to export into the automatic calibration workflow.
     """
     json_serialize(outputs)
-
     print(f"{logger_output_start}{json.dumps(outputs)}")
 
 
 def json_serialize(_object: Any):
     """Function to JSON serialize the input argument.
+
     Needed to handle input/output of notebook executions from the :class:`CalibrationNode` class.
     This method only looks for np.ndarrays objects to JSON serialize. Any other non-JSON serializable won't be serialized.
 
     Args:
-        object (Any): Object to serialize
+        _object (Any): Object to serialize
     """
     if isinstance(_object, dict):
         for k, v in _object.items():
