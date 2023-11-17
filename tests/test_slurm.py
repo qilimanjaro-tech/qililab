@@ -102,10 +102,10 @@ def test_setting_parameters(ip):
         with patch("qililab.slurm.os"):
             ip.run_cell_magic(
                 magic_name="submit_job",
-                line=f"-o results -p debug -l {slurm_job_data_test} -n unit_test -e local -t 5",
+                line=f"-o results -p debug -l {slurm_job_data_test} -n unit_test -e local -t 5 --begin now+1hour",
                 cell="results=a+b",
             )
     executor.assert_called_once_with(folder=slurm_job_data_test, cluster="local")
     executor_instance.update_parameters.assert_called_once_with(
-        slurm_partition="debug", name="unit_test", timeout_min=5
+        slurm_partition="debug", name="unit_test", timeout_min=5, slurm_additional_parameters={"begin": "now+1hour"}
     )
