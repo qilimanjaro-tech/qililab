@@ -205,7 +205,7 @@ class CalibrationController:
             self.maintain(self.node_sequence[n])
 
         logger.info(
-            "#############################################\n"
+            "\n#############################################\n"
             "Automatic calibration completed successfully!\n"
             "#############################################\n"
         )
