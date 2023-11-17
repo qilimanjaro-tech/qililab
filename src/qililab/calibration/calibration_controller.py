@@ -333,9 +333,9 @@ class CalibrationController:
         logger.info('Checking state of node "%s".\n', node.node_id)
 
         # Get the list of the dependencies that have been calibrated before this node, all of them should be True
-        # Check if something happened and the timestamp could not be setted properly and the rest of conditions
-        if node.previous_timestamp is None or not all(
-            [n.previous_timestamp < node.previous_timestamp for n in self._dependencies(node)]
+        # Check if something happened and the timestamp could not be setted properly (and the rest of conditions)
+        if node.previous_timestamp is None or any(
+            n.previous_timestamp >= node.previous_timestamp for n in self._dependencies(node)
         ):  # or not all(dependencies_status)
             logger.info("check_state of %s: False.\n", node.node_id)
             return False
