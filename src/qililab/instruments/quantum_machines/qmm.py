@@ -22,6 +22,8 @@ from qm import SimulationConfig
 from qm.jobs.running_qm_job import RunningQmJob
 from qm.qua import Program
 
+from qililab.instruments.quantum_machines.config import config as config_dict_qm
+
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
 from qililab.result.quantum_machines_results import QuantumMachinesResult
@@ -77,8 +79,10 @@ class QuantumMachinesManager(Instrument):
         """
         super().initial_setup()
         self.config = self.create_config()
+        print(self.config)
         qmm = QMM(host=self.settings.address, port=self.settings.port)
-        self.qm = qmm.open_qm(config=self.settings.config, close_other_machines=True)
+        self.qm = qmm.open_qm(config=self.config, close_other_machines=True)
+        # self.qm = qmm.open_qm(config=config_dict_qm, close_other_machines=True)
 
     @Instrument.CheckDeviceInitialized
     def turn_on(self):
@@ -116,11 +120,17 @@ class QuantumMachinesManager(Instrument):
         Returns:
             config: Dict[str, Any]
         """
+        elements, mixers = self._get_elements_config()
         config = {
             "version": 1,  # hardcoded for now, need to check what version really refers to
             "controllers": self._get_controllers_config(),
-            "elements": self._get_elements_config(),
-            "octaves": self._get_octaves_config(),
+            "elements": elements,
+            "mixers": mixers,
+            "waveforms": {},
+            "integration_weights": {},
+            "pulses": {},
+            "digital_waveforms": {},
+            # "octaves": self._get_octaves_config(),
         }
 
         return config
@@ -134,26 +144,27 @@ class QuantumMachinesManager(Instrument):
         controllers = {}
         for controller in self.settings.controllers:
             controllers[controller["name"]] = {
-                "analog_outputs": [
-                    {output["port"]: {"offset": output["offset"]}} for output in controller.get("analog_outputs", [])
-                ],
-                "analog_inputs": [
-                    {input["port"]: {"offset": input["offset"], "gain_db": input["gain_db"]}} for input in controller.get("analog_inputs", [])
-                ],
-                "digital_outputs": [
-                    {output["port"]: {}} for output in controller.get("digital_outputs", [])
-                ]
+                "analog_outputs": {
+                    output["port"]: {"offset": output["offset"]} for output in controller.get("analog_outputs", [])
+                },
+                "analog_inputs": {
+                    input["port"]: {"offset": input["offset"], "gain_db": input["gain_db"]} for input in controller.get("analog_inputs", [])
+                },
+                "digital_outputs": {
+                    output["port"]: {} for output in controller.get("digital_outputs", [])
+                }
             }
 
         return controllers
 
-    def _get_elements_config(self) -> dict[str, Any]:
+    def _get_elements_config(self) -> tuple:
         """Returns the elements config dictionary.
 
         Returns:
             elements: Dict[str, Any]
         """
         elements = {}
+        mixers = {}
 
         for element in self.settings.elements:
             if "rf_bus" in element["bus"]:
@@ -186,15 +197,19 @@ class QuantumMachinesManager(Instrument):
                     "mixInputs": {
                         key: (element["mixInputs"][key]["controller"], element["mixInputs"][key]["port"])
                         for key in ["I", "Q"]
-                    },
-                    "lo_frequency": element["mixInputs"]["lo_frequency"],
-                    "mixer_correction": element["mixInputs"]["mixer_correction"],
-                    "intermediate_frequency": element["intermediate_frequency"]
+                    } | {"lo_frequency": int(element["mixInputs"]["lo_frequency"])} | {"mixer": "mixer_" + element["bus"]},
+                    "intermediate_frequency": int(element["intermediate_frequency"]),
                 }
+                mixers["mixer_" + element["bus"]] = [{
+                    "intermediate_frequency": int(element["intermediate_frequency"]),
+                    "lo_frequency": int(element["mixInputs"]["lo_frequency"]),
+                    "correction": element["mixInputs"]["mixer_correction"],
+                }]
+            bus_dict["operations"] = {}
 
             elements[element["bus"]] = bus_dict
 
-        return elements
+        return elements, mixers
 
     def _get_octaves_config(self) -> dict[str, Any]:
         """Returns the octaves config dictionary.

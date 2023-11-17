@@ -1,0 +1,421 @@
+name: sauron
+
+device_id: 9
+
+gates_settings:
+  delay_between_pulses: 0
+  delay_before_readout: 4
+  timings_calculation_method: as_soon_as_possible
+  reset_method: passive
+  passive_reset_duration: 100
+  minimum_clock_time: 4
+  operations: []
+  gates:
+    M(0):
+      - bus: feedline_bus # alias of the bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 2000
+          shape:
+            name: rectangular
+    Drag(0):
+      - bus: drive_line_q0_bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 20
+          shape:
+            name: drag
+            num_sigmas: 4
+            drag_coefficient: 0.0
+
+    M(1):
+      - bus: feedline_bus # alias of the bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 2000
+          shape:
+            name: rectangular
+    Drag(1):
+      - bus: drive_line_q1_bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 20
+          shape:
+            name: drag
+            num_sigmas: 4
+            drag_coefficient: 0.0
+
+    M(2):
+      - bus: feedline_bus # alias of the bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 2000
+          shape:
+            name: rectangular
+    Drag(2):
+      - bus: drive_line_q2_bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 20
+          shape:
+            name: drag
+            num_sigmas: 4
+            drag_coefficient: 0.0
+
+    M(3):
+      - bus: feedline_bus # alias of the bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 2000
+          shape:
+            name: rectangular
+    Drag(3):
+      - bus: drive_line_q3_bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 20
+          shape:
+            name: drag
+            num_sigmas: 4
+            drag_coefficient: 0.0
+
+    M(4):
+      - bus: feedline_bus # alias of the bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 2000
+          shape:
+            name: rectangular
+
+    Drag(4):
+      - bus: drive_line_q4_bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 20
+          shape:
+            name: drag
+            num_sigmas: 4
+            drag_coefficient: 0.0
+
+    CZ(0,2):
+      - bus: flux_line_q2_bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 101
+          shape:
+            name: snz
+            t_phi: 1
+            b: 0.5
+          options:
+            q0_phase_correction: 0.1
+            q2_phase_correction: 0.2
+
+      - bus: flux_line_q1_bus # park pulse
+        wait_time: 20
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 121
+          shape:
+            name: rectangular
+
+    CZ(1,2):
+      - bus: flux_line_q2_bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 101
+          shape:
+            name: snz
+            t_phi: 1
+            b: 0.5
+      - bus: flux_line_q0_bus # park pulse
+        wait_time: 20
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 121
+          shape:
+            name: rectangular
+
+    CZ(4,2):
+      - bus: flux_line_q4_bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 101
+          shape:
+            name: snz
+            t_phi: 1
+            b: 0.5
+
+    CZ(3,2):
+      - bus: flux_line_q3_bus
+        pulse:
+          amplitude: 1.0
+          phase: 0
+          duration: 101
+          shape:
+            name: snz
+            t_phi: 1
+            b: 0.5
+
+chip:
+  nodes:
+    - name: qubit
+      alias: qubit_0
+      qubit_index: 0
+      frequency: 4.92e+09
+      nodes: [qubit_2, resonator_q0, drive_line_q0, flux_line_q0]
+    - name: qubit
+      alias: qubit_1
+      qubit_index: 1
+      frequency: 5.0e+09
+      nodes: [qubit_2, resonator_q1, drive_line_q1, flux_line_q1]
+    - name: qubit
+      alias: qubit_2
+      qubit_index: 2
+      frequency: 5.6e+09
+      nodes: [qubit_0, qubit_1, qubit_3, qubit_4, resonator_q2, drive_line_q2, flux_line_q2]
+    - name: qubit
+      alias: qubit_3
+      qubit_index: 3
+      frequency: 6.7e+09
+      nodes: [qubit_2, resonator_q3, drive_line_q3, flux_line_q3]
+    - name: qubit
+      alias: qubit_4
+      qubit_index: 4
+      frequency: 6.5e+09
+      nodes: [qubit_2, resonator_q4, drive_line_q4, flux_line_q4]
+    - name: resonator
+      alias: resonator_q0
+      frequency: 7.1e+09
+      nodes: [qubit_0, feedline_input, feedline_output]
+    - name: resonator
+      alias: resonator_q1
+      frequency: 7.2e+09
+      nodes: [qubit_1, feedline_input, feedline_output]
+    - name: resonator
+      alias: resonator_q2
+      frequency: 7.3e+09
+      nodes: [qubit_2, feedline_input, feedline_output]
+    - name: resonator
+      alias: resonator_q3
+      frequency: 7.4e+09
+      nodes: [qubit_3, feedline_input, feedline_output]
+    - name: resonator
+      alias: resonator_q4
+      frequency: 7.5e+09
+      nodes: [qubit_4, feedline_input, feedline_output]
+    - name: port
+      alias: drive_line_q0
+      nodes: [qubit_0]
+      line: drive
+    - name: port
+      alias: drive_line_q1
+      nodes: [qubit_1]
+      line: drive
+    - name: port
+      alias: drive_line_q2
+      nodes: [qubit_2]
+      line: drive
+    - name: port
+      alias: drive_line_q3
+      nodes: [qubit_3]
+      line: drive
+    - name: port
+      alias: drive_line_q4
+      nodes: [qubit_4]
+      line: drive
+    - name: port
+      alias: flux_line_q0
+      nodes: [qubit_0]
+      line: flux
+    - name: port
+      alias: flux_line_q1
+      nodes: [qubit_1]
+      line: flux
+    - name: port
+      alias: flux_line_q2
+      nodes: [qubit_2]
+      line: flux
+    - name: port
+      alias: flux_line_q3
+      nodes: [qubit_3]
+      line: flux
+    - name: port
+      alias: flux_line_q4
+      nodes: [qubit_4]
+      line: flux
+    - name: port
+      alias: feedline_input
+      nodes: [resonator_q0, resonator_q1, resonator_q2, resonator_q3, resonator_q4]
+      line: feedline_input
+    - name: port
+      alias: feedline_output
+      nodes: [resonator_q0, resonator_q1, resonator_q2, resonator_q3, resonator_q4]
+      line: feedline_output
+
+buses:
+  - alias: drive_line_q0_bus
+    system_control:
+      name: system_control
+      instruments: [QMM]
+    port: drive_line_q0
+    distortions: []
+
+  - alias: drive_line_q1_bus
+    system_control:
+      name: system_control
+      instruments: [QMM]
+    port: drive_line_q1
+    distortions: []
+
+  - alias: flux_line_q0_bus
+    system_control:
+      name: system_control
+      instruments: [QMM]
+    port: flux_line_q0
+    distortions: []
+
+  - alias: flux_line_q1_bus
+    system_control:
+      name: system_control
+      instruments: [QMM]
+    port: flux_line_q1
+    distortions: []
+
+  - alias: readout_line_q0_bus
+    system_control:
+      name: system_control
+      instruments: [QMM]
+    port: feedline_input
+    distortions: []
+
+  - alias: readout_line_q1_bus
+    system_control:
+      name: system_control
+      instruments: [QMM]
+    port: feedline_input
+    distortions: []
+
+instruments:
+  - name: quantum_machines_manager
+    alias: QMM
+    firmware: 0.7.0
+    address: 192.168.1.67
+    port: 80
+    octaves:
+      - name: octave1
+        port: 11250
+        controller: con1
+        rf_outputs:
+        - port: 1
+          lo_frequency: 6e9
+          gain: 0
+        - port: 2
+          lo_frequency: 6e9
+          gain: 0
+        - port: 3
+          lo_frequency: 6e9
+          gain: 0
+        - port: 4
+          lo_frequency: 6e9
+          gain: 0
+        - port: 5
+          lo_frequency: 6e9
+          gain: 0
+        rf_inputs:
+        - port: 0
+          lo_frequency: 6e9
+        - port: 1
+          lo_frequency: 6e9
+    controllers:
+      - name: con1
+        analog_outputs:
+        - port: 1
+          offset: -0.0142
+        - port: 2
+          offset: -0.0142
+        - port: 3
+          offset: -0.0142
+        - port: 4
+          offset: -0.0142
+        - port: 5
+          offset: -0.0142
+        - port: 6
+          offset: -0.0142
+        - port: 7
+          offset: -0.0142
+        - port: 8
+          offset: -0.0142
+        - port: 9
+          offset: -0.0142
+        - port: 10
+          offset: -0.0142
+        analog_inputs:
+        - port: 1
+          offset: -0.023947
+          gain_db: 0
+        - port: 2
+          offset: -0.023947
+          gain_db: 0
+        digital_outputs:
+        - port: 1
+        - port: 2
+        - port: 3
+        - port: 4
+        - port: 5
+    elements:
+    - bus: drive_line_q0_bus
+      mixInputs:
+        I:
+            controller: con1
+            port: 1
+        Q:
+            controller: con1
+            port: 2
+        lo_frequency: 8.0e+09
+        mixer_correction: [0.0, 0.0, 0.0, 0.0]
+      intermediate_frequency: 8.4e+07
+    - bus: readout_line_q0_bus
+      mixInputs:
+        I:
+            controller: con1
+            port: 7
+        Q:
+            controller: con1
+            port: 8
+        lo_frequency: 8.0e+09
+        mixer_correction: [0.0, 0.0, 0.0, 0.0]
+      intermediate_frequency: 8.4e+07
+      outputs:
+        out1:
+            controller: con1
+            port: 1
+        out2:
+            controller: con1
+            port: 2
+      time_of_flight: 300
+      smearing: 0
+
+instrument_controllers:
+  - name: quantum_machines_manager
+    alias: QMM
+    connection:
+      name: tcp_ip
+      address: 192.168.1.67
+    modules:
+      - alias: QMM
+        slot_id: 0
