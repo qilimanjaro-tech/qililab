@@ -2,6 +2,9 @@
 
 ### New features since last release
 
+- Add parameter to the SLURM magic method to configure the time limit of a job.
+  [#608](https://github.com/qilimanjaro-tech/qililab/pull/608)
+
 - Add magic method to run python code as slurm jobs from Jupyter Notebooks.
   [#600](https://github.com/qilimanjaro-tech/qililab/pull/600)
 

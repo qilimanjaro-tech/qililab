@@ -29,16 +29,19 @@ def is_variable_used(code, variable):
 @argument(
     "-o",
     "--output",
-    help="Output of the SLURM job. This name should correspond to a variable defined in the cell that we want to retrieve after execution. After queuing a cell, this variable will be converted to a `Job` class. To retrieve the results of the job, you need to call `variable.result()`.",
+    help="Output of the SLURM job. This name should correspond to a variable defined in the cell that we want to"
+    " retrieve after execution. After queuing a cell, this variable will be converted to a `Job` class. To retrieve"
+    " the results of the job, you need to call `variable.result()`.",
 )
 @argument("-d", "--device", help="Name of the device where you want to execute the SLURM job.")
+@argument("-n", "--name", default="submitit", help="Name of the slurm job.")
+@argument("-t", "--time", default=120, help="Time limit (in minutes) of the job.")
 @argument(
     "-l",
     "--logs",
     default="slurm_job_data",
-    help=(f"Path where you want slurm to write the logs for the last {num_files_to_keep} jobs"),
+    help=(f"Path where you want slurm to write the logs for the last {num_files_to_keep} jobs."),
 )
-@argument("-n", "--name", default="submitit", help="Name of the slurm job")
 @argument(
     "-e",
     "--execution_environment",
@@ -57,8 +60,9 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
     args = parse_argstring(submit_job, line)
     output = args.output
     partition = args.device
-    folder_path = args.logs
     job_name = args.name
+    time_limit = int(args.time)
+    folder_path = args.logs
     execution_env = args.execution_environment
 
     # Take all the import lines and add them right before the code of the cell (to make sure all the needed libraries
@@ -69,7 +73,7 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
 
     # Create the executor that will be used to queue the SLURM job
     executor = AutoExecutor(folder=folder_path, cluster=execution_env)
-    executor.update_parameters(slurm_partition=partition, name=job_name)
+    executor.update_parameters(slurm_partition=partition, name=job_name, timeout_min=time_limit)
 
     # Compile the code defined above
     code = compile(executable_code, "<string>", "exec")
