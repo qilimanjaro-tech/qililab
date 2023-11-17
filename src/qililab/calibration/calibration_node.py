@@ -617,7 +617,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             raise FileNotFoundError(f"No previous execution found of notebook {self.nb_path}.") from exc
 
         # Check how many lines contain an output, to raise the corresponding errors:
-        if len(outputs_lines) < 1:
+        if not outputs_lines:
             logger.error("No output found in notebook %s.", self.nb_path)
             raise IncorrectCalibrationOutput(f"No output found in notebook {self.nb_path}.")
         elif len(outputs_lines) > 1:
@@ -688,7 +688,7 @@ def export_nb_outputs(outputs: dict) -> None:
     print(f"{logger_output_start}{json.dumps(outputs)}")
 
 
-def json_serialize(object: Any):
+def json_serialize(_object: Any):
     """Function to JSON serialize the input argument.
     Needed to handle input/output of notebook executions from the :class:`CalibrationNode` class.
     This method only looks for np.ndarrays objects to JSON serialize. Any other non-JSON serializable won't be serialized.
@@ -696,21 +696,19 @@ def json_serialize(object: Any):
     Args:
         object (Any): Object to serialize
     """
-    if isinstance(object, dict):
-        for k, v in object.items():
-            object[k] = json_serialize(v)
+    if isinstance(_object, dict):
+        for k, v in _object.items():
+            _object[k] = json_serialize(v)
 
-    if isinstance(object, list):
-        for idx, elem in enumerate(object):
-            object[idx] = json_serialize(elem)
+    if isinstance(_object, list):
+        for idx, elem in enumerate(_object):
+            _object[idx] = json_serialize(elem)
 
-    if isinstance(object, tuple):
-        tuple_list = []
-        for elem in object:
-            tuple_list.append(json_serialize(elem))
+    if isinstance(_object, tuple):
+        tuple_list = [json_serialize(elem) for elem in _object]
         return tuple(tuple_list)
 
-    return object.tolist() if isinstance(object, np.ndarray) else object
+    return _object.tolist() if isinstance(_object, np.ndarray) else _object
 
 
 class IncorrectCalibrationOutput(Exception):

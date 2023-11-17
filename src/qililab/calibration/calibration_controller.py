@@ -334,8 +334,8 @@ class CalibrationController:
 
         # Get the list of the dependencies that have been calibrated before this node, all of them should be True
         # Check if something hapened and the timestamp could not be setted properly and the rest of conditions
-        if node.previous_timestamp is None or not all(
-            [n.previous_timestamp < node.previous_timestamp for n in self._dependencies(node)]
+        if node.previous_timestamp is None or any(
+            n.previous_timestamp >= node.previous_timestamp for n in self._dependencies(node)
         ):
             logger.info("check_state of %s: False.\n", node.node_id)
             return False
@@ -396,8 +396,7 @@ class CalibrationController:
             logger.info("obtained: %s ", str(obtain_params))
             logger.info("comparison: %s", str(compar_params))
 
-            fit = "fit" in compar_params
-            comparison_number = self._obtain_comparison(node, obtain_params, compar_params, fit)
+            comparison_number = self._obtain_comparison(node, obtain_params, compar_params)
 
             if comparison_number <= node.in_spec_threshold:
                 comparison_result = "in_spec"
@@ -506,9 +505,7 @@ class CalibrationController:
         return [self.node_sequence[node_name] for node_name in self.calibration_graph.predecessors(node.node_id)]
 
     @staticmethod
-    def _obtain_comparison(
-        node: CalibrationNode, obtained: dict[str, list], comparison: dict[str, list], fit: bool = True
-    ) -> float:
+    def _obtain_comparison(node: CalibrationNode, obtained: dict[str, list], comparison: dict[str, list]) -> float:
         """Returns the error, given the chosen method, between the comparison and obtained samples.
 
         Args:
@@ -519,7 +516,7 @@ class CalibrationController:
         Returns:
             float: difference/error between the two samples.
         """
-        return node.comparison_model(obtained, comparison, fit)
+        return node.comparison_model(obtained, comparison)
 
     @staticmethod
     def _is_timeout_expired(timestamp: float, timeout: float) -> bool:
