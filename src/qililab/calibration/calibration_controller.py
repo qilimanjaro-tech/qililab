@@ -351,6 +351,7 @@ class CalibrationController:
                 logger.info("check_state of %s: False.\n", node.node_id)
                 return False
 
+        # If this node concretely passes check_state
         logger.info(
             "check_state of %s: %r.\n",
             node.node_id,
