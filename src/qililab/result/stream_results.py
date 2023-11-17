@@ -64,14 +64,14 @@ def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
             # Executing the experiment on the platform:
             AMP_VALUES = np.arange(0, 1, 1000)
 
-            stream_array = ql.stream_results(shape=(1000, 2), loops={"amp": AMP_VALUES}, path="results.h5", name="rabi")
+            stream_array = ql.stream_results(shape=(1000, 2), loops={"amp": AMP_VALUES}, path="results.h5")
 
             with stream_array:
                 for i, amp in enumerate(AMP_VALUES):
                     platform.set_parameter(alias="drive_q0", parameter=ql.Parameter.AMPLITUDE, value=amp)
                     results = platform.execute(circuit)
-                    stream_array[i][0] = results.array[0]
-                    stream_array[i][0] = results.array[1]
+                    stream_array[(i, 0)] = results.array[0]
+                    stream_array[(i, 1)] = results.array[1]
 
         The results would look something like this:
 
@@ -114,10 +114,11 @@ class StreamArray:
             key (str): key for the item to save.
             value (float): value to save.
         """
+        if self._file is not None and self._dataset is not None:
+            self._dataset[key] = value
         self._results[key] = value
 
     def __enter__(self):
-        """Enters the context manager."""
         self._file = h5py.File(name=self.path, mode="w")
         # Save loops
         g = self._file.create_group(name="loops")
@@ -125,6 +126,8 @@ class StreamArray:
             g.create_dataset(name=loop_name, data=array)
         # Save results
         self._dataset = self._file.create_dataset("results", data=self._results)
+
+        return self
 
     def __exit__(self, *args):
         """Exits the context manager."""
