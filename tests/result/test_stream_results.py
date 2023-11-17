@@ -1,7 +1,7 @@
 """ Test StreamArray """
+import copy
 from unittest.mock import patch
 
-import copy
 import numpy as np
 import pytest
 
