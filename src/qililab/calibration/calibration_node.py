@@ -646,10 +646,11 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             IncorrectCalibrationOutput: In case no outputs, incorrect outputs or multiple outputs where found. Incorrect outputs are those that do not contain `check_parameters` or is empty.
         """
         logger_splitted = logger_string.split(logger_output_start)
-        # In case something unexpected happened with the output we raise an error
+        # In case no output is found we raise an error:
         if len(logger_splitted) < 2:
             logger.error("No output found in notebook %s.", input_path)
             raise IncorrectCalibrationOutput(f"No output found in notebook {input_path}.")
+        # In case more than one output is found, we keep the first one, and raise a warning:
         elif len(logger_splitted) > 2:
             logger.warning("If you had multiple outputs exported in %s, the first one found will be used.", input_path)
 
@@ -657,7 +658,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         clean_data = logger_splitted[1].split("\\n")[0].replace('\\"', '"')
 
         logger_outputs_string = clean_data.split("\n")[0]
-        out_dict = json.loads(logger_outputs_string)  # in-dictionary strings must be double-quoted "" not ''.
+        out_dict = json.loads(logger_outputs_string)  # in-dictionary strings will need to be double-quoted "" not ''.
 
         if "check_parameters" not in out_dict or out_dict["check_parameters"] == {}:
             logger.error(
