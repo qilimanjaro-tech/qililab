@@ -28,7 +28,8 @@ def ip(session_ip):
 class TestSubmitJob:
     def teardown_method(self):
         """Teardown method to make sure all files are deleted."""
-        shutil.rmtree(slurm_job_data_test)
+        if os.path.exists(slurm_job_data_test):
+            shutil.rmtree(slurm_job_data_test)
 
     def test_submit_job(self, ip):
         ip.run_cell(raw_cell="a=1\nb=1")
