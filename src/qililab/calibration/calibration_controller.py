@@ -205,7 +205,7 @@ class CalibrationController:
             self.maintain(self.node_sequence[n])
 
         logger.info(
-            "\n#############################################\n"
+            "#############################################\n"
             "Automatic calibration completed successfully!\n"
             "#############################################\n"
         )
@@ -249,11 +249,9 @@ class CalibrationController:
             logger.info("Maintaining %s from maintain(%s).\n", n.node_id, node.node_id)
             self.maintain(n)
 
-        # If check_state of this node passes, don't check data, assume it works.
         if self.check_state(node):
             return
 
-        # Check data, if bad, diagnose to find the problem.
         result = self.check_data(node)
         if result == "in_spec":
             return
@@ -334,31 +332,16 @@ class CalibrationController:
         """
         logger.info('Checking state of node "%s".\n', node.node_id)
 
-        # Check if something happened and the timestamp could not be setted properly
-        if node.previous_timestamp is None:
+        # Get the list of the dependencies that have been calibrated before this node, all of them should be True
+        dependencies_timestamps_previous = [
+            n.previous_timestamp < node.previous_timestamp for n in self._dependencies(node)
+        ]
+        # Check if something hapened and the timestamp could not be setted properly and the rest of conditions
+        if node.previous_timestamp is None or not all(
+            dependencies_timestamps_previous
+        ):  # or not all(dependencies_status)
             logger.info("check_state of %s: False.\n", node.node_id)
             return False
-
-        # Get the list of the dependencies that have been calibrated before this node, all of them should be True
-        for n in self._dependencies(node):
-            # Keep the smaller drift timeout, from all its dependencies.
-            if n.drift_timeout < node.drift_timeout:
-                node.drift_timeout = n.drift_timeout
-                logger.warning(
-                    "The drift_timeout of node %s is bigger than its dependency %s, so the later will be used.",
-                    node.node_id,
-                    n.node_id,
-                )
-            # A dependency has been calibrated before this node
-            if n.previous_timestamp >= node.previous_timestamp:
-                logger.info("check_state of %s: False.\n", node.node_id)
-                return False
-            # A dependency is expired
-            if self._is_timeout_expired(n.previous_timestamp, n.drift_timeout):
-                logger.info("check_state of %s: False.\n", node.node_id)
-                return False
-
-        # If this node concretely passes check_state
         logger.info(
             "check_state of %s: %r.\n",
             node.node_id,
@@ -412,6 +395,8 @@ class CalibrationController:
             # Get comparison from last notebook and the new obtained parameters.
             compar_params = comparison_outputs["check_parameters"]
             obtain_params = obtained_outputs["check_parameters"]
+            logger.info("obtained: %s ", str(obtain_params))
+            logger.info("comparison: %s", str(compar_params))
 
             comparison_number = self._obtain_comparison(node, obtain_params, compar_params)
 
@@ -423,8 +408,8 @@ class CalibrationController:
 
         # Do the necessary following changes:
         logger.info("check_data of %s: %s.\n", node.node_id, comparison_result)
-        node._add_string_to_checked_nb_name(comparison_result, timestamp)  # add comparison result tag to the file name.
-        node.output_parameters = node.previous_output_parameters
+        node._add_string_to_checked_nb_name(comparison_result, timestamp)
+        node.previous_output_parameters = node.output_parameters
         return comparison_result
 
     def calibrate(self, node: CalibrationNode) -> None:
@@ -441,7 +426,6 @@ class CalibrationController:
         logger.info('Calibrating node "%s".\n', node.node_id)
         node.previous_timestamp = node.run_node()
         node._add_string_to_checked_nb_name("calibrated", node.previous_timestamp)  # pylint: disable=protected-access
-        # add _calibrated tag to the file name, which doesn't have a tag.
 
     def _update_parameters(self, node: CalibrationNode) -> None:
         """Updates the node parameters value in the platform, after a calibration.
