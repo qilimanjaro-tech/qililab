@@ -421,15 +421,15 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                 raise Exception(
                     f"Aborting execution. Exception {str(exc)} during automatic calibration notebook execution, trace of the error can be found in {error_path}"
                 ) from exc
-            else:
-                logger.error(
-                    "Aborting execution. Exception %s during automatic calibration, expected error execution file to be created but it did not",
-                    str(exc),
-                )
-                # pylint: disable = broad-exception-raised
-                raise Exception(
-                    f"Aborting execution. Exception {str(exc)} during automatic calibration, expected error execution file to be created but it did not"
-                ) from exc
+
+            logger.error(
+                "Aborting execution. Exception %s during automatic calibration, expected error execution file to be created but it did not",
+                str(exc),
+            )
+            # pylint: disable = broad-exception-raised
+            raise Exception(
+                f"Aborting execution. Exception {str(exc)} during automatic calibration, expected error execution file to be created but it did not"
+            ) from exc
 
     @staticmethod
     def _build_notebooks_logger_stream() -> StringIO:
@@ -624,7 +624,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         if not outputs_lines:
             logger.error("No output found in notebook %s.", self.nb_path)
             raise IncorrectCalibrationOutput(f"No output found in notebook {self.nb_path}.")
-        elif len(outputs_lines) > 1:
+        if len(outputs_lines) > 1:
             logger.warning(
                 "If you had multiple outputs exported in %s, the first one found will be used.", self.nb_path
             )
@@ -651,7 +651,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             logger.error("No output found in notebook %s.", input_path)
             raise IncorrectCalibrationOutput(f"No output found in notebook {input_path}.")
         # In case more than one output is found, we keep the first one, and raise a warning:
-        elif len(logger_splitted) > 2:
+        if len(logger_splitted) > 2:
             logger.warning("If you had multiple outputs exported in %s, the first one found will be used.", input_path)
 
         # This next line is for taking into account other encodings, where special characters get `\\` in front.
