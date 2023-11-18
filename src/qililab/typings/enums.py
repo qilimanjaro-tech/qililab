@@ -340,6 +340,7 @@ class ResultName(str, Enum):
     QBLOX_QPROGRAM_MEASUREMENT = "qblox_qprogram_measurement"
     VECTOR_NETWORK_ANALYZER = "vector_network_analyzer"
     QUANTUM_MACHINES = "quantum_machines"
+    QUANTUM_MACHINES_MEASUREMENT = "quantum_machines_measurement"
 
 
 class ConnectionName(str, Enum):
