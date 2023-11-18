@@ -256,6 +256,9 @@ class CalibrationController:
             logger.info("Maintaining %s from maintain(%s).\n", n.node_id, node.node_id)
             self.maintain(n)
 
+        # TODO: Integrationt test, where if all the drift_timeouts are super big, no check_data or calibration is dene
+        # TODO: when no force_maintain, and one in the end, when the flag exist.
+
         # If check_state of this node passes, don't check data, assume it works (unless its an end node).
         node_status = self.check_state(node)
         if not force_mantain and node_status:
@@ -263,14 +266,21 @@ class CalibrationController:
 
         # Check data, if bad, diagnose to find the problem.
         result = self.check_data(node)
+
+        # If in_spec, maintain ends!
         if result == "in_spec":
             return
+
+        # TODO: Integration test, for the second condition here: for example, if we had check_data like
+        # TODO: V - V - O - O then it would calibrate the last without calibrating the dependency...
+
+        # If `bad_data` or `out_of_spec` in the last nodes with safe flag:
         if result == "bad_data" or (safe_diagnose and result == "out_of_spec"):
             for n in self._dependencies(node):
                 logger.info("Diagnosing %s from maintain(%s).\n", n.node_id, node.node_id)
                 self.diagnose(n, safe=safe_diagnose)
 
-        # implicit out_spec case
+        # Implicit out_spec case (except above second condition with safe flag)
         if force_mantain and node_status:
             logger.info(
                 "`force_maintain` in node %s, detected that `check_status` was passed, but node was not `in_spec', perhaps `drift_timeouts` should be updated.",
@@ -376,6 +386,7 @@ class CalibrationController:
 
         # Get the list of the dependencies that have been calibrated before this node, all of them should be True
         for n in self._dependencies(node):
+            # TODO: Integration test that cases where check_states are like: V - X - V - V only skip the first node
             # Keep the smaller drift timeout, from all its dependencies.
             if n.drift_timeout < node.drift_timeout:
                 node.drift_timeout = n.drift_timeout
@@ -447,6 +458,9 @@ class CalibrationController:
             # Get comparison from last notebook and the new obtained parameters.
             compar_params = comparison_outputs["check_parameters"]
             obtain_params = obtained_outputs["check_parameters"]
+
+            # TODO: Intergation test, that this returns the expected values, for very sided thresholds to
+            # TODO: the right or to the left...
 
             comparison_number = self._obtain_comparison(node, obtain_params, compar_params)
 

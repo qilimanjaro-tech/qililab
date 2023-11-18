@@ -1,5 +1,4 @@
 """Test for the `CalibrationNode` class"""
-import json
 import os
 from datetime import datetime
 from io import StringIO

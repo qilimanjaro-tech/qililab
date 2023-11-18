@@ -388,14 +388,15 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         output_path = self._create_notebook_datetime_path(dirty=True)
         self.previous_output_parameters = self.output_parameters
 
+        # TODO: Integration test, that dirty flags are created and deleted when needed, for calibrated, or in_spec..
+        # TODO: , bad_data or other to take its place. And that all functions work correctly with it.
+
         # Execute notebook without problems:
         try:
             self.output_parameters = self._execute_notebook(self.nb_path, output_path, params)
-
             timestamp = datetime.timestamp(datetime.now())
-            new_output_path = self._create_notebook_datetime_path(
-                timestamp=timestamp
-            )  # remove the _dirty tag, since it finished.
+            # remove the _dirty tag, since it finished.
+            new_output_path = self._create_notebook_datetime_path(timestamp=timestamp)
             os.rename(output_path, new_output_path)
             return timestamp
 
