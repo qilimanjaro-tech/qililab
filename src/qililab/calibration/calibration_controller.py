@@ -80,6 +80,7 @@ class CalibrationController:
 
         Finally, ``run_automatic_calibration()`` is designed to start acquiring data or calibrating in the optimal location of the graph to avoid extra work:
 
+        # TODO: Change this workflow explanations to new one
         - If node A has been calibrated very recently (before the ``drift_timeout`` of the :class:`.CalibrationNode`), it would be a waste of resources to check its data, so ``check_state()`` makes ``maintain()`` skip it.
         - If node A depends on node B, before calibrating node A, we check the data of node B. Calibrating A would be a waste of resources if we were doing so based on faulty data, so it goes to its dependencies first.
 
@@ -91,6 +92,7 @@ class CalibrationController:
 
         Note that depending on your ``CalibrationController`` construction, you can have dangerous behaviors in the workflow. You need to watch out for:
 
+        # TODO: change this dangerous behaviours explanations, to new workflow
         - If you give bad ``comparison_thresholds`` or have bad ``comparison_models``, returning ``out_of_spec`` when you actually have ``bad_data`` or the other way around, will make ``diagnose()`` not being able to work properly, since for it to work, you need to have a single layer node separation (``out_of_spec``) between the ``in_spec`` and the ``bad_data`` nodes.
         - If you give too long ``drift_timeout``'s, since ``maintain()`` will assume the node is 100% working, you will go to further dependents when maybe you shouldn't without recalibrating. In the end ``diagnose()`` saves the day here, since it doesn't do ``check_state()``, although it will be less efficient.
 
@@ -205,6 +207,9 @@ class CalibrationController:
         """
         highest_level_nodes = [node for node, out_degree in self.calibration_graph.out_degree() if out_degree == 0]
 
+        # TODO: Do a couple of integrations test, with deterministic scripts, where you know the sequence of check_datas and
+        # TODO: calibrates the workflow would need to follow, like the ones in my notebook, and check them.
+
         for n in highest_level_nodes:
             self.maintain(self.node_sequence[n], force_mantain=force_maintain, safe_diagnose=safe_diagnose)
 
@@ -231,11 +236,13 @@ class CalibrationController:
 
         Finally, ``maintain`` is designed to start acquiring data or calibrating in the optimal location of the graph, to avoid extra work:
 
+        # TODO: Change this workflow explanations to new one
         - if node A has been calibrated very recently (before the ``drift_timeout`` of the :class:`.CalibrationNode`), it would be waste of resources to check its data, so ``check_state()`` makes ``maintain()`` skip it.
         - if node A depends on node B, before calibrating node A we check the data of node B, calibrating A would be a waste of resources if we were doing so based on faulty data, so it goes to its dependencies first.
 
         |
 
+        # TODO: change this dangerous behaviours explanations, to new workflow
         Note that due to this, we can have dangerous behaviours in ``maintain()``, for example:
 
         - if you give bad ``comparison_thresholds`` or have bad ``comparison_models``, returning ``out_of_spec`` when you actually have ``bad_data`` or the other way around, making ``diagnose()`` not being able to work properly. Since for ``diagnose()`` to work, you need to have a single layer node separation (``out_of_spec``) between the ``in_spec`` and the ``bad_data`` nodes.
@@ -311,7 +318,7 @@ class CalibrationController:
         Note that `check` will cover corner cases that may be caused by user choices in exchange for time complexity as the number of
         calls to `check_data` will be higher on average.
 
-
+        # TODO: change this dangerous behaviours explanations, to new workflow
         Finally mention, two important thing to have in mind:
 
         - if you give bad ``comparison_thresholds`` or have bad ``comparison_models``, which return ``out_of_spec`` when you actually have ``bad_data`` or the other way around, it will make your full calibration fail. Since for ``diagnose()`` to work, you need to have a single node separation (``out_of_spec``) between the ``in_spec`` and the ``bad_data`` ones.
