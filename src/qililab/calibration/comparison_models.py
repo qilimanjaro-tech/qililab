@@ -24,10 +24,11 @@ div_epsilon = 0.00000000000000000000000000001
 def norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, list]) -> float:
     """Returns the normalized RMSE (mean absolute error) between the comparison and obtained samples.
 
+    If the comparison has a fit, it will be used, if not, the results will.
+
     Args:
         obtained (dict): obtained samples to compare.
         comparison (dict): previous samples to compare.
-        fit (bool): flag, to wether compare against the previous fit or the previous results. Defaults to True (against fit).
 
     Returns:
         float: difference/error between the two samples.
@@ -37,10 +38,10 @@ def norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, l
     # Structure checks:
     is_structure_of_check_parameters_correct(obtained, comparison, fit)
     for check_data in [obtained, comparison]:
-        if 0 in [len(check_data["sweep_interval"]), len(check_data["results"])]:
-            raise ValueError("Empty 'sweep_interval' or 'results' in `check_parameters`'s notebook output.")
         if not np.shape(check_data[check]) == np.shape(check_data["results"]) == (len(check_data["sweep_interval"]),):
             raise ValueError("Incorrect 'check_parameters' shape for this notebook output.")
+        if 0 in [len(check_data["sweep_interval"]), len(check_data["results"])]:
+            raise ValueError("Empty 'sweep_interval' or 'results' in `check_parameters`'s notebook output.")
 
     # Error computation:
     square_error = sum(
@@ -52,13 +53,14 @@ def norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, l
     return root_mean_square_error / np.abs(np.mean(comparison[check]) + div_epsilon)
 
 
-def IQ_norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, list], fit: bool = True) -> float:
+def IQ_norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, list]) -> float:
     """Returns the normalized RMSE (mean absolute error) between the comparison and obtained samples for I and Q.
+
+    If the comparison has a fit, it will be used, if not, the results will.
 
     Args:
         obtained (dict): obtained samples to compare.
         comparison (dict): previous samples to compare.
-        fit (bool): flag, to wether compare against the previous fit or the previous results. Defaults to True (against fit).
 
     Returns:
         float: difference/error between the two samples.
@@ -68,10 +70,10 @@ def IQ_norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str
     # Structure checks:
     is_structure_of_check_parameters_correct(obtained, comparison, fit)
     for check_data in [obtained, comparison]:
-        if 0 in [len(check_data["sweep_interval"]), len(check_data["results"][0]), len(check_data["results"][1])]:
-            raise ValueError("Empty 'sweep_interval' or 'results' in `check_parameters`'s notebook output.")
         if not np.shape(check_data[check]) == np.shape(check_data["results"]) == (2, len(check_data["sweep_interval"])):
             raise ValueError("Incorrect 'check_parameters' shape for this notebook output.")
+        if 0 in [len(check_data["sweep_interval"]), len(check_data["results"][0]), len(check_data["results"][1])]:
+            raise ValueError("Empty 'sweep_interval' or 'results' in `check_parameters`'s notebook output.")
 
     # Error computation:
     i, q = obtained["results"]
@@ -90,13 +92,14 @@ def IQ_norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str
     return np.min(errors)
 
 
-def ssro_comparison_2D(obtained: dict[str, Any], comparison: dict[str, Any], fit: bool = True) -> float:
+def ssro_comparison_2D(obtained: dict[str, Any], comparison: dict[str, Any]) -> float:
     """Returns a normalized error between the comparison and obtained samples, for 2D plots.
+
+    Always compares results vs results, no fit used.
 
     Args:
         obtained (dict): obtained samples to compare.
         comparison (dict): previous samples to compare.
-        fit (bool): Unused flag, to have same interface structure. Defaults to True.
 
     Returns:
         float: difference/error between the two samples.
@@ -104,16 +107,12 @@ def ssro_comparison_2D(obtained: dict[str, Any], comparison: dict[str, Any], fit
     # Structure checks:
     for check_data in [obtained, comparison]:
         if "sweep_interval" not in check_data or "results" not in check_data:
-            raise ValueError(
-                "Keys in the `check_parameters` are not 'sweep_interval', 'results' (and 'fit', optional), as is needed."
-            )
+            raise ValueError("Keys in the `check_parameters` are not 'sweep_interval' and 'results', as is needed.")
+        if np.shape(check_data["results"]) != (2, 2, check_data["sweep_interval"]):
+            raise ValueError("Incorrect 'check_parameters' shape for this notebook output.")
         for i in range(2):
             if len(check_data["results"][0][i]) == 0 or len(check_data["results"][1][i]) == 0:
                 raise ValueError("Empty 'sweep_interval' or 'results' in `check_parameters`'s notebook output.")
-        if np.shape(check_data["results"]) != (2, 2, check_data["sweep_interval"]):
-            raise ValueError("Incorrect 'check_parameters' shape for this notebook output.")
-
-    _ = fit  # No fit for this case.
 
     # Error computation:
     obtn_i_0, obtn_i_1 = obtained["results"][0]  # first gaussian I's
