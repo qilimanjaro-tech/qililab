@@ -18,7 +18,7 @@ import logging
 import os
 from datetime import datetime
 from io import StringIO
-from typing import Any, Callable
+from typing import Callable
 
 import numpy as np
 import papermill as pm
@@ -382,10 +382,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         if self.input_parameters is not None:
             params |= self.input_parameters
 
-        # JSON serialize nb input, no np.ndarrays
-        _json_serialize(params)
-        # initially the file is "dirty" until we make sure the execution was not aborted, so we add _dirty tag.
-        output_path = self._create_notebook_datetime_path(dirty=True)
+        # initially the file is "dirty" until we make sure the execution was not aborted
+        output_path = self._create_notebook_datetime_path(self.nb_path, dirty=True)
         self.previous_output_parameters = self.output_parameters
 
         # Execute notebook without problems:
@@ -393,42 +391,28 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             self.output_parameters = self._execute_notebook(self.nb_path, output_path, params)
 
             timestamp = datetime.timestamp(datetime.now())
-            new_output_path = self._create_notebook_datetime_path(
-                timestamp=timestamp
-            )  # remove the _dirty tag, since it finished.
+            new_output_path = self._create_notebook_datetime_path(self.nb_path, timestamp)
             os.rename(output_path, new_output_path)
             return timestamp
 
         # When keyboard interrupt (Ctrl+C), generate error, and leave `_dirty`` in the name:
-        except KeyboardInterrupt as exc:  # we don't remove the _dirty tag, since it was stopped, not failed.
+        except KeyboardInterrupt as exc:
             logger.error("Interrupted automatic calibration notebook execution of %s", self.nb_path)
             raise KeyboardInterrupt(f"Interrupted automatic calibration notebook execution of {self.nb_path}") from exc
 
         # When notebook execution fails, generate error folder and move there the notebook:
         except Exception as exc:  # pylint: disable = broad-exception-caught
-            if output_path in [os.scandir(self.nb_folder)]:
-                timestamp = datetime.timestamp(datetime.now())
-                error_path = self._create_notebook_datetime_path(
-                    timestamp=timestamp, error=True
-                )  # add _error tag, for failed executions.
-                os.rename(output_path, error_path)
-                logger.error(
-                    "Aborting execution. Exception %s during automatic calibration notebook execution, trace of the error can be found in %s",
-                    str(exc),
-                    error_path,
-                )
-                # pylint: disable = broad-exception-raised
-                raise Exception(
-                    f"Aborting execution. Exception {str(exc)} during automatic calibration notebook execution, trace of the error can be found in {error_path}"
-                ) from exc
-
+            timestamp = datetime.timestamp(datetime.now())
+            error_path = self._create_notebook_datetime_path(self.nb_path, timestamp, error=True)
+            os.rename(output_path, error_path)
             logger.error(
-                "Aborting execution. Exception %s during automatic calibration, expected error execution file to be created but it did not",
+                "Aborting execution. Exception %s during automatic calibration notebook execution, trace of the error can be found in %s",
                 str(exc),
+                error_path,
             )
             # pylint: disable = broad-exception-raised
             raise Exception(
-                f"Aborting execution. Exception {str(exc)} during automatic calibration, expected error execution file to be created but it did not"
+                f"Aborting execution. Exception {str(exc)} during automatic calibration notebook execution, trace of the error can be found in {error_path}"
             ) from exc
 
     @staticmethod
@@ -476,7 +460,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         return None
 
     def _create_notebook_datetime_path(
-        self, timestamp: float | None = None, dirty: bool = False, error: bool = False
+        self, original_path: str, timestamp: float | None = None, dirty: bool = False, error: bool = False
     ) -> str:
         """Create a timestamped notebook path, adding the datetime to the file name end, just before the ``.ipynb``.
 
@@ -502,17 +486,17 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         now_path = f"{daily_path}-" + f"{now.hour:02d}:{now.minute:02d}:{now.second:02d}"
 
         # If doesn't exist, create the needed folder for the path
-        os.makedirs(self.nb_folder, exist_ok=True)
+        name, folder_path = self._path_to_name_and_folder(original_path)
+        os.makedirs(folder_path, exist_ok=True)
 
         if dirty and not error:  # return the path of the execution
-            return f"{self.nb_folder}/{self.node_id}_{now_path}_dirty.ipynb"
+            return f"{folder_path}/{name}_{now_path}_dirty.ipynb"
         if error:
-            # CREATE FOLDERS FOR CALIBRATED EXECUTIONS, COMPARISONS, etc.
-            os.makedirs(f"{self.nb_folder}/error_executions", exist_ok=True)
-            return f"{self.nb_folder}/error_executions/{self.node_id}_{now_path}_error.ipynb"
+            os.makedirs(f"{folder_path}/error_executions", exist_ok=True)
+            return f"{folder_path}/error_executions/{name}_{now_path}_error.ipynb"
 
         # return the string where saved
-        return f"{self.nb_folder}/{self.node_id}_{now_path}.ipynb"
+        return f"{folder_path}/{name}_{now_path}.ipynb"
 
     def _path_to_name_and_folder(self, original_path: str) -> tuple[str, str]:
         """Extract the name and folder from a notebook path. Name will be extended with the qubit it acts on.
@@ -621,13 +605,9 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             raise FileNotFoundError(f"No previous execution found of notebook {self.nb_path}.") from exc
 
         # Check how many lines contain an output, to raise the corresponding errors:
-        if not outputs_lines:
-            logger.error("No output found in notebook %s.", self.nb_path)
-            raise IncorrectCalibrationOutput(f"No output found in notebook {self.nb_path}.")
-        if len(outputs_lines) > 1:
-            logger.warning(
-                "If you had multiple outputs exported in %s, the first one found will be used.", self.nb_path
-            )
+        if len(outputs_lines) != 1:
+            logger.error("No output or various outputs found in notebook %s.", self.nb_path)
+            raise IncorrectCalibrationOutput(f"No output or various outputs found in notebook {self.nb_path}.")
 
         # When only one line of outputs, use that one:
         return self._from_logger_string_to_output_dict(outputs_lines[0], self.nb_path)
@@ -646,19 +626,17 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             IncorrectCalibrationOutput: In case no outputs, incorrect outputs or multiple outputs where found. Incorrect outputs are those that do not contain `check_parameters` or is empty.
         """
         logger_splitted = logger_string.split(logger_output_start)
-        # In case no output is found we raise an error:
-        if len(logger_splitted) < 2:
-            logger.error("No output found in notebook %s.", input_path)
-            raise IncorrectCalibrationOutput(f"No output found in notebook {input_path}.")
-        # In case more than one output is found, we keep the first one, and raise a warning:
-        if len(logger_splitted) > 2:
-            logger.warning("If you had multiple outputs exported in %s, the first one found will be used.", input_path)
+
+        # In case something unexpected happened with the output we raise an error
+        if len(logger_splitted) != 2:
+            logger.error("No output or various outputs found in notebook %s.", input_path)
+            raise IncorrectCalibrationOutput(f"No output or various outputs found in notebook {input_path}.")
 
         # This next line is for taking into account other encodings, where special characters get `\\` in front.
         clean_data = logger_splitted[1].split("\\n")[0].replace('\\"', '"')
 
         logger_outputs_string = clean_data.split("\n")[0]
-        out_dict = json.loads(logger_outputs_string)  # in-dictionary strings will need to be double-quoted "" not ''.
+        out_dict = json.loads(logger_outputs_string)
 
         if "check_parameters" not in out_dict or out_dict["check_parameters"] == {}:
             logger.error(
@@ -677,7 +655,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             string_to_add (str): The string to append to the notebook name.
             timestamp (float): The timestamp to use for the new notebook execution name.
         """
-        timestamp_path = self._create_notebook_datetime_path(timestamp=timestamp).split(".ipynb")[0]
+        path = os.path.join(self.nb_folder, self.node_id)
+        timestamp_path = self._create_notebook_datetime_path(path, timestamp).split(".ipynb")[0]
 
         os.rename(f"{timestamp_path}.ipynb", f"{timestamp_path}_{string_to_add}.ipynb")
 
@@ -688,32 +667,7 @@ def export_nb_outputs(outputs: dict) -> None:
     Args:
         outputs (dict): Outputs from the notebook to export into the automatic calibration workflow.
     """
-    _json_serialize(outputs)
     print(f"{logger_output_start}{json.dumps(outputs)}")
-
-
-def _json_serialize(_object: Any):
-    """Function to JSON serialize the input argument.
-
-    Needed to handle input/output of notebook executions from the :class:`CalibrationNode` class.
-    This method only looks for np.ndarrays objects to JSON serialize. Any other non-JSON serializable won't be serialized.
-
-    Args:
-        _object (Any): Object to serialize
-    """
-    if isinstance(_object, dict):
-        for k, v in _object.items():
-            _object[k] = _json_serialize(v)
-
-    if isinstance(_object, list):
-        for idx, elem in enumerate(_object):
-            _object[idx] = _json_serialize(elem)
-
-    if isinstance(_object, tuple):
-        tuple_list = [_json_serialize(elem) for elem in _object]
-        return tuple(tuple_list)
-
-    return _object.tolist() if isinstance(_object, np.ndarray) else _object
 
 
 class IncorrectCalibrationOutput(Exception):
