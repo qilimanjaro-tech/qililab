@@ -860,6 +860,7 @@ class TestStaticMethodsFromCalibrationController:
     @pytest.mark.parametrize(
         "timestamp",
         [datetime(2023, 1, 1).timestamp(), datetime.now().timestamp() - 3600, datetime.now().timestamp() - 3600 * 23],
+        ids=["timestampA", "timestampB", "timestampC"],
     )
     def test_timeout_expired(self, timestamp):
         """Tests cases where timeout should be expired."""
@@ -869,6 +870,7 @@ class TestStaticMethodsFromCalibrationController:
     @pytest.mark.parametrize(
         "timestamp",
         [datetime.now().timestamp(), datetime.now().timestamp() - 1700],
+        ids=["timestampA", "timestampB"],
     )
     def test_timeout_not_expired(self, timestamp):
         """Test cases where timeout should not be expired."""

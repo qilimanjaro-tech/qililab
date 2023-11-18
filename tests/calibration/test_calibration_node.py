@@ -1,4 +1,5 @@
 """Test for the `CalibrationNode` class"""
+import json
 import os
 from datetime import datetime
 from io import StringIO
@@ -7,7 +8,12 @@ from unittest.mock import MagicMock, call, patch
 import numpy as np
 import pytest
 
-from qililab.calibration.calibration_node import CalibrationNode, IncorrectCalibrationOutput, export_nb_outputs
+from qililab.calibration.calibration_node import (
+    CalibrationNode,
+    IncorrectCalibrationOutput,
+    _json_serialize,
+    export_nb_outputs,
+)
 
 # pylint: disable=protected-access, unspecified-encoding
 
@@ -204,8 +210,10 @@ class TestPublicMethodsFromCalibrationNode:
     )
     @patch("qililab.calibration.calibration_node.os.rename")
     @patch("qililab.calibration.calibration_node.logger.error")
+    @patch("qililab.calibration.calibration_node.json_serialize")
     def test_run_node(
         self,
+        mock_json_serialize,
         mock_logger,
         mock_os,
         mock_create,
@@ -238,7 +246,8 @@ class TestPublicMethodsFromCalibrationNode:
         if input_parameters is not None:
             params_dict |= input_parameters
 
-        mock_create.assert_has_calls([call(methods_node.nb_path, dirty=True), call(methods_node.nb_path, timestamp)])
+        mock_create.assert_has_calls([call(dirty=True), call(timestamp=timestamp)])
+        mock_json_serialize.assert_called_once_with(params_dict)
         mock_execute.assert_called_with(methods_node.nb_path, "", params_dict)
         mock_os.assert_called_once_with("", "")
         mock_logger.assert_not_called()
@@ -263,8 +272,10 @@ class TestPublicMethodsFromCalibrationNode:
     )
     @patch("qililab.calibration.calibration_node.os.rename")
     @patch("qililab.calibration.calibration_node.logger.error")
+    @patch("qililab.calibration.calibration_node.json_serialize")
     def test_run_node_interrupt(
         self,
+        mock_json_serialize,
         mock_logger,
         mock_os,
         mock_create,
@@ -302,7 +313,8 @@ class TestPublicMethodsFromCalibrationNode:
         if input_parameters is not None:
             params_dict |= input_parameters
 
-        mock_create.assert_called_once_with(methods_node.nb_path, dirty=True)
+        mock_create.assert_called_once_with(dirty=True)
+        mock_json_serialize.assert_called_once_with(params_dict)
         mock_execute.assert_called_with(methods_node.nb_path, "", params_dict)
         mock_os.assert_not_called()
 
@@ -369,6 +381,26 @@ class TestPublicMethodsFromCalibrationNode:
             "Aborting execution. Exception %s during automatic calibration notebook execution, trace of the error can be found in %s",
             "Test error",
             "error_path/foobar_error.ipynb",
+        )
+
+    @patch(
+        "qililab.calibration.calibration_node.CalibrationNode._execute_notebook",
+        side_effect=Exception("test_exception"),
+    )
+    @patch("qililab.calibration.calibration_node.logger", autospec=True)
+    @patch("qililab.calibration.calibration_node.os")
+    def test_run_node_does_not_rename_non_existent_output(self, mocked_os, mocked_logger, _, methods_node):
+        """Testing when outputs are empty received from ``execute_notebook()`."""
+        with pytest.raises(
+            Exception,
+            match="Aborting execution. Exception test_exception during automatic calibration, expected error execution file to be created but it did not",
+        ):
+            methods_node.run_node()
+
+        mocked_os.assert_not_called()
+        mocked_logger.error.assert_called_with(
+            "Aborting execution. Exception %s during automatic calibration, expected error execution file to be created but it did not",
+            "test_exception",
         )
 
     ##########################################
@@ -446,16 +478,11 @@ class TestPrivateMethodsFromCalibrationNode:
         [
             "",
             "a",
-            "RAND_INT:4320765720413 - OUTPUTS: {'check_parameters': {'a':2}}/n",
-            "RAND_INT:47102512880765720413 - OUTPUTS: {} RAND_INT:47102512880765720413 - OUTPUTS: {}",
-            "RAND_INT:47102512880765720413 - OUTPUTS: {'check_parameters': {'a':2}}RAND_INT:47102512880765720413 - OUTPUTS: {'check_parameters': {'a':2}}/n",
         ],
     )
     @patch("qililab.calibration.calibration_node.pm.execute_notebook")
     @patch("qililab.calibration.calibration_node.logger", autospec=True)
-    def test_execute_notebook_raises_no_output_or_more_than_one_output(
-        self, mocked_logger, mocked_pm_exec, output, methods_node
-    ):
+    def test_execute_notebook_raises_no_output(self, mocked_logger, mocked_pm_exec, output, methods_node):
         """Testing when no outputs or more than one outputs are received from ``execute_notebook()``."""
         methods_node._stream.getvalue.return_value = output  # type: ignore [attr-defined]
 
@@ -467,6 +494,30 @@ class TestPrivateMethodsFromCalibrationNode:
 
         mocked_logger.error.assert_called_with(
             "No output or various outputs found in notebook %s.",
+            methods_node.nb_path,
+        )
+
+        mocked_pm_exec.assert_called_once_with(
+            methods_node.nb_path, "", {}, log_output=True, stdout_file=methods_node._stream
+        )
+
+    @pytest.mark.parametrize(
+        "output",
+        [
+            'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"fizz":"buzz"}} RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"foo": "bar"}}',
+            'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"a":2}}RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"a":2}}RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"a":2}}/n',
+        ],
+    )
+    @patch("qililab.calibration.calibration_node.pm.execute_notebook")
+    @patch("qililab.calibration.calibration_node.logger", autospec=True)
+    def test_execute_notebook_warnings_more_than_one_output(self, mocked_logger, mocked_pm_exec, output, methods_node):
+        """Testing when no outputs or more than one outputs are received from ``execute_notebook()``."""
+        methods_node._stream.getvalue.return_value = output  # type: ignore [attr-defined]
+
+        methods_node._execute_notebook(methods_node.nb_path, "", {})
+
+        mocked_logger.warning.assert_called_with(
+            "If you had multiple outputs exported in %s, the first one found will be used.",
             methods_node.nb_path,
         )
 
@@ -531,11 +582,16 @@ class TestPrivateMethodsFromCalibrationNode:
         [(None, True, True), (145783952598, False, True), (145783959532, False, False), (None, True, False)],
     )
     def test_create_notebook_datetime_path(
-        self, timestamp, dirty, error, methods_node: CalibrationNode, original_path="foo/bar.ipynb"
+        self,
+        timestamp,
+        dirty,
+        error,
+        methods_node: CalibrationNode,
     ):
         """Test ``that create_notebook_datetime_path()`` works correctly."""
         with patch("qililab.calibration.calibration_node.os") as mocked_os:
-            test_value = methods_node._create_notebook_datetime_path(original_path, timestamp, dirty, error)
+            test_value = methods_node._create_notebook_datetime_path(timestamp=timestamp, dirty=dirty, error=error)
+            test_value = methods_node._create_notebook_datetime_path(timestamp=timestamp, dirty=dirty, error=error)
             mocked_os.makedirs.assert_called()
             if timestamp is not None:
                 test_timestamp = datetime.fromtimestamp(timestamp)
@@ -544,14 +600,16 @@ class TestPrivateMethodsFromCalibrationNode:
                     f"{test_daily_path}-"
                     + f"{test_timestamp.hour:02d}:{test_timestamp.minute:02d}:{test_timestamp.second:02d}"
                 )
-
+                assert os.path.join(methods_node.nb_path, methods_node.node_id) in test_value
                 assert f"_{test_path}" in test_value
             if dirty and not error:
-                assert "foo/bar" in test_value
+                path_and_node_id = os.path.join(methods_node.nb_folder, methods_node.node_id)
+                assert path_and_node_id in test_value
                 assert "_dirty.ipynb" in test_value
             if error:
+                path_and_node_id_error = os.path.join(methods_node.nb_folder, "error_executions", methods_node.node_id)
                 assert mocked_os.makedirs.call_count == 2
-                assert "foo/error_executions/bar" in test_value
+                assert path_and_node_id_error in test_value
                 assert "_error.ipynb" in test_value
 
     ####################################
@@ -635,16 +693,16 @@ class TestPrivateMethodsFromCalibrationNode:
                 "good",
                 'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_params": [["bus_alias", "param_name", 1]]}\n',
             ),
-            ("two", "RAND_INT:47102512880765720413 - OUTPUTS: /n {} RAND_INT:47102512880765720413 - OUTPUTS: {}"),
             (
-                "two",
-                'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"a":2}}RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"a":2}}/n',
+                "more_than_one",
+                'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_params": [["bus_alias", "param_name", 1]]}RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_params": [["bus_alias", "param_name", 1]]}/n',
             ),
             ("none", '"check_parameters": {"x": [10, 12, 14, 16,]}'),
             (
-                "two",
+                "more_than_one",
                 'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_params": [["bus_alias", "param_name", 1]]}\n'
-                "\n"
+                + "\n"
+                + 'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_params": [["bus_alias", "param_name", 1]]}\n'
                 + 'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_params": [["bus_alias", "param_name", 1]]}\n',
             ),
             ("empty", "RAND_INT:47102512880765720413 - OUTPUTS: {}"),
@@ -674,7 +732,7 @@ class TestPrivateMethodsFromCalibrationNode:
                 methods_node.nb_path,
             )
 
-        if type_content == "good":
+        if type_content in ["good", "two"]:
             # building a fixed dictionary for the test
             results = {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}
             expected_dict = {"check_parameters": results, "platform_params": [["bus_alias", "param_name", 1]]}
@@ -682,15 +740,26 @@ class TestPrivateMethodsFromCalibrationNode:
             test_dict = methods_node._parse_output_from_execution_file(filename)
             assert test_dict == expected_dict
 
-        if type_content in ["none", "two"]:
+        if type_content == "none":
             with pytest.raises(
                 IncorrectCalibrationOutput,
-                match=f"No output or various outputs found in notebook {methods_node.nb_path}.",
+                match=f"No output found in notebook {methods_node.nb_path}.",
             ):
                 methods_node._parse_output_from_execution_file(filename)
 
             mocked_logger.error.assert_called_with(
-                "No output or various outputs found in notebook %s.",
+                "No output found in notebook %s.",
+                methods_node.nb_path,
+            )
+
+        if type_content == "more_than_one":
+            results = {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}
+            expected_dict = {"check_parameters": results, "platform_params": [["bus_alias", "param_name", 1]]}
+
+            test_dict = methods_node._parse_output_from_execution_file(filename)
+            assert test_dict == expected_dict
+            mocked_logger.warning.assert_called_with(
+                "If you had multiple outputs exported in %s, the first one found will be used.",
                 methods_node.nb_path,
             )
 
@@ -715,10 +784,9 @@ class TestPrivateMethodsFromCalibrationNode:
     def test_add_string_to_checked_nb_name(self, methods_node: CalibrationNode):
         """Test that ``add_string_to_checked_nb_name()`` works properly."""
         with patch("qililab.calibration.calibration_node.os.rename") as mocked_rename:
-            path = os.path.join(methods_node.nb_folder, methods_node.node_id)
-            timestamp_path = methods_node._create_notebook_datetime_path(path, 0).split(".ipynb")[0]
+            timestamp_path = methods_node._create_notebook_datetime_path(timestamp=0).split(".ipynb")[0]
             string_to_add = "test_succesful"
-            methods_node._add_string_to_checked_nb_name(string_to_add, 0)
+            methods_node._add_string_to_checked_nb_name(string_to_add, timestamp=0)
             mocked_rename.assert_called_once_with(f"{timestamp_path}.ipynb", f"{timestamp_path}_{string_to_add}.ipynb")
 
 
@@ -744,13 +812,52 @@ class TestStaticMethodsFromCalibrationNode:
 #######################################
 ### TEST EXPORT CALIBRATION OUTPUTS ###
 #######################################
+@pytest.mark.parametrize(
+    "test_outputs, test_dumped_outputs",
+    [
+        ({"this_is": "a_test_dict", "foo": [1, 2, 3, 4]}, '{"this_is": "a_test_dict", "foo": [1, 2, 3, 4]}'),
+        (
+            {"this_is": np.array([1, 2, 3, 4, 5]), "foo": {"bar": "jose", "pepe": (np.array([0]), np.array([0]), "a")}},
+            '{"this_is": [1, 2, 3, 4, 5], "foo": {"bar": "jose", "pepe": [[0], [0], "a"]}}',
+        ),
+    ],
+)
 @patch("qililab.calibration.calibration_node.json.dumps", autospec=True)
-def test_export_nb_outputs(mocked_dumps):
+def test_export_nb_outputs(mocked_dumps, test_outputs, test_dumped_outputs):
     """Test that ``export_nb_outputs()`` works properly."""
-    test_outputs = {"this_is": "a_test_dict", "foo": "bar"}
-    test_dumped_outputs = '{"this_is": "a_test_dict", "foo": "bar"}'
     mocked_dumps.return_value = test_dumped_outputs
     with patch("builtins.print") as mocked_print:
         export_nb_outputs(test_outputs)
         mocked_dumps.assert_called_with(test_outputs)
         mocked_print.assert_called_with(f"{logger_output_start}{test_dumped_outputs}")
+
+
+#######################################
+######### TEST JSON SERIALIZE #########
+#######################################
+@pytest.mark.parametrize(
+    "test_objects, expected_test_objects",
+    [
+        ({"this_is": "a_test_dict", "foo": np.array([1, 2, 3, 4])}, {"this_is": "a_test_dict", "foo": [1, 2, 3, 4]}),
+        (
+            {"this_is": np.array([1, 2, 3, 4, 5]), "foo": {"bar": "jose", "pepe": (np.array([0]), np.array([0]), "a")}},
+            {"this_is": [1, 2, 3, 4, 5], "foo": {"bar": "jose", "pepe": ([0], [0], "a")}},
+        ),
+        (123, 123),
+        (
+            (np.array([1, 2, 3, 4, 5.5]), {"foo": np.array([0.1, 0.2, 0.3])}),
+            ([1, 2, 3, 4, 5.5], {"foo": [0.1, 0.2, 0.3]}),
+        ),
+        (np.array([20, 30, 40]), [20, 30, 40]),
+        ("qililab rocks", "qililab rocks"),
+    ],
+)
+def test_json_serialize(test_objects, expected_test_objects):
+    """Test that ``json_serialize()`` works properly."""
+    if isinstance(test_objects, (dict, list)):
+        # No need to colect return value for objects that are referenced
+        _json_serialize(test_objects)
+        assert test_objects == expected_test_objects
+    else:
+        test_result = _json_serialize(test_objects)
+        assert test_result == expected_test_objects
