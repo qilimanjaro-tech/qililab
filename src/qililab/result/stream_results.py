@@ -82,7 +82,48 @@ def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
             ...,
             [  0.,   0.],
             [  0.,   0.],
-            [  0.,   0.]]), {'amp': array([1, 2, 3])})
+            [  0.,   0.]]), {'amp': array([0, 0.1,..., 1.0])})
+
+        You can also include nested loops experiments like this:
+
+        .. code-block:: python
+
+            import numpy as np
+            import qililab as ql
+
+            # Building the platform:
+            platform = ql.build_platform(runcard="runcards/galadriel.yml")
+
+            # Connecting and setting up the platform:
+            platform.connect()
+            platform.initial_setup()
+            platform.turn_on_instruments()
+
+            # Executing the experiment on the platform:
+            AMP_VALUES = np.linspace(0, 1, 1000)
+            FREQ_VALUES = np.linspace(0, 1, 1000)
+
+            stream_array = ql.stream_results(shape=(1000, 1000, 2), loops={"amp": AMP_VALUES, "freq": FREQ_VALUES}, path="results.h5")
+
+            with stream_array:
+                for i, amp in enumerate(AMP_VALUES):
+                    platform.set_parameter(alias="drive_q0", parameter=ql.Parameter.AMPLITUDE, value=amp)
+                    for j, freq in enumerate(FREQ_VALUES):
+                        platform.set_parameter(alias="drive_q0", parameter=ql.Parameter.LO_FREQUENCY, value=freq)
+                        results = platform.execute(circuit)
+                        stream_array[(i, j, 0)] = results.array[0]
+                        stream_array[(i, j, 1)] = results.array[1]
+
+        The results would look something like this:
+
+        >>> print(ql.load_results(path="results.h5"))
+        (array([[[700.,   0.],
+            [  0.,   0.],
+            [  0.,   0.],
+            ...,
+            [  0.,   0.],
+            [  0.,   0.],
+            [  0.,   0.]]]), {'amp': array([0, 0.1,...,1.0], 'freq': array([0, 0.1,...,1.0])})
 
     """
     return StreamArray(shape=shape, path=path, loops=loops)
