@@ -183,9 +183,7 @@ class CalibrationController:
         self.platform: Platform = build_platform(runcard)
         """The initialized platform, where the experiments will be run (Platform)."""
 
-    def run_automatic_calibration(
-        self, force_maintain_timeout_ratio: float = 0.0, safe_diagnose: bool = False
-    ) -> dict[str, dict]:
+    def run_automatic_calibration(self, force_maintain: bool = False, safe_diagnose: bool = False) -> dict[str, dict]:
         """Runs the full automatic calibration procedure and retrieves the final set parameters and achieved fidelities dictionaries.
 
         This is the primary interface for our calibration procedure and the highest level algorithm, which finds all the end nodes of the graph
@@ -208,8 +206,7 @@ class CalibrationController:
         highest_level_nodes = [node for node, out_degree in self.calibration_graph.out_degree() if out_degree == 0]
 
         for n in highest_level_nodes:
-            force_mantain = CalibrationController._get_forced_maintain_condition(n, force_maintain_timeout_ratio)
-            self.maintain(self.node_sequence[n], force_mantain=force_mantain, safe_diagnose=safe_diagnose)
+            self.maintain(self.node_sequence[n], force_mantain=force_maintain, safe_diagnose=safe_diagnose)
 
         logger.info(
             "\n#############################################\n"
@@ -258,7 +255,7 @@ class CalibrationController:
         for n in self._dependencies(node):
             logger.info("Maintaining %s from maintain(%s).\n", n.node_id, node.node_id)
             self.maintain(n)
-        
+
         # If check_state of this node passes, don't check data, assume it works (unless its an end node).
         node_status = self.check_state(node)
         if not force_mantain and node_status:
@@ -268,7 +265,7 @@ class CalibrationController:
         result = self.check_data(node)
         if result == "in_spec":
             return
-        if result == "bad_data":
+        if result == "bad_data" or (safe_diagnose and result == "out_of_spec"):
             for n in self._dependencies(node):
                 logger.info("Diagnosing %s from maintain(%s).\n", n.node_id, node.node_id)
                 self.diagnose(n, safe=safe_diagnose)
@@ -276,7 +273,7 @@ class CalibrationController:
         # implicit out_spec case
         if force_mantain and node_status:
             logger.info(
-                "Force maintaining node %s. `Check satus` has passed but the real state of the node was not `in_spec', perhaps drift timeouts shall be updated.",
+                "`force_maintain` in node %s, detected that `check_status` was passed, but node was not `in_spec', perhaps `drift_timeouts` should be updated.",
                 node.node_id,
             )
 
@@ -330,10 +327,6 @@ class CalibrationController:
             for n in self._dependencies(node):
                 self.diagnose(n, safe=True)
 
-            # calibrate
-            self.calibrate(node)
-            self._update_parameters(node)
-
         else:
             result = self.check_data(node)
 
@@ -350,10 +343,10 @@ class CalibrationController:
             if recalibrated != [] and not any(recalibrated):
                 return False
 
-            # calibrate
-            self.calibrate(node)
-            self._update_parameters(node)
-            return True
+        # calibrate
+        self.calibrate(node)
+        self._update_parameters(node)
+        return safe
 
     def check_state(self, node: CalibrationNode) -> bool:
         """Checks if the node's drift timeouts have passed since the last calibration or data check.
@@ -499,9 +492,9 @@ class CalibrationController:
                 logger.info(
                     "Platform updated with: (bus: %s, q: %s, %s, %f).", bus_alias, qubit, param_name, param_value
                 )
-                self.platform.set_parameter(alias=bus_alias, parameter=param_name, value=param_value, channel_id=qubit)
+            #     self.platform.set_parameter(alias=bus_alias, parameter=param_name, value=param_value, channel_id=qubit)
 
-            save_platform(self.runcard, self.platform)
+            # save_platform(self.runcard, self.platform)
 
     def get_last_set_parameters(self) -> dict[tuple, tuple]:
         """Retrieves the last set parameters of the graph.
@@ -598,18 +591,22 @@ class CalibrationController:
         current_time = datetime.now()
         return current_time > timeout_time
 
-    @staticmethod
-    def _get_forced_maintain_condition(node: CalibrationNode, ratio: float = 0.0) -> bool:
-        """Method to return if a Calibration Node should be force maintained or not.
-        The condition checks if the time trancurred from the last calibration is greater than a ratio of the drift timeout of the node.
+    # TODO: @Isaac, I've commented this, because we won't use a ratio parameter, its too ugly and complex for a first iteration...
+    # I would just delete this function, but if you really want, keep this one with a fixed number like 600, or a fixed small ratio like 0.01
+    # Like it is now, its super beautiful and clear, two flags, nothing complicated, if hardware ask, we can always add it!
 
-        Args:
-            node (CalibrationNode): Calibration Node to get the the forced maintain condition
-            ratio(flat, optional): Ratio used for the condition. Default to 0.0.
+    # @staticmethod
+    # def _get_forced_maintain_condition(node: CalibrationNode, ratio: float = 0.01) -> bool:
+    #     """Method to return if a Calibration Node should be force maintained or not.
+    #     The condition checks if the time transcurred from the last calibration is greater than a ratio of the drift timeout of the node.
 
-        Returns:
-            bool: Returns True if the condition is met. Otherwise returns False.
-        """
-        comp = node.drift_timeout * ratio if ratio != 0 else 600
-        now = datetime.timestamp(datetime.now())
-        return now - node.previous_timestamp > comp if node.previous_timestamp is not None else False
+    #     Args:
+    #         node (CalibrationNode): Calibration Node to get the the forced maintain condition
+    #         ratio(flat, optional): Ratio used for the condition. Default to 0.0.
+
+    #     Returns:
+    #         bool: Returns True if the condition is met. Otherwise returns False.
+    #     """
+    #     comp = node.drift_timeout * ratio if ratio != 0 else 600
+    #     now = datetime.timestamp(datetime.now())
+    #     return now - node.previous_timestamp > comp if node.previous_timestamp is not None else False

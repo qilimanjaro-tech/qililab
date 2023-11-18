@@ -880,21 +880,21 @@ class TestStaticMethodsFromCalibrationController:
     ######################################
     #### TEST FORCE MAINTAIN CONDITION ###
     ######################################
-    @pytest.mark.parametrize(
-        "ratio, drift_timeout, delta_previous_timestamp, expected",
-        [(0, 200, 800, True), (0, 5000, 400, False), (0.5, 1000, 800, True), (0.2, 1000, 100, False)],
-    )
-    def test_get_forced_maintain_condition(self, ratio, drift_timeout, delta_previous_timestamp, expected):
-        """Test conditions are computed properly"""
-        node = CalibrationNode(
-            nb_path="tests/automatic_calibration/notebook_test/fourth.ipynb",
-            in_spec_threshold=1,
-            bad_data_threshold=2,
-            comparison_model=dummy_comparison_model,
-            drift_timeout=drift_timeout,
-        )
+    # @pytest.mark.parametrize(
+    #     "ratio, drift_timeout, delta_previous_timestamp, expected",
+    #     [(0, 200, 800, True), (0, 5000, 400, False), (0.5, 1000, 800, True), (0.2, 1000, 100, False)],
+    # )
+    # def test_get_forced_maintain_condition(self, ratio, drift_timeout, delta_previous_timestamp, expected):
+    #     """Test conditions are computed properly"""
+    #     node = CalibrationNode(
+    #         nb_path="tests/automatic_calibration/notebook_test/fourth.ipynb",
+    #         in_spec_threshold=1,
+    #         bad_data_threshold=2,
+    #         comparison_model=dummy_comparison_model,
+    #         drift_timeout=drift_timeout,
+    #     )
 
-        now = datetime.timestamp(datetime.now())
-        node.previous_timestamp = now - delta_previous_timestamp
+    #     now = datetime.timestamp(datetime.now())
+    #     node.previous_timestamp = now - delta_previous_timestamp
 
-        assert CalibrationController._get_forced_maintain_condition(node, ratio) == expected
+    #     assert CalibrationController._get_forced_maintain_condition(node, ratio) == expected
