@@ -60,8 +60,8 @@ class _MeasurementCompilationInfo:  # pylint: disable=too-few-public-methods, to
         self.bus: str = bus
         self.variable_I: qua.QuaVariableType | None = variable_I
         self.variable_Q: qua.QuaVariableType | None = variable_Q
-        self.stream_I: qua_dsl._ResultSource | qua_dsl._ResultStream | None = stream_I
-        self.stream_Q: qua_dsl._ResultSource | qua_dsl._ResultStream | None = stream_Q
+        self.stream_I: qua_dsl._ResultSource | None = stream_I
+        self.stream_Q: qua_dsl._ResultSource | None = stream_Q
         self.stream_raw_adc: qua_dsl._ResultSource | None = stream_raw_adc
         self.loops_iterations: list[int] = []
         self.average: bool = False
@@ -168,32 +168,25 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
     def _process_measurements(self):
         def _process_measurement(measurement: _MeasurementCompilationInfo, index: int):
             result_handles: list[str] = []
+
+            def _process_stream(stream: qua_dsl._ResultSource, save_as: str) -> None:
+                processing_stream: qua_dsl._ResultSource | qua_dsl._ResultStream = stream
+                for loop_iteration in measurement.loops_iterations:
+                    processing_stream = processing_stream.buffer(loop_iteration)
+                if measurement.average:
+                    processing_stream = processing_stream.average()
+                processing_stream.save(save_as)
+                result_handles.append(save_as)
+
             if measurement.stream_I is not None:
-                stream_I = measurement.stream_I
-                for loop_iteration in measurement.loops_iterations:
-                    stream_I = stream_I.buffer(loop_iteration)
-                if measurement.average:
-                    stream_I = stream_I.average()
-                stream_I.save(f"I_{index}")
-                result_handles.append(f"I_{index}")
+                _process_stream(measurement.stream_I, f"I_{index}")
             if measurement.stream_Q is not None:
-                stream_Q = measurement.stream_Q
-                for loop_iteration in measurement.loops_iterations:
-                    stream_Q = stream_Q.buffer(loop_iteration)
-                if measurement.average:
-                    stream_Q = stream_Q.average()
-                stream_Q.save(f"Q_{index}")
-                result_handles.append(f"Q_{index}")
+                _process_stream(measurement.stream_Q, f"Q_{index}")
             if measurement.stream_raw_adc is not None:
-                input1 = measurement.stream_raw_adc.input1()
-                input2 = measurement.stream_raw_adc.input2()
-                for loop_iteration in measurement.loops_iterations:
-                    input1 = input1.buffer(loop_iteration)  # type: ignore[assignment]
-                    input2 = input2.buffer(loop_iteration)  # type: ignore[assignment]
-                input2.save_all(f"adc1_{index}")
-                input2.save_all(f"adc2_{index}")
-                result_handles.append(f"adc1_{index}")
-                result_handles.append(f"adc2_{index}")
+                # TODO: Check if both inputs are available
+                _process_stream(measurement.stream_raw_adc.input1(), f"adc1_{index}")
+                _process_stream(measurement.stream_raw_adc.input2(), f"adc2_{index}")
+
             return result_handles
 
         measurements = [
