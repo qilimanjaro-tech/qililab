@@ -92,9 +92,8 @@ def IQ_norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str
     return np.min(errors)
 
 
-def ssro_comparison_2D(
-    obtained: dict[str, Any], comparison: dict[str, Any]
-) -> float:  # pylint: disable=too-many-locals
+# pylint: disable=too-many-locals
+def ssro_comparison_2D(obtained: dict[str, Any], comparison: dict[str, Any]) -> float:
     """Returns a normalized error between the comparison and obtained samples, for 2D plots.
 
     Always compares results vs results, no fit used.
