@@ -62,7 +62,7 @@ def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
             platform.turn_on_instruments()
 
             # Executing the experiment on the platform:
-            AMP_VALUES = np.arange(0, 1, 1000)
+            AMP_VALUES = np.linspace(0, 1, 1000)
 
             stream_array = ql.stream_results(shape=(1000, 2), loops={"amp": AMP_VALUES}, path="results.h5")
 
