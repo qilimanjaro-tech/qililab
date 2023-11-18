@@ -492,9 +492,9 @@ class CalibrationController:
                 logger.info(
                     "Platform updated with: (bus: %s, q: %s, %s, %f).", bus_alias, qubit, param_name, param_value
                 )
-            #     self.platform.set_parameter(alias=bus_alias, parameter=param_name, value=param_value, channel_id=qubit)
+                self.platform.set_parameter(alias=bus_alias, parameter=param_name, value=param_value, channel_id=qubit)
 
-            # save_platform(self.runcard, self.platform)
+            save_platform(self.runcard, self.platform)
 
     def get_last_set_parameters(self) -> dict[tuple, tuple]:
         """Retrieves the last set parameters of the graph.
