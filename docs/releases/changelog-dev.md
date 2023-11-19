@@ -20,6 +20,9 @@
 - Added the driver for Quantum Machines Manager and a new QuantumMachinesResult class to handle Quantum Machines instruments.
   [#568](https://github.com/qilimanjaro-tech/qililab/pull/568)
 
+- Implemented the `QuantumMachinesMeasurementResult` class to store data acquired from a single instrument.
+  [#596](https://github.com/qilimanjaro-tech/qililab/pull/596)
+
 ### Improvements
 
 - Improved the UX for circuit transpilation by unifying the native gate and pulse transpiler under one `CircuitTranspiler` class, which has 3 methods:
@@ -38,6 +41,9 @@
 
 - Various improvements in the compilation flow of `QbloxCompiler`.
   [#563](https://github.com/qilimanjaro-tech/qililab/pull/563)
+
+- Updated `qm-qua` library to latest `1.1.5.1`.
+  [#596](https://github.com/qilimanjaro-tech/qililab/pull/596)
 
 ### Breaking changes
 
