@@ -16,6 +16,7 @@
 from dataclasses import dataclass
 from typing import Dict
 
+import numpy as np
 from qm import QuantumMachine
 from qm import QuantumMachinesManager as QMM
 from qm import SimulationConfig
@@ -24,7 +25,6 @@ from qm.qua import Program
 
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
-from qililab.result.quantum_machines_results import QuantumMachinesResult
 from qililab.typings import InstrumentName, Parameter, QMMDriver
 
 
@@ -114,7 +114,7 @@ class QuantumMachinesManager(Instrument):
 
         return self.qm.execute(program)
 
-    def get_acquisitions(self, job: RunningQmJob) -> QuantumMachinesResult:
+    def get_acquisitions(self, job: RunningQmJob) -> dict[str, np.ndarray]:
         """Fetches the results from the execution of a QUA Program.
 
         Once the results have been fetched, they are returned wrapped in a QuantumMachinesResult instance.
@@ -127,10 +127,10 @@ class QuantumMachinesManager(Instrument):
         """
         result_handles_fetchers = job.result_handles
         result_handles_fetchers.wait_for_all_values()
-        # TODO: we might need to use 'name' in 'name, handle in job.result_handles' in the future
-        results = [handle.fetch_all() for _, handle in job.result_handles if handle is not None]
-
-        return QuantumMachinesResult(raw_results=results)
+        results = {
+            name: handle.fetch_all(flat_struct=True) for name, handle in job.result_handles if handle is not None
+        }
+        return {name: data for name, data in results.items() if data is not None}
 
     def simulate(self, program: Program) -> RunningQmJob:
         """Simulates the QUA Program.
