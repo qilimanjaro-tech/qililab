@@ -18,7 +18,7 @@ from typing import Any
 import numpy as np
 
 # Epsilon, for avoiding divisions by zero.
-d_epsilon = 0.00000000000000000000000000001
+div_epsilon = 0.00000000000000000000000000001
 
 
 def norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, list]) -> float:
@@ -60,7 +60,7 @@ def norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, l
     )
     root_mean_square_error = np.sqrt(square_error / len(obtained["results"]))
 
-    return root_mean_square_error / np.abs(np.mean(comparison[check]) + d_epsilon)
+    return root_mean_square_error / np.abs(np.mean(comparison[check]) + div_epsilon)
 
 
 def IQ_norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, list]) -> float:
@@ -106,7 +106,7 @@ def IQ_norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str
         root_mean_square_error = np.sqrt(square_error / len(obtained_results))
 
         # normalize the difference with the mean values, and add it to the i or q error
-        errors.append(root_mean_square_error / np.abs(np.mean(comparison[check]) + d_epsilon))
+        errors.append(root_mean_square_error / np.abs(np.mean(comparison[check]) + div_epsilon))
 
     # Return the one with less errors, since it was the one used for the fitting.
     return np.min(errors)
@@ -155,20 +155,20 @@ def ssro_comparison_2D(obtained: dict[str, Any], comparison: dict[str, Any]) -> 
 
         # Difference in means of 2d histograms
         mean_diff += (
-            (np.mean(i_s[gaussian_n][0]) - np.mean(i_s[gaussian_n][1])) / (np.mean(i_s[gaussian_n][0]) + d_epsilon)
+            (np.mean(i_s[gaussian_n][0]) - np.mean(i_s[gaussian_n][1])) / (np.mean(i_s[gaussian_n][0]) + div_epsilon)
         ) ** 2 + (
-            (np.mean(q_s[gaussian_n][0]) - np.mean(q_s[gaussian_n][1])) / (np.mean(q_s[gaussian_n][0]) + d_epsilon)
+            (np.mean(q_s[gaussian_n][0]) - np.mean(q_s[gaussian_n][1])) / (np.mean(q_s[gaussian_n][0]) + div_epsilon)
         ) ** 2
 
         # Difference in std of 2d histograms
         std_dev_diff += (
-            (np.std(i_s[gaussian_n][0]) - np.std(i_s[gaussian_n][1])) / (np.std(i_s[gaussian_n][0]) + d_epsilon)
+            (np.std(i_s[gaussian_n][0]) - np.std(i_s[gaussian_n][1])) / (np.std(i_s[gaussian_n][0]) + div_epsilon)
         ) ** 2 + (
-            (np.std(q_s[gaussian_n][0]) - np.std(q_s[gaussian_n][1])) / (np.std(q_s[gaussian_n][0]) + d_epsilon)
+            (np.std(q_s[gaussian_n][0]) - np.std(q_s[gaussian_n][1])) / (np.std(q_s[gaussian_n][0]) + div_epsilon)
         ) ** 2
 
     # Return a weighted sum, with more weight in the average than the standard deviation:
-    return np.sqrt((mean_diff) * 4 + (std_dev_diff) / (obtained["sweep_interval"] + d_epsilon)) / 10
+    return np.sqrt((mean_diff) * 4 + (std_dev_diff) / (obtained["sweep_interval"] + div_epsilon)) / 10
 
 
 def is_structure_of_check_parameters_correct(obtained: dict[str, list], comparison: dict[str, list], fit: bool = True):
