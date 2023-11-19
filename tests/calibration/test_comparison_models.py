@@ -289,6 +289,12 @@ class TestIQNormRootMeanSqrtError:
                     "fit": np.array([basic_results]),
                 }
             ),
+            dump_load(
+                {
+                    "sweep_interval": basic_interval,
+                    "results": np.array([very_changed_results]),
+                }
+            ),
         ],
     )
     def test_norm_root_mean_sqrt_error_bad_shape(self, comparison):
@@ -297,7 +303,7 @@ class TestIQNormRootMeanSqrtError:
             ValueError,
             match="Incorrect 'check_parameters' shape for this notebook output",
         ):
-            norm_root_mean_sqrt_error(obtained=obtained, comparison=comparison)
+            IQ_norm_root_mean_sqrt_error(obtained=obtained_IQ, comparison=comparison)
 
     @pytest.mark.parametrize(
         "comparison",
@@ -316,7 +322,7 @@ class TestIQNormRootMeanSqrtError:
                 "Keys in the `check_parameters` are not 'sweep_interval', 'results' (and 'fit', optional), as is needed."
             ),
         ):
-            norm_root_mean_sqrt_error(obtained=obtained, comparison=comparison)
+            IQ_norm_root_mean_sqrt_error(obtained=obtained_IQ, comparison=comparison)
 
     @pytest.mark.parametrize(
         "comparison",
@@ -324,25 +330,25 @@ class TestIQNormRootMeanSqrtError:
             dump_load(
                 {
                     "sweep_interval": np.array([]),
-                    "results": np.array([]),
-                    "fit": np.array([]),
+                    "results": np.array([[], []]),
+                    "fit": np.array([[], []]),
                 }
             ),
             dump_load(
                 {
                     "sweep_interval": np.array([]),
-                    "results": np.array([]),
+                    "results": np.array([[], []]),
                 }
             ),
         ],
     )
-    def test_norm_root_mean_sqrt_error_empty(self, comparison):
+    def test_IQ_norm_root_mean_sqrt_error_empty(self, comparison):
         """Test bad shape comparisons."""
         with pytest.raises(
             ValueError,
             match="Empty 'sweep_interval' or 'results' in `check_parameters`'s notebook output.",
         ):
-            norm_root_mean_sqrt_error(obtained=obtained, comparison=comparison)
+            IQ_norm_root_mean_sqrt_error(obtained=obtained_IQ, comparison=comparison)
 
     @pytest.mark.parametrize(
         "output, comparison_IQ",

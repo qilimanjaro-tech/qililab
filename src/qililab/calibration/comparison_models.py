@@ -26,9 +26,17 @@ def norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, l
 
     If the comparison has a fit, it will be used, if not, the results will.
 
+    The samples have to have the following structure (lists can be arrays as well):
+
+    obtained/comparison = {
+        "sweep_interval": list_of_the_sweep,
+        "results": list_of_results
+        "fit": list_of_fitting,  # optional
+    }
+
     Args:
-        obtained (dict): obtained samples to compare.
-        comparison (dict): previous samples to compare.
+        obtained (dict): obtained samples to compare. Structure following the function docstring.
+        comparison (dict): previous samples to compare. Structure following the function docstring.
 
     Returns:
         float: difference/error between the two samples.
@@ -37,9 +45,11 @@ def norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, l
 
     # Structure checks:
     is_structure_of_check_parameters_correct(obtained, comparison, fit)
+
     for check_data in [obtained, comparison]:
         if not np.shape(check_data[check]) == np.shape(check_data["results"]) == (len(check_data["sweep_interval"]),):
             raise ValueError("Incorrect 'check_parameters' shape for this notebook output.")
+
         if 0 in [len(check_data["sweep_interval"]), len(check_data["results"])]:
             raise ValueError("Empty 'sweep_interval' or 'results' in `check_parameters`'s notebook output.")
 
@@ -58,9 +68,17 @@ def IQ_norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str
 
     If the comparison has a fit, it will be used, if not, the results will.
 
+    The samples have to have the following structure (lists can be arrays as well):
+
+    obtained/comparison = {
+        "sweep_interval": list_of_the_sweep,
+        "results": [list_of_I_results, list_of_Q_results],
+        "fit": [list_of_I_fitting, list_of_Q_fitting],  # optional
+    }
+
     Args:
-        obtained (dict): obtained samples to compare.
-        comparison (dict): previous samples to compare.
+        obtained (dict): obtained samples to compare. Structure following the function docstring.
+        comparison (dict): previous samples to compare. Structure following the function docstring.
 
     Returns:
         float: difference/error between the two samples.
@@ -69,9 +87,11 @@ def IQ_norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str
 
     # Structure checks:
     is_structure_of_check_parameters_correct(obtained, comparison, fit)
+
     for check_data in [obtained, comparison]:
         if not np.shape(check_data[check]) == np.shape(check_data["results"]) == (2, len(check_data["sweep_interval"])):
             raise ValueError("Incorrect 'check_parameters' shape for this notebook output.")
+
         if 0 in [len(check_data["sweep_interval"]), len(check_data["results"][0]), len(check_data["results"][1])]:
             raise ValueError("Empty 'sweep_interval' or 'results' in `check_parameters`'s notebook output.")
 
@@ -98,9 +118,16 @@ def ssro_comparison_2D(obtained: dict[str, Any], comparison: dict[str, Any]) -> 
 
     Always compares results vs results, no fit used.
 
+    The samples have to have the following structure (lists can be arrays as well):
+
+    obtained/comparison = {
+        "sweep_interval": NUM_BINS,
+        "results": ((list_i_0, list_i_1), (list_q_0, list_q_1)),  # the index indicates the gaussian.
+    }
+
     Args:
-        obtained (dict): obtained samples to compare.
-        comparison (dict): previous samples to compare.
+        obtained (dict): Obtained samples to compare. Structure following the function docstring.
+        comparison (dict): pPrevious samples to compare. Structure following the function docstring.
 
     Returns:
         float: difference/error between the two samples.
@@ -109,38 +136,39 @@ def ssro_comparison_2D(obtained: dict[str, Any], comparison: dict[str, Any]) -> 
     for check_data in [obtained, comparison]:
         if "sweep_interval" not in check_data or "results" not in check_data:
             raise ValueError("Keys in the `check_parameters` are not 'sweep_interval' and 'results', as is needed.")
+
         if np.shape(check_data["results"]) != (2, 2, check_data["sweep_interval"]):
             raise ValueError("Incorrect 'check_parameters' shape for this notebook output.")
+
         for i in range(2):
             if len(check_data["results"][0][i]) == 0 or len(check_data["results"][1][i]) == 0:
                 raise ValueError("Empty 'sweep_interval' or 'results' in `check_parameters`'s notebook output.")
 
+    i_s: list[list[list[list]]] = [[[], []], [[], []]]
+    q_s: list[list[list[list]]] = [[[], []], [[], []]]
+    mean_diff, std_dev_diff = 0, 0
     # Error computation:
-    obtn_i_0, obtn_i_1 = obtained["results"][0]  # first gaussian I's
-    obtn_q_0, obtn_q_1 = obtained["results"][1]  # second gaussian I's
+    for gaussian_n in range(2):  # For first and secong gaussian
+        for datas, data in enumerate([obtained, comparison]):
+            i_s[gaussian_n][datas] = data["results"][0][datas]  # 0 for i's, and j for first or second gaussian
+            q_s[gaussian_n][datas] = data["results"][1][datas]  # 1 for q's, and j for first or second gaussian
 
-    comp_i_0, comp_i_1 = comparison["results"][0]  # first gaussian Q's
-    comp_q_0, comp_q_1 = comparison["results"][1]  # second gaussian Q's
+        # Difference in means of 2d histograms
+        mean_diff += (
+            (np.mean(i_s[gaussian_n][0]) - np.mean(i_s[gaussian_n][1])) / (np.mean(i_s[gaussian_n][0]) + div_epsilon)
+        ) ** 2 + (
+            (np.mean(q_s[gaussian_n][0]) - np.mean(q_s[gaussian_n][1])) / (np.mean(q_s[gaussian_n][0]) + div_epsilon)
+        ) ** 2
 
-    # Difference in means of 2d histograms
-    mean_diff_0 = ((np.mean(obtn_i_0) - np.mean(comp_i_0)) / (np.mean(obtn_i_0) + div_epsilon)) ** 2 + (
-        (np.mean(obtn_q_0) - np.mean(comp_q_0)) / (np.mean(obtn_q_0) + div_epsilon)
-    ) ** 2
-    mean_diff_1 = ((np.mean(obtn_i_1) - np.mean(comp_i_1)) / (np.mean(obtn_i_1) + div_epsilon)) ** 2 + (
-        (np.mean(obtn_q_1) - np.mean(comp_q_1)) / (np.mean(obtn_q_1) + div_epsilon)
-    ) ** 2
-    # Difference in std of 2d histograms
-    std_dev_0 = ((np.std(obtn_i_0) - np.std(comp_i_0)) / (np.std(obtn_i_0) + div_epsilon)) ** 2 + (
-        (np.std(obtn_q_0) - np.std(comp_q_0)) / (np.std(obtn_q_0) + div_epsilon)
-    ) ** 2
-    std_dev_1 = ((np.std(obtn_i_1) - np.std(comp_i_1)) / (np.std(obtn_i_1) + div_epsilon)) ** 2 + (
-        (np.std(obtn_q_1) - np.std(comp_q_1)) / (np.std(obtn_q_1) + div_epsilon)
-    ) ** 2
+        # Difference in std of 2d histograms
+        std_dev_diff += (
+            (np.std(i_s[gaussian_n][0]) - np.std(i_s[gaussian_n][1])) / (np.std(i_s[gaussian_n][0]) + div_epsilon)
+        ) ** 2 + (
+            (np.std(q_s[gaussian_n][0]) - np.std(q_s[gaussian_n][1])) / (np.std(q_s[gaussian_n][0]) + div_epsilon)
+        ) ** 2
 
-    return (
-        np.sqrt((mean_diff_0 + mean_diff_1) * 4 + (std_dev_0 + std_dev_1) / (obtained["sweep_interval"] + div_epsilon))
-        / 10
-    )
+    # Return a weighted sum, with more weight in the average than the standard deviation:
+    return np.sqrt((mean_diff) * 4 + (std_dev_diff) / (obtained["sweep_interval"] + div_epsilon)) / 10
 
 
 def is_structure_of_check_parameters_correct(obtained: dict[str, list], comparison: dict[str, list], fit: bool = True):
