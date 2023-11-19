@@ -35,8 +35,8 @@ def norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, l
     }
 
     Args:
-        obtained (dict): obtained samples to compare.
-        comparison (dict): previous samples to compare.
+        obtained (dict): obtained samples to compare. Structure following the function docstring.
+        comparison (dict): previous samples to compare. Structure following the function docstring.
 
     Returns:
         float: difference/error between the two samples.
@@ -77,8 +77,8 @@ def IQ_norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str
     }
 
     Args:
-        obtained (dict): obtained samples to compare.
-        comparison (dict): previous samples to compare.
+        obtained (dict): obtained samples to compare. Structure following the function docstring.
+        comparison (dict): previous samples to compare. Structure following the function docstring.
 
     Returns:
         float: difference/error between the two samples.
@@ -126,8 +126,8 @@ def ssro_comparison_2D(obtained: dict[str, Any], comparison: dict[str, Any]) -> 
     }
 
     Args:
-        obtained (dict): Obtained samples to compare. Structure following function docstring.
-        comparison (dict): pPrevious samples to compare.
+        obtained (dict): Obtained samples to compare. Structure following the function docstring.
+        comparison (dict): pPrevious samples to compare. Structure following the function docstring.
 
     Returns:
         float: difference/error between the two samples.
