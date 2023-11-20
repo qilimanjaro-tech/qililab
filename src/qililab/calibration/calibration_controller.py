@@ -258,10 +258,9 @@ class CalibrationController:
                 meaning it allways perform a call to `check_data`. Default to False.
             safe_diagnose (bool, optional): Flag to specify if we make sure to avoid corner cases while diagnosing (its slower). Defaults to False.
         """
-        logger.info("Maintaining %s.\n", node.node_id)
+        logger.info("WORKFLOW: Maintaining %s.\n", node.node_id)
         # Recursion over all the nodes that the current node depends on.
         for n in self._dependencies(node):
-            logger.info("Maintaining %s from maintain(%s).\n", n.node_id, node.node_id)
             self.maintain(n)
 
         # TODO: Integrationt test, where if all the drift_timeouts are super big, no check_data or calibration is dene
@@ -286,7 +285,7 @@ class CalibrationController:
         # If `bad_data` or `out_of_spec` in the last nodes with safe flag:
         if result == "bad_data" or (safe_diagnose and result == "out_of_spec"):
             for n in self._dependencies(node):
-                logger.info("Diagnosing %s from maintain(%s).\n", n.node_id, node.node_id)
+                logger.info("WORKFLOW: Diagnosing %s from maintain(%s).\n", n.node_id, node.node_id)
                 self.diagnose(n, safe=safe_diagnose)
 
         # Implicit out_spec case (except above second condition with safe flag)
@@ -335,7 +334,7 @@ class CalibrationController:
         Returns:
             bool: True is there have been recalibrations, False otherwise. The return value is only used by recursive calls.
         """
-        logger.info("diagnosing %s.\n", node.node_id)
+        logger.info("WORKFLOW: diagnosing %s.\n", node.node_id)
 
         if safe:
             # in spec case
@@ -359,7 +358,7 @@ class CalibrationController:
             recalibrated = []
             if result == "bad_data":
                 recalibrated = [self.diagnose(n, safe=False) for n in self._dependencies(node)]
-                logger.info("Dependencies diagnoses of %s: %s\n", node.node_id, str(recalibrated))
+                logger.info("WORKFLOW: Dependencies diagnoses of %s: %s\n", node.node_id, str(recalibrated))
             # If not empty and only filled with False's (not any True).
             if recalibrated != [] and not any(recalibrated):
                 return False
@@ -388,11 +387,9 @@ class CalibrationController:
         Returns:
             bool: True if the parameter's drift timeout has not yet expired, False otherwise.
         """
-        logger.info('Checking state of node "%s".\n', node.node_id)
-
         # Check if something happened and the timestamp could not be setted properly
         if node.previous_timestamp is None:
-            logger.info("check_state of %s: False.\n", node.node_id)
+            logger.info("WORKFLOW: check_state of %s: False.\n", node.node_id)
             return False
 
         # Get the list of the dependencies that have been calibrated before this node, all of them should be True
@@ -408,16 +405,16 @@ class CalibrationController:
                 )
             # A dependency has been calibrated before this node
             if n.previous_timestamp >= node.previous_timestamp:
-                logger.info("check_state of %s: False.\n", node.node_id)
+                logger.info("WORKFLOW: check_state of %s: False.\n", node.node_id)
                 return False
             # A dependency is expired
             if self._is_timeout_expired(n.previous_timestamp, n.drift_timeout):
-                logger.info("check_state of %s: False.\n", node.node_id)
+                logger.info("WORKFLOW: check_state of %s: False.\n", node.node_id)
                 return False
 
         # If this node concretely passes check_state
         logger.info(
-            "check_state of %s: %r.\n",
+            "WORKFLOW: check_state of %s: %r.\n",
             node.node_id,
             (not self._is_timeout_expired(node.previous_timestamp, node.drift_timeout)),
         )
@@ -452,12 +449,10 @@ class CalibrationController:
             - ``bad_data`` if the results don't follow the desired fit, or are noisy, which should happen when dependencies have drifted. Or also if there are no previous executions.
         """
         # pylint: disable=protected-access
-        logger.info('Checking data of node "%s".\n', node.node_id)
-
         if node.previous_inspec is None or self._is_timeout_expired(node.previous_inspec, 1800.0):
             timestamp = node.run_node(check=True)
         else:
-            logger.info('Using recent `in_spec` of `check_data` in node "%s".\n', node.node_id)
+            logger.info('WORKFLOW: Using recent `in_spec` of `check_data` in node "%s".\n', node.node_id)
             return "in_spec"
 
         # Comparison and obtained parameters:
@@ -487,7 +482,7 @@ class CalibrationController:
                 comparison_result = "out_of_spec"
 
         # Do the necessary following changes:
-        logger.info("check_data of %s: %s.\n", node.node_id, comparison_result)
+        logger.info("WORKFLOW: check_data of %s: %s.\n", node.node_id, comparison_result)
         node._add_string_to_checked_nb_name(comparison_result, timestamp)  # add comparison result tag to the file name.
         node.output_parameters = node.previous_output_parameters
         return comparison_result
