@@ -7,6 +7,9 @@
   For example, if a circuit is measuring `M(1)-M(2)-M(0,1)` the first iq values will be those for `M(1)`, followed by `M(2)`, `M(0)` and `M(1)`.
   [#524](https://github.com/qilimanjaro-tech/qililab/pull/524)
 
+- Add parameter to the SLURM magic method to configure the time limit of a job.
+  [#608](https://github.com/qilimanjaro-tech/qililab/pull/608)
+
 - Add magic method to run python code as slurm jobs from Jupyter Notebooks.
   [#600](https://github.com/qilimanjaro-tech/qililab/pull/600)
 
@@ -21,6 +24,9 @@
 
 - Added the driver for Quantum Machines Manager and a new QuantumMachinesResult class to handle Quantum Machines instruments.
   [#568](https://github.com/qilimanjaro-tech/qililab/pull/568)
+
+- Implemented the `QuantumMachinesMeasurementResult` class to store data acquired from a single instrument.
+  [#596](https://github.com/qilimanjaro-tech/qililab/pull/596)
 
 ### Improvements
 
@@ -40,6 +46,9 @@
 
 - Various improvements in the compilation flow of `QbloxCompiler`.
   [#563](https://github.com/qilimanjaro-tech/qililab/pull/563)
+
+- Updated `qm-qua` library to latest `1.1.5.1`.
+  [#596](https://github.com/qilimanjaro-tech/qililab/pull/596)
 
 ### Breaking changes
 

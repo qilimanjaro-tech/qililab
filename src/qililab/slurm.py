@@ -29,16 +29,27 @@ def is_variable_used(code, variable):
 @argument(
     "-o",
     "--output",
-    help="Output of the SLURM job. This name should correspond to a variable defined in the cell that we want to retrieve after execution. After queuing a cell, this variable will be converted to a `Job` class. To retrieve the results of the job, you need to call `variable.result()`.",
+    help="Output of the SLURM job. This name should correspond to a variable defined in the cell that we want to"
+    " retrieve after execution. After queuing a cell, this variable will be converted to a `Job` class. To retrieve"
+    " the results of the job, you need to call `variable.result()`.",
 )
-@argument("-d", "--device", help="Name of the device where you want to execute the SLURM job.")
+@argument("-p", "--partition", help="Name of the partition where you want to execute the SLURM job.")
+@argument("-n", "--name", default="submitit", help="Name of the slurm job.")
+@argument("-t", "--time", default=120, help="Time limit (in minutes) of the job.")
+@argument(
+    "-b",
+    "--begin",
+    default="now",
+    help="Submit the batch script to the Slurm controller immediately, like normal, "
+    "but tell the controller to defer the allocation of the job until the specified time. The time format can be"
+    " either `HH:MM:SS`, `now+1hour`, `now+60minutes`, `now+60` (seconds by default), `2010-01-20T12:34:00`.",
+)
 @argument(
     "-l",
     "--logs",
-    default="slurm_job_data",
-    help=(f"Path where you want slurm to write the logs for the last {num_files_to_keep} jobs"),
+    default=".slurm_job_data",
+    help=(f"Path where you want slurm to write the logs for the last {num_files_to_keep} jobs."),
 )
-@argument("-n", "--name", default="submitit", help="Name of the slurm job")
 @argument(
     "-e",
     "--execution_environment",
@@ -56,10 +67,12 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
 
     args = parse_argstring(submit_job, line)
     output = args.output
-    partition = args.device
-    folder_path = args.logs
+    partition = args.partition
     job_name = args.name
+    time_limit = int(args.time)
+    folder_path = args.logs
     execution_env = args.execution_environment
+    begin_time = args.begin
 
     # Take all the import lines and add them right before the code of the cell (to make sure all the needed libraries
     # are imported inside the SLURM job)
@@ -69,7 +82,12 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
 
     # Create the executor that will be used to queue the SLURM job
     executor = AutoExecutor(folder=folder_path, cluster=execution_env)
-    executor.update_parameters(slurm_partition=partition, name=job_name)
+    executor.update_parameters(
+        slurm_partition=partition,
+        name=job_name,
+        timeout_min=time_limit,
+        slurm_additional_parameters={"begin": begin_time},
+    )
 
     # Compile the code defined above
     code = compile(executable_code, "<string>", "exec")
