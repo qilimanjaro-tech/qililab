@@ -655,6 +655,11 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         programs = {}
         for pulse_bus_schedule in pulse_schedule.elements:
+            if len(pulse_bus_schedule.timeline) != 0:  # can't do only one conditional if list is empty
+                if pulse_bus_schedule.timeline[-1].end_time > repetition_duration:
+                    raise ValueError(
+                        f"Circuit execution time cannnot be longer than repetition duration but found circuit time {pulse_bus_schedule.timeline[-1].end_time } > {repetition_duration} for qubit {pulse_bus_schedule.qubit}"
+                    )
             bus = self.buses.get(port=pulse_bus_schedule.port)
             bus_programs = bus.compile(pulse_bus_schedule, num_avg, repetition_duration, num_bins)
             programs[bus.alias] = bus_programs
