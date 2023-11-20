@@ -29,18 +29,6 @@ def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
 
     Examples:
 
-        .. note::
-
-            All the following examples are explained in detail in the :ref:`Platform <platform>` section of the documentation. However, here are a few thing to keep in mind:
-
-            - To connect, your computer must be in the same network of the instruments specified in the runcard, with their IP's addresses. Connection is necessary for the subsequent steps.
-
-            - You might want to skip the ``platform.initial_setup()`` and the ``platform.turn_on_instruments()`` steps if you think nothing has been modified, but we recommend doing them every time.
-
-            - ``platform.turn_on_instruments()`` is used to turn on the signal output of all the sources defined in the runcard (RF, Voltage and Current sources).
-
-            - You can print ``platform.chip`` and ``platform.buses`` at any time to check the platform's structure.
-
         **1. Executing an experiment and saving the results live time:**
 
 
