@@ -498,7 +498,7 @@ class CalibrationController:
         Args:
             node (CalibrationNode): The node where the calibration experiment is run.
         """
-        logger.info('Calibrating node "%s".\n', node.node_id)
+        logger.info('WORKFLOW: Calibrating node "%s".\n', node.node_id)
         node.previous_timestamp = node.run_node()
         node._add_string_to_checked_nb_name("calibrated", node.previous_timestamp)  # pylint: disable=protected-access
         # add _calibrated tag to the file name, which doesn't have a tag.
