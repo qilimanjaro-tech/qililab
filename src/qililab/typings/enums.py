@@ -1,46 +1,19 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Enum classes"""
 from enum import Enum
-
-
-class Category(str, Enum):
-    """Category of settings.
-
-    Args:
-        enum (str): Available types of settings categories:
-        * platform
-        * qubit
-        * awg
-        * signal_generator
-        * buses
-        * bus
-        * schema
-        * resonator
-        * node
-        * instrument_controller
-        * voltage_source
-        * current_source
-        * digital_analog_converter
-    """
-
-    PLATFORM = "platform"
-    QUBIT = "qubit"
-    AWG = "awg"
-    SIGNAL_GENERATOR = "signal_generator"
-    SCHEMA = "schema"
-    RESONATOR = "resonator"
-    BUSES = "buses"
-    BUS = "bus"
-    SYSTEM_CONTROL = "system_control"
-    EXPERIMENT = "experiment"
-    ATTENUATOR = "attenuator"
-    DC_SOURCE = "dc_source"
-    VNA = "vna"
-    CHIP = "chip"
-    NODE = "node"
-    INSTRUMENT_CONTROLLER = "instrument_controller"
-    VOLTAGE_SOURCE = "voltage_source"
-    CURRENT_SOURCE = "current_source"
-    ADC = "adc"
 
 
 class Instrument(str, Enum):
@@ -62,19 +35,6 @@ class Instrument(str, Enum):
     ATTENUATOR = "attenuator"
     VOLTAGE_SOURCE = "voltage_source"
     CURRENT_SOURCE = "current_source"
-
-
-class InstrumentControllerSubCategory(str, Enum):
-    """Instrument Controller subcategory types.
-
-    Args:
-        enum (str): Available types of instrument controllers:
-        * single_instrument
-        * multiple_instruments
-    """
-
-    SINGLE = "single_instrument"
-    MULTI = "multiple_instruments"
 
 
 class ReferenceClock(str, Enum):
@@ -126,6 +86,9 @@ class GateName(str, Enum):
         * RX
         * RY
         * XY
+        * Drag
+        * CZ
+        * Park
     """
 
     I = "I"  # noqa: E741
@@ -135,18 +98,9 @@ class GateName(str, Enum):
     RY = "RY"
     XY = "XY"
     M = "M"
-
-
-class MasterGateSettingsName(str, Enum):
-    """Master Gate Settings names.
-    Args:
-        enum (str): Available types of master gate settings names:
-        * master_amplitude_gate
-        * master_duration_gate
-    """
-
-    MASTER_AMPLITUDE_GATE = "master_amplitude_gate"
-    MASTER_DURATION_GATE = "master_duration_gate"
+    Drag = "Drag"
+    CZ = "CZ"
+    Park = "Park"
 
 
 class AcquisitionName(str, Enum):
@@ -161,17 +115,17 @@ class AcquisitionName(str, Enum):
     LARGE = "large"
 
 
-class SchemaDrawOptions(str, Enum):
-    """Schema draw options.
+class PulseDistortionName(str, Enum):
+    """Pulse distortion options.
 
     Args:
-        enum (str): Available types of schema draw options:
-        * print
-        * file
+        Enum (str): Available types of PulseDistortion options:
+        * gaussian
     """
 
-    PRINT = "print"
-    FILE = "file"
+    BIAS_TEE_CORRECTION = "bias_tee"
+    EXPONENTIAL_CORRECTION = "exponential"
+    LFILTER = "lfilter"
 
 
 class PulseShapeName(str, Enum):
@@ -185,18 +139,8 @@ class PulseShapeName(str, Enum):
     GAUSSIAN = "gaussian"
     DRAG = "drag"
     RECTANGULAR = "rectangular"
-
-
-class PulseShapeSettingsName(str, Enum):
-    """Pulse Shape Settings names.
-    Args:
-        enum (str): Available types of pulse shape settings names:
-        * num_sigmas
-        * drag_coefficient
-    """
-
-    NUM_SIGMAS = "num_sigmas"
-    DRAG_COEFFICIENT = "drag_coefficient"
+    SNZ = "snz"
+    COSINE = "cosine"
 
 
 class NodeName(str, Enum):
@@ -231,10 +175,12 @@ class InstrumentName(str, Enum):
         * keysight_e5080b
         * agilent_e5071B
         * yokogawa_gs200
+        * OPX -> Exactly as Quantum Machines InstrumentType
     """
 
     QBLOX_QCM = "QCM"
     QBLOX_QRM = "QRM"
+    QRMRF = "QRM-RF"
     ROHDE_SCHWARZ = "rohde_schwarz"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
     KEITHLEY2600 = "keithley_2600"
@@ -243,6 +189,8 @@ class InstrumentName(str, Enum):
     KEYSIGHT_E5080B = "keysight_e5080b"
     AGILENT_E5071B = "agilent_e5071B"
     YOKOGAWA_GS200 = "yokogawa_gs200"
+    QCMRF = "QCM-RF"
+    QUANTUM_MACHINES_MANAGER = "quantum_machines_manager"
 
 
 class InstrumentControllerName(str, Enum):
@@ -258,6 +206,7 @@ class InstrumentControllerName(str, Enum):
         * keysight_e5080b
         * agilent_e5071B
         * yokogawa
+        * qmm
     """
 
     QBLOX_PULSAR = "qblox_pulsar"
@@ -269,6 +218,7 @@ class InstrumentControllerName(str, Enum):
     KEYSIGHT_E5080B = "keysight_e5080b_controller"
     AGILENT_E5071B = "agilent_e5071B_controller"
     YOKOGAWA = "yokogawa"
+    QUANTUM_MACHINES_MANAGER = "quantum_machines_manager"
 
 
 class SystemControlName(str, Enum):
@@ -278,12 +228,10 @@ class SystemControlName(str, Enum):
         enum (str): Available system control element names:
         * system_control
         * readout_system_control
-        * simulated_system_control
     """
 
     SYSTEM_CONTROL = "system_control"
     READOUT_SYSTEM_CONTROL = "readout_system_control"
-    SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
 
 
 class Parameter(str, Enum):
@@ -295,19 +243,18 @@ class Parameter(str, Enum):
     DURATION = "duration"
     AMPLITUDE = "amplitude"
     PHASE = "phase"
+    WAIT_TIME = "wait_time"
     DELAY_BETWEEN_PULSES = "delay_between_pulses"
     DELAY_BEFORE_READOUT = "delay_before_readout"
     GATE_DURATION = "gate_duration"
+    GATE_PARAMETER = "gate_parameter"
     NUM_SIGMAS = "num_sigmas"
     DRAG_COEFFICIENT = "drag_coefficient"
     REFERENCE_CLOCK = "reference_clock"
     SEQUENCER = "sequencer"
-    SYNC_ENABLED = "sync_enabled"
     POWER = "power"
     GAIN_IMBALANCE = "gain_imbalance"
     PHASE_IMBALANCE = "phase_imbalance"
-    OFFSET_I = "offset_i"
-    OFFSET_Q = "offset_q"
     SAMPLING_RATE = "sampling_rate"
     INTEGRATION = "integration"
     INTEGRATION_LENGTH = "integration_length"
@@ -317,8 +264,6 @@ class Parameter(str, Enum):
     SOFTWARE_AVERAGE = "software_average"
     NUM_BINS = "num_bins"
     SEQUENCE_TIMEOUT = "sequence_timeout"
-    MASTER_AMPLITUDE_GATE = "master_amplitude_gate"
-    MASTER_DURATION_GATE = "master_duration_gate"
     EXTERNAL = "external"
     RESET = "reset"
     HARDWARE_MODULATION = "hardware_modulation"
@@ -348,10 +293,10 @@ class Parameter(str, Enum):
     MAX_CURRENT = "max_current"
     MAX_VOLTAGE = "max_voltage"
     SCOPE_STORE_ENABLED = "scope_store_enabled"
-    GAIN_PATH0 = "gain_path0"
-    GAIN_PATH1 = "gain_path1"
-    OFFSET_PATH0 = "offset_path0"
-    OFFSET_PATH1 = "offset_path1"
+    GAIN_I = "gain_i"
+    GAIN_Q = "gain_q"
+    OFFSET_I = "offset_i"
+    OFFSET_Q = "offset_q"
     OFFSET_OUT0 = "offset_out0"
     OFFSET_OUT1 = "offset_out1"
     OFFSET_OUT2 = "offset_out2"
@@ -365,6 +310,28 @@ class Parameter(str, Enum):
     NUM_FLIPS = "num_flips"
     SOURCE_MODE = "source_mode"
     OUTPUT_STATUS = "output_status"
+    WEIGHTS_I = "weights_i"
+    WEIGHTS_Q = "weights_q"
+    WEIGHED_ACQ_ENABLED = "weighed_acq_enabled"
+    THRESHOLD = "threshold"
+    THRESHOLD_ROTATION = "threshold_rotation"
+    OUT0_LO_FREQ = "out0_lo_freq"
+    OUT0_IN0_LO_FREQ = "out0_in0_lo_freq"
+    OUT1_LO_FREQ = "out1_lo_freq"
+    OUT0_LO_EN = "out0_lo_en"
+    OUT0_IN0_LO_EN = "out0_in0_lo_en"
+    OUT1_LO_EN = "out1_lo_en"
+    OUT0_ATT = "out0_att"
+    IN0_ATT = "in0_att"
+    OUT1_ATT = "out1_att"
+    OUT0_OFFSET_PATH0 = "out0_offset_path0"
+    OUT1_OFFSET_PATH0 = "out1_offset_path0"
+    OUT0_OFFSET_PATH1 = "out0_offset_path1"
+    OUT1_OFFSET_PATH1 = "out1_offset_path1"
+    DELAY = "delay"
+    B = "b"
+    T_PHI = "t_phi"
+    GATE_OPTIONS = "options"
 
 
 class ResultName(str, Enum):
@@ -373,12 +340,12 @@ class ResultName(str, Enum):
     Args:
         enum (str): Available result element names:
         * qblox
-        * simulator
     """
 
     QBLOX = "qblox"
-    SIMULATOR = "simulator"
+    QBLOX_QPROGRAM_MEASUREMENT = "qblox_qprogram_measurement"
     VECTOR_NETWORK_ANALYZER = "vector_network_analyzer"
+    QUANTUM_MACHINES = "quantum_machines"
 
 
 class ConnectionName(str, Enum):
@@ -481,21 +448,16 @@ class VNASweepModes(str, Enum):
     GRO = "group"
 
 
-class Node(str, Enum):
-    """Node elements
+class Line(str, Enum):
+    """Chip line"""
 
-    Args:
-        enum (str): Available elements of chip node:
-        * nodes
-        * frequency
-    """
-
-    NODES = "nodes"
-    FREQUENCY = "frequency"
-    QUBIT_INDEX = "qubit_index"
+    FLUX = "flux"
+    DRIVE = "drive"
+    FEEDLINE_INPUT = "feedline_input"
+    FEEDLINE_OUTPUT = "feedline_output"
 
 
-class Qubits(str, Enum):
+class Qubits(str, Enum):  # pylint: disable=missing-class-docstring
     ANY = "any"
     ONE = "one"
     TWO = "two"
@@ -530,12 +492,12 @@ class OperationName(str, Enum):
     SQUARE = "Square"
 
 
-class OperationTimingsCalculationMethod(str, Enum):
+class OperationTimingsCalculationMethod(str, Enum):  # pylint: disable=missing-class-docstring
     AS_SOON_AS_POSSIBLE = "as_soon_as_possible"
     AS_LATE_AS_POSSIBLE = "as_late_as_possible"
 
 
-class ResetMethod(str, Enum):
+class ResetMethod(str, Enum):  # pylint: disable=missing-class-docstring
     PASSIVE = "passive"
     ACTIVE = "active"
 

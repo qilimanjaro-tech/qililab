@@ -1,9 +1,0 @@
-@startuml
-
-participant IntegratedSystemControl as int
-
-[-> int ++: stop ()
-note right of int: NOT IMPLEMENTED
-return
-
-@enduml

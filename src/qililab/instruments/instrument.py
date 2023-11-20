@@ -1,15 +1,27 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Instrument class"""
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import partial
-from typing import Callable, Type, get_type_hints
+from typing import Callable, get_type_hints
 
 from qililab.config import logger
-from qililab.constants import RUNCARD
 from qililab.platform.components.bus_element import BusElement
-from qililab.pulse import PulseBusSchedule
 from qililab.result import Result
-from qililab.settings import DDBBElement
+from qililab.settings import Settings
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.typings.instruments.device import Device
 
@@ -25,14 +37,15 @@ class Instrument(BusElement, ABC):
     name: InstrumentName
 
     @dataclass
-    class InstrumentSettings(DDBBElement):
+    class InstrumentSettings(Settings):
         """Contains the settings of an instrument.
 
         Args:
+            alias (str): Alias of the instrument.
             firmware (str): Firmware version installed on the instrument.
-            channels (int | None): Number of channels supported or None otherwise.
         """
 
+        alias: str
         firmware: str
 
     settings: InstrumentSettings  # a subtype of settings must be specified by the subclass
@@ -139,8 +152,7 @@ class Instrument(BusElement, ABC):
             return self._method(ref, *args, **kwargs) if hasattr(ref, "device") else self._method(*args, **kwargs)
 
     def __init__(self, settings: dict):
-        """Cast the settings to its corresponding class."""
-        settings_class: Type[self.InstrumentSettings] = get_type_hints(self).get(RUNCARD.SETTINGS)  # type: ignore
+        settings_class: type[self.InstrumentSettings] = get_type_hints(self).get("settings")  # type: ignore
         self.settings = settings_class(**settings)
 
     @CheckDeviceInitialized
@@ -159,6 +171,17 @@ class Instrument(BusElement, ABC):
         """
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
+    def get(self, parameter: Parameter, channel_id: int | None = None):  # pylint: disable=unused-argument
+        """Get instrument parameter.
+
+        Args:
+            parameter (Parameter): Name of the parameter to get.
+            channel_id (int | None): Channel identifier of the parameter to update.
+        """
+        if hasattr(self.settings, parameter.value):
+            return getattr(self.settings, parameter.value)
+        raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
+
     @CheckDeviceInitialized
     @abstractmethod
     def turn_on(self):
@@ -168,6 +191,18 @@ class Instrument(BusElement, ABC):
         """Acquire results of the measurement.
 
         In some cases this method might do nothing."""
+
+    def acquire_qprogram_results(self, acquisitions: list[str]) -> list[Result]:  # type: ignore[empty-body]
+        """Acquire results of the measurement.
+
+        In some cases this method might do nothing.
+
+        Args:
+            acquisitions (list[str]): A list of acquisitions names.
+
+        Returns:
+            list[Result]: The acquired results in chronological order.
+        """
 
     @CheckDeviceInitialized
     @abstractmethod
@@ -180,15 +215,6 @@ class Instrument(BusElement, ABC):
         """Turn off an instrument."""
 
     @property
-    def id_(self):
-        """Instrument 'id' property.
-
-        Returns:
-            int: settings.id_.
-        """
-        return self.settings.id_
-
-    @property
     def alias(self):
         """Instrument 'alias' property.
 
@@ -196,15 +222,6 @@ class Instrument(BusElement, ABC):
             str: settings.alias.
         """
         return self.settings.alias
-
-    @property
-    def category(self):
-        """Instrument 'category' property.
-
-        Returns:
-            Category: settings.category.
-        """
-        return self.settings.category
 
     @property
     def firmware(self):
@@ -217,7 +234,7 @@ class Instrument(BusElement, ABC):
 
     def __str__(self):
         """String representation of an instrument."""
-        return f"{self.alias}" if self.alias is not None else f"{self.category}_{self.id_}"
+        return f"{self.alias}"
 
     def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Sets the parameter of a specific instrument.
@@ -232,7 +249,7 @@ class Instrument(BusElement, ABC):
         """
         if not hasattr(self, "device"):
             raise ValueError(
-                f"Instrument is not connected and cannot set the new value: {value} to the parameter {parameter.value}."
+                f"Instrument {self.name.value} is not connected and cannot set the new value: {value} to the parameter {parameter}."
             )
         if channel_id is None:
             logger.debug("Setting parameter: %s to value: %f", parameter.value, value)
@@ -240,6 +257,18 @@ class Instrument(BusElement, ABC):
             logger.debug("Setting parameter: %s to value: %f in channel %d", parameter.value, value, channel_id)
 
         return self.setup(parameter=parameter, value=value, channel_id=channel_id)
+
+    def get_parameter(self, parameter: Parameter, channel_id: int | None = None):
+        """Gets the parameter of a specific instrument.
+
+        Args:
+            parameter (Parameter): Name of the parameter to get.
+            channel_id (int | None, optional): Instrument channel, if multiple. Defaults to None.
+
+        Returns:
+            str | int | float | bool: Parameter value.
+        """
+        return self.get(parameter=parameter, channel_id=channel_id)
 
 
 class ParameterNotFound(Exception):

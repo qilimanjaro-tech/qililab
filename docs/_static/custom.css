@@ -1,0 +1,11 @@
+:root {
+    --code-block-color: rgb(250, 250, 250);
+}
+
+.dark {
+    --code-block-color: rgb(5, 5, 5);
+}
+
+pre {
+    background-color: var(--code-block-color);
+}

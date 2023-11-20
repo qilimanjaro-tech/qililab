@@ -1,8 +1,22 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Instrument Controller class"""
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import partial
-from typing import Callable, List, Sequence, Type, get_type_hints
+from typing import Callable, Sequence, get_type_hints
 
 from qililab.config import logger
 from qililab.constants import INSTRUMENTCONTROLLER, RUNCARD
@@ -12,29 +26,29 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.utils.instrument_reference import InstrumentReference
 from qililab.instruments.utils.loader import Loader
 from qililab.platform.components.bus_element import BusElement
-from qililab.settings import DDBBElement
-from qililab.typings.enums import InstrumentControllerName, InstrumentControllerSubCategory, Parameter
+from qililab.settings import Settings
+from qililab.typings.enums import InstrumentControllerName, Parameter
 from qililab.typings.instruments.device import Device
 from qililab.utils import Factory
 
 
 @dataclass(kw_only=True)
-class InstrumentControllerSettings(DDBBElement):
+class InstrumentControllerSettings(Settings):
     """Contains the settings of a specific Instrument Controller.
+
     Args:
-        subcategory (InstrumentControllerSubCategory): Subcategory type of the Instrument Controller.
         connection (Connection): Connection class that represents the connection type of the Instrument Controller.
-        modules: (List[InstrumentReference]): List of the Instrument References that links to the actual Instruments
+        modules: (list[InstrumentReference]): List of the Instrument References that links to the actual Instruments
                                                 to be managed by the Instrument Controller.
+        reset (bool, optional): Whether or not to reset the instrument after connecting to it. Defaults to True.
     """
 
+    alias: str
     connection: Connection
-    modules: List[InstrumentReference]
-    subcategory: InstrumentControllerSubCategory  # a subtype of settings must be specified by the subclass
+    modules: list[InstrumentReference]
     reset: bool = True
 
     def __post_init__(self):
-        """Cast nodes and category to their corresponding classes."""
         super().__post_init__()
         if self.connection and isinstance(self.connection, dict):
             # Pop the connection name from the dictionary and instantiate its corresponding Connection class.
@@ -54,7 +68,7 @@ class InstrumentController(BusElement, ABC):
         device (Device): Driver instance of the instrument to operate the instrument controller.
         number_available_modules (int): Number of modules available in the Instrument Controller.
         modules (Sequence[Instrument]): Actual Instruments classes that manages the Instrument Controller.
-        connected_modules_slot_ids (List[int]): List with the slot ids from the connected instruments
+        connected_modules_slot_ids (list[int]): List with the slot ids from the connected instruments
     """
 
     name: InstrumentControllerName
@@ -62,7 +76,7 @@ class InstrumentController(BusElement, ABC):
     device: Device  # a subtype of device must be specified by the subclass
     number_available_modules: int  # to be set by child classes
     modules: Sequence[Instrument]
-    connected_modules_slot_ids: List[int]  # slot_id represents the number displayed in the cluster
+    connected_modules_slot_ids: list[int]  # slot_id represents the number displayed in the cluster
 
     class CheckConnected:
         """Property used to check if the connection has established with an instrument."""
@@ -86,23 +100,23 @@ class InstrumentController(BusElement, ABC):
             return self._method(ref, *args, **kwargs)
 
     def __init__(self, settings: dict, loaded_instruments: Instruments):
-        settings_class: Type[InstrumentControllerSettings] = get_type_hints(self).get(RUNCARD.SETTINGS)  # type: ignore
+        settings_class: type[InstrumentControllerSettings] = get_type_hints(self).get("settings")  # type: ignore
         self.settings = settings_class(**settings)
         self.modules = Loader().replace_modules_from_settings_with_instrument_objects(
             instruments=loaded_instruments,
             instrument_references=self.settings.modules,
         )
         if len(self.modules) <= 0:
-            raise ValueError(f"The {self.name} Instrument Controller requires at least ONE module.")
+            raise ValueError(f"The {self.name.value} Instrument Controller requires at least ONE module.")
         if len(self.modules) > self.number_available_modules:
             raise ValueError(
-                f"The {self.name} Instrument Controller only supports {self.number_available_modules} module/s."
+                f"The {self.name.value} Instrument Controller only supports {self.number_available_modules} module/s."
                 + f"You have loaded {len(self.modules)} modules."
             )
         self.connected_modules_slot_ids = self._set_connected_modules_slot_ids()
         if len(self.connected_modules_slot_ids) > self.number_available_modules:
             raise ValueError(
-                f"The {self.name} Instrument Controller only supports {self.number_available_modules} module/s."
+                f"The {self.name.value} Instrument Controller only supports {self.number_available_modules} module/s."
                 + f"You have connected {len(self.connected_modules_slot_ids)} modules."
             )
         if len(self.connected_modules_slot_ids) != len(self.modules):
@@ -111,7 +125,7 @@ class InstrumentController(BusElement, ABC):
                 + f"the available modules: {len(self.modules)}."
             )
 
-    def _set_connected_modules_slot_ids(self) -> List[int]:
+    def _set_connected_modules_slot_ids(self) -> list[int]:
         """Initialize the modules slot ids from the settings"""
         return [instrument_reference.slot_id for instrument_reference in self.settings.modules]
 
@@ -154,6 +168,16 @@ class InstrumentController(BusElement, ABC):
         if not isinstance(value, bool):
             raise ValueError("Reset value Must be a boolean.")
         self.settings.reset = value
+
+    def get_parameter(
+        self,
+        parameter: Parameter,
+        channel_id: int | None = None,  # pylint: disable=unused-argument
+    ):
+        """updates the reset settings for the controller"""
+        if parameter is not Parameter.RESET:
+            raise ValueError("Reset is the only property that can be set for an Instrument Controller.")
+        return self.settings.reset
 
     @CheckConnected
     def turn_on(self):
@@ -198,15 +222,6 @@ class InstrumentController(BusElement, ABC):
         self._release_device_and_set_to_all_modules()
 
     @property
-    def id_(self):
-        """Instrument Controller 'id_' property.
-
-        Returns:
-            int: settings.id_.
-        """
-        return self.settings.id_
-
-    @property
     def alias(self):
         """Instrument Controller 'alias' property.
 
@@ -214,24 +229,6 @@ class InstrumentController(BusElement, ABC):
             str: settings.alias.
         """
         return self.settings.alias
-
-    @property
-    def category(self):
-        """Instrument Controller 'category' property.
-
-        Returns:
-            Category: settings.category.
-        """
-        return self.settings.category
-
-    @property
-    def subcategory(self):
-        """Instrument Controller 'subcategory' property.
-
-        Returns:
-            InstrumentControllerSubcategory: settings.subcategory.
-        """
-        return self.settings.subcategory
 
     @property
     def connection(self):
@@ -253,16 +250,13 @@ class InstrumentController(BusElement, ABC):
 
     def __str__(self):
         """String representation of an instrument controller."""
-        return f"{self.alias}" if self.alias is not None else f"{self.category}_{self.subcategory}_{self.id_}"
+        return f"{self.alias}"
 
     def to_dict(self):
         """Return a dict representation of the InstrumentReference class."""
         return {
             RUNCARD.NAME: self.name.value,
-            RUNCARD.ID: self.id_,
             RUNCARD.ALIAS: self.alias,
-            RUNCARD.CATEGORY: self.category.value,
-            RUNCARD.SUBCATEGORY: self.subcategory.value,
             INSTRUMENTCONTROLLER.CONNECTION: self.connection.to_dict(),
             INSTRUMENTCONTROLLER.MODULES: [module.to_dict() for module in self.settings.modules],
         }

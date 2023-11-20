@@ -1,8 +1,22 @@
-"""Instrument Controllers class"""
-from dataclasses import dataclass
-from typing import List
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-import yaml
+"""Instrument Controllers class"""
+import io
+from dataclasses import dataclass
+
+from ruamel.yaml import YAML
 
 from qililab.instrument_controllers.instrument_controller import InstrumentController
 
@@ -11,14 +25,11 @@ from qililab.instrument_controllers.instrument_controller import InstrumentContr
 class InstrumentControllers:
     """Instrument Controllers class."""
 
-    elements: List[InstrumentController]
+    elements: list[InstrumentController]
 
     def get_instrument_controller(self, alias: str | None = None):
-        """Get instrument controller given an id_ and category"""
-        for instrument in self.elements:
-            if instrument.alias == alias:
-                return instrument
-        return None
+        """Get instrument controller given an id and category"""
+        return next((instrument for instrument in self.elements if instrument.alias == alias), None)
 
     def connect(self):
         """Connect to all instrument controllers."""
@@ -54,4 +65,4 @@ class InstrumentControllers:
         Returns:
             str: String representation of the Instrument Controllers class.
         """
-        return str(yaml.dump(self.to_dict(), sort_keys=False))
+        return str(YAML().dump(self.to_dict(), io.BytesIO()))

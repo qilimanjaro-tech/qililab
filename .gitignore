@@ -70,6 +70,7 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/code/api/*
 
 # PyBuilder
 target/
@@ -131,6 +132,7 @@ dmypy.json
 # Data
 data/
 _build
+slurm_job_data*
 
 .qibo_configuration
 tmp.*

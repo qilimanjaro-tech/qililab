@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """ AWG with Digital To Analog Conversion (DAC) capabilities."""
 from abc import abstractmethod
 from dataclasses import dataclass
@@ -36,7 +50,9 @@ class AWGAnalogDigitalConverter(AWG):
         """
 
     @Instrument.CheckDeviceInitialized
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def setup(  # pylint: disable=too-many-return-statements, too-many-branches
+        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None
+    ):
         """set a specific parameter to the instrument"""
         if channel_id is None:
             if self.num_sequencers == 1:
@@ -73,6 +89,12 @@ class AWGAnalogDigitalConverter(AWG):
         if parameter == Parameter.SCOPE_STORE_ENABLED:
             self._set_scope_store_enabled(value=value, sequencer_id=channel_id)
             return
+        if parameter == Parameter.THRESHOLD:
+            self._set_threshold(value=value, sequencer_id=channel_id)
+            return
+        if parameter == Parameter.THRESHOLD_ROTATION:
+            self._set_threshold_rotation(value=value, sequencer_id=channel_id)
+            return
 
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
@@ -87,6 +109,28 @@ class AWGAnalogDigitalConverter(AWG):
         Raises:
             ValueError: when value type is not bool
         """
+
+    @abstractmethod
+    def _set_device_threshold(self, value: float, sequencer_id: int):
+        """Set threshold value for the specific channel.
+
+        Args:
+            value (float): the threshold value
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float"""
+
+    @abstractmethod
+    def _set_device_threshold_rotation(self, value: float, sequencer_id: int):
+        """Set threshold rotation value for the specific channel.
+
+        Args:
+            value (float): the threshold rotation value
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float"""
 
     @abstractmethod
     def _set_device_hardware_demodulation(self, value: bool, sequencer_id: int):
@@ -134,6 +178,28 @@ class AWGAnalogDigitalConverter(AWG):
         """
         cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).scope_hardware_averaging = bool(value)
         self._set_device_scope_hardware_averaging(value=bool(value), sequencer_id=sequencer_id)
+
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_threshold(self, value: float | str | bool, sequencer_id: int):
+        """Set threshold value for the specific channel.
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+        """
+        cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).threshold = float(value)
+        self._set_device_threshold(value=float(value), sequencer_id=sequencer_id)
+
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_threshold_rotation(self, value: float | str | bool, sequencer_id: int):
+        """Set threshold rotation value for the specific channel.
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+        """
+        cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).threshold_rotation = float(value)
+        self._set_device_threshold_rotation(value=float(value), sequencer_id=sequencer_id)
 
     @Instrument.CheckParameterValueBool
     def _set_hardware_demodulation(self, value: float | str | bool, sequencer_id: int):

@@ -1,9 +1,0 @@
-@startuml
-
-participant SGS100A as sgs
-
-[-> sgs ++: reset ()
-note right of sgs: NOT IMPLEMENTED
-return
-
-@enduml

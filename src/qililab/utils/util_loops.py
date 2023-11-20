@@ -1,12 +1,24 @@
-""" Utilities for Loops """
-from typing import List
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
+""" Utilities for Loops."""
 import numpy as np
 
 from qililab.utils.loop import Loop
 
 
-def _find_minimum_range_from_loops(loops: List[Loop] | None):
+def _find_minimum_range_from_loops(loops: list[Loop] | None):
     """find minimum range from same level loops"""
     if loops is None or len(loops) <= 0:
         return np.array([], dtype=object)
@@ -19,12 +31,12 @@ def _find_minimum_range_from_loops(loops: List[Loop] | None):
     return minimum_range
 
 
-def _create_loops_from_inner_loops(loops: List[Loop]):
+def _create_loops_from_inner_loops(loops: list[Loop]):
     """create sequence of loops from inner loops (if exist)"""
     return list(filter(None, [loop.loop for loop in loops]))
 
 
-def compute_ranges_from_loops(loops: List[Loop] | None):
+def compute_ranges_from_loops(loops: list[Loop] | None):
     """compute ranges from a list of loops that may have inner loops"""
     if loops is None or len(loops) <= 0:
         return []
@@ -33,11 +45,25 @@ def compute_ranges_from_loops(loops: List[Loop] | None):
     return ranges
 
 
-def compute_shapes_from_loops(loops: List[Loop] | None):
-    """compute the shapes from a list of loops that may have inner loops"""
+def compute_shapes_from_loops(loops: list[Loop]):
+    """Computes the shape of the results obtained from running a list of parallel loops that might contain
+    inner loops.
+
+    When running parallel loops, the shape of the results correspond to the minimum range of each nested loop.
+
+    Args:
+        loops (list[Loop]): list of parallel loops that might contain inner loops
+
+    Returns:
+        list[int]: shape of the results obtained from running the parallel loops
+    """
     if loops is None:
         return []
     all_shapes = [loop.shape for loop in loops]
     max_len = max(len(shape) for shape in all_shapes)
-    all_shapes_with_same_length = [shape + [0] * (max_len - len(shape)) for shape in all_shapes]
-    return [min(values) for values in zip(*all_shapes_with_same_length)]
+    final_shape: list[None | int] = [None] * max_len
+    for shape in all_shapes:
+        for i, dim in enumerate(shape):
+            if final_shape[i] is None or dim < final_shape[i]:  # type: ignore
+                final_shape[i] = dim
+    return final_shape

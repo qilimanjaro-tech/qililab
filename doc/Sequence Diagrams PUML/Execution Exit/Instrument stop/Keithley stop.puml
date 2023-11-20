@@ -1,9 +1,0 @@
-@startuml
-
-participant Keithley2600 as kei
-
-[-> kei ++: stop()
-note right of kei: NOT IMPLEMENTED
-return
-
-@enduml

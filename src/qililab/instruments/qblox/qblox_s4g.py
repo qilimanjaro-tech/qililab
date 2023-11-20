@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Class to interface with the voltage source Qblox S4g
 """
@@ -67,7 +81,7 @@ class QbloxS4g(CurrentSource):
             if len(self.dacs) == 1:
                 channel_id = self.dacs[0]
             else:
-                raise ValueError("channel not specified to update instrument")
+                raise ValueError(f"channel not specified to update instrument {self.name.value}")
         if channel_id > 3:
             raise ValueError(
                 f"the specified dac index:{channel_id} is out of range."
@@ -87,6 +101,27 @@ class QbloxS4g(CurrentSource):
             self._set_ramping_rate(value=value, channel_id=channel_id, channel=channel)
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
+
+    def get(self, parameter: Parameter, channel_id: int | None = None):
+        """Get instrument parameter.
+
+        Args:
+            parameter (Parameter): Name of the parameter to get.
+            channel_id (int | None): Channel identifier of the parameter to update.
+        """
+        if channel_id is None:
+            if len(self.dacs) == 1:
+                channel_id = self.dacs[0]
+            else:
+                raise ValueError(f"channel not specified to update instrument {self.name.value}")
+        if channel_id > 3:
+            raise ValueError(
+                f"the specified dac index:{channel_id} is out of range."
+                + " Number of dacs is 4 -> maximum channel_id should be 3."
+            )
+        if hasattr(self.settings, parameter.value):
+            return getattr(self.settings, parameter.value)[channel_id]
+        raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_current(self, value: float | str | bool, channel_id: int, channel: Any):

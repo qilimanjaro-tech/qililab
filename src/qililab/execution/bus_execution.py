@@ -1,46 +1,41 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """BusExecution class."""
 from dataclasses import dataclass, field
 
 from qililab.platform import Bus
 from qililab.pulse import PulseBusSchedule
-from qililab.result.result import Result
-from qililab.system_control import ReadoutSystemControl, SimulatedSystemControl, SystemControl
+from qililab.system_control import ReadoutSystemControl, SystemControl
 from qililab.utils import Waveforms
 
 
+# TODO: Remove class once a Drawer class is implemented
 @dataclass
 class BusExecution:
     """This class contains the information of a specific bus in the platform together with a list of
-    pulse schedules that will be executed on this bus."""
+    pulse schedules that will be executed on this bus.
+
+    This class is a relic and should be removed once the drawing responsibilities are moved to its own class.
+
+    Args:
+        bus (Bus): Bus where the pulse schedules will be executed.
+        pulse_bus_schedules (list[PulseBusSchedule]): pulse schedules to execute on the Bus.
+    """
 
     bus: Bus
-    pulse_schedule: list[PulseBusSchedule] = field(default_factory=list)
-
-    def compile(self, idx: int, nshots: int, repetition_duration: int) -> list:
-        """Compiles the pulse schedule at index ``idx`` into an assembly program.
-
-        Args:
-            idx (int): index of the circuit to compile and upload
-            nshots (int): number of shots / hardware average
-            repetition_duration (int): maximum window for the duration of one hardware repetition
-
-        Returns:
-            list: list of compiled assembly programs
-        """
-        return self.system_control.compile(
-            pulse_bus_schedule=self.pulse_schedule[idx], nshots=nshots, repetition_duration=repetition_duration
-        )
-
-    def upload(self):
-        """Uploads any previously compiled program into the instrument."""
-        self.system_control.upload()
-
-    def run(self):
-        """Run the given pulse sequence."""
-        return self.system_control.run()
-
-    def setup(self):
-        """Generates the sequence for each bus and uploads it to the sequencer"""
+    pulse_bus_schedules: list[PulseBusSchedule] = field(default_factory=list)
 
     def add_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule):
         """Add pulse to the BusPulseSequence given by idx.
@@ -49,21 +44,7 @@ class BusExecution:
             pulse (Pulse): Pulse object.
             idx (int): Index of the BusPulseSequence to add the pulse.
         """
-
-        self.pulse_schedule.append(pulse_bus_schedule)
-
-    def acquire_result(self) -> Result:
-        """Read the result from the AWG instrument
-
-        Returns:
-            Result: Acquired result
-        """
-        if not isinstance(self.system_control, (ReadoutSystemControl, SimulatedSystemControl)):
-            raise ValueError(
-                f"The bus {self.bus.alias} needs a readout system control to acquire the results. This bus "
-                f"has a {self.system_control.name} instead."
-            )
-        return self.system_control.acquire_result()  # type: ignore  # pylint: disable=no-member
+        self.pulse_bus_schedules.append(pulse_bus_schedule)
 
     def acquire_time(self, idx: int = 0) -> int:
         """BusExecution 'acquire_time' property.
@@ -71,16 +52,16 @@ class BusExecution:
         Returns:
             int: Acquire time (in ns).
         """
-        num_sequences = len(self.pulse_schedule)
+        num_sequences = len(self.pulse_bus_schedules)
         if idx >= num_sequences:
             raise IndexError(f"Index {idx} is out of bounds for pulse_schedule list of length {num_sequences}")
-        readout_schedule = self.pulse_schedule[idx]
+        readout_schedule = self.pulse_bus_schedules[idx]
         time = readout_schedule.timeline[-1].start_time
         if isinstance(self.system_control, ReadoutSystemControl):
             time += self.system_control.acquisition_delay_time
         return time
 
-    def waveforms(self, resolution: float = 1.0, idx: int = 0) -> Waveforms:
+    def waveforms(self, modulation: bool = True, resolution: float = 1.0, idx: int = 0) -> Waveforms:
         """Return pulses applied on this bus.
 
         Args:
@@ -90,19 +71,10 @@ class BusExecution:
             Waveforms: Object containing arrays of the I/Q amplitudes
             of the pulses applied on this bus.
         """
-        num_sequences = len(self.pulse_schedule)
+        num_sequences = len(self.pulse_bus_schedules)
         if idx >= num_sequences:
             raise IndexError(f"Index {idx} is out of bounds for pulse_sequences list of length {num_sequences}")
-        return self.pulse_schedule[idx].waveforms(resolution=resolution)
-
-    @property
-    def port(self):
-        """BusExecution 'port' property
-
-        Returns:
-            int: Port where the bus is connected.
-        """
-        return self.bus.port
+        return self.pulse_bus_schedules[idx].waveforms(modulation=modulation, resolution=resolution)
 
     @property
     def system_control(self) -> SystemControl:
@@ -112,15 +84,6 @@ class BusExecution:
             SystemControl: bus.system_control
         """
         return self.bus.system_control
-
-    @property
-    def id_(self):
-        """BusExecution 'id_' property.
-
-        Returns:
-            int: bus.id_
-        """
-        return self.bus.id_
 
     @property
     def alias(self):

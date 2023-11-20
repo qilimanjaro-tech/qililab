@@ -1,5 +1,19 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Nested Dictionary Iterator"""
-from typing import Generator, List
+from typing import Generator
 
 import pandas as pd
 
@@ -25,7 +39,7 @@ def nested_dict_to_path_tuples(dict_obj: dict) -> Generator:
             yield key, value
 
 
-def nested_dict_to_path_value_list(dict_obj: dict) -> List:
+def nested_dict_to_path_value_list(dict_obj: dict) -> list:
     """Transform a nested dict into a list of [key0, keyN, value] into a list using the nested_dict_to_path_tuples
     generator"""
     return list(nested_dict_to_path_tuples(dict_obj=dict_obj))

@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """This file contains a pre-defined version of a flipping sequence experiment."""
 import numpy as np
 from qibo.gates import RX, M, X
@@ -8,10 +22,10 @@ from qililab.typings import ExperimentOptions, ExperimentSettings, Parameter
 from qililab.utils import Loop
 
 from .experiment_analysis import ExperimentAnalysis
-from .fitting_models import CosFunc
+from .fitting_models import Cos
 
 
-class FlippingSequence(ExperimentAnalysis, CosFunc):
+class FlippingSequence(ExperimentAnalysis, Cos):
     """Class used to run a flipping sequence experiment on the given qubit.
 
     This experiment creates multiple circuits, each of which uses an RX(pi/2) gate to send the qubit to the equator of
@@ -46,7 +60,7 @@ class FlippingSequence(ExperimentAnalysis, CosFunc):
             circuit.add(M(qubit))
             circuits.append(circuit)
 
-        control_bus, readout_bus = platform.get_bus_by_qubit_index(qubit)
+        _, control_bus, readout_bus = platform._get_bus_by_qubit_index(qubit)
 
         experiment_options = ExperimentOptions(
             name="Flipping Sequence",

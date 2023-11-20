@@ -1,9 +1,0 @@
-@startuml
-
-participant Attenuator as att
-
-[-> att ++: stop ()
-note right of att: NOT IMPLEMENTED
-return
-
-@enduml

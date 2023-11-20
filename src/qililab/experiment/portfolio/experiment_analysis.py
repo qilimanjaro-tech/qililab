@@ -1,6 +1,19 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """This file contains the ``ExperimentAnalysis`` class used to analyze the results of an experiment."""
 import inspect
-from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -25,11 +38,11 @@ class ExperimentAnalysis(Experiment, FittingModel):
 
     Args:
         platform (Platform): platform used to run the experiment
-        circuits (List[Circuit]): list of circuits used in the experiment
+        circuits (list[Circuit]): list of circuits used in the experiment
         options (ExperimentOptions): options of the experiment
         control_bus (Bus, optional): control bus used in the experiment. Defaults to None.
         readout_bus (Bus, optional): readout bus used in the experiment. Defaults to None.
-        experiment_loop (Loop, optional): external loop used in the experiment. This argument can be used for
+        experiment_loop (.Loop, optional): external loop used in the experiment. This argument can be used for
             experiments that use a loop to define multiple circuits, such as the Flipping Sequence experiment.
             Defaults to None.
     """
@@ -37,10 +50,10 @@ class ExperimentAnalysis(Experiment, FittingModel):
     post_processed_results: np.ndarray
     popt: np.ndarray  # fitted parameters
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         platform: Platform,
-        circuits: List[Circuit],
+        circuits: list[Circuit],
         options: ExperimentOptions,
         control_bus: Bus | None = None,  # TODO: This will probably change for 2-qubit experiments
         readout_bus: Bus | None = None,
@@ -77,14 +90,14 @@ class ExperimentAnalysis(Experiment, FittingModel):
     def fit(self, p0: tuple | None = None):
         """Method used to fit the results of an experiment.
 
-        This method uses the scipy function ``curve_fit`` to fit the function ``self.func`` to the post-processed data.
+        This method uses the scipy function `curve_fit` to fit the function `self.func` to the post-processed data.
 
         Args:
             p0 (tuple, optional): Initial guess for the parameters. Defaults to None.
 
         Returns:
-            float: optimal values for the parameters so that the sum of the squared residuals of
-                ``f(xdata, *popt) - ydata is minimized.
+            float: Optimal values for the parameters so that the sum of the squared residuals of
+                `f(xdata, *popt) - ydata` is minimized.
         """
         if not hasattr(self, "post_processed_results"):
             raise AttributeError(
@@ -124,7 +137,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
             axes.legend(loc="upper right")
         return fig
 
-    def bus_setup(self, parameters: Dict[Parameter, float | str | bool], control=False) -> None:
+    def bus_setup(self, parameters: dict[Parameter, float | str | bool], control=False) -> None:
         """Method used to change parameters of the bus used in the experiment. Some possible bus parameters are:
 
             * Parameter.CURRENT
@@ -135,7 +148,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
             * Parameter.POWER
 
         Args:
-            parameters (Dict[Parameter, float | str | bool]): dictionary containing parameter names as keys and
+            parameters (dict[Parameter, float | str | bool]): dictionary containing parameter names as keys and
                 parameter values as values
             control (bool, optional): whether to change the parameters of the control bus (True) or the readout
                 bus (False)
@@ -148,7 +161,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
         for parameter, value in parameters.items():
             bus.set_parameter(parameter=parameter, value=value)
 
-    def gate_setup(self, parameters: Dict[Parameter, float | str | bool], gate: str) -> None:
+    def gate_setup(self, parameters: dict[Parameter, float | str | bool], gate: str) -> None:
         """Method used to change the parameters of the given gate. Some possible gate parameters are:
 
             * Parameter.AMPLITUDE
@@ -156,7 +169,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
             * Parameter.PHASE
 
         Args:
-            parameters (Dict[Parameter, float | str | bool]): dictionary containing parameter names as keys and
+            parameters (dict[Parameter, float | str | bool]): dictionary containing parameter names as keys and
                 parameter values as values
             gate (str): name of the gate to change
         """

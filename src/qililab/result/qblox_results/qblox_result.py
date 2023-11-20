@@ -1,25 +1,36 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """QbloxResult class."""
 from copy import deepcopy
-from dataclasses import dataclass, field
-from typing import List, Tuple
 
 import numpy as np
-import numpy.typing as npt
 import pandas as pd
 
 from qililab.constants import QBLOXRESULT, RUNCARD
 from qililab.exceptions import DataUnavailable
-from qililab.instruments.qblox.constants import SCOPE_ACQ_MAX_DURATION
-from qililab.result.qblox_results.qblox_acquisitions_builder import QbloxAcquisitionsBuilder
-from qililab.result.qblox_results.qblox_bins_acquisitions import QbloxBinsAcquisitions
-from qililab.result.qblox_results.qblox_scope_acquisitions import QbloxScopeAcquisitions
+from qililab.result.counts import Counts
 from qililab.result.result import Result
 from qililab.typings.enums import ResultName
 from qililab.utils.factory import Factory
 
+from .constants import SCOPE_ACQ_MAX_DURATION
+from .qblox_acquisitions_builder import QbloxAcquisitionsBuilder
+from .qblox_scope_acquisitions import QbloxScopeAcquisitions
+
 
 @Factory.register
-@dataclass
 class QbloxResult(Result):
     """QbloxResult class. Contains the binning acquisition results obtained from the `Pulsar.get_acquisitions` method.
 
@@ -31,23 +42,22 @@ class QbloxResult(Result):
     - threshold: threshold result bin list.
     - valid: list of valid indications per bin.
     - avg_cnt: list of number of averages per bin.
+
     Args:
-        pulse_length (int): Duration (in ns) of the pulse.
+        qblox_raw_results (list[dict]): Raw results obtained from a Qblox digitiser.
+        integration_lengths (list[int]): Integration lengths used to get the given results.
     """
 
     name = ResultName.QBLOX
-    pulse_length: int | np.number
-    qblox_raw_results: List[dict]
-    qblox_bins_acquisitions: QbloxBinsAcquisitions = field(init=False, compare=False)
-    qblox_scope_acquisitions: QbloxScopeAcquisitions | None = field(init=False, compare=False)
 
-    def __post_init__(self):
-        """Create a Qblox Acquisition class from dictionaries data"""
+    def __init__(self, qblox_raw_results: list[dict], integration_lengths: list[int]):
+        self.qblox_raw_results = qblox_raw_results
+        self.integration_lengths = integration_lengths
         self.qblox_scope_acquisitions = QbloxAcquisitionsBuilder.get_scope(
-            pulse_length=self.pulse_length, qblox_raw_results=self.qblox_raw_results
+            integration_lengths=integration_lengths, qblox_raw_results=qblox_raw_results
         )
         self.qblox_bins_acquisitions = QbloxAcquisitionsBuilder.get_bins(
-            pulse_length=self.pulse_length, qblox_raw_results=self.qblox_raw_results
+            integration_lengths=integration_lengths, qblox_raw_results=qblox_raw_results
         )
         self._qblox_scope_acquisition_copy = deepcopy(self.qblox_scope_acquisitions)
         self.data_dataframe_indices = self.qblox_bins_acquisitions.data_dataframe_indices
@@ -96,21 +106,21 @@ class QbloxResult(Result):
         demod_freq: float = 0.0,
         demod_phase_offset: float = 0.0,
         integrate: bool = False,
-        integration_range: Tuple[int, int] = (0, SCOPE_ACQ_MAX_DURATION),
-    ) -> Tuple[List[float], List[float]]:
+        integration_range: tuple[int, int] = (0, SCOPE_ACQ_MAX_DURATION),
+    ) -> tuple[list[float], list[float]]:
         """Acquisitions Scope
 
         Args:
             demod_freq (float, optional): _description_. Defaults to 0.0.
             demod_phase_offset (float, optional): _description_. Defaults to 0.0.
             integrate (bool, optional): _description_. Defaults to False.
-            integration_range (Tuple[int, int], optional): _description_. Defaults to (0, SCOPE_ACQ_MAX_DURATION).
+            integration_range (tuple[int, int], optional): _description_. Defaults to (0, SCOPE_ACQ_MAX_DURATION).
 
         Raises:
             DataUnavailable: Scope data is not available since it was not stored for this acquisition.
 
         Returns:
-            Tuple[List[float], List[float]]
+            tuple[list[float], list[float]]
         """
         acquisitions = self.qblox_scope_acquisitions
         if acquisitions is None:
@@ -124,20 +134,61 @@ class QbloxResult(Result):
             )
         return acquisitions.scope.path0.data, acquisitions.scope.path1.data
 
-    def probabilities(self) -> List[Tuple[float, float]]:
-        """Return probabilities of being in the ground and excited state.
+    def counts_object(self) -> Counts:
+        """Returns a Counts object containing the counts of each state.
 
         Returns:
-            Tuple[float, float]: Probabilities of being in the ground and excited state.
+            Counts: Counts object containing the counts of each state.
         """
-        return self.qblox_bins_acquisitions.probabilities()
+        return self.qblox_bins_acquisitions.counts()
+
+    def counts(self) -> dict:
+        """Returns a Counts object containing the counts of each state.
+
+        Returns:
+            Counts: Counts object containing the counts of each state.
+        """
+        return self.qblox_bins_acquisitions.counts().as_dict()
+
+    def samples(self) -> np.ndarray:
+        """Returns an array containing the measured samples.
+
+        Returns:
+            np.ndarray: An array containing the measured samples (0 or 1).
+        """
+        return self.qblox_bins_acquisitions.samples()
 
     @property
-    def shape(self) -> List[int]:
+    def array(self) -> np.ndarray:
+        # Save array data
+        if self.qblox_scope_acquisitions is not None:
+            # The dimensions of the array are: (2, N) where N is the length of the scope.
+            path0 = self.qblox_scope_acquisitions.scope.path0.data
+            path1 = self.qblox_scope_acquisitions.scope.path1.data
+            return np.array([path0, path1])
+
+        bins_len = [len(bins) for bins in self.qblox_bins_acquisitions.bins]
+        # Check that all sequencers have the same number of bins.
+        if len(set(bins_len)) != 1:
+            raise IndexError(
+                f"All sequencers must have the same number of bins to return an array. Obtained {len(bins_len)} "
+                f"sequencers with {bins_len} bins respectively."
+            )
+        # The dimensions of the array are the following: (#sequencers, 2, #bins)
+        # Where the 2 corresponds to path0 (I) and path1 (Q) of the sequencer
+        bins = [
+            [sequencer.integration.path0, sequencer.integration.path1]
+            for sequencer in self.qblox_bins_acquisitions.bins
+        ]
+
+        return np.array(bins[0] if len(bins) == 1 else bins)
+
+    @property
+    def shape(self) -> list[int]:
         """QbloxResult 'shape' property.
 
         Returns:
-            List[int]: Shape of the acquisitions.
+            list[int]: Shape of the acquisitions.
         """
         return list(self.acquisitions().shape)
 
@@ -148,8 +199,6 @@ class QbloxResult(Result):
         """
         return {
             RUNCARD.NAME: self.name.value,
-            QBLOXRESULT.PULSE_LENGTH: self.pulse_length.item()
-            if isinstance(self.pulse_length, np.number)
-            else self.pulse_length,
+            QBLOXRESULT.INTEGRATION_LENGTHS: self.integration_lengths,
             QBLOXRESULT.QBLOX_RAW_RESULTS: self.qblox_raw_results,
         }

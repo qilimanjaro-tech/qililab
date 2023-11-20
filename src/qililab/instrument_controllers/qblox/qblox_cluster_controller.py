@@ -1,7 +1,20 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Qblox Cluster Controller class"""
 from dataclasses import dataclass
 
-from qililab.instrument_controllers.multi_instrument_controller import MultiInstrumentController
 from qililab.instrument_controllers.qblox.qblox_controller import QbloxController
 from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
 from qililab.typings.enums import ConnectionName, InstrumentControllerName
@@ -9,7 +22,7 @@ from qililab.typings.instruments.cluster import Cluster
 
 
 @InstrumentControllerFactory.register
-class QbloxClusterController(MultiInstrumentController, QbloxController):
+class QbloxClusterController(QbloxController):
     """Qblox Cluster Controller class.
 
     Args:
@@ -23,9 +36,7 @@ class QbloxClusterController(MultiInstrumentController, QbloxController):
     device: Cluster
 
     @dataclass
-    class QbloxClusterControllerSettings(
-        MultiInstrumentController.MultiInstrumentControllerSettings, QbloxController.QbloxControllerSettings
-    ):
+    class QbloxClusterControllerSettings(QbloxController.QbloxControllerSettings):
         """Contains the settings of a specific Qblox Cluster Controller."""
 
         def __post_init__(self):
@@ -36,7 +47,7 @@ class QbloxClusterController(MultiInstrumentController, QbloxController):
 
     def _initialize_device(self):
         """Initialize device controller."""
-        self.device = Cluster(name=f"{self.name.value}_{self.id_}", identifier=self.address)
+        self.device = Cluster(name=f"{self.name.value}_{self.alias}", identifier=self.address)
 
     def _set_device_to_all_modules(self):
         """Sets the initialized device to all attached modules,

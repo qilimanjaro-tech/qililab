@@ -1,8 +1,21 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Loop class."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List
 
 import numpy as np
 
@@ -53,6 +66,8 @@ class Loop:
             self.loop.previous = self
         if isinstance(self.parameter, str):
             self.parameter = Parameter(self.parameter)
+        if isinstance(self.values, list):
+            self.values = np.array(self.values, dtype=object)
 
     @property
     def all_values(self) -> np.ndarray:
@@ -65,7 +80,7 @@ class Loop:
         return np.array(all_values, dtype=object)
 
     @property
-    def shape(self) -> List[int]:
+    def shape(self) -> list[int]:
         """Return number of points of all loops.
 
         Returns:
@@ -88,11 +103,11 @@ class Loop:
         return len(self.loops)
 
     @property
-    def loops(self) -> List[Loop]:
+    def loops(self) -> list[Loop]:
         """Loop 'loops' property.
 
         Returns:
-            List[Loop]: List of loop objects.
+            list[Loop]: List of loop objects.
         """
         loops = []
         loop: Loop | None = self
@@ -110,7 +125,7 @@ class Loop:
         return {
             LOOP.ALIAS: self.alias,
             LOOP.PARAMETER: self.parameter.value,
-            LOOP.VALUES: self.values,
+            LOOP.VALUES: self.values.tolist(),
             LOOP.LOOP: self.loop.to_dict() if self.loop is not None else None,
             LOOP.CHANNEL_ID: self.channel_id,
         }
@@ -129,3 +144,15 @@ class Loop:
     def num(self):
         """returns 'num' options property."""
         return len(self.values)
+
+    def __eq__(self, other: object) -> bool:
+        """Equality operator"""
+        if not isinstance(other, Loop):
+            return False
+        return (
+            self.alias == other.alias
+            and self.parameter == other.parameter
+            and self.loop == other.loop
+            and self.channel_id == other.channel_id
+            and (self.values == other.values).all()
+        )

@@ -1,7 +1,20 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """VoltageSource class."""
 
 from dataclasses import dataclass
-from typing import List
 
 from qililab.instruments.instrument import Instrument
 
@@ -18,11 +31,11 @@ class VoltageSource(Instrument):
                 Value range is (-40, 40).
         """
 
-        voltage: List[float]
-        span: List[str]
-        ramping_enabled: List[bool]
-        ramp_rate: List[float]
-        dacs: List[int]  # indices of the dacs to use
+        voltage: list[float]
+        span: list[str]
+        ramping_enabled: list[bool]
+        ramp_rate: list[float]
+        dacs: list[int]  # indices of the dacs to use
 
     settings: VoltageSourceSettings
 

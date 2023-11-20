@@ -1,9 +1,0 @@
-@startuml
-
-participant SimulatedSystemControl as sim
-
-[-> sim ++: start ()
-note right of sim: NOT IMPLEMENTED
-return
-
-@enduml

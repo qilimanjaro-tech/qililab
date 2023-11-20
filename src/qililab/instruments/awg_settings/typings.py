@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """ Typings from AWG Types """
 
 from enum import Enum
@@ -7,7 +21,6 @@ class AWGTypes(Enum):
     """Typings from AWG Types"""
 
     AWG_SEQUENCERS = "awg_sequencers"
-    AWG_IQ_CHANNELS = "awg_iq_channels"
     OUT_OFFSETS = "out_offsets"
 
 
@@ -15,30 +28,10 @@ class AWGSequencerTypes(Enum):
     """Types from AWG Sequencer Types"""
 
     IDENTIFIER = "identifier"
-    PATH0 = "path0"
-    PATH1 = "path1"
     INTERMEDIATE_FREQUENCY = "intermediate_frequency"
-    OFFSET_PATH0 = "offset_path0"
-    OFFSET_PATH1 = "offset_path1"
+    OFFSET_I = "offset_i"
+    OFFSET_Q = "offset_q"
     CHIP_PORT_ID = "chip_port_id"
-
-
-class AWGSequencerPathIdentifier(Enum):
-    """AWG Sequence Path Identifier
-    Options:
-        PATH0 = 0
-        PATH1 = 1
-    """
-
-    PATH0 = 0
-    PATH1 = 1
-
-
-class AWGSequencerPathTypes(Enum):
-    """Types from AWG Sequencer Path Types"""
-
-    PATH_ID = "path_id"
-    OUTPUT_CHANNEL = "output_channel"
 
 
 class AWGIQChannelTypes(Enum):

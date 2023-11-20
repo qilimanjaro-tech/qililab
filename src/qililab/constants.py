@@ -1,4 +1,19 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Constants"""
+# pylint: disable=too-few-public-methods
 
 # Environment variables
 DATA = "DATA"  # variable containing the path where data is saved
@@ -12,6 +27,7 @@ GALADRIEL_DEVICE_ID = 9
 
 DEFAULT_TIMEOUT = 10 * 1000  # 10 seconds
 
+GATE_ALIAS_REGEX = r"(?P<gate>[a-zA-Z]+)\((?P<qubits>\d+(?:,\s*\d+)*)\)"
 
 # TODO: Distribute constants over different classes
 
@@ -19,27 +35,29 @@ DEFAULT_TIMEOUT = 10 * 1000  # 10 seconds
 class RUNCARD:
     """YAML constants."""
 
-    ID = "id_"
     NAME = "name"
+    DEVICE_ID = "device_id"
     ALIAS = "alias"
-    CATEGORY = "category"
-    SUBCATEGORY = "subcategory"
     INSTRUMENT = "instrument"
     INSTRUMENTS = "instruments"
     ELEMENTS = "elements"
     READOUT = "readout"
-    SETTINGS = "settings"
+    GATES_SETTINGS = "gates_settings"
     PLATFORM = "platform"
-    SCHEMA = "schema"
+    BUSES = "buses"
+    CHIP = "chip"
     AWG = "awg"
     SIGNAL_GENERATOR = "signal_generator"
     ATTENUATOR = "attenuator"
     SYSTEM_CONTROL = "system_control"
     INSTRUMENT_CONTROLLER = "instrument_controller"
+    INSTRUMENT_CONTROLLERS = "instrument_controllers"
     FIRMWARE = "firmware"
     GATES = "gates"
     VOLTAGE_SOURCE = "voltage_source"
     CURRENT_SOURCE = "current_source"
+    DISTORTIONS = "distortions"
+    DELAY = "delay"
 
 
 class PLATFORM:
@@ -47,8 +65,6 @@ class PLATFORM:
 
     DELAY_BETWEEN_PULSES = "delay_between_pulses"
     DELAY_BEFORE_READOUT = "delay_before_readout"
-    MASTER_AMPLITUDE_GATE = "master_amplitude_gate"
-    MASTER_DURATION_GATE = "master_duration_gate"
     TIMINGS_CALCULATION_METHOD = "timings_calculation_method"
     RESET_METHOD = "reset_method"
     PASSIVE_RESET_DURATION = "passive_reset_duration"
@@ -101,15 +117,6 @@ class EXPERIMENT:
     DESCRIPTION = "description"
 
 
-class SCHEMA:
-    """Schema constants."""
-
-    INSTRUMENTS = "instruments"
-    BUSES = "buses"
-    CHIP = "chip"
-    INSTRUMENT_CONTROLLERS = "instrument_controllers"
-
-
 class BUS:
     """Bus constants."""
 
@@ -131,6 +138,15 @@ class LOOP:
     CHANNEL_ID = "channel_id"
     PREVIOUS = "previous"
     VALUES = "values"
+
+
+class NODE:
+    """Chip node class and attribute names"""
+
+    NODES = "nodes"
+    FREQUENCY = "frequency"
+    QUBIT_INDEX = "qubit_index"
+    LINE = "line"
 
 
 class PULSESCHEDULES:
@@ -164,10 +180,17 @@ class PULSESHAPE:
     NAME = "name"
 
 
+class PULSEDISTORTION:
+    """PulsePredecessor attribute names."""
+
+    NAME = "name"
+
+
 class PULSEEVENT:
     """PulseEvent attribute names."""
 
     PULSE = "pulse"
+    PULSE_DISTORTIONS = "pulse_distortions"
     START_TIME = "start_time"
 
 
@@ -184,17 +207,23 @@ class CONNECTION:
     ADDRESS = "address"
 
 
-class INSTRUMENTREFERENCE:
-    """InstrumentReference attribute names."""
-
-    SLOT_ID = "slot_id"
-
-
 class QBLOXRESULT:
     """Qblox Results attribute names."""
 
-    PULSE_LENGTH = "pulse_length"
+    INTEGRATION_LENGTHS = "integration_lengths"
     QBLOX_RAW_RESULTS = "qblox_raw_results"
+
+
+class QBLOXMEASUREMENTRESULT:
+    """Qblox Results attribute names."""
+
+    RAW_MEASUREMENT_DATA = "raw_measurement_data"
+
+
+class QMRESULT:
+    """Quantum Machines Results attribute names."""
+
+    QM_RAW_RESULTS = "qm_raw_results"
 
 
 class RESULTSDATAFRAME:

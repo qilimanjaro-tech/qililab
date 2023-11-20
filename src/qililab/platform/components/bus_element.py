@@ -1,8 +1,22 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """BusElement class"""
 from dataclasses import asdict
 
 from qililab.constants import RUNCARD
-from qililab.settings import DDBBElement
+from qililab.settings import Settings
 from qililab.typings.factory_element import FactoryElement
 from qililab.utils import dict_factory
 
@@ -10,7 +24,7 @@ from qililab.utils import dict_factory
 class BusElement(FactoryElement):
     """Class BusElement. All bus element classes must inherit from this class."""
 
-    settings: DDBBElement
+    settings: Settings
 
     def to_dict(self):
         """Return a dict representation of the BusElement class."""
@@ -18,8 +32,4 @@ class BusElement(FactoryElement):
 
     def short_dict(self):
         """Return a dict representation of the BusElement class discarding all static elements."""
-        return {
-            key: value
-            for key, value in self.to_dict().items()
-            if key not in [RUNCARD.NAME, RUNCARD.ID, RUNCARD.CATEGORY, RUNCARD.FIRMWARE]
-        }
+        return {key: value for key, value in self.to_dict().items() if key not in [RUNCARD.NAME, RUNCARD.FIRMWARE]}
