@@ -38,20 +38,31 @@ def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
 
         .. code-block:: python
 
+            from qibo.models import Circuit
             import numpy as np
             import qililab as ql
 
+            # Constants
+            QUBIT = 0
+            M_BUFFER_TIME = 0
+            AMP_VALUES = np.linspace(0, 1, 1000)
+            PLATFORM_PATH = "runcards/galadriel.yml"
+
             # Building the platform:
-            platform = ql.build_platform(runcard="runcards/galadriel.yml")
+            platform = ql.build_platform(runcard=PLATFORM_PATH)
 
             # Connecting and setting up the platform:
             platform.connect()
             platform.initial_setup()
             platform.turn_on_instruments()
 
-            # Executing the experiment on the platform:
-            AMP_VALUES = np.linspace(0, 1, 1000)
+            # Define circuit
+            circuit = Circuit(QUBIT + 1)
+            circuit.add(ql.Drag(QUBIT, theta=np.pi, phase=0))
+            circuit.add(ql.Wait(QUBIT, M_BUFFER_TIME))
+            circuit.add(gates.M(QUBIT))
 
+            # Executing the experiment on the platform:
             stream_array = ql.stream_results(shape=(1000, 2), loops={"amp": AMP_VALUES}, path="results.h5")
 
             with stream_array:
@@ -76,21 +87,32 @@ def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
 
         .. code-block:: python
 
+            from qibo.models import Circuit
             import numpy as np
             import qililab as ql
 
+            # Constants
+            QUBIT = 0
+            M_BUFFER_TIME = 0
+            AMP_VALUES = np.linspace(0, 1, 1000)
+            FREQ_VALUES = np.linspace(0, 1, 1000)
+            PLATFORM_PATH = "runcards/galadriel.yml"
+
             # Building the platform:
-            platform = ql.build_platform(runcard="runcards/galadriel.yml")
+            platform = ql.build_platform(runcard=PLATFORM_PATH)
 
             # Connecting and setting up the platform:
             platform.connect()
             platform.initial_setup()
             platform.turn_on_instruments()
 
-            # Executing the experiment on the platform:
-            AMP_VALUES = np.linspace(0, 1, 1000)
-            FREQ_VALUES = np.linspace(0, 1, 1000)
+            # Define circuit
+            circuit = Circuit(QUBIT + 1)
+            circuit.add(ql.Drag(QUBIT, theta=np.pi, phase=0))
+            circuit.add(ql.Wait(QUBIT, M_BUFFER_TIME))
+            circuit.add(gates.M(QUBIT))
 
+            # Executing the experiment on the platform:
             stream_array = ql.stream_results(shape=(1000, 1000, 2), loops={"amp": AMP_VALUES, "freq": FREQ_VALUES}, path="results.h5")
 
             with stream_array:
@@ -120,42 +142,53 @@ def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
 
         .. code-block:: python
 
+            from qibo.models import Circuit
             import numpy as np
             import qililab as ql
 
-            # Building the platform:
-            platform = ql.build_platform(runcard="runcards/galadriel.yml")
+            %%submit_job -o results -p galadriel
 
-            # Connecting and setting up the platform:
+            QUBIT = 0
+            M_BUFFER_TIME = 0
+            AMP_VALUES = np.linspace(0, 0.4, num=11)
+            HW_AVG = 1000
+            REPETITION_DURATION = 200_000
+            PLATFORM_PATH = "runcards/galadriel.yml"
+
+            # Building the platform:
+            platform = ql.build_platform(runcard=PLATFORM_PATH)
             platform.connect()
             platform.initial_setup()
             platform.turn_on_instruments()
 
-            # Executing the experiment on the platform:
-            AMP_VALUES = np.linspace(0, 1, 1000)
+            # Define circuit
+            circuit = Circuit(QUBIT + 1)
+            circuit.add(ql.Drag(QUBIT, theta=np.pi, phase=0))
+            circuit.add(ql.Wait(QUBIT, M_BUFFER_TIME))
+            circuit.add(gates.M(QUBIT))
 
+            # Executing the experiment through SLURM:
             stream_array = ql.stream_results(shape=(1000, 2), loops={"amp": AMP_VALUES}, path="results.h5")
-
-            %%submit_job -o experiment_name -d galadriel
 
             with stream_array:
                 for i, amp in enumerate(AMP_VALUES):
-                    platform.set_parameter(alias="drive_q0", parameter=ql.Parameter.AMPLITUDE, value=amp)
-                    results = platform.execute(circuit)
+                    platform.set_parameter(alias=f"Drag({QUBIT})", parameter=ql.Parameter.AMPLITUDE, value=float(amp))
+                    results = platform.execute(program=circuit, num_avg=HW_AVG, repetition_duration=REPETITION_DURATION)
                     stream_array[(i, 0)] = results.array[0]
                     stream_array[(i, 1)] = results.array[1]
-                    whatever_name.append(results.array)
+
+            results = stream_array.results
 
         The results would look something like this:
 
-        >>> print(ql.load_results(path="results.h5"))
-        (array([[700.,   0.],
-            [  0.,   0.],
-            [  0.,   0.],
+        >>> print(results.result())
+        (array([[ 0.24409233, -6.61454812],
+            [-0.06998486, -6.5098212 ],
+            [-1.08470591, -5.96761065],
             ...,
-            [  0.,   0.],
-            [  0.,   0.],
-            [  0.,   0.]]), {'amp': array([0, 0.1,..., 1.0])})
+            [ 0.        ,  0.        ],
+            [ 0.        ,  0.        ],
+            [ 0.        ,  0.        ]]))
 
     """
     return StreamArray(shape=shape, path=path, loops=loops)
