@@ -644,6 +644,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         Returns:
             dict: Dictionary of compiled assembly programs. The key is the bus alias (``str``), and the value is the assembly compilation (``list``).
+
+        Raises:
+            ValueError: raises value error if the circuit execution time is longer than ``repetition_duration`` for some qubit.
         """
         # We have a circular import because Platform uses CircuitToPulses and vice versa
 
