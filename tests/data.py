@@ -890,37 +890,7 @@ class SauronYokogawa:
         PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
         PLATFORM.PASSIVE_RESET_DURATION: 100,
         "operations": [],
-        "gates": [],
-    }
-
-    yokogawa_gs200_controller = {
-        RUNCARD.NAME: InstrumentControllerName.YOKOGAWA,
-        RUNCARD.ALIAS: "yokogawa_controller",
-        INSTRUMENTCONTROLLER.CONNECTION: {
-            RUNCARD.NAME: ConnectionName.TCP_IP.value,
-            CONNECTION.ADDRESS: "192.168.1.15",
-        },
-        INSTRUMENTCONTROLLER.MODULES: [
-            {
-                "alias": "yokogawa",
-                "slot_id": 0,
-            }
-        ],
-    }
-
-    yokogawa_gs200_controller_ramping_dissabled = {
-        RUNCARD.NAME: InstrumentControllerName.YOKOGAWA,
-        RUNCARD.ALIAS: "yokogawa_controller_ramping_disabled",
-        INSTRUMENTCONTROLLER.CONNECTION: {
-            RUNCARD.NAME: ConnectionName.TCP_IP.value,
-            CONNECTION.ADDRESS: "192.168.1.15",
-        },
-        INSTRUMENTCONTROLLER.MODULES: [
-            {
-                "alias": "yokogawa_ramping_disabled",
-                "slot_id": 0,
-            }
-        ],
+        "gates": {},
     }
 
     yokogawa_gs200 = {
@@ -935,9 +905,9 @@ class SauronYokogawa:
         "dacs": [0, 1],
     }
 
-    yokogawa_gs200_ramping_dissabled = {
+    yokogawa_gs200_ramping_disabled = {
         RUNCARD.NAME: InstrumentName.YOKOGAWA_GS200,
-        RUNCARD.ALIAS: "yokogawa_ramping_dissabled",
+        RUNCARD.ALIAS: "yokogawa_ramping_disabled",
         RUNCARD.FIRMWARE: "A.15.10.06",
         Parameter.CURRENT.value: [0.0],
         Parameter.SPAN.value: ["range_max_bi"],
@@ -947,8 +917,66 @@ class SauronYokogawa:
         "dacs": [0, 1],
     }
 
-    instruments = [yokogawa_gs200, yokogawa_gs200_ramping_dissabled]
-    instrument_controllers = [yokogawa_gs200_controller, yokogawa_gs200_controller_ramping_dissabled]
+    rohde_schwarz: dict[str, Any] = {
+        "name": InstrumentName.ROHDE_SCHWARZ,
+        "alias": "rohde_schwarz",
+        RUNCARD.FIRMWARE: "4.30.046.295",
+        Parameter.POWER.value: 15,
+        Parameter.LO_FREQUENCY.value: 7.24730e09,
+        Parameter.RF_ON.value: True,
+    }
+
+    yokogawa_gs200_controller = {
+        RUNCARD.NAME: InstrumentControllerName.YOKOGAWA_GS200,
+        RUNCARD.ALIAS: "yokogawa_controller",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.1.15",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "yokogawa",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    yokogawa_gs200_controller_ramping_disabled = {
+        RUNCARD.NAME: InstrumentControllerName.YOKOGAWA_GS200,
+        RUNCARD.ALIAS: "yokogawa_controller_ramping_disabled",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.1.15",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "yokogawa_ramping_disabled",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    yokogawa_gs200_controller_wrong_module = {
+        RUNCARD.NAME: InstrumentControllerName.YOKOGAWA_GS200,
+        RUNCARD.ALIAS: "yokogawa_controller_ramping_disabled",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.1.15",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "rohde_schwarz",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    instruments = [yokogawa_gs200, yokogawa_gs200_ramping_disabled, rohde_schwarz]
+    instrument_controllers = [
+        yokogawa_gs200_controller,
+        yokogawa_gs200_controller_ramping_disabled,
+        yokogawa_gs200_controller_wrong_module,
+    ]
 
     chip: dict[str, Any] = {
         "nodes": [
@@ -968,9 +996,19 @@ class SauronYokogawa:
             RUNCARD.ALIAS: "yokogawa_gs200_bus",
             RUNCARD.SYSTEM_CONTROL: {
                 RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: [InstrumentName.YOKOGAWA_GS200.value, "yokogawa"],
+                RUNCARD.INSTRUMENTS: ["yokogawa"],
             },
             "port": "flux_q0",
+            RUNCARD.DISTORTIONS: [],
+        },
+        {
+            RUNCARD.ALIAS: "yokogawa_gs200_bus_ramping_disabled",
+            RUNCARD.SYSTEM_CONTROL: {
+                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
+                RUNCARD.INSTRUMENTS: ["yokogawa_ramping_disabled"],
+            },
+            "port": "flux_q0",
+            RUNCARD.DISTORTIONS: [],
         },
     ]
 

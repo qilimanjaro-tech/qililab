@@ -9,15 +9,22 @@ from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.yokogawa.gs200 import GS200
 from qililab.platform import Platform
 from qililab.typings.enums import Parameter, YokogawaSourceModes
-from tests.data import Galadriel, SauronYokogawa
+from tests.data import SauronYokogawa
+from tests.test_utils import build_platform
+
+
+@pytest.fixture(name="platform")
+def fixture_platform() -> Platform:
+    """Return Platform object."""
+    return build_platform(runcard=SauronYokogawa.runcard)
 
 
 @pytest.fixture(name="yokogawa_gs200_controller")
-def fixture_yokogawa_gs200_controller(sauron_yoko_platform: Platform):
+def fixture_yokogawa_gs200_controller(platform: Platform):
     """Return an instance of GS200 controller class"""
     settings = copy.deepcopy(SauronYokogawa.yokogawa_gs200_controller)
     settings.pop("name")
-    return GS200Controller(settings=settings, loaded_instruments=sauron_yoko_platform.instruments)
+    return GS200Controller(settings=settings, loaded_instruments=platform.instruments)
 
 
 @pytest.fixture(name="yokogawa_gs200")
@@ -31,28 +38,28 @@ def fixture_yokogawa_gs200(mock_rs: MagicMock, yokogawa_gs200_controller: GS200C
     return yokogawa_gs200_controller.modules[0]
 
 
-@pytest.fixture(name="yokogawa_gs200_controller_ramping_dissabled")
-def fixture_yokogawa_gs200_controller_ramping_dissabled(sauron_yoko_platform: Platform):
+@pytest.fixture(name="yokogawa_gs200_controller_ramping_disabled")
+def fixture_yokogawa_gs200_controller_ramping_disabled(platform: Platform):
     """Return an instance of GS200 controller class"""
-    settings = copy.deepcopy(SauronYokogawa.yokogawa_gs200_controller_ramping_dissabled)
+    settings = copy.deepcopy(SauronYokogawa.yokogawa_gs200_controller_ramping_disabled)
     settings.pop("name")
-    return GS200Controller(settings=settings, loaded_instruments=sauron_yoko_platform.instruments)
+    return GS200Controller(settings=settings, loaded_instruments=platform.instruments)
 
 
-@pytest.fixture(name="yokogawa_gs200_ramping_dissabled")
+@pytest.fixture(name="yokogawa_gs200_ramping_disabled")
 @patch("qililab.instrument_controllers.yokogawa.gs200_controller.YokogawaGS200", autospec=True)
 def fixture_yokogawa_gs200_ramping_disabled(
-    mock_rs: MagicMock, yokogawa_gs200_controller_ramping_dissabled: GS200Controller
+    mock_rs: MagicMock, yokogawa_gs200_controller_ramping_disabled: GS200Controller
 ):
     """Return connected instance of GS200 class"""
     # add dynamically created attributes
     mock_instance = mock_rs.return_value
     mock_instance.mock_add_spec(["output_status"])
-    yokogawa_gs200_controller_ramping_dissabled.connect()
-    return yokogawa_gs200_controller_ramping_dissabled.modules[0]
+    yokogawa_gs200_controller_ramping_disabled.connect()
+    return yokogawa_gs200_controller_ramping_disabled.modules[0]
 
 
-class TestGS200:
+class TestYokogawaGS200:
     """Unit tests checking the GS200 attributes and methods"""
 
     @pytest.mark.parametrize("parameter, value", [(Parameter.CURRENT, -0.001), (Parameter.CURRENT, 0.0005)])
@@ -99,10 +106,10 @@ class TestGS200:
         assert yokogawa_gs200.settings.current[0] == ramp_to
 
     @pytest.mark.parametrize("ramp_to, step, delay", [(0.001, 0.0001, 0), (0.001, 0.0001, 1), (0.0001, 0.00005, 10)])
-    def test_ramp_current_method_raises_exception(self, ramp_to, step, delay, yokogawa_gs200_ramping_dissabled: GS200):
+    def test_ramp_current_method_raises_exception(self, ramp_to, step, delay, yokogawa_gs200_ramping_disabled: GS200):
         """Test the ramp current method raises exception when ramping is not enabled"""
         with pytest.raises(ValueError):
-            yokogawa_gs200_ramping_dissabled.ramp_current(ramp_to, step, delay)
+            yokogawa_gs200_ramping_disabled.ramp_current(ramp_to, step, delay)
 
     def test_start_method(self, yokogawa_gs200: GS200):
         """Test start method"""
@@ -135,20 +142,3 @@ class TestGS200:
         """Test the source mode property"""
         assert hasattr(yokogawa_gs200, "current")
         assert yokogawa_gs200.current == yokogawa_gs200.settings.current[0]
-
-
-@pytest.fixture(name="yokogawa_gs200_controller_fail")
-def fixture_yokogawa_gs200_controller_fail(platform: Platform):
-    """Return an instance of GS200 controller class"""
-    settings = copy.deepcopy(Galadriel.pulsar_controller_qcm_0)
-    settings.pop("name")
-    settings.pop("reference_clock")
-    return GS200Controller(settings=settings, loaded_instruments=platform.instruments)
-
-
-class TestGS200Controller:
-    """Unit tests checking the GS200 Controller attributes and methods"""
-
-    def test_check_supported_modules_raises_exception(self, yokogawa_gs200_controller_fail: GS200Controller):
-        with pytest.raises(ValueError):
-            yokogawa_gs200_controller_fail._check_supported_modules()

@@ -2,19 +2,24 @@
 from dataclasses import dataclass
 from typing import Sequence
 
-from qililab.instrument_controllers.instrument_controller import InstrumentController, InstrumentControllerSettings
+from qililab.instrument_controllers.instrument_controller import InstrumentControllerSettings
+from qililab.instrument_controllers.single_instrument_controller import SingleInstrumentController
+from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instruments.yokogawa.gs200 import GS200
 from qililab.typings import YokogawaGS200
-from qililab.typings.enums import ConnectionName, InstrumentControllerName, InstrumentTypeName
+from qililab.typings.enums import InstrumentControllerName, InstrumentTypeName
 
 
-class GS200Controller(InstrumentController):
+@InstrumentControllerFactory.register
+class GS200Controller(SingleInstrumentController):
     """YOKOGAWA GS200 class
     Args:
         name (InstrumentControllerName): Name of the Instrument Controller.
         device (GS200): Instance of the qcodes GS200 class.
         settings (GS200Settings): Settings of the instrument.
     """
+
+    name = InstrumentControllerName.YOKOGAWA_GS200
 
     @dataclass
     class GS200ControllerSettings(InstrumentControllerSettings):
