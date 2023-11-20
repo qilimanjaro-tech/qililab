@@ -901,7 +901,6 @@ class SauronYokogawa:
         Parameter.SPAN.value: ["range_max_bi"],
         Parameter.RAMPING_ENABLED.value: [True],
         Parameter.RAMPING_RATE.value: [0.0001, 0.0001],
-        Parameter.OUTPUT_STATUS.value: False,
         "dacs": [0, 1],
     }
 
@@ -913,7 +912,6 @@ class SauronYokogawa:
         Parameter.SPAN.value: ["range_max_bi"],
         Parameter.RAMPING_ENABLED.value: [False],
         Parameter.RAMPING_RATE.value: [0.0001, 0.0001],
-        Parameter.OUTPUT_STATUS.value: False,
         "dacs": [0, 1],
     }
 

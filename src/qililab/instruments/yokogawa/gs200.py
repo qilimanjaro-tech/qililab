@@ -3,14 +3,12 @@ Class to interface with the voltage source Qblox S4g
 """
 from dataclasses import dataclass
 
-import numpy as np
-
 from qililab.instruments.current_source import CurrentSource
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import InstrumentName
 from qililab.typings import YokogawaGS200 as YokogawaGS200Driver
-from qililab.typings.enums import Parameter, YokogawaSourceModes
+from qililab.typings.enums import Parameter, YokogawaSourceMode
 
 
 @InstrumentFactory.register
@@ -29,8 +27,7 @@ class GS200(CurrentSource):
     class YokogawaGS200Settings(CurrentSource.CurrentSourceSettings):
         """Contains the settings of a specific signal generator."""
 
-        output_status: bool
-        source_mode: YokogawaSourceModes = YokogawaSourceModes.CURR
+        source_mode: YokogawaSourceMode = YokogawaSourceMode.CURRENT
 
     settings: YokogawaGS200Settings
     device: YokogawaGS200Driver
@@ -44,41 +41,18 @@ class GS200(CurrentSource):
             value (float | str | bool): new value
             channel_id (int | None): channel identifier of the parameter to update
         """
-        if isinstance(value, (str, np.character)):
-            self._set_parameter_str(parameter=parameter, value=value)
-            return
-        if isinstance(value, (float, np.floating)):
-            self._set_parameter_float(parameter=parameter, value=value)
-            return
-
-    def _set_parameter_str(self, parameter: Parameter, value: str):
-        """Set instrument settings parameter to the corresponding value
-
-        Args:
-            parameter (Parameter): settings parameter to be updated
-            value (str): new value
-        """
         if parameter == Parameter.SOURCE_MODE:
-            self.source_mode = YokogawaSourceModes(value)
+            self.source_mode = YokogawaSourceMode(value)
             return
 
-        raise ParameterNotFound(f"Invalid Parameter: {parameter}")
-
-    def _set_parameter_float(self, parameter: Parameter, value: float):
-        """Set instrument settings parameter to the corresponding value
-
-        Args:
-            parameter (Parameter): settings parameter to be updated
-            value (float): new value
-        """
         if parameter == Parameter.CURRENT:
-            self.current = value
+            self.current = float(value)
             return
 
-        raise ParameterNotFound(f"Invalid Parameter: {parameter}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
     @property
-    def source_mode(self):
+    def source_mode(self) -> YokogawaSourceMode:
         """Yokogawa gs200 'source_mode' property.
 
         Returns:
@@ -87,22 +61,13 @@ class GS200(CurrentSource):
         return self.settings.source_mode
 
     @source_mode.setter
-    def source_mode(self, value):
+    def source_mode(self, value: YokogawaSourceMode):
         """sets the source mode"""
         self.settings.source_mode = value
-        self.device._set_source_mode(self.settings.source_mode.name)
+        self.device.source_mode(self.settings.source_mode.name[0:4])
 
     @property
-    def output_status(self):
-        """Yokogawa gs200 'output_status' property.
-
-        Returns:
-            bool: settings.output_status.
-        """
-        return self.settings.output_status
-
-    @property
-    def current(self):
+    def current(self) -> float:
         """Yokogawa gs200 'current_value' property.
 
         Returns:
@@ -114,47 +79,26 @@ class GS200(CurrentSource):
     def current(self, value: float):
         """Sets the current_value"""
         self.settings.current[0] = value
-        self.ramp_current(value, value, 0)
+        self.device.current(value)
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """performs an initial setup."""
-        self.device._set_source_mode(YokogawaSourceModes.CURR.name)
+        self.source_mode = YokogawaSourceMode.CURRENT
 
     @Instrument.CheckDeviceInitialized
     def start(self):
         """Dummy method."""
         self.device.on()
-        self.settings.output_status = True
 
     @Instrument.CheckDeviceInitialized
     def stop(self):
         """Stop outputing current."""
         self.device.off()
-        self.settings.output_status = False
 
     def to_dict(self):
         """Return a dict representation of the VectorNetworkAnalyzer class."""
         return dict(super().to_dict().items())
 
-    def ramp_current(self, ramp_to: float, step: float, delay: float) -> None:
-        """Ramp current to a target value
-
-        Args:
-            ramp_to: float
-                New target current value in Ampere
-            step: float
-                The ramp steps in Ampere
-            delay: float
-                The time between finishing one step and starting
-                another in seconds.
-        """
-        if self.settings.ramping_enabled[0]:
-            self.settings.current[0] = ramp_to
-            self.device.ramp_current(ramp_to, abs(step), delay)
-            return
-        raise ValueError("Ramping is not enabled, check runcard specifications")
-
     def run(self):
         """Run method"""
-        pass

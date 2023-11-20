@@ -503,7 +503,7 @@ class ResetMethod(str, Enum):  # pylint: disable=missing-class-docstring
     ACTIVE = "active"
 
 
-class YokogawaSourceModes(str, Enum):
+class YokogawaSourceMode(str, Enum):
     """Yokogawa gs200 Source Modes
 
     Args:
@@ -512,5 +512,5 @@ class YokogawaSourceModes(str, Enum):
         * voltage
     """
 
-    CURR = "current"
-    VOLT = "voltage"
+    CURRENT = "current"
+    VOLTAGE = "voltage"
