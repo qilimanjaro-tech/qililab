@@ -20,7 +20,7 @@ from qibo.models import Circuit
 import qililab as ql  # pylint: disable=cyclic-import
 from qililab.platform import Platform
 from qililab.typings import ExperimentOptions, ExperimentSettings, Parameter
-from qililab.utils import Loop, Wait
+from qililab.utils import Loop
 
 from .experiment_analysis import ExperimentAnalysis
 from .fitting_models import Exp
@@ -60,11 +60,11 @@ class T2Echo(ExperimentAnalysis, Exp):
         # Define Circuit to execute
         circuit = Circuit(qubit + 1)
         circuit.add(ql.Drag(q=qubit, theta=np.pi / 2, phase=0))
-        circuit.add(Wait(qubit, t=0))
+        circuit.add(ql.Wait(qubit, t=0))
         circuit.add(ql.Drag(q=qubit, theta=np.pi, phase=0))
-        circuit.add(Wait(qubit, t=0))
+        circuit.add(ql.Wait(qubit, t=0))
         circuit.add(ql.Drag(q=qubit, theta=np.pi / 2, phase=0))
-        circuit.add(Wait(qubit, t=measurement_buffer))
+        circuit.add(ql.Wait(qubit, t=measurement_buffer))
         circuit.add(M(qubit))
 
         # Alias of loops reference the wait parameters, looping over wait times.

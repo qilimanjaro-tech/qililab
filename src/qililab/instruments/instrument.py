@@ -152,7 +152,6 @@ class Instrument(BusElement, ABC):
             return self._method(ref, *args, **kwargs) if hasattr(ref, "device") else self._method(*args, **kwargs)
 
     def __init__(self, settings: dict):
-        """Cast the settings to its corresponding class."""
         settings_class: type[self.InstrumentSettings] = get_type_hints(self).get("settings")  # type: ignore
         self.settings = settings_class(**settings)
 
@@ -192,6 +191,18 @@ class Instrument(BusElement, ABC):
         """Acquire results of the measurement.
 
         In some cases this method might do nothing."""
+
+    def acquire_qprogram_results(self, acquisitions: list[str]) -> list[Result]:  # type: ignore[empty-body]
+        """Acquire results of the measurement.
+
+        In some cases this method might do nothing.
+
+        Args:
+            acquisitions (list[str]): A list of acquisitions names.
+
+        Returns:
+            list[Result]: The acquired results in chronological order.
+        """
 
     @CheckDeviceInitialized
     @abstractmethod

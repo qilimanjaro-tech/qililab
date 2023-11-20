@@ -15,6 +15,8 @@
 """Bus class."""
 from dataclasses import InitVar, dataclass
 
+from qpysequence import Sequence as QpySequence
+
 from qililab.chip import Chip, Coil, Coupler, Qubit, Resonator
 from qililab.constants import BUS, NODE, RUNCARD
 from qililab.instruments import Instruments, ParameterNotFound
@@ -34,10 +36,12 @@ class Bus:
     which is connected to one or multiple qubits.
 
     Args:
+        targets (list[Qubit | Resonator | Coupler | Coil]): Port target (or targets in case of multiple resonators).
         settings (BusSettings): Bus settings.
     """
 
-    targets: list[Qubit | Resonator | Coupler | Coil]  # port target (or targets in case of multiple resonators)
+    targets: list[Qubit | Resonator | Coupler | Coil]
+    """Port target (or targets in case of multiple resonators)."""
 
     @dataclass
     class BusSettings(Settings):
@@ -71,6 +75,9 @@ class Bus:
             ]
 
     settings: BusSettings
+    """Bus settings. Containing the alias of the bus, the system control used to control and readout its qubits, the alias
+    of the port where it's connected, the list of the distortions to apply, and its delay.
+    """
 
     def __init__(self, settings: dict, platform_instruments: Instruments, chip: Chip):
         self.settings = self.BusSettings(**settings, platform_instruments=platform_instruments)  # type: ignore
@@ -157,7 +164,7 @@ class Bus:
         }
 
     def set_parameter(self, parameter: Parameter, value: int | float | str | bool, channel_id: int | None = None):
-        """_summary_
+        """Set a parameter to the bus.
 
         Args:
             parameter (Parameter): parameter settings of the instrument to update
@@ -177,7 +184,7 @@ class Bus:
                 ) from error
 
     def get_parameter(self, parameter: Parameter, channel_id: int | None = None):
-        """_summary_
+        """Gets a parameter of the bus.
 
         Args:
             parameter (Parameter): parameter settings of the instrument to update
@@ -206,6 +213,10 @@ class Bus:
         """
         return self.system_control.compile(pulse_bus_schedule, nshots, repetition_duration, num_bins)
 
+    def upload_qpysequence(self, qpysequence: QpySequence):
+        """Uploads the qpysequence into the instrument."""
+        self.system_control.upload_qpysequence(qpysequence=qpysequence, port=self.port)
+
     def upload(self):
         """Uploads any previously compiled program into the instrument."""
         self.system_control.upload(port=self.port)
@@ -222,6 +233,19 @@ class Bus:
         """
         if isinstance(self.system_control, ReadoutSystemControl):
             return self.system_control.acquire_result()
+
+        raise AttributeError(
+            f"The bus {self.alias} cannot acquire results because it doesn't have a readout system control."
+        )
+
+    def acquire_qprogram_results(self, acquisitions: list[str]) -> list[Result]:
+        """Read the result from the instruments
+
+        Returns:
+            list[Result]: Acquired results in chronological order
+        """
+        if isinstance(self.system_control, ReadoutSystemControl):
+            return self.system_control.acquire_qprogram_results(acquisitions=acquisitions)
 
         raise AttributeError(
             f"The bus {self.alias} cannot acquire results because it doesn't have a readout system control."

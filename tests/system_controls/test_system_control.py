@@ -2,7 +2,7 @@
 from unittest.mock import MagicMock
 
 import pytest
-from qpysequence import Sequence
+from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 
 import qililab as ql
 from qililab.instruments import AWG, Instrument
@@ -18,6 +18,12 @@ from tests.test_utils import build_platform
 def fixture_platform() -> Platform:
     """Return Platform object."""
     return build_platform(runcard=Galadriel.runcard)
+
+
+@pytest.fixture(name="qpysequence")
+def fixture_qpysequence() -> Sequence:
+    """Return Sequence instance."""
+    return Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
 
 
 @pytest.fixture(name="pulse_bus_schedule")
@@ -53,6 +59,18 @@ class TestInitialization:
         for instrument in system_control.settings.instruments:
             assert isinstance(instrument, Instrument)
         assert not hasattr(system_control.settings, "platform_instruments")
+
+    def test_init_with_a_wrong_instrument_alias_raises_an_error(self, platform: Platform):
+        """Test that an error is raised when initializing a SystemControl with an instrument alias that is not
+        present in the platform.
+        """
+        alias = "UnknownInstrument"
+        wrong_system_control_settings = {"instruments": [alias]}
+        with pytest.raises(
+            NameError,
+            match=f"The instrument with alias {alias} could not be found within the instruments of the platform",
+        ):
+            SystemControl(settings=wrong_system_control_settings, platform_instruments=platform.instruments)
 
 
 @pytest.fixture(name="base_system_control")
@@ -100,6 +118,24 @@ class TestMethods:
             match="The system control doesn't have any AWG to upload a program",
         ):
             system_control_without_awg.upload(port="drive_q0")
+
+    def test_upload_qpysequence(self, system_control: SystemControl, qpysequence: Sequence):
+        awg = system_control.instruments[0]
+        assert isinstance(awg, AWG)
+        awg.device = MagicMock()
+        system_control.upload_qpysequence(qpysequence=qpysequence, port="drive_q0")
+        for seq_idx in range(awg.num_sequencers):
+            awg.device.sequencers[seq_idx].sequence.assert_called_once()
+
+    def test_upload_qpysequence_raises_error_when_awg_is_missing(
+        self, system_control_without_awg: SystemControl, qpysequence: Sequence
+    ):
+        """Test that the ``upload`` method raises an error when the system control doesn't have an AWG."""
+        with pytest.raises(
+            AttributeError,
+            match="The system control doesn't have any AWG to upload a qpysequence.",
+        ):
+            system_control_without_awg.upload_qpysequence(qpysequence=qpysequence, port="drive_q0")
 
     def test_upload(self, system_control: SystemControl, pulse_bus_schedule: PulseBusSchedule):
         """Test upload method."""

@@ -1,318 +1,66 @@
 # Release dev (development release)
 
-This document contains the changes of the current release.
-
 ### New features since last release
 
-- build_platform() has been extended: [#533](https://github.com/qilimanjaro-tech/qililab/pull/533)
+- Add parameter to the SLURM magic method to configure the time limit of a job.
+  [#608](https://github.com/qilimanjaro-tech/qililab/pull/608)
 
-  Now appart from passing the runcard YAML file path, you can directly pass an already build dictionary.
+- Add magic method to run python code as slurm jobs from Jupyter Notebooks.
+  [#600](https://github.com/qilimanjaro-tech/qililab/pull/600)
 
-  Also the argument has changed names from `path` to `runcard`.
+- Implemented `QuantumMachinesCompiler` class to compile QPrograms to QUA programs.
+  [#563](https://github.com/qilimanjaro-tech/qililab/pull/563)
 
-- Buses serialization have been implemented: [#515](https://github.com/qilimanjaro-tech/qililab/pull/515)
+- Implemented `platform.execute_qprogram()` method to execute a qprogram on Qblox hardware.
+  [#563](https://github.com/qilimanjaro-tech/qililab/pull/563)
 
-  When printing the runcard, in the buses part we will now have the normal Buses serialization, plus the parameters of the instruments associated to that bus, with the `to_dict/from_dict` methods.\`
+- Added the two main classes need for automatic-calibration, `CalibrationController` and `CalibrationNode`
+  [#554](https://github.com/qilimanjaro-tech/qililab/pull/554)
 
-  Also the serialization includes using the `set/get_params` for setting/getting the instruments params.
+- Added the driver for Quantum Machines Manager and a new QuantumMachinesResult class to handle Quantum Machines instruments.
+  [#568](https://github.com/qilimanjaro-tech/qililab/pull/568)
 
-- Distorsions and PulseShapes have been improved: [#512](https://github.com/qilimanjaro-tech/qililab/pull/512)
-
-  They now work for `amplitude=0`, and for negative and `snz` envelopes (both positive and negatives)
-
-  It now also adds the `norm_factor` parameter for manual normalization to all the distortions (previously only in the lfilter distortion)
-
-  And finally we also have added the option to skip the automatic normalization that we do, setting the parameter `auto_norm` to `False`, (defaults to `True`).
-
-  Plus, added a lots of tests and documentation to both classes.
-
-- Fixed bug which did not allow gaussian waveforms to have amplitude 0
-  [#471](https://github.com/qilimanjaro-tech/qililab/pull/471)
-
-- Delete `Schema` class from `Platform` and `RuncardSchema` classes (and from the rest of qililab).
-
-  Also `RuncardSchema` is now called simply `Runcard` (since its the class that maps our runcard files).
-
-  This PR brings importants simplifications to the full qililab structure, now the runcard will have the following structure:
-
-  ```yaml
-  name: ...
-
-  device_id: ...
-
-  gates_settings:   # Old `settings` without name & device_id
-    ...
-
-  chip:
-    ...
-
-  buses:
-    ...
-
-  instruments:
-    ...
-
-  instrument_controllers:
-    ...
-  ```
-
-  instead than the previous:
-
-  ```yaml
-  settings:
-    name: ...
-    device_id: ...
-    ...
-
-  schema:   # Schema disappears from the platform.
-    chip:
-      ...
-
-    buses:
-      ...
-
-    instruments:
-      ...
-
-    instrument_controllers:
-      ...
-  ```
-
-  Notice also how `settings` (and his respective class `PlatformSettings`) has changed to `gates_settings` (and the class to `GatesSettings` having the runcard string and the class the same name now, before they didn't).
-
-  [#475](https://github.com/qilimanjaro-tech/qililab/pull/475)
-  [#505](https://github.com/qilimanjaro-tech/qililab/pull/505)
-
-- Simplify circuit gate to pulse transpilation.
-  Previous hardware gates are removed. Now gates can be defined in the runcard as a list of
-  `GateEvent` items with bus, wait time (optional) and pulse information. This allows more
-  customization and freedom of what a certain gate does. The gate will be transpiled as long
-  as the circuit gate's name and qubits match those of the gate in the runcard.
-  An example of a custom gate for the circuit X gate at qubit 0 and a CZ gate at (0,1)
-
-  ```yml
-  X(0):
-  - bus: drive_line_q0_bus  # alias of the bus
-    wait_time: 200
-    pulse:
-      amplitude: 0.5
-      phase: 0
-      duration: 200
-      frequency: 0
-      shape:
-        name: drag
-        drag_coefficient: 1
-        num_sigmas: 2
-  - bus: flux_line_q0_bus  # alias of the bus
-    pulse:
-      amplitude: 1.0
-      phase: 0
-      duration: 200
-      frequency: 0
-      shape:
-        name: rectangular
-
-  CZ(0,1):
-  - bus: flux_line_q0_bus  # park pulse
-    pulse:
-      amplitude: 0.5
-      phase: 0
-      duration: 241
-      frequency: 0
-      shape:
-        name: rectangular
-  - bus: flux_line_q1_bus  # snz
-    wait_time: 40 # wait 40ns after start of the park pulse
-    pulse:
-      amplitude: 1
-      phase: 0
-      duration: 201
-      frequency: 0
-      shape:
-        name: snz
-        b: 0.5
-        t_phi: 1
-  ```
-
-  Experiments can access `GateEvent` items by using the gate and qubit `alias` like previously
-  and adding `_item` to access a `GateEvent` that is not the first event of the gate.
-  For example, `set_parameter(parameter='amplitude', value=0.8, alias='X(0)')` will set the amplitude
-  in the gate setting above from 0.5 to 0.8. This is equivalent to `alias='X(0)_0'`. However
-  `alias='X(0)_1'` sets instead the amplitude of the second event (`bus=flux_line_q0_bus`) from
-  1.0 to 0.8
-  [#472](https://github.com/qilimanjaro-tech/qililab/pull/472)
-
-- Rename Experiment and CircuitExperiment classes and dependencies:
-  This branch renames the Experiment class to BaseExperiment and CircuitExperiment to Experiment.
-  [#482](https://github.com/qilimanjaro-tech/qililab/pull/482)
-
-- Add a new Factory for the Buses and registered the current ones
-  [#487](https://github.com/qilimanjaro-tech/qililab/pull/487)
-
-- Add the NEW_DRIVERS flag to choose between old and new instruments and bus drivers.
-  [#486](https://github.com/qilimanjaro-tech/qililab/pull/486)
-
-- Add a new Factory for the InstrumentDrivers and registered the current ones
-  [#473](https://github.com/qilimanjaro-tech/qililab/pull/473)
-
-- Add interfaces and drivers for Flux bus:
-  This PR brings the qililab implementation of the Flux bus driver and unittests.
-  [#469](https://github.com/qilimanjaro-tech/qililab/pull/469)
-
-- Add ReadoutBus class.
-  [#465](https://github.com/qilimanjaro-tech/qililab/pull/465)
-
-- Fix: check whether cluster has submodules not present at init time.
-  [#477](https://github.com/qilimanjaro-tech/qililab/pull/477)
-
-- Add interfaces and drivers for Voltage and Current sources:
-  This PR brings the qililab implementation of the Keithly2600 and Yokowaga QCodes drivers and unittests.
-  [#438](https://github.com/qilimanjaro-tech/qililab/pull/438)
-
-- Fix: add acquisitions and weights to Sequencer QRM
-  [#461](https://github.com/qilimanjaro-tech/qililab/pull/461)
-
-- Add DriveBus and its interface for the new bus structure.
-  [457](https://github.com/qilimanjaro-tech/qililab/pull/457)
-
-- Add QProgram for developing quantum programs in the bus level, the operations `Play`, `Sync`, `Wait`, `Acquire`, `SetGain`, `SetOffset`, `SetFrequency`, `SetPhase`, `ResetPhase`, and the iteration blocks `AcquireLoop` and `Loop`.
-  [452](https://github.com/qilimanjaro-tech/qililab/pull/452)
-
-- Add QBloxCompiler for compiling QProgram into QPySequence.
-  [481](https://github.com/qilimanjaro-tech/qililab/pull/481)
-
-- Add waveforms for the new QProgram
-  [456](https://github.com/qilimanjaro-tech/qililab/pull/456)
-
-- Add interface for Voltage and Current sources
-  [#448](https://github.com/qilimanjaro-tech/qililab/pull/448)
-
-- New AWG Interface + SequencerQCM, Pulsar, QCM-QRM drivers
-  [#442](https://github.com/qilimanjaro-tech/qililab/pull/442)
-
-- New Digitiser interface + SequencerQRM driver
-  [#443](https://github.com/qilimanjaro-tech/qililab/pull/442)
-
-- Add interface for the Attenuator.
-  This is part of the "Promoting Modular Autonomy" epic.
-  [#432](https://github.com/qilimanjaro-tech/qililab/pull/432)
-
-- Added new drivers for Local Oscillators inheriting from QCoDeS drivers and Local Oscillator interface.
-  This is part of the "Promoting Modular Autonomy" epic.
-  [#437](https://github.com/qilimanjaro-tech/qililab/pull/437)
-
-- Add qcodes_contrib_drivers (0.18.0) to requierements
-  [#440](https://github.com/qilimanjaro-tech/qililab/pull/440)
-
-- Update qcodes to latest current version (0.38.1)
-  [#431](https://github.com/qilimanjaro-tech/qililab/pull/431)
-
-- Added hotfix for bus delay issue from Hardware:
-  This fix adds a delay for each pulse on a bus
-  [#439](https://github.com/qilimanjaro-tech/qililab/pull/439)
-
-- Added `T1` portfolio experiment
-  [#409](https://github.com/qilimanjaro-tech/qililab/pull/409)
-
-- The `ExecutionManager` can now be built from the loops of the experiment.
-  This is done by `alias` matching, the loops will be executed on the bus with the same `alias`.
-  Note that aliases are not unique, therefore the execution builder will use the first bus alias that matches the loop alias. An exception is raised if a `loop.alias` does not match any `bus.alias` specified in the runcard
-  [#320](https://github.com/qilimanjaro-tech/qililab/pull/320)
-
-- Added `T2Echo` portfolio experiment
-  [#415](https://github.com/qilimanjaro-tech/qililab/pull/415)
-
-- The `ExecutionManager` can now be built from the loops of the experiment.
-  This is done by `alias` matching, the loops will be executed on the bus with the same `alias`.
-  Note that aliases are not unique, therefore the execution builder will use the first bus alias that matches the loop alias. An exception is raised if a `loop.alias` does not match any `bus.alias` specified in the runcard
-  [#320](https://github.com/qilimanjaro-tech/qililab/pull/320)
-
-- The `Experiment` class has been changed to support a more general definition of experiment by removing the
-  `circuits` and `pulse_schedules`. A new class `CircuitExperiment` inherits from the new `Experiment` class has the previous attributes and all the functionality the old `Experiment` had.
-
-  ```python
-  experiment = Experiment(platform=platform, options=options)
-  experiment_2 = CircuitExperiment(platform=platform, options=options, circuits=[circuit])
-  ```
-
-  [#334](https://github.com/qilimanjaro-tech/qililab/pull/334)
-
-- Added `threshold_rotation` parameter to `AWGADCSequencer`. This adds a new parameter to the runcard of sequencers of that type, QRM sequencers in the case of Qblox. This value is an angle expressed in degrees from 0.0 to 360.0.
-
-  ```yml
-  awg_sequencers:
-    - identifier: 0
-      chip_port_id: 1
-      intermediate_frequency: 1.e+08
-      weights_path0: [0.98, ...]
-      weights_path1: [0.72, ...]
-      weighed_acq_enabled: true
-      threshold: 0.5
-      threshold_rotation: 45.0 # <-- new line
-  ```
-
-  [#417](https://github.com/qilimanjaro-tech/qililab/pull/417)
+- Implemented the `QuantumMachinesMeasurementResult` class to store data acquired from a single instrument.
+  [#596](https://github.com/qilimanjaro-tech/qililab/pull/596)
 
 ### Improvements
 
-- Add `ForLoop` iteration method to QProgram.
-  [481](https://github.com/qilimanjaro-tech/qililab/pull/481)
+- Improved the UX for circuit transpilation by unifying the native gate and pulse transpiler under one `CircuitTranspiler` class, which has 3 methods:
 
-- Add `Parallel` block to QProgram to allow parallel loops, and compilation support to QBloxCompiler.
-  [496](https://github.com/qilimanjaro-tech/qililab/pull/496)
+  - `circuit_to_native`: transpiles a qibo circuit to native gates (Drag, CZ, Wait, M) and optionally RZ if optimize=False (optimize=True by default)
+  - `circuit_to_pulses`: transpiles a native gate circuit to a `PulseSchedule`
+  - `transpile_circuit`: runs both of the methods above sequentially
+    `Wait` gate moved from the `utils` module to `circuit_transpilation_native_gates`
+    [#575](https://github.com/qilimanjaro-tech/qililab/pull/575)
 
-- Allow CZ gates to use different pulse shapes
-  [#406](https://github.com/qilimanjaro-tech/qililab/pull/406)
+- Added `infinite_loop()` method to QProgram.
+  [#563](https://github.com/qilimanjaro-tech/qililab/pull/563)
 
-- Add support for the `Wait` gate
+- Added `measure()` method to QProgram.
+  [#563](https://github.com/qilimanjaro-tech/qililab/pull/563)
 
-- Addeds support for the `Wait` gate
-  [#405](https://github.com/qilimanjaro-tech/qililab/pull/405)
+- Various improvements in the compilation flow of `QbloxCompiler`.
+  [#563](https://github.com/qilimanjaro-tech/qililab/pull/563)
 
-- Added support for `Parameter.Gate_Parameter` in `experiment.set_parameter()` method. In this case, alias is a, convertable to integer, string that denotes the index of the parameter to change, as returned by `circuit.get_parameters()` method.
-  [#404](https://github.com/qilimanjaro-tech/qililab/pull/404)
-
-- The `Chip` class now uses the `alias` of each node to define node connections.
-  [#494](https://github.com/qilimanjaro-tech/qililab/pull/494)
-
-  Before:
-
-  ```yaml
-  chip:
-  nodes:
-    - name: qubit
-      alias: qubit_0
-      id_: 0
-      qubit_index: 0
-      frequency: 4.92e+09
-      nodes: [2, 10, 20, 30]
-  ```
-
-  Now:
-
-  ```yaml
-  chip:
-  nodes:
-    - name: qubit
-      alias: qubit_0
-      qubit_index: 0
-      frequency: 4.92e+09
-      nodes: [qubit_2, resonator_q0, drive_line_q0, flux_line_q0]
-  ```
+- Updated `qm-qua` library to latest `1.1.5.1`.
+  [#596](https://github.com/qilimanjaro-tech/qililab/pull/596)
 
 ### Breaking changes
 
-- Old scripts using `Experiment` with circuits should be changed and use `CircuitExperiment` instead.
-  [#334](https://github.com/qilimanjaro-tech/qililab/pull/334)
+- Changed `resolution` parameter of waveforms' `envelope()` method to integer.
+  [#563](https://github.com/qilimanjaro-tech/qililab/pull/563)
+
+- Changed the way variables work within a QProgram. Variables are now instantiated based on the physical domain they affect.
+  [#563](https://github.com/qilimanjaro-tech/qililab/pull/563)
 
 ### Deprecations / Removals
 
-- `id` and `category` attributes have been removed from `qililab`.
-  [#494](https://github.com/qilimanjaro-tech/qililab/pull/494)
+- Removed the park gate since it is no longer needed
+  [#575](https://github.com/qilimanjaro-tech/qililab/pull/575)
 
 ### Documentation
 
 ### Bug fixes
 
-- The `threshold` and `threshold_rotation` parameters of a `QbloxQRM` can now be set using `Platform.set_parameter`.
-  [#534](https://github.com/qilimanjaro-tech/qililab/pull/534)
+- Fixed [bug #579](https://github.com/qilimanjaro-tech/qililab/issues/579), were now all `yaml.dumps` are done with [ruamel](https://yaml.readthedocs.io/en/latest/#changelog), for not losing decimals precisons, and also following the previous bug due to the elimination of `ruamel.yaml.round_trip_dump`, the version of ruamel in qililab got fixed, and imports where rewritten for more clarity
+  [#577](https://github.com/qilimanjaro-tech/qililab/pull/578)

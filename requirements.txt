@@ -7,8 +7,14 @@ qcodes_contrib_drivers==0.18.0
 PyVISA-py==0.5.2
 tqdm==4.64.1
 urllib3==1.26.12
-qiboconnection==0.8.0
-qpysequence==0.9.3
+qiboconnection==0.12.0
+qpysequence==0.10.0
 lmfit==1.1.0
 rustworkx==0.12.1
 h5py==3.9.0
+papermill==2.4.0
+qm-qua==1.1.5.1
+qualang-tools==0.15.2
+networkx==3.1
+ruamel.yaml==0.18.2
+submitit==1.5.0

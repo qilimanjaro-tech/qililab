@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-This module contains all the methods and classes used to define a Platform, which is a representation
+This module contains all the methods and the class used to define a platform, which is a representation
 of a laboratory.
 
 Platform Class
@@ -25,19 +25,6 @@ Platform Class
     :toctree: api
 
     ~Platform
-
-
-Platform Components
-~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~Bus
-    ~BusDriver
-    ~DriveBus
-    ~FluxBus
-    ~ReadoutBus
 
 """
 from .components import Bus, BusDriver, BusElement, Buses, DriveBus, FluxBus, ReadoutBus

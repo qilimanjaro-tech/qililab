@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""IQPair dataclass."""
 from dataclasses import dataclass
 
 from qililab.waveforms.waveform import Waveform
@@ -19,5 +20,19 @@ from qililab.waveforms.waveform import Waveform
 
 @dataclass
 class IQPair:  # pylint: disable=missing-class-docstring
+    """IQPair dataclass, containing the 'in-phase' (I) and 'quadrature' (Q) parts of a signal."""
+
     I: Waveform
     Q: Waveform
+
+    def __post_init__(self):
+        if self.I.get_duration() != self.Q.get_duration():
+            raise ValueError("Waveforms of an IQ pair must have the same duration.")
+
+    def get_duration(self) -> int:
+        """Get the duration of the waveforms
+
+        Returns:
+            int: The duration of the waveforms.
+        """
+        return self.I.get_duration()

@@ -26,16 +26,32 @@ from qililab.utils import Factory
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class Rectangular(PulseShape):
-    """Rectangular/square pulse shape."""
+    """Rectangular/square pulse shape. Given by a constant height line.
 
-    name = PulseShapeName.RECTANGULAR
+    Examples:
+        To get the envelope of a rectangular shape, with ``amplitude`` equal to ``X``, you need to do:
 
-    def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
+        .. code-block:: python
+
+            from qililab.pulse.pulse_shape import Rectangular
+            rectangular_envelope = Rectangular().envelope(amplitude=X, duration=50)
+
+        which for ``X`` being ``1.`` and ``0.75``, look respectively like:
+
+        .. image:: /classes_images/rectangulars.png
+            :width: 800
+            :align: center
+    """
+
+    name = PulseShapeName.RECTANGULAR  #: Name of the rectangular pulse shape.
+
+    def envelope(self, duration: int, amplitude: float, resolution: float = 1.0) -> np.ndarray:
         """Constant amplitude envelope.
 
         Args:
             duration (int): Duration of the pulse (ns).
             amplitude (float): Maximum amplitude of the pulse.
+            resolution (float, optional): Resolution of the pulse. Defaults to 1.
 
         Returns:
             ndarray: Amplitude of the envelope for each time step.
@@ -44,10 +60,10 @@ class Rectangular(PulseShape):
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "Rectangular":
-        """Load Rectangular object/shape from dictionary.
+        """Loads Rectangular object/shape from dictionary.
 
         Args:
-            dictionary (dict): Dictionary representation of the Rectangular object/shape.
+            dictionary (dict): Dictionary representation of the Rectangular object/shape including the name of the pulse shape.
 
         Returns:
             Rectangular: Loaded class.
@@ -56,11 +72,11 @@ class Rectangular(PulseShape):
         local_dictionary.pop("name", None)
         return cls(**local_dictionary)
 
-    def to_dict(self):
-        """Return dictionary representation of the Rectangular object/shape.
+    def to_dict(self) -> dict:
+        """Returns dictionary representation of the Rectangular object/shape.
 
         Returns:
-            dict: Dictionary.
+            dict: Dictionary representation of the pulse shape including its name.
         """
         return {
             "name": self.name.value,

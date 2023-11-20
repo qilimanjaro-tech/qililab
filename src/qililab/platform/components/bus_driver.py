@@ -23,7 +23,9 @@ from qililab.pulse import PulseBusSchedule, PulseDistortion
 
 
 class BusDriver(ABC):
-    """Bus Class.
+    """Derived: :class:`DriveBus`, :class:`FluxBus` and :class:`ReadoutBus`
+
+    Bus abstract base class.
 
     Args:
         alias (str): Bus alias.
@@ -33,7 +35,6 @@ class BusDriver(ABC):
     """
 
     def __init__(self, alias: str, port: int, awg: AWG | None, distortions: list):
-        """Initialise the base of a bus."""
         self.alias = alias
         self.port = port
         self._awg = awg

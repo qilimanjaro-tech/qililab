@@ -103,11 +103,13 @@ class TestExecutionManager:
         plt.close()
 
 
+@patch("qililab.instrument_controllers.quantum_machines.qmm_controller.QMMController", autospec=True)
+@patch("qililab.instruments.quantum_machines.qmm.QuantumMachinesManager.initial_setup")
 @patch("qililab.instrument_controllers.keithley.keithley_2600_controller.Keithley2600Driver", autospec=True)
 @patch("qililab.typings.instruments.mini_circuits.urllib", autospec=True)
 @patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
 @patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
-@patch("qililab.experiment.base_experiment.yaml.safe_dump")
+@patch("qililab.experiment.base_experiment.YAML.dump", autospec=True)
 @patch("qililab.experiment.base_experiment.open")
 @patch("qililab.experiment.base_experiment.os.makedirs")
 class TestExecutionManagerPlatform:
@@ -124,6 +126,8 @@ class TestExecutionManagerPlatform:
         mock_pulsar: MagicMock,
         mock_urllib: MagicMock,
         mock_keithley: MagicMock,
+        mock_qmm: MagicMock,  # pylint: disable=unused-argument
+        mock_qmm_controller: MagicMock,  # pylint: disable=unused-argument
         nested_experiment: Experiment,
     ):
         """Test execute method with nested loops."""
@@ -158,6 +162,8 @@ class TestExecutionManagerPlatform:
         mock_pulsar: MagicMock,
         mock_urllib: MagicMock,
         mock_keithley: MagicMock,
+        mock_qmm: MagicMock,  # pylint: disable=unused-argument
+        mock_qmm_controller: MagicMock,  # pylint: disable=unused-argument
         nested_experiment: Experiment,
     ):
         """Test execute method with nested loops."""
@@ -197,6 +203,8 @@ class TestExecutionManagerPlatform:
         mock_pulsar: MagicMock,
         mock_urllib: MagicMock,
         mock_keithley: MagicMock,
+        mock_qmm: MagicMock,  # pylint: disable=unused-argument
+        mock_qmm_controller: MagicMock,  # pylint: disable=unused-argument
         experiment: Experiment,
     ):
         """Test run method."""
@@ -224,8 +232,10 @@ class TestExecutionManagerPlatform:
         mock_pulsar: MagicMock,
         mock_urllib: MagicMock,
         mock_keithley: MagicMock,
+        mock_qmm: MagicMock,  # pylint: disable=unused-argument
+        mock_qmm_controller: MagicMock,  # pylint: disable=unused-argument
         nested_experiment: Experiment,
-    ):
+    ):  # pylint: disable=too-many-locals
         """Test run method."""
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
         nested_experiment_dict = nested_experiment.to_dict()
@@ -255,6 +265,8 @@ class TestExecutionManagerPlatform:
         mock_pulsar: MagicMock,
         mock_urllib: MagicMock,
         mock_keithley: MagicMock,
+        mock_qmm: MagicMock,  # pylint: disable=unused-argument
+        mock_qmm_controller: MagicMock,  # pylint: disable=unused-argument
         experiment: Experiment,
     ):
         """Test run method."""
@@ -265,6 +277,7 @@ class TestExecutionManagerPlatform:
             mock_urllib.request.Request.assert_called()
             mock_urllib.request.urlopen.assert_called()
             mock_rs.assert_called()
+            mock_qmm_controller.assert_called()
             mock_pulsar.assert_called()
             assert isinstance(results, Results)
             mock_open.assert_called()
@@ -283,7 +296,7 @@ qblox_acquisition = {
             "bins": {
                 "integration": {"path0": [1, 2, 3], "path1": [4, 5, 6]},
                 "threshold": [1, 1, 1],
-                "avg_cnt": [1000, 1000, 1000],
+                "avg_cnt": [1, 1, 1],
             },
         },
     }

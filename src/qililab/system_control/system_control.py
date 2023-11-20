@@ -19,6 +19,8 @@ from abc import ABC
 from dataclasses import InitVar, dataclass
 from typing import get_type_hints
 
+from qpysequence import Sequence as QpySequence
+
 from qililab.constants import RUNCARD
 from qililab.instruments import AWG, Instrument, Instruments
 from qililab.instruments.instrument import ParameterNotFound
@@ -45,7 +47,17 @@ class SystemControl(FactoryElement, ABC):
 
         def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
             # ``self.instruments`` contains a list of instrument aliases
-            self.instruments = [platform_instruments.get_instrument(alias=i) for i in self.instruments]  # type: ignore
+            instruments = []
+            for inst_alias in self.instruments:
+                inst_class = platform_instruments.get_instrument(alias=inst_alias)  # type: ignore
+                if inst_class is None:
+                    raise NameError(
+                        f"The instrument with alias {inst_alias} could not be found within the instruments of the "
+                        "platform. The available instrument aliases are: "
+                        f"{[inst.alias for inst in platform_instruments.elements]}."
+                    )
+                instruments.append(inst_class)
+            self.instruments = instruments
             super().__post_init__()
 
     settings: SystemControlSettings
@@ -74,6 +86,15 @@ class SystemControl(FactoryElement, ABC):
                     num_bins=num_bins,
                 )
         raise AttributeError("The system control doesn't have any AWG to compile the given pulse sequence.")
+
+    def upload_qpysequence(self, qpysequence: QpySequence, port: str):
+        """Uploads the qpysequence into the instrument."""
+        for instrument in self.instruments:
+            if isinstance(instrument, AWG):
+                instrument.upload_qpysequence(qpysequence=qpysequence, port=port)
+                return
+
+        raise AttributeError("The system control doesn't have any AWG to upload a qpysequence.")
 
     def upload(self, port: str):
         """Uploads any previously compiled program into the instrument."""

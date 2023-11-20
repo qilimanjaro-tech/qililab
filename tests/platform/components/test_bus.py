@@ -1,8 +1,9 @@
 """Tests for the Bus class."""
 from types import NoneType
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
+from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.platform import Bus, Buses
@@ -20,6 +21,12 @@ def load_buses() -> Buses:
     """
     platform = build_platform(Galadriel.runcard)
     return platform.buses
+
+
+@pytest.fixture(name="qpysequence")
+def fixture_qpysequence() -> Sequence:
+    """Return Sequence instance."""
+    return Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
 
 
 @pytest.mark.parametrize("bus", [load_buses().elements[0], load_buses().elements[1]])
@@ -58,6 +65,26 @@ class TestBus:
         ):
             bus.set_parameter(parameter=Parameter.DURATION, value=0.5, channel_id=1)
 
+    def test_upload_qpysequence(self, bus: Bus, qpysequence: Sequence):
+        """Test upload_qpysequence method."""
+        bus.settings.system_control = MagicMock()
+        bus.upload_qpysequence(qpysequence=qpysequence)
+        bus.system_control.upload_qpysequence.assert_called_once_with(qpysequence=qpysequence, port=bus.port)
+
+
+class TestAcquireResults:
+    """Unit tests for acquiring results"""
+
+    def test_acquire_qprogram_results(self):
+        """Test acquire_qprogram_results method."""
+        buses = load_buses()
+        readout_bus = [bus for bus in buses if isinstance(bus.system_control, ReadoutSystemControl)][0]
+
+        with patch.object(ReadoutSystemControl, "acquire_qprogram_results") as acquire_qprogram_results:
+            readout_bus.acquire_qprogram_results(acquisitions=["acquisition_0", "acquisition_1"])
+
+        acquire_qprogram_results.assert_called_once_with(acquisitions=["acquisition_0", "acquisition_1"])
+
 
 class TestErrors:
     """Unit tests for the errors raised by the Bus class."""
@@ -71,3 +98,13 @@ class TestErrors:
             match=f"The bus {control_bus.alias} cannot acquire results because it doesn't have a readout system control",
         ):
             control_bus.acquire_result()
+
+    def test_control_bus_raises_error_when_acquiring_qprogram_results(self):
+        """Test that an error is raised when calling acquire_result with a drive bus."""
+        buses = load_buses()
+        control_bus = [bus for bus in buses if not isinstance(bus.system_control, ReadoutSystemControl)][0]
+        with pytest.raises(
+            AttributeError,
+            match=f"The bus {control_bus.alias} cannot acquire results because it doesn't have a readout system control",
+        ):
+            control_bus.acquire_qprogram_results(acquisitions=["acquisition_0", "acquisition_1"])

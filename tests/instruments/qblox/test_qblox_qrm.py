@@ -1,5 +1,6 @@
 """Test for the QbloxQRM class."""
 import copy
+import re
 from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
@@ -11,8 +12,9 @@ from qililab.instruments import ParameterNotFound
 from qililab.instruments.awg_settings.awg_qblox_adc_sequencer import AWGQbloxADCSequencer
 from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.instruments.qblox import QbloxQRM
+from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent, Rectangular
-from qililab.result.results import QbloxResult
+from qililab.result.qblox_results import QbloxResult
 from qililab.typings import InstrumentName
 from qililab.typings.enums import AcquireTriggerMode, IntegrationMode, Parameter
 from tests.data import Galadriel
@@ -120,6 +122,15 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     pulse_shape = Gaussian(num_sigmas=4)
     pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
     pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=0)
+    return PulseBusSchedule(timeline=[pulse_event], port="feedline_input")
+
+
+@pytest.fixture(name="pulse_bus_schedule2")
+def fixture_pulse_bus_schedule2() -> PulseBusSchedule:
+    """Return PulseBusSchedule instance."""
+    pulse_shape = Gaussian(num_sigmas=4)
+    pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
+    pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=1)
     return PulseBusSchedule(timeline=[pulse_event], port="feedline_input")
 
 
@@ -237,6 +248,38 @@ def fixture_big_pulse_bus_schedule() -> PulseBusSchedule:
 class TestQbloxQRM:
     """Unit tests checking the QbloxQRM attributes and methods"""
 
+    def test_error_post_init_too_many_seqs(self, settings_6_sequencers: dict):
+        num_sequencers = 7
+        settings_6_sequencers["num_sequencers"] = num_sequencers
+        error_string = re.escape(
+            "The number of sequencers must be greater than 0 and less or equal than "
+            + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: {num_sequencers}"
+        )
+
+        with pytest.raises(ValueError, match=error_string):
+            QbloxQRM(settings_6_sequencers)
+
+    def test_error_post_init_0_seqs(self, settings_6_sequencers: dict):
+        num_sequencers = 0
+        settings_6_sequencers["num_sequencers"] = num_sequencers
+        error_string = re.escape(
+            "The number of sequencers must be greater than 0 and less or equal than "
+            + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: {num_sequencers}"
+        )
+
+        with pytest.raises(ValueError, match=error_string):
+            QbloxQRM(settings_6_sequencers)
+
+    def test_error_awg_seqs_neq_seqs(self, settings_6_sequencers: dict):
+        num_sequencers = 5
+        settings_6_sequencers["num_sequencers"] = num_sequencers
+        error_string = re.escape(
+            f"The number of sequencers: {num_sequencers} does not match"
+            + f" the number of AWG Sequencers settings specified: {len(settings_6_sequencers['awg_sequencers'])}"
+        )
+        with pytest.raises(ValueError, match=error_string):
+            QbloxQRM(settings_6_sequencers)
+
     def test_inital_setup_method(self, qrm: QbloxQRM):
         """Test initial_setup method"""
         qrm.initial_setup()
@@ -265,12 +308,6 @@ class TestQbloxQRM:
         """Tests that a QRM cannot have more than one sequencer storing the scope simultaneously."""
         with pytest.raises(ValueError, match="The scope can only be stored in one sequencer at a time."):
             qrm_two_scopes._obtain_scope_sequencer()
-
-    def test_start_sequencer_method(self, qrm: QbloxQRM):
-        """Test start_sequencer method"""
-        qrm.start_sequencer(port="feedline_input")
-        qrm.device.arm_sequencer.assert_not_called()
-        qrm.device.start_sequencer.assert_not_called()
 
     @pytest.mark.parametrize(
         "parameter, value, channel_id",
@@ -380,12 +417,28 @@ class TestQbloxQRM:
         qrm.reset()
         assert qrm._cache == {}  # pylint: disable=protected-access
 
-    def test_compile(self, qrm, pulse_bus_schedule):
+    def test_compile(self, qrm, pulse_bus_schedule, pulse_bus_schedule2):
         """Test compile method."""
         sequences = qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000, num_bins=1)
         assert isinstance(sequences, list)
         assert len(sequences) == 1
         assert isinstance(sequences[0], Sequence)
+
+        # test for different qubit, checkout that clearing the cache is working
+        sequences = qrm.compile(pulse_bus_schedule2, nshots=1000, repetition_duration=2000, num_bins=1)
+        assert isinstance(sequences, list)
+        assert len(sequences) == 1
+        assert isinstance(sequences[0], Sequence)
+        assert list(qrm._cache.keys()) == [1]
+
+    def test_compile_raises_seq_error(self, qrm, pulse_bus_schedule):
+        """Test compile method raises an error if 2 seqs are assigned
+        to the same qubit."""
+        qubit = 0
+        qrm.awg_sequencers[1].qubit = qubit
+        error_string = re.escape(f"Expected 1 sequencer connected to port feedline_input and qubit {qubit}, got 2")
+        with pytest.raises(IndexError, match=error_string):
+            qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000, num_bins=1)
 
     def test_compile_multiplexing(self, qrm, multiplexed_pulse_bus_schedule: PulseBusSchedule):
         """Test compile method with a multiplexed pulse bus schedule."""
@@ -452,6 +505,29 @@ class TestQbloxQRM:
         qrm.device.get_sequencer_state.assert_not_called()
         qrm.device.get_acquisition_state.assert_not_called()
         qrm.device.get_acquisitions.assert_not_called()
+
+    def test_get_qprogram_acquisitions_method(self, qrm: QbloxQRM):
+        """Test get_acquisitions_method"""
+        qrm.device.get_acquisitions.return_value = {
+            "default": {
+                "index": 0,
+                "acquisition": {
+                    "scope": {
+                        "path0": {"data": [1, 1, 1, 1, 1, 1, 1, 1], "out-of-range": False, "avg_cnt": 1000},
+                        "path1": {"data": [0, 0, 0, 0, 0, 0, 0, 0], "out-of-range": False, "avg_cnt": 1000},
+                    },
+                    "bins": {
+                        "integration": {"path0": [1, 1, 1, 1], "path1": [0, 0, 0, 0]},
+                        "threshold": [0.5, 0.5, 0.5, 0.5],
+                        "avg_cnt": [1000, 1000, 1000, 1000],
+                    },
+                },
+            }
+        }
+        qrm.sequences = {0: None, 1: None}
+        acquisitions = qrm.acquire_qprogram_results(acquisitions=["default"])
+        assert isinstance(acquisitions, list)
+        assert len(acquisitions) == 2
 
     def test_name_property(self, qrm_no_device: QbloxQRM):
         """Test name property."""

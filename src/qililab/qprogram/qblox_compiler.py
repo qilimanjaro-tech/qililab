@@ -15,14 +15,14 @@
 # pylint: disable=protected-access
 import math
 from collections import deque
-from typing import Callable
+from typing import Any, Callable
 
 import numpy as np
 import qpysequence as QPy
 import qpysequence.program as QPyProgram
 import qpysequence.program.instructions as QPyInstructions
 
-from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
+from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.operations import (
     Acquire,
     Operation,
@@ -40,7 +40,7 @@ from qililab.qprogram.variable import Variable
 from qililab.waveforms import IQPair, Waveform
 
 
-class BusInfo:  # pylint: disable=too-many-instance-attributes, too-few-public-methods
+class BusCompilationInfo:  # pylint: disable=too-many-instance-attributes, too-few-public-methods
     """Class representing the information stored by QBloxCompiler for a bus."""
 
     def __init__(self):
@@ -53,6 +53,7 @@ class BusInfo:  # pylint: disable=too-many-instance-attributes, too-few-public-m
         self.variable_to_register: dict[Variable, QPyProgram.Register] = {}
         self.waveform_to_index: dict[str, int] = {}
         self.weight_to_index: dict[str, int] = {}
+        self.acquisition_to_index: dict[str, int] = {}
 
         # Create and append the main block to the Sequence's program
         main_block = QPyProgram.Block(name="main")
@@ -68,18 +69,24 @@ class BusInfo:  # pylint: disable=too-many-instance-attributes, too-few-public-m
         self.loop_counter = 0
         self.average_counter = 0
 
+        # Syncing durations
+        self.static_duration = 0
+        self.dynamic_durations: list[Variable] = []
+        self.sync_durations: list[QPyProgram.Register] = []
+
+        # Syncing marker. If true, a real-time instruction has been added since the last sync or the beginning of the program.
+        self.marked_for_sync = False
+
 
 class QbloxCompiler:  # pylint: disable=too-few-public-methods
     """A class for compiling QProgram to QBlox hardware."""
 
     minimum_wait_duration: int = 4
 
-    def __init__(self, integration_length: int = 1000):
-        # External settings
-        self._integration_length = integration_length
-
+    def __init__(self):
         # Handlers to map each operation to a corresponding handler function
         self._handlers: dict[type, Callable] = {
+            InfiniteLoop: self._handle_infinite_loop,
             Parallel: self._handle_parallel,
             Average: self._handle_average,
             ForLoop: self._handle_for_loop,
@@ -96,7 +103,8 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         }
 
         self._qprogram: QProgram
-        self._buses: dict[str, BusInfo]
+        self._buses: dict[str, BusCompilationInfo]
+        self._sync_counter: int
 
     def compile(self, qprogram: QProgram) -> dict[str, QPy.Sequence]:
         """Compile QProgram to qpysequence.Sequence
@@ -118,6 +126,8 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                 appended = handler(element)
                 if isinstance(element, Block):
                     traverse(element)
+                    if isinstance(element, (ForLoop, Parallel, Loop, Average)):
+                        self._handle_sync(element=Sync(buses=None))
                     if appended:
                         for bus in self._buses:
                             self._buses[bus].qpy_block_stack.pop()
@@ -125,10 +135,11 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                 self._buses[bus].qprogram_block_stack.pop()
 
         self._qprogram = qprogram
+        self._sync_counter = 0
         self._buses = self._populate_buses()
 
         # Recursive traversal to convert QProgram blocks to Sequence
-        traverse(self._qprogram._program)
+        traverse(self._qprogram._body)
 
         # Post-processing: Add stop instructions and compile
         for bus in self._buses:
@@ -139,10 +150,10 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         return {bus: bus_info.qpy_sequence for bus, bus_info in self._buses.items()}
 
     def _populate_buses(self):
-        """Map each bus in the QProgram to a BusInfo instance.
+        """Map each bus in the QProgram to a BusCompilationInfo instance.
 
         Returns:
-            A dictionary where the keys are bus names and the values are BusInfo objects.
+            A dictionary where the keys are bus names and the values are BusCompilationInfo objects.
         """
 
         def collect_buses(block: Block):
@@ -154,8 +165,8 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                     if bus:
                         yield bus
 
-        buses = set(collect_buses(self._qprogram._program))
-        return {bus: BusInfo() for bus in buses}
+        buses = set(collect_buses(self._qprogram._body))
+        return {bus: BusCompilationInfo() for bus in buses}
 
     def _append_to_waveforms_of_bus(self, bus: str, waveform_I: Waveform, waveform_Q: Waveform | None):
         """Append waveforms to Sequence's Waveforms of the given bus.
@@ -167,7 +178,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         """
 
         def handle_waveform(waveform: Waveform | None, default_length: int = 0):
-            _hash = QbloxCompiler._hash(waveform) if waveform else f"zeros {default_length}"
+            _hash = QbloxCompiler._hash_waveform(waveform) if waveform else f"zeros {default_length}"
 
             if _hash in self._buses[bus].waveform_to_index:
                 index = self._buses[bus].waveform_to_index[_hash]
@@ -184,14 +195,12 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             return index, len(envelope)
 
         index_I, length_I = handle_waveform(waveform_I, 0)
-        index_Q, length_Q = handle_waveform(waveform_Q, len(waveform_I.envelope()))
-        if length_I != length_Q:
-            raise NotImplementedError("Waveforms should have equal lengths.")
+        index_Q, _ = handle_waveform(waveform_Q, len(waveform_I.envelope()))
         return index_I, index_Q, length_I
 
     def _append_to_weights_of_bus(self, bus: str, weights: IQPair):
         def handle_waveform(waveform: Waveform):
-            _hash = QbloxCompiler._hash(waveform)
+            _hash = QbloxCompiler._hash_waveform(waveform)
 
             if _hash in self._buses[bus].weight_to_index:
                 index = self._buses[bus].weight_to_index[_hash]
@@ -209,36 +218,35 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             return index, length
 
         index_I, length_I = handle_waveform(weights.I)
-        index_Q, length_Q = handle_waveform(weights.Q)
-        if length_I != length_Q:
-            raise NotImplementedError("Weights should have equal lengths.")
+        index_Q, _ = handle_waveform(weights.Q)
         return index_I, index_Q, length_I
 
     def _handle_parallel(self, element: Parallel):
         if not element.loops:
             raise NotImplementedError("Parallel block should contain loops.")
-        if len({int((loop.stop - loop.start) / loop.step) for loop in element.loops}) != 1:
-            raise NotImplementedError("Loops run in parallel should have the same number of iterations.")
+        if any(isinstance(loop, Loop) for loop in element.loops):
+            raise NotImplementedError("Loops with arbitrary numpy arrays are not currently supported for QBlox.")
+
+        loops = []
+        iterations = []
+        for loop in element.loops:
+            operation = QbloxCompiler._get_reference_operation_of_loop(loop=loop, starting_block=element)
+            if not operation:
+                raise NotImplementedError("Variables referenced in loops should be used in at least one operation.")
+            start, step, iters = QbloxCompiler._convert_for_loop_values(loop, operation)  # type: ignore[arg-type]
+            loops.append((start, step))
+            iterations.append(iters)
+        iterations = min(iterations)
+
+        # iterations = min(QbloxCompiler._calculate_iterations(loop.start, loop.stop, loop.step) for loop in element.loops)
+        # loops = [(QbloxCompiler._convert_for_loop_values(for_loop=loop, operation=QbloxCompiler._get_reference_operation_of_loop(element)))[:2]) for loop in element.loops]
+
         for bus in self._buses:
-            iterations = int((element.loops[0].stop - element.loops[0].start) / element.loops[0].step)
-            qpy_loop = QPyProgram.Loop(name=f"loop_{self._buses[bus].loop_counter}", begin=iterations)
-            for loop in element.loops:
-                operation = QbloxCompiler._get_reference_operation_of_loop(loop=loop, starting_block=element)
-                if not operation:
-                    raise NotImplementedError("Variables referenced in loops should be used in at least one operation.")
-                begin, _, step = QbloxCompiler._convert_for_loop_values(loop, operation)
-                loop_register = QPyProgram.Register()
-                self._buses[bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.Move(var=begin, register=loop_register)
-                )
-                qpy_loop.builtin_components.insert(
-                    0,
-                    QPyInstructions.Add(loop_register, step, loop_register)
-                    if step > 0
-                    else QPyInstructions.Sub(loop_register, step, loop_register),
-                )
-                self._buses[bus].variable_to_register[loop.variable] = loop_register
-            qpy_loop.append_component(QPyInstructions.WaitSync(4))
+            qpy_loop = QPyProgram.IterativeLoop(
+                name=f"loop_{self._buses[bus].loop_counter}", iterations=iterations, loops=loops
+            )
+            for i, loop in enumerate(element.loops):
+                self._buses[bus].variable_to_register[loop.variable] = qpy_loop.loop_registers[i]
             self._buses[bus].qpy_block_stack[-1].append_component(qpy_loop)
             self._buses[bus].qpy_block_stack.append(qpy_loop)
             self._buses[bus].loop_counter += 1
@@ -247,33 +255,35 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
     def _handle_average(self, element: Average):
         for bus in self._buses:
             qpy_loop = QPyProgram.Loop(name=f"avg_{self._buses[bus].average_counter}", begin=element.shots)
-            qpy_loop.append_component(
-                component=QPyInstructions.WaitSync(wait_time=QbloxCompiler.minimum_wait_duration),
-                bot_position=len(qpy_loop.components),
-            )
             self._buses[bus].qpy_block_stack[-1].append_component(qpy_loop)
             self._buses[bus].qpy_block_stack.append(qpy_loop)
             self._buses[bus].average_counter += 1
+        return True
+
+    def _handle_infinite_loop(self, _: InfiniteLoop):
+        for bus in self._buses:
+            qpy_loop = QPyProgram.InfiniteLoop(name=f"infinite_loop_{self._buses[bus].loop_counter}")
+            self._buses[bus].qpy_block_stack[-1].append_component(qpy_loop)
+            self._buses[bus].qpy_block_stack.append(qpy_loop)
+            self._buses[bus].loop_counter += 1
         return True
 
     def _handle_for_loop(self, element: ForLoop):
         operation = QbloxCompiler._get_reference_operation_of_loop(element)
         if not operation:
             raise NotImplementedError("Variables referenced in loops should be used in at least one operation.")
-        begin, end, step = QbloxCompiler._convert_for_loop_values(element, operation)
+        start, step, iterations = QbloxCompiler._convert_for_loop_values(element, operation)
         for bus in self._buses:
-            qpy_loop = QPyProgram.Loop(name=f"loop_{self._buses[bus].loop_counter}", begin=begin, end=end, step=step)
-            qpy_loop.append_component(
-                component=QPyInstructions.WaitSync(wait_time=QbloxCompiler.minimum_wait_duration),
-                bot_position=len(qpy_loop.components),
+            qpy_loop = QPyProgram.IterativeLoop(
+                name=f"loop_{self._buses[bus].loop_counter}", iterations=iterations, loops=[(start, step)]
             )
             self._buses[bus].qpy_block_stack[-1].append_component(qpy_loop)
             self._buses[bus].qpy_block_stack.append(qpy_loop)
-            self._buses[bus].variable_to_register[element.variable] = qpy_loop.counter_register
+            self._buses[bus].variable_to_register[element.variable] = qpy_loop.loop_registers[0]
             self._buses[bus].loop_counter += 1
         return True
 
-    def _handle_loop(self, element: Loop):
+    def _handle_loop(self, _: Loop):
         raise NotImplementedError("Loops with arbitrary numpy arrays are not currently supported for QBlox.")
 
     def _handle_set_frequency(self, element: SetFrequency):
@@ -301,18 +311,13 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
 
     def _handle_set_gain(self, element: SetGain):
         convert = QbloxCompiler._convert_value(element)
-        gain_0 = (
-            self._buses[element.bus].variable_to_register[element.gain_path0]
-            if isinstance(element.gain_path0, Variable)
-            else convert(element.gain_path0)
-        )
-        gain_1 = (
-            self._buses[element.bus].variable_to_register[element.gain_path1]
-            if isinstance(element.gain_path1, Variable)
-            else convert(element.gain_path1)
+        gain = (
+            self._buses[element.bus].variable_to_register[element.gain]
+            if isinstance(element.gain, Variable)
+            else convert(element.gain)
         )
         self._buses[element.bus].qpy_block_stack[-1].append_component(
-            component=QPyInstructions.SetAwgGain(gain_0=gain_0, gain_1=gain_1)
+            component=QPyInstructions.SetAwgGain(gain_0=gain, gain_1=gain)
         )
 
     def _handle_set_offset(self, element: SetOffset):
@@ -328,85 +333,77 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             else convert(element.offset_path1)
         )
         self._buses[element.bus].qpy_block_stack[-1].append_component(
-            component=QPyInstructions.SetAwgOffs(gain_0=offset_0, gain_1=offset_1)
+            component=QPyInstructions.SetAwgOffs(offset_0=offset_0, offset_1=offset_1)
         )
 
     def _handle_wait(self, element: Wait):
-        convert = QbloxCompiler._convert_value(element)
-        time = (
-            self._buses[element.bus].variable_to_register[element.time]
-            if isinstance(element.time, Variable)
-            else convert(element.time)
+        duration: QPyProgram.Register | int
+        if isinstance(element.duration, Variable):
+            duration = self._buses[element.bus].variable_to_register[element.duration]
+            self._buses[element.bus].dynamic_durations.append(element.duration)
+        else:
+            convert = QbloxCompiler._convert_value(element)
+            duration = convert(element.duration)
+            self._buses[element.bus].static_duration += duration
+        self._buses[element.bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.Wait(wait_time=duration)
         )
-        self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Wait(wait_time=time))
+        self._buses[element.bus].marked_for_sync = True
 
-    def _handle_sync(self, _: Sync):
-        # QBlox does not currently support syncing on selective sequences. If it did we would do somethin like:
-        # buses = element.buses if element.buses is not None else self._buses.keys()
-        for bus in self._buses:
-            self._buses[bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.WaitSync(wait_time=QbloxCompiler.minimum_wait_duration)
-            )
+    def _handle_sync(self, element: Sync):
+        # Get the buses involved in the sync operation.
+        buses = set(element.buses or self._buses)
+
+        # If they are zero or one, return.
+        if len(buses) <= 1:
+            return
+
+        # If there is no bus marked for sync, return.
+        if all(not self._buses[bus].marked_for_sync for bus in buses):
+            return
+
+        # Is there any bus that has dynamic durations?
+        if any(bus for bus in buses if self._buses[bus].dynamic_durations or self._buses[bus].sync_durations):
+            # If yes, we must add a sync block that calculates the difference between buses dynamically.
+            # But the following doesn't work unfortunetely, so raise an error for now.
+            self.__handle_dynamic_sync(buses=buses)
+        else:
+            # If no, calculating the difference is trivial.
+            self.__handle_static_sync(buses=buses)
+
+        # In any case, mark al buses as synced.
+        for bus in buses:
+            self._buses[bus].marked_for_sync = False
+
+    def __handle_static_sync(self, buses: set[str]):
+        max_duration = max(self._buses[bus].static_duration for bus in buses)
+        for bus in buses:
+            duration_diff = max_duration - self._buses[bus].static_duration
+            if duration_diff > 0:
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.Wait(wait_time=duration_diff)
+                )
+                self._buses[bus].static_duration += duration_diff
+
+    def __handle_dynamic_sync(self, buses: set[str]):
+        raise NotImplementedError("Dynamic syncing is not implemented yet.")
 
     def _handle_acquire(self, element: Acquire):
         loops = [
             (i, loop)
             for i, loop in enumerate(self._buses[element.bus].qpy_block_stack)
-            if isinstance(loop, QPyProgram.Loop) and not loop.name.startswith("avg")
+            if isinstance(loop, QPyProgram.IterativeLoop) and not loop.name.startswith("avg")
         ]
-        num_bins = math.prod(loop[1]._iterations for loop in loops)
+        num_bins = math.prod(loop[1].iterations for loop in loops)
         self._buses[element.bus].qpy_sequence._acquisitions.add(
             name=f"acquisition_{self._buses[element.bus].next_acquisition_index}",
             num_bins=num_bins,
             index=self._buses[element.bus].next_acquisition_index,
         )
 
-        if element.weights:
-            index_I, index_Q, integration_length = self._append_to_weights_of_bus(element.bus, weights=element.weights)
+        index_I, index_Q, integration_length = self._append_to_weights_of_bus(element.bus, weights=element.weights)
 
-        if num_bins > 1:
-            bin_register = QPyProgram.Register()
-            block_index_for_move_instruction = loops[0][0] - 1 if loops else -2
-            block_index_for_add_instruction = loops[-1][0] if loops else -1
-            self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
-                component=QPyInstructions.Move(var=self._buses[element.bus].next_bin_index, register=bin_register),
-                bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
-            )
-            if element.weights:
-                register_I, register_Q = QPyProgram.Register(), QPyProgram.Register()
-                self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
-                    component=QPyInstructions.Move(var=index_I, register=register_I),
-                    bot_position=len(
-                        self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components
-                    ),
-                )
-                self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
-                    component=QPyInstructions.Move(var=index_Q, register=register_Q),
-                    bot_position=len(
-                        self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components
-                    ),
-                )
-                self._buses[element.bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.AcquireWeighed(
-                        acq_index=self._buses[element.bus].next_acquisition_index,
-                        bin_index=bin_register,
-                        weight_index_0=register_I,
-                        weight_index_1=register_Q,
-                        wait_time=integration_length,
-                    )
-                )
-            else:
-                self._buses[element.bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.Acquire(
-                        acq_index=self._buses[element.bus].next_acquisition_index,
-                        bin_index=bin_register,
-                        wait_time=self._integration_length,
-                    )
-                )
-            self._buses[element.bus].qpy_block_stack[block_index_for_add_instruction].append_component(
-                component=QPyInstructions.Add(origin=bin_register, var=1, destination=bin_register)
-            )
-        elif element.weights:
+        if num_bins == 1:
             self._buses[element.bus].qpy_block_stack[-1].append_component(
                 component=QPyInstructions.AcquireWeighed(
                     acq_index=self._buses[element.bus].next_acquisition_index,
@@ -417,29 +414,56 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                 )
             )
         else:
+            bin_register = QPyProgram.Register()
+            block_index_for_move_instruction = loops[0][0] - 1 if loops else -2
+            block_index_for_add_instruction = loops[-1][0] if loops else -1
+            self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
+                component=QPyInstructions.Move(var=self._buses[element.bus].next_bin_index, register=bin_register),
+                bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
+            )
+            register_I, register_Q = QPyProgram.Register(), QPyProgram.Register()
+            self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
+                component=QPyInstructions.Move(var=index_I, register=register_I),
+                bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
+            )
+            self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
+                component=QPyInstructions.Move(var=index_Q, register=register_Q),
+                bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
+            )
             self._buses[element.bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.Acquire(
+                component=QPyInstructions.AcquireWeighed(
                     acq_index=self._buses[element.bus].next_acquisition_index,
-                    bin_index=self._buses[element.bus].next_bin_index,
-                    wait_time=self._integration_length,
+                    bin_index=bin_register,
+                    weight_index_0=register_I,
+                    weight_index_1=register_Q,
+                    wait_time=integration_length,
                 )
             )
-        self._buses[element.bus].next_bin_index += num_bins
+            self._buses[element.bus].qpy_block_stack[block_index_for_add_instruction].append_component(
+                component=QPyInstructions.Add(origin=bin_register, var=1, destination=bin_register)
+            )
+        self._buses[element.bus].static_duration += integration_length
+        self._buses[element.bus].next_bin_index = 0  # maybe this counter can be removed completely
         self._buses[element.bus].next_acquisition_index += 1
+        self._buses[element.bus].marked_for_sync = True
 
     def _handle_play(self, element: Play):
         waveform_I, waveform_Q = element.get_waveforms()
-        variables = element.get_variables()
-        if not variables:
-            index_I, index_Q, length = self._append_to_waveforms_of_bus(
+        waveform_variables = element.get_waveform_variables()
+        if not waveform_variables:
+            index_I, index_Q, duration = self._append_to_waveforms_of_bus(
                 bus=element.bus, waveform_I=waveform_I, waveform_Q=waveform_Q
             )
+            convert = QbloxCompiler._convert_value(element)
+            duration = convert(duration)
+            self._buses[element.bus].static_duration += duration
             self._buses[element.bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.Play(index_I, index_Q, wait_time=length)
+                component=QPyInstructions.Play(index_I, index_Q, wait_time=duration)
             )
+            self._buses[element.bus].marked_for_sync = True
 
     @staticmethod
-    def _get_reference_operation_of_loop(loop: ForLoop, starting_block: Block | None = None):
+    def _get_reference_operation_of_loop(loop: Loop | ForLoop, starting_block: Block | None = None):
         def collect_operations(block: Block):
             for element in block.elements:
                 if isinstance(element, Block):
@@ -453,30 +477,49 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
 
         if not operations:
             return None
-        if len(set(map(type, operations))) != 1:
-            raise NotImplementedError("Variables referenced in a loop cannot be used in different types of operations.")
-        if isinstance(operations[0], Play):
+        if isinstance(operations[0], Play) and operations[0].get_waveform_variables():
             raise NotImplementedError("TODO: Variables referenced in a loop cannot be used in Play operation.")
         return operations[0]
 
     @staticmethod
-    def _convert_for_loop_values(for_loop: ForLoop, operation: Operation):
-        convert = QbloxCompiler._convert_value(operation)
-        return tuple(convert(value) for value in (for_loop.start, for_loop.stop, for_loop.step))
+    def _calculate_iterations(start: int | float, stop: int | float, step: int | float):
+        if step == 0:
+            raise ValueError("Step value cannot be zero")
+
+        # Calculate the raw number of iterations
+        raw_iterations = (stop - start + step) / step
+
+        # If the raw number of iterations is very close to an integer, round it to that integer
+        # This accounts for potential floating-point inaccuracies
+        if abs(raw_iterations - round(raw_iterations)) < 1e-9:
+            return round(raw_iterations)
+
+        # Otherwise, if we're incrementing, take the ceiling, and if we're decrementing, take the floor
+        return math.floor(raw_iterations) if step > 0 else math.ceil(raw_iterations)
 
     @staticmethod
-    def _convert_value(operation: Operation):
-        conversion_map = {
+    def _convert_for_loop_values(for_loop: ForLoop, operation: Operation):
+        convert = QbloxCompiler._convert_value(operation)
+        iterations = QbloxCompiler._calculate_iterations(start=for_loop.start, stop=for_loop.stop, step=for_loop.step)
+        qblox_start = convert(for_loop.start)
+        qblox_stop = convert(for_loop.stop)
+        qblox_step = (qblox_stop - qblox_start) // (iterations - 1)
+        return (qblox_start, qblox_step, iterations)
+
+    @staticmethod
+    def _convert_value(operation: Operation) -> Callable[[Any], int]:
+        conversion_map: dict[type[Operation], Callable[[Any], int]] = {
             SetFrequency: lambda x: int(x * 4),
             SetPhase: lambda x: int(x * 1e9 / 360),
             SetGain: lambda x: int(x * 32_767),
             SetOffset: lambda x: int(x * 32_767),
-            Wait: lambda x: max(x, QbloxCompiler.minimum_wait_duration),
+            Wait: lambda x: int(max(x, QbloxCompiler.minimum_wait_duration)),
+            Play: lambda x: int(max(x, QbloxCompiler.minimum_wait_duration)),
         }
-        return conversion_map.get(type(operation), lambda x: x)
+        return conversion_map.get(type(operation), lambda x: int(x))  # pylint: disable=unnecessary-lambda
 
     @staticmethod
-    def _hash(waveform: Waveform):
+    def _hash_waveform(waveform: Waveform):
         hashes = {
             key: (value.__dict__ if isinstance(value, Waveform) else value) for key, value in waveform.__dict__.items()
         }

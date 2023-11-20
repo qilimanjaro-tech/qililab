@@ -91,6 +91,18 @@ class Galadriel:
                     },
                 }
             ],
+            "Drag(0)": [
+                {
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 50,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
             "X(0)": [
                 {
                     "bus": "drive_line_q0_bus",
@@ -136,6 +148,31 @@ class Galadriel:
                         "phase": 1.5707963267948966,
                         "duration": 20,
                         "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "CZ(0,1)": [
+                {
+                    "bus": "flux_line_q1_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "shape": {"name": "rectangular"},
+                        "options": {"q0_phase_correction": 0.1, "q2_phase_correction": 0.2},
+                    },
+                }
+            ],
+            "CZ(0, 2)": [
+                {
+                    "bus": "flux_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "shape": {"name": "rectangular"},
                     },
                 }
             ],
@@ -380,7 +417,39 @@ class Galadriel:
         Parameter.MAX_VOLTAGE.value: 20.0,
     }
 
-    instruments: list[dict] = [qblox_qcm_0, qblox_qrm_0, rohde_schwarz_0, rohde_schwarz_1, attenuator, keithley_2600]
+    qmm_controller_0: dict[str, Any] = {
+        "name": InstrumentControllerName.QUANTUM_MACHINES_MANAGER,
+        "alias": "qmm_controller_0",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            "name": ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.0.111",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "qmm_0",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    qmm_0: dict[str, Any] = {
+        "name": InstrumentName.QUANTUM_MACHINES_MANAGER,
+        "alias": "qmm_0",
+        RUNCARD.FIRMWARE: "4.30.046.295",
+        "qop_ip": "192.168.0.1",
+        "qop_port": 80,
+        "config": {},
+    }
+
+    instruments: list[dict] = [
+        qblox_qcm_0,
+        qblox_qrm_0,
+        rohde_schwarz_0,
+        rohde_schwarz_1,
+        attenuator,
+        keithley_2600,
+        qmm_0,
+    ]
     instrument_controllers: list[dict] = [
         pulsar_controller_qcm_0,
         pulsar_controller_qrm_0,
@@ -388,6 +457,7 @@ class Galadriel:
         rohde_schwarz_controller_1,
         attenuator_controller_0,
         keithley_2600_controller_0,
+        qmm_controller_0,
     ]
 
     chip: dict[str, Any] = {
@@ -525,8 +595,8 @@ results_two_loops: dict[str, Any] = {
                     },
                     "bins": {
                         "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-                        "threshold": [0.48046875],
-                        "avg_cnt": [1024],
+                        "threshold": [0],
+                        "avg_cnt": [1],
                     },
                 }
             ],
@@ -542,8 +612,8 @@ results_two_loops: dict[str, Any] = {
                     },
                     "bins": {
                         "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
-                        "threshold": [0.4599609375],
-                        "avg_cnt": [1024],
+                        "threshold": [0],
+                        "avg_cnt": [1],
                     },
                 }
             ],
@@ -576,8 +646,8 @@ results_one_loops: dict[str, Any] = {
                     },
                     "bins": {
                         "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-                        "threshold": [0.48046875],
-                        "avg_cnt": [1024],
+                        "threshold": [0],
+                        "avg_cnt": [1],
                     },
                 }
             ],
@@ -593,8 +663,8 @@ results_one_loops: dict[str, Any] = {
                     },
                     "bins": {
                         "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
-                        "threshold": [0.4599609375],
-                        "avg_cnt": [1024],
+                        "threshold": [0],
+                        "avg_cnt": [1],
                     },
                 }
             ],
