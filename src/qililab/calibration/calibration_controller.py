@@ -18,6 +18,7 @@ from datetime import datetime, timedelta
 
 import networkx as nx
 
+import qililab as ql
 from qililab.calibration.calibration_node import CalibrationNode
 from qililab.config import logger
 from qililab.data_management import build_platform, save_platform
@@ -521,7 +522,9 @@ class CalibrationController:
                 logger.info(
                     "Platform updated with: (bus: %s, q: %s, %s, %f).", bus_alias, qubit, param_name, param_value
                 )
-                self.platform.set_parameter(alias=bus_alias, parameter=param_name, value=param_value, channel_id=qubit)
+                self.platform.set_parameter(
+                    alias=bus_alias, parameter=ql.Parameter(param_name), value=param_value, channel_id=qubit
+                )
 
             save_platform(self.runcard, self.platform)
 
