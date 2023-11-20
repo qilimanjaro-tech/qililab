@@ -276,6 +276,7 @@ class CalibrationController:
 
         # If in_spec, maintain ends!
         if result == "in_spec":
+            self._update_parameters(node)
             return
 
         # TODO: Integration test, for the second condition here: for example, if we had check_data like
@@ -338,6 +339,7 @@ class CalibrationController:
         if safe:
             # in spec case
             if self.check_data(node) == "in_spec":
+                self._update_parameters(node)
                 return
 
             # bad_data/out_spec case
@@ -349,6 +351,7 @@ class CalibrationController:
 
             # in spec case
             if result == "in_spec":
+                self._update_parameters(node)
                 return False
 
             # bad data case
