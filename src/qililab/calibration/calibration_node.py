@@ -320,6 +320,10 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         self.previous_inspec: float | None = None
         """Last in-spec check_data timestamp. If no previous in-spec check_data, then is None."""
+        # Its different to previous_timestamp, since this only checks that its been inspec in this concrete
+        # calibration as we want. If we update the `previous_timestamp` instead, for big ones, we might double
+        # it, for example, 1 week turns into 2 weeks if its done exactly close to the thresholds, giving possible
+        # errors. Think if we can merge them, but I wouldn't trivially merge them, without thinking about it. TODO:
 
         self._stream: StringIO = self._build_notebooks_logger_stream()
         """Stream object to which the notebooks logger output will be written, to posterior retrieval."""
