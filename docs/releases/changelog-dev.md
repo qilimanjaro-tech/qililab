@@ -5,8 +5,6 @@
 - Added real time results saving capability.
   [#598](https://github.com/qilimanjaro-tech/qililab/pull/598)
 
-- Added the two main classes need for automatic-calibration, `CalibrationController` and `CalibrationNode`: [#554](https://github.com/qilimanjaro-tech/qililab/pull/554)
-
 - Add parameter to the SLURM magic method to configure the time limit of a job.
   [#608](https://github.com/qilimanjaro-tech/qililab/pull/608)
 
