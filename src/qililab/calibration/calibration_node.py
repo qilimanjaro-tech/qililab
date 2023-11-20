@@ -318,6 +318,9 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         self.previous_timestamp: float | None = self.get_last_calibrated_timestamp()
         """Last calibrated timestamp. If no previous successful calibration, then is None."""
 
+        self.previous_inspec: float | None = None
+        """Last in-spec check_data timestamp. If no previous in-spec check_data, then is None."""
+
         self._stream: StringIO = self._build_notebooks_logger_stream()
         """Stream object to which the notebooks logger output will be written, to posterior retrieval."""
 

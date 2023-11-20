@@ -276,7 +276,7 @@ class CalibrationController:
 
         # If in_spec, maintain ends!
         if result == "in_spec":
-            self._update_parameters(node)  # In case the runcard is not from last calibration.
+            self._update_parameters(node)  # In case the runcard has changed from last calibration.
             return
 
         # TODO: Integration test, for the second condition here: for example, if we had check_data like
@@ -339,7 +339,7 @@ class CalibrationController:
         if safe:
             # in spec case
             if self.check_data(node) == "in_spec":
-                self._update_parameters(node)  # In case the runcard is not from last calibration.
+                self._update_parameters(node)  # In case the runcard has changed from last calibration.
                 return
 
             # bad_data/out_spec case
@@ -351,7 +351,7 @@ class CalibrationController:
 
             # in spec case
             if result == "in_spec":
-                self._update_parameters(node)  # In case the runcard is not from last calibration.
+                self._update_parameters(node)  # In case the runcard has changed from last calibration.
                 return False
 
             # bad data case
@@ -451,9 +451,13 @@ class CalibrationController:
             - ``bad_data`` if the results don't follow the desired fit, or are noisy, which should happen when dependencies have drifted. Or also if there are no previous executions.
         """
         # pylint: disable=protected-access
-
         logger.info('Checking data of node "%s".\n', node.node_id)
-        timestamp = node.run_node(check=True)
+
+        if node.previous_inspec is None or self._is_timeout_expired(node.previous_inspec, 1800.0):
+            timestamp = node.run_node(check=True)
+        else:
+            logger.info('Using recent `in_spec` of `check_data` in node "%s".\n', node.node_id)
+            return "in_spec"
 
         # Comparison and obtained parameters:
         comparison_outputs = node.previous_output_parameters
@@ -476,6 +480,7 @@ class CalibrationController:
 
             if comparison_number <= node.in_spec_threshold:
                 comparison_result = "in_spec"
+                node.previous_inspec = datetime.timestamp(datetime.now())
 
             elif comparison_number <= node.bad_data_threshold:
                 comparison_result = "out_of_spec"
