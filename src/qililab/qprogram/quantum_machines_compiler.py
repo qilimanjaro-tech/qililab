@@ -47,15 +47,17 @@ class _BusCompilationInfo:  # pylint: disable=too-few-public-methods
         self.current_gain: float | qua.QuaVariableType | None = None
 
 
-class _MeasurementCompilationInfo:  # pylint: disable=too-few-public-methods
+class _MeasurementCompilationInfo:  # pylint: disable=too-few-public-methods, too-many-instance-attributes
     def __init__(
         self,
+        bus: str,
         variable_I: qua.QuaVariableType | None = None,
         variable_Q: qua.QuaVariableType | None = None,
         stream_I: qua_dsl._ResultSource | None = None,
         stream_Q: qua_dsl._ResultSource | None = None,
         stream_raw_adc: qua_dsl._ResultSource | None = None,
     ):
+        self.bus: str = bus
         self.variable_I: qua.QuaVariableType | None = variable_I
         self.variable_Q: qua.QuaVariableType | None = variable_Q
         self.stream_I: qua_dsl._ResultSource | None = stream_I
@@ -68,8 +70,9 @@ class _MeasurementCompilationInfo:  # pylint: disable=too-few-public-methods
 class MeasurementInfo:  # pylint: disable=too-few-public-methods
     """Class representing information about the measurements taking place."""
 
-    def __init__(self):
-        self.result_handles: list[str] = []
+    def __init__(self, bus: str, result_handles: list[str]):
+        self.bus: str = bus
+        self.result_handles: list[str] = result_handles
 
 
 class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
@@ -163,36 +166,33 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
         return qua_program, self._configuration, measurements
 
     def _process_measurements(self):
-        measurements = []
+        def _process_measurement(measurement: _MeasurementCompilationInfo, index: int):
+            result_handles: list[str] = []
 
-        for i, measurement_compilation_info in enumerate(self._measurements):
-            measurement = MeasurementInfo()
-            if (stream_I := measurement_compilation_info.stream_I) is not None:
-                for loop_iteration in measurement_compilation_info.loops_iterations:
-                    stream_I = stream_I.buffer(loop_iteration)
-                if measurement_compilation_info.average:
-                    stream_I = stream_I.average()
-                stream_I.save(f"I_{i}")
-                measurement.result_handles.append(f"I_{i}")
-            if (stream_Q := measurement_compilation_info.stream_Q) is not None:
-                for loop_iteration in measurement_compilation_info.loops_iterations:
-                    stream_Q = stream_Q.buffer(loop_iteration)
-                if measurement_compilation_info.average:
-                    stream_Q = stream_Q.average()
-                stream_Q.save(f"Q_{i}")
-                measurement.result_handles.append(f"Q_{i}")
-            if measurement_compilation_info.stream_raw_adc is not None:
-                input1 = measurement_compilation_info.stream_raw_adc.input1()
-                input2 = measurement_compilation_info.stream_raw_adc.input2()
-                for loop_iteration in measurement_compilation_info.loops_iterations:
-                    input1 = input1.buffer(loop_iteration)
-                    input2 = input2.buffer(loop_iteration)
-                input2.save_all(f"adc1_{i}")
-                input2.save_all(f"adc2_{i}")
-                measurement.result_handles.append(f"adc1_{i}")
-                measurement.result_handles.append(f"adc2_{i}")
+            def _process_stream(stream: qua_dsl._ResultSource, save_as: str) -> None:
+                processing_stream: qua_dsl._ResultSource | qua_dsl._ResultStream = stream
+                for loop_iteration in measurement.loops_iterations:
+                    processing_stream = processing_stream.buffer(loop_iteration)
+                if measurement.average:
+                    processing_stream = processing_stream.average()
+                processing_stream.save(save_as)
+                result_handles.append(save_as)
 
-            measurements.append(measurement)
+            if measurement.stream_I is not None:
+                _process_stream(measurement.stream_I, f"I_{index}")
+            if measurement.stream_Q is not None:
+                _process_stream(measurement.stream_Q, f"Q_{index}")
+            if measurement.stream_raw_adc is not None:
+                # TODO: Check if both inputs are available
+                _process_stream(measurement.stream_raw_adc.input1(), f"adc1_{index}")
+                _process_stream(measurement.stream_raw_adc.input2(), f"adc2_{index}")
+
+            return result_handles
+
+        measurements = [
+            MeasurementInfo(bus=measurement.bus, result_handles=_process_measurement(measurement=measurement, index=i))
+            for i, measurement in enumerate(self._measurements)
+        ]
 
         return measurements
 
@@ -438,7 +438,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
             qua.save(variable_I, stream_I)
             qua.save(variable_Q, stream_Q)
 
-        measurement_info = _MeasurementCompilationInfo(variable_I, variable_Q, stream_I, stream_Q, stream_raw_adc)
+        measurement_info = _MeasurementCompilationInfo(bus, variable_I, variable_Q, stream_I, stream_Q, stream_raw_adc)
         for block in reversed(self._qprogram_block_stack):
             if isinstance(block, ForLoop):
                 iterations = QuantumMachinesCompiler._calculate_iterations(block.start, block.stop, block.step)
