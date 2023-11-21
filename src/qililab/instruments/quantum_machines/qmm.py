@@ -128,7 +128,7 @@ class QuantumMachinesManager(Instrument):
             "integration_weights": {},
             "pulses": {},
             "digital_waveforms": {},
-            # "octaves": self._get_octaves_config(),
+            "octaves": self._get_octaves_config(),
         }
 
     def _get_controllers_config(self) -> dict[str, Any]:
@@ -217,14 +217,22 @@ class QuantumMachinesManager(Instrument):
         """
         return {
             octave["name"]: {
-                "port": octave["port"],
-                "controller": octave["controller"],
-                "rf_outputs": [
-                    {output["port"]: {"lo_frequency": output["lo_frequency"], "gain": output["gain"]}}
-                    for output in octave.get("rf_outputs", [])
-                ],
-            }
-            for octave in self.settings.octaves
+                "RF_outputs": {
+                    output["port"]: {
+                        "lo_frequency": output["lo_frequency"],
+                        "gain": output["gain"]
+                    } for output in octave.get("rf_outputs", [])
+                },
+                "RF_inputs": {
+                    output["port"]: {
+                        "lo_frequency": output["lo_frequency"],
+                        "lo_source": "internal",
+                        "IF_mode_I": "direct",  # can be: "direct" / "mixer" / "envelope" / "off". direct is default
+                        "IF_mode_Q": "direct",
+                    } for output in octave.get("rf_inputs", [])
+                },
+                "connectivity": self.settings.controllers[0]["name"]
+            } for octave in self.settings.octaves
         }
 
     def run(self, program: Program) -> RunningQmJob:
