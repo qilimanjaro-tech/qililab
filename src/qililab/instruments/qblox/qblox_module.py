@@ -135,7 +135,7 @@ class QbloxModule(AWG):
     @property
     def module_type(self):
         """returns the qblox module type. Options: QCM or QRM"""
-        return self.device.module_type()
+        return self.device.module_type
 
     def compile(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
