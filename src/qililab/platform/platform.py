@@ -25,6 +25,7 @@ from qiboconnection.api import API
 from ruamel.yaml import YAML
 
 from qililab.chip import Chip
+from qililab.circuit_transpiler import CircuitTranspiler
 from qililab.config import logger
 from qililab.constants import GATE_ALIAS_REGEX, RUNCARD
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
@@ -34,6 +35,8 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSchedule
+from qililab.qprogram.qblox_compiler import QbloxCompiler
+from qililab.qprogram.qprogram import QProgram
 from qililab.result import Result
 from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
@@ -400,11 +403,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         flux_bus = self.buses.get(port=flux_port)
         control_bus = self.buses.get(port=control_port)
         readout_bus = self.buses.get(port=readout_port)
-        if flux_bus is None or control_bus is None or readout_bus is None:
-            raise ValueError(
-                f"Could not find buses for qubit {qubit_index} connected to the ports "
-                f"{flux_port}, {control_port} and {readout_port}."
-            )
         return flux_bus, control_bus, readout_bus
 
     def _get_bus_by_alias(self, alias: str | None = None):
@@ -526,6 +524,45 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """
         return str(YAML().dump(self.to_dict(), io.BytesIO()))
 
+    def execute_qprogram(self, qprogram: QProgram) -> dict[str, list[Result]]:
+        """Execute a QProgram using the platform instruments.
+
+        Args:
+            qprogram (QProgram): The QProgram to execute.
+
+        Returns:
+            dict[str, list[Result]]: A dictionary of measurement results. The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
+        """
+
+        # Compile QProgram
+        qblox_compiler = QbloxCompiler()
+        sequences = qblox_compiler.compile(qprogram=qprogram)
+        buses = {bus_alias: self._get_bus_by_alias(alias=bus_alias) for bus_alias in sequences}
+
+        # Upload sequences
+        for bus_alias in sequences:
+            buses[bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
+
+        # Execute sequences
+        for bus_alias in sequences:
+            buses[bus_alias].run()
+
+        # Acquire results
+        results: dict[str, list[Result]] = {}
+        for bus_alias in buses:
+            if isinstance(buses[bus_alias].system_control, ReadoutSystemControl):
+                acquisitions = list(sequences[bus_alias].todict()["acquisitions"])
+                bus_results = buses[bus_alias].acquire_qprogram_results(acquisitions=acquisitions)
+                results[bus_alias] = bus_results
+
+        # Reset instrument settings
+        for instrument in self.instruments.elements:
+            if isinstance(instrument, QbloxModule):
+                instrument.reset_sequences()
+                instrument.desync_sequencers()
+
+        return results
+
     def execute(
         self,
         program: PulseSchedule | Circuit,
@@ -609,13 +646,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             dict: Dictionary of compiled assembly programs. The key is the bus alias (``str``), and the value is the assembly compilation (``list``).
         """
         # We have a circular import because Platform uses CircuitToPulses and vice versa
-        from qililab.pulse.circuit_to_pulses import (  # pylint: disable=import-outside-toplevel, cyclic-import
-            CircuitToPulses,
-        )
 
         if isinstance(program, Circuit):
-            translator = CircuitToPulses(platform=self)
-            pulse_schedule = translator.translate(circuits=[program])[0]
+            transpiler = CircuitTranspiler(platform=self)
+            pulse_schedule = transpiler.transpile_circuit(circuits=[program])[0]
         else:
             pulse_schedule = program
 

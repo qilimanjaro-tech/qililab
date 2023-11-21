@@ -16,9 +16,11 @@ from collections import deque
 
 import numpy as np
 
-from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
+from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
+from qililab.qprogram.decorators import requires_domain
 from qililab.qprogram.operations import (
     Acquire,
+    Measure,
     Play,
     ResetPhase,
     SetFrequency,
@@ -28,7 +30,7 @@ from qililab.qprogram.operations import (
     Sync,
     Wait,
 )
-from qililab.qprogram.variable import FloatVariable, IntVariable, Variable
+from qililab.qprogram.variable import Domain, FloatVariable, IntVariable, ValueSource, Variable
 from qililab.waveforms import IQPair, Waveform
 
 
@@ -64,15 +66,33 @@ class QProgram:
     """
 
     def __init__(self):
-        self._program: Block = Block()
+        self._body: Block = Block()
         self._variables: list[Variable] = []
-        self._block_stack: deque[Block] = deque([self._program])
+        self._block_stack: deque[Block] = deque([self._body])
 
     def _append_to_block_stack(self, block: Block):
         self._block_stack.append(block)
 
     def _pop_from_block_stack(self):
         return self._block_stack.pop()
+
+    @property
+    def body(self) -> Block:
+        """Get the body of the QProgram
+
+        Returns:
+            Block: The block of the body
+        """
+        return self._body
+
+    @property
+    def variables(self) -> list[Variable]:
+        """Get the variables
+
+        Returns:
+            list[Variable]: A list of variables
+        """
+        return self._variables
 
     @property
     def _active_block(self) -> Block:
@@ -93,7 +113,7 @@ class QProgram:
         """
         return QProgram._BlockContext(qprogram=self)
 
-    def parallel(self, loops: list[ForLoop]):
+    def parallel(self, loops: list[Loop | ForLoop]):
         """Define a block for running multiple loops in parallel.
 
         Blocks need to open a scope.
@@ -129,7 +149,22 @@ class QProgram:
             >>> with qp.acquire_loop(iterations=1000):
             >>>    # operations that shall be executed in the acquire_loop block
         """
-        return QProgram._AverageContext(qprogram=self, iterations=shots)
+        return QProgram._AverageContext(qprogram=self, shots=shots)
+
+    def infinite_loop(self):
+        """Define an infinite loop.
+
+        Blocks need to open a scope.
+
+        Examples:
+
+            >>> with qp.infinite_loop():
+            >>>    # operations that shall be executed in the infinite loop block
+
+        Returns:
+            InfiniteLoop: The infinite loop block.
+        """
+        return QProgram._InfiniteLoopContext(qprogram=self)
 
     def loop(self, variable: Variable, values: np.ndarray):
         """Define a loop block to iterate values over a variable.
@@ -185,28 +220,53 @@ class QProgram:
         operation = Play(bus=bus, waveform=waveform)
         self._active_block.append(operation)
 
-    def wait(self, bus: str, time: int):
+    @requires_domain("duration", Domain.Time)
+    def wait(self, bus: str, duration: int):
         """Adds a delay on the bus with a specified time.
 
         Args:
             bus (str): Unique identifier of the bus.
             time (int): Duration of the delay.
         """
-        operation = Wait(bus=bus, time=time)
+        operation = Wait(bus=bus, duration=duration)
         self._active_block.append(operation)
 
-    def acquire(self, bus: str, weights: IQPair | None = None):
-        """Acquire results.
+    def acquire(self, bus: str, weights: IQPair):
+        """Acquire results based on the given weights.
 
         Args:
             bus (str): Unique identifier of the bus.
-            weights (IQPair | None, optional): Weights used during acquisition. Defaults to None.
+            weights (IQPair): Weights used during acquisition.
         """
         operation = Acquire(bus=bus, weights=weights)
         self._active_block.append(operation)
 
+    def measure(
+        self,
+        bus: str,
+        waveform: IQPair,
+        weights: IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair, IQPair] | None = None,
+        demodulation: bool = True,
+        save_raw_adc: bool = True,
+    ):
+        """Play a pulse and acquire results.
+
+        Args:
+            bus (str): Unique identifier of the bus.
+            waveform (IQPair): Waveform played during measurement.
+            weights (IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair, IQPair] | None, optional): Weights used during acquisition. Defaults to None.
+            demodulation (bool, optional): If demodulation is enabled. Defaults to True.
+            save_raw_adc (bool, optional): If raw adc data should be saved. Defaults to True.
+        """
+        operation = Measure(
+            bus=bus, waveform=waveform, weights=weights, demodulation=demodulation, save_raw_adc=save_raw_adc
+        )
+        self._active_block.append(operation)
+
     def sync(self, buses: list[str] | None = None):
-        """Synchronize operations between buses, so the operations following will start at the same time. If no buses are given, then the synchronization will involve all buses present in the QProgram.
+        """Synchronize operations between buses, so the operations following will start at the same time.
+
+        If no buses are given, then the synchronization will involve all buses present in the QProgram.
 
         Args:
             buses (list[str] | None, optional): List of unique identifiers of the buses. Defaults to None.
@@ -223,6 +283,7 @@ class QProgram:
         operation = ResetPhase(bus=bus)
         self._active_block.append(operation)
 
+    @requires_domain("phase", Domain.Phase)
     def set_phase(self, bus: str, phase: float):
         """Set the absolute phase of the NCO associated with the bus.
 
@@ -233,6 +294,7 @@ class QProgram:
         operation = SetPhase(bus=bus, phase=phase)
         self._active_block.append(operation)
 
+    @requires_domain("frequency", Domain.Frequency)
     def set_frequency(self, bus: str, frequency: float):
         """Set the frequency of the NCO associated with bus.
 
@@ -243,15 +305,15 @@ class QProgram:
         operation = SetFrequency(bus=bus, frequency=frequency)
         self._active_block.append(operation)
 
-    def set_gain(self, bus: str, gain_path0: float, gain_path1: float):
+    @requires_domain("gain", Domain.Voltage)
+    def set_gain(self, bus: str, gain: float):
         """Set the gain of the AWG associated with bus.
 
         Args:
             bus (str): Unique identifier of the bus.
-            gain_path0 (float): The new gain of the AWG for path0.
-            gain_path1 (float): The new gain of the AWG for path1.
+            gain (float): The new gain of the AWG.
         """
-        operation = SetGain(bus=bus, gain_path0=gain_path0, gain_path1=gain_path1)
+        operation = SetGain(bus=bus, gain=gain)
         self._active_block.append(operation)
 
     def set_offset(self, bus: str, offset_path0: float, offset_path1: float):
@@ -265,7 +327,7 @@ class QProgram:
         operation = SetOffset(bus=bus, offset_path0=offset_path0, offset_path1=offset_path1)
         self._active_block.append(operation)
 
-    def variable(self, type: type[int | float]):  # pylint: disable=redefined-builtin
+    def variable(self, domain: Domain, type: type[int | float] | None = None):  # pylint: disable=redefined-builtin
         """Declare a variable.
 
         Args:
@@ -278,20 +340,31 @@ class QProgram:
             IntVariable | FloatVariable: The variable.
         """
 
-        def _int_variable(value: int = 0) -> IntVariable:
-            variable = IntVariable(value)
+        def _int_variable(domain: Domain = Domain.Scalar) -> IntVariable:
+            variable = IntVariable(domain)
             self._variables.append(variable)
             return variable
 
-        def _float_variable(value: float = 0.0) -> FloatVariable:
-            variable = FloatVariable(value)
+        def _float_variable(domain: Domain = Domain.Scalar) -> FloatVariable:
+            variable = FloatVariable(domain)
             self._variables.append(variable)
             return variable
 
-        if type == int:
-            return _int_variable()
-        if type == float:
-            return _float_variable()
+        if domain is Domain.Scalar and type is None:
+            raise ValueError("You must specify a type in a scalar variable.")
+        if domain is not Domain.Scalar and type is not None:
+            raise ValueError("When declaring a variable of a specific domain, its type is inferred by its domain.")
+
+        if domain is Domain.Scalar:
+            if type == int:
+                return _int_variable(domain)
+            if type == float:
+                return _float_variable(domain)
+
+        if domain == Domain.Time:
+            return _int_variable(domain)
+        if domain in [Domain.Frequency, Domain.Phase, Domain.Voltage]:
+            return _float_variable(domain)
         raise NotImplementedError
 
     class _BlockContext:
@@ -307,14 +380,26 @@ class QProgram:
             block = self.qprogram._pop_from_block_stack()
             self.qprogram._active_block.append(block)
 
+    class _InfiniteLoopContext(_BlockContext):  # pylint: disable=too-few-public-methods
+        def __init__(self, qprogram: "QProgram"):  # pylint: disable=super-init-not-called
+            self.qprogram = qprogram
+            self.block: InfiniteLoop = InfiniteLoop()
+
     class _ParallelContext(_BlockContext):  # pylint: disable=too-few-public-methods
-        def __init__(self, qprogram: "QProgram", loops: list[ForLoop]):  # pylint: disable=super-init-not-called
+        def __init__(self, qprogram: "QProgram", loops: list[Loop | ForLoop]):  # pylint: disable=super-init-not-called
             self.qprogram = qprogram
             self.block: Parallel = Parallel(loops=loops)
 
         def __enter__(self) -> Parallel:
-            self.qprogram._append_to_block_stack(block=self.block)
-            return self.block
+            for loop in self.block.loops:
+                loop.variable._source = ValueSource.Dependent
+                loop.variable._value = None
+            return super().__enter__()
+
+        def __exit__(self, exc_type, exc_value, exc_tb):
+            for loop in self.block.loops:
+                loop.variable._source = ValueSource.Free
+            super().__exit__(exc_type, exc_value, exc_tb)
 
     class _LoopContext(_BlockContext):  # pylint: disable=too-few-public-methods
         def __init__(  # pylint: disable=super-init-not-called
@@ -324,8 +409,13 @@ class QProgram:
             self.block: Loop = Loop(variable=variable, values=values)
 
         def __enter__(self) -> Loop:
-            self.qprogram._append_to_block_stack(block=self.block)
-            return self.block
+            self.block.variable._source = ValueSource.Dependent
+            self.block.variable._value = None
+            return super().__enter__()
+
+        def __exit__(self, exc_type, exc_value, exc_tb):
+            self.block.variable._source = ValueSource.Free
+            super().__exit__(exc_type, exc_value, exc_tb)
 
     class _ForLoopContext(_BlockContext):  # pylint: disable=too-few-public-methods
         def __init__(  # pylint: disable=super-init-not-called
@@ -335,14 +425,15 @@ class QProgram:
             self.block: ForLoop = ForLoop(variable=variable, start=start, stop=stop, step=step)
 
         def __enter__(self) -> ForLoop:
-            self.qprogram._append_to_block_stack(block=self.block)
-            return self.block
+            self.block.variable._source = ValueSource.Dependent
+            self.block.variable._value = None
+            return super().__enter__()
+
+        def __exit__(self, exc_type, exc_value, exc_tb):
+            self.block.variable._source = ValueSource.Free
+            super().__exit__(exc_type, exc_value, exc_tb)
 
     class _AverageContext(_BlockContext):  # pylint: disable=too-few-public-methods
-        def __init__(self, qprogram: "QProgram", iterations: int):  # pylint: disable=super-init-not-called
+        def __init__(self, qprogram: "QProgram", shots: int):  # pylint: disable=super-init-not-called
             self.qprogram = qprogram
-            self.block: Average = Average(shots=iterations)
-
-        def __enter__(self) -> Average:
-            self.qprogram._append_to_block_stack(block=self.block)
-            return self.block
+            self.block: Average = Average(shots=shots)

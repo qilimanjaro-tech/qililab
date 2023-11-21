@@ -91,6 +91,18 @@ class Galadriel:
                     },
                 }
             ],
+            "Drag(0)": [
+                {
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 50,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
             "X(0)": [
                 {
                     "bus": "drive_line_q0_bus",

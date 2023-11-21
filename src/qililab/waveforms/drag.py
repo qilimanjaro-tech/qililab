@@ -24,13 +24,13 @@ class Drag(IQPair):  # pylint: disable=too-few-public-methods
     and the Q is the drag correction, which corresponds to the derivative of the I channel times a ``drag_coefficient``.
 
     Args:
+        amplitude (float): Maximum amplitude of the pulse.
+        duration (int): Duration of the pulse (ns).
         num_sigmas (float): Sigma number of the gaussian pulse shape. Defines the width of the gaussian pulse.
         drag_coefficient (float): Drag coefficient that gives the DRAG its imaginary components.
-        duration (int): Duration of the pulse (ns).
-        amplitude (float): Maximum amplitude of the pulse.
     """
 
-    def __init__(self, drag_coefficient: float, amplitude: float, duration: int, num_sigmas: float):
+    def __init__(self, amplitude: float, duration: int, num_sigmas: float, drag_coefficient: float):
         waveform_i = Gaussian(amplitude=amplitude, duration=duration, num_sigmas=num_sigmas)
         waveform_q = DragCorrection(drag_coefficient=drag_coefficient, waveform=waveform_i)
 
