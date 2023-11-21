@@ -1,6 +1,18 @@
-"""
-Class to interface with the voltage source Qblox S4g
-"""
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""GS200 class"""
 from dataclasses import dataclass
 
 from qililab.instruments.current_source import CurrentSource
@@ -13,11 +25,11 @@ from qililab.typings.enums import Parameter, YokogawaSourceMode
 
 @InstrumentFactory.register
 class GS200(CurrentSource):
-    """Yokogawa GS200 class
+    """Yokogawa GS200 low voltage/current DC source.
 
     Args:
         name (InstrumentName): name of the instrument
-        device (GS200): Instance of the qcodes GS200 class.
+        device (YokogawaGS200Driver): Instance of the qcodes GS200 class.
         settings (YokogawaGS200Settings): Settings of the instrument.
     """
 
@@ -31,6 +43,36 @@ class GS200(CurrentSource):
 
     settings: YokogawaGS200Settings
     device: YokogawaGS200Driver
+
+    @property
+    def source_mode(self) -> YokogawaSourceMode:
+        """Yokogawa GS200 `source_mode` property.
+
+        Returns:
+            str: settings.source_mode.
+        """
+        return self.settings.source_mode
+
+    @source_mode.setter
+    def source_mode(self, value: YokogawaSourceMode):
+        """sets the source mode"""
+        self.settings.source_mode = value
+        self.device.source_mode(self.settings.source_mode.name[0:4])
+
+    @property
+    def current(self) -> float:
+        """Yokogawa GS200 `current_value` property.
+
+        Returns:
+            float: settings.current_value.
+        """
+        return self.settings.current[0]
+
+    @current.setter
+    def current(self, value: float):
+        """Sets the current_value"""
+        self.settings.current[0] = value
+        self.device.current(value)
 
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
@@ -51,54 +93,18 @@ class GS200(CurrentSource):
 
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
-    @property
-    def source_mode(self) -> YokogawaSourceMode:
-        """Yokogawa gs200 'source_mode' property.
-
-        Returns:
-            str: settings.source_mode.
-        """
-        return self.settings.source_mode
-
-    @source_mode.setter
-    def source_mode(self, value: YokogawaSourceMode):
-        """sets the source mode"""
-        self.settings.source_mode = value
-        self.device.source_mode(self.settings.source_mode.name[0:4])
-
-    @property
-    def current(self) -> float:
-        """Yokogawa gs200 'current_value' property.
-
-        Returns:
-            float: settings.current_value.
-        """
-        return self.settings.current[0]
-
-    @current.setter
-    def current(self, value: float):
-        """Sets the current_value"""
-        self.settings.current[0] = value
-        self.device.current(value)
-
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """performs an initial setup."""
         self.source_mode = YokogawaSourceMode.CURRENT
+        self.current = 0
 
     @Instrument.CheckDeviceInitialized
-    def start(self):
+    def turn_on(self):
         """Dummy method."""
         self.device.on()
 
     @Instrument.CheckDeviceInitialized
-    def stop(self):
+    def turn_off(self):
         """Stop outputing current."""
         self.device.off()
-
-    def to_dict(self):
-        """Return a dict representation of the VectorNetworkAnalyzer class."""
-        return dict(super().to_dict().items())
-
-    def run(self):
-        """Run method"""

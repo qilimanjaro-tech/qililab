@@ -9,8 +9,8 @@ from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.yokogawa.gs200 import GS200
 from qililab.platform import Platform
 from qililab.typings.enums import Parameter, YokogawaSourceMode
-from tests.data import SauronYokogawa
-from tests.test_utils import build_platform
+from tests.data import SauronYokogawa  # pylint: disable=import-error
+from tests.test_utils import build_platform  # pylint: disable=import-error
 
 
 @pytest.fixture(name="platform")
@@ -98,14 +98,14 @@ class TestYokogawaGS200:
         """Test the dict method"""
         assert isinstance(yokogawa_gs200.to_dict(), dict)
 
-    def test_start_method(self, yokogawa_gs200: GS200):
+    def test_turn_on_method(self, yokogawa_gs200: GS200):
         """Test start method"""
-        yokogawa_gs200.start()
+        yokogawa_gs200.turn_on()
         yokogawa_gs200.device.on.assert_called()
 
-    def test_stop_method(self, yokogawa_gs200: GS200):
+    def test_turn_off_method(self, yokogawa_gs200: GS200):
         """Test stop method"""
-        yokogawa_gs200.stop()
+        yokogawa_gs200.turn_off()
         yokogawa_gs200.device.off.assert_called()
 
     def test_initial_setup_method(self, yokogawa_gs200: GS200):
