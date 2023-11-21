@@ -117,7 +117,8 @@ class QuantumMachinesManager(Instrument):
             config: Dict[str, Any]
         """
         elements, mixers = self._get_elements_config()
-        config = {
+
+        return {
             "version": 1,  # hardcoded for now, need to check what version really refers to
             "controllers": self._get_controllers_config(),
             "elements": elements,
@@ -129,17 +130,14 @@ class QuantumMachinesManager(Instrument):
             # "octaves": self._get_octaves_config(),
         }
 
-        return config
-
     def _get_controllers_config(self) -> dict[str, Any]:
         """Returns the controllers config dictionary.
 
         Returns:
             controllers: Dict[str, Any]
         """
-        controllers = {}
-        for controller in self.settings.controllers:
-            controllers[controller["name"]] = {
+        return {
+            controller["name"]: {
                 "analog_outputs": {
                     output["port"]: {"offset": output["offset"]} for output in controller.get("analog_outputs", [])
                 },
@@ -149,9 +147,8 @@ class QuantumMachinesManager(Instrument):
                 "digital_outputs": {
                     output["port"]: {} for output in controller.get("digital_outputs", [])
                 }
-            }
-
-        return controllers
+            } for controller in self.settings.controllers
+        }
 
     def _get_elements_config(self) -> tuple:
         """Returns the elements config dictionary.
@@ -213,18 +210,15 @@ class QuantumMachinesManager(Instrument):
         Returns:
             octaves: Dict[str, Any]
         """
-        octaves = {}
-
-        for octave in self.settings.octaves:
-            octaves[octave["name"]] = {
+        return {
+            octave["name"]: {
                 "port": octave["port"],
                 "controller": octave["controller"],
                 "rf_outputs": [
                     {output["port"]: {"lo_frequency": output["lo_frequency"], "gain": output["gain"]}} for output in octave.get("rf_outputs", [])
                 ],
-            }
-
-        return octaves
+            } for octave in self.settings.octaves
+        }
 
     def run(self, program: Program) -> RunningQmJob:
         """Runs the QUA Program.
