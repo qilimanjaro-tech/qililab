@@ -57,6 +57,7 @@ class QuantumMachinesManager(Instrument):
             controllers (list[dict[str, Any]]): List of controllers (instruments) the quantum machines stack has.
             elements (list[dict[str, Any]]): List of elements (buses) the quantum machines stack has.
         """
+
         address: str
         port: int
         octaves: list[dict[str, Any]]
@@ -142,12 +143,12 @@ class QuantumMachinesManager(Instrument):
                     output["port"]: {"offset": output["offset"]} for output in controller.get("analog_outputs", [])
                 },
                 "analog_inputs": {
-                    input["port"]: {"offset": input["offset"], "gain_db": input["gain_db"]} for input in controller.get("analog_inputs", [])
+                    input["port"]: {"offset": input["offset"], "gain_db": input["gain_db"]}
+                    for input in controller.get("analog_inputs", [])
                 },
-                "digital_outputs": {
-                    output["port"]: {} for output in controller.get("digital_outputs", [])
-                }
-            } for controller in self.settings.controllers
+                "digital_outputs": {output["port"]: {} for output in controller.get("digital_outputs", [])},
+            }
+            for controller in self.settings.controllers
         }
 
     def _get_elements_config(self) -> tuple:
@@ -176,7 +177,7 @@ class QuantumMachinesManager(Instrument):
                         "delay": element["digital_inputs"]["delay"],
                         "buffer": element["digital_inputs"]["buffer"],
                     },
-                    "intermediate_frequency": element["intermediate_frequency"]
+                    "intermediate_frequency": element["intermediate_frequency"],
                 }
             elif "flux" in element["bus"]:
                 bus_dict = {
@@ -190,14 +191,18 @@ class QuantumMachinesManager(Instrument):
                     "mixInputs": {
                         key: (element["mixInputs"][key]["controller"], element["mixInputs"][key]["port"])
                         for key in ["I", "Q"]
-                    } | {"lo_frequency": int(element["mixInputs"]["lo_frequency"])} | {"mixer": "mixer_" + element["bus"]},
+                    }
+                    | {"lo_frequency": int(element["mixInputs"]["lo_frequency"])}
+                    | {"mixer": "mixer_" + element["bus"]},
                     "intermediate_frequency": int(element["intermediate_frequency"]),
                 }
-                mixers["mixer_" + element["bus"]] = [{
-                    "intermediate_frequency": int(element["intermediate_frequency"]),
-                    "lo_frequency": int(element["mixInputs"]["lo_frequency"]),
-                    "correction": element["mixInputs"]["mixer_correction"],
-                }]
+                mixers["mixer_" + element["bus"]] = [
+                    {
+                        "intermediate_frequency": int(element["intermediate_frequency"]),
+                        "lo_frequency": int(element["mixInputs"]["lo_frequency"]),
+                        "correction": element["mixInputs"]["mixer_correction"],
+                    }
+                ]
             bus_dict["operations"] = {}
 
             elements[element["bus"]] = bus_dict
@@ -215,9 +220,11 @@ class QuantumMachinesManager(Instrument):
                 "port": octave["port"],
                 "controller": octave["controller"],
                 "rf_outputs": [
-                    {output["port"]: {"lo_frequency": output["lo_frequency"], "gain": output["gain"]}} for output in octave.get("rf_outputs", [])
+                    {output["port"]: {"lo_frequency": output["lo_frequency"], "gain": output["gain"]}}
+                    for output in octave.get("rf_outputs", [])
                 ],
-            } for octave in self.settings.octaves
+            }
+            for octave in self.settings.octaves
         }
 
     def run(self, program: Program) -> RunningQmJob:
