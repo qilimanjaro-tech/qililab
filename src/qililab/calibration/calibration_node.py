@@ -373,6 +373,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             In case of a keyboard interruption or any exception during the execution of the notebook.
         """
         # Create the input parameters for the notebook:)
+        self.previous_output_parameters = self.output_parameters
+
         params: dict = {
             "check": check,
             "number_of_random_datapoints": self.number_of_random_datapoints,
@@ -384,14 +386,15 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         if self.input_parameters is not None:
             params |= self.input_parameters
+        
+        if check and self.previous_output_parameters is not None and "fit" in self.previous_output_parameters['check_parameters']:
+            params |= {"compare_fit" : [self.previous_output_parameters["check_parameters"]["sweep_interval"], self.previous_output_parameters["check_parameters"]["fit"]]}
 
         # JSON serialize nb input, no np.ndarrays
         _json_serialize(params)  # TODO: Add a test, for passing np,arrays as inputs and working after this change
 
         # initially the file is "dirty" until we make sure the execution was not aborted, so we add _dirty tag.
         output_path = self._create_notebook_datetime_path(dirty=True)
-        self.previous_output_parameters = self.output_parameters
-
         # TODO: Integration test, that dirty flags are created and deleted when needed, for calibrated, or in_spec..
         # TODO: , bad_data or other to take its place. And that all functions work correctly with it.
 
@@ -660,7 +663,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             logger.warning("If you had multiple outputs exported in %s, the first one found will be used.", input_path)
 
         # This next line is for taking into account other encodings, where special characters get `\\` in front.
-        clean_data = logger_splitted[1].split("\\n")[0].replace('\\"', '"')
+        clean_data = logger_splitted[-1].split("\\n")[0].replace('\\"', '"')
 
         logger_outputs_string = clean_data.split("\n")[0]
         out_dict = json.loads(logger_outputs_string)  # in-dictionary strings will need to be double-quoted "" not ''.
