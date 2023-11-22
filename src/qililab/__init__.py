@@ -19,6 +19,7 @@ Qililab can be directly imported.
 
 import contextlib
 
+# Execute is imported first
 from .about import about
 from .circuit_transpiler import Drag, Wait
 from .config import __version__, logger

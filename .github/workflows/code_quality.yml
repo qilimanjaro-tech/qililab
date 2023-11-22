@@ -42,7 +42,7 @@ jobs:
 
       - name: Isort
         run: |
-          isort src -l 120 --check
+          isort src -l 120 --check --skip "src/qililab/__init__.py"
           isort tests -l 120 --check
 
       - name: Black

@@ -16,15 +16,14 @@ repos:
     hooks:
       - id: isort
         name: isort (python)
-        args: [-l=120]
+        args: [-l=120, --skip=src/qililab/__init__.py]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: "v1.4.1" # Use the sha / tag you want to point at
     hooks:
       - id: mypy
         args: [--no-strict-optional, --ignore-missing-imports]
-        additional_dependencies:
-          [types-PyYAML==6.0.12, types-requests==2.28.11.8]
+        additional_dependencies: [types-PyYAML==6.0.12, types-requests==2.28.11.8]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
