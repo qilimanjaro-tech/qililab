@@ -29,40 +29,37 @@ def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
 
     Examples:
 
-        **1. Executing an experiment and saving the results live time:**
+        You have the option to save your results in real-time using this feature.
+        This ensures that in the event of a runtime failure, you can still access results up to the point of failure
+        from a resulting file. Specify the desired shape of the results, the loops to include,
+        and the path to the resulting file by doing:
 
-
-        To execute an experiment you first need to define the loops and the values you want to loop for, for example, a Rabi experiment
-        where you will loop over amplitude values, measuring the results out of the amplitude in each of the steps.
-        Then you also need to build, connect, set up, and execute the platform, which together look like:
 
         .. code-block:: python
 
             import numpy as np
             import qililab as ql
 
-            AMP_VALUES = np.linspace(0, 1, 5)
-            stream_array = ql.stream_results(shape=(5, 2), loops={"amp": AMP_VALUES}, path="results.h5")
+            LOOP_VALUES = np.linspace(0, 1, 5)
+            stream_array = ql.stream_results(shape=(5, 2), loops={"loop_name": LOOP_VALUES}, path="results.h5")
 
             with stream_array:
-                for i in range(5)
-                    stream_array[(i, 0)] = i
+                for i, value in enumerate(LOOP_VALUES):
+                    stream_array[(i, 0)] = value
 
-            >>> stream_array
+        >>> stream_array
+        [[0.   0.  ]
+         [0.25 0.  ]
+         [0.5  0.  ]
+         [0.75 0.  ]
+         [1.   0.  ]]
 
-            [[0. 0.]
-            [1. 0.]
-            [2. 0.]
-            [3. 0.]
-            [4. 0.]]
-
-            >>> ql.load_results("results.h5")
-
-            (array([[0., 0.],
-                [1., 0.],
-                [2., 0.],
-                [3., 0.],
-                [4., 0.]]), {'amp': array([0.  , 0.25, 0.5 , 0.75, 1.  ])})
+        >>> ql.load_results("results.h5")
+        (array([[0., 0.],
+               [0.25, 0.],
+               [0.5, 0.],
+               [0.75, 0.],
+               [1., 0.]]), {'amp': array([0.  , 0.25, 0.5 , 0.75, 1.  ])})
 
     .. note::
 
@@ -71,21 +68,21 @@ def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
         .. code-block:: python
 
             %%submit_job -o results -d galadriel
-            AMP_VALUES = np.linspace(0, 1, 5)
-            stream = ql.stream_results(shape=(5, 2), loops={"amp": AMP_VALUES}, path="results.h5")
+            LOOP_VALUES = np.linspace(0, 1, 5)
+            stream_array = ql.stream_results(shape=(5, 2), loops={"loop_name": LOOP_VALUES}, path="results.h5")
             with stream:
-                for i in range(5):
+                for i, value in enumerate(LOOP_VALUES):
                     # Here you can execute any algorithm you want
-                    stream_array[(i, 0)] = i
+                    stream_array[(i, 0)] = value
 
             results = stream.results
 
-            >>> results.result()
-            (array([[0., 0.],
-                [1., 0.],
-                [2., 0.],
-                [3., 0.],
-                [4., 0.]])
+        >>> results.result()
+        (array([[0.   0.  ]
+                [0.25 0.  ]
+                [0.5  0.  ]
+                [0.75 0.  ]
+                [1.   0.  ]])
 
     """
     return StreamArray(shape=shape, path=path, loops=loops)
