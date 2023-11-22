@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 import numpy as np
 import pandas as pd
 
-from qililab.constants import EXPERIMENT, RESULTSDATAFRAME, RUNCARD
+from qililab.constants import RESULTSDATAFRAME, RUNCARD
 from qililab.utils import coordinate_decompose
 from qililab.utils.dataframe_manipulation import concatenate_creating_new_name_index
 from qililab.utils.factory import Factory
@@ -230,11 +230,11 @@ class Results:
             dict: Dictionary containing all the class information.
         """
         return {
-            EXPERIMENT.SOFTWARE_AVERAGE: self.software_average,
-            EXPERIMENT.NUM_SCHEDULES: self.num_schedules,
-            EXPERIMENT.SHAPE: [] if self.loops is None else compute_shapes_from_loops(loops=self.loops),
-            EXPERIMENT.LOOPS: [loop.to_dict() for loop in self.loops] if self.loops is not None else None,
-            EXPERIMENT.RESULTS: [result.to_dict() for result in self.results],
+            "software_average": self.software_average,
+            "num_schedules": self.num_schedules,
+            "shape": [] if self.loops is None else compute_shapes_from_loops(loops=self.loops),
+            "loops": [loop.to_dict() for loop in self.loops] if self.loops is not None else None,
+            "results": [result.to_dict() for result in self.results],
         }
 
     @classmethod

@@ -9,7 +9,6 @@ from qibo.models.circuit import Circuit
 
 from qililab.constants import (
     CONNECTION,
-    EXPERIMENT,
     INSTRUMENTCONTROLLER,
     LOOP,
     PLATFORM,
@@ -565,10 +564,10 @@ for platform in [Galadriel]:
     experiment_params.extend([[platform.runcard, circuit], [platform.runcard, [circuit, circuit]]])  # type: ignore
 
 results_two_loops: dict[str, Any] = {
-    EXPERIMENT.SOFTWARE_AVERAGE: 1,
-    EXPERIMENT.NUM_SCHEDULES: 1,
-    EXPERIMENT.SHAPE: [75, 100],
-    EXPERIMENT.LOOPS: [
+    "software_average": 1,
+    "num_schedules": 1,
+    "shape": [75, 100],
+    "loops": [
         {
             "alias": "attenuator",
             LOOP.PARAMETER: Parameter.ATTENUATION.value,
@@ -583,7 +582,7 @@ results_two_loops: dict[str, Any] = {
             },
         },
     ],
-    EXPERIMENT.RESULTS: [
+    "results": [
         {
             "name": "qblox",
             "integration_lengths": [8000],
@@ -622,10 +621,10 @@ results_two_loops: dict[str, Any] = {
 }
 
 results_one_loops: dict[str, Any] = {
-    EXPERIMENT.SOFTWARE_AVERAGE: 1,
-    EXPERIMENT.NUM_SCHEDULES: 1,
-    EXPERIMENT.SHAPE: [100],
-    EXPERIMENT.LOOPS: [
+    "software_average": 1,
+    "num_schedules": 1,
+    "shape": [100],
+    "loops": [
         {
             "alias": "rs_1",
             LOOP.PARAMETER: "frequency",
@@ -634,7 +633,7 @@ results_one_loops: dict[str, Any] = {
             LOOP.CHANNEL_ID: None,
         }
     ],
-    EXPERIMENT.RESULTS: [
+    "results": [
         {
             "name": "qblox",
             "integration_lengths": [8000],
@@ -673,10 +672,10 @@ results_one_loops: dict[str, Any] = {
 }
 
 results_one_loops_empty: dict[str, Any] = {
-    EXPERIMENT.SOFTWARE_AVERAGE: 1,
-    EXPERIMENT.NUM_SCHEDULES: 1,
-    EXPERIMENT.SHAPE: [100],
-    EXPERIMENT.LOOPS: [
+    "software_average": 1,
+    "num_schedules": 1,
+    "shape": [100],
+    "loops": [
         {
             "alias": "rs_1",
             LOOP.PARAMETER: "frequency",
@@ -684,59 +683,7 @@ results_one_loops_empty: dict[str, Any] = {
             LOOP.LOOP: None,
         }
     ],
-    EXPERIMENT.RESULTS: [],
-}
-
-experiment: dict[str, Any] = {
-    RUNCARD.PLATFORM: Galadriel.runcard,
-    EXPERIMENT.OPTIONS: {
-        EXPERIMENT.LOOPS: [
-            {
-                "alias": "qblox_qrm",
-                LOOP.PARAMETER: Parameter.GAIN.value,
-                LOOP.VALUES: np.arange(start=0.1, stop=1, step=0.3),
-                LOOP.CHANNEL_ID: 0,
-                LOOP.LOOP: {
-                    "alias": "attenuator",
-                    LOOP.PARAMETER: Parameter.ATTENUATION.value,
-                    LOOP.VALUES: np.arange(start=15, stop=90, step=1),
-                    LOOP.LOOP: {
-                        "alias": "rs_1",
-                        LOOP.PARAMETER: "frequency",
-                        LOOP.VALUES: np.arange(start=7342000000, stop=7352000000, step=100000),
-                        LOOP.LOOP: None,
-                    },
-                },
-            }
-        ],
-        RUNCARD.NAME: "punchout",
-        RUNCARD.GATES_SETTINGS: {
-            EXPERIMENT.HARDWARE_AVERAGE: 1024,
-            EXPERIMENT.SOFTWARE_AVERAGE: 1,
-            EXPERIMENT.REPETITION_DURATION: 200000,
-        },
-    },
-    EXPERIMENT.PULSE_SCHEDULES: [
-        {
-            PULSESCHEDULES.ELEMENTS: [
-                {
-                    PULSEBUSSCHEDULE.TIMELINE: [
-                        {
-                            PULSEEVENT.PULSE: {
-                                PULSE.AMPLITUDE: 1,
-                                PULSE.FREQUENCY: 1e9,
-                                PULSE.PHASE: 0,
-                                PULSE.DURATION: 2000,
-                                PULSE.PULSE_SHAPE: {"name": PulseShapeName.RECTANGULAR.value},
-                            },
-                            PULSEEVENT.START_TIME: 40,
-                        }
-                    ],
-                    PULSEBUSSCHEDULE.PORT: 1,
-                }
-            ],
-        }
-    ],
+    "results": [],
 }
 
 
