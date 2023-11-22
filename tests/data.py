@@ -7,17 +7,7 @@ import numpy as np
 from qibo.gates import I, M, X, Y
 from qibo.models.circuit import Circuit
 
-from qililab.constants import (
-    CONNECTION,
-    INSTRUMENTCONTROLLER,
-    LOOP,
-    PLATFORM,
-    PULSE,
-    PULSEBUSSCHEDULE,
-    PULSEEVENT,
-    PULSESCHEDULES,
-    RUNCARD,
-)
+from qililab.constants import CONNECTION, INSTRUMENTCONTROLLER, LOOP, PLATFORM, RUNCARD
 from qililab.instruments.awg_settings.typings import AWGTypes
 from qililab.typings.enums import (
     AcquireTriggerMode,
@@ -26,7 +16,6 @@ from qililab.typings.enums import (
     InstrumentName,
     IntegrationMode,
     Parameter,
-    PulseShapeName,
     ReferenceClock,
     ResetMethod,
     SystemControlName,
