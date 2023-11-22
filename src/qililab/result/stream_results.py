@@ -32,7 +32,7 @@ def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
         You have the option to save your results in real-time using this feature.
         This ensures that in the event of a runtime failure, you can still access results up to the point of failure
         from a resulting file. You have to specify the desired shape of the results, the loops to include,
-        and the path to the resulting file. Then you start saving results in real-time by doing:
+        and the path to the resulting file. Then you can start saving results in real-time by doing:
 
 
         .. code-block:: python
