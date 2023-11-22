@@ -20,7 +20,6 @@ DATA = "DATA"  # variable containing the path where data is saved
 RUNCARDS = "RUNCARDS"  # variable containing the runcard's path
 
 RESULTS_FILENAME = "results.yml"
-EXPERIMENT_FILENAME = "experiment.yml"
 
 DEFAULT_PLATFORM_NAME = "galadriel"
 GALADRIEL_DEVICE_ID = 9
@@ -95,26 +94,6 @@ class SIGNALGENERATOR:
 
     FREQUENCY = "frequency"
     PULSES = "pulses"
-
-
-class EXPERIMENT:
-    """Experiment constants."""
-
-    HARDWARE_AVERAGE = "hardware_average"
-    SOFTWARE_AVERAGE = "software_average"
-    REPETITION_DURATION = "repetition_duration"
-    SHAPE = "shape"
-    RESULTS = "results"
-    NUM_SCHEDULES = "num_schedules"
-    LOOPS = "loops"
-    OPTIONS = "options"
-    DEVICE_ID = "device_id"
-    REMOTE_DEVICE_MANUAL_OVERRIDE = "remote_device_manual_override"
-    CONNECTION = "connection"
-    CIRCUITS = "circuits"
-    PULSE_SCHEDULES = "pulse_schedules"
-    REMOTE_SAVE = "remote_save"
-    DESCRIPTION = "description"
 
 
 class BUS:
