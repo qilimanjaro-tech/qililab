@@ -5,6 +5,9 @@
 - Added real time results saving capability.
   [#598](https://github.com/qilimanjaro-tech/qililab/pull/598)
 
+- Raise an error if a user requests to run a circuit that is longer than `repetition_duration`
+  [#621](https://github.com/qilimanjaro-tech/qililab/pull/621)
+
 - Add parameter to the SLURM magic method to configure the time limit of a job.
   [#608](https://github.com/qilimanjaro-tech/qililab/pull/608)
 
