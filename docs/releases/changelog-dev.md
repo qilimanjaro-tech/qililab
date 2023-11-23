@@ -62,5 +62,8 @@
 
 ### Bug fixes
 
+- Fixed [bug #626](https://github.com/qilimanjaro-tech/qililab/issues/626), where a regression bug was introduced by adding empty schedules to all flux buses, not only the ones with an AWG registered instrument, as it was intended originally.
+  [#628](https://github.com/qilimanjaro-tech/qililab/pull/628)
+  
 - Fixed [bug #579](https://github.com/qilimanjaro-tech/qililab/issues/579), were now all `yaml.dumps` are done with [ruamel](https://yaml.readthedocs.io/en/latest/#changelog), for not losing decimals precisons, and also following the previous bug due to the elimination of `ruamel.yaml.round_trip_dump`, the version of ruamel in qililab got fixed, and imports where rewritten for more clarity
   [#577](https://github.com/qilimanjaro-tech/qililab/pull/578)
