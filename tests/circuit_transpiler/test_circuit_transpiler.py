@@ -765,12 +765,12 @@ class TestCircuitTranspiler:
         assert len(pulse_schedule) == 8
 
         flux_bus_no_awg_settings = {
-            "alias": "flux_q1_bus",
+            "alias": "flux_q4_bus",
             "system_control": {
                 "name": "system_control",
                 "instruments": ["rs_1"],
             },
-            "port": "flux_q1",
+            "port": "flux_q4",
             "distortions": [],
             "delay": 0,
         }
