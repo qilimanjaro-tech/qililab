@@ -75,7 +75,7 @@ def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
                     # Here you can execute any algorithm you want
                     stream_array[(i, 0)] = value
 
-            results = stream.results
+            results = stream_array.results
 
         >>> results.result()
         (array([[0.   0.  ]
