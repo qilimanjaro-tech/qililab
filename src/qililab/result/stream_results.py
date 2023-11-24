@@ -59,7 +59,7 @@ def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
                [0.25, 0.],
                [0.5, 0.],
                [0.75, 0.],
-               [1., 0.]]), {'amp': array([0.  , 0.25, 0.5 , 0.75, 1.  ])})
+               [1., 0.]]), {'loop_name': array([0.  , 0.25, 0.5 , 0.75, 1.  ])})
 
     .. note::
 
