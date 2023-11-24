@@ -250,9 +250,10 @@ class QbloxModule(AWG):
                 Play(
                     waveform_0=waveform_pair.waveform_i.index,
                     waveform_1=waveform_pair.waveform_q.index,
-                    wait_time=int(wait_time),
+                    wait_time=int(4),
                 )
             )
+            bin_loop.append_component(long_wait(wait_time=int(wait_time-4)))
         self._append_acquire_instruction(
             loop=bin_loop, bin_index=bin_loop.counter_register, sequencer_id=sequencer, weight_regs=weight_registers
         )
