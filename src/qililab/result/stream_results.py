@@ -70,7 +70,7 @@ def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
             %%submit_job -o results -d galadriel
             LOOP_VALUES = np.linspace(0, 1, 5)
             stream_array = ql.stream_results(shape=(5, 2), loops={"loop_name": LOOP_VALUES}, path="results.h5")
-            with stream:
+            with stream_array:
                 for i, value in enumerate(LOOP_VALUES):
                     # Here you can execute any algorithm you want
                     stream_array[(i, 0)] = value
