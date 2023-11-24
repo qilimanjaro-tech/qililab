@@ -736,7 +736,13 @@ class TestCircuitTranspiler:
             assert gate_r.qubits == gate_opt.qubits
 
     def test_translate_for_no_awg(self, platform):
-        """Test translate method adding/removing AWG instruments to test empty schedules"""
+        """Test translate method adding/removing AWG instruments to test empty schedules.
+
+        This test ensures that the correct number of pulse schedules are added when we have a flux bus
+        which contains and AWG instrument, as opposed to no empty schedules for flux buses that don't contain
+        AWG instruments. This test is designed to test this bug is not reintroduced as a regression:
+        https://github.com/qilimanjaro-tech/qililab/issues/626
+        """
         transpiler = CircuitTranspiler(platform=platform)
         # test circuit
         circuit = Circuit(5)
