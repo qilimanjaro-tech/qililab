@@ -56,8 +56,36 @@ class GS200(CurrentSource):
     @source_mode.setter
     def source_mode(self, value: YokogawaSourceMode):
         """sets the source mode"""
-        self.settings.source_mode = value
         self.device.source_mode(self.settings.source_mode.name[0:4])
+        self.settings.source_mode = value
+
+    @property
+    def ramping_enabled(self):
+        """Yokogawa 'ramping_enabled' property.
+
+        Returns:
+            bool: True, if ramping is enabled.
+        """
+        return self.settings.ramping_enabled[0]
+
+    @ramping_enabled.setter
+    def ramping_enabled(self, value: bool):
+        """Set the Yokogawa `ramping_enabled` property."""
+        self.settings.ramping_enabled[0] = value
+
+    @property
+    def ramping_rate(self):
+        """Yokogawa 'ramping_rate' property.
+
+        Returns:
+            float: The ramping rate in seconds.
+        """
+        return self.settings.ramp_rate[0]
+
+    @ramping_rate.setter
+    def ramping_rate(self, value: float):
+        """Set the Yokogawa `ramping_rate` property."""
+        self.settings.ramp_rate[0] = value
 
     @property
     def current(self) -> float:
@@ -71,8 +99,14 @@ class GS200(CurrentSource):
     @current.setter
     def current(self, value: float):
         """Sets the current_value"""
+        if self.ramping_enabled:
+            n_steps = 100
+            ramp_step = abs(self.current - value) / n_steps
+            ramp_delay = self.ramping_rate / n_steps
+            self.device.ramp_current(value, ramp_step, ramp_delay)
+        else:
+            self.device.current(value)
         self.settings.current[0] = value
-        self.device.current(value)
 
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
@@ -89,6 +123,14 @@ class GS200(CurrentSource):
 
         if parameter == Parameter.CURRENT:
             self.current = float(value)
+            return
+
+        if parameter == Parameter.RAMPING_ENABLED:
+            self.ramping_enabled = bool(value)
+            return
+
+        if parameter == Parameter.RAMPING_RATE:
+            self.ramping_rate = float(value)
             return
 
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
