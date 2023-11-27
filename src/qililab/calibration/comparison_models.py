@@ -56,7 +56,7 @@ def norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, l
     # Error computation:
     square_error = sum(
         (obtained["results"][i] - comparison[check][comparison["sweep_interval"].index(obtained_x)]) ** 2
-        for i, obtained_x in enumerate(obtained["sweep_interval"])
+        for i, obtained_x in enumerate(obtained["sweep_interval"]) if obtained_x in comparison["sweep_interval"]
     )
     root_mean_square_error = np.sqrt(square_error / len(obtained["results"]))
 
