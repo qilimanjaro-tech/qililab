@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 0.21.2 (2023-11-27)
+## 0.22.0 (2023-11-27)
 
 ### New features since last release
 
