@@ -8,9 +8,9 @@ from qililab.instrument_controllers.yokogawa.gs200_controller import GS200Contro
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.yokogawa.gs200 import GS200
 from qililab.platform import Platform
-from qililab.typings.enums import Parameter, YokogawaSourceMode
-from tests.data import SauronYokogawa
-from tests.test_utils import build_platform
+from qililab.typings.enums import Parameter
+from tests.data import SauronYokogawa  # pylint: disable=no-name-in-module
+from tests.test_utils import build_platform  # pylint: disable=no-name-in-module, import-error
 
 
 @pytest.fixture(name="platform")
@@ -49,8 +49,6 @@ class TestYokogawaGS200:
             (Parameter.RAMPING_ENABLED, True),
             (Parameter.RAMPING_ENABLED, False),
             (Parameter.RAMPING_RATE, 0.05),
-            (Parameter.SOURCE_MODE, "current"),
-            (Parameter.SOURCE_MODE, "voltage"),
         ],
     )
     def test_setup_method(self, parameter: Parameter, value, yokogawa_gs200: GS200):
@@ -61,8 +59,6 @@ class TestYokogawaGS200:
             assert yokogawa_gs200.current == value
         if parameter == Parameter.RAMPING_ENABLED:
             assert yokogawa_gs200.ramping_enabled == value
-        if parameter == Parameter.SOURCE_MODE:
-            assert yokogawa_gs200.source_mode == YokogawaSourceMode(value)
         if parameter == Parameter.RAMPING_RATE:
             assert yokogawa_gs200.ramping_rate == value
 
@@ -91,16 +87,9 @@ class TestYokogawaGS200:
         yokogawa_gs200.initial_setup()
         yokogawa_gs200.device.source_mode.assert_called_with("CURR")
 
-    def test_source_mode_property(self, yokogawa_gs200: GS200):
-        """Test the source mode property"""
-        assert hasattr(yokogawa_gs200, "source_mode")
-        assert yokogawa_gs200.source_mode == yokogawa_gs200.settings.source_mode
-        yokogawa_gs200.source_mode = YokogawaSourceMode.VOLTAGE
-        assert yokogawa_gs200.source_mode == YokogawaSourceMode.VOLTAGE
-
     def test_ramping_enabled_property(self, yokogawa_gs200: GS200):
         """Test the source mode property"""
-        assert hasattr(yokogawa_gs200, "source_mode")
+        assert hasattr(yokogawa_gs200, "ramping_enabled")
         assert yokogawa_gs200.ramping_enabled == yokogawa_gs200.settings.ramping_enabled[0]
         yokogawa_gs200.ramping_enabled = False
         assert yokogawa_gs200.ramping_enabled is False

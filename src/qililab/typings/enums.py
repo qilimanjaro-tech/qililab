@@ -308,7 +308,6 @@ class Parameter(str, Enum):
     ELECTRICAL_DELAY = "electrical_delay"
     TIMEOUT = "timeout"
     NUM_FLIPS = "num_flips"
-    SOURCE_MODE = "source_mode"
     OUTPUT_STATUS = "output_status"
     WEIGHTS_I = "weights_i"
     WEIGHTS_Q = "weights_q"
@@ -501,16 +500,3 @@ class OperationTimingsCalculationMethod(str, Enum):  # pylint: disable=missing-c
 class ResetMethod(str, Enum):  # pylint: disable=missing-class-docstring
     PASSIVE = "passive"
     ACTIVE = "active"
-
-
-class YokogawaSourceMode(str, Enum):
-    """Yokogawa gs200 Source Modes
-
-    Args:
-        enum (str): Available types of source modes:
-        * current
-        * voltage
-    """
-
-    CURRENT = "current"
-    VOLTAGE = "voltage"

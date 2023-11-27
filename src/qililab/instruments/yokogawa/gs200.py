@@ -20,7 +20,7 @@ from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import InstrumentName
 from qililab.typings import YokogawaGS200 as YokogawaGS200Driver
-from qililab.typings.enums import Parameter, YokogawaSourceMode
+from qililab.typings.enums import Parameter
 
 
 @InstrumentFactory.register
@@ -39,25 +39,8 @@ class GS200(CurrentSource):
     class YokogawaGS200Settings(CurrentSource.CurrentSourceSettings):
         """Contains the settings of a specific signal generator."""
 
-        source_mode: YokogawaSourceMode = YokogawaSourceMode.CURRENT
-
     settings: YokogawaGS200Settings
     device: YokogawaGS200Driver
-
-    @property
-    def source_mode(self) -> YokogawaSourceMode:
-        """Yokogawa GS200 `source_mode` property.
-
-        Returns:
-            str: settings.source_mode.
-        """
-        return self.settings.source_mode
-
-    @source_mode.setter
-    def source_mode(self, value: YokogawaSourceMode):
-        """sets the source mode"""
-        self.device.source_mode(self.settings.source_mode.name[0:4])
-        self.settings.source_mode = value
 
     @property
     def ramping_enabled(self):
@@ -100,7 +83,7 @@ class GS200(CurrentSource):
     def current(self, value: float):
         """Sets the current_value"""
         if self.ramping_enabled:
-            self.device.ramp_current(value, self.ramping_rate, 0.001)
+            self.device.ramp_current(value, self.ramping_rate * 0.001, 0.001)
         else:
             self.device.current(value)
         self.settings.current[0] = value
@@ -114,10 +97,6 @@ class GS200(CurrentSource):
             value (float | str | bool): new value
             channel_id (int | None): channel identifier of the parameter to update
         """
-        if parameter == Parameter.SOURCE_MODE:
-            self.source_mode = YokogawaSourceMode(value)
-            return
-
         if parameter == Parameter.CURRENT:
             self.current = float(value)
             return
@@ -135,7 +114,7 @@ class GS200(CurrentSource):
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """performs an initial setup."""
-        self.source_mode = YokogawaSourceMode.CURRENT
+        self.device.source_mode("CURR")
 
     @Instrument.CheckDeviceInitialized
     def turn_on(self):
