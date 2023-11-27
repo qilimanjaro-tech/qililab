@@ -78,7 +78,7 @@ class GS200(CurrentSource):
         """Yokogawa 'ramping_rate' property.
 
         Returns:
-            float: The ramping rate in seconds.
+            float: The ramping rate in volts/second or ambers/second.
         """
         return self.settings.ramp_rate[0]
 
@@ -100,10 +100,7 @@ class GS200(CurrentSource):
     def current(self, value: float):
         """Sets the current_value"""
         if self.ramping_enabled:
-            n_steps = 100
-            ramp_step = abs(self.current - value) / n_steps
-            ramp_delay = self.ramping_rate / n_steps
-            self.device.ramp_current(value, ramp_step, ramp_delay)
+            self.device.ramp_current(value, self.ramping_rate, 0.001)
         else:
             self.device.current(value)
         self.settings.current[0] = value
@@ -139,11 +136,10 @@ class GS200(CurrentSource):
     def initial_setup(self):
         """performs an initial setup."""
         self.source_mode = YokogawaSourceMode.CURRENT
-        self.current = 0
 
     @Instrument.CheckDeviceInitialized
     def turn_on(self):
-        """Dummy method."""
+        """Start outputting current."""
         self.device.on()
 
     @Instrument.CheckDeviceInitialized
