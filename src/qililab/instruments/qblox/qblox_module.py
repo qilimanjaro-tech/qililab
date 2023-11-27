@@ -24,7 +24,7 @@ from qpysequence import Sequence as QpySequence
 from qpysequence import Waveforms, Weights
 from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Register
-from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop, SetMrk, UpdParam
+from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetMrk, SetPh, Stop, UpdParam
 from qpysequence.utils.constants import AWG_MAX_GAIN
 
 from qililab.config import logger
@@ -118,7 +118,8 @@ class QbloxModule(AWG):
             self._set_gain_imbalance(value=sequencer.gain_imbalance, sequencer_id=sequencer_id)
             self._set_phase_imbalance(value=sequencer.phase_imbalance, sequencer_id=sequencer_id)
             ALL_ON = 15  # 1111 in binary
-            # self._set_markers(value=ALL_ON, sequencer_id=sequencer_id)
+            ALL_OFF = 0
+            self._set_markers(value=ALL_OFF, sequencer_id=sequencer_id)
 
         for idx, offset in enumerate(self.out_offsets):
             self._set_out_offset(output=idx, value=offset)
