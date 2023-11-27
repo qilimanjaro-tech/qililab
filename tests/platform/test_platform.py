@@ -285,7 +285,7 @@ class TestMethods:
         self._compile_and_assert(platform, pulse_schedule, 2)
 
     def _compile_and_assert(self, platform: Platform, program: Circuit | PulseSchedule, len_sequences: int):
-        sequences = platform.compile(program=program, num_avg=1000, repetition_duration=2000, num_bins=1)
+        sequences = platform.compile(program=program, num_avg=1000, repetition_duration=200_000, num_bins=1)
         assert isinstance(sequences, dict)
         assert len(sequences) == len_sequences
         for alias, sequences in sequences.items():
@@ -293,7 +293,7 @@ class TestMethods:
             assert isinstance(sequences, list)
             assert len(sequences) == 1
             assert isinstance(sequences[0], Sequence)
-            assert sequences[0]._program.duration == 2000 * 1000 + 4
+            assert sequences[0]._program.duration == 200_000 * 1000 + 4
 
     def test_execute_qprogram(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
@@ -394,6 +394,13 @@ class TestMethods:
                         error_string = f"Number of measurements in the circuit {n_m} does not match number of acquisitions {len(qblox_results)}"
                         with pytest.raises(ValueError, match=error_string):
                             _ = platform.execute(program=c, num_avg=1000, repetition_duration=2000, num_bins=1)
+    def test_error_circuit_gt_repetition_duration(self, platform: Platform):
+        c = Circuit(1)
+        c.add([gates.X(0)] * 1000)
+        c.add(gates.M(0))
+        error_string = "Circuit execution time cannnot be longer than repetition duration but found circuit time 51998 > 2000 for qubit 0"
+        with pytest.raises(ValueError, match=error_string):
+            platform.compile(program=c, num_avg=1000, repetition_duration=2000, num_bins=1)
 
     def test_execute_with_queue(self, platform: Platform):
         """Test that the execute method adds the obtained results to the given queue."""

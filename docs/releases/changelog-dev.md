@@ -6,6 +6,12 @@
   property. Results in the array will be grouped by iq pairs (same as before) and ordered in the same order as measurements in the circuit.
   For example, if a circuit is measuring `M(1)-M(2)-M(0,1)` the first iq values will be those for `M(1)`, followed by `M(2)`, `M(0)` and `M(1)`.
   [#524](https://github.com/qilimanjaro-tech/qililab/pull/524)
+  
+- Added real time results saving capability.
+  [#598](https://github.com/qilimanjaro-tech/qililab/pull/598)
+
+- Raise an error if a user requests to run a circuit that is longer than `repetition_duration`
+  [#621](https://github.com/qilimanjaro-tech/qililab/pull/621)
 
 - Add parameter to the SLURM magic method to configure the time limit of a job.
   [#608](https://github.com/qilimanjaro-tech/qililab/pull/608)
@@ -67,5 +73,8 @@
 
 ### Bug fixes
 
+- Fixed [bug #626](https://github.com/qilimanjaro-tech/qililab/issues/626), where a regression bug was introduced by adding empty schedules to all flux buses, not only the ones with an AWG registered instrument, as it was intended originally.
+  [#628](https://github.com/qilimanjaro-tech/qililab/pull/628)
+  
 - Fixed [bug #579](https://github.com/qilimanjaro-tech/qililab/issues/579), were now all `yaml.dumps` are done with [ruamel](https://yaml.readthedocs.io/en/latest/#changelog), for not losing decimals precisons, and also following the previous bug due to the elimination of `ruamel.yaml.round_trip_dump`, the version of ruamel in qililab got fixed, and imports where rewritten for more clarity
   [#577](https://github.com/qilimanjaro-tech/qililab/pull/578)
