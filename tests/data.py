@@ -900,19 +900,8 @@ class SauronYokogawa:
         Parameter.CURRENT.value: [0.0],
         Parameter.SPAN.value: ["range_max_bi"],
         Parameter.RAMPING_ENABLED.value: [True],
-        Parameter.RAMPING_RATE.value: [0.0001, 0.0001],
-        "dacs": [0, 1],
-    }
-
-    yokogawa_gs200_ramping_disabled = {
-        RUNCARD.NAME: InstrumentName.YOKOGAWA_GS200,
-        RUNCARD.ALIAS: "yokogawa_ramping_disabled",
-        RUNCARD.FIRMWARE: "A.15.10.06",
-        Parameter.CURRENT.value: [0.0],
-        Parameter.SPAN.value: ["range_max_bi"],
-        Parameter.RAMPING_ENABLED.value: [False],
-        Parameter.RAMPING_RATE.value: [0.0001, 0.0001],
-        "dacs": [0, 1],
+        Parameter.RAMPING_RATE.value: [0.0001],
+        "dacs": [0],
     }
 
     rohde_schwarz: dict[str, Any] = {
@@ -939,24 +928,9 @@ class SauronYokogawa:
         ],
     }
 
-    yokogawa_gs200_controller_ramping_disabled = {
-        RUNCARD.NAME: InstrumentControllerName.YOKOGAWA_GS200,
-        RUNCARD.ALIAS: "yokogawa_controller_ramping_disabled",
-        INSTRUMENTCONTROLLER.CONNECTION: {
-            RUNCARD.NAME: ConnectionName.TCP_IP.value,
-            CONNECTION.ADDRESS: "192.168.1.15",
-        },
-        INSTRUMENTCONTROLLER.MODULES: [
-            {
-                "alias": "yokogawa_ramping_disabled",
-                "slot_id": 0,
-            }
-        ],
-    }
-
     yokogawa_gs200_controller_wrong_module = {
         RUNCARD.NAME: InstrumentControllerName.YOKOGAWA_GS200,
-        RUNCARD.ALIAS: "yokogawa_controller_ramping_disabled",
+        RUNCARD.ALIAS: "yokogawa_controller_wrong_module",
         INSTRUMENTCONTROLLER.CONNECTION: {
             RUNCARD.NAME: ConnectionName.TCP_IP.value,
             CONNECTION.ADDRESS: "192.168.1.15",
@@ -969,10 +943,9 @@ class SauronYokogawa:
         ],
     }
 
-    instruments = [yokogawa_gs200, yokogawa_gs200_ramping_disabled, rohde_schwarz]
+    instruments = [yokogawa_gs200, rohde_schwarz]
     instrument_controllers = [
         yokogawa_gs200_controller,
-        yokogawa_gs200_controller_ramping_disabled,
         yokogawa_gs200_controller_wrong_module,
     ]
 
@@ -995,15 +968,6 @@ class SauronYokogawa:
             RUNCARD.SYSTEM_CONTROL: {
                 RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
                 RUNCARD.INSTRUMENTS: ["yokogawa"],
-            },
-            "port": "flux_q0",
-            RUNCARD.DISTORTIONS: [],
-        },
-        {
-            RUNCARD.ALIAS: "yokogawa_gs200_bus_ramping_disabled",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["yokogawa_ramping_disabled"],
             },
             "port": "flux_q0",
             RUNCARD.DISTORTIONS: [],
