@@ -386,10 +386,12 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         if self.input_parameters is not None:
             params |= self.input_parameters
-        
+
         if check and self.previous_output_parameters is not None and "fit" in self.previous_output_parameters['check_parameters']:
             params |= {"compare_fit" : [self.previous_output_parameters["check_parameters"]["sweep_interval"], self.previous_output_parameters["check_parameters"]["fit"]]}
 
+        elif check and self.previous_output_parameters is not None:
+            params |= {"compare_fit" : [self.previous_output_parameters["check_parameters"]["sweep_interval"], self.previous_output_parameters["check_parameters"]["results"]]}
         # JSON serialize nb input, no np.ndarrays
         _json_serialize(params)  # TODO: Add a test, for passing np,arrays as inputs and working after this change
 
