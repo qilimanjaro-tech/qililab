@@ -44,7 +44,7 @@ class GS200(CurrentSource):
 
     @property
     def ramping_enabled(self):
-        """Yokogawa 'ramping_enabled' property.
+        """Yokogawa GS200 'ramping_enabled' property. If set to True, changes in current will transition linearly according to the `ramping_rate` value.
 
         Returns:
             bool: True, if ramping is enabled.
@@ -58,10 +58,10 @@ class GS200(CurrentSource):
 
     @property
     def ramping_rate(self):
-        """Yokogawa 'ramping_rate' property.
+        """Yokogawa GS200 'ramping_rate' property. If `ramping_enabled` is set to True, changes in current will transition linearly according to this value.
 
         Returns:
-            float: The ramping rate in volts/second or ambers/second.
+            float: The ramping rate in mA / ms.
         """
         return self.settings.ramp_rate[0]
 
@@ -72,7 +72,7 @@ class GS200(CurrentSource):
 
     @property
     def current(self) -> float:
-        """Yokogawa GS200 `current_value` property.
+        """Yokogawa GS200 `current` property.
 
         Returns:
             float: settings.current_value.
@@ -81,7 +81,7 @@ class GS200(CurrentSource):
 
     @current.setter
     def current(self, value: float):
-        """Sets the current_value"""
+        """Set Yokogawa GS200 `current` property. If `ramping_enabled` is set to True, the current will transition linearly from the current to the new value according to `ramping_rate`. Else, it will jump to new value instantly."""
         if self.ramping_enabled:
             self.device.ramp_current(value, self.ramping_rate * 0.001, 0.001)
         else:
@@ -113,7 +113,7 @@ class GS200(CurrentSource):
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
-        """performs an initial setup."""
+        """Performs an initial setup."""
         self.device.source_mode("CURR")
 
     @Instrument.CheckDeviceInitialized

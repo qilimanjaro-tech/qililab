@@ -26,8 +26,9 @@ class CurrentSource(Instrument):
         """Contains the settings of a specific signal generator.
 
         Args:
-            current (float): Current of the instrument in A.
-                Value range is (-8, 8).
+            current (float): Current of the instrument in A. Value range is (-8, 8).
+            ramping_enabled (bool): If ramping is enabled.
+            ramp_rate (float): The ramping rate in mA / ms.
         """
 
         current: list[float]
