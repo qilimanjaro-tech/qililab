@@ -33,7 +33,7 @@ def fixture_yokogawa_gs200(mock_rs: MagicMock, yokogawa_gs200_controller: GS200C
     """Return connected instance of GS200 class"""
     # add dynamically created attributes
     mock_instance = mock_rs.return_value
-    mock_instance.mock_add_spec(["current", "voltage", "source_mode"])
+    mock_instance.mock_add_spec(["current", "voltage", "source_mode", "current_range", "voltage_range"])
     yokogawa_gs200_controller.connect()
     return yokogawa_gs200_controller.modules[0]
 
@@ -69,6 +69,8 @@ class TestYokogawaGS200:
             assert yokogawa_gs200.ramping_enabled == value
         if parameter == Parameter.RAMPING_RATE:
             assert yokogawa_gs200.ramping_rate == value
+        if parameter == Parameter.SPAN:
+            assert yokogawa_gs200.span == value
 
     @pytest.mark.parametrize("parameter, value", [(Parameter.MAX_CURRENT, 0.001), (Parameter.GAIN, 0.0005)])
     def test_setup_method_raises_exception(self, parameter: Parameter, value, yokogawa_gs200: GS200):
@@ -140,3 +142,13 @@ class TestYokogawaGS200:
         yokogawa_gs200.source_mode = SourceMode.CURRENT
         yokogawa_gs200.device.source_mode.assert_called()
         assert yokogawa_gs200.source_mode == SourceMode.CURRENT
+
+    def test_span_property(self, yokogawa_gs200: GS200):
+        assert hasattr(yokogawa_gs200, "span")
+        assert yokogawa_gs200.span == yokogawa_gs200.settings.span[0]
+        yokogawa_gs200.span = "1mA"
+        yokogawa_gs200.device.current_range.assert_called()
+        yokogawa_gs200.source_mode = SourceMode.VOLTAGE
+        yokogawa_gs200.span = "1V"
+        yokogawa_gs200.device.voltage_range.assert_called()
+        assert yokogawa_gs200.span == "1V"

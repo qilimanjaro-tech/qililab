@@ -57,7 +57,8 @@ class GS200(CurrentSource, VoltageSource):
     @source_mode.setter
     def source_mode(self, value: SourceMode):
         """Set the Yokogawa GS200 source mode."""
-        self.device.source_mode(self.settings.source_mode.name[0:4])
+        qcodes_str = self.__source_mode_to_qcodes_str(value)
+        self.device.source_mode(qcodes_str)
         self.settings.source_mode = value
 
     @property
@@ -79,7 +80,7 @@ class GS200(CurrentSource, VoltageSource):
         """Yokogawa GS200 'ramping_rate' property. If `ramping_enabled` is set to True, changes in current will transition linearly according to this value.
 
         Returns:
-            float: The ramping rate in mA / ms.
+            float: The ramping rate in mA/ms or mV/ms.
         """
         return self.settings.ramp_rate[0]
 
@@ -105,6 +106,38 @@ class GS200(CurrentSource, VoltageSource):
         else:
             self.device.current(value)
         self.settings.current[0] = value
+
+    @property
+    def span(self) -> str:
+        """Yokogawa GS200 `span` property.
+
+        Returns:
+            str: The span of the instrument.
+        """
+        return self.settings.span[0]
+
+    @span.setter
+    def span(self, value: str):
+        """Set Yokogawa GS200 `span` property.
+
+        Available values:
+            - 10mV
+            - 100mV
+            - 1V
+            - 10V
+            - 30V
+            - 1mA
+            - 10mA
+            - 100mA
+            - 200mA
+        """
+        if self.source_mode == SourceMode.CURRENT:
+            qcodes_int = self.__current_span_to_qcodes_float(value)
+            self.device.current_range(qcodes_int)
+        else:
+            qcodes_int = self.__voltage_span_to_qcodes_float(value)
+            self.device.voltage_range(qcodes_int)
+        self.settings.span[0] = value
 
     @property
     def voltage(self) -> float:
@@ -153,6 +186,10 @@ class GS200(CurrentSource, VoltageSource):
             self.source_mode = SourceMode(value)
             return
 
+        if parameter == Parameter.SPAN:
+            self.span = str(value)
+            return
+
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
     @Instrument.CheckDeviceInitialized
@@ -168,3 +205,15 @@ class GS200(CurrentSource, VoltageSource):
     def turn_off(self):
         """Stop outputing current."""
         self.device.off()
+
+    def __source_mode_to_qcodes_str(self, source_mode: SourceMode) -> str:
+        mapping = {SourceMode.CURRENT: "CURR", SourceMode.VOLTAGE: "VOLT"}
+        return mapping[source_mode]
+
+    def __voltage_span_to_qcodes_float(self, voltage_span: str) -> float:
+        mapping = {"10mV": 10e-3, "100mV": 100e-3, "1V": 1e0, "10V": 10e0, "30V": 30e0}
+        return mapping[voltage_span]
+
+    def __current_span_to_qcodes_float(self, current_span: str) -> float:
+        mapping = {"1mA": 1e-3, "10mA": 10e-3, "100mA": 100e-3, "200mA": 200e-3}
+        return mapping[current_span]

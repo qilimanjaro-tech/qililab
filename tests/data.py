@@ -900,7 +900,7 @@ class SauronYokogawa:
         Parameter.SOURCE_MODE.value: "current",
         Parameter.CURRENT.value: [0.0],
         Parameter.VOLTAGE.value: [0.0],
-        Parameter.SPAN.value: ["range_max_bi"],
+        Parameter.SPAN.value: ["200mA"],
         Parameter.RAMPING_ENABLED.value: [True],
         Parameter.RAMPING_RATE.value: [0.0001],
         "dacs": [0],
