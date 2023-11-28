@@ -58,6 +58,7 @@ class QbloxQCM(QbloxModule):
         sequencer_id: int,
         weight_regs: tuple[Register, Register],
         acq_index: int,
+        wait_time: int
     ):
         """Append an acquire instruction to the loop."""
 

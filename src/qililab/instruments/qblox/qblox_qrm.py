@@ -341,9 +341,13 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         sequencer_id: int,
         weight_regs: tuple[Register, Register],
         acq_index: int,
+        wait_time: int
     ):
         """Append an acquire instruction to the loop."""
         weighed_acq = self._get_sequencer_by_id(id=sequencer_id).weighed_acq_enabled
+        
+        if wait_time < self.integration_length(sequencer_id):
+            raise ValueError(f"Time between consecutive measurements {wait_time} has to be longer than integration length {self.integration_length}")
 
         acq_instruction = (
             AcquireWeighed(
@@ -351,10 +355,10 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 bin_index=bin_index,
                 weight_index_0=weight_regs[0],
                 weight_index_1=weight_regs[1],
-                wait_time=self._MIN_WAIT_TIME,
+                wait_time=wait_time,
             )
             if weighed_acq
-            else Acquire(acq_index=acq_index, bin_index=bin_index, wait_time=self._MIN_WAIT_TIME)
+            else Acquire(acq_index=acq_index, bin_index=bin_index, wait_time=wait_time)
         )
         loop.append_component(acq_instruction)
 

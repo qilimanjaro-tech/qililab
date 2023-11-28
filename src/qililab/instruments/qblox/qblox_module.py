@@ -250,26 +250,18 @@ class QbloxModule(AWG):
                 Play(
                     waveform_0=waveform_pair.waveform_i.index,
                     waveform_1=waveform_pair.waveform_q.index,
-                    wait_time=int(wait_time),
+                    wait_time=int(wait_time) if self.module_type != "QRM" else 4, #TODO: add time of flight
                 )
             )
-            if self.module_type == "QRM":
-                self._append_acquire_instruction(
-                    loop=bin_loop,
-                    bin_index=bin_loop.counter_register,
-                    sequencer_id=sequencer,
-                    weight_regs=weight_registers,
-                    acq_index=i,
-                )
-        # FIXME: can we safely remove this?
-        if self.module_type != "QRM":
             self._append_acquire_instruction(
                 loop=bin_loop,
                 bin_index=bin_loop.counter_register,
                 sequencer_id=sequencer,
                 weight_regs=weight_registers,
-                acq_index=0,
-            )
+                acq_index=i if self.module_type == "QRM" else 0, # FIXME: can we safely remove acq for QCM?
+                wait_time = int(wait_time) if i != (len(timeline) - 1) else int(pulse_event.duration) #FIXME: last pulse wait can be 4 if relaxation time follows afterwards
+                )
+
 
         if self.repetition_duration is not None:
             wait_time = self.repetition_duration - bin_loop.duration_iter
@@ -307,6 +299,7 @@ class QbloxModule(AWG):
         sequencer_id: int,
         weight_regs: tuple[Register, Register],
         acq_index: int,
+        wait_time: int
     ):
         """Append an acquire instruction to the loop."""
 
