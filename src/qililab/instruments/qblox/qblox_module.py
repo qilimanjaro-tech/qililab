@@ -248,6 +248,7 @@ class QbloxModule(AWG):
             bin_loop.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
             bin_loop.append_component(SetPh(phase=phase))
             bin_loop.append_component(SetMrk(15))
+            # bin_loop.append_component(UpdParam(4))
             bin_loop.append_component(
                 Play(
                     waveform_0=waveform_pair.waveform_i.index,
