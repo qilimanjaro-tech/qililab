@@ -504,5 +504,7 @@ class ResetMethod(str, Enum):  # pylint: disable=missing-class-docstring
 
 
 class SourceMode(str, Enum):
+    """Source Modes"""
+
     CURRENT = "current"
     VOLTAGE = "voltage"
