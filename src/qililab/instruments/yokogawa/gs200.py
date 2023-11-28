@@ -18,13 +18,14 @@ from dataclasses import dataclass
 from qililab.instruments.current_source import CurrentSource
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
+from qililab.instruments.voltage_source import VoltageSource
 from qililab.typings import InstrumentName
 from qililab.typings import YokogawaGS200 as YokogawaGS200Driver
-from qililab.typings.enums import Parameter
+from qililab.typings.enums import Parameter, SourceMode
 
 
 @InstrumentFactory.register
-class GS200(CurrentSource):
+class GS200(CurrentSource, VoltageSource):
     """Yokogawa GS200 low voltage/current DC source.
 
     Args:
@@ -36,11 +37,28 @@ class GS200(CurrentSource):
     name = InstrumentName.YOKOGAWA_GS200
 
     @dataclass
-    class YokogawaGS200Settings(CurrentSource.CurrentSourceSettings):
+    class YokogawaGS200Settings(CurrentSource.CurrentSourceSettings, VoltageSource.VoltageSourceSettings):
         """Contains the settings of a specific signal generator."""
+
+        source_mode: SourceMode
 
     settings: YokogawaGS200Settings
     device: YokogawaGS200Driver
+
+    @property
+    def source_mode(self) -> SourceMode:
+        """Yokogawa GS200 `source_mode` property. It determines if the instrument will act as Current Source or Voltage Source.
+
+        Returns:
+            SourceMode: The source mode of the instrument.
+        """
+        return self.settings.source_mode
+
+    @source_mode.setter
+    def source_mode(self, value: SourceMode):
+        """Set the Yokogawa GS200 source mode."""
+        self.device.source_mode(self.settings.source_mode.name[0:4])
+        self.settings.source_mode = value
 
     @property
     def ramping_enabled(self):
@@ -67,7 +85,7 @@ class GS200(CurrentSource):
 
     @ramping_rate.setter
     def ramping_rate(self, value: float):
-        """Set the Yokogawa `ramping_rate` property."""
+        """Set the Yokogawa GS200 `ramping_rate` property."""
         self.settings.ramp_rate[0] = value
 
     @property
@@ -75,18 +93,36 @@ class GS200(CurrentSource):
         """Yokogawa GS200 `current` property.
 
         Returns:
-            float: settings.current_value.
+            float: The current of the instrument in A.
         """
         return self.settings.current[0]
 
     @current.setter
     def current(self, value: float):
-        """Set Yokogawa GS200 `current` property. If `ramping_enabled` is set to True, the current will transition linearly from the current to the new value according to `ramping_rate`. Else, it will jump to new value instantly."""
+        """Set Yokogawa GS200 `current` property. If `ramping_enabled` is set to True, the current will transition linearly according to `ramping_rate`. Else, it will be set instantly."""
         if self.ramping_enabled:
             self.device.ramp_current(value, self.ramping_rate * 0.001, 0.001)
         else:
             self.device.current(value)
         self.settings.current[0] = value
+
+    @property
+    def voltage(self) -> float:
+        """Yokogawa GS200 `voltage` property.
+
+        Returns:
+            float: The voltage of the instrument in V.
+        """
+        return self.settings.voltage[0]
+
+    @voltage.setter
+    def voltage(self, value: float):
+        """Set Yokogawa GS200 `voltage` property. If `ramping_enabled` is set to True, the voltage will transition linearly according to `ramping_rate`. Else, it will be set instantly."""
+        if self.ramping_enabled:
+            self.device.ramp_voltage(value, self.ramping_rate * 0.001, 0.001)
+        else:
+            self.device.voltage(value)
+        self.settings.voltage[0] = value
 
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
@@ -101,6 +137,10 @@ class GS200(CurrentSource):
             self.current = float(value)
             return
 
+        if parameter == Parameter.VOLTAGE:
+            self.voltage = float(value)
+            return
+
         if parameter == Parameter.RAMPING_ENABLED:
             self.ramping_enabled = bool(value)
             return
@@ -109,12 +149,15 @@ class GS200(CurrentSource):
             self.ramping_rate = float(value)
             return
 
+        if parameter == Parameter.SOURCE_MODE:
+            self.source_mode = SourceMode(value)
+            return
+
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """Performs an initial setup."""
-        self.device.source_mode("CURR")
 
     @Instrument.CheckDeviceInitialized
     def turn_on(self):

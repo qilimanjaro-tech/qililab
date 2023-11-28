@@ -272,6 +272,7 @@ class Parameter(str, Enum):
     SCOPE_ACQUIRE_TRIGGER_MODE = "scope_acquire_trigger_mode"
     SCOPE_HARDWARE_AVERAGING = "scope_hardware_averaging"
     IF = "intermediate_frequency"
+    SOURCE_MODE = "source_mode"
     VOLTAGE = "voltage"
     CURRENT = "current"
     RAMPING_ENABLED = "ramping_enabled"
@@ -500,3 +501,8 @@ class OperationTimingsCalculationMethod(str, Enum):  # pylint: disable=missing-c
 class ResetMethod(str, Enum):  # pylint: disable=missing-class-docstring
     PASSIVE = "passive"
     ACTIVE = "active"
+
+
+class SourceMode(str, Enum):
+    CURRENT = "current"
+    VOLTAGE = "voltage"
