@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""GS200 class"""
+"""Yokogawa GS200 Instrument"""
 from dataclasses import dataclass
 
 from qililab.instruments.current_source import CurrentSource
