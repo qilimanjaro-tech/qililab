@@ -136,7 +136,7 @@ class TestYokogawaGS200:
         assert yokogawa_gs200.voltage == 0.0
 
     def test_source_mode_property(self, yokogawa_gs200: GS200):
-           """Test the source mode property"""
+        """Test the source mode property"""
         assert hasattr(yokogawa_gs200, "source_mode")
         yokogawa_gs200.source_mode = SourceMode.VOLTAGE
         yokogawa_gs200.device.source_mode.assert_called()
