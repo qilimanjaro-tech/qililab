@@ -22,7 +22,6 @@ class TestQMM:
         """Test QMMController has been initialized correctly"""
         controller_alias = "qmm_controller_0"
         controller_instance = platform.instrument_controllers.get_instrument_controller(alias=controller_alias)
-        print(platform.instrument_controllers)
         assert isinstance(controller_instance, QMMController)
 
         controller_settings = controller_instance.settings
