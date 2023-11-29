@@ -26,9 +26,11 @@ class CurrentSource(Instrument):
         """Contains the settings of a specific signal generator.
 
         Args:
-            current (float): Current of the instrument in A. Value range is (-8, 8).
-            ramping_enabled (bool): If ramping is enabled.
-            ramp_rate (float): The ramping rate in mA / ms.
+            current (list[float]): List of currents of the instrument's DACs in A. Value range is (-8, 8).
+            span (list[str]): A list of the max range of each DACs.
+            ramping_enabled (list[bool]): A list of ramping enabled boolean values per DAC.
+            ramp_rate (list[float]): List of ramping rates in mA / ms per DAC.
+            dacs (list[int]): List of the dacs of which to set the current.
         """
 
         current: list[float]

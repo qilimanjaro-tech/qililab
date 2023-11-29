@@ -102,7 +102,7 @@ class TestYokogawaGS200:
         assert hasattr(yokogawa_gs200, "ramping_enabled")
         assert yokogawa_gs200.ramping_enabled == yokogawa_gs200.settings.ramping_enabled[0]
         yokogawa_gs200.ramping_enabled = False
-        assert yokogawa_gs200.ramping_enabled is False
+        assert not yokogawa_gs200.ramping_enabled
 
     def test_ramping_rate_property(self, yokogawa_gs200: GS200):
         """Test the source mode property"""
@@ -124,7 +124,7 @@ class TestYokogawaGS200:
         assert yokogawa_gs200.current == 0.0
 
     def test_voltage_property(self, yokogawa_gs200: GS200):
-        """Test the source mode property"""
+        """Test the voltage property"""
         assert hasattr(yokogawa_gs200, "voltage")
         assert yokogawa_gs200.voltage == yokogawa_gs200.settings.voltage[0]
         yokogawa_gs200.voltage = 0.01
@@ -136,6 +136,7 @@ class TestYokogawaGS200:
         assert yokogawa_gs200.voltage == 0.0
 
     def test_source_mode_property(self, yokogawa_gs200: GS200):
+           """Test the source mode property"""
         assert hasattr(yokogawa_gs200, "source_mode")
         yokogawa_gs200.source_mode = SourceMode.VOLTAGE
         yokogawa_gs200.device.source_mode.assert_called()
@@ -145,6 +146,7 @@ class TestYokogawaGS200:
         assert yokogawa_gs200.source_mode == SourceMode.CURRENT
 
     def test_span_property(self, yokogawa_gs200: GS200):
+    """Test the span property"""
         assert hasattr(yokogawa_gs200, "span")
         assert yokogawa_gs200.span == yokogawa_gs200.settings.span[0]
         yokogawa_gs200.span = "1mA"
