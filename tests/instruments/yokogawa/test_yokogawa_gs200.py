@@ -101,7 +101,7 @@ class TestYokogawaGS200:
         assert hasattr(yokogawa_gs200, "ramping_enabled")
         assert yokogawa_gs200.ramping_enabled == yokogawa_gs200.settings.ramping_enabled[0]
         yokogawa_gs200.ramping_enabled = False
-        assert yokogawa_gs200.ramping_enabled is False
+        assert not yokogawa_gs200.ramping_enabled
 
     def test_ramping_rate_property(self, yokogawa_gs200: GS200):
         """Test the source mode property"""
