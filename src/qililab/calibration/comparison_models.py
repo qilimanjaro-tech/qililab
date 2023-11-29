@@ -101,7 +101,7 @@ def IQ_norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str
     for idx, obtained_results in enumerate([i, q]):
         square_error = sum(
             (obtained_results[index] - comparison[check][idx][comparison["sweep_interval"].index(obtained_x)]) ** 2
-            for index, obtained_x in enumerate(obtained["sweep_interval"])
+            for index, obtained_x in enumerate(obtained["sweep_interval"]) if obtained_x in comparison["sweep_interval"]
         )
         root_mean_square_error = np.sqrt(square_error / len(obtained_results))
 
