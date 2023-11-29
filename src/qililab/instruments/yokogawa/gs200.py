@@ -195,6 +195,14 @@ class GS200(CurrentSource, VoltageSource):
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """Performs an initial setup."""
+        self.source_mode = self.settings.source_mode
+        self.span = self.settings.span[0]
+        self.ramping_rate = self.settings.ramp_rate[0]
+        self.ramping_enabled = self.settings.ramping_enabled[0]
+        if self.source_mode == SourceMode.CURRENT:
+            self.current = self.settings.current[0]
+        else:
+            self.voltage = self.settings.voltage[0]
 
     @Instrument.CheckDeviceInitialized
     def turn_on(self):
