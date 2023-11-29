@@ -96,14 +96,24 @@ class TestYokogawaGS200:
     def test_initial_setup_method(self, yokogawa_gs200: GS200):
         """Test the initial setup method"""
         yokogawa_gs200.initial_setup()
-        assert yokogawa_gs200.ramping_enabled == yokogawa_gs200.settings.ramping_enabled[0]
+        yokogawa_gs200.device.source_mode.assert_called()
         assert yokogawa_gs200.source_mode == yokogawa_gs200.settings.source_mode
         assert yokogawa_gs200.span == yokogawa_gs200.settings.span[0]
         assert yokogawa_gs200.ramping_rate == yokogawa_gs200.settings.ramp_rate[0]
         assert yokogawa_gs200.ramping_enabled == yokogawa_gs200.settings.ramping_enabled[0]
         if yokogawa_gs200.source_mode == SourceMode.CURRENT:
+            yokogawa_gs200.device.current_range.assert_called()
+            if yokogawa_gs200.ramping_enabled:
+                yokogawa_gs200.device.ramp_current.assert_called()
+            else:
+                yokogawa_gs200.device.current.assert_called()
             assert yokogawa_gs200.current == yokogawa_gs200.settings.current[0]
         else:
+            yokogawa_gs200.device.voltage_range.assert_called()
+            if yokogawa_gs200.ramping_enabled:
+                yokogawa_gs200.device.ramp_voltage.assert_called()
+            else:
+                yokogawa_gs200.device.voltage.assert_called()
             assert yokogawa_gs200.voltage == yokogawa_gs200.settings.voltage[0]
 
     def test_ramping_enabled_property(self, yokogawa_gs200: GS200):
