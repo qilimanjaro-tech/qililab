@@ -9,7 +9,7 @@ from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.yokogawa.gs200 import GS200
 from qililab.platform import Platform
 from qililab.typings.enums import Parameter, SourceMode
-from tests.data import SauronYokogawa  # pylint: disable=no-name-in-module
+from tests.data import SauronYokogawa  # pylint: disable=no-name-in-module, import-error
 from tests.test_utils import build_platform  # pylint: disable=no-name-in-module, import-error
 
 
@@ -53,6 +53,7 @@ class TestYokogawaGS200:
             (Parameter.RAMPING_RATE, 0.05),
             (Parameter.SOURCE_MODE, SourceMode.CURRENT),
             (Parameter.SOURCE_MODE, SourceMode.VOLTAGE),
+            (Parameter.SPAN, "100mA"),
         ],
     )
     def test_setup_method(self, parameter: Parameter, value, yokogawa_gs200: GS200):
