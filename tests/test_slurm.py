@@ -76,7 +76,7 @@ class TestSubmitJob:
                 line=f"-o results -p debug -l {slurm_job_data_test} -n unit_test -e local",
                 cell="results=a+b",
             )
-            time.sleep(4)  # give time submitit to create the files
+            time.sleep(2)  # give time submitit to create the files
 
         assert (
             len([f for f in os.listdir(slurm_job_data_test) if os.path.isfile(os.path.join(slurm_job_data_test, f))])
@@ -87,7 +87,7 @@ class TestSubmitJob:
             line=f"-o results -p debug -l {slurm_job_data_test} -n unit_test -e local",
             cell="results=a+b",
         )
-        time.sleep(4)
+        time.sleep(2)
         assert (
             len([f for f in os.listdir(slurm_job_data_test) if os.path.isfile(os.path.join(slurm_job_data_test, f))])
             == ql.slurm.num_files_to_keep
