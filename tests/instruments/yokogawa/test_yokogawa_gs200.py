@@ -144,6 +144,7 @@ class TestYokogawaGS200:
         assert yokogawa_gs200.source_mode == SourceMode.CURRENT
 
     def test_span_property(self, yokogawa_gs200: GS200):
+    """Test the span property"""
         assert hasattr(yokogawa_gs200, "span")
         assert yokogawa_gs200.span == yokogawa_gs200.settings.span[0]
         yokogawa_gs200.span = "1mA"
