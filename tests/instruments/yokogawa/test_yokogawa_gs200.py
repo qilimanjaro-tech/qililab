@@ -19,23 +19,42 @@ def fixture_platform() -> Platform:
     return build_platform(runcard=SauronYokogawa.runcard)
 
 
-@pytest.fixture(name="yokogawa_gs200_controller")
-def fixture_yokogawa_gs200_controller(platform: Platform):
+@pytest.fixture(name="yokogawa_gs200_current_controller")
+def fixture_yokogawa_gs200_current_controller(platform: Platform):
     """Return an instance of GS200 controller class"""
-    settings = copy.deepcopy(SauronYokogawa.yokogawa_gs200_controller)
+    settings = copy.deepcopy(SauronYokogawa.yokogawa_gs200_current_controller)
+    settings.pop("name")
+    return GS200Controller(settings=settings, loaded_instruments=platform.instruments)
+
+
+@pytest.fixture(name="yokogawa_gs200_voltage_controller")
+def fixture_yokogawa_gs200_voltage_controller(platform: Platform):
+    """Return an instance of GS200 controller class"""
+    settings = copy.deepcopy(SauronYokogawa.yokogawa_gs200_voltage_controller)
     settings.pop("name")
     return GS200Controller(settings=settings, loaded_instruments=platform.instruments)
 
 
 @pytest.fixture(name="yokogawa_gs200")
 @patch("qililab.instrument_controllers.yokogawa.gs200_controller.YokogawaGS200", autospec=True)
-def fixture_yokogawa_gs200(mock_rs: MagicMock, yokogawa_gs200_controller: GS200Controller):
+def fixture_yokogawa_gs200(mock_rs: MagicMock, yokogawa_gs200_current_controller: GS200Controller):
     """Return connected instance of GS200 class"""
     # add dynamically created attributes
     mock_instance = mock_rs.return_value
     mock_instance.mock_add_spec(["current", "voltage", "source_mode", "current_range", "voltage_range"])
-    yokogawa_gs200_controller.connect()
-    return yokogawa_gs200_controller.modules[0]
+    yokogawa_gs200_current_controller.connect()
+    return yokogawa_gs200_current_controller.modules[0]
+
+
+@pytest.fixture(name="yokogawa_gs200_voltage")
+@patch("qililab.instrument_controllers.yokogawa.gs200_controller.YokogawaGS200", autospec=True)
+def fixture_yokogawa_gs200_voltage(mock_rs: MagicMock, yokogawa_gs200_voltage_controller: GS200Controller):
+    """Return connected instance of GS200 class"""
+    # add dynamically created attributes
+    mock_instance = mock_rs.return_value
+    mock_instance.mock_add_spec(["current", "voltage", "source_mode", "current_range", "voltage_range"])
+    yokogawa_gs200_voltage_controller.connect()
+    return yokogawa_gs200_voltage_controller.modules[0]
 
 
 class TestYokogawaGS200:
@@ -93,8 +112,10 @@ class TestYokogawaGS200:
         yokogawa_gs200.turn_off()
         yokogawa_gs200.device.off.assert_called()
 
-    def test_initial_setup_method(self, yokogawa_gs200: GS200):
+    @pytest.mark.parametrize("yokogawa_fixture", ["yokogawa_gs200", "yokogawa_gs200_voltage"])
+    def test_initial_setup_method(self, yokogawa_fixture: str, request):
         """Test the initial setup method"""
+        yokogawa_gs200 = request.getfixturevalue(yokogawa_fixture)
         yokogawa_gs200.initial_setup()
         yokogawa_gs200.device.source_mode.assert_called()
         assert yokogawa_gs200.source_mode == yokogawa_gs200.settings.source_mode

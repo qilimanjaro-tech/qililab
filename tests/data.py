@@ -893,16 +893,29 @@ class SauronYokogawa:
         "gates": {},
     }
 
-    yokogawa_gs200 = {
+    yokogawa_gs200_current = {
         RUNCARD.NAME: InstrumentName.YOKOGAWA_GS200,
-        RUNCARD.ALIAS: "yokogawa",
+        RUNCARD.ALIAS: "yokogawa_current",
         RUNCARD.FIRMWARE: "A.15.10.06",
         Parameter.SOURCE_MODE.value: "current",
-        Parameter.CURRENT.value: [0.0],
+        Parameter.CURRENT.value: [0.5],
         Parameter.VOLTAGE.value: [0.0],
         Parameter.SPAN.value: ["200mA"],
         Parameter.RAMPING_ENABLED.value: [True],
-        Parameter.RAMPING_RATE.value: [0.0001],
+        Parameter.RAMPING_RATE.value: [0.01],
+        "dacs": [0],
+    }
+
+    yokogawa_gs200_voltage = {
+        RUNCARD.NAME: InstrumentName.YOKOGAWA_GS200,
+        RUNCARD.ALIAS: "yokogawa_voltage",
+        RUNCARD.FIRMWARE: "A.15.10.06",
+        Parameter.SOURCE_MODE.value: "voltage",
+        Parameter.CURRENT.value: [0.0],
+        Parameter.VOLTAGE.value: [0.5],
+        Parameter.SPAN.value: ["100mV"],
+        Parameter.RAMPING_ENABLED.value: [True],
+        Parameter.RAMPING_RATE.value: [0.01],
         "dacs": [0],
     }
 
@@ -915,7 +928,7 @@ class SauronYokogawa:
         Parameter.RF_ON.value: True,
     }
 
-    yokogawa_gs200_controller = {
+    yokogawa_gs200_current_controller = {
         RUNCARD.NAME: InstrumentControllerName.YOKOGAWA_GS200,
         RUNCARD.ALIAS: "yokogawa_controller",
         INSTRUMENTCONTROLLER.CONNECTION: {
@@ -924,7 +937,22 @@ class SauronYokogawa:
         },
         INSTRUMENTCONTROLLER.MODULES: [
             {
-                "alias": "yokogawa",
+                "alias": "yokogawa_current",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    yokogawa_gs200_voltage_controller = {
+        RUNCARD.NAME: InstrumentControllerName.YOKOGAWA_GS200,
+        RUNCARD.ALIAS: "yokogawa_controller",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.1.15",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "yokogawa_voltage",
                 "slot_id": 0,
             }
         ],
@@ -945,9 +973,10 @@ class SauronYokogawa:
         ],
     }
 
-    instruments = [yokogawa_gs200, rohde_schwarz]
+    instruments = [yokogawa_gs200_current, yokogawa_gs200_voltage, rohde_schwarz]
     instrument_controllers = [
-        yokogawa_gs200_controller,
+        yokogawa_gs200_current_controller,
+        yokogawa_gs200_voltage_controller,
         yokogawa_gs200_controller_wrong_module,
     ]
 
@@ -966,10 +995,19 @@ class SauronYokogawa:
 
     buses: list[dict[str, Any]] = [
         {
-            RUNCARD.ALIAS: "yokogawa_gs200_bus",
+            RUNCARD.ALIAS: "yokogawa_gs200_current_bus",
             RUNCARD.SYSTEM_CONTROL: {
                 RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["yokogawa"],
+                RUNCARD.INSTRUMENTS: ["yokogawa_current"],
+            },
+            "port": "flux_q0",
+            RUNCARD.DISTORTIONS: [],
+        },
+        {
+            RUNCARD.ALIAS: "yokogawa_gs200_voltage_bus",
+            RUNCARD.SYSTEM_CONTROL: {
+                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
+                RUNCARD.INSTRUMENTS: ["yokogawa_voltage"],
             },
             "port": "flux_q0",
             RUNCARD.DISTORTIONS: [],
