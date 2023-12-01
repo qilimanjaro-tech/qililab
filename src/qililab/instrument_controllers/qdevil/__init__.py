@@ -12,16 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Instruments module """
-from .cluster import Cluster
-from .device import Device
-from .keithley_2600 import Keithley2600Driver
-from .mini_circuits import MiniCircuitsDriver
-from .pulsar import Pulsar
-from .qblox_d5a import QbloxD5a
-from .qblox_s4g import QbloxS4g
-from .qcm_qrm import QcmQrm
-from .qdevil_qdac2 import QDevilQDac2
-from .qmm_driver import QMMDriver
-from .rohde_schwarz import RohdeSchwarzSGS100A
-from .yokogawa_gs200 import YokogawaGS200
+""" QDevil Controllers """
+
+from .qdevil_qdac2_controller import QDevilQDac2Controller
