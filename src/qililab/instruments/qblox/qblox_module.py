@@ -259,7 +259,7 @@ class QbloxModule(AWG):
                 sequencer_id=sequencer,
                 weight_regs=weight_registers,
                 acq_index=i if self.module_type == "QRM" else 0, # FIXME: can we safely remove acq for QCM?
-                wait_time = int(wait_time) if i != (len(timeline) - 1) else int(pulse_event.duration) #FIXME: last pulse wait can be 4 if relaxation time follows afterwards
+                wait_time = int(wait_time)
                 )
 
 
