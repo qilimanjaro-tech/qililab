@@ -98,6 +98,8 @@ def IQ_norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str
     # Error computation:
     i, q = obtained["results"]
     errors = []
+    #TODO: Avoid comparison "if obtained_x in comparison["sweep_interval"]" instead build comparison sweep interval taking into acount this
+    #TODO: If no overlapping sweep intervals we must return a huge error so we get bad_data directly
     for idx, obtained_results in enumerate([i, q]):
         square_error = sum(
             (obtained_results[index] - comparison[check][idx][comparison["sweep_interval"].index(obtained_x)]) ** 2

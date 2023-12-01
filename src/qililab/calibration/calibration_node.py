@@ -265,6 +265,9 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         if len(nb_path.split("\\")) > 1:
             raise ValueError("`nb_path` must be written in unix format: `folder/subfolder/.../file.ipynb`.")
+        
+        if isinstance(qubit_index, list) and len(qubit_index) != 2:
+            raise ValueError("List of `qubit_index` only accepts two qubit index")
 
         self.nb_path: str = nb_path
         """Absolute notebook path, with folder, nb_name and ``.ipynb`` extension."""
@@ -375,11 +378,19 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         # Create the input parameters for the notebook:)
         self.previous_output_parameters = self.output_parameters
 
-        params: dict = {
-            "check": check,
-            "number_of_random_datapoints": self.number_of_random_datapoints,
-            "qubit": self.qubit_index,
-        }
+        if isinstance(self.qubit_index, int):
+            params: dict = {
+                "check": check,
+                "number_of_random_datapoints": self.number_of_random_datapoints,
+                "qubit": self.qubit_index,
+            }
+        # No need to use number_of_random_datapoints for 2qb experiments
+        elif isinstance(self.qubit_index, list):
+            params: dict = {
+                "check": check,
+                "control_qubit": self.qubit_index[0],
+                "target_qubit": self.qubit_index[1],
+            }
 
         if self.sweep_interval is not None:
             params["sweep_interval"] = self._build_check_data_interval() if check else self.sweep_interval
@@ -661,6 +672,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             logger.error("No output found in notebook %s.", input_path)
             raise IncorrectCalibrationOutput(f"No output found in notebook {input_path}.")
         # In case more than one output is found, we keep the first one, and raise a warning:
+        #TODO: Rethink removing this, logger shared in same execution
         if len(logger_splitted) > 2:
             logger.warning("If you had multiple outputs exported in %s, the first one found will be used.", input_path)
 
