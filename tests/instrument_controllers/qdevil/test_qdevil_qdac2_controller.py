@@ -1,5 +1,4 @@
 import copy
-from unittest.mock import MagicMock, call
 
 import pytest
 
@@ -19,17 +18,17 @@ def fixture_platform() -> Platform:
 
 @pytest.fixture(name="qdevil_qdac2_controller_wrong_module")
 def fixture_qdevil_qdac2_controller_wrong_module_wrong_module(platform: Platform) -> QDevilQDac2Controller:
-    """Return an instance of GS200 controller class"""
+    """Return an instance of the QDAC-II controller with an incorrect module."""
     settings = copy.deepcopy(SauronQDevil.qdevil_qdac2_controller_wrong_module)
     settings.pop("name")
     return QDevilQDac2Controller(settings=settings, loaded_instruments=platform.instruments)
 
 
-class TestYokogawaGS200Controller:
-    """Unit tests checking the GS200 Controller attributes and methods"""
+class TestQDevilQDac2Controller:
+    """Unit tests checking the QDAC-II controller attributes and methods"""
 
     def test_initialization(self, platform: Platform):
-        """Test QMMController has been initialized correctly"""
+        """Test QDAC-II controller has been initialized correctly"""
         controller_alias = "qdac_controller"
         controller_instance = platform.instrument_controllers.get_instrument_controller(alias=controller_alias)
         assert isinstance(controller_instance, QDevilQDac2Controller)
@@ -44,5 +43,6 @@ class TestYokogawaGS200Controller:
     def test_check_supported_modules_raises_exception(
         self, qdevil_qdac2_controller_wrong_module: QDevilQDac2Controller
     ):
+        """Test QDAC-II controller raises an error if initialized with wrong module."""
         with pytest.raises(ValueError):
             qdevil_qdac2_controller_wrong_module._check_supported_modules()
