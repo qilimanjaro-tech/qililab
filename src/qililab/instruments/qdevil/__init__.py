@@ -12,5 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" QDevil Controllers """
-from .qdevil_qdac2_controller import QDevilQDac2Controller
+"""QDevil Instruments"""
+from .qdevil_qdac2 import QDevilQDac2
