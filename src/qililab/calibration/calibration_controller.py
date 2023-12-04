@@ -342,12 +342,14 @@ class CalibrationController:
         ):  # or not all(dependencies_status)
             logger.info("check_state of %s: False.\n", node.node_id)
             return False
+
+        is_timeout_expired = self._is_timeout_expired(node.previous_timestamp, node.drift_timeout)
         logger.info(
             "check_state of %s: %r.\n",
             node.node_id,
-            (not self._is_timeout_expired(node.previous_timestamp, node.drift_timeout)),
+            (not is_timeout_expired),
         )
-        return not self._is_timeout_expired(node.previous_timestamp, node.drift_timeout)
+        return not is_timeout_expired  # pylint: disable=inconsistent-return-statements
 
     def check_data(self, node: CalibrationNode) -> str:
         """Checks if the parameters found in the last calibration are still valid, doing a reduced execution of the notebook.
