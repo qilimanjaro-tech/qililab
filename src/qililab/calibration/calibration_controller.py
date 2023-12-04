@@ -324,7 +324,7 @@ class CalibrationController:
             )
 
         self.calibrate(node)
-        self._update_parameters(node)
+        self._update_parameters(node)  # pylint: disable=inconsistent-return-statements
 
     def diagnose(self, node: CalibrationNode, safe: bool = False):
         """Checks the data of all the dependencies of a node, until it finds the root of the problem with their data.
@@ -441,13 +441,13 @@ class CalibrationController:
                 return False
 
         # If this node concretely passes check_state
-        is_timeout_expired = self._is_timeout_expired(node.previous_timestamp, node.drift_timeout)
+        is_timeout_not_expired = not self._is_timeout_expired(node.previous_timestamp, node.drift_timeout)
         logger.info(
             "WORKFLOW: check_state of %s: %r.\n",
             node.node_id,
-            (not is_timeout_expired),
+            is_timeout_not_expired,
         )
-        return not is_timeout_expired  # pylint: disable=inconsistent-return-statements
+        return is_timeout_not_expired
 
     def check_data(self, node: CalibrationNode) -> str:
         """Checks if the parameters found in the last calibration are still valid, doing a reduced execution of the notebook.
