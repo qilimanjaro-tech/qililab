@@ -290,7 +290,6 @@ class CalibrationController:
                 meaning it allways perform a call to `check_data`. Default to False.
             safe_diagnose (bool, optional): Flag to specify if we make sure to avoid corner cases while diagnosing (its slower). Defaults to False.
         """
-        # pylint: disable=inconsistent-return-statements
         logger.info("WORKFLOW: Maintaining %s.\n", node.node_id)
         # Recursion over all the nodes that the current node depends on.
         for n in self._dependencies(node):
