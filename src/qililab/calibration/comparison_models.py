@@ -54,9 +54,12 @@ def norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, l
             raise ValueError("Empty 'sweep_interval' or 'results' in `check_parameters`'s notebook output.")
 
     # Error computation:
+    # TODO: Avoid comparison "if obtained_x in comparison["sweep_interval"]" instead build comparison sweep interval taking into acount this
+    # TODO: If no overlapping sweep intervals we must return a huge error so we get bad_data directly
     square_error = sum(
         (obtained["results"][i] - comparison[check][comparison["sweep_interval"].index(obtained_x)]) ** 2
-        for i, obtained_x in enumerate(obtained["sweep_interval"]) if obtained_x in comparison["sweep_interval"]
+        for i, obtained_x in enumerate(obtained["sweep_interval"])
+        if obtained_x in comparison["sweep_interval"]
     )
     root_mean_square_error = np.sqrt(square_error / len(obtained["results"]))
 
@@ -98,12 +101,13 @@ def IQ_norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str
     # Error computation:
     i, q = obtained["results"]
     errors = []
-    #TODO: Avoid comparison "if obtained_x in comparison["sweep_interval"]" instead build comparison sweep interval taking into acount this
-    #TODO: If no overlapping sweep intervals we must return a huge error so we get bad_data directly
+    # TODO: Avoid comparison "if obtained_x in comparison["sweep_interval"]" instead build comparison sweep interval taking into acount this
+    # TODO: If no overlapping sweep intervals we must return a huge error so we get bad_data directly
     for idx, obtained_results in enumerate([i, q]):
         square_error = sum(
             (obtained_results[index] - comparison[check][idx][comparison["sweep_interval"].index(obtained_x)]) ** 2
-            for index, obtained_x in enumerate(obtained["sweep_interval"]) if obtained_x in comparison["sweep_interval"]
+            for index, obtained_x in enumerate(obtained["sweep_interval"])
+            if obtained_x in comparison["sweep_interval"]
         )
         root_mean_square_error = np.sqrt(square_error / len(obtained_results))
 
