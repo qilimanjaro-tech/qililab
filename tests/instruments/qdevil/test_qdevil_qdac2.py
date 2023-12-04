@@ -80,6 +80,7 @@ class TestQDevilQDac2:
         [
             (Parameter.VOLTAGE, -0.001),
             (Parameter.RAMPING_ENABLED, False),
+            (Parameter.RAMPING_ENABLED, True),
             (Parameter.RAMPING_RATE, 0.05),
             (Parameter.SPAN, "high"),
             (Parameter.LOW_PASS_FILTER, "low"),
@@ -116,6 +117,13 @@ class TestQDevilQDac2:
         for channel_id in qdac.dacs:
             with pytest.raises(ParameterNotFound):
                 qdac.setup(parameter, value, channel_id)
+
+    @pytest.mark.parametrize("parameter, value", [(Parameter.MAX_CURRENT, 0.001), (Parameter.GAIN, 0.0005)])
+    def test_get_method_raises_exception(self, qdac: QDevilQDac2, parameter: Parameter, value):
+        """Test the setup method raises an exception with wrong parameters"""
+        for channel_id in qdac.dacs:
+            with pytest.raises(ParameterNotFound):
+                qdac.get(parameter, channel_id)
 
     @pytest.mark.parametrize("channel_id", [0, 25, -1, None])
     def test_validate_channel_method_raises_exception(self, qdac: QDevilQDac2, channel_id):
