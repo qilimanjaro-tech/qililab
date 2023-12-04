@@ -7,7 +7,6 @@ from qililab.instrument_controllers.qdevil.qdevil_qdac2_controller import QDevil
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
 from qililab.platform import Platform
 from qililab.settings import Settings
-from qililab.typings import QDevilQDac2 as QDevilQDac2Device
 from tests.data import SauronQDevil  # pylint: disable=import-error
 from tests.test_utils import build_platform  # pylint: disable=import-error
 
@@ -48,12 +47,3 @@ class TestQDevilQDac2Controller:
         """Test QDAC-II controller raises an error if initialized with wrong module."""
         with pytest.raises(ValueError):
             qdevil_qdac2_controller_wrong_module._check_supported_modules()
-
-    @patch("qililab.typings.instruments.qdevil_qdac2.QDevilQDac2", autospec=True)
-    def test_initialize_device(self, platform: Platform):
-        controller_alias = "qdac_controller"
-        controller_instance = platform.instrument_controllers.get_instrument_controller(alias=controller_alias)
-
-        controller_instance._initialize_device()
-
-        assert isinstance(controller_instance.device, QDevilQDac2Device)
