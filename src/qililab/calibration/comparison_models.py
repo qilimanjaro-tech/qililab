@@ -173,6 +173,32 @@ def ssro_comparison_2D(obtained: dict[str, Any], comparison: dict[str, Any]) -> 
     return np.sqrt((mean_diff) * 4 + (std_dev_diff) / (obtained["sweep_interval"] + div_epsilon)) / 10
 
 
+def cz_cond_optimizer_comparison(obtained: dict[str, Any], comparison: dict[str, Any]) -> float:
+    """ Returns a normalized error between the comparison and obtained samples.
+    
+    Args:
+        obtained (dict): Obtained samples to compare. Structure following the function docstring.
+        comparison (dict): Previous samples to compare. Structure following the function docstring.
+
+    Returns:
+        float: difference/error between the two samples.
+    """
+    raise NotImplementedError
+
+
+def cz_tomography_comparison(obtained: dict[str, Any], comparison: dict[str, Any]) -> float:
+    """ Returns a normalized error between the comparison and obtained samples.
+    
+    Args:
+        obtained (dict): Obtained samples to compare. Structure following the function docstring.
+        comparison (dict): Previous samples to compare. Structure following the function docstring.
+
+    Returns:
+        float: difference/error between the two samples.
+    """
+    raise NotImplementedError
+
+
 def is_structure_of_check_parameters_correct(obtained: dict[str, list], comparison: dict[str, list], fit: bool = True):
     """If the structure is incorrect it will raise an error.
 
