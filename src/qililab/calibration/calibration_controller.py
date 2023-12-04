@@ -186,7 +186,13 @@ class CalibrationController:
         self.platform: Platform = build_platform(runcard)
         """The initialized platform, where the experiments will be run (Platform)."""
 
-    def run_automatic_calibration(self, force_maintain: bool = False, safe_diagnose: bool = False) -> dict[str, dict]:
+    def run_automatic_calibration(
+        self,
+        force_maintain: bool = False,
+        safe_diagnose: bool = True,
+        strict_dependencies: bool = False,
+        run_fidelities: bool = False,
+    ) -> dict[str, dict]:
         """Runs the full automatic calibration procedure and retrieves the final set parameters and achieved fidelities dictionaries.
 
         This is the primary interface for our calibration procedure and the highest level algorithm, which finds all the end nodes of the graph
@@ -195,6 +201,8 @@ class CalibrationController:
         Args:
             force_maintain_timeout_ratio (float, optional): Argument needed to compute the force maintain condition. Defaults to 0.0.
             safe_diagnose (bool, optional): Flag to specify if we make sure to avoid corner cases while diagnosing (its slower). Defaults to False.
+            strict_dependencies (bool, optional): Flag to specify if the drift_timeout dependencies should be completely strict, meaning that a previous
+                dependency can never have a smaller drift_timeout. Defaults to False.
 
         Returns:
             dict[str, dict]: Dictionary for the last set parameters and the last achieved fidelities. It contains two dictionaries (dict[tuple, tuple]) in the keys:
@@ -206,13 +214,25 @@ class CalibrationController:
                     - key: (``str``: parameter name, ``int``: qubit).
                     - value: (``float``: parameter value, ``str``: node_id where computed, ``datetime``: updated time).
         """
-        highest_level_nodes = [node for node, out_degree in self.calibration_graph.out_degree() if out_degree == 0]
+        highest_level_nodes = [
+            node for node, out_degree in self.calibration_graph.out_degree() if (out_degree == 0 and not node.fidelity)
+        ]
 
         # TODO: Do a couple of integrations test, with deterministic scripts, where you know the sequence of check_datas and
         # TODO: calibrates the workflow would need to follow, like the ones in my notebook, and check them.
 
         for n in highest_level_nodes:
-            self.maintain(self.node_sequence[n], force_mantain=force_maintain, safe_diagnose=safe_diagnose)
+            self.maintain(
+                self.node_sequence[n],
+                force_mantain=force_maintain,
+                safe_diagnose=safe_diagnose,
+                strict_dependencies=strict_dependencies,
+            )
+
+        if run_fidelities:
+            fidelities_nodes = (node for node in self.node_sequence.values() if node.fidelity)
+            for node in fidelities_nodes:
+                self.calibrate(node)
 
         logger.info(
             "\n#############################################\n"
@@ -222,7 +242,13 @@ class CalibrationController:
 
         return {"set_parameters": self.get_last_set_parameters(), "fidelities": self.get_last_fidelities()}
 
-    def maintain(self, node: CalibrationNode, force_mantain: bool = False, safe_diagnose: bool = False) -> None:
+    def maintain(
+        self,
+        node: CalibrationNode,
+        force_mantain: bool = False,
+        safe_diagnose: bool = False,
+        strict_dependencies: bool = False,
+    ) -> None:
         """Calls all the necessary subroutines (``check_state()``, ``check_data()`` and ``calibrate()``) in the respective dependencies to get a node
         in spec. Maintain contains the main workflow for our calibration procedure, and it's what is called from ``run_automatic_calibration()`` into
         each of the end ``nodes`` (leaves) of our graph.
@@ -263,11 +289,11 @@ class CalibrationController:
         for n in self._dependencies(node):
             self.maintain(n)
 
-        # TODO: Integrationt test, where if all the drift_timeouts are super big, no check_data or calibration is dene
+        # TODO: Integrationt test, where if all the drift_timeouts are super big, no check_data or calibration is done
         # TODO: when no force_maintain, and one in the end, when the flag exist.
 
         # If check_state of this node passes, don't check data, assume it works (unless its an end node).
-        node_status = self.check_state(node)
+        node_status = self.check_state(node, strict_dependencies=strict_dependencies)
         if not force_mantain and node_status:
             return
 
@@ -368,7 +394,7 @@ class CalibrationController:
         self._update_parameters(node)
         return safe
 
-    def check_state(self, node: CalibrationNode) -> bool:
+    def check_state(self, node: CalibrationNode, strict_dependencies: bool = False) -> bool:
         """Checks if the node's drift timeouts have passed since the last calibration or data check.
 
         These timeouts represent how long it usually takes for the parameters to drift, specified by the user.
@@ -396,7 +422,7 @@ class CalibrationController:
         for n in self._dependencies(node):
             # TODO: Integration test that cases where check_states are like: V - X - V - V only skip the first node
             # Keep the smaller drift timeout, from all its dependencies.
-            if n.drift_timeout < node.drift_timeout:
+            if strict_dependencies and n.drift_timeout < node.drift_timeout:
                 node.drift_timeout = n.drift_timeout
                 logger.warning(
                     "The drift_timeout of node %s is bigger than its dependency %s, so the later will be used.",

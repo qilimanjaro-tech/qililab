@@ -72,6 +72,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         input_parameters (dict | None, optional): Kwargs for input parameters to pass and be interpreted by the notebook. Defaults to None.
         sweep_interval (np.ndarray | None, optional): Array describing the sweep values of the experiment. Defaults to None, which means the one specified in the notebook will be used.
         number_of_random_datapoints (int, optional): The number of points randomly choose within the sweep interval, to run ``check_data()`` with. Default value is 10.
+        fidelity (bool, optional): Flag whether this notebook is a final fidelity experiment. Defaults to False.
 
     Examples:
 
@@ -259,13 +260,14 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         input_parameters: dict | None = None,
         sweep_interval: np.ndarray | None = None,
         number_of_random_datapoints: int = 10,
+        fidelity: bool = False,
     ):
         if in_spec_threshold > bad_data_threshold:
             raise ValueError("`in_spec_threshold` must be smaller or equal than `bad_data_threshold`.")
 
         if len(nb_path.split("\\")) > 1:
             raise ValueError("`nb_path` must be written in unix format: `folder/subfolder/.../file.ipynb`.")
-        
+
         if isinstance(qubit_index, list) and len(qubit_index) != 2:
             raise ValueError("List of `qubit_index` only accepts two qubit index")
 
@@ -331,6 +333,9 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         self._stream: StringIO = self._build_notebooks_logger_stream()
         """Stream object to which the notebooks logger output will be written, to posterior retrieval."""
 
+        self.fidelity = fidelity
+        """Flag whether this notebook is a final fidelity experiment. Defaults to False."""
+
     def run_node(self, check: bool = False) -> float:
         """Executes the notebook, passing the needed parameters and flags. Also it can be chosen to only check certain values of the sweep interval for
         when checking data.
@@ -381,16 +386,17 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         """
         # Create the input parameters for the notebook:)
         self.previous_output_parameters = self.output_parameters
+        params: dict = {}
 
         if isinstance(self.qubit_index, int):
-            params: dict = {
+            params |= {
                 "check": check,
                 "number_of_random_datapoints": self.number_of_random_datapoints,
                 "qubit": self.qubit_index,
             }
         # No need to use number_of_random_datapoints for 2qb experiments
         elif isinstance(self.qubit_index, list):
-            params: dict = {
+            params |= {
                 "check": check,
                 "control_qubit": self.qubit_index[0],
                 "target_qubit": self.qubit_index[1],
@@ -402,11 +408,23 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         if self.input_parameters is not None:
             params |= self.input_parameters
 
-        if check and self.previous_output_parameters is not None and "fit" in self.previous_output_parameters['check_parameters']:
-            params |= {"compare_fit" : [self.previous_output_parameters["check_parameters"]["sweep_interval"], self.previous_output_parameters["check_parameters"]["fit"]]}
+        if check and self.previous_output_parameters is not None:
+            if "fit" in self.previous_output_parameters["check_parameters"]:
+                params |= {
+                    "compare_fit": [
+                        self.previous_output_parameters["check_parameters"]["sweep_interval"],
+                        self.previous_output_parameters["check_parameters"]["fit"],
+                    ]
+                }
 
-        elif check and self.previous_output_parameters is not None:
-            params |= {"compare_fit" : [self.previous_output_parameters["check_parameters"]["sweep_interval"], self.previous_output_parameters["check_parameters"]["results"]]}
+            else:
+                params |= {
+                    "compare_fit": [
+                        self.previous_output_parameters["check_parameters"]["sweep_interval"],
+                        self.previous_output_parameters["check_parameters"]["results"],
+                    ]
+                }
+
         # JSON serialize nb input, no np.ndarrays
         _json_serialize(params)  # TODO: Add a test, for passing np,arrays as inputs and working after this change
 
@@ -676,7 +694,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             logger.error("No output found in notebook %s.", input_path)
             raise IncorrectCalibrationOutput(f"No output found in notebook {input_path}.")
         # In case more than one output is found, we keep the first one, and raise a warning:
-        #TODO: Rethink removing this, logger shared in same execution
+        # TODO: Rethink removing this, logger shared in same execution
         if len(logger_splitted) > 2:
             logger.warning("If you had multiple outputs exported in %s, the first one found will be used.", input_path)
 
