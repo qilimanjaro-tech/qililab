@@ -15,7 +15,7 @@ def fixture_qdac() -> QDevilQDac2:
             "alias": "qdac",
             "voltage": [0.5, 0.5],
             "span": ["low", "low"],
-            "ramping_enabled": [True, True],
+            "ramping_enabled": [True, False],
             "ramp_rate": [0.01, 0.01],
             "dacs": [10, 11],
             "low_pass_filter": ["DC", "DC"],
@@ -116,3 +116,9 @@ class TestQDevilQDac2:
         for channel_id in qdac.dacs:
             with pytest.raises(ParameterNotFound):
                 qdac.setup(parameter, value, channel_id)
+
+    @pytest.mark.parametrize("channel_id", [0, 25, -1, None])
+    def test_validate_channel_method_raises_exception(self, qdac: QDevilQDac2, channel_id):
+        """Test the setup method raises an exception with wrong parameters"""
+        with pytest.raises(ValueError):
+            qdac._validate_channel(channel_id)
