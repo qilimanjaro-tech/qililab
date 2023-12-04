@@ -232,9 +232,7 @@ class CalibrationController:
             )
 
         if run_fidelities:
-            fidelities_nodes = (node for node in self.node_sequence.values() if node.fidelity)
-            for node in fidelities_nodes:
-                self.calibrate(node)
+            self.run_fidelities()
 
         logger.info(
             "\n#############################################\n"
@@ -243,6 +241,12 @@ class CalibrationController:
         )
 
         return {"set_parameters": self.get_last_set_parameters(), "fidelities": self.get_last_fidelities()}
+
+    def run_fidelities(self) -> None:
+        """Runs the fidelities notebooks."""
+        fidelities_nodes = (node for node in self.node_sequence.values() if node.fidelity)
+        for node in fidelities_nodes:
+            self.calibrate(node)
 
     def maintain(
         self,
