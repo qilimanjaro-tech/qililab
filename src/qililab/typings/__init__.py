@@ -42,4 +42,5 @@ from .instruments import (
     QcmQrm,
     QMMDriver,
     RohdeSchwarzSGS100A,
+    YokogawaGS200,
 )
