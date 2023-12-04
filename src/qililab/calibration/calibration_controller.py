@@ -215,15 +215,17 @@ class CalibrationController:
                     - value: (``float``: parameter value, ``str``: node_id where computed, ``datetime``: updated time).
         """
         highest_level_nodes = [
-            node for node, out_degree in self.calibration_graph.out_degree() if (out_degree == 0 and not node.fidelity)
+            self.node_sequence[node]
+            for node, out_degree in self.calibration_graph.out_degree()
+            if (out_degree == 0 and not self.node_sequence[node].fidelity)
         ]
 
         # TODO: Do a couple of integrations test, with deterministic scripts, where you know the sequence of check_datas and
         # TODO: calibrates the workflow would need to follow, like the ones in my notebook, and check them.
 
-        for n in highest_level_nodes:
+        for node in highest_level_nodes:
             self.maintain(
-                self.node_sequence[n],
+                node,
                 force_mantain=force_maintain,
                 safe_diagnose=safe_diagnose,
                 strict_dependencies=strict_dependencies,
