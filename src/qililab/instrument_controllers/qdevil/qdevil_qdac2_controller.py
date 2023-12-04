@@ -26,11 +26,11 @@ from qililab.typings.enums import InstrumentControllerName, InstrumentTypeName
 
 @InstrumentControllerFactory.register
 class QDevilQDac2Controller(SingleInstrumentController):
-    """YOKOGAWA GS200 class
+    """QDevil QDAC-II controller class
     Args:
         name (InstrumentControllerName): Name of the Instrument Controller.
-        device (GS200): Instance of the qcodes GS200 class.
-        settings (GS200Settings): Settings of the instrument.
+        device (QDevilQDac2Device): Instance of the QDevil QDAC-II class.
+        settings (QDevilQDac2ControllerSettings): Settings of the instrument.
     """
 
     name = InstrumentControllerName.QDEVIL_QDAC2
