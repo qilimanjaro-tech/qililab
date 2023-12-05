@@ -483,10 +483,14 @@ class CalibrationController:
         """
         # pylint: disable=protected-access
         # 2 hour interval from last in_spec, for assuming is still good:
-        if node.previous_inspec is None or self._is_timeout_expired(node.previous_inspec, 7200.0):
+        if (
+            node.previous_inspec is None
+            or self._is_timeout_expired(node.previous_inspec, 7200.0)
+            or self._is_timeout_expired(node.previous_timestamp, 7200.0)
+        ):
             timestamp = node.run_node(check=True)
         else:
-            logger.info('WORKFLOW: Using recent `in_spec` of `check_data` in node "%s".\n', node.node_id)
+            logger.info('WORKFLOW: Using recent `in_spec`-`check_data` or calibration in node "%s".\n', node.node_id)
             return "in_spec"
 
         # Comparison and obtained parameters:
@@ -551,11 +555,11 @@ class CalibrationController:
                 logger.info(
                     "Platform updated with: (bus: %s, q: %s, %s, %f).", bus_alias, qubit, param_name, param_value
                 )
-                self.platform.set_parameter(
-                    alias=bus_alias, parameter=ql.Parameter(param_name), value=param_value, channel_id=qubit
-                )
+            #     self.platform.set_parameter(
+            #         alias=bus_alias, parameter=ql.Parameter(param_name), value=param_value, channel_id=qubit
+            #     )
 
-            save_platform(self.runcard, self.platform)
+            # save_platform(self.runcard, self.platform)
 
     def get_last_set_parameters(self) -> dict[tuple, tuple]:
         """Retrieves the last set parameters of the graph.
