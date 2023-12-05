@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=anomalous-backslash-in-string
+# pylint: disable=anomalous-backslash-in-string, inconsistent-return-statements
 """Automatic-calibration Controller module, which works with notebooks as nodes."""
 from datetime import datetime, timedelta
 
@@ -553,11 +553,11 @@ class CalibrationController:
                 logger.info(
                     "Platform updated with: (bus: %s, q: %s, %s, %f).", bus_alias, qubit, param_name, param_value
                 )
-            #     self.platform.set_parameter(
-            #         alias=bus_alias, parameter=ql.Parameter(param_name), value=param_value, channel_id=qubit
-            #     )
+                self.platform.set_parameter(
+                    alias=bus_alias, parameter=ql.Parameter(param_name), value=param_value, channel_id=qubit
+                )
 
-            # save_platform(self.runcard, self.platform)
+            save_platform(self.runcard, self.platform)
 
     def get_last_set_parameters(self) -> dict[tuple, tuple]:
         """Retrieves the last set parameters of the graph.
