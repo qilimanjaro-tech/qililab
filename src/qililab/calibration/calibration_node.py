@@ -333,7 +333,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         self._stream: StringIO = self._build_notebooks_logger_stream()
         """Stream object to which the notebooks logger output will be written, to posterior retrieval."""
 
-        self.fidelity = fidelity
+        self.fidelity: bool = fidelity
         """Flag whether this notebook is a final fidelity experiment. Defaults to False."""
 
     def run_node(self, check: bool = False) -> float:
@@ -693,10 +693,10 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         if len(logger_splitted) < 2:
             logger.error("No output found in notebook %s.", input_path)
             raise IncorrectCalibrationOutput(f"No output found in notebook {input_path}.")
-        # In case more than one output is found, we keep the first one, and raise a warning:
+        # In case more than one output is found, we keep the last one, and raise a warning:
         # TODO: Rethink removing this, logger shared in same execution
         if len(logger_splitted) > 2:
-            logger.warning("If you had multiple outputs exported in %s, the first one found will be used.", input_path)
+            logger.warning("If you had multiple outputs exported in %s, the last one found will be used.", input_path)
 
         # This next line is for taking into account other encodings, where special characters get `\\` in front.
         clean_data = logger_splitted[-1].split("\\n")[0].replace('\\"', '"')
