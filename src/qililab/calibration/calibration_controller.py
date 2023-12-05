@@ -483,9 +483,9 @@ class CalibrationController:
         """
         # pylint: disable=protected-access
         # 2 hour interval from last in_spec, for assuming is still good:
-        if (
-            node.previous_inspec is None or self._is_timeout_expired(node.previous_inspec, 7200.0)
-        ) and self._is_timeout_expired(node.previous_timestamp, 7200.0):
+        if (node.previous_inspec is None or self._is_timeout_expired(node.previous_inspec, 7200.0)) and (
+            node.previous_timestamp is None or self._is_timeout_expired(node.previous_timestamp, 7200.0)
+        ):
             timestamp = node.run_node(check=True)
         else:
             logger.info('WORKFLOW: Using recent `in_spec`-`check_data` or calibration in node "%s".\n', node.node_id)
