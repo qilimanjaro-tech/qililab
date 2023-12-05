@@ -1,6 +1,7 @@
 """Tests for the Platform class."""
 import copy
 import io
+import re
 from pathlib import Path
 from queue import Queue
 from unittest.mock import MagicMock, patch
@@ -318,6 +319,19 @@ class TestMethods:
             with patch.object(QbloxModule, "desync_sequencers") as desync:
                 platform.execute(program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1)
             desync.assert_called()
+
+    def test_execute_raises_error_if_program_type_wrong(self, platform: Platform):
+        """Test that `Platform.execute` raises an error if the program sent is not a Circuit or a PulseSchedule."""
+        c = Circuit(1)
+        c.add(gates.M(0))
+        program = [c, c]
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                f"Program to execute can only be either a single circuit or a pulse schedule. Got program of type {type(program)} instead"
+            ),
+        ):
+            platform.execute(program=program, num_avg=1000, repetition_duration=2000, num_bins=1)
 
     def test_execute_raises_error_if_more_than_one_readout_bus_present(self, platform: Platform):
         """Test that `Platform.execute` raises an error when the platform contains more than one readout bus."""
