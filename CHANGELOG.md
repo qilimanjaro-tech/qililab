@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 0.22.1 (2023-12-05)
+
+### Bug fixes
+
+- Fixed [bug #635](https://github.com/qilimanjaro-tech/qililab/issues/635), where trying to read/set the Intermediate
+frequency parameter was failing for Qblox RF modules.
+  [#635](https://github.com/qilimanjaro-tech/qililab/pull/635)
+
 ## 0.22.0 (2023-11-27)
 
 ### New features since last release
