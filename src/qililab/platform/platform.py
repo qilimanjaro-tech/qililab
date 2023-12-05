@@ -653,8 +653,12 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         if isinstance(program, Circuit):
             transpiler = CircuitTranspiler(platform=self)
             pulse_schedule = transpiler.transpile_circuit(circuits=[program])[0]
-        else:
+        elif isinstance(program, PulseSchedule):
             pulse_schedule = program
+        else:
+            raise ValueError(
+                f"Program to execute can only be either a single circuit or a pulse schedule. Got program of type {type(program)} instead"
+            )
 
         programs = {}
         for pulse_bus_schedule in pulse_schedule.elements:
