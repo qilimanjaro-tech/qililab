@@ -20,6 +20,7 @@ import networkx as nx
 
 import qililab as ql
 from qililab.calibration.calibration_node import CalibrationNode
+from qililab.calibration.comparison_models import cz_cond_optimizer_comparison
 from qililab.config import logger
 from qililab.data_management import build_platform, save_platform
 from qililab.platform.platform import Platform
@@ -596,6 +597,9 @@ class CalibrationController:
         Returns:
             float: difference/error between the two samples.
         """
+        if node.comparison_model is cz_cond_optimizer_comparison:
+            return node.comparison_model(obtained)
+
         return node.comparison_model(obtained, comparison)
 
     @staticmethod
