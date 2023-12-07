@@ -185,7 +185,7 @@ def cz_cond_optimizer_comparison(obtained: dict[str, Any]) -> float:
     Returns:
         float: difference/error between the two samples.
     """
-    obtained_phase = obtained["check_parameters"]["results"]
+    obtained_phase = obtained["results"]
     range_in_spec = np.pi / 6  # Allow +- 30 degree phase diff from optimal 180º (pi)
 
     if obtained_phase < np.pi - 2 * range_in_spec or obtained_phase > np.pi + 2 * range_in_spec:
