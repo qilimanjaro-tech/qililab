@@ -56,7 +56,8 @@ def norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str, l
     # Error computation:
     square_error = sum(
         (obtained["results"][i] - comparison[check][comparison["sweep_interval"].index(obtained_x)]) ** 2
-        for i, obtained_x in enumerate(obtained["sweep_interval"]) if obtained_x in comparison["sweep_interval"]
+        for i, obtained_x in enumerate(obtained["sweep_interval"])
+        if obtained_x in comparison["sweep_interval"]
     )
     root_mean_square_error = np.sqrt(square_error / len(obtained["results"]))
 
@@ -98,12 +99,13 @@ def IQ_norm_root_mean_sqrt_error(obtained: dict[str, list], comparison: dict[str
     # Error computation:
     i, q = obtained["results"]
     errors = []
-    #TODO: Avoid comparison "if obtained_x in comparison["sweep_interval"]" instead build comparison sweep interval taking into acount this
-    #TODO: If no overlapping sweep intervals we must return a huge error so we get bad_data directly
+    # TODO: Avoid comparison "if obtained_x in comparison["sweep_interval"]" instead build comparison sweep interval taking into acount this
+    # TODO: If no overlapping sweep intervals we must return a huge error so we get bad_data directly
     for idx, obtained_results in enumerate([i, q]):
         square_error = sum(
             (obtained_results[index] - comparison[check][idx][comparison["sweep_interval"].index(obtained_x)]) ** 2
-            for index, obtained_x in enumerate(obtained["sweep_interval"]) if obtained_x in comparison["sweep_interval"]
+            for index, obtained_x in enumerate(obtained["sweep_interval"])
+            if obtained_x in comparison["sweep_interval"]
         )
         root_mean_square_error = np.sqrt(square_error / len(obtained_results))
 
@@ -173,9 +175,9 @@ def ssro_comparison_2D(obtained: dict[str, Any], comparison: dict[str, Any]) -> 
     return np.sqrt((mean_diff) * 4 + (std_dev_diff) / (obtained["sweep_interval"] + div_epsilon)) / 10
 
 
-def cz_cond_optimizer_comparison(obtained: dict[str, Any], comparison: dict[str, Any]) -> float:
-    """ Returns a normalized error between the comparison and obtained samples.
-    
+def cz_cond_optimizer_comparison(obtained: dict[str, Any]) -> float:
+    """Returns a normalized error between pi and obtained samples.
+
     Args:
         obtained (dict): Obtained samples to compare. Structure following the function docstring.
         comparison (dict): Previous samples to compare. Structure following the function docstring.
@@ -183,12 +185,19 @@ def cz_cond_optimizer_comparison(obtained: dict[str, Any], comparison: dict[str,
     Returns:
         float: difference/error between the two samples.
     """
-    raise NotImplementedError
+    obtained_phase = obtained["check_parameters"]["results"]
+    range_in_spec = np.pi / 6  # Allow +- 30 degree phase diff from optimal 180º (pi)
+
+    if obtained_phase < np.pi - 2 * range_in_spec or obtained_phase > np.pi + 2 * range_in_spec:
+        return 1
+    if obtained_phase < np.pi - range_in_spec or obtained_phase > np.pi + range_in_spec:
+        return 0.5
+    return 0
 
 
 def cz_tomography_comparison(obtained: dict[str, Any], comparison: dict[str, Any]) -> float:
-    """ Returns a normalized error between the comparison and obtained samples.
-    
+    """Returns a normalized error between the comparison and obtained samples.
+
     Args:
         obtained (dict): Obtained samples to compare. Structure following the function docstring.
         comparison (dict): Previous samples to compare. Structure following the function docstring.
