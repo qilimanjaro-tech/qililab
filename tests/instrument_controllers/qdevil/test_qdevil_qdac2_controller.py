@@ -7,6 +7,7 @@ from qililab.instrument_controllers.qdevil.qdevil_qdac2_controller import QDevil
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
 from qililab.platform import Platform
 from qililab.settings import Settings
+from qililab.typings import QDevilQDac2 as QDevilQDac2Device
 from tests.data import SauronQDevil  # pylint: disable=import-error
 from tests.test_utils import build_platform  # pylint: disable=import-error
 
@@ -29,7 +30,7 @@ class TestQDevilQDac2Controller:
     """Unit tests checking the QDAC-II controller attributes and methods"""
 
     def test_initialization(self, platform: Platform):
-        """Test QDAC-II controller has been initialized correctly"""
+        """Test QDAC-II controller has been initialized correctly."""
         controller_alias = "qdac_controller"
         controller_instance = platform.instrument_controllers.get_instrument_controller(alias=controller_alias)
         assert isinstance(controller_instance, QDevilQDac2Controller)
@@ -40,6 +41,14 @@ class TestQDevilQDac2Controller:
         controller_modules = controller_instance.modules
         assert len(controller_modules) == 1
         assert isinstance(controller_modules[0], QDevilQDac2)
+
+    @patch("qcodes.instrument.visa.VisaInstrument.device_clear")
+    def test_initialize_device(self, platform: Platform):
+        """Test QDAC-II controller initializes device correctly."""
+        controller_alias = "qdac_controller"
+        controller_instance = platform.instrument_controllers.get_instrument_controller(alias=controller_alias)
+
+        controller_instance._initialize_device()
 
     def test_check_supported_modules_raises_exception(
         self, qdevil_qdac2_controller_wrong_module: QDevilQDac2Controller

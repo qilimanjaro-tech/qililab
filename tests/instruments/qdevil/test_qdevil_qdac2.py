@@ -120,13 +120,13 @@ class TestQDevilQDac2:
 
     @pytest.mark.parametrize("parameter, value", [(Parameter.MAX_CURRENT, 0.001), (Parameter.GAIN, 0.0005)])
     def test_get_method_raises_exception(self, qdac: QDevilQDac2, parameter: Parameter, value):
-        """Test the setup method raises an exception with wrong parameters"""
+        """Test the get method raises an exception with wrong parameters"""
         for channel_id in qdac.dacs:
             with pytest.raises(ParameterNotFound):
                 qdac.get(parameter, channel_id)
 
     @pytest.mark.parametrize("channel_id", [0, 25, -1, None])
     def test_validate_channel_method_raises_exception(self, qdac: QDevilQDac2, channel_id):
-        """Test the setup method raises an exception with wrong parameters"""
+        """Test the _validate_channel method raises an exception with wrong parameters"""
         with pytest.raises(ValueError):
             qdac._validate_channel(channel_id)
