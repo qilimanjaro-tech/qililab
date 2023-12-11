@@ -25,6 +25,7 @@ from qibo.models import Circuit
 
 from qililab.chip import Coupler, Qubit
 from qililab.constants import RUNCARD
+from qililab.instruments import AWG
 from qililab.pulse import Pulse, PulseEvent, PulseSchedule
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.typings.enums import Line
@@ -210,15 +211,16 @@ class CircuitTranspiler:
 
             for qubit in self.platform.chip.qubits:
                 with contextlib.suppress(ValueError):
-                    # If we find a flux port, create empty schedule for that port
+                    # If we find a flux port, create empty schedule for that port.
+                    # This is needed because for Qblox instrument working in flux buses as DC sources, if we don't
+                    # add an empty schedule its offsets won't be activated and the results will be misleading.
                     flux_port = self.platform.chip.get_port_from_qubit_idx(idx=qubit, line=Line.FLUX)
-                    flux_bus = (
-                        next((bus for bus in self.platform.buses if bus.port == flux_port), None)
-                        if flux_port is not None
-                        else None
-                    )
-                    if flux_bus:
-                        pulse_schedule.create_schedule(port=flux_port)
+                    if flux_port is not None:
+                        flux_bus = next((bus for bus in self.platform.buses if bus.port == flux_port), None)
+                        if flux_bus and any(
+                            isinstance(instrument, AWG) for instrument in flux_bus.system_control.instruments
+                        ):
+                            pulse_schedule.create_schedule(port=flux_port)
 
             pulse_schedule_list.append(pulse_schedule)
 

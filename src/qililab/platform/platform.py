@@ -644,17 +644,29 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         Returns:
             dict: Dictionary of compiled assembly programs. The key is the bus alias (``str``), and the value is the assembly compilation (``list``).
+
+        Raises:
+            ValueError: raises value error if the circuit execution time is longer than ``repetition_duration`` for some qubit.
         """
         # We have a circular import because Platform uses CircuitToPulses and vice versa
 
         if isinstance(program, Circuit):
             transpiler = CircuitTranspiler(platform=self)
             pulse_schedule = transpiler.transpile_circuit(circuits=[program])[0]
-        else:
+        elif isinstance(program, PulseSchedule):
             pulse_schedule = program
+        else:
+            raise ValueError(
+                f"Program to execute can only be either a single circuit or a pulse schedule. Got program of type {type(program)} instead"
+            )
 
         programs = {}
         for pulse_bus_schedule in pulse_schedule.elements:
+            if len(pulse_bus_schedule.timeline) != 0:  # can't do only one conditional if list is empty
+                if pulse_bus_schedule.timeline[-1].end_time > repetition_duration:
+                    raise ValueError(
+                        f"Circuit execution time cannnot be longer than repetition duration but found circuit time {pulse_bus_schedule.timeline[-1].end_time } > {repetition_duration} for qubit {pulse_bus_schedule.qubit}"
+                    )
             bus = self.buses.get(port=pulse_bus_schedule.port)
             bus_programs = bus.compile(pulse_bus_schedule, num_avg, repetition_duration, num_bins)
             programs[bus.alias] = bus_programs

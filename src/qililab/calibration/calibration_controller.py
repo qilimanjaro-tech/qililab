@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=anomalous-backslash-in-string
+# pylint: disable=anomalous-backslash-in-string, inconsistent-return-statements
 """Automatic-calibration Controller module, which works with notebooks as nodes."""
 from datetime import datetime, timedelta
 
 import networkx as nx
 
+import qililab as ql
 from qililab.calibration.calibration_node import CalibrationNode
 from qililab.config import logger
 from qililab.data_management import build_platform, save_platform
@@ -80,6 +81,7 @@ class CalibrationController:
 
         Finally, ``run_automatic_calibration()`` is designed to start acquiring data or calibrating in the optimal location of the graph to avoid extra work:
 
+        # TODO: Change this workflow explanations to new one
         - If node A has been calibrated very recently (before the ``drift_timeout`` of the :class:`.CalibrationNode`), it would be a waste of resources to check its data, so ``check_state()`` makes ``maintain()`` skip it.
         - If node A depends on node B, before calibrating node A, we check the data of node B. Calibrating A would be a waste of resources if we were doing so based on faulty data, so it goes to its dependencies first.
 
@@ -91,6 +93,7 @@ class CalibrationController:
 
         Note that depending on your ``CalibrationController`` construction, you can have dangerous behaviors in the workflow. You need to watch out for:
 
+        # TODO: change this dangerous behaviours explanations, to new workflow
         - If you give bad ``comparison_thresholds`` or have bad ``comparison_models``, returning ``out_of_spec`` when you actually have ``bad_data`` or the other way around, will make ``diagnose()`` not being able to work properly, since for it to work, you need to have a single layer node separation (``out_of_spec``) between the ``in_spec`` and the ``bad_data`` nodes.
         - If you give too long ``drift_timeout``'s, since ``maintain()`` will assume the node is 100% working, you will go to further dependents when maybe you shouldn't without recalibrating. In the end ``diagnose()`` saves the day here, since it doesn't do ``check_state()``, although it will be less efficient.
 
@@ -183,11 +186,23 @@ class CalibrationController:
         self.platform: Platform = build_platform(runcard)
         """The initialized platform, where the experiments will be run (Platform)."""
 
-    def run_automatic_calibration(self) -> dict[str, dict]:
+    def run_automatic_calibration(
+        self,
+        force_maintain: bool = False,
+        safe_diagnose: bool = True,
+        strict_dependencies: bool = False,
+        run_fidelities: bool = False,
+    ) -> dict[str, dict]:
         """Runs the full automatic calibration procedure and retrieves the final set parameters and achieved fidelities dictionaries.
 
         This is the primary interface for our calibration procedure and the highest level algorithm, which finds all the end nodes of the graph
         (`leaves`, those without further `dependents`) and runs ``maintain()`` on them.
+
+        Args:
+            force_maintain_timeout_ratio (float, optional): Argument needed to compute the force maintain condition. Defaults to 0.0.
+            safe_diagnose (bool, optional): Flag to specify if we make sure to avoid corner cases while diagnosing (its slower). Defaults to False.
+            strict_dependencies (bool, optional): Flag to specify if the drift_timeout dependencies should be completely strict, meaning that a previous
+                dependency can never have a smaller drift_timeout. Defaults to False.
 
         Returns:
             dict[str, dict]: Dictionary for the last set parameters and the last achieved fidelities. It contains two dictionaries (dict[tuple, tuple]) in the keys:
@@ -199,20 +214,47 @@ class CalibrationController:
                     - key: (``str``: parameter name, ``int``: qubit).
                     - value: (``float``: parameter value, ``str``: node_id where computed, ``datetime``: updated time).
         """
-        highest_level_nodes = [node for node, out_degree in self.calibration_graph.out_degree() if out_degree == 0]
+        highest_level_nodes = [
+            self.node_sequence[node]
+            for node, out_degree in self.calibration_graph.out_degree()
+            if (out_degree == 0 and not self.node_sequence[node].fidelity)
+        ]
 
-        for n in highest_level_nodes:
-            self.maintain(self.node_sequence[n])
+        # TODO: Do a couple of integrations test, with deterministic scripts, where you know the sequence of check_datas and
+        # TODO: calibrates the workflow would need to follow, like the ones in my notebook, and check them.
+
+        for node in highest_level_nodes:
+            self.maintain(
+                node,
+                force_mantain=force_maintain,
+                safe_diagnose=safe_diagnose,
+                strict_dependencies=strict_dependencies,
+            )
+
+        if run_fidelities:
+            self.run_fidelities()
 
         logger.info(
-            "#############################################\n"
+            "\n#############################################\n"
             "Automatic calibration completed successfully!\n"
             "#############################################\n"
         )
 
         return {"set_parameters": self.get_last_set_parameters(), "fidelities": self.get_last_fidelities()}
 
-    def maintain(self, node: CalibrationNode) -> None:
+    def run_fidelities(self) -> None:
+        """Runs the fidelities notebooks."""
+        fidelities_nodes = (node for node in self.node_sequence.values() if node.fidelity)
+        for node in fidelities_nodes:
+            self.calibrate(node)
+
+    def maintain(
+        self,
+        node: CalibrationNode,
+        force_mantain: bool = False,
+        safe_diagnose: bool = False,
+        strict_dependencies: bool = False,
+    ) -> None:
         """Calls all the necessary subroutines (``check_state()``, ``check_data()`` and ``calibrate()``) in the respective dependencies to get a node
         in spec. Maintain contains the main workflow for our calibration procedure, and it's what is called from ``run_automatic_calibration()`` into
         each of the end ``nodes`` (leaves) of our graph.
@@ -227,11 +269,13 @@ class CalibrationController:
 
         Finally, ``maintain`` is designed to start acquiring data or calibrating in the optimal location of the graph, to avoid extra work:
 
+        # TODO: Change this workflow explanations to new one
         - if node A has been calibrated very recently (before the ``drift_timeout`` of the :class:`.CalibrationNode`), it would be waste of resources to check its data, so ``check_state()`` makes ``maintain()`` skip it.
         - if node A depends on node B, before calibrating node A we check the data of node B, calibrating A would be a waste of resources if we were doing so based on faulty data, so it goes to its dependencies first.
 
         |
 
+        # TODO: change this dangerous behaviours explanations, to new workflow
         Note that due to this, we can have dangerous behaviours in ``maintain()``, for example:
 
         - if you give bad ``comparison_thresholds`` or have bad ``comparison_models``, returning ``out_of_spec`` when you actually have ``bad_data`` or the other way around, making ``diagnose()`` not being able to work properly. Since for ``diagnose()`` to work, you need to have a single layer node separation (``out_of_spec``) between the ``in_spec`` and the ``bad_data`` nodes.
@@ -242,28 +286,51 @@ class CalibrationController:
         Args:
             node (CalibrationNode): The node where we want to start the algorithm on, getting it in spec. Normally you would want
                 this node to be the furthest node in the calibration graph.
+            force_mantain (bool, optional): Flag to force the method to not considerate `check_status` output value,
+                meaning it allways perform a call to `check_data`. Default to False.
+            safe_diagnose (bool, optional): Flag to specify if we make sure to avoid corner cases while diagnosing (its slower). Defaults to False.
         """
-        logger.info("Maintaining %s.\n", node.node_id)
+        logger.info("WORKFLOW: Maintaining %s.\n", node.node_id)
         # Recursion over all the nodes that the current node depends on.
         for n in self._dependencies(node):
-            logger.info("Maintaining %s from maintain(%s).\n", n.node_id, node.node_id)
             self.maintain(n)
 
-        if self.check_state(node):
+        # TODO: Integrationt test, where if all the drift_timeouts are super big, no check_data or calibration is done
+        # TODO: when no force_maintain, and one in the end, when the flag exist.
+
+        # If check_state of this node passes, don't check data, assume it works (unless its an end node).
+        node_status = self.check_state(node, strict_dependencies=strict_dependencies)
+        if not force_mantain and node_status:
             return
 
+        # Check data, if bad, diagnose to find the problem.
         result = self.check_data(node)
+
+        # If in_spec, maintain ends!
         if result == "in_spec":
+            self._update_parameters(node)  # In case the runcard has changed from last calibration.
             return
-        if result == "bad_data":
+
+        # TODO: Integration test, for the second condition here: for example, if we had check_data like
+        # TODO: V - V - O - O then it would calibrate the last without calibrating the dependency...
+
+        # If `bad_data` or `out_of_spec` in the last nodes with safe flag:
+        if result == "bad_data" or (safe_diagnose and result == "out_of_spec"):
             for n in self._dependencies(node):
-                logger.info("Diagnosing %s from maintain(%s).\n", n.node_id, node.node_id)
-                self.diagnose(n)
+                logger.info("WORKFLOW: Diagnosing %s from maintain(%s).\n", n.node_id, node.node_id)
+                self.diagnose(n, safe=safe_diagnose)
+
+        # Implicit out_spec case (except above second condition with safe flag)
+        if force_mantain and node_status:
+            logger.info(
+                "`force_maintain` in node %s, detected that `check_status` was passed, but node was not `in_spec', perhaps `drift_timeouts` should be updated.",
+                node.node_id,
+            )
 
         self.calibrate(node)
         self._update_parameters(node)
 
-    def diagnose(self, node: CalibrationNode) -> bool:
+    def diagnose(self, node: CalibrationNode, safe: bool = False):
         """Checks the data of all the dependencies of a node, until it finds the root of the problem with their data.
 
         This is a method called by ``maintain()`` in the special case that its call of ``check_data()`` finds bad data.
@@ -277,6 +344,14 @@ class CalibrationController:
         case, our knowledge of the systems's state is inaccurate. That why ``diagnose()`` does more strict checks, fixing inaccuracies in our
         knowledge of the system's state, to allow ``maintain()`` to continue.
 
+        #TODO: Explain safe_check, this as example:
+        Diagnose called with flag `safe_check` will make sure `out_spec` nodes are detected by reliying on actuall information of dependant nodes.
+        Otherwise the algorithm will rely on `out_spec` classification method provided by the user via comparison model chosen.
+
+        Note that `check` will cover corner cases that may be caused by user choices in exchange for time complexity as the number of
+        calls to `check_data` will be higher on average.
+
+        # TODO: change this dangerous behaviours explanations, to new workflow
         Finally mention, two important thing to have in mind:
 
         - if you give bad ``comparison_thresholds`` or have bad ``comparison_models``, which return ``out_of_spec`` when you actually have ``bad_data`` or the other way around, it will make your full calibration fail. Since for ``diagnose()`` to work, you need to have a single node separation (``out_of_spec``) between the ``in_spec`` and the ``bad_data`` ones.
@@ -286,32 +361,46 @@ class CalibrationController:
 
         Args:
             node (CalibrationNode): The node where we want to start the algorithm.
+            safe (bool, optional):  Flag to specify if we make sure to avoid corner cases (its slower). Defaults to False.
 
         Returns:
             bool: True is there have been recalibrations, False otherwise. The return value is only used by recursive calls.
         """
-        logger.info("diagnosing %s.\n", node.node_id)
-        result = self.check_data(node)
+        logger.info("WORKFLOW: diagnosing %s.\n", node.node_id)
 
-        # in spec case
-        if result == "in_spec":
-            return False
+        if safe:
+            # in spec case
+            if self.check_data(node) == "in_spec":
+                self._update_parameters(node)  # In case the runcard has changed from last calibration.
+                return
 
-        # bad data case
-        recalibrated = []
-        if result == "bad_data":
-            recalibrated = [self.diagnose(n) for n in self._dependencies(node)]
-            logger.info("Dependencies diagnoses of %s: %s\n", node.node_id, str(recalibrated))
-        # If not empty and only filled with False's (not any True).
-        if recalibrated != [] and not any(recalibrated):
-            return False
+            # bad_data/out_spec case
+            for n in self._dependencies(node):
+                self.diagnose(n, safe=True)
+
+        else:
+            result = self.check_data(node)
+
+            # in spec case
+            if result == "in_spec":
+                self._update_parameters(node)  # In case the runcard has changed from last calibration.
+                return False
+
+            # bad data case
+            recalibrated = []
+            if result == "bad_data":
+                recalibrated = [self.diagnose(n, safe=False) for n in self._dependencies(node)]
+                logger.info("WORKFLOW: Dependencies diagnoses of %s: %s\n", node.node_id, str(recalibrated))
+            # If not empty and only filled with False's (not any True).
+            if recalibrated != [] and not any(recalibrated):
+                return False
 
         # calibrate
         self.calibrate(node)
         self._update_parameters(node)
-        return True
+        return safe
 
-    def check_state(self, node: CalibrationNode) -> bool:
+    def check_state(self, node: CalibrationNode, strict_dependencies: bool = False) -> bool:
         """Checks if the node's drift timeouts have passed since the last calibration or data check.
 
         These timeouts represent how long it usually takes for the parameters to drift, specified by the user.
@@ -330,24 +419,39 @@ class CalibrationController:
         Returns:
             bool: True if the parameter's drift timeout has not yet expired, False otherwise.
         """
-        logger.info('Checking state of node "%s".\n', node.node_id)
+        # Check if something happened and the timestamp could not be setted properly
+        if node.previous_timestamp is None:
+            logger.info("WORKFLOW: check_state of %s: False.\n", node.node_id)
+            return False
 
         # Get the list of the dependencies that have been calibrated before this node, all of them should be True
-        dependencies_timestamps_previous = [
-            n.previous_timestamp < node.previous_timestamp for n in self._dependencies(node)
-        ]
-        # Check if something hapened and the timestamp could not be setted properly and the rest of conditions
-        if node.previous_timestamp is None or not all(
-            dependencies_timestamps_previous
-        ):  # or not all(dependencies_status)
-            logger.info("check_state of %s: False.\n", node.node_id)
-            return False
+        for n in self._dependencies(node):
+            # TODO: Integration test that cases where check_states are like: V - X - V - V only skip the first node
+            # Keep the smaller drift timeout, from all its dependencies.
+            if strict_dependencies and n.drift_timeout < node.drift_timeout:
+                node.drift_timeout = n.drift_timeout
+                logger.warning(
+                    "The drift_timeout of node %s is bigger than its dependency %s, so the later will be used.",
+                    node.node_id,
+                    n.node_id,
+                )
+            # A dependency has been calibrated before this node
+            if n.previous_timestamp >= node.previous_timestamp:
+                logger.info("WORKFLOW: check_state of %s: False.\n", node.node_id)
+                return False
+            # A dependency is expired
+            if self._is_timeout_expired(n.previous_timestamp, n.drift_timeout):
+                logger.info("WORKFLOW: check_state of %s: False.\n", node.node_id)
+                return False
+
+        # If this node concretely passes check_state
+        is_timeout_not_expired = not self._is_timeout_expired(node.previous_timestamp, node.drift_timeout)
         logger.info(
-            "check_state of %s: %r.\n",
+            "WORKFLOW: check_state of %s: %r.\n",
             node.node_id,
-            (not self._is_timeout_expired(node.previous_timestamp, node.drift_timeout)),
+            is_timeout_not_expired,
         )
-        return not self._is_timeout_expired(node.previous_timestamp, node.drift_timeout)
+        return is_timeout_not_expired
 
     def check_data(self, node: CalibrationNode) -> str:
         """Checks if the parameters found in the last calibration are still valid, doing a reduced execution of the notebook.
@@ -378,9 +482,14 @@ class CalibrationController:
             - ``bad_data`` if the results don't follow the desired fit, or are noisy, which should happen when dependencies have drifted. Or also if there are no previous executions.
         """
         # pylint: disable=protected-access
-
-        logger.info('Checking data of node "%s".\n', node.node_id)
-        timestamp = node.run_node(check=True)
+        # 2 hour interval from last in_spec, for assuming is still good:
+        if (node.previous_inspec is None or self._is_timeout_expired(node.previous_inspec, 7200.0)) and (
+            node.previous_timestamp is None or self._is_timeout_expired(node.previous_timestamp, 7200.0)
+        ):
+            timestamp = node.run_node(check=True)
+        else:
+            logger.info('WORKFLOW: Using recent `in_spec`-`check_data` or calibration in node "%s".\n', node.node_id)
+            return "in_spec"
 
         # Comparison and obtained parameters:
         comparison_outputs = node.previous_output_parameters
@@ -395,21 +504,23 @@ class CalibrationController:
             # Get comparison from last notebook and the new obtained parameters.
             compar_params = comparison_outputs["check_parameters"]
             obtain_params = obtained_outputs["check_parameters"]
-            logger.info("obtained: %s ", str(obtain_params))
-            logger.info("comparison: %s", str(compar_params))
+
+            # TODO: Intergation test, that this returns the expected values, for very sided thresholds to
+            # TODO: the right or to the left...
 
             comparison_number = self._obtain_comparison(node, obtain_params, compar_params)
 
             if comparison_number <= node.in_spec_threshold:
                 comparison_result = "in_spec"
+                node.previous_inspec = datetime.timestamp(datetime.now())
 
             elif comparison_number <= node.bad_data_threshold:
                 comparison_result = "out_of_spec"
 
         # Do the necessary following changes:
-        logger.info("check_data of %s: %s.\n", node.node_id, comparison_result)
-        node._add_string_to_checked_nb_name(comparison_result, timestamp)
-        node.previous_output_parameters = node.output_parameters
+        logger.info("WORKFLOW: check_data of %s: %s.\n", node.node_id, comparison_result)
+        node._add_string_to_checked_nb_name(comparison_result, timestamp)  # add comparison result tag to the file name.
+        node.output_parameters = node.previous_output_parameters
         return comparison_result
 
     def calibrate(self, node: CalibrationNode) -> None:
@@ -423,9 +534,10 @@ class CalibrationController:
         Args:
             node (CalibrationNode): The node where the calibration experiment is run.
         """
-        logger.info('Calibrating node "%s".\n', node.node_id)
+        logger.info('WORKFLOW: Calibrating node "%s".\n', node.node_id)
         node.previous_timestamp = node.run_node()
         node._add_string_to_checked_nb_name("calibrated", node.previous_timestamp)  # pylint: disable=protected-access
+        # add _calibrated tag to the file name, which doesn't have a tag.
 
     def _update_parameters(self, node: CalibrationNode) -> None:
         """Updates the node parameters value in the platform, after a calibration.
@@ -441,7 +553,9 @@ class CalibrationController:
                 logger.info(
                     "Platform updated with: (bus: %s, q: %s, %s, %f).", bus_alias, qubit, param_name, param_value
                 )
-                self.platform.set_parameter(alias=bus_alias, parameter=param_name, value=param_value, channel_id=qubit)
+                self.platform.set_parameter(
+                    alias=bus_alias, parameter=ql.Parameter(param_name), value=param_value, channel_id=qubit
+                )
 
             save_platform(self.runcard, self.platform)
 
@@ -539,3 +653,23 @@ class CalibrationController:
         # Check if the current time is greater than the timeout time
         current_time = datetime.now()
         return current_time > timeout_time
+
+    # TODO: @Isaac, I've commented this, because we won't use a ratio parameter, its too ugly and complex for a first iteration...
+    # I would just delete this function, but if you really want, keep this one with a fixed number like 600, or a fixed small ratio like 0.01
+    # Like it is now, its super beautiful and clear, two flags, nothing complicated, if hardware ask, we can always add it!
+
+    # @staticmethod
+    # def _get_forced_maintain_condition(node: CalibrationNode, ratio: float = 0.01) -> bool:
+    #     """Method to return if a Calibration Node should be force maintained or not.
+    #     The condition checks if the time transcurred from the last calibration is greater than a ratio of the drift timeout of the node.
+
+    #     Args:
+    #         node (CalibrationNode): Calibration Node to get the the forced maintain condition
+    #         ratio(flat, optional): Ratio used for the condition. Default to 0.0.
+
+    #     Returns:
+    #         bool: Returns True if the condition is met. Otherwise returns False.
+    #     """
+    #     comp = node.drift_timeout * ratio if ratio != 0 else 600
+    #     now = datetime.timestamp(datetime.now())
+    #     return now - node.previous_timestamp > comp if node.previous_timestamp is not None else False

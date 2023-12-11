@@ -1,6 +1,7 @@
 """Tests for the Platform class."""
 import copy
 import io
+import re
 from pathlib import Path
 from queue import Queue
 from unittest.mock import MagicMock, patch
@@ -226,7 +227,7 @@ class TestMethods:
         self._compile_and_assert(platform, pulse_schedule, 2)
 
     def _compile_and_assert(self, platform: Platform, program: Circuit | PulseSchedule, len_sequences: int):
-        sequences = platform.compile(program=program, num_avg=1000, repetition_duration=2000, num_bins=1)
+        sequences = platform.compile(program=program, num_avg=1000, repetition_duration=200_000, num_bins=1)
         assert isinstance(sequences, dict)
         assert len(sequences) == len_sequences
         for alias, sequences in sequences.items():
@@ -234,7 +235,7 @@ class TestMethods:
             assert isinstance(sequences, list)
             assert len(sequences) == 1
             assert isinstance(sequences[0], Sequence)
-            assert sequences[0]._program.duration == 2000 * 1000 + 4
+            assert sequences[0]._program.duration == 200_000 * 1000 + 4
 
     def test_execute_qprogram(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
@@ -287,6 +288,14 @@ class TestMethods:
         assert result == 123
         desync.assert_called()
 
+    def test_error_circuit_gt_repetition_duration(self, platform: Platform):
+        c = Circuit(1)
+        c.add([gates.X(0)] * 1000)
+        c.add(gates.M(0))
+        error_string = "Circuit execution time cannnot be longer than repetition duration but found circuit time 51998 > 2000 for qubit 0"
+        with pytest.raises(ValueError, match=error_string):
+            platform.compile(program=c, num_avg=1000, repetition_duration=2000, num_bins=1)
+
     def test_execute_with_queue(self, platform: Platform):
         """Test that the execute method adds the obtained results to the given queue."""
         queue: Queue = Queue()
@@ -310,6 +319,19 @@ class TestMethods:
             with patch.object(QbloxModule, "desync_sequencers") as desync:
                 platform.execute(program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1)
             desync.assert_called()
+
+    def test_execute_raises_error_if_program_type_wrong(self, platform: Platform):
+        """Test that `Platform.execute` raises an error if the program sent is not a Circuit or a PulseSchedule."""
+        c = Circuit(1)
+        c.add(gates.M(0))
+        program = [c, c]
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                f"Program to execute can only be either a single circuit or a pulse schedule. Got program of type {type(program)} instead"
+            ),
+        ):
+            platform.execute(program=program, num_avg=1000, repetition_duration=2000, num_bins=1)
 
     def test_execute_raises_error_if_more_than_one_readout_bus_present(self, platform: Platform):
         """Test that `Platform.execute` raises an error when the platform contains more than one readout bus."""
