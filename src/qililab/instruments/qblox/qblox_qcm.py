@@ -40,24 +40,3 @@ class QbloxQCM(QbloxModule):
         """Contains the settings of a specific pulsar."""
 
     settings: QbloxQCMSettings
-
-    def _generate_weights(self, sequencer: AWGQbloxSequencer) -> Weights:
-        """Generate acquisition weights.
-
-        Returns:
-            dict: Acquisition weights.
-        """
-        return Weights()
-
-    def _append_acquire_instruction(
-        self, loop: Loop, bin_index: Register | int, sequencer_id: int, weight_regs: tuple[Register, Register]
-    ):
-        """Append an acquire instruction to the loop."""
-
-    def acquire_result(self) -> QbloxResult:
-        """Read the result from the AWG instrument
-
-        Returns:
-            QbloxResult: Acquired Qblox result
-        """
-        raise NotImplementedError
