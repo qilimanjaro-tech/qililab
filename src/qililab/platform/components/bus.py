@@ -14,6 +14,7 @@
 
 """Bus class."""
 from dataclasses import InitVar, dataclass
+from typing import Any
 
 from qpysequence import Sequence as QpySequence
 
@@ -217,9 +218,9 @@ class Bus:
         """Uploads the qpysequence into the instrument."""
         self.system_control.upload_qpysequence(qpysequence=qpysequence, port=self.port)
 
-    def upload(self):
+    def upload(self, program: Any):
         """Uploads any previously compiled program into the instrument."""
-        self.system_control.upload(port=self.port)
+        self.system_control.upload(program= program, port=self.port)
 
     def run(self) -> None:
         """Runs any previously uploaded program into the instrument."""

@@ -17,7 +17,7 @@
 import contextlib
 from abc import ABC
 from dataclasses import InitVar, dataclass
-from typing import get_type_hints
+from typing import get_type_hints, Any
 
 from qpysequence import Sequence as QpySequence
 
@@ -96,11 +96,11 @@ class SystemControl(FactoryElement, ABC):
 
         raise AttributeError("The system control doesn't have any AWG to upload a qpysequence.")
 
-    def upload(self, port: str):
+    def upload(self, program: Any, port: str):
         """Uploads any previously compiled program into the instrument."""
         for instrument in self.instruments:
             if isinstance(instrument, AWG):
-                instrument.upload(port=port)
+                instrument.upload(program=program, port=port)
                 return
 
         raise AttributeError("The system control doesn't have any AWG to upload a program.")

@@ -15,7 +15,7 @@
 """QubitControl class."""
 from abc import abstractmethod
 from dataclasses import asdict, dataclass
-from typing import Sequence
+from typing import Sequence, Any
 
 from qpysequence import Sequence as QpySequence
 
@@ -75,7 +75,7 @@ class AWG(Instrument):
         """Upload qpysequence."""
 
     @abstractmethod
-    def upload(self, port: str):
+    def upload(self, program: Any, port: str):
         """Upload compiled program."""
 
     @property

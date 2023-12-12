@@ -43,10 +43,7 @@ class QbloxCompiler():
         self.num_bins = num_bins
         self.qblox_modules = [instrument for instrument in platform.instruments.elements if isinstance(instrument, QbloxModule)]
         
-    def clear_cache(self): # TODO: rename to avoid confusion with qblox clear cache
-        """Empty cache."""
-        self._cache = {}
-        self.sequences = {}
+
     
     def compile(self, pulse_schedule: PulseSchedule, nshots: int, repetition_duration: int, num_bins: int): # TODO: temporary
         
@@ -54,56 +51,20 @@ class QbloxCompiler():
             self.nshots = nshots
             self.repetition_duration = repetition_duration
             self.num_bins = num_bins
-            self.clear_cache()
+            for qblox_module in self.qblox_modules:
+                qblox_module.clear_sequence_cache()
 
         sequencer_qrm_bus_schedules, sequencer_qcm_bus_schedules = self.get_pulse_bus_schedule_sequencers(pulse_schedule, self.qblox_modules)
 
-        # empty cache and sequence for specific qubits if they are not in the schedule
-        for cached_qubit, seq_id in (
-            (timeline.qubit, key) for key, element in list(self._cache.items()) for timeline in element.timeline
-        ):
-            if cached_qubit not in (schedule.qubit for schedule in [schedule for _, schedule in sequencer_qrm_bus_schedules]):
-                _ = self.sequences.pop(seq_id)
-                _ = self._cache.pop(seq_id)
         
-        compiled_sequences = []
-        for sequencer, bus_schedule in sequencer_qrm_bus_schedules:
-            self._compile(bus_schedule, self.nshots, self.repetition_duration, self.num_bins, sequencer)
-
-    def _compile(
-        self, pulse_bus_schedule: PulseBusSchedule, sequencer: AWGQbloxSequencer
-    ) -> list[QpySequence]:
-        """Compiles the ``PulseBusSchedule`` into an assembly program.
-
-        This method skips compilation if the pulse schedule is in the cache. Otherwise, the pulse schedule is
-        compiled and added into the cache.
-
-        If the number of shots or the repetition duration changes, the cache will be cleared.
-
-        Args:
-            pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
-            nshots (int): number of shots / hardware average
-            repetition_duration (int): repetition duration
-            num_bins (int): number of bins
-
-        Returns:
-            list[QpySequence]: list of compiled assembly programs
-        """
-
-
-        compiled_sequences = []
-        
-
-    
-        if pulse_bus_schedule != self._cache.get(sequencer.identifier):                
-            sequence = self._translate_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule, sequencer=sequencer)
-            compiled_sequences.append(sequence)
-            self._cache[sequencer.identifier] = pulse_bus_schedule
-            self.sequences[sequencer.identifier] = (sequence, False)
-        else:
-            compiled_sequences.append(self.sequences[sequencer.identifier][0])
+        compiled_sequences = {}
+        for sequencer, bus_schedule in sequencer_qrm_bus_schedules + sequencer_qcm_bus_schedules:
+            qblox_module = self._get_instrument_from_sequencer(sequencer)
+            compiled_sequences[bus_schedule.] = self._translate_pulse_bus_schedule(bus_schedule, sequencer) if bus_schedule != qblox_module.cache.get(sequencer.identifier) else qblox_module.sequences[sequencer.identifier][0]
+            
         return compiled_sequences
-    
+
+
     def _translate_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule, sequencer: AWGQbloxSequencer):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
 

@@ -615,9 +615,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         programs = self.compile(program, num_avg, repetition_duration, num_bins)
 
         # Upload pulse schedule
-        for bus_alias in programs:
+        for bus_alias, program in programs:
             bus = self._get_bus_by_alias(alias=bus_alias)
-            bus.upload()
+            bus.upload(program)
 
         # Execute pulse schedule
         for bus_alias in programs:
