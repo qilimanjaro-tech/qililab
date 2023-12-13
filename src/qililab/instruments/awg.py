@@ -71,10 +71,6 @@ class AWG(Instrument):
         """Run the uploaded program"""
 
     @abstractmethod
-    def upload_qpysequence(self, qpysequence: QpySequence, port: str): #TODO: why do we have an upload_qpysequence method here?
-        """Upload qpysequence."""
-
-    @abstractmethod
     def upload(self, program: Any, port: str):
         """Upload compiled program."""
 

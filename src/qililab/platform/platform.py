@@ -35,12 +35,13 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSchedule
-from qililab.qprogram.qblox_compiler import QbloxCompiler
+from qililab.qprogram.qblox_compiler import QProgramQbloxCompiler
 from qililab.qprogram.qprogram import QProgram
 from qililab.result import Result
 from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import Line, Parameter
+from qililab.compiler import QbloxCompiler as PulseScheduleQbloxCompiler
 
 from .components import Bus, Buses
 
@@ -297,6 +298,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         self._connected_to_instruments: bool = False
         """Boolean indicating the connection status to the instruments. Defaults to False (not connected)."""
+        
+        self.compiler = PulseScheduleQbloxCompiler(platform=self) #TODO: integrate with qprogram compiler
+        """Compiler to translate given programs to instructions for a given awg vendor"""
 
     def connect(self, manual_override=False):
         """Connects to all the instruments and blocks the connection for other users.
@@ -552,7 +556,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """
 
         # Compile QProgram
-        qblox_compiler = QbloxCompiler()
+        qblox_compiler = QProgramQbloxCompiler()
         sequences = qblox_compiler.compile(qprogram=qprogram)
         buses = {bus_alias: self._get_bus_by_alias(alias=bus_alias) for bus_alias in sequences}
 
@@ -669,11 +673,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             pulse_schedule = transpiler.transpile_circuit(circuits=[program])[0]
         else:
             pulse_schedule = program
+            
+        return self.compiler.compile(pulse_schedule=pulse_schedule, num_avg=num_avg,repetition_duration=repetition_duration,num_bins=num_bins)
 
-        programs = {}
-        for pulse_bus_schedule in pulse_schedule.elements:
-            bus = self.buses.get(port=pulse_bus_schedule.port)
-            bus_programs = bus.compile(pulse_bus_schedule, num_avg, repetition_duration, num_bins)
-            programs[bus.alias] = bus_programs
-
-        return programs

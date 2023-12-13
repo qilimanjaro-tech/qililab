@@ -12,29 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module contains the QProgram class and all the needed information to build a QProgram.
-
-.. currentmodule:: qililab
-
-QProgram Class
-~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~QProgram
-
-Compilers
-~~~~~~~~~
-
-.. currentmodule:: qililab.qprogram
-
-.. autosummary::
-    :toctree: api
-
-    ~QbloxCompiler
-"""
-from .qblox_compiler import QProgramQbloxCompiler
-from .qprogram import QProgram
-from .quantum_machines_compiler import QuantumMachinesCompiler
-from .variable import Domain
+from .qblox_compiler import QbloxCompiler
