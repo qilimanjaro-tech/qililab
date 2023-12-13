@@ -112,6 +112,39 @@ class QuantumMachinesManager(Instrument):
                 for controller in self.controllers
             }
 
+        def _get_octaves_config(self) -> dict[str, Any]:
+            """Returns the octaves config dictionary.
+
+            Returns:
+                octaves: Dict[str, Any]
+            """
+            return {
+                octave["name"]: {
+                    "RF_outputs": {
+                        output["port"]: {
+                            "LO_frequency": output["lo_frequency"],  # Should be between 2 and 18 GHz.
+                            "LO_source": "internal",
+                            "gain": output["gain"],
+                            "output_mode": "always_on",
+                            "input_attenuators": "OFF",  # can be: "OFF" / "ON". Default is "OFF".
+                        }
+                        for output in octave.get("rf_outputs", [])
+                    },
+                    "RF_inputs": {
+                        output["port"]: {
+                            "RF_source": "RF_in",
+                            "LO_frequency": output["lo_frequency"],
+                            "LO_source": "internal",  # can be: "internal" / "external". Default is "internal".
+                            "IF_mode_I": "direct",  # can be: "direct" / "mixer" / "envelope" / "off". Default is "direct".
+                            "IF_mode_Q": "direct",
+                        }
+                        for output in octave.get("rf_inputs", [])
+                    },
+                    "connectivity": octave["connected_to"],
+                }
+                for octave in self.octaves
+            }
+
         def _get_elements_and_mixers_config(self) -> tuple:
             """Returns the elements config dictionary.
 
@@ -184,39 +217,6 @@ class QuantumMachinesManager(Instrument):
                 elements[bus_name] = element_dict
 
             return elements, mixers
-
-        def _get_octaves_config(self) -> dict[str, Any]:
-            """Returns the octaves config dictionary.
-
-            Returns:
-                octaves: Dict[str, Any]
-            """
-            return {
-                octave["name"]: {
-                    "RF_outputs": {
-                        output["port"]: {
-                            "LO_frequency": output["lo_frequency"],  # Should be between 2 and 18 GHz.
-                            "LO_source": "internal",
-                            "gain": output["gain"],
-                            "output_mode": "always_on",
-                            "input_attenuators": "OFF",  # can be: "OFF" / "ON". Default is "OFF".
-                        }
-                        for output in octave.get("rf_outputs", [])
-                    },
-                    "RF_inputs": {
-                        output["port"]: {
-                            "RF_source": "RF_in",
-                            "LO_frequency": output["lo_frequency"],
-                            "LO_source": "internal",  # can be: "internal" / "external". Default is "internal".
-                            "IF_mode_I": "direct",  # can be: "direct" / "mixer" / "envelope" / "off". Default is "direct".
-                            "IF_mode_Q": "direct",
-                        }
-                        for output in octave.get("rf_inputs", [])
-                    },
-                    "connectivity": octave["connected_to"],
-                }
-                for octave in self.octaves
-            }
 
     settings: QMMSettings
     device: QMMDriver
