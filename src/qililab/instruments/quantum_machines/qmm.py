@@ -50,7 +50,7 @@ class QuantumMachinesManager(Instrument):
         """Settings for Quantum Machines Manager instrument.
 
         Args:
-            address (str): I.P. address to connect to the Quantum Machines instruments.
+            address (str): IP address to connect to the Quantum Machines instruments.
             port (int): Port to connect to the Quantum Machines instruments.
             num_controllers (int): Number of controllers (instruments) in the quantum machines stack.
             octaves (list[dict[str, Any]]): List of octaves the quantum machines stack has.
@@ -63,6 +63,160 @@ class QuantumMachinesManager(Instrument):
         octaves: list[dict[str, Any]]
         controllers: list[dict[str, Any]]
         elements: list[dict[str, Any]]
+
+        def to_qua_config(self) -> Dict[str, Any]:
+            """Creates the Quantum Machines config dictionary.
+
+            Creates, an instance of a dictionary in the format that QuantumMachines expects the config dictionary to be.
+            Controllers (instruments in the quantum machines stack) and elements (buses) are parsed from the QMMSettings
+            object of this class to generate the right output that will be added to the config dictionary generated out of the
+            QProgram compiler.
+
+            Returns:
+                config: Dict[str, Any]
+            """
+            elements, mixers = self._get_elements_and_mixers_config()
+            controllers = self._get_controllers_config()
+            octaves = self._get_octaves_config()
+
+            return {
+                "version": 1,
+                "controllers": controllers,
+                "elements": elements,
+                "mixers": mixers,
+                "waveforms": {},
+                "integration_weights": {},
+                "pulses": {},
+                "digital_waveforms": {},
+                "octaves": octaves,
+            }
+
+        def _get_controllers_config(self) -> dict[str, Any]:
+            """Returns the controllers config dictionary.
+
+            Returns:
+                controllers: Dict[str, Any]
+            """
+            return {
+                controller["name"]: {
+                    "analog_outputs": {
+                        output["port"]: {"offset": output["offset"], "delay": output["delay"]}
+                        for output in controller.get("analog_outputs", [])
+                    },
+                    "analog_inputs": {
+                        input["port"]: {"offset": input["offset"], "gain_db": input["gain"]}
+                        for input in controller.get("analog_inputs", [])
+                    },
+                    "digital_outputs": {output["port"]: {} for output in controller.get("digital_outputs", [])},
+                }
+                for controller in self.controllers
+            }
+
+        def _get_elements_and_mixers_config(self) -> tuple:
+            """Returns the elements config dictionary.
+
+            Returns:
+                elements: Dict[str, Any]
+            """
+            elements = {}
+            mixers = {}
+
+            for element in self.elements:
+                bus_name = element["bus"]
+                element_dict: dict = {"operations": {}}
+
+                # Flux bus
+                if "single_input" in element:
+                    element_dict["singleInput"] = {
+                        "port": (element["single_input"]["controller"], element["single_input"]["port"]),
+                    }
+                # IQ bus
+                elif "mix_inputs" in element:
+                    mixer_name = f"mixer_{bus_name}"
+                    lo_frequency = int(element["mix_inputs"]["lo_frequency"])
+                    intermediate_frequency = int(element["intermediate_frequency"])
+                    mixers[mixer_name] = [
+                        {
+                            "intermediate_frequency": intermediate_frequency,
+                            "lo_frequency": lo_frequency,
+                            "correction": element["mix_inputs"]["mixer_correction"],
+                        }
+                    ]
+                    element_dict["mixInputs"] = {
+                        key: (element["mix_inputs"][key]["controller"], element["mix_inputs"][key]["port"])
+                        for key in ["I", "Q"]
+                    } | {"lo_frequency": lo_frequency, "mixer": mixer_name}
+                    element_dict["intermediate_frequency"] = intermediate_frequency
+
+                    # readout bus
+                    if "outputs" in element:
+                        element_dict["outputs"] = {
+                            key: (element["outputs"][key]["controller"], element["outputs"][key]["port"])
+                            for key in ["out1", "out2"]
+                        }
+                        element_dict["time_of_flight"] = element["time_of_flight"]
+                        element_dict["smearing"] = element["smearing"]
+                # RF with Octave
+                elif "rf_inputs" in element:
+                    element_dict["RF_inputs"] = {"port": (element["rf_inputs"]["octave"], element["rf_inputs"]["port"])}
+                    element_dict["intermediate_frequency"] = int(element["intermediate_frequency"])
+
+                    # readout bus
+                    if "rf_outputs" in element:
+                        element_dict["RF_outputs"] = {
+                            "port": (element["rf_outputs"]["octave"], element["rf_outputs"]["port"]),
+                        }
+                        element_dict["time_of_flight"] = element["time_of_flight"]
+                        element_dict["smearing"] = element["smearing"]
+
+                # other settings
+                if "digital_inputs" in element:
+                    element_dict["digitalInputs"] = {
+                        "port": (element["digital_inputs"]["controller"], element["digital_inputs"]["port"]),
+                        "delay": element["digital_inputs"]["delay"],
+                        "buffer": element["digital_inputs"]["buffer"],
+                    }
+                if "digital_outputs" in element:
+                    element_dict["digitalOutputs"] = {
+                        "port": (element["digital_outputs"]["controller"], element["digital_outputs"]["port"]),
+                    }
+
+                elements[bus_name] = element_dict
+
+            return elements, mixers
+
+        def _get_octaves_config(self) -> dict[str, Any]:
+            """Returns the octaves config dictionary.
+
+            Returns:
+                octaves: Dict[str, Any]
+            """
+            return {
+                octave["name"]: {
+                    "RF_outputs": {
+                        output["port"]: {
+                            "LO_frequency": output["lo_frequency"],  # Should be between 2 and 18 GHz.
+                            "LO_source": "internal",
+                            "gain": output["gain"],
+                            "output_mode": "always_on",
+                            "input_attenuators": "OFF",  # can be: "OFF" / "ON". Default is "OFF".
+                        }
+                        for output in octave.get("rf_outputs", [])
+                    },
+                    "RF_inputs": {
+                        output["port"]: {
+                            "RF_source": "RF_in",
+                            "LO_frequency": output["lo_frequency"],
+                            "LO_source": "internal",  # can be: "internal" / "external". Default is "internal".
+                            "IF_mode_I": "direct",  # can be: "direct" / "mixer" / "envelope" / "off". Default is "direct".
+                            "IF_mode_Q": "direct",
+                        }
+                        for output in octave.get("rf_inputs", [])
+                    },
+                    "connectivity": octave["connected_to"],
+                }
+                for octave in self.octaves
+            }
 
     settings: QMMSettings
     device: QMMDriver
@@ -77,7 +231,7 @@ class QuantumMachinesManager(Instrument):
         a connection to the Quantum Machine by the use of the Quantum Machines Manager.
         """
         super().initial_setup()
-        self.config = self.create_config()
+        self.config = self.settings.to_qua_config()
         qmm = QMM(host=self.settings.address, port=self.settings.port)
         self.qm = qmm.open_qm(config=self.config, close_other_machines=True)
 
@@ -105,135 +259,6 @@ class QuantumMachinesManager(Instrument):
             bool: True if the parameter is set correctly, False otherwise
         """
         raise NotImplementedError("Setting a parameter is not supported for Quantum Machines yet.")
-
-    def create_config(self) -> Dict[str, Any]:
-        """Creates the Quantum Machines config dictionary.
-
-        Creates, an instance of a dictionary in the format that QuantumMachines expects the config dictionary to be.
-        Controllers (instruments in the quantum machines stack) and elements (buses) are parsed from the QMMSettings
-        object of this class to generate the right output that will be added to the config dictionary generated out of the
-        QProgram compiler.
-
-        Returns:
-            config: Dict[str, Any]
-        """
-        elements, mixers = self._get_elements_config()
-
-        return {
-            "version": 1,  # hardcoded for now, need to check what version really refers to
-            "controllers": self._get_controllers_config(),
-            "elements": elements,
-            "mixers": mixers,
-            "waveforms": {},
-            "integration_weights": {},
-            "pulses": {},
-            "digital_waveforms": {},
-            "octaves": self._get_octaves_config(),
-        }
-
-    def _get_controllers_config(self) -> dict[str, Any]:
-        """Returns the controllers config dictionary.
-
-        Returns:
-            controllers: Dict[str, Any]
-        """
-        return {
-            controller["name"]: {
-                "analog_outputs": {
-                    output["port"]: {"offset": output["offset"]} for output in controller.get("analog_outputs", [])
-                },
-                "analog_inputs": {
-                    input["port"]: {"offset": input["offset"], "gain_db": input["gain_db"]}
-                    for input in controller.get("analog_inputs", [])
-                },
-                "digital_outputs": {output["port"]: {} for output in controller.get("digital_outputs", [])},
-            }
-            for controller in self.settings.controllers
-        }
-
-    def _get_elements_config(self) -> tuple:
-        """Returns the elements config dictionary.
-
-        Returns:
-            elements: Dict[str, Any]
-        """
-        elements = {}
-        mixers = {}
-
-        for element in self.settings.elements:
-            if "rf_bus" in element["bus"]:
-                bus_dict = {
-                    "rf_inputs": {
-                        "octave": element["rf_inputs"]["octave"],
-                        "port": element["rf_inputs"]["port"],
-                    },
-                    "rf_outputs": {
-                        "octave": element["rf_outputs"]["octave"],
-                        "port": element["rf_outputs"]["port"],
-                    },
-                    "digital_inputs": {
-                        "controller": element["digital_inputs"]["controller"],
-                        "port": element["digital_inputs"]["port"],
-                        "delay": element["digital_inputs"]["delay"],
-                        "buffer": element["digital_inputs"]["buffer"],
-                    },
-                    "intermediate_frequency": element["intermediate_frequency"],
-                }
-            elif "flux" in element["bus"]:
-                bus_dict = {
-                    "singleInput": {
-                        "controller": element["singleInput"]["controller"],
-                        "port": element["singleInput"]["port"],
-                    }
-                }
-            else:
-                bus_dict = {
-                    "mixInputs": {
-                        key: (element["mixInputs"][key]["controller"], element["mixInputs"][key]["port"])
-                        for key in ["I", "Q"]
-                    }
-                    | {"lo_frequency": int(element["mixInputs"]["lo_frequency"])}
-                    | {"mixer": "mixer_" + element["bus"]},
-                    "intermediate_frequency": int(element["intermediate_frequency"]),
-                }
-                mixers["mixer_" + element["bus"]] = [
-                    {
-                        "intermediate_frequency": int(element["intermediate_frequency"]),
-                        "lo_frequency": int(element["mixInputs"]["lo_frequency"]),
-                        "correction": element["mixInputs"]["mixer_correction"],
-                    }
-                ]
-            bus_dict["operations"] = {}
-
-            elements[element["bus"]] = bus_dict
-
-        return elements, mixers
-
-    def _get_octaves_config(self) -> dict[str, Any]:
-        """Returns the octaves config dictionary.
-
-        Returns:
-            octaves: Dict[str, Any]
-        """
-        return {
-            octave["name"]: {
-                "RF_outputs": {
-                    output["port"]: {
-                        "lo_frequency": output["lo_frequency"],
-                        "gain": output["gain"]
-                    } for output in octave.get("rf_outputs", [])
-                },
-                "RF_inputs": {
-                    output["port"]: {
-                        "lo_frequency": output["lo_frequency"],
-                        "lo_source": "internal",
-                        "IF_mode_I": "direct",  # can be: "direct" / "mixer" / "envelope" / "off". direct is default
-                        "IF_mode_Q": "direct",
-                    } for output in octave.get("rf_inputs", [])
-                },
-                "connectivity": self.settings.controllers[0]["name"]
-            } for octave in self.settings.octaves
-        }
 
     def run(self, program: Program) -> RunningQmJob:
         """Runs the QUA Program.
