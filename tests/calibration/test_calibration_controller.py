@@ -751,7 +751,7 @@ class TestCalibrationController:
     #     """Test that the update parameters method, calls ``platform.set_parameter()`` and ``save_platform()``."""
     #     for node in controller.node_sequence.values():
     #         node.output_parameters = {
-    #             "platform_params": [
+    #             "platform_parameters": [
     #                 ("test_bus", node.qubit_index, "param", 0),
     #                 ("test_bus2", node.qubit_index, "param2", 1),
     #             ]
@@ -774,7 +774,7 @@ class TestCalibrationController:
         for i, node in controller.node_sequence.items():
             node.output_parameters = {
                 "check_parameters": {"x": [0, 1, 2, 3, 4, 5], "y": [0, 1, 2, 3, 4, 5]},
-                "platform_params": [(f"test_bus_{i}", 0, "param", 0), (f"test_bus_{i}", 1, "param2", 1)],
+                "platform_parameters": [(f"test_bus_{i}", 0, "param", 0), (f"test_bus_{i}", 1, "param2", 1)],
                 "fidelities": [(0, f"param1_{i}", 1), (1, f"param2_{i}", 0.967)],
             }
             node.previous_timestamp = 1999
@@ -801,7 +801,7 @@ class TestCalibrationController:
         for i, node in controller.node_sequence.items():
             node.output_parameters = {
                 "check_parameters": {"x": [0, 1, 2, 3, 4, 5], "y": [0, 1, 2, 3, 4, 5]},
-                "platform_params": [(f"test_bus_{i}", 0, "param", 0), (f"test_bus_{i}", 1, "param2", 1)],
+                "platform_parameters": [(f"test_bus_{i}", 0, "param", 0), (f"test_bus_{i}", 1, "param2", 1)],
                 "fidelities": [(0, f"param1_{i}", 1), (1, f"param2_{i}", 0.967)],
             }
             node.previous_timestamp = 1999

@@ -548,8 +548,8 @@ class CalibrationController:
         Args:
             node (CalibrationNode): The node which parameters need to be updated in the platform.
         """
-        if node.output_parameters is not None and "platform_params" in node.output_parameters:
-            for bus_alias, qubit, param_name, param_value in node.output_parameters["platform_params"]:
+        if node.output_parameters is not None and "platform_parameters" in node.output_parameters:
+            for bus_alias, qubit, param_name, param_value in node.output_parameters["platform_parameters"]:
                 logger.info(
                     "Platform updated with: (bus: %s, q: %s, %s, %f).", bus_alias, qubit, param_name, param_value
                 )
@@ -572,9 +572,9 @@ class CalibrationController:
             if (
                 node.output_parameters is not None
                 and node.previous_timestamp is not None
-                and "platform_params" in node.output_parameters
+                and "platform_parameters" in node.output_parameters
             ):
-                for bus, qubit, parameter, value in node.output_parameters["platform_params"]:
+                for bus, qubit, parameter, value in node.output_parameters["platform_parameters"]:
                     parameters[(parameter, bus, qubit)] = (
                         value,
                         node.node_id,
