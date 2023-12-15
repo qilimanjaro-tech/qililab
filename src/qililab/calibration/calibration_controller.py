@@ -17,6 +17,7 @@
 from datetime import datetime, timedelta
 
 import networkx as nx
+import pandas as pd
 
 import qililab as ql
 from qililab.calibration.calibration_node import CalibrationNode
@@ -581,7 +582,7 @@ class CalibrationController:
                         datetime.fromtimestamp(node.previous_timestamp),
                     )
 
-        return parameters
+        return pd.DataFrame.from_dict(parameters)
 
     def get_last_fidelities(self) -> dict[tuple, tuple]:
         """Retrieves the last updated fidelities of the graph.
@@ -605,7 +606,7 @@ class CalibrationController:
                         datetime.fromtimestamp(node.previous_timestamp),
                     )
 
-        return fidelities
+        return pd.DataFrame.from_dict(fidelities)
 
     def _dependencies(self, node: CalibrationNode) -> list:
         """Finds the dependencies of a node.
