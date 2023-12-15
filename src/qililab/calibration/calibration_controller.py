@@ -616,12 +616,12 @@ class CalibrationController:
 
     # TODO: Make this fidelities into Table with the 5 qubits, alone as indices.
     def get_fancy_table(self) -> dict[tuple, tuple]:
-        """Retrieves the last updated fidelities of the graph.
+        """Retrieves the last updated fidelities of the graph in a fancy way.
 
         Returns:
             dict[tuple, tuple]: Fidelities dictionary, with the key and values being tuples containing, in this order:
-                - ``key``: (``str``: parameter name, ``int``: qubit).
-                - ``value``: (``float``: parameter value, ``str``: node_id where computed, ``datetime``: updated time).
+                - ``key``: (``int``: qubit).
+                - ``value``:{``str``: parameter name,``float``: parameter value}.
         """
         fidelities: dict[tuple, tuple] = {}
         for node in self.node_sequence.values():
