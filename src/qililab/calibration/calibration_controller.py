@@ -609,7 +609,31 @@ class CalibrationController:
                         datetime.fromtimestamp(node.previous_timestamp),
                     )
 
-        return pd.DataFrame.from_dict(fidelities)
+        df = pd.DataFrame.from_dict(fidelities).transpose()
+        df.columns = ("fidelity", "node_id", "datetime")
+        df.index.names = ["fidelity", "qubit"]
+        return df
+
+    # TODO: Make this fidelities into Table with the 5 qubits, alone as indices.
+    def get_fancy_table(self) -> dict[tuple, tuple]:
+        """Retrieves the last updated fidelities of the graph.
+
+        Returns:
+            dict[tuple, tuple]: Fidelities dictionary, with the key and values being tuples containing, in this order:
+                - ``key``: (``str``: parameter name, ``int``: qubit).
+                - ``value``: (``float``: parameter value, ``str``: node_id where computed, ``datetime``: updated time).
+        """
+        fidelities: dict[tuple, tuple] = {}
+        for node in self.node_sequence.values():
+            if (
+                node.output_parameters is not None
+                and node.previous_timestamp is not None
+                and "fidelities" in node.output_parameters
+            ):
+                for qubit, fidelity, value in node.output_parameters["fidelities"]:
+                    fidelities[qubit] = {fidelity: value}
+
+        return pd.DataFrame.from_dict(fidelities).transpose()  # Doesn't work directly... the qubits are overwritten...
 
     def _dependencies(self, node: CalibrationNode) -> list:
         """Finds the dependencies of a node.
