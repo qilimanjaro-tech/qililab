@@ -582,7 +582,10 @@ class CalibrationController:
                         datetime.fromtimestamp(node.previous_timestamp),
                     )
 
-        return pd.DataFrame.from_dict(parameters)
+        df = pd.DataFrame.from_dict(parameters).transpose()
+        df.columns = ("value", "node_id", "datetime")
+        df.index.names = ["parameter", "bus", "qubit"]
+        return df
 
     def get_last_fidelities(self) -> dict[tuple, tuple]:
         """Retrieves the last updated fidelities of the graph.
