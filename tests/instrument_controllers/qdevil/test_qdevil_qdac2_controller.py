@@ -1,5 +1,5 @@
 import copy
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -7,7 +7,6 @@ from qililab.instrument_controllers.qdevil.qdevil_qdac2_controller import QDevil
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
 from qililab.platform import Platform
 from qililab.settings import Settings
-from qililab.typings import QDevilQDac2 as QDevilQDac2Device
 from tests.data import SauronQDevil  # pylint: disable=import-error
 from tests.test_utils import build_platform  # pylint: disable=import-error
 
@@ -42,13 +41,15 @@ class TestQDevilQDac2Controller:
         assert len(controller_modules) == 1
         assert isinstance(controller_modules[0], QDevilQDac2)
 
-    @patch("qcodes.instrument.visa.VisaInstrument.device_clear")
-    def test_initialize_device(self, platform: Platform):
+    @patch("qililab.instrument_controllers.qdevil.qdevil_qdac2_controller.QDevilQDac2Device")
+    def test_initialize_device(self, device_mock: MagicMock, platform: Platform):
         """Test QDAC-II controller initializes device correctly."""
         controller_alias = "qdac_controller"
         controller_instance = platform.instrument_controllers.get_instrument_controller(alias=controller_alias)
 
         controller_instance._initialize_device()
+
+        assert isinstance(controller_instance.device, MagicMock)
 
     def test_check_supported_modules_raises_exception(
         self, qdevil_qdac2_controller_wrong_module: QDevilQDac2Controller
