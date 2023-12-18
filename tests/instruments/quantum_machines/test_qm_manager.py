@@ -53,6 +53,23 @@ def fixture_qmm_with_octave():
     return qmm
 
 
+@pytest.fixture(name="compilation_config")
+def fixture_compilation_config() -> dict:
+    """Fixture that returns a configuration dictionary as the QuantumMachinesCompiler would."""
+    config = {
+        "elements": {"drive_q0": {"operations": {"control_445e964c_fb58e912_100": "control_445e964c_fb58e912_100"}}},
+        "pulses": {
+            "control_445e964c_fb58e912_100": {
+                "operation": "control",
+                "length": 100,
+                "waveforms": {"I": "445e964c", "Q": "fb58e912"},
+            },
+        },
+        "waveforms": {"445e964c": {"type": "constant", "sample": 1.0}, "fb58e912": {"type": "constant", "sample": 0.0}},
+    }
+    return config
+
+
 class MockJob:
     """Mocks a running job from Quantum Machines"""
 
@@ -149,6 +166,14 @@ class TestQMM:
 
         assert isinstance(qmm.qm, MagicMock)
         qmm.qm.close.assert_called_once()
+
+    def test_update_configurations(self, qmm: QuantumMachinesManager, compilation_config: dict):
+        qmm.update_configuration(compilation_config=compilation_config)
+
+        assert "control_445e964c_fb58e912_100" in qmm.config["elements"]["drive_q0"]["operations"]
+        assert "control_445e964c_fb58e912_100" in qmm.config["pulses"]
+        assert "445e964c" in qmm.config["waveforms"]
+        assert "fb58e912" in qmm.config["waveforms"]
 
     @patch("qm.QuantumMachine")
     def test_execute(

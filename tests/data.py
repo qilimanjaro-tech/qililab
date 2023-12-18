@@ -1109,6 +1109,7 @@ class SauronQuantumMachines:
                 "bus": "drive_q0_rf",
                 "rf_inputs": {"octave": "octave1", "port": 1},
                 "digital_inputs": {"controller": "con1", "port": 1, "delay": 87, "buffer": 15},
+                "digital_outputs": {"controller": "con1", "port": 1},
                 "intermediate_frequency": 6e9,
             },
             {

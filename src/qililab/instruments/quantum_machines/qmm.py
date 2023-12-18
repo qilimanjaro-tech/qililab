@@ -256,7 +256,8 @@ class QuantumMachinesManager(Instrument):
                 self.octave_config.add_device_info(octave["name"], self.settings.address, octave["port"])
         self.qmm = QMM(host=self.settings.address, cluster_name=self.settings.cluster, octave=self.octave_config)
 
-        self.config = self.settings.to_qua_config()
+        if self.config is None:
+            self.config = self.settings.to_qua_config()
 
     @Instrument.CheckDeviceInitialized
     def turn_on(self):
