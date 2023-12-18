@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Quantum Machines Manager class."""
+import os
 from dataclasses import dataclass
 from typing import Any, Dict
 
@@ -21,6 +22,7 @@ from qm import QuantumMachine
 from qm import QuantumMachinesManager as QMM
 from qm import SimulationConfig
 from qm.jobs.running_qm_job import RunningQmJob
+from qm.octave import QmOctaveConfig
 from qm.qua import Program
 
 from qililab.instruments.instrument import Instrument
@@ -59,7 +61,8 @@ class QuantumMachinesManager(Instrument):
         """
 
         address: str
-        port: int
+        cluster: str
+        run_octave_calibration: bool
         octaves: list[dict[str, Any]]
         controllers: list[dict[str, Any]]
         elements: list[dict[str, Any]]
@@ -100,11 +103,17 @@ class QuantumMachinesManager(Instrument):
             return {
                 controller["name"]: {
                     "analog_outputs": {
-                        output["port"]: {"offset": output["offset"], "delay": output["delay"]}
+                        output["port"]: {
+                            "offset": output["offset"] if "offset" in output else 0.0,
+                            "delay": output["delay"] if "delay" in output else 0.0,
+                        }
                         for output in controller.get("analog_outputs", [])
                     },
                     "analog_inputs": {
-                        input["port"]: {"offset": input["offset"], "gain_db": input["gain"]}
+                        input["port"]: {
+                            "offset": input["offset"] if "offset" in input else 0.0,
+                            "gain_db": input["gain"] if "gain" in input else 0.0,
+                        }
                         for input in controller.get("analog_inputs", [])
                     },
                     "digital_outputs": {output["port"]: {} for output in controller.get("digital_outputs", [])},
@@ -124,7 +133,7 @@ class QuantumMachinesManager(Instrument):
                         output["port"]: {
                             "LO_frequency": output["lo_frequency"],  # Should be between 2 and 18 GHz.
                             "LO_source": "internal",
-                            "gain": output["gain"],
+                            "gain": output["gain"] if "gain" in output else 0.0,
                             "output_mode": "always_on",
                             "input_attenuators": "OFF",  # can be: "OFF" / "ON". Default is "OFF".
                         }
@@ -140,7 +149,7 @@ class QuantumMachinesManager(Instrument):
                         }
                         for output in octave.get("rf_inputs", [])
                     },
-                    "connectivity": octave["connected_to"],
+                    "connectivity": octave["controller"],
                 }
                 for octave in self.octaves
             }
@@ -168,11 +177,16 @@ class QuantumMachinesManager(Instrument):
                     mixer_name = f"mixer_{bus_name}"
                     lo_frequency = int(element["mix_inputs"]["lo_frequency"])
                     intermediate_frequency = int(element["intermediate_frequency"])
+                    mixer_correction = (
+                        element["mix_inputs"]["mixer_correction"]
+                        if "mixer_correction" in element["mix_inputs"]
+                        else [1.0, 0.0, 0.0, 1.0]
+                    )
                     mixers[mixer_name] = [
                         {
                             "intermediate_frequency": intermediate_frequency,
                             "lo_frequency": lo_frequency,
-                            "correction": element["mix_inputs"]["mixer_correction"],
+                            "correction": mixer_correction,
                         }
                     ]
                     element_dict["mixInputs"] = {
@@ -205,9 +219,11 @@ class QuantumMachinesManager(Instrument):
                 # other settings
                 if "digital_inputs" in element:
                     element_dict["digitalInputs"] = {
-                        "port": (element["digital_inputs"]["controller"], element["digital_inputs"]["port"]),
-                        "delay": element["digital_inputs"]["delay"],
-                        "buffer": element["digital_inputs"]["buffer"],
+                        "switch": {
+                            "port": (element["digital_inputs"]["controller"], element["digital_inputs"]["port"]),
+                            "delay": element["digital_inputs"]["delay"],
+                            "buffer": element["digital_inputs"]["buffer"],
+                        }
                     }
                 if "digital_outputs" in element:
                     element_dict["digitalOutputs"] = {
@@ -222,6 +238,8 @@ class QuantumMachinesManager(Instrument):
     device: QMMDriver
     qm: QuantumMachine
     config: dict | None = None
+    octave_config: QmOctaveConfig | None = None
+    compilation_config: dict | None = None
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
@@ -230,10 +248,17 @@ class QuantumMachinesManager(Instrument):
         Creates an instance of the Qilililab Quantum Machines Manager, and the Quantum Machine, opening
         a connection to the Quantum Machine by the use of the Quantum Machines Manager.
         """
-        super().initial_setup()
         self.config = self.settings.to_qua_config()
-        qmm = QMM(host=self.settings.address, port=self.settings.port)
+        if self.settings.octaves:
+            self.octave_config = QmOctaveConfig()
+            self.octave_config.set_calibration_db(os.getcwd())
+            for octave in self.settings.octaves:
+                self.octave_config.add_device_info(octave["name"], self.settings.address, octave["port"])
+        qmm = QMM(host=self.settings.address, cluster_name=self.settings.cluster, octave=self.octave_config)
         self.qm = qmm.open_qm(config=self.config, close_other_machines=True)
+
+        if self.settings.run_octave_calibration:
+            self.run_octave_calibration()
 
     @Instrument.CheckDeviceInitialized
     def turn_on(self):
@@ -246,6 +271,12 @@ class QuantumMachinesManager(Instrument):
     @Instrument.CheckDeviceInitialized
     def turn_off(self):
         """Turns off an instrument."""
+
+    def run_octave_calibration(self):
+        """Run calibration procedure for the buses with octaves, if any."""
+        elements = [element for element in self.config["elements"] if "RF_inputs" in element]
+        for element in elements:
+            self.qm.octave.calibrate_element(element)
 
     def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Sets the parameter of a specific instrument.
