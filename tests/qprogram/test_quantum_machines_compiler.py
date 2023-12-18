@@ -5,97 +5,6 @@ from qililab import Domain, DragPair, Gaussian, IQPair, QProgram, QuantumMachine
 from qililab.qprogram.blocks import ForLoop, Loop
 
 
-@pytest.fixture(name="runcard_configuration")
-def fixture_runcard_configuration() -> dict:
-    runcard_configuration = {
-        "version": 1,
-        "controllers": {
-            "con1": {
-                "analog_outputs": {
-                    1: {"offset": 0.0},  # I qubit_0
-                    2: {"offset": 0.0},  # Q qubit_0
-                    3: {"offset": 0.0},  # I qubit_1
-                    4: {"offset": 0.0},  # Q qubit_1
-                    5: {"offset": 0.0},  # flux qubit_0
-                    6: {"offset": 0.0},  # flux qubit_1
-                    7: {"offset": 0.0},  # I resonator
-                    8: {"offset": 0.0},  # Q resonator
-                },
-                "digital_outputs": {
-                    1: {},
-                },
-                "analog_inputs": {
-                    1: {"offset": 0.0, "gain_db": 0},  # I from down-conversion
-                    2: {"offset": 0.0, "gain_db": 0},  # Q from down-conversion
-                },
-            },
-        },
-        "elements": {
-            "qubit_0": {
-                "mixInputs": {
-                    "I_0": ("con1", 1),
-                    "Q_0": ("con1", 2),
-                    "lo_frequency": 100e6,
-                    "mixer": "mixer_qubit",
-                },
-                "intermediate_frequency": 7.4e9,
-            },
-            "qubit_1": {
-                "mixInputs": {
-                    "I_0": ("con1", 3),
-                    "Q_0": ("con1", 4),
-                    "lo_frequency": 100e6,
-                    "mixer": "mixer_qubit",
-                },
-                "intermediate_frequency": 7.4e9,
-            },
-            "flux_0": {
-                "singleInput": {
-                    "port": ("con1", 5),
-                },
-            },
-            "flux_1": {
-                "singleInput": {
-                    "port": ("con1", 6),
-                },
-            },
-            "resonator": {
-                "mixInputs": {
-                    "I_0": ("con1", 7),
-                    "Q_0": ("con1", 8),
-                    "lo_frequency": 150e6,
-                    "mixer": "mixer_resonator",
-                },
-                "intermediate_frequency": 6e9,
-                "outputs": {
-                    "out1": ("con1", 1),
-                    "out2": ("con1", 2),
-                },
-                "time_of_flight": 120,
-                "smearing": 0,
-            },
-        },
-        "mixers": {
-            "mixer_qubit": [
-                {
-                    "intermediate_frequency": 100e6,
-                    "lo_frequency": 7.4e9,
-                    "correction": [1.0, 0.0, 0.0, 1.0],
-                }
-            ],
-            "mixer_resonator": [
-                {
-                    "intermediate_frequency": 6e9,
-                    "lo_frequency": 100e6,
-                    "correction": [1.0, 0.0, 0.0, 1.0],
-                }
-            ],
-        },
-    }
-
-    return runcard_configuration
-
-
 @pytest.fixture(name="play_operation")
 def fixture_play_operation() -> QProgram:
     ones_zeros_pair = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
@@ -906,17 +815,6 @@ class TestQuantumMachinesCompiler:
         statements = qua_program._program.script.body.statements
         assert len(statements) == 1
         assert bool(statements[0].for_.condition.literal.value) is True
-
-    def test_merge_configurations(self, runcard_configuration: dict, play_operation: QProgram):
-        compiler = QuantumMachinesCompiler()
-        _, configuration, _ = compiler.compile(play_operation)
-
-        merged_configuration = QuantumMachinesCompiler.merge_configurations(runcard_configuration, configuration)
-
-        assert "pulses" in merged_configuration
-        assert "waveforms" in merged_configuration
-        assert "integration_weights" in merged_configuration
-        assert "digital_waveforms" in merged_configuration
 
     @pytest.mark.parametrize(
         "start,stop,step,expected_result",

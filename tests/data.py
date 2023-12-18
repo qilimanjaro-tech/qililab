@@ -437,10 +437,11 @@ class Galadriel:
         "alias": "qmm_0",
         RUNCARD.FIRMWARE: "4.30.046.295",
         "address": "192.168.0.1",
-        "port": 80,
-        "num_controllers": 2,
+        "cluster": "cluster_0",
         "controllers": {},
         "elements": {},
+        "octaves": {},
+        "run_octave_calibration": True,
     }
 
     instruments: list[dict] = [

@@ -580,13 +580,3 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
 
         # Otherwise, if we're incrementing, take the ceiling, and if we're decrementing, take the floor
         return math.floor(raw_iterations) if step > 0 else math.ceil(raw_iterations)
-
-    @staticmethod
-    def merge_configurations(origin: dict, new: dict):
-        """Recursively merge `new` into `origin`."""
-        for key, value in new.items():
-            if key in origin and isinstance(origin[key], dict) and isinstance(value, dict):
-                QuantumMachinesCompiler.merge_configurations(origin[key], value)
-            else:
-                origin[key] = value
-        return origin

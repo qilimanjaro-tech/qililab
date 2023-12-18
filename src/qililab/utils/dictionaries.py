@@ -12,15 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""__init__.py"""
-from .asdict_factory import dict_factory
-from .coordinate_decomposition import coordinate_decompose
-from .dictionaries import merge_dictionaries
-from .factory import Factory
-from .live_plot import LivePlot
-from .loop import Loop
-from .nested_data_class import nested_dataclass
-from .nested_dict_iterator import nested_dict_to_pandas_dataframe
-from .signal_processing import demodulate
-from .singleton import Singleton, SingletonABC
-from .waveforms import Waveforms
+""" Utils for dictionaries manipulation """
+
+
+def merge_dictionaries(origin: dict, new: dict):
+    """Recursively merge `new` into `origin`."""
+    for key, value in new.items():
+        if key in origin and isinstance(origin[key], dict) and isinstance(value, dict):
+            merge_dictionaries(origin[key], value)
+        else:
+            origin[key] = value
+    return origin

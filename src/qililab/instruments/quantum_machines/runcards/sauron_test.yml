@@ -392,6 +392,19 @@ instruments:
         delay: 87
         buffer: 15
       intermediate_frequency: 6.5e+09
+    - bus: readout_line_q0_rf_bus
+      rf_inputs:
+        octave: octave1
+        port: 2
+      rf_outputs:
+        octave: octave1
+        port: 1
+      digital_inputs:
+        controller: con1
+        port: 2
+        delay: 87
+        buffer: 15
+      intermediate_frequency: 6.5e+09
 
 instrument_controllers:
   - name: quantum_machines_manager
