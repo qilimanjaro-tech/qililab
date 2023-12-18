@@ -339,7 +339,6 @@ instruments:
         rf_inputs:
         - port: 1
           lo_frequency: 6e9
-        rf_inputs:
         - port: 2
           lo_frequency: 6e9
     controllers:

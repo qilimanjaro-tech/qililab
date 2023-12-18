@@ -1,4 +1,5 @@
 """This file tests the the ``qm_manager`` class"""
+import copy
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -7,9 +8,12 @@ from qm import Program
 from qm.qua import play, program
 
 from qililab.instruments.quantum_machines import QuantumMachinesManager
+from qililab.platform import Platform
 from qililab.result.quantum_machines_results import QuantumMachinesMeasurementResult
 from qililab.settings import Settings
 from qililab.typings import Parameter
+from tests.data import SauronQuantumMachines
+from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="qua_program")
@@ -21,20 +25,29 @@ def fixture_qua_program():
     return dummy_qua_program
 
 
+@pytest.fixture(name="platform")
+def fixture_platform() -> Platform:
+    """Return Platform object."""
+    return build_platform(runcard=SauronQuantumMachines.runcard)
+
+
 @pytest.fixture(name="qmm")
 def fixture_qmm():
     """Fixture that returns an instance a qililab wrapper for Quantum Machines Manager."""
-    qmm = QuantumMachinesManager(
-        {
-            "alias": "qmm",
-            "address": "192.168.0.1",
-            "port": 80,
-            "num_controllers": 2,
-            "controllers": {},
-            "elements": {},
-            "firmware": "3.10.2",
-        }
-    )  # pylint: disable=abstract-class-instantiated
+    settings = copy.deepcopy(SauronQuantumMachines.qmm)
+    settings.pop("name")
+    qmm = QuantumMachinesManager(settings=settings)
+    qmm.device = MagicMock
+
+    return qmm
+
+
+@pytest.fixture(name="qmm_with_octave")
+def fixture_qmm_with_octave():
+    """Fixture that returns an instance a qililab wrapper for Quantum Machines Manager."""
+    settings = copy.deepcopy(SauronQuantumMachines.qmm_with_octave)
+    settings.pop("name")
+    qmm = QuantumMachinesManager(settings=settings)
     qmm.device = MagicMock
 
     return qmm
@@ -87,18 +100,23 @@ class TestQMM:
 
     @patch("qililab.instruments.quantum_machines.qmm.QMM")
     @patch("qililab.instruments.Instrument.initial_setup")
+    @pytest.mark.parametrize("qmm_name", ["qmm", "qmm_with_octave"])
     def test_initial_setup(
-        self, mock_instrument_init: MagicMock, mock_init: MagicMock, qmm: QuantumMachinesManager
+        self, mock_instrument_init: MagicMock, mock_init: MagicMock, qmm_name, request
     ):  # pylint: disable=unused-argument
         """Test QMM class initialization."""
+        qmm = request.getfixturevalue(qmm_name)
         qmm.initial_setup()
-        mock_instrument_init.assert_called()
+        mock_init.assert_called()
 
-        assert isinstance(qmm.qm, MagicMock)
+        assert isinstance(qmm.qmm, MagicMock)
+        assert isinstance(qmm.config, dict)
 
-    def test_settings(self, qmm: QuantumMachinesManager):
+    @pytest.mark.parametrize("qmm_name", ["qmm", "qmm_with_octave"])
+    def test_settings(self, qmm_name, request):
         """Test QMMSettings have been set correctly"""
 
+        qmm = request.getfixturevalue(qmm_name)
         assert isinstance(qmm.settings, Settings)
 
     @patch("qm.QuantumMachine")
