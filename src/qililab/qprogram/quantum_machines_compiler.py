@@ -75,7 +75,7 @@ class MeasurementInfo:  # pylint: disable=too-few-public-methods
         self.result_handles: list[str] = result_handles
 
 
-class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
+class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, too-few-public-methods
     """A class for compiling QProgram to Quantum Machines hardware."""
 
     FREQUENCY_COEFF = 1e3
