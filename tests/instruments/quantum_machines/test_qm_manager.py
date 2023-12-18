@@ -1,6 +1,6 @@
 """This file tests the the ``qm_manager`` class"""
 import copy
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import numpy as np
 import pytest
@@ -118,6 +118,37 @@ class TestQMM:
 
         qmm = request.getfixturevalue(qmm_name)
         assert isinstance(qmm.settings, Settings)
+
+    @patch("qililab.instruments.quantum_machines.qmm.QMM")
+    @patch("qililab.instruments.quantum_machines.qmm.QuantumMachine")
+    @pytest.mark.parametrize("qmm_name", ["qmm", "qmm_with_octave"])
+    def test_turn_on(self, mock_qmm, mock_qm, qmm_name, request):
+        """Test QMMSettings have been set correctly"""
+
+        qmm = request.getfixturevalue(qmm_name)
+        qmm.initial_setup()
+        qmm.turn_on()
+
+        assert isinstance(qmm.qm, MagicMock)
+        if qmm.settings.run_octave_calibration:
+            calls = [
+                call(element) for element in qmm.config["elements"] if "RF_inputs" in qmm.config["elements"][element]
+            ]
+            qmm.qm.octave.calibrate_element.assert_has_calls(calls)
+
+    @patch("qililab.instruments.quantum_machines.qmm.QMM")
+    @patch("qililab.instruments.quantum_machines.qmm.QuantumMachine")
+    @pytest.mark.parametrize("qmm_name", ["qmm", "qmm_with_octave"])
+    def test_turn_off(self, mock_qmm, mock_qm, qmm_name, request):
+        """Test QMMSettings have been set correctly"""
+
+        qmm = request.getfixturevalue(qmm_name)
+        qmm.initial_setup()
+        qmm.turn_on()
+        qmm.turn_off()
+
+        assert isinstance(qmm.qm, MagicMock)
+        qmm.qm.close.assert_called_once()
 
     @patch("qm.QuantumMachine")
     def test_execute(

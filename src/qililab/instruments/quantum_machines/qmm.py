@@ -283,7 +283,7 @@ class QuantumMachinesManager(Instrument):
 
     def run_octave_calibration(self):
         """Run calibration procedure for the buses with octaves, if any."""
-        elements = [element for element in self.config["elements"] if "RF_inputs" in element]
+        elements = [element for element in self.config["elements"] if "RF_inputs" in self.config["elements"][element]]
         for element in elements:
             self.qm.octave.calibrate_element(element)
 
