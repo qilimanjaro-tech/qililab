@@ -28,9 +28,9 @@ def fixture_qdevil_qdac2_controller_wrong_module_wrong_module(platform: Platform
 class TestQDevilQDac2Controller:
     """Unit tests checking the QDAC-II controller attributes and methods"""
 
-    def test_initialization(self, platform: Platform):
+    @pytest.mark.parametrize("controller_alias", ["qdac_controller_ip", "qdac_controller_usb"])
+    def test_initialization(self, platform: Platform, controller_alias: str):
         """Test QDAC-II controller has been initialized correctly."""
-        controller_alias = "qdac_controller"
         controller_instance = platform.instrument_controllers.get_instrument_controller(alias=controller_alias)
         assert isinstance(controller_instance, QDevilQDac2Controller)
 
@@ -42,9 +42,9 @@ class TestQDevilQDac2Controller:
         assert isinstance(controller_modules[0], QDevilQDac2)
 
     @patch("qililab.instrument_controllers.qdevil.qdevil_qdac2_controller.QDevilQDac2Device")
-    def test_initialize_device(self, device_mock: MagicMock, platform: Platform):
+    @pytest.mark.parametrize("controller_alias", ["qdac_controller_ip", "qdac_controller_usb"])
+    def test_initialize_device(self, device_mock: MagicMock, platform: Platform, controller_alias: str):
         """Test QDAC-II controller initializes device correctly."""
-        controller_alias = "qdac_controller"
         controller_instance = platform.instrument_controllers.get_instrument_controller(alias=controller_alias)
 
         controller_instance._initialize_device()

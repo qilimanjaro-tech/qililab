@@ -1063,12 +1063,27 @@ class SauronQDevil:
         Parameter.RF_ON.value: True,
     }
 
-    qdevil_qdac2_controller = {
+    qdevil_qdac2_controller_ip = {
         RUNCARD.NAME: InstrumentControllerName.QDEVIL_QDAC2,
-        RUNCARD.ALIAS: "qdac_controller",
+        RUNCARD.ALIAS: "qdac_controller_ip",
         INSTRUMENTCONTROLLER.CONNECTION: {
             RUNCARD.NAME: ConnectionName.TCP_IP.value,
             CONNECTION.ADDRESS: "192.168.1.15",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "qdac",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    qdevil_qdac2_controller_usb = {
+        RUNCARD.NAME: InstrumentControllerName.QDEVIL_QDAC2,
+        RUNCARD.ALIAS: "qdac_controller_usb",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.USB.value,
+            CONNECTION.ADDRESS: "ttyUSB0",
         },
         INSTRUMENTCONTROLLER.MODULES: [
             {
@@ -1095,7 +1110,8 @@ class SauronQDevil:
 
     instruments = [qdevil_qdac2, rohde_schwarz]
     instrument_controllers = [
-        qdevil_qdac2_controller,
+        qdevil_qdac2_controller_ip,
+        qdevil_qdac2_controller_usb,
         qdevil_qdac2_controller_wrong_module,
     ]
 
