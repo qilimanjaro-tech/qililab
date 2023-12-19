@@ -1050,7 +1050,7 @@ class SauronQDevil:
         Parameter.SPAN.value: ["low"],
         Parameter.RAMPING_ENABLED.value: [True],
         Parameter.RAMPING_RATE.value: [0.01],
-        Parameter.LOW_PASS_FILTER.value: ["DC"],
+        Parameter.LOW_PASS_FILTER.value: ["dc"],
         "dacs": [1],
     }
 
