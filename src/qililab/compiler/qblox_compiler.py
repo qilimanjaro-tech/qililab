@@ -27,6 +27,7 @@ from qpysequence.program.instructions import Acquire, AcquireWeighed, Move
 
 from qililab.instruments.awg_settings import AWGQbloxSequencer
 from qililab.instruments.qblox import QbloxModule, QbloxQCM, QbloxQRM
+from qililab.typings import InstrumentName
 
 from qililab.config import logger
 
@@ -41,8 +42,11 @@ class QbloxCompiler():
         self.nshots = None
         self.num_bins = None
         self.repetition_duration = None
-        if not any(isinstance(qblox, QbloxQRM) for qblox in self.qblox_modules): # Raise error if qrm is not found
-            raise ValueError(f"At least one QRM should be connected. Found {sum(isinstance(qblox, QbloxQRM) for qblox in self.qblox_modules)} QRM modules")
+        self.readout_modules = [InstrumentName.QBLOX_QRM, InstrumentName.QRMRF]
+        self.control_modules = [InstrumentName.QBLOX_QCM, InstrumentName.QCMRF]
+
+        if all(qblox.name not in self.readout_modules for qblox in self.qblox_modules): # Raise error if qrm is not found
+            raise ValueError(f"At least one QRM should be connected. Found {sum(qblox.name in self.readout_modules for qblox in self.qblox_modules)} QRM modules")
         
     # TODO: add comments
     def compile(self, pulse_schedule: PulseSchedule, num_avg: int, repetition_duration: int, num_bins: int):
@@ -60,16 +64,26 @@ class QbloxCompiler():
         
         for sequencer, bus_schedule in sequencer_qrm_bus_schedules + sequencer_qcm_bus_schedules:
             qblox_module = self._get_instrument_from_sequencer(sequencer)
+            bus_alias = self.buses.get(bus_schedule.port).alias
             if bus_schedule == qblox_module.cache.get(sequencer.identifier): # if it's already cached then dont compile
-                compiled_sequences[self.buses.get(bus_schedule.port).alias] = qblox_module.sequences[sequencer.identifier][0] #TODO: why the 0 index
+                if bus_alias not in compiled_sequences:
+                    compiled_sequences[self.buses.get(bus_schedule.port).alias] = qblox_module.sequences[sequencer.identifier] #TODO: why the 0 index
+                else:
+                    compiled_sequences[self.buses.get(bus_schedule.port).alias].append(qblox_module.sequences[sequencer.identifier])
+                # If the schedule is in the cache, delete the acquisition data (if uploaded) # FIXME: acquisitions should be deleted after acquisitions and not at compilation
+                if qblox_module.name in self.readout_modules:
+                    qblox_module.device.delete_acquisition_data(sequencer=sequencer.identifier, name="default")
             else:
-                compiled_sequences[self.buses.get(bus_schedule.port).alias] = self._translate_pulse_bus_schedule(bus_schedule, sequencer)
+                if bus_alias not in compiled_sequences:
+                    compiled_sequences[self.buses.get(bus_schedule.port).alias] = [self._translate_pulse_bus_schedule(bus_schedule, sequencer)]
+                else:
+                    compiled_sequences[bus_alias].append(self._translate_pulse_bus_schedule(bus_schedule, sequencer))
                 qblox_module.cache[sequencer.identifier] = bus_schedule
-        
-        qrm = next((qblox_module for qblox_module in self.qblox_modules if qblox_module.module_type == "QRM")) # FIXME: only one qrm supported
-        missing_seq_ids = [cached_seq_id for cached_seq_id in qrm.sequences.keys() if cached_seq_id not in (sequencer for sequencer, _ in sequencer_qrm_bus_schedules)]
+        if sum(qblox_module.name in self.readout_modules for qblox_module in self.qblox_modules) > 1:
+            raise NotImplementedError(f"Only one readout module can be connected, found {sum(qblox_module.name in self.readout_modules for qblox_module in self.qblox_modules)} instead")
+        qrm = next((qblox_module for qblox_module in self.qblox_modules if qblox_module.name in self.readout_modules)) # FIXME: only one qrm supported
+        missing_seq_ids = [cached_seq_id for cached_seq_id in qrm.cache.keys() if cached_seq_id not in (sequencer.identifier for sequencer, _ in sequencer_qrm_bus_schedules)]
         for seq_id in missing_seq_ids:
-            _ = qrm.sequences.pop(seq_id)
             _ = qrm.cache.pop(seq_id)
             
         return compiled_sequences
@@ -129,7 +143,7 @@ class QbloxCompiler():
         """
         # FIXME: is it really necessary to generate acquisitions for a QCM??
         acquisitions = Acquisitions()
-        if self._get_instrument_from_sequencer(sequencer).module_type == "QCM":
+        if self._get_instrument_from_sequencer(sequencer).name in self.control_modules:
             return acquisitions
         acquisitions.add(name="default", num_bins=self.num_bins, index=0)
         return acquisitions
@@ -158,7 +172,7 @@ class QbloxCompiler():
         program.append_block(block=start)
         # Create registers with 0 and 1 (necessary for qblox)
         weight_registers = Register(), Register()
-        if qblox_module.module_type == "QRM":
+        if qblox_module.name in self.readout_modules:
             self._init_weights_registers(registers=weight_registers, values=(0, 1), program=program)
         avg_loop = Loop(name="average", begin=int(self.nshots))  # type: ignore
         bin_loop = Loop(name="bin", begin=0, end=self.num_bins, step=1)
@@ -185,7 +199,7 @@ class QbloxCompiler():
                     wait_time=int(wait_time),
                 )
             )
-        if qblox_module.module_type == "QRM":
+        if qblox_module.name in self.readout_modules:
             self._append_acquire_instruction(
                 loop=bin_loop, bin_index=bin_loop.counter_register, sequencer=sequencer, weight_regs=weight_registers
             )
@@ -206,7 +220,7 @@ class QbloxCompiler():
         """
         weights = Weights()
 
-        if self._get_instrument_from_sequencer(sequencer).module_type == "QCM":
+        if self._get_instrument_from_sequencer(sequencer).name in self.control_modules:
             return weights
         pair = ([float(w) for w in sequencer.weights_i], [float(w) for w in sequencer.weights_q])
         if (sequencer.path_i, sequencer.path_q) == (1, 0):
@@ -245,9 +259,9 @@ class QbloxCompiler():
 
     
     def get_pulse_bus_schedule_sequencers(self, pulse_schedule: PulseSchedule, qblox_instruments: list[QbloxModule]) -> dict[AWGQbloxSequencer, PulseBusSchedule]:
-        qrm_sequencers = [sequencer for instrument in qblox_instruments for sequencer in instrument.awg_sequencers if instrument.module_type == "QRM"]
+        qrm_sequencers = [sequencer for instrument in qblox_instruments for sequencer in instrument.awg_sequencers if instrument.name in self.readout_modules]
         feedline_port = qrm_sequencers[0].chip_port_id #FIXME: only one chip port id supported for qrm
-        qcm_sequencers = [sequencer for instrument in qblox_instruments for sequencer in instrument.awg_sequencers if instrument.module_type == "QCM"]
+        qcm_sequencers = [sequencer for instrument in qblox_instruments for sequencer in instrument.awg_sequencers if instrument.name in self.control_modules]
         
         control_pulses = [pulse for pulse in pulse_schedule.elements if pulse.port != feedline_port]
         readout_pulses = [pulse for pulse in pulse_schedule.elements if pulse.port == feedline_port]

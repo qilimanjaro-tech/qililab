@@ -249,32 +249,6 @@ class TestQbloxQCM:
         qcm.turn_off()
         assert qcm.device.stop_sequencer.call_count == qcm.num_sequencers
 
-    def test_reset_method(self, qcm: QbloxQCM):
-        """Test reset method"""
-        qcm._cache = {0: None}  # type: ignore # pylint: disable=protected-access
-        qcm.reset()
-        assert qcm._cache == {}  # pylint: disable=protected-access
-
-    def test_compile(self, qcm, pulse_bus_schedule):
-        """Test compile method."""
-        sequences = qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000, num_bins=1)
-        assert isinstance(sequences, list)
-        assert len(sequences) == 1
-        assert isinstance(sequences[0], Sequence)
-        assert sequences[0]._program.duration == 1000 * 2000 + 4
-
-    def test_upload_raises_error(self, qcm):
-        """Test upload method raises error."""
-        with pytest.raises(ValueError, match="Please compile the circuit before uploading it to the device"):
-            qcm.upload(port=0)
-
-    def test_upload_method(self, qcm, pulse_bus_schedule):
-        """Test upload method"""
-        qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100, num_bins=1)
-        qcm.upload(port=pulse_bus_schedule.port)
-        qcm.device.sequencer0.sequence.assert_called_once()
-        qcm.device.sequencer0.sync_en.assert_called_once_with(True)
-
     def test_name_property(self, qcm_no_device: QbloxQCM):
         """Test name property."""
         assert qcm_no_device.name == InstrumentName.QBLOX_QCM
@@ -282,20 +256,3 @@ class TestQbloxQCM:
     def test_firmware_property(self, qcm_no_device: QbloxQCM):
         """Test firmware property."""
         assert qcm_no_device.firmware == qcm_no_device.settings.firmware
-
-    def test_compile_swaps_the_i_and_q_channels_when_mapping_is_not_supported_in_hw(self, qcm):
-        """Test that the compile method swaps the I and Q channels when the output mapping is not supported in HW."""
-        # We change the dictionary and initialize the QCM
-        qcm_settings = qcm.to_dict()
-        qcm_settings.pop("name")
-        qcm_settings["awg_sequencers"][0]["output_i"] = 1
-        qcm_settings["awg_sequencers"][0]["output_q"] = 0
-        new_qcm = QbloxQCM(settings=qcm_settings)
-        # We create a pulse bus schedule
-        pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=Gaussian(num_sigmas=4))
-        pulse_bus_schedule = PulseBusSchedule(timeline=[PulseEvent(pulse=pulse, start_time=0)], port="drive_q0")
-        sequences = new_qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000, num_bins=1)
-        # We assert that the waveform of the first path is all zeros and the waveform of the second path is the gaussian
-        waveforms = sequences[0]._waveforms._waveforms
-        assert np.allclose(waveforms[0].data, 0)
-        assert np.allclose(waveforms[1].data, pulse.envelope(amplitude=1))

@@ -298,8 +298,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         self._connected_to_instruments: bool = False
         """Boolean indicating the connection status to the instruments. Defaults to False (not connected)."""
-        
-        self.compiler = PulseScheduleQbloxCompiler(platform=self) #TODO: integrate with qprogram compiler
+        if any(isinstance(instrument, QbloxModule) for instrument in self.instruments.elements):
+            self.compiler = PulseScheduleQbloxCompiler(platform=self) #TODO: integrate with qprogram compiler
         """Compiler to translate given programs to instructions for a given awg vendor"""
 
     def connect(self, manual_override=False):
@@ -579,7 +579,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         # Reset instrument settings
         for instrument in self.instruments.elements:
             if isinstance(instrument, QbloxModule):
-                instrument.reset_sequences()
+                instrument.clear_sequence_cache()
                 instrument.desync_sequencers()
 
         return results
@@ -619,7 +619,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         programs = self.compile(program, num_avg, repetition_duration, num_bins)
 
         # Upload pulse schedule
-        for bus_alias, program in programs:
+        for bus_alias, program in programs.items():
             bus = self._get_bus_by_alias(alias=bus_alias)
             bus.upload(program)
 
@@ -642,11 +642,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 instrument.desync_sequencers()
 
         # FIXME: set multiple readout buses
-        if len(results) > 1:
-            logger.error("Only One Readout Bus allowed. Reading only from the first one.")
-        if not results:
-            raise ValueError("There are no readout buses in the platform.")
-
         return results[0]
 
     def compile(self, program: PulseSchedule | Circuit, num_avg: int, repetition_duration: int, num_bins: int) -> dict:

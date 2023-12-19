@@ -2,7 +2,7 @@
 import pytest
 import qpysequence as QPy
 
-from qililab import Domain, DragPair, Gaussian, IQPair, QbloxCompiler, QProgram, Square
+from qililab import Domain, DragPair, Gaussian, IQPair, QProgramQbloxCompiler, QProgram, Square
 from qililab.qprogram.blocks import ForLoop
 from tests.test_utils import is_q1asm_equal  # pylint: disable=import-error, no-name-in-module
 
@@ -237,7 +237,7 @@ def fixture_multiple_play_operations_with_no_Q_waveform() -> QProgram:
 
 class TestQBloxCompiler:
     def test_no_loops_all_operations(self, no_loops_all_operations: QProgram):
-        compiler = QbloxCompiler()
+        compiler = QProgramQbloxCompiler()
         sequences = compiler.compile(qprogram=no_loops_all_operations)
 
         assert len(sequences) == 2
@@ -287,7 +287,7 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["readout"], readout_str)
 
     def test_dynamic_wait(self, dynamic_wait: QProgram):
-        compiler = QbloxCompiler()
+        compiler = QProgramQbloxCompiler()
         sequences = compiler.compile(qprogram=dynamic_wait)
 
         assert len(sequences) == 1
@@ -311,7 +311,7 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["drive"], drive_str)
 
     def test_infinite_loop(self, infinite_loop: QProgram):
-        compiler = QbloxCompiler()
+        compiler = QProgramQbloxCompiler()
         sequences = compiler.compile(qprogram=infinite_loop)
 
         assert len(sequences) == 1
@@ -331,7 +331,7 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["drive"], drive_str)
 
     def test_average_loop(self, average_loop: QProgram):
-        compiler = QbloxCompiler()
+        compiler = QProgramQbloxCompiler()
         sequences = compiler.compile(qprogram=average_loop)
 
         assert len(sequences) == 2
@@ -383,7 +383,7 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["readout"], readout_str)
 
     def test_average_with_for_loop(self, average_with_for_loop: QProgram):
-        compiler = QbloxCompiler()
+        compiler = QProgramQbloxCompiler()
         sequences = compiler.compile(qprogram=average_with_for_loop)
 
         assert len(sequences) == 2
@@ -450,7 +450,7 @@ class TestQBloxCompiler:
     def test_acquire_loop_with_for_loop_with_weights_of_same_waveform(
         self, acquire_loop_with_for_loop_with_weights_of_same_waveform: QProgram
     ):
-        compiler = QbloxCompiler()
+        compiler = QProgramQbloxCompiler()
         sequences = compiler.compile(qprogram=acquire_loop_with_for_loop_with_weights_of_same_waveform)
 
         assert len(sequences) == 2
@@ -515,7 +515,7 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["readout"], readout_str)
 
     def test_average_with_multiple_for_loops_and_acquires(self, average_with_multiple_for_loops_and_acquires: QProgram):
-        compiler = QbloxCompiler()
+        compiler = QProgramQbloxCompiler()
         sequences = compiler.compile(qprogram=average_with_multiple_for_loops_and_acquires)
 
         assert len(sequences) == 1
@@ -572,7 +572,7 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["readout"], readout_str)
 
     def test_average_with_nested_for_loops(self, average_with_nested_for_loops: QProgram):
-        compiler = QbloxCompiler()
+        compiler = QProgramQbloxCompiler()
         sequences = compiler.compile(qprogram=average_with_nested_for_loops)
 
         assert len(sequences) == 2
@@ -649,7 +649,7 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["readout"], readout_str)
 
     def test_average_with_parallel_for_loops(self, average_with_parallel_for_loops: QProgram):
-        compiler = QbloxCompiler()
+        compiler = QProgramQbloxCompiler()
         sequences = compiler.compile(qprogram=average_with_parallel_for_loops)
 
         assert len(sequences) == 2
@@ -723,16 +723,16 @@ class TestQBloxCompiler:
         with pytest.raises(
             NotImplementedError, match="Variables referenced in loops should be used in at least one operation."
         ):
-            compiler = QbloxCompiler()
+            compiler = QProgramQbloxCompiler()
             _ = compiler.compile(qprogram=for_loop_variable_with_no_target)
 
     def test_sync_operation_with_dynamic_timings_throws_exception(self, sync_with_dynamic_wait: QProgram):
         with pytest.raises(NotImplementedError, match="Dynamic syncing is not implemented yet."):
-            compiler = QbloxCompiler()
+            compiler = QProgramQbloxCompiler()
             _ = compiler.compile(qprogram=sync_with_dynamic_wait)
 
     def test_multiple_play_operations_with_same_waveform(self, multiple_play_operations_with_same_waveform: QProgram):
-        compiler = QbloxCompiler()
+        compiler = QProgramQbloxCompiler()
         sequences = compiler.compile(qprogram=multiple_play_operations_with_same_waveform)
 
         assert len(sequences) == 1
@@ -759,7 +759,7 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["drive"], drive_str)
 
     def test_multiple_play_operations_with_no_Q_waveform(self, multiple_play_operations_with_no_Q_waveform: QProgram):
-        compiler = QbloxCompiler()
+        compiler = QProgramQbloxCompiler()
         sequences = compiler.compile(qprogram=multiple_play_operations_with_no_Q_waveform)
 
         assert len(sequences) == 1
@@ -790,9 +790,9 @@ class TestQBloxCompiler:
         [(0, 10, 1, 11), (10, 0, -1, 11), (1, 2.05, 0.1, 11)],
     )
     def test_calculate_iterations(self, start, stop, step, expected_result):
-        result = QbloxCompiler._calculate_iterations(start, stop, step)
+        result = QProgramQbloxCompiler._calculate_iterations(start, stop, step)
         assert result == expected_result
 
     def test_calculate_iterations_with_zero_step_throws_error(self):
         with pytest.raises(ValueError, match="Step value cannot be zero"):
-            QbloxCompiler._calculate_iterations(100, 200, 0)
+            QProgramQbloxCompiler._calculate_iterations(100, 200, 0)

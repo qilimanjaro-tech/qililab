@@ -97,7 +97,6 @@ class QbloxModule(AWG):
     def initial_setup(self):
         """Initial setup"""
         self._map_outputs()
-        self.clear_cache()
         for sequencer in self.awg_sequencers:
             sequencer_id = sequencer.identifier
             # Set `sync_en` flag to False (this value will be set to True if the sequencer is used in the execution)
@@ -383,15 +382,14 @@ class QbloxModule(AWG):
     @Instrument.CheckDeviceInitialized
     def reset(self):
         """Reset instrument."""
-        self.clear_cache()
         self.device.reset()
         
-    def clear_sequence_cache(self): # TODO: rename to avoid confusion with qblox clear cache # TODO: this should be in qblox module
+    def clear_sequence_cache(self):
         """Empty cache."""
         self.cache = {}
         self.sequences = {}
 
-    def upload(self, program: QpySequence, port: str): # TODO: add condition to platofor to upload if not already uploaded (see previous upload method)
+    def upload(self, program: QpySequence, port: str): #TODO: check compatibility with QPrgram
         """Upload the qpysequence to its corresponding sequencer.
 
         Args:
@@ -403,11 +401,16 @@ class QbloxModule(AWG):
         for sequencer in sequencers:
             seq_idx = sequencer.identifier
             logger.info("Sequence program: \n %s", repr(program._program))  # pylint: disable=protected-access
-            if seq_idx in self.sequences: # if already cached
-                sequence, uploaded = self.sequences[seq_idx]
+            # check is sequence has already been uploaded in a previous execution
+            if seq_idx in self.sequences:
+                # is sequencer id is not in cache then delete the sequence, otherwise do nothing
+                # since the sequence is already uploaded
+                if seq_idx not in self.cache:
+                    _ = self.device.sequences.pop(seq_idx)
+            # if sequence is not in sequences, upload it
             else:
-                self.device.sequencers[seq_idx].sequence(program.todict())
-                self.sequences[seq_idx] = (program, True) # TODO: we dont need uploaded variable anymore
+                self.device.sequencers[seq_idx].sequence(program.todict()) # TODO: what is this doing
+                self.sequences[seq_idx] = program
             self.device.sequencers[sequencer.identifier].sync_en(True)
 
     def _set_nco(self, sequencer_id: int):

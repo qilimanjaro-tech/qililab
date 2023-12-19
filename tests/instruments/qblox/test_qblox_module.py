@@ -14,57 +14,29 @@ from qililab.pulse.pulse_event import PulseEvent
 from tests.data import Galadriel
 
 
-class DummyQbloxModule(QbloxModule):
-    """Dummy QbloxModule class for testing"""
-
-    def _generate_weights(self, sequencer: AWGQbloxSequencer):  # pylint: disable=unused-argument
-        return Weights()
-
-    def _append_acquire_instruction(  # pylint: disable=unused-argument
-        self, loop: Loop, bin_index: Register, sequencer_id: int, weight_regs: tuple[Register, Register]
-    ):
-        """Append an acquire instruction to the loop."""
-
-
-@pytest.fixture(name="qblox_module")
-def fixture_qblox_module():
-    """Return an instance of QbloxModule class"""
-    settings = copy.deepcopy(Galadriel.qblox_qcm_0)
-    settings.pop("name")
-    return DummyQbloxModule(settings=settings)
-
 
 class TestQbloxModule:
     """Unit tests checking the QbloxQCM attributes and methods"""
 
-    def test_amplitude_and_phase_in_program(self, qblox_module: QbloxModule):
-        """Test that the amplitude and the phase of a compiled pulse is added into the Qblox program."""
 
-        amplitude = 0.8
-        phase = np.pi / 2 + 12.2
-        timeline = [
-            PulseEvent(
-                pulse=Pulse(
-                    amplitude=amplitude,
-                    phase=phase,
-                    duration=1000,
-                    frequency=7.0e9,
-                    pulse_shape=Gaussian(num_sigmas=5),
-                ),
-                start_time=0,
-            )
-        ]
+# test self.sequencer
 
-        pulse_bus_schedule = PulseBusSchedule(timeline=timeline, port="drive_q0")
+"""
+    def test_upload_method(self, qcm, pulse_bus_schedule):
+        
+        qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100, num_bins=1)
+        qcm.upload(port=pulse_bus_schedule.port)
+        qcm.device.sequencer0.sequence.assert_called_once()
+        qcm.device.sequencer0.sync_en.assert_called_once_with(True)
+   
 
-        sequences = qblox_module.compile(pulse_bus_schedule, nshots=1, repetition_duration=1, num_bins=1)
-        program = sequences[0]._program
 
-        expected_gain = int(amplitude * AWG_MAX_GAIN)
-        expected_phase = int((phase % (2 * np.pi)) * 1e9 / (2 * np.pi))
-
-        bin_loop = program.blocks[2].components[1]
-
-        assert bin_loop.components[0].args[0] == expected_gain
-        assert bin_loop.components[0].args[1] == expected_gain
-        assert bin_loop.components[1].args[0] == expected_phase
+    def test_upload_method(self, qrm, pulse_bus_schedule):
+   
+        pulse_bus_schedule.port = "feedline_input"
+        qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100, num_bins=1)
+        qrm.upload(port=pulse_bus_schedule.port)
+        qrm.device.sequencers[0].sync_en.assert_called_once_with(True)
+        qrm.device.sequencers[1].sequence.assert_not_called()
+        # TODO: test that sequence from compule is added to qrm sequences
+"""

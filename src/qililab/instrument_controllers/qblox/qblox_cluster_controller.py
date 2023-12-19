@@ -60,8 +60,7 @@ class QbloxClusterController(QbloxController):
     def reset(self):
         """Reset instrument."""
         self.device.reset()
-        for module in self.modules:
-            module.clear_cache()
+        self.device.clear_cache()
 
     @QbloxController.CheckConnected
     def _set_reference_source(self):
