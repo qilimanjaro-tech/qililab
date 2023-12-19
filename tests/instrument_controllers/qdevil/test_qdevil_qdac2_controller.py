@@ -7,8 +7,9 @@ from qililab.instrument_controllers.qdevil.qdevil_qdac2_controller import QDevil
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
 from qililab.platform import Platform
 from qililab.settings import Settings
-from tests.data import SauronQDevil  # pylint: disable=import-error
-from tests.test_utils import build_platform  # pylint: disable=import-error
+from qililab.typings import ConnectionName
+from tests.data import SauronQDevil  # pylint: disable=import-error, no-name-in-module
+from tests.test_utils import build_platform  # pylint: disable=import-error, no-name-in-module
 
 
 @pytest.fixture(name="platform")
@@ -41,7 +42,7 @@ class TestQDevilQDac2Controller:
         assert len(controller_modules) == 1
         assert isinstance(controller_modules[0], QDevilQDac2)
 
-    @patch("qililab.instrument_controllers.qdevil.qdevil_qdac2_controller.QDevilQDac2Device")
+    @patch("qililab.instrument_controllers.qdevil.qdevil_qdac2_controller.QDevilQDac2Device", autospec=True)
     @pytest.mark.parametrize("controller_alias", ["qdac_controller_ip", "qdac_controller_usb"])
     def test_initialize_device(self, device_mock: MagicMock, platform: Platform, controller_alias: str):
         """Test QDAC-II controller initializes device correctly."""
@@ -49,7 +50,13 @@ class TestQDevilQDac2Controller:
 
         controller_instance._initialize_device()
 
-        assert isinstance(controller_instance.device, MagicMock)
+        name = f"{controller_instance.name.value}"
+        address = (
+            f"TCPIP::{controller_instance.address}::5025::SOCKET"
+            if controller_instance.connection.name == ConnectionName.TCP_IP
+            else f"ASRL/dev/{controller_instance.address}::INSTR"
+        )
+        device_mock.assert_called_once_with(name, address)
 
     def test_check_supported_modules_raises_exception(
         self, qdevil_qdac2_controller_wrong_module: QDevilQDac2Controller
