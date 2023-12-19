@@ -27,8 +27,11 @@ class VoltageSource(Instrument):
         """Contains the settings of a specific signal generator.
 
         Args:
-            voltage (float): Voltage of the instrument in V.
-                Value range is (-40, 40).
+            voltage (list[float]): List of voltages of the instrument's DACs in V. Value range is (-40, 40).
+            span (list[str]): A list of the max range of each DACs.
+            ramping_enabled (list[bool]): A list of ramping enabled boolean values per DAC.
+            ramp_rate (list[float]): List of ramping rates in mA / ms per DAC.
+            dacs (list[int]): List of the dacs of which to set the current.
         """
 
         voltage: list[float]

@@ -383,20 +383,20 @@ class QbloxModule(AWG):
     def reset(self):
         """Reset instrument."""
         self.device.reset()
-        
-    def clear_sequence_cache(self):
+
+    def clear_cache(self):
         """Empty cache."""
         self.cache = {}
         self.sequences = {}
 
-    def upload(self, program: QpySequence, port: str): #TODO: check compatibility with QPrgram
+    def upload(self, program: QpySequence, port: str):  # TODO: check compatibility with QPrgram
         """Upload the qpysequence to its corresponding sequencer.
 
         Args:
             program (QpySequence): The qpysequence to upload.
             port (str): The port of the sequencer to upload to.
-        """       
- 
+        """
+
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
         for sequencer in sequencers:
             seq_idx = sequencer.identifier
@@ -409,7 +409,7 @@ class QbloxModule(AWG):
                     _ = self.device.sequences.pop(seq_idx)
             # if sequence is not in sequences, upload it
             else:
-                self.device.sequencers[seq_idx].sequence(program.todict()) # TODO: what is this doing
+                self.device.sequencers[seq_idx].sequence(program.todict())  # TODO: what is this doing
                 self.sequences[seq_idx] = program
             self.device.sequencers[sequencer.identifier].sync_en(True)
 

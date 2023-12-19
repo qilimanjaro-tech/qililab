@@ -26,6 +26,7 @@ from ruamel.yaml import YAML
 
 from qililab.chip import Chip
 from qililab.circuit_transpiler import CircuitTranspiler
+from qililab.compiler import QbloxCompiler as PulseScheduleQbloxCompiler
 from qililab.config import logger
 from qililab.constants import GATE_ALIAS_REGEX, RUNCARD
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
@@ -41,7 +42,6 @@ from qililab.result import Result
 from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import Line, Parameter
-from qililab.compiler import QbloxCompiler as PulseScheduleQbloxCompiler
 
 from .components import Bus, Buses
 
@@ -299,7 +299,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         self._connected_to_instruments: bool = False
         """Boolean indicating the connection status to the instruments. Defaults to False (not connected)."""
         if any(isinstance(instrument, QbloxModule) for instrument in self.instruments.elements):
-            self.compiler = PulseScheduleQbloxCompiler(platform=self) #TODO: integrate with qprogram compiler
+            self.compiler = PulseScheduleQbloxCompiler(platform=self)  # TODO: integrate with qprogram compiler
         """Compiler to translate given programs to instructions for a given awg vendor"""
 
     def connect(self, manual_override=False):
@@ -409,7 +409,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         readout_bus = self.buses.get(port=readout_port)
         return flux_bus, control_bus, readout_bus
 
-    def _get_bus_by_node(self, qubit_index: int) -> tuple[Bus, Bus, Bus]: # TODO: docstrings
+    def _get_bus_by_node(self, qubit_index: int) -> tuple[Bus, Bus, Bus]:  # TODO: docstrings
         """Finds buses associated with the given node.
 
         Args:
@@ -579,7 +579,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         # Reset instrument settings
         for instrument in self.instruments.elements:
             if isinstance(instrument, QbloxModule):
-                instrument.clear_sequence_cache()
+                instrument.clear_cache()
                 instrument.desync_sequencers()
 
         return results
@@ -660,14 +660,21 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         Returns:
             dict: Dictionary of compiled assembly programs. The key is the bus alias (``str``), and the value is the assembly compilation (``list``).
+
+        Raises:
+            ValueError: raises value error if the circuit execution time is longer than ``repetition_duration`` for some qubit.
         """
         # We have a circular import because Platform uses CircuitToPulses and vice versa
 
         if isinstance(program, Circuit):
             transpiler = CircuitTranspiler(platform=self)
             pulse_schedule = transpiler.transpile_circuit(circuits=[program])[0]
-        else:
+        elif isinstance(program, PulseSchedule):
             pulse_schedule = program
-            
-        return self.compiler.compile(pulse_schedule=pulse_schedule, num_avg=num_avg,repetition_duration=repetition_duration,num_bins=num_bins)
-
+        else:
+            raise ValueError(
+                f"Program to execute can only be either a single circuit or a pulse schedule. Got program of type {type(program)} instead"
+            )
+        return self.compiler.compile(
+            pulse_schedule=pulse_schedule, num_avg=num_avg, repetition_duration=repetition_duration, num_bins=num_bins
+        )
