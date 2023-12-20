@@ -11,7 +11,7 @@ from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Platform
 from qililab.settings import Settings
 from qililab.typings import Parameter
-from tests.data import SauronQuantumMachines  # pylint: disable=no-name-in-module
+from tests.data import SauronQuantumMachines  # pylint: disable=import-error, no-name-in-module
 from tests.test_utils import build_platform  # pylint: disable=import-error, no-name-in-module
 
 
@@ -170,6 +170,7 @@ class TestQuantumMachinesCluster:
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
     def test_update_configurations(self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, compilation_config: dict):
         """Test update_configuration method"""
+        qmm.initial_setup()
         qmm.update_configuration(compilation_config=compilation_config)
 
         assert "control_445e964c_fb58e912_100" in qmm.config["elements"]["drive_q0"]["operations"]
@@ -177,7 +178,6 @@ class TestQuantumMachinesCluster:
         assert "445e964c" in qmm.config["waveforms"]
         assert "fb58e912" in qmm.config["waveforms"]
 
-        qmm.initial_setup()
         qmm.turn_on()
         qmm.update_configuration(compilation_config=compilation_config)
 
