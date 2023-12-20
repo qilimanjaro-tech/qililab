@@ -78,19 +78,20 @@ class TestYokogawaGS200:
     def test_setup_method(self, parameter: Parameter, value, yokogawa_gs200: GS200):
         """Test the setup method with float value"""
         assert isinstance(parameter, Parameter)
-        yokogawa_gs200.setup(parameter, value)
-        if parameter == Parameter.SOURCE_MODE:
-            assert yokogawa_gs200.source_mode == SourceMode(value)
-        if parameter == Parameter.CURRENT:
-            assert yokogawa_gs200.current == value
-        if parameter == Parameter.VOLTAGE:
-            assert yokogawa_gs200.voltage == value
-        if parameter == Parameter.RAMPING_ENABLED:
-            assert yokogawa_gs200.ramping_enabled == value
-        if parameter == Parameter.RAMPING_RATE:
-            assert yokogawa_gs200.ramping_rate == value
-        if parameter == Parameter.SPAN:
-            assert yokogawa_gs200.span == value
+        for instrument_set in [True, False]:
+            yokogawa_gs200.setup(parameter, value, instrument_set=instrument_set)
+            if parameter == Parameter.SOURCE_MODE:
+                assert yokogawa_gs200.source_mode == SourceMode(value)
+            if parameter == Parameter.CURRENT:
+                assert yokogawa_gs200.current == value
+            if parameter == Parameter.VOLTAGE:
+                assert yokogawa_gs200.voltage == value
+            if parameter == Parameter.RAMPING_ENABLED:
+                assert yokogawa_gs200.ramping_enabled == value
+            if parameter == Parameter.RAMPING_RATE:
+                assert yokogawa_gs200.ramping_rate == value
+            if parameter == Parameter.SPAN:
+                assert yokogawa_gs200.span == value
 
     @pytest.mark.parametrize("parameter, value", [(Parameter.MAX_CURRENT, 0.001), (Parameter.GAIN, 0.0005)])
     def test_setup_method_raises_exception(self, parameter: Parameter, value, yokogawa_gs200: GS200):

@@ -95,6 +95,16 @@ class TestMethods:
         qcm_rf.device.sequencers[0].gain_awg_path0.assert_called_once_with(1)
         qcm_rf.device.sequencers[0].gain_awg_path1.assert_called_once_with(1)
 
+    def test_setup_no_instrument_set(self, settings):
+        """Test the `setup` method of the QbloxQCMRF class."""
+        qcm_rf = QbloxQCMRF(settings=settings)
+        qcm_rf.device = MagicMock()
+        qcm_rf.setup(parameter=Parameter.OUT0_LO_FREQ, value=3.8e9, instrument_set=False)
+        qcm_rf.device.set.assert_not_called()
+        qcm_rf.setup(parameter=Parameter.GAIN, value=1, instrument_set=False)
+        qcm_rf.device.sequencers[0].gain_awg_path0.assert_not_called()
+        qcm_rf.device.sequencers[0].gain_awg_path1.assert_not_called()
+
 
 class TestIntegration:
     """Integration tests of the QbloxQCMRF class."""
@@ -142,27 +152,51 @@ class TestIntegration:
         assert qcm_rf.device.sequencers[0].get("gain_awg_path1") == pytest.approx(0.123)
         cluster.close()
 
+    def test_setup_no_instrument_set(self, settings):
+        """Test the `setup` method of the QbloxQCMRF class."""
+        qcm_rf = QbloxQCMRF(settings=settings)
+        cluster = Cluster(name="test", dummy_cfg={"1": ClusterType.CLUSTER_QCM_RF})
+        qcm_rf.device = cluster.modules[0]
+        qcm_rf.setup(parameter=Parameter.OUT0_ATT, value=58, instrument_set=False)
+        assert qcm_rf.device.get("out0_att") != 58
+        qcm_rf.setup(parameter=Parameter.GAIN, value=0.123, instrument_set=False)
+        assert qcm_rf.device.sequencers[0].get("gain_awg_path0") != pytest.approx(0.123)
+        assert qcm_rf.device.sequencers[0].get("gain_awg_path1") != pytest.approx(0.123)
+        cluster.close()
+
     def test_setup_with_lo_frequency_output0(self, settings):
         """Test the `setup` method when using the `Parameter.LO_FREQUENCY` generic parameter."""
         sequencer_idx = 0
-        qcm_rf = QbloxQCMRF(settings=settings)
-        sequencer = qcm_rf._get_sequencer_by_id(sequencer_idx)
-        sequencer.output_i = 0
-        sequencer.output_q = 1
-        qcm_rf.device = MagicMock()
-        qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=sequencer_idx)
-        qcm_rf.device.set.assert_called_once_with("out0_lo_freq", 2e9)
+        for instrument_set in [True, False]:
+            qcm_rf = QbloxQCMRF(settings=settings)
+            sequencer = qcm_rf._get_sequencer_by_id(sequencer_idx)
+            sequencer.output_i = 0
+            sequencer.output_q = 1
+            qcm_rf.device = MagicMock()
+            qcm_rf.setup(
+                parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=sequencer_idx, instrument_set=instrument_set
+            )
+            if instrument_set is True:
+                qcm_rf.device.set.assert_called_once_with("out0_lo_freq", 2e9)
+            else:
+                qcm_rf.device.set.assert_not_called()
 
     def test_setup_with_lo_frequency_output1(self, settings):
         """Test the `setup` method when using the `Parameter.LO_FREQUENCY` generic parameter."""
         sequencer_idx = 0
-        qcm_rf = QbloxQCMRF(settings=settings)
-        sequencer = qcm_rf._get_sequencer_by_id(sequencer_idx)
-        sequencer.output_i = 3
-        sequencer.output_q = 2
-        qcm_rf.device = MagicMock()
-        qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=sequencer_idx)
-        qcm_rf.device.set.assert_called_once_with("out1_lo_freq", 2e9)
+        for instrument_set in [True, False]:
+            qcm_rf = QbloxQCMRF(settings=settings)
+            sequencer = qcm_rf._get_sequencer_by_id(sequencer_idx)
+            sequencer.output_i = 3
+            sequencer.output_q = 2
+            qcm_rf.device = MagicMock()
+            qcm_rf.setup(
+                parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=sequencer_idx, instrument_set=instrument_set
+            )
+        if instrument_set is True:
+            qcm_rf.device.set.assert_called_once_with("out1_lo_freq", 2e9)
+        else:
+            qcm_rf.device.set.assert_not_called()
 
     def test_setup_with_lo_frequency_with_port_id(self, settings):
         """Test the `setup` method when using the `Parameter.LO_FREQUENCY` generic parameter."""

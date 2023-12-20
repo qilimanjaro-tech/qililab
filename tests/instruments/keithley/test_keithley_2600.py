@@ -59,6 +59,17 @@ class TestKeithley2600:
         if parameter == Parameter.VOLTAGE:
             assert keithley_2600.settings.max_voltage == value
 
+    @pytest.mark.parametrize("parameter, value", [(Parameter.MAX_CURRENT, 0.01), (Parameter.MAX_VOLTAGE, 19.0)])
+    def test_setup_method_current_parameter_no_instrument_set(
+        self, parameter: Parameter, value: float, keithley_2600: Keithley2600
+    ):
+        """Test setup method."""
+        keithley_2600.setup(parameter=parameter, value=value, instrument_set=False)
+        if parameter == Parameter.CURRENT:
+            assert keithley_2600.settings.max_current == value
+        if parameter == Parameter.VOLTAGE:
+            assert keithley_2600.settings.max_voltage == value
+
     def test_initial_setup_method(self, keithley_2600: Keithley2600):
         """Test initial_setup method."""
         keithley_2600.initial_setup()

@@ -70,21 +70,22 @@ class TestE5071B:
         """Test the setup method with float value"""
         assert isinstance(parameter, Parameter)
         assert isinstance(value, float)
-        e5071b.setup(parameter, value)
-        if parameter == Parameter.POWER:
-            assert e5071b.power == value
-        if parameter == Parameter.FREQUENCY_SPAN:
-            assert e5071b.frequency_span == value
-        if parameter == Parameter.FREQUENCY_CENTER:
-            assert e5071b.frequency_center == value
-        if parameter == Parameter.FREQUENCY_START:
-            assert e5071b.frequency_start == value
-        if parameter == Parameter.FREQUENCY_STOP:
-            assert e5071b.frequency_stop == value
-        if parameter == Parameter.IF_BANDWIDTH:
-            assert e5071b.if_bandwidth == value
-        if parameter == Parameter.ELECTRICAL_DELAY:
-            assert e5071b.electrical_delay == value
+        for instrument_set in [True, False]:
+            e5071b.setup(parameter, value, instrument_set=instrument_set)
+            if parameter == Parameter.POWER:
+                assert e5071b.power == value
+            if parameter == Parameter.FREQUENCY_SPAN:
+                assert e5071b.frequency_span == value
+            if parameter == Parameter.FREQUENCY_CENTER:
+                assert e5071b.frequency_center == value
+            if parameter == Parameter.FREQUENCY_START:
+                assert e5071b.frequency_start == value
+            if parameter == Parameter.FREQUENCY_STOP:
+                assert e5071b.frequency_stop == value
+            if parameter == Parameter.IF_BANDWIDTH:
+                assert e5071b.if_bandwidth == value
+            if parameter == Parameter.ELECTRICAL_DELAY:
+                assert e5071b.electrical_delay == value
 
     @pytest.mark.parametrize(
         "parameter, value",

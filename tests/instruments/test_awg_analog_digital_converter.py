@@ -97,11 +97,29 @@ class TestAWGAnalogDigitalConverter:
         awg.device = MagicMock()
         with patch.object(target=AWGAnalogDigitalConverter, attribute="_set_threshold") as mock_set:
             awg.setup(parameter=Parameter.THRESHOLD, value=2)
-            mock_set.assert_called_once_with(value=2, sequencer_id=0)
+            mock_set.assert_called_once_with(value=2, sequencer_id=0, instrument_set=True)
+            awg.device.assert_not_called()
+
+    def test_setup_threshold_no_instrument_set(self, awg: AWG):
+        """Test that calling `setup` with the `THRESHOLD` parameter works correctly."""
+        awg.device = MagicMock()
+        with patch.object(target=AWGAnalogDigitalConverter, attribute="_set_threshold") as mock_set:
+            awg.setup(parameter=Parameter.THRESHOLD, value=2, instrument_set=False)
+            mock_set.assert_called_once_with(value=2, sequencer_id=0, instrument_set=False)
+            awg.device.assert_not_called()
 
     def test_setup_threshold_rotation(self, awg: AWG):
         """Test that calling `setup` with the `THRESHOLD_ROTATION` parameter works correctly."""
         awg.device = MagicMock()
         with patch.object(target=AWGAnalogDigitalConverter, attribute="_set_threshold_rotation") as mock_set:
             awg.setup(parameter=Parameter.THRESHOLD_ROTATION, value=2)
-            mock_set.assert_called_once_with(value=2, sequencer_id=0)
+            mock_set.assert_called_once_with(value=2, sequencer_id=0, instrument_set=True)
+            awg.device.assert_not_called()
+
+    def test_setup_threshold_rotation_no_instrument_set(self, awg: AWG):
+        """Test that calling `setup` with the `THRESHOLD_ROTATION` parameter works correctly."""
+        awg.device = MagicMock()
+        with patch.object(target=AWGAnalogDigitalConverter, attribute="_set_threshold_rotation") as mock_set:
+            awg.setup(parameter=Parameter.THRESHOLD_ROTATION, value=2, instrument_set=False)
+            mock_set.assert_called_once_with(value=2, sequencer_id=0, instrument_set=False)
+            awg.device.assert_not_called()

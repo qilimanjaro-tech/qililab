@@ -102,6 +102,16 @@ class TestMethods:
         qcm_rf.device.sequencers[0].gain_awg_path0.assert_called_once_with(1)
         qcm_rf.device.sequencers[0].gain_awg_path1.assert_called_once_with(1)
 
+    def test_setup_no_instrument_set(self, settings):
+        """Test the `setup` method of the QbloxQRMRF class."""
+        qcm_rf = QbloxQRMRF(settings=settings)
+        qcm_rf.device = MagicMock()
+        qcm_rf.setup(parameter=Parameter.OUT0_IN0_LO_FREQ, value=3.8e9, instrument_set=False)
+        qcm_rf.device.set.assert_not_called()
+        qcm_rf.setup(parameter=Parameter.GAIN, value=1, instrument_set=False)
+        qcm_rf.device.sequencers[0].gain_awg_path0.assert_not_called()
+        qcm_rf.device.sequencers[0].gain_awg_path1.assert_not_called()
+
 
 class TestIntegration:
     """Integration tests of the QbloxQRMRF class."""
@@ -145,6 +155,18 @@ class TestIntegration:
         assert qrm_rf.device.sequencers[0].get("gain_awg_path1") == pytest.approx(0.123)
         cluster.close()
 
+    def test_setup_no_set_instrument(self, settings):
+        """Test the `setup` method of the QbloxQRMRF class."""
+        qrm_rf = QbloxQRMRF(settings=settings)
+        cluster = Cluster(name="test", dummy_cfg={"1": ClusterType.CLUSTER_QRM_RF})
+        qrm_rf.device = cluster.modules[0]
+        qrm_rf.setup(parameter=Parameter.OUT0_ATT, value=58, instrument_set=False)
+        assert qrm_rf.device.get("out0_att") != 58
+        qrm_rf.setup(parameter=Parameter.GAIN, value=0.123, instrument_set=False)
+        assert qrm_rf.device.sequencers[0].get("gain_awg_path0") != pytest.approx(0.123)
+        assert qrm_rf.device.sequencers[0].get("gain_awg_path1") != pytest.approx(0.123)
+        cluster.close()
+
     def test_setup_with_lo_frequency(self, settings):
         """Test the `setup` method when using the `Parameter.LO_FREQUENCY` generic parameter."""
         sequencer_idx = 0
@@ -152,6 +174,14 @@ class TestIntegration:
         qcm_rf.device = MagicMock()
         qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=sequencer_idx)
         qcm_rf.device.set.assert_called_once_with(Parameter.OUT0_IN0_LO_FREQ, 2e9)
+
+    def test_setup_with_lo_frequency_no_set_instrument(self, settings):
+        """Test the `setup` method when using the `Parameter.LO_FREQUENCY` generic parameter."""
+        sequencer_idx = 0
+        qcm_rf = QbloxQRMRF(settings=settings)
+        qcm_rf.device = MagicMock()
+        qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=sequencer_idx, instrument_set=False)
+        qcm_rf.device.set.assert_not_called()
 
     def test_to_dict_method(self, settings):
         """Test that the `to_dict` method does not return a dictionary containing the key 'out_offsets' for a correct serialization"""

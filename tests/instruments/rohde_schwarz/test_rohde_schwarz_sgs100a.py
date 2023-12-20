@@ -54,13 +54,27 @@ class TestSGS100A:
     )
     def test_setup_method(self, parameter: Parameter, value: float, rohde_schwarz: SGS100A):
         """Test setup method"""
-        rohde_schwarz.setup(parameter=parameter, value=value)
-        if parameter == Parameter.POWER:
-            assert rohde_schwarz.settings.power == value
-        if parameter == Parameter.LO_FREQUENCY:
-            assert rohde_schwarz.settings.frequency == value
-        if parameter == Parameter.RF_ON:
-            assert rohde_schwarz.settings.rf_on == value
+        for instrument_set in [True, False]:
+            rohde_schwarz.setup(parameter=parameter, value=value, instrument_set=instrument_set)
+            if parameter == Parameter.POWER:
+                assert rohde_schwarz.settings.power == value
+            if parameter == Parameter.LO_FREQUENCY:
+                assert rohde_schwarz.settings.frequency == value
+            if parameter == Parameter.RF_ON:
+                assert rohde_schwarz.settings.rf_on == value
+
+    @pytest.mark.parametrize("rf_on", [True, False])
+    def test_setup_method_no_instrument_set(self, rf_on: bool, rohde_schwarz: SGS100A):
+        """Test initial setup method"""
+        rohde_schwarz.setup(Parameter.RF_ON, rf_on, instrument_set=False)
+        rohde_schwarz.device.power.assert_not_called()
+        rohde_schwarz.device.frequency.assert_not_called()
+        if rohde_schwarz.rf_on:
+            assert rohde_schwarz.settings.rf_on is True
+            rohde_schwarz.device.on.assert_not_called()  # type: ignore
+        else:
+            assert rohde_schwarz.settings.rf_on is False
+            rohde_schwarz.device.off.assert_not_called()  # type: ignore
 
     @pytest.mark.parametrize("rf_on", [True, False])
     def test_initial_setup_method(self, rf_on: bool, rohde_schwarz: SGS100A):
