@@ -53,7 +53,7 @@ class TestBus:
         bus.settings.system_control = MagicMock()
         bus.set_parameter(parameter=Parameter.GAIN, value=0.5)
         bus.system_control.set_parameter.assert_called_once_with(
-            parameter=Parameter.GAIN, value=0.5, channel_id=None, port_id=bus.port
+            parameter=Parameter.GAIN, value=0.5, channel_id=None, port_id=bus.port, instrument_set=True
         )
 
     def test_set_parameter_no_instrument_set(self, bus: Bus):
