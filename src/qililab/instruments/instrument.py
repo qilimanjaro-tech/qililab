@@ -166,6 +166,7 @@ class Instrument(BusElement, ABC):
         parameter: Parameter,
         value: float | str | bool,
         channel_id: int | None = None,
+        port_id: str | None = None,
         instrument_set: bool = True,
     ):
         """Set instrument settings parameter to the corresponding value
