@@ -1010,7 +1010,7 @@ class SauronQuantumMachines:
     }
 
     qmm = {
-        "name": InstrumentName.QUANTUM_MACHINES_MANAGER,
+        "name": InstrumentName.QUANTUM_MACHINES_CLUSTER,
         "alias": "qmm",
         RUNCARD.FIRMWARE: "4.30.046.295",
         "address": "192.168.0.1",
@@ -1065,7 +1065,7 @@ class SauronQuantumMachines:
     }
 
     qmm_with_octave = {
-        "name": InstrumentName.QUANTUM_MACHINES_MANAGER,
+        "name": InstrumentName.QUANTUM_MACHINES_CLUSTER,
         "alias": "qmm_with_octave",
         RUNCARD.FIRMWARE: "4.30.046.295",
         "address": "192.168.0.1",
@@ -1126,7 +1126,7 @@ class SauronQuantumMachines:
     }
 
     qmm_controller = {
-        "name": InstrumentControllerName.QUANTUM_MACHINES_MANAGER,
+        "name": InstrumentControllerName.QUANTUM_MACHINES_CLUSTER,
         "alias": "qmm_controller",
         INSTRUMENTCONTROLLER.CONNECTION: {
             "name": ConnectionName.TCP_IP.value,
@@ -1141,7 +1141,7 @@ class SauronQuantumMachines:
     }
 
     qmm_with_octave_controller = {
-        "name": InstrumentControllerName.QUANTUM_MACHINES_MANAGER,
+        "name": InstrumentControllerName.QUANTUM_MACHINES_CLUSTER,
         "alias": "qmm_with_octave_controller",
         INSTRUMENTCONTROLLER.CONNECTION: {
             "name": ConnectionName.TCP_IP.value,
@@ -1165,7 +1165,7 @@ class SauronQuantumMachines:
     }
 
     qmm_controller_wrong_module = {
-        "name": InstrumentControllerName.QUANTUM_MACHINES_MANAGER,
+        "name": InstrumentControllerName.QUANTUM_MACHINES_CLUSTER,
         "alias": "qmm_controller_wrong_module",
         INSTRUMENTCONTROLLER.CONNECTION: {
             "name": ConnectionName.TCP_IP.value,

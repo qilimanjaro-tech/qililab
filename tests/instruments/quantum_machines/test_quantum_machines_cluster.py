@@ -7,9 +7,8 @@ import pytest
 from qm import Program
 from qm.qua import play, program
 
-from qililab.instruments.quantum_machines import QuantumMachinesManager
+from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Platform
-from qililab.result.quantum_machines_results import QuantumMachinesMeasurementResult
 from qililab.settings import Settings
 from qililab.typings import Parameter
 from tests.data import SauronQuantumMachines  # pylint: disable=no-name-in-module
@@ -36,7 +35,7 @@ def fixture_qmm():
     """Fixture that returns an instance a qililab wrapper for Quantum Machines Manager."""
     settings = copy.deepcopy(SauronQuantumMachines.qmm)
     settings.pop("name")
-    qmm = QuantumMachinesManager(settings=settings)
+    qmm = QuantumMachinesCluster(settings=settings)
     qmm.device = MagicMock
 
     return qmm
@@ -47,7 +46,7 @@ def fixture_qmm_with_octave():
     """Fixture that returns an instance a qililab wrapper for Quantum Machines Manager."""
     settings = copy.deepcopy(SauronQuantumMachines.qmm_with_octave)
     settings.pop("name")
-    qmm = QuantumMachinesManager(settings=settings)
+    qmm = QuantumMachinesCluster(settings=settings)
     qmm.device = MagicMock
 
     return qmm
@@ -112,10 +111,10 @@ class MockSingleHandle:
         return self.values
 
 
-class TestQMM:
-    """This class contains the unit tests for the ``QMM`` class."""
+class TestQuantumMachinesCluster:
+    """This class contains the unit tests for the ``QuantumMachinesCluster`` class."""
 
-    @patch("qililab.instruments.quantum_machines.qmm.QMM")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.Instrument.initial_setup")
     @pytest.mark.parametrize("qmm_name", ["qmm", "qmm_with_octave"])
     def test_initial_setup(
@@ -131,16 +130,16 @@ class TestQMM:
 
     @pytest.mark.parametrize("qmm_name", ["qmm", "qmm_with_octave"])
     def test_settings(self, qmm_name, request):
-        """Test QMMSettings have been set correctly"""
+        """Test QuantumMachinesClusterSettings have been set correctly"""
 
         qmm = request.getfixturevalue(qmm_name)
         assert isinstance(qmm.settings, Settings)
 
-    @patch("qililab.instruments.quantum_machines.qmm.QMM")
-    @patch("qililab.instruments.quantum_machines.qmm.QuantumMachine")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
     @pytest.mark.parametrize("qmm_name", ["qmm", "qmm_with_octave"])
     def test_turn_on(self, mock_qmm, mock_qm, qmm_name, request):
-        """Test QMMSettings have been set correctly"""
+        """Test turn_on method"""
 
         qmm = request.getfixturevalue(qmm_name)
         qmm.initial_setup()
@@ -153,11 +152,11 @@ class TestQMM:
             ]
             qmm.qm.calibrate_element.assert_has_calls(calls)
 
-    @patch("qililab.instruments.quantum_machines.qmm.QMM")
-    @patch("qililab.instruments.quantum_machines.qmm.QuantumMachine")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
     @pytest.mark.parametrize("qmm_name", ["qmm", "qmm_with_octave"])
     def test_turn_off(self, mock_qmm, mock_qm, qmm_name, request):
-        """Test QMMSettings have been set correctly"""
+        """Test turn_off method"""
 
         qmm = request.getfixturevalue(qmm_name)
         qmm.initial_setup()
@@ -167,9 +166,10 @@ class TestQMM:
         assert isinstance(qmm.qm, MagicMock)
         qmm.qm.close.assert_called_once()
 
-    @patch("qililab.instruments.quantum_machines.qmm.QMM")
-    @patch("qililab.instruments.quantum_machines.qmm.QuantumMachine")
-    def test_update_configurations(self, mock_qmm, mock_qm, qmm: QuantumMachinesManager, compilation_config: dict):
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    def test_update_configurations(self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, compilation_config: dict):
+        """Test update_configuration method"""
         qmm.update_configuration(compilation_config=compilation_config)
 
         assert "control_445e964c_fb58e912_100" in qmm.config["elements"]["drive_q0"]["operations"]
@@ -185,7 +185,7 @@ class TestQMM:
 
     @patch("qm.QuantumMachine")
     def test_execute(
-        self, mock_qm: MagicMock, qmm: QuantumMachinesManager, qua_program: Program
+        self, mock_qm: MagicMock, qmm: QuantumMachinesCluster, qua_program: Program
     ):  # pylint: disable=unused-argument
         """Test execute method"""
         mock_qm.return_value.execute.return_value = MagicMock
@@ -194,8 +194,8 @@ class TestQMM:
 
         assert isinstance(job, MagicMock)
 
-    def test_get_acquisitions(self, qmm: QuantumMachinesManager):
-        """Test get_acquisition method"""
+    def test_get_acquisitions(self, qmm: QuantumMachinesCluster):
+        """Test get_acquisitions method"""
         job = MockJob()
         results = qmm.get_acquisitions(job)
 
@@ -205,16 +205,16 @@ class TestQMM:
 
     @patch("qm.QuantumMachine")
     def test_simulate(
-        self, mock_qm: MagicMock, qmm: QuantumMachinesManager, qua_program: Program
+        self, mock_qm: MagicMock, qmm: QuantumMachinesCluster, qua_program: Program
     ):  # pylint: disable=unused-argument
-        """Test execute method"""
+        """Test simulate method"""
         mock_qm.return_value.simulate.return_value = MagicMock
         qmm.qm = mock_qm
         job = qmm.simulate(qua_program)
 
         assert isinstance(job, MagicMock)
 
-    def test_set_parameter(self, qmm: QuantumMachinesManager):
+    def test_set_parameter(self, qmm: QuantumMachinesCluster):
         """Tests that set_parameter method raises a not implemented error."""
         with pytest.raises(NotImplementedError, match="Setting a parameter is not supported for Quantum Machines yet."):
             _ = qmm.set_parameter(parameter=Parameter.LO_FREQUENCY, value=0.0)

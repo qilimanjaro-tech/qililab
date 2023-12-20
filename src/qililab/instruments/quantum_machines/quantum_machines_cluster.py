@@ -18,9 +18,7 @@ from dataclasses import dataclass
 from typing import Any, Dict
 
 import numpy as np
-from qm import QuantumMachine
-from qm import QuantumMachinesManager as QMM
-from qm import SimulationConfig
+from qm import DictQuaConfig, QuantumMachine, QuantumMachinesManager, SimulationConfig
 from qm.jobs.running_qm_job import RunningQmJob
 from qm.octave import QmOctaveConfig
 from qm.qua import Program
@@ -32,8 +30,8 @@ from qililab.utils import merge_dictionaries
 
 
 @InstrumentFactory.register
-class QuantumMachinesManager(Instrument):
-    """Class defining the Qililab Quantum Machines Manager instrument in Qililab.
+class QuantumMachinesCluster(Instrument):
+    """Class defining the Qililab Quantum Machines Cluster instrument in Qililab.
 
     This class allows Qililab control and communication with an instance of the
     Quantum Machines Manager, which is the central class to interact with Quantum Machines instruments.
@@ -46,10 +44,10 @@ class QuantumMachinesManager(Instrument):
         settings (QMMSettings): Settings of the instrument.
     """
 
-    name = InstrumentName.QUANTUM_MACHINES_MANAGER
+    name = InstrumentName.QUANTUM_MACHINES_CLUSTER
 
     @dataclass
-    class QMMSettings(Instrument.InstrumentSettings):
+    class QuantumMachinesClusterSettings(Instrument.InstrumentSettings):
         """Settings for Quantum Machines Manager instrument.
 
         Args:
@@ -235,11 +233,11 @@ class QuantumMachinesManager(Instrument):
 
             return elements, mixers
 
-    settings: QMMSettings
+    settings: QuantumMachinesClusterSettings
     device: QMMDriver
-    qmm: QMM
+    qmm: QuantumMachinesManager
     qm: QuantumMachine
-    config: dict | None = None
+    config: DictQuaConfig | None = None
     octave_config: QmOctaveConfig | None = None
     compilation_config: dict | None = None
 
@@ -254,7 +252,9 @@ class QuantumMachinesManager(Instrument):
             self.octave_config.set_calibration_db(os.getcwd())
             for octave in self.settings.octaves:
                 self.octave_config.add_device_info(octave["name"], self.settings.address, octave["port"])
-        self.qmm = QMM(host=self.settings.address, cluster_name=self.settings.cluster, octave=self.octave_config)
+        self.qmm = QuantumMachinesManager(
+            host=self.settings.address, cluster_name=self.settings.cluster, octave=self.octave_config
+        )
 
         if self.config is None:
             self.config = self.settings.to_qua_config()
