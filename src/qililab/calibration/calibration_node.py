@@ -18,7 +18,7 @@ import logging
 import os
 from datetime import datetime
 from io import StringIO
-from typing import Callable
+from typing import Any, Callable
 
 import numpy as np
 import papermill as pm
@@ -72,6 +72,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         input_parameters (dict | None, optional): Kwargs for input parameters to pass and be interpreted by the notebook. Defaults to None.
         sweep_interval (np.ndarray | None, optional): Array describing the sweep values of the experiment. Defaults to None, which means the one specified in the notebook will be used.
         number_of_random_datapoints (int, optional): The number of points randomly choose within the sweep interval, to run ``check_data()`` with. Default value is 10.
+        fidelity (bool, optional): Flag whether this notebook is a final fidelity experiment. Defaults to False.
 
     Examples:
 
@@ -259,12 +260,16 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         input_parameters: dict | None = None,
         sweep_interval: np.ndarray | None = None,
         number_of_random_datapoints: int = 10,
+        fidelity: bool = False,
     ):
         if in_spec_threshold > bad_data_threshold:
             raise ValueError("`in_spec_threshold` must be smaller or equal than `bad_data_threshold`.")
 
         if len(nb_path.split("\\")) > 1:
             raise ValueError("`nb_path` must be written in unix format: `folder/subfolder/.../file.ipynb`.")
+
+        if isinstance(qubit_index, list) and len(qubit_index) != 2:
+            raise ValueError("List of `qubit_index` only accepts two qubit index")
 
         self.nb_path: str = nb_path
         """Absolute notebook path, with folder, nb_name and ``.ipynb`` extension."""
@@ -318,8 +323,18 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         self.previous_timestamp: float | None = self.get_last_calibrated_timestamp()
         """Last calibrated timestamp. If no previous successful calibration, then is None."""
 
+        self.previous_inspec: float | None = None
+        """Last in-spec check_data timestamp. If no previous in-spec check_data, then is None."""
+        # Its different to previous_timestamp, since this only checks that its been inspec in this concrete
+        # calibration as we want. If we update the `previous_timestamp` instead, for big ones, we might double
+        # it, for example, 1 week turns into 2 weeks if its done exactly close to the thresholds, giving possible
+        # errors. Think if we can merge them, but I wouldn't trivially merge them, without thinking about it. TODO:
+
         self._stream: StringIO = self._build_notebooks_logger_stream()
         """Stream object to which the notebooks logger output will be written, to posterior retrieval."""
+
+        self.fidelity: bool = fidelity
+        """Flag whether this notebook is a final fidelity experiment. Defaults to False."""
 
     def run_node(self, check: bool = False) -> float:
         """Executes the notebook, passing the needed parameters and flags. Also it can be chosen to only check certain values of the sweep interval for
@@ -370,11 +385,22 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             In case of a keyboard interruption or any exception during the execution of the notebook.
         """
         # Create the input parameters for the notebook:)
-        params: dict = {
-            "check": check,
-            "number_of_random_datapoints": self.number_of_random_datapoints,
-            "qubit": self.qubit_index,
-        }
+        self.previous_output_parameters = self.output_parameters
+        params: dict = {}
+
+        if isinstance(self.qubit_index, int):
+            params |= {
+                "check": check,
+                "number_of_random_datapoints": self.number_of_random_datapoints,
+                "qubit": self.qubit_index,
+            }
+        # No need to use number_of_random_datapoints for 2qb experiments
+        elif isinstance(self.qubit_index, list):
+            params |= {
+                "check": check,
+                "control_qubit": self.qubit_index[0],
+                "target_qubit": self.qubit_index[1],
+            }
 
         if self.sweep_interval is not None:
             params["sweep_interval"] = self._build_check_data_interval() if check else self.sweep_interval
@@ -382,37 +408,70 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         if self.input_parameters is not None:
             params |= self.input_parameters
 
-        # initially the file is "dirty" until we make sure the execution was not aborted
-        output_path = self._create_notebook_datetime_path(self.nb_path, dirty=True)
-        self.previous_output_parameters = self.output_parameters
+        if check and self.previous_output_parameters is not None:
+            if "fit" in self.previous_output_parameters["check_parameters"]:
+                params |= {
+                    "compare_fit": [
+                        self.previous_output_parameters["check_parameters"]["sweep_interval"],
+                        self.previous_output_parameters["check_parameters"]["fit"],
+                    ]
+                }
+
+            else:
+                params |= {
+                    "compare_fit": [
+                        self.previous_output_parameters["check_parameters"]["sweep_interval"],
+                        self.previous_output_parameters["check_parameters"]["results"],
+                    ]
+                }
+
+        # JSON serialize nb input, no np.ndarrays
+        _json_serialize(params)  # TODO: Add a test, for passing np,arrays as inputs and working after this change
+
+        # initially the file is "dirty" until we make sure the execution was not aborted, so we add _dirty tag.
+        output_path = self._create_notebook_datetime_path(dirty=True)
+        # TODO: Integration test, that dirty flags are created and deleted when needed, for calibrated, or in_spec..
+        # TODO: , bad_data or other to take its place. And that all functions work correctly with it.
 
         # Execute notebook without problems:
         try:
             self.output_parameters = self._execute_notebook(self.nb_path, output_path, params)
-
             timestamp = datetime.timestamp(datetime.now())
-            new_output_path = self._create_notebook_datetime_path(self.nb_path, timestamp)
+            # remove the _dirty tag, since it finished.
+            new_output_path = self._create_notebook_datetime_path(timestamp=timestamp)
             os.rename(output_path, new_output_path)
             return timestamp
 
         # When keyboard interrupt (Ctrl+C), generate error, and leave `_dirty`` in the name:
-        except KeyboardInterrupt as exc:
+        except KeyboardInterrupt as exc:  # we don't remove the _dirty tag, since it was stopped, not failed.
             logger.error("Interrupted automatic calibration notebook execution of %s", self.nb_path)
             raise KeyboardInterrupt(f"Interrupted automatic calibration notebook execution of {self.nb_path}") from exc
 
         # When notebook execution fails, generate error folder and move there the notebook:
         except Exception as exc:  # pylint: disable = broad-exception-caught
-            timestamp = datetime.timestamp(datetime.now())
-            error_path = self._create_notebook_datetime_path(self.nb_path, timestamp, error=True)
-            os.rename(output_path, error_path)
+            if output_path in [os.scandir(self.nb_folder)]:
+                timestamp = datetime.timestamp(datetime.now())
+                error_path = self._create_notebook_datetime_path(
+                    timestamp=timestamp, error=True
+                )  # add _error tag, for failed executions.
+                os.rename(output_path, error_path)
+                logger.error(
+                    "Aborting execution. Exception %s during automatic calibration notebook execution, trace of the error can be found in %s",
+                    str(exc),
+                    error_path,
+                )
+                # pylint: disable = broad-exception-raised
+                raise Exception(
+                    f"Aborting execution. Exception {str(exc)} during automatic calibration notebook execution, trace of the error can be found in {error_path}"
+                ) from exc
+
             logger.error(
-                "Aborting execution. Exception %s during automatic calibration notebook execution, trace of the error can be found in %s",
+                "Aborting execution. Exception %s during automatic calibration, expected error execution file to be created but it did not",
                 str(exc),
-                error_path,
             )
             # pylint: disable = broad-exception-raised
             raise Exception(
-                f"Aborting execution. Exception {str(exc)} during automatic calibration notebook execution, trace of the error can be found in {error_path}"
+                f"Aborting execution. Exception {str(exc)} during automatic calibration, expected error execution file to be created but it did not"
             ) from exc
 
     @staticmethod
@@ -460,7 +519,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         return None
 
     def _create_notebook_datetime_path(
-        self, original_path: str, timestamp: float | None = None, dirty: bool = False, error: bool = False
+        self, timestamp: float | None = None, dirty: bool = False, error: bool = False
     ) -> str:
         """Create a timestamped notebook path, adding the datetime to the file name end, just before the ``.ipynb``.
 
@@ -486,17 +545,17 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         now_path = f"{daily_path}-" + f"{now.hour:02d}:{now.minute:02d}:{now.second:02d}"
 
         # If doesn't exist, create the needed folder for the path
-        name, folder_path = self._path_to_name_and_folder(original_path)
-        os.makedirs(folder_path, exist_ok=True)
+        os.makedirs(self.nb_folder, exist_ok=True)
 
         if dirty and not error:  # return the path of the execution
-            return f"{folder_path}/{name}_{now_path}_dirty.ipynb"
+            return f"{self.nb_folder}/{self.node_id}_{now_path}_dirty.ipynb"
         if error:
-            os.makedirs(f"{folder_path}/error_executions", exist_ok=True)
-            return f"{folder_path}/error_executions/{name}_{now_path}_error.ipynb"
+            # CREATE FOLDERS FOR CALIBRATED EXECUTIONS, COMPARISONS, etc.
+            os.makedirs(f"{self.nb_folder}/error_executions", exist_ok=True)
+            return f"{self.nb_folder}/error_executions/{self.node_id}_{now_path}_error.ipynb"
 
         # return the string where saved
-        return f"{folder_path}/{name}_{now_path}.ipynb"
+        return f"{self.nb_folder}/{self.node_id}_{now_path}.ipynb"
 
     def _path_to_name_and_folder(self, original_path: str) -> tuple[str, str]:
         """Extract the name and folder from a notebook path. Name will be extended with the qubit it acts on.
@@ -605,9 +664,13 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             raise FileNotFoundError(f"No previous execution found of notebook {self.nb_path}.") from exc
 
         # Check how many lines contain an output, to raise the corresponding errors:
-        if len(outputs_lines) != 1:
-            logger.error("No output or various outputs found in notebook %s.", self.nb_path)
-            raise IncorrectCalibrationOutput(f"No output or various outputs found in notebook {self.nb_path}.")
+        if not outputs_lines:
+            logger.error("No output found in notebook %s.", self.nb_path)
+            raise IncorrectCalibrationOutput(f"No output found in notebook {self.nb_path}.")
+        if len(outputs_lines) > 1:
+            logger.warning(
+                "If you had multiple outputs exported in %s, the first one found will be used.", self.nb_path
+            )
 
         # When only one line of outputs, use that one:
         return self._from_logger_string_to_output_dict(outputs_lines[0], self.nb_path)
@@ -626,17 +689,20 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             IncorrectCalibrationOutput: In case no outputs, incorrect outputs or multiple outputs where found. Incorrect outputs are those that do not contain `check_parameters` or is empty.
         """
         logger_splitted = logger_string.split(logger_output_start)
-
-        # In case something unexpected happened with the output we raise an error
-        if len(logger_splitted) != 2:
-            logger.error("No output or various outputs found in notebook %s.", input_path)
-            raise IncorrectCalibrationOutput(f"No output or various outputs found in notebook {input_path}.")
+        # In case no output is found we raise an error:
+        if len(logger_splitted) < 2:
+            logger.error("No output found in notebook %s.", input_path)
+            raise IncorrectCalibrationOutput(f"No output found in notebook {input_path}.")
+        # In case more than one output is found, we keep the last one, and raise a warning:
+        # TODO: Rethink removing this, logger shared in same execution
+        if len(logger_splitted) > 2:
+            logger.warning("If you had multiple outputs exported in %s, the last one found will be used.", input_path)
 
         # This next line is for taking into account other encodings, where special characters get `\\` in front.
-        clean_data = logger_splitted[1].split("\\n")[0].replace('\\"', '"')
+        clean_data = logger_splitted[-1].split("\\n")[0].replace('\\"', '"')
 
         logger_outputs_string = clean_data.split("\n")[0]
-        out_dict = json.loads(logger_outputs_string)
+        out_dict = json.loads(logger_outputs_string)  # in-dictionary strings will need to be double-quoted "" not ''.
 
         if "check_parameters" not in out_dict or out_dict["check_parameters"] == {}:
             logger.error(
@@ -655,8 +721,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             string_to_add (str): The string to append to the notebook name.
             timestamp (float): The timestamp to use for the new notebook execution name.
         """
-        path = os.path.join(self.nb_folder, self.node_id)
-        timestamp_path = self._create_notebook_datetime_path(path, timestamp).split(".ipynb")[0]
+        timestamp_path = self._create_notebook_datetime_path(timestamp=timestamp).split(".ipynb")[0]
 
         os.rename(f"{timestamp_path}.ipynb", f"{timestamp_path}_{string_to_add}.ipynb")
 
@@ -667,7 +732,32 @@ def export_nb_outputs(outputs: dict) -> None:
     Args:
         outputs (dict): Outputs from the notebook to export into the automatic calibration workflow.
     """
+    _json_serialize(outputs)
     print(f"{logger_output_start}{json.dumps(outputs)}")
+
+
+def _json_serialize(_object: Any):
+    """Function to JSON serialize the input argument.
+
+    Needed to handle input/output of notebook executions from the :class:`CalibrationNode` class.
+    This method only looks for np.ndarrays objects to JSON serialize. Any other non-JSON serializable won't be serialized.
+
+    Args:
+        _object (Any): Object to serialize
+    """
+    if isinstance(_object, dict):
+        for k, v in _object.items():
+            _object[k] = _json_serialize(v)
+
+    if isinstance(_object, list):
+        for idx, elem in enumerate(_object):
+            _object[idx] = _json_serialize(elem)
+
+    if isinstance(_object, tuple):
+        tuple_list = [_json_serialize(elem) for elem in _object]
+        return tuple(tuple_list)
+
+    return _object.tolist() if isinstance(_object, np.ndarray) else _object
 
 
 class IncorrectCalibrationOutput(Exception):
