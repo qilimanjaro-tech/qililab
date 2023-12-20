@@ -49,6 +49,7 @@ class SGS100A(SignalGenerator):
         parameter: Parameter,
         value: float | str | bool,
         channel_id: int | None = None,
+        port_id: int | None = None,
         instrument_set: bool = True,
     ):
         """Set R&S dbm power and frequency. Value ranges are:

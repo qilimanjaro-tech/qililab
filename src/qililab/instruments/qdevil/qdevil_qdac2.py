@@ -60,6 +60,7 @@ class QDevilQDac2(VoltageSource):
         parameter: Parameter,
         value: float | str | bool,
         channel_id: int | None = None,
+        port_id: int | None = None,
         instrument_set: bool = True,
     ):
         """Set parameter to the corresponding value for an instrument's channel.

@@ -80,6 +80,7 @@ class QbloxD5a(VoltageSource):
         parameter: Parameter,
         value: float | str | bool,
         channel_id: int | None = None,
+        port_id: int | None = None,
         instrument_set: bool = True,
     ):
         """Set Qblox instrument calibration settings."""

@@ -67,6 +67,7 @@ class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instan
         parameter: Parameter,
         value: float | str | bool | int,
         channel_id: int | None = None,
+        port_id: int | None = None,
         instrument_set: bool = True,
     ):
         """Set instrument settings parameter to the corresponding value
