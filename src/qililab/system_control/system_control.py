@@ -17,7 +17,7 @@
 import contextlib
 from abc import ABC
 from dataclasses import InitVar, dataclass
-from typing import get_type_hints, Any
+from typing import Any, get_type_hints
 
 from qpysequence import Sequence as QpySequence
 
@@ -66,27 +66,6 @@ class SystemControl(FactoryElement, ABC):
         settings_class: type[self.SystemControlSettings] = get_type_hints(self).get("settings")  # type: ignore
         self.settings = settings_class(**settings, platform_instruments=platform_instruments)
 
-    def compile(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
-    ) -> list:
-        """Compiles the ``PulseBusSchedule`` into an assembly program.
-
-        Args:
-            pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
-            nshots (int): number of shots / hardware average
-            repetition_duration (int): maximum window for the duration of one hardware repetition
-            num_bins (int): number of bins
-        """
-        for instrument in self.instruments:
-            if isinstance(instrument, AWG):
-                return instrument.compile(
-                    pulse_bus_schedule=pulse_bus_schedule,
-                    nshots=nshots,
-                    repetition_duration=repetition_duration,
-                    num_bins=num_bins,
-                )
-        raise AttributeError("The system control doesn't have any AWG to compile the given pulse sequence.")
-
     def upload_qpysequence(self, qpysequence: QpySequence, port: str):
         """Uploads the qpysequence into the instrument."""
         for instrument in self.instruments:
@@ -96,7 +75,7 @@ class SystemControl(FactoryElement, ABC):
 
         raise AttributeError("The system control doesn't have any AWG to upload a qpysequence.")
 
-    def upload(self, program: Any, port: str):
+    def upload(self, program: QpySequence, port: str):
         """Uploads any previously compiled program into the instrument."""
         for instrument in self.instruments:
             if isinstance(instrument, AWG):

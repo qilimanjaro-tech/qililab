@@ -48,8 +48,27 @@ class QbloxCompiler:
                 f"At least one QRM should be connected. Found {sum(qblox.name in self.readout_modules for qblox in self.qblox_modules)} QRM modules"
             )
 
-    # TODO: add comments
-    def compile(self, pulse_schedule: PulseSchedule, num_avg: int, repetition_duration: int, num_bins: int):
+    def compile(
+        self, pulse_schedule: PulseSchedule, num_avg: int, repetition_duration: int, num_bins: int
+    ) -> dict[str, list[QpySequence]]:
+        """Compiles a given pulse schedule to a Sequence (QpySequence). If the compiler object is created and not
+        reinitialized between executions, previously run Sequences and PulseBusSchedules are saved to the corresponding's
+        qblox_module sequences and cache, respectively. They can then be loaded from the stored data instead of being
+        compiled again.
+
+        Args:
+            pulse_schedule (PulseSchedule): PulseSchedule to be executed
+            num_avg (int): hardware average - number of times to average execution over
+            repetition_duration (int): fixed execution duration. Execution always lasts `repetition_duration` ns. If execution is shorter than that, a wait time of `repetition_duration` - circuit_execution_time is added (this is used for qubti relaxation)
+            num_bins (int): number of shots to execute
+
+        Raises:
+            ValueError: if circuit execution time is longer than `repetition_duration`
+            NotImplementedError: if more than one readout module is found connected to the platform
+
+        Returns:
+            dict[str, list[QpySequence]]: dictionary where the keys correspond to the bus which has to execute a list of QpySequences, given in the values
+        """
         if num_avg != self.nshots or repetition_duration != self.repetition_duration or num_bins != self.num_bins:
             self.nshots = num_avg
             self.repetition_duration = repetition_duration
@@ -57,54 +76,56 @@ class QbloxCompiler:
             for qblox_module in self.qblox_modules:
                 qblox_module.clear_cache()
 
-        sequencer_qrm_bus_schedules, sequencer_qcm_bus_schedules = self.get_pulse_bus_schedule_sequencers(
+        sequencer_qrm_bus_schedules, sequencer_qcm_bus_schedules = self.get_sequencer_schedule(
             pulse_schedule, self.qblox_modules
         )
 
         compiled_sequences = {}
 
-        for sequencer, bus_schedule in sequencer_qrm_bus_schedules + sequencer_qcm_bus_schedules:
-            end_time = None if len(bus_schedule.timeline) == 0 else bus_schedule.timeline[-1].end_time
+        # generally a sequencer_schedule is the schedule sent to a specific bus, except for readout,
+        # where multiple schedules for different sequencers are sent to the same bus
+        for sequencer, sequencer_schedule in sequencer_qrm_bus_schedules + sequencer_qcm_bus_schedules:
+            # check if circuit lasts longer than repetition duration
+            end_time = None if len(sequencer_schedule.timeline) == 0 else sequencer_schedule.timeline[-1].end_time
             if end_time is not None and end_time > self.repetition_duration:
                 raise ValueError(
-                    f"Circuit execution time cannnot be longer than repetition duration but found circuit time {end_time } > {repetition_duration} for qubit {bus_schedule.qubit}"
+                    f"Circuit execution time cannnot be longer than repetition duration but found circuit time {end_time } > {repetition_duration} for qubit {sequencer_schedule.qubit}"
                 )
-
+            # get qblox module for this sequencer
             qblox_module = self._get_instrument_from_sequencer(sequencer)
-            bus_alias = self.buses.get(bus_schedule.port).alias
-            if bus_schedule == qblox_module.cache.get(sequencer.identifier):  # if it's already cached then dont compile
-                if bus_alias not in compiled_sequences:
-                    compiled_sequences[self.buses.get(bus_schedule.port).alias] = qblox_module.sequences[
-                        sequencer.identifier
-                    ]  # TODO: why the 0 index
-                else:
-                    compiled_sequences[self.buses.get(bus_schedule.port).alias].append(
-                        qblox_module.sequences[sequencer.identifier]
-                    )
+            bus_alias = self.buses.get(sequencer_schedule.port).alias
+            # create empty list if key does not exist
+            if bus_alias not in compiled_sequences:
+                compiled_sequences[bus_alias] = []
+            # if the schedule is already compiled get it from the module's sequences
+            if sequencer_schedule == qblox_module.cache.get(
+                sequencer.identifier
+            ):  # if it's already cached then dont compile
+                compiled_sequences[bus_alias].append(qblox_module.sequences[sequencer.identifier][0])
                 # If the schedule is in the cache, delete the acquisition data (if uploaded) # FIXME: acquisitions should be deleted after acquisitions and not at compilation
                 if qblox_module.name in self.readout_modules:
                     qblox_module.device.delete_acquisition_data(sequencer=sequencer.identifier, name="default")
-            else:
-                if bus_alias not in compiled_sequences:
-                    compiled_sequences[self.buses.get(bus_schedule.port).alias] = [
-                        self._translate_pulse_bus_schedule(bus_schedule, sequencer)
-                    ]
-                else:
-                    compiled_sequences[bus_alias].append(self._translate_pulse_bus_schedule(bus_schedule, sequencer))
-                qblox_module.cache[sequencer.identifier] = bus_schedule
 
-        if sum(qblox_module.name in self.readout_modules for qblox_module in self.qblox_modules) > 1:
+            else:
+                # compile the sequences
+                compiled_sequences[bus_alias].append(self._translate_pulse_bus_schedule(sequencer_schedule, sequencer))
+                qblox_module.cache[sequencer.identifier] = sequencer_schedule
+
+        if (
+            sum(qblox_module.name in self.readout_modules for qblox_module in self.qblox_modules) > 1
+        ):  # FIXME: only one qrm supported
             raise NotImplementedError(
                 f"Only one readout module can be connected, found {sum(qblox_module.name in self.readout_modules for qblox_module in self.qblox_modules)} instead"
             )
-        qrm = next(
-            (qblox_module for qblox_module in self.qblox_modules if qblox_module.name in self.readout_modules)
-        )  # FIXME: only one qrm supported
+        qrm = next((qblox_module for qblox_module in self.qblox_modules if qblox_module.name in self.readout_modules))
+        # check for sequences which where not in the PulseSchedule but are uploaded and erase them from cache
+        # this is only needed for the qrm since it has multiple sequencers for the same bus
         missing_seq_ids = [
             cached_seq_id
             for cached_seq_id in qrm.cache.keys()
             if cached_seq_id not in (sequencer.identifier for sequencer, _ in sequencer_qrm_bus_schedules)
         ]
+        # pop from cache. qblox_module takes care of popping from sequences
         for seq_id in missing_seq_ids:
             _ = qrm.cache.pop(seq_id)
 
@@ -280,9 +301,23 @@ class QbloxCompiler:
         setup_block = program.get_block(name="setup")
         setup_block.append_components([move_0, move_1], bot_position=1)
 
-    def get_pulse_bus_schedule_sequencers(
+    def get_sequencer_schedule(
         self, pulse_schedule: PulseSchedule, qblox_instruments: list[QbloxModule]
     ) -> dict[AWGQbloxSequencer, PulseBusSchedule]:
+        """Gets the pulse schedule for each sequencer. This corresponds to a PulseBusSchedule
+        object. Note that for multiplexed QRM more than one PulseBusSchedule is sent to the same
+        bus (feedline) but to different sequences (as qubit schedules)
+
+        Args:
+            pulse_schedule (PulseSchedule): pulse schedule to be executed
+            qblox_instruments (list[QbloxModule]): list of connected qblox modules
+
+        Raises:
+            ValueError: raises an error if readoud pulses are targeted at more tan one port
+
+        Returns:
+            dict[AWGQbloxSequencer, PulseBusSchedule]: dictionary of the pulse schedule corresponding to a given sequencer
+        """
         qrm_sequencers = [
             sequencer
             for instrument in qblox_instruments
@@ -319,7 +354,15 @@ class QbloxCompiler:
         ]
         return qrm_bus_schedules, qcm_bus_schedules
 
-    def _get_instrument_from_sequencer(self, sequencer) -> QbloxModule:
+    def _get_instrument_from_sequencer(self, sequencer: AWGQbloxSequencer) -> QbloxModule:
+        """Get the qblox module to which a given sequencer belongs
+
+        Args:
+            sequencer (AWGQbloxSequencer): qblox sequencer
+
+        Returns:
+            QbloxModule: qblox module
+        """
         return next(
             instrument for instrument in self.qblox_modules for seq in instrument.awg_sequencers if seq == sequencer
         )

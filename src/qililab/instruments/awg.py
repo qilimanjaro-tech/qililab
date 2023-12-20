@@ -15,7 +15,7 @@
 """QubitControl class."""
 from abc import abstractmethod
 from dataclasses import asdict, dataclass
-from typing import Sequence, Any
+from typing import Any, Sequence
 
 from qpysequence import Sequence as QpySequence
 
@@ -23,7 +23,6 @@ from qililab.constants import RUNCARD
 from qililab.instruments.awg_settings.awg_sequencer import AWGSequencer
 from qililab.instruments.awg_settings.typings import AWGTypes
 from qililab.instruments.instrument import Instrument
-from qililab.pulse import PulseBusSchedule
 from qililab.utils.asdict_factory import dict_factory
 
 

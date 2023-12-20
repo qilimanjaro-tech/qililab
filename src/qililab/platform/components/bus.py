@@ -201,26 +201,9 @@ class Bus:
                 f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
             ) from error
 
-    def compile(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
-    ) -> list:
-        """Compiles the ``PulseBusSchedule`` into an assembly program.
-
-        Args:
-            pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
-            nshots (int): number of shots / hardware average
-            repetition_duration (int): maximum window for the duration of one hardware repetition
-            num_bins (int): number of bins
-        """
-        return self.system_control.compile(pulse_bus_schedule, nshots, repetition_duration, num_bins)
-
-    def upload_qpysequence(self, qpysequence: QpySequence):
-        """Uploads the qpysequence into the instrument."""
-        self.system_control.upload_qpysequence(qpysequence=qpysequence, port=self.port)
-
-    def upload(self, program: Any):
+    def upload(self, program: QpySequence):
         """Uploads any previously compiled program into the instrument."""
-        self.system_control.upload(program= program, port=self.port)
+        self.system_control.upload(program=program, port=self.port)
 
     def run(self) -> None:
         """Runs any previously uploaded program into the instrument."""

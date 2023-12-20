@@ -288,14 +288,6 @@ class TestMethods:
         assert result == 123
         desync.assert_called()
 
-    def test_error_circuit_gt_repetition_duration(self, platform: Platform):
-        c = Circuit(1)
-        c.add([gates.X(0)] * 1000)
-        c.add(gates.M(0))
-        error_string = "Circuit execution time cannnot be longer than repetition duration but found circuit time 51998 > 2000 for qubit 0"
-        with pytest.raises(ValueError, match=error_string):
-            platform.compile(program=c, num_avg=1000, repetition_duration=2000, num_bins=1)
-
     def test_execute_with_queue(self, platform: Platform):
         """Test that the execute method adds the obtained results to the given queue."""
         queue: Queue = Queue()
@@ -322,14 +314,6 @@ class TestMethods:
         assert queue.get() == 123
         desync.assert_called()
 
-    def test_execute_raises_error_if_no_readout_buses_present(self, platform: Platform):
-        """Test that `Platform.execute` raises an error when the platform contains more than one readout bus."""
-        platform.buses.elements = []
-        with pytest.raises(ValueError, match="There are no readout buses in the platform."):
-            with patch.object(QbloxModule, "desync_sequencers") as desync:
-                platform.execute(program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1)
-            desync.assert_called()
-
     def test_execute_raises_error_if_program_type_wrong(self, platform: Platform):
         """Test that `Platform.execute` raises an error if the program sent is not a Circuit or a PulseSchedule."""
         c = Circuit(1)
@@ -342,28 +326,6 @@ class TestMethods:
             ),
         ):
             platform.execute(program=program, num_avg=1000, repetition_duration=2000, num_bins=1)
-
-    def test_execute_raises_error_if_more_than_one_readout_bus_present(self, platform: Platform):
-        """Test that `Platform.execute` raises an error when the platform contains more than one readout bus."""
-        platform.buses.add(
-            Bus(
-                settings=copy.deepcopy(Galadriel.buses[1]),
-                platform_instruments=platform.instruments,
-                chip=platform.chip,
-            )
-        )
-
-        with patch.object(Bus, "upload"):
-            with patch.object(Bus, "run"):
-                with patch.object(Bus, "acquire_result"):
-                    with patch("qililab.platform.platform.logger") as mock_logger:
-                        with patch.object(QbloxModule, "desync_sequencers") as desync:
-                            _ = platform.execute(
-                                program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1
-                            )
-
-        mock_logger.error.assert_called_once_with("Only One Readout Bus allowed. Reading only from the first one.")
-        desync.assert_called()
 
     @pytest.mark.parametrize("parameter", [Parameter.AMPLITUDE, Parameter.DURATION, Parameter.PHASE])
     @pytest.mark.parametrize("gate", ["I(0)", "X(0)", "Y(0)"])
