@@ -28,8 +28,7 @@ def fixture_settings_6_sequencers():
             "identifier": seq_idx,
             "chip_port_id": "feedline_input",
             "qubit": 5 - seq_idx,
-            "output_i": 1,
-            "output_q": 0,
+            "outputs": [0, 1],
             "weights_i": [1, 1, 1, 1],
             "weights_q": [1, 1, 1, 1],
             "weighed_acq_enabled": False,
@@ -73,8 +72,7 @@ def fixture_settings_even_sequencers():
             "identifier": seq_idx,
             "chip_port_id": "feedline_input",
             "qubit": 5 - seq_idx,
-            "output_i": 1,
-            "output_q": 0,
+            "outputs": [0, 1],
             "weights_i": [1, 1, 1, 1],
             "weights_q": [1, 1, 1, 1],
             "weighed_acq_enabled": False,
@@ -214,6 +212,8 @@ def fixture_qrm(mock_pulsar: MagicMock, pulsar_controller_qrm: QbloxPulsarContro
             "thresholded_acq_rotation",
             "marker_ovr_en",
             "marker_ovr_value",
+            "connect_acq_I",
+            "connect_acq_Q",
         ]
     )
     # connect to instrument
@@ -540,30 +540,6 @@ class TestQbloxQRM:
     def tests_firmware_property(self, qrm_no_device: QbloxQRM):
         """Test firmware property."""
         assert qrm_no_device.firmware == qrm_no_device.settings.firmware
-
-    def test_compile_swaps_the_i_and_q_channels_when_mapping_is_not_supported_in_hw(self, qrm):
-        """Test that the compile method swaps the I and Q channels when the output mapping is not supported in HW."""
-        # We change the dictionary and initialize the QCM
-        qrm_settings = qrm.to_dict()
-        qrm_settings.pop("name")
-        qrm_settings["awg_sequencers"][0]["output_i"] = 1
-        qrm_settings["awg_sequencers"][0]["output_q"] = 0
-        qrm_settings["awg_sequencers"][0]["weights_i"] = [1, 2, 3]
-        qrm_settings["awg_sequencers"][0]["weights_q"] = [4, 5, 6]
-        new_qrm = QbloxQRM(settings=qrm_settings)
-        # We create a pulse bus schedule
-        pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=Gaussian(num_sigmas=4))
-        pulse_bus_schedule = PulseBusSchedule(
-            timeline=[PulseEvent(pulse=pulse, start_time=0, qubit=0)], port="feedline_input"
-        )
-        sequences = new_qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000, num_bins=1)
-        # We assert that the waveform/weights of the first path is all zeros and the waveform of the second path is the gaussian
-        waveforms = sequences[0]._waveforms._waveforms
-        assert np.allclose(waveforms[0].data, 0)
-        assert np.allclose(waveforms[1].data, pulse.envelope(amplitude=1))
-        weights = sequences[0]._weights.to_dict()
-        assert np.allclose(weights["pair_0_I"]["data"], [4, 5, 6])
-        assert np.allclose(weights["pair_0_Q"]["data"], [1, 2, 3])
 
     def test_qubit_to_sequencer_mapping(self, local_cfg_qrm: QbloxQRM, pulse_bus_schedule_odd_qubits):
         """Test that the pulses to odd qubits are mapped to odd sequencers."""

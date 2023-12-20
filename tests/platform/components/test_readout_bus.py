@@ -154,7 +154,7 @@ class TestReadoutBus:
     def test_set(self, readout_bus: ReadoutBus):
         """Test set method"""
         # Testing with parameters that exist
-        sequencer_param = "channel_map_path0_out0_en"
+        sequencer_param = "gain"
         lo_frequency_param = parameters.lo.frequency
         attenuation_param = parameters.attenuator.attenuation
 
@@ -184,7 +184,7 @@ class TestReadoutBus:
     def test_get(self, readout_bus: ReadoutBus):
         """Test get method"""
         # Testing with parameters that exist
-        sequencer_param = "channel_map_path0_out0_en"
+        sequencer_param = "gain"
         lo_frequency_param = parameters.lo.frequency
         attenuation_param = parameters.attenuator.attenuation
         readout_bus.set(param_name=sequencer_param, value=True)
@@ -395,10 +395,8 @@ class TestReadoutBusSerialization:
                 "AWG": {
                     "alias": AWG_ALIAS,
                     "parameters": {
-                        "channel_map_path0_out0_en": True,
-                        "channel_map_path1_out1_en": True,
-                        "channel_map_path0_out2_en": True,
-                        "channel_map_path1_out3_en": True,
+                        "connect_out0": True,
+                        "connect_acq": True,
                         "sync_en": True,
                         "nco_freq": True,
                         "nco_phase_offs": True,

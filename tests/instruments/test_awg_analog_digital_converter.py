@@ -62,8 +62,7 @@ def fixture_awg():
             {
                 AWGSequencerTypes.IDENTIFIER.value: 0,
                 AWGSequencerTypes.CHIP_PORT_ID.value: 0,
-                "output_i": 0,
-                "output_q": 1,
+                "outputs": [0, 1],
                 Parameter.IF.value: 100_000_000,
                 Parameter.GAIN_I.value: 1,
                 Parameter.GAIN_Q.value: 1,

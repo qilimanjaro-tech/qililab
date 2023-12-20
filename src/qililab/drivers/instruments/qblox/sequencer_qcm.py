@@ -59,37 +59,6 @@ class SequencerQCM(Sequencer, AWG):
         """return the alias of the instrument, which corresponds to the QCodes name attribute"""
         return self.name
 
-    def set(self, param_name: str, value: Any):
-        """Sets a parameter value checking if is an output mapping.
-
-        Args:
-            param_name (str): Parameter name
-            value (Any): Parameter value
-        """
-        if param_name in {"path0", "path1"}:
-            self._map_outputs(param_name, value)
-        else:
-            super().set(param_name, value)
-
-    def _map_outputs(self, param_name: str, param_value: Any):
-        """Map sequencer paths with output channels and set the swapping.
-
-        Args:
-            param_name (str): Parameter name
-            param_value (Any): Parameter value
-        """
-        allowed_conf = {("path0", 0), ("path0", 2), ("path1", 1), ("path1", 3)}
-        swappable_conf = {("path0", 1), ("path0", 3), ("path1", 0), ("path1", 2)}
-        if (param_name, param_value) in allowed_conf:
-            self.set(f"channel_map_{param_name}_out{param_value}_en", True)
-        elif (param_name, param_value) in swappable_conf:
-            self.set("swap_paths", True)
-            self.set(f"channel_map_{param_name}_out{1 - param_value}_en", True)
-        else:
-            raise ValueError(
-                f"Impossible path configuration detected. {param_name} cannot be mapped to output {param_value}."
-            )
-
     def execute(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int):
         """Execute a PulseBusSchedule on the instrument.
 

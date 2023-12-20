@@ -37,8 +37,7 @@ def fixture_awg():
             {
                 "identifier": 0,
                 "chip_port_id": "feedline_input",
-                "output_i": 0,
-                "output_q": 1,
+                "outputs": [0, 1],
                 "intermediate_frequency": 20000000,
                 "gain_i": 0.1,
                 "gain_q": 0.1,
@@ -51,8 +50,7 @@ def fixture_awg():
             {
                 "identifier": 1,
                 "chip_port_id": "feedline_output",
-                "output_i": 2,
-                "output_q": 3,
+                "outputs": [2, 3],
                 "intermediate_frequency": 20000000,
                 "gain_i": 0.1,
                 "gain_q": 0.1,
@@ -80,8 +78,7 @@ class TestInitialization:
             assert isinstance(sequencer, AWGSequencer)
             assert sequencer.identifier == idx
             assert sequencer.chip_port_id in {"feedline_input", "feedline_output"}
-            assert sequencer.output_i == 0 + 2 * idx
-            assert sequencer.output_q == 1 + 2 * idx
+            assert sequencer.outputs == [0 + 2 * idx, 1 + 2 * idx]
             assert sequencer.intermediate_frequency == 20000000
             assert sequencer.gain_i == 0.1
             assert sequencer.gain_q == 0.1

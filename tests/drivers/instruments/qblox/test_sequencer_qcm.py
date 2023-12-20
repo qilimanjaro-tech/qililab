@@ -145,44 +145,11 @@ class TestSequencer:
 
         assert sequencer.get("swap_paths") is False
 
-    @patch("qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM._map_outputs")
-    @pytest.mark.parametrize("path0", [0, 1])
-    def test_set_with_qililab_path(self, mock_map_outputs: MagicMock, path0: int):
-        """Unit tests for set method with qililab path"""
-        sequencer_name = "test_sequencer_set_qililab_path"
-        seq_idx = 0
-        sequencer = SequencerQCM(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
-
-        sequencer.set("path0", path0)
-        mock_map_outputs.assert_called_once_with("path0", path0)
-
-    def test_set_with_qblox_parameter(self, sequencer):
-        """Unit tests for set method with qblox parameter"""
-        sequencer.set("channel_map_path0_out0_en", True)
-        assert sequencer.get("channel_map_path0_out0_en") is True
-
-    @pytest.mark.parametrize("path0", [0, 1, 10])
-    def test_map_outputs(self, sequencer, path0: int):
-        """Unit tests for _map_outputs method"""
-        if path0 == 10:
-            error_str = f"Impossible path configuration detected. path0 cannot be mapped to output {path0}."
-            with pytest.raises(ValueError, match=error_str):
-                sequencer._map_outputs("path0", path0)
-                assert sequencer.get("swap_paths") is False
-
-        else:
-            sequencer._map_outputs("path0", path0)
-            if path0 == 0:
-                assert sequencer.get("swap_paths") is False
-            elif path0 == 1:
-                assert sequencer.get("swap_paths") is True
-
-    @pytest.mark.parametrize("path0", [0, 1])
-    def test_generate_waveforms(self, sequencer, pulse_bus_schedule: PulseBusSchedule, path0: int):
+    def test_generate_waveforms(self, sequencer, pulse_bus_schedule: PulseBusSchedule):
         """Unit tests for _generate_waveforms method"""
         label = pulse_bus_schedule.timeline[0].pulse.label()
         envelope = get_envelope()
-        sequencer.set("path0", path0)
+
         waveforms = sequencer._generate_waveforms(pulse_bus_schedule).to_dict()
         waveforms_keys = list(waveforms.keys())
 
@@ -190,33 +157,21 @@ class TestSequencer:
         assert waveforms_keys[0] == f"{label}_I"
         assert waveforms_keys[1] == f"{label}_Q"
 
-        if path0 % 2 != 0:
-            # swapped waveforms should have I component all zeros
-            assert np.all(waveforms[waveforms_keys[0]]["data"]) == 0
-            # swapped waveforms should have Q component equal to gaussian pulse envelope
-            assert np.alltrue(envelope == waveforms[waveforms_keys[1]]["data"])
-        else:
-            # swapped waveforms should have Q component all zeros
-            assert np.all(waveforms[waveforms_keys[1]]["data"]) == 0
-            # swapped waveforms should have Q component equal to gaussian pulse envelope
-            assert np.alltrue(envelope == waveforms[waveforms_keys[0]]["data"])
+        # swapped waveforms should have Q component all zeros
+        assert np.all(waveforms[waveforms_keys[1]]["data"]) == 0
+        # swapped waveforms should have Q component equal to gaussian pulse envelope
+        assert np.alltrue(envelope == waveforms[waveforms_keys[0]]["data"])
 
-    @pytest.mark.parametrize("path0", [0, 1])
-    def test_generate_waveforms_multiple_pulses(
-        self, sequencer, pulse_bus_schedule_repeated_pulses: PulseBusSchedule, path0: int
-    ):
+    def test_generate_waveforms_multiple_pulses(self, sequencer, pulse_bus_schedule_repeated_pulses: PulseBusSchedule):
         """Unit tests for _generate_waveforms method with repeated pulses"""
-        sequencer.set("path0", path0)
         waveforms = sequencer._generate_waveforms(pulse_bus_schedule_repeated_pulses).to_dict()
 
         assert len(waveforms) == 2
 
-    @pytest.mark.parametrize("path0", [0, 1])
     def test_generate_waveforms_negative_amplitude(
-        self, sequencer, pulse_bus_schedule_negative_amplitude: PulseBusSchedule, path0: int
+        self, sequencer, pulse_bus_schedule_negative_amplitude: PulseBusSchedule
     ):
         """Unit tests for _generate_waveforms method with negative amplitude"""
-        sequencer.set("path0", path0)
         waveforms = sequencer._generate_waveforms(pulse_bus_schedule_negative_amplitude).to_dict()
 
         assert isinstance(waveforms, dict)
