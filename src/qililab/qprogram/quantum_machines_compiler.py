@@ -43,7 +43,7 @@ from qililab.waveforms import IQPair, Square, Waveform
 
 
 class _BusCompilationInfo:  # pylint: disable=too-few-public-methods
-    def __init__(self):
+    def __init__(self) -> None:
         self.current_gain: float | qua.QuaVariableType | None = None
 
 
@@ -56,7 +56,7 @@ class _MeasurementCompilationInfo:  # pylint: disable=too-few-public-methods, to
         stream_I: qua_dsl._ResultSource | None = None,
         stream_Q: qua_dsl._ResultSource | None = None,
         stream_raw_adc: qua_dsl._ResultSource | None = None,
-    ):
+    ) -> None:
         self.bus: str = bus
         self.variable_I: qua.QuaVariableType | None = variable_I
         self.variable_Q: qua.QuaVariableType | None = variable_Q
@@ -83,7 +83,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
     VOLTAGE_COEFF = 2
     MINIMUM_TIME = 4
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Handlers to map each operation to a corresponding handler function
         self._handlers: dict[type, Callable] = {
             InfiniteLoop: self._handle_infinite_loop,
@@ -207,16 +207,10 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
     def _populate_buses(self):
         """Map each bus in the QProgram to a BusCompilationInfo instance."""
 
-        def collect_buses(block: Block):
-            for element in block.elements:
-                if isinstance(element, Block):
-                    yield from collect_buses(element)
-                if isinstance(element, Operation):
-                    bus = getattr(element, "bus", None)
-                    if bus:
-                        yield self._bus_mapping[bus] if self._bus_mapping and bus in self._bus_mapping else bus
-
-        buses = set(collect_buses(self._qprogram.body))
+        buses = set(
+            self._bus_mapping[bus] if self._bus_mapping and bus in self._bus_mapping else bus
+            for bus in self._qprogram.buses
+        )
         self._configuration["elements"] = {bus: {"operations": {}} for bus in buses}
         self._buses = {bus: _BusCompilationInfo() for bus in buses}
 

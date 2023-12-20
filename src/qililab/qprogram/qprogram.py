@@ -21,6 +21,7 @@ from qililab.qprogram.decorators import requires_domain
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
+    Operation,
     Play,
     ResetPhase,
     SetFrequency,
@@ -67,6 +68,7 @@ class QProgram:
 
     def __init__(self):
         self._body: Block = Block()
+        self._buses: set[str] = set()
         self._variables: list[Variable] = []
         self._block_stack: deque[Block] = deque([self._body])
 
@@ -84,6 +86,15 @@ class QProgram:
             Block: The block of the body
         """
         return self._body
+
+    @property
+    def buses(self) -> set[str]:
+        """Get the buses of the QProgram
+
+        Returns:
+            set[str]: A set of the names of the buses
+        """
+        return self._buses
 
     @property
     def variables(self) -> list[Variable]:
@@ -219,6 +230,7 @@ class QProgram:
         """
         operation = Play(bus=bus, waveform=waveform)
         self._active_block.append(operation)
+        self._buses.add(bus)
 
     @requires_domain("duration", Domain.Time)
     def wait(self, bus: str, duration: int):
@@ -230,6 +242,7 @@ class QProgram:
         """
         operation = Wait(bus=bus, duration=duration)
         self._active_block.append(operation)
+        self._buses.add(bus)
 
     def acquire(self, bus: str, weights: IQPair):
         """Acquire results based on the given weights.
@@ -240,6 +253,7 @@ class QProgram:
         """
         operation = Acquire(bus=bus, weights=weights)
         self._active_block.append(operation)
+        self._buses.add(bus)
 
     def measure(
         self,
@@ -262,6 +276,7 @@ class QProgram:
             bus=bus, waveform=waveform, weights=weights, demodulation=demodulation, save_raw_adc=save_raw_adc
         )
         self._active_block.append(operation)
+        self._buses.add(bus)
 
     def sync(self, buses: list[str] | None = None):
         """Synchronize operations between buses, so the operations following will start at the same time.
@@ -273,6 +288,9 @@ class QProgram:
         """
         operation = Sync(buses=buses)
         self._active_block.append(operation)
+        self._buses.update()
+        if buses:
+            self._buses.update(buses)
 
     def reset_phase(self, bus: str):
         """Reset the absolute phase of the NCO associated with the bus.
@@ -282,6 +300,7 @@ class QProgram:
         """
         operation = ResetPhase(bus=bus)
         self._active_block.append(operation)
+        self._buses.add(bus)
 
     @requires_domain("phase", Domain.Phase)
     def set_phase(self, bus: str, phase: float):
@@ -293,6 +312,7 @@ class QProgram:
         """
         operation = SetPhase(bus=bus, phase=phase)
         self._active_block.append(operation)
+        self._buses.add(bus)
 
     @requires_domain("frequency", Domain.Frequency)
     def set_frequency(self, bus: str, frequency: float):
@@ -304,6 +324,7 @@ class QProgram:
         """
         operation = SetFrequency(bus=bus, frequency=frequency)
         self._active_block.append(operation)
+        self._buses.add(bus)
 
     @requires_domain("gain", Domain.Voltage)
     def set_gain(self, bus: str, gain: float):
@@ -315,6 +336,7 @@ class QProgram:
         """
         operation = SetGain(bus=bus, gain=gain)
         self._active_block.append(operation)
+        self._buses.add(bus)
 
     def set_offset(self, bus: str, offset_path0: float, offset_path1: float):
         """Set the gain of the AWG associated with bus.
@@ -326,6 +348,7 @@ class QProgram:
         """
         operation = SetOffset(bus=bus, offset_path0=offset_path0, offset_path1=offset_path1)
         self._active_block.append(operation)
+        self._buses.add(bus)
 
     def variable(self, domain: Domain, type: type[int | float] | None = None):  # pylint: disable=redefined-builtin
         """Declare a variable.

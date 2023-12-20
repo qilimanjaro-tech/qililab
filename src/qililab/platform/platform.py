@@ -33,11 +33,12 @@ from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
+from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSchedule
-from qililab.qprogram.qblox_compiler import QbloxCompiler
-from qililab.qprogram.qprogram import QProgram
+from qililab.qprogram import QbloxCompiler, QProgram, QuantumMachinesCompiler
 from qililab.result import Result
+from qililab.result.quantum_machines_results import QuantumMachinesMeasurementResult
 from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import Line, Parameter
@@ -524,7 +525,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """
         return str(YAML().dump(self.to_dict(), io.BytesIO()))
 
-    def execute_qprogram(self, qprogram: QProgram) -> dict[str, list[Result]]:
+    def execute_qprogram(
+        self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None
+    ) -> dict[str, list[Result]]:
         """Execute a QProgram using the platform instruments.
 
         Args:
@@ -533,10 +536,33 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         Returns:
             dict[str, list[Result]]: A dictionary of measurement results. The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
         """
+        bus_aliases = set(bus_mapping[bus] if bus_mapping and bus in bus_mapping else bus for bus in qprogram.buses)
+        buses = set(self._get_bus_by_alias(alias=bus_alias) for bus_alias in bus_aliases)
+        instruments = set(
+            instrument
+            for bus in buses
+            for instrument in bus.system_control.instruments
+            if isinstance(instrument, (QbloxModule, QuantumMachinesCluster))
+        )
+        if all(isinstance(instrument, QbloxModule) for instrument in instruments):
+            return self._execute_qprogram_with_qblox(qprogram=qprogram, bus_mapping=bus_mapping)
+        if all(isinstance(instrument, QuantumMachinesCluster) for instrument in instruments):
+            if len(instruments) != 1:
+                raise NotImplementedError(
+                    "Executing QProgram in more than one Quantum Machines Cluster is not supported."
+                )
+            cluster: QuantumMachinesCluster = instruments.pop()  # type: ignore[assignment]
+            return self._execute_qprogram_with_quantum_machines(
+                cluster=cluster, qprogram=qprogram, bus_mapping=bus_mapping
+            )
+        raise NotImplementedError("Executing QProgram in a mixture of instruments is not supported.")
 
+    def _execute_qprogram_with_qblox(
+        self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None
+    ) -> dict[str, list[Result]]:
         # Compile QProgram
         qblox_compiler = QbloxCompiler()
-        sequences = qblox_compiler.compile(qprogram=qprogram)
+        sequences = qblox_compiler.compile(qprogram=qprogram, bus_mapping=bus_mapping)
         buses = {bus_alias: self._get_bus_by_alias(alias=bus_alias) for bus_alias in sequences}
 
         # Upload sequences
@@ -560,6 +586,28 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             if isinstance(instrument, QbloxModule):
                 instrument.reset_sequences()
                 instrument.desync_sequencers()
+
+        return results
+
+    def _execute_qprogram_with_quantum_machines(
+        self, cluster: QuantumMachinesCluster, qprogram: QProgram, bus_mapping: dict[str, str] | None = None
+    ) -> dict[str, list[Result]]:
+        compiler = QuantumMachinesCompiler()
+        qua_program, compilation_config, measurements = compiler.compile(qprogram=qprogram, bus_mapping=bus_mapping)
+
+        cluster.update_configuration(compilation_config=compilation_config)
+
+        job = cluster.run(program=qua_program)
+
+        acquisitions = cluster.get_acquisitions(job=job)
+
+        results: dict[str, list[Result]] = {}
+        for measurement in measurements:
+            if measurement.bus not in results:
+                results[measurement.bus] = []
+            results[measurement.bus].append(
+                QuantumMachinesMeasurementResult(*[acquisitions[handle] for handle in measurement.result_handles])
+            )
 
         return results
 
