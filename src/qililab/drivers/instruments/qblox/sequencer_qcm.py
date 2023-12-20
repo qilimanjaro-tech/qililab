@@ -45,10 +45,6 @@ class SequencerQCM(Sequencer, AWG):
 
     _MIN_WAIT_TIME: int = 4
 
-    def __init__(self, parent: Instrument, name: str, seq_idx: int):
-        super().__init__(parent=parent, name=name, seq_idx=seq_idx)
-        self.add_parameter(name="swap_paths", set_cmd=None, vals=vals.Bool(), initial_value=False)
-
     @property
     def params(self):
         """return the parameters of the instrument"""
@@ -141,8 +137,6 @@ class SequencerQCM(Sequencer, AWG):
                 real = np.real(envelope)
                 imag = np.imag(envelope)
                 pair = (real, imag)
-                if self.get("swap_paths"):
-                    pair = pair[::-1]  # swap paths
                 waveforms.add_pair(pair=pair, name=pulse_event.pulse.label())
 
         return waveforms

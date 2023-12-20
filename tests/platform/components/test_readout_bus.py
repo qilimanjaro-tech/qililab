@@ -457,7 +457,6 @@ class TestReadoutBusSerialization:
                         "thresholded_acq_trigger_en": True,
                         "thresholded_acq_trigger_address": True,
                         "thresholded_acq_trigger_invert": True,
-                        "swap_paths": True,
                         "sequence_timeout": True,
                         "acquisition_timeout": True,
                         "weights_i": True,

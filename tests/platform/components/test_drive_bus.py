@@ -430,7 +430,6 @@ class TestDriveBusSerialization:
                         "thresholded_acq_trigger_en": True,
                         "thresholded_acq_trigger_address": True,
                         "thresholded_acq_trigger_invert": True,
-                        "swap_paths": True,
                         "path0_out": True,
                         "path1_out": True,
                         "intermediate_frequency": True,

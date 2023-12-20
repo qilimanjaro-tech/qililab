@@ -136,15 +136,6 @@ def fixture_sequencer() -> SequencerQCM:
 class TestSequencer:
     """Unit tests checking the Sequencer attributes and methods"""
 
-    def test_init(self):
-        """Unit tests for init method"""
-
-        sequencer_name = "test_sequencer_init"
-        seq_idx = 0
-        sequencer = SequencerQCM(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
-
-        assert sequencer.get("swap_paths") is False
-
     def test_generate_waveforms(self, sequencer, pulse_bus_schedule: PulseBusSchedule):
         """Unit tests for _generate_waveforms method"""
         label = pulse_bus_schedule.timeline[0].pulse.label()
