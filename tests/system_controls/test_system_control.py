@@ -166,6 +166,14 @@ class TestMethods:
             else:
                 instrument.device.frequency.assert_not_called()  # type: ignore
 
+    def test_set_parameter_no_instrument_set(self, system_control: SystemControl):
+        """Test the ``set_parameter`` method with a Rohde & Schwarz instrument."""
+        for instrument in system_control.instruments:
+            instrument.device = MagicMock()
+        system_control.set_parameter(parameter=ql.Parameter.LO_FREQUENCY, value=1e9, instrument_set=False)
+        for instrument in system_control.instruments:
+            instrument.device.frequency.assert_not_called()  # type: ignore
+
 
 class TestProperties:
     """Unit tests checking the SystemControl attributes and methods"""
