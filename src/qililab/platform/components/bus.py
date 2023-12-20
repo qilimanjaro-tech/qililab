@@ -71,7 +71,7 @@ class Bus:
             super().__post_init__()
 
             self.distortions = [
-                PulseDistortion.from_dict(distortion) for distortion in self.distortions if isinstance(distortion, dict)
+                PulseDistortion.from_dict(distortion) for distortion in self.distortions if isinstance(distortion, dict)  # type: ignore[arg-type]
             ]
 
     settings: BusSettings

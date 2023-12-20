@@ -536,14 +536,14 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         Returns:
             dict[str, list[Result]]: A dictionary of measurement results. The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
         """
-        bus_aliases = set(bus_mapping[bus] if bus_mapping and bus in bus_mapping else bus for bus in qprogram.buses)
-        buses = set(self._get_bus_by_alias(alias=bus_alias) for bus_alias in bus_aliases)
-        instruments = set(
+        bus_aliases = {bus_mapping[bus] if bus_mapping and bus in bus_mapping else bus for bus in qprogram.buses}
+        buses = [self._get_bus_by_alias(alias=bus_alias) for bus_alias in bus_aliases]
+        instruments = {
             instrument
             for bus in buses
             for instrument in bus.system_control.instruments
             if isinstance(instrument, (QbloxModule, QuantumMachinesCluster))
-        )
+        }
         if all(isinstance(instrument, QbloxModule) for instrument in instruments):
             return self._execute_qprogram_with_qblox(qprogram=qprogram, bus_mapping=bus_mapping)
         if all(isinstance(instrument, QuantumMachinesCluster) for instrument in instruments):
