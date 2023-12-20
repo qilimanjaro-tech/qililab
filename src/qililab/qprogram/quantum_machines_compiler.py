@@ -24,17 +24,7 @@ from qualang_tools.config.integration_weights_tools import convert_integration_w
 
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.blocks.infinite_loop import InfiniteLoop
-from qililab.qprogram.operations import (
-    Measure,
-    Operation,
-    Play,
-    ResetPhase,
-    SetFrequency,
-    SetGain,
-    SetPhase,
-    Sync,
-    Wait,
-)
+from qililab.qprogram.operations import Measure, Play, ResetPhase, SetFrequency, SetGain, SetPhase, Sync, Wait
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable import Domain, Variable
 from qililab.waveforms import IQPair, Square, Waveform

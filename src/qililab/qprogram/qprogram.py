@@ -21,7 +21,6 @@ from qililab.qprogram.decorators import requires_domain
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
-    Operation,
     Play,
     ResetPhase,
     SetFrequency,
@@ -288,7 +287,6 @@ class QProgram:
         """
         operation = Sync(buses=buses)
         self._active_block.append(operation)
-        self._buses.update()
         if buses:
             self._buses.update(buses)
 
