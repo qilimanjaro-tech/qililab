@@ -3,7 +3,6 @@ import copy
 import re
 from unittest.mock import MagicMock, Mock, patch
 
-import numpy as np
 import pytest
 from qpysequence.sequence import Sequence
 
