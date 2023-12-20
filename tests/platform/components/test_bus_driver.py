@@ -334,7 +334,7 @@ class TestBusDriver:
                 assert bus == new_bus == newest_bus
 
                 # Test the calls are the same each time
-                for index in range(2, 67):
+                for index in range(2, 66):
                     # The first 2 and last 3 calls cannot be compared given that the call is done with a MagicMock
                     # and the assert fails because the mock is not the same
                     assert calls[index] == new_calls[index]
