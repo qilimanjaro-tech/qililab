@@ -992,6 +992,132 @@ class SauronYokogawa:
     }
 
 
+class SauronQDevil:
+    """Test data of the sauron with yokogawa platform."""
+
+    name = "sauron_qdevil"
+    device_id = 9
+
+    gates_settings: dict[str, Any] = {
+        PLATFORM.MINIMUM_CLOCK_TIME: 4,
+        PLATFORM.DELAY_BETWEEN_PULSES: 0,
+        PLATFORM.DELAY_BEFORE_READOUT: 0,
+        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
+        PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
+        PLATFORM.PASSIVE_RESET_DURATION: 100,
+        "operations": [],
+        "gates": {},
+    }
+
+    qdevil_qdac2 = {
+        RUNCARD.NAME: InstrumentName.QDEVIL_QDAC2,
+        RUNCARD.ALIAS: "qdac",
+        RUNCARD.FIRMWARE: "A.15.10.06",
+        Parameter.VOLTAGE.value: [0.0],
+        Parameter.SPAN.value: ["low"],
+        Parameter.RAMPING_ENABLED.value: [True],
+        Parameter.RAMPING_RATE.value: [0.01],
+        Parameter.LOW_PASS_FILTER.value: ["dc"],
+        "dacs": [1],
+    }
+
+    rohde_schwarz: dict[str, Any] = {
+        "name": InstrumentName.ROHDE_SCHWARZ,
+        "alias": "rohde_schwarz",
+        RUNCARD.FIRMWARE: "4.30.046.295",
+        Parameter.POWER.value: 15,
+        Parameter.LO_FREQUENCY.value: 7.24730e09,
+        Parameter.RF_ON.value: True,
+    }
+
+    qdevil_qdac2_controller_ip = {
+        RUNCARD.NAME: InstrumentControllerName.QDEVIL_QDAC2,
+        RUNCARD.ALIAS: "qdac_controller_ip",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.1.15",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "qdac",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    qdevil_qdac2_controller_usb = {
+        RUNCARD.NAME: InstrumentControllerName.QDEVIL_QDAC2,
+        RUNCARD.ALIAS: "qdac_controller_usb",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.USB.value,
+            CONNECTION.ADDRESS: "ttyUSB0",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "qdac",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    qdevil_qdac2_controller_wrong_module = {
+        RUNCARD.NAME: InstrumentControllerName.QDEVIL_QDAC2,
+        RUNCARD.ALIAS: "qdac_controller_wrong_module",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.1.15",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "rohde_schwarz",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    instruments = [qdevil_qdac2, rohde_schwarz]
+    instrument_controllers = [
+        qdevil_qdac2_controller_ip,
+        qdevil_qdac2_controller_usb,
+        qdevil_qdac2_controller_wrong_module,
+    ]
+
+    chip: dict[str, Any] = {
+        "nodes": [
+            {"name": "port", "alias": "port_q0", "line": "flux", "nodes": ["q0"]},
+            {
+                "name": "qubit",
+                "alias": "q0",
+                "qubit_index": 0,
+                "frequency": 3.451e09,
+                "nodes": ["port_q0"],
+            },
+        ],
+    }
+
+    buses: list[dict[str, Any]] = [
+        {
+            RUNCARD.ALIAS: "qdac_bus",
+            RUNCARD.SYSTEM_CONTROL: {
+                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
+                RUNCARD.INSTRUMENTS: ["qdac"],
+            },
+            "port": "port_q0",
+            RUNCARD.DISTORTIONS: [],
+        }
+    ]
+
+    runcard = {
+        RUNCARD.NAME: name,
+        RUNCARD.DEVICE_ID: device_id,
+        RUNCARD.GATES_SETTINGS: gates_settings,
+        RUNCARD.CHIP: chip,
+        RUNCARD.BUSES: buses,
+        RUNCARD.INSTRUMENTS: instruments,
+        RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
+    }
+
+
 class SauronQuantumMachines:
     """Test data of the sauron with quantum machines platform."""
 

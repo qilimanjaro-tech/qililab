@@ -191,6 +191,7 @@ class InstrumentName(str, Enum):
     YOKOGAWA_GS200 = "yokogawa_gs200"
     QCMRF = "QCM-RF"
     QUANTUM_MACHINES_CLUSTER = "quantum_machines_cluster"
+    QDEVIL_QDAC2 = "qdevil_qdac2"
 
 
 class InstrumentControllerName(str, Enum):
@@ -219,6 +220,7 @@ class InstrumentControllerName(str, Enum):
     AGILENT_E5071B = "agilent_e5071B_controller"
     YOKOGAWA_GS200 = "yokogawa_gs200_controller"
     QUANTUM_MACHINES_CLUSTER = "quantum_machines_cluster_controller"
+    QDEVIL_QDAC2 = "qdevil_qdac2"
 
 
 class SystemControlName(str, Enum):
@@ -278,6 +280,7 @@ class Parameter(str, Enum):
     RAMPING_ENABLED = "ramping_enabled"
     RAMPING_RATE = "ramp_rate"
     SPAN = "span"
+    LOW_PASS_FILTER = "low_pass_filter"  # nosec
     SCATTERING_PARAMETER = "scattering_parameter"
     FREQUENCY_SPAN = "frequency_span"
     FREQUENCY_CENTER = "frequency_center"
@@ -375,6 +378,7 @@ class InstrumentTypeName(str, Enum):
         * QbloxD5a
         * QbloxS4g
         * YokogawaGS200
+        * QDevilQDac2
     """
 
     QBLOX_QCM = "QbloxQCM"
@@ -385,6 +389,7 @@ class InstrumentTypeName(str, Enum):
     QBLOX_D5A = "QbloxD5a"
     QBLOX_S4G = "QbloxS4g"
     YOKOGAWA_GS200 = "YokogawaGS200"
+    QDEVIL_QDAC2 = "QDevilQDac2"
 
 
 class LivePlotTypes(str, Enum):
