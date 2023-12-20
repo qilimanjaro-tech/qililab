@@ -376,10 +376,24 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
 
     @Instrument.CheckDeviceInitialized
     def setup(
-        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
+        self,
+        parameter: Parameter,
+        value: float | str | bool,
+        channel_id: int | None = None,
+        port_id: str | None = None,
+        instrument_set: bool = True,
     ):
         """set a specific parameter to the instrument"""
         try:
-            AWGAnalogDigitalConverter.setup(self, parameter=parameter, value=value, channel_id=channel_id)
+            AWGAnalogDigitalConverter.setup(
+                self, parameter=parameter, value=value, channel_id=channel_id, instrument_set=instrument_set
+            )
         except ParameterNotFound:
-            QbloxModule.setup(self, parameter=parameter, value=value, channel_id=channel_id, port_id=port_id)
+            QbloxModule.setup(
+                self,
+                parameter=parameter,
+                value=value,
+                channel_id=channel_id,
+                port_id=port_id,
+                instrument_set=instrument_set,
+            )

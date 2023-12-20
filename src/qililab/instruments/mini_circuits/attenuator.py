@@ -45,11 +45,18 @@ class Attenuator(Instrument):
 
     @Instrument.CheckDeviceInitialized
     @Instrument.CheckParameterValueFloatOrInt
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def setup(
+        self,
+        parameter: Parameter,
+        value: float | str | bool,
+        channel_id: int | None = None,
+        instrument_set: bool = True,
+    ):
         """Set instrument settings."""
         if parameter == Parameter.ATTENUATION:
             self.settings.attenuation = float(value)
-            self.device.setup(attenuation=self.attenuation)
+            if instrument_set:
+                self.device.setup(attenuation=self.attenuation)
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 

@@ -161,13 +161,20 @@ class Instrument(BusElement, ABC):
         """Set initial instrument settings."""
 
     @CheckDeviceInitialized
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def setup(
+        self,
+        parameter: Parameter,
+        value: float | str | bool,
+        channel_id: int | None = None,
+        instrument_set: bool = True,
+    ):
         """Set instrument settings parameter to the corresponding value
 
         Args:
             parameter (Parameter): settings parameter to be updated
             value (float | str | bool): new value
             channel_id (int | None): channel identifier of the parameter to update
+            instrument_set (bool, optional): Wether to set the parameter on the instruments. Defaults to True.
         """
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
@@ -236,18 +243,25 @@ class Instrument(BusElement, ABC):
         """String representation of an instrument."""
         return f"{self.alias}"
 
-    def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def set_parameter(
+        self,
+        parameter: Parameter,
+        value: float | str | bool,
+        channel_id: int | None = None,
+        instrument_set: bool = True,
+    ):
         """Sets the parameter of a specific instrument.
 
         Args:
             parameter (Parameter): parameter settings of the instrument to update
             value (float | str | bool): value to update
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
+            instrument_set (bool, optional): Wether to set the parameter on the instruments. Defaults to True.
 
         Returns:
             bool: True if the parameter is set correctly, False otherwise
         """
-        if not hasattr(self, "device"):
+        if instrument_set and not hasattr(self, "device"):
             raise ValueError(
                 f"Instrument {self.name.value} is not connected and cannot set the new value: {value} to the parameter {parameter}."
             )
@@ -256,7 +270,7 @@ class Instrument(BusElement, ABC):
         if channel_id is not None:
             logger.debug("Setting parameter: %s to value: %f in channel %d", parameter.value, value, channel_id)
 
-        return self.setup(parameter=parameter, value=value, channel_id=channel_id)
+        return self.setup(parameter=parameter, value=value, channel_id=channel_id, instrument_set=instrument_set)
 
     def get_parameter(self, parameter: Parameter, channel_id: int | None = None):
         """Gets the parameter of a specific instrument.

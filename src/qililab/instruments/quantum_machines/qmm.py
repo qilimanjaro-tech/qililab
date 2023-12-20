@@ -86,7 +86,13 @@ class QuantumMachinesManager(Instrument):
     def turn_off(self):
         """Turns off an instrument."""
 
-    def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def set_parameter(
+        self,
+        parameter: Parameter,
+        value: float | str | bool,
+        channel_id: int | None = None,
+        instrument_set: bool = True,
+    ):
         """Sets the parameter of a specific instrument.
 
         Args:

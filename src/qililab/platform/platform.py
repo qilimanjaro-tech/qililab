@@ -437,6 +437,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         value: float | str | bool,
         alias: str,
         channel_id: int | None = None,
+        instrument_set: bool = True,
     ):
         """Sets any parameter of a platform element.
 
@@ -445,13 +446,14 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             value (float | str | bool): New value to set in the parameter.
             alias (str): Alias of the bus where the parameter is set.
             channel_id (int, optional): ID of the channel you want to use to set the parameter. Defaults to None.
+            instrument_set (bool, optional): Wether to set the parameter on the instruments. Defaults to True.
         """
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
         if alias == "platform" or regex_match is not None:
             self.gates_settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             return
         element = self.get_element(alias=alias)
-        element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+        element.set_parameter(parameter=parameter, value=value, channel_id=channel_id, instrument_set=instrument_set)
 
     def _load_instruments(self, instruments_dict: list[dict]) -> list[Instrument]:
         """Instantiates all instrument classes from their respective dictionaries.

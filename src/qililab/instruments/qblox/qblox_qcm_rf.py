@@ -72,7 +72,12 @@ class QbloxQCMRF(QbloxQCM):
 
     @Instrument.CheckDeviceInitialized
     def setup(
-        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
+        self,
+        parameter: Parameter,
+        value: float | str | bool,
+        channel_id: int | None = None,
+        port_id: str | None = None,
+        instrument_set: bool = True,
     ):
         """Set a parameter of the Qblox QCM-RF module.
 
@@ -108,9 +113,10 @@ class QbloxQCMRF(QbloxQCM):
 
         if parameter in self.parameters:
             setattr(self.settings, parameter.value, value)
-            self.device.set(parameter.value, value)
+            if instrument_set:
+                self.device.set(parameter.value, value)
             return
-        super().setup(parameter, value, channel_id, port_id)
+        super().setup(parameter, value, channel_id, port_id, instrument_set=instrument_set)
 
     def get(self, parameter: Parameter, channel_id: int | None = None, port_id: str | None = None):
         """Set a parameter of the Qblox QCM-RF module.

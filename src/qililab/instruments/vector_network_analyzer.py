@@ -62,7 +62,13 @@ class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instan
     device: VectorNetworkAnalyzerDriver
 
     @Instrument.CheckDeviceInitialized
-    def setup(self, parameter: Parameter, value: float | str | bool | int, channel_id: int | None = None):
+    def setup(
+        self,
+        parameter: Parameter,
+        value: float | str | bool | int,
+        channel_id: int | None = None,
+        instrument_set: bool = True,
+    ):
         """Set instrument settings parameter to the corresponding value
 
         Args:

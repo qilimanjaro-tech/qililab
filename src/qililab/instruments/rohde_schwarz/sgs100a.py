@@ -49,6 +49,7 @@ class SGS100A(SignalGenerator):
         parameter: Parameter,
         value: float | str | bool,
         channel_id: int | None = None,
+        instrument_set: bool = True,
     ):
         """Set R&S dbm power and frequency. Value ranges are:
         - power: (-120, 25).
@@ -56,18 +57,21 @@ class SGS100A(SignalGenerator):
         """
         if parameter == Parameter.POWER:
             self.settings.power = float(value)
-            self.device.power(self.power)
+            if instrument_set:
+                self.device.power(self.power)
             return
         if parameter == Parameter.LO_FREQUENCY:
             self.settings.frequency = float(value)
-            self.device.frequency(self.frequency)
+            if instrument_set:
+                self.device.frequency(self.frequency)
             return
         if parameter == Parameter.RF_ON:
             value = bool(value)
-            if value:
-                self.turn_on()
-            else:
-                self.turn_off()
+            if instrument_set:
+                if value:
+                    self.turn_on()
+                else:
+                    self.turn_off()
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 

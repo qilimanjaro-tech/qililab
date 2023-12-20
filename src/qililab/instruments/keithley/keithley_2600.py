@@ -51,15 +51,18 @@ class Keithley2600(Instrument):
         parameter: Parameter,
         value: float | str | bool,
         channel_id: int | None = None,
+        instrument_set: bool = True,
     ):
         """Setup instrument."""
         if parameter == Parameter.MAX_CURRENT:
             self.max_current = float(value)
-            self.device.smua.limiti(self.max_current)
+            if instrument_set:
+                self.device.smua.limiti(self.max_current)
             return
         if parameter == Parameter.MAX_VOLTAGE:
             self.max_voltage = float(value)
-            self.device.smua.limitv(self.max_voltage)
+            if instrument_set:
+                self.device.smua.limitv(self.max_voltage)
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
