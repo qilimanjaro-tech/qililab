@@ -125,8 +125,8 @@ class TestQuantumMachinesCluster:
         qmm.initial_setup()
         mock_init.assert_called()
 
-        assert isinstance(qmm.qmm, MagicMock)
-        assert isinstance(qmm.config, dict)
+        assert isinstance(qmm._qmm, MagicMock)
+        assert isinstance(qmm._config, dict)
 
     @pytest.mark.parametrize("qmm_name", ["qmm", "qmm_with_octave"])
     def test_settings(self, qmm_name, request):
@@ -145,12 +145,12 @@ class TestQuantumMachinesCluster:
         qmm.initial_setup()
         qmm.turn_on()
 
-        assert isinstance(qmm.qm, MagicMock)
+        assert isinstance(qmm._qm, MagicMock)
         if qmm.settings.run_octave_calibration:
             calls = [
-                call(element) for element in qmm.config["elements"] if "RF_inputs" in qmm.config["elements"][element]
+                call(element) for element in qmm._config["elements"] if "RF_inputs" in qmm._config["elements"][element]
             ]
-            qmm.qm.calibrate_element.assert_has_calls(calls)
+            qmm._qm.calibrate_element.assert_has_calls(calls)
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
@@ -163,8 +163,8 @@ class TestQuantumMachinesCluster:
         qmm.turn_on()
         qmm.turn_off()
 
-        assert isinstance(qmm.qm, MagicMock)
-        qmm.qm.close.assert_called_once()
+        assert isinstance(qmm._qm, MagicMock)
+        qmm._qm.close.assert_called_once()
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
@@ -173,15 +173,15 @@ class TestQuantumMachinesCluster:
         qmm.initial_setup()
         qmm.update_configuration(compilation_config=compilation_config)
 
-        assert "control_445e964c_fb58e912_100" in qmm.config["elements"]["drive_q0"]["operations"]
-        assert "control_445e964c_fb58e912_100" in qmm.config["pulses"]
-        assert "445e964c" in qmm.config["waveforms"]
-        assert "fb58e912" in qmm.config["waveforms"]
+        assert "control_445e964c_fb58e912_100" in qmm._config["elements"]["drive_q0"]["operations"]
+        assert "control_445e964c_fb58e912_100" in qmm._config["pulses"]
+        assert "445e964c" in qmm._config["waveforms"]
+        assert "fb58e912" in qmm._config["waveforms"]
 
         qmm.turn_on()
         qmm.update_configuration(compilation_config=compilation_config)
 
-        assert isinstance(qmm.qm, MagicMock)
+        assert isinstance(qmm._qm, MagicMock)
 
     @patch("qm.QuantumMachine")
     def test_execute(
@@ -189,7 +189,7 @@ class TestQuantumMachinesCluster:
     ):  # pylint: disable=unused-argument
         """Test execute method"""
         mock_qm.return_value.execute.return_value = MagicMock
-        qmm.qm = mock_qm
+        qmm._qm = mock_qm
         job = qmm.run(qua_program)
 
         assert isinstance(job, MagicMock)
@@ -209,7 +209,7 @@ class TestQuantumMachinesCluster:
     ):  # pylint: disable=unused-argument
         """Test simulate method"""
         mock_qm.return_value.simulate.return_value = MagicMock
-        qmm.qm = mock_qm
+        qmm._qm = mock_qm
         job = qmm.simulate(qua_program)
 
         assert isinstance(job, MagicMock)
