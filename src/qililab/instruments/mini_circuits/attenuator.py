@@ -43,7 +43,7 @@ class Attenuator(Instrument):
     settings: StepAttenuatorSettings
     device: MiniCircuitsDriver
 
-    @Instrument.CheckParameterValueFloatOrInt  # type: ignore = override
+    @Instrument.CheckParameterValueFloatOrInt
     def setup(
         self,
         parameter: Parameter,

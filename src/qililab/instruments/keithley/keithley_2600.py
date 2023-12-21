@@ -44,7 +44,7 @@ class Keithley2600(Instrument):
     settings: Keithley2600Settings
     device: Keithley2600Driver
 
-    @Instrument.CheckParameterValueFloatOrInt  # type: ignore = override
+    @Instrument.CheckParameterValueFloatOrInt
     def setup(
         self,
         parameter: Parameter,
