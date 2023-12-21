@@ -45,7 +45,7 @@ class Keithley2600(Instrument):
     device: Keithley2600Driver
 
     @Instrument.CheckParameterValueFloatOrInt
-    def setup(
+    def setup(  # type: ignore
         self,
         parameter: Parameter,
         value: float | str | bool,

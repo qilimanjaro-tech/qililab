@@ -44,7 +44,7 @@ class Attenuator(Instrument):
     device: MiniCircuitsDriver
 
     @Instrument.CheckParameterValueFloatOrInt
-    def setup(
+    def setup(  # type: ignore
         self,
         parameter: Parameter,
         value: float | str | bool,
