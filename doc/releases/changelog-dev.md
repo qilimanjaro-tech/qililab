@@ -7,6 +7,9 @@ This document contains the changes of the current release.
 - Added Yokogawa `GS200` instrument and associated istrument controller.
   [#619](https://github.com/qilimanjaro-tech/qililab/pull/619)
 
+- Added QDevil `QDAC-II` instrument and associated istrument controller.
+  [#634](https://github.com/qilimanjaro-tech/qililab/pull/634)
+
 ### Improvements
 
 ### Breaking changes
