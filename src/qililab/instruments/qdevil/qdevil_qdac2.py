@@ -54,7 +54,7 @@ class QDevilQDac2(VoltageSource):
         """
         return self.settings.low_pass_filter
 
-    def setup(
+    def setup(  # pylint: too-many-branches
         self,
         parameter: Parameter,
         value: float | str | bool,
