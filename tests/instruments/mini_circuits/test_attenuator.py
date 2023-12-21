@@ -76,11 +76,12 @@ class TestAttenuator:
 
     @patch("qililab.typings.instruments.mini_circuits.urllib", autospec=True)
     @pytest.mark.parametrize("parameter, value", [(Parameter.ATTENUATION, 0.01)])
-    def test_setup_method_no_instrument_set(
+    def test_setup_method_no_instrument_connection(
         self, mock_urllib: MagicMock, attenuator: Attenuator, parameter: Parameter, value: float
     ):
         """Test setup method."""
-        attenuator.setup(parameter=parameter, value=value, instrument_set=False)
+        attenuator.device = None
+        attenuator.setup(parameter=parameter, value=value)
         mock_urllib.request.Request.assert_not_called()
         mock_urllib.request.urlopen.assert_not_called()
         assert attenuator.settings.attenuation == value
@@ -91,6 +92,11 @@ class TestAttenuator:
         attenuator.initial_setup()
         mock_urllib.request.Request.assert_called()
         mock_urllib.request.urlopen.assert_called()
+
+    def test_initial_setup_method_no_connection(self, attenuator_no_device: Attenuator):
+        """Test initial setup method."""
+        with pytest.raises(AttributeError, match="Instrument Device has not been initialized"):
+            attenuator_no_device.initial_setup()
 
     def test_turn_on_method(self, attenuator: Attenuator):
         """Test turn_on method."""

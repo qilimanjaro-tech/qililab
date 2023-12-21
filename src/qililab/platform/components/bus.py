@@ -168,7 +168,6 @@ class Bus:
         parameter: Parameter,
         value: int | float | str | bool,
         channel_id: int | None = None,
-        instrument_set: bool = True,
     ):
         """Set a parameter to the bus.
 
@@ -176,7 +175,6 @@ class Bus:
             parameter (Parameter): parameter settings of the instrument to update
             value (int | float | str | bool): value to update
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
-            instrument_set (bool, optional): Wether to set the parameter on the instruments. Defaults to True.
         """
         if parameter == Parameter.DELAY:
             self.settings.delay = int(value)
@@ -187,7 +185,6 @@ class Bus:
                     value=value,
                     channel_id=channel_id,
                     port_id=self.port,
-                    instrument_set=instrument_set,
                 )
             except ParameterNotFound as error:
                 raise ParameterNotFound(

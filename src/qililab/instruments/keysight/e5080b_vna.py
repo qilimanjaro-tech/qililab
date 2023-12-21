@@ -77,15 +77,17 @@ class E5080B(VectorNetworkAnalyzer):
     def power(self, value: float, channel=1, port=1):
         """sets the power in dBm"""
         self.settings.power = value
-        power = f"{self.settings.power:.1f}"
-        self.send_command(f"SOUR{channel}:POW{port}", power)
+        if hasattr(self, "device") and self.device is not None:
+            power = f"{self.settings.power:.1f}"
+            self.send_command(f"SOUR{channel}:POW{port}", power)
 
     @VectorNetworkAnalyzer.if_bandwidth.setter  # type: ignore
     def if_bandwidth(self, value: float, channel=1):
         """sets the if bandwidth in Hz"""
         self.settings.if_bandwidth = value
-        bandwidth = str(self.settings.if_bandwidth)
-        self.send_command(f"SENS{channel}:BWID", bandwidth)
+        if hasattr(self, "device") and self.device is not None:
+            bandwidth = str(self.settings.if_bandwidth)
+            self.send_command(f"SENS{channel}:BWID", bandwidth)
 
     @VectorNetworkAnalyzer.electrical_delay.setter  # type: ignore
     def electrical_delay(self, value: float):
@@ -96,8 +98,9 @@ class E5080B(VectorNetworkAnalyzer):
             value (str) : Electrical delay in ns
         """
         self.settings.electrical_delay = value
-        etime = f"{self.settings.electrical_delay:.12f}"
-        self.send_command("SENS1:CORR:EXT:PORT1:TIME", etime)
+        if hasattr(self, "device") and self.device is not None:
+            etime = f"{self.settings.electrical_delay:.12f}"
+            self.send_command("SENS1:CORR:EXT:PORT1:TIME", etime)
 
     @property
     def sweep_mode(self):
@@ -117,8 +120,9 @@ class E5080B(VectorNetworkAnalyzer):
             mode (str) : Sweep mode: 'hold', 'cont', single' and 'group'
         """
         self.settings.sweep_mode = VNASweepModes(value)
-        mode = self.settings.sweep_mode.name
-        self.send_command(f"SENS{channel}:SWE:MODE", mode)
+        if hasattr(self, "device") and self.device is not None:
+            mode = self.settings.sweep_mode.name
+            self.send_command(f"SENS{channel}:SWE:MODE", mode)
 
     @property
     def device_timeout(self):

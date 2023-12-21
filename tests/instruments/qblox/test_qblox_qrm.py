@@ -345,10 +345,11 @@ class TestQbloxQRM:
         value: float | bool | int | str,
         channel_id: int,
         qrm: QbloxQRM,
+        qrm_no_device: QbloxQRM,
     ):
         """Test setup method"""
-        for instrument_set in [True, False]:
-            qrm.setup(parameter=parameter, value=value, channel_id=channel_id, instrument_set=instrument_set)
+        for qrm in [qrm, qrm_no_device]:
+            qrm.setup(parameter=parameter, value=value, channel_id=channel_id)
             if channel_id is None:
                 channel_id = 0
             if parameter == Parameter.GAIN:

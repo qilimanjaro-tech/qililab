@@ -46,6 +46,16 @@ def fixture_yokogawa_gs200(mock_rs: MagicMock, yokogawa_gs200_current_controller
     return yokogawa_gs200_current_controller.modules[0]
 
 
+@pytest.fixture(name="yokogawa_gs200_no_connected")
+@patch("qililab.instrument_controllers.yokogawa.gs200_controller.YokogawaGS200", autospec=True)
+def fixture_yokogawa_gs200_no_connected(mock_rs: MagicMock, yokogawa_gs200_current_controller: GS200Controller):
+    """Return connected instance of GS200 class"""
+    # add dynamically created attributes
+    mock_instance = mock_rs.return_value
+    mock_instance.mock_add_spec(["current", "voltage", "source_mode", "current_range", "voltage_range"])
+    return yokogawa_gs200_current_controller.modules[0]
+
+
 @pytest.fixture(name="yokogawa_gs200_voltage")
 @patch("qililab.instrument_controllers.yokogawa.gs200_controller.YokogawaGS200", autospec=True)
 def fixture_yokogawa_gs200_voltage(mock_rs: MagicMock, yokogawa_gs200_voltage_controller: GS200Controller):
@@ -75,11 +85,11 @@ class TestYokogawaGS200:
             (Parameter.SPAN, "100mA"),
         ],
     )
-    def test_setup_method(self, parameter: Parameter, value, yokogawa_gs200: GS200):
+    def test_setup_method(self, parameter: Parameter, value, yokogawa_gs200_no_connected: GS200, yokogawa_gs200: GS200):
         """Test the setup method with float value"""
         assert isinstance(parameter, Parameter)
-        for instrument_set in [True, False]:
-            yokogawa_gs200.setup(parameter, value, instrument_set=instrument_set)
+        for yokogawa_gs200 in [yokogawa_gs200, yokogawa_gs200_no_connected]:
+            yokogawa_gs200.setup(parameter, value)
             if parameter == Parameter.SOURCE_MODE:
                 assert yokogawa_gs200.source_mode == SourceMode(value)
             if parameter == Parameter.CURRENT:

@@ -66,12 +66,12 @@ class TestE5071B:
             (Parameter.ELECTRICAL_DELAY, 0.0),
         ],
     )
-    def test_setup_method_value_flt(self, parameter: Parameter, value, e5071b: E5071B):
+    def test_setup_method_value_flt(self, parameter: Parameter, value, e5071b: E5071B, e5071b_no_device: E5071B):
         """Test the setup method with float value"""
         assert isinstance(parameter, Parameter)
         assert isinstance(value, float)
-        for instrument_set in [True, False]:
-            e5071b.setup(parameter, value, instrument_set=instrument_set)
+        for e5071b in [e5071b, e5071b_no_device]:
+            e5071b.setup(parameter, value)
             if parameter == Parameter.POWER:
                 assert e5071b.power == value
             if parameter == Parameter.FREQUENCY_SPAN:

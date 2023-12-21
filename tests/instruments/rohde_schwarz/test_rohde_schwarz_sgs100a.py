@@ -52,10 +52,12 @@ class TestSGS100A:
         "parameter, value",
         [(Parameter.POWER, 0.01), (Parameter.LO_FREQUENCY, 6.0e09), (Parameter.RF_ON, True), (Parameter.RF_ON, False)],
     )
-    def test_setup_method(self, parameter: Parameter, value: float, rohde_schwarz: SGS100A):
+    def test_setup_method(
+        self, parameter: Parameter, value: float, rohde_schwarz: SGS100A, rohde_schwarz_no_device: SGS100A
+    ):
         """Test setup method"""
-        for instrument_set in [True, False]:
-            rohde_schwarz.setup(parameter=parameter, value=value, instrument_set=instrument_set)
+        for i, rohde_schwarz in enumerate([rohde_schwarz, rohde_schwarz]):
+            rohde_schwarz.setup(parameter=parameter, value=value)
             if parameter == Parameter.POWER:
                 assert rohde_schwarz.settings.power == value
             if parameter == Parameter.LO_FREQUENCY:
@@ -63,18 +65,8 @@ class TestSGS100A:
             if parameter == Parameter.RF_ON:
                 assert rohde_schwarz.settings.rf_on == value
 
-    @pytest.mark.parametrize("rf_on", [True, False])
-    def test_setup_method_no_instrument_set(self, rf_on: bool, rohde_schwarz: SGS100A):
-        """Test initial setup method"""
-        rohde_schwarz.setup(Parameter.RF_ON, rf_on, instrument_set=False)
-        rohde_schwarz.device.power.assert_not_called()
-        rohde_schwarz.device.frequency.assert_not_called()
-        if rohde_schwarz.rf_on:
-            assert rohde_schwarz.settings.rf_on is True
-            rohde_schwarz.device.on.assert_not_called()  # type: ignore
-        else:
-            assert rohde_schwarz.settings.rf_on is False
-            rohde_schwarz.device.off.assert_not_called()  # type: ignore
+            if i == 1:
+                assert not hasattr(self, "device")
 
     @pytest.mark.parametrize("rf_on", [True, False])
     def test_initial_setup_method(self, rf_on: bool, rohde_schwarz: SGS100A):
@@ -89,6 +81,11 @@ class TestSGS100A:
         else:
             assert rohde_schwarz.settings.rf_on is False
             rohde_schwarz.device.off.assert_called()  # type: ignore
+
+    def test_initial_setup_no_connected(self, rohde_schwarz_no_device: SGS100A):
+        """Test initial setup method without connection"""
+        with pytest.raises(AttributeError, match="Instrument Device has not been initialized"):
+            rohde_schwarz_no_device.initial_setup()
 
     def test_turn_on_method(self, rohde_schwarz: SGS100A):
         """Test turn_on method"""

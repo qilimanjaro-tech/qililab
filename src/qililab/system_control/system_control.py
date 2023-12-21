@@ -137,7 +137,6 @@ class SystemControl(FactoryElement, ABC):
         value: float | str | bool,
         channel_id: int | None = None,
         port_id: str | None = None,
-        instrument_set: bool = True,
     ):
         """Sets the parameter of a specific instrument.
 
@@ -147,14 +146,13 @@ class SystemControl(FactoryElement, ABC):
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
             port_id (str | None, optional): The ``port_id`` argument can be used when setting a parameter of a
                 QbloxModule, to avoid having to look which sequencer corresponds to which bus.
-            instrument_set (bool, optional): Wether to set the parameter on the instruments. Defaults to True.
         """
         for instrument in self.instruments:
             with contextlib.suppress(ParameterNotFound):
-                if instrument_set and isinstance(instrument, QbloxModule):
-                    instrument.setup(parameter, value, channel_id, port_id=port_id, instrument_set=instrument_set)
+                if isinstance(instrument, QbloxModule):
+                    instrument.setup(parameter, value, channel_id, port_id=port_id)
                 else:
-                    instrument.set_parameter(parameter, value, channel_id, instrument_set)
+                    instrument.set_parameter(parameter, value, channel_id)
                 return
         raise ParameterNotFound(f"Could not find parameter {parameter.value} in the system control {self.name}")
 

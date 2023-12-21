@@ -323,10 +323,19 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         logger.info("Connected to the instruments")
 
     def initial_setup(self):
-        """Sets the values of the :ref:`runcard <runcards>` to the connected instruments.
+        """Sets the values of the cache of the :class:`.Platform` object to the connected instruments.
 
-        We recommend you to do this always after a connection, to ensure that no parameter differs from the current runcard settings.
+        If called after a `ql.build_platform()`, where the :class:`.Platform` object is built with the provided runcard,
+        this function sets the values of the :ref:`runcard <runcards>` into the connected instruments.
+
+        It is recommended to use this function after a `ql.build_platform()` + `platform.connect()` to ensure that no parameter
+        differs from the current runcard settings.
+
+        If a `platform.set_parameter()` is called between platform building and initial setup, the value set in the instruments
+        will be the new "set" value, as the cache values of the :class:`.Platform` object are modified.
         """
+        if not self._connected_to_instruments:
+            raise AttributeError("Can not do initial_setup without being connected to the instruments.")
         self.instrument_controllers.initial_setup()
         logger.info("Initial setup applied to the instruments")
 
@@ -437,23 +446,28 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         value: float | str | bool,
         alias: str,
         channel_id: int | None = None,
-        instrument_set: bool = True,
     ):
-        """Sets any parameter of a platform element.
+        """Set a parameter for a platform element.
+
+        If connected to an instrument, this function updates both the cache of the :class:`.Platform` object and the
+        instrument's value. Otherwise, it only stores the value in the cache. Subsequent `connect()` + `initial_setup()`
+        will apply the cached values into the real instruments.
+
+        If you use `set_parameter` + `ql.save_platform()`, the saved runcard will include the new "set" value, even without
+        an instrument connection, as the cache values of the :class:`.Platform` object are modified.
 
         Args:
             parameter (Parameter): Name of the parameter to change.
             value (float | str | bool): New value to set in the parameter.
             alias (str): Alias of the bus where the parameter is set.
             channel_id (int, optional): ID of the channel you want to use to set the parameter. Defaults to None.
-            instrument_set (bool, optional): Wether to set the parameter on the instruments. Defaults to True.
         """
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
         if alias == "platform" or regex_match is not None:
             self.gates_settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             return
         element = self.get_element(alias=alias)
-        element.set_parameter(parameter=parameter, value=value, channel_id=channel_id, instrument_set=instrument_set)
+        element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
 
     def _load_instruments(self, instruments_dict: list[dict]) -> list[Instrument]:
         """Instantiates all instrument classes from their respective dictionaries.

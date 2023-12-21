@@ -157,10 +157,12 @@ class TestQbloxQCM:
             (Parameter.PHASE_IMBALANCE, 0.09, 0),
         ],
     )
-    def test_setup_method(self, parameter: Parameter, value: float | bool | int, channel_id: int, qcm: QbloxQCM):
+    def test_setup_method(
+        self, parameter: Parameter, value: float | bool | int, channel_id: int, qcm: QbloxQCM, qcm_no_device: QbloxQCM
+    ):
         """Test setup method"""
-        for instrument_set in [True, False]:
-            qcm.setup(parameter=parameter, value=value, channel_id=channel_id, instrument_set=instrument_set)
+        for qcm in [qcm, qcm_no_device]:
+            qcm.setup(parameter=parameter, value=value, channel_id=channel_id)
             if parameter == Parameter.GAIN:
                 assert qcm.awg_sequencers[channel_id].gain_i == value
                 assert qcm.awg_sequencers[channel_id].gain_q == value
@@ -212,11 +214,16 @@ class TestQbloxQCM:
         ],
     )
     def test_setup_method_with_port_id(
-        self, parameter: Parameter, value: float | bool | int, port_id: str | None, qcm: QbloxQCM
+        self,
+        parameter: Parameter,
+        value: float | bool | int,
+        port_id: str | None,
+        qcm: QbloxQCM,
+        qcm_no_device: QbloxQCM,
     ):
         """Test setup method"""
-        for instrument_set in [True, False]:
-            qcm.setup(parameter=parameter, value=value, port_id=port_id, instrument_set=instrument_set)
+        for qcm in [qcm, qcm_no_device]:
+            qcm.setup(parameter=parameter, value=value, port_id=port_id)
             if port_id is not None:
                 channel_id = qcm.get_sequencers_from_chip_port_id(port_id)[0].identifier
             else:

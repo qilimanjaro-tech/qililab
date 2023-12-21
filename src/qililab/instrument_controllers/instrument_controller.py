@@ -161,7 +161,6 @@ class InstrumentController(BusElement, ABC):
         parameter: Parameter,
         value: float | str | bool,
         channel_id: int | None = None,  # pylint: disable=unused-argument
-        instrument_set: bool = True,  # pylint: disable=unused-argument
     ):
         """Updates the reset settings for the controller."""
         if parameter is not Parameter.RESET:

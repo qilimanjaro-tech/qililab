@@ -43,20 +43,18 @@ class Attenuator(Instrument):
     settings: StepAttenuatorSettings
     device: MiniCircuitsDriver
 
-    @Instrument.CheckDeviceInitialized
-    @Instrument.CheckParameterValueFloatOrInt
+    @Instrument.CheckParameterValueFloatOrInt  # type: ignore = override
     def setup(
         self,
         parameter: Parameter,
         value: float | str | bool,
         channel_id: int | None = None,
-        port_id: int | None = None,
-        instrument_set: bool = True,
+        port_id: str | None = None,
     ):
         """Set instrument settings."""
         if parameter == Parameter.ATTENUATION:
             self.settings.attenuation = float(value)
-            if instrument_set:
+            if hasattr(self, "device") and self.device is not None:
                 self.device.setup(attenuation=self.attenuation)
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")

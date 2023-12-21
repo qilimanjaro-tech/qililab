@@ -102,15 +102,17 @@ class TestMethods:
         qcm_rf.device.sequencers[0].gain_awg_path0.assert_called_once_with(1)
         qcm_rf.device.sequencers[0].gain_awg_path1.assert_called_once_with(1)
 
-    def test_setup_no_instrument_set(self, settings):
+    def test_setup_no_instrument_connection(self, settings):
         """Test the `setup` method of the QbloxQRMRF class."""
         qcm_rf = QbloxQRMRF(settings=settings)
-        qcm_rf.device = MagicMock()
-        qcm_rf.setup(parameter=Parameter.OUT0_IN0_LO_FREQ, value=3.8e9, instrument_set=False)
-        qcm_rf.device.set.assert_not_called()
-        qcm_rf.setup(parameter=Parameter.GAIN, value=1, instrument_set=False)
-        qcm_rf.device.sequencers[0].gain_awg_path0.assert_not_called()
-        qcm_rf.device.sequencers[0].gain_awg_path1.assert_not_called()
+
+        qcm_rf.setup(parameter=Parameter.OUT0_IN0_LO_FREQ, value=2.8e9)
+        assert qcm_rf.get_parameter(parameter=Parameter.OUT0_IN0_LO_FREQ) == 2.8e9
+        assert not hasattr(qcm_rf, "device")
+
+        qcm_rf.setup(parameter=Parameter.GAIN, value=1)
+        assert qcm_rf.get_parameter(parameter=Parameter.GAIN, channel_id=0)[0] == 1
+        assert not hasattr(qcm_rf, "device")
 
 
 class TestIntegration:
@@ -125,6 +127,12 @@ class TestIntegration:
         assert qrm_rf.device.get("out0_att") == settings["out0_att"]
         assert qrm_rf.device.get("in0_att") == settings["in0_att"]
         cluster.close()
+
+    def test_initial_setup_no_connected(self, settings):
+        """Test initial setup method without connection"""
+        qcm_rf = QbloxQRMRF(settings=settings)
+        with pytest.raises(AttributeError, match="Instrument Device has not been initialized"):
+            qcm_rf.initial_setup()
 
     @pytest.mark.xfail
     def test_initial_setup_with_failing_setters(self, settings):
@@ -158,14 +166,14 @@ class TestIntegration:
     def test_setup_no_set_instrument(self, settings):
         """Test the `setup` method of the QbloxQRMRF class."""
         qrm_rf = QbloxQRMRF(settings=settings)
-        cluster = Cluster(name="test", dummy_cfg={"1": ClusterType.CLUSTER_QRM_RF})
-        qrm_rf.device = cluster.modules[0]
-        qrm_rf.setup(parameter=Parameter.OUT0_ATT, value=58, instrument_set=False)
-        assert qrm_rf.device.get("out0_att") != 58
-        qrm_rf.setup(parameter=Parameter.GAIN, value=0.123, instrument_set=False)
-        assert qrm_rf.device.sequencers[0].get("gain_awg_path0") != pytest.approx(0.123)
-        assert qrm_rf.device.sequencers[0].get("gain_awg_path1") != pytest.approx(0.123)
-        cluster.close()
+
+        qrm_rf.setup(parameter=Parameter.OUT0_ATT, value=58)
+        assert qrm_rf.get_parameter(parameter=Parameter.OUT0_ATT) == 58
+        assert not hasattr(qrm_rf, "device")
+
+        qrm_rf.setup(parameter=Parameter.GAIN, value=0.123)
+        assert qrm_rf.get_parameter(parameter=Parameter.GAIN, channel_id=0)[0] == 0.123
+        assert not hasattr(qrm_rf, "device")
 
     def test_setup_with_lo_frequency(self, settings):
         """Test the `setup` method when using the `Parameter.LO_FREQUENCY` generic parameter."""
@@ -178,10 +186,10 @@ class TestIntegration:
     def test_setup_with_lo_frequency_no_set_instrument(self, settings):
         """Test the `setup` method when using the `Parameter.LO_FREQUENCY` generic parameter."""
         sequencer_idx = 0
-        qcm_rf = QbloxQRMRF(settings=settings)
-        qcm_rf.device = MagicMock()
-        qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=sequencer_idx, instrument_set=False)
-        qcm_rf.device.set.assert_not_called()
+        qrm_rf = QbloxQRMRF(settings=settings)
+        qrm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=sequencer_idx)
+        assert qrm_rf.get_parameter(parameter=Parameter.LO_FREQUENCY, channel_id=0) == 2e9
+        assert not hasattr(qrm_rf, "device")
 
     def test_to_dict_method(self, settings):
         """Test that the `to_dict` method does not return a dictionary containing the key 'out_offsets' for a correct serialization"""

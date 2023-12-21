@@ -54,14 +54,12 @@ class QDevilQDac2(VoltageSource):
         """
         return self.settings.low_pass_filter
 
-    @Instrument.CheckDeviceInitialized
     def setup(
         self,
         parameter: Parameter,
         value: float | str | bool,
         channel_id: int | None = None,
-        port_id: int | None = None,
-        instrument_set: bool = True,
+        port_id: str | None = None,
     ):
         """Set parameter to the corresponding value for an instrument's channel.
 

@@ -91,7 +91,6 @@ class QuantumMachinesManager(Instrument):
         parameter: Parameter,
         value: float | str | bool,
         channel_id: int | None = None,
-        instrument_set: bool = True,
     ):
         """Sets the parameter of a specific instrument.
 

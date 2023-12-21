@@ -49,14 +49,12 @@ class AWGAnalogDigitalConverter(AWG):
             Result: Acquired result
         """
 
-    @Instrument.CheckDeviceInitialized
     def setup(  # pylint: disable=too-many-return-statements, too-many-branches
         self,
         parameter: Parameter,
         value: float | str | bool,
         channel_id: int | None = None,
-        port_id: int | None = None,
-        instrument_set: bool = True,
+        port_id: str | None = None,
     ):
         """set a specific parameter to the instrument"""
         if channel_id is None:
@@ -68,16 +66,16 @@ class AWGAnalogDigitalConverter(AWG):
             self._set_acquisition_delay_time(value=value)
             return
         if parameter == Parameter.SCOPE_HARDWARE_AVERAGING:
-            self._set_scope_hardware_averaging(value=value, sequencer_id=channel_id, instrument_set=instrument_set)
+            self._set_scope_hardware_averaging(value=value, sequencer_id=channel_id)
             return
         if parameter == Parameter.HARDWARE_DEMODULATION:
-            self._set_hardware_demodulation(value=value, sequencer_id=channel_id, instrument_set=instrument_set)
+            self._set_hardware_demodulation(value=value, sequencer_id=channel_id)
             return
         if parameter == Parameter.SCOPE_ACQUIRE_TRIGGER_MODE:
-            self._set_acquisition_mode(value=value, sequencer_id=channel_id, instrument_set=instrument_set)
+            self._set_acquisition_mode(value=value, sequencer_id=channel_id)
             return
         if parameter == Parameter.INTEGRATION_LENGTH:
-            self._set_integration_length(value=value, sequencer_id=channel_id, instrument_set=instrument_set)
+            self._set_integration_length(value=value, sequencer_id=channel_id)
             return
         if parameter == Parameter.SAMPLING_RATE:
             self._set_sampling_rate(value=value, sequencer_id=channel_id)
@@ -95,10 +93,10 @@ class AWGAnalogDigitalConverter(AWG):
             self._set_scope_store_enabled(value=value, sequencer_id=channel_id)
             return
         if parameter == Parameter.THRESHOLD:
-            self._set_threshold(value=value, sequencer_id=channel_id, instrument_set=instrument_set)
+            self._set_threshold(value=value, sequencer_id=channel_id)
             return
         if parameter == Parameter.THRESHOLD_ROTATION:
-            self._set_threshold_rotation(value=value, sequencer_id=channel_id, instrument_set=instrument_set)
+            self._set_threshold_rotation(value=value, sequencer_id=channel_id)
             return
 
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
@@ -171,7 +169,7 @@ class AWGAnalogDigitalConverter(AWG):
         """
 
     @Instrument.CheckParameterValueBool
-    def _set_scope_hardware_averaging(self, value: float | str | bool, sequencer_id: int, instrument_set: bool = True):
+    def _set_scope_hardware_averaging(self, value: float | str | bool, sequencer_id: int):
         """set scope_hardware_averaging for the specific channel
 
         Args:
@@ -182,11 +180,10 @@ class AWGAnalogDigitalConverter(AWG):
             ValueError: when value type is not bool
         """
         cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).scope_hardware_averaging = bool(value)
-        if instrument_set:
-            self._set_device_scope_hardware_averaging(value=bool(value), sequencer_id=sequencer_id)
+        self._set_device_scope_hardware_averaging(value=bool(value), sequencer_id=sequencer_id)
 
     @Instrument.CheckParameterValueFloatOrInt
-    def _set_threshold(self, value: float | str | bool, sequencer_id: int, instrument_set: bool = True):
+    def _set_threshold(self, value: float | str | bool, sequencer_id: int):
         """Set threshold value for the specific channel.
 
         Args:
@@ -194,11 +191,10 @@ class AWGAnalogDigitalConverter(AWG):
             sequencer_id (int): sequencer to update the value
         """
         cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).threshold = float(value)
-        if instrument_set:
-            self._set_device_threshold(value=float(value), sequencer_id=sequencer_id)
+        self._set_device_threshold(value=float(value), sequencer_id=sequencer_id)
 
     @Instrument.CheckParameterValueFloatOrInt
-    def _set_threshold_rotation(self, value: float | str | bool, sequencer_id: int, instrument_set: bool = True):
+    def _set_threshold_rotation(self, value: float | str | bool, sequencer_id: int):
         """Set threshold rotation value for the specific channel.
 
         Args:
@@ -206,11 +202,10 @@ class AWGAnalogDigitalConverter(AWG):
             sequencer_id (int): sequencer to update the value
         """
         cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).threshold_rotation = float(value)
-        if instrument_set:
-            self._set_device_threshold_rotation(value=float(value), sequencer_id=sequencer_id)
+        self._set_device_threshold_rotation(value=float(value), sequencer_id=sequencer_id)
 
     @Instrument.CheckParameterValueBool
-    def _set_hardware_demodulation(self, value: float | str | bool, sequencer_id: int, instrument_set: bool = True):
+    def _set_hardware_demodulation(self, value: float | str | bool, sequencer_id: int):
         """set hardware demodulation
 
         Args:
@@ -221,12 +216,9 @@ class AWGAnalogDigitalConverter(AWG):
             ValueError: when value type is not bool
         """
         cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).hardware_demodulation = bool(value)
-        if instrument_set:
-            self._set_device_hardware_demodulation(value=bool(value), sequencer_id=sequencer_id)
+        self._set_device_hardware_demodulation(value=bool(value), sequencer_id=sequencer_id)
 
-    def _set_acquisition_mode(
-        self, value: float | str | bool | AcquireTriggerMode, sequencer_id: int, instrument_set: bool = True
-    ):
+    def _set_acquisition_mode(self, value: float | str | bool | AcquireTriggerMode, sequencer_id: int):
         """set acquisition_mode for the specific channel
 
         Args:
@@ -239,11 +231,10 @@ class AWGAnalogDigitalConverter(AWG):
         if not isinstance(value, AcquireTriggerMode) and not isinstance(value, str):
             raise ValueError(f"value must be a string or AcquireTriggerMode. Current type: {type(value)}")
         cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).scope_acquire_trigger_mode = AcquireTriggerMode(value)
-        if instrument_set:
-            self._set_device_acquisition_mode(mode=AcquireTriggerMode(value), sequencer_id=sequencer_id)
+        self._set_device_acquisition_mode(mode=AcquireTriggerMode(value), sequencer_id=sequencer_id)
 
     @Instrument.CheckParameterValueFloatOrInt
-    def _set_integration_length(self, value: int | float | str | bool, sequencer_id: int, instrument_set: bool = True):
+    def _set_integration_length(self, value: int | float | str | bool, sequencer_id: int):
         """set integration_length for the specific channel
 
         Args:
@@ -254,8 +245,7 @@ class AWGAnalogDigitalConverter(AWG):
             ValueError: when value type is not float
         """
         cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).integration_length = int(value)
-        if instrument_set:
-            self._set_device_integration_length(value=int(value), sequencer_id=sequencer_id)
+        self._set_device_integration_length(value=int(value), sequencer_id=sequencer_id)
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_sampling_rate(self, value: int | float | str | bool, sequencer_id: int):

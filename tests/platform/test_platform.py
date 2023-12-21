@@ -2,6 +2,7 @@
 import copy
 import io
 import re
+from distutils.util import change_root
 from pathlib import Path
 from queue import Queue
 from unittest.mock import MagicMock, patch
@@ -68,6 +69,20 @@ class TestPlatform:
     def test_platform_name(self, platform: Platform):
         """Test platform name."""
         assert platform.name == DEFAULT_PLATFORM_NAME
+
+    def test_initial_setup_no_instrument_connection(self, platform: Platform):
+        """Test platform raises and error if no instrument connection."""
+        platform._connected_to_instruments = False
+        with pytest.raises(
+            AttributeError, match="Can not do initial_setup without being connected to the instruments."
+        ):
+            platform.initial_setup()
+
+    def test_set_parameter_no_instrument_connection(self, platform: Platform):
+        """Test platform raises and error if no instrument connection."""
+        platform._connected_to_instruments = False
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, value=0.14, channel_id=0)
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, channel_id=0) == 0.14
 
     def test_connect_logger(self, platform: Platform):
         platform._connected_to_instruments = True

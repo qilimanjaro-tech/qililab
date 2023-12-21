@@ -73,14 +73,12 @@ class QbloxS4g(CurrentSource):
         while channel.is_ramping():
             sleep(0.1)
 
-    @Instrument.CheckDeviceInitialized
     def setup(
         self,
         parameter: Parameter,
         value: float | str | bool,
         channel_id: int | None = None,
-        port_id: int | None = None,
-        instrument_set: bool = True,
+        port_id: str | None = None,
     ):
         """Set Qblox instrument calibration settings."""
 
@@ -96,18 +94,16 @@ class QbloxS4g(CurrentSource):
             )
         channel = self.dac(dac_index=channel_id)
         if parameter == Parameter.CURRENT:
-            self._set_current(value=value, channel_id=channel_id, channel=channel, instrument_set=instrument_set)
+            self._set_current(value=value, channel_id=channel_id, channel=channel)
             return
         if parameter == Parameter.SPAN:
-            self._set_span(value=value, channel_id=channel_id, channel=channel, instrument_set=instrument_set)
+            self._set_span(value=value, channel_id=channel_id, channel=channel)
             return
         if parameter == Parameter.RAMPING_ENABLED:
-            self._set_ramping_enabled(
-                value=value, channel_id=channel_id, channel=channel, instrument_set=instrument_set
-            )
+            self._set_ramping_enabled(value=value, channel_id=channel_id, channel=channel)
             return
         if parameter == Parameter.RAMPING_RATE:
-            self._set_ramping_rate(value=value, channel_id=channel_id, channel=channel, instrument_set=instrument_set)
+            self._set_ramping_rate(value=value, channel_id=channel_id, channel=channel)
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
@@ -138,12 +134,11 @@ class QbloxS4g(CurrentSource):
         value: float | str | bool,
         channel_id: int,
         channel: Any,
-        instrument_set: bool = True,
     ):
         """Set the current"""
         self.settings.current[channel_id] = float(value)
 
-        if instrument_set:
+        if hasattr(self, "device") and self.device is not None:
             channel.current(self.current[channel_id])
 
     @Instrument.CheckParameterValueString
@@ -152,12 +147,11 @@ class QbloxS4g(CurrentSource):
         value: float | str | bool,
         channel_id: int,
         channel: Any,
-        instrument_set: bool = True,
     ):
         """Set the span"""
         self.settings.span[channel_id] = str(value)
 
-        if instrument_set:
+        if hasattr(self, "device") and self.device is not None:
             channel.span(self.span[channel_id])
 
     @Instrument.CheckParameterValueBool
@@ -166,12 +160,11 @@ class QbloxS4g(CurrentSource):
         value: float | str | bool,
         channel_id: int,
         channel: Any,
-        instrument_set: bool = True,
     ):
         """Set the ramping_enabled"""
         self.settings.ramping_enabled[channel_id] = bool(value)
 
-        if instrument_set:
+        if hasattr(self, "device") and self.device is not None:
             channel.ramping_enabled(self.ramping_enabled[channel_id])
 
     @Instrument.CheckParameterValueFloatOrInt
@@ -180,12 +173,11 @@ class QbloxS4g(CurrentSource):
         value: float | str | bool,
         channel_id: int,
         channel: Any,
-        instrument_set: bool = True,
     ):
         """Set the ramp_rate"""
         self.settings.ramp_rate[channel_id] = float(value)
 
-        if instrument_set:
+        if hasattr(self, "device") and self.device is not None:
             channel.ramp_rate(self.ramp_rate[channel_id])
 
     @Instrument.CheckDeviceInitialized

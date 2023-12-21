@@ -1,4 +1,5 @@
 """This file tests the the ``AWGAnalogDigitalConverter`` class"""
+from typing import cast
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -6,6 +7,7 @@ from qpysequence import Sequence as QpySequence
 
 from qililab.constants import RUNCARD
 from qililab.instruments import AWG, AWGAnalogDigitalConverter
+from qililab.instruments.awg_settings.awg_adc_sequencer import AWGADCSequencer
 from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.pulse import PulseBusSchedule
 from qililab.typings.enums import AcquireTriggerMode, InstrumentName, Parameter
@@ -97,29 +99,19 @@ class TestAWGAnalogDigitalConverter:
         awg.device = MagicMock()
         with patch.object(target=AWGAnalogDigitalConverter, attribute="_set_threshold") as mock_set:
             awg.setup(parameter=Parameter.THRESHOLD, value=2)
-            mock_set.assert_called_once_with(value=2, sequencer_id=0, instrument_set=True)
+            mock_set.assert_called_once_with(value=2, sequencer_id=0)
             awg.device.assert_not_called()
 
-    def test_setup_threshold_no_instrument_set(self, awg: AWG):
+    def test_setup_threshold_no_connection(self, awg: AWG):
         """Test that calling `setup` with the `THRESHOLD` parameter works correctly."""
-        awg.device = MagicMock()
-        with patch.object(target=AWGAnalogDigitalConverter, attribute="_set_threshold") as mock_set:
-            awg.setup(parameter=Parameter.THRESHOLD, value=2, instrument_set=False)
-            mock_set.assert_called_once_with(value=2, sequencer_id=0, instrument_set=False)
-            awg.device.assert_not_called()
+        awg.device = None
+        awg.setup(parameter=Parameter.THRESHOLD, value=2)
+        assert cast(AWGADCSequencer, awg.get_sequencer(sequencer_id=0)).threshold == 2
 
     def test_setup_threshold_rotation(self, awg: AWG):
         """Test that calling `setup` with the `THRESHOLD_ROTATION` parameter works correctly."""
         awg.device = MagicMock()
         with patch.object(target=AWGAnalogDigitalConverter, attribute="_set_threshold_rotation") as mock_set:
             awg.setup(parameter=Parameter.THRESHOLD_ROTATION, value=2)
-            mock_set.assert_called_once_with(value=2, sequencer_id=0, instrument_set=True)
-            awg.device.assert_not_called()
-
-    def test_setup_threshold_rotation_no_instrument_set(self, awg: AWG):
-        """Test that calling `setup` with the `THRESHOLD_ROTATION` parameter works correctly."""
-        awg.device = MagicMock()
-        with patch.object(target=AWGAnalogDigitalConverter, attribute="_set_threshold_rotation") as mock_set:
-            awg.setup(parameter=Parameter.THRESHOLD_ROTATION, value=2, instrument_set=False)
-            mock_set.assert_called_once_with(value=2, sequencer_id=0, instrument_set=False)
+            mock_set.assert_called_once_with(value=2, sequencer_id=0)
             awg.device.assert_not_called()
