@@ -113,7 +113,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         for sequencer_dataclass in self.awg_sequencers:
             sequencer = self.device.sequencers[sequencer_dataclass.identifier]
             for path, output in zip(["I", "Q"], sequencer_dataclass.outputs):
-                setattr(sequencer, f"connect_out{output}", path)
+                getattr(sequencer, f"connect_out{output}")(path)
 
             sequencer.connect_acq_I("in0")
             sequencer.connect_acq_Q("in1")

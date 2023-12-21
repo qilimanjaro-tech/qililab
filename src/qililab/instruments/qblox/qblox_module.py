@@ -647,7 +647,7 @@ class QbloxModule(AWG):
         for sequencer_dataclass in self.awg_sequencers:
             sequencer = self.device.sequencers[sequencer_dataclass.identifier]
             for path, output in zip(["I", "Q"], sequencer_dataclass.outputs):
-                setattr(sequencer, f"connect_out{output}", path)
+                getattr(sequencer, f"connect_out{output}")(path)
 
     def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule):
         """Generate I and Q waveforms from a PulseSequence object.
