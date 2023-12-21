@@ -70,22 +70,22 @@ class TestE5071B:
         """Test the setup method with float value"""
         assert isinstance(parameter, Parameter)
         assert isinstance(value, float)
-        for e5071b in [e5071b, e5071b_no_device]:
-            e5071b.setup(parameter, value)
+        for e5071bs in [e5071b, e5071b_no_device]:
+            e5071bs.setup(parameter, value)
             if parameter == Parameter.POWER:
-                assert e5071b.power == value
+                assert e5071bs.power == value
             if parameter == Parameter.FREQUENCY_SPAN:
-                assert e5071b.frequency_span == value
+                assert e5071bs.frequency_span == value
             if parameter == Parameter.FREQUENCY_CENTER:
-                assert e5071b.frequency_center == value
+                assert e5071bs.frequency_center == value
             if parameter == Parameter.FREQUENCY_START:
-                assert e5071b.frequency_start == value
+                assert e5071bs.frequency_start == value
             if parameter == Parameter.FREQUENCY_STOP:
-                assert e5071b.frequency_stop == value
+                assert e5071bs.frequency_stop == value
             if parameter == Parameter.IF_BANDWIDTH:
-                assert e5071b.if_bandwidth == value
+                assert e5071bs.if_bandwidth == value
             if parameter == Parameter.ELECTRICAL_DELAY:
-                assert e5071b.electrical_delay == value
+                assert e5071bs.electrical_delay == value
 
     @pytest.mark.parametrize(
         "parameter, value",

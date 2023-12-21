@@ -2,7 +2,6 @@
 import copy
 import io
 import re
-from distutils.util import change_root
 from pathlib import Path
 from queue import Queue
 from unittest.mock import MagicMock, patch
