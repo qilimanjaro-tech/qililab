@@ -253,7 +253,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         Raises:
             ValueError: when value type is not float
         """
-        if hasattr(self, "device") or self.device is None:
+        if not hasattr(self, "device") or self.device is None:
             return
         self.device.sequencers[sequencer_id].integration_length_acq(value)
 
@@ -267,7 +267,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         Raises:
             ValueError: when value type is not bool
         """
-        if sequencer_id != self._scoping_sequencer or hasattr(self, "device") or self.device is None:
+        if sequencer_id != self._scoping_sequencer or not hasattr(self, "device") or self.device is None:
             return
         self.device.scope_acq_sequencer_select(sequencer_id)
         self.device.scope_acq_avg_mode_en_path0(value)
@@ -280,7 +280,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             value (float): integrated value of the threshold
             sequencer_id (int): sequencer to update the value
         """
-        if hasattr(self, "device") or self.device is None:
+        if not hasattr(self, "device") or self.device is None:
             return
         integrated_value = value * self._get_sequencer_by_id(id=sequencer_id).used_integration_length
         self.device.sequencers[sequencer_id].thresholded_acq_threshold(integrated_value)
@@ -292,7 +292,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             value (float): threshold rotation value in degrees (0.0 to 360.0).
             sequencer_id (int): sequencer to update the value
         """
-        if hasattr(self, "device") or self.device is None:
+        if not hasattr(self, "device") or self.device is None:
             return
         self.device.sequencers[sequencer_id].thresholded_acq_rotation(value)
 

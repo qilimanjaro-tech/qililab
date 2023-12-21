@@ -92,7 +92,11 @@ class QbloxS4g(CurrentSource):
                 f"the specified dac index:{channel_id} is out of range."
                 + " Number of dacs is 4 -> maximum channel_id should be 3."
             )
-        channel = self.dac(dac_index=channel_id)
+        if hasattr(self, "device") and self.device is not None:
+            channel = self.dac(dac_index=channel_id)
+        else:
+            channel = None
+
         if parameter == Parameter.CURRENT:
             self._set_current(value=value, channel_id=channel_id, channel=channel)
             return

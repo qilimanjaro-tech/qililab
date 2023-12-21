@@ -56,14 +56,15 @@ class TestSGS100A:
         self, parameter: Parameter, value: float, rohde_schwarz: SGS100A, rohde_schwarz_no_device: SGS100A
     ):
         """Test setup method"""
-        for i, rohde_schwarz in enumerate([rohde_schwarz, rohde_schwarz]):
+        for i, rohde_schwarz in enumerate([rohde_schwarz, rohde_schwarz_no_device]):
             rohde_schwarz.setup(parameter=parameter, value=value)
             if parameter == Parameter.POWER:
                 assert rohde_schwarz.settings.power == value
             if parameter == Parameter.LO_FREQUENCY:
                 assert rohde_schwarz.settings.frequency == value
             if parameter == Parameter.RF_ON:
-                assert rohde_schwarz.settings.rf_on == value
+                assert rohde_schwarz.settings.rf_on == value if i == 0 else True
+            # Cannot change if on/off without connecting.
 
             if i == 1:
                 assert not hasattr(self, "device")

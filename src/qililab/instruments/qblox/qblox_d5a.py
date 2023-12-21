@@ -94,6 +94,7 @@ class QbloxD5a(VoltageSource):
             channel = self.dac(dac_index=channel_id)
         else:
             channel = None
+
         if parameter == Parameter.VOLTAGE:
             self._set_voltage(value=value, channel_id=channel_id, channel=channel)
             return
