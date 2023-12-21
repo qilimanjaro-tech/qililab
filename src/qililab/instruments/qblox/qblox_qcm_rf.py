@@ -80,7 +80,11 @@ class QbloxQCMRF(QbloxQCM):
 
         for sequencer_dataclass in self.awg_sequencers:
             sequencer = self.device.sequencers[sequencer_dataclass.identifier]
-            setattr(sequencer, f"connect_out{sequencer_dataclass.outputs[0]}", "IQ")
+            if sequencer_dataclass.identifier == 0:
+                sequencer.connect_out0('IQ')
+            else:
+                sequencer.connect_out1('IQ')
+            # setattr(sequencer, f"connect_out{sequencer_dataclass.outputs[0]}", "IQ")
 
     @Instrument.CheckDeviceInitialized
     def setup(
