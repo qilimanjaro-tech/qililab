@@ -140,7 +140,7 @@ def save_platform(path: str, platform: Platform) -> str:
     """Serialize and save the given platform to the specified path.
 
     This function saves the cache values of the :class:`.Platform` object during execution as a YAML file.
-    It does not read the actual instruments. If you have previously used `platform.set_parameter()` without being
+    It does not read the actual instruments. If you have previously used ``platform.set_parameter()`` without being
     connected to the instruments, it will save this "set" value as the cache values of the :class:`.Platform` object were modified.
 
     If the `path` string doesn't end with `.yml` or `.yaml`, this function assumes that `path` corresponds to an

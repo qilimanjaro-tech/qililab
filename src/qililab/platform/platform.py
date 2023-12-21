@@ -325,10 +325,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
     def initial_setup(self):
         """Sets the values of the cache of the :class:`.Platform` object to the connected instruments.
 
-        If called after a `ql.build_platform()`, where the :class:`.Platform` object is built with the provided runcard,
+        If called after a ``ql.build_platform()``, where the :class:`.Platform` object is built with the provided runcard,
         this function sets the values of the :ref:`runcard <runcards>` into the connected instruments.
 
-        It is recommended to use this function after a `ql.build_platform()` + `platform.connect()` to ensure that no parameter
+        It is recommended to use this function after a ``ql.build_platform()`` + ``platform.connect()`` to ensure that no parameter
         differs from the current runcard settings.
 
         If a `platform.set_parameter()` is called between platform building and initial setup, the value set in the instruments
@@ -450,10 +450,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """Set a parameter for a platform element.
 
         If connected to an instrument, this function updates both the cache of the :class:`.Platform` object and the
-        instrument's value. Otherwise, it only stores the value in the cache. Subsequent `connect()` + `initial_setup()`
+        instrument's value. Otherwise, it only stores the value in the cache. Subsequent ``connect()`` + ``initial_setup()``
         will apply the cached values into the real instruments.
 
-        If you use `set_parameter` + `ql.save_platform()`, the saved runcard will include the new "set" value, even without
+        If you use ``set_parameter`` + ``ql.save_platform()``, the saved runcard will include the new "set" value, even without
         an instrument connection, as the cache values of the :class:`.Platform` object are modified.
 
         Args:
