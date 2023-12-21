@@ -247,7 +247,7 @@ class QuantumMachinesCluster(Instrument):
 
     def _is_connected_to_qm(self):
         """Check if a connection to Quantum Machine is open."""
-        return hasattr(self, "qm")
+        return hasattr(self, "_qm")
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
