@@ -13,4 +13,4 @@
 # limitations under the License.
 
 """ Quantum Machines Instrument Controllers."""
-from .qmm_controller import QMMController
+from .quantum_machines_cluster_controller import QuantumMachinesClusterController
