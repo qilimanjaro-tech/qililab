@@ -11,7 +11,6 @@ from qililab.instruments.awg_settings.awg_qblox_adc_sequencer import AWGQbloxADC
 from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.instruments.qblox import QbloxQRM
 from qililab.instruments.qblox.qblox_module import QbloxModule
-from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
 from qililab.result.qblox_results import QbloxResult
 from qililab.typings import InstrumentName
 from qililab.typings.enums import AcquireTriggerMode, IntegrationMode, Parameter

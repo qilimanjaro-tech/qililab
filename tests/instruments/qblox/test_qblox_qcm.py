@@ -7,20 +7,10 @@ import pytest
 
 from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
 from qililab.instruments.qblox import QbloxQCM
-from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
 from qililab.typings import InstrumentName
 from qililab.typings.enums import Parameter
 from tests.data import Galadriel
 from tests.test_utils import build_platform
-
-
-@pytest.fixture(name="pulse_bus_schedule")
-def fixture_pulse_bus_schedule() -> PulseBusSchedule:
-    """Return PulseBusSchedule instance."""
-    pulse_shape = Gaussian(num_sigmas=4)
-    pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
-    pulse_event = PulseEvent(pulse=pulse, start_time=0)
-    return PulseBusSchedule(timeline=[pulse_event], port="drive_q0")
 
 
 @pytest.fixture(name="pulsar_controller_qcm")
@@ -87,29 +77,6 @@ def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarContro
     mock_instance.sequencer1.mock_add_spec(spec)
     pulsar_controller_qcm.connect()
     return pulsar_controller_qcm.modules[0]
-
-
-@pytest.fixture(name="big_pulse_bus_schedule")
-def fixture_big_pulse_bus_schedule() -> PulseBusSchedule:
-    """Load PulseBusSchedule with 10 different frequencies.
-
-    Returns:
-        PulseBusSchedule: PulseBusSchedule with 10 different frequencies.
-    """
-    timeline = [
-        PulseEvent(
-            pulse=Pulse(
-                amplitude=1,
-                phase=0,
-                duration=1000,
-                frequency=7.0e9 + n * 0.1e9,
-                pulse_shape=Gaussian(num_sigmas=5),
-            ),
-            start_time=0,
-        )
-        for n in range(10)
-    ]
-    return PulseBusSchedule(timeline=timeline, port="drive_q0")
 
 
 class TestQbloxQCM:
