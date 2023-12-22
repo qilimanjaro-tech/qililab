@@ -24,7 +24,9 @@ from qpysequence.utils.constants import AWG_MAX_GAIN
 from qililab.config import logger
 from qililab.instruments.awg_settings import AWGQbloxADCSequencer, AWGQbloxSequencer
 from qililab.instruments.qblox import QbloxModule
-from qililab.pulse import PulseBusSchedule, PulseSchedule, PulseShape
+from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
+from qililab.pulse.pulse_schedule import PulseSchedule
+from qililab.pulse.pulse_shape.pulse_shape import PulseShape
 from qililab.typings import InstrumentName
 
 
@@ -300,8 +302,10 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
             )
             if weighed_acq
             else Acquire(
-                acq_index=0, bin_index=bin_index, wait_time=qblox_module._MIN_WAIT_TIME
-            )  # pylint: disable=protected-access
+                acq_index=0,
+                bin_index=bin_index,
+                wait_time=qblox_module._MIN_WAIT_TIME,  # pylint: disable=protected-access
+            )
         )
         loop.append_component(acq_instruction)
 
