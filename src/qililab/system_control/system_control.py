@@ -132,11 +132,7 @@ class SystemControl(FactoryElement, ABC):
         return self.settings.instruments
 
     def set_parameter(
-        self,
-        parameter: Parameter,
-        value: float | str | bool,
-        channel_id: int | None = None,
-        port_id: str | None = None,
+        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
     ):
         """Sets the parameter of a specific instrument.
 

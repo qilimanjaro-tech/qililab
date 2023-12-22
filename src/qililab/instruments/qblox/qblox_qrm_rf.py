@@ -61,11 +61,7 @@ class QbloxQRMRF(QbloxQRM):
             self.setup(parameter, getattr(self.settings, parameter.value))
 
     def setup(
-        self,
-        parameter: Parameter,
-        value: float | str | bool,
-        channel_id: int | None = None,
-        port_id: str | None = None,
+        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
     ):
         """Set a parameter of the Qblox QCM-RF module.
         Args:

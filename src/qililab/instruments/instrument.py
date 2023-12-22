@@ -169,11 +169,7 @@ class Instrument(BusElement, ABC):
         """Set initial instrument settings."""
 
     def setup(
-        self,
-        parameter: Parameter,
-        value: float | str | bool,
-        channel_id: int | None = None,
-        port_id: str | None = None,
+        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
     ):
         """Set instrument settings parameter to the corresponding value
 
@@ -249,12 +245,7 @@ class Instrument(BusElement, ABC):
         """String representation of an instrument."""
         return f"{self.alias}"
 
-    def set_parameter(
-        self,
-        parameter: Parameter,
-        value: float | str | bool,
-        channel_id: int | None = None,
-    ):
+    def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Sets the parameter of a specific instrument.
 
         Args:

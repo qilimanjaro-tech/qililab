@@ -55,11 +55,7 @@ class QDevilQDac2(VoltageSource):
         return self.settings.low_pass_filter
 
     def setup(  # pylint: disable=too-many-branches
-        self,
-        parameter: Parameter,
-        value: float | str | bool,
-        channel_id: int | None = None,
-        port_id: str | None = None,
+        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
     ):
         """Set parameter to the corresponding value for an instrument's channel.
 

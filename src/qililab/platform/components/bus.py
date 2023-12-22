@@ -163,12 +163,7 @@ class Bus:
             RUNCARD.DELAY: self.delay,
         }
 
-    def set_parameter(
-        self,
-        parameter: Parameter,
-        value: int | float | str | bool,
-        channel_id: int | None = None,
-    ):
+    def set_parameter(self, parameter: Parameter, value: int | float | str | bool, channel_id: int | None = None):
         """Set a parameter to the bus.
 
         Args:
@@ -181,10 +176,7 @@ class Bus:
         else:
             try:
                 self.system_control.set_parameter(
-                    parameter=parameter,
-                    value=value,
-                    channel_id=channel_id,
-                    port_id=self.port,
+                    parameter=parameter, value=value, channel_id=channel_id, port_id=self.port
                 )
             except ParameterNotFound as error:
                 raise ParameterNotFound(

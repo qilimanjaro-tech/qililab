@@ -303,11 +303,7 @@ class QbloxModule(AWG):
                 self.device.start_sequencer(sequencer=sequencer.identifier)
 
     def setup(  # pylint: disable=too-many-branches, too-many-return-statements
-        self,
-        parameter: Parameter,
-        value: float | str | bool,
-        channel_id: int | None = None,
-        port_id: str | None = None,
+        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
     ):
         """Set Qblox instrument calibration settings."""
         if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
@@ -404,11 +400,7 @@ class QbloxModule(AWG):
         cast(AWGQbloxSequencer, self._get_sequencer_by_id(id=sequencer_id)).num_bins = int(value)
 
     @Instrument.CheckParameterValueBool
-    def _set_hardware_modulation(
-        self,
-        value: float | str | bool,
-        sequencer_id: int,
-    ):
+    def _set_hardware_modulation(self, value: float | str | bool, sequencer_id: int):
         """set hardware modulation
 
         Args:
@@ -424,11 +416,7 @@ class QbloxModule(AWG):
             self.device.sequencers[sequencer_id].mod_en_awg(bool(value))
 
     @Instrument.CheckParameterValueFloatOrInt
-    def _set_frequency(
-        self,
-        value: float | str | bool,
-        sequencer_id: int,
-    ):
+    def _set_frequency(self, value: float | str | bool, sequencer_id: int):
         """set frequency
 
         Args:
@@ -444,11 +432,7 @@ class QbloxModule(AWG):
             self.device.sequencers[sequencer_id].nco_freq(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
-    def _set_offset_i(
-        self,
-        value: float | str | bool,
-        sequencer_id: int,
-    ):
+    def _set_offset_i(self, value: float | str | bool, sequencer_id: int):
         """Set the offset of the I channel of the given sequencer.
 
         Args:
@@ -467,11 +451,7 @@ class QbloxModule(AWG):
             getattr(sequencer, f"offset_awg_path{path}")(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
-    def _set_offset_q(
-        self,
-        value: float | str | bool,
-        sequencer_id: int,
-    ):
+    def _set_offset_q(self, value: float | str | bool, sequencer_id: int):
         """Set the offset of the Q channel of the given sequencer.
 
         Args:
@@ -490,11 +470,7 @@ class QbloxModule(AWG):
             getattr(sequencer, f"offset_awg_path{path}")(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
-    def _set_out_offset(
-        self,
-        output: int,
-        value: float | str | bool,
-    ):
+    def _set_out_offset(self, output: int, value: float | str | bool):
         """Set output offsets of the Qblox device.
 
         Args:
@@ -516,11 +492,7 @@ class QbloxModule(AWG):
             getattr(self.device, f"out{output}_offset")(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
-    def _set_gain_i(
-        self,
-        value: float | str | bool,
-        sequencer_id: int,
-    ):
+    def _set_gain_i(self, value: float | str | bool, sequencer_id: int):
         """Set the gain of the I channel of the given sequencer.
 
         Args:
@@ -539,11 +511,7 @@ class QbloxModule(AWG):
             getattr(sequencer, f"gain_awg_path{path}")(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
-    def _set_gain_q(
-        self,
-        value: float | str | bool,
-        sequencer_id: int,
-    ):
+    def _set_gain_q(self, value: float | str | bool, sequencer_id: int):
         """Set the gain of the Q channel of the given sequencer.
 
         Args:
@@ -562,11 +530,7 @@ class QbloxModule(AWG):
             getattr(sequencer, f"gain_awg_path{path}")(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
-    def _set_gain(
-        self,
-        value: float | str | bool,
-        sequencer_id: int,
-    ):
+    def _set_gain(self, value: float | str | bool, sequencer_id: int):
         """set gain
 
         Args:
@@ -641,11 +605,7 @@ class QbloxModule(AWG):
             )
 
     @Instrument.CheckParameterValueFloatOrInt
-    def _set_gain_imbalance(
-        self,
-        value: float | str | bool,
-        sequencer_id: int,
-    ):
+    def _set_gain_imbalance(self, value: float | str | bool, sequencer_id: int):
         """Set I and Q gain imbalance of sequencer.
 
         Args:
@@ -661,11 +621,7 @@ class QbloxModule(AWG):
             self.device.sequencers[sequencer_id].mixer_corr_gain_ratio(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
-    def _set_phase_imbalance(
-        self,
-        value: float | str | bool,
-        sequencer_id: int,
-    ):
+    def _set_phase_imbalance(self, value: float | str | bool, sequencer_id: int):
         """Set I and Q phase imbalance of sequencer.
 
          Args:

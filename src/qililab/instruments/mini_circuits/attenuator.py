@@ -45,11 +45,7 @@ class Attenuator(Instrument):
 
     @Instrument.CheckParameterValueFloatOrInt
     def setup(  # type: ignore
-        self,
-        parameter: Parameter,
-        value: float | str | bool,
-        channel_id: int | None = None,
-        port_id: str | None = None,
+        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
     ):
         """Set instrument settings."""
         if parameter == Parameter.ATTENUATION:

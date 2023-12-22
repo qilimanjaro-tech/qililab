@@ -44,11 +44,7 @@ class SGS100A(SignalGenerator):
     device: RohdeSchwarzSGS100A
 
     def setup(
-        self,
-        parameter: Parameter,
-        value: float | str | bool,
-        channel_id: int | None = None,
-        port_id: str | None = None,
+        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
     ):
         """Set R&S dbm power and frequency. Value ranges are:
         - power: (-120, 25).

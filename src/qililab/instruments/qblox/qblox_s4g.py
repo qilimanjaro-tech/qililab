@@ -74,11 +74,7 @@ class QbloxS4g(CurrentSource):
             sleep(0.1)
 
     def setup(
-        self,
-        parameter: Parameter,
-        value: float | str | bool,
-        channel_id: int | None = None,
-        port_id: str | None = None,
+        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
     ):
         """Set Qblox instrument calibration settings."""
 
@@ -133,12 +129,7 @@ class QbloxS4g(CurrentSource):
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
     @Instrument.CheckParameterValueFloatOrInt
-    def _set_current(
-        self,
-        value: float | str | bool,
-        channel_id: int,
-        channel: Any,
-    ):
+    def _set_current(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the current"""
         self.settings.current[channel_id] = float(value)
 
@@ -146,12 +137,7 @@ class QbloxS4g(CurrentSource):
             channel.current(self.current[channel_id])
 
     @Instrument.CheckParameterValueString
-    def _set_span(
-        self,
-        value: float | str | bool,
-        channel_id: int,
-        channel: Any,
-    ):
+    def _set_span(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the span"""
         self.settings.span[channel_id] = str(value)
 
@@ -159,12 +145,7 @@ class QbloxS4g(CurrentSource):
             channel.span(self.span[channel_id])
 
     @Instrument.CheckParameterValueBool
-    def _set_ramping_enabled(
-        self,
-        value: float | str | bool,
-        channel_id: int,
-        channel: Any,
-    ):
+    def _set_ramping_enabled(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the ramping_enabled"""
         self.settings.ramping_enabled[channel_id] = bool(value)
 
@@ -172,12 +153,7 @@ class QbloxS4g(CurrentSource):
             channel.ramping_enabled(self.ramping_enabled[channel_id])
 
     @Instrument.CheckParameterValueFloatOrInt
-    def _set_ramping_rate(
-        self,
-        value: float | str | bool,
-        channel_id: int,
-        channel: Any,
-    ):
+    def _set_ramping_rate(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the ramp_rate"""
         self.settings.ramp_rate[channel_id] = float(value)
 
