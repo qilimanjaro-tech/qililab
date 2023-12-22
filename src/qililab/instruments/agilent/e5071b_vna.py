@@ -17,6 +17,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.vector_network_analyzer import VectorNetworkAnalyzer
 from qililab.result.vna_result import VNAResult
@@ -41,7 +42,7 @@ class E5071B(VectorNetworkAnalyzer):
     def power(self, power: float, channel=1):
         """Set or read current power"""
         self.settings.power = power
-        if hasattr(self, "device") and self.device is not None:
+        if Instrument.is_device_initialized(self):
             self.send_command(command=f":SOUR{channel}:POW:LEV:IMM:AMPL", arg=f"{power}")
 
     @VectorNetworkAnalyzer.electrical_delay.setter  # type: ignore
@@ -52,14 +53,14 @@ class E5071B(VectorNetworkAnalyzer):
             value (str) : Electrical delay in ns
         """
         self.settings.electrical_delay = time
-        if hasattr(self, "device") and self.device is not None:
+        if Instrument.is_device_initialized(self):
             self.send_command("CALC:MEAS:CORR:EDEL:TIME", f"{time}")
 
     @VectorNetworkAnalyzer.if_bandwidth.setter  # type: ignore
     def if_bandwidth(self, bandwidth: float, channel=1):
         """Set/query IF Bandwidth for specified channel"""
         self.settings.if_bandwidth = bandwidth
-        if hasattr(self, "device") and self.device is not None:
+        if Instrument.is_device_initialized(self):
             self.send_command(command=f":SENS{channel}:BAND:RES", arg=f"{bandwidth}")
 
     def get_data(self):

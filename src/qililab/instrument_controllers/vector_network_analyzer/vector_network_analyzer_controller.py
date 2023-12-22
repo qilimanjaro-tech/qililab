@@ -55,5 +55,4 @@ class VectorNetworkAnalyzerController(SingleInstrumentController):
     def timeout(self, value: float):
         """sets the timeout"""
         self.settings.timeout = value
-        if hasattr(self, "device") and self.device is not None:
-            self.device.set_timeout(value=self.settings.timeout)
+        self.device.set_timeout(value=self.settings.timeout)

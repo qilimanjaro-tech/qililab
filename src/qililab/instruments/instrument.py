@@ -151,6 +151,14 @@ class Instrument(BusElement, ABC):
                 raise AttributeError("Instrument Device has not been initialized")
             return self._method(ref, *args, **kwargs) if hasattr(ref, "device") else self._method(*args, **kwargs)
 
+    def is_device_initialized(self) -> bool:
+        """Function to use on instrument childs, to check wether or not the device has been initialized.
+
+        Returns:
+            bool: Wether or not the device has been initialized.
+        """
+        return hasattr(self, "device") and self.device is not None
+
     def __init__(self, settings: dict):
         settings_class: type[self.InstrumentSettings] = get_type_hints(self).get("settings")  # type: ignore
         self.settings = settings_class(**settings)
@@ -172,7 +180,7 @@ class Instrument(BusElement, ABC):
         Args:
             parameter (Parameter): settings parameter to be updated
             value (float | str | bool): new value
-            channel_id (int | None): channel identifier of the parameter to update\
+            channel_id (int | None): channel identifier of the parameter to update
         """
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 

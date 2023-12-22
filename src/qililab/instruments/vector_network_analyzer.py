@@ -197,7 +197,8 @@ class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instan
     def scattering_parameter(self, value: str, channel=1):
         """sets the scattering parameter"""
         self.settings.scattering_parameter = VNAScatteringParameters(value)
-        if hasattr(self, "device") and self.device is not None:
+
+        if Instrument.is_device_initialized(self):
             scat_par = self.settings.scattering_parameter.value
             self.send_command(f"CALC1:MEAS{channel}:PAR", scat_par)
 
@@ -214,7 +215,8 @@ class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instan
     def frequency_span(self, value: float, channel=1):
         """sets the frequency span in kHz"""
         self.settings.frequency_span = value
-        if hasattr(self, "device") and self.device is not None:
+
+        if Instrument.is_device_initialized(self):
             freq = str(self.settings.frequency_span)
             self.send_command(f"SENS{channel}:FREQ:SPAN", freq)
 
@@ -231,7 +233,8 @@ class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instan
     def frequency_center(self, value: float, channel=1):
         """sets the frequency center in Hz"""
         self.settings.frequency_center = value
-        if hasattr(self, "device") and self.device is not None:
+
+        if Instrument.is_device_initialized(self):
             freq = str(self.settings.frequency_center)
             self.send_command(f"SENS{channel}:FREQ:CENT", freq)
 
@@ -248,7 +251,8 @@ class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instan
     def frequency_start(self, value: float, channel=1):
         """sets the frequency start in Hz"""
         self.settings.frequency_start = value
-        if hasattr(self, "device") and self.device is not None:
+
+        if Instrument.is_device_initialized(self):
             freq = str(self.settings.frequency_start)
             self.send_command(f"SENS{channel}:FREQ:STAR", freq)
 
@@ -265,7 +269,8 @@ class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instan
     def frequency_stop(self, value: float, channel=1):
         """sets the frequency stop in Hz"""
         self.settings.frequency_stop = value
-        if hasattr(self, "device") and self.device is not None:
+
+        if Instrument.is_device_initialized(self):
             freq = str(self.settings.frequency_stop)
             self.send_command(f"SENS{channel}:FREQ:STOP", freq)
 
@@ -296,7 +301,8 @@ class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instan
     def averaging_enabled(self, value: bool):
         """sets the averaging enabled"""
         self.settings.averaging_enabled = value
-        if hasattr(self, "device") and self.device is not None:
+
+        if Instrument.is_device_initialized(self):
             self._average_state(state=self.settings.averaging_enabled)
 
     @property
@@ -312,7 +318,8 @@ class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instan
     def number_averages(self, value: int, channel=1):
         """sets the number averages"""
         self.settings.number_averages = value
-        if hasattr(self, "device") and self.device is not None:
+
+        if Instrument.is_device_initialized(self):
             self._average_count(count=str(self.settings.number_averages), channel=channel)
 
     @property
@@ -337,7 +344,8 @@ class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instan
     def number_points(self, value: int, channel=1):
         """sets the number of points for sweep"""
         self.settings.number_points = value
-        if hasattr(self, "device") and self.device is not None:
+
+        if Instrument.is_device_initialized(self):
             points = str(self.settings.number_points)
             self.send_command(f":SENS{channel}:SWE:POIN", points)
 

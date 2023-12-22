@@ -55,12 +55,12 @@ class Keithley2600(Instrument):
         """Setup instrument."""
         if parameter == Parameter.MAX_CURRENT:
             self.max_current = float(value)
-            if hasattr(self, "device") and self.device is not None:
+            if Instrument.is_device_initialized(self):
                 self.device.smua.limiti(self.max_current)
             return
         if parameter == Parameter.MAX_VOLTAGE:
             self.max_voltage = float(value)
-            if hasattr(self, "device") and self.device is not None:
+            if Instrument.is_device_initialized(self):
                 self.device.smua.limitv(self.max_voltage)
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
@@ -117,7 +117,7 @@ class Keithley2600(Instrument):
         Args:
             float: Maximum current allowed in voltage mode.
         """
-        if hasattr(self, "device") and self.device is not None:
+        if Instrument.is_device_initialized(self):
             self.device.smua.limiti(value)
         self.settings.max_current = value
 
@@ -137,6 +137,6 @@ class Keithley2600(Instrument):
         Args:
             float: Maximum voltage allowed in current mode.
         """
-        if hasattr(self, "device") and self.device is not None:
+        if Instrument.is_device_initialized(self):
             self.device.smua.limitv(value)
         self.settings.max_voltage = value

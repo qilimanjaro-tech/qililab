@@ -79,7 +79,7 @@ class QbloxQRMRF(QbloxQRM):
         if parameter in self.parameters:
             setattr(self.settings, parameter.value, value)
 
-            if hasattr(self, "device") and self.device is not None:
+            if Instrument.is_device_initialized(self):
                 self.device.set(parameter.value, value)
             return
         super().setup(parameter, value, channel_id, port_id=port_id)

@@ -90,7 +90,7 @@ class QbloxD5a(VoltageSource):
                 f"the specified dac index:{channel_id} is out of range."
                 + " Number of dacs is 4 -> maximum channel_id should be 3."
             )
-        if hasattr(self, "device") and self.device is not None:
+        if Instrument.is_device_initialized(self):
             channel = self.dac(dac_index=channel_id)
         else:
             channel = None
@@ -136,7 +136,7 @@ class QbloxD5a(VoltageSource):
     ):
         """Set the voltage"""
         self.settings.voltage[channel_id] = float(value)
-        if hasattr(self, "device") and self.device is not None:
+        if Instrument.is_device_initialized(self):
             channel.voltage(self.voltage[channel_id])
 
     @Instrument.CheckParameterValueString
@@ -148,7 +148,7 @@ class QbloxD5a(VoltageSource):
     ):
         """Set the span"""
         self.settings.span[channel_id] = str(value)
-        if hasattr(self, "device") and self.device is not None:
+        if Instrument.is_device_initialized(self):
             channel.span(self.span[channel_id])
 
     @Instrument.CheckParameterValueBool
@@ -160,7 +160,7 @@ class QbloxD5a(VoltageSource):
     ):
         """Set the ramping_enabled"""
         self.settings.ramping_enabled[channel_id] = bool(value)
-        if hasattr(self, "device") and self.device is not None:
+        if Instrument.is_device_initialized(self):
             channel.ramping_enabled(self.ramping_enabled[channel_id])
 
     @Instrument.CheckParameterValueFloatOrInt
@@ -172,7 +172,7 @@ class QbloxD5a(VoltageSource):
     ):
         """Set the ramp_rate"""
         self.settings.ramp_rate[channel_id] = float(value)
-        if hasattr(self, "device") and self.device is not None:
+        if Instrument.is_device_initialized(self):
             channel.ramp_rate(self.ramp_rate[channel_id])
 
     @Instrument.CheckDeviceInitialized

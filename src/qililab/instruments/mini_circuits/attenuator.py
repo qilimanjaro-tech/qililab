@@ -54,7 +54,7 @@ class Attenuator(Instrument):
         """Set instrument settings."""
         if parameter == Parameter.ATTENUATION:
             self.settings.attenuation = float(value)
-            if hasattr(self, "device") and self.device is not None:
+            if Instrument.is_device_initialized(self):
                 self.device.setup(attenuation=self.attenuation)
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")

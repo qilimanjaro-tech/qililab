@@ -70,7 +70,7 @@ class QDevilQDac2(VoltageSource):
         """
         self._validate_channel(channel_id=channel_id)
 
-        if hasattr(self, "device") and self.device is not None:
+        if Instrument.is_device_initialized(self):
             channel = self.device.channel(channel_id)
         else:
             channel = None
@@ -79,19 +79,19 @@ class QDevilQDac2(VoltageSource):
         if parameter == Parameter.VOLTAGE:
             voltage = float(value)
             self.settings.voltage[index] = voltage
-            if hasattr(self, "device") and self.device is not None:
+            if Instrument.is_device_initialized(self):
                 channel.dc_constant_V(voltage)
             return
         if parameter == Parameter.SPAN:
             span = str(value)
             self.settings.span[index] = span
-            if hasattr(self, "device") and self.device is not None:
+            if Instrument.is_device_initialized(self):
                 channel.output_range(span)
             return
         if parameter == Parameter.RAMPING_ENABLED:
             ramping_enabled = bool(value)
             self.settings.ramping_enabled[index] = ramping_enabled
-            if hasattr(self, "device") and self.device is not None:
+            if Instrument.is_device_initialized(self):
                 if ramping_enabled:
                     channel.dc_slew_rate_V_per_s(self.ramp_rate[index])
                 else:
@@ -101,13 +101,13 @@ class QDevilQDac2(VoltageSource):
             ramping_rate = float(value)
             self.settings.ramp_rate[index] = ramping_rate
             ramping_enabled = self.ramping_enabled[index]
-            if ramping_enabled and hasattr(self, "device") and self.device is not None:
+            if ramping_enabled and Instrument.is_device_initialized(self):
                 channel.dc_slew_rate_V_per_s(ramping_rate)
             return
         if parameter == Parameter.LOW_PASS_FILTER:
             low_pass_filter = str(value)
             self.settings.low_pass_filter[index] = low_pass_filter
-            if hasattr(self, "device") and self.device is not None:
+            if Instrument.is_device_initialized(self):
                 channel.output_filter(low_pass_filter)
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
