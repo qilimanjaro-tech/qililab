@@ -3,9 +3,7 @@ import copy
 import re
 from unittest.mock import MagicMock, Mock, patch
 
-import numpy as np
 import pytest
-from qpysequence.sequence import Sequence
 
 from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
 from qililab.instruments import ParameterNotFound
@@ -13,7 +11,7 @@ from qililab.instruments.awg_settings.awg_qblox_adc_sequencer import AWGQbloxADC
 from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.instruments.qblox import QbloxQRM
 from qililab.instruments.qblox.qblox_module import QbloxModule
-from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent, Rectangular
+from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
 from qililab.result.qblox_results import QbloxResult
 from qililab.typings import InstrumentName
 from qililab.typings.enums import AcquireTriggerMode, IntegrationMode, Parameter
@@ -23,6 +21,7 @@ from tests.test_utils import build_platform
 
 @pytest.fixture(name="settings_6_sequencers")
 def fixture_settings_6_sequencers():
+    """6 sequencers fixture"""
     sequencers = [
         {
             "identifier": seq_idx,
@@ -68,6 +67,7 @@ def fixture_settings_6_sequencers():
 
 @pytest.fixture(name="settings_even_sequencers")
 def fixture_settings_even_sequencers():
+    """module with even sequencers"""
     sequencers = [
         {
             "identifier": seq_idx,
@@ -113,6 +113,14 @@ def fixture_settings_even_sequencers():
 
 @pytest.fixture(name="local_cfg_qrm")
 def fixture_local_cfg_qrm(settings_6_sequencers: dict) -> QbloxQRM:
+    """qblox module fixture
+
+    Args:
+        settings_6_sequencers (dict): qrm with 6 sequencers settings
+
+    Returns:
+        QbloxQRM: QRM object
+    """
     return QbloxQRM(settings=settings_6_sequencers)
 
 
@@ -153,6 +161,7 @@ def fixture_qrm_no_device() -> QbloxQRM:
 
 @pytest.fixture(name="qrm_two_scopes")
 def fixture_qrm_two_scopes():
+    """qrm fixture"""
     settings = copy.deepcopy(Galadriel.qblox_qrm_0)
     extra_sequencer = copy.deepcopy(settings[AWGTypes.AWG_SEQUENCERS.value][0])
     extra_sequencer[AWGSequencerTypes.IDENTIFIER.value] = 1
@@ -217,28 +226,31 @@ class TestQbloxQRM:
     """Unit tests checking the QbloxQRM attributes and methods"""
 
     def test_error_post_init_too_many_seqs(self, settings_6_sequencers: dict):
+        """test that init raises an error if there are too many sequencers"""
         num_sequencers = 7
         settings_6_sequencers["num_sequencers"] = num_sequencers
         error_string = re.escape(
             "The number of sequencers must be greater than 0 and less or equal than "
-            + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: {num_sequencers}"
+            + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: {num_sequencers}"  # pylint: disable=protected-access
         )
 
         with pytest.raises(ValueError, match=error_string):
             QbloxQRM(settings_6_sequencers)
 
     def test_error_post_init_0_seqs(self, settings_6_sequencers: dict):
+        """test that errror is raised in no sequencers are found"""
         num_sequencers = 0
         settings_6_sequencers["num_sequencers"] = num_sequencers
         error_string = re.escape(
             "The number of sequencers must be greater than 0 and less or equal than "
-            + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: {num_sequencers}"
+            + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: {num_sequencers}"  # pylint: disable=protected-access
         )
 
         with pytest.raises(ValueError, match=error_string):
             QbloxQRM(settings_6_sequencers)
 
     def test_error_awg_seqs_neq_seqs(self, settings_6_sequencers: dict):
+        """test taht error is raised if awg sequencers in settings and those in device dont match"""
         num_sequencers = 5
         settings_6_sequencers["num_sequencers"] = num_sequencers
         error_string = re.escape(
@@ -275,7 +287,7 @@ class TestQbloxQRM:
     def test_double_scope_forbidden(self, qrm_two_scopes: QbloxQRM):
         """Tests that a QRM cannot have more than one sequencer storing the scope simultaneously."""
         with pytest.raises(ValueError, match="The scope can only be stored in one sequencer at a time."):
-            qrm_two_scopes._obtain_scope_sequencer()
+            qrm_two_scopes._obtain_scope_sequencer()  # pylint: disable=protected-access
 
     @pytest.mark.parametrize(
         "parameter, value, channel_id",
@@ -372,7 +384,7 @@ class TestQbloxQRM:
     def test_setup_out_offset_raises_error(self, qrm: QbloxQRM):
         """Test that calling ``_set_out_offset`` with a wrong output value raises an error."""
         with pytest.raises(IndexError, match="Output 5 is out of range"):
-            qrm._set_out_offset(output=5, value=1)
+            qrm._set_out_offset(output=5, value=1)  # pylint: disable=protected-access
 
     def test_turn_off_method(self, qrm: QbloxQRM):
         """Test turn_off method"""
@@ -444,13 +456,13 @@ class TestQbloxQRM:
         qrm = QbloxQRM(settings=settings_even_sequencers)
         for seq_id in range(6):
             if seq_id % 2 == 0:
-                assert qrm._get_sequencer_by_id(id=seq_id).identifier == seq_id
+                assert qrm._get_sequencer_by_id(id=seq_id).identifier == seq_id  # pylint: disable=protected-access
             else:
                 with pytest.raises(IndexError, match=f"There is no sequencer with id={seq_id}."):
-                    qrm._get_sequencer_by_id(id=seq_id)
+                    qrm._get_sequencer_by_id(id=seq_id)  # pylint: disable=protected-access
 
 
-class TestAWGQbloxADCSequencer:
+class TestAWGQbloxADCSequencer:  # pylint: disable=too-few-public-methods
     """Unit tests for AWGQbloxADCSequencer class."""
 
     def test_verify_weights(self):
@@ -460,4 +472,4 @@ class TestAWGQbloxADCSequencer:
         mock_sequencer.weights_q = [1.0, 1.0]
 
         with pytest.raises(IndexError, match="The length of weights_i and weights_q must be equal."):
-            AWGQbloxADCSequencer._verify_weights(mock_sequencer)
+            AWGQbloxADCSequencer._verify_weights(mock_sequencer)  # pylint: disable=protected-access

@@ -3,9 +3,7 @@
 import copy
 from unittest.mock import MagicMock, patch
 
-import numpy as np
 import pytest
-from qpysequence.sequence import Sequence
 
 from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
 from qililab.instruments.qblox import QbloxQCM
@@ -242,7 +240,7 @@ class TestQbloxQCM:
     def test_setup_out_offset_raises_error(self, qcm: QbloxQCM):
         """Test that calling ``_set_out_offset`` with a wrong output value raises an error."""
         with pytest.raises(IndexError, match="Output 5 is out of range"):
-            qcm._set_out_offset(output=5, value=1)
+            qcm._set_out_offset(output=5, value=1)  # pylint: disable=protected-access
 
     def test_turn_off_method(self, qcm: QbloxQCM):
         """Test turn_off method"""
