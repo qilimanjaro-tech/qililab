@@ -22,13 +22,23 @@ from qpysequence.program.instructions import Acquire, AcquireWeighed, Move, Play
 from qpysequence.utils.constants import AWG_MAX_GAIN
 
 from qililab.config import logger
-from qililab.instruments.awg_settings import AWGQbloxSequencer
-from qililab.instruments.qblox import QbloxModule, QbloxQCM, QbloxQRM
+from qililab.instruments.awg_settings import AWGQbloxADCSequencer, AWGQbloxSequencer
+from qililab.instruments.qblox import QbloxModule
 from qililab.pulse import PulseBusSchedule, PulseSchedule, PulseShape
 from qililab.typings import InstrumentName
 
 
-class QbloxCompiler:
+class QbloxCompiler:  # pylint: disable=too-many-locals
+    """Qblox compiler for pulse schedules. Its only public method is `compile`, which compiles a pulse schedule to qpysequences (see docs for `QBloxCompiler.compile`).
+    The class object is meant to be initialized once, with `compile` running as many times as necessary. This way the class attributes do not have to be initialized
+    at each single compilation.
+
+    Args:
+        platform (Platform): Platform object representing the laboratory setup used to control quantum devices.
+    Raises:
+        ValueError: at init if no readout module (QRM) is found in platform.
+    """
+
     def __init__(self, platform):
         self.qblox_modules = [
             instrument for instrument in platform.instruments.elements if isinstance(instrument, QbloxModule)
@@ -80,7 +90,7 @@ class QbloxCompiler:
             pulse_schedule, self.qblox_modules
         )
 
-        compiled_sequences = {}
+        compiled_sequences = {}  # type: dict[str, list[QpySequence]]
 
         # generally a sequencer_schedule is the schedule sent to a specific bus, except for readout,
         # where multiple schedules for different sequencers are sent to the same bus
@@ -108,8 +118,10 @@ class QbloxCompiler:
 
             else:
                 # compile the sequences
-                compiled_sequences[bus_alias].append(self._translate_pulse_bus_schedule(sequencer_schedule, sequencer))
+                sequence = self._translate_pulse_bus_schedule(sequencer_schedule, sequencer)
+                compiled_sequences[bus_alias].append(sequence)
                 qblox_module.cache[sequencer.identifier] = sequencer_schedule
+                qblox_module.sequences[sequencer.identifier] = sequence
 
         if (
             sum(qblox_module.name in self.readout_modules for qblox_module in self.qblox_modules) > 1
@@ -146,7 +158,7 @@ class QbloxCompiler:
         program = self._generate_program(
             pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, sequencer=sequencer
         )
-        weights = self._generate_weights(sequencer=sequencer)
+        weights = self._generate_weights(sequencer=sequencer)  # type: ignore
         return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
 
     def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule, sequencer: AWGQbloxSequencer):
@@ -213,7 +225,7 @@ class QbloxCompiler:
         # Create registers with 0 and 1 (necessary for qblox)
         weight_registers = Register(), Register()
         if qblox_module.name in self.readout_modules:
-            self._init_weights_registers(registers=weight_registers, values=(0, 1), program=program)
+            self._init_weights_registers(registers=weight_registers, program=program)
         avg_loop = Loop(name="average", begin=int(self.nshots))  # type: ignore
         bin_loop = Loop(name="bin", begin=0, end=self.num_bins, step=1)
         avg_loop.append_component(bin_loop)
@@ -241,17 +253,17 @@ class QbloxCompiler:
             )
         if qblox_module.name in self.readout_modules:
             self._append_acquire_instruction(
-                loop=bin_loop, bin_index=bin_loop.counter_register, sequencer=sequencer, weight_regs=weight_registers
+                loop=bin_loop, bin_index=bin_loop.counter_register, sequencer=sequencer, weight_regs=weight_registers  # type: ignore
             )
         if self.repetition_duration is not None:
             wait_time = self.repetition_duration - bin_loop.duration_iter
-            if wait_time > qblox_module._MIN_WAIT_TIME:
+            if wait_time > qblox_module._MIN_WAIT_TIME:  # pylint: disable=protected-access
                 bin_loop.append_component(long_wait(wait_time=wait_time))
 
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
         return program
 
-    def _generate_weights(self, sequencer: AWGQbloxSequencer) -> Weights:
+    def _generate_weights(self, sequencer: AWGQbloxADCSequencer) -> Weights:
         """Generate acquisition weights.
 
         Returns:
@@ -271,7 +283,7 @@ class QbloxCompiler:
         self,
         loop: Loop,
         bin_index: Register | int,
-        sequencer: AWGQbloxSequencer,
+        sequencer: AWGQbloxADCSequencer,
         weight_regs: tuple[Register, Register],
     ):
         """Append an acquire instruction to the loop."""
@@ -284,18 +296,17 @@ class QbloxCompiler:
                 bin_index=bin_index,
                 weight_index_0=weight_regs[0],
                 weight_index_1=weight_regs[1],
-                wait_time=qblox_module._MIN_WAIT_TIME,
+                wait_time=qblox_module._MIN_WAIT_TIME,  # pylint: disable=protected-access
             )
             if weighed_acq
-            else Acquire(acq_index=0, bin_index=bin_index, wait_time=qblox_module._MIN_WAIT_TIME)
+            else Acquire(
+                acq_index=0, bin_index=bin_index, wait_time=qblox_module._MIN_WAIT_TIME
+            )  # pylint: disable=protected-access
         )
         loop.append_component(acq_instruction)
 
-    def _init_weights_registers(
-        self, registers: tuple[Register, Register], values: tuple[int, int], program: Program
-    ):  # TODO: is values used anywhere?
-        """Initialize the weights `registers` to the `values` specified and place the required instructions in the
-        setup block of the `program`."""
+    def _init_weights_registers(self, registers: tuple[Register, Register], program: Program):
+        """Initialize the weights `registers` and place the required instructions in the setup block of the `program`."""
         move_0 = Move(0, registers[0])
         move_1 = Move(1, registers[1])
         setup_block = program.get_block(name="setup")
@@ -303,7 +314,7 @@ class QbloxCompiler:
 
     def get_sequencer_schedule(
         self, pulse_schedule: PulseSchedule, qblox_instruments: list[QbloxModule]
-    ) -> dict[AWGQbloxSequencer, PulseBusSchedule]:
+    ) -> tuple[list[tuple[AWGQbloxSequencer, PulseBusSchedule]], list[tuple[AWGQbloxSequencer, PulseBusSchedule]]]:
         """Gets the pulse schedule for each sequencer. This corresponds to a PulseBusSchedule
         object. Note that for multiplexed QRM more than one PulseBusSchedule is sent to the same
         bus (feedline) but to different sequences (as qubit schedules)

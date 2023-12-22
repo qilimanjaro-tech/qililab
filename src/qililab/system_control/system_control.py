@@ -75,14 +75,12 @@ class SystemControl(FactoryElement, ABC):
 
         raise AttributeError("The system control doesn't have any AWG to upload a qpysequence.")
 
-    def upload(self, program: QpySequence, port: str):
+    def upload(self, port: str):
         """Uploads any previously compiled program into the instrument."""
         for instrument in self.instruments:
             if isinstance(instrument, AWG):
-                instrument.upload(program=program, port=port)
+                instrument.upload(port=port)
                 return
-
-        raise AttributeError("The system control doesn't have any AWG to upload a program.")
 
     def run(self, port: str) -> None:
         """Runs any previously uploaded program into the instrument."""

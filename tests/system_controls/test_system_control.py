@@ -91,25 +91,15 @@ class TestMethods:
         for instrument in system_control:
             assert isinstance(instrument, Instrument)
 
-    def test_upload_raises_error(self, system_control_without_awg: SystemControl):
-        """Test that the ``upload`` method raises an error when the system control doesn't have an AWG."""
-        with pytest.raises(
-            AttributeError,
-            match="The system control doesn't have any AWG to upload a program",
-        ):
-            system_control_without_awg.upload(program={}, port="feedline_input")
-
     def test_upload(self, platform: Platform, pulse_schedule: PulseSchedule, system_control: SystemControl):
         """Test upload method."""
         awg = platform.instruments.elements[1]
         assert isinstance(awg, AWG)
         awg.device = MagicMock()
         _ = platform.compile(pulse_schedule, num_avg=1000, repetition_duration=2000, num_bins=1)
-        system_control.upload(program=MagicMock(), port=pulse_schedule.elements[0].port)
+        system_control.upload(port=pulse_schedule.elements[0].port)
         for seq_idx in range(awg.num_sequencers):
-            assert (
-                awg.device.sequencers[seq_idx].sequence.call_count == 2
-            )  # called at device.sequence = program and device.sequence.to_dict() in upload method
+            assert awg.device.sequencers[seq_idx].sequence.call_count == 1  # device.sequence.to_dict() in upload method
 
     def test_run_raises_error(self, system_control_without_awg: SystemControl):
         """Test that the ``run`` method raises an error when the system control doesn't have an AWG."""

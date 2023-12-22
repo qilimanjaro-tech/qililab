@@ -70,7 +70,11 @@ class AWG(Instrument):
         """Run the uploaded program"""
 
     @abstractmethod
-    def upload(self, program: Any, port: str):
+    def upload_qpysequence(self, qpysequence: QpySequence, port: str):
+        """Upload qpysequence."""
+
+    @abstractmethod
+    def upload(self, port: str):
         """Upload compiled program."""
 
     @property

@@ -86,8 +86,9 @@ class QbloxModule(AWG):
     def __init__(self, settings: dict):
         # The sequences dictionary contains all the compiled sequences for each sequencer and a flag indicating whether
         # the sequence has been uploaded or not
-        self.sequences: dict[int, tuple[QpySequence, bool]] = {}  # {sequencer_idx: (program, True), ...}
+        self.sequences: dict[int, QpySequence] = {}  # {sequencer_idx: (program, True), ...}
         # TODO: Set this attribute during initialization of the instrument
+        # TODO: delete useless parameters nshots num bins since they are managed at compilation
         self.nshots: int | None = None
         self.num_bins: int = 1
         self.repetition_duration: int | None = None
@@ -134,6 +135,7 @@ class QbloxModule(AWG):
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
         for sequencer in sequencers:
             if sequencer.identifier in self.sequences:
+                # TODO: skip sequencer here if it is not in cache, instead of poping the sequence at upload
                 self.device.arm_sequencer(sequencer=sequencer.identifier)
                 self.device.start_sequencer(sequencer=sequencer.identifier)
 
@@ -389,29 +391,46 @@ class QbloxModule(AWG):
         self.cache = {}
         self.sequences = {}
 
-    def upload(self, program: QpySequence, port: str):  # TODO: check compatibility with QPrgram
+    def upload_qpysequence(self, qpysequence: QpySequence, port: str):
         """Upload the qpysequence to its corresponding sequencer.
 
         Args:
-            program (QpySequence): The qpysequence to upload.
+            qpysequence (QpySequence): The qpysequence to upload.
             port (str): The port of the sequencer to upload to.
         """
+        sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
+        for sequencer in sequencers:
+            logger.info("Sequence program: \n %s", repr(qpysequence._program))  # pylint: disable=protected-access
+            self.device.sequencers[sequencer.identifier].sequence(qpysequence.todict())
+            self.device.sequencers[sequencer.identifier].sync_en(True)
+            self.sequences[sequencer.identifier] = (qpysequence, True)
 
+    def upload(self, port: str):  # TODO: check compatibility with QPrgram
+        """Upload all the previously compiled programs to its corresponding sequencers.
+
+        This method must be called after the method ``compile`` in the compiler
+        Args:
+            port (str): The port of the sequencer to upload to.
+        """
+        # TODO: run upload sequencer-wise and pass sequence to be uploaded as argument
+        # TODO: pass the sequence to be uploaded here and save to self.sequences here as well instead of at the compiler
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
         for sequencer in sequencers:
             seq_idx = sequencer.identifier
-            logger.info("Sequence program: \n %s", repr(program._program))  # pylint: disable=protected-access
             # check is sequence has already been uploaded in a previous execution
             if seq_idx in self.sequences:
-                # is sequencer id is not in cache then delete the sequence, otherwise do nothing
-                # since the sequence is already uploaded
+                # is sequencer id is not in cache then delete the sequence and do not sync,
+                # since the sequence is not to be run, we skip this sequencer
                 if seq_idx not in self.cache:
                     _ = self.device.sequences.pop(seq_idx)
-            # if sequence is not in sequences, upload it
-            else:
-                self.device.sequencers[seq_idx].sequence(program.todict())  # TODO: what is this doing
-                self.sequences[seq_idx] = program
-            self.device.sequencers[sequencer.identifier].sync_en(True)
+                    continue
+                # if the sequence was in the cache then it is to be run so we sync the sequencer to the others
+                sequence = self.sequences[seq_idx]
+                logger.info(
+                    "Uploaded sequence program: \n %s", repr(sequence._program)
+                )  # pylint: disable=protected-access
+                self.device.sequencers[seq_idx].sequence(sequence.todict())
+                self.device.sequencers[sequencer.identifier].sync_en(True)
 
     def _set_nco(self, sequencer_id: int):
         """Enable modulation of pulses and setup NCO frequency."""

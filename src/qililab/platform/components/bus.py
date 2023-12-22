@@ -201,9 +201,13 @@ class Bus:
                 f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
             ) from error
 
-    def upload(self, program: QpySequence):
+    def upload_qpysequence(self, qpysequence: QpySequence):
+        """Uploads the qpysequence into the instrument."""
+        self.system_control.upload_qpysequence(qpysequence=qpysequence, port=self.port)
+
+    def upload(self):
         """Uploads any previously compiled program into the instrument."""
-        self.system_control.upload(program=program, port=self.port)
+        self.system_control.upload(port=self.port)
 
     def run(self) -> None:
         """Runs any previously uploaded program into the instrument."""

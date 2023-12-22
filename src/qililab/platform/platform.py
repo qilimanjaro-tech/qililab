@@ -22,8 +22,8 @@ from queue import Queue
 
 from qibo.models import Circuit
 from qiboconnection.api import API
-from ruamel.yaml import YAML
 from qpysequence import Sequence as QpySequence
+from ruamel.yaml import YAML
 
 from qililab.chip import Chip
 from qililab.circuit_transpiler import CircuitTranspiler
@@ -35,8 +35,8 @@ from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
-from qililab.pulse import QbloxCompiler as QbloxCompiler
 from qililab.pulse import PulseSchedule
+from qililab.pulse import QbloxCompiler as QbloxCompiler
 from qililab.qprogram.qblox_compiler import QbloxCompiler as QProgramQbloxCompiler
 from qililab.qprogram.qprogram import QProgram
 from qililab.result import Result
@@ -580,7 +580,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         # Reset instrument settings
         for instrument in self.instruments.elements:
             if isinstance(instrument, QbloxModule):
-                instrument.clear_cache() # FIXME: allow cache with QProgram
+                instrument.clear_cache()  # FIXME: allow cache with QProgram
                 instrument.desync_sequencers()
 
         return results
@@ -645,7 +645,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         # FIXME: set multiple readout buses
         return results[0]
 
-    def compile(self, program: PulseSchedule | Circuit, num_avg: int, repetition_duration: int, num_bins: int) -> dict[tuple[str, int],list[QpySequence]]:
+    def compile(
+        self, program: PulseSchedule | Circuit, num_avg: int, repetition_duration: int, num_bins: int
+    ) -> dict[str, list[QpySequence]]:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
 
         If the ``program`` argument is a :class:`Circuit`, it will first be translated into a :class:`PulseSchedule` using the transpilation
