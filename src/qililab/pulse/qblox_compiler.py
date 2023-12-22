@@ -113,9 +113,11 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
             if sequencer_schedule == qblox_module.cache.get(
                 sequencer.identifier
             ):  # if it's already cached then dont compile
-                compiled_sequences[bus_alias].append(qblox_module.sequences[sequencer.identifier][0])
+                compiled_sequences[bus_alias].append(qblox_module.sequences[sequencer.identifier])
                 # If the schedule is in the cache, delete the acquisition data (if uploaded) # FIXME: acquisitions should be deleted after acquisitions and not at compilation
-                if qblox_module.name in self.readout_modules:
+                if qblox_module.name in self.readout_modules and hasattr(
+                    qblox_module, "device"
+                ):  # TODO: remove hasattr when the fixme above is done
                     qblox_module.device.delete_acquisition_data(sequencer=sequencer.identifier, name="default")
 
             else:
@@ -145,7 +147,9 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
 
         return compiled_sequences
 
-    def _translate_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule, sequencer: AWGQbloxSequencer):
+    def _translate_pulse_bus_schedule(
+        self, pulse_bus_schedule: PulseBusSchedule, sequencer: AWGQbloxSequencer
+    ) -> QpySequence:
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
 
         Args:

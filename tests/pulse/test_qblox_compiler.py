@@ -39,7 +39,7 @@ class DummyQRM(QbloxQRM):
 
     def __init__(self, settings: dict):
         super().__init__(settings)
-        self.device = MagicMock()
+        self.device = MagicMock(autospec=True)
 
 
 @pytest.fixture(name="qblox_compiler")
@@ -269,7 +269,7 @@ class TestQbloxCompiler:
             "feedline_input_output_bus"
         ]
         qblox_compiler.qblox_modules[1].sequences = {
-            0: sequences
+            0: sequences[0]
         }  # do this manually since we're not calling the upload method
         sequences2 = qblox_compiler.compile(pulse_event, num_avg=1000, repetition_duration=100, num_bins=1)[
             "feedline_input_output_bus"
