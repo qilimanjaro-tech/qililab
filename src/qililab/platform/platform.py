@@ -36,7 +36,7 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSchedule
-from qililab.pulse import QbloxCompiler as QbloxCompiler
+from qililab.pulse import QbloxCompiler as PulseQbloxCompiler
 from qililab.qprogram.qblox_compiler import QbloxCompiler as QProgramQbloxCompiler
 from qililab.qprogram.qprogram import QProgram
 from qililab.result import Result
@@ -299,9 +299,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         self._connected_to_instruments: bool = False
         """Boolean indicating the connection status to the instruments. Defaults to False (not connected)."""
+
         if any(isinstance(instrument, QbloxModule) for instrument in self.instruments.elements):
-            self.compiler = QbloxCompiler(platform=self)  # TODO: integrate with qprogram compiler
-        """Compiler to translate given programs to instructions for a given awg vendor"""
+            self.compiler = PulseQbloxCompiler(platform=self)  # TODO: integrate with qprogram compiler
+            """Compiler to translate given programs to instructions for a given awg vendor."""
 
     def connect(self, manual_override=False):
         """Connects to all the instruments and blocks the connection for other users.

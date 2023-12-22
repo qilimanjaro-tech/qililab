@@ -14,14 +14,13 @@
 
 """Bus class."""
 from dataclasses import InitVar, dataclass
-from typing import Any
 
 from qpysequence import Sequence as QpySequence
 
 from qililab.chip import Chip, Coil, Coupler, Qubit, Resonator
 from qililab.constants import BUS, NODE, RUNCARD
 from qililab.instruments import Instruments, ParameterNotFound
-from qililab.pulse import PulseBusSchedule, PulseDistortion
+from qililab.pulse import PulseDistortion
 from qililab.result import Result
 from qililab.settings import Settings
 from qililab.system_control import ReadoutSystemControl, SystemControl

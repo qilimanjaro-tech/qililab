@@ -15,7 +15,7 @@
 """QubitControl class."""
 from abc import abstractmethod
 from dataclasses import asdict, dataclass
-from typing import Any, Sequence
+from typing import Sequence
 
 from qpysequence import Sequence as QpySequence
 
