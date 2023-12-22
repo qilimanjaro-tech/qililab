@@ -410,23 +410,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         readout_bus = self.buses.get(port=readout_port)
         return flux_bus, control_bus, readout_bus
 
-    def _get_bus_by_node(self, qubit_index: int) -> tuple[Bus, Bus, Bus]:  # TODO: docstrings
-        """Finds buses associated with the given node.
-
-        Args:
-            qubit_index (int): Qubit index to get the buses from.
-
-        Returns:
-            tuple[:class:`Bus`, :class:`Bus`, :class:`Bus`]: Tuple of Bus objects containing the flux, control and readout buses of the given qubit.
-        """
-        flux_port = self.chip.get_port_from_qubit_idx(idx=qubit_index, line=Line.FLUX)
-        control_port = self.chip.get_port_from_qubit_idx(idx=qubit_index, line=Line.DRIVE)
-        readout_port = self.chip.get_port_from_qubit_idx(idx=qubit_index, line=Line.FEEDLINE_INPUT)
-        flux_bus = self.buses.get(port=flux_port)
-        control_bus = self.buses.get(port=control_port)
-        readout_bus = self.buses.get(port=readout_port)
-        return flux_bus, control_bus, readout_bus
-
     def _get_bus_by_alias(self, alias: str | None = None):
         """Gets buses given their alias.
 
@@ -620,9 +603,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         programs = self.compile(program, num_avg, repetition_duration, num_bins)
 
         # Upload pulse schedule
-        for bus_alias, program in programs.items():
+        for bus_alias in programs:
             bus = self._get_bus_by_alias(alias=bus_alias)
-            bus.upload(program)
+            bus.upload()
 
         # Execute pulse schedule
         for bus_alias in programs:

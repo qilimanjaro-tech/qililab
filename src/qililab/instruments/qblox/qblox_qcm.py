@@ -15,13 +15,8 @@
 """Qblox QCM class"""
 from dataclasses import dataclass
 
-from qpysequence.program import Loop, Register
-from qpysequence.weights import Weights
-
-from qililab.instruments.awg_settings import AWGQbloxSequencer
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.utils.instrument_factory import InstrumentFactory
-from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.typings.enums import InstrumentName
 
 

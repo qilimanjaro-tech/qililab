@@ -25,7 +25,6 @@ from qililab.constants import RUNCARD
 from qililab.instruments import AWG, Instrument, Instruments
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.qblox import QbloxModule
-from qililab.pulse import PulseBusSchedule
 from qililab.settings import Settings
 from qililab.typings import FactoryElement
 from qililab.typings.enums import Parameter, SystemControlName
