@@ -24,7 +24,7 @@ from qililab.config import logger
 from qililab.instruments.awg import AWG
 from qililab.instruments.awg_settings import AWGQbloxSequencer
 from qililab.instruments.instrument import Instrument, ParameterNotFound
-from qililab.pulse import PulseBusSchedule
+from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
 from qililab.typings.enums import Parameter
 from qililab.typings.instruments import Pulsar, QcmQrm
 
