@@ -213,9 +213,6 @@ def fixture_qrm(mock_pulsar: MagicMock, pulsar_controller_qrm: QbloxPulsarContro
     return pulsar_controller_qrm.modules[0]
 
 
-
-
-
 class TestQbloxQRM:
     """Unit tests checking the QbloxQRM attributes and methods"""
 
@@ -380,7 +377,7 @@ class TestQbloxQRM:
     def test_turn_off_method(self, qrm: QbloxQRM):
         """Test turn_off method"""
         qrm.turn_off()
-        qrm.device.stop_sequencer.assert_called()    
+        qrm.device.stop_sequencer.assert_called()
 
     def test_get_acquisitions_method(self, qrm: QbloxQRM):
         """Test get_acquisitions_method"""
@@ -441,8 +438,6 @@ class TestQbloxQRM:
     def tests_firmware_property(self, qrm_no_device: QbloxQRM):
         """Test firmware property."""
         assert qrm_no_device.firmware == qrm_no_device.settings.firmware
-
-
 
     def test_getting_even_sequencers(self, settings_even_sequencers: dict):
         """Tests the method QbloxQRM._get_sequencers_by_id() for a QbloxQRM with only the even sequencers configured."""

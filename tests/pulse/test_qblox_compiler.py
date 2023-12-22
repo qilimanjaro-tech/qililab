@@ -150,7 +150,7 @@ def fixture_multiplexed_pulse_bus_schedule() -> PulseBusSchedule:
 
 
 @pytest.fixture(name="pulse_schedule_odd_qubits")
-def fixture_pulse_schedule_odd_qubits() -> PulseBusSchedule:
+def fixture_pulse_schedule_odd_qubits() -> PulseSchedule:
     """Returns a PulseBusSchedule with readout pulses for qubits 1, 3 and 5."""
     pulse = Pulse(amplitude=1.0, phase=0, duration=1000, frequency=7.0e9, pulse_shape=Rectangular())
     timeline = [PulseEvent(pulse=pulse, start_time=0, qubit=qubit) for qubit in [3, 1, 5]]

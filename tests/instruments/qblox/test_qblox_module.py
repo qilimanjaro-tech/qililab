@@ -14,7 +14,6 @@ from qililab.pulse.pulse_event import PulseEvent
 from tests.data import Galadriel
 
 
-
 class TestQbloxModule:
     """Unit tests checking the QbloxQCM attributes and methods"""
 
@@ -23,16 +22,16 @@ class TestQbloxModule:
 
 """
     def test_upload_method(self, qcm, pulse_bus_schedule):
-        
+
         qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100, num_bins=1)
         qcm.upload(port=pulse_bus_schedule.port)
         qcm.device.sequencer0.sequence.assert_called_once()
         qcm.device.sequencer0.sync_en.assert_called_once_with(True)
-   
+
 
 
     def test_upload_method(self, qrm, pulse_bus_schedule):
-   
+
         pulse_bus_schedule.port = "feedline_input"
         qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100, num_bins=1)
         qrm.upload(port=pulse_bus_schedule.port)
