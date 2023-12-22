@@ -19,13 +19,13 @@ from typing import Sequence
 from qililab.instrument_controllers.instrument_controller import InstrumentControllerSettings
 from qililab.instrument_controllers.single_instrument_controller import SingleInstrumentController
 from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
-from qililab.instruments.quantum_machines import QuantumMachinesManager
+from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.typings import QMMDriver
 from qililab.typings.enums import InstrumentControllerName
 
 
 @InstrumentControllerFactory.register
-class QMMController(SingleInstrumentController):
+class QuantumMachinesClusterController(SingleInstrumentController):
     """Quantum Machines Manager class.
 
     This class implements the instrument controller for the Quantum Machines Manager instrument wrapper in Qililab.
@@ -36,15 +36,15 @@ class QMMController(SingleInstrumentController):
         settings (QMMControllerSettings): Settings of the instrument.
     """
 
-    name = InstrumentControllerName.QUANTUM_MACHINES_MANAGER
+    name = InstrumentControllerName.QUANTUM_MACHINES_CLUSTER
     device: QMMDriver
-    modules: Sequence[QuantumMachinesManager]
+    modules: Sequence[QuantumMachinesCluster]
 
     @dataclass
-    class QMMControllerSettings(InstrumentControllerSettings):
+    class QuantumMachinesClusterControllerSettings(InstrumentControllerSettings):
         """Contains the settings of a specific Quantum Machines Manager Controller."""
 
-    settings: QMMControllerSettings
+    settings: QuantumMachinesClusterControllerSettings
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""

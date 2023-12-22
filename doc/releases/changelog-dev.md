@@ -12,7 +12,13 @@ This document contains the changes of the current release.
 
 ### Improvements
 
+- `QuantumMachinesCluster` can be created by translating the runcard into the equivelant QUA config dictionary. `initial_setup`, `turn_on` and `turn_off` methods have been edited to properly instatiate and calibrate the instrument.
+  [#620](https://github.com/qilimanjaro-tech/qililab/pull/620)
+
 ### Breaking changes
+
+- `QuantumMachinesManager` has been renamed to `QuantumMachinesCluster` and `QMMController` to `QuantumMachinesClusterController`.
+  [#620](https://github.com/qilimanjaro-tech/qililab/pull/620)
 
 ### Deprecations / Removals
 
