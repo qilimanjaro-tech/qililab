@@ -111,7 +111,7 @@ class QbloxQCMRF(QbloxQCM):
 
         if parameter in self.parameters:
             setattr(self.settings, parameter.value, value)
-            if Instrument.is_device_initialized(self):
+            if self.is_device_initialized():
                 self.device.set(parameter.value, value)
             return
         super().setup(parameter, value, channel_id, port_id)

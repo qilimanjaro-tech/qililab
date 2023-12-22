@@ -56,17 +56,17 @@ class SGS100A(SignalGenerator):
         """
         if parameter == Parameter.POWER:
             self.settings.power = float(value)
-            if Instrument.is_device_initialized(self):
+            if self.is_device_initialized():
                 self.device.power(self.power)
             return
         if parameter == Parameter.LO_FREQUENCY:
             self.settings.frequency = float(value)
-            if Instrument.is_device_initialized(self):
+            if self.is_device_initialized():
                 self.device.frequency(self.frequency)
             return
         if parameter == Parameter.RF_ON:
             value = bool(value)
-            if Instrument.is_device_initialized(self):
+            if self.is_device_initialized():
                 if value:
                     self.turn_on()
                 else:

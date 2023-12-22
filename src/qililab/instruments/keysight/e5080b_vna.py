@@ -19,7 +19,6 @@ from dataclasses import dataclass
 import numpy as np
 
 from qililab.constants import DEFAULT_TIMEOUT
-from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.vector_network_analyzer import VectorNetworkAnalyzer
 from qililab.result.vna_result import VNAResult
@@ -78,7 +77,7 @@ class E5080B(VectorNetworkAnalyzer):
     def power(self, value: float, channel=1, port=1):
         """sets the power in dBm"""
         self.settings.power = value
-        if Instrument.is_device_initialized(self):
+        if self.is_device_initialized():
             power = f"{self.settings.power:.1f}"
             self.send_command(f"SOUR{channel}:POW{port}", power)
 
@@ -86,7 +85,7 @@ class E5080B(VectorNetworkAnalyzer):
     def if_bandwidth(self, value: float, channel=1):
         """sets the if bandwidth in Hz"""
         self.settings.if_bandwidth = value
-        if Instrument.is_device_initialized(self):
+        if self.is_device_initialized():
             bandwidth = str(self.settings.if_bandwidth)
             self.send_command(f"SENS{channel}:BWID", bandwidth)
 
@@ -99,7 +98,7 @@ class E5080B(VectorNetworkAnalyzer):
             value (str) : Electrical delay in ns
         """
         self.settings.electrical_delay = value
-        if Instrument.is_device_initialized(self):
+        if self.is_device_initialized():
             etime = f"{self.settings.electrical_delay:.12f}"
             self.send_command("SENS1:CORR:EXT:PORT1:TIME", etime)
 
@@ -121,7 +120,7 @@ class E5080B(VectorNetworkAnalyzer):
             mode (str) : Sweep mode: 'hold', 'cont', single' and 'group'
         """
         self.settings.sweep_mode = VNASweepModes(value)
-        if Instrument.is_device_initialized(self):
+        if self.is_device_initialized():
             mode = self.settings.sweep_mode.name
             self.send_command(f"SENS{channel}:SWE:MODE", mode)
 
