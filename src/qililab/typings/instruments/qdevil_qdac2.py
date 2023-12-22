@@ -12,16 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Instruments module """
-from .cluster import Cluster
-from .device import Device
-from .keithley_2600 import Keithley2600Driver
-from .mini_circuits import MiniCircuitsDriver
-from .pulsar import Pulsar
-from .qblox_d5a import QbloxD5a
-from .qblox_s4g import QbloxS4g
-from .qcm_qrm import QcmQrm
-from .qdevil_qdac2 import QDevilQDac2
-from .qmm_driver import QMMDriver
-from .rohde_schwarz import RohdeSchwarzSGS100A
-from .yokogawa_gs200 import YokogawaGS200
+"""Driver for QDevil QDAC-II"""
+from qcodes_contrib_drivers.drivers.QDevil.QDAC2 import QDac2 as Driver_QDac2
+
+from qililab.typings.instruments.device import Device
+
+
+class QDevilQDac2(Driver_QDac2, Device):
+    """Typing class of the QDevil QDAC-II."""
