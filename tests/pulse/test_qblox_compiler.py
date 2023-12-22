@@ -18,6 +18,7 @@ from tests.test_utils import build_platform
 
 @pytest.fixture(name="platform")
 def fixture_platform():
+    """platform fixture"""
     return build_platform(runcard=Galadriel.runcard)
 
 
@@ -56,6 +57,7 @@ def fixture_qblox_compiler(platform: Platform):
 
 @pytest.fixture(name="settings_6_sequencers")
 def fixture_settings_6_sequencers():
+    """settings for 6 sequencers"""
     sequencers = [
         {
             "identifier": seq_idx,
@@ -171,7 +173,7 @@ class TestQbloxCompiler:
         pulse_schedule = PulseSchedule([pulse_bus_schedule_qcm, pulse_bus_schedule])
 
         sequences = qblox_compiler.compile(pulse_schedule, num_avg=1, repetition_duration=2000, num_bins=1)
-        program = list(sequences.items())[1][1][0]._program
+        program = list(sequences.items())[1][1][0]._program  # pylint: disable=protected-access
 
         expected_gain = int(amplitude * AWG_MAX_GAIN)
         expected_phase = int((phase % (2 * np.pi)) * 1e9 / (2 * np.pi))
@@ -240,10 +242,10 @@ class TestQbloxCompiler:
             "feedline_input_output_bus"
         ]
         # We assert that the waveform/weights of the first path is all zeros and the waveform of the second path is the gaussian
-        waveforms = sequences[0]._waveforms._waveforms
+        waveforms = sequences[0]._waveforms._waveforms  # pylint: disable=protected-access
         assert np.allclose(waveforms[0].data, 0)
         assert np.allclose(waveforms[1].data, pulse.envelope(amplitude=1))
-        weights = sequences[0]._weights.to_dict()
+        weights = sequences[0]._weights.to_dict()  # pylint: disable=protected-access
         assert np.allclose(weights["pair_0_I"]["data"], [4, 5, 6])
         assert np.allclose(weights["pair_0_Q"]["data"], [1, 2, 3])
 
@@ -282,6 +284,7 @@ class TestQbloxCompiler:
     def test_error_program_gt_repetition_duration(
         self, long_pulse_bus_schedule: PulseBusSchedule, qblox_compiler: QbloxCompiler
     ):
+        """test that error is raised if circuit execution duration is longer than repetition duration"""
         pulse_schedule = PulseSchedule([long_pulse_bus_schedule])
         repetition_duration = 2000
         error_string = f"Circuit execution time cannnot be longer than repetition duration but found circuit time {long_pulse_bus_schedule.duration} > {repetition_duration} for qubit 0"

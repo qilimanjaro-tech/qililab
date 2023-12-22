@@ -121,7 +121,7 @@ class TestMethods:
                 instrument.device.frequency.assert_not_called()  # type: ignore
 
 
-class TestProperties:
+class TestProperties:  # pylint: disable=too-few-public-methods
     """Unit tests checking the SystemControl attributes and methods"""
 
     def test_instruments_property(self, system_control: SystemControl):

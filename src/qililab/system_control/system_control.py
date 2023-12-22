@@ -17,7 +17,7 @@
 import contextlib
 from abc import ABC
 from dataclasses import InitVar, dataclass
-from typing import Any, get_type_hints
+from typing import get_type_hints
 
 from qpysequence import Sequence as QpySequence
 

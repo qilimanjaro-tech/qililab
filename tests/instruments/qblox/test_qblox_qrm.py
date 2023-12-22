@@ -124,24 +124,6 @@ def fixture_local_cfg_qrm(settings_6_sequencers: dict) -> QbloxQRM:
     return QbloxQRM(settings=settings_6_sequencers)
 
 
-@pytest.fixture(name="pulse_bus_schedule")
-def fixture_pulse_bus_schedule() -> PulseBusSchedule:
-    """Return PulseBusSchedule instance."""
-    pulse_shape = Gaussian(num_sigmas=4)
-    pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
-    pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=0)
-    return PulseBusSchedule(timeline=[pulse_event], port="feedline_input")
-
-
-@pytest.fixture(name="pulse_bus_schedule2")
-def fixture_pulse_bus_schedule2() -> PulseBusSchedule:
-    """Return PulseBusSchedule instance."""
-    pulse_shape = Gaussian(num_sigmas=4)
-    pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
-    pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=1)
-    return PulseBusSchedule(timeline=[pulse_event], port="feedline_input")
-
-
 @pytest.fixture(name="pulsar_controller_qrm")
 def fixture_pulsar_controller_qrm():
     """Return an instance of QbloxPulsarController class"""
