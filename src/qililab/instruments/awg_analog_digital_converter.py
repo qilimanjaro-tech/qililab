@@ -50,7 +50,7 @@ class AWGAnalogDigitalConverter(AWG):
         """
 
     def setup(  # pylint: disable=too-many-return-statements, too-many-branches
-        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
+        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None
     ):
         """set a specific parameter to the instrument"""
         if channel_id is None:

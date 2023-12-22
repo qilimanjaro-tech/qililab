@@ -224,7 +224,8 @@ class TestIntegration:
         sequencer.output_i = 3
         sequencer.output_q = 2
         qcm_rf.device = MagicMock()
-        qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, port_id=sequencer.chip_port_id)
+        channel_id = qcm_rf.get_sequencers_from_chip_port_id(sequencer.chip_port_id)[0].identifier
+        qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=channel_id)
         qcm_rf.device.set.assert_called_once_with("out1_lo_freq", 2e9)
 
     def test_setup_with_lo_frequency_without_channel_id_raises_error(self, settings):

@@ -60,9 +60,7 @@ class QbloxQRMRF(QbloxQRM):
         for parameter in self.parameters:
             self.setup(parameter, getattr(self.settings, parameter.value))
 
-    def setup(
-        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
-    ):
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Set a parameter of the Qblox QCM-RF module.
         Args:
             parameter (Parameter): Parameter name.
@@ -78,9 +76,9 @@ class QbloxQRMRF(QbloxQRM):
             if self.is_device_initialized():
                 self.device.set(parameter.value, value)
             return
-        super().setup(parameter, value, channel_id, port_id=port_id)
+        super().setup(parameter, value, channel_id)
 
-    def get(self, parameter: Parameter, channel_id: int | None = None, port_id: str | None = None):
+    def get(self, parameter: Parameter, channel_id: int | None = None):
         """Set a parameter of the Qblox QCM-RF module.
         Args:
             parameter (Parameter): Parameter name.
@@ -92,7 +90,7 @@ class QbloxQRMRF(QbloxQRM):
 
         if parameter in self.parameters:
             return getattr(self.settings, parameter.value)
-        return super().get(parameter, channel_id, port_id=port_id)
+        return super().get(parameter, channel_id)
 
     def to_dict(self):
         """Return a dict representation of an `QRM-RF` instrument."""

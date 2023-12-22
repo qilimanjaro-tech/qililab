@@ -303,7 +303,7 @@ class QbloxModule(AWG):
                 self.device.start_sequencer(sequencer=sequencer.identifier)
 
     def setup(  # pylint: disable=too-many-branches, too-many-return-statements
-        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
+        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None
     ):
         """Set Qblox instrument calibration settings."""
         if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
@@ -312,9 +312,7 @@ class QbloxModule(AWG):
             return
 
         if channel_id is None:
-            if port_id is not None:
-                channel_id = self.get_sequencers_from_chip_port_id(chip_port_id=port_id)[0].identifier
-            elif self.num_sequencers == 1:
+            if self.num_sequencers == 1:
                 channel_id = 0
             else:
                 raise ParameterNotFound(f"Cannot update parameter {parameter.value} without specifying a channel_id.")
@@ -355,7 +353,7 @@ class QbloxModule(AWG):
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
-    def get(self, parameter: Parameter, channel_id: int | None = None, port_id: str | None = None):
+    def get(self, parameter: Parameter, channel_id: int | None = None):
         """Get instrument parameter.
 
         Args:
@@ -367,9 +365,7 @@ class QbloxModule(AWG):
             return self.out_offsets[output]
 
         if channel_id is None:
-            if port_id is not None:
-                channel_id = self.get_sequencers_from_chip_port_id(chip_port_id=port_id)[0].identifier
-            elif self.num_sequencers == 1:
+            if self.num_sequencers == 1:
                 channel_id = 0
             else:
                 raise ParameterNotFound(f"Cannot update parameter {parameter.value} without specifying a channel_id.")

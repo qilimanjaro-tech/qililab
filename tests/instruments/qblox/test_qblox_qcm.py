@@ -223,11 +223,11 @@ class TestQbloxQCM:
     ):
         """Test setup method"""
         for qcms in [qcm, qcm_no_device]:
-            qcms.setup(parameter=parameter, value=value, port_id=port_id)
             if port_id is not None:
                 channel_id = qcms.get_sequencers_from_chip_port_id(port_id)[0].identifier
             else:
                 channel_id = None
+            qcms.setup(parameter=parameter, value=value, channel_id=channel_id)
             if parameter == Parameter.GAIN:
                 assert qcms.awg_sequencers[channel_id].gain_i == value
                 assert qcms.awg_sequencers[channel_id].gain_q == value

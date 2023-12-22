@@ -73,9 +73,7 @@ class QbloxS4g(CurrentSource):
         while channel.is_ramping():
             sleep(0.1)
 
-    def setup(
-        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
-    ):
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Set Qblox instrument calibration settings."""
 
         if channel_id is None:

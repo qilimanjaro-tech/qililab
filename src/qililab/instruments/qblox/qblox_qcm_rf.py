@@ -70,9 +70,7 @@ class QbloxQCMRF(QbloxQCM):
         for parameter in self.parameters:
             self.setup(parameter, getattr(self.settings, parameter.value))
 
-    def setup(
-        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
-    ):
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Set a parameter of the Qblox QCM-RF module.
 
         Args:
@@ -83,8 +81,6 @@ class QbloxQCMRF(QbloxQCM):
         if parameter == Parameter.LO_FREQUENCY:
             if channel_id is not None:
                 sequencer: AWGQbloxSequencer = self._get_sequencer_by_id(channel_id)
-            elif port_id is not None:
-                sequencer = self.get_sequencers_from_chip_port_id(chip_port_id=port_id)[0]
             else:
                 raise ParameterNotFound(
                     "`channel_id` cannot be None when setting the `LO_FREQUENCY` parameter."
@@ -110,9 +106,9 @@ class QbloxQCMRF(QbloxQCM):
             if self.is_device_initialized():
                 self.device.set(parameter.value, value)
             return
-        super().setup(parameter, value, channel_id, port_id)
+        super().setup(parameter, value, channel_id)
 
-    def get(self, parameter: Parameter, channel_id: int | None = None, port_id: str | None = None):
+    def get(self, parameter: Parameter, channel_id: int | None = None):
         """Set a parameter of the Qblox QCM-RF module.
 
         Args:
@@ -123,8 +119,6 @@ class QbloxQCMRF(QbloxQCM):
         if parameter == Parameter.LO_FREQUENCY:
             if channel_id is not None:
                 sequencer: AWGQbloxSequencer = self._get_sequencer_by_id(channel_id)
-            elif port_id is not None:
-                sequencer = self.get_sequencers_from_chip_port_id(chip_port_id=port_id)[0]
             else:
                 raise ParameterNotFound(
                     "`channel_id` cannot be None when setting the `LO_FREQUENCY` parameter."
@@ -146,7 +140,7 @@ class QbloxQCMRF(QbloxQCM):
 
         if parameter in self.parameters:
             return getattr(self.settings, parameter.value)
-        return super().get(parameter, channel_id, port_id)
+        return super().get(parameter, channel_id)
 
     def to_dict(self):
         """Return a dict representation of an `QCM-RF` instrument."""
