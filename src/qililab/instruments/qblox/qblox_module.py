@@ -428,8 +428,8 @@ class QbloxModule(AWG):
                 # if the sequence was in the cache then it is to be run so we sync the sequencer to the others
                 sequence = self.sequences[seq_idx]
                 logger.info(
-                    "Uploaded sequence program: \n %s", repr(sequence._program)
-                )  # pylint: disable=protected-access
+                    "Uploaded sequence program: \n %s", repr(sequence._program)  # pylint: disable=protected-access
+                )
                 self.device.sequencers[seq_idx].sequence(sequence.todict())
                 self.device.sequencers[sequencer.identifier].sync_en(True)
 
