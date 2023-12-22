@@ -110,8 +110,6 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 else:
                     raise ValueError("The scope can only be stored in one sequencer at a time.")
 
-
-
     def acquire_result(self) -> QbloxResult:
         """Read the result from the AWG instrument
 
