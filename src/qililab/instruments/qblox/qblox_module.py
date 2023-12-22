@@ -18,7 +18,6 @@ from dataclasses import dataclass
 from typing import Sequence, cast
 
 from qpysequence import Sequence as QpySequence
-from qpysequence.utils.constants import AWG_MAX_GAIN
 
 from qililab.config import logger
 from qililab.instruments.awg import AWG
