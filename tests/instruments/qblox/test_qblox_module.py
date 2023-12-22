@@ -4,7 +4,6 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
-from qpysequence.utils.constants import AWG_MAX_GAIN
 
 from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
 from qililab.platform import Platform
@@ -97,7 +96,7 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     return PulseBusSchedule(timeline=[pulse_event], port="feedline_input")
 
 
-class TestQbloxModule:
+class TestQbloxModule:  # pylint: disable=too-few-public-methods
     """Unit tests checking the QbloxModule attributes and methods"""
 
     def test_upload_method(self, qrm, qblox_compiler, pulse_bus_schedule):
