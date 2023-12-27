@@ -12,5 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""__init__.py"""
-from .quantum_machines_cluster import QuantumMachinesCluster
+""" Utils for dictionaries manipulation """
+
+
+def merge_dictionaries(origin: dict, new: dict):
+    """Recursively merge `new` into `origin`."""
+    for key, value in new.items():
+        if key in origin and isinstance(origin[key], dict) and isinstance(value, dict):
+            merge_dictionaries(origin[key], value)
+        else:
+            origin[key] = value
+    return origin

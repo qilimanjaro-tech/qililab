@@ -75,7 +75,7 @@ class MeasurementInfo:  # pylint: disable=too-few-public-methods
         self.result_handles: list[str] = result_handles
 
 
-class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
+class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, too-few-public-methods
     """A class for compiling QProgram to Quantum Machines hardware."""
 
     FREQUENCY_COEFF = 1e3
@@ -580,13 +580,3 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes
 
         # Otherwise, if we're incrementing, take the ceiling, and if we're decrementing, take the floor
         return math.floor(raw_iterations) if step > 0 else math.ceil(raw_iterations)
-
-    @staticmethod
-    def merge_configurations(origin: dict, new: dict):
-        """Recursively merge `new` into `origin`."""
-        for key, value in new.items():
-            if key in origin and isinstance(origin[key], dict) and isinstance(value, dict):
-                QuantumMachinesCompiler.merge_configurations(origin[key], value)
-            else:
-                origin[key] = value
-        return origin

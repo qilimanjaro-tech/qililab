@@ -190,7 +190,7 @@ class InstrumentName(str, Enum):
     AGILENT_E5071B = "agilent_e5071B"
     YOKOGAWA_GS200 = "yokogawa_gs200"
     QCMRF = "QCM-RF"
-    QUANTUM_MACHINES_MANAGER = "quantum_machines_manager"
+    QUANTUM_MACHINES_CLUSTER = "quantum_machines_cluster"
     QDEVIL_QDAC2 = "qdevil_qdac2"
 
 
@@ -219,7 +219,7 @@ class InstrumentControllerName(str, Enum):
     KEYSIGHT_E5080B = "keysight_e5080b_controller"
     AGILENT_E5071B = "agilent_e5071B_controller"
     YOKOGAWA_GS200 = "yokogawa_gs200_controller"
-    QUANTUM_MACHINES_MANAGER = "quantum_machines_manager"
+    QUANTUM_MACHINES_CLUSTER = "quantum_machines_cluster_controller"
     QDEVIL_QDAC2 = "qdevil_qdac2"
 
 
