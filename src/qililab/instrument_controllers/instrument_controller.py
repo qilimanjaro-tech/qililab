@@ -259,4 +259,5 @@ class InstrumentController(BusElement, ABC):
             RUNCARD.ALIAS: self.alias,
             INSTRUMENTCONTROLLER.CONNECTION: self.connection.to_dict(),
             INSTRUMENTCONTROLLER.MODULES: [module.to_dict() for module in self.settings.modules],
+            INSTRUMENTCONTROLLER.RESET: self.settings.reset
         }

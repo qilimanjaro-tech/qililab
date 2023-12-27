@@ -187,6 +187,7 @@ class Galadriel:
             "name": ConnectionName.TCP_IP.value,
             CONNECTION.ADDRESS: "192.168.0.3",
         },
+        INSTRUMENTCONTROLLER.RESET: "False",
         INSTRUMENTCONTROLLER.MODULES: [
             {
                 "alias": InstrumentName.QBLOX_QCM.value,
