@@ -349,7 +349,7 @@ class TestReset:
         exp.platform.connect()
         exp.platform.disconnect()
         mock_reset.assert_called()
-        assert mock_reset.call_count == 12
+        assert mock_reset.call_count == 10
 
     @patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
     @patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
