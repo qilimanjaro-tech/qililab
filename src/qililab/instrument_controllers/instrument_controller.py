@@ -254,10 +254,12 @@ class InstrumentController(BusElement, ABC):
 
     def to_dict(self):
         """Return a dict representation of the InstrumentReference class."""
-        return {
+        controller_dict = {
             RUNCARD.NAME: self.name.value,
             RUNCARD.ALIAS: self.alias,
             INSTRUMENTCONTROLLER.CONNECTION: self.connection.to_dict(),
             INSTRUMENTCONTROLLER.MODULES: [module.to_dict() for module in self.settings.modules],
-            INSTRUMENTCONTROLLER.RESET: self.settings.reset,
         }
+        if not self.settings.reset:
+            controller_dict[INSTRUMENTCONTROLLER.RESET] = self.settings.reset
+        return controller_dict

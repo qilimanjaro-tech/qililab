@@ -182,18 +182,18 @@ class Galadriel:
     pulsar_controller_qcm_0: dict[str, Any] = {
         "name": InstrumentControllerName.QBLOX_PULSAR,
         "alias": "pulsar_controller_qcm_0",
-        Parameter.REFERENCE_CLOCK.value: ReferenceClock.INTERNAL.value,
         INSTRUMENTCONTROLLER.CONNECTION: {
             "name": ConnectionName.TCP_IP.value,
             CONNECTION.ADDRESS: "192.168.0.3",
         },
-        INSTRUMENTCONTROLLER.RESET: "False",
         INSTRUMENTCONTROLLER.MODULES: [
             {
                 "alias": InstrumentName.QBLOX_QCM.value,
                 "slot_id": 0,
             }
         ],
+        INSTRUMENTCONTROLLER.RESET: False,
+        Parameter.REFERENCE_CLOCK.value: ReferenceClock.INTERNAL.value,
     }
 
     qblox_qcm_0: dict[str, Any] = {
