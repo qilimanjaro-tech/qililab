@@ -25,3 +25,5 @@ This document contains the changes of the current release.
 ### Documentation
 
 ### Bug fixes
+- Reset parameter from Instruments controller does not get saved when the runcard is saved through the platform.
+  [#653] (https://github.com/qilimanjaro-tech/qililab/pull/653)
