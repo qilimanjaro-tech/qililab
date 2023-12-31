@@ -43,13 +43,13 @@ class Attenuator(Instrument):
     settings: StepAttenuatorSettings
     device: MiniCircuitsDriver
 
-    @Instrument.CheckDeviceInitialized
     @Instrument.CheckParameterValueFloatOrInt
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):  # type: ignore
         """Set instrument settings."""
         if parameter == Parameter.ATTENUATION:
             self.settings.attenuation = float(value)
-            self.device.setup(attenuation=self.attenuation)
+            if self.is_device_initialized():
+                self.device.setup(attenuation=self.attenuation)
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 

@@ -44,22 +44,18 @@ class Keithley2600(Instrument):
     settings: Keithley2600Settings
     device: Keithley2600Driver
 
-    @Instrument.CheckDeviceInitialized
     @Instrument.CheckParameterValueFloatOrInt
-    def setup(
-        self,
-        parameter: Parameter,
-        value: float | str | bool,
-        channel_id: int | None = None,
-    ):
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):  # type: ignore
         """Setup instrument."""
         if parameter == Parameter.MAX_CURRENT:
             self.max_current = float(value)
-            self.device.smua.limiti(self.max_current)
+            if self.is_device_initialized():
+                self.device.smua.limiti(self.max_current)
             return
         if parameter == Parameter.MAX_VOLTAGE:
             self.max_voltage = float(value)
-            self.device.smua.limitv(self.max_voltage)
+            if self.is_device_initialized():
+                self.device.smua.limitv(self.max_voltage)
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
@@ -115,7 +111,8 @@ class Keithley2600(Instrument):
         Args:
             float: Maximum current allowed in voltage mode.
         """
-        self.device.smua.limiti(value)
+        if self.is_device_initialized():
+            self.device.smua.limiti(value)
         self.settings.max_current = value
 
     @property
@@ -134,5 +131,6 @@ class Keithley2600(Instrument):
         Args:
             float: Maximum voltage allowed in current mode.
         """
-        self.device.smua.limitv(value)
+        if self.is_device_initialized():
+            self.device.smua.limitv(value)
         self.settings.max_voltage = value
