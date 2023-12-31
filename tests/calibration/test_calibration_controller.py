@@ -3,6 +3,7 @@ from datetime import datetime
 from unittest.mock import MagicMock, call, patch
 
 import networkx as nx
+import pandas as pd
 import pytest
 
 from qililab.calibration import CalibrationController, CalibrationNode
@@ -774,24 +775,44 @@ class TestCalibrationController:
         for i, node in controller.node_sequence.items():
             node.output_parameters = {
                 "check_parameters": {"x": [0, 1, 2, 3, 4, 5], "y": [0, 1, 2, 3, 4, 5]},
-                "platform_parameters": [(f"test_bus_{i}", 0, "param", 0), (f"test_bus_{i}", 1, "param2", 1)],
-                "fidelities": [(0, f"param1_{i}", 1), (1, f"param2_{i}", 0.967)],
+                "platform_parameters": [(f"test_bus_{i}", 0, "param", 0), (f"test_bus_{i}", 1, "param", 1)],
+                "fidelities": [(0, f"param_{i}", 1), (1, f"param_{i}", 0.967)],
             }
             node.previous_timestamp = 1999
 
-        dictionary = controller.get_last_set_parameters()
-        assert dictionary == {
-            ("param", "test_bus_zeroth_q0q1", 0): (0, "zeroth_q0q1", datetime.fromtimestamp(1999)),
-            ("param2", "test_bus_zeroth_q0q1", 1): (1, "zeroth_q0q1", datetime.fromtimestamp(1999)),
-            ("param", "test_bus_first_q0", 0): (0, "first_q0", datetime.fromtimestamp(1999)),
-            ("param2", "test_bus_first_q0", 1): (1, "first_q0", datetime.fromtimestamp(1999)),
-            ("param", "test_bus_second_q0", 0): (0, "second_q0", datetime.fromtimestamp(1999)),
-            ("param2", "test_bus_second_q0", 1): (1, "second_q0", datetime.fromtimestamp(1999)),
-            ("param", "test_bus_third_q0", 0): (0, "third_q0", datetime.fromtimestamp(1999)),
-            ("param2", "test_bus_third_q0", 1): (1, "third_q0", datetime.fromtimestamp(1999)),
-            ("param", "test_bus_fourth", 0): (0, "fourth", datetime.fromtimestamp(1999)),
-            ("param2", "test_bus_fourth", 1): (1, "fourth", datetime.fromtimestamp(1999)),
-        }
+        df = controller.get_last_set_parameters()
+
+        # Create the pandas DataFrame to test
+        data = [
+            [0, "zeroth_q0q1", datetime.fromtimestamp(1999)],
+            [1, "zeroth_q0q1", datetime.fromtimestamp(1999)],
+            [0, "first_q0", datetime.fromtimestamp(1999)],
+            [1, "first_q0", datetime.fromtimestamp(1999)],
+            [0, "second_q0", datetime.fromtimestamp(1999)],
+            [1, "second_q0", datetime.fromtimestamp(1999)],
+            [0, "third_q0", datetime.fromtimestamp(1999)],
+            [1, "third_q0", datetime.fromtimestamp(1999)],
+            [0, "fourth", datetime.fromtimestamp(1999)],
+            [1, "fourth", datetime.fromtimestamp(1999)],
+        ]
+        idx = pd.MultiIndex.from_product(
+            [
+                ["param"],
+                [
+                    "test_bus_zeroth_q0q1",
+                    "test_bus_first_q0",
+                    "test_bus_second_q0",
+                    "test_bus_third_q0",
+                    "test_bus_fourth",
+                ],
+                [0, 1],
+            ],
+            names=["parameter", "bus", "qubit"],
+        )
+        col = ["value", "node_id", "datetime"]
+        test_df = pd.DataFrame(data, idx, col)
+
+        assert pd.testing.assert_frame_equal(df, test_df, check_dtype=False) is None
 
     ################################
     ### TEST GET LAST FIDELITIES ###
@@ -801,24 +822,81 @@ class TestCalibrationController:
         for i, node in controller.node_sequence.items():
             node.output_parameters = {
                 "check_parameters": {"x": [0, 1, 2, 3, 4, 5], "y": [0, 1, 2, 3, 4, 5]},
-                "platform_parameters": [(f"test_bus_{i}", 0, "param", 0), (f"test_bus_{i}", 1, "param2", 1)],
-                "fidelities": [(0, f"param1_{i}", 1), (1, f"param2_{i}", 0.967)],
+                "platform_parameters": [(f"test_bus_{i}", 0, "param", 0), (f"test_bus_{i}", 1, "param", 1)],
+                "fidelities": [(0, f"param_{i}", 1), (1, f"param_{i}", 0.967)],
             }
             node.previous_timestamp = 1999
 
-        dictionary = controller.get_last_fidelities()
-        assert dictionary == {
-            ("param1_zeroth_q0q1", 0): (1, "zeroth_q0q1", datetime.fromtimestamp(1999)),
-            ("param2_zeroth_q0q1", 1): (0.967, "zeroth_q0q1", datetime.fromtimestamp(1999)),
-            ("param1_first_q0", 0): (1, "first_q0", datetime.fromtimestamp(1999)),
-            ("param2_first_q0", 1): (0.967, "first_q0", datetime.fromtimestamp(1999)),
-            ("param1_second_q0", 0): (1, "second_q0", datetime.fromtimestamp(1999)),
-            ("param2_second_q0", 1): (0.967, "second_q0", datetime.fromtimestamp(1999)),
-            ("param1_third_q0", 0): (1, "third_q0", datetime.fromtimestamp(1999)),
-            ("param2_third_q0", 1): (0.967, "third_q0", datetime.fromtimestamp(1999)),
-            ("param1_fourth", 0): (1, "fourth", datetime.fromtimestamp(1999)),
-            ("param2_fourth", 1): (0.967, "fourth", datetime.fromtimestamp(1999)),
-        }
+        df = controller.get_last_fidelities()
+
+        # Create the pandas DataFrame to test
+        data = [
+            [1, "zeroth_q0q1", datetime.fromtimestamp(1999)],
+            [0.967, "zeroth_q0q1", datetime.fromtimestamp(1999)],
+            [1, "first_q0", datetime.fromtimestamp(1999)],
+            [0.967, "first_q0", datetime.fromtimestamp(1999)],
+            [1, "second_q0", datetime.fromtimestamp(1999)],
+            [0.967, "second_q0", datetime.fromtimestamp(1999)],
+            [1, "third_q0", datetime.fromtimestamp(1999)],
+            [0.967, "third_q0", datetime.fromtimestamp(1999)],
+            [1, "fourth", datetime.fromtimestamp(1999)],
+            [0.967, "fourth", datetime.fromtimestamp(1999)],
+        ]
+        idx = pd.MultiIndex.from_product(
+            [
+                [
+                    "param_zeroth_q0q1",
+                    "param_first_q0",
+                    "param_second_q0",
+                    "param_third_q0",
+                    "param_fourth",
+                ],
+                [0, 1],
+            ],
+            names=["fidelity", "qubit"],
+        )
+        col = ["fidelity", "node_id", "datetime"]
+        test_df = pd.DataFrame(data, idx, col)
+
+        assert pd.testing.assert_frame_equal(df, test_df, check_dtype=False) is None
+
+    ################################
+    ##### TEST GET QUBITS TABLE ####
+    ################################
+
+    def test_get_qubits_table(self, controller):
+        """Test that the ``get_qubits_table()`` method, gets the correct parameters."""
+        for i, node in controller.node_sequence.items():
+            node.output_parameters = {
+                "check_parameters": {"x": [0, 1, 2, 3, 4, 5], "y": [0, 1, 2, 3, 4, 5]},
+                "platform_parameters": [("test_bus", 0, f"param_{i}", 0), ("test_bus", 1, f"param_{i}", 1)],
+                "fidelities": [(0, f"fidelity_{i}", 1), (1, f"fidelity_{i}", 0.967)],
+            }
+            node.previous_timestamp = 1999
+
+        df = controller.get_qubits_table()
+
+        # Create the pandas DataFrame to test
+        data = [
+            [0, 0, 0, 0, 0, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 0.967, 0.967, 0.967, 0.967, 0.967],
+        ]
+        col = [
+            "param_zeroth_q0q1_test_bus",
+            "param_first_q0_test_bus",
+            "param_second_q0_test_bus",
+            "param_third_q0_test_bus",
+            "param_fourth_test_bus",
+            "fidelity_zeroth_q0q1",
+            "fidelity_first_q0",
+            "fidelity_second_q0",
+            "fidelity_third_q0",
+            "fidelity_fourth",
+        ]
+        test_df = pd.DataFrame(data, columns=col)
+        test_df.index.name = "qubit"
+
+        assert pd.testing.assert_frame_equal(df, test_df, check_dtype=False, check_like=True) is None
 
     #######################
     ### TEST DEPENDENTS ###
