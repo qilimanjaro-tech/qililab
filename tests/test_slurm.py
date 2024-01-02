@@ -4,9 +4,8 @@ import time
 from unittest.mock import MagicMock, patch
 
 import pytest
-from IPython.testing.globalipapp import start_ipython
-
 import qililab as ql
+from IPython.testing.globalipapp import start_ipython
 
 # pylint: disable=redefined-outer-name
 slurm_job_data_test = "slurm_job_data_test"
@@ -76,7 +75,7 @@ class TestSubmitJob:
                 line=f"-o results -p debug -l {slurm_job_data_test} -n unit_test -e local",
                 cell="results=a+b",
             )
-            time.sleep(1)  # give time submitit to create the files
+            time.sleep(2)  # give time submitit to create the files
 
         assert (
             len([f for f in os.listdir(slurm_job_data_test) if os.path.isfile(os.path.join(slurm_job_data_test, f))])
