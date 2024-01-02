@@ -4,8 +4,9 @@ import time
 from unittest.mock import MagicMock, patch
 
 import pytest
-import qililab as ql
 from IPython.testing.globalipapp import start_ipython
+
+import qililab as ql
 
 # pylint: disable=redefined-outer-name
 slurm_job_data_test = "slurm_job_data_test"
@@ -66,7 +67,7 @@ class TestSubmitJob:
         assert os.path.isfile(os.path.join(slurm_job_data_test, "abc.py")) is False
 
     def test_submit_job_delete_info_from_past_jobs(self, ip):
-        """Check only 60 files are kept in the logs folder"""
+        """Check only a certain amount files are kept in the logs folder"""
         ql.slurm.num_files_to_keep = 8
         ip.run_cell(raw_cell="a=1\nb=1")
         for _ in range(int(ql.slurm.num_files_to_keep / 4)):
