@@ -14,6 +14,7 @@
 
 # pylint: disable=anomalous-backslash-in-string, inconsistent-return-statements
 """Automatic-calibration Controller module, which works with notebooks as nodes."""
+import re
 from datetime import datetime, timedelta
 
 import networkx as nx
@@ -600,6 +601,13 @@ class CalibrationController:
                 and "platform_parameters" in node.output_parameters
             ):
                 for bus, qubit, parameter, value in node.output_parameters["platform_parameters"]:
+                    if qubit is None:
+                        qubits = [int(s) for s in re.findall(r"\d+", "he33llo 42 I'm a 32 string 30")]
+                        if len(qubits) == 1:
+                            qubit = qubits[0]
+                        elif len(qubits) == 2:
+                            qubit = f"{str(qubits[0])}-{str(qubits[1])}"
+
                     parameters[(parameter, bus, qubit)] = (
                         value,
                         node.node_id,
