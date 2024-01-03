@@ -4,9 +4,8 @@ from types import ModuleType
 
 from IPython.core.magic import needs_local_scope, register_cell_magic
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
-from submitit import AutoExecutor
-
 from qililab.config import logger
+from submitit import AutoExecutor
 
 num_files_to_keep = 60  # needs to be a multiple of 4 and 5: 20,40,60,80..
 
@@ -60,7 +59,7 @@ def is_variable_used(code, variable):
     "-lp",
     "--low_priority",
     default=None,
-    help="By default lab jobs have higher priority than QaaS jobs. However, if '--lp True' they will have the same priority than QaaS jobs and other Lab jobs will be processed first.",
+    help="By default lab jobs have higher priority than QaaS jobs. However, if '--lp True' they will have the same priority than QaaS jobs and other Lab jobs will be executed first.",
 )
 @needs_local_scope
 @register_cell_magic
@@ -83,7 +82,7 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
 
     nice_factor = 0
     if is_low_priority:
-        nice_factor = 1000000  # this ensure Lab jobs have 0 priority, same as QaaS jobs
+        nice_factor = 1000000  # this ensures Lab jobs have 0 priority, same as QaaS jobs
 
     # Take all the import lines and add them right before the code of the cell (to make sure all the needed libraries
     # are imported inside the SLURM job)
