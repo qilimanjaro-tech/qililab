@@ -660,6 +660,11 @@ class CalibrationController:
                     if fidelity not in col:
                         col.append(fidelity)
 
+            if (
+                node.output_parameters is not None
+                and node.previous_timestamp is not None
+                and "platform_parameters" in node.output_parameters
+            ):
                 for bus, qubit, parameter, _ in node.output_parameters["platform_parameters"]:
                     if qubit not in idx:
                         idx.append(qubit)
@@ -678,6 +683,11 @@ class CalibrationController:
                 for qubit, fidelity, value in node.output_parameters["fidelities"]:
                     df[fidelity][qubit] = value
 
+            if (
+                node.output_parameters is not None
+                and node.previous_timestamp is not None
+                and "platform_parameters" in node.output_parameters
+            ):
                 for bus, qubit, parameter, value in node.output_parameters["platform_parameters"]:
                     df[f"{str(parameter)}_{str(bus)}"][qubit] = value
 
