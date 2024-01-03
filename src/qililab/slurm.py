@@ -8,7 +8,7 @@ from submitit import AutoExecutor
 
 from qililab.config import logger
 
-num_files_to_keep = 60  # needs to be a multiple of 4 and 5: 20,40,60,80..
+num_files_to_keep = 500  # needs to be a multiple of 4 and 5
 
 
 # pylint: disable=too-many-locals
@@ -121,9 +121,12 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
     for file_path in file_paths:
         try:
             job_ids.append(int(file_path.split("/")[1].split("_")[0]))
-            if len(file_paths) >= num_files_to_keep and (str(job_ids[0]) in file_path):
-                os.remove(file_path)
+
         # remove non-submitit files, not starting with an id
         except ValueError:
             logger.warning("%s shouldn't be in %s. It has been removed!", file_path.split("/")[1], folder_path)
+            os.remove(file_path)
+
+    for file_path in file_paths:
+        if len(file_paths) >= num_files_to_keep and str(min(job_ids)) in file_path:
             os.remove(file_path)
