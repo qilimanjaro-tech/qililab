@@ -607,8 +607,10 @@ class CalibrationController:
                     )
 
         df = pd.DataFrame.from_dict(parameters).transpose()
-        df.columns = ["value", "node_id", "datetime"]
-        df.index.names = ["parameter", "bus", "qubit"]
+        if len(df.columns) == 3:
+            df.columns = ["value", "node_id", "datetime"]
+        if len(df.index) == 3:
+            df.index.names = ["parameter", "bus", "qubit"]
         return df
 
     def get_last_fidelities(self) -> pd.DataFrame:
@@ -634,8 +636,10 @@ class CalibrationController:
                     )
 
         df = pd.DataFrame.from_dict(fidelities).transpose()
-        df.columns = ["fidelity", "node_id", "datetime"]
-        df.index.names = ["fidelity", "qubit"]
+        if len(df.columns) == 3:
+            df.columns = ["fidelity", "node_id", "datetime"]
+        if len(df.index) == 2:
+            df.index.names = ["fidelity", "qubit"]
         return df
 
     def get_qubits_table(self) -> pd.DataFrame:
