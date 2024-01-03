@@ -58,7 +58,7 @@ class GS200(CurrentSource, VoltageSource):
     def source_mode(self, value: SourceMode):
         """Set the Yokogawa GS200 source mode."""
         self.settings.source_mode = value
-        if self.is_device_initialized():
+        if self.is_device_active():
             qcodes_str = self.__source_mode_to_qcodes_str(value)
             self.device.source_mode(qcodes_str)
 
@@ -103,7 +103,7 @@ class GS200(CurrentSource, VoltageSource):
     def current(self, value: float):
         """Set Yokogawa GS200 `current` property. If `ramping_enabled` is set to True, the current will transition linearly according to `ramping_rate`. Else, it will be set instantly."""
         self.settings.current[0] = value
-        if self.is_device_initialized():
+        if self.is_device_active():
             if self.ramping_enabled:
                 self.device.ramp_current(value, self.ramping_rate * 0.001, 0.001)
             else:
@@ -134,7 +134,7 @@ class GS200(CurrentSource, VoltageSource):
             - 200mA
         """
         self.settings.span[0] = value
-        if self.is_device_initialized():
+        if self.is_device_active():
             if self.source_mode == SourceMode.CURRENT:
                 qcodes_int = self.__current_span_to_qcodes_float(value)
                 self.device.current_range(qcodes_int)
@@ -155,7 +155,7 @@ class GS200(CurrentSource, VoltageSource):
     def voltage(self, value: float):
         """Set Yokogawa GS200 `voltage` property. If `ramping_enabled` is set to True, the voltage will transition linearly according to `ramping_rate`. Else, it will be set instantly."""
         self.settings.voltage[0] = value
-        if self.is_device_initialized():
+        if self.is_device_active():
             if self.ramping_enabled:
                 self.device.ramp_voltage(value, self.ramping_rate * 0.001, 0.001)
             else:

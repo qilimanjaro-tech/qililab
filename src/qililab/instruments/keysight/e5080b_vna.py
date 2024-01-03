@@ -77,7 +77,7 @@ class E5080B(VectorNetworkAnalyzer):
     def power(self, value: float, channel=1, port=1):
         """sets the power in dBm"""
         self.settings.power = value
-        if self.is_device_initialized():
+        if self.is_device_active():
             power = f"{self.settings.power:.1f}"
             self.send_command(f"SOUR{channel}:POW{port}", power)
 
@@ -85,7 +85,7 @@ class E5080B(VectorNetworkAnalyzer):
     def if_bandwidth(self, value: float, channel=1):
         """sets the if bandwidth in Hz"""
         self.settings.if_bandwidth = value
-        if self.is_device_initialized():
+        if self.is_device_active():
             bandwidth = str(self.settings.if_bandwidth)
             self.send_command(f"SENS{channel}:BWID", bandwidth)
 
@@ -98,7 +98,7 @@ class E5080B(VectorNetworkAnalyzer):
             value (str) : Electrical delay in ns
         """
         self.settings.electrical_delay = value
-        if self.is_device_initialized():
+        if self.is_device_active():
             etime = f"{self.settings.electrical_delay:.12f}"
             self.send_command("SENS1:CORR:EXT:PORT1:TIME", etime)
 
@@ -120,7 +120,7 @@ class E5080B(VectorNetworkAnalyzer):
             mode (str) : Sweep mode: 'hold', 'cont', single' and 'group'
         """
         self.settings.sweep_mode = VNASweepModes(value)
-        if self.is_device_initialized():
+        if self.is_device_active():
             mode = self.settings.sweep_mode.name
             self.send_command(f"SENS{channel}:SWE:MODE", mode)
 

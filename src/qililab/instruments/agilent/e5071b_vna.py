@@ -41,7 +41,7 @@ class E5071B(VectorNetworkAnalyzer):
     def power(self, power: float, channel=1):
         """Set or read current power"""
         self.settings.power = power
-        if self.is_device_initialized():
+        if self.is_device_active():
             self.send_command(command=f":SOUR{channel}:POW:LEV:IMM:AMPL", arg=f"{power}")
 
     @VectorNetworkAnalyzer.electrical_delay.setter  # type: ignore
@@ -52,14 +52,14 @@ class E5071B(VectorNetworkAnalyzer):
             value (str) : Electrical delay in ns
         """
         self.settings.electrical_delay = time
-        if self.is_device_initialized():
+        if self.is_device_active():
             self.send_command("CALC:MEAS:CORR:EDEL:TIME", f"{time}")
 
     @VectorNetworkAnalyzer.if_bandwidth.setter  # type: ignore
     def if_bandwidth(self, bandwidth: float, channel=1):
         """Set/query IF Bandwidth for specified channel"""
         self.settings.if_bandwidth = bandwidth
-        if self.is_device_initialized():
+        if self.is_device_active():
             self.send_command(command=f":SENS{channel}:BAND:RES", arg=f"{bandwidth}")
 
     def get_data(self):

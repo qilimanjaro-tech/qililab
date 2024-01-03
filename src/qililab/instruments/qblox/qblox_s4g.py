@@ -87,7 +87,7 @@ class QbloxS4g(CurrentSource):
                 + " Number of dacs is 4 -> maximum channel_id should be 3."
             )
 
-        channel = self.dac(dac_index=channel_id) if self.is_device_initialized() else None
+        channel = self.dac(dac_index=channel_id) if self.is_device_active() else None
 
         if parameter == Parameter.CURRENT:
             self._set_current(value=value, channel_id=channel_id, channel=channel)
@@ -129,7 +129,7 @@ class QbloxS4g(CurrentSource):
         """Set the current"""
         self.settings.current[channel_id] = float(value)
 
-        if self.is_device_initialized():
+        if self.is_device_active():
             channel.current(self.current[channel_id])
 
     @Instrument.CheckParameterValueString
@@ -137,7 +137,7 @@ class QbloxS4g(CurrentSource):
         """Set the span"""
         self.settings.span[channel_id] = str(value)
 
-        if self.is_device_initialized():
+        if self.is_device_active():
             channel.span(self.span[channel_id])
 
     @Instrument.CheckParameterValueBool
@@ -145,7 +145,7 @@ class QbloxS4g(CurrentSource):
         """Set the ramping_enabled"""
         self.settings.ramping_enabled[channel_id] = bool(value)
 
-        if self.is_device_initialized():
+        if self.is_device_active():
             channel.ramping_enabled(self.ramping_enabled[channel_id])
 
     @Instrument.CheckParameterValueFloatOrInt
@@ -153,7 +153,7 @@ class QbloxS4g(CurrentSource):
         """Set the ramp_rate"""
         self.settings.ramp_rate[channel_id] = float(value)
 
-        if self.is_device_initialized():
+        if self.is_device_active():
             channel.ramp_rate(self.ramp_rate[channel_id])
 
     @Instrument.CheckDeviceInitialized

@@ -73,7 +73,7 @@ class QbloxQRMRF(QbloxQRM):
         if parameter in self.parameters:
             setattr(self.settings, parameter.value, value)
 
-            if self.is_device_initialized():
+            if self.is_device_active():
                 self.device.set(parameter.value, value)
             return
         super().setup(parameter, value, channel_id)
