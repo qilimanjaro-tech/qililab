@@ -607,7 +607,7 @@ class CalibrationController:
                     )
 
         df = pd.DataFrame.from_dict(parameters).transpose()
-        df.columns = ("value", "node_id", "datetime")
+        df.columns = ["value", "node_id", "datetime"]
         df.index.names = ["parameter", "bus", "qubit"]
         return df
 
@@ -634,7 +634,7 @@ class CalibrationController:
                     )
 
         df = pd.DataFrame.from_dict(fidelities).transpose()
-        df.columns = ("fidelity", "node_id", "datetime")
+        df.columns = ["fidelity", "node_id", "datetime"]
         df.index.names = ["fidelity", "qubit"]
         return df
 
