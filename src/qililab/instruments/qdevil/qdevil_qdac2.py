@@ -66,10 +66,7 @@ class QDevilQDac2(VoltageSource):
         """
         self._validate_channel(channel_id=channel_id)
 
-        if self.is_device_initialized():
-            channel = self.device.channel(channel_id)
-        else:
-            channel = None
+        channel = self.device.channel(channel_id) if self.is_device_initialized() else None
 
         index = self.dacs.index(channel_id)
         if parameter == Parameter.VOLTAGE:
