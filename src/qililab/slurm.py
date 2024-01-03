@@ -56,6 +56,11 @@ def is_variable_used(code, variable):
     default=None,
     help="Select execution environment. Targets slurm by default but if '-e local' the job is run locally.",
 )
+@argument(
+    "-lp" "--low_priority",
+    default=None,
+    help="By default lab jobs have higher priority than QaaS jobs. However, if '--lp True' they will have the same priority than QaaS jobs and other Lab jobs will be processed first.",
+)
 @needs_local_scope
 @register_cell_magic
 def submit_job(line: str, cell: str, local_ns: dict) -> None:
@@ -73,6 +78,11 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
     folder_path = args.logs
     execution_env = args.execution_environment
     begin_time = args.begin
+    low_priority = args.low_priority
+
+    nice_factor = 0
+    if low_priority is True:
+        nice_factor = 1000000  # this ensure Lab jobs have 0 priority, same as QaaS jobs
 
     # Take all the import lines and add them right before the code of the cell (to make sure all the needed libraries
     # are imported inside the SLURM job)
@@ -86,7 +96,7 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
         slurm_partition=partition,
         name=job_name,
         timeout_min=time_limit,
-        slurm_additional_parameters={"begin": begin_time},
+        slurm_additional_parameters={"begin": begin_time, "nice": nice_factor},
     )
 
     # Compile the code defined above
