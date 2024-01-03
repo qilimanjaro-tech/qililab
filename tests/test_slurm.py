@@ -67,7 +67,7 @@ class TestSubmitJob:
         assert os.path.isfile(os.path.join(slurm_job_data_test, "abc.py")) is False
 
     def test_submit_job_delete_info_from_past_jobs(self, ip):
-        """Check only 60 files are kept in the logs folder"""
+        """Check only a certain amount files are kept in the logs folder"""
         ql.slurm.num_files_to_keep = 8
         ip.run_cell(raw_cell="a=1\nb=1")
         for _ in range(int(ql.slurm.num_files_to_keep / 4)):
@@ -76,7 +76,7 @@ class TestSubmitJob:
                 line=f"-o results -p debug -l {slurm_job_data_test} -n unit_test -e local",
                 cell="results=a+b",
             )
-            time.sleep(1)  # give time submitit to create the files
+            time.sleep(2)  # give time submitit to create the files
 
         assert (
             len([f for f in os.listdir(slurm_job_data_test) if os.path.isfile(os.path.join(slurm_job_data_test, f))])
