@@ -59,7 +59,7 @@ def is_variable_used(code, variable):
     "-lp",
     "--low_priority",
     default=None,
-    help="By default lab jobs have higher priority than QaaS jobs. However, if '--lp True' they will have the same priority than QaaS jobs and other Lab jobs will be executed first.",
+    help="By default lab jobs have higher priority than QaaS jobs. However, if '--lp True' or '--lp true' they will be queued with same priority as QaaS jobs, hence other Lab jobs will be executed first.",
 )
 @needs_local_scope
 @register_cell_magic
@@ -78,10 +78,10 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
     folder_path = args.logs
     execution_env = args.execution_environment
     begin_time = args.begin
-    is_low_priority = args.low_priority
+    low_priority = args.low_priority
 
     nice_factor = 0
-    if is_low_priority:
+    if low_priority in ['True','true']:
         nice_factor = 1000000  # this ensures Lab jobs have 0 priority, same as QaaS jobs
 
     # Take all the import lines and add them right before the code of the cell (to make sure all the needed libraries
