@@ -695,6 +695,14 @@ class CalibrationController:
                 for bus, qubit, parameter, value in node.output_parameters["platform_parameters"]:
                     df[f"{str(parameter)}_{str(bus)}"][qubit] = value
 
+        if "readout_fidelity" in df.columns:
+            first_column = df.pop("readout_fidelity")
+            df.insert(0, "readout_fidelity", first_column)
+
+        if "gate_fidelity" in df.columns:
+            first_column = df.pop("gate_fidelity")
+            df.insert(0, "gate_fidelity", first_column)
+
         return df
 
     def _dependencies(self, node: CalibrationNode) -> list:
