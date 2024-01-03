@@ -152,7 +152,7 @@ class Instrument(BusElement, ABC):
             return self._method(ref, *args, **kwargs) if hasattr(ref, "device") else self._method(*args, **kwargs)
 
     def is_device_initialized(self) -> bool:
-        """Function to use on instrument childs, to check wether or not the device has been initialized.
+        """Check wether or not the device has been initialized, on instrument childs.
 
         Returns:
             bool: Wether or not the device has been initialized.
