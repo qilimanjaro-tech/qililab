@@ -250,6 +250,7 @@ class Galadriel:
                 "slot_id": 0,
             }
         ],
+        INSTRUMENTCONTROLLER.RESET: True,
     }
 
     qblox_qrm_0: dict[str, Any] = {
@@ -337,6 +338,7 @@ class Galadriel:
                 "slot_id": 0,
             }
         ],
+        INSTRUMENTCONTROLLER.RESET: True,
     }
 
     rohde_schwarz_0: dict[str, Any] = {
@@ -362,6 +364,7 @@ class Galadriel:
                 "slot_id": 0,
             }
         ],
+        INSTRUMENTCONTROLLER.RESET: True,
     }
 
     rohde_schwarz_1: dict[str, Any] = {
@@ -386,6 +389,7 @@ class Galadriel:
                 "slot_id": 0,
             }
         ],
+        INSTRUMENTCONTROLLER.RESET: True,
     }
 
     attenuator: dict[str, Any] = {
@@ -408,6 +412,7 @@ class Galadriel:
                 "slot_id": 0,
             }
         ],
+        INSTRUMENTCONTROLLER.RESET: True,
     }
 
     keithley_2600: dict[str, Any] = {
