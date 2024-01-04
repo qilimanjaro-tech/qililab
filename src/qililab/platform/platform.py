@@ -38,6 +38,7 @@ from qililab.pulse import PulseSchedule
 from qililab.qprogram.qblox_compiler import QbloxCompiler
 from qililab.qprogram.qprogram import QProgram
 from qililab.result import Result
+from qililab.result.qblox_results import QbloxResult
 from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import Line, Parameter
@@ -620,9 +621,12 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             if isinstance(instrument, QbloxModule):
                 instrument.desync_sequencers()
 
-        # FIXME: set multiple readout buses
+        # Flatten results if more than one readout bus was used for a qblox module
         if len(results) > 1:
-            logger.error("Only One Readout Bus allowed. Reading only from the first one.")
+            return QbloxResult(
+                integration_lengths=[length for result in results for length in result.integration_lengths],
+                qblox_raw_results=[raw_result for result in results for raw_result in result.qblox_raw_results],
+            )
         if not results:
             raise ValueError("There are no readout buses in the platform.")
 
