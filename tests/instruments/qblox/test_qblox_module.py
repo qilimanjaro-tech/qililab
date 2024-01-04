@@ -1,11 +1,13 @@
 """Tests for the Qblox Module class."""
 import copy
+import re
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 
 from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
+from qililab.instruments.qblox import QbloxModule, QbloxQRM
 from qililab.platform import Platform
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseSchedule
 from qililab.pulse.pulse_event import PulseEvent
@@ -18,6 +20,17 @@ from tests.test_utils import build_platform
 def fixture_platform():
     """platform fixture"""
     return build_platform(runcard=Galadriel.runcard)
+
+
+class DummyQRM(QbloxQRM):
+    """Dummy QRM class for testing"""
+
+    _MIN_WAIT_TIME = 4
+
+    def __init__(self, settings: dict):
+        super().__init__(settings)
+        self.device = MagicMock()
+        self.device.module_type.return_value = "QRM"
 
 
 @pytest.fixture(name="pulsar_controller_qrm")
@@ -111,3 +124,37 @@ class TestQbloxModule:  # pylint: disable=too-few-public-methods
         qrm.device.sequencers[0].sequence.assert_called_once()
         qrm.device.sequencers[0].sync_en.assert_called_once_with(True)
         qrm.device.sequencers[1].sequence.assert_not_called()
+
+    def test_num_sequencers_error(self):
+        """test that an error is raised if more than _NUM_MAX_SEQUENCERS are in the qblox module"""
+
+        nsequencers = 100
+        settings = copy.deepcopy(Galadriel.qblox_qcm_0)
+        settings.pop("name")
+        settings["num_sequencers"] = nsequencers
+        error_string = re.escape(
+            "The number of sequencers must be greater than 0 and less or equal than "
+            + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: {nsequencers}"  # pylint: disable=protected-access
+        )
+        with pytest.raises(ValueError, match=error_string):
+            QbloxModule(settings)
+
+    def test_incorrect_num_sequencers_error(self):
+        """test that an error is raised if num_sequencers is not the same as len(awg_sequencers)"""
+        nsequencers = 2
+        settings = copy.deepcopy(Galadriel.qblox_qcm_0)
+        settings.pop("name")
+        settings["num_sequencers"] = nsequencers
+        settings["awg_sequencers"] = [settings["awg_sequencers"][0]]
+        error_string = re.escape(
+            f"The number of sequencers: {nsequencers} does not match "
+            + "the number of AWG Sequencers settings specified: 1"
+        )
+        with pytest.raises(ValueError, match=error_string):
+            QbloxModule(settings)
+
+    def test_module_type(self):
+        qrm_settings = copy.deepcopy(Galadriel.qblox_qrm_0)
+        qrm_settings.pop("name")
+        qrm = DummyQRM(settings=qrm_settings)
+        assert qrm.module_type == "QRM"
