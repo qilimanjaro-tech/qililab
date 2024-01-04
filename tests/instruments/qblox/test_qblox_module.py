@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
+from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 
 from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
 from qililab.instruments.instrument import ParameterNotFound
@@ -22,6 +23,12 @@ from tests.test_utils import build_platform
 def fixture_platform():
     """platform fixture"""
     return build_platform(runcard=Galadriel.runcard)
+
+
+@pytest.fixture(name="qpysequence")
+def fixture_qpysequence() -> Sequence:
+    """Return Sequence instance."""
+    return Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
 
 
 class DummyQRM(QbloxQRM):
@@ -164,6 +171,17 @@ class TestQbloxModule:  # pylint: disable=too-few-public-methods
         qrm.upload(port=pulse_bus_schedule.port)
         # sequences2 qubit index is 1
         assert qrm.sequences[1] is sequences2[0]
+
+    def test_upload_qpysequence(self, qpysequence: Sequence):
+        """Test upload_qpysequence method."""
+        qrm_settings = copy.deepcopy(Galadriel.qblox_qrm_0)
+        qrm_settings.pop("name")
+        qrm = DummyQRM(settings=qrm_settings)
+        qrm.upload_qpysequence(qpysequence=qpysequence, port="feedline_input")
+        assert qrm.sequences[0][0] is qpysequence
+        qrm.sequences[0][1] is True
+        assert qrm.sequences[1][0] is qpysequence
+        qrm.sequences[1][1] is True
 
     def test_num_sequencers_error(self):
         """test that an error is raised if more than _NUM_MAX_SEQUENCERS are in the qblox module"""
