@@ -162,7 +162,7 @@ class InstrumentController(BusElement, ABC):
         value: float | str | bool,
         channel_id: int | None = None,  # pylint: disable=unused-argument
     ):
-        """updates the reset settings for the controller"""
+        """Updates the reset settings for the controller."""
         if parameter is not Parameter.RESET:
             raise ValueError("Reset is the only property that can be set for an Instrument Controller.")
         if not isinstance(value, bool):
@@ -174,7 +174,7 @@ class InstrumentController(BusElement, ABC):
         parameter: Parameter,
         channel_id: int | None = None,  # pylint: disable=unused-argument
     ):
-        """updates the reset settings for the controller"""
+        """Updates the reset settings for the controller."""
         if parameter is not Parameter.RESET:
             raise ValueError("Reset is the only property that can be set for an Instrument Controller.")
         return self.settings.reset
@@ -259,4 +259,5 @@ class InstrumentController(BusElement, ABC):
             RUNCARD.ALIAS: self.alias,
             INSTRUMENTCONTROLLER.CONNECTION: self.connection.to_dict(),
             INSTRUMENTCONTROLLER.MODULES: [module.to_dict() for module in self.settings.modules],
+            INSTRUMENTCONTROLLER.RESET: self.settings.reset,
         }

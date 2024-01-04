@@ -121,10 +121,9 @@ class SystemControl(FactoryElement, ABC):
         """
         for instrument in self.instruments:
             with contextlib.suppress(ParameterNotFound):
-                if isinstance(instrument, QbloxModule):
-                    instrument.setup(parameter, value, channel_id, port_id=port_id)
-                else:
-                    instrument.set_parameter(parameter, value, channel_id)
+                if isinstance(instrument, QbloxModule) and channel_id is None and port_id is not None:
+                    channel_id = instrument.get_sequencers_from_chip_port_id(chip_port_id=port_id)[0].identifier
+                instrument.set_parameter(parameter, value, channel_id)
                 return
         raise ParameterNotFound(f"Could not find parameter {parameter.value} in the system control {self.name}")
 
@@ -137,7 +136,7 @@ class SystemControl(FactoryElement, ABC):
         """
         for instrument in self.instruments:
             with contextlib.suppress(ParameterNotFound):
-                if isinstance(instrument, QbloxModule):
-                    return instrument.get(parameter, channel_id, port_id=port_id)
+                if isinstance(instrument, QbloxModule) and channel_id is None and port_id is not None:
+                    channel_id = instrument.get_sequencers_from_chip_port_id(chip_port_id=port_id)[0].identifier
                 return instrument.get_parameter(parameter, channel_id)
         raise ParameterNotFound(f"Could not find parameter {parameter.value} in the system control {self.name}")
