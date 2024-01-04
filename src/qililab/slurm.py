@@ -8,7 +8,7 @@ from submitit import AutoExecutor
 
 from qililab.config import logger
 
-num_files_to_keep = 60  # needs to be a multiple of 4 and 5: 20,40,60,80..
+num_files_to_keep = 500  # needs to be a multiple of 4 and 5
 
 
 # pylint: disable=too-many-locals
@@ -56,6 +56,12 @@ def is_variable_used(code, variable):
     default=None,
     help="Select execution environment. Targets slurm by default but if '-e local' the job is run locally.",
 )
+@argument(
+    "-lp",
+    "--low_priority",
+    default=None,
+    help="By default lab jobs have higher priority than QaaS jobs. However, if '--lp True' or '--lp true' they will be queued with same priority as QaaS jobs, hence other Lab jobs will be executed first.",
+)
 @needs_local_scope
 @register_cell_magic
 def submit_job(line: str, cell: str, local_ns: dict) -> None:
@@ -73,6 +79,11 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
     folder_path = args.logs
     execution_env = args.execution_environment
     begin_time = args.begin
+    low_priority = args.low_priority
+
+    nice_factor = 0
+    if low_priority in ["True", "true"]:
+        nice_factor = 1000000  # this ensures Lab jobs have 0 priority, same as QaaS jobs
 
     # Take all the import lines and add them right before the code of the cell (to make sure all the needed libraries
     # are imported inside the SLURM job)
@@ -86,7 +97,7 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
         slurm_partition=partition,
         name=job_name,
         timeout_min=time_limit,
-        slurm_additional_parameters={"begin": begin_time},
+        slurm_additional_parameters={"begin": begin_time, "nice": nice_factor},
     )
 
     # Compile the code defined above
@@ -121,9 +132,12 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
     for file_path in file_paths:
         try:
             job_ids.append(int(file_path.split("/")[1].split("_")[0]))
-            if len(file_paths) >= num_files_to_keep and (str(job_ids[0]) in file_path):
-                os.remove(file_path)
+
         # remove non-submitit files, not starting with an id
         except ValueError:
             logger.warning("%s shouldn't be in %s. It has been removed!", file_path.split("/")[1], folder_path)
+            os.remove(file_path)
+
+    for file_path in file_paths:
+        if len(file_paths) >= num_files_to_keep and str(min(job_ids)) in file_path:
             os.remove(file_path)
