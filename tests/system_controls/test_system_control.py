@@ -113,7 +113,7 @@ class TestMethods:
         """Test the ``set_parameter`` method with a Rohde & Schwarz instrument."""
         for instrument in system_control.instruments:
             instrument.device = MagicMock()
-        system_control.set_parameter(parameter=ql.Parameter.LO_FREQUENCY, value=1e9, channel_id=0)
+        system_control.set_parameter(parameter=ql.Parameter.LO_FREQUENCY, value=1e9)
         for instrument in system_control.instruments:
             if isinstance(instrument, SGS100A):
                 instrument.device.frequency.assert_called_once_with(1e9)  # type: ignore
