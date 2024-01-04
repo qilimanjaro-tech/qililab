@@ -63,6 +63,22 @@ class TestKeithley2600:
         """Test initial_setup method."""
         keithley_2600.initial_setup()
 
+    @pytest.mark.parametrize("parameter, value", [(Parameter.MAX_CURRENT, 0.01), (Parameter.MAX_VOLTAGE, 19.0)])
+    def test_setup_method_current_parameter_no_connection(
+        self, parameter: Parameter, value: float, keithley_2600_no_device: Keithley2600
+    ):
+        """Test setup method."""
+        keithley_2600_no_device.setup(parameter=parameter, value=value)
+        if parameter == Parameter.CURRENT:
+            assert keithley_2600_no_device.settings.max_current == value
+        if parameter == Parameter.VOLTAGE:
+            assert keithley_2600_no_device.settings.max_voltage == value
+
+    def test_initial_setup_method_no_connection(self, keithley_2600_no_device: Keithley2600):
+        """Test initial setup method."""
+        with pytest.raises(AttributeError, match="Instrument Device has not been initialized"):
+            keithley_2600_no_device.initial_setup()
+
     def test_turn_on_method(self, keithley_2600: Keithley2600):
         """Test turn_on method."""
         keithley_2600.turn_on()

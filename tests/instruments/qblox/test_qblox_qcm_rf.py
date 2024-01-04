@@ -85,6 +85,13 @@ class TestMethods:
             ("out1_offset_path1", 0.6),
         }
 
+    def test_initial_setup_no_connection(self, settings):
+        """Test the `initial_setup` method of the QbloxQCMRF class."""
+        qcm_rf = QbloxQCMRF(settings=settings)
+        qcm_rf.device = None
+        with pytest.raises(AttributeError):
+            qcm_rf.initial_setup()
+
     def test_setup(self, settings):
         """Test the `setup` method of the QbloxQCMRF class."""
         qcm_rf = QbloxQCMRF(settings=settings)
@@ -94,6 +101,14 @@ class TestMethods:
         qcm_rf.setup(parameter=Parameter.GAIN, value=1)
         qcm_rf.device.sequencers[0].gain_awg_path0.assert_called_once_with(1)
         qcm_rf.device.sequencers[0].gain_awg_path1.assert_called_once_with(1)
+
+    def test_setup_no_instrument_connection(self, settings):
+        """Test the `setup` method of the QbloxQCMRF class."""
+        qcm_rf = QbloxQCMRF(settings=settings)
+        qcm_rf.device = None
+        qcm_rf.setup(parameter=Parameter.OUT0_LO_FREQ, value=3.8e9)
+        qcm_rf.setup(parameter=Parameter.GAIN, value=1)
+        assert qcm_rf.get_parameter(parameter=Parameter.OUT0_LO_FREQ) == 3.8e9
 
 
 class TestIntegration:
@@ -108,6 +123,13 @@ class TestIntegration:
         assert qcm_rf.device.get("out0_att") == settings["out0_att"]
         assert qcm_rf.device.get("out1_att") == settings["out1_att"]
         cluster.close()
+
+    def test_initial_setup_no_connection(self, settings):
+        """Test the `initial_setup` method of the QbloxQCMRF class."""
+        qcm_rf = QbloxQCMRF(settings=settings)
+        qcm_rf.device = None
+        with pytest.raises(AttributeError):
+            qcm_rf.initial_setup()
 
     @pytest.mark.xfail
     def test_initial_setup_with_failing_setters(self, settings):
@@ -142,6 +164,19 @@ class TestIntegration:
         assert qcm_rf.device.sequencers[0].get("gain_awg_path1") == pytest.approx(0.123)
         cluster.close()
 
+    def test_setup_no_instrument_connection(self, settings):
+        """Test the `setup` method of the QbloxQCMRF class without connection."""
+        qcm_rf = QbloxQCMRF(settings=settings)
+        qcm_rf.setup(parameter=Parameter.OUT0_ATT, value=58)
+        qcm_rf.setup(parameter=Parameter.GAIN, value=0.123)
+        assert not hasattr(qcm_rf, "device")
+
+    def test_initial_setup_no_connected(self, settings):
+        """Test initial setup method without connection"""
+        qcm_rf = QbloxQCMRF(settings=settings)
+        with pytest.raises(AttributeError, match="Instrument Device has not been initialized"):
+            qcm_rf.initial_setup()
+
     def test_setup_with_lo_frequency_output0(self, settings):
         """Test the `setup` method when using the `Parameter.LO_FREQUENCY` generic parameter."""
         sequencer_idx = 0
@@ -149,20 +184,37 @@ class TestIntegration:
         sequencer = qcm_rf._get_sequencer_by_id(sequencer_idx)
         sequencer.output_i = 0
         sequencer.output_q = 1
-        qcm_rf.device = MagicMock()
+
         qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=sequencer_idx)
-        qcm_rf.device.set.assert_called_once_with("out0_lo_freq", 2e9)
+        assert qcm_rf.get_parameter(parameter=Parameter.LO_FREQUENCY, channel_id=sequencer_idx) == 2e9
+        assert not hasattr(qcm_rf, "device")
+
+        qcm_rf.device = MagicMock()
+        qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=3e9, channel_id=sequencer_idx)
+        qcm_rf.device.set.assert_called_once_with("out0_lo_freq", 3e9)
+        assert qcm_rf.get_parameter(parameter=Parameter.LO_FREQUENCY, channel_id=sequencer_idx) == 3e9
 
     def test_setup_with_lo_frequency_output1(self, settings):
         """Test the `setup` method when using the `Parameter.LO_FREQUENCY` generic parameter."""
         sequencer_idx = 0
+
         qcm_rf = QbloxQCMRF(settings=settings)
         sequencer = qcm_rf._get_sequencer_by_id(sequencer_idx)
         sequencer.output_i = 3
         sequencer.output_q = 2
-        qcm_rf.device = MagicMock()
+
         qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=sequencer_idx)
-        qcm_rf.device.set.assert_called_once_with("out1_lo_freq", 2e9)
+        assert qcm_rf.get_parameter(parameter=Parameter.LO_FREQUENCY, channel_id=sequencer_idx) == 2e9
+        assert not hasattr(qcm_rf, "device")
+
+        qcm_rf.device = MagicMock()
+        qcm_rf.setup(
+            parameter=Parameter.LO_FREQUENCY,
+            value=3e9,
+            channel_id=sequencer_idx,
+        )
+        qcm_rf.device.set.assert_called_once_with("out1_lo_freq", 3e9)
+        assert qcm_rf.get_parameter(parameter=Parameter.LO_FREQUENCY, channel_id=sequencer_idx) == 3e9
 
     def test_setup_with_lo_frequency_with_port_id(self, settings):
         """Test the `setup` method when using the `Parameter.LO_FREQUENCY` generic parameter."""
@@ -172,7 +224,8 @@ class TestIntegration:
         sequencer.output_i = 3
         sequencer.output_q = 2
         qcm_rf.device = MagicMock()
-        qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, port_id=sequencer.chip_port_id)
+        channel_id = qcm_rf.get_sequencers_from_chip_port_id(sequencer.chip_port_id)[0].identifier
+        qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=channel_id)
         qcm_rf.device.set.assert_called_once_with("out1_lo_freq", 2e9)
 
     def test_setup_with_lo_frequency_without_channel_id_raises_error(self, settings):
