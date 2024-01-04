@@ -428,7 +428,7 @@ class QbloxModule(AWG):
                 # is sequencer id is not in cache then delete the sequence and do not sync,
                 # since the sequence is not to be run, we skip this sequencer
                 if seq_idx not in self.cache:
-                    _ = self.device.sequences.pop(seq_idx)
+                    _ = self.sequences.pop(seq_idx)
                     continue
                 # if the sequence was in the cache then it is to be run so we sync the sequencer to the others
                 sequence = self.sequences[seq_idx]

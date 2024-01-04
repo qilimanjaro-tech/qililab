@@ -7,11 +7,13 @@ import numpy as np
 import pytest
 
 from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
-from qililab.instruments.qblox import QbloxModule, QbloxQRM
+from qililab.instruments.instrument import ParameterNotFound
+from qililab.instruments.qblox import QbloxModule, QbloxQCM, QbloxQRM
 from qililab.platform import Platform
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseSchedule
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.qblox_compiler import QbloxCompiler
+from qililab.typings.enums import Parameter
 from tests.data import Galadriel
 from tests.test_utils import build_platform
 
@@ -31,6 +33,17 @@ class DummyQRM(QbloxQRM):
         super().__init__(settings)
         self.device = MagicMock()
         self.device.module_type.return_value = "QRM"
+
+
+class DummyQCM(QbloxQCM):
+    """Dummy QCM class for testing"""
+
+    _MIN_WAIT_TIME = 4
+
+    def __init__(self, settings: dict):
+        super().__init__(settings)
+        self.device = MagicMock()
+        self.device.module_type.return_value = "QCM"
 
 
 @pytest.fixture(name="pulsar_controller_qrm")
@@ -109,6 +122,15 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     return PulseBusSchedule(timeline=[pulse_event], port="feedline_input")
 
 
+@pytest.fixture(name="pulse_bus_schedule2")
+def fixture_pulse_bus_schedule2() -> PulseBusSchedule:
+    """Return PulseBusSchedule instance."""
+    pulse_shape = Gaussian(num_sigmas=4)
+    pulse = Pulse(amplitude=0.8, phase=np.pi / 2 + 12.2, duration=50, frequency=1e9, pulse_shape=pulse_shape)
+    pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=1)
+    return PulseBusSchedule(timeline=[pulse_event], port="feedline_input")
+
+
 class TestQbloxModule:  # pylint: disable=too-few-public-methods
     """Unit tests checking the QbloxModule attributes and methods"""
 
@@ -124,6 +146,24 @@ class TestQbloxModule:  # pylint: disable=too-few-public-methods
         qrm.device.sequencers[0].sequence.assert_called_once()
         qrm.device.sequencers[0].sync_en.assert_called_once_with(True)
         qrm.device.sequencers[1].sequence.assert_not_called()
+
+    def test_upload_pops_not_in_cache(self, qrm, qblox_compiler, pulse_bus_schedule, pulse_bus_schedule2):
+        """Tests that uploading twice the same sequence for different qubit erases old sequences in the
+        same busnot being used"""
+        pulse_schedule = PulseSchedule([pulse_bus_schedule])
+        pulse_schedule2 = PulseSchedule([pulse_bus_schedule2])
+
+        sequences1 = qblox_compiler.compile(pulse_schedule, num_avg=1000, repetition_duration=2000, num_bins=1)[
+            "feedline_input_output_bus"
+        ]
+        qrm.upload(port=pulse_bus_schedule.port)
+        assert qrm.sequences[0] is sequences1[0]
+        sequences2 = qblox_compiler.compile(pulse_schedule2, num_avg=1000, repetition_duration=2000, num_bins=1)[
+            "feedline_input_output_bus"
+        ]
+        qrm.upload(port=pulse_bus_schedule.port)
+        # sequences2 qubit index is 1
+        assert qrm.sequences[1] is sequences2[0]
 
     def test_num_sequencers_error(self):
         """test that an error is raised if more than _NUM_MAX_SEQUENCERS are in the qblox module"""
@@ -158,3 +198,30 @@ class TestQbloxModule:  # pylint: disable=too-few-public-methods
         qrm_settings.pop("name")
         qrm = DummyQRM(settings=qrm_settings)
         assert qrm.module_type == "QRM"
+
+    def test_setup_raises_error(self):
+        qcm_settings = copy.deepcopy(Galadriel.qblox_qcm_0)
+        qcm_settings.pop("name")
+        qcm = DummyQCM(settings=qcm_settings)
+        param = Parameter.NUM_BINS
+        error_string = re.escape(f"Cannot update parameter {param.value} without specifying a channel_id.")
+        with pytest.raises(ParameterNotFound, match=error_string):
+            qcm.setup(parameter=Parameter.NUM_BINS, value=10)
+
+    def test_get_raises_error(self):
+        qcm_settings = copy.deepcopy(Galadriel.qblox_qcm_0)
+        qcm_settings.pop("name")
+        qcm = DummyQCM(settings=qcm_settings)
+        param = Parameter.NUM_BINS
+        error_string = re.escape(f"Cannot update parameter {param.value} without specifying a channel_id.")
+        with pytest.raises(ParameterNotFound, match=error_string):
+            qcm.get(parameter=Parameter.NUM_BINS)
+
+    def test_set_num_bins_raises_error(self):
+        qcm_settings = copy.deepcopy(Galadriel.qblox_qcm_0)
+        qcm_settings.pop("name")
+        qcm = DummyQCM(settings=qcm_settings)
+        value = float(qcm._MAX_BINS + 1)
+        error_string = re.escape(f"Value {value} greater than maximum bins: {qcm._MAX_BINS}")
+        with pytest.raises(ValueError, match=error_string):
+            qcm._set_num_bins(value=value, sequencer_id=0)
