@@ -28,3 +28,6 @@ This document contains the changes of the current release.
 ### Documentation
 
 ### Bug fixes
+
+- Fixed [bug #653](https://github.com/qilimanjaro-tech/qililab/issues/635), where saving the runcard would not include the reset parameter in the instrument controllers.
+  [#653](https://github.com/qilimanjaro-tech/qililab/pull/653)
