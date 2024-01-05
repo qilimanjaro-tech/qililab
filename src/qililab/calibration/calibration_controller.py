@@ -658,7 +658,6 @@ class CalibrationController:
                 - ``key``: (``int``: qubit).
                 - ``value``:{``str``: parameter name,``float``: parameter value}.
         """
-        # fidelities: dict[int, dict[str, float]] = {}
         idx, col = [], []
         for node in self.node_sequence.values():
             qubit_list = node.node_id.split("_")
