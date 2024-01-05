@@ -650,14 +650,8 @@ class CalibrationController:
             df.index.names = ["fidelity", "qubit"]
         return df
 
-    def get_qubits_table(self) -> pd.DataFrame:
-        """Retrieves the last updated fidelities of the graph in a fancy way.
-
-        Returns:
-            dict[tuple, tuple]: Fidelities dictionary, with the key and values being tuples containing, in this order:
-                - ``key``: (``int``: qubit).
-                - ``value``:{``str``: parameter name,``float``: parameter value}.
-        """
+    def _create_empty_dataframe(self) -> pd.DataFrame:
+        """Creates the structure of the dataframe for the qubits table."""
         idx, col = [], []
         for node in self.node_sequence.values():
             qubit_list = node.node_id.split("_")
@@ -691,13 +685,21 @@ class CalibrationController:
         df = pd.DataFrame("-", idx, col)
         df.index.name = "qubit"
 
+        return df
+
+    def get_qubits_table(self) -> pd.DataFrame:
+        """Retrieves the last updated fidelities of the graph in a qubit table.
+
+        Returns:
+            pd.DataFrame: where columns are each fidelity or parameter, and rows each qubit.
+        """
+        df = self._create_empty_dataframe()
+
         for node in self.node_sequence.values():
             qubit_list = node.node_id.split("_")
             qubit = "_".join(
                 [i for i in qubit_list if any(char == "q" for char in i) and any(char.isdigit() for char in i)]
             ).replace("q", "-")[1:]
-            if qubit not in idx:
-                idx.append(qubit)
 
             if (
                 node.output_parameters is not None
@@ -717,6 +719,7 @@ class CalibrationController:
                     bus = "_".join([x for x in bus_list if not any(char.isdigit() for char in x)])
                     df[f"{str(parameter)}_{bus}"][qubit] = value
 
+        # Reorder fidelities to the front of the dataframe:
         for column in df.columns:
             if "fidelity" in column:
                 first_column = df.pop(column)
