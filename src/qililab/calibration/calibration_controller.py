@@ -662,9 +662,9 @@ class CalibrationController:
         idx, col = [], []
         for node in self.node_sequence.values():
             qubit_list = node.node_id.split("_")
-            qubit = "-".join(
+            qubit = "_".join(
                 [i for i in qubit_list if any(char == "q" for char in i) and any(char.isdigit() for char in i)]
-            ).replace("q", "")
+            ).replace("q", "-")[1:]
             if qubit not in idx:
                 idx.append(qubit)
 
@@ -694,9 +694,9 @@ class CalibrationController:
 
         for node in self.node_sequence.values():
             qubit_list = node.node_id.split("_")
-            qubit = "-".join(
+            qubit = "_".join(
                 [i for i in qubit_list if any(char == "q" for char in i) and any(char.isdigit() for char in i)]
-            ).replace("q", "")
+            ).replace("q", "-")[1:]
             if qubit not in idx:
                 idx.append(qubit)
 
