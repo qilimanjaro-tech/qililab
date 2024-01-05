@@ -680,7 +680,7 @@ class CalibrationController:
                 for bus, qubit, parameter, _ in node.output_parameters["platform_parameters"]:
                     bus_list = str(bus).split("_")
                     bus = "_".join([x for x in bus_list if not any(char.isdigit() for char in x)])
-                    if qubit in (None, "None", "NaN", "nan"):
+                    if qubit in (None, "None", "NaN", "nan", "null", "Null"):
                         qubit = "".join(char for char in bus if char.isdigit())
 
                     if qubit not in idx:
@@ -708,7 +708,7 @@ class CalibrationController:
                 for bus, qubit, parameter, value in node.output_parameters["platform_parameters"]:
                     bus_list = str(bus).split("_")
                     bus = "_".join([x for x in bus_list if not any(char.isdigit() for char in x)])
-                    if qubit in (None, "None", "NaN", "nan"):
+                    if qubit in (None, "None", "NaN", "nan", "null", "Null"):
                         qubit = "".join(char for char in bus if char.isdigit())
                     df[f"{str(parameter)}_{bus}"][qubit] = value
 
