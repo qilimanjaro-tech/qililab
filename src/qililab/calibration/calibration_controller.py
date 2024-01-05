@@ -661,14 +661,19 @@ class CalibrationController:
         # fidelities: dict[int, dict[str, float]] = {}
         idx, col = [], []
         for node in self.node_sequence.values():
+            qubit_list = node.node_id.split("_")
+            qubit = "-".join(
+                [i for i in qubit_list if any(char == "q" for char in i) and any(char.isdigit() for char in i)]
+            ).replace("q", "")
+            if qubit not in idx:
+                idx.append(qubit)
+
             if (
                 node.output_parameters is not None
                 and node.previous_timestamp is not None
                 and "fidelities" in node.output_parameters
             ):
-                for qubit, fidelity, _ in node.output_parameters["fidelities"]:
-                    if qubit not in idx:
-                        idx.append(qubit)
+                for _, fidelity, _ in node.output_parameters["fidelities"]:
                     if fidelity not in col:
                         col.append(fidelity)
 
@@ -677,14 +682,10 @@ class CalibrationController:
                 and node.previous_timestamp is not None
                 and "platform_parameters" in node.output_parameters
             ):
-                for bus, qubit, parameter, _ in node.output_parameters["platform_parameters"]:
+                for bus, _, parameter, _ in node.output_parameters["platform_parameters"]:
                     bus_list = str(bus).split("_")
                     bus = "_".join([x for x in bus_list if not any(char.isdigit() for char in x)])
-                    if qubit in (None, "None", "NaN", "nan", "null", "Null"):
-                        qubit = "".join(char for char in bus if char.isdigit())
 
-                    if qubit not in idx:
-                        idx.append(qubit)
                     if f"{str(parameter)}_{bus}" not in col:
                         col.append(f"{str(parameter)}_{bus}")
 
@@ -692,12 +693,19 @@ class CalibrationController:
         df.index.name = "qubit"
 
         for node in self.node_sequence.values():
+            qubit_list = node.node_id.split("_")
+            qubit = "-".join(
+                [i for i in qubit_list if any(char == "q" for char in i) and any(char.isdigit() for char in i)]
+            ).replace("q", "")
+            if qubit not in idx:
+                idx.append(qubit)
+
             if (
                 node.output_parameters is not None
                 and node.previous_timestamp is not None
                 and "fidelities" in node.output_parameters
             ):
-                for qubit, fidelity, value in node.output_parameters["fidelities"]:
+                for _, fidelity, value in node.output_parameters["fidelities"]:
                     df[fidelity][qubit] = value
 
             if (
@@ -705,11 +713,9 @@ class CalibrationController:
                 and node.previous_timestamp is not None
                 and "platform_parameters" in node.output_parameters
             ):
-                for bus, qubit, parameter, value in node.output_parameters["platform_parameters"]:
+                for bus, _, parameter, value in node.output_parameters["platform_parameters"]:
                     bus_list = str(bus).split("_")
                     bus = "_".join([x for x in bus_list if not any(char.isdigit() for char in x)])
-                    if qubit in (None, "None", "NaN", "nan", "null", "Null"):
-                        qubit = "".join(char for char in bus if char.isdigit())
                     df[f"{str(parameter)}_{bus}"][qubit] = value
 
         if "readout_fidelity" in df.columns:
