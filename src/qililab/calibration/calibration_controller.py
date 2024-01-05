@@ -681,7 +681,7 @@ class CalibrationController:
                     bus_list = str(bus).split("_")
                     bus = "_".join([x for x in bus_list if not any(char.isdigit() for char in x)])
                     if qubit is None:
-                        qubit = re.sub("[^0-9]", "", bus)
+                        qubit = "".join(char for char in bus if char.isdigit())
 
                     if qubit not in idx:
                         idx.append(qubit)
@@ -709,7 +709,7 @@ class CalibrationController:
                     bus_list = str(bus).split("_")
                     bus = "_".join([x for x in bus_list if not any(char.isdigit() for char in x)])
                     if qubit is None:
-                        qubit = re.sub("[^0-9]", "", bus)
+                        qubit = "".join(char for char in bus if char.isdigit())
                     df[f"{str(parameter)}_{bus}"][qubit] = value
 
         if "readout_fidelity" in df.columns:
