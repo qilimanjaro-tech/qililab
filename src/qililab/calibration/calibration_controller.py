@@ -609,7 +609,7 @@ class CalibrationController:
         df = pd.DataFrame.from_dict(parameters).transpose()
         if len(df.columns) == 3:
             df.columns = ["value", "node_id", "datetime"]
-        if len(df.index) == 3:
+        if df.index.nlevels == 3:
             df.index.names = ["parameter", "bus", "qubit"]
         return df
 
@@ -638,7 +638,7 @@ class CalibrationController:
         df = pd.DataFrame.from_dict(fidelities).transpose()
         if len(df.columns) == 3:
             df.columns = ["fidelity", "node_id", "datetime"]
-        if len(df.index) == 2:
+        if df.index.nlevels == 2:
             df.index.names = ["fidelity", "qubit"]
         return df
 
