@@ -66,28 +66,25 @@ class QDevilQDac2(VoltageSource):
         """
         self._validate_channel(channel_id=channel_id)
 
-        if self.is_device_initialized():
-            channel = self.device.channel(channel_id)
-        else:
-            channel = None
+        channel = self.device.channel(channel_id) if self.is_device_active() else None
 
         index = self.dacs.index(channel_id)
         if parameter == Parameter.VOLTAGE:
             voltage = float(value)
             self.settings.voltage[index] = voltage
-            if self.is_device_initialized():
+    if self.is_device_active():
                 channel.dc_constant_V(voltage)
             return
         if parameter == Parameter.SPAN:
             span = str(value)
             self.settings.span[index] = span
-            if self.is_device_initialized():
+    if self.is_device_active():
                 channel.output_range(span)
             return
         if parameter == Parameter.RAMPING_ENABLED:
             ramping_enabled = bool(value)
             self.settings.ramping_enabled[index] = ramping_enabled
-            if self.is_device_initialized():
+    if self.is_device_active():
                 if ramping_enabled:
                     channel.dc_slew_rate_V_per_s(self.ramp_rate[index])
                 else:
@@ -97,13 +94,13 @@ class QDevilQDac2(VoltageSource):
             ramping_rate = float(value)
             self.settings.ramp_rate[index] = ramping_rate
             ramping_enabled = self.ramping_enabled[index]
-            if ramping_enabled and self.is_device_initialized():
+            if ramping_enabled and self.is_device_active():
                 channel.dc_slew_rate_V_per_s(ramping_rate)
             return
         if parameter == Parameter.LOW_PASS_FILTER:
             low_pass_filter = str(value)
             self.settings.low_pass_filter[index] = low_pass_filter
-            if self.is_device_initialized():
+    if self.is_device_active():
                 channel.output_filter(low_pass_filter)
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")

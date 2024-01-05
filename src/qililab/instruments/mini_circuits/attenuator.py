@@ -48,7 +48,7 @@ class Attenuator(Instrument):
         """Set instrument settings."""
         if parameter == Parameter.ATTENUATION:
             self.settings.attenuation = float(value)
-            if self.is_device_initialized():
+    if self.is_device_active():
                 self.device.setup(attenuation=self.attenuation)
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")

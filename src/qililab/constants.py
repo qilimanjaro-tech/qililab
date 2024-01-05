@@ -199,6 +199,7 @@ class INSTRUMENTCONTROLLER:
 
     CONNECTION = "connection"
     MODULES = "modules"
+    RESET = "reset"
 
 
 class CONNECTION:

@@ -176,7 +176,7 @@ class AWGAnalogDigitalConverter(AWG):
             ValueError: when value type is not bool
         """
         cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).scope_hardware_averaging = bool(value)
-        if self.is_device_initialized():
+    if self.is_device_active():
             self._set_device_scope_hardware_averaging(value=bool(value), sequencer_id=sequencer_id)
 
     @Instrument.CheckParameterValueFloatOrInt
@@ -188,7 +188,7 @@ class AWGAnalogDigitalConverter(AWG):
             sequencer_id (int): sequencer to update the value
         """
         cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).threshold = float(value)
-        if self.is_device_initialized():
+    if self.is_device_active():
             self._set_device_threshold(value=float(value), sequencer_id=sequencer_id)
 
     @Instrument.CheckParameterValueFloatOrInt
@@ -200,7 +200,7 @@ class AWGAnalogDigitalConverter(AWG):
             sequencer_id (int): sequencer to update the value
         """
         cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).threshold_rotation = float(value)
-        if self.is_device_initialized():
+    if self.is_device_active():
             self._set_device_threshold_rotation(value=float(value), sequencer_id=sequencer_id)
 
     @Instrument.CheckParameterValueBool
@@ -215,7 +215,7 @@ class AWGAnalogDigitalConverter(AWG):
             ValueError: when value type is not bool
         """
         cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).hardware_demodulation = bool(value)
-        if self.is_device_initialized():
+    if self.is_device_active():
             self._set_device_hardware_demodulation(value=bool(value), sequencer_id=sequencer_id)
 
     def _set_acquisition_mode(self, value: float | str | bool | AcquireTriggerMode, sequencer_id: int):
@@ -231,7 +231,7 @@ class AWGAnalogDigitalConverter(AWG):
         if not isinstance(value, AcquireTriggerMode) and not isinstance(value, str):
             raise ValueError(f"value must be a string or AcquireTriggerMode. Current type: {type(value)}")
         cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).scope_acquire_trigger_mode = AcquireTriggerMode(value)
-        if self.is_device_initialized():
+    if self.is_device_active():
             self._set_device_acquisition_mode(mode=AcquireTriggerMode(value), sequencer_id=sequencer_id)
 
     @Instrument.CheckParameterValueFloatOrInt
@@ -246,7 +246,7 @@ class AWGAnalogDigitalConverter(AWG):
             ValueError: when value type is not float
         """
         cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).integration_length = int(value)
-        if self.is_device_initialized():
+    if self.is_device_active():
             self._set_device_integration_length(value=int(value), sequencer_id=sequencer_id)
 
     @Instrument.CheckParameterValueFloatOrInt

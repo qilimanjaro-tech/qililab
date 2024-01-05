@@ -151,8 +151,11 @@ class Instrument(BusElement, ABC):
                 raise AttributeError("Instrument Device has not been initialized")
             return self._method(ref, *args, **kwargs) if hasattr(ref, "device") else self._method(*args, **kwargs)
 
-    def is_device_initialized(self) -> bool:
-        """Function to use on instrument childs, to check wether or not the device has been initialized.
+    def is_device_active(self) -> bool:
+        """Check wether or not the device is currently active, for instrument childs.
+
+        Contrary to ``CheckDeviceInitialized``, we also check if the device is not None, since a ``disconnect()`` after
+        initialization would set it to None.
 
         Returns:
             bool: Wether or not the device has been initialized.
