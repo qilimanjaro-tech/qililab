@@ -651,7 +651,11 @@ class CalibrationController:
         return df
 
     def _create_empty_dataframe(self) -> pd.DataFrame:
-        """Creates the structure of the dataframe for the qubits table."""
+        """Creates the structure of the dataframe for the qubits table.
+
+        Returns:
+            pd.DataFrame: Empty df, where columns are each fidelity or parameter, and rows each qubit.
+        """
         idx, col = [], []
         for node in self.node_sequence.values():
             qubit_list = node.node_id.split("_")
@@ -691,7 +695,7 @@ class CalibrationController:
         """Retrieves the last updated fidelities of the graph in a qubit table.
 
         Returns:
-            pd.DataFrame: where columns are each fidelity or parameter, and rows each qubit.
+            pd.DataFrame: Table where columns are each fidelity or parameter, and rows each qubit.
         """
         df = self._create_empty_dataframe()
 
