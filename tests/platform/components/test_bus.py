@@ -1,10 +1,12 @@
 """Tests for the Bus class."""
+import re
 from types import NoneType
 from unittest.mock import MagicMock, patch
 
 import pytest
 from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 
+import qililab as ql
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.platform import Bus, Buses
 from qililab.system_control import ReadoutSystemControl, SystemControl
@@ -98,6 +100,17 @@ class TestErrors:
             match=f"The bus {control_bus.alias} cannot acquire results because it doesn't have a readout system control",
         ):
             control_bus.acquire_result()
+
+    def test_control_bus_raises_error_when_parameter_not_found(self):
+        """Test that an error is raised when trying to set a parameter not found in bus parameters."""
+        buses = load_buses()
+        control_bus = [bus for bus in buses if not isinstance(bus.system_control, ReadoutSystemControl)][0]
+        parameter = ql.Parameter.GATE_OPTIONS
+        error_string = re.escape(
+            f"No parameter with name {parameter.value} was found in the bus with alias {control_bus.alias}"
+        )
+        with pytest.raises(ParameterNotFound, match=error_string):
+            control_bus.get_parameter(parameter=parameter)
 
     def test_control_bus_raises_error_when_acquiring_qprogram_results(self):
         """Test that an error is raised when calling acquire_result with a drive bus."""
