@@ -678,10 +678,13 @@ class CalibrationController:
                 and "platform_parameters" in node.output_parameters
             ):
                 for bus, qubit, parameter, _ in node.output_parameters["platform_parameters"]:
+                    bus_list = str(bus).split("_")
+                    bus = "_".join([x for x in bus_list if "q" not in x])
+
                     if qubit not in idx:
                         idx.append(qubit)
-                    if f"{str(parameter)}_{str(bus)}" not in col:
-                        col.append(f"{str(parameter)}_{str(bus)}")
+                    if f"{str(parameter)}_{bus}" not in col:
+                        col.append(f"{str(parameter)}_{bus}")
 
         df = pd.DataFrame("-", idx, col)
         df.index.name = "qubit"
@@ -701,7 +704,9 @@ class CalibrationController:
                 and "platform_parameters" in node.output_parameters
             ):
                 for bus, qubit, parameter, value in node.output_parameters["platform_parameters"]:
-                    df[f"{str(parameter)}_{str(bus)}"][qubit] = value
+                    bus_list = str(bus).split("_")
+                    bus = "_".join([x for x in bus_list if "q" not in x])
+                    df[f"{str(parameter)}_{bus}"][qubit] = value
 
         if "readout_fidelity" in df.columns:
             first_column = df.pop("readout_fidelity")
