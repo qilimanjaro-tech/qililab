@@ -718,13 +718,10 @@ class CalibrationController:
                     bus = "_".join([x for x in bus_list if not any(char.isdigit() for char in x)])
                     df[f"{str(parameter)}_{bus}"][qubit] = value
 
-        if "readout_fidelity" in df.columns:
-            first_column = df.pop("readout_fidelity")
-            df.insert(0, "readout_fidelity", first_column)
-
-        if "gate_fidelity" in df.columns:
-            first_column = df.pop("gate_fidelity")
-            df.insert(0, "gate_fidelity", first_column)
+        for column in df.columns:
+            if "fidelity" in column:
+                first_column = df.pop(column)
+                df.insert(0, column, first_column)
 
         return df
 
