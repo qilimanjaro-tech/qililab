@@ -14,7 +14,6 @@
 
 # pylint: disable=anomalous-backslash-in-string, inconsistent-return-statements
 """Automatic-calibration Controller module, which works with notebooks as nodes."""
-import re
 from datetime import datetime, timedelta
 
 import networkx as nx
