@@ -14,13 +14,13 @@
 
 """Waveform protocol class."""
 from abc import abstractmethod
-from typing import Protocol, runtime_checkable
 
 import numpy as np
 
+from qililab.utils import DictSerializable
 
-@runtime_checkable
-class Waveform(Protocol):  # pylint: disable=too-few-public-methods, disable=missing-class-docstring
+
+class Waveform(DictSerializable):  # pylint: disable=too-few-public-methods, disable=missing-class-docstring
     """Waveforms describes the pulses envelope's shapes. ``Waveform`` is their abstract base class.
 
     Every child of this interface needs to contain an `envelope` method.

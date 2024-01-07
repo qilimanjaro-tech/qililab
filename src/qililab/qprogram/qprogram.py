@@ -31,10 +31,11 @@ from qililab.qprogram.operations import (
     Wait,
 )
 from qililab.qprogram.variable import Domain, FloatVariable, IntVariable, ValueSource, Variable
+from qililab.utils import DictSerializable
 from qililab.waveforms import IQPair, Waveform
 
 
-class QProgram:
+class QProgram(DictSerializable):
     """A class for building quantum programs.
 
     This class provides an interface for building quantum programs,
@@ -366,6 +367,12 @@ class QProgram:
         if domain in [Domain.Frequency, Domain.Phase, Domain.Voltage]:
             return _float_variable(domain)
         raise NotImplementedError
+
+    # def to_dict(self, bus_mapping: dict[str, str] | None = None) -> dict:
+    #     return {
+    #         "_body": asdict(self._body),
+    #         "_variables": [variable.to_dict() for variable in self._variables]
+    #     }
 
     class _BlockContext:
         def __init__(self, qprogram: "QProgram"):

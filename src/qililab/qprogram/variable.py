@@ -16,6 +16,8 @@
 from enum import Enum
 from uuid import UUID, uuid4
 
+from qililab.utils import DictSerializable
+
 
 class Domain(Enum):
     """Domain class."""
@@ -34,13 +36,8 @@ class ValueSource(Enum):
     Dependent = 1
 
 
-class Variable:
+class Variable(DictSerializable):
     """Variable class used to define variables inside a QProgram."""
-
-    _uuid: UUID
-    _value: int | float | None = None
-    _source: ValueSource = ValueSource.Free
-    domain: Domain
 
     @property
     def value(self):
@@ -51,8 +48,20 @@ class Variable:
         """
         return self._value
 
-    def __init__(self):
-        self._uuid = uuid4()
+    @property
+    def domain(self):
+        """Get the domain of the variable
+
+        Returns:
+            Domain: The domain of the variable
+        """
+        return self._domain
+
+    def __init__(self, domain: Domain = Domain.Scalar) -> None:
+        self._uuid: UUID = uuid4()
+        self._source: ValueSource = ValueSource.Free
+        self._value: int | float | None = None
+        self._domain: Domain = domain
 
     def __repr__(self):
         return repr(self._uuid)
@@ -71,9 +80,7 @@ class IntVariable(Variable, int):  # type: ignore
         return instance
 
     def __init__(self, domain: Domain = Domain.Scalar):
-        Variable.__init__(self)
-        self._value = None
-        self.domain = domain
+        Variable.__init__(self, domain)
 
 
 class FloatVariable(Variable, float):  # type: ignore
@@ -86,6 +93,4 @@ class FloatVariable(Variable, float):  # type: ignore
         return instance
 
     def __init__(self, domain: Domain = Domain.Scalar):
-        Variable.__init__(self)
-        self._value = None
-        self.domain = domain
+        Variable.__init__(self, domain)

@@ -15,6 +15,7 @@
 """__init__.py"""
 from .asdict_factory import dict_factory
 from .coordinate_decomposition import coordinate_decompose
+from .dict_serializable import DictSerializable, from_dict
 from .dictionaries import merge_dictionaries
 from .factory import Factory
 from .live_plot import LivePlot
