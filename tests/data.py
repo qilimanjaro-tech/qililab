@@ -182,7 +182,6 @@ class Galadriel:
     pulsar_controller_qcm_0: dict[str, Any] = {
         "name": InstrumentControllerName.QBLOX_PULSAR,
         "alias": "pulsar_controller_qcm_0",
-        Parameter.REFERENCE_CLOCK.value: ReferenceClock.INTERNAL.value,
         INSTRUMENTCONTROLLER.CONNECTION: {
             "name": ConnectionName.TCP_IP.value,
             CONNECTION.ADDRESS: "192.168.0.3",
@@ -193,6 +192,8 @@ class Galadriel:
                 "slot_id": 0,
             }
         ],
+        INSTRUMENTCONTROLLER.RESET: False,
+        Parameter.REFERENCE_CLOCK.value: ReferenceClock.INTERNAL.value,
     }
 
     qblox_qcm_0: dict[str, Any] = {
@@ -249,6 +250,7 @@ class Galadriel:
                 "slot_id": 0,
             }
         ],
+        INSTRUMENTCONTROLLER.RESET: True,
     }
 
     qblox_qrm_0: dict[str, Any] = {
@@ -336,6 +338,7 @@ class Galadriel:
                 "slot_id": 0,
             }
         ],
+        INSTRUMENTCONTROLLER.RESET: True,
     }
 
     rohde_schwarz_0: dict[str, Any] = {
@@ -361,6 +364,7 @@ class Galadriel:
                 "slot_id": 0,
             }
         ],
+        INSTRUMENTCONTROLLER.RESET: True,
     }
 
     rohde_schwarz_1: dict[str, Any] = {
@@ -385,6 +389,7 @@ class Galadriel:
                 "slot_id": 0,
             }
         ],
+        INSTRUMENTCONTROLLER.RESET: True,
     }
 
     attenuator: dict[str, Any] = {
@@ -407,6 +412,7 @@ class Galadriel:
                 "slot_id": 0,
             }
         ],
+        INSTRUMENTCONTROLLER.RESET: True,
     }
 
     keithley_2600: dict[str, Any] = {
