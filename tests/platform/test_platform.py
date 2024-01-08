@@ -13,7 +13,6 @@ from qibo.models import Circuit
 from qpysequence import Sequence
 from ruamel.yaml import YAML
 
-import qililab as ql
 from qililab import save_platform
 from qililab.chip import Chip, Qubit
 from qililab.constants import DEFAULT_PLATFORM_NAME, RUNCARD
