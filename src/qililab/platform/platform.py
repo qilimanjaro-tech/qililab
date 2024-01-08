@@ -580,7 +580,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         # Reset instrument settings
         for instrument in self.instruments.elements:
             if isinstance(instrument, QbloxModule):
-                instrument.clear_cache()  # FIXME: allow cache with QProgram
+                instrument.clear_cache()
                 instrument.desync_sequencers()
 
         return results

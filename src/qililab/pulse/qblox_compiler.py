@@ -144,6 +144,7 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         # pop from cache. qblox_module takes care of popping from sequences
         for seq_id in missing_seq_ids:
             _ = qrm.cache.pop(seq_id)
+            _ = qrm.sequences.pop(seq_id)
 
         return compiled_sequences
 

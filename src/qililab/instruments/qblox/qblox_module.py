@@ -83,10 +83,8 @@ class QbloxModule(AWG):
     cache: dict[int, PulseBusSchedule] = {}
 
     def __init__(self, settings: dict):
-        # The sequences dictionary contains all the compiled sequences for each sequencer and a flag indicating whether
-        # the sequence has been uploaded or not
-        self.sequences: dict[int, QpySequence] = {}  # {sequencer_idx: (program, True), ...}
-        # TODO: Set this attribute during initialization of the instrument
+        # The sequences dictionary contains all the compiled sequences for each sequencer. Sequences are saved and handled at the compiler
+        self.sequences: dict[int, QpySequence] = {}  # {sequencer_idx: (program), ...}
         # TODO: delete useless parameters nshots num bins since they are managed at compilation
         self.nshots: int | None = None
         self.num_bins: int = 1
@@ -419,18 +417,11 @@ class QbloxModule(AWG):
         Args:
             port (str): The port of the sequencer to upload to.
         """
-        # TODO: run upload sequencer-wise and pass sequence to be uploaded as argument
-        # TODO: pass the sequence to be uploaded here and save to self.sequences here as well instead of at the compiler
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
         for sequencer in sequencers:
             seq_idx = sequencer.identifier
             # check is sequence has already been uploaded in a previous execution
             if seq_idx in self.sequences:
-                # is sequencer id is not in cache then delete the sequence and do not sync,
-                # since the sequence is not to be run, we skip this sequencer
-                if seq_idx not in self.cache:
-                    _ = self.sequences.pop(seq_idx)
-                    continue
                 # if the sequence was in the cache then it is to be run so we sync the sequencer to the others
                 sequence = self.sequences[seq_idx]
                 logger.info(
