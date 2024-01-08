@@ -53,9 +53,9 @@ class DictSerializableFactory:
 class DictSerializableMeta(_ProtocolMeta):
     """Metaclass to be used in `DictSerializable` protocol. Automatically registers any `DictSerializable` class to `DictSerializableFactory`."""
 
-    def __new__(
+    def __new__(  # pylint: disable=arguments-differ
         mcs: Type["DictSerializableMeta"], name: str, bases: tuple, namespace: dict[str, Any]
-    ) -> Type["DictSerializable"]:  # pylint: disable=locally-disabled
+    ) -> Type["DictSerializable"]:
         new_class = super().__new__(mcs, name, bases, namespace)
         new_class = cast(Type["DictSerializable"], new_class)
         if bases != (object,):  # Avoid registering the base DictSerializable protocol
