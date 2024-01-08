@@ -1,5 +1,5 @@
 from dataclasses import fields, is_dataclass
-from typing import Any, Iterable, Protocol, Type, TypedDict, TypeVar, _ProtocolMeta, cast, runtime_checkable
+from typing import Any, Protocol, Type, TypedDict, TypeVar, _ProtocolMeta, cast, runtime_checkable
 
 T = TypeVar("T", bound="DictSerializable")
 
@@ -82,16 +82,21 @@ class DictSerializable(Protocol, metaclass=DictSerializableMeta):
         Returns:
             DictSerializableObject: A typed dictionary representing the serialized state of the object.
         """
-        attributes = {
-            k: (
-                [item.to_dict() if isinstance(item, DictSerializable) else item for item in v]
-                if isinstance(v, Iterable) and not isinstance(v, str)
-                else v.to_dict()
-                if isinstance(v, DictSerializable)
-                else v
-            )
-            for k, v in vars(self).items()
-        }
+
+        def process_element(element):
+            if isinstance(element, DictSerializable):
+                return element.to_dict()
+            elif isinstance(element, list):
+                return [process_element(item) for item in element]
+            elif isinstance(element, tuple):
+                return tuple(process_element(item) for item in element)
+            elif isinstance(element, set):
+                return {process_element(item) for item in element}
+            else:
+                return element
+
+        attributes = {k: process_element(v) for k, v in vars(self).items()}
+
         return {"type": self.__class__.__name__, "attributes": attributes}
 
     @classmethod
@@ -110,6 +115,10 @@ class DictSerializable(Protocol, metaclass=DictSerializableMeta):
                 return from_dict(attribute)
             if isinstance(attribute, list):
                 return [process_attribute(item) for item in attribute]
+            if isinstance(attribute, tuple):
+                return tuple(process_attribute(item) for item in attribute)
+            if isinstance(attribute, set):
+                return {process_attribute(item) for item in attribute}
             return attribute
 
         if is_dataclass(cls):
