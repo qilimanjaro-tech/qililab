@@ -368,12 +368,6 @@ class QProgram(DictSerializable):
             return _float_variable(domain)
         raise NotImplementedError
 
-    # def to_dict(self, bus_mapping: dict[str, str] | None = None) -> dict:
-    #     return {
-    #         "_body": asdict(self._body),
-    #         "_variables": [variable.to_dict() for variable in self._variables]
-    #     }
-
     class _BlockContext:
         def __init__(self, qprogram: "QProgram"):
             self.qprogram = qprogram
