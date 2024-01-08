@@ -186,6 +186,8 @@ def fixture_qrm(mock_pulsar: MagicMock, pulsar_controller_qrm: QbloxPulsarContro
             "scope_acq_avg_mode_en_path0",
             "scope_acq_avg_mode_en_path1",
             "get_acquisitions",
+            "disconnect_outputs",
+            "disconnect_inputs",
         ]
     )
     mock_instance.sequencers = [mock_instance.sequencer0, mock_instance.sequencer1]
@@ -213,6 +215,8 @@ def fixture_qrm(mock_pulsar: MagicMock, pulsar_controller_qrm: QbloxPulsarContro
             "marker_ovr_value",
             "connect_acq_I",
             "connect_acq_Q",
+            "connect_out0",
+            "connect_out1",
         ]
     )
     # connect to instrument

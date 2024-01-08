@@ -120,7 +120,7 @@ class TestMethods:
         qcm_rf = QbloxQCMRF(settings=settings)
         qcm_rf.device = None
         qcm_rf.setup(parameter=Parameter.OUT0_LO_FREQ, value=3.8e9)
-        qcm_rf.setup(parameter=Parameter.GAIN, value=1)
+        qcm_rf.setup(parameter=Parameter.GAIN, value=1, channel_id=0)
         assert qcm_rf.get_parameter(parameter=Parameter.OUT0_LO_FREQ) == 3.8e9
 
 
@@ -181,7 +181,7 @@ class TestIntegration:
         """Test the `setup` method of the QbloxQCMRF class without connection."""
         qcm_rf = QbloxQCMRF(settings=settings)
         qcm_rf.setup(parameter=Parameter.OUT0_ATT, value=58)
-        qcm_rf.setup(parameter=Parameter.GAIN, value=0.123)
+        qcm_rf.setup(parameter=Parameter.GAIN, value=0.123, channel_id=0)
         assert not hasattr(qcm_rf, "device")
 
     def test_initial_setup_no_connected(self, settings):
@@ -196,7 +196,6 @@ class TestIntegration:
         qcm_rf = QbloxQCMRF(settings=settings)
         sequencer = qcm_rf._get_sequencer_by_id(sequencer_idx)
         sequencer.outputs = [0]
-        qcm_rf.device = MagicMock()
         qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=sequencer_idx)
         assert qcm_rf.get_parameter(parameter=Parameter.LO_FREQUENCY, channel_id=sequencer_idx) == 2e9
         assert not hasattr(qcm_rf, "device")
@@ -213,7 +212,6 @@ class TestIntegration:
         qcm_rf = QbloxQCMRF(settings=settings)
         sequencer = qcm_rf._get_sequencer_by_id(sequencer_idx)
         sequencer.outputs = [1]
-        qcm_rf.device = MagicMock()
         qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=sequencer_idx)
         assert qcm_rf.get_parameter(parameter=Parameter.LO_FREQUENCY, channel_id=sequencer_idx) == 2e9
         assert not hasattr(qcm_rf, "device")

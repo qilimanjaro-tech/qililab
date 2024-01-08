@@ -49,6 +49,8 @@ def mock_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock, mock_keithley: 
             "sequencers",
             "scope_acq_sequencer_select",
             "get_acquisitions",
+            "disconnect_outputs",
+            "disconnect_inputs",
         ]
     )
     mock_pulsar_instance.sequencer0.mock_add_spec(
