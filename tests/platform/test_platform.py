@@ -40,8 +40,6 @@ def fixture_platform():
 
 @pytest.fixture(name="platform_multiple_qrm")
 def fixture_platform_multiple_qrm():
-    # TODO: chip
-
     readout_buses = [
         {
             "alias": "feedline_input_output_bus_0",
