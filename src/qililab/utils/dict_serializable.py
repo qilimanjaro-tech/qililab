@@ -55,7 +55,7 @@ class DictSerializableMeta(_ProtocolMeta):
 
     def __new__(
         mcs: Type["DictSerializableMeta"], name: str, bases: tuple, namespace: dict[str, Any]
-    ) -> Type["DictSerializable"]:
+    ) -> Type["DictSerializable"]:  # pylint: disable=locally-disabled
         new_class = super().__new__(mcs, name, bases, namespace)
         new_class = cast(Type["DictSerializable"], new_class)
         if bases != (object,):  # Avoid registering the base DictSerializable protocol
@@ -86,14 +86,13 @@ class DictSerializable(Protocol, metaclass=DictSerializableMeta):
         def process_element(element):
             if isinstance(element, DictSerializable):
                 return element.to_dict()
-            elif isinstance(element, list):
+            if isinstance(element, list):
                 return [process_element(item) for item in element]
-            elif isinstance(element, tuple):
+            if isinstance(element, tuple):
                 return tuple(process_element(item) for item in element)
-            elif isinstance(element, set):
+            if isinstance(element, set):
                 return {process_element(item) for item in element}
-            else:
-                return element
+            return element
 
         attributes = {k: process_element(v) for k, v in vars(self).items()}
 
