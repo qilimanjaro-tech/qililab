@@ -74,7 +74,6 @@ class QbloxD5a(VoltageSource):
         while channel.is_ramping():
             sleep(0.1)
 
-    @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Set Qblox instrument calibration settings."""
 
@@ -85,7 +84,9 @@ class QbloxD5a(VoltageSource):
                 f"the specified dac index:{channel_id} is out of range."
                 + " Number of dacs is 4 -> maximum channel_id should be 3."
             )
-        channel = self.dac(dac_index=channel_id)
+
+        channel = self.dac(dac_index=channel_id) if self.is_device_active() else None
+
         if parameter == Parameter.VOLTAGE:
             self._set_voltage(value=value, channel_id=channel_id, channel=channel)
             return
@@ -122,25 +123,29 @@ class QbloxD5a(VoltageSource):
     def _set_voltage(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the voltage"""
         self.settings.voltage[channel_id] = float(value)
-        channel.voltage(self.voltage[channel_id])
+        if self.is_device_active():
+            channel.voltage(self.voltage[channel_id])
 
     @Instrument.CheckParameterValueString
     def _set_span(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the span"""
         self.settings.span[channel_id] = str(value)
-        channel.span(self.span[channel_id])
+        if self.is_device_active():
+            channel.span(self.span[channel_id])
 
     @Instrument.CheckParameterValueBool
     def _set_ramping_enabled(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the ramping_enabled"""
         self.settings.ramping_enabled[channel_id] = bool(value)
-        channel.ramping_enabled(self.ramping_enabled[channel_id])
+        if self.is_device_active():
+            channel.ramping_enabled(self.ramping_enabled[channel_id])
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_ramping_rate(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the ramp_rate"""
         self.settings.ramp_rate[channel_id] = float(value)
-        channel.ramp_rate(self.ramp_rate[channel_id])
+        if self.is_device_active():
+            channel.ramp_rate(self.ramp_rate[channel_id])
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):

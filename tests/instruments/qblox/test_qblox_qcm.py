@@ -61,6 +61,8 @@ def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarContro
             "scope_acq_trigger_mode_path0",
             "scope_acq_trigger_mode_path1",
             "scope_acq_sequencer_select",
+            "disconnect_outputs",
+            "disconnect_inputs",
         ]
     )
     mock_instance.sequencers = [mock_instance.sequencer0, mock_instance.sequencer1]
@@ -83,6 +85,8 @@ def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarContro
         "offset_awg_path1",
         "marker_ovr_en",
         "marker_ovr_value",
+        "connect_out0",
+        "connect_out1",
     ]
     mock_instance.sequencer0.mock_add_spec(spec)
     mock_instance.sequencer1.mock_add_spec(spec)
@@ -156,33 +160,41 @@ class TestQbloxQCM:
             (Parameter.PHASE_IMBALANCE, 0.09, 0),
         ],
     )
-    def test_setup_method(self, parameter: Parameter, value: float | bool | int, channel_id: int, qcm: QbloxQCM):
+    def test_setup_method(
+        self, parameter: Parameter, value: float | bool | int, channel_id: int, qcm: QbloxQCM, qcm_no_device: QbloxQCM
+    ):
         """Test setup method"""
-        qcm.setup(parameter=parameter, value=value, channel_id=channel_id)
-        if parameter == Parameter.GAIN:
-            assert qcm.awg_sequencers[channel_id].gain_i == value
-            assert qcm.awg_sequencers[channel_id].gain_q == value
-        if parameter == Parameter.GAIN_I:
-            assert qcm.awg_sequencers[channel_id].gain_i == value
-        if parameter == Parameter.GAIN_Q:
-            assert qcm.awg_sequencers[channel_id].gain_q == value
-        if parameter == Parameter.OFFSET_I:
-            assert qcm.awg_sequencers[channel_id].offset_i == value
-        if parameter == Parameter.OFFSET_Q:
-            assert qcm.awg_sequencers[channel_id].offset_q == value
-        if parameter == Parameter.IF:
-            assert qcm.awg_sequencers[channel_id].intermediate_frequency == value
-        if parameter == Parameter.HARDWARE_MODULATION:
-            assert qcm.awg_sequencers[channel_id].hardware_modulation == value
-        if parameter == Parameter.NUM_BINS:
-            assert qcm.awg_sequencers[channel_id].num_bins == value
-        if parameter == Parameter.GAIN_IMBALANCE:
-            assert qcm.awg_sequencers[channel_id].gain_imbalance == value
-        if parameter == Parameter.PHASE_IMBALANCE:
-            assert qcm.awg_sequencers[channel_id].phase_imbalance == value
-        if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
-            output = int(parameter.value[-1])
-            assert qcm.out_offsets[output] == value
+        for qcms in [qcm, qcm_no_device]:
+            qcms.setup(parameter=parameter, value=value, channel_id=channel_id)
+            if parameter == Parameter.GAIN:
+                assert qcms.awg_sequencers[channel_id].gain_i == value
+                assert qcms.awg_sequencers[channel_id].gain_q == value
+            if parameter == Parameter.GAIN_I:
+                assert qcms.awg_sequencers[channel_id].gain_i == value
+            if parameter == Parameter.GAIN_Q:
+                assert qcms.awg_sequencers[channel_id].gain_q == value
+            if parameter == Parameter.OFFSET_I:
+                assert qcms.awg_sequencers[channel_id].offset_i == value
+            if parameter == Parameter.OFFSET_Q:
+                assert qcms.awg_sequencers[channel_id].offset_q == value
+            if parameter == Parameter.IF:
+                assert qcms.awg_sequencers[channel_id].intermediate_frequency == value
+            if parameter == Parameter.HARDWARE_MODULATION:
+                assert qcms.awg_sequencers[channel_id].hardware_modulation == value
+            if parameter == Parameter.NUM_BINS:
+                assert qcms.awg_sequencers[channel_id].num_bins == value
+            if parameter == Parameter.GAIN_IMBALANCE:
+                assert qcms.awg_sequencers[channel_id].gain_imbalance == value
+            if parameter == Parameter.PHASE_IMBALANCE:
+                assert qcms.awg_sequencers[channel_id].phase_imbalance == value
+            if parameter in {
+                Parameter.OFFSET_OUT0,
+                Parameter.OFFSET_OUT1,
+                Parameter.OFFSET_OUT2,
+                Parameter.OFFSET_OUT3,
+            }:
+                output = int(parameter.value[-1])
+                assert qcms.out_offsets[output] == value
 
     @pytest.mark.parametrize(
         "parameter, value, port_id",
@@ -205,38 +217,49 @@ class TestQbloxQCM:
         ],
     )
     def test_setup_method_with_port_id(
-        self, parameter: Parameter, value: float | bool | int, port_id: str | None, qcm: QbloxQCM
+        self,
+        parameter: Parameter,
+        value: float | bool | int,
+        port_id: str | None,
+        qcm: QbloxQCM,
+        qcm_no_device: QbloxQCM,
     ):
         """Test setup method"""
-        qcm.setup(parameter=parameter, value=value, port_id=port_id)
-        if port_id is not None:
-            channel_id = qcm.get_sequencers_from_chip_port_id(port_id)[0].identifier
-        else:
-            channel_id = None
-        if parameter == Parameter.GAIN:
-            assert qcm.awg_sequencers[channel_id].gain_i == value
-            assert qcm.awg_sequencers[channel_id].gain_q == value
-        if parameter == Parameter.GAIN_I:
-            assert qcm.awg_sequencers[channel_id].gain_i == value
-        if parameter == Parameter.GAIN_Q:
-            assert qcm.awg_sequencers[channel_id].gain_q == value
-        if parameter == Parameter.OFFSET_I:
-            assert qcm.awg_sequencers[channel_id].offset_i == value
-        if parameter == Parameter.OFFSET_Q:
-            assert qcm.awg_sequencers[channel_id].offset_q == value
-        if parameter == Parameter.IF:
-            assert qcm.awg_sequencers[channel_id].intermediate_frequency == value
-        if parameter == Parameter.HARDWARE_MODULATION:
-            assert qcm.awg_sequencers[channel_id].hardware_modulation == value
-        if parameter == Parameter.NUM_BINS:
-            assert qcm.awg_sequencers[channel_id].num_bins == value
-        if parameter == Parameter.GAIN_IMBALANCE:
-            assert qcm.awg_sequencers[channel_id].gain_imbalance == value
-        if parameter == Parameter.PHASE_IMBALANCE:
-            assert qcm.awg_sequencers[channel_id].phase_imbalance == value
-        if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
-            output = int(parameter.value[-1])
-            assert qcm.out_offsets[output] == value
+        for qcms in [qcm, qcm_no_device]:
+            if port_id is not None:
+                channel_id = qcms.get_sequencers_from_chip_port_id(port_id)[0].identifier
+            else:
+                channel_id = None
+            qcms.setup(parameter=parameter, value=value, channel_id=channel_id)
+            if parameter == Parameter.GAIN:
+                assert qcms.awg_sequencers[channel_id].gain_i == value
+                assert qcms.awg_sequencers[channel_id].gain_q == value
+            if parameter == Parameter.GAIN_I:
+                assert qcms.awg_sequencers[channel_id].gain_i == value
+            if parameter == Parameter.GAIN_Q:
+                assert qcms.awg_sequencers[channel_id].gain_q == value
+            if parameter == Parameter.OFFSET_I:
+                assert qcms.awg_sequencers[channel_id].offset_i == value
+            if parameter == Parameter.OFFSET_Q:
+                assert qcms.awg_sequencers[channel_id].offset_q == value
+            if parameter == Parameter.IF:
+                assert qcms.awg_sequencers[channel_id].intermediate_frequency == value
+            if parameter == Parameter.HARDWARE_MODULATION:
+                assert qcms.awg_sequencers[channel_id].hardware_modulation == value
+            if parameter == Parameter.NUM_BINS:
+                assert qcms.awg_sequencers[channel_id].num_bins == value
+            if parameter == Parameter.GAIN_IMBALANCE:
+                assert qcms.awg_sequencers[channel_id].gain_imbalance == value
+            if parameter == Parameter.PHASE_IMBALANCE:
+                assert qcms.awg_sequencers[channel_id].phase_imbalance == value
+            if parameter in {
+                Parameter.OFFSET_OUT0,
+                Parameter.OFFSET_OUT1,
+                Parameter.OFFSET_OUT2,
+                Parameter.OFFSET_OUT3,
+            }:
+                output = int(parameter.value[-1])
+                assert qcms.out_offsets[output] == value
 
     def test_setup_out_offset_raises_error(self, qcm: QbloxQCM):
         """Test that calling ``_set_out_offset`` with a wrong output value raises an error."""

@@ -386,12 +386,9 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """
         return cast(AWGQbloxADCSequencer, self.get_sequencer(sequencer_id)).integration_length
 
-    @Instrument.CheckDeviceInitialized
-    def setup(
-        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
-    ):
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """set a specific parameter to the instrument"""
         try:
             AWGAnalogDigitalConverter.setup(self, parameter=parameter, value=value, channel_id=channel_id)
         except ParameterNotFound:
-            QbloxModule.setup(self, parameter=parameter, value=value, channel_id=channel_id, port_id=port_id)
+            QbloxModule.setup(self, parameter=parameter, value=value, channel_id=channel_id)

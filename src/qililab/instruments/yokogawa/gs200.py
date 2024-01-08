@@ -57,9 +57,10 @@ class GS200(CurrentSource, VoltageSource):
     @source_mode.setter
     def source_mode(self, value: SourceMode):
         """Set the Yokogawa GS200 source mode."""
-        qcodes_str = self.__source_mode_to_qcodes_str(value)
-        self.device.source_mode(qcodes_str)
         self.settings.source_mode = value
+        if self.is_device_active():
+            qcodes_str = self.__source_mode_to_qcodes_str(value)
+            self.device.source_mode(qcodes_str)
 
     @property
     def ramping_enabled(self):
@@ -101,11 +102,12 @@ class GS200(CurrentSource, VoltageSource):
     @current.setter
     def current(self, value: float):
         """Set Yokogawa GS200 `current` property. If `ramping_enabled` is set to True, the current will transition linearly according to `ramping_rate`. Else, it will be set instantly."""
-        if self.ramping_enabled:
-            self.device.ramp_current(value, self.ramping_rate * 0.001, 0.001)
-        else:
-            self.device.current(value)
         self.settings.current[0] = value
+        if self.is_device_active():
+            if self.ramping_enabled:
+                self.device.ramp_current(value, self.ramping_rate * 0.001, 0.001)
+            else:
+                self.device.current(value)
 
     @property
     def span(self) -> str:
@@ -131,13 +133,14 @@ class GS200(CurrentSource, VoltageSource):
             - 100mA
             - 200mA
         """
-        if self.source_mode == SourceMode.CURRENT:
-            qcodes_int = self.__current_span_to_qcodes_float(value)
-            self.device.current_range(qcodes_int)
-        else:
-            qcodes_int = self.__voltage_span_to_qcodes_float(value)
-            self.device.voltage_range(qcodes_int)
         self.settings.span[0] = value
+        if self.is_device_active():
+            if self.source_mode == SourceMode.CURRENT:
+                qcodes_int = self.__current_span_to_qcodes_float(value)
+                self.device.current_range(qcodes_int)
+            else:
+                qcodes_int = self.__voltage_span_to_qcodes_float(value)
+                self.device.voltage_range(qcodes_int)
 
     @property
     def voltage(self) -> float:
@@ -151,13 +154,13 @@ class GS200(CurrentSource, VoltageSource):
     @voltage.setter
     def voltage(self, value: float):
         """Set Yokogawa GS200 `voltage` property. If `ramping_enabled` is set to True, the voltage will transition linearly according to `ramping_rate`. Else, it will be set instantly."""
-        if self.ramping_enabled:
-            self.device.ramp_voltage(value, self.ramping_rate * 0.001, 0.001)
-        else:
-            self.device.voltage(value)
         self.settings.voltage[0] = value
+        if self.is_device_active():
+            if self.ramping_enabled:
+                self.device.ramp_voltage(value, self.ramping_rate * 0.001, 0.001)
+            else:
+                self.device.voltage(value)
 
-    @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Set instrument settings parameter to the corresponding value
 

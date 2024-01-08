@@ -744,6 +744,7 @@ instrument_controllers:
         slot_id: 14
       - alias: QCM2
         slot_id: 14
+    reset: False
   - name: rohde_schwarz
     alias: rohde_schwarz_controller_0
     reference_clock: internal
@@ -753,6 +754,7 @@ instrument_controllers:
     modules:
       - alias: rs_1
         slot_id: 0
+    reset: True
   - name: mini_circuits
     alias: attenuator_controller_0
     connection:
@@ -761,3 +763,4 @@ instrument_controllers:
     modules:
       - alias: attenuator
         slot_id: 0
+    reset: True

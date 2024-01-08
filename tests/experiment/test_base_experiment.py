@@ -275,10 +275,9 @@ class TestMethods:
 class TestSetParameter:
     """Unit tests for the ``set_parameter`` method."""
 
-    def test_set_parameter_method_without_a_connected_device(self, exp: BaseExperiment):
+    def test_set_parameter_method_without_a_connected_device_doesnt_raise_error(self, exp: BaseExperiment):
         """Test set_parameter method raising an error when device is not connected."""
-        with pytest.raises(ValueError):
-            exp.set_parameter(alias=InstrumentName.QBLOX_QCM.value, parameter=Parameter.IF, value=1e9, channel_id=0)
+        exp.set_parameter(alias=InstrumentName.QBLOX_QCM.value, parameter=Parameter.IF, value=1e9, channel_id=0)
 
     @patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
     @patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
@@ -349,7 +348,7 @@ class TestReset:
         exp.platform.connect()
         exp.platform.disconnect()
         mock_reset.assert_called()
-        assert mock_reset.call_count == 14
+        assert mock_reset.call_count == 10
 
     @patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
     @patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
@@ -370,4 +369,4 @@ class TestReset:
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
         experiment_reset.platform.connect()
         experiment_reset.platform.disconnect()
-        assert mock_reset.call_count == 12
+        assert mock_reset.call_count == 10

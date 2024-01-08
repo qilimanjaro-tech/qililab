@@ -66,25 +66,26 @@ class TestE5071B:
             (Parameter.ELECTRICAL_DELAY, 0.0),
         ],
     )
-    def test_setup_method_value_flt(self, parameter: Parameter, value, e5071b: E5071B):
+    def test_setup_method_value_flt(self, parameter: Parameter, value, e5071b: E5071B, e5071b_no_device: E5071B):
         """Test the setup method with float value"""
         assert isinstance(parameter, Parameter)
         assert isinstance(value, float)
-        e5071b.setup(parameter, value)
-        if parameter == Parameter.POWER:
-            assert e5071b.power == value
-        if parameter == Parameter.FREQUENCY_SPAN:
-            assert e5071b.frequency_span == value
-        if parameter == Parameter.FREQUENCY_CENTER:
-            assert e5071b.frequency_center == value
-        if parameter == Parameter.FREQUENCY_START:
-            assert e5071b.frequency_start == value
-        if parameter == Parameter.FREQUENCY_STOP:
-            assert e5071b.frequency_stop == value
-        if parameter == Parameter.IF_BANDWIDTH:
-            assert e5071b.if_bandwidth == value
-        if parameter == Parameter.ELECTRICAL_DELAY:
-            assert e5071b.electrical_delay == value
+        for e5071bs in [e5071b, e5071b_no_device]:
+            e5071bs.setup(parameter, value)
+            if parameter == Parameter.POWER:
+                assert e5071bs.power == value
+            if parameter == Parameter.FREQUENCY_SPAN:
+                assert e5071bs.frequency_span == value
+            if parameter == Parameter.FREQUENCY_CENTER:
+                assert e5071bs.frequency_center == value
+            if parameter == Parameter.FREQUENCY_START:
+                assert e5071bs.frequency_start == value
+            if parameter == Parameter.FREQUENCY_STOP:
+                assert e5071bs.frequency_stop == value
+            if parameter == Parameter.IF_BANDWIDTH:
+                assert e5071bs.if_bandwidth == value
+            if parameter == Parameter.ELECTRICAL_DELAY:
+                assert e5071bs.electrical_delay == value
 
     @pytest.mark.parametrize(
         "parameter, value",
