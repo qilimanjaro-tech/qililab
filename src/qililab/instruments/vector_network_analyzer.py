@@ -61,7 +61,6 @@ class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instan
     settings: VectorNetworkAnalyzerSettings
     device: VectorNetworkAnalyzerDriver
 
-    @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool | int, channel_id: int | None = None):
         """Set instrument settings parameter to the corresponding value
 
@@ -192,8 +191,10 @@ class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instan
     def scattering_parameter(self, value: str, channel=1):
         """sets the scattering parameter"""
         self.settings.scattering_parameter = VNAScatteringParameters(value)
-        scat_par = self.settings.scattering_parameter.value
-        self.send_command(f"CALC1:MEAS{channel}:PAR", scat_par)
+
+        if self.is_device_active():
+            scat_par = self.settings.scattering_parameter.value
+            self.send_command(f"CALC1:MEAS{channel}:PAR", scat_par)
 
     @property
     def frequency_span(self):
@@ -208,8 +209,10 @@ class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instan
     def frequency_span(self, value: float, channel=1):
         """sets the frequency span in kHz"""
         self.settings.frequency_span = value
-        freq = str(self.settings.frequency_span)
-        self.send_command(f"SENS{channel}:FREQ:SPAN", freq)
+
+        if self.is_device_active():
+            freq = str(self.settings.frequency_span)
+            self.send_command(f"SENS{channel}:FREQ:SPAN", freq)
 
     @property
     def frequency_center(self):
@@ -224,8 +227,10 @@ class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instan
     def frequency_center(self, value: float, channel=1):
         """sets the frequency center in Hz"""
         self.settings.frequency_center = value
-        freq = str(self.settings.frequency_center)
-        self.send_command(f"SENS{channel}:FREQ:CENT", freq)
+
+        if self.is_device_active():
+            freq = str(self.settings.frequency_center)
+            self.send_command(f"SENS{channel}:FREQ:CENT", freq)
 
     @property
     def frequency_start(self):
@@ -240,8 +245,10 @@ class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instan
     def frequency_start(self, value: float, channel=1):
         """sets the frequency start in Hz"""
         self.settings.frequency_start = value
-        freq = str(self.settings.frequency_start)
-        self.send_command(f"SENS{channel}:FREQ:STAR", freq)
+
+        if self.is_device_active():
+            freq = str(self.settings.frequency_start)
+            self.send_command(f"SENS{channel}:FREQ:STAR", freq)
 
     @property
     def frequency_stop(self):
@@ -256,8 +263,10 @@ class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instan
     def frequency_stop(self, value: float, channel=1):
         """sets the frequency stop in Hz"""
         self.settings.frequency_stop = value
-        freq = str(self.settings.frequency_stop)
-        self.send_command(f"SENS{channel}:FREQ:STOP", freq)
+
+        if self.is_device_active():
+            freq = str(self.settings.frequency_stop)
+            self.send_command(f"SENS{channel}:FREQ:STOP", freq)
 
     @property
     def if_bandwidth(self):
@@ -286,7 +295,9 @@ class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instan
     def averaging_enabled(self, value: bool):
         """sets the averaging enabled"""
         self.settings.averaging_enabled = value
-        self._average_state(state=self.settings.averaging_enabled)
+
+        if self.is_device_active():
+            self._average_state(state=self.settings.averaging_enabled)
 
     @property
     def number_averages(self):
@@ -301,7 +312,9 @@ class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instan
     def number_averages(self, value: int, channel=1):
         """sets the number averages"""
         self.settings.number_averages = value
-        self._average_count(count=str(self.settings.number_averages), channel=channel)
+
+        if self.is_device_active():
+            self._average_count(count=str(self.settings.number_averages), channel=channel)
 
     @property
     def trigger_mode(self):
@@ -325,8 +338,10 @@ class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instan
     def number_points(self, value: int, channel=1):
         """sets the number of points for sweep"""
         self.settings.number_points = value
-        points = str(self.settings.number_points)
-        self.send_command(f":SENS{channel}:SWE:POIN", points)
+
+        if self.is_device_active():
+            points = str(self.settings.number_points)
+            self.send_command(f":SENS{channel}:SWE:POIN", points)
 
     @property
     def electrical_delay(self):
