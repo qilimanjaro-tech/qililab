@@ -225,6 +225,15 @@ class RunAutomaticCalibrationMockedController(CalibrationController):
         self.get_last_fidelities = MagicMock(return_value={"test": (0.0, "test", datetime.fromtimestamp(1999))})
 
 
+class CalibrateAllMockedController(CalibrationController):
+    """``CalibrationController`` to test the workflow of ``calibrate_all()`` where its mocked ``calibrate()`` and ``update_parameters()``."""
+
+    def __init__(self, node_sequence, calibration_graph, runcard):
+        super().__init__(node_sequence=node_sequence, calibration_graph=calibration_graph, runcard=runcard)
+        self.calibrate = MagicMock(return_value=None)
+        self._update_parameters = MagicMock(return_value=None)
+
+
 # type: ignore[method-assign]
 class MaintainMockedController(CalibrationController):
     """``CalibrationController`` to test the workflow of ``maintain()`` where its mocked ``check_state()``, ``check_data()``, ``diagnose()``, ``calibrate()`` and ``update_parameters()``."""
@@ -350,6 +359,45 @@ class TestRunAutomaticCalibrationFromCalibrationController:
     #         controller.maintain.assert_any_call(fourth)
     #         assert controller.maintain.call_count == 1
     #         # assert mock_force_condition.call_count == 1
+
+
+##########################
+### TEST CALIBRATE ALL ###
+##########################
+@pytest.mark.parametrize(
+    "controller",
+    [
+        (
+            graph,
+            expected_call_order,
+            CalibrateAllMockedController(node_sequence=nodes, calibration_graph=graph, runcard=path_runcard),
+        )
+        for graph, expected_call_order in zip(good_graphs, leaves_to_roots_good_graphs_calls)
+    ],
+)
+class TestCalibrateAllFromCalibrationController:
+    """Test that ``calibrate_all()`` of ``CalibrationConroller`` behaves well."""
+
+    def test_low_level_mockings_working_properly(self, controller):
+        """Test that the mockings are working properly."""
+        # Assert:
+        assert all(node.previous_timestamp is None for node in controller[2].node_sequence.values())
+        assert controller[2].calibrate() is None
+        assert controller[2]._update_parameters() is None
+
+    def test_calls_for_linear_calibration(self, controller):
+        """Test that ``calibrate_all`` follows the correct logic for each graph, from leaves up to the roots"""
+
+        # Reset mock calls:
+        controller[2].calibrate.reset_mock()
+        controller[2]._update_parameters.reset_mock()
+
+        # Act:
+        controller[2].calibrate_all(fourth)
+
+        # Asserts recursive calls
+        controller[2].calibrate.assert_has_calls(controller[1])
+        controller[2]._update_parameters.assert_has_calls(controller[1])
 
 
 #####################
