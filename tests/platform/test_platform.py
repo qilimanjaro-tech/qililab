@@ -13,6 +13,7 @@ from qibo.models import Circuit
 from qpysequence import Sequence
 from ruamel.yaml import YAML
 
+import qililab as ql
 from qililab import save_platform
 from qililab.chip import Chip, Qubit
 from qililab.constants import DEFAULT_PLATFORM_NAME, RUNCARD
@@ -63,14 +64,14 @@ def fixture_platform_multiple_qrm():
         },
     ]
 
-    runcard = Galadriel.runcard
+    runcard_2qrm = copy.deepcopy(Galadriel.runcard)
 
     # change readout buses to 2
-    _ = runcard["buses"].pop(1)
-    runcard["buses"].extend(readout_buses)
+    _ = runcard_2qrm["buses"].pop(1)
+    runcard_2qrm["buses"].extend(readout_buses)
 
     # fix feedline inputs in awgs for each qrm module
-    qblox_qrm_0 = runcard["instruments"].pop(1)
+    qblox_qrm_0 = runcard_2qrm["instruments"].pop(1)
     qblox_qrm_0["alias"] = "QRM1"
     qblox_qrm_0["awg_sequencers"][0]["chip_port_id"] = "feedline_input_0"
     qblox_qrm_0["awg_sequencers"][1]["chip_port_id"] = "feedline_input_0"
@@ -81,7 +82,7 @@ def fixture_platform_multiple_qrm():
     qblox_qrm_1["awg_sequencers"] = [qblox_qrm_1["awg_sequencers"][0]]
     qblox_qrm_1["awg_sequencers"][0]["chip_port_id"] = "feedline_input_1"
 
-    runcard["instruments"].extend([qblox_qrm_0, qblox_qrm_1])
+    runcard_2qrm["instruments"].extend([qblox_qrm_0, qblox_qrm_1])
     chip: dict[str, Any] = {
         "nodes": [
             {"name": "port", "alias": "flux_q0", "line": "flux", "nodes": ["q0"]},
@@ -118,17 +119,22 @@ def fixture_platform_multiple_qrm():
             },
         ],
     }
-    runcard["chip"] = chip
+    runcard_2qrm["chip"] = chip
 
-    pulsar_controller_qrm_0 = runcard["instrument_controllers"].pop(1)
+    pulsar_controller_qrm_0 = runcard_2qrm["instrument_controllers"].pop(1)
     pulsar_controller_qrm_0["modules"][0]["alias"] = "QRM1"
 
     pulsar_controller_qrm_1 = pulsar_controller_qrm_0.copy()
     pulsar_controller_qrm_1["modules"][0]["alias"] = "QRM2"
 
-    runcard["instrument_controllers"].extend([pulsar_controller_qrm_0, pulsar_controller_qrm_1])
+    runcard_2qrm["instrument_controllers"].extend([pulsar_controller_qrm_0, pulsar_controller_qrm_1])
 
-    return build_platform(runcard=Galadriel.runcard)
+    with patch("qililab.data_management.yaml.safe_load", return_value=runcard_2qrm) as mock_load:
+        with patch("qililab.data_management.open") as mock_open:
+            pl = ql.build_platform(runcard="_")
+            mock_load.assert_called()
+            mock_open.assert_called()
+    return pl
 
 
 @pytest.fixture(name="runcard")
