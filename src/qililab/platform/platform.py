@@ -640,8 +640,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         # Flatten results if more than one readout bus was used for a qblox module
         if len(results) > 1:
             return QbloxResult(
-                integration_lengths=[length for result in results for length in result.integration_lengths],
-                qblox_raw_results=[raw_result for result in results for raw_result in result.qblox_raw_results],
+                integration_lengths=[length for result in results for length in result.integration_lengths],  # type: ignore [attr-defined]
+                qblox_raw_results=[raw_result for result in results for raw_result in result.qblox_raw_results],  # type: ignore [attr-defined]
             )
         if not results:
             raise ValueError("There are no readout buses in the platform.")
