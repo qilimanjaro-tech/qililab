@@ -431,30 +431,9 @@ class TestMethods:
         ):
             platform.execute(program=program, num_avg=1000, repetition_duration=2000, num_bins=1)
 
-    def test_execute_raises_error_if_more_than_one_readout_bus_present(self, platform: Platform):
-        """Test that `Platform.execute` raises an error when the platform contains more than one readout bus."""
-        platform.buses.add(
-            Bus(
-                settings=copy.deepcopy(Galadriel.buses[1]),
-                platform_instruments=platform.instruments,
-                chip=platform.chip,
-            )
-        )
-
-        with patch.object(Bus, "upload"):
-            with patch.object(Bus, "run"):
-                with patch.object(Bus, "acquire_result"):
-                    with patch("qililab.platform.platform.logger") as mock_logger:
-                        with patch.object(QbloxModule, "desync_sequencers") as desync:
-                            _ = platform.execute(
-                                program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1
-                            )
-
-        mock_logger.error.assert_called_once_with("Only One Readout Bus allowed. Reading only from the first one.")
-        desync.assert_called()
-
     def test_execute_stack_2qrm(self, platform_multiple_qrm: Platform):
         """Test that the execute stacks results when more than one qrm is called."""
+        # build mock qblox results
         qblox_raw_results = QbloxResult(
             integration_lengths=[20],
             qblox_raw_results=[
@@ -471,9 +450,8 @@ class TestMethods:
                 }
             ],
         )
-        # Define pulse schedule
         pulse_schedule = PulseSchedule()
-
+        # mock execution
         with patch.object(Bus, "upload"):
             with patch.object(Bus, "run"):
                 with patch.object(Bus, "acquire_result") as acquire_result:
@@ -482,8 +460,9 @@ class TestMethods:
                         result = platform_multiple_qrm.execute(
                             program=pulse_schedule, num_avg=1000, repetition_duration=2000, num_bins=1
                         )
+        assert len(result.qblox_raw_results) == 2
+        assert qblox_raw_results.qblox_raw_results[0] == result.qblox_raw_results[0]
         assert qblox_raw_results.qblox_raw_results[0] == result.qblox_raw_results[1]
-        assert qblox_raw_results.qblox_raw_results[1] == result.qblox_raw_results[1]
 
     @pytest.mark.parametrize("parameter", [Parameter.AMPLITUDE, Parameter.DURATION, Parameter.PHASE])
     @pytest.mark.parametrize("gate", ["I(0)", "X(0)", "Y(0)"])
