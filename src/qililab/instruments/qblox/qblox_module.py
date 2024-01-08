@@ -85,10 +85,7 @@ class QbloxModule(AWG):
     def __init__(self, settings: dict):
         # The sequences dictionary contains all the compiled sequences for each sequencer. Sequences are saved and handled at the compiler
         self.sequences: dict[int, QpySequence] = {}  # {sequencer_idx: (program), ...}
-        # TODO: delete useless parameters nshots num bins since they are managed at compilation
-        self.nshots: int | None = None
         self.num_bins: int = 1
-        self.repetition_duration: int | None = None
         super().__init__(settings=settings)
 
     @Instrument.CheckDeviceInitialized
