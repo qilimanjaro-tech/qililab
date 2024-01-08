@@ -137,11 +137,16 @@ def load_results(path: str) -> tuple[np.ndarray, dict[str, np.ndarray]]:
 
 
 def save_platform(path: str, platform: Platform) -> str:
-    """Serialize and save the platform in the given path.
+    """Serialize and save the given platform to the specified path.
 
-    If the path string doesn't end with `.yml` or `.yaml`  this function will assume the `path` corresponds to an
-    existing folder. Thus the platform will be saved inside the folder in `path` in a file called `platform_name.yml`,
-    where `platform_name` corresponds to the `name` attribute of the given `Platform`.
+    This function saves the cache values of the :class:`.Platform` object during execution as a YAML file.
+    It does not read the actual instruments. If you have previously used ``platform.set_parameter()`` without being
+    connected to the instruments, it will save this "set" value as the cache values of the :class:`.Platform` object were modified.
+
+    If the `path` string doesn't end with `.yml` or `.yaml`, this function assumes that `path` corresponds to an
+    existing folder. The platform will then be saved inside the folder specified by `path` in a file called
+    `platform_name.yml`, where `platform_name` corresponds to the `name` attribute of the given `Platform`.
+
 
     Args:
         path (str): Path to the folder/file where the YAML file will be saved.

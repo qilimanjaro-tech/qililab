@@ -12,5 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Version number (major.minor.patch[-label])"""
-__version__ = "0.22.2"
+""" Utils for dictionaries manipulation """
+
+
+def merge_dictionaries(origin: dict, new: dict):
+    """Recursively merge `new` into `origin`."""
+    for key, value in new.items():
+        if key in origin and isinstance(origin[key], dict) and isinstance(value, dict):
+            merge_dictionaries(origin[key], value)
+        else:
+            origin[key] = value
+    return origin
