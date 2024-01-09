@@ -206,7 +206,7 @@ class TestPublicMethodsFromCalibrationNode:
     #     "qililab.calibration.calibration_node.CalibrationNode._execute_notebook",
     #     return_value={
     #         "check_parameters": {"x": 0, "y": 1},
-    #         "platform_params": {"x": 0, "y": 1},
+    #         "platform_parameters": {"x": 0, "y": 1},
     #         "fidelities": {"x": 0, "y": 1},
     #     },
     # )
@@ -457,9 +457,9 @@ class TestPrivateMethodsFromCalibrationNode:
     @pytest.mark.parametrize(
         "output",
         [
-            'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48], "y": [100, 144, 196, 256, 324, 400, 484, 576, 676, 784, 900, 1024, 1156, 1296, 1444, 1600, 1764, 1936, 2116, 2304]}, "platform_params": [["bus_alias", "param_name", 1]]}\n',
-            'RAND_INT:47102512880765720413 - OUTPUTS: {\\"check_parameters\\": {\\"x\\": [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48], \\"y\\": [100, 144, 196, 256, 324, 400, 484, 576, 676, 784, 900, 1024, 1156, 1296, 1444, 1600, 1764, 1936, 2116, 2304]}, \\"platform_params\\": [[\\"bus_alias\\", \\"param_name\\", 1]]}\\n',
-            'RAND_INT:47102512880765720413 - OUTPUTS: {\\"check_parameters\\": {\\"x\\": [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48], \\"y\\": [100, 144, 196, 256, 324, 400, 484, 576, 676, 784, 900, 1024, 1156, 1296, 1444, 1600, 1764, 1936, 2116, 2304]}, \\"platform_params\\": [[\\"bus_alias\\", \\"param_name\\", 1]]}\\n"',
+            'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48], "y": [100, 144, 196, 256, 324, 400, 484, 576, 676, 784, 900, 1024, 1156, 1296, 1444, 1600, 1764, 1936, 2116, 2304]}, "platform_parameters": [["bus_alias", "param_name", 1]]}\n',
+            'RAND_INT:47102512880765720413 - OUTPUTS: {\\"check_parameters\\": {\\"x\\": [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48], \\"y\\": [100, 144, 196, 256, 324, 400, 484, 576, 676, 784, 900, 1024, 1156, 1296, 1444, 1600, 1764, 1936, 2116, 2304]}, \\"platform_parameters\\": [[\\"bus_alias\\", \\"param_name\\", 1]]}\\n',
+            'RAND_INT:47102512880765720413 - OUTPUTS: {\\"check_parameters\\": {\\"x\\": [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48], \\"y\\": [100, 144, 196, 256, 324, 400, 484, 576, 676, 784, 900, 1024, 1156, 1296, 1444, 1600, 1764, 1936, 2116, 2304]}, \\"platform_parameters\\": [[\\"bus_alias\\", \\"param_name\\", 1]]}\\n"',
         ],
     )
     @patch("qililab.calibration.calibration_node.pm.execute_notebook")
@@ -469,7 +469,7 @@ class TestPrivateMethodsFromCalibrationNode:
         sweep_interval = [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48]
         y = [i**2 for i in sweep_interval]
         results = {"x": sweep_interval, "y": y}
-        expected = {"check_parameters": results, "platform_params": [["bus_alias", "param_name", 1]]}
+        expected = {"check_parameters": results, "platform_parameters": [["bus_alias", "param_name", 1]]}
 
         # Mocking return value of stream and calling execute_notebook
         methods_node._stream.getvalue.return_value = output  # type: ignore [attr-defined]
@@ -700,19 +700,19 @@ class TestPrivateMethodsFromCalibrationNode:
             ("no_file", ""),
             (
                 "good",
-                'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_params": [["bus_alias", "param_name", 1]]}\n',
+                'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_parameters": [["bus_alias", "param_name", 1]]}\n',
             ),
             (
                 "more_than_one",
-                'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_params": [["bus_alias", "param_name", 1]]}RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_params": [["bus_alias", "param_name", 1]]}/n',
+                'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_parameters": [["bus_alias", "param_name", 1]]}RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_parameters": [["bus_alias", "param_name", 1]]}/n',
             ),
             ("none", '"check_parameters": {"x": [10, 12, 14, 16,]}'),
             (
                 "more_than_one",
-                'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_params": [["bus_alias", "param_name", 1]]}\n'
+                'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_parameters": [["bus_alias", "param_name", 1]]}\n'
                 + "\n"
-                + 'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_params": [["bus_alias", "param_name", 1]]}\n'
-                + 'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_params": [["bus_alias", "param_name", 1]]}\n',
+                + 'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_parameters": [["bus_alias", "param_name", 1]]}\n'
+                + 'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_parameters": [["bus_alias", "param_name", 1]]}\n',
             ),
             ("empty", "RAND_INT:47102512880765720413 - OUTPUTS: {}"),
             ("empty", 'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters":{},"y":1}'),
@@ -744,7 +744,7 @@ class TestPrivateMethodsFromCalibrationNode:
         if type_content in ["good", "two"]:
             # building a fixed dictionary for the test
             results = {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}
-            expected_dict = {"check_parameters": results, "platform_params": [["bus_alias", "param_name", 1]]}
+            expected_dict = {"check_parameters": results, "platform_parameters": [["bus_alias", "param_name", 1]]}
 
             test_dict = methods_node._parse_output_from_execution_file(filename)
             assert test_dict == expected_dict
@@ -764,7 +764,7 @@ class TestPrivateMethodsFromCalibrationNode:
         # TODO: Solve problem with multiple outputs tests:
         # if type_content == "more_than_one":
         #     results = {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}
-        #     expected_dict = {"check_parameters": results, "platform_params": [["bus_alias", "param_name", 1]]}
+        #     expected_dict = {"check_parameters": results, "platform_parameters": [["bus_alias", "param_name", 1]]}
 
         #     test_dict = methods_node._parse_output_from_execution_file(filename)
         #     assert test_dict == expected_dict

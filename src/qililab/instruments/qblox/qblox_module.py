@@ -450,6 +450,7 @@ class QbloxModule(AWG):
         """
 
         self._get_sequencer_by_id(id=sequencer_id).gain_imbalance = float(value)
+
         if self.is_device_active():
             self.device.sequencers[sequencer_id].mixer_corr_gain_ratio(float(value))
 
