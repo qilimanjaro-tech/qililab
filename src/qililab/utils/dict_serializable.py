@@ -147,7 +147,7 @@ class DictSerializable(Protocol, metaclass=DictSerializableMeta):
         return instance
 
 
-def from_dict(dictionary: DictSerializableObject):
+def from_dict(dictionary: DictSerializableObject) -> DictSerializable:
     """Constructs an object instance conforming to the `DictSerializable` protocol from a dictionary.
 
     This function is a utility to deserialize a dictionary into an object that conforms to the
