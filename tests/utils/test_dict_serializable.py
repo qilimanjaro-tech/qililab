@@ -3,7 +3,10 @@
 from dataclasses import dataclass, field
 from uuid import UUID, uuid4
 
+import pytest
+
 from qililab.utils import DictSerializable, from_dict
+from qililab.utils.dict_serializable import DictSerializableFactory, is_dict_serializable_object
 
 
 class A(DictSerializable):
@@ -67,3 +70,25 @@ class TestDictSerializable:
         assert isinstance(deserialized_object.attr8, dict)
         assert origin_object.attr8["type"] == deserialized_object.attr8["type"]
         assert origin_object.attr8["key"] == deserialized_object.attr8["key"]
+
+    @pytest.mark.parametrize(
+        "obj, expected_result",
+        [
+            (C(), False),
+            ({"key": 123}, False),
+            ({"type": "C"}, False),
+            ({"type": "C", "attributes": {"uuid": UUID("eadbecf6-4431-4b55-a861-88487b18296a")}}, True),
+        ],
+    )
+    def test_is_dict_serializable_object(self, obj: object, expected_result: bool):
+        """Test internal `is_dict_serializable_object` function."""
+        result = is_dict_serializable_object(obj)
+        assert result == expected_result
+
+    def test_dict_serializable_factory(self):
+        """Test internal `DictSerializableFactory`."""
+        a_cls = DictSerializableFactory.get("A")
+        assert issubclass(a_cls, DictSerializable)
+
+        with pytest.raises(ValueError):
+            _ = DictSerializableFactory.get("NotRegistered")
