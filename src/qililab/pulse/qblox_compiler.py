@@ -56,9 +56,7 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         if all(
             qblox.name not in self.readout_modules for qblox in self.qblox_modules
         ):  # Raise error if qrm is not found
-            raise ValueError(
-                f"At least one QRM should be connected. Found {sum(qblox.name in self.readout_modules for qblox in self.qblox_modules)} QRM modules"
-            )
+            raise ValueError("No QRM modules found in platform instruments")
 
     def compile(
         self, pulse_schedule: PulseSchedule, num_avg: int, repetition_duration: int, num_bins: int

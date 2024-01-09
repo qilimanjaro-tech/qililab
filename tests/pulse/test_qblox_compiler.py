@@ -44,7 +44,7 @@ class DummyQRM(QbloxQRM):
 
 @pytest.fixture(name="qblox_compiler")
 def fixture_qblox_compiler(platform: Platform):
-    """Return an instance of QbloxModule class"""
+    """Return an instance of Qblox Compiler class"""
     qcm_settings = copy.deepcopy(Galadriel.qblox_qcm_0)
     qcm_settings.pop("name")
     dummy_qcm = DummyQCM(settings=qcm_settings)
@@ -291,8 +291,21 @@ class TestQbloxCompiler:
         with pytest.raises(ValueError, match=re.escape(error_string)):
             qblox_compiler.compile(pulse_schedule=pulse_schedule, num_avg=1000, repetition_duration=2000, num_bins=1)
 
+    def test_no_qrm_raises_error(self, platform: Platform):
+        """test that error is raised if no qrm is found in platform"""
+        qcm_settings = copy.deepcopy(Galadriel.qblox_qcm_0)
+        qcm_settings.pop("name")
+        dummy_qcm = DummyQCM(settings=qcm_settings)
+        platform.instruments.elements = [dummy_qcm]
+        error_string = "No QRM modules found in platform instruments"
+        with pytest.raises(ValueError, match=re.escape(error_string)):
+            QbloxCompiler(platform)
 
-# test qcm compile
-# test empty qcm compile
-# test multiple sequences (qcm + qrm)
-# TODO: test that missing seq ids in compiler works
+    def test_target_more_than_one_readout_port_raises_error(
+        self, qblox_compiler, pulse_bus_schedule, pulse_bus_schedule2
+    ):
+        """Test compile method."""
+        pulse_schedule = PulseSchedule([pulse_bus_schedule, pulse_bus_schedule])
+        error_string = "readout pulses targeted at more than one port. Expected only one target port and instead got 2"
+        with pytest.raises(ValueError, match=re.escape(error_string)):
+            qblox_compiler.compile(pulse_schedule, num_avg=1000, repetition_duration=2000, num_bins=1)
