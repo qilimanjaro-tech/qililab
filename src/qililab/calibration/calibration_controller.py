@@ -17,6 +17,7 @@
 from datetime import datetime, timedelta
 
 import networkx as nx
+import pandas as pd
 
 import qililab as ql
 from qililab.calibration.calibration_node import CalibrationNode
@@ -186,12 +187,28 @@ class CalibrationController:
         self.platform: Platform = build_platform(runcard)
         """The initialized platform, where the experiments will be run (Platform)."""
 
+    def calibrate_all(self, node: CalibrationNode):
+        """Calibrates all the nodes sequentially.
+
+        Args:
+            node (CalibrationNode): The node where we want to start the `calibration_all()` on. Normally you would want
+                this node to be the furthest node in the calibration graph.
+        """
+        logger.info("WORKFLOW: Calibrating all %s.\n", node.node_id)
+        for n in self._dependencies(node):
+            self.calibrate_all(n)
+
+        if node.previous_timestamp is None or self._is_timeout_expired(node.previous_timestamp, 7200.0):
+            self.calibrate(node)
+            self._update_parameters(node)
+
     def run_automatic_calibration(
         self,
         force_maintain: bool = False,
         safe_diagnose: bool = True,
         strict_dependencies: bool = False,
         run_fidelities: bool = False,
+        calibrate_all: bool = False,
     ) -> dict[str, dict]:
         """Runs the full automatic calibration procedure and retrieves the final set parameters and achieved fidelities dictionaries.
 
@@ -224,12 +241,16 @@ class CalibrationController:
         # TODO: calibrates the workflow would need to follow, like the ones in my notebook, and check them.
 
         for node in highest_level_nodes:
-            self.maintain(
-                node,
-                force_mantain=force_maintain,
-                safe_diagnose=safe_diagnose,
-                strict_dependencies=strict_dependencies,
-            )
+            if calibrate_all:
+                self.calibrate_all(node)
+
+            else:
+                self.maintain(
+                    node,
+                    force_mantain=force_maintain,
+                    safe_diagnose=safe_diagnose,
+                    strict_dependencies=strict_dependencies,
+                )
 
         if run_fidelities:
             self.run_fidelities()
@@ -240,7 +261,11 @@ class CalibrationController:
             "#############################################\n"
         )
 
-        return {"set_parameters": self.get_last_set_parameters(), "fidelities": self.get_last_fidelities()}
+        return {
+            "qubits_table": self.get_qubits_table(),
+            "set_parameters": self.get_last_set_parameters(),
+            "fidelities": self.get_last_fidelities(),
+        }
 
     def run_fidelities(self) -> None:
         """Runs the fidelities notebooks."""
@@ -548,8 +573,8 @@ class CalibrationController:
         Args:
             node (CalibrationNode): The node which parameters need to be updated in the platform.
         """
-        if node.output_parameters is not None and "platform_params" in node.output_parameters:
-            for bus_alias, qubit, param_name, param_value in node.output_parameters["platform_params"]:
+        if node.output_parameters is not None and "platform_parameters" in node.output_parameters:
+            for bus_alias, qubit, param_name, param_value in node.output_parameters["platform_parameters"]:
                 logger.info(
                     "Platform updated with: (bus: %s, q: %s, %s, %s).", bus_alias, qubit, param_name, param_value
                 )
@@ -559,7 +584,7 @@ class CalibrationController:
 
             save_platform(self.runcard, self.platform)
 
-    def get_last_set_parameters(self) -> dict[tuple, tuple]:
+    def get_last_set_parameters(self) -> pd.DataFrame:
         """Retrieves the last set parameters of the graph.
 
         Returns:
@@ -572,18 +597,23 @@ class CalibrationController:
             if (
                 node.output_parameters is not None
                 and node.previous_timestamp is not None
-                and "platform_params" in node.output_parameters
+                and "platform_parameters" in node.output_parameters
             ):
-                for bus, qubit, parameter, value in node.output_parameters["platform_params"]:
+                for bus, qubit, parameter, value in node.output_parameters["platform_parameters"]:
                     parameters[(parameter, bus, qubit)] = (
                         value,
                         node.node_id,
                         datetime.fromtimestamp(node.previous_timestamp),
                     )
 
-        return parameters
+        df = pd.DataFrame.from_dict(parameters).transpose()
+        if len(df.columns) == 3:
+            df.columns = ["value", "node_id", "datetime"]
+        if df.index.nlevels == 3:
+            df.index.names = ["parameter", "bus", "qubit"]
+        return df
 
-    def get_last_fidelities(self) -> dict[tuple, tuple]:
+    def get_last_fidelities(self) -> pd.DataFrame:
         """Retrieves the last updated fidelities of the graph.
 
         Returns:
@@ -605,7 +635,93 @@ class CalibrationController:
                         datetime.fromtimestamp(node.previous_timestamp),
                     )
 
-        return fidelities
+        df = pd.DataFrame.from_dict(fidelities).transpose()
+        if len(df.columns) == 3:
+            df.columns = ["fidelity", "node_id", "datetime"]
+        if df.index.nlevels == 2:
+            df.index.names = ["fidelity", "qubit"]
+        return df
+
+    def _create_empty_dataframe(self) -> pd.DataFrame:
+        """Creates the structure of the dataframe for the qubits table.
+
+        Returns:
+            pd.DataFrame: Empty df, where columns are each fidelity or parameter, and rows each qubit.
+        """
+        idx, col = [], []
+        for node in self.node_sequence.values():
+            qubit_list = node.node_id.split("_")
+            qubit = "_".join(
+                [i for i in qubit_list if any(char == "q" for char in i) and any(char.isdigit() for char in i)]
+            ).replace("q", "-")[1:]
+            if qubit not in idx:
+                idx.append(qubit)
+
+            if (
+                node.output_parameters is not None
+                and node.previous_timestamp is not None
+                and "fidelities" in node.output_parameters
+            ):
+                for _, fidelity, _ in node.output_parameters["fidelities"]:
+                    if fidelity not in col:
+                        col.append(fidelity)
+
+            if (
+                node.output_parameters is not None
+                and node.previous_timestamp is not None
+                and "platform_parameters" in node.output_parameters
+            ):
+                for bus, _, parameter, _ in node.output_parameters["platform_parameters"]:
+                    bus_list = str(bus).split("_")
+                    bus = "_".join([x for x in bus_list if not any(char.isdigit() for char in x)])
+
+                    if f"{str(parameter)}_{bus}" not in col:
+                        col.append(f"{str(parameter)}_{bus}")
+
+        df = pd.DataFrame("-", idx, col)
+        df.index.name = "qubit"
+
+        return df
+
+    def get_qubits_table(self) -> pd.DataFrame:
+        """Retrieves the last updated fidelities of the graph in a qubit table.
+
+        Returns:
+            pd.DataFrame: Table where columns are each fidelity or parameter, and rows each qubit.
+        """
+        df = self._create_empty_dataframe()
+
+        for node in self.node_sequence.values():
+            qubit_list = node.node_id.split("_")
+            qubit = "_".join(
+                [i for i in qubit_list if any(char == "q" for char in i) and any(char.isdigit() for char in i)]
+            ).replace("q", "-")[1:]
+
+            if (
+                node.output_parameters is not None
+                and node.previous_timestamp is not None
+                and "fidelities" in node.output_parameters
+            ):
+                for _, fidelity, value in node.output_parameters["fidelities"]:
+                    df[fidelity][qubit] = value
+
+            if (
+                node.output_parameters is not None
+                and node.previous_timestamp is not None
+                and "platform_parameters" in node.output_parameters
+            ):
+                for bus, _, parameter, value in node.output_parameters["platform_parameters"]:
+                    bus_list = str(bus).split("_")
+                    bus = "_".join([x for x in bus_list if not any(char.isdigit() for char in x)])
+                    df[f"{str(parameter)}_{bus}"][qubit] = value
+
+        # Reorder fidelities to the front of the dataframe:
+        for column in df.columns:
+            if "fidelity" in column:
+                first_column = df.pop(column)
+                df.insert(0, column, first_column)
+
+        return df
 
     def _dependencies(self, node: CalibrationNode) -> list:
         """Finds the dependencies of a node.
