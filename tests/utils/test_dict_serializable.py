@@ -16,6 +16,8 @@ class A(DictSerializable):
         self.attr4: tuple[B, ...] = (B(0), B(1), B(2))
         self.attr5: C = C()
         self.attr6: D = D()
+        self.attr7: dict = {"key": 123}
+        self.attr8: dict = {"type": "A", "key": 123}
 
 
 class B(DictSerializable):
@@ -54,7 +56,14 @@ class TestDictSerializable:
         assert all(a == b for a, b in zip(origin_object.attr3, deserialized_object.attr3))
         assert all(isinstance(obj, B) for obj in deserialized_object.attr4)
         assert all(a.attr == b.attr for a, b in zip(origin_object.attr4, deserialized_object.attr4))
-        assert isinstance(origin_object.attr5, C)
+        assert isinstance(deserialized_object.attr5, C)
         assert origin_object.attr5.uuid == origin_object.attr5.uuid
-        assert isinstance(origin_object.attr6, D)
+        assert isinstance(deserialized_object.attr6, D)
         assert origin_object.attr6.uuid == origin_object.attr6.uuid
+
+        assert isinstance(deserialized_object.attr7, dict)
+        assert origin_object.attr7["key"] == deserialized_object.attr7["key"]
+
+        assert isinstance(deserialized_object.attr8, dict)
+        assert origin_object.attr8["type"] == deserialized_object.attr8["type"]
+        assert origin_object.attr8["key"] == deserialized_object.attr8["key"]
