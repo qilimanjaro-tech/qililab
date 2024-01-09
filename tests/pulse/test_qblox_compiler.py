@@ -301,9 +301,7 @@ class TestQbloxCompiler:
         with pytest.raises(ValueError, match=re.escape(error_string)):
             QbloxCompiler(platform)
 
-    def test_target_more_than_one_readout_port_raises_error(
-        self, qblox_compiler, pulse_bus_schedule, pulse_bus_schedule2
-    ):
+    def test_target_more_than_one_readout_port_raises_error(self, qblox_compiler, pulse_bus_schedule):
         """Test compile method."""
         pulse_schedule = PulseSchedule([pulse_bus_schedule, pulse_bus_schedule])
         error_string = "readout pulses targeted at more than one port. Expected only one target port and instead got 2"
