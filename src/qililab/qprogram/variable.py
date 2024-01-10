@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """This file contains all the variables used inside a QProgram."""
-from enum import Enum
 from uuid import UUID, uuid4
 
 from qililab.utils import DictSerializable, DictSerializableEnum
