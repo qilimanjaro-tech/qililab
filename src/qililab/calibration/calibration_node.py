@@ -42,7 +42,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         **3) An analysis procedure**, that plots and fits the obtained data to the expected theoretical behavior, finding the optimal desired parameters.
 
         **4) An export data cell**, that calls ``export_nb_outputs()`` with the dictionary to retrieve data from the notebook into the calibration workflow.
-        This dictionary contains a ``check_parameters`` dictionary of the obtained results for comparisons and a ``platform_params`` list of parameters to set on the platform.
+        This dictionary contains a ``check_parameters`` dictionary of the obtained results for comparisons and a ``platform_parameters`` list of parameters to set on the platform.
 
         .. note::
 
@@ -240,12 +240,12 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                 export_nb_outputs(
                     {
                         "check_parameters": {"x": sweep_interval, "y": results},
-                        "platform_params": [(bus_alias0, qubit, param_name0, fitted_values[0]), (bus_alias1, qubit, param_name1, fitted_values[1])],
+                        "platform_parameters": [(bus_alias0, qubit, param_name0, fitted_values[0]), (bus_alias1, qubit, param_name1, fitted_values[1])],
                         "fidelities": [(qubit, "fidelity1", 0.9), (qubit, "fidelity2", 0.95)]  # Fidelities in the output dictionary are optional.
                     }
                 )
 
-        where the ``check_parameters`` are a dictionary of the saved results to do comparisons against. And the ``platform_params`` are a list of parameters to set on the platform.
+        where the ``check_parameters`` are a dictionary of the saved results to do comparisons against. And the ``platform_parameters`` are a list of parameters to set on the platform.
     """
 
     def __init__(
@@ -312,7 +312,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         self.output_parameters: dict | None = self.get_last_calibrated_output_parameters()
         """Output parameters dictionary from the notebook execution, which was extracted with ``ql.export_nb_outputs()``, normally contains
-        a ``check_params`` to do the ``check_data()`` and the ``platform_params`` which will be the calibrated parameters to set in the platform.
+        a ``check_params`` to do the ``check_data()`` and the ``platform_parameters`` which will be the calibrated parameters to set in the platform.
 
         If no previous successful calibration, then is None.
         """
