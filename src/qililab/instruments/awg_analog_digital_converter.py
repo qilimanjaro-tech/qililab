@@ -176,6 +176,7 @@ class AWGAnalogDigitalConverter(AWG):
             ValueError: when value type is not bool
         """
         cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).scope_hardware_averaging = bool(value)
+
         if self.is_device_active():
             self._set_device_scope_hardware_averaging(value=bool(value), sequencer_id=sequencer_id)
 
@@ -188,6 +189,7 @@ class AWGAnalogDigitalConverter(AWG):
             sequencer_id (int): sequencer to update the value
         """
         cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).threshold = float(value)
+
         if self.is_device_active():
             self._set_device_threshold(value=float(value), sequencer_id=sequencer_id)
 
