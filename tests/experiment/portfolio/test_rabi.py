@@ -21,7 +21,7 @@ q = 9 * np.sin(7 * x)
 @pytest.fixture(name="rabi")
 def fixture_rabi():
     """Return Experiment object."""
-    with patch("qililab.data_management.yaml.safe_load", return_value=Galadriel.runcard) as mock_load:
+    with patch("ruamel.yaml.YAML.load", return_value=Galadriel.runcard) as mock_load:
         with patch("qililab.data_management.open") as mock_open:
             platform = build_platform(runcard="flux_qubit.yml")
             mock_load.assert_called()

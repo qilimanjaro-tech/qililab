@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
-import yaml
+from ruamel.yaml import YAML
 
 import qililab as ql
 from qililab.data_management import load_results, save_platform, save_results
@@ -15,7 +15,7 @@ from tests.data import Galadriel
 from tests.test_utils import build_platform
 
 
-@patch("qililab.data_management.yaml.safe_load", return_value=copy.deepcopy(Galadriel.runcard))
+@patch("ruamel.yaml.YAML.load", return_value=copy.deepcopy(Galadriel.runcard))
 @patch("qililab.data_management.open")
 class TestPlatformData:
     """Unit tests for the `build_platform` function.."""
@@ -108,7 +108,8 @@ class TestBuildPlatformCornerCases:
         new_saved_platform = ql.build_platform(new_path)
 
         with open(file="./test.yml", mode="r", encoding="utf8") as generated_f:
-            generated_f_dict = yaml.safe_load(stream=generated_f)
+            yaml = YAML(typ="safe")
+            generated_f_dict = yaml.load(stream=generated_f)
 
         assert (
             original_platform.to_dict()
@@ -128,9 +129,10 @@ class TestBuildPlatformCornerCases:
         new_saved_platform = ql.build_platform(new_path)
 
         with open(file="examples/runcards/galadriel.yml", mode="r", encoding="utf8") as yaml_f:
-            yaml_f_dict = yaml.safe_load(stream=yaml_f)
+            yaml = YAML(typ="safe")
+            yaml_f_dict = yaml.load(stream=yaml_f)
         with open(file="./test.yml", mode="r", encoding="utf8") as generated_f:
-            generated_f_dict = yaml.safe_load(stream=generated_f)
+            generated_f_dict = yaml.load(stream=generated_f)
 
         for i in ["name", "device_id", "chip", "instruments", "instrument_controllers"]:
             assert yaml_f_dict[i] == generated_f_dict[i]

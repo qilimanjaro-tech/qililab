@@ -6,6 +6,9 @@ This document contains the changes of the current release.
 
 ### Improvements
 
+- Changed save and load methods using `PyYAML` to `ruamel.YAML`
+  [#661](https://github.com/qilimanjaro-tech/qililab/pull/661)
+
 ### Breaking changes
 
 ### Deprecations / Removals
