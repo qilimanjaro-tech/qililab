@@ -1,9 +1,8 @@
 from collections import deque
-from collections.abc import Iterable
 from dataclasses import fields, is_dataclass
 from enum import Enum, EnumMeta
 from typing import Any, Protocol, Type, TypedDict, TypeVar, _ProtocolMeta, cast, runtime_checkable
-from uuid import UUID, uuid4
+from uuid import UUID
 
 T = TypeVar("T", bound="DictSerializable")
 
@@ -39,7 +38,7 @@ def is_dict_serializable_object(obj: Any) -> bool:
 class DictSerializableEnumMeta(EnumMeta):
     """Metaclass to be used in `DictSerializableEnum`. Automatically registers the enums to `DictSerializableFactory`."""
 
-    def __new__(mcs, name, bases, namespace):
+    def __new__(mcs, name, bases, namespace):  # pylint: disable=arguments-differ
         new_class = super().__new__(mcs, name, bases, namespace)
         if bases != (Enum,):  # Avoid registering the base Enum class
             DictSerializableFactory.register(name, new_class)
@@ -115,7 +114,7 @@ class DictSerializable(Protocol, metaclass=DictSerializableMeta):
             DictSerializableObject: A typed dictionary representing the serialized state of the object.
         """
 
-        def process_element(element):
+        def process_element(element):  # pylint: disable=too-many-return-statements
             if isinstance(element, UUID):
                 return {"type": UUID.__name__, "uuid": str(element)}
             if isinstance(element, deque):
@@ -145,7 +144,7 @@ class DictSerializable(Protocol, metaclass=DictSerializableMeta):
             T: An instance of the object populated with data from the dictionary.
         """
 
-        def process_attribute(attribute):
+        def process_attribute(attribute):  # pylint: disable=too-many-return-statements
             if isinstance(attribute, dict) and "type" in attribute and attribute["type"] == UUID.__name__:
                 return UUID(attribute["uuid"])
             if isinstance(attribute, dict) and "type" in attribute and attribute["type"] == deque.__name__:
