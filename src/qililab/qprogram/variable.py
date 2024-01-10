@@ -16,10 +16,10 @@
 from enum import Enum
 from uuid import UUID, uuid4
 
-from qililab.utils import DictSerializable
+from qililab.utils import DictSerializable, DictSerializableEnum
 
 
-class Domain(Enum):
+class Domain(DictSerializableEnum):
     """Domain class."""
 
     Scalar = (0,)
@@ -29,7 +29,7 @@ class Domain(Enum):
     Voltage = 4
 
 
-class ValueSource(Enum):
+class ValueSource(DictSerializableEnum):
     """ValueSource class"""
 
     Free = (0,)

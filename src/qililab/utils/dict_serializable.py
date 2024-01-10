@@ -1,5 +1,9 @@
+from collections import deque
+from collections.abc import Iterable
 from dataclasses import fields, is_dataclass
+from enum import Enum, EnumMeta
 from typing import Any, Protocol, Type, TypedDict, TypeVar, _ProtocolMeta, cast, runtime_checkable
+from uuid import UUID, uuid4
 
 T = TypeVar("T", bound="DictSerializable")
 
@@ -30,6 +34,34 @@ def is_dict_serializable_object(obj: Any) -> bool:
         return False
 
     return all(isinstance(key, str) for key in obj["attributes"])
+
+
+class DictSerializableEnumMeta(EnumMeta):
+    """Metaclass to be used in `DictSerializableEnum`. Automatically registers the enums to `DictSerializableFactory`."""
+
+    def __new__(mcs, name, bases, namespace):
+        new_class = super().__new__(mcs, name, bases, namespace)
+        if bases != (Enum,):  # Avoid registering the base Enum class
+            DictSerializableFactory.register(name, new_class)
+        return new_class
+
+
+class DictSerializableEnum(Enum, metaclass=DictSerializableEnumMeta):
+    """Class that extends Enum and implements the DictSerializable protocol.
+
+    Methods:
+        to_dict: Converts the enum into a dictionary format.
+        from_dict: Creates an instance of the enum from a dictionary.
+    """
+
+    def to_dict(self) -> DictSerializableObject:
+        """Serialize the enum member to a dictionary."""
+        return {"type": self.__class__.__name__, "attributes": {"value": self.name}}
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "DictSerializableEnum":
+        """Creates an instance of the enum from a dictionary."""
+        return cls[data["value"]]
 
 
 class DictSerializableFactory:
@@ -84,14 +116,18 @@ class DictSerializable(Protocol, metaclass=DictSerializableMeta):
         """
 
         def process_element(element):
+            if isinstance(element, UUID):
+                return {"type": UUID.__name__, "uuid": str(element)}
+            if isinstance(element, deque):
+                return {"type": deque.__name__, "elements": [process_element(item) for item in element]}
+            if isinstance(element, list):
+                return {"type": list.__name__, "elements": [process_element(item) for item in element]}
+            if isinstance(element, tuple):
+                return {"type": tuple.__name__, "elements": [process_element(item) for item in element]}
+            if isinstance(element, set):
+                return {"type": set.__name__, "elements": [process_element(item) for item in element]}
             if isinstance(element, DictSerializable):
                 return element.to_dict()
-            if isinstance(element, list):
-                return [process_element(item) for item in element]
-            if isinstance(element, tuple):
-                return tuple(process_element(item) for item in element)
-            if isinstance(element, set):
-                return {process_element(item) for item in element}
             return element
 
         attributes = {k: process_element(v) for k, v in vars(self).items()}
@@ -110,14 +146,18 @@ class DictSerializable(Protocol, metaclass=DictSerializableMeta):
         """
 
         def process_attribute(attribute):
+            if isinstance(attribute, dict) and "type" in attribute and attribute["type"] == UUID.__name__:
+                return UUID(attribute["uuid"])
+            if isinstance(attribute, dict) and "type" in attribute and attribute["type"] == deque.__name__:
+                return deque(process_attribute(item) for item in attribute["elements"])
+            if isinstance(attribute, dict) and "type" in attribute and attribute["type"] == list.__name__:
+                return list(process_attribute(item) for item in attribute["elements"])
+            if isinstance(attribute, dict) and "type" in attribute and attribute["type"] == tuple.__name__:
+                return tuple(process_attribute(item) for item in attribute["elements"])
+            if isinstance(attribute, dict) and "type" in attribute and attribute["type"] == set.__name__:
+                return set(process_attribute(item) for item in attribute["elements"])
             if is_dict_serializable_object(attribute):
                 return from_dict(attribute)
-            if isinstance(attribute, list):
-                return [process_attribute(item) for item in attribute]
-            if isinstance(attribute, tuple):
-                return tuple(process_attribute(item) for item in attribute)
-            if isinstance(attribute, set):
-                return {process_attribute(item) for item in attribute}
             return attribute
 
         if is_dataclass(cls):
