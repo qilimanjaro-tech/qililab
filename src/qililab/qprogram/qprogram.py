@@ -31,10 +31,11 @@ from qililab.qprogram.operations import (
     Wait,
 )
 from qililab.qprogram.variable import Domain, FloatVariable, IntVariable, ValueSource, Variable
+from qililab.utils import DictSerializable
 from qililab.waveforms import IQPair, Waveform
 
 
-class QProgram:
+class QProgram(DictSerializable):
     """A class for building quantum programs.
 
     This class provides an interface for building quantum programs,
