@@ -89,7 +89,7 @@ class DictSerializableMeta(_ProtocolMeta):
     ) -> Type["DictSerializable"]:
         new_class = super().__new__(mcs, name, bases, namespace)
         new_class = cast(Type["DictSerializable"], new_class)
-        if bases != (object,):  # Avoid registering the base DictSerializable protocol
+        if bases != (Protocol,):  # Avoid registering the base DictSerializable protocol
             DictSerializableFactory.register(name, new_class)
         return new_class
 
