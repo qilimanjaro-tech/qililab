@@ -208,6 +208,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                         sequencer=sequencer.identifier,
                         timeout=cast(AWGQbloxADCSequencer, sequencer).acquisition_timeout,
                     )
+                    self.device.store_scope_acquisition(sequencer=sequencer.identifier, name=acquisition)
                     raw_measurement_data = self.device.get_acquisitions(sequencer=sequencer.identifier)[acquisition][
                         "acquisition"
                     ]
