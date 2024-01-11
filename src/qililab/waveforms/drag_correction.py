@@ -30,6 +30,7 @@ class DragCorrection(Waveform):  # pylint: disable=too-few-public-methods
     """
 
     def __init__(self, drag_coefficient: float, waveform: Waveform):
+        super().__init__()
         self.drag_coefficient = drag_coefficient
         self.waveform = waveform
 

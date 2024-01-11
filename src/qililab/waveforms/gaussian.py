@@ -65,6 +65,7 @@ class Gaussian(Waveform):  # pylint: disable=too-few-public-methods
     """
 
     def __init__(self, amplitude: float, duration: int, num_sigmas: float):
+        super().__init__()
         self.amplitude = amplitude
         self.duration = duration
         self.num_sigmas = num_sigmas
