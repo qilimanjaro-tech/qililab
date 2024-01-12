@@ -1,5 +1,6 @@
 """File testing the AWG class."""
 import pytest
+from qpysequence import Sequence as QpySequence
 
 from qililab.instruments import AWG
 from qililab.instruments.awg_settings import AWGSequencer
@@ -19,6 +20,9 @@ class DummyAWG(AWG):
         pass
 
     def upload(self, bus_alias: str):
+        pass
+
+    def upload_qpysequence(self, qpysequence: QpySequence, port: str):
         pass
 
 

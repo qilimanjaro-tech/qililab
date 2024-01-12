@@ -107,7 +107,7 @@ def fixture_experiment_reset(request: pytest.FixtureRequest):
     """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
     runcard = copy.deepcopy(runcard)
-    with patch("qililab.data_management.yaml.safe_load", return_value=runcard) as mock_load:
+    with patch("ruamel.yaml.YAML.load", return_value=runcard) as mock_load:
         with patch("qililab.data_management.open") as mock_open:
             mock_load.return_value[RUNCARD.INSTRUMENT_CONTROLLERS][0] |= {"reset": False}
             platform = ql.build_platform(runcard="galadriel.yml")
@@ -297,7 +297,7 @@ class TestReset:
         experiment.platform.connect()
         experiment.platform.disconnect()
         mock_reset.assert_called()
-        assert mock_reset.call_count == 14
+        assert mock_reset.call_count == 10
 
     @patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
     @patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
@@ -318,4 +318,4 @@ class TestReset:
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
         experiment_reset.platform.connect()
         experiment_reset.platform.disconnect()
-        assert mock_reset.call_count == 12
+        assert mock_reset.call_count == 10

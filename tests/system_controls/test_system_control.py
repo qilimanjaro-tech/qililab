@@ -2,7 +2,7 @@
 from unittest.mock import MagicMock
 
 import pytest
-from qpysequence import Sequence
+from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 
 import qililab as ql
 from qililab.instruments import AWG, Instrument
@@ -18,6 +18,12 @@ from tests.test_utils import build_platform
 def fixture_platform() -> Platform:
     """Return Platform object."""
     return build_platform(runcard=Galadriel.runcard)
+
+
+@pytest.fixture(name="qpysequence")
+def fixture_qpysequence() -> Sequence:
+    """Return Sequence instance."""
+    return Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
 
 
 @pytest.fixture(name="pulse_bus_schedule")
@@ -112,6 +118,24 @@ class TestMethods:
             match="The system control doesn't have any AWG to upload a program",
         ):
             system_control_without_awg.upload(bus_alias="drive_q0")
+
+    def test_upload_qpysequence(self, system_control: SystemControl, qpysequence: Sequence):
+        awg = system_control.instruments[0]
+        assert isinstance(awg, AWG)
+        awg.device = MagicMock()
+        system_control.upload_qpysequence(qpysequence=qpysequence, bus_alias="drive_q0")
+        for seq_idx in range(awg.num_sequencers):
+            awg.device.sequencers[seq_idx].sequence.assert_called_once()
+
+    def test_upload_qpysequence_raises_error_when_awg_is_missing(
+        self, system_control_without_awg: SystemControl, qpysequence: Sequence
+    ):
+        """Test that the ``upload`` method raises an error when the system control doesn't have an AWG."""
+        with pytest.raises(
+            AttributeError,
+            match="The system control doesn't have any AWG to upload a qpysequence.",
+        ):
+            system_control_without_awg.upload_qpysequence(qpysequence=qpysequence, bus_alias="drive_q0")
 
     def test_upload(self, system_control: SystemControl, pulse_bus_schedule: PulseBusSchedule):
         """Test upload method."""

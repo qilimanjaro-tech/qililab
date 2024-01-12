@@ -29,7 +29,7 @@ from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseBusSchedule
-from qililab.result.qblox_results.qblox_result import QbloxResult
+from qililab.result.qblox_results import QbloxQProgramMeasurementResult, QbloxResult
 from qililab.typings.enums import AcquireTriggerMode, InstrumentName, Parameter
 
 
@@ -186,6 +186,35 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             QbloxResult: Acquired Qblox result
         """
         return self.get_acquisitions()
+
+    def acquire_qprogram_results(self, acquisitions: list[str]) -> list[QbloxQProgramMeasurementResult]:  # type: ignore
+        """Read the result from the AWG instrument
+
+        Args:
+            acquisitions (list[str]): A list of acquisitions names.
+
+        Returns:
+            list[QbloxQProgramMeasurementResult]: Acquired Qblox results in chronological order.
+        """
+        return self._get_qprogram_acquisitions(acquisitions=acquisitions)
+
+    @Instrument.CheckDeviceInitialized
+    def _get_qprogram_acquisitions(self, acquisitions: list[str]) -> list[QbloxQProgramMeasurementResult]:
+        results = []
+        for acquisition in acquisitions:
+            for sequencer in self.awg_sequencers:
+                if sequencer.identifier in self.sequences:
+                    self.device.get_acquisition_state(
+                        sequencer=sequencer.identifier,
+                        timeout=cast(AWGQbloxADCSequencer, sequencer).acquisition_timeout,
+                    )
+                    raw_measurement_data = self.device.get_acquisitions(sequencer=sequencer.identifier)[acquisition][
+                        "acquisition"
+                    ]
+                    measurement_result = QbloxQProgramMeasurementResult(raw_measurement_data=raw_measurement_data)
+                    results.append(measurement_result)
+
+        return results
 
     def _set_device_hardware_demodulation(self, value: bool, sequencer_id: int):
         """set hardware demodulation
@@ -345,16 +374,9 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """
         return cast(AWGQbloxADCSequencer, self.get_sequencer(sequencer_id)).integration_length
 
-    @Instrument.CheckDeviceInitialized
-    def setup(
-        self,
-        parameter: Parameter,
-        value: float | str | bool,
-        channel_id: int | None = None,
-        bus_alias: str | None = None,
-    ):
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """set a specific parameter to the instrument"""
         try:
             AWGAnalogDigitalConverter.setup(self, parameter=parameter, value=value, channel_id=channel_id)
         except ParameterNotFound:
-            QbloxModule.setup(self, parameter=parameter, value=value, channel_id=channel_id, bus_alias=bus_alias)
+            QbloxModule.setup(self, parameter=parameter, value=value, channel_id=channel_id)

@@ -21,6 +21,7 @@ from .enums import (
     Instrument,
     InstrumentName,
     IntegrationMode,
+    Line,
     OperationName,
     Parameter,
     PulseDistortionName,
@@ -39,6 +40,8 @@ from .instruments import (
     QbloxD5a,
     QbloxS4g,
     QcmQrm,
+    QDevilQDac2,
     QMMDriver,
     RohdeSchwarzSGS100A,
+    YokogawaGS200,
 )

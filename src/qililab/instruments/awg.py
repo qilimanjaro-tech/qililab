@@ -17,6 +17,8 @@ from abc import abstractmethod
 from dataclasses import asdict, dataclass
 from typing import Sequence
 
+from qpysequence import Sequence as QpySequence
+
 from qililab.constants import RUNCARD
 from qililab.instruments.awg_settings.awg_sequencer import AWGSequencer
 from qililab.instruments.awg_settings.typings import AWGTypes
@@ -87,6 +89,9 @@ class AWG(Instrument):
     @abstractmethod
     def upload(self, bus_alias: str):
         """Upload compiled program."""
+
+    def upload_qpysequence(self, qpysequence: QpySequence, bus_alias: str):
+        """Upload qpysequence."""
 
     @property
     def num_sequencers(self):

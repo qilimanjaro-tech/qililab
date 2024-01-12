@@ -14,7 +14,7 @@ from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.instruments.qblox import QbloxQRM
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent, Rectangular
-from qililab.result.results import QbloxResult
+from qililab.result.qblox_results import QbloxResult
 from qililab.typings import InstrumentName
 from qililab.typings.enums import AcquireTriggerMode, IntegrationMode, Parameter
 from tests.data import Galadriel
@@ -351,53 +351,60 @@ class TestQbloxQRM:
         value: float | bool | int | str,
         channel_id: int,
         qrm: QbloxQRM,
+        qrm_no_device: QbloxQRM,
     ):
         """Test setup method"""
-        qrm.setup(parameter=parameter, value=value, channel_id=channel_id)
-        if channel_id is None:
-            channel_id = 0
-        if parameter == Parameter.GAIN:
-            assert qrm.awg_sequencers[channel_id].gain_i == value
-            assert qrm.awg_sequencers[channel_id].gain_q == value
-        if parameter == Parameter.GAIN_I:
-            assert qrm.awg_sequencers[channel_id].gain_i == value
-        if parameter == Parameter.GAIN_Q:
-            assert qrm.awg_sequencers[channel_id].gain_q == value
-        if parameter == Parameter.OFFSET_I:
-            assert qrm.awg_sequencers[channel_id].offset_i == value
-        if parameter == Parameter.OFFSET_Q:
-            assert qrm.awg_sequencers[channel_id].offset_q == value
-        if parameter == Parameter.IF:
-            assert qrm.awg_sequencers[channel_id].intermediate_frequency == value
-        if parameter == Parameter.HARDWARE_MODULATION:
-            assert qrm.awg_sequencers[channel_id].hardware_modulation == value
-        if parameter == Parameter.NUM_BINS:
-            assert qrm.awg_sequencers[channel_id].num_bins == value
-        if parameter == Parameter.GAIN_IMBALANCE:
-            assert qrm.awg_sequencers[channel_id].gain_imbalance == value
-        if parameter == Parameter.PHASE_IMBALANCE:
-            assert qrm.awg_sequencers[channel_id].phase_imbalance == value
-        if parameter == Parameter.SCOPE_HARDWARE_AVERAGING:
-            assert qrm.awg_sequencers[channel_id].scope_hardware_averaging == value
-        if parameter == Parameter.HARDWARE_DEMODULATION:
-            assert qrm.awg_sequencers[channel_id].hardware_demodulation == value
-        if parameter == Parameter.SCOPE_ACQUIRE_TRIGGER_MODE:
-            assert qrm.awg_sequencers[channel_id].scope_acquire_trigger_mode == AcquireTriggerMode(value)
-        if parameter == Parameter.INTEGRATION_LENGTH:
-            assert qrm.awg_sequencers[channel_id].integration_length == value
-        if parameter == Parameter.SAMPLING_RATE:
-            assert qrm.awg_sequencers[channel_id].sampling_rate == value
-        if parameter == Parameter.INTEGRATION_MODE:
-            assert qrm.awg_sequencers[channel_id].integration_mode == IntegrationMode(value)
-        if parameter == Parameter.SEQUENCE_TIMEOUT:
-            assert qrm.awg_sequencers[channel_id].sequence_timeout == value
-        if parameter == Parameter.ACQUISITION_TIMEOUT:
-            assert qrm.awg_sequencers[channel_id].acquisition_timeout == value
-        if parameter == Parameter.ACQUISITION_DELAY_TIME:
-            assert qrm.acquisition_delay_time == value
-        if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
-            output = int(parameter.value[-1])
-            assert qrm.out_offsets[output] == value
+        for qrms in [qrm, qrm_no_device]:
+            qrms.setup(parameter=parameter, value=value, channel_id=channel_id)
+            if channel_id is None:
+                channel_id = 0
+            if parameter == Parameter.GAIN:
+                assert qrms.awg_sequencers[channel_id].gain_i == value
+                assert qrms.awg_sequencers[channel_id].gain_q == value
+            if parameter == Parameter.GAIN_I:
+                assert qrms.awg_sequencers[channel_id].gain_i == value
+            if parameter == Parameter.GAIN_Q:
+                assert qrms.awg_sequencers[channel_id].gain_q == value
+            if parameter == Parameter.OFFSET_I:
+                assert qrms.awg_sequencers[channel_id].offset_i == value
+            if parameter == Parameter.OFFSET_Q:
+                assert qrms.awg_sequencers[channel_id].offset_q == value
+            if parameter == Parameter.IF:
+                assert qrms.awg_sequencers[channel_id].intermediate_frequency == value
+            if parameter == Parameter.HARDWARE_MODULATION:
+                assert qrms.awg_sequencers[channel_id].hardware_modulation == value
+            if parameter == Parameter.NUM_BINS:
+                assert qrms.awg_sequencers[channel_id].num_bins == value
+            if parameter == Parameter.GAIN_IMBALANCE:
+                assert qrms.awg_sequencers[channel_id].gain_imbalance == value
+            if parameter == Parameter.PHASE_IMBALANCE:
+                assert qrms.awg_sequencers[channel_id].phase_imbalance == value
+            if parameter == Parameter.SCOPE_HARDWARE_AVERAGING:
+                assert qrms.awg_sequencers[channel_id].scope_hardware_averaging == value
+            if parameter == Parameter.HARDWARE_DEMODULATION:
+                assert qrms.awg_sequencers[channel_id].hardware_demodulation == value
+            if parameter == Parameter.SCOPE_ACQUIRE_TRIGGER_MODE:
+                assert qrms.awg_sequencers[channel_id].scope_acquire_trigger_mode == AcquireTriggerMode(value)
+            if parameter == Parameter.INTEGRATION_LENGTH:
+                assert qrms.awg_sequencers[channel_id].integration_length == value
+            if parameter == Parameter.SAMPLING_RATE:
+                assert qrms.awg_sequencers[channel_id].sampling_rate == value
+            if parameter == Parameter.INTEGRATION_MODE:
+                assert qrms.awg_sequencers[channel_id].integration_mode == IntegrationMode(value)
+            if parameter == Parameter.SEQUENCE_TIMEOUT:
+                assert qrms.awg_sequencers[channel_id].sequence_timeout == value
+            if parameter == Parameter.ACQUISITION_TIMEOUT:
+                assert qrms.awg_sequencers[channel_id].acquisition_timeout == value
+            if parameter == Parameter.ACQUISITION_DELAY_TIME:
+                assert qrms.acquisition_delay_time == value
+            if parameter in {
+                Parameter.OFFSET_OUT0,
+                Parameter.OFFSET_OUT1,
+                Parameter.OFFSET_OUT2,
+                Parameter.OFFSET_OUT3,
+            }:
+                output = int(parameter.value[-1])
+                assert qrms.out_offsets[output] == value
 
     def test_setup_raises_error(self, qrm: QbloxQRM):
         """Test that the ``setup`` method raises an error when called with a channel id bigger than the number of
@@ -511,6 +518,29 @@ class TestQbloxQRM:
         qrm.device.get_sequencer_state.assert_not_called()
         qrm.device.get_acquisition_state.assert_not_called()
         qrm.device.get_acquisitions.assert_not_called()
+
+    def test_get_qprogram_acquisitions_method(self, qrm: QbloxQRM):
+        """Test get_acquisitions_method"""
+        qrm.device.get_acquisitions.return_value = {
+            "default": {
+                "index": 0,
+                "acquisition": {
+                    "scope": {
+                        "path0": {"data": [1, 1, 1, 1, 1, 1, 1, 1], "out-of-range": False, "avg_cnt": 1000},
+                        "path1": {"data": [0, 0, 0, 0, 0, 0, 0, 0], "out-of-range": False, "avg_cnt": 1000},
+                    },
+                    "bins": {
+                        "integration": {"path0": [1, 1, 1, 1], "path1": [0, 0, 0, 0]},
+                        "threshold": [0.5, 0.5, 0.5, 0.5],
+                        "avg_cnt": [1000, 1000, 1000, 1000],
+                    },
+                },
+            }
+        }
+        qrm.sequences = {0: None, 1: None}
+        acquisitions = qrm.acquire_qprogram_results(acquisitions=["default"])
+        assert isinstance(acquisitions, list)
+        assert len(acquisitions) == 2
 
     def test_name_property(self, qrm_no_device: QbloxQRM):
         """Test name property."""

@@ -20,13 +20,13 @@ from queue import Queue
 from qibo.models.circuit import Circuit
 from tqdm.auto import tqdm
 
+from qililab.circuit_transpiler import CircuitTranspiler
 from qililab.config import __version__
 from qililab.constants import EXPERIMENT, RUNCARD
 from qililab.execution import EXECUTION_BUILDER
 from qililab.experiment.base_experiment import BaseExperiment
 from qililab.platform.platform import Platform
 from qililab.pulse import PulseSchedule
-from qililab.pulse.circuit_to_pulses import CircuitToPulses
 from qililab.result.results import Results
 from qililab.settings import Runcard
 from qililab.typings.enums import Instrument, Parameter
@@ -53,8 +53,8 @@ class Experiment(BaseExperiment):
         """Translates the list of circuits to pulse sequences (if needed) and creates the ``ExecutionManager`` class."""
         # Translate circuits into pulses if needed
         if self.circuits:
-            translator = CircuitToPulses(platform=self.platform)
-            self.pulse_schedules = translator.translate(circuits=self.circuits)
+            transpiler = CircuitTranspiler(platform=self.platform)
+            self.pulse_schedules = transpiler.circuit_to_pulses(circuits=self.circuits)
         # Build ``ExecutionManager`` class
         self.execution_manager = EXECUTION_BUILDER.build(platform=self.platform, pulse_schedules=self.pulse_schedules)
 

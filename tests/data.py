@@ -91,6 +91,18 @@ class Galadriel:
                     },
                 }
             ],
+            "Drag(0)": [
+                {
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 50,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
             "X(0)": [
                 {
                     "bus": "drive_line_q0_bus",
@@ -170,7 +182,6 @@ class Galadriel:
     pulsar_controller_qcm_0: dict[str, Any] = {
         "name": InstrumentControllerName.QBLOX_PULSAR,
         "alias": "pulsar_controller_qcm_0",
-        Parameter.REFERENCE_CLOCK.value: ReferenceClock.INTERNAL.value,
         INSTRUMENTCONTROLLER.CONNECTION: {
             "name": ConnectionName.TCP_IP.value,
             CONNECTION.ADDRESS: "192.168.0.3",
@@ -181,6 +192,8 @@ class Galadriel:
                 "slot_id": 0,
             }
         ],
+        INSTRUMENTCONTROLLER.RESET: False,
+        Parameter.REFERENCE_CLOCK.value: ReferenceClock.INTERNAL.value,
     }
 
     qblox_qcm_0: dict[str, Any] = {
@@ -237,6 +250,7 @@ class Galadriel:
                 "slot_id": 0,
             }
         ],
+        INSTRUMENTCONTROLLER.RESET: True,
     }
 
     qblox_qrm_0: dict[str, Any] = {
@@ -324,6 +338,7 @@ class Galadriel:
                 "slot_id": 0,
             }
         ],
+        INSTRUMENTCONTROLLER.RESET: True,
     }
 
     rohde_schwarz_0: dict[str, Any] = {
@@ -349,6 +364,7 @@ class Galadriel:
                 "slot_id": 0,
             }
         ],
+        INSTRUMENTCONTROLLER.RESET: True,
     }
 
     rohde_schwarz_1: dict[str, Any] = {
@@ -373,6 +389,7 @@ class Galadriel:
                 "slot_id": 0,
             }
         ],
+        INSTRUMENTCONTROLLER.RESET: True,
     }
 
     attenuator: dict[str, Any] = {
@@ -395,6 +412,7 @@ class Galadriel:
                 "slot_id": 0,
             }
         ],
+        INSTRUMENTCONTROLLER.RESET: True,
     }
 
     keithley_2600: dict[str, Any] = {
@@ -405,39 +423,7 @@ class Galadriel:
         Parameter.MAX_VOLTAGE.value: 20.0,
     }
 
-    qmm_controller_0: dict[str, Any] = {
-        "name": InstrumentControllerName.QUANTUM_MACHINES_MANAGER,
-        "alias": "qmm_controller_0",
-        INSTRUMENTCONTROLLER.CONNECTION: {
-            "name": ConnectionName.TCP_IP.value,
-            CONNECTION.ADDRESS: "192.168.0.111",
-        },
-        INSTRUMENTCONTROLLER.MODULES: [
-            {
-                "alias": "qmm_0",
-                "slot_id": 0,
-            }
-        ],
-    }
-
-    qmm_0: dict[str, Any] = {
-        "name": InstrumentName.QUANTUM_MACHINES_MANAGER,
-        "alias": "qmm_0",
-        RUNCARD.FIRMWARE: "4.30.046.295",
-        "qop_ip": "192.168.0.1",
-        "qop_port": 80,
-        "config": {},
-    }
-
-    instruments: list[dict] = [
-        qblox_qcm_0,
-        qblox_qrm_0,
-        rohde_schwarz_0,
-        rohde_schwarz_1,
-        attenuator,
-        keithley_2600,
-        qmm_0,
-    ]
+    instruments: list[dict] = [qblox_qcm_0, qblox_qrm_0, rohde_schwarz_0, rohde_schwarz_1, attenuator, keithley_2600]
     instrument_controllers: list[dict] = [
         pulsar_controller_qcm_0,
         pulsar_controller_qrm_0,
@@ -445,7 +431,6 @@ class Galadriel:
         rohde_schwarz_controller_1,
         attenuator_controller_0,
         keithley_2600_controller_0,
-        qmm_controller_0,
     ]
 
     buses: list[dict[str, Any]] = [
@@ -820,3 +805,537 @@ class MockedSettingsFactory:
         """Return class attribute."""
         mocked_platform = cls.handlers[platform_name]
         return copy.deepcopy(mocked_platform.runcard)
+
+
+class SauronYokogawa:
+    """Test data of the sauron with yokogawa platform."""
+
+    name = "sauron_yokogawa"
+    device_id = 9
+
+    gates_settings: dict[str, Any] = {
+        PLATFORM.MINIMUM_CLOCK_TIME: 4,
+        PLATFORM.DELAY_BETWEEN_PULSES: 0,
+        PLATFORM.DELAY_BEFORE_READOUT: 0,
+        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
+        PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
+        PLATFORM.PASSIVE_RESET_DURATION: 100,
+        "operations": [],
+        "gates": {},
+    }
+
+    yokogawa_gs200_current = {
+        RUNCARD.NAME: InstrumentName.YOKOGAWA_GS200,
+        RUNCARD.ALIAS: "yokogawa_current",
+        RUNCARD.FIRMWARE: "A.15.10.06",
+        Parameter.SOURCE_MODE.value: "current",
+        Parameter.CURRENT.value: [0.5],
+        Parameter.VOLTAGE.value: [0.0],
+        Parameter.SPAN.value: ["200mA"],
+        Parameter.RAMPING_ENABLED.value: [True],
+        Parameter.RAMPING_RATE.value: [0.01],
+        "dacs": [0],
+    }
+
+    yokogawa_gs200_voltage = {
+        RUNCARD.NAME: InstrumentName.YOKOGAWA_GS200,
+        RUNCARD.ALIAS: "yokogawa_voltage",
+        RUNCARD.FIRMWARE: "A.15.10.06",
+        Parameter.SOURCE_MODE.value: "voltage",
+        Parameter.CURRENT.value: [0.0],
+        Parameter.VOLTAGE.value: [0.5],
+        Parameter.SPAN.value: ["100mV"],
+        Parameter.RAMPING_ENABLED.value: [True],
+        Parameter.RAMPING_RATE.value: [0.01],
+        "dacs": [0],
+    }
+
+    rohde_schwarz: dict[str, Any] = {
+        "name": InstrumentName.ROHDE_SCHWARZ,
+        "alias": "rohde_schwarz",
+        RUNCARD.FIRMWARE: "4.30.046.295",
+        Parameter.POWER.value: 15,
+        Parameter.LO_FREQUENCY.value: 7.24730e09,
+        Parameter.RF_ON.value: True,
+    }
+
+    yokogawa_gs200_current_controller = {
+        RUNCARD.NAME: InstrumentControllerName.YOKOGAWA_GS200,
+        RUNCARD.ALIAS: "yokogawa_controller",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.1.15",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "yokogawa_current",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    yokogawa_gs200_voltage_controller = {
+        RUNCARD.NAME: InstrumentControllerName.YOKOGAWA_GS200,
+        RUNCARD.ALIAS: "yokogawa_controller",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.1.15",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "yokogawa_voltage",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    yokogawa_gs200_controller_wrong_module = {
+        RUNCARD.NAME: InstrumentControllerName.YOKOGAWA_GS200,
+        RUNCARD.ALIAS: "yokogawa_controller_wrong_module",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.1.15",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "rohde_schwarz",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    instruments = [yokogawa_gs200_current, yokogawa_gs200_voltage, rohde_schwarz]
+    instrument_controllers = [
+        yokogawa_gs200_current_controller,
+        yokogawa_gs200_voltage_controller,
+        yokogawa_gs200_controller_wrong_module,
+    ]
+
+    chip: dict[str, Any] = {
+        "nodes": [
+            {"name": "port", "alias": "flux_q0", "line": "flux", "nodes": ["q0"]},
+            {
+                "name": "qubit",
+                "alias": "q0",
+                "qubit_index": 0,
+                "frequency": 3.451e09,
+                "nodes": ["flux_q0"],
+            },
+        ],
+    }
+
+    buses: list[dict[str, Any]] = [
+        {
+            RUNCARD.ALIAS: "yokogawa_gs200_current_bus",
+            RUNCARD.SYSTEM_CONTROL: {
+                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
+                RUNCARD.INSTRUMENTS: ["yokogawa_current"],
+            },
+            "port": "flux_q0",
+            RUNCARD.DISTORTIONS: [],
+        },
+        {
+            RUNCARD.ALIAS: "yokogawa_gs200_voltage_bus",
+            RUNCARD.SYSTEM_CONTROL: {
+                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
+                RUNCARD.INSTRUMENTS: ["yokogawa_voltage"],
+            },
+            "port": "flux_q0",
+            RUNCARD.DISTORTIONS: [],
+        },
+    ]
+
+    runcard = {
+        RUNCARD.NAME: name,
+        RUNCARD.DEVICE_ID: device_id,
+        RUNCARD.GATES_SETTINGS: gates_settings,
+        RUNCARD.BUSES: buses,
+        RUNCARD.INSTRUMENTS: instruments,
+        RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
+    }
+
+
+class SauronQDevil:
+    """Test data of the sauron with yokogawa platform."""
+
+    name = "sauron_qdevil"
+    device_id = 9
+
+    gates_settings: dict[str, Any] = {
+        PLATFORM.MINIMUM_CLOCK_TIME: 4,
+        PLATFORM.DELAY_BETWEEN_PULSES: 0,
+        PLATFORM.DELAY_BEFORE_READOUT: 0,
+        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
+        PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
+        PLATFORM.PASSIVE_RESET_DURATION: 100,
+        "operations": [],
+        "gates": {},
+    }
+
+    qdevil_qdac2 = {
+        RUNCARD.NAME: InstrumentName.QDEVIL_QDAC2,
+        RUNCARD.ALIAS: "qdac",
+        RUNCARD.FIRMWARE: "A.15.10.06",
+        Parameter.VOLTAGE.value: [0.0],
+        Parameter.SPAN.value: ["low"],
+        Parameter.RAMPING_ENABLED.value: [True],
+        Parameter.RAMPING_RATE.value: [0.01],
+        Parameter.LOW_PASS_FILTER.value: ["dc"],
+        "dacs": [1],
+    }
+
+    rohde_schwarz: dict[str, Any] = {
+        "name": InstrumentName.ROHDE_SCHWARZ,
+        "alias": "rohde_schwarz",
+        RUNCARD.FIRMWARE: "4.30.046.295",
+        Parameter.POWER.value: 15,
+        Parameter.LO_FREQUENCY.value: 7.24730e09,
+        Parameter.RF_ON.value: True,
+    }
+
+    qdevil_qdac2_controller_ip = {
+        RUNCARD.NAME: InstrumentControllerName.QDEVIL_QDAC2,
+        RUNCARD.ALIAS: "qdac_controller_ip",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.1.15",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "qdac",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    qdevil_qdac2_controller_usb = {
+        RUNCARD.NAME: InstrumentControllerName.QDEVIL_QDAC2,
+        RUNCARD.ALIAS: "qdac_controller_usb",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.USB.value,
+            CONNECTION.ADDRESS: "ttyUSB0",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "qdac",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    qdevil_qdac2_controller_wrong_module = {
+        RUNCARD.NAME: InstrumentControllerName.QDEVIL_QDAC2,
+        RUNCARD.ALIAS: "qdac_controller_wrong_module",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.1.15",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "rohde_schwarz",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    instruments = [qdevil_qdac2, rohde_schwarz]
+    instrument_controllers = [
+        qdevil_qdac2_controller_ip,
+        qdevil_qdac2_controller_usb,
+        qdevil_qdac2_controller_wrong_module,
+    ]
+
+    chip: dict[str, Any] = {
+        "nodes": [
+            {"name": "port", "alias": "port_q0", "line": "flux", "nodes": ["q0"]},
+            {
+                "name": "qubit",
+                "alias": "q0",
+                "qubit_index": 0,
+                "frequency": 3.451e09,
+                "nodes": ["port_q0"],
+            },
+        ],
+    }
+
+    buses: list[dict[str, Any]] = [
+        {
+            RUNCARD.ALIAS: "qdac_bus",
+            RUNCARD.SYSTEM_CONTROL: {
+                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
+                RUNCARD.INSTRUMENTS: ["qdac"],
+            },
+            "port": "port_q0",
+            RUNCARD.DISTORTIONS: [],
+        }
+    ]
+
+    runcard = {
+        RUNCARD.NAME: name,
+        RUNCARD.DEVICE_ID: device_id,
+        RUNCARD.GATES_SETTINGS: gates_settings,
+        RUNCARD.BUSES: buses,
+        RUNCARD.INSTRUMENTS: instruments,
+        RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
+    }
+
+
+class SauronQuantumMachines:
+    """Test data of the sauron with quantum machines platform."""
+
+    name = "sauron_quantum_machines"
+    device_id = 9
+
+    gates_settings: dict[str, Any] = {
+        PLATFORM.MINIMUM_CLOCK_TIME: 4,
+        PLATFORM.DELAY_BETWEEN_PULSES: 0,
+        PLATFORM.DELAY_BEFORE_READOUT: 0,
+        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
+        PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
+        PLATFORM.PASSIVE_RESET_DURATION: 100,
+        "operations": [],
+        "gates": {},
+    }
+
+    qmm = {
+        "name": InstrumentName.QUANTUM_MACHINES_CLUSTER,
+        "alias": "qmm",
+        RUNCARD.FIRMWARE: "4.30.046.295",
+        "address": "192.168.0.1",
+        "cluster": "cluster_0",
+        "controllers": [
+            {
+                "name": "con1",
+                "analog_outputs": [
+                    {"port": 1},
+                    {"port": 2},
+                    {"port": 3},
+                    {"port": 4},
+                    {"port": 5},
+                    {"port": 6},
+                    {"port": 7},
+                    {"port": 8},
+                    {"port": 9},
+                    {"port": 10},
+                ],
+                "analog_inputs": [{"port": 1}, {"port": 2}],
+                "digital_outputs": [{"port": 1}, {"port": 2}, {"port": 3}, {"port": 4}, {"port": 5}],
+            }
+        ],
+        "octaves": [],
+        "elements": [
+            {
+                "bus": "drive_q0",
+                "mix_inputs": {
+                    "I": {"controller": "con1", "port": 1},
+                    "Q": {"controller": "con1", "port": 2},
+                    "lo_frequency": 6e9,
+                    "mixer_correction": [1.0, 0.0, 0.0, 1.0],
+                },
+                "intermediate_frequency": 6e9,
+            },
+            {
+                "bus": "readout_q0",
+                "mix_inputs": {
+                    "I": {"controller": "con1", "port": 3},
+                    "Q": {"controller": "con1", "port": 4},
+                    "lo_frequency": 6e9,
+                    "mixer_correction": [1.0, 0.0, 0.0, 1.0],
+                },
+                "outputs": {"out1": {"controller": "con1", "port": 1}, "out2": {"controller": "con1", "port": 2}},
+                "time_of_flight": 40,
+                "smearing": 10,
+                "intermediate_frequency": 6e9,
+            },
+            {"bus": "flux_q0", "single_input": {"controller": "con1", "port": 5}},
+        ],
+        "run_octave_calibration": False,
+    }
+
+    qmm_with_octave = {
+        "name": InstrumentName.QUANTUM_MACHINES_CLUSTER,
+        "alias": "qmm_with_octave",
+        RUNCARD.FIRMWARE: "4.30.046.295",
+        "address": "192.168.0.1",
+        "cluster": "cluster_0",
+        "controllers": [
+            {
+                "name": "con1",
+                "analog_outputs": [
+                    {"port": 1},
+                    {"port": 2},
+                    {"port": 3},
+                    {"port": 4},
+                    {"port": 5},
+                    {"port": 6},
+                    {"port": 7},
+                    {"port": 8},
+                    {"port": 9},
+                    {"port": 10},
+                ],
+                "analog_inputs": [{"port": 1}, {"port": 2}],
+                "digital_outputs": [{"port": 1}, {"port": 2}, {"port": 3}, {"port": 4}, {"port": 5}],
+            }
+        ],
+        "octaves": [
+            {
+                "name": "octave1",
+                "port": 11555,
+                "controller": "con1",
+                "rf_outputs": [
+                    {"port": 1, "lo_frequency": 6e9},
+                    {"port": 2, "lo_frequency": 6e9},
+                    {"port": 3, "lo_frequency": 6e9},
+                    {"port": 4, "lo_frequency": 6e9},
+                    {"port": 5, "lo_frequency": 6e9},
+                ],
+                "rf_inputs": [{"port": 1, "lo_frequency": 6e9}, {"port": 2, "lo_frequency": 6e9}],
+            }
+        ],
+        "elements": [
+            {
+                "bus": "drive_q0_rf",
+                "rf_inputs": {"octave": "octave1", "port": 1},
+                "digital_inputs": {"controller": "con1", "port": 1, "delay": 87, "buffer": 15},
+                "digital_outputs": {"controller": "con1", "port": 1},
+                "intermediate_frequency": 6e9,
+            },
+            {
+                "bus": "readout_q0_rf",
+                "rf_inputs": {"octave": "octave1", "port": 2},
+                "digital_inputs": {"controller": "con1", "port": 2, "delay": 87, "buffer": 15},
+                "rf_outputs": {"octave": "octave1", "port": 1},
+                "intermediate_frequency": 6e9,
+                "time_of_flight": 40,
+                "smearing": 10,
+            },
+        ],
+        "run_octave_calibration": True,
+    }
+
+    qmm_controller = {
+        "name": InstrumentControllerName.QUANTUM_MACHINES_CLUSTER,
+        "alias": "qmm_controller",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            "name": ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.0.111",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "qmm",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    qmm_with_octave_controller = {
+        "name": InstrumentControllerName.QUANTUM_MACHINES_CLUSTER,
+        "alias": "qmm_with_octave_controller",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            "name": ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.0.111",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "qmm_with_octave",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    rohde_schwarz: dict[str, Any] = {
+        "name": InstrumentName.ROHDE_SCHWARZ,
+        "alias": "rohde_schwarz",
+        RUNCARD.FIRMWARE: "4.30.046.295",
+        Parameter.POWER.value: 15,
+        Parameter.LO_FREQUENCY.value: 7.24730e09,
+        Parameter.RF_ON.value: True,
+    }
+
+    qmm_controller_wrong_module = {
+        "name": InstrumentControllerName.QUANTUM_MACHINES_CLUSTER,
+        "alias": "qmm_controller_wrong_module",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            "name": ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.0.111",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "rohde_schwarz",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    instruments = [qmm, qmm_with_octave, rohde_schwarz]
+    instrument_controllers = [qmm_controller, qmm_with_octave_controller, qmm_controller_wrong_module]
+
+    chip: dict[str, Any] = {
+        "nodes": [
+            {"name": "port", "alias": "port_q0", "line": "flux", "nodes": ["q0"]},
+            {
+                "name": "qubit",
+                "alias": "q0",
+                "qubit_index": 0,
+                "frequency": 3.451e09,
+                "nodes": ["port_q0"],
+            },
+        ],
+    }
+
+    buses: list[dict[str, Any]] = [
+        {
+            RUNCARD.ALIAS: "drive_q0",
+            RUNCARD.SYSTEM_CONTROL: {
+                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
+                RUNCARD.INSTRUMENTS: ["qmm"],
+            },
+            "port": "port_q0",
+            RUNCARD.DISTORTIONS: [],
+        },
+        {
+            RUNCARD.ALIAS: "readout_q0",
+            RUNCARD.SYSTEM_CONTROL: {
+                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
+                RUNCARD.INSTRUMENTS: ["qmm"],
+            },
+            "port": "port_q0",
+            RUNCARD.DISTORTIONS: [],
+        },
+        {
+            RUNCARD.ALIAS: "flux_q0",
+            RUNCARD.SYSTEM_CONTROL: {
+                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
+                RUNCARD.INSTRUMENTS: ["qmm"],
+            },
+            "port": "port_q0",
+            RUNCARD.DISTORTIONS: [],
+        },
+        {
+            RUNCARD.ALIAS: "drive_q0_rf",
+            RUNCARD.SYSTEM_CONTROL: {
+                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
+                RUNCARD.INSTRUMENTS: ["qmm_with_octave"],
+            },
+            "port": "port_q0",
+            RUNCARD.DISTORTIONS: [],
+        },
+        {
+            RUNCARD.ALIAS: "readout_q0_rf",
+            RUNCARD.SYSTEM_CONTROL: {
+                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
+                RUNCARD.INSTRUMENTS: ["qmm_with_octave"],
+            },
+            "port": "port_q0",
+            RUNCARD.DISTORTIONS: [],
+        },
+    ]
+
+    runcard = {
+        RUNCARD.NAME: name,
+        RUNCARD.DEVICE_ID: device_id,
+        RUNCARD.GATES_SETTINGS: gates_settings,
+        RUNCARD.BUSES: buses,
+        RUNCARD.INSTRUMENTS: instruments,
+        RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
+    }

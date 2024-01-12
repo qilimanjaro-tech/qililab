@@ -15,6 +15,9 @@
 """Square waveform."""
 import numpy as np
 
+from qililab.qprogram.decorators import requires_domain
+from qililab.qprogram.variable import Domain
+
 from .waveform import Waveform
 
 
@@ -40,11 +43,14 @@ class Square(Waveform):  # pylint: disable=too-few-public-methods
             :align: center
     """
 
+    @requires_domain("amplitude", Domain.Voltage)
+    @requires_domain("duration", Domain.Time)
     def __init__(self, amplitude: float, duration: int):
+        super().__init__()
         self.amplitude = amplitude
         self.duration = duration
 
-    def envelope(self, resolution: float = 1.0) -> np.ndarray:
+    def envelope(self, resolution: int = 1) -> np.ndarray:
         """Constant amplitude envelope.
 
         Args:
@@ -54,3 +60,11 @@ class Square(Waveform):  # pylint: disable=too-few-public-methods
             np.ndarray: Height of the envelope for each time step.
         """
         return self.amplitude * np.ones(round(self.duration / resolution))
+
+    def get_duration(self) -> int:
+        """Get the duration of the waveform.
+
+        Returns:
+            int: The duration of the waveform in ns.
+        """
+        return self.duration

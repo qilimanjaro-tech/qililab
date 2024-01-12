@@ -21,5 +21,7 @@ from .pulsar import Pulsar
 from .qblox_d5a import QbloxD5a
 from .qblox_s4g import QbloxS4g
 from .qcm_qrm import QcmQrm
+from .qdevil_qdac2 import QDevilQDac2
 from .qmm_driver import QMMDriver
 from .rohde_schwarz import RohdeSchwarzSGS100A
+from .yokogawa_gs200 import YokogawaGS200

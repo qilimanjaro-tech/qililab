@@ -19,6 +19,8 @@ from abc import ABC
 from dataclasses import InitVar, dataclass
 from typing import get_type_hints
 
+from qpysequence import Sequence as QpySequence
+
 from qililab.constants import RUNCARD
 from qililab.instruments import AWG, Instrument, Instruments
 from qililab.instruments.instrument import ParameterNotFound
@@ -85,6 +87,15 @@ class SystemControl(FactoryElement, ABC):
                 )
         raise AttributeError("The system control doesn't have any AWG to compile the given pulse sequence.")
 
+    def upload_qpysequence(self, qpysequence: QpySequence, bus_alias: str):
+        """Uploads the qpysequence into the instrument."""
+        for instrument in self.instruments:
+            if isinstance(instrument, AWG):
+                instrument.upload_qpysequence(qpysequence=qpysequence, bus_alias=bus_alias)
+                return
+
+        raise AttributeError("The system control doesn't have any AWG to upload a qpysequence.")
+
     def upload(self, bus_alias: str):
         """Uploads any previously compiled program into the instrument."""
         for instrument in self.instruments:
@@ -138,10 +149,9 @@ class SystemControl(FactoryElement, ABC):
         """
         for instrument in self.instruments:
             with contextlib.suppress(ParameterNotFound):
-                if isinstance(instrument, QbloxModule):
-                    instrument.setup(parameter, value, channel_id, bus_alias=bus_alias)
-                else:
-                    instrument.set_parameter(parameter, value, channel_id)
+                if isinstance(instrument, QbloxModule) and channel_id is None and bus_alias is not None:
+                    channel_id = instrument.get_sequencers_from_bus_alias(bus_alias=bus_alias)[0].identifier
+                instrument.set_parameter(parameter, value, channel_id)
                 return
         raise ParameterNotFound(f"Could not find parameter {parameter.value} in the system control {self.name}")
 
@@ -154,7 +164,7 @@ class SystemControl(FactoryElement, ABC):
         """
         for instrument in self.instruments:
             with contextlib.suppress(ParameterNotFound):
-                if isinstance(instrument, QbloxModule):
-                    return instrument.get(parameter, channel_id, bus_alias=bus_alias)
+                if isinstance(instrument, QbloxModule) and channel_id is None and bus_alias is not None:
+                    channel_id = instrument.get_sequencers_from_bus_alias(bus_alias=bus_alias)[0].identifier
                 return instrument.get_parameter(parameter, channel_id)
         raise ParameterNotFound(f"Could not find parameter {parameter.value} in the system control {self.name}")

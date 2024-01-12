@@ -157,6 +157,7 @@ class InstrumentName(str, Enum):
         * qblox_S4g
         * keysight_e5080b
         * agilent_e5071B
+        * yokogawa_gs200
         * OPX -> Exactly as Quantum Machines InstrumentType
     """
 
@@ -170,8 +171,10 @@ class InstrumentName(str, Enum):
     QBLOX_S4G = "S4g"
     KEYSIGHT_E5080B = "keysight_e5080b"
     AGILENT_E5071B = "agilent_e5071B"
+    YOKOGAWA_GS200 = "yokogawa_gs200"
     QCMRF = "QCM-RF"
-    QUANTUM_MACHINES_MANAGER = "quantum_machines_manager"
+    QUANTUM_MACHINES_CLUSTER = "quantum_machines_cluster"
+    QDEVIL_QDAC2 = "qdevil_qdac2"
 
 
 class InstrumentControllerName(str, Enum):
@@ -186,6 +189,7 @@ class InstrumentControllerName(str, Enum):
         * keithley_2600
         * keysight_e5080b
         * agilent_e5071B
+        * yokogawa
         * qmm
     """
 
@@ -197,7 +201,9 @@ class InstrumentControllerName(str, Enum):
     QBLOX_SPIRACK = "qblox_spi_rack"
     KEYSIGHT_E5080B = "keysight_e5080b_controller"
     AGILENT_E5071B = "agilent_e5071B_controller"
-    QUANTUM_MACHINES_MANAGER = "quantum_machines_manager"
+    YOKOGAWA_GS200 = "yokogawa_gs200_controller"
+    QUANTUM_MACHINES_CLUSTER = "quantum_machines_cluster_controller"
+    QDEVIL_QDAC2 = "qdevil_qdac2"
 
 
 class SystemControlName(str, Enum):
@@ -251,11 +257,13 @@ class Parameter(str, Enum):
     SCOPE_ACQUIRE_TRIGGER_MODE = "scope_acquire_trigger_mode"
     SCOPE_HARDWARE_AVERAGING = "scope_hardware_averaging"
     IF = "intermediate_frequency"
+    SOURCE_MODE = "source_mode"
     VOLTAGE = "voltage"
     CURRENT = "current"
     RAMPING_ENABLED = "ramping_enabled"
     RAMPING_RATE = "ramp_rate"
     SPAN = "span"
+    LOW_PASS_FILTER = "low_pass_filter"  # nosec
     SCATTERING_PARAMETER = "scattering_parameter"
     FREQUENCY_SPAN = "frequency_span"
     FREQUENCY_CENTER = "frequency_center"
@@ -287,6 +295,7 @@ class Parameter(str, Enum):
     ELECTRICAL_DELAY = "electrical_delay"
     TIMEOUT = "timeout"
     NUM_FLIPS = "num_flips"
+    OUTPUT_STATUS = "output_status"
     WEIGHTS_I = "weights_i"
     WEIGHTS_Q = "weights_q"
     WEIGHED_ACQ_ENABLED = "weighed_acq_enabled"
@@ -320,8 +329,10 @@ class ResultName(str, Enum):
     """
 
     QBLOX = "qblox"
+    QBLOX_QPROGRAM_MEASUREMENT = "qblox_qprogram_measurement"
     VECTOR_NETWORK_ANALYZER = "vector_network_analyzer"
     QUANTUM_MACHINES = "quantum_machines"
+    QUANTUM_MACHINES_MEASUREMENT = "quantum_machines_measurement"
 
 
 class ConnectionName(str, Enum):
@@ -349,6 +360,8 @@ class InstrumentTypeName(str, Enum):
         * Keithley2600
         * QbloxD5a
         * QbloxS4g
+        * YokogawaGS200
+        * QDevilQDac2
     """
 
     QBLOX_QCM = "QbloxQCM"
@@ -358,6 +371,8 @@ class InstrumentTypeName(str, Enum):
     KEITHLEY2600 = "Keithley2600"
     QBLOX_D5A = "QbloxD5a"
     QBLOX_S4G = "QbloxS4g"
+    YOKOGAWA_GS200 = "YokogawaGS200"
+    QDEVIL_QDAC2 = "QDevilQDac2"
 
 
 class LivePlotTypes(str, Enum):
@@ -465,3 +480,19 @@ class OperationTimingsCalculationMethod(str, Enum):  # pylint: disable=missing-c
 class ResetMethod(str, Enum):  # pylint: disable=missing-class-docstring
     PASSIVE = "passive"
     ACTIVE = "active"
+
+
+class SourceMode(str, Enum):
+    """Source Modes"""
+
+    CURRENT = "current"
+    VOLTAGE = "voltage"
+
+
+class Line(str, Enum):
+    """Chip line"""
+
+    FLUX = "flux"
+    DRIVE = "drive"
+    FEEDLINE_INPUT = "feedline_input"
+    FEEDLINE_OUTPUT = "feedline_output"

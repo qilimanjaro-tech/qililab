@@ -1,6 +1,7 @@
 """Tests for the Platform class."""
 import copy
 import io
+import re
 from pathlib import Path
 from queue import Queue
 from unittest.mock import MagicMock, patch
@@ -19,10 +20,12 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
+from qililab.qprogram import QProgram
 from qililab.settings import Runcard
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName, Parameter
+from qililab.waveforms import IQPair, Square
 from tests.data import Galadriel
 from tests.test_utils import build_platform
 
@@ -63,6 +66,34 @@ class TestPlatform:
     def test_platform_name(self, platform: Platform):
         """Test platform name."""
         assert platform.name == DEFAULT_PLATFORM_NAME
+
+    def test_initial_setup_no_instrument_connection(self, platform: Platform):
+        """Test platform raises and error if no instrument connection."""
+        platform._connected_to_instruments = False
+        with pytest.raises(
+            AttributeError, match="Can not do initial_setup without being connected to the instruments."
+        ):
+            platform.initial_setup()
+
+    def test_set_parameter_no_instrument_connection(self, platform: Platform):
+        """Test platform raises and error if no instrument connection."""
+        platform._connected_to_instruments = False
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, value=0.14, channel_id=0)
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, channel_id=0) == 0.14
+
+    def test_connect_logger(self, platform: Platform):
+        platform._connected_to_instruments = True
+        platform.instrument_controllers = MagicMock()
+        with patch("qililab.platform.platform.logger", autospec=True) as mock_logger:
+            platform.connect()
+        mock_logger.info.assert_called_once_with("Already connected to the instruments")
+
+    def test_disconnect_logger(self, platform: Platform):
+        platform._connected_to_instruments = False
+        platform.instrument_controllers = MagicMock()
+        with patch("qililab.platform.platform.logger", autospec=True) as mock_logger:
+            platform.disconnect()
+        mock_logger.info.assert_called_once_with("Already disconnected from the instruments")
 
     def test_get_element_method_unknown_returns_none(self, platform: Platform):
         """Test get_element method with unknown element."""
@@ -182,7 +213,7 @@ class TestMethods:
         self._compile_and_assert(platform, pulse_schedule, 2)
 
     def _compile_and_assert(self, platform: Platform, program: Circuit | PulseSchedule, len_sequences: int):
-        sequences = platform.compile(program=program, num_avg=1000, repetition_duration=2000, num_bins=1)
+        sequences = platform.compile(program=program, num_avg=1000, repetition_duration=200_000, num_bins=1)
         assert isinstance(sequences, dict)
         assert len(sequences) == len_sequences
         for alias, sequences in sequences.items():
@@ -190,7 +221,31 @@ class TestMethods:
             assert isinstance(sequences, list)
             assert len(sequences) == 1
             assert isinstance(sequences[0], Sequence)
-            assert sequences[0]._program.duration == 2000 * 1000 + 4
+            assert sequences[0]._program.duration == 200_000 * 1000 + 4
+
+    def test_execute_qprogram(self, platform: Platform):
+        """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
+        qprogram.sync()
+        qprogram.play(bus="feedline_input_output_bus", waveform=readout_wf)
+        qprogram.acquire(bus="feedline_input_output_bus", weights=weights_wf)
+
+        with patch.object(Bus, "upload_qpysequence") as upload:
+            with patch.object(Bus, "run") as run:
+                with patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results:
+                    with patch.object(QbloxModule, "desync_sequencers") as desync:
+                        acquire_qprogram_results.return_value = 123
+                        results = platform.execute_qprogram(qprogram=qprogram)
+
+        assert upload.call_count == 2
+        assert run.call_count == 2
+        acquire_qprogram_results.assert_called_once()
+        assert results == {"feedline_input_output_bus": 123}
+        desync.assert_called()
 
     def test_execute(self, platform: Platform):
         """Test that the execute method calls the buses to run and return the results."""
@@ -219,6 +274,14 @@ class TestMethods:
         assert result == 123
         desync.assert_called()
 
+    def test_error_circuit_gt_repetition_duration(self, platform: Platform):
+        c = Circuit(1)
+        c.add([gates.X(0)] * 1000)
+        c.add(gates.M(0))
+        error_string = "Circuit execution time cannnot be longer than repetition duration but found circuit time 51998 > 2000 for qubit 0"
+        with pytest.raises(ValueError, match=error_string):
+            platform.compile(program=c, num_avg=1000, repetition_duration=2000, num_bins=1)
+
     def test_execute_with_queue(self, platform: Platform):
         """Test that the execute method adds the obtained results to the given queue."""
         queue: Queue = Queue()
@@ -242,6 +305,19 @@ class TestMethods:
             with patch.object(QbloxModule, "desync_sequencers") as desync:
                 platform.execute(program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1)
             desync.assert_called()
+
+    def test_execute_raises_error_if_program_type_wrong(self, platform: Platform):
+        """Test that `Platform.execute` raises an error if the program sent is not a Circuit or a PulseSchedule."""
+        c = Circuit(1)
+        c.add(gates.M(0))
+        program = [c, c]
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                f"Program to execute can only be either a single circuit or a pulse schedule. Got program of type {type(program)} instead"
+            ),
+        ):
+            platform.execute(program=program, num_avg=1000, repetition_duration=2000, num_bins=1)
 
     def test_execute_raises_error_if_more_than_one_readout_bus_present(self, platform: Platform):
         """Test that `Platform.execute` raises an error when the platform contains more than one readout bus."""

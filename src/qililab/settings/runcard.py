@@ -187,7 +187,14 @@ class Runcard:
             channel_id: int | None = None,
             alias: str | None = None,
         ):
-            """Cast the new value to its corresponding type and set the new attribute."""
+            """Cast the new value to its corresponding type and set the new attribute.
+
+            Args:
+                parameter (Parameter): Name of the parameter to get.
+                value (float | str | bool): New value to set in the parameter.
+                channel_id (int | None, optional): Channel id. Defaults to None.
+                alias (str): String which specifies where the parameter can be found.
+            """
             if alias is None or alias == "platform":
                 super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
                 return

@@ -25,6 +25,7 @@ from qibo.models import Circuit
 from qiboconnection.api import API
 from ruamel.yaml import YAML
 
+from qililab.circuit_transpiler import CircuitTranspiler
 from qililab.config import logger
 from qililab.constants import GATE_ALIAS_REGEX, RUNCARD
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
@@ -34,6 +35,8 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSchedule
+from qililab.qprogram.qblox_compiler import QbloxCompiler
+from qililab.qprogram.qprogram import QProgram
 from qililab.result import Result
 from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
@@ -312,10 +315,19 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         logger.info("Connected to the instruments")
 
     def initial_setup(self):
-        """Sets the values of the :ref:`runcard <runcards>` to the connected instruments.
+        """Sets the values of the cache of the :class:`.Platform` object to the connected instruments.
 
-        We recommend you to do this always after a connection, to ensure that no parameter differs from the current runcard settings.
+        If called after a ``ql.build_platform()``, where the :class:`.Platform` object is built with the provided runcard,
+        this function sets the values of the :ref:`runcard <runcards>` into the connected instruments.
+
+        It is recommended to use this function after a ``ql.build_platform()`` + ``platform.connect()`` to ensure that no parameter
+        differs from the current runcard settings.
+
+        If a `platform.set_parameter()` is called between platform building and initial setup, the value set in the instruments
+        will be the new "set" value, as the cache values of the :class:`.Platform` object are modified.
         """
+        if not self._connected_to_instruments:
+            raise AttributeError("Can not do initial_setup without being connected to the instruments.")
         self.instrument_controllers.initial_setup()
         logger.info("Initial setup applied to the instruments")
 
@@ -375,6 +387,23 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             element = self._get_bus_by_alias(alias=alias)
         return element
 
+    # def _get_bus_by_qubit_index(self, qubit_index: int) -> tuple[Bus, Bus, Bus]:
+    #     """Finds buses associated with the given qubit index.
+
+    #     Args:
+    #         qubit_index (int): Qubit index to get the buses from.
+
+    #     Returns:
+    #         tuple[:class:`Bus`, :class:`Bus`, :class:`Bus`]: Tuple of Bus objects containing the flux, control and readout buses of the given qubit.
+    #     """
+    #     flux_port = self.chip.get_port_from_qubit_idx(idx=qubit_index, line=Line.FLUX)
+    #     control_port = self.chip.get_port_from_qubit_idx(idx=qubit_index, line=Line.DRIVE)
+    #     readout_port = self.chip.get_port_from_qubit_idx(idx=qubit_index, line=Line.FEEDLINE_INPUT)
+    #     flux_bus = self.buses.get(port=flux_port)
+    #     control_bus = self.buses.get(port=control_port)
+    #     readout_bus = self.buses.get(port=readout_port)
+    #     return flux_bus, control_bus, readout_bus
+
     def _get_bus_by_alias(self, alias: str | None = None):
         """Gets buses given their alias.
 
@@ -408,7 +437,14 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         alias: str,
         channel_id: int | None = None,
     ):
-        """Sets any parameter of a platform element.
+        """Set a parameter for a platform element.
+
+        If connected to an instrument, this function updates both the cache of the :class:`.Platform` object and the
+        instrument's value. Otherwise, it only stores the value in the cache. Subsequent ``connect()`` + ``initial_setup()``
+        will apply the cached values into the real instruments.
+
+        If you use ``set_parameter`` + ``ql.save_platform()``, the saved runcard will include the new "set" value, even without
+        an instrument connection, as the cache values of the :class:`.Platform` object are modified.
 
         Args:
             parameter (Parameter): Name of the parameter to change.
@@ -484,6 +520,45 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             str: Name of the platform.
         """
         return str(YAML().dump(self.to_dict(), io.BytesIO()))
+
+    def execute_qprogram(self, qprogram: QProgram) -> dict[str, list[Result]]:
+        """Execute a QProgram using the platform instruments.
+
+        Args:
+            qprogram (QProgram): The QProgram to execute.
+
+        Returns:
+            dict[str, list[Result]]: A dictionary of measurement results. The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
+        """
+
+        # Compile QProgram
+        qblox_compiler = QbloxCompiler()
+        sequences = qblox_compiler.compile(qprogram=qprogram)
+        buses = {bus_alias: self._get_bus_by_alias(alias=bus_alias) for bus_alias in sequences}
+
+        # Upload sequences
+        for bus_alias in sequences:
+            buses[bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
+
+        # Execute sequences
+        for bus_alias in sequences:
+            buses[bus_alias].run()
+
+        # Acquire results
+        results: dict[str, list[Result]] = {}
+        for bus_alias in buses:
+            if isinstance(buses[bus_alias].system_control, ReadoutSystemControl):
+                acquisitions = list(sequences[bus_alias].todict()["acquisitions"])
+                bus_results = buses[bus_alias].acquire_qprogram_results(acquisitions=acquisitions)
+                results[bus_alias] = bus_results
+
+        # Reset instrument settings
+        for instrument in self.instruments.elements:
+            if isinstance(instrument, QbloxModule):
+                instrument.reset_sequences()
+                instrument.desync_sequencers()
+
+        return results
 
     def execute(
         self,
@@ -566,20 +641,29 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         Returns:
             dict: Dictionary of compiled assembly programs. The key is the bus alias (``str``), and the value is the assembly compilation (``list``).
+
+        Raises:
+            ValueError: raises value error if the circuit execution time is longer than ``repetition_duration`` for some qubit.
         """
         # We have a circular import because Platform uses CircuitToPulses and vice versa
-        from qililab.pulse.circuit_to_pulses import (  # pylint: disable=import-outside-toplevel, cyclic-import
-            CircuitToPulses,
-        )
 
         if isinstance(program, Circuit):
-            translator = CircuitToPulses(platform=self)
-            pulse_schedule = translator.translate(circuits=[program])[0]
-        else:
+            transpiler = CircuitTranspiler(platform=self)
+            pulse_schedule = transpiler.transpile_circuit(circuits=[program])[0]
+        elif isinstance(program, PulseSchedule):
             pulse_schedule = program
+        else:
+            raise ValueError(
+                f"Program to execute can only be either a single circuit or a pulse schedule. Got program of type {type(program)} instead"
+            )
 
         programs = {}
         for pulse_bus_schedule in pulse_schedule.elements:
+            if len(pulse_bus_schedule.timeline) != 0:  # can't do only one conditional if list is empty
+                if pulse_bus_schedule.timeline[-1].end_time > repetition_duration:
+                    raise ValueError(
+                        f"Circuit execution time cannnot be longer than repetition duration but found circuit time {pulse_bus_schedule.timeline[-1].end_time } > {repetition_duration} for qubit {pulse_bus_schedule.qubit}"
+                    )
             bus = self.buses.get(alias=pulse_bus_schedule.bus_alias)
             bus_programs = bus.compile(pulse_bus_schedule, num_avg, repetition_duration, num_bins)
             programs[bus.alias] = bus_programs

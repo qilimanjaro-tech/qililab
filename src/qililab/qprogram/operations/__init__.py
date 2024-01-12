@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from .acquire import Acquire
+from .measure import Measure
 from .operation import Operation
 from .play import Play
 from .reset_phase import ResetPhase

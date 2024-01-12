@@ -3,6 +3,7 @@ import pytest
 
 from qililab.platform import Platform
 from qililab.system_control import SystemControl
+from qililab.typings.enums import Parameter
 from tests.data import Galadriel
 from tests.test_utils import build_platform
 
@@ -23,7 +24,7 @@ def fixture_system_control(platform: Platform):
 class TestInstument:
     """Unit tests checking the ``SystemControl`` methods."""
 
-    def test_error_raises_instrument_not_connected(self, system_control: SystemControl):
+    def test_set_parameter_doesnt_raise_error_instrument_not_connected(self, system_control: SystemControl):
         """ "Test Parameter error raises if the parameter is not found."""
-        with pytest.raises(AttributeError, match="Instrument Device has not been initialized"):
-            system_control.set_parameter(parameter="voltage", value="45", channel_id=1)  # type: ignore
+        system_control.set_parameter(parameter=Parameter.IF, value=0.14, channel_id=0)
+        assert system_control.get_parameter(parameter=Parameter.IF, channel_id=0) == 0.14

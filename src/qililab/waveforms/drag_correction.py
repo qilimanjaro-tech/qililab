@@ -30,14 +30,15 @@ class DragCorrection(Waveform):  # pylint: disable=too-few-public-methods
     """
 
     def __init__(self, drag_coefficient: float, waveform: Waveform):
+        super().__init__()
         self.drag_coefficient = drag_coefficient
         self.waveform = waveform
 
-    def envelope(self, resolution: float = 1.0) -> np.ndarray:
+    def envelope(self, resolution: int = 1) -> np.ndarray:
         """Returns the envelope corresponding to the drag correction.
 
         Args:
-            resolution (float, optional): Pulse resolution. Defaults to 1.
+            resolution (int, optional): Pulse resolution. Defaults to 1.
 
         Returns:
             np.ndarray: Height of the envelope for each time step.
@@ -49,3 +50,11 @@ class DragCorrection(Waveform):  # pylint: disable=too-few-public-methods
 
             return (-1 * self.drag_coefficient * (x - mu) / sigma**2) * self.waveform.envelope()
         raise NotImplementedError(f"Cannot apply drag correction on a {self.waveform.__class__.__name__} waveform.")
+
+    def get_duration(self) -> int:
+        """Get the duration of the waveform.
+
+        Returns:
+            int: The duration of the waveform in ns.
+        """
+        return self.waveform.get_duration()

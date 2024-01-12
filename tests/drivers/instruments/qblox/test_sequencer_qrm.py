@@ -1,6 +1,5 @@
 """Tests for the SequencerQRM class."""
 # pylint: disable=protected-access
-import re
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -12,6 +11,7 @@ from qililab.drivers.instruments.qblox.sequencer_qrm import SequencerQRM
 from qililab.pulse import Pulse, PulseBusSchedule, Rectangular
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.result.qblox_results.qblox_acquisitions_builder import QbloxAcquisitionsBuilder
+from tests.test_utils import is_q1asm_equal
 
 PULSE_SIGMAS = 4
 PULSE_AMPLITUDE = 1
@@ -38,9 +38,60 @@ def get_pulse_bus_schedule(start_time):
     return PulseBusSchedule(timeline=[pulse_event], bus_alias=0)
 
 
-expected_program_str_0 = r"setup:\n    move             0, R0\n    move             1, R1\n    move             1, R2\n    wait_sync        4\n    \naverage:\n    move             0, R3\n    bin:\n        reset_ph\n        set_awg_gain     32767, 32767\n        set_ph           0\n        play             0, 1, 4\n        acquire          0, R3, 4\n        long_wait_\d+:\n            wait             992\n            \n        add              R3, 1, R3\n        nop\n        jlt              R3, 1, @bin\n    loop             R2, @average\nstop:\n    stop\n    \n"
+expected_program_str_0 = """
+setup:
+    move             0, R0
+    move             1, R1
+    move             1, R2
+    wait_sync        4
 
-expected_program_str_1 = r"setup:\n    move             0, R0\n    move             1, R1\n    move             1, R2\n    wait_sync        4\n    \naverage:\n    move             0, R3\n    bin:\n        long_wait_\d+:\n            wait             4\n            \n        reset_ph\n        set_awg_gain     32767, 32767\n        set_ph           0\n        play             0, 1, 4\n        acquire          0, R3, 4\n        long_wait_\d+:\n            wait             988\n            \n        add              R3, 1, R3\n        nop\n        jlt              R3, 1, @bin\n    loop             R2, @average\nstop:\n    stop\n    \n"
+average:
+    move             0, R3
+    bin:
+        reset_ph
+        set_awg_gain     32767, 32767
+        set_ph           0
+        play             0, 1, 4
+        acquire          0, R3, 4
+        long_wait_1:
+            wait             992
+
+        add              R3, 1, R3
+        nop
+        jlt              R3, 1, @bin
+    loop             R2, @average
+stop:
+    stop
+"""
+
+expected_program_str_1 = """
+setup:
+                move             0, R0
+                move             1, R1
+                move             1, R2
+                wait_sync        4
+
+average:
+                move             0, R3
+bin:
+long_wait_1:
+
+
+                reset_ph
+                set_awg_gain     32767, 32767
+                set_ph           0
+                play             0, 1, 4
+                acquire          0, R3, 4
+long_wait_2:
+                wait             992
+
+                add              R3, 1, R3
+                nop
+                jlt              R3, 1, @bin
+                loop             R2, @average
+stop:
+                stop
+"""
 
 
 @pytest.fixture(name="pulse_bus_schedule")
@@ -145,7 +196,7 @@ class TestSequencerQRM:
         )
 
         assert isinstance(program, Program)
-        assert re.match(expected_program_str, repr(program))
+        is_q1asm_equal(program, expected_program_str)
 
     def test_generate_empty_weights(self, sequencer):
         """Test the ``_generate_weights`` method when no weights have been set beforehand."""

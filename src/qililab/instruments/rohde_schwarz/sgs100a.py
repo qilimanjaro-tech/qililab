@@ -43,31 +43,28 @@ class SGS100A(SignalGenerator):
     settings: SGS100ASettings
     device: RohdeSchwarzSGS100A
 
-    @Instrument.CheckDeviceInitialized
-    def setup(
-        self,
-        parameter: Parameter,
-        value: float | str | bool,
-        channel_id: int | None = None,
-    ):
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Set R&S dbm power and frequency. Value ranges are:
         - power: (-120, 25).
         - frequency (1e6, 20e9).
         """
         if parameter == Parameter.POWER:
             self.settings.power = float(value)
-            self.device.power(self.power)
+            if self.is_device_active():
+                self.device.power(self.power)
             return
         if parameter == Parameter.LO_FREQUENCY:
             self.settings.frequency = float(value)
-            self.device.frequency(self.frequency)
+            if self.is_device_active():
+                self.device.frequency(self.frequency)
             return
         if parameter == Parameter.RF_ON:
             value = bool(value)
-            if value:
-                self.turn_on()
-            else:
-                self.turn_off()
+            if self.is_device_active():
+                if value:
+                    self.turn_on()
+                else:
+                    self.turn_off()
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 

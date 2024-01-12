@@ -186,6 +186,7 @@ class INSTRUMENTCONTROLLER:
 
     CONNECTION = "connection"
     MODULES = "modules"
+    RESET = "reset"
 
 
 class CONNECTION:
@@ -201,10 +202,19 @@ class QBLOXRESULT:
     QBLOX_RAW_RESULTS = "qblox_raw_results"
 
 
+class QBLOXMEASUREMENTRESULT:
+    """Qblox Results attribute names."""
+
+    RAW_MEASUREMENT_DATA = "raw_measurement_data"
+
+
 class QMRESULT:
     """Quantum Machines Results attribute names."""
 
-    QM_RAW_RESULTS = "qm_raw_results"
+    I = "i"
+    Q = "q"
+    ADC1 = "adc1"
+    ADC2 = "adc2"
 
 
 class RESULTSDATAFRAME:

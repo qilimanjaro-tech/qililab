@@ -1,9 +1,9 @@
 """Tests for the PulseSequences class."""
 import pytest
 
+from qililab.circuit_transpiler import CircuitTranspiler
 from qililab.platform import Platform
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent, PulseSchedule
-from qililab.pulse.circuit_to_pulses import CircuitToPulses
 from tests.data import Galadriel, circuit, experiment_params
 from tests.test_utils import build_platform
 
@@ -29,7 +29,7 @@ def fixture_platform() -> Platform:
 @pytest.fixture(name="pulse_schedule", params=experiment_params)
 def fixture_pulse_schedule(platform: Platform) -> PulseSchedule:
     """Return PulseSchedule instance."""
-    return CircuitToPulses(platform=platform).translate(circuits=[circuit])[0]
+    return CircuitTranspiler(platform=platform).circuit_to_pulses(circuits=[circuit])[0]
 
 
 class TestPulseSequences:

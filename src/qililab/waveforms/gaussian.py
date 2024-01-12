@@ -65,11 +65,12 @@ class Gaussian(Waveform):  # pylint: disable=too-few-public-methods
     """
 
     def __init__(self, amplitude: float, duration: int, num_sigmas: float):
+        super().__init__()
         self.amplitude = amplitude
         self.duration = duration
         self.num_sigmas = num_sigmas
 
-    def envelope(self, resolution: float = 1.0) -> np.ndarray:
+    def envelope(self, resolution: int = 1) -> np.ndarray:
         """Gaussian envelope centered with respect to the pulse.
 
         The gaussian is symmetrically cut in the given ``num_sigmas``, meaning that it starts and ends at that sigma width.
@@ -77,7 +78,7 @@ class Gaussian(Waveform):  # pylint: disable=too-few-public-methods
         And then to avoid introducing noise at time 0, the full gaussian is shifted down so that it starts at 0.
 
         Args:
-            resolution (float, optional): Resolution of the pulse. Defaults to 1.
+            resolution (int, optional): Resolution of the pulse. Defaults to 1.
 
         Returns:
             np.ndarray: Height of the envelope for each time step.
@@ -93,3 +94,11 @@ class Gaussian(Waveform):  # pylint: disable=too-few-public-methods
         corr_norm = np.amax(np.real(gaussian))
 
         return gaussian * norm / corr_norm if corr_norm != 0 else gaussian
+
+    def get_duration(self) -> int:
+        """Get the duration of the waveform.
+
+        Returns:
+            int: The duration of the waveform in ns.
+        """
+        return self.duration

@@ -15,6 +15,8 @@
 """Bus class."""
 from dataclasses import InitVar, dataclass
 
+from qpysequence import Sequence as QpySequence
+
 from qililab.constants import BUS, RUNCARD
 from qililab.instruments import Instruments, ParameterNotFound
 from qililab.pulse import PulseBusSchedule, PulseDistortion
@@ -190,6 +192,10 @@ class Bus:
         """
         return self.system_control.compile(pulse_bus_schedule, nshots, repetition_duration, num_bins)
 
+    def upload_qpysequence(self, qpysequence: QpySequence):
+        """Uploads the qpysequence into the instrument."""
+        self.system_control.upload_qpysequence(qpysequence=qpysequence, bus_alias=self.alias)
+
     def upload(self):
         """Uploads any previously compiled program into the instrument."""
         self.system_control.upload(bus_alias=self.alias)
@@ -206,6 +212,19 @@ class Bus:
         """
         if isinstance(self.system_control, ReadoutSystemControl):
             return self.system_control.acquire_result()
+
+        raise AttributeError(
+            f"The bus {self.alias} cannot acquire results because it doesn't have a readout system control."
+        )
+
+    def acquire_qprogram_results(self, acquisitions: list[str]) -> list[Result]:
+        """Read the result from the instruments
+
+        Returns:
+            list[Result]: Acquired results in chronological order
+        """
+        if isinstance(self.system_control, ReadoutSystemControl):
+            return self.system_control.acquire_qprogram_results(acquisitions=acquisitions)
 
         raise AttributeError(
             f"The bus {self.alias} cannot acquire results because it doesn't have a readout system control."

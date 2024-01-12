@@ -1,6 +1,5 @@
 """Tests for the SequencerQCM class."""
 # pylint: disable=protected-access
-from textwrap import dedent
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -13,6 +12,7 @@ from qpysequence.weights import Weights
 from qililab.drivers.instruments.qblox.sequencer_qcm import SequencerQCM
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
+from tests.test_utils import is_q1asm_equal
 
 PULSE_SIGMAS = 4
 PULSE_AMPLITUDE = 1
@@ -57,12 +57,53 @@ def get_envelope():
     return pulse.envelope()
 
 
-expected_program_str_0 = repr(
-    "setup:\n    move             1, R0\n    wait_sync        4\n\naverage:\n    move             0, R1\n    bin:\n        reset_ph\n        set_awg_gain     32767, 32767\n        set_ph           0\n        play             0, 1, 4\n        long_wait_1:\n            wait             996\n\n        add              R1, 1, R1\n        nop\n        jlt              R1, 1, @bin\n    loop             R0, @average\nstop:\n    stop\n\n"
-)
-expected_program_str_1 = repr(
-    "setup:\n    move             1, R0\n    wait_sync        4\n\naverage:\n    move             0, R1\n    bin:\n        long_wait_2:\n            wait             4\n\n        reset_ph\n        set_awg_gain     32767, 32767\n        set_ph           0\n        play             0, 1, 4\n        long_wait_3:\n            wait             992\n\n        add              R1, 1, R1\n        nop\n        jlt              R1, 1, @bin\n    loop             R0, @average\nstop:\n    stop\n\n"
-)
+expected_program_str_0 = """
+setup:
+                move             1, R0
+                wait_sync        4
+
+average:
+                move             0, R1
+bin:
+                reset_ph
+                set_awg_gain     32767, 32767
+                set_ph           0
+                play             0, 1, 4
+long_wait_1:
+                wait             996
+
+                add              R1, 1, R1
+                nop
+                jlt              R1, 1, @bin
+                loop             R0, @average
+stop:
+                stop
+"""
+expected_program_str_1 = """
+setup:
+                move             1, R0
+                wait_sync        4
+
+average:
+                move             0, R1
+bin:
+long_wait_1:
+
+
+                reset_ph
+                set_awg_gain     32767, 32767
+                set_ph           0
+                play             0, 1, 4
+long_wait_2:
+                wait             996
+
+                add              R1, 1, R1
+                nop
+                jlt              R1, 1, @bin
+                loop             R0, @average
+stop:
+                stop
+"""
 
 
 @pytest.fixture(name="pulse_bus_schedule")
@@ -217,9 +258,8 @@ class TestSequencer:
         program = sequencer._generate_program(
             pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, nshots=1, repetition_duration=1000, num_bins=1
         )
-
         assert isinstance(program, Program)
-        assert repr(dedent(repr(program))) == expected_program_str
+        is_q1asm_equal(program, expected_program_str)
 
     def test_execute(self, pulse_bus_schedule: PulseBusSchedule):
         """Unit tests for execute method"""
