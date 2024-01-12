@@ -128,7 +128,7 @@ dummy_qcm_name_generator = name_generator("dummy_qcm")
 def build_platform(runcard: dict) -> Platform:
     """Return PlatformBuilderDB instance with loaded platform."""
     runcard = copy.deepcopy(runcard)
-    with patch("qililab.data_management.yaml.safe_load", return_value=runcard) as mock_load:
+    with patch("ruamel.yaml.YAML.load", return_value=runcard) as mock_load:
         with patch("qililab.data_management.open") as mock_open:
             pl = ql.build_platform(runcard="_")
             mock_load.assert_called()

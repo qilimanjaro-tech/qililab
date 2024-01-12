@@ -19,7 +19,6 @@ from warnings import warn
 
 import h5py
 import numpy as np
-import yaml
 from qiboconnection.api import API
 from ruamel.yaml import YAML
 
@@ -245,7 +244,8 @@ def build_platform(
 
     if isinstance(runcard, str):
         with open(file=runcard, mode="r", encoding="utf8") as file:
-            runcard = yaml.safe_load(stream=file)
+            yaml = YAML(typ="safe")
+            runcard = yaml.load(stream=file)
 
     runcard_class = Runcard(**runcard)
     return Platform(runcard=runcard_class, connection=connection)

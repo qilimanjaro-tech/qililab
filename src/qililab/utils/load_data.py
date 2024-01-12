@@ -17,7 +17,7 @@ import glob
 import os
 from pathlib import Path
 
-import yaml
+from ruamel.yaml import YAML
 
 from qililab.constants import DATA, EXPERIMENT_FILENAME, RESULTS_FILENAME
 from qililab.experiment.experiment import Experiment
@@ -55,11 +55,13 @@ def load(path: str | None = None, load_experiment: bool = False) -> tuple[Experi
     experiment, results = None, None
     if load_experiment and os.path.exists(parsed_path / EXPERIMENT_FILENAME):
         with open(parsed_path / EXPERIMENT_FILENAME, mode="r", encoding="utf-8") as experiment_file:
-            experiment = Experiment.from_dict(yaml.safe_load(stream=experiment_file))
+            yaml = YAML(typ="safe")
+            experiment = Experiment.from_dict(yaml.load(stream=experiment_file))
 
     if os.path.exists(parsed_path / RESULTS_FILENAME):
         with open(parsed_path / RESULTS_FILENAME, mode="r", encoding="utf-8") as results_file:
-            results = Results(**yaml.safe_load(stream=results_file))
+            yaml = YAML(typ="safe")
+            results = Results(**yaml.load(stream=results_file))
 
     if experiment is not None and results is not None:
         experiment.results = results

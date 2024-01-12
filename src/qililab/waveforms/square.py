@@ -46,6 +46,7 @@ class Square(Waveform):  # pylint: disable=too-few-public-methods
     @requires_domain("amplitude", Domain.Voltage)
     @requires_domain("duration", Domain.Time)
     def __init__(self, amplitude: float, duration: int):
+        super().__init__()
         self.amplitude = amplitude
         self.duration = duration
 
