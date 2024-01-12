@@ -178,10 +178,8 @@ class TestQbloxModule:  # pylint: disable=too-few-public-methods
         qrm_settings.pop("name")
         qrm = DummyQRM(settings=qrm_settings)
         qrm.upload_qpysequence(qpysequence=qpysequence, port="feedline_input")
-        assert qrm.sequences[0][0] is qpysequence
-        assert qrm.sequences[0][1] is True
-        assert qrm.sequences[1][0] is qpysequence
-        assert qrm.sequences[1][1] is True
+        assert qrm.sequences[0] is qpysequence
+        assert qrm.sequences[1] is qpysequence
 
     def test_num_sequencers_error(self):
         """test that an error is raised if more than _NUM_MAX_SEQUENCERS are in the qblox module"""
