@@ -149,11 +149,12 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
     def _translate_pulse_bus_schedule(
         self, pulse_bus_schedule: PulseBusSchedule, sequencer: AWGQbloxSequencer
     ) -> QpySequence:
-        """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
+        """Translate a pulse sequence into a Q1ASM program, a waveform dictionary and
+        acquisitions dictionary (that is, a QpySequence sequence).
 
         Args:
             pulse_bus_schedule (PulseBusSchedule): Pulse bus schedule to translate.
-            sequencer (int): index of the sequencer to generate the program
+            sequencer (AWGQbloxSequencer): sequencer to generate the program
 
         Returns:
             Sequence: Qblox Sequence object containing the program and waveforms.

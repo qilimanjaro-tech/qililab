@@ -130,7 +130,6 @@ class QbloxModule(AWG):
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
         for sequencer in sequencers:
             if sequencer.identifier in self.sequences:
-                # TODO: skip sequencer here if it is not in cache, instead of poping the sequence at upload
                 self.device.arm_sequencer(sequencer=sequencer.identifier)
                 self.device.start_sequencer(sequencer=sequencer.identifier)
 
@@ -405,7 +404,7 @@ class QbloxModule(AWG):
             logger.info("Sequence program: \n %s", repr(qpysequence._program))  # pylint: disable=protected-access
             self.device.sequencers[sequencer.identifier].sequence(qpysequence.todict())
             self.device.sequencers[sequencer.identifier].sync_en(True)
-            self.sequences[sequencer.identifier] = (qpysequence, True)
+            self.sequences[sequencer.identifier] = qpysequence
 
     def upload(self, port: str):  # TODO: check compatibility with QPrgram
         """Upload all the previously compiled programs to its corresponding sequencers.
