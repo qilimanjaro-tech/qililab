@@ -1,4 +1,6 @@
 """File testing the AWG class."""
+import re
+
 import pytest
 from qpysequence import Sequence as QpySequence
 
@@ -26,10 +28,10 @@ class DummyAWG(AWG):
         pass
 
 
-@pytest.fixture(name="awg")
-def fixture_awg():
-    """Fixture that returns an instance of a dummy AWG."""
-    settings = {
+@pytest.fixture(name="awg_settings")
+def fixture_awg_settings():
+    """Fixture that returns AWG settings."""
+    return {
         "alias": "QRM",
         "firmware": "0.7.0",
         "num_sequencers": 2,
@@ -64,7 +66,12 @@ def fixture_awg():
             },
         ],
     }
-    return DummyAWG(settings=settings)  # pylint: disable=abstract-class-instantiated
+
+
+@pytest.fixture(name="awg")
+def fixture_awg(awg_settings: dict):
+    """Fixture that returns an instance of a dummy AWG."""
+    return DummyAWG(settings=awg_settings)  # pylint: disable=abstract-class-instantiated
 
 
 class TestInitialization:
@@ -118,3 +125,22 @@ class TestMethods:
         awg.settings.awg_sequencers[1].identifier = 0
         with pytest.raises(ValueError, match="Each sequencer should have a unique id"):
             awg.get_sequencer(sequencer_id=0)
+
+    def test_num_sequencers_error(self, awg_settings: dict):
+        """test that an error is raised if more than _NUM_MAX_SEQUENCERS are in the qblox module"""
+
+        awg_settings["num_sequencers"] = 0
+        error_string = re.escape("The number of sequencers must be greater than 0. Received: 0")
+        with pytest.raises(ValueError, match=error_string):
+            DummyAWG(settings=awg_settings)  # pylint: disable=abstract-class-instantiated
+
+    def test_match_sequencers_error(self, awg_settings: dict):
+        """test that an error is raised if more than _NUM_MAX_SEQUENCERS are in the qblox module"""
+        num_sequencers = 1
+        awg_settings["num_sequencers"] = 1
+        error_string = re.escape(
+            f"The number of sequencers: {num_sequencers} does not match"
+            + f" the number of AWG Sequencers settings specified: {len(awg_settings['awg_sequencers'])}"
+        )
+        with pytest.raises(ValueError, match=error_string):
+            DummyAWG(settings=awg_settings)  # pylint: disable=abstract-class-instantiated
