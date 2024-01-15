@@ -22,6 +22,7 @@ from queue import Queue
 
 from qibo.models import Circuit
 from qiboconnection.api import API
+from qm import generate_qua_script
 from ruamel.yaml import YAML
 
 from qililab.chip import Chip
@@ -542,7 +543,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         return str(YAML().dump(self.to_dict(), io.BytesIO()))
 
     def execute_qprogram(
-        self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None
+        self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None, debug: bool = False
     ) -> dict[str, list[Result]]:
         """Execute a QProgram using the platform instruments.
 
@@ -569,7 +570,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 )
             cluster: QuantumMachinesCluster = instruments.pop()  # type: ignore[assignment]
             return self._execute_qprogram_with_quantum_machines(
-                cluster=cluster, qprogram=qprogram, bus_mapping=bus_mapping
+                cluster=cluster, qprogram=qprogram, bus_mapping=bus_mapping, debug=debug
             )
         raise NotImplementedError("Executing QProgram in a mixture of instruments is not supported.")
 
@@ -606,12 +607,20 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         return results
 
     def _execute_qprogram_with_quantum_machines(
-        self, cluster: QuantumMachinesCluster, qprogram: QProgram, bus_mapping: dict[str, str] | None = None
+        self,
+        cluster: QuantumMachinesCluster,
+        qprogram: QProgram,
+        bus_mapping: dict[str, str] | None = None,
+        debug: bool = False,
     ) -> dict[str, list[Result]]:
         compiler = QuantumMachinesCompiler()
         qua_program, compilation_config, measurements = compiler.compile(qprogram=qprogram, bus_mapping=bus_mapping)
 
         cluster.update_configuration(compilation_config=compilation_config)
+
+        if debug:
+            with open("debug.py", "w") as sourceFile:
+                print(generate_qua_script(qua_program, cluster._config), file=sourceFile)
 
         job = cluster.run(program=qua_program)
 

@@ -337,8 +337,8 @@ class QuantumMachinesCluster(Instrument):
         Returns:
             QuantumMachinesResult: Quantum Machines result instance.
         """
-        result_handles_fetchers = job.result_handles
-        result_handles_fetchers.wait_for_all_values()
+        # result_handles_fetchers = job.result_handles
+        # result_handles_fetchers.wait_for_all_values()
         results = {
             name: handle.fetch_all(flat_struct=True) for name, handle in job.result_handles if handle is not None
         }
