@@ -111,6 +111,21 @@ def fixture_average_with_for_loop() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="average_with_for_loop_nshots")
+def fixture_average_with_for_loop_nshots() -> QProgram:
+    drag_pair = DragPair(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+    weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+    qp = QProgram()
+    nshots = qp.variable(Domain.Scalar, type=int)
+    with qp.average(shots=1000):
+        with qp.for_loop(variable=nshots, start=0, stop=2, step=1):
+            qp.play(bus="drive", waveform=drag_pair)
+            qp.play(bus="readout", waveform=readout_pair)
+            qp.acquire(bus="readout", weights=weights_pair)
+    return qp
+
+
 @pytest.fixture(name="acquire_loop_with_for_loop_with_weights_of_same_waveform")
 def fixture_acquire_loop_with_for_loop_with_weights_of_same_waveform() -> QProgram:
     drag_pair = DragPair(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
@@ -380,6 +395,69 @@ class TestQBloxCompiler:
                             loop             R0, @avg_0
                             stop
         """
+        assert is_q1asm_equal(sequences["readout"], readout_str)
+
+    def test_average_with_for_loop_variable_does_nothing(self, average_with_for_loop_nshots: QProgram):
+        compiler = QbloxCompiler()
+        sequences = compiler.compile(qprogram=average_with_for_loop_nshots)
+
+        assert len(sequences) == 2
+        assert "drive" in sequences
+        assert "readout" in sequences
+
+        for bus in sequences:
+            assert isinstance(sequences[bus], QPy.Sequence)
+
+        assert len(sequences["drive"]._waveforms._waveforms) == 2
+        assert len(sequences["drive"]._acquisitions._acquisitions) == 0
+        assert len(sequences["drive"]._weights._weights) == 0
+        assert sequences["drive"]._program._compiled
+
+        assert len(sequences["readout"]._waveforms._waveforms) == 2
+        assert len(sequences["readout"]._acquisitions._acquisitions) == 1
+        assert sequences["readout"]._acquisitions._acquisitions[0].num_bins == 3
+        assert len(sequences["readout"]._weights._weights) == 2
+        assert sequences["readout"]._program._compiled
+
+        drive_str = """
+            setup:
+                wait_sync        4
+
+            main:
+                            move             1000, R0
+            avg_0:
+                            move             3, R1
+                            move             0, R2
+            loop_0:
+                            play             0, 1, 40
+                            wait             2960
+                            add              R2, 1, R2
+                            loop             R1, @loop_0
+                            loop             R0, @avg_0
+                            stop
+        """
+        readout_str = """
+            setup:
+                wait_sync        4
+
+            main:
+                            move             1000, R0
+            avg_0:
+                            move             1, R1
+                            move             0, R2
+                            move             0, R3
+                            move             3, R4
+                            move             0, R5
+            loop_0:
+                            play             0, 1, 1000
+                            acquire_weighed  0, R3, R2, R1, 2000
+                            add              R3, 1, R3
+                            add              R5, 1, R5
+                            loop             R4, @loop_0
+                            loop             R0, @avg_0
+                            stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
 
     def test_average_with_for_loop(self, average_with_for_loop: QProgram):
@@ -718,13 +796,6 @@ class TestQBloxCompiler:
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
-
-    def test_for_loop_variable_with_no_targets_throws_exception(self, for_loop_variable_with_no_target: QProgram):
-        with pytest.raises(
-            NotImplementedError, match="Variables referenced in loops should be used in at least one operation."
-        ):
-            compiler = QbloxCompiler()
-            _ = compiler.compile(qprogram=for_loop_variable_with_no_target)
 
     def test_sync_operation_with_dynamic_timings_throws_exception(self, sync_with_dynamic_wait: QProgram):
         with pytest.raises(NotImplementedError, match="Dynamic syncing is not implemented yet."):
