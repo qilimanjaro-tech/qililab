@@ -5,6 +5,9 @@
 - Added `DictSerializable` protocol and `from_dict` utility function to enable (de)serialization (from)to dictionary for any class.
   [#659](https://github.com/qilimanjaro-tech/qililab/pull/659)
 
+- Added method to get the QRM `channel_id` for a given qubit
+  [#664](https://github.com/qilimanjaro-tech/qililab/pull/664)
+
 ### Improvements
 
 - Compilation for pulses is now done at platform instead of being delegated to each bus pointing to an awg instrument. This allows easier
