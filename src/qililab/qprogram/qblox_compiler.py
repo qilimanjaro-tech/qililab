@@ -347,17 +347,20 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                 )
             duration = self._buses[element.bus].variable_to_register[element.duration]
             self._buses[element.bus].dynamic_durations.append(element.duration)
+            self._buses[element.bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.Wait(wait_time=duration)
+            )
         else:
             convert = QbloxCompiler._convert_value(element)
             duration = convert(element.duration)
             self._buses[element.bus].static_duration += duration
-        # loop over wait instructions if static duration is longer than allowed qblox max wait time of 2**16 -4
-        if duration > INST_MAX_WAIT:
-            self._handle_long_wait(bus=element.bus, duration=duration)
-        # add the remaining wait time (or all of it if the above conditional is false)
-        self._buses[element.bus].qpy_block_stack[-1].append_component(
-            component=QPyInstructions.Wait(wait_time=duration % INST_MAX_WAIT)
-        )
+            # loop over wait instructions if static duration is longer than allowed qblox max wait time of 2**16 -4
+            if duration > INST_MAX_WAIT:
+                self._handle_long_wait(bus=element.bus, duration=duration)
+            # add the remaining wait time (or all of it if the above conditional is false)
+            self._buses[element.bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.Wait(wait_time=duration % INST_MAX_WAIT)
+            )
         self._buses[element.bus].marked_for_sync = True
 
     def _handle_long_wait(self, bus: str, duration: int):
