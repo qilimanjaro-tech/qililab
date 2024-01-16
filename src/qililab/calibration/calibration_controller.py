@@ -260,9 +260,20 @@ class CalibrationController:
             "Automatic calibration completed successfully!\n"
             "#############################################\n"
         )
+        return self.get_qubit_fidelities_and_parameters_df_tables()
+
+    def get_qubit_fidelities_and_parameters_df_tables(self) -> dict[str, pd.DataFrame]:
+        """Generates the 1q, 2q, fidelities and parameters dataframes, with the last calibrations.
+
+        Returns:
+            dict[str, pd.DataFrame]: Last calibrations dataframes.
+        """
+        df = self.get_qubits_table()
+        df_1q, df_2q = self._split_1q_2q_tables(df)
 
         return {
-            "qubits_table": self.get_qubits_table(),
+            "1q_table": df_1q,
+            "2q_table": df_2q,
             "set_parameters": self.get_last_set_parameters(),
             "fidelities": self.get_last_fidelities(),
         }
@@ -722,6 +733,21 @@ class CalibrationController:
                 df.insert(0, column, first_column)
 
         return df
+
+    def _split_1q_2q_tables(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Splits the qubit table into 2 tables, for the 1q and the 2q information.
+
+        Args:
+            df (pd.DataFrame): Qubits table dataframe.
+
+        Returns:
+            tuple(pd.DataFrame): Split 1q and 2q tables.
+        """
+        bool_compare = len(df["qubit"]) == 1
+        df_1q = df[bool_compare]
+        df_2q = df[~bool_compare]
+
+        return df_1q, df_2q
 
     def _dependencies(self, node: CalibrationNode) -> list:
         """Finds the dependencies of a node.
