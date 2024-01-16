@@ -622,7 +622,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         compiler = QuantumMachinesCompiler()
         qua_program, compilation_config, measurements = compiler.compile(qprogram=qprogram, bus_mapping=bus_mapping)
 
-        cluster.update_configuration(compilation_config=compilation_config)
+        cluster.append_configuration(configuration=compilation_config)
 
         if debug:
             with open("debug.py", "w") as sourceFile:

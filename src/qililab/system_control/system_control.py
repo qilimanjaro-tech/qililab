@@ -22,7 +22,7 @@ from typing import get_type_hints
 from qpysequence import Sequence as QpySequence
 
 from qililab.constants import RUNCARD
-from qililab.instruments import AWG, Instrument, Instruments
+from qililab.instruments import AWG, Instrument, Instruments, QuantumMachinesCluster
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.qblox import QbloxModule
 from qililab.settings import Settings
@@ -108,7 +108,12 @@ class SystemControl(FactoryElement, ABC):
         return self.settings.instruments
 
     def set_parameter(
-        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
+        self,
+        parameter: Parameter,
+        value: float | str | bool,
+        channel_id: int | None = None,
+        port_id: str | None = None,
+        bus_alias: str | None = None,
     ):
         """Sets the parameter of a specific instrument.
 
@@ -121,13 +126,22 @@ class SystemControl(FactoryElement, ABC):
         """
         for instrument in self.instruments:
             with contextlib.suppress(ParameterNotFound):
+                if isinstance(instrument, QuantumMachinesCluster) and bus_alias is not None:
+                    instrument.set_parameter_of_bus(bus=bus_alias, parameter=parameter, value=value)
+                    return
                 if isinstance(instrument, QbloxModule) and channel_id is None and port_id is not None:
                     channel_id = instrument.get_sequencers_from_chip_port_id(chip_port_id=port_id)[0].identifier
                 instrument.set_parameter(parameter, value, channel_id)
                 return
         raise ParameterNotFound(f"Could not find parameter {parameter.value} in the system control {self.name}")
 
-    def get_parameter(self, parameter: Parameter, channel_id: int | None = None, port_id: str | None = None):
+    def get_parameter(
+        self,
+        parameter: Parameter,
+        channel_id: int | None = None,
+        port_id: str | None = None,
+        bus_alias: str | None = None,
+    ):
         """Gets a parameter of a specific instrument.
 
         Args:
@@ -136,6 +150,8 @@ class SystemControl(FactoryElement, ABC):
         """
         for instrument in self.instruments:
             with contextlib.suppress(ParameterNotFound):
+                if isinstance(instrument, QuantumMachinesCluster) and bus_alias is not None:
+                    return instrument.get_parameter_of_bus(bus=bus_alias, parameter=parameter)
                 if isinstance(instrument, QbloxModule) and channel_id is None and port_id is not None:
                     channel_id = instrument.get_sequencers_from_chip_port_id(chip_port_id=port_id)[0].identifier
                 return instrument.get_parameter(parameter, channel_id)

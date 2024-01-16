@@ -176,7 +176,7 @@ class Bus:
         else:
             try:
                 self.system_control.set_parameter(
-                    parameter=parameter, value=value, channel_id=channel_id, port_id=self.port
+                    parameter=parameter, value=value, channel_id=channel_id, port_id=self.port, bus_alias=self.alias
                 )
             except ParameterNotFound as error:
                 raise ParameterNotFound(
