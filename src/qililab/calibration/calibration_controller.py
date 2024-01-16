@@ -743,7 +743,7 @@ class CalibrationController:
         Returns:
             tuple(pd.DataFrame): Split 1q and 2q tables.
         """
-        bool_compare = len(df["qubit"]) == 1
+        bool_compare = len(df.index) == 1
         df_1q = df[bool_compare]
         df_2q = df[~bool_compare]
 
