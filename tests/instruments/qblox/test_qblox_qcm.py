@@ -3,26 +3,14 @@
 import copy
 from unittest.mock import MagicMock, patch
 
-import numpy as np
 import pytest
-from qpysequence.sequence import Sequence
 
 from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
 from qililab.instruments.qblox import QbloxQCM
-from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
 from qililab.typings import InstrumentName
 from qililab.typings.enums import Parameter
 from tests.data import Galadriel
 from tests.test_utils import build_platform
-
-
-@pytest.fixture(name="pulse_bus_schedule")
-def fixture_pulse_bus_schedule() -> PulseBusSchedule:
-    """Return PulseBusSchedule instance."""
-    pulse_shape = Gaussian(num_sigmas=4)
-    pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
-    pulse_event = PulseEvent(pulse=pulse, start_time=0)
-    return PulseBusSchedule(timeline=[pulse_event], port="drive_q0")
 
 
 @pytest.fixture(name="pulsar_controller_qcm")
@@ -89,29 +77,6 @@ def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarContro
     mock_instance.sequencer1.mock_add_spec(spec)
     pulsar_controller_qcm.connect()
     return pulsar_controller_qcm.modules[0]
-
-
-@pytest.fixture(name="big_pulse_bus_schedule")
-def fixture_big_pulse_bus_schedule() -> PulseBusSchedule:
-    """Load PulseBusSchedule with 10 different frequencies.
-
-    Returns:
-        PulseBusSchedule: PulseBusSchedule with 10 different frequencies.
-    """
-    timeline = [
-        PulseEvent(
-            pulse=Pulse(
-                amplitude=1,
-                phase=0,
-                duration=1000,
-                frequency=7.0e9 + n * 0.1e9,
-                pulse_shape=Gaussian(num_sigmas=5),
-            ),
-            start_time=0,
-        )
-        for n in range(10)
-    ]
-    return PulseBusSchedule(timeline=timeline, port="drive_q0")
 
 
 class TestQbloxQCM:
@@ -261,38 +226,12 @@ class TestQbloxQCM:
     def test_setup_out_offset_raises_error(self, qcm: QbloxQCM):
         """Test that calling ``_set_out_offset`` with a wrong output value raises an error."""
         with pytest.raises(IndexError, match="Output 5 is out of range"):
-            qcm._set_out_offset(output=5, value=1)
+            qcm._set_out_offset(output=5, value=1)  # pylint: disable=protected-access
 
     def test_turn_off_method(self, qcm: QbloxQCM):
         """Test turn_off method"""
         qcm.turn_off()
         assert qcm.device.stop_sequencer.call_count == qcm.num_sequencers
-
-    def test_reset_method(self, qcm: QbloxQCM):
-        """Test reset method"""
-        qcm._cache = {0: None}  # type: ignore # pylint: disable=protected-access
-        qcm.reset()
-        assert qcm._cache == {}  # pylint: disable=protected-access
-
-    def test_compile(self, qcm, pulse_bus_schedule):
-        """Test compile method."""
-        sequences = qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000, num_bins=1)
-        assert isinstance(sequences, list)
-        assert len(sequences) == 1
-        assert isinstance(sequences[0], Sequence)
-        assert sequences[0]._program.duration == 1000 * 2000 + 4
-
-    def test_upload_raises_error(self, qcm):
-        """Test upload method raises error."""
-        with pytest.raises(ValueError, match="Please compile the circuit before uploading it to the device"):
-            qcm.upload(port=0)
-
-    def test_upload_method(self, qcm, pulse_bus_schedule):
-        """Test upload method"""
-        qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100, num_bins=1)
-        qcm.upload(port=pulse_bus_schedule.port)
-        qcm.device.sequencer0.sequence.assert_called_once()
-        qcm.device.sequencer0.sync_en.assert_called_once_with(True)
 
     def test_name_property(self, qcm_no_device: QbloxQCM):
         """Test name property."""
@@ -301,20 +240,3 @@ class TestQbloxQCM:
     def test_firmware_property(self, qcm_no_device: QbloxQCM):
         """Test firmware property."""
         assert qcm_no_device.firmware == qcm_no_device.settings.firmware
-
-    def test_compile_swaps_the_i_and_q_channels_when_mapping_is_not_supported_in_hw(self, qcm):
-        """Test that the compile method swaps the I and Q channels when the output mapping is not supported in HW."""
-        # We change the dictionary and initialize the QCM
-        qcm_settings = qcm.to_dict()
-        qcm_settings.pop("name")
-        qcm_settings["awg_sequencers"][0]["output_i"] = 1
-        qcm_settings["awg_sequencers"][0]["output_q"] = 0
-        new_qcm = QbloxQCM(settings=qcm_settings)
-        # We create a pulse bus schedule
-        pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=Gaussian(num_sigmas=4))
-        pulse_bus_schedule = PulseBusSchedule(timeline=[PulseEvent(pulse=pulse, start_time=0)], port="drive_q0")
-        sequences = new_qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000, num_bins=1)
-        # We assert that the waveform of the first path is all zeros and the waveform of the second path is the gaussian
-        waveforms = sequences[0]._waveforms._waveforms
-        assert np.allclose(waveforms[0].data, 0)
-        assert np.allclose(waveforms[1].data, pulse.envelope(amplitude=1))

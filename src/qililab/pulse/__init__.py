@@ -65,3 +65,4 @@ from .pulse_distortion import BiasTeeCorrection, ExponentialCorrection, LFilterC
 from .pulse_event import PulseEvent
 from .pulse_schedule import PulseSchedule
 from .pulse_shape import SNZ, Cosine, Drag, Gaussian, PulseShape, Rectangular
+from .qblox_compiler import QbloxCompiler

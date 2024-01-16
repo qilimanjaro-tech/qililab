@@ -23,6 +23,7 @@ from queue import Queue
 from qibo.models import Circuit
 from qiboconnection.api import API
 from qm import generate_qua_script
+from qpysequence import Sequence as QpySequence
 from ruamel.yaml import YAML
 
 from qililab.chip import Chip
@@ -37,6 +38,7 @@ from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSchedule
+from qililab.pulse import QbloxCompiler as PulseQbloxCompiler
 from qililab.qprogram import QbloxCompiler, QProgram, QuantumMachinesCompiler
 from qililab.result import Result
 from qililab.result.quantum_machines_results import QuantumMachinesMeasurementResult
@@ -299,6 +301,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         self._connected_to_instruments: bool = False
         """Boolean indicating the connection status to the instruments. Defaults to False (not connected)."""
+
+        if any(isinstance(instrument, QbloxModule) for instrument in self.instruments.elements):
+            self.compiler = PulseQbloxCompiler(platform=self)  # TODO: integrate with qprogram compiler
+            """Compiler to translate given programs to instructions for a given awg vendor."""
 
     def connect(self, manual_override=False):
         """Connects to all the instruments and blocks the connection for other users.
@@ -601,7 +607,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         # Reset instrument settings
         for instrument in self.instruments.elements:
             if isinstance(instrument, QbloxModule):
-                instrument.reset_sequences()
+                instrument.clear_cache()
                 instrument.desync_sequencers()
 
         return results
@@ -694,14 +700,11 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 instrument.desync_sequencers()
 
         # FIXME: set multiple readout buses
-        if len(results) > 1:
-            logger.error("Only One Readout Bus allowed. Reading only from the first one.")
-        if not results:
-            raise ValueError("There are no readout buses in the platform.")
-
         return results[0]
 
-    def compile(self, program: PulseSchedule | Circuit, num_avg: int, repetition_duration: int, num_bins: int) -> dict:
+    def compile(
+        self, program: PulseSchedule | Circuit, num_avg: int, repetition_duration: int, num_bins: int
+    ) -> dict[str, list[QpySequence]]:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
 
         If the ``program`` argument is a :class:`Circuit`, it will first be translated into a :class:`PulseSchedule` using the transpilation
@@ -732,16 +735,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             raise ValueError(
                 f"Program to execute can only be either a single circuit or a pulse schedule. Got program of type {type(program)} instead"
             )
-
-        programs = {}
-        for pulse_bus_schedule in pulse_schedule.elements:
-            if len(pulse_bus_schedule.timeline) != 0:  # can't do only one conditional if list is empty
-                if pulse_bus_schedule.timeline[-1].end_time > repetition_duration:
-                    raise ValueError(
-                        f"Circuit execution time cannnot be longer than repetition duration but found circuit time {pulse_bus_schedule.timeline[-1].end_time } > {repetition_duration} for qubit {pulse_bus_schedule.qubit}"
-                    )
-            bus = self.buses.get(port=pulse_bus_schedule.port)
-            bus_programs = bus.compile(pulse_bus_schedule, num_avg, repetition_duration, num_bins)
-            programs[bus.alias] = bus_programs
-
-        return programs
+        return self.compiler.compile(
+            pulse_schedule=pulse_schedule, num_avg=num_avg, repetition_duration=repetition_duration, num_bins=num_bins
+        )
