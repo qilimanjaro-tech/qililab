@@ -659,6 +659,7 @@ class CalibrationController:
             pd.DataFrame: Empty df, where columns are each fidelity or parameter, and rows each qubit.
         """
         q1_idx, q1_col, q2_idx, q2_col = [], [], [], []
+
         for node in self.node_sequence.values():
             qubit_list = node.node_id.split("_")
             qubit = "_".join(
