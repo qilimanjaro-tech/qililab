@@ -23,7 +23,6 @@ import qpysequence.program as QPyProgram
 import qpysequence.program.instructions as QPyInstructions
 from qpysequence.utils.constants import INST_MAX_WAIT
 
-from qililab.platform.components import Bus
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.operations import (
     Acquire,
