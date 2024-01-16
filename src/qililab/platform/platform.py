@@ -640,7 +640,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         return results
 
-    def _execute_qprogram_with_quantum_machines(
+    def _execute_qprogram_with_quantum_machines(  # pylint: disable=too-many-locals
         self,
         cluster: QuantumMachinesCluster,
         qprogram: QProgram,
@@ -648,13 +648,13 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         debug: bool = False,
     ) -> dict[str, list[Result]]:
         compiler = QuantumMachinesCompiler()
-        qua_program, compilation_config, measurements = compiler.compile(qprogram=qprogram, bus_mapping=bus_mapping)
+        qua_program, configuration, measurements = compiler.compile(qprogram=qprogram, bus_mapping=bus_mapping)
 
-        cluster.append_configuration(configuration=compilation_config)
+        cluster.append_configuration(configuration=configuration)
 
         if debug:
             with open("debug.py", "w", encoding="utf-8") as sourceFile:
-                print(generate_qua_script(qua_program, cluster._config), file=sourceFile)
+                print(generate_qua_script(qua_program, cluster.config), file=sourceFile)
 
         qua_program_hash = hash_qua_program(program=qua_program)
         if qua_program not in self._qua_program_cache:

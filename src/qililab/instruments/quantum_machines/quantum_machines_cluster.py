@@ -245,6 +245,11 @@ class QuantumMachinesCluster(Instrument):
     _config: DictQuaConfig
     _octave_config: QmOctaveConfig | None = None
 
+    @property
+    def config(self) -> DictQuaConfig:
+        """Get the QUA config dictionary."""
+        return self._config
+
     def _is_connected_to_qm(self):
         """Check if a connection to Quantum Machine is open."""
         return hasattr(self, "_qm") and isinstance(self._qm, QuantumMachine)
