@@ -97,6 +97,19 @@ class TestPlatform:
             platform.disconnect()
         mock_logger.info.assert_called_once_with("Already disconnected from the instruments")
 
+    def test_get_qrm_ch_id_from_qubit(self, platform: Platform):
+        """Test that get_ch_id_from_qubits gets the channel id it should get from the runcard"""
+        channel_id = platform.get_qrm_ch_id_from_qubit(alias="feedline_input_output_bus", qubit_index=0)
+        assert channel_id == 0
+
+    def test_get_qrm_ch_id_from_qubit_error_no_bus(self, platform: Platform):
+        """Test that the method raises an error if the alias is not in the buses returned."""
+        alias = "dummy"
+        qubit_id = 0
+        error_string = f"Could not find bus with alias {alias} for qubit {qubit_id}"
+        with pytest.raises(ValueError, match=re.escape(error_string)):
+            platform.get_qrm_ch_id_from_qubit(alias=alias, qubit_index=qubit_id)
+
     def test_get_element_method_unknown_returns_none(self, platform: Platform):
         """Test get_element method with unknown element."""
         element = platform.get_element(alias="ABC")
@@ -244,12 +257,12 @@ class TestMethods:
         sequences = platform.compile(program=program, num_avg=1000, repetition_duration=200_000, num_bins=1)
         assert isinstance(sequences, dict)
         assert len(sequences) == len_sequences
-        for alias, sequences in sequences.items():
+        for alias, sequence in sequences.items():
             assert alias in {bus.alias for bus in platform.buses}
-            assert isinstance(sequences, list)
-            assert len(sequences) == 1
-            assert isinstance(sequences[0], Sequence)
-            assert sequences[0]._program.duration == 200_000 * 1000 + 4
+            assert isinstance(sequence, list)
+            assert len(sequence) == 1
+            assert isinstance(sequence[0], Sequence)
+            assert sequence[0]._program.duration == 200_000 * 1000 + 4
 
     def test_execute_qprogram(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
