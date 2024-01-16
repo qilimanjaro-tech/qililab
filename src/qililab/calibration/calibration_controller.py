@@ -268,8 +268,7 @@ class CalibrationController:
         Returns:
             dict[str, pd.DataFrame]: Last calibrations dataframes.
         """
-        df = self.get_qubits_table()
-        df_1q, df_2q = self._split_1q_2q_tables(df)
+        df_1q, df_2q = self.get_qubits_tables()
 
         return {
             "1q_table": df_1q,
@@ -653,35 +652,56 @@ class CalibrationController:
             df.index.names = ["fidelity", "qubit"]
         return df
 
-    def _create_empty_dataframe(self) -> pd.DataFrame:
+    def _create_empty_dataframes(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """Creates the structure of the dataframe for the qubits table.
 
         Returns:
             pd.DataFrame: Empty df, where columns are each fidelity or parameter, and rows each qubit.
         """
-        idx, col = [], []
+        q1_idx, q1_col, q2_idx, q2_col = [], [], [], []
         for node in self.node_sequence.values():
             qubit_list = node.node_id.split("_")
             qubit = "_".join(
                 [i for i in qubit_list if any(char == "q" for char in i) and any(char.isdigit() for char in i)]
             ).replace("q", "-")[1:]
-            if qubit not in idx:
-                idx.append(qubit)
 
-            if (
-                node.output_parameters is not None
-                and node.previous_timestamp is not None
-                and "fidelities" in node.output_parameters
-            ):
+            if len(qubit) == 1:
+                q1_idx, q1_col = self._get_idx_and_columns(node, qubit, q1_idx, q1_col)
+
+            else:
+                q2_idx, q2_col = self._get_idx_and_columns(node, qubit, q2_idx, q2_col)
+
+        df_q1 = pd.DataFrame("-", q1_idx, q1_col)
+        df_q1.index.name = "qubit"
+
+        df_q2 = pd.DataFrame("-", q2_idx, q2_col)
+        df_q2.index.name = "qubit"
+
+        return df_q1, df_q2
+
+    @staticmethod
+    def _get_idx_and_columns(node: CalibrationNode, qubit: str, idx: list, col: list) -> tuple[list, list]:
+        """Gets the index and columns for creating a dataframe for 1q or 2q.
+
+        Args:
+            node (CalibrationNode): Node for which we are currently creating the dataframe idx and columns.
+            qubit (str): qubit for which we are currently creating the dataframe idx and columns, corresponding to the node.
+            idx (list): idx to be added.
+            col (list): column to be added.
+
+        Returns:
+            tuple[list, list]: list of idx and columns for creating the dataframe.
+        """
+        if qubit not in idx:
+            idx.append(qubit)
+
+        if node.output_parameters is not None and node.previous_timestamp is not None:
+            if "fidelities" in node.output_parameters:
                 for _, fidelity, _ in node.output_parameters["fidelities"]:
                     if fidelity not in col:
                         col.append(fidelity)
 
-            if (
-                node.output_parameters is not None
-                and node.previous_timestamp is not None
-                and "platform_parameters" in node.output_parameters
-            ):
+            if "platform_parameters" in node.output_parameters:
                 for bus, _, parameter, _ in node.output_parameters["platform_parameters"]:
                     bus_list = str(bus).split("_")
                     bus = "_".join([x for x in bus_list if not any(char.isdigit() for char in x)])
@@ -689,18 +709,15 @@ class CalibrationController:
                     if f"{str(parameter)}_{bus}" not in col:
                         col.append(f"{str(parameter)}_{bus}")
 
-        df = pd.DataFrame("-", idx, col)
-        df.index.name = "qubit"
+        return idx, col
 
-        return df
-
-    def get_qubits_table(self) -> pd.DataFrame:
-        """Retrieves the last updated fidelities of the graph in a qubit table.
+    def get_qubits_tables(self) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """Retrieves the last updated fidelities of the graph in the 1 qubit and 2 qubit tables.
 
         Returns:
-            pd.DataFrame: Table where columns are each fidelity or parameter, and rows each qubit.
+            tuple[pd.DataFrame]: Tables where columns are each fidelity or parameter, and rows each qubit.
         """
-        df = self._create_empty_dataframe()
+        q1_df, q2_df = self._create_empty_dataframes()
 
         for node in self.node_sequence.values():
             qubit_list = node.node_id.split("_")
@@ -708,25 +725,28 @@ class CalibrationController:
                 [i for i in qubit_list if any(char == "q" for char in i) and any(char.isdigit() for char in i)]
             ).replace("q", "-")[1:]
 
-            if (
-                node.output_parameters is not None
-                and node.previous_timestamp is not None
-                and "fidelities" in node.output_parameters
-            ):
-                for _, fidelity, value in node.output_parameters["fidelities"]:
-                    df[fidelity][qubit] = value
+            if len(qubit) == 1:
+                q1_df = self._fill_qubits_columns(node, qubit, q1_df)
 
-            if (
-                node.output_parameters is not None
-                and node.previous_timestamp is not None
-                and "platform_parameters" in node.output_parameters
-            ):
-                for bus, _, parameter, value in node.output_parameters["platform_parameters"]:
-                    bus_list = str(bus).split("_")
-                    bus = "_".join([x for x in bus_list if not any(char.isdigit() for char in x)])
-                    df[f"{str(parameter)}_{bus}"][qubit] = value
+            else:
+                q2_df = self._fill_qubits_columns(node, qubit, q2_df)
 
         # Reorder fidelities to the front of the dataframe:
+        q1_df = self._reorder_fidelities(q1_df)
+        q2_df = self._reorder_fidelities(q2_df)
+
+        return q1_df, q2_df
+
+    @staticmethod
+    def _reorder_fidelities(df: pd.DataFrame) -> pd.DataFrame:
+        """It moves the fidelities columns to the front of the dataframe.
+
+        Args:
+            df (pd.DataFrame): Dataframe to reorder.
+
+        Returns:
+            pd.DataFrame: Reordered dataframe.
+        """
         for column in df.columns:
             if "fidelity" in column:
                 first_column = df.pop(column)
@@ -734,19 +754,30 @@ class CalibrationController:
 
         return df
 
-    def _split_1q_2q_tables(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Splits the qubit table into 2 tables, for the 1q and the 2q information.
+    @staticmethod
+    def _fill_qubits_columns(node: CalibrationNode, qubit: str, df: pd.DataFrame) -> pd.DataFrame:
+        """Fills the qubit tables columns with the fidelities or parameters values.
 
         Args:
-            df (pd.DataFrame): Qubits table dataframe.
+            node (CalibrationNode): Node currently being filled.
+            qubit (str): qubit being filled, corresponding to the node.
+            df (pd.DataFrame): Dataframe to fill.
 
         Returns:
-            tuple(pd.DataFrame): Split 1q and 2q tables.
+            pd.DataFrame: Filled dataframe.
         """
-        df_1q = df.filter(like="-", axis=0)
-        df_2q = pd.concat([df, df_1q, df_1q]).drop_duplicates(keep=False)
+        if node.output_parameters is not None and node.previous_timestamp is not None:
+            if "fidelities" in node.output_parameters:
+                for _, fidelity, value in node.output_parameters["fidelities"]:
+                    df[fidelity][qubit] = value
 
-        return df_1q, df_2q
+            if "platform_parameters" in node.output_parameters:
+                for bus, _, parameter, value in node.output_parameters["platform_parameters"]:
+                    bus_list = str(bus).split("_")
+                    bus = "_".join([x for x in bus_list if not any(char.isdigit() for char in x)])
+                    df[f"{str(parameter)}_{bus}"][qubit] = value
+
+        return df
 
     def _dependencies(self, node: CalibrationNode) -> list:
         """Finds the dependencies of a node.
