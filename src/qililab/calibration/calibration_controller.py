@@ -744,7 +744,7 @@ class CalibrationController:
             tuple(pd.DataFrame): Split 1q and 2q tables.
         """
         df_1q = df.filter(like="-", axis=0)
-        df_2q = df.subtract(df_1q, fill_value=0)
+        df_2q = pd.concat([df, df_1q, df_1q]).drop_duplicates(keep=False)
 
         return df_1q, df_2q
 
