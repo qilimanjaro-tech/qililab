@@ -398,7 +398,12 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         return element
 
     def get_qrm_ch_id_from_qubit(self, alias: str, qubit_index: int) -> int:
-        """Finds a sequencer id for a given qubit given a bus alias
+        """Finds a sequencer id for a given qubit given a bus alias. This is utility is added so that one can get a qrm's
+        channel id easily in case the setup contains more than one qrm and / or there is not a one to one correspondance
+        between sequencer id in the instrument and the qubit id. This one to one correspondance used to be the norm for
+        5 qubit chips with non-RF QRM modules with 5 sequencers, each mapped to a qubit with the same numerical id as the
+        sequencer.
+
         Args:
             alias (str): bus alias
             qubit_index (int): qubit index
