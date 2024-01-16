@@ -21,6 +21,7 @@ import numpy as np
 import qpysequence as QPy
 import qpysequence.program as QPyProgram
 import qpysequence.program.instructions as QPyInstructions
+from qpysequence.utils.constants import INST_MAX_WAIT
 
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.operations import (
@@ -339,14 +340,25 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
     def _handle_wait(self, element: Wait):
         duration: QPyProgram.Register | int
         if isinstance(element.duration, Variable):
+            if element.duration > INST_MAX_WAIT:
+                raise ValueError(
+                    "Tried to use wait time as variable for wait time {element.duration} which is larger than qblox INST_MAX_WAIT"
+                )
             duration = self._buses[element.bus].variable_to_register[element.duration]
             self._buses[element.bus].dynamic_durations.append(element.duration)
         else:
             convert = QbloxCompiler._convert_value(element)
             duration = convert(element.duration)
             self._buses[element.bus].static_duration += duration
+
+        # loop over wait instructions if static duration is longer than allowed qblox max wait time of 2**16 -4
+        if duration > INST_MAX_WAIT:
+            for _ in range(duration // INST_MAX_WAIT):
+                self._buses[element.bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.Wait(wait_time=duration // INST_MAX_WAIT)
+                )
         self._buses[element.bus].qpy_block_stack[-1].append_component(
-            component=QPyInstructions.Wait(wait_time=duration)
+            component=QPyInstructions.Wait(wait_time=duration % INST_MAX_WAIT)
         )
         self._buses[element.bus].marked_for_sync = True
 
