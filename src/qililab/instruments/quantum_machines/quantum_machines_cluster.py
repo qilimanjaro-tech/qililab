@@ -344,6 +344,15 @@ class QuantumMachinesCluster(Instrument):
             return self._config["elements"][bus]["intermediate_frequency"]
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
+    def compile(self, program: Program) -> str:
+        """Compiles a QUA program and returns the id."""
+        return self._qm.compile(program)
+
+    def run_compiled_program(self, compiled_program_id: str) -> RunningQmJob:
+        """Runs a compiled QUA Program."""
+        pending_job = self._qm.queue.add_compiled(compiled_program_id)
+        return pending_job.wait_for_execution()
+
     def run(self, program: Program) -> RunningQmJob:
         """Runs the QUA Program.
 
