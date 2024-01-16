@@ -77,6 +77,22 @@ def fixture_average_loop() -> QProgram:
         qp.acquire(bus="readout", weights=weights)
     return qp
 
+@pytest.fixture(name="average_loop_long_wait")
+def fixture_average_loop_long_wait() -> QProgram:
+    drag_pair = DragPair(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+    weights = IQPair(
+        I=Gaussian(amplitude=1.0, duration=1000, num_sigmas=2.5),
+        Q=Gaussian(amplitude=1.0, duration=1000, num_sigmas=2.5),
+    )
+    qp = QProgram()
+    with qp.average(shots=1000):
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.wait(bus="readout", duration=100_000)
+        qp.sync()
+        qp.play(bus="readout", waveform=readout_pair)
+        qp.acquire(bus="readout", weights=weights)
+    return qp
 
 @pytest.fixture(name="acquire_with_weights_of_different_length")
 def fixture_acquire_with_weights_of_different_lengths() -> QProgram:
@@ -387,6 +403,71 @@ class TestQBloxCompiler:
     def test_average_with_for_loop(self, average_with_for_loop: QProgram):
         compiler = QbloxCompiler()
         sequences = compiler.compile(qprogram=average_with_for_loop)
+
+        assert len(sequences) == 2
+        assert "drive" in sequences
+        assert "readout" in sequences
+
+        for bus in sequences:
+            assert isinstance(sequences[bus], QPy.Sequence)
+
+        assert len(sequences["drive"]._waveforms._waveforms) == 2
+        assert len(sequences["drive"]._acquisitions._acquisitions) == 0
+        assert len(sequences["drive"]._weights._weights) == 0
+        assert sequences["drive"]._program._compiled
+
+        assert len(sequences["readout"]._waveforms._waveforms) == 2
+        assert len(sequences["readout"]._acquisitions._acquisitions) == 1
+        assert sequences["readout"]._acquisitions._acquisitions[0].num_bins == 11
+        assert len(sequences["readout"]._weights._weights) == 2
+        assert sequences["readout"]._program._compiled
+
+        drive_str = """
+            setup:
+                wait_sync        4
+
+            main:
+                            move             1000, R0
+            avg_0:
+                            move             11, R1
+                            move             0, R2
+            loop_0:
+                            play             0, 1, 40
+                            wait             2960
+                            add              R2, 3276, R2
+                            loop             R1, @loop_0
+                            loop             R0, @avg_0
+                            stop
+        """
+        readout_str = """
+            setup:
+                wait_sync        4
+
+            main:
+                            move             1000, R0
+            avg_0:
+                            move             1, R1
+                            move             0, R2
+                            move             0, R3
+                            move             11, R4
+                            move             0, R5
+            loop_0:
+                            set_awg_gain     R5, R5
+                            play             0, 1, 1000
+                            acquire_weighed  0, R3, R2, R1, 2000
+                            add              R3, 1, R3
+                            add              R5, 3276, R5
+                            loop             R4, @loop_0
+                            nop
+                            loop             R0, @avg_0
+                            stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+        assert is_q1asm_equal(sequences["readout"], readout_str)
+
+    def test_average_with_long_wait(self, average_loop_long_wait: QProgram):
+        compiler = QbloxCompiler()
+        sequences = compiler.compile(qprogram=average_loop_long_wait)
 
         assert len(sequences) == 2
         assert "drive" in sequences
