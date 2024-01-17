@@ -1018,6 +1018,11 @@ class TestCalibrationController:
             is None
         )
 
+        # Undo the previous change to the node_id, for the nexts tests:
+        for node in controller.node_sequence.values():
+            if node.node_id == "fourth_q1":
+                node.node_id = "fourth"
+
     def test_reorder_fidelities(self, controller):
         """Test that the reorder method, puts the fidelities in the front."""
         idx = ["0", "1"]
@@ -1055,9 +1060,9 @@ class TestCalibrationController:
 
         assert pd.testing.assert_frame_equal(df, ordered_df, check_dtype=False, check_index_type=False) is None
 
-    #######################
-    ### TEST DEPENDENTS ###
-    #######################
+    #########################
+    ### TEST DEPENDENCIES ###
+    #########################
     def test_dependencies(self, controller):
         """Test that dependencies return the correct dependencies."""
         result = controller._dependencies(nodes["zeroth_q0q1"])
