@@ -911,9 +911,8 @@ class TestCalibrationController:
     ################################
     ##### TEST GET QUBITS TABLE ####
     ################################
-
-    def test_get_qubits_table(self, controller):
-        """Test that the ``get_qubits_table()`` method, gets the correct parameters."""
+    def test_get_qubits_table_and_test_create_empty_dataframe(self, controller):
+        """Test that the ``get_qubits_table()`` and ``_create_empty_dataframes()`` methods, gets the correct structure and parameters."""
         for ind, (_, node) in enumerate(controller.node_sequence.items()):
             if node.node_id == "zeroth_q0q1":
                 node.output_parameters = {
@@ -938,14 +937,21 @@ class TestCalibrationController:
                 }
             node.previous_timestamp = 1999
 
+        # Generate the empty dataframes, and the filled ones, for testing both functions.
+        empty_q1_df, empty_q2_df = controller._create_empty_dataframes()
         q1_df, q2_df = controller.get_qubits_tables()
 
-        # Create the pandas DataFrame to test
+        # Create the pandas DataFrames idx, columns and data to test:
         idx = ["0-1", "0", "1"]
         data = [
             [1, 0.967],
             [1, 1, 1, "-", 0.967, 0.967, 0.967, "-"],
             ["-", "-", "-", 1, "-", "-", "-", 0.967],
+        ]
+        empty_data = [
+            ["-", "-"],
+            ["-", "-", "-", "-", "-", "-", "-", "-"],
+            ["-", "-", "-", "-", "-", "-", "-", "-"],
         ]
         col_q1 = [
             "param_1_test_bus",
@@ -961,12 +967,44 @@ class TestCalibrationController:
             "param_0_test_bus",
             "fidelity_0",
         ]
+
+        # Create the check empty dataframes:
+        test_empty_q1_df = pd.DataFrame(empty_data[1:], idx[1:], col_q1)
+        test_empty_q2_df = pd.DataFrame(empty_data[:1], idx[:1], col_q2)
+
+        # Create the check filled dataframes:
         test_q1_df = pd.DataFrame(data[1:], idx[1:], col_q1)
         test_q2_df = pd.DataFrame(data[:1], idx[:1], col_q2)
 
-        test_q1_df.index.name = "qubit"
-        test_q2_df.index.name = "qubit"
+        # Give name to the index to the test dataframes:
+        for df in [test_q1_df, test_q2_df, test_empty_q1_df, test_empty_q2_df]:
+            df.index.name = "qubit"
 
+        # Testing the empty dataframes structure:
+        assert (
+            pd.testing.assert_frame_equal(
+                empty_q1_df,
+                test_empty_q1_df,
+                check_dtype=False,
+                check_like=True,
+                check_index_type=False,
+                check_column_type=False,
+            )
+            is None
+        )
+        assert (
+            pd.testing.assert_frame_equal(
+                empty_q2_df,
+                test_empty_q2_df,
+                check_dtype=False,
+                check_like=True,
+                check_index_type=False,
+                check_column_type=False,
+            )
+            is None
+        )
+
+        # Testing that the dataframes got filled correctly
         assert (
             pd.testing.assert_frame_equal(
                 q1_df, test_q1_df, check_dtype=False, check_like=True, check_index_type=False, check_column_type=False
@@ -979,6 +1017,43 @@ class TestCalibrationController:
             )
             is None
         )
+
+    def test_reorder_fidelities(self, controller):
+        """Test that the reorder method, puts the fidelities in the front."""
+        idx = ["0", "1"]
+
+        empty_data = [
+            ["-", "-", "-", "-", "-", "-", "-", "-"],
+            ["-", "-", "-", "-", "-", "-", "-", "-"],
+        ]
+        col = [
+            "param_1_test_bus",
+            "param_2_test_bus",
+            "param_3_test_bus",
+            "param_4_test_bus",
+            "fidelity_1",
+            "fidelity_2",
+            "fidelity_3",
+            "fidelity_4",
+        ]
+
+        reordered_col = [
+            "fidelity_4",
+            "fidelity_3",
+            "fidelity_2",
+            "fidelity_1",
+            "param_1_test_bus",
+            "param_2_test_bus",
+            "param_3_test_bus",
+            "param_4_test_bus",
+        ]
+
+        df = pd.DataFrame(empty_data, idx, col)
+        df = controller._reorder_fidelities(df)
+
+        ordered_df = pd.DataFrame(empty_data, idx, reordered_col)
+
+        assert pd.testing.assert_frame_equal(df, ordered_df, check_dtype=False, check_index_type=False) is None
 
     #######################
     ### TEST DEPENDENTS ###
