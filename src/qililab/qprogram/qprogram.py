@@ -211,14 +211,14 @@ class QProgram(DictSerializable):
 
         return QProgram._ForLoopContext(qprogram=self, variable=variable, start=start, stop=stop, step=step)
 
-    def play(self, bus: str, waveform: Waveform | IQPair):
+    def play(self, bus: str, waveform: Waveform | IQPair, wait_time: int | None = None):
         """Play a single waveform or an I/Q pair of waveforms on the bus.
 
         Args:
             bus (str): Unique identifier of the bus.
             waveform (Waveform | IQPair): A single waveform or an I/Q pair of waveforms
         """
-        operation = Play(bus=bus, waveform=waveform)
+        operation = Play(bus=bus, waveform=waveform, wait_time=wait_time)
         self._active_block.append(operation)
 
     @requires_domain("duration", Domain.Time)

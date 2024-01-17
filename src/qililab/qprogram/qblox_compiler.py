@@ -450,6 +450,8 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             index_I, index_Q, duration = self._append_to_waveforms_of_bus(
                 bus=element.bus, waveform_I=waveform_I, waveform_Q=waveform_Q
             )
+            if element.wait_time is not None:  # TODO: Change this in clean fix
+                duration = element.wait_time
             convert = QbloxCompiler._convert_value(element)
             duration = convert(duration)
             self._buses[element.bus].static_duration += duration
