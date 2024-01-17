@@ -219,6 +219,7 @@ class RunAutomaticCalibrationMockedController(CalibrationController):
     def __init__(self, node_sequence, calibration_graph, runcard):
         super().__init__(node_sequence=node_sequence, calibration_graph=calibration_graph, runcard=runcard)
         self.maintain = MagicMock(return_value=None)
+        self.get_qubits_tables = MagicMock(return_value=(10, 10))
         self.get_last_set_parameters = MagicMock(
             return_value={("test", "test"): (0.0, "test", datetime.fromtimestamp(1999))}
         )
@@ -327,20 +328,24 @@ class TestInitializationCalibrationController:
 class TestRunAutomaticCalibrationFromCalibrationController:
     """Test that ``run_autoamtic_calibration()`` of ``CalibrationController`` behaves well."""
 
-    # TODO: Add functionality for new flags, and new changes!
-    # def test_run_automatic_calibration(self, controller):
-    #     """Test that `run_automatic_calibration()` gets the proper nodes to maintain."""
-    #     # Act:
-    #     output_dict = controller.run_automatic_calibration()
+    def test_run_automatic_calibration(self, controller):
+        """Test that `run_automatic_calibration()` gets the proper nodes to maintain."""
+        # Act:
+        output_dict = controller.run_automatic_calibration()
 
-    #     # Asserts:
-    #     controller.get_last_set_parameters.assert_called_once_with()
-    #     controller.get_last_fidelities.assert_called_once_with()
-    #     assert output_dict == {
-    #         "set_parameters": {("test", "test"): (0.0, "test", datetime.fromtimestamp(1999))},
-    #         "fidelities": {"test": (0.0, "test", datetime.fromtimestamp(1999))},
-    #     }
+        # Asserts:
+        controller.get_last_set_parameters.assert_called_once_with()
+        controller.get_last_fidelities.assert_called_once_with()
+        controller.get_qubits_tables.assert_called_once_with()
 
+        assert output_dict == {
+            "1q_table": 10,
+            "2q_table": 10,
+            "set_parameters": {("test", "test"): (0.0, "test", datetime.fromtimestamp(1999))},
+            "fidelities": {"test": (0.0, "test", datetime.fromtimestamp(1999))},
+        }
+
+    # TODO: Add functionality for new flags, and new changes to test above!
     #     # sourcery skip: extract-duplicate-method
     #     if controller.calibration_graph in [G0, G3]:
     #         controller.maintain.assert_any_call(fourth)
