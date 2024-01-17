@@ -45,7 +45,7 @@ from qililab.result.quantum_machines_results import QuantumMachinesMeasurementRe
 from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName, Line, Parameter
-from qililab.utils import hash_qua_program
+from qililab.utils import hash_qpy_sequence, hash_qua_program
 
 from .components import Bus, Buses
 
@@ -309,6 +309,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         self._qua_program_cache: dict[str, str] = {}
         """Dictionary for caching compiled qua programs."""
+
+        self._qpy_sequence_cache: dict[str, str] = {}
+        """Dictionary for caching qpysequences."""
 
     def connect(self, manual_override=False):
         """Connects to all the instruments and blocks the connection for other users.
@@ -596,7 +599,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             if isinstance(instrument, (QbloxModule, QuantumMachinesCluster))
         }
         if all(isinstance(instrument, QbloxModule) for instrument in instruments):
-            return self._execute_qprogram_with_qblox(qprogram=qprogram, bus_mapping=bus_mapping)
+            return self._execute_qprogram_with_qblox(qprogram=qprogram, bus_mapping=bus_mapping, debug=debug)
         if all(isinstance(instrument, QuantumMachinesCluster) for instrument in instruments):
             if len(instruments) != 1:
                 raise NotImplementedError(
@@ -609,16 +612,26 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         raise NotImplementedError("Executing QProgram in a mixture of instruments is not supported.")
 
     def _execute_qprogram_with_qblox(
-        self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None
+        self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None, debug: bool = False
     ) -> dict[str, list[Result]]:
         # Compile QProgram
         qblox_compiler = QbloxCompiler()
         sequences = qblox_compiler.compile(qprogram=qprogram, bus_mapping=bus_mapping)
         buses = {bus_alias: self._get_bus_by_alias(alias=bus_alias) for bus_alias in sequences}
 
+        if debug:
+            with open("debug.py", "w", encoding="utf-8") as sourceFile:
+                for bus_alias in sequences:
+                    print(bus_alias, file=sourceFile)
+                    print(repr(sequences[bus_alias]), file=sourceFile)
+                    print(file=sourceFile)
+
         # Upload sequences
         for bus_alias in sequences:
-            buses[bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
+            sequence_hash = hash_qpy_sequence(sequence=sequences[bus_alias])
+            if bus_alias not in self._qpy_sequence_cache or self._qpy_sequence_cache[bus_alias] != sequence_hash:
+                buses[bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
+                self._qpy_sequence_cache[bus_alias] = sequence_hash
 
         # Execute sequences
         for bus_alias in sequences:
@@ -635,7 +648,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         # Reset instrument settings
         for instrument in self.instruments.elements:
             if isinstance(instrument, QbloxModule):
-                instrument.clear_cache()
+                # instrument.clear_cache()
                 instrument.desync_sequencers()
 
         return results

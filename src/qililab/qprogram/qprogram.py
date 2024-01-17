@@ -261,7 +261,7 @@ class QProgram(DictSerializable):
         waveform: IQPair,
         weights: IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair, IQPair] | None = None,
         demodulation: bool = True,
-        save_raw_adc: bool = True,
+        save_raw_adc: bool = False,
     ):
         """Play a pulse and acquire results.
 

@@ -22,7 +22,7 @@ from .live_plot import LivePlot
 from .loop import Loop
 from .nested_data_class import nested_dataclass
 from .nested_dict_iterator import nested_dict_to_pandas_dataframe
-from .quantum_machines import hash_qua_program
+from .quantum_machines import hash_qpy_sequence, hash_qua_program
 from .signal_processing import demodulate
 from .singleton import Singleton, SingletonABC
 from .waveforms import Waveforms
