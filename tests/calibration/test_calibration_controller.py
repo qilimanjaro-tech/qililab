@@ -922,46 +922,61 @@ class TestCalibrationController:
                     "fidelities": [("0-1", f"fidelity_{ind}", 0.967)],
                 }
 
-            if node.node_id == "fourth":
+            elif node.node_id == "fourth":
+                node.node_id = "fourth_q1"
                 node.output_parameters = {
                     "check_parameters": {"x": [0, 1, 2, 3, 4, 5], "y": [0, 1, 2, 3, 4, 5]},
-                    "platform_parameters": [("test_bus", "", f"param_{ind}", 1)],
-                    "fidelities": [("", f"fidelity_{ind}", 0.967)],
+                    "platform_parameters": [("test_bus", 1, f"param_{ind}", 1)],
+                    "fidelities": [(1, f"fidelity_{ind}", 0.967)],
                 }
 
-            node.output_parameters = {
-                "check_parameters": {"x": [0, 1, 2, 3, 4, 5], "y": [0, 1, 2, 3, 4, 5]},
-                "platform_parameters": [("test_bus", 0, f"param_{ind}", 1)],
-                "fidelities": [(0, f"fidelity_{ind}", 0.967)],
-            }
+            else:
+                node.output_parameters = {
+                    "check_parameters": {"x": [0, 1, 2, 3, 4, 5], "y": [0, 1, 2, 3, 4, 5]},
+                    "platform_parameters": [("test_bus", 0, f"param_{ind}", 1)],
+                    "fidelities": [(0, f"fidelity_{ind}", 0.967)],
+                }
             node.previous_timestamp = 1999
 
-        df = controller.get_qubits_table()
+        q1_df, q2_df = controller.get_qubits_tables()
 
         # Create the pandas DataFrame to test
-        idx = ["0-1", "0", ""]
+        idx = ["0-1", "0", "1"]
         data = [
-            [1, "-", "-", "-", "-", 0.967, "-", "-", "-", "-"],
-            ["-", 1, 1, 1, "-", "-", 0.967, 0.967, 0.967, "-"],
-            ["-", "-", "-", "-", 1, "-", "-", "-", "-", 0.967],
+            [1, 0.967],
+            [1, 1, 1, "-", 0.967, 0.967, 0.967, "-"],
+            ["-", "-", "-", 1, "-", "-", "-", 0.967],
         ]
-        col = [
-            "param_0_test_bus",
+        col_q1 = [
             "param_1_test_bus",
             "param_2_test_bus",
             "param_3_test_bus",
             "param_4_test_bus",
-            "fidelity_0",
             "fidelity_1",
             "fidelity_2",
             "fidelity_3",
             "fidelity_4",
         ]
-        test_df = pd.DataFrame(data, idx, col)
-        test_df.index.name = "qubit"
+        col_q2 = [
+            "param_0_test_bus",
+            "fidelity_0",
+        ]
+        test_q1_df = pd.DataFrame(data[1:], idx[1:], col_q1)
+        test_q2_df = pd.DataFrame(data[:1], idx[:1], col_q2)
+
+        test_q1_df.index.name = "qubit"
+        test_q2_df.index.name = "qubit"
 
         assert (
-            pd.testing.assert_frame_equal(df, test_df, check_dtype=False, check_like=True, check_index_type=False)
+            pd.testing.assert_frame_equal(
+                q1_df, test_q1_df, check_dtype=False, check_like=True, check_index_type=False, check_column_type=False
+            )
+            is None
+        )
+        assert (
+            pd.testing.assert_frame_equal(
+                q2_df, test_q2_df, check_dtype=False, check_like=True, check_index_type=False, check_column_type=False
+            )
             is None
         )
 
