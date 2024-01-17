@@ -340,10 +340,6 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
     def _handle_wait(self, element: Wait):
         duration: QPyProgram.Register | int
         if isinstance(element.duration, Variable):
-            if element.duration > INST_MAX_WAIT:
-                raise ValueError(
-                    "Tried to use wait time as variable for wait time {element.duration} which is larger than qblox INST_MAX_WAIT"
-                )
             duration = self._buses[element.bus].variable_to_register[element.duration]
             self._buses[element.bus].dynamic_durations.append(element.duration)
             self._buses[element.bus].qpy_block_stack[-1].append_component(
