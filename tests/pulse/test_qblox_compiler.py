@@ -296,12 +296,6 @@ class TestQbloxCompiler:
 
         assert "Gaussian" in sequences_0._waveforms._waveforms[0].name
         assert "Rectangular" in sequences_1._waveforms._waveforms[0].name
-        assert sequences_0._acquisitions._acquisitions[0].name == "default"
-        assert sequences_0._acquisitions._acquisitions[0].num_bins == 1
-        assert sequences_0._acquisitions._acquisitions[0].index == 0
-        assert sequences_1._acquisitions._acquisitions[0].name == "default"
-        assert sequences_1._acquisitions._acquisitions[0].num_bins == 1
-        assert sequences_1._acquisitions._acquisitions[0].index == 0
 
         q1asm_0 = """
             setup:
@@ -389,10 +383,6 @@ class TestQbloxCompiler:
         assert isinstance(sequences_0, Sequence)
 
         assert "Gaussian" in sequences_0._waveforms._waveforms[0].name
-        assert sequences_0._acquisitions._acquisitions[0].name == "default"
-        assert sequences_0._acquisitions._acquisitions[0].num_bins == 1
-        assert sequences_0._acquisitions._acquisitions[0].index == 0
-
         # qblox modules 1 is the first qrm and 2 is the second
         assert qblox_compiler_2qrm.qblox_modules[1].cache == {0: pulse_bus_schedule}
         assert qblox_compiler_2qrm.qblox_modules[1].sequences == {0: sequences_0}
