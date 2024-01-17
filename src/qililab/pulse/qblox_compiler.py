@@ -340,9 +340,7 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
             for sequencer in instrument.awg_sequencers
             if instrument.name in self.readout_modules
         ]
-        feedline_ports = {
-            sequencer.chip_port_id for sequencer in qrm_sequencers
-        }  # FIXME: only one chip port id supported for qrm
+        feedline_ports = {sequencer.chip_port_id for sequencer in qrm_sequencers}
         qcm_sequencers = [
             sequencer
             for instrument in qblox_instruments
