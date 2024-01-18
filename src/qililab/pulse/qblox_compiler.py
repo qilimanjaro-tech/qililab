@@ -204,7 +204,7 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
 
     def _generate_program(  # pylint: disable=too-many-locals
         self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, sequencer: AWGQbloxSequencer
-    ):
+    ) -> Program:
         """Generate Q1ASM program
 
         Args:

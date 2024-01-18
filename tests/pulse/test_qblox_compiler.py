@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
+import qpysequence
 from qpysequence import Sequence
 from qpysequence.utils.constants import AWG_MAX_GAIN
 
@@ -13,7 +14,7 @@ from qililab.platform import Platform
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseSchedule, QbloxCompiler, Rectangular
 from qililab.pulse.pulse_event import PulseEvent
 from tests.data import Galadriel
-from tests.test_utils import build_platform, is_q1asm_equal
+from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="platform")
@@ -196,6 +197,13 @@ def fixture_pulse_schedule_odd_qubits() -> PulseSchedule:
     return PulseSchedule([PulseBusSchedule(timeline=timeline, port="feedline_input")])
 
 
+def are_q1asm_equal(a: str, b: str):
+    """Compare two Q1ASM strings and parse them to remove spaces, new lines and long_wait counters"""
+    return "".join(
+        [cmd if "long_wait" not in cmd else "".join(cmd.split("_")[:-1]) for cmd in a.strip().split()]
+    ) == "".join([cmd if "long_wait" not in cmd else "".join(cmd.split("_")[:-1]) for cmd in b.strip().split()])
+
+
 class TestQbloxCompiler:
     """Unit tests checking the QbloxQCM attributes and methods"""
 
@@ -355,8 +363,8 @@ class TestQbloxCompiler:
             stop:
                             stop
         """
-        assert is_q1asm_equal(q1asm_0, sequences_0._program)
-        assert is_q1asm_equal(q1asm_1, sequences_1._program)
+        assert are_q1asm_equal(q1asm_0, repr(sequences_0._program))
+        assert are_q1asm_equal(q1asm_1, repr(sequences_1._program))
 
         # qblox modules 1 is the first qrm and 2 is the second
         assert qblox_compiler_2qrm.qblox_modules[1].cache == {1: pulse_schedule_2qrm.elements[0]}
@@ -419,7 +427,8 @@ class TestQbloxCompiler:
             stop:
                             stop
         """
-        assert is_q1asm_equal(sequences_0._program, q1asm_0)
+        sequences_0_program = sequences_0._program
+        assert are_q1asm_equal(q1asm_0, repr(sequences_0_program))
 
     def test_compile_swaps_the_i_and_q_channels_when_mapping_is_not_supported_in_hw(self, qblox_compiler):
         """Test that the compile method swaps the I and Q channels when the output mapping is not supported in HW."""
