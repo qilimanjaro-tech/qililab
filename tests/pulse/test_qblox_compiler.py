@@ -1,11 +1,11 @@
 """Tests for the Qblox Compiler class."""
+# pylint: disable=protected-access
 import copy
 import re
 from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
-import qpysequence
 from qpysequence import Sequence
 from qpysequence.utils.constants import AWG_MAX_GAIN
 
