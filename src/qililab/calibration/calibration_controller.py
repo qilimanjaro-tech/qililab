@@ -199,6 +199,7 @@ class CalibrationController:
             self.calibrate_all(n)
 
         # You can skip it from 2h time, but also skip it due to `been_calibrated()`
+        # TODO: DOCUMENT: If you want to start the calibration from the start again, just remove the executed files!
         if (
             node.previous_timestamp is None or self._is_timeout_expired(node.previous_timestamp, 7200.0)
         ) and not node.been_calibrated:
