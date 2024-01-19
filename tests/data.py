@@ -571,6 +571,8 @@ results_two_loops: dict[str, Any] = {
                         "threshold": [0],
                         "avg_cnt": [1],
                     },
+                    "qubit": 0,
+                    "measurement": 0,
                 }
             ],
         },
@@ -588,6 +590,8 @@ results_two_loops: dict[str, Any] = {
                         "threshold": [0],
                         "avg_cnt": [1],
                     },
+                    "qubit": 0,
+                    "measurement": 0,
                 }
             ],
         },
@@ -622,6 +626,8 @@ results_one_loops: dict[str, Any] = {
                         "threshold": [0],
                         "avg_cnt": [1],
                     },
+                    "qubit": 1,
+                    "measurement": 0,
                 }
             ],
         },
@@ -639,6 +645,8 @@ results_one_loops: dict[str, Any] = {
                         "threshold": [0],
                         "avg_cnt": [1],
                     },
+                    "qubit": 1,
+                    "measurement": 0,
                 }
             ],
         },
