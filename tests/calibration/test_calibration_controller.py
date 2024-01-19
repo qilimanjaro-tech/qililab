@@ -219,6 +219,7 @@ class RunAutomaticCalibrationMockedController(CalibrationController):
     def __init__(self, node_sequence, calibration_graph, runcard):
         super().__init__(node_sequence=node_sequence, calibration_graph=calibration_graph, runcard=runcard)
         self.maintain = MagicMock(return_value=None)
+        self.get_qubits_tables = MagicMock(return_value=(10, 10))
         self.get_last_set_parameters = MagicMock(
             return_value={("test", "test"): (0.0, "test", datetime.fromtimestamp(1999))}
         )
@@ -327,20 +328,24 @@ class TestInitializationCalibrationController:
 class TestRunAutomaticCalibrationFromCalibrationController:
     """Test that ``run_autoamtic_calibration()`` of ``CalibrationController`` behaves well."""
 
-    # TODO: Add functionality for new flags, and new changes!
-    # def test_run_automatic_calibration(self, controller):
-    #     """Test that `run_automatic_calibration()` gets the proper nodes to maintain."""
-    #     # Act:
-    #     output_dict = controller.run_automatic_calibration()
+    def test_run_automatic_calibration(self, controller):
+        """Test that `run_automatic_calibration()` gets the proper nodes to maintain."""
+        # Act:
+        output_dict = controller.run_automatic_calibration()
 
-    #     # Asserts:
-    #     controller.get_last_set_parameters.assert_called_once_with()
-    #     controller.get_last_fidelities.assert_called_once_with()
-    #     assert output_dict == {
-    #         "set_parameters": {("test", "test"): (0.0, "test", datetime.fromtimestamp(1999))},
-    #         "fidelities": {"test": (0.0, "test", datetime.fromtimestamp(1999))},
-    #     }
+        # Asserts:
+        controller.get_last_set_parameters.assert_called_once_with()
+        controller.get_last_fidelities.assert_called_once_with()
+        controller.get_qubits_tables.assert_called_once_with()
 
+        assert output_dict == {
+            "1q_table": 10,
+            "2q_table": 10,
+            "set_parameters": {("test", "test"): (0.0, "test", datetime.fromtimestamp(1999))},
+            "fidelities": {"test": (0.0, "test", datetime.fromtimestamp(1999))},
+        }
+
+    # TODO: Add functionality for new flags, and new changes to test above!
     #     # sourcery skip: extract-duplicate-method
     #     if controller.calibration_graph in [G0, G3]:
     #         controller.maintain.assert_any_call(fourth)
@@ -786,6 +791,7 @@ class TestCalibrationController:
         """Test that the calibration method, calls node.run_node()."""
         for node in controller.node_sequence.values():
             controller.calibrate(node)
+            assert node.been_calibrated
         assert mock_run.call_count == len(controller.node_sequence)
         assert mock_add_str.call_count == len(controller.node_sequence)
 
@@ -911,9 +917,8 @@ class TestCalibrationController:
     ################################
     ##### TEST GET QUBITS TABLE ####
     ################################
-
-    def test_get_qubits_table(self, controller):
-        """Test that the ``get_qubits_table()`` method, gets the correct parameters."""
+    def test_get_qubits_table_and_test_create_empty_dataframe(self, controller):
+        """Test that the ``get_qubits_table()`` and ``_create_empty_dataframes()`` methods, gets the correct structure and parameters."""
         for ind, (_, node) in enumerate(controller.node_sequence.items()):
             if node.node_id == "zeroth_q0q1":
                 node.output_parameters = {
@@ -922,52 +927,148 @@ class TestCalibrationController:
                     "fidelities": [("0-1", f"fidelity_{ind}", 0.967)],
                 }
 
-            if node.node_id == "fourth":
+            elif node.node_id == "fourth":
+                node.node_id = "fourth_q1"
                 node.output_parameters = {
                     "check_parameters": {"x": [0, 1, 2, 3, 4, 5], "y": [0, 1, 2, 3, 4, 5]},
-                    "platform_parameters": [("test_bus", "", f"param_{ind}", 1)],
-                    "fidelities": [("", f"fidelity_{ind}", 0.967)],
+                    "platform_parameters": [("test_bus", 1, f"param_{ind}", 1)],
+                    "fidelities": [(1, f"fidelity_{ind}", 0.967)],
                 }
 
-            node.output_parameters = {
-                "check_parameters": {"x": [0, 1, 2, 3, 4, 5], "y": [0, 1, 2, 3, 4, 5]},
-                "platform_parameters": [("test_bus", 0, f"param_{ind}", 1)],
-                "fidelities": [(0, f"fidelity_{ind}", 0.967)],
-            }
+            else:
+                node.output_parameters = {
+                    "check_parameters": {"x": [0, 1, 2, 3, 4, 5], "y": [0, 1, 2, 3, 4, 5]},
+                    "platform_parameters": [("test_bus", 0, f"param_{ind}", 1)],
+                    "fidelities": [(0, f"fidelity_{ind}", 0.967)],
+                }
             node.previous_timestamp = 1999
 
-        df = controller.get_qubits_table()
+        # Generate the empty dataframes, and the filled ones, for testing both functions.
+        empty_q1_df, empty_q2_df = controller._create_empty_dataframes()
+        q1_df, q2_df = controller.get_qubits_tables()
 
-        # Create the pandas DataFrame to test
-        idx = ["0-1", "0", ""]
+        # Create the pandas DataFrames idx, columns and data to test:
+        idx = ["0-1", "0", "1"]
         data = [
-            [1, "-", "-", "-", "-", 0.967, "-", "-", "-", "-"],
-            ["-", 1, 1, 1, "-", "-", 0.967, 0.967, 0.967, "-"],
-            ["-", "-", "-", "-", 1, "-", "-", "-", "-", 0.967],
+            [1, 0.967],
+            [1, 1, 1, "-", 0.967, 0.967, 0.967, "-"],
+            ["-", "-", "-", 1, "-", "-", "-", 0.967],
         ]
-        col = [
-            "param_0_test_bus",
+        empty_data = [
+            ["-", "-"],
+            ["-", "-", "-", "-", "-", "-", "-", "-"],
+            ["-", "-", "-", "-", "-", "-", "-", "-"],
+        ]
+        col_q1 = [
             "param_1_test_bus",
             "param_2_test_bus",
             "param_3_test_bus",
             "param_4_test_bus",
-            "fidelity_0",
             "fidelity_1",
             "fidelity_2",
             "fidelity_3",
             "fidelity_4",
         ]
-        test_df = pd.DataFrame(data, idx, col)
-        test_df.index.name = "qubit"
+        col_q2 = [
+            "param_0_test_bus",
+            "fidelity_0",
+        ]
 
+        # Create the check empty dataframes:
+        test_empty_q1_df = pd.DataFrame(empty_data[1:], idx[1:], col_q1)
+        test_empty_q2_df = pd.DataFrame(empty_data[:1], idx[:1], col_q2)
+
+        # Create the check filled dataframes:
+        test_q1_df = pd.DataFrame(data[1:], idx[1:], col_q1)
+        test_q2_df = pd.DataFrame(data[:1], idx[:1], col_q2)
+
+        # Give name to the index to the test dataframes:
+        for df in [test_q1_df, test_q2_df, test_empty_q1_df, test_empty_q2_df]:
+            df.index.name = "qubit"
+
+        # Testing the empty dataframes structure:
         assert (
-            pd.testing.assert_frame_equal(df, test_df, check_dtype=False, check_like=True, check_index_type=False)
+            pd.testing.assert_frame_equal(
+                empty_q1_df,
+                test_empty_q1_df,
+                check_dtype=False,
+                check_like=True,
+                check_index_type=False,
+                check_column_type=False,
+            )
+            is None
+        )
+        assert (
+            pd.testing.assert_frame_equal(
+                empty_q2_df,
+                test_empty_q2_df,
+                check_dtype=False,
+                check_like=True,
+                check_index_type=False,
+                check_column_type=False,
+            )
             is None
         )
 
-    #######################
-    ### TEST DEPENDENTS ###
-    #######################
+        # Testing that the dataframes got filled correctly
+        assert (
+            pd.testing.assert_frame_equal(
+                q1_df, test_q1_df, check_dtype=False, check_like=True, check_index_type=False, check_column_type=False
+            )
+            is None
+        )
+        assert (
+            pd.testing.assert_frame_equal(
+                q2_df, test_q2_df, check_dtype=False, check_like=True, check_index_type=False, check_column_type=False
+            )
+            is None
+        )
+
+        # Undo the previous change to the node_id, for the nexts tests:
+        for node in controller.node_sequence.values():
+            if node.node_id == "fourth_q1":
+                node.node_id = "fourth"
+
+    def test_reorder_fidelities(self, controller):
+        """Test that the reorder method, puts the fidelities in the front."""
+        idx = ["0", "1"]
+
+        empty_data = [
+            ["-", "-", "-", "-", "-", "-", "-", "-"],
+            ["-", "-", "-", "-", "-", "-", "-", "-"],
+        ]
+        col = [
+            "param_1_test_bus",
+            "param_2_test_bus",
+            "param_3_test_bus",
+            "param_4_test_bus",
+            "fidelity_1",
+            "fidelity_2",
+            "fidelity_3",
+            "fidelity_4",
+        ]
+
+        reordered_col = [
+            "fidelity_4",
+            "fidelity_3",
+            "fidelity_2",
+            "fidelity_1",
+            "param_1_test_bus",
+            "param_2_test_bus",
+            "param_3_test_bus",
+            "param_4_test_bus",
+        ]
+
+        df = pd.DataFrame(empty_data, idx, col)
+        df = controller._reorder_fidelities(df)
+
+        ordered_df = pd.DataFrame(empty_data, idx, reordered_col)
+
+        assert pd.testing.assert_frame_equal(df, ordered_df, check_dtype=False, check_index_type=False) is None
+
+    #########################
+    ### TEST DEPENDENCIES ###
+    #########################
     def test_dependencies(self, controller):
         """Test that dependencies return the correct dependencies."""
         result = controller._dependencies(nodes["zeroth_q0q1"])

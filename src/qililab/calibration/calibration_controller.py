@@ -198,7 +198,11 @@ class CalibrationController:
         for n in self._dependencies(node):
             self.calibrate_all(n)
 
-        if node.previous_timestamp is None or self._is_timeout_expired(node.previous_timestamp, 7200.0):
+        # You can skip it from 2h time, but also skip it due to `been_calibrated()`
+        # TODO: DOCUMENT: If you want to start the calibration from the start again, just remove the executed files!
+        if (
+            node.previous_timestamp is None or self._is_timeout_expired(node.previous_timestamp, 7200.0)
+        ) and not node.been_calibrated:
             self.calibrate(node)
             self._update_parameters(node)
 
@@ -260,9 +264,19 @@ class CalibrationController:
             "Automatic calibration completed successfully!\n"
             "#############################################\n"
         )
+        return self.get_qubit_fidelities_and_parameters_df_tables()
+
+    def get_qubit_fidelities_and_parameters_df_tables(self) -> dict[str, pd.DataFrame]:
+        """Generates the 1q, 2q, fidelities and parameters dataframes, with the last calibrations.
+
+        Returns:
+            dict[str, pd.DataFrame]: Last calibrations dataframes.
+        """
+        df_1q, df_2q = self.get_qubits_tables()
 
         return {
-            "qubits_table": self.get_qubits_table(),
+            "1q_table": df_1q,
+            "2q_table": df_2q,
             "set_parameters": self.get_last_set_parameters(),
             "fidelities": self.get_last_fidelities(),
         }
@@ -561,6 +575,7 @@ class CalibrationController:
         """
         logger.info('WORKFLOW: Calibrating node "%s".\n', node.node_id)
         node.previous_timestamp = node.run_node()
+        node.been_calibrated = True
         node._add_string_to_checked_nb_name("calibrated", node.previous_timestamp)  # pylint: disable=protected-access
         # add _calibrated tag to the file name, which doesn't have a tag.
 
@@ -642,35 +657,83 @@ class CalibrationController:
             df.index.names = ["fidelity", "qubit"]
         return df
 
-    def _create_empty_dataframe(self) -> pd.DataFrame:
-        """Creates the structure of the dataframe for the qubits table.
+    def get_qubits_tables(self) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """Retrieves the last updated fidelities of the graph in the 1 qubit and 2 qubit tables.
 
         Returns:
-            pd.DataFrame: Empty df, where columns are each fidelity or parameter, and rows each qubit.
+            tuple[pd.DataFrame]: Tables where columns are each fidelity or parameter, and rows each qubit.
         """
-        idx, col = [], []
+        q1_df, q2_df = self._create_empty_dataframes()
+
         for node in self.node_sequence.values():
             qubit_list = node.node_id.split("_")
             qubit = "_".join(
                 [i for i in qubit_list if any(char == "q" for char in i) and any(char.isdigit() for char in i)]
             ).replace("q", "-")[1:]
-            if qubit not in idx:
-                idx.append(qubit)
 
-            if (
-                node.output_parameters is not None
-                and node.previous_timestamp is not None
-                and "fidelities" in node.output_parameters
-            ):
+            if len(qubit) == 1:
+                q1_df = self._fill_qubits_columns(node, qubit, q1_df)
+
+            else:
+                q2_df = self._fill_qubits_columns(node, qubit, q2_df)
+
+        # Reorder fidelities to the front of the dataframe:
+        q1_df = self._reorder_fidelities(q1_df)
+        q2_df = self._reorder_fidelities(q2_df)
+
+        return q1_df, q2_df
+
+    def _create_empty_dataframes(self) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """Creates the structure of the dataframe for the qubits table.
+
+        Returns:
+            pd.DataFrame: Empty df, where columns are each fidelity or parameter, and rows each qubit.
+        """
+        q1_idx, q1_col, q2_idx, q2_col = [], [], [], []  # type: ignore[var-annotated]
+
+        for node in self.node_sequence.values():
+            qubit_list = node.node_id.split("_")
+            qubit = "_".join(
+                [i for i in qubit_list if any(char == "q" for char in i) and any(char.isdigit() for char in i)]
+            ).replace("q", "-")[1:]
+
+            if len(qubit) == 1:
+                q1_idx, q1_col = self._get_idx_and_columns(node, qubit, q1_idx, q1_col)
+
+            else:
+                q2_idx, q2_col = self._get_idx_and_columns(node, qubit, q2_idx, q2_col)
+
+        df_q1 = pd.DataFrame("-", q1_idx, q1_col)
+        df_q1.index.name = "qubit"
+
+        df_q2 = pd.DataFrame("-", q2_idx, q2_col)
+        df_q2.index.name = "qubit"
+
+        return df_q1, df_q2
+
+    @staticmethod
+    def _get_idx_and_columns(node: CalibrationNode, qubit: str, idx: list, col: list) -> tuple[list, list]:
+        """Gets the index and columns for creating a dataframe for 1q or 2q.
+
+        Args:
+            node (CalibrationNode): Node for which we are currently creating the dataframe idx and columns.
+            qubit (str): qubit for which we are currently creating the dataframe idx and columns, corresponding to the node.
+            idx (list): idx to be added.
+            col (list): column to be added.
+
+        Returns:
+            tuple[list, list]: list of idx and columns for creating the dataframe.
+        """
+        if qubit not in idx:
+            idx.append(qubit)
+
+        if node.output_parameters is not None and node.previous_timestamp is not None:
+            if "fidelities" in node.output_parameters:
                 for _, fidelity, _ in node.output_parameters["fidelities"]:
                     if fidelity not in col:
                         col.append(fidelity)
 
-            if (
-                node.output_parameters is not None
-                and node.previous_timestamp is not None
-                and "platform_parameters" in node.output_parameters
-            ):
+            if "platform_parameters" in node.output_parameters:
                 for bus, _, parameter, _ in node.output_parameters["platform_parameters"]:
                     bus_list = str(bus).split("_")
                     bus = "_".join([x for x in bus_list if not any(char.isdigit() for char in x)])
@@ -678,44 +741,43 @@ class CalibrationController:
                     if f"{str(parameter)}_{bus}" not in col:
                         col.append(f"{str(parameter)}_{bus}")
 
-        df = pd.DataFrame("-", idx, col)
-        df.index.name = "qubit"
+        return idx, col
 
-        return df
+    @staticmethod
+    def _fill_qubits_columns(node: CalibrationNode, qubit: str, df: pd.DataFrame) -> pd.DataFrame:
+        """Fills the qubit tables columns with the fidelities or parameters values.
 
-    def get_qubits_table(self) -> pd.DataFrame:
-        """Retrieves the last updated fidelities of the graph in a qubit table.
+        Args:
+            node (CalibrationNode): Node currently being filled.
+            qubit (str): qubit being filled, corresponding to the node.
+            df (pd.DataFrame): Dataframe to fill.
 
         Returns:
-            pd.DataFrame: Table where columns are each fidelity or parameter, and rows each qubit.
+            pd.DataFrame: Filled dataframe.
         """
-        df = self._create_empty_dataframe()
-
-        for node in self.node_sequence.values():
-            qubit_list = node.node_id.split("_")
-            qubit = "_".join(
-                [i for i in qubit_list if any(char == "q" for char in i) and any(char.isdigit() for char in i)]
-            ).replace("q", "-")[1:]
-
-            if (
-                node.output_parameters is not None
-                and node.previous_timestamp is not None
-                and "fidelities" in node.output_parameters
-            ):
+        if node.output_parameters is not None and node.previous_timestamp is not None:
+            if "fidelities" in node.output_parameters:
                 for _, fidelity, value in node.output_parameters["fidelities"]:
                     df[fidelity][qubit] = value
 
-            if (
-                node.output_parameters is not None
-                and node.previous_timestamp is not None
-                and "platform_parameters" in node.output_parameters
-            ):
+            if "platform_parameters" in node.output_parameters:
                 for bus, _, parameter, value in node.output_parameters["platform_parameters"]:
                     bus_list = str(bus).split("_")
                     bus = "_".join([x for x in bus_list if not any(char.isdigit() for char in x)])
                     df[f"{str(parameter)}_{bus}"][qubit] = value
 
-        # Reorder fidelities to the front of the dataframe:
+        return df
+
+    @staticmethod
+    def _reorder_fidelities(df: pd.DataFrame) -> pd.DataFrame:
+        """It moves the fidelities columns to the front of the dataframe.
+
+        Args:
+            df (pd.DataFrame): Dataframe to reorder.
+
+        Returns:
+            pd.DataFrame: Reordered dataframe.
+        """
         for column in df.columns:
             if "fidelity" in column:
                 first_column = df.pop(column)
