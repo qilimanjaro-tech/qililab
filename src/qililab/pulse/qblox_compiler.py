@@ -267,14 +267,15 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
                     else MIN_WAIT,  # TODO: add time of flight
                 )
             )
-        if qblox_module.name in self.readout_modules:
-            self._append_acquire_instruction(
-                loop=bin_loop,
-                bin_index=bin_loop.counter_register,
-                sequencer=sequencer,  # type: ignore
-                weight_regs=weight_registers,
-                wait=wait_time,
-            )
+            if qblox_module.name in self.readout_modules:
+                self._append_acquire_instruction(
+                    loop=bin_loop,
+                    bin_index=bin_loop.counter_register,
+                    sequencer=sequencer,  # type: ignore
+                    weight_regs=weight_registers,
+                    wait=wait_time,
+                )
+
         if self.repetition_duration is not None:
             wait_time = self.repetition_duration - bin_loop.duration_iter
             if wait_time > qblox_module._MIN_WAIT_TIME:  # pylint: disable=protected-access
