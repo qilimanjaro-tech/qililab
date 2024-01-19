@@ -791,6 +791,7 @@ class TestCalibrationController:
         """Test that the calibration method, calls node.run_node()."""
         for node in controller.node_sequence.values():
             controller.calibrate(node)
+            assert node.been_calibrated
         assert mock_run.call_count == len(controller.node_sequence)
         assert mock_add_str.call_count == len(controller.node_sequence)
 

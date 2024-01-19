@@ -198,7 +198,11 @@ class CalibrationController:
         for n in self._dependencies(node):
             self.calibrate_all(n)
 
-        if node.previous_timestamp is None or self._is_timeout_expired(node.previous_timestamp, 7200.0):
+        # You can skip it from 2h time, but also skip it due to `been_calibrated()`
+        # TODO: DOCUMENT: If you want to start the calibration from the start again, just remove the executed files!
+        if (
+            node.previous_timestamp is None or self._is_timeout_expired(node.previous_timestamp, 7200.0)
+        ) and not node.been_calibrated:
             self.calibrate(node)
             self._update_parameters(node)
 
@@ -571,6 +575,7 @@ class CalibrationController:
         """
         logger.info('WORKFLOW: Calibrating node "%s".\n', node.node_id)
         node.previous_timestamp = node.run_node()
+        node.been_calibrated = True
         node._add_string_to_checked_nb_name("calibrated", node.previous_timestamp)  # pylint: disable=protected-access
         # add _calibrated tag to the file name, which doesn't have a tag.
 
