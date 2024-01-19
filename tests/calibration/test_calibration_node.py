@@ -123,6 +123,7 @@ class TestInitializationCalibrationNode:
         assert initialize_node_no_optional.previous_inspec is None
         assert isinstance(initialize_node_no_optional._stream, StringIO)
         assert initialize_node_no_optional.fidelity is False
+        assert initialize_node_no_optional.been_calibrated is False
 
     def test_good_init_method_with_optional(self, initialize_node_optional):
         """Test a valid initialization of the class, passing all optional arguments."""
@@ -145,6 +146,7 @@ class TestInitializationCalibrationNode:
         assert initialize_node_optional.previous_inspec is None
         assert isinstance(initialize_node_optional._stream, StringIO)
         assert initialize_node_optional.fidelity is True
+        assert initialize_node_optional.been_calibrated is False
 
     def test_bad_thresholds_initialization(self):
         """Test an invalid initialization of the class due to the thresholds.
