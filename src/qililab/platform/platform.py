@@ -670,7 +670,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 print(generate_qua_script(qua_program, cluster.config), file=sourceFile)
 
         qua_program_hash = hash_qua_program(program=qua_program)
-        if qua_program not in self._qua_program_cache:
+        if qua_program_hash not in self._qua_program_cache:
             self._qua_program_cache[qua_program_hash] = cluster.compile(program=qua_program)
         compiled_program_id = self._qua_program_cache[qua_program_hash]
 

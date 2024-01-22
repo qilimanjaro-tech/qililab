@@ -6,6 +6,7 @@ from pathlib import Path
 from queue import Queue
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 from qibo import gates
 from qibo.models import Circuit
@@ -19,21 +20,28 @@ from qililab.instrument_controllers import InstrumentControllers
 from qililab.instruments import AWG, AWGAnalogDigitalConverter, SignalGenerator
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
+from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
 from qililab.qprogram import QProgram
+from qililab.result.quantum_machines_results import QuantumMachinesMeasurementResult
 from qililab.settings import Runcard
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import IQPair, Square
-from tests.data import Galadriel
+from tests.data import Galadriel, SauronQuantumMachines
 from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="platform")
 def fixture_platform():
     return build_platform(runcard=Galadriel.runcard)
+
+
+@pytest.fixture(name="platform_quantum_machines")
+def fixture_platform_quantum_machines():
+    return build_platform(runcard=SauronQuantumMachines.runcard)
 
 
 @pytest.fixture(name="runcard")
@@ -264,7 +272,7 @@ class TestMethods:
             assert isinstance(sequence[0], Sequence)
             assert sequence[0]._program.duration == 200_000 * 1000 + 4
 
-    def test_execute_qprogram(self, platform: Platform):
+    def test_execute_qprogram_with_qblox(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
@@ -287,6 +295,59 @@ class TestMethods:
         acquire_qprogram_results.assert_called_once()
         assert results == {"feedline_input_output_bus": 123}
         desync.assert_called()
+
+    def test_execute_qprogram_with_quantum_machines(self, platform_quantum_machines: Platform):
+        """Test that the execute_qprogram method executes the qprogram for Quantum Machines correctly"""
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_q0_rf", waveform=drive_wf)
+        qprogram.sync()
+        qprogram.play(bus="readout_q0_rf", waveform=readout_wf)
+        qprogram.measure(bus="readout_q0_rf", waveform=readout_wf, weights=(weights_wf, weights_wf))
+
+        with (
+            patch("builtins.open") as patched_open,
+            patch("qililab.platform.platform.generate_qua_script", return_value=None) as generate_qua,
+            patch.object(QuantumMachinesCluster, "config") as config,
+            patch.object(QuantumMachinesCluster, "append_configuration") as append_configuration,
+            patch.object(QuantumMachinesCluster, "compile") as compile_program,
+            patch.object(QuantumMachinesCluster, "run_compiled_program") as run_compiled_program,
+            patch.object(QuantumMachinesCluster, "get_acquisitions") as get_acquisitions,
+        ):
+            cluster = platform_quantum_machines.get_element("qmm")
+            config.return_value = cluster.settings.to_qua_config()
+
+            get_acquisitions.return_value = {"I_0": np.array([1, 2, 3]), "Q_0": np.array([4, 5, 6])}
+            first_execution_results = platform_quantum_machines.execute_qprogram(qprogram=qprogram)
+
+            get_acquisitions.return_value = {"I_0": np.array([3, 2, 1]), "Q_0": np.array([6, 5, 4])}
+            second_execution_results = platform_quantum_machines.execute_qprogram(qprogram=qprogram)
+
+            _ = platform_quantum_machines.execute_qprogram(qprogram=qprogram, debug=True)
+
+        # assure only one debug was called
+        assert patched_open.call_count == 1
+        assert generate_qua.call_count == 1
+        # assure only one compilation happened
+        assert compile_program.call_count == 1
+        # assure the rest were executed three times
+        assert append_configuration.call_count == 3
+        assert run_compiled_program.call_count == 3
+        assert get_acquisitions.call_count == 3
+
+        assert "readout_q0_rf" in first_execution_results
+        assert len(first_execution_results["readout_q0_rf"]) == 1
+        assert isinstance(first_execution_results["readout_q0_rf"][0], QuantumMachinesMeasurementResult)
+        np.testing.assert_array_equal(first_execution_results["readout_q0_rf"][0].I, np.array([1, 2, 3]))
+        np.testing.assert_array_equal(first_execution_results["readout_q0_rf"][0].Q, np.array([4, 5, 6]))
+
+        assert "readout_q0_rf" in second_execution_results
+        assert len(second_execution_results["readout_q0_rf"]) == 1
+        assert isinstance(second_execution_results["readout_q0_rf"][0], QuantumMachinesMeasurementResult)
+        np.testing.assert_array_equal(second_execution_results["readout_q0_rf"][0].I, np.array([3, 2, 1]))
+        np.testing.assert_array_equal(second_execution_results["readout_q0_rf"][0].Q, np.array([6, 5, 4]))
 
     def test_execute(self, platform: Platform):
         """Test that the execute method calls the buses to run and return the results."""
