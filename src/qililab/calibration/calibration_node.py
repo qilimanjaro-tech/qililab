@@ -336,6 +336,9 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         self.fidelity: bool = fidelity
         """Flag whether this notebook is a final fidelity experiment. Defaults to False."""
 
+        self.been_calibrated: bool = False
+        """Flag whether this notebook has been already calibrated in a concrete run. Defaults to False."""
+
     def run_node(self, check: bool = False) -> float:
         """Executes the notebook, passing the needed parameters and flags. Also it can be chosen to only check certain values of the sweep interval for
         when checking data.
