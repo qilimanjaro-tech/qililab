@@ -271,9 +271,10 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
                 self._append_acquire_instruction(
                     loop=bin_loop,
                     bin_index=bin_loop.counter_register,
+                    acq_index=i,
                     sequencer=sequencer,  # type: ignore
                     weight_regs=weight_registers,
-                    wait=wait_time,
+                    wait=wait_time - MIN_WAIT,
                 )
 
         if self.repetition_duration is not None:
@@ -304,6 +305,7 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         self,
         loop: Loop,
         bin_index: Register | int,
+        acq_index: int,
         sequencer: AWGQbloxADCSequencer,
         weight_regs: tuple[Register, Register],
         wait: int,
@@ -313,7 +315,7 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
 
         acq_instruction = (
             AcquireWeighed(
-                acq_index=0,
+                acq_index=acq_index,
                 bin_index=bin_index,
                 weight_index_0=weight_regs[0],
                 weight_index_1=weight_regs[1],
@@ -321,7 +323,7 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
             )
             if weighed_acq
             else Acquire(
-                acq_index=0,
+                acq_index=acq_index,
                 bin_index=bin_index,
                 wait_time=wait,
             )
