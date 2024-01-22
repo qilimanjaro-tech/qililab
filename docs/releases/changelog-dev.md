@@ -26,6 +26,9 @@
 - Changed save and load methods using `PyYAML` to `ruamel.YAML`
   [#661](https://github.com/qilimanjaro-tech/qililab/pull/661)
 
+- Qprogram's qblox compiler now allows iterations over variables even if these variables do nothing (eg. iterate over nshots)
+  [#666](https://github.com/qilimanjaro-tech/qililab/pull/666)
+
 ### Breaking changes
 
 ### Deprecations / Removals
