@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, call, patch
 
 import numpy as np
 import pytest
-from qm import Program
+from qm import Program, QmPendingJob, QmQueue
 from qm.qua import play, program
 
 from qililab.instruments.instrument import ParameterNotFound
@@ -182,7 +182,9 @@ class TestQuantumMachinesCluster:
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    def test_append_configuration_after_turn_on(self, qmm: QuantumMachinesCluster, compilation_config: dict):
+    def test_append_configuration_after_turn_on(
+        self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, compilation_config: dict
+    ):
         """Test update_configuration method"""
         qmm.initial_setup()
         qmm.turn_on()
@@ -191,8 +193,20 @@ class TestQuantumMachinesCluster:
         qmm._qmm.open_qm.call_count == 2
         assert isinstance(qmm._qm, MagicMock)
 
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    def test_compile(self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, qua_program: Program):
+        qmm.initial_setup()
+        qmm.turn_on()
+
+        qmm._qm.compile.return_value = "123"
+        compile_program_id = qmm.compile(qua_program)
+
+        qmm._qm.compile.assert_called_once_with(qua_program)
+        assert compile_program_id == "123"
+
     @patch("qm.QuantumMachine")
-    def test_execute(
+    def test_run(
         self, mock_qm: MagicMock, qmm: QuantumMachinesCluster, qua_program: Program
     ):  # pylint: disable=unused-argument
         """Test execute method"""
@@ -201,6 +215,20 @@ class TestQuantumMachinesCluster:
         job = qmm.run(qua_program)
 
         assert isinstance(job, MagicMock)
+
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    def test_run_compiled_program(self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, qua_program: Program):
+        qmm.initial_setup()
+        qmm.turn_on()
+
+        qmm._qm.compile.return_value = "123"
+
+        compile_program_id = qmm.compile(qua_program)
+        _ = qmm.run_compiled_program(compile_program_id)
+
+        qmm._qm.queue.add_compiled.assert_called_once_with(compile_program_id)
+        qmm._qm.queue.add_compiled.return_value.wait_for_execution.assert_called_once()
 
     def test_get_acquisitions(self, qmm: QuantumMachinesCluster):
         """Test get_acquisitions method"""

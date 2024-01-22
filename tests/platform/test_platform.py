@@ -311,7 +311,9 @@ class TestMethods:
         # assure only one debug was called
         assert patched_open.call_count == 1
 
-    def test_execute_qprogram_with_quantum_machines(self, platform_quantum_machines: Platform):
+    def test_execute_qprogram_with_quantum_machines(
+        self, platform_quantum_machines: Platform
+    ):  # pylint: disable=too-many-locals
         """Test that the execute_qprogram method executes the qprogram for Quantum Machines correctly"""
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))

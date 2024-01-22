@@ -321,13 +321,13 @@ class QuantumMachinesCluster(Instrument):
             raise NotImplementedError("You should be connected to Quantum Machines in order to change a parameter.")
         if parameter == Parameter.LO_FREQUENCY:
             self._qm.octave.set_lo_frequency(element=bus, lo_frequency=float(value))
-            if "RF_INPUTS" in self._config["elements"][bus]:
+            if "RF_inputs" in self._config["elements"][bus]:
                 octave, port = self._config["elements"][bus]["RF_inputs"]["port"]
                 self._config["octaves"][octave]["RF_outputs"][port]["LO_frequency"] = float(value)
             return
         if parameter == Parameter.GAIN:
             self._qm.octave.set_rf_output_gain(element=bus, gain_in_db=float(value))
-            if "RF_INPUTS" in self._config["elements"][bus]:
+            if "RF_inputs" in self._config["elements"][bus]:
                 octave, port = self._config["elements"][bus]["RF_inputs"]["port"]
                 self._config["octaves"][octave]["RF_outputs"][port]["gain"] = float(value)
             return
