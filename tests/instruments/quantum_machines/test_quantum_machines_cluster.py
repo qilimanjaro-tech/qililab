@@ -7,6 +7,7 @@ import pytest
 from qm import Program
 from qm.qua import play, program
 
+from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Platform
 from qililab.settings import Settings
@@ -168,10 +169,10 @@ class TestQuantumMachinesCluster:
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    def test_update_configurations(self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, compilation_config: dict):
+    def test_append_configuration(self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, compilation_config: dict):
         """Test update_configuration method"""
         qmm.initial_setup()
-        qmm.update_configuration(compilation_config=compilation_config)
+        qmm.append_configuration(configuration=compilation_config)
 
         assert "control_445e964c_fb58e912_100" in qmm._config["elements"]["drive_q0"]["operations"]
         assert "control_445e964c_fb58e912_100" in qmm._config["pulses"]
@@ -179,7 +180,7 @@ class TestQuantumMachinesCluster:
         assert "fb58e912" in qmm._config["waveforms"]
 
         qmm.turn_on()
-        qmm.update_configuration(compilation_config=compilation_config)
+        qmm.append_configuration(configuration=compilation_config)
 
         assert isinstance(qmm._qm, MagicMock)
 
@@ -214,7 +215,82 @@ class TestQuantumMachinesCluster:
 
         assert isinstance(job, MagicMock)
 
-    def test_set_parameter(self, qmm: QuantumMachinesCluster):
-        """Tests that set_parameter method raises a not implemented error."""
-        with pytest.raises(NotImplementedError, match="Setting a parameter is not supported for Quantum Machines yet."):
-            _ = qmm.set_parameter(parameter=Parameter.LO_FREQUENCY, value=0.0)
+    @pytest.mark.parametrize(
+        "bus, parameter, value",
+        [
+            ("drive_q0_rf", Parameter.LO_FREQUENCY, 6e9),
+            ("drive_q0_rf", Parameter.IF, 20e6),
+            ("drive_q0_rf", Parameter.GAIN, 0.001),
+        ],
+    )
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    def test_set_parameter_of_bus_method_with_octave(
+        self,
+        mock_qmm,
+        mock_qm,
+        bus: str,
+        parameter: Parameter,
+        value: float | str | bool,
+        qmm_with_octave: QuantumMachinesCluster,
+    ):
+        """Test the setup method with float value"""
+        qmm_with_octave.initial_setup()
+        qmm_with_octave.turn_on()
+        qmm_with_octave.set_parameter_of_bus(bus, parameter, value)
+
+        if parameter == Parameter.LO_FREQUENCY:
+            qmm_with_octave._qm.octave.set_lo_frequency.assert_called_once()
+        if parameter == Parameter.GAIN:
+            qmm_with_octave._qm.octave.set_rf_output_gain.assert_called_once()
+        if parameter == Parameter.IF:
+            qmm_with_octave._qm.set_intermediate_frequency.assert_called_once()
+
+    @pytest.mark.parametrize(
+        "bus, parameter, value",
+        [
+            ("drive_q0", Parameter.LO_FREQUENCY, 6e9),
+            ("drive_q0", Parameter.IF, 20e6),
+            ("drive_q0", Parameter.GAIN, 0.001),
+        ],
+    )
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    def test_set_parameter_of_bus_method(
+        self, mock_qmm, mock_qm, bus: str, parameter: Parameter, value: float | str | bool, qmm: QuantumMachinesCluster
+    ):
+        """Test the setup method with float value"""
+        qmm.initial_setup()
+        qmm.turn_on()
+        qmm.set_parameter_of_bus(bus, parameter, value)
+
+        if parameter == Parameter.LO_FREQUENCY:
+            qmm._qm.octave.set_lo_frequency.assert_called_once()
+        if parameter == Parameter.GAIN:
+            qmm._qm.octave.set_rf_output_gain.assert_called_once()
+        if parameter == Parameter.IF:
+            qmm._qm.set_intermediate_frequency.assert_called_once()
+
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    def test_set_parameter_of_bus_method_raises_exception_when_not_connected(
+        self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster
+    ):
+        """Test the set_parameter_of_bus method raises exception when not connected to QuantumMachines."""
+        qmm.initial_setup()
+        with pytest.raises(
+            NotImplementedError, match="You should be connected to Quantum Machines in order to change a parameter."
+        ):
+            qmm.set_parameter_of_bus("bus", Parameter.IF, 123e6)
+
+    @pytest.mark.parametrize("parameter, value", [(Parameter.MAX_CURRENT, 0.001), (Parameter.OUT0_ATT, 0.0005)])
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    def test_set_parameter_of_bus_method_raises_exception_when_parameter_not_found(
+        self, mock_qmm, mock_qm, parameter: Parameter, value, qmm: QuantumMachinesCluster
+    ):
+        """Test the set_parameter_of_bus method raises exception when parameter is wrong."""
+        qmm.initial_setup()
+        qmm.turn_on()
+        with pytest.raises(ParameterNotFound):
+            qmm.set_parameter_of_bus("bus", parameter, value)
