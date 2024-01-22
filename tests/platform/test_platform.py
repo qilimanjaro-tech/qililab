@@ -283,18 +283,33 @@ class TestMethods:
         qprogram.play(bus="feedline_input_output_bus", waveform=readout_wf)
         qprogram.acquire(bus="feedline_input_output_bus", weights=weights_wf)
 
-        with patch.object(Bus, "upload_qpysequence") as upload:
-            with patch.object(Bus, "run") as run:
-                with patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results:
-                    with patch.object(QbloxModule, "desync_sequencers") as desync:
-                        acquire_qprogram_results.return_value = 123
-                        results = platform.execute_qprogram(qprogram=qprogram)
+        with (
+            patch("builtins.open") as patched_open,
+            patch.object(Bus, "upload_qpysequence") as upload,
+            patch.object(Bus, "run") as run,
+            patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
+            patch.object(QbloxModule, "desync_sequencers") as desync,
+        ):
+            acquire_qprogram_results.return_value = 123
+            first_execution_results = platform.execute_qprogram(qprogram=qprogram)
 
+            acquire_qprogram_results.return_value = 456
+            second_execution_results = platform.execute_qprogram(qprogram=qprogram)
+
+            _ = platform.execute_qprogram(qprogram=qprogram, debug=True)
+
+        # assert upload executed only once (2 because there are 2 buses)
         assert upload.call_count == 2
-        assert run.call_count == 2
-        acquire_qprogram_results.assert_called_once()
-        assert results == {"feedline_input_output_bus": 123}
-        desync.assert_called()
+
+        # assert run executed all three times (6 because there are 2 buses)
+        assert run.call_count == 6
+        assert acquire_qprogram_results.call_count == 3  # only readout buses
+        assert desync.call_count == 6
+        assert first_execution_results == {"feedline_input_output_bus": 123}
+        assert second_execution_results == {"feedline_input_output_bus": 456}
+
+        # assure only one debug was called
+        assert patched_open.call_count == 1
 
     def test_execute_qprogram_with_quantum_machines(self, platform_quantum_machines: Platform):
         """Test that the execute_qprogram method executes the qprogram for Quantum Machines correctly"""
@@ -327,9 +342,6 @@ class TestMethods:
 
             _ = platform_quantum_machines.execute_qprogram(qprogram=qprogram, debug=True)
 
-        # assure only one debug was called
-        assert patched_open.call_count == 1
-        assert generate_qua.call_count == 1
         # assure only one compilation happened
         assert compile_program.call_count == 1
         # assure the rest were executed three times
@@ -348,6 +360,10 @@ class TestMethods:
         assert isinstance(second_execution_results["readout_q0_rf"][0], QuantumMachinesMeasurementResult)
         np.testing.assert_array_equal(second_execution_results["readout_q0_rf"][0].I, np.array([3, 2, 1]))
         np.testing.assert_array_equal(second_execution_results["readout_q0_rf"][0].Q, np.array([6, 5, 4]))
+
+        # assure only one debug was called
+        assert patched_open.call_count == 1
+        assert generate_qua.call_count == 1
 
     def test_execute(self, platform: Platform):
         """Test that the execute method calls the buses to run and return the results."""

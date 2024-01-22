@@ -128,6 +128,7 @@ class TestQuantumMachinesCluster:
 
         assert isinstance(qmm._qmm, MagicMock)
         assert isinstance(qmm._config, dict)
+        assert isinstance(qmm.config, dict)
 
     @pytest.mark.parametrize("qmm_name", ["qmm", "qmm_with_octave"])
     def test_settings(self, qmm_name, request):
@@ -179,9 +180,15 @@ class TestQuantumMachinesCluster:
         assert "445e964c" in qmm._config["waveforms"]
         assert "fb58e912" in qmm._config["waveforms"]
 
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    def test_append_configuration_after_turn_on(self, qmm: QuantumMachinesCluster, compilation_config: dict):
+        """Test update_configuration method"""
+        qmm.initial_setup()
         qmm.turn_on()
         qmm.append_configuration(configuration=compilation_config)
 
+        qmm._qmm.open_qm.call_count == 2
         assert isinstance(qmm._qm, MagicMock)
 
     @patch("qm.QuantumMachine")
@@ -237,8 +244,9 @@ class TestQuantumMachinesCluster:
         """Test the setup method with float value"""
         qmm_with_octave.initial_setup()
         qmm_with_octave.turn_on()
-        qmm_with_octave.set_parameter_of_bus(bus, parameter, value)
+        qmm_with_octave._config = qmm_with_octave.settings.to_qua_config()
 
+        qmm_with_octave.set_parameter_of_bus(bus, parameter, value)
         if parameter == Parameter.LO_FREQUENCY:
             qmm_with_octave._qm.octave.set_lo_frequency.assert_called_once()
         if parameter == Parameter.GAIN:
@@ -262,8 +270,9 @@ class TestQuantumMachinesCluster:
         """Test the setup method with float value"""
         qmm.initial_setup()
         qmm.turn_on()
-        qmm.set_parameter_of_bus(bus, parameter, value)
+        qmm._config = qmm.settings.to_qua_config()
 
+        qmm.set_parameter_of_bus(bus, parameter, value)
         if parameter == Parameter.LO_FREQUENCY:
             qmm._qm.octave.set_lo_frequency.assert_called_once()
         if parameter == Parameter.GAIN:
@@ -294,3 +303,41 @@ class TestQuantumMachinesCluster:
         qmm.turn_on()
         with pytest.raises(ParameterNotFound):
             qmm.set_parameter_of_bus("bus", parameter, value)
+
+    @pytest.mark.parametrize(
+        "bus, parameter",
+        [
+            ("drive_q0", Parameter.LO_FREQUENCY),
+            ("drive_q0", Parameter.IF),
+            ("drive_q0", Parameter.GAIN),
+        ],
+    )
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    def test_get_parameter_of_bus_method(
+        self, mock_qmm, mock_qm, bus: str, parameter: Parameter, qmm: QuantumMachinesCluster
+    ):
+        """Test the setup method with float value"""
+        qmm.initial_setup()
+        qmm.turn_on()
+        qmm._config = qmm.settings.to_qua_config()
+
+        value = qmm.get_parameter_of_bus(bus, parameter)
+        if parameter == Parameter.LO_FREQUENCY:
+            assert value == qmm._qm._elements[bus].input.lo_frequency
+        if parameter == Parameter.GAIN:
+            assert value == qmm._qm._elements[bus].input.gain
+        if parameter == Parameter.IF:
+            assert value == qmm._qm._elements[bus].intermediate_frequency
+
+    @pytest.mark.parametrize("parameter", [(Parameter.MAX_CURRENT), (Parameter.OUT0_ATT)])
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    def test_get_parameter_of_bus_method_raises_exception_when_parameter_not_found(
+        self, mock_qmm, mock_qm, parameter: Parameter, qmm: QuantumMachinesCluster
+    ):
+        """Test the set_parameter_of_bus method raises exception when parameter is wrong."""
+        qmm.initial_setup()
+        qmm.turn_on()
+        with pytest.raises(ParameterNotFound):
+            qmm.get_parameter_of_bus("bus", parameter)
