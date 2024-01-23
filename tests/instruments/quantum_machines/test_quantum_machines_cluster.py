@@ -285,9 +285,7 @@ class TestQuantumMachinesCluster:
     @pytest.mark.parametrize(
         "bus, parameter, value",
         [
-            ("drive_q0", Parameter.LO_FREQUENCY, 6e9),
             ("drive_q0", Parameter.IF, 20e6),
-            ("drive_q0", Parameter.GAIN, 0.001),
         ],
     )
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
@@ -301,12 +299,47 @@ class TestQuantumMachinesCluster:
         qmm._config = qmm.settings.to_qua_config()
 
         qmm.set_parameter_of_bus(bus, parameter, value)
-        if parameter == Parameter.LO_FREQUENCY:
-            qmm._qm.octave.set_lo_frequency.assert_called_once()
-        if parameter == Parameter.GAIN:
-            qmm._qm.octave.set_rf_output_gain.assert_called_once()
         if parameter == Parameter.IF:
             qmm._qm.set_intermediate_frequency.assert_called_once()
+
+    @pytest.mark.parametrize(
+        "bus, parameter, value",
+        [
+            ("drive_q0", Parameter.LO_FREQUENCY, 6e9),
+            ("drive_q0", Parameter.GAIN, 0.001),
+        ],
+    )
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    def test_set_parameter_of_bus_method_raises_error_when_parameter_is_for_octave_and_there_is_no_octave(
+        self, mock_qmm, mock_qm, bus: str, parameter: Parameter, value: float | str | bool, qmm: QuantumMachinesCluster
+    ):
+        """Test the set_parameter_of_bus method raises exception when the parameter is for octave and there is no octave connected to the bus."""
+        qmm.initial_setup()
+        qmm.turn_on()
+        qmm._config = qmm.settings.to_qua_config()
+
+        with pytest.raises(
+            ValueError,
+            match=f"Trying to change parameter {parameter.name} in {qmm.name}, however bus {bus} is not connected to an octave.",
+        ):
+            qmm.set_parameter_of_bus(bus, parameter, value)
+
+    @pytest.mark.parametrize(
+        "parameter, value", [(Parameter.LO_FREQUENCY, 6e9), (Parameter.MAX_CURRENT, 0.5), (Parameter.OUT0_ATT, 0.01)]
+    )
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    def test_set_parameter_of_bus_method_raises_exception_when_bus_not_found(
+        self, mock_qmm, mock_qm, parameter: Parameter, value: float | str | bool, qmm: QuantumMachinesCluster
+    ):
+        """Test the set_parameter_of_bus method raises exception when parameter is wrong."""
+        non_existent_bus = "non_existent_bus"
+
+        qmm.initial_setup()
+        qmm.turn_on()
+        with pytest.raises(ValueError, match=f"Bus {non_existent_bus} was not found in {qmm.name} settings."):
+            qmm.set_parameter_of_bus(non_existent_bus, parameter, value)
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
@@ -316,9 +349,9 @@ class TestQuantumMachinesCluster:
         """Test the set_parameter_of_bus method raises exception when not connected to QuantumMachines."""
         qmm.initial_setup()
         with pytest.raises(
-            NotImplementedError, match="You should be connected to Quantum Machines in order to change a parameter."
+            NotImplementedError, match=f"You should be connected to {qmm.name} in order to change a parameter."
         ):
-            qmm.set_parameter_of_bus("bus", Parameter.IF, 123e6)
+            qmm.set_parameter_of_bus("drive_q0", Parameter.IF, 123e6)
 
     @pytest.mark.parametrize("parameter, value", [(Parameter.MAX_CURRENT, 0.001), (Parameter.OUT0_ATT, 0.0005)])
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
@@ -329,8 +362,8 @@ class TestQuantumMachinesCluster:
         """Test the set_parameter_of_bus method raises exception when parameter is wrong."""
         qmm.initial_setup()
         qmm.turn_on()
-        with pytest.raises(ParameterNotFound):
-            qmm.set_parameter_of_bus("bus", parameter, value)
+        with pytest.raises(ParameterNotFound, match=f"Could not find parameter {parameter} in instrument {qmm.name}."):
+            qmm.set_parameter_of_bus("drive_q0", parameter, value)
 
     @pytest.mark.parametrize(
         "bus, parameter",
@@ -368,4 +401,4 @@ class TestQuantumMachinesCluster:
         qmm.initial_setup()
         qmm.turn_on()
         with pytest.raises(ParameterNotFound):
-            qmm.get_parameter_of_bus("bus", parameter)
+            qmm.get_parameter_of_bus("drive_q0", parameter)
