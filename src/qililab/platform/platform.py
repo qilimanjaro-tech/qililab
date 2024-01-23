@@ -623,7 +623,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             with open("debug_qblox_execution.txt", "w", encoding="utf-8") as sourceFile:
                 for bus_alias in sequences:
                     print(f"Bus {bus_alias}:", file=sourceFile)
-                    print(str(sequences[bus_alias]._program), file=sourceFile)
+                    print(str(sequences[bus_alias]._program), file=sourceFile)  # pylint: disable=protected-access
                     print(file=sourceFile)
 
         # Upload sequences
