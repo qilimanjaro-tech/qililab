@@ -620,10 +620,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         buses = {bus_alias: self._get_bus_by_alias(alias=bus_alias) for bus_alias in sequences}
 
         if debug:
-            with open("debug.py", "w", encoding="utf-8") as sourceFile:
+            with open("debug_qblox_execution.txt", "w", encoding="utf-8") as sourceFile:
                 for bus_alias in sequences:
-                    print(bus_alias, file=sourceFile)
-                    print(repr(sequences[bus_alias]), file=sourceFile)
+                    print(f"Bus {bus_alias}:", file=sourceFile)
+                    print(str(sequences[bus_alias]._program), file=sourceFile)
                     print(file=sourceFile)
 
         # Upload sequences
@@ -666,7 +666,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         cluster.append_configuration(configuration=configuration)
 
         if debug:
-            with open("debug.py", "w", encoding="utf-8") as sourceFile:
+            with open("debug_qm_execution.py", "w", encoding="utf-8") as sourceFile:
                 print(generate_qua_script(qua_program, cluster.config), file=sourceFile)
 
         qua_program_hash = hash_qua_program(program=qua_program)
