@@ -45,3 +45,6 @@
 
 - Added the temporary parameter `wait_time` to QProgram's `play` method. This allows the user to emulate a `time_of_flight` duration for measurement until this is added as a setting in runcard.
   [#648](https://github.com/qilimanjaro-tech/qililab/pull/648)
+
+- Fixed issue with Yokogawa GS200 instrument, that raised an error during initial_setup when the instrument's output was on.
+  [#648](https://github.com/qilimanjaro-tech/qililab/pull/648)

@@ -112,6 +112,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
 
         Args:
             qprogram (QProgram): The QProgram to be compiled
+            bus_mapping (dict[str, str] | None, optional): Optional mapping of bus names. Defaults to None.
 
         Returns:
             dict[str, QPy.Sequence]: A dictionary with the buses participating in the QProgram as keys and the corresponding Sequence as values.
