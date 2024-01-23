@@ -751,16 +751,4 @@ instrument_controllers:
     connection:
       name: tcp_ip
       address: 192.168.1.11
-    modules:
-      - alias: rs_1
-        slot_id: 0
-    reset: True
-  - name: mini_circuits
-    alias: attenuator_controller_0
-    connection:
-      name: tcp_ip
-      address: 192.168.1.69
-    modules:
-      - alias: attenuator
-        slot_id: 0
-    reset: True
+    modul

@@ -41,6 +41,7 @@ class Arbitrary(Waveform):  # pylint: disable=too-few-public-methods, disable=mi
     """
 
     def __init__(self, samples: np.ndarray):
+        super().__init__()
         self.samples = samples
 
     def envelope(self, resolution: int = 1) -> np.ndarray:

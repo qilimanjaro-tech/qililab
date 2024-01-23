@@ -46,7 +46,7 @@ class InstrumentControllerSettings(Settings):
     alias: str
     connection: Connection
     modules: list[InstrumentReference]
-    reset: bool = True
+    reset: bool = False
 
     def __post_init__(self):
         super().__post_init__()

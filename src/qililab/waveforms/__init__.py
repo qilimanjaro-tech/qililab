@@ -28,6 +28,7 @@ Waveforms
     ~Square
     ~IQPair
     ~DragPair
+    ~FlatTop
 """
 
 from .arbitrary import Arbitrary
@@ -36,3 +37,4 @@ from .gaussian import Gaussian
 from .iq_pair import IQPair
 from .square import Square
 from .waveform import Waveform
+from .flat_top import FlatTop
