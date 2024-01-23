@@ -10,6 +10,12 @@
 - Added `bus_mapping` parameter in `QbloxCompiler.compile` method to allow changing the bus names of the compiled output.
   [#648](https://github.com/qilimanjaro-tech/qililab/pull/648)
 
+- Improved `QuantumMachinesCluster` instrument functionality.
+  [#648](https://github.com/qilimanjaro-tech/qililab/pull/648)
+
+- Improved execution times of `QProgram` when used inside a software loop by using caching mechanism.
+  [#648](https://github.com/qilimanjaro-tech/qililab/pull/648)
+
 - Added `DictSerializable` protocol and `from_dict` utility function to enable (de)serialization (from)to dictionary for any class.
   [#659](https://github.com/qilimanjaro-tech/qililab/pull/659)
 
@@ -36,3 +42,6 @@
 ### Documentation
 
 ### Bug fixes
+
+- Added the temporary parameter `wait_time` to QProgram's `play` method. This allows the user to emulate a `time_of_flight` duration for measurement until this is added as a setting in runcard.
+  [#648](https://github.com/qilimanjaro-tech/qililab/pull/648)

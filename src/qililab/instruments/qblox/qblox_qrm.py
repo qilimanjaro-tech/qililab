@@ -145,7 +145,8 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                     ]
                     measurement_result = QbloxQProgramMeasurementResult(raw_measurement_data=raw_measurement_data)
                     results.append(measurement_result)
-
+        for sequencer in self.awg_sequencers:
+            self.device.delete_acquisition_data(sequencer=sequencer.identifier, all=True)
         return results
 
     def _set_device_hardware_demodulation(self, value: bool, sequencer_id: int):
