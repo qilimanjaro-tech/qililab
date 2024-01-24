@@ -337,6 +337,8 @@ class QProgram(DictSerializable):
         self._active_block.append(operation)
         self._buses.add(bus)
 
+    @requires_domain("offset_path0", Domain.Voltage)
+    @requires_domain("offset_path1", Domain.Voltage)
     def set_offset(self, bus: str, offset_path0: float, offset_path1: float):
         """Set the gain of the AWG associated with bus.
 
