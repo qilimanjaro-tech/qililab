@@ -104,14 +104,16 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         }
 
         self._qprogram: QProgram
+        self._bus_mapping: dict[str, str] | None
         self._buses: dict[str, BusCompilationInfo]
         self._sync_counter: int
 
-    def compile(self, qprogram: QProgram) -> dict[str, QPy.Sequence]:
+    def compile(self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None) -> dict[str, QPy.Sequence]:
         """Compile QProgram to qpysequence.Sequence
 
         Args:
             qprogram (QProgram): The QProgram to be compiled
+            bus_mapping (dict[str, str] | None, optional): Optional mapping of bus names. Defaults to None.
 
         Returns:
             dict[str, QPy.Sequence]: A dictionary with the buses participating in the QProgram as keys and the corresponding Sequence as values.
@@ -136,6 +138,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                 self._buses[bus].qprogram_block_stack.pop()
 
         self._qprogram = qprogram
+        self._bus_mapping = bus_mapping
         self._sync_counter = 0
         self._buses = self._populate_buses()
 
@@ -148,7 +151,10 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             self._buses[bus].qpy_sequence._program.compile()
 
         # Return a dictionary with bus names as keys and the compiled Sequence as values.
-        return {bus: bus_info.qpy_sequence for bus, bus_info in self._buses.items()}
+        return {
+            self._bus_mapping[bus] if self._bus_mapping and bus in self._bus_mapping else bus: bus_info.qpy_sequence
+            for bus, bus_info in self._buses.items()
+        }
 
     def _populate_buses(self):
         """Map each bus in the QProgram to a BusCompilationInfo instance.
@@ -157,17 +163,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             A dictionary where the keys are bus names and the values are BusCompilationInfo objects.
         """
 
-        def collect_buses(block: Block):
-            for element in block.elements:
-                if isinstance(element, Block):
-                    yield from collect_buses(element)
-                if isinstance(element, Operation):
-                    bus = getattr(element, "bus", None)
-                    if bus:
-                        yield bus
-
-        buses = set(collect_buses(self._qprogram._body))
-        return {bus: BusCompilationInfo() for bus in buses}
+        return {bus: BusCompilationInfo() for bus in self._qprogram.buses}
 
     def _append_to_waveforms_of_bus(self, bus: str, waveform_I: Waveform, waveform_Q: Waveform | None):
         """Append waveforms to Sequence's Waveforms of the given bus.

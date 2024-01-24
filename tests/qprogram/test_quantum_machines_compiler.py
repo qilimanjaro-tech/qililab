@@ -84,8 +84,8 @@ def fixture_sync_operation_no_parameters() -> QProgram:
     return qp
 
 
-@pytest.fixture(name="measure_operation_with_no_weights")
-def fixture_measure_operation_with_no_weights() -> QProgram:
+@pytest.fixture(name="measure_operation_with_no_weights_no_adc")
+def fixture_measure_operation_with_no_weights_no_adc() -> QProgram:
     drag_wf = DragPair(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
     qp = QProgram()
     qp.measure(bus="drive", waveform=drag_wf)
@@ -93,11 +93,11 @@ def fixture_measure_operation_with_no_weights() -> QProgram:
     return qp
 
 
-@pytest.fixture(name="measure_operation_with_no_raw_adc")
-def fixture_measure_operation_with_no_raw_adc() -> QProgram:
+@pytest.fixture(name="measure_operation_with_no_weights")
+def fixture_measure_operation_with_no_weights() -> QProgram:
     drag_wf = DragPair(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
     qp = QProgram()
-    qp.measure(bus="drive", waveform=drag_wf, save_raw_adc=False)
+    qp.measure(bus="drive", waveform=drag_wf, save_raw_adc=True)
 
     return qp
 
@@ -409,7 +409,7 @@ class TestQuantumMachinesCompiler:
         update_frequency = statements[0].update_frequency
         assert update_frequency.qe.name == "drive"
         assert update_frequency.keep_phase is False
-        assert float(update_frequency.value.literal.value) == 100e6 * 1e3
+        assert float(update_frequency.value.literal.value) == 100e6
 
     def test_set_phase_operation(self, set_phase_operation: QProgram):
         compiler = QuantumMachinesCompiler()
@@ -466,6 +466,20 @@ class TestQuantumMachinesCompiler:
         align = statements[2].align
         assert len(align.qe) == 0
 
+    def test_measure_operation_with_no_weights_no_adc(self, measure_operation_with_no_weights_no_adc: QProgram):
+        compiler = QuantumMachinesCompiler()
+        qua_program, configuration, measurements = compiler.compile(measure_operation_with_no_weights_no_adc)
+
+        statements = qua_program._program.script.body.statements
+        assert len(statements) == 1
+
+        measure = statements[0].measure
+        assert measure.qe.name == "drive"
+        assert measure.pulse.name in configuration["pulses"]
+
+        assert len(measurements) == 1
+        assert len(measurements[0].result_handles) == 0
+
     def test_measure_operation_with_no_weights(self, measure_operation_with_no_weights: QProgram):
         compiler = QuantumMachinesCompiler()
         qua_program, configuration, measurements = compiler.compile(measure_operation_with_no_weights)
@@ -481,20 +495,6 @@ class TestQuantumMachinesCompiler:
         assert len(measurements[0].result_handles) == 2
         assert "adc1_0" in measurements[0].result_handles
         assert "adc2_0" in measurements[0].result_handles
-
-    def test_measure_operation_with_no_raw_adc(self, measure_operation_with_no_raw_adc: QProgram):
-        compiler = QuantumMachinesCompiler()
-        qua_program, configuration, measurements = compiler.compile(measure_operation_with_no_raw_adc)
-
-        statements = qua_program._program.script.body.statements
-        assert len(statements) == 1
-
-        measure = statements[0].measure
-        assert measure.qe.name == "drive"
-        assert measure.pulse.name in configuration["pulses"]
-
-        assert len(measurements) == 1
-        assert len(measurements[0].result_handles) == 0
 
     def test_measure_operation_with_one_weight(self, measure_operation_with_one_weight: QProgram):
         compiler = QuantumMachinesCompiler()
@@ -514,9 +514,7 @@ class TestQuantumMachinesCompiler:
         assert len(measurement_pulse["integration_weights"]) == 1
 
         assert len(measurements) == 1
-        assert len(measurements[0].result_handles) == 3
-        assert "adc1_0" in measurements[0].result_handles
-        assert "adc2_0" in measurements[0].result_handles
+        assert len(measurements[0].result_handles) == 1
         assert "I_0" in measurements[0].result_handles
 
     def test_measure_operation_with_two_weights(self, measure_operation_with_two_weights: QProgram):
@@ -538,9 +536,7 @@ class TestQuantumMachinesCompiler:
         assert len(measurement_pulse["integration_weights"]) == 2
 
         assert len(measurements) == 1
-        assert len(measurements[0].result_handles) == 4
-        assert "adc1_0" in measurements[0].result_handles
-        assert "adc2_0" in measurements[0].result_handles
+        assert len(measurements[0].result_handles) == 2
         assert "I_0" in measurements[0].result_handles
         assert "Q_0" in measurements[0].result_handles
 
@@ -565,9 +561,7 @@ class TestQuantumMachinesCompiler:
         assert len(measurement_pulse["integration_weights"]) == 3
 
         assert len(measurements) == 1
-        assert len(measurements[0].result_handles) == 4
-        assert "adc1_0" in measurements[0].result_handles
-        assert "adc2_0" in measurements[0].result_handles
+        assert len(measurements[0].result_handles) == 2
         assert "I_0" in measurements[0].result_handles
         assert "Q_0" in measurements[0].result_handles
 
@@ -591,9 +585,7 @@ class TestQuantumMachinesCompiler:
         assert len(measurement_pulse["integration_weights"]) == 1
 
         assert len(measurements) == 1
-        assert len(measurements[0].result_handles) == 3
-        assert "adc1_0" in measurements[0].result_handles
-        assert "adc2_0" in measurements[0].result_handles
+        assert len(measurements[0].result_handles) == 1
         assert "I_0" in measurements[0].result_handles
 
     def test_measure_operation_with_two_weights_no_demodulation(
@@ -617,9 +609,7 @@ class TestQuantumMachinesCompiler:
         assert len(measurement_pulse["integration_weights"]) == 2
 
         assert len(measurements) == 1
-        assert len(measurements[0].result_handles) == 4
-        assert "adc1_0" in measurements[0].result_handles
-        assert "adc2_0" in measurements[0].result_handles
+        assert len(measurements[0].result_handles) == 2
         assert "I_0" in measurements[0].result_handles
         assert "Q_0" in measurements[0].result_handles
 
@@ -646,9 +636,7 @@ class TestQuantumMachinesCompiler:
         assert len(measurement_pulse["integration_weights"]) == 3
 
         assert len(measurements) == 1
-        assert len(measurements[0].result_handles) == 4
-        assert "adc1_0" in measurements[0].result_handles
-        assert "adc2_0" in measurements[0].result_handles
+        assert len(measurements[0].result_handles) == 2
         assert "I_0" in measurements[0].result_handles
         assert "Q_0" in measurements[0].result_handles
 
@@ -660,9 +648,7 @@ class TestQuantumMachinesCompiler:
         assert len(statements) == 1
 
         assert len(measurements) == 1
-        assert len(measurements[0].result_handles) == 4
-        assert "adc1_0" in measurements[0].result_handles
-        assert "adc2_0" in measurements[0].result_handles
+        assert len(measurements[0].result_handles) == 2
         assert "I_0" in measurements[0].result_handles
         assert "Q_0" in measurements[0].result_handles
 
@@ -688,9 +674,7 @@ class TestQuantumMachinesCompiler:
         _, _, measurements = compiler.compile(measure_operation_in_for_loop)
 
         assert len(measurements) == 1
-        assert len(measurements[0].result_handles) == 4
-        assert "adc1_0" in measurements[0].result_handles
-        assert "adc2_0" in measurements[0].result_handles
+        assert len(measurements[0].result_handles) == 2
         assert "I_0" in measurements[0].result_handles
         assert "Q_0" in measurements[0].result_handles
 
@@ -699,9 +683,7 @@ class TestQuantumMachinesCompiler:
         _, _, measurements = compiler.compile(measure_operation_in_loop)
 
         assert len(measurements) == 1
-        assert len(measurements[0].result_handles) == 4
-        assert "adc1_0" in measurements[0].result_handles
-        assert "adc2_0" in measurements[0].result_handles
+        assert len(measurements[0].result_handles) == 2
         assert "I_0" in measurements[0].result_handles
         assert "Q_0" in measurements[0].result_handles
 
@@ -710,9 +692,7 @@ class TestQuantumMachinesCompiler:
         _, _, measurements = compiler.compile(measure_operation_in_parallel)
 
         assert len(measurements) == 1
-        assert len(measurements[0].result_handles) == 4
-        assert "adc1_0" in measurements[0].result_handles
-        assert "adc2_0" in measurements[0].result_handles
+        assert len(measurements[0].result_handles) == 2
         assert "I_0" in measurements[0].result_handles
         assert "Q_0" in measurements[0].result_handles
 
@@ -731,11 +711,11 @@ class TestQuantumMachinesCompiler:
         )
 
         # Frequency
-        assert float(statements[1].for_.init.statements[0].assign.expression.literal.value) == int(100 * 1e3)
-        assert float(statements[1].for_.condition.binary_operation.right.literal.value) == int(200 * 1e3)
-        assert float(
-            statements[1].for_.update.statements[0].assign.expression.binary_operation.right.literal.value
-        ) == int(10 * 1e3)
+        assert float(statements[1].for_.init.statements[0].assign.expression.literal.value) == 100
+        assert float(statements[1].for_.condition.binary_operation.right.literal.value) == 200
+        assert (
+            float(statements[1].for_.update.statements[0].assign.expression.binary_operation.right.literal.value) == 10
+        )
 
         # Phase
         assert float(statements[2].for_.init.statements[0].assign.expression.literal.value) == 0 / 360.0
@@ -768,11 +748,11 @@ class TestQuantumMachinesCompiler:
         )
 
         # Frequency
-        assert float(statements[1].for_.init.statements[0].assign.expression.literal.value) == int(200 * 1e3)
-        assert float(statements[1].for_.condition.binary_operation.right.literal.value) == int(100 * 1e3)
-        assert float(
-            statements[1].for_.update.statements[0].assign.expression.binary_operation.right.literal.value
-        ) == -int(10 * 1e3)
+        assert float(statements[1].for_.init.statements[0].assign.expression.literal.value) == 200
+        assert float(statements[1].for_.condition.binary_operation.right.literal.value) == 100
+        assert (
+            float(statements[1].for_.update.statements[0].assign.expression.binary_operation.right.literal.value) == -10
+        )
 
         # Phase
         assert float(statements[2].for_.init.statements[0].assign.expression.literal.value) == 90 / 360.0
