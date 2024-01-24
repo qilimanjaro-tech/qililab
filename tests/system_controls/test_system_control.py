@@ -40,7 +40,7 @@ def fixture_pulse_schedule() -> PulseSchedule:
 @pytest.fixture(name="system_control")
 def fixture_system_control(platform: Platform):
     """Fixture that returns an instance of a SystemControl class."""
-    settings = {"instruments": ["QRM", "rs_1"]}
+    settings = {"instruments": ["QRM_0", "rs_1"]}
     return SystemControl(settings=settings, platform_instruments=platform.instruments)
 
 
