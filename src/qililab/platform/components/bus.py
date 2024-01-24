@@ -71,7 +71,7 @@ class Bus:
             super().__post_init__()
 
             self.distortions = [
-                PulseDistortion.from_dict(distortion) for distortion in self.distortions if isinstance(distortion, dict)
+                PulseDistortion.from_dict(distortion) for distortion in self.distortions if isinstance(distortion, dict)  # type: ignore[arg-type]
             ]
 
     settings: BusSettings
@@ -176,7 +176,7 @@ class Bus:
         else:
             try:
                 self.system_control.set_parameter(
-                    parameter=parameter, value=value, channel_id=channel_id, port_id=self.port
+                    parameter=parameter, value=value, channel_id=channel_id, port_id=self.port, bus_alias=self.alias
                 )
             except ParameterNotFound as error:
                 raise ParameterNotFound(

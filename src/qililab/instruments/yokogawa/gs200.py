@@ -198,6 +198,7 @@ class GS200(CurrentSource, VoltageSource):
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """Performs an initial setup."""
+        self.device.off()
         self.source_mode = self.settings.source_mode
         self.span = self.settings.span[0]
         self.ramping_rate = self.settings.ramp_rate[0]

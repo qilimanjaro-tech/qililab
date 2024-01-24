@@ -22,6 +22,7 @@ from queue import Queue
 
 from qibo.models import Circuit
 from qiboconnection.api import API
+from qm import generate_qua_script
 from qpysequence import Sequence as QpySequence
 from ruamel.yaml import YAML
 
@@ -34,15 +35,17 @@ from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
+from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSchedule
 from qililab.pulse import QbloxCompiler as PulseQbloxCompiler
-from qililab.qprogram.qblox_compiler import QbloxCompiler as QProgramQbloxCompiler
-from qililab.qprogram.qprogram import QProgram
+from qililab.qprogram import QbloxCompiler, QProgram, QuantumMachinesCompiler
 from qililab.result import Result
+from qililab.result.quantum_machines_results import QuantumMachinesMeasurementResult
 from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName, Line, Parameter
+from qililab.utils import hash_qpy_sequence, hash_qua_program
 
 from .components import Bus, Buses
 
@@ -303,6 +306,12 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         if any(isinstance(instrument, QbloxModule) for instrument in self.instruments.elements):
             self.compiler = PulseQbloxCompiler(platform=self)  # TODO: integrate with qprogram compiler
             """Compiler to translate given programs to instructions for a given awg vendor."""
+
+        self._qua_program_cache: dict[str, str] = {}
+        """Dictionary for caching compiled qua programs."""
+
+        self._qpy_sequence_cache: dict[str, str] = {}
+        """Dictionary for caching qpysequences."""
 
     def connect(self, manual_override=False):
         """Connects to all the instruments and blocks the connection for other users.
@@ -570,7 +579,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """
         return str(YAML().dump(self.to_dict(), io.BytesIO()))
 
-    def execute_qprogram(self, qprogram: QProgram) -> dict[str, list[Result]]:
+    def execute_qprogram(
+        self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None, debug: bool = False
+    ) -> dict[str, list[Result]]:
         """Execute a QProgram using the platform instruments.
 
         Args:
@@ -579,15 +590,48 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         Returns:
             dict[str, list[Result]]: A dictionary of measurement results. The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
         """
+        bus_aliases = {bus_mapping[bus] if bus_mapping and bus in bus_mapping else bus for bus in qprogram.buses}
+        buses = [self._get_bus_by_alias(alias=bus_alias) for bus_alias in bus_aliases]
+        instruments = {
+            instrument
+            for bus in buses
+            for instrument in bus.system_control.instruments
+            if isinstance(instrument, (QbloxModule, QuantumMachinesCluster))
+        }
+        if all(isinstance(instrument, QbloxModule) for instrument in instruments):
+            return self._execute_qprogram_with_qblox(qprogram=qprogram, bus_mapping=bus_mapping, debug=debug)
+        if all(isinstance(instrument, QuantumMachinesCluster) for instrument in instruments):
+            if len(instruments) != 1:
+                raise NotImplementedError(
+                    "Executing QProgram in more than one Quantum Machines Cluster is not supported."
+                )
+            cluster: QuantumMachinesCluster = instruments.pop()  # type: ignore[assignment]
+            return self._execute_qprogram_with_quantum_machines(
+                cluster=cluster, qprogram=qprogram, bus_mapping=bus_mapping, debug=debug
+            )
+        raise NotImplementedError("Executing QProgram in a mixture of instruments is not supported.")
 
+    def _execute_qprogram_with_qblox(
+        self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None, debug: bool = False
+    ) -> dict[str, list[Result]]:
         # Compile QProgram
-        qblox_compiler = QProgramQbloxCompiler()
-        sequences = qblox_compiler.compile(qprogram=qprogram)
+        qblox_compiler = QbloxCompiler()
+        sequences = qblox_compiler.compile(qprogram=qprogram, bus_mapping=bus_mapping)
         buses = {bus_alias: self._get_bus_by_alias(alias=bus_alias) for bus_alias in sequences}
+
+        if debug:
+            with open("debug_qblox_execution.txt", "w", encoding="utf-8") as sourceFile:
+                for bus_alias in sequences:
+                    print(f"Bus {bus_alias}:", file=sourceFile)
+                    print(str(sequences[bus_alias]._program), file=sourceFile)  # pylint: disable=protected-access
+                    print(file=sourceFile)
 
         # Upload sequences
         for bus_alias in sequences:
-            buses[bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
+            sequence_hash = hash_qpy_sequence(sequence=sequences[bus_alias])
+            if bus_alias not in self._qpy_sequence_cache or self._qpy_sequence_cache[bus_alias] != sequence_hash:
+                buses[bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
+                self._qpy_sequence_cache[bus_alias] = sequence_hash
 
         # Execute sequences
         for bus_alias in sequences:
@@ -604,8 +648,43 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         # Reset instrument settings
         for instrument in self.instruments.elements:
             if isinstance(instrument, QbloxModule):
-                instrument.clear_cache()
+                # instrument.clear_cache()
                 instrument.desync_sequencers()
+
+        return results
+
+    def _execute_qprogram_with_quantum_machines(  # pylint: disable=too-many-locals
+        self,
+        cluster: QuantumMachinesCluster,
+        qprogram: QProgram,
+        bus_mapping: dict[str, str] | None = None,
+        debug: bool = False,
+    ) -> dict[str, list[Result]]:
+        compiler = QuantumMachinesCompiler()
+        qua_program, configuration, measurements = compiler.compile(qprogram=qprogram, bus_mapping=bus_mapping)
+
+        cluster.append_configuration(configuration=configuration)
+
+        if debug:
+            with open("debug_qm_execution.py", "w", encoding="utf-8") as sourceFile:
+                print(generate_qua_script(qua_program, cluster.config), file=sourceFile)
+
+        qua_program_hash = hash_qua_program(program=qua_program)
+        if qua_program_hash not in self._qua_program_cache:
+            self._qua_program_cache[qua_program_hash] = cluster.compile(program=qua_program)
+        compiled_program_id = self._qua_program_cache[qua_program_hash]
+
+        job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
+
+        acquisitions = cluster.get_acquisitions(job=job)
+
+        results: dict[str, list[Result]] = {}
+        for measurement in measurements:
+            if measurement.bus not in results:
+                results[measurement.bus] = []
+            results[measurement.bus].append(
+                QuantumMachinesMeasurementResult(*[acquisitions[handle] for handle in measurement.result_handles])
+            )
 
         return results
 
