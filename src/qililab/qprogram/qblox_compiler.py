@@ -231,8 +231,6 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         iterations = []
         for loop in element.loops:
             operation = QbloxCompiler._get_reference_operation_of_loop(loop=loop, starting_block=element)
-            if not operation:
-                raise NotImplementedError("Variables referenced in loops should be used in at least one operation.")
             start, step, iters = QbloxCompiler._convert_for_loop_values(loop, operation)  # type: ignore[arg-type]
             loops.append((start, step))
             iterations.append(iters)
@@ -270,8 +268,6 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
 
     def _handle_for_loop(self, element: ForLoop):
         operation = QbloxCompiler._get_reference_operation_of_loop(element)
-        if not operation:
-            raise NotImplementedError("Variables referenced in loops should be used in at least one operation.")
         start, step, iterations = QbloxCompiler._convert_for_loop_values(element, operation)
         for bus in self._buses:
             qpy_loop = QPyProgram.IterativeLoop(
