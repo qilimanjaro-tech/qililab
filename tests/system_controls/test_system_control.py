@@ -1,6 +1,6 @@
 """Tests for the SystemControl class."""
 import re
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
@@ -8,11 +8,12 @@ from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 import qililab as ql
 from qililab.instruments import AWG, Instrument, ParameterNotFound
 from qililab.instruments.qblox import QbloxModule
+from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.instruments.rohde_schwarz import SGS100A
 from qililab.platform import Platform
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent, PulseSchedule
 from qililab.system_control import SystemControl
-from tests.data import Galadriel
+from tests.data import Galadriel, SauronQuantumMachines
 from tests.test_utils import build_platform
 
 
@@ -20,6 +21,12 @@ from tests.test_utils import build_platform
 def fixture_platform() -> Platform:
     """Return Platform object."""
     return build_platform(runcard=Galadriel.runcard)
+
+
+@pytest.fixture(name="platform_quantum_machines")
+def fixture_platform_quantum_machines() -> Platform:
+    """Return Platform object."""
+    return build_platform(runcard=SauronQuantumMachines.runcard)
 
 
 @pytest.fixture(name="qpysequence")
@@ -40,7 +47,7 @@ def fixture_pulse_schedule() -> PulseSchedule:
 @pytest.fixture(name="system_control")
 def fixture_system_control(platform: Platform):
     """Fixture that returns an instance of a SystemControl class."""
-    settings = {"instruments": ["QRM", "rs_1"]}
+    settings = {"instruments": ["QRM_0", "rs_1"]}
     return SystemControl(settings=settings, platform_instruments=platform.instruments)
 
 
@@ -56,6 +63,13 @@ def fixture_system_control_without_awg(platform: Platform):
     """Fixture that returns an instance of a SystemControl class."""
     settings = {"instruments": ["rs_1"]}
     return SystemControl(settings=settings, platform_instruments=platform.instruments)
+
+
+@pytest.fixture(name="system_control_quantum_machines")
+def fixture_system_control_quantum_machines(platform_quantum_machines: Platform):
+    """Fixture that returns an instance of a SystemControl class."""
+    settings = {"instruments": ["qmm"]}
+    return SystemControl(settings=settings, platform_instruments=platform_quantum_machines.instruments)
 
 
 class TestInitialization:
@@ -165,15 +179,25 @@ class TestMethods:
         with pytest.raises(ParameterNotFound, match=error_string):
             system_control_qcm.set_parameter(parameter=param, value=12.0e06, port_id="drive_q0")
 
-    def test_get_parameter_error(self, system_control_qcm: SystemControl):
-        """Test the ``get_parameter`` method with an invalid parameter and check that it raises an error."""
-        param = ql.Parameter.GATE_OPTIONS
-        error_string = re.escape(
-            f"Could not find parameter {param.value} in the system control {system_control_qcm.name}"
-        )
+    def test_set_parameter_quantum_machines(self, system_control_quantum_machines: SystemControl):
+        """Test the ``set_parameter`` method with a QuantumMachineCluster."""
+        with patch.object(QuantumMachinesCluster, "set_parameter_of_bus") as set_parameter_of_bus:
+            system_control_quantum_machines.set_parameter(
+                parameter=ql.Parameter.LO_FREQUENCY, value=6e9, bus_alias="drive_q0_rf"
+            )
 
-        with pytest.raises(ParameterNotFound, match=error_string):
-            system_control_qcm.get_parameter(parameter=param, port_id="drive_q0")
+            set_parameter_of_bus.assert_called_with(bus="drive_q0_rf", parameter=ql.Parameter.LO_FREQUENCY, value=6e9)
+
+    def test_get_parameter_quantum_machines(self, system_control_quantum_machines: SystemControl):
+        """Test the ``get_parameter`` method with a QuantumMachineCluster."""
+        with patch.object(QuantumMachinesCluster, "get_parameter_of_bus") as get_parameter_of_bus:
+            get_parameter_of_bus.return_value = 123
+            value = system_control_quantum_machines.get_parameter(
+                parameter=ql.Parameter.LO_FREQUENCY, bus_alias="drive_q0_rf"
+            )
+
+            get_parameter_of_bus.assert_called_with(bus="drive_q0_rf", parameter=ql.Parameter.LO_FREQUENCY)
+            assert value == 123
 
 
 class TestProperties:  # pylint: disable=too-few-public-methods

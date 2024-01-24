@@ -24,17 +24,7 @@ from qualang_tools.config.integration_weights_tools import convert_integration_w
 
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.blocks.infinite_loop import InfiniteLoop
-from qililab.qprogram.operations import (
-    Measure,
-    Operation,
-    Play,
-    ResetPhase,
-    SetFrequency,
-    SetGain,
-    SetPhase,
-    Sync,
-    Wait,
-)
+from qililab.qprogram.operations import Measure, Play, ResetPhase, SetFrequency, SetGain, SetPhase, Sync, Wait
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable import Domain, Variable
 from qililab.waveforms import IQPair, Square, Waveform
@@ -43,7 +33,7 @@ from qililab.waveforms import IQPair, Square, Waveform
 
 
 class _BusCompilationInfo:  # pylint: disable=too-few-public-methods
-    def __init__(self):
+    def __init__(self) -> None:
         self.current_gain: float | qua.QuaVariableType | None = None
 
 
@@ -56,7 +46,7 @@ class _MeasurementCompilationInfo:  # pylint: disable=too-few-public-methods, to
         stream_I: qua_dsl._ResultSource | None = None,
         stream_Q: qua_dsl._ResultSource | None = None,
         stream_raw_adc: qua_dsl._ResultSource | None = None,
-    ):
+    ) -> None:
         self.bus: str = bus
         self.variable_I: qua.QuaVariableType | None = variable_I
         self.variable_Q: qua.QuaVariableType | None = variable_Q
@@ -78,12 +68,12 @@ class MeasurementInfo:  # pylint: disable=too-few-public-methods
 class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, too-few-public-methods
     """A class for compiling QProgram to Quantum Machines hardware."""
 
-    FREQUENCY_COEFF = 1e3
+    FREQUENCY_COEFF = 1
     PHASE_COEFF = 360.0
     VOLTAGE_COEFF = 2
     MINIMUM_TIME = 4
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Handlers to map each operation to a corresponding handler function
         self._handlers: dict[type, Callable] = {
             InfiniteLoop: self._handle_infinite_loop,
@@ -207,16 +197,10 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
     def _populate_buses(self):
         """Map each bus in the QProgram to a BusCompilationInfo instance."""
 
-        def collect_buses(block: Block):
-            for element in block.elements:
-                if isinstance(element, Block):
-                    yield from collect_buses(element)
-                if isinstance(element, Operation):
-                    bus = getattr(element, "bus", None)
-                    if bus:
-                        yield self._bus_mapping[bus] if self._bus_mapping and bus in self._bus_mapping else bus
-
-        buses = set(collect_buses(self._qprogram.body))
+        buses = set(
+            self._bus_mapping[bus] if self._bus_mapping and bus in self._bus_mapping else bus
+            for bus in self._qprogram.buses
+        )
         self._configuration["elements"] = {bus: {"operations": {}} for bus in buses}
         self._buses = {bus: _BusCompilationInfo() for bus in buses}
 
@@ -236,7 +220,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             if loop.variable.domain is Domain.Phase:
                 values = values / self.PHASE_COEFF
             if loop.variable.domain is Domain.Frequency:
-                values = (values * self.FREQUENCY_COEFF).astype(int)
+                values = values.astype(int)
             if loop.variable.domain is Domain.Time:
                 values = np.maximum(values, self.MINIMUM_TIME).astype(int)
 
@@ -251,9 +235,9 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             start, stop, step = start / self.PHASE_COEFF, stop / self.PHASE_COEFF, step / self.PHASE_COEFF
         if element.variable.domain is Domain.Frequency:
             start, stop, step = (
-                int(start * self.FREQUENCY_COEFF),
-                int(stop * self.FREQUENCY_COEFF),
-                int(step * self.FREQUENCY_COEFF),
+                int(start),
+                int(stop),
+                int(step),
             )
         if element.variable.domain is Domain.Time:
             start = max(start, self.MINIMUM_TIME)
@@ -269,10 +253,10 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         if element.variable.domain is Domain.Phase:
             values = values / self.PHASE_COEFF
         if element.variable.domain is Domain.Frequency:
-            values = (values * self.FREQUENCY_COEFF).astype(int)
+            values = values.astype(int)
         if element.variable.domain is Domain.Time:
             values = np.maximum(values, self.MINIMUM_TIME).astype(int)
-        return qua.for_each_(qua_variable, values)
+        return qua.for_each_(qua_variable, values.tolist())
 
     def _handle_average(self, element: Average):
         variable = qua.declare(int)
@@ -283,9 +267,9 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         frequency = (
             self._qprogram_to_qua_variables[element.frequency]
             if isinstance(element.frequency, Variable)
-            else element.frequency * self.FREQUENCY_COEFF
+            else element.frequency
         )
-        qua.update_frequency(element=bus, new_frequency=frequency, units="mHz")
+        qua.update_frequency(element=bus, new_frequency=frequency)
 
     def _handle_set_phase(self, element: SetPhase):
         bus = self._bus_mapping[element.bus] if self._bus_mapping and element.bus in self._bus_mapping else element.bus

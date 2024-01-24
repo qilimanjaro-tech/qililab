@@ -13,13 +13,18 @@
 # limitations under the License.
 
 """ Utils for dictionaries manipulation """
+import copy
 
 
-def merge_dictionaries(origin: dict, new: dict):
-    """Recursively merge `new` into `origin`."""
+def merge_dictionaries(origin: dict, new: dict) -> dict:
+    """Recursively merge `new` into a copy of `origin` and returns the new dictionary."""
+    merged = copy.deepcopy(origin)
+
     for key, value in new.items():
-        if key in origin and isinstance(origin[key], dict) and isinstance(value, dict):
-            merge_dictionaries(origin[key], value)
+        if key in merged and isinstance(merged[key], dict) and isinstance(value, dict):
+            # Recursively merge dictionaries
+            merged[key] = merge_dictionaries(merged[key], value)
         else:
-            origin[key] = value
-    return origin
+            merged[key] = value
+
+    return merged

@@ -18,6 +18,7 @@ from .coordinate_decomposition import coordinate_decompose
 from .dict_serializable import DictSerializable, DictSerializableEnum, from_dict
 from .dictionaries import merge_dictionaries
 from .factory import Factory
+from .hashing import hash_qpy_sequence, hash_qua_program
 from .live_plot import LivePlot
 from .loop import Loop
 from .nested_data_class import nested_dataclass

@@ -21,6 +21,7 @@ import numpy as np
 import qpysequence as QPy
 import qpysequence.program as QPyProgram
 import qpysequence.program.instructions as QPyInstructions
+from qpysequence.utils.constants import INST_MAX_WAIT
 
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.operations import (
@@ -103,14 +104,16 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         }
 
         self._qprogram: QProgram
+        self._bus_mapping: dict[str, str] | None
         self._buses: dict[str, BusCompilationInfo]
         self._sync_counter: int
 
-    def compile(self, qprogram: QProgram) -> dict[str, QPy.Sequence]:
+    def compile(self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None) -> dict[str, QPy.Sequence]:
         """Compile QProgram to qpysequence.Sequence
 
         Args:
             qprogram (QProgram): The QProgram to be compiled
+            bus_mapping (dict[str, str] | None, optional): Optional mapping of bus names. Defaults to None.
 
         Returns:
             dict[str, QPy.Sequence]: A dictionary with the buses participating in the QProgram as keys and the corresponding Sequence as values.
@@ -135,6 +138,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                 self._buses[bus].qprogram_block_stack.pop()
 
         self._qprogram = qprogram
+        self._bus_mapping = bus_mapping
         self._sync_counter = 0
         self._buses = self._populate_buses()
 
@@ -147,7 +151,10 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             self._buses[bus].qpy_sequence._program.compile()
 
         # Return a dictionary with bus names as keys and the compiled Sequence as values.
-        return {bus: bus_info.qpy_sequence for bus, bus_info in self._buses.items()}
+        return {
+            self._bus_mapping[bus] if self._bus_mapping and bus in self._bus_mapping else bus: bus_info.qpy_sequence
+            for bus, bus_info in self._buses.items()
+        }
 
     def _populate_buses(self):
         """Map each bus in the QProgram to a BusCompilationInfo instance.
@@ -156,17 +163,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             A dictionary where the keys are bus names and the values are BusCompilationInfo objects.
         """
 
-        def collect_buses(block: Block):
-            for element in block.elements:
-                if isinstance(element, Block):
-                    yield from collect_buses(element)
-                if isinstance(element, Operation):
-                    bus = getattr(element, "bus", None)
-                    if bus:
-                        yield bus
-
-        buses = set(collect_buses(self._qprogram._body))
-        return {bus: BusCompilationInfo() for bus in buses}
+        return {bus: BusCompilationInfo() for bus in self._qprogram.buses}
 
     def _append_to_waveforms_of_bus(self, bus: str, waveform_I: Waveform, waveform_Q: Waveform | None):
         """Append waveforms to Sequence's Waveforms of the given bus.
@@ -337,14 +334,34 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         if isinstance(element.duration, Variable):
             duration = self._buses[element.bus].variable_to_register[element.duration]
             self._buses[element.bus].dynamic_durations.append(element.duration)
+            self._buses[element.bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.Wait(wait_time=duration)
+            )
         else:
             convert = QbloxCompiler._convert_value(element)
             duration = convert(element.duration)
             self._buses[element.bus].static_duration += duration
-        self._buses[element.bus].qpy_block_stack[-1].append_component(
-            component=QPyInstructions.Wait(wait_time=duration)
-        )
+            # loop over wait instructions if static duration is longer than allowed qblox max wait time of 2**16 -4
+            self._handle_add_waits(bus=element.bus, duration=duration)
+
         self._buses[element.bus].marked_for_sync = True
+
+    def _handle_add_waits(self, bus: str, duration: int):
+        """Wait for longer than QBLOX INST_MAX_WAIT by looping over wait instructions
+
+        Args:
+            element (Wait): wait element
+            duration (int): duration to wait in ns
+        """
+        if duration > INST_MAX_WAIT:
+            for _ in range(duration // INST_MAX_WAIT):
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.Wait(wait_time=INST_MAX_WAIT)
+                )
+        # add the remaining wait time (or all of it if the above conditional is false)
+        self._buses[bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.Wait(wait_time=duration % INST_MAX_WAIT)
+        )
 
     def _handle_sync(self, element: Sync):
         # Get the buses involved in the sync operation.
@@ -376,9 +393,8 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         for bus in buses:
             duration_diff = max_duration - self._buses[bus].static_duration
             if duration_diff > 0:
-                self._buses[bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.Wait(wait_time=duration_diff)
-                )
+                # loop over wait instructions if static duration is longer than allowed qblox max wait time of 2**16 -4
+                self._handle_add_waits(bus=bus, duration=duration_diff)
                 self._buses[bus].static_duration += duration_diff
 
     def __handle_dynamic_sync(self, buses: set[str]):
