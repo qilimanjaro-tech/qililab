@@ -481,7 +481,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "alias": "feedline_bus",
             "system_control": {
                 "name": "readout_system_control",
-                "instruments": ["QRM", "rs_1"],
+                "instruments": ["QRM_0", "rs_1"],
             },
             "port": "feedline_input",
             "distortions": [],

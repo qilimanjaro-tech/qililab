@@ -1,4 +1,5 @@
 """Tests for the Qblox Compiler class."""
+# pylint: disable=protected-access
 import copy
 import re
 from unittest.mock import MagicMock
@@ -52,6 +53,20 @@ def fixture_qblox_compiler(platform: Platform):
     qrm_settings.pop("name")
     dummy_qrm = DummyQRM(settings=qrm_settings)
     platform.instruments.elements = [dummy_qcm, dummy_qrm]
+    return QbloxCompiler(platform)
+
+
+@pytest.fixture(name="qblox_compiler_2qrm")
+def fixture_qblox_compiler_2qrm(platform: Platform):
+    """Return an instance of Qblox Compiler class"""
+    qcm_settings = copy.deepcopy(Galadriel.qblox_qcm_0)
+    qcm_settings.pop("name")
+    dummy_qcm = DummyQCM(settings=qcm_settings)
+    qrm_0_settings = copy.deepcopy(Galadriel.qblox_qrm_0)
+    qrm_0_settings.pop("name")
+    qrm_1_settings = copy.deepcopy(Galadriel.qblox_qrm_1)
+    qrm_1_settings.pop("name")
+    platform.instruments.elements = [dummy_qcm, DummyQRM(settings=qrm_0_settings), DummyQRM(settings=qrm_1_settings)]
     return QbloxCompiler(platform)
 
 
@@ -119,6 +134,29 @@ def fixture_pulse_bus_schedule2() -> PulseBusSchedule:
     return PulseBusSchedule(timeline=[pulse_event], port="feedline_input")
 
 
+@pytest.fixture(name="pulse_schedule_2qrm")
+def fixture_pulse_schedule() -> PulseSchedule:
+    """Return PulseBusSchedule instance."""
+    pulse_event_0 = PulseEvent(
+        pulse=Pulse(
+            amplitude=0.8, phase=np.pi / 2 + 12.2, duration=50, frequency=1e9, pulse_shape=Gaussian(num_sigmas=4)
+        ),
+        start_time=0,
+        qubit=1,
+    )
+    pulse_event_1 = PulseEvent(
+        pulse=Pulse(amplitude=0.8, phase=0.1, duration=50, frequency=1e9, pulse_shape=Rectangular()),
+        start_time=12,
+        qubit=2,
+    )
+    return PulseSchedule(
+        [
+            PulseBusSchedule(timeline=[pulse_event_0], port="feedline_input"),
+            PulseBusSchedule(timeline=[pulse_event_1], port="feedline_input_1"),
+        ]
+    )
+
+
 @pytest.fixture(name="long_pulse_bus_schedule")
 def fixture_long_pulse_bus_schedule() -> PulseBusSchedule:
     """Return PulseBusSchedule instance."""
@@ -159,6 +197,13 @@ def fixture_pulse_schedule_odd_qubits() -> PulseSchedule:
     return PulseSchedule([PulseBusSchedule(timeline=timeline, port="feedline_input")])
 
 
+def are_q1asm_equal(a: str, b: str):
+    """Compare two Q1ASM strings and parse them to remove spaces, new lines and long_wait counters"""
+    return "".join(
+        [cmd if "long_wait" not in cmd else "".join(cmd.split("_")[:-1]) for cmd in a.strip().split()]
+    ) == "".join([cmd if "long_wait" not in cmd else "".join(cmd.split("_")[:-1]) for cmd in b.strip().split()])
+
+
 class TestQbloxCompiler:
     """Unit tests checking the QbloxQCM attributes and methods"""
 
@@ -193,7 +238,13 @@ class TestQbloxCompiler:
         assert isinstance(sequences, list)
         assert len(sequences) == 1
         assert isinstance(sequences[0], Sequence)
-
+        assert "Gaussian" in sequences[0]._waveforms._waveforms[0].name
+        assert "Gaussian" in sequences[0]._waveforms._waveforms[1].name
+        assert sum(sequences[0]._waveforms._waveforms[1].data) == 0
+        assert len(sequences[0]._acquisitions._acquisitions) == 1
+        assert sequences[0]._acquisitions._acquisitions[0].name == "default"
+        assert sequences[0]._acquisitions._acquisitions[0].num_bins == 1
+        assert sequences[0]._acquisitions._acquisitions[0].index == 0
         # test for different qubit, checkout that clearing the cache is working
         pulse_schedule2 = PulseSchedule([pulse_bus_schedule2])
         sequences = qblox_compiler.compile(pulse_schedule2, num_avg=1000, repetition_duration=2000, num_bins=1)[
@@ -222,6 +273,162 @@ class TestQbloxCompiler:
             cache_schedule == expected_schedule
             for cache_schedule, expected_schedule in zip(qrm.cache.values(), single_freq_schedules)
         )
+
+    def test_qrm_compile_2qrm(
+        self,
+        qblox_compiler_2qrm: QbloxCompiler,
+        pulse_bus_schedule: PulseBusSchedule,
+        pulse_schedule_2qrm: PulseSchedule,
+    ):
+        """Test compile method for 2 qrms. First check a pulse schedule with 2 qrms, then one with
+        only 1 qrm. Check that compiling the second sequence erases unused sequences in the unused qrm cache."""
+        program = qblox_compiler_2qrm.compile(pulse_schedule_2qrm, num_avg=1000, repetition_duration=2000, num_bins=1)
+
+        assert len(program.items()) == 2
+        assert "feedline_input_output_bus" in program
+        assert "feedline_input_output_bus_1" in program
+        assert len(qblox_compiler_2qrm.qblox_modules[1].cache.keys()) == 1
+        assert len(qblox_compiler_2qrm.qblox_modules[2].cache.keys()) == 1
+
+        assert list(qblox_compiler_2qrm.qblox_modules[1].sequences.keys()) == [1]
+        assert list(qblox_compiler_2qrm.qblox_modules[2].sequences.keys()) == [0]
+
+        assert len(program["feedline_input_output_bus"]) == 1
+        assert len(program["feedline_input_output_bus_1"]) == 1
+
+        sequences_0 = program["feedline_input_output_bus"][0]
+        sequences_1 = program["feedline_input_output_bus_1"][0]
+
+        assert isinstance(sequences_0, Sequence)
+        assert isinstance(sequences_1, Sequence)
+
+        assert "Gaussian" in sequences_0._waveforms._waveforms[0].name
+        assert "Rectangular" in sequences_1._waveforms._waveforms[0].name
+
+        q1asm_0 = """
+            setup:
+                            move             0, R0
+                            move             1, R1
+                            move             1000, R2
+                            wait_sync        4
+
+            start:
+                            reset_ph
+
+            average:
+                            move             0, R3
+            bin:
+                            set_awg_gain     26213, 26213
+                            set_ph           191690305
+                            play             0, 1, 4
+                            acquire          0, R3, 4
+            long_wait_1:
+                            wait             1992
+
+                            add              R3, 1, R3
+                            nop
+                            jlt              R3, 1, @bin
+                            loop             R2, @average
+            stop:
+                            stop
+        """
+
+        q1asm_1 = """
+            setup:
+                            move             0, R0
+                            move             1, R1
+                            move             1000, R2
+                            wait_sync        4
+
+            start:
+                            reset_ph
+
+            average:
+                            move             0, R3
+            bin:
+            long_wait_2:
+                            wait             12
+
+                            set_awg_gain     26213, 26213
+                            set_ph           15915494
+                            play             0, 1, 4
+                            acquire_weighed  0, R3, R0, R1, 4
+            long_wait_3:
+                            wait             1980
+
+                            add              R3, 1, R3
+                            nop
+                            jlt              R3, 1, @bin
+                            loop             R2, @average
+            stop:
+                            stop
+        """
+        assert are_q1asm_equal(q1asm_0, repr(sequences_0._program))
+        assert are_q1asm_equal(q1asm_1, repr(sequences_1._program))
+
+        # qblox modules 1 is the first qrm and 2 is the second
+        assert qblox_compiler_2qrm.qblox_modules[1].cache == {1: pulse_schedule_2qrm.elements[0]}
+        assert qblox_compiler_2qrm.qblox_modules[2].cache == {0: pulse_schedule_2qrm.elements[1]}
+        assert qblox_compiler_2qrm.qblox_modules[1].sequences == {1: sequences_0}
+        assert qblox_compiler_2qrm.qblox_modules[2].sequences == {0: sequences_1}
+
+        # check that the qcm is empty since we didnt send anything to it
+        assert not qblox_compiler_2qrm.qblox_modules[0].cache
+        assert not qblox_compiler_2qrm.qblox_modules[0].sequences
+
+        # compile next sequence
+        # test for different qubit, checkout that clearing the cache is working
+        pulse_schedule2 = PulseSchedule([pulse_bus_schedule])
+        program = qblox_compiler_2qrm.compile(pulse_schedule2, num_avg=1000, repetition_duration=2000, num_bins=1)
+
+        assert len(program.items()) == 1
+        assert "feedline_input_output_bus" in program
+        assert len(qblox_compiler_2qrm.qblox_modules[1].cache.keys()) == 1
+        assert list(qblox_compiler_2qrm.qblox_modules[1].sequences.keys()) == [0]
+        assert len(program["feedline_input_output_bus"]) == 1
+
+        sequences_0 = program["feedline_input_output_bus"][0]
+        assert isinstance(sequences_0, Sequence)
+
+        assert "Gaussian" in sequences_0._waveforms._waveforms[0].name
+        # qblox modules 1 is the first qrm and 2 is the second
+        assert qblox_compiler_2qrm.qblox_modules[1].cache == {0: pulse_bus_schedule}
+        assert qblox_compiler_2qrm.qblox_modules[1].sequences == {0: sequences_0}
+
+        assert not qblox_compiler_2qrm.qblox_modules[0].cache
+        assert not qblox_compiler_2qrm.qblox_modules[0].sequences
+        assert not qblox_compiler_2qrm.qblox_modules[2].cache
+        assert not qblox_compiler_2qrm.qblox_modules[2].sequences
+
+        q1asm_0 = """
+            setup:
+                            move             0, R0
+                            move             1, R1
+                            move             1000, R2
+                            wait_sync        4
+
+            start:
+                            reset_ph
+
+            average:
+                            move             0, R3
+            bin:
+                            set_awg_gain     26213, 26213
+                            set_ph           191690305
+                            play             0, 1, 4
+                            acquire_weighed  0, R3, R0, R1, 4
+            long_wait_4:
+                            wait             1992
+
+                            add              R3, 1, R3
+                            nop
+                            jlt              R3, 1, @bin
+                            loop             R2, @average
+            stop:
+                            stop
+        """
+        sequences_0_program = sequences_0._program
+        assert are_q1asm_equal(q1asm_0, repr(sequences_0_program))
 
     def test_compile_swaps_the_i_and_q_channels_when_mapping_is_not_supported_in_hw(self, qblox_compiler):
         """Test that the compile method swaps the I and Q channels when the output mapping is not supported in HW."""
@@ -300,10 +507,3 @@ class TestQbloxCompiler:
         error_string = "No QRM modules found in platform instruments"
         with pytest.raises(ValueError, match=re.escape(error_string)):
             QbloxCompiler(platform)
-
-    def test_target_more_than_one_readout_port_raises_error(self, qblox_compiler, pulse_bus_schedule):
-        """Test compile method."""
-        pulse_schedule = PulseSchedule([pulse_bus_schedule, pulse_bus_schedule])
-        error_string = "readout pulses targeted at more than one port. Expected only one target port and instead got 2"
-        with pytest.raises(ValueError, match=re.escape(error_string)):
-            qblox_compiler.compile(pulse_schedule, num_avg=1000, repetition_duration=2000, num_bins=1)
