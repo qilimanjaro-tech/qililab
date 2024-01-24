@@ -149,7 +149,7 @@ class TestPlatform:
 
     def test_bus_1_awg_instance(self, platform: Platform):
         """Test bus 1 qubit readout instance."""
-        element = platform.get_element(alias=InstrumentName.QBLOX_QRM.value)
+        element = platform.get_element(alias=f"{InstrumentName.QBLOX_QRM.value}_0")
         assert isinstance(element, AWGAnalogDigitalConverter)
 
     @patch("qililab.data_management.open")

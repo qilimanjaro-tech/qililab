@@ -654,7 +654,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             bus.run()
 
         # Acquire results
-        readout_buses = [bus for bus in self.buses if isinstance(bus.system_control, ReadoutSystemControl)]
+        readout_buses = [
+            bus for bus in self.buses if isinstance(bus.system_control, ReadoutSystemControl) and bus.alias in programs
+        ]
         results: list[Result] = []
         for bus in readout_buses:
             result = bus.acquire_result()
