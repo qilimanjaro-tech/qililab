@@ -209,9 +209,9 @@ def fixture_pulse_schedule_odd_qubits() -> PulseSchedule:
 
 def are_q1asm_equal(a: str, b: str):
     """Compare two Q1ASM strings and parse them to remove spaces, new lines and long_wait counters"""
-    return "".join(
-        [cmd if "long_wait" not in cmd else "".join(cmd.split("_")[:-1]) for cmd in a.strip().split()]
-    ) == "".join([cmd if "long_wait" not in cmd else "".join(cmd.split("_")[:-1]) for cmd in b.strip().split()])
+    return "".join([cmd for cmd in a.strip().split() if "long_wait" not in cmd]) == "".join(
+        [cmd for cmd in b.strip().split() if "long_wait" not in cmd]
+    )
 
 
 class TestQbloxCompiler:
@@ -252,7 +252,7 @@ class TestQbloxCompiler:
         assert "Gaussian" in sequences[0]._waveforms._waveforms[1].name
         assert sum(sequences[0]._waveforms._waveforms[1].data) == 0
         assert len(sequences[0]._acquisitions._acquisitions) == 1
-        assert sequences[0]._acquisitions._acquisitions[0].name == "default"
+        assert sequences[0]._acquisitions._acquisitions[0].name == "acq_q0_0"
         assert sequences[0]._acquisitions._acquisitions[0].num_bins == 1
         assert sequences[0]._acquisitions._acquisitions[0].index == 0
         # test for different qubit, checkout that clearing the cache is working
@@ -373,8 +373,10 @@ class TestQbloxCompiler:
             stop:
                             stop
         """
-        assert are_q1asm_equal(q1asm_0, repr(sequences_0._program))
-        assert are_q1asm_equal(q1asm_1, repr(sequences_1._program))
+        seq_0_q1asm = sequences_0._program
+        seq_1_q1asm = sequences_1._program
+        assert are_q1asm_equal(q1asm_0, repr(seq_0_q1asm))
+        assert are_q1asm_equal(q1asm_1, repr(seq_1_q1asm))
 
         # qblox modules 1 is the first qrm and 2 is the second
         assert qblox_compiler_2qrm.qblox_modules[1].cache == {1: pulse_schedule_2qrm.elements[0]}
@@ -489,7 +491,8 @@ class TestQbloxCompiler:
                         stop
         """
 
-        assert are_q1asm_equal(q1asm, repr(program["feedline_input_output_bus"][0]._program))
+        sequences_program = program["feedline_input_output_bus"][0]._program
+        assert are_q1asm_equal(q1asm, repr(sequences_program))
 
     def test_compile_swaps_the_i_and_q_channels_when_mapping_is_not_supported_in_hw(self, qblox_compiler):
         """Test that the compile method swaps the I and Q channels when the output mapping is not supported in HW."""
