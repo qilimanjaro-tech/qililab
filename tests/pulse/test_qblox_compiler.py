@@ -134,16 +134,6 @@ def fixture_pulse_bus_schedule2() -> PulseBusSchedule:
     return PulseBusSchedule(timeline=[pulse_event], port="feedline_input")
 
 
-@pytest.fixture(name="pulse_bus_schedule_measurement_pulse")
-def fixture_pulse_bus_schedule_measurement_pulse() -> PulseBusSchedule:
-    """Return PulseBusSchedule instance."""
-    pulse_shape = Gaussian(num_sigmas=4)
-    pulse = Pulse(amplitude=0.8, phase=np.pi / 2 + 12.2, duration=50, frequency=1e9, pulse_shape=pulse_shape)
-    pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=0)
-    pulse_event2 = PulseEvent(pulse=pulse, start_time=50, qubit=0)
-    return PulseBusSchedule(timeline=[pulse_event, pulse_event2], port="feedline_input")
-
-
 @pytest.fixture(name="pulse_bus_schedule_long_wait")
 def fixture_pulse_bus_schedule_long_wait() -> PulseBusSchedule:
     """Return PulseBusSchedule instance."""
