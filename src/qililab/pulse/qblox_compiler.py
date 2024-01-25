@@ -285,10 +285,6 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
                 )
             )
             if qblox_module.name in self.readout_modules:
-                # FIXME: handle this
-                if wait_time == MIN_WAIT and (i < (len(timeline) - 1)):
-                    raise NotImplementedError("Cannot add pulse after measurement with less than 4ns wait")
-
                 self._append_acquire_instruction(
                     loop=bin_loop,
                     bin_index=bin_loop.counter_register,

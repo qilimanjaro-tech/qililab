@@ -134,6 +134,26 @@ def fixture_pulse_bus_schedule2() -> PulseBusSchedule:
     return PulseBusSchedule(timeline=[pulse_event], port="feedline_input")
 
 
+@pytest.fixture(name="pulse_bus_schedule_measurement_pulse")
+def fixture_pulse_bus_schedule_measurement_pulse() -> PulseBusSchedule:
+    """Return PulseBusSchedule instance."""
+    pulse_shape = Gaussian(num_sigmas=4)
+    pulse = Pulse(amplitude=0.8, phase=np.pi / 2 + 12.2, duration=50, frequency=1e9, pulse_shape=pulse_shape)
+    pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=0)
+    pulse_event2 = PulseEvent(pulse=pulse, start_time=50, qubit=0)
+    return PulseBusSchedule(timeline=[pulse_event, pulse_event2], port="feedline_input")
+
+
+@pytest.fixture(name="pulse_bus_schedule_long_wait")
+def fixture_pulse_bus_schedule_long_wait() -> PulseBusSchedule:
+    """Return PulseBusSchedule instance."""
+    pulse_shape = Gaussian(num_sigmas=4)
+    pulse = Pulse(amplitude=0.8, phase=np.pi / 2 + 12.2, duration=50, frequency=1e9, pulse_shape=pulse_shape)
+    pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=0)
+    pulse_event2 = PulseEvent(pulse=pulse, start_time=200_000, qubit=0)
+    return PulseBusSchedule(timeline=[pulse_event, pulse_event2], port="feedline_input")
+
+
 @pytest.fixture(name="pulse_schedule_2qrm")
 def fixture_pulse_schedule() -> PulseSchedule:
     """Return PulseBusSchedule instance."""
@@ -429,6 +449,57 @@ class TestQbloxCompiler:
         """
         sequences_0_program = sequences_0._program
         assert are_q1asm_equal(q1asm_0, repr(sequences_0_program))
+
+    def test_long_wait_between_pulses(
+        self, pulse_bus_schedule_long_wait: PulseBusSchedule, qblox_compiler: QbloxCompiler
+    ):
+        """test that a long wait is added properly between pulses if the wait time is longer than the max wait allowed by qblox"""
+        pulse_schedule = PulseSchedule([pulse_bus_schedule_long_wait])
+        program = qblox_compiler.compile(pulse_schedule, num_avg=1000, repetition_duration=400_000, num_bins=1)
+        q1asm = """
+        setup:
+                        move             0, R0
+                        move             1, R1
+                        move             1000, R2
+                        wait_sync        4
+
+        start:
+                        reset_ph
+
+        average:
+                        move             0, R3
+        bin:
+                        set_awg_gain     26213, 26213
+                        set_ph           191690305
+                        play             0, 1, 4
+                        acquire_weighed  0, R3, R0, R1, 4
+        long_wait_1:
+                        move             3, R4
+        long_wait_1_loop:
+                        wait             65532
+                        loop             R4, @long_wait_1_loop
+                        wait             3396
+
+                        set_awg_gain     26213, 26213
+                        set_ph           191690305
+                        play             0, 1, 4
+                        acquire_weighed  1, R3, R0, R1, 4
+        long_wait_2:
+                        move             3, R5
+        long_wait_2_loop:
+                        wait             65532
+                        loop             R5, @long_wait_2_loop
+                        wait             3396
+
+                        add              R3, 1, R3
+                        nop
+                        jlt              R3, 1, @bin
+                        loop             R2, @average
+        stop:
+                        stop
+        """
+
+        assert are_q1asm_equal(q1asm, repr(program["feedline_input_output_bus"][0]._program))
 
     def test_compile_swaps_the_i_and_q_channels_when_mapping_is_not_supported_in_hw(self, qblox_compiler):
         """Test that the compile method swaps the I and Q channels when the output mapping is not supported in HW."""
