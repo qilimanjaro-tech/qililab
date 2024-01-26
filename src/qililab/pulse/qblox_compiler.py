@@ -195,7 +195,7 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
 
         Args:
             sequencer (AWGQbloxSequencer): sequencer to which we generate the acquisitions dictionary
-            num_acq (int): number of acquisitions to perform. Time ordered (first acquisition in time is 0)
+            timeline (list[PulseEvent]): time ordered list of pulse events to play
 
         Returns:
             Acquisitions: Acquisitions object.

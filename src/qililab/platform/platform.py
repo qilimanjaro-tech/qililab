@@ -783,15 +783,13 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             )
 
         # allocate each measurement its corresponding index in the results list
-        results = [None] * len(order)
+        results = [None] * len(order)  # type: list | list[dict]
         for qblox_result in result.qblox_raw_results:
             measurement = qblox_result["measurement"]
             qubit = qblox_result["qubit"]
-            results[order[(qubit, measurement)]] = qblox_result  # type: ignore[call-overload]
+            results[order[(qubit, measurement)]] = qblox_result
 
-        return QbloxResult(
-            integration_lengths=result.integration_lengths, qblox_raw_results=results  # type: ignore[arg-type]
-        )
+        return QbloxResult(integration_lengths=result.integration_lengths, qblox_raw_results=results)
 
     def compile(
         self, program: PulseSchedule | Circuit, num_avg: int, repetition_duration: int, num_bins: int

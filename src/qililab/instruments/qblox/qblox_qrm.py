@@ -257,7 +257,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 for key, data in self.device.get_acquisitions(sequencer=sequencer.identifier).items():
                     acquisitions = data["acquisition"]
                     # parse acquisition index
-                    qubit, measure = key.split("_")[1:]
+                    _, qubit, measure = key.split("_")
                     qubit = int(qubit[1:])
                     measurement = int(measure)
                     acquisitions["qubit"] = qubit
