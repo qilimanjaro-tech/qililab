@@ -134,6 +134,16 @@ def fixture_pulse_bus_schedule2() -> PulseBusSchedule:
     return PulseBusSchedule(timeline=[pulse_event], port="feedline_input")
 
 
+@pytest.fixture(name="pulse_bus_schedule_long_wait")
+def fixture_pulse_bus_schedule_long_wait() -> PulseBusSchedule:
+    """Return PulseBusSchedule instance."""
+    pulse_shape = Gaussian(num_sigmas=4)
+    pulse = Pulse(amplitude=0.8, phase=np.pi / 2 + 12.2, duration=50, frequency=1e9, pulse_shape=pulse_shape)
+    pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=0)
+    pulse_event2 = PulseEvent(pulse=pulse, start_time=200_000, qubit=0)
+    return PulseBusSchedule(timeline=[pulse_event, pulse_event2], port="feedline_input")
+
+
 @pytest.fixture(name="pulse_schedule_2qrm")
 def fixture_pulse_schedule() -> PulseSchedule:
     """Return PulseBusSchedule instance."""
@@ -199,9 +209,9 @@ def fixture_pulse_schedule_odd_qubits() -> PulseSchedule:
 
 def are_q1asm_equal(a: str, b: str):
     """Compare two Q1ASM strings and parse them to remove spaces, new lines and long_wait counters"""
-    return "".join(
-        [cmd if "long_wait" not in cmd else "".join(cmd.split("_")[:-1]) for cmd in a.strip().split()]
-    ) == "".join([cmd if "long_wait" not in cmd else "".join(cmd.split("_")[:-1]) for cmd in b.strip().split()])
+    return "".join([cmd for cmd in a.strip().split() if "long_wait" not in cmd]) == "".join(
+        [cmd for cmd in b.strip().split() if "long_wait" not in cmd]
+    )
 
 
 class TestQbloxCompiler:
@@ -242,7 +252,7 @@ class TestQbloxCompiler:
         assert "Gaussian" in sequences[0]._waveforms._waveforms[1].name
         assert sum(sequences[0]._waveforms._waveforms[1].data) == 0
         assert len(sequences[0]._acquisitions._acquisitions) == 1
-        assert sequences[0]._acquisitions._acquisitions[0].name == "default"
+        assert sequences[0]._acquisitions._acquisitions[0].name == "acq_q0_0"
         assert sequences[0]._acquisitions._acquisitions[0].num_bins == 1
         assert sequences[0]._acquisitions._acquisitions[0].index == 0
         # test for different qubit, checkout that clearing the cache is working
@@ -363,8 +373,10 @@ class TestQbloxCompiler:
             stop:
                             stop
         """
-        assert are_q1asm_equal(q1asm_0, repr(sequences_0._program))
-        assert are_q1asm_equal(q1asm_1, repr(sequences_1._program))
+        seq_0_q1asm = sequences_0._program
+        seq_1_q1asm = sequences_1._program
+        assert are_q1asm_equal(q1asm_0, repr(seq_0_q1asm))
+        assert are_q1asm_equal(q1asm_1, repr(seq_1_q1asm))
 
         # qblox modules 1 is the first qrm and 2 is the second
         assert qblox_compiler_2qrm.qblox_modules[1].cache == {1: pulse_schedule_2qrm.elements[0]}
@@ -430,6 +442,58 @@ class TestQbloxCompiler:
         sequences_0_program = sequences_0._program
         assert are_q1asm_equal(q1asm_0, repr(sequences_0_program))
 
+    def test_long_wait_between_pulses(
+        self, pulse_bus_schedule_long_wait: PulseBusSchedule, qblox_compiler: QbloxCompiler
+    ):
+        """test that a long wait is added properly between pulses if the wait time is longer than the max wait allowed by qblox"""
+        pulse_schedule = PulseSchedule([pulse_bus_schedule_long_wait])
+        program = qblox_compiler.compile(pulse_schedule, num_avg=1000, repetition_duration=400_000, num_bins=1)
+        q1asm = """
+        setup:
+                        move             0, R0
+                        move             1, R1
+                        move             1000, R2
+                        wait_sync        4
+
+        start:
+                        reset_ph
+
+        average:
+                        move             0, R3
+        bin:
+                        set_awg_gain     26213, 26213
+                        set_ph           191690305
+                        play             0, 1, 4
+                        acquire_weighed  0, R3, R0, R1, 4
+        long_wait_1:
+                        move             3, R4
+        long_wait_1_loop:
+                        wait             65532
+                        loop             R4, @long_wait_1_loop
+                        wait             3396
+
+                        set_awg_gain     26213, 26213
+                        set_ph           191690305
+                        play             0, 1, 4
+                        acquire_weighed  1, R3, R0, R1, 4
+        long_wait_2:
+                        move             3, R5
+        long_wait_2_loop:
+                        wait             65532
+                        loop             R5, @long_wait_2_loop
+                        wait             3396
+
+                        add              R3, 1, R3
+                        nop
+                        jlt              R3, 1, @bin
+                        loop             R2, @average
+        stop:
+                        stop
+        """
+
+        sequences_program = program["feedline_input_output_bus"][0]._program
+        assert are_q1asm_equal(q1asm, repr(sequences_program))
+
     def test_compile_swaps_the_i_and_q_channels_when_mapping_is_not_supported_in_hw(self, qblox_compiler):
         """Test that the compile method swaps the I and Q channels when the output mapping is not supported in HW."""
         # We change the dictionary and initialize the QCM
@@ -484,9 +548,7 @@ class TestQbloxCompiler:
         assert len(sequences) == 1
         assert len(sequences2) == 1
         assert sequences[0] is sequences2[0]
-        qblox_compiler.qblox_modules[1].device.delete_acquisition_data.assert_called_once_with(
-            sequencer=0, name="default"
-        )
+        qblox_compiler.qblox_modules[1].device.delete_acquisition_data.assert_called_once_with(sequencer=0, all=True)
 
     def test_error_program_gt_repetition_duration(
         self, long_pulse_bus_schedule: PulseBusSchedule, qblox_compiler: QbloxCompiler

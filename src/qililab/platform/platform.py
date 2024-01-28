@@ -20,6 +20,7 @@ from copy import deepcopy
 from dataclasses import asdict
 from queue import Queue
 
+from qibo.gates import M
 from qibo.models import Circuit
 from qiboconnection.api import API
 from qm import generate_qua_script
@@ -41,6 +42,7 @@ from qililab.pulse import PulseSchedule
 from qililab.pulse import QbloxCompiler as PulseQbloxCompiler
 from qililab.qprogram import QbloxCompiler, QProgram, QuantumMachinesCompiler
 from qililab.result import Result
+from qililab.result.qblox_results import QbloxResult
 from qililab.result.quantum_machines_results import QuantumMachinesMeasurementResult
 from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
@@ -739,6 +741,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         results: list[Result] = []
         for bus in readout_buses:
             result = bus.acquire_result()
+            if isinstance(program, Circuit):
+                result = self._order_result(result, program)
             if queue is not None:
                 queue.put_nowait(item=result)
             results.append(result)
@@ -749,6 +753,43 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         # FIXME: set multiple readout buses
         return results[0]
+
+    def _order_result(self, result: Result, circuit: Circuit) -> Result:
+        """Order the results of the execution as they are ordered in the input circuit.
+        Finds the absolute order of each measurement for each qubit and its corresponding key in the
+        same format as in qblox's aqcuisitions dictionary (#qubit, #qubit_measurement).
+        Then it orders results in the same measurement order as the one in circuit.queue.
+        Args:
+            result (Result): Result obtained from the execution
+            circuit (Circuit): qibo circuit being executed
+        Returns:
+            Result: Result obtained from the execution, with each measurement in the same order as in circuit.queue
+        """
+        if not isinstance(result, QbloxResult):
+            raise NotImplementedError("Result ordering is only implemented for qblox results")
+
+        # register the overall order of all qubit measurements.
+        qubits_m = {}
+        order = {}
+        # iterate over qubits measured in same order as they appear in the circuit
+        for i, qubit in enumerate(qubit for gate in circuit.queue for qubit in gate.qubits if isinstance(gate, M)):
+            if qubit not in qubits_m:
+                qubits_m[qubit] = 0
+            order[(qubit, qubits_m[qubit])] = i
+            qubits_m[qubit] += 1
+        if len(order) != len(result.qblox_raw_results):
+            raise ValueError(
+                f"Number of measurements in the circuit {len(order)} does not match number of acquisitions {len(result.qblox_raw_results)}"
+            )
+
+        # allocate each measurement its corresponding index in the results list
+        results = [None] * len(order)  # type: list | list[dict]
+        for qblox_result in result.qblox_raw_results:
+            measurement = qblox_result["measurement"]
+            qubit = qblox_result["qubit"]
+            results[order[(qubit, measurement)]] = qblox_result
+
+        return QbloxResult(integration_lengths=result.integration_lengths, qblox_raw_results=results)
 
     def compile(
         self, program: PulseSchedule | Circuit, num_avg: int, repetition_duration: int, num_bins: int

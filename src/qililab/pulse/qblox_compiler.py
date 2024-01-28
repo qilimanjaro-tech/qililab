@@ -19,12 +19,13 @@ from qpysequence import Waveforms, Weights
 from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Register
 from qpysequence.program.instructions import Acquire, AcquireWeighed, Move, Play, ResetPh, SetAwgGain, SetPh, Stop
-from qpysequence.utils.constants import AWG_MAX_GAIN
+from qpysequence.utils.constants import AWG_MAX_GAIN, INST_MAX_WAIT
 
 from qililab.config import logger
 from qililab.instruments.awg_settings import AWGQbloxADCSequencer, AWGQbloxSequencer
 from qililab.instruments.qblox import QbloxModule
 from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
+from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
 from qililab.typings import InstrumentName
@@ -116,7 +117,7 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
                 if qblox_module.name in self.readout_modules and hasattr(
                     qblox_module, "device"
                 ):  # TODO: remove hasattr when the fixme above is done
-                    qblox_module.device.delete_acquisition_data(sequencer=sequencer.identifier, name="default")
+                    qblox_module.device.delete_acquisition_data(sequencer=sequencer.identifier, all=True)
 
             else:
                 # compile the sequences
@@ -155,7 +156,7 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
             Sequence: Qblox Sequence object containing the program and waveforms.
         """
         waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule, sequencer=sequencer)
-        acquisitions = self._generate_acquisitions(sequencer)
+        acquisitions = self._generate_acquisitions(sequencer, timeline=pulse_bus_schedule.timeline)
         program = self._generate_program(
             pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, sequencer=sequencer
         )
@@ -188,9 +189,13 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
 
         return waveforms
 
-    def _generate_acquisitions(self, sequencer: AWGQbloxSequencer) -> Acquisitions:
+    def _generate_acquisitions(self, sequencer: AWGQbloxSequencer, timeline: list[PulseEvent]) -> Acquisitions:
         """Generate Acquisitions object, currently containing a single acquisition named "default", with num_bins = 1
         and index = 0.
+
+        Args:
+            sequencer (AWGQbloxSequencer): sequencer to which we generate the acquisitions dictionary
+            timeline (list[PulseEvent]): time ordered list of pulse events to play
 
         Returns:
             Acquisitions: Acquisitions object.
@@ -199,7 +204,8 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         acquisitions = Acquisitions()
         if self._get_instrument_from_sequencer(sequencer).name in self.control_modules:
             return acquisitions
-        acquisitions.add(name="default", num_bins=self.num_bins, index=0)
+        for i, pulse in enumerate(timeline):
+            acquisitions.add(name=f"acq_q{pulse.qubit}_{i}", num_bins=self.num_bins, index=i)
         return acquisitions
 
     def _generate_program(  # pylint: disable=too-many-locals
@@ -217,6 +223,7 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         """
         # get qblox module from sequencer
         qblox_module = self._get_instrument_from_sequencer(sequencer)
+        MIN_WAIT = qblox_module._MIN_WAIT_TIME  # pylint: disable=protected-access
 
         # Define program's blocks
         program = Program()
@@ -240,7 +247,14 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
 
         for i, pulse_event in enumerate(timeline):
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
-            wait_time = timeline[i + 1].start_time - pulse_event.start_time if (i < (len(timeline) - 1)) else 4
+            wait_time = timeline[i + 1].start_time - pulse_event.start_time if (i < (len(timeline) - 1)) else MIN_WAIT
+
+            # Allow wait times longer than INST_MAX_WAIT
+            long_wait_time = 0
+            if wait_time > INST_MAX_WAIT:
+                long_wait_time = wait_time - 2 * MIN_WAIT
+                wait_time = 2 * MIN_WAIT
+            # Add instrucitons to play the pulse
             phase = int((pulse_event.pulse.phase % (2 * np.pi)) * 1e9 / (2 * np.pi))
             gain = int(np.abs(pulse_event.pulse.amplitude) * AWG_MAX_GAIN)  # np.abs() needed for negative pulses
             bin_loop.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
@@ -249,13 +263,26 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
                 Play(
                     waveform_0=waveform_pair.waveform_i.index,
                     waveform_1=waveform_pair.waveform_q.index,
-                    wait_time=int(wait_time),
+                    # wait until next pulse if QCM. If QRM wait min time (4) and wait time is added after acquiring
+                    wait_time=int(wait_time)
+                    if qblox_module.name not in self.readout_modules
+                    else MIN_WAIT,  # TODO: add time of flight
                 )
             )
-        if qblox_module.name in self.readout_modules:
-            self._append_acquire_instruction(
-                loop=bin_loop, bin_index=bin_loop.counter_register, sequencer=sequencer, weight_regs=weight_registers  # type: ignore
-            )
+            if qblox_module.name in self.readout_modules:
+                self._append_acquire_instruction(
+                    loop=bin_loop,
+                    bin_index=bin_loop.counter_register,
+                    acq_index=i,
+                    sequencer=sequencer,  # type: ignore
+                    weight_regs=weight_registers,
+                    wait=wait_time - MIN_WAIT if (i < len(timeline) - 1) else MIN_WAIT,
+                )
+
+            # Add long wait for wait time if necessary
+            if long_wait_time != 0:
+                bin_loop.append_component(long_wait(long_wait_time))
+
         if self.repetition_duration is not None:
             wait_time = self.repetition_duration - bin_loop.duration_iter
             if wait_time > qblox_module._MIN_WAIT_TIME:  # pylint: disable=protected-access
@@ -284,26 +311,27 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         self,
         loop: Loop,
         bin_index: Register | int,
+        acq_index: int,
         sequencer: AWGQbloxADCSequencer,
         weight_regs: tuple[Register, Register],
+        wait: int,
     ):
         """Append an acquire instruction to the loop."""
         weighed_acq = sequencer.weighed_acq_enabled
-        qblox_module = self._get_instrument_from_sequencer(sequencer)
 
         acq_instruction = (
             AcquireWeighed(
-                acq_index=0,
+                acq_index=acq_index,
                 bin_index=bin_index,
                 weight_index_0=weight_regs[0],
                 weight_index_1=weight_regs[1],
-                wait_time=qblox_module._MIN_WAIT_TIME,  # pylint: disable=protected-access
+                wait_time=wait,
             )
             if weighed_acq
             else Acquire(
-                acq_index=0,
+                acq_index=acq_index,
                 bin_index=bin_index,
-                wait_time=qblox_module._MIN_WAIT_TIME,  # pylint: disable=protected-access
+                wait_time=wait,
             )
         )
         loop.append_component(acq_instruction)
