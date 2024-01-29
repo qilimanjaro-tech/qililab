@@ -89,7 +89,8 @@ def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
 
 
 class StreamArray:
-    """Allows for real time saving of results from an experiment.
+    """
+    Allows for real time saving of results from an experiment.
 
     This class wraps a numpy array and adds a context manager to save results on real time while they are acquired by
     the instruments.
@@ -107,7 +108,7 @@ class StreamArray:
         self._file: h5py.File | None = None
         self._dataset = None
 
-    def __setitem__(self, key: str, value: float):
+    def __setitem__(self, key: tuple, value: float):
         """Sets and item by key and value in the dataset.
 
         Args:
