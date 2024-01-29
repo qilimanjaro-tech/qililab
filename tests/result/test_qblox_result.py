@@ -1,4 +1,5 @@
 """ Test Results """
+import re
 
 import numpy as np
 import pandas as pd
@@ -97,7 +98,44 @@ def fixture_qblox_result_scope(dummy_qrm: Pulsar):
     dummy_qrm.start_sequencer(0)
     dummy_qrm.store_scope_acquisition(0, "single")
     acquisition = dummy_qrm.get_acquisitions(0)["single"]["acquisition"]
+    acquisition["qubit"] = 0
+    acquisition["measurement"] = 0
     return QbloxResult(integration_lengths=[1000], qblox_raw_results=[acquisition])
+
+
+@pytest.fixture(name="qblox_multi_m_results")
+def fixture_qblox_multi_m_results():
+    return QbloxResult(
+        integration_lengths=[1, 1],
+        qblox_raw_results=[
+            {
+                "scope": {
+                    "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                    "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                },
+                "bins": {
+                    "integration": {"path0": [1], "path1": [1]},
+                    "threshold": [0],
+                    "avg_cnt": [1],
+                },
+                "qubit": 0,
+                "measurement": 0,
+            },
+            {
+                "scope": {
+                    "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                    "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                },
+                "bins": {
+                    "integration": {"path0": [1], "path1": [1]},
+                    "threshold": [1],
+                    "avg_cnt": [1],
+                },
+                "qubit": 0,
+                "measurement": 1,
+            },
+        ],
+    )
 
 
 @pytest.fixture(name="qblox_asymmetric_bins_result")
@@ -113,6 +151,8 @@ def fixture_qblox_asymmetric_bins_result():
                 "threshold": [0.0, 1.0],
                 "avg_cnt": [1, 1],
             },
+            "qubit": 0,
+            "measurement": 0,
         },
         {
             "scope": {
@@ -124,6 +164,8 @@ def fixture_qblox_asymmetric_bins_result():
                 "threshold": [1.0, 0.0, 1.0],
                 "avg_cnt": [1, 1, 1],
             },
+            "qubit": 0,
+            "measurement": 0,
         },
     ]
     return QbloxResult(integration_lengths=[1000, 1000], qblox_raw_results=qblox_raw_results)
@@ -270,8 +312,15 @@ class TestsQbloxResult:
         Args:
             qblox_asymmetric_bins_result (QbloxResult): QbloxResult instance with different number of bins on each sequencer.
         """
-        with pytest.raises(IndexError, match="Sequencers must have the same number of bins."):
-            qblox_asymmetric_bins_result.counts_object()
+        bins = [len(result["bins"]["threshold"]) for result in qblox_asymmetric_bins_result.qblox_raw_results]
+        measurements = len(bins)
+        with pytest.raises(
+            IndexError,
+            match=re.escape(
+                f"All measurements must have the same number of bins to return an array. Obtained {measurements} measurements with {bins} bins respectively."
+            ),
+        ):
+            qblox_asymmetric_bins_result.array()
 
     def test_array_property_of_scope(self, dummy_qrm: Pulsar, qblox_result_scope: QbloxResult):
         """Test the array property of the QbloxResult class."""
@@ -299,8 +348,28 @@ class TestsQbloxResult:
         Args:
             qblox_asymmetric_bins_result (QbloxResult): QbloxResult instance with different number of bins on each sequencer.
         """
-        with pytest.raises(IndexError, match="All sequencers must have the same number of bins to return an array"):
+        bin_shape = [len(bin_s["bins"]["threshold"]) for bin_s in qblox_asymmetric_bins_result.qblox_raw_results]
+        with pytest.raises(
+            IndexError,
+            match=re.escape(
+                f"All measurements must have the same number of bins to return an array. Obtained {len(bin_shape)} measurements with {bin_shape} bins respectively."
+            ),
+        ):
             _ = qblox_asymmetric_bins_result.array
+
+    def test_counts_error_multi_measurement(self, qblox_multi_m_results: QbloxResult):
+        """Test that an error is raised in counts if there is more than one result for a single qubit"""
+        with pytest.raises(
+            NotImplementedError, match="Counts for multiple measurements on a single qubit are not supported"
+        ):
+            _ = qblox_multi_m_results.counts()
+
+    def test_samples_error_multi_measurement(self, qblox_multi_m_results: QbloxResult):
+        """Test that an error is raised in counts if there is more than one result for a single qubit"""
+        with pytest.raises(
+            NotImplementedError, match="Samples for multiple measurements on a single qubit are not supported"
+        ):
+            _ = qblox_multi_m_results.samples()
 
     def test_to_dataframe(self, qblox_result_noscope: QbloxResult):
         """Test the to_dataframe method."""

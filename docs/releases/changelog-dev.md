@@ -5,6 +5,13 @@
 - Allow execution of `QProgram` through `platform.execute_qprogram` method for Quantum Machines hardware.
   [#648](https://github.com/qilimanjaro-tech/qililab/pull/648)
 
+- Allow multiple measurements of the same qubit in a single circuit. Also allow measurements in the middle of a circuit
+  [#674](https://github.com/qilimanjaro-tech/qililab/pull/674)
+
+- Wait times longer than 2\*\*16-4 (QBLOX maximum wait time in a Q1ASM wait instruction) are now allowed in the middle of
+  a circuit
+  [#674](https://github.com/qilimanjaro-tech/qililab/pull/674)
+
 ### Improvements
 
 - Added `bus_mapping` parameter in `QbloxCompiler.compile` method to allow changing the bus names of the compiled output.

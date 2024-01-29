@@ -254,7 +254,16 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 if sequencer.scope_store_enabled:
                     self.device.store_scope_acquisition(sequencer=sequencer_id, name="default")
 
-                results.append(self.device.get_acquisitions(sequencer=sequencer.identifier)["default"]["acquisition"])
+                for key, data in self.device.get_acquisitions(sequencer=sequencer.identifier).items():
+                    acquisitions = data["acquisition"]
+                    # parse acquisition index
+                    _, qubit, measure = key.split("_")
+                    qubit = int(qubit[1:])
+                    measurement = int(measure)
+                    acquisitions["qubit"] = qubit
+                    acquisitions["measurement"] = measurement
+                    results.append(acquisitions)
+                    integration_lengths.append(sequencer.used_integration_length)
                 self.device.sequencers[sequencer.identifier].sync_en(False)
                 integration_lengths.append(sequencer.used_integration_length)
 
