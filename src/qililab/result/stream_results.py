@@ -112,7 +112,7 @@ class StreamArray:
         """Sets and item by key and value in the dataset.
 
         Args:
-            key (str): key for the item to save.
+            key (tuple): key for the item to save.
             value (float): value to save.
         """
         if self._file is not None and self._dataset is not None:
