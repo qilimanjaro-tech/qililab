@@ -164,18 +164,19 @@ class TestPlatform:
             platform.disconnect()
         mock_logger.info.assert_called_once_with("Already disconnected from the instruments")
 
-    def test_get_qrm_ch_id_from_qubit(self, platform: Platform):
+    @pytest.mark.parametrize("alias", ["feedline_input_output_bus", "drive_line_q0_bus"])
+    def test_get_ch_id_from_qubit_and_bus(self, alias: str, platform: Platform):
         """Test that get_ch_id_from_qubits gets the channel id it should get from the runcard"""
-        channel_id = platform.get_qrm_ch_id_from_qubit(alias="feedline_input_output_bus", qubit_index=0)
+        channel_id = platform.get_ch_id_from_qubit_and_bus(alias=alias, qubit_index=0)
         assert channel_id == 0
 
-    def test_get_qrm_ch_id_from_qubit_error_no_bus(self, platform: Platform):
+    def test_get_ch_id_from_qubit_and_bus_error_no_bus(self, platform: Platform):
         """Test that the method raises an error if the alias is not in the buses returned."""
         alias = "dummy"
         qubit_id = 0
         error_string = f"Could not find bus with alias {alias} for qubit {qubit_id}"
         with pytest.raises(ValueError, match=re.escape(error_string)):
-            platform.get_qrm_ch_id_from_qubit(alias=alias, qubit_index=qubit_id)
+            platform.get_ch_id_from_qubit_and_bus(alias=alias, qubit_index=qubit_id)
 
     def test_get_element_method_unknown_returns_none(self, platform: Platform):
         """Test get_element method with unknown element."""
