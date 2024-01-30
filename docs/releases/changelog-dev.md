@@ -12,6 +12,9 @@
   a circuit
   [#674](https://github.com/qilimanjaro-tech/qililab/pull/674)
 
+- Add method to get sequencer channel id from qubit index and bus alias
+  [#678](https://github.com/qilimanjaro-tech/qililab/pull/678)
+
 ### Improvements
 
 - Added `bus_mapping` parameter in `QbloxCompiler.compile` method to allow changing the bus names of the compiled output.
