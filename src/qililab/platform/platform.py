@@ -444,18 +444,15 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 sequencer.identifier for sequencer in instrument.awg_sequencers if sequencer.qubit == qubit_index
             )
         # if the alias is not in the QRMs, it should be in the QCM
-        if instrument := next(
-            (
-                instrument
-                for instrument in bus.system_control.instruments
-                if instrument.name in [InstrumentName.QBLOX_QCM, InstrumentName.QCMRF]
-            ),
+        instrument = next(
+            instrument
+            for instrument in bus.system_control.instruments
+            if instrument.name in [InstrumentName.QBLOX_QCM, InstrumentName.QCMRF]
+        )
+        return next(
+            (sequencer.identifier for sequencer in instrument.awg_sequencers if sequencer.chip_port_id == bus.port),
             None,
-        ):
-            return next(
-                sequencer.identifier for sequencer in instrument.awg_sequencers if sequencer.chip_port_id == bus.port
-            )
-        return None
+        )
 
     def _get_bus_by_qubit_index(self, qubit_index: int) -> tuple[Bus, Bus, Bus]:
         """Finds buses associated with the given qubit index.
