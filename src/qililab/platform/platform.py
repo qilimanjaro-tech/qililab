@@ -444,7 +444,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 sequencer.identifier for sequencer in instrument.awg_sequencers if sequencer.qubit == qubit_index
             )
         # if the alias is not in the QRMs, it should be in the QCM
-        elif instrument := next(
+        if instrument := next(
             (
                 instrument
                 for instrument in bus.system_control.instruments
