@@ -414,12 +414,13 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             element = self.chip.get_node_from_alias(alias=alias)
         return element
 
-    def get_qrm_ch_id_from_qubit(self, alias: str, qubit_index: int) -> int:
-        """Finds a sequencer id for a given qubit given a bus alias. This is utility is added so that one can get a qrm's
+    def get_ch_id_from_qubit_and_bus(self, alias: str, qubit_index: int) -> int | None:
+        """Finds a sequencer id for a given qubit given a bus alias. This utility is added so that one can get a qrm's
         channel id easily in case the setup contains more than one qrm and / or there is not a one to one correspondance
         between sequencer id in the instrument and the qubit id. This one to one correspondance used to be the norm for
         5 qubit chips with non-RF QRM modules with 5 sequencers, each mapped to a qubit with the same numerical id as the
         sequencer.
+        For QCMs it is also useful since the sequencer id is not always the same as the qubit id.
 
         Args:
             alias (str): bus alias
@@ -431,12 +432,27 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         bus = next((bus for bus in self._get_bus_by_qubit_index(qubit_index=qubit_index) if bus.alias == alias), None)
         if bus is None:
             raise ValueError(f"Could not find bus with alias {alias} for qubit {qubit_index}")
+        if instrument := next(
+            (
+                instrument
+                for instrument in bus.system_control.instruments
+                if instrument.name in [InstrumentName.QBLOX_QRM, InstrumentName.QRMRF]
+            ),
+            None,
+        ):
+            return next(
+                sequencer.identifier for sequencer in instrument.awg_sequencers if sequencer.qubit == qubit_index
+            )
+        # if the alias is not in the QRMs, it should be in the QCM
         instrument = next(
             instrument
             for instrument in bus.system_control.instruments
-            if instrument.name in [InstrumentName.QBLOX_QRM, InstrumentName.QRMRF]
+            if instrument.name in [InstrumentName.QBLOX_QCM, InstrumentName.QCMRF]
         )
-        return next(sequencer.identifier for sequencer in instrument.awg_sequencers if sequencer.qubit == qubit_index)
+        return next(
+            (sequencer.identifier for sequencer in instrument.awg_sequencers if sequencer.chip_port_id == bus.port),
+            None,
+        )
 
     def _get_bus_by_qubit_index(self, qubit_index: int) -> tuple[Bus, Bus, Bus]:
         """Finds buses associated with the given qubit index.
