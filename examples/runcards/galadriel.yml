@@ -404,8 +404,7 @@ instruments:
       - identifier: 0
         chip_port_id: feedline_input
         qubit: 0
-        output_i: 0
-        output_q: 1
+        outputs: [0, 1]
         gain_i: .5
         gain_q: .5
         offset_i: 0
@@ -432,8 +431,7 @@ instruments:
       - identifier: 1
         chip_port_id: feedline_input
         qubit: 1
-        output_i: 0
-        output_q: 1
+        outputs: [0, 1]
         gain_i: .5
         gain_q: .5
         offset_i: 0
@@ -460,8 +458,7 @@ instruments:
       - identifier: 2
         chip_port_id: feedline_input
         qubit: 2
-        output_i: 0
-        output_q: 1
+        outputs: [0, 1]
         gain_i: .5
         gain_q: .5
         offset_i: 0
@@ -488,8 +485,7 @@ instruments:
       - identifier: 3
         chip_port_id: feedline_input
         qubit: 3
-        output_i: 0
-        output_q: 1
+        outputs: [0, 1]
         gain_i: .5
         gain_q: .5
         offset_i: 0
@@ -516,8 +512,7 @@ instruments:
       - identifier: 4
         chip_port_id: feedline_input
         qubit: 4
-        output_i: 0
-        output_q: 1
+        outputs: [0, 1]
         gain_i: .5
         gain_q: .5
         offset_i: 0
@@ -558,8 +553,7 @@ instruments:
     awg_sequencers:
       - identifier: 0
         chip_port_id: drive_line_q0
-        output_i: 0
-        output_q: 1
+        outputs: [0]
         gain_i: 0.1
         gain_q: 0.1
         offset_i: 0. # -0.012
@@ -571,8 +565,7 @@ instruments:
         hardware_modulation: true
       - identifier: 1
         chip_port_id: drive_line_q1
-        output_i: 2
-        output_q: 3
+        outputs: [1]
         gain_i: 1
         gain_q: 1
         offset_i: 0
@@ -599,8 +592,7 @@ instruments:
     awg_sequencers:
       - identifier: 0
         chip_port_id: drive_line_q2
-        output_i: 0
-        output_q: 1
+        outputs: [0]
         gain_i: 0.1
         gain_q: 0.1
         offset_i: 0.
@@ -627,8 +619,7 @@ instruments:
     awg_sequencers:
       - identifier: 0
         chip_port_id: drive_line_q3
-        output_i: 0
-        output_q: 1
+        outputs: [0]
         gain_i: 0.1
         gain_q: 0.1
         offset_i: 0.
@@ -640,8 +631,7 @@ instruments:
         hardware_modulation: true
       - identifier: 1
         chip_port_id: drive_line_q4
-        output_i: 2
-        output_q: 3
+        outputs: [1]
         gain_i: 1
         gain_q: 1
         offset_i: 0
@@ -659,8 +649,7 @@ instruments:
     awg_sequencers:
       - identifier: 0
         chip_port_id: flux_line_q0
-        output_i: 0
-        output_q: 1
+        outputs: [0, 1]
         gain_i: 0.1
         gain_q: 0.1
         offset_i: 0.
@@ -672,8 +661,7 @@ instruments:
         hardware_modulation: true
       - identifier: 1
         chip_port_id: flux_line_q1
-        output_i: 1
-        output_q: 0
+        outputs: [1, 0]
         gain_i: 1
         gain_q: 1
         offset_i: 0
@@ -685,8 +673,7 @@ instruments:
         hardware_modulation: true
       - identifier: 2
         chip_port_id: flux_line_q3
-        output_i: 2
-        output_q: 3
+        outputs: [2, 3]
         gain_i: 1
         gain_q: 1
         offset_i: 0
@@ -698,8 +685,7 @@ instruments:
         hardware_modulation: true
       - identifier: 3
         chip_port_id: flux_line_q4
-        output_i: 3
-        output_q: 2
+        outputs: [3, 2]
         gain_i: 1
         gain_q: 1
         offset_i: 0
@@ -717,8 +703,7 @@ instruments:
     awg_sequencers:
       - identifier: 0
         chip_port_id: flux_line_q2
-        output_i: 0
-        output_q: 1
+        outputs: [0, 1]
         gain_i: 1.
         gain_q: 1.
         offset_i: 0.
@@ -766,16 +751,4 @@ instrument_controllers:
     connection:
       name: tcp_ip
       address: 192.168.1.11
-    modules:
-      - alias: rs_1
-        slot_id: 0
-    reset: True
-  - name: mini_circuits
-    alias: attenuator_controller_0
-    connection:
-      name: tcp_ip
-      address: 192.168.1.69
-    modules:
-      - alias: attenuator
-        slot_id: 0
-    reset: True
+    modul

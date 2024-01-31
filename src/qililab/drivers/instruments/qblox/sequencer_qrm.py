@@ -102,8 +102,6 @@ class SequencerQRM(SequencerQCM, Digitiser):
         weights = Weights()
         if len(self.get("weights_i")) > 0 and len(self.get("weights_q")) > 0:
             pair = (self.get("weights_i"), self.get("weights_q"))
-            if self.get("swap_paths"):
-                pair = pair[::-1]  # swap paths
             weights.add_pair(pair=pair, indices=(0, 1))
         return weights
 

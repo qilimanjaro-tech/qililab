@@ -97,6 +97,20 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 value=cast(AWGQbloxADCSequencer, sequencer).threshold_rotation, sequencer_id=sequencer_id
             )
 
+    def _map_connections(self):
+        """Disable all connections and map sequencer paths with output/input channels."""
+        # Disable all connections
+        self.device.disconnect_outputs()
+        self.device.disconnect_inputs()
+
+        for sequencer_dataclass in self.awg_sequencers:
+            sequencer = self.device.sequencers[sequencer_dataclass.identifier]
+            for path, output in zip(["I", "Q"], sequencer_dataclass.outputs):
+                getattr(sequencer, f"connect_out{output}")(path)
+
+            sequencer.connect_acq_I("in0")
+            sequencer.connect_acq_Q("in1")
+
     def _obtain_scope_sequencer(self):
         """Checks that only one sequencer is storing the scope and saves that sequencer in `_scoping_sequencer`
 

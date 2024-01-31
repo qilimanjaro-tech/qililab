@@ -42,6 +42,10 @@
 - Changed save and load methods using `PyYAML` to `ruamel.YAML`.
   [#661](https://github.com/qilimanjaro-tech/qililab/pull/661)
 
+- Allow measurements on more than one qblox readout module. This can be done by simply adding more than one readout bus and its corresponding
+  connections to the runcard.
+  [#656](https://github.com/qilimanjaro-tech/qililab/pull/656)
+
 - Qprogram's qblox compiler now allows iterations over variables even if these variables do nothing. (eg. iterate over nshots)
   [#666](https://github.com/qilimanjaro-tech/qililab/pull/666)
 

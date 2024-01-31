@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """Qblox module class"""
-import itertools
 from dataclasses import dataclass
 from typing import Sequence, cast
 
@@ -91,7 +90,7 @@ class QbloxModule(AWG):
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """Initial setup"""
-        self._map_outputs()
+        self._map_connections()
         self.clear_cache()
         for sequencer in self.awg_sequencers:
             sequencer_id = sequencer.identifier
@@ -273,9 +272,8 @@ class QbloxModule(AWG):
         self._get_sequencer_by_id(id=sequencer_id).offset_i = float(value)
         # update value in the instrument
         if self.is_device_active():
-            path = self._get_sequencer_by_id(id=sequencer_id).path_i
             sequencer = self.device.sequencers[sequencer_id]
-            getattr(sequencer, f"offset_awg_path{path}")(float(value))
+            getattr(sequencer, "offset_awg_path0")(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_offset_q(self, value: float | str | bool, sequencer_id: int):
@@ -292,9 +290,8 @@ class QbloxModule(AWG):
         self._get_sequencer_by_id(id=sequencer_id).offset_q = float(value)
         # update value in the instrument
         if self.is_device_active():
-            path = self._get_sequencer_by_id(id=sequencer_id).path_q
             sequencer = self.device.sequencers[sequencer_id]
-            getattr(sequencer, f"offset_awg_path{path}")(float(value))
+            getattr(sequencer, "offset_awg_path1")(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_out_offset(self, output: int, value: float | str | bool):
@@ -333,9 +330,8 @@ class QbloxModule(AWG):
         self._get_sequencer_by_id(id=sequencer_id).gain_i = float(value)
         # update value in the instrument
         if self.is_device_active():
-            path = self._get_sequencer_by_id(id=sequencer_id).path_i
             sequencer = self.device.sequencers[sequencer_id]
-            getattr(sequencer, f"gain_awg_path{path}")(float(value))
+            getattr(sequencer, "gain_awg_path0")(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_gain_q(self, value: float | str | bool, sequencer_id: int):
@@ -352,9 +348,8 @@ class QbloxModule(AWG):
         self._get_sequencer_by_id(id=sequencer_id).gain_q = float(value)
         # update value in the instrument
         if self.is_device_active():
-            path = self._get_sequencer_by_id(id=sequencer_id).path_q
             sequencer = self.device.sequencers[sequencer_id]
-            getattr(sequencer, f"gain_awg_path{path}")(float(value))
+            getattr(sequencer, "gain_awg_path1")(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_gain(self, value: float | str | bool, sequencer_id: int):
@@ -488,22 +483,15 @@ class QbloxModule(AWG):
         self.device.sequencers[sequencer_id].marker_ovr_en(True)
         self.device.sequencers[sequencer_id].marker_ovr_value(value)
 
-    def _map_outputs(self):
+    def _map_connections(self):
         """Disable all connections and map sequencer paths with output channels."""
         # Disable all connections
-        for sequencer, out in itertools.product(self.device.sequencers, range(self._NUM_MAX_SEQUENCERS)):
-            if hasattr(sequencer, f"channel_map_path{out % 2}_out{out}_en"):
-                sequencer.set(f"channel_map_path{out % 2}_out{out}_en", False)
+        self.device.disconnect_outputs()
 
-        for sequencer in self.awg_sequencers:
-            if sequencer.output_i is not None:
-                self.device.sequencers[sequencer.identifier].set(
-                    f"channel_map_path{sequencer.path_i}_out{sequencer.output_i}_en", True
-                )
-            if sequencer.output_q is not None:
-                self.device.sequencers[sequencer.identifier].set(
-                    f"channel_map_path{sequencer.path_q}_out{sequencer.output_q}_en", True
-                )
+        for sequencer_dataclass in self.awg_sequencers:
+            sequencer = self.device.sequencers[sequencer_dataclass.identifier]
+            for path, output in zip(["I", "Q"], sequencer_dataclass.outputs):
+                getattr(sequencer, f"connect_out{output}")(path)
 
     @property
     def final_wait_time(self) -> int:

@@ -29,11 +29,13 @@ Waveforms
     ~Square
     ~IQPair
     ~DragPair
+    ~FlatTop
 """
 
 from .arbitrary import Arbitrary
 from .drag import Drag as DragPair
 from .drag_correction import DragCorrection
+from .flat_top import FlatTop
 from .gaussian import Gaussian
 from .iq_pair import IQPair
 from .square import Square

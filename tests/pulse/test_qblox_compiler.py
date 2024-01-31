@@ -78,8 +78,7 @@ def fixture_settings_6_sequencers():
             "identifier": seq_idx,
             "chip_port_id": "feedline_input",
             "qubit": 5 - seq_idx,
-            "output_i": 1,
-            "output_q": 0,
+            "outputs": [0],
             "weights_i": [1, 1, 1, 1],
             "weights_q": [1, 1, 1, 1],
             "weighed_acq_enabled": False,
@@ -142,6 +141,14 @@ def fixture_pulse_bus_schedule_long_wait() -> PulseBusSchedule:
     pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=0)
     pulse_event2 = PulseEvent(pulse=pulse, start_time=200_000, qubit=0)
     return PulseBusSchedule(timeline=[pulse_event, pulse_event2], port="feedline_input")
+
+
+@pytest.fixture(name="pulse_bus_schedule_odd_qubits")
+def fixture_pulse_bus_schedule_odd_qubits() -> PulseBusSchedule:
+    """Returns a PulseBusSchedule with readout pulses for qubits 1, 3 and 5."""
+    pulse = Pulse(amplitude=1.0, phase=0, duration=1000, frequency=7.0e9, pulse_shape=Rectangular())
+    timeline = [PulseEvent(pulse=pulse, start_time=0, qubit=qubit) for qubit in [3, 1, 5]]
+    return PulseBusSchedule(timeline=timeline, port="feedline_input")
 
 
 @pytest.fixture(name="pulse_schedule_2qrm")
@@ -569,3 +576,16 @@ class TestQbloxCompiler:
         error_string = "No QRM modules found in platform instruments"
         with pytest.raises(ValueError, match=re.escape(error_string)):
             QbloxCompiler(platform)
+
+    def test_qubit_to_sequencer_mapping(
+        self, settings_6_sequencers: dict, platform: Platform, pulse_bus_schedule_odd_qubits
+    ):
+        """Test that the pulses to odd qubits are mapped to odd sequencers."""
+
+        dummy_qcm = DummyQRM(settings=settings_6_sequencers)
+        platform.instruments.elements = [dummy_qcm]
+        compiler = QbloxCompiler(platform)
+        compiler.compile(
+            PulseSchedule([pulse_bus_schedule_odd_qubits]), num_avg=1, repetition_duration=5000, num_bins=1
+        )
+        assert list(compiler.qblox_modules[0].sequences.keys()) == [0, 2, 4]
