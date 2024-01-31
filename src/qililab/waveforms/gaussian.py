@@ -15,6 +15,9 @@
 """Gaussian waveform."""
 import numpy as np
 
+from qililab.qprogram.decorators import requires_domain
+from qililab.qprogram.variable import Domain
+
 from .waveform import Waveform
 
 
@@ -64,6 +67,9 @@ class Gaussian(Waveform):  # pylint: disable=too-few-public-methods
         num_sigmas (float): Sigma number of the gaussian pulse shape. Defines the width of the gaussian pulse.
     """
 
+    @requires_domain("amplitude", Domain.Voltage)
+    @requires_domain("duration", Domain.Time)
+    @requires_domain("num_sigmas", Domain.Scalar)
     def __init__(self, amplitude: float, duration: int, num_sigmas: float):
         super().__init__()
         self.amplitude = amplitude

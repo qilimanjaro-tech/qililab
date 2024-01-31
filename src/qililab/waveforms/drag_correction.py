@@ -15,6 +15,9 @@
 """DragCorrection waveform."""
 import numpy as np
 
+from qililab.qprogram.decorators import requires_domain
+from qililab.qprogram.variable import Domain
+
 from .gaussian import Gaussian
 from .waveform import Waveform
 
@@ -29,6 +32,7 @@ class DragCorrection(Waveform):  # pylint: disable=too-few-public-methods
         waveform (Waveform): waveform on which the drag transformation is calculated
     """
 
+    @requires_domain("drag_coefficient", Domain.Scalar)
     def __init__(self, drag_coefficient: float, waveform: Waveform):
         super().__init__()
         self.drag_coefficient = drag_coefficient
