@@ -17,9 +17,9 @@ from dataclasses import InitVar, dataclass
 
 from qpysequence import Sequence as QpySequence
 
-from qililab.constants import BUS, RUNCARD
+from qililab.constants import RUNCARD
 from qililab.instruments import Instruments, ParameterNotFound
-from qililab.pulse import PulseBusSchedule, PulseDistortion
+from qililab.pulse import PulseDistortion
 from qililab.result import Result
 from qililab.settings import Settings
 from qililab.system_control import ReadoutSystemControl, SystemControl
@@ -65,7 +65,7 @@ class Bus:
             super().__post_init__()
 
             self.distortions = [
-                PulseDistortion.from_dict(distortion) for distortion in self.distortions if isinstance(distortion, dict)
+                PulseDistortion.from_dict(distortion) for distortion in self.distortions if isinstance(distortion, dict)  # type: ignore[arg-type]
             ]
 
     settings: BusSettings
@@ -178,19 +178,6 @@ class Bus:
             raise ParameterNotFound(
                 f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
             ) from error
-
-    def compile(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
-    ) -> list:
-        """Compiles the ``PulseBusSchedule`` into an assembly program.
-
-        Args:
-            pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
-            nshots (int): number of shots / hardware average
-            repetition_duration (int): maximum window for the duration of one hardware repetition
-            num_bins (int): number of bins
-        """
-        return self.system_control.compile(pulse_bus_schedule, nshots, repetition_duration, num_bins)
 
     def upload_qpysequence(self, qpysequence: QpySequence):
         """Uploads the qpysequence into the instrument."""

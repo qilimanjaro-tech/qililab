@@ -36,3 +36,6 @@ class FactoryElement:  # pylint: disable=too-few-public-methods
         | ConnectionName
         | InstrumentControllerName
     )  #: Enumerate for name
+
+    def __hash__(self) -> int:
+        return hash(repr(self))

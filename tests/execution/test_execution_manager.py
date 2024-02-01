@@ -41,7 +41,7 @@ def fixture_nested_experiment(request: pytest.FixtureRequest):
         values=np.arange(start=40, stop=100, step=40),
     )
     loop = Loop(
-        alias=InstrumentName.QBLOX_QRM.value,
+        alias=f"{InstrumentName.QBLOX_QRM.value}_0",
         parameter=Parameter.GAIN,
         values=np.linspace(start=0, stop=1, num=2),
         channel_id=0,
@@ -273,7 +273,7 @@ class TestExecutionManagerPlatform:
 
 
 qblox_acquisition = {
-    "default": {
+    "acq_q0_0": {
         "index": 0,
         "acquisition": {
             "scope": {

@@ -22,10 +22,9 @@ from typing import get_type_hints
 from qpysequence import Sequence as QpySequence
 
 from qililab.constants import RUNCARD
-from qililab.instruments import AWG, Instrument, Instruments
+from qililab.instruments import AWG, Instrument, Instruments, QuantumMachinesCluster
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.qblox import QbloxModule
-from qililab.pulse import PulseBusSchedule
 from qililab.settings import Settings
 from qililab.typings import FactoryElement
 from qililab.typings.enums import Parameter, SystemControlName
@@ -66,27 +65,6 @@ class SystemControl(FactoryElement, ABC):
         settings_class: type[self.SystemControlSettings] = get_type_hints(self).get("settings")  # type: ignore
         self.settings = settings_class(**settings, platform_instruments=platform_instruments)
 
-    def compile(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
-    ) -> list:
-        """Compiles the ``PulseBusSchedule`` into an assembly program.
-
-        Args:
-            pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
-            nshots (int): number of shots / hardware average
-            repetition_duration (int): maximum window for the duration of one hardware repetition
-            num_bins (int): number of bins
-        """
-        for instrument in self.instruments:
-            if isinstance(instrument, AWG):
-                return instrument.compile(
-                    pulse_bus_schedule=pulse_bus_schedule,
-                    nshots=nshots,
-                    repetition_duration=repetition_duration,
-                    num_bins=num_bins,
-                )
-        raise AttributeError("The system control doesn't have any AWG to compile the given pulse sequence.")
-
     def upload_qpysequence(self, qpysequence: QpySequence, bus_alias: str):
         """Uploads the qpysequence into the instrument."""
         for instrument in self.instruments:
@@ -102,8 +80,6 @@ class SystemControl(FactoryElement, ABC):
             if isinstance(instrument, AWG):
                 instrument.upload(bus_alias=bus_alias)
                 return
-
-        raise AttributeError("The system control doesn't have any AWG to upload a program.")
 
     def run(self, bus_alias: str) -> None:
         """Runs any previously uploaded program into the instrument."""
@@ -149,6 +125,9 @@ class SystemControl(FactoryElement, ABC):
         """
         for instrument in self.instruments:
             with contextlib.suppress(ParameterNotFound):
+                if isinstance(instrument, QuantumMachinesCluster) and bus_alias is not None:
+                    instrument.set_parameter_of_bus(bus=bus_alias, parameter=parameter, value=value)
+                    return
                 if isinstance(instrument, QbloxModule) and channel_id is None and bus_alias is not None:
                     channel_id = instrument.get_sequencers_from_bus_alias(bus_alias=bus_alias)[0].identifier
                 instrument.set_parameter(parameter, value, channel_id)
@@ -164,6 +143,8 @@ class SystemControl(FactoryElement, ABC):
         """
         for instrument in self.instruments:
             with contextlib.suppress(ParameterNotFound):
+                if isinstance(instrument, QuantumMachinesCluster) and bus_alias is not None:
+                    return instrument.get_parameter_of_bus(bus=bus_alias, parameter=parameter)
                 if isinstance(instrument, QbloxModule) and channel_id is None and bus_alias is not None:
                     channel_id = instrument.get_sequencers_from_bus_alias(bus_alias=bus_alias)[0].identifier
                 return instrument.get_parameter(parameter, channel_id)

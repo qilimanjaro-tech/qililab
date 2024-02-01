@@ -6,6 +6,7 @@ from pathlib import Path
 from queue import Queue
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 from qibo import gates
 from qibo.models import Circuit
@@ -18,15 +19,18 @@ from qililab.instrument_controllers import InstrumentControllers
 from qililab.instruments import AWG, AWGAnalogDigitalConverter, SignalGenerator
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
+from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
 from qililab.qprogram import QProgram
+from qililab.result.qblox_results import QbloxResult
+from qililab.result.quantum_machines_results import QuantumMachinesMeasurementResult
 from qililab.settings import Runcard
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import IQPair, Square
-from tests.data import Galadriel
+from tests.data import Galadriel, SauronQuantumMachines
 from tests.test_utils import build_platform
 
 
@@ -35,9 +39,72 @@ def fixture_platform():
     return build_platform(runcard=Galadriel.runcard)
 
 
+@pytest.fixture(name="platform_quantum_machines")
+def fixture_platform_quantum_machines():
+    return build_platform(runcard=SauronQuantumMachines.runcard)
+
+
 @pytest.fixture(name="runcard")
 def fixture_runcard():
     return Runcard(**copy.deepcopy(Galadriel.runcard))
+
+
+@pytest.fixture(name="qblox_results")
+def fixture_qblox_results():
+    return [
+        {
+            "scope": {
+                "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
+            },
+            "bins": {
+                "integration": {"path0": [1], "path1": [1]},
+                "threshold": [0],
+                "avg_cnt": [1],
+            },
+            "qubit": 0,
+            "measurement": 0,
+        },
+        {
+            "scope": {
+                "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
+            },
+            "bins": {
+                "integration": {"path0": [1], "path1": [1]},
+                "threshold": [1],
+                "avg_cnt": [1],
+            },
+            "qubit": 0,
+            "measurement": 1,
+        },
+        {
+            "scope": {
+                "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
+            },
+            "bins": {
+                "integration": {"path0": [1], "path1": [1]},
+                "threshold": [2],
+                "avg_cnt": [1],
+            },
+            "qubit": 1,
+            "measurement": 0,
+        },
+        {
+            "scope": {
+                "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
+            },
+            "bins": {
+                "integration": {"path0": [1], "path1": [1]},
+                "threshold": [3],
+                "avg_cnt": [1],
+            },
+            "qubit": 1,
+            "measurement": 1,
+        },
+    ]
 
 
 class TestPlatformInitialization:
@@ -95,6 +162,20 @@ class TestPlatform:
             platform.disconnect()
         mock_logger.info.assert_called_once_with("Already disconnected from the instruments")
 
+    @pytest.mark.parametrize("alias", ["feedline_input_output_bus", "drive_line_q0_bus"])
+    def test_get_ch_id_from_qubit_and_bus(self, alias: str, platform: Platform):
+        """Test that get_ch_id_from_qubits gets the channel id it should get from the runcard"""
+        channel_id = platform.get_ch_id_from_qubit_and_bus(alias=alias, qubit_index=0)
+        assert channel_id == 0
+
+    def test_get_ch_id_from_qubit_and_bus_error_no_bus(self, platform: Platform):
+        """Test that the method raises an error if the alias is not in the buses returned."""
+        alias = "dummy"
+        qubit_id = 0
+        error_string = f"Could not find bus with alias {alias} for qubit {qubit_id}"
+        with pytest.raises(ValueError, match=re.escape(error_string)):
+            platform.get_ch_id_from_qubit_and_bus(alias=alias, qubit_index=qubit_id)
+
     def test_get_element_method_unknown_returns_none(self, platform: Platform):
         """Test get_element method with unknown element."""
         element = platform.get_element(alias="ABC")
@@ -129,7 +210,7 @@ class TestPlatform:
 
     def test_bus_1_awg_instance(self, platform: Platform):
         """Test bus 1 qubit readout instance."""
-        element = platform.get_element(alias=InstrumentName.QBLOX_QRM.value)
+        element = platform.get_element(alias=f"{InstrumentName.QBLOX_QRM.value}_0")
         assert isinstance(element, AWGAnalogDigitalConverter)
 
     @patch("qililab.data_management.open")
@@ -216,14 +297,14 @@ class TestMethods:
         sequences = platform.compile(program=program, num_avg=1000, repetition_duration=200_000, num_bins=1)
         assert isinstance(sequences, dict)
         assert len(sequences) == len_sequences
-        for alias, sequences in sequences.items():
+        for alias, sequence in sequences.items():
             assert alias in {bus.alias for bus in platform.buses}
-            assert isinstance(sequences, list)
-            assert len(sequences) == 1
-            assert isinstance(sequences[0], Sequence)
-            assert sequences[0]._program.duration == 200_000 * 1000 + 4
+            assert isinstance(sequence, list)
+            assert len(sequence) == 1
+            assert isinstance(sequence[0], Sequence)
+            assert sequence[0]._program.duration == 200_000 * 1000 + 4
 
-    def test_execute_qprogram(self, platform: Platform):
+    def test_execute_qprogram_with_qblox(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
@@ -234,18 +315,89 @@ class TestMethods:
         qprogram.play(bus="feedline_input_output_bus", waveform=readout_wf)
         qprogram.acquire(bus="feedline_input_output_bus", weights=weights_wf)
 
-        with patch.object(Bus, "upload_qpysequence") as upload:
-            with patch.object(Bus, "run") as run:
-                with patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results:
-                    with patch.object(QbloxModule, "desync_sequencers") as desync:
-                        acquire_qprogram_results.return_value = 123
-                        results = platform.execute_qprogram(qprogram=qprogram)
+        with (
+            patch("builtins.open") as patched_open,
+            patch.object(Bus, "upload_qpysequence") as upload,
+            patch.object(Bus, "run") as run,
+            patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
+            patch.object(QbloxModule, "desync_sequencers") as desync,
+        ):
+            acquire_qprogram_results.return_value = 123
+            first_execution_results = platform.execute_qprogram(qprogram=qprogram)
 
+            acquire_qprogram_results.return_value = 456
+            second_execution_results = platform.execute_qprogram(qprogram=qprogram)
+
+            _ = platform.execute_qprogram(qprogram=qprogram, debug=True)
+
+        # assert upload executed only once (2 because there are 2 buses)
         assert upload.call_count == 2
-        assert run.call_count == 2
-        acquire_qprogram_results.assert_called_once()
-        assert results == {"feedline_input_output_bus": 123}
-        desync.assert_called()
+
+        # assert run executed all three times (6 because there are 2 buses)
+        assert run.call_count == 6
+        assert acquire_qprogram_results.call_count == 3  # only readout buses
+        assert desync.call_count == 9
+        assert first_execution_results == {"feedline_input_output_bus": 123}
+        assert second_execution_results == {"feedline_input_output_bus": 456}
+
+        # assure only one debug was called
+        assert patched_open.call_count == 1
+
+    def test_execute_qprogram_with_quantum_machines(
+        self, platform_quantum_machines: Platform
+    ):  # pylint: disable=too-many-locals
+        """Test that the execute_qprogram method executes the qprogram for Quantum Machines correctly"""
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_q0_rf", waveform=drive_wf)
+        qprogram.sync()
+        qprogram.play(bus="readout_q0_rf", waveform=readout_wf)
+        qprogram.measure(bus="readout_q0_rf", waveform=readout_wf, weights=(weights_wf, weights_wf))
+
+        with (
+            patch("builtins.open") as patched_open,
+            patch("qililab.platform.platform.generate_qua_script", return_value=None) as generate_qua,
+            patch.object(QuantumMachinesCluster, "config") as config,
+            patch.object(QuantumMachinesCluster, "append_configuration") as append_configuration,
+            patch.object(QuantumMachinesCluster, "compile") as compile_program,
+            patch.object(QuantumMachinesCluster, "run_compiled_program") as run_compiled_program,
+            patch.object(QuantumMachinesCluster, "get_acquisitions") as get_acquisitions,
+        ):
+            cluster = platform_quantum_machines.get_element("qmm")
+            config.return_value = cluster.settings.to_qua_config()
+
+            get_acquisitions.return_value = {"I_0": np.array([1, 2, 3]), "Q_0": np.array([4, 5, 6])}
+            first_execution_results = platform_quantum_machines.execute_qprogram(qprogram=qprogram)
+
+            get_acquisitions.return_value = {"I_0": np.array([3, 2, 1]), "Q_0": np.array([6, 5, 4])}
+            second_execution_results = platform_quantum_machines.execute_qprogram(qprogram=qprogram)
+
+            _ = platform_quantum_machines.execute_qprogram(qprogram=qprogram, debug=True)
+
+        # assure only one compilation happened
+        assert compile_program.call_count == 1
+        # assure the rest were executed three times
+        assert append_configuration.call_count == 3
+        assert run_compiled_program.call_count == 3
+        assert get_acquisitions.call_count == 3
+
+        assert "readout_q0_rf" in first_execution_results
+        assert len(first_execution_results["readout_q0_rf"]) == 1
+        assert isinstance(first_execution_results["readout_q0_rf"][0], QuantumMachinesMeasurementResult)
+        np.testing.assert_array_equal(first_execution_results["readout_q0_rf"][0].I, np.array([1, 2, 3]))
+        np.testing.assert_array_equal(first_execution_results["readout_q0_rf"][0].Q, np.array([4, 5, 6]))
+
+        assert "readout_q0_rf" in second_execution_results
+        assert len(second_execution_results["readout_q0_rf"]) == 1
+        assert isinstance(second_execution_results["readout_q0_rf"][0], QuantumMachinesMeasurementResult)
+        np.testing.assert_array_equal(second_execution_results["readout_q0_rf"][0].I, np.array([3, 2, 1]))
+        np.testing.assert_array_equal(second_execution_results["readout_q0_rf"][0].Q, np.array([6, 5, 4]))
+
+        # assure only one debug was called
+        assert patched_open.call_count == 1
+        assert generate_qua.call_count == 1
 
     def test_execute(self, platform: Platform):
         """Test that the execute method calls the buses to run and return the results."""
@@ -274,37 +426,82 @@ class TestMethods:
         assert result == 123
         desync.assert_called()
 
-    def test_error_circuit_gt_repetition_duration(self, platform: Platform):
-        c = Circuit(1)
-        c.add([gates.X(0)] * 1000)
-        c.add(gates.M(0))
-        error_string = "Circuit execution time cannnot be longer than repetition duration but found circuit time 51998 > 2000 for qubit 0"
-        with pytest.raises(ValueError, match=error_string):
-            platform.compile(program=c, num_avg=1000, repetition_duration=2000, num_bins=1)
-
     def test_execute_with_queue(self, platform: Platform):
         """Test that the execute method adds the obtained results to the given queue."""
         queue: Queue = Queue()
+        pulse_schedule = PulseSchedule()
+        pulse_schedule.add_event(
+            PulseEvent(
+                pulse=Pulse(amplitude=1, phase=0.5, duration=1500, frequency=1e9, pulse_shape=Rectangular()),
+                start_time=200,
+                qubit=0,
+            ),
+            bus_alias="feedline_input",
+            delay=0,
+        )
         with patch.object(Bus, "upload"):
             with patch.object(Bus, "run"):
                 with patch.object(Bus, "acquire_result") as acquire_result:
                     with patch.object(QbloxModule, "desync_sequencers") as desync:
                         acquire_result.return_value = 123
                         _ = platform.execute(
-                            program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1, queue=queue
+                            program=pulse_schedule, num_avg=1000, repetition_duration=2000, num_bins=1, queue=queue
                         )
 
         assert len(queue.queue) == 1
         assert queue.get() == 123
         desync.assert_called()
 
-    def test_execute_raises_error_if_no_readout_buses_present(self, platform: Platform):
-        """Test that `Platform.execute` raises an error when the platform contains more than one readout bus."""
-        platform.buses.elements = []
-        with pytest.raises(ValueError, match="There are no readout buses in the platform."):
-            with patch.object(QbloxModule, "desync_sequencers") as desync:
-                platform.execute(program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1)
-            desync.assert_called()
+    def test_execute_returns_ordered_measurements(self, platform: Platform, qblox_results: list[dict]):
+        """Test that executing with some circuit returns acquisitions with multiple measurements in same order
+        as they appear in circuit"""
+
+        # Define circuit
+        c = Circuit(2)
+        c.add([gates.M(1), gates.M(0), gates.M(0, 1)])  # without ordering, these are retrieved for each sequencer, so
+        # the order from qblox qrm will be M(0),M(0),M(1),M(1)
+
+        platform.compile = MagicMock()  # type: ignore # don't care about compilation
+        platform.compile.return_value = {"feedline_input_output_bus": None}
+        with patch.object(Bus, "upload"):
+            with patch.object(Bus, "run"):
+                with patch.object(Bus, "acquire_result") as acquire_result:
+                    with patch.object(QbloxModule, "desync_sequencers"):
+                        acquire_result.return_value = QbloxResult(
+                            qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1]
+                        )
+                        result = platform.execute(program=c, num_avg=1000, repetition_duration=2000, num_bins=1)
+
+        # check that the order of #measurement # qubit is the same as in the circuit
+        assert [(result["measurement"], result["qubit"]) for result in result.qblox_raw_results] == [  # type: ignore
+            (0, 1),
+            (0, 0),
+            (1, 0),
+            (1, 1),
+        ]
+
+    def test_order_results_circuit_M_neq_acquisitions(self, platform: Platform, qblox_results: list[dict]):
+        """Test that executing with some circuit returns acquisitions with multiple measurements in same order
+        as they appear in circuit"""
+
+        # Define circuit
+        c = Circuit(2)
+        c.add([gates.M(1), gates.M(0, 1)])  # without ordering, these are retrieved for each sequencer, so
+        # the order from qblox qrm will be M(0),M(1),M(1)
+        n_m = len([qubit for gate in c.queue for qubit in gate.qubits if isinstance(gate, gates.M)])
+
+        platform.compile = MagicMock()  # type: ignore # don't care about compilation
+        platform.compile.return_value = {"feedline_input_output_bus": None}
+        with patch.object(Bus, "upload"):
+            with patch.object(Bus, "run"):
+                with patch.object(Bus, "acquire_result") as acquire_result:
+                    with patch.object(QbloxModule, "desync_sequencers"):
+                        acquire_result.return_value = QbloxResult(
+                            qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1]
+                        )
+                        error_string = f"Number of measurements in the circuit {n_m} does not match number of acquisitions {len(qblox_results)}"
+                        with pytest.raises(ValueError, match=error_string):
+                            _ = platform.execute(program=c, num_avg=1000, repetition_duration=2000, num_bins=1)
 
     def test_execute_raises_error_if_program_type_wrong(self, platform: Platform):
         """Test that `Platform.execute` raises an error if the program sent is not a Circuit or a PulseSchedule."""
@@ -318,22 +515,6 @@ class TestMethods:
             ),
         ):
             platform.execute(program=program, num_avg=1000, repetition_duration=2000, num_bins=1)
-
-    def test_execute_raises_error_if_more_than_one_readout_bus_present(self, platform: Platform):
-        """Test that `Platform.execute` raises an error when the platform contains more than one readout bus."""
-        platform.buses.add(Bus(settings=copy.deepcopy(Galadriel.buses[1]), platform_instruments=platform.instruments))
-
-        with patch.object(Bus, "upload"):
-            with patch.object(Bus, "run"):
-                with patch.object(Bus, "acquire_result"):
-                    with patch("qililab.platform.platform.logger") as mock_logger:
-                        with patch.object(QbloxModule, "desync_sequencers") as desync:
-                            _ = platform.execute(
-                                program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1
-                            )
-
-        mock_logger.error.assert_called_once_with("Only One Readout Bus allowed. Reading only from the first one.")
-        desync.assert_called()
 
     @pytest.mark.parametrize("parameter", [Parameter.AMPLITUDE, Parameter.DURATION, Parameter.PHASE])
     @pytest.mark.parametrize("gate", ["I(0)", "X(0)", "Y(0)"])

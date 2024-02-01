@@ -139,7 +139,11 @@ class QbloxResult(Result):
 
         Returns:
             Counts: Counts object containing the counts of each state.
+        Raises:
+            NotImplementedError: this method is not implemented for n measurements on the same qubit
         """
+        if sum(result["measurement"] for result in self.qblox_raw_results) != 0:
+            raise NotImplementedError("Counts for multiple measurements on a single qubit are not supported")
         return self.qblox_bins_acquisitions.counts()
 
     def counts(self) -> dict:
@@ -147,39 +151,49 @@ class QbloxResult(Result):
 
         Returns:
             Counts: Counts object containing the counts of each state.
+        Raises:
+            NotImplementedError: this method is not implemented for n measurements on the same qubit
         """
+        if sum(result["measurement"] for result in self.qblox_raw_results) != 0:
+            raise NotImplementedError("Counts for multiple measurements on a single qubit are not supported")
         return self.qblox_bins_acquisitions.counts().as_dict()
 
     def samples(self) -> np.ndarray:
         """Returns an array containing the measured samples.
+        The shape of the returned array is ``(# sequencers, # bins)``.
 
         Returns:
             np.ndarray: An array containing the measured samples (0 or 1).
+        Raises:
+            NotImplementedError: this method is not implemented for n measurements on the same qubit
         """
+        if sum(result["measurement"] for result in self.qblox_raw_results) != 0:
+            raise NotImplementedError("Samples for multiple measurements on a single qubit are not supported")
         return self.qblox_bins_acquisitions.samples()
 
     @property
     def array(self) -> np.ndarray:
         # Save array data
         if self.qblox_scope_acquisitions is not None:
+            if sum(result["measurement"] for result in self.qblox_raw_results) != 0:
+                raise NotImplementedError(
+                    "Scope acquisition for multiple measurements on a single qubit are not supported"
+                )
             # The dimensions of the array are: (2, N) where N is the length of the scope.
             path0 = self.qblox_scope_acquisitions.scope.path0.data
             path1 = self.qblox_scope_acquisitions.scope.path1.data
             return np.array([path0, path1])
 
         bins_len = [len(bins) for bins in self.qblox_bins_acquisitions.bins]
-        # Check that all sequencers have the same number of bins.
+        # Check that all measurements have the same number of bins.
         if len(set(bins_len)) != 1:
             raise IndexError(
-                f"All sequencers must have the same number of bins to return an array. Obtained {len(bins_len)} "
-                f"sequencers with {bins_len} bins respectively."
+                f"All measurements must have the same number of bins to return an array. Obtained {len(bins_len)} "
+                f"measurements with {bins_len} bins respectively."
             )
-        # The dimensions of the array are the following: (#sequencers, 2, #bins)
-        # Where the 2 corresponds to path0 (I) and path1 (Q) of the sequencer
-        bins = [
-            [sequencer.integration.path0, sequencer.integration.path1]
-            for sequencer in self.qblox_bins_acquisitions.bins
-        ]
+        # The dimensions of the array are the following: (#sequencers*#measurements, 2, #bins)
+        # #measurements are the number of measurements done for a particular single qubit
+        bins = [[result.integration.path0, result.integration.path1] for result in self.qblox_bins_acquisitions.bins]
 
         return np.array(bins[0] if len(bins) == 1 else bins)
 

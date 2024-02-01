@@ -13,6 +13,8 @@
 # limitations under the License.
 
 """Drag IQPair."""
+from qililab.qprogram.decorators import requires_domain
+from qililab.qprogram.variable import Domain
 from qililab.waveforms.drag_correction import DragCorrection
 from qililab.waveforms.gaussian import Gaussian
 
@@ -30,6 +32,10 @@ class Drag(IQPair):  # pylint: disable=too-few-public-methods
         drag_coefficient (float): Drag coefficient that gives the DRAG its imaginary components.
     """
 
+    @requires_domain("amplitude", Domain.Voltage)
+    @requires_domain("duration", Domain.Time)
+    @requires_domain("num_sigmas", Domain.Scalar)
+    @requires_domain("drag_coefficient", Domain.Scalar)
     def __init__(self, amplitude: float, duration: int, num_sigmas: float, drag_coefficient: float):
         waveform_i = Gaussian(amplitude=amplitude, duration=duration, num_sigmas=num_sigmas)
         waveform_q = DragCorrection(drag_coefficient=drag_coefficient, waveform=waveform_i)

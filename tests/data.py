@@ -79,6 +79,30 @@ class Galadriel:
                     },
                 }
             ],
+            "M(1)": [
+                {
+                    "bus": "feedline_input_output_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 2000,
+                        "shape": {"name": "rectangular"},
+                    },
+                }
+            ],
+            "M(2)": [
+                {
+                    "bus": "feedline_input_output_bus_1",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 2000,
+                        "shape": {"name": "rectangular"},
+                    },
+                }
+            ],
             "I(0)": [
                 {
                     "bus": "drive_line_q0_bus",
@@ -246,7 +270,7 @@ class Galadriel:
         },
         INSTRUMENTCONTROLLER.MODULES: [
             {
-                "alias": InstrumentName.QBLOX_QRM.value,
+                "alias": f"{InstrumentName.QBLOX_QRM.value}_0",
                 "slot_id": 0,
             }
         ],
@@ -255,7 +279,7 @@ class Galadriel:
 
     qblox_qrm_0: dict[str, Any] = {
         "name": InstrumentName.QBLOX_QRM,
-        "alias": InstrumentName.QBLOX_QRM.value,
+        "alias": f"{InstrumentName.QBLOX_QRM.value}_0",
         RUNCARD.FIRMWARE: "0.7.0",
         Parameter.NUM_SEQUENCERS.value: 2,
         Parameter.ACQUISITION_DELAY_TIME.value: 100,
@@ -318,6 +342,64 @@ class Galadriel:
                 Parameter.WEIGHTS_I.value: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
                 Parameter.WEIGHTS_Q.value: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
                 Parameter.WEIGHED_ACQ_ENABLED.value: False,
+                Parameter.THRESHOLD.value: 0.5,
+                Parameter.THRESHOLD_ROTATION.value: 45.0,
+            },
+        ],
+    }
+
+    pulsar_controller_qrm_1: dict[str, Any] = {
+        "name": InstrumentControllerName.QBLOX_PULSAR,
+        "alias": "pulsar_controller_qrm_1",
+        Parameter.REFERENCE_CLOCK.value: ReferenceClock.EXTERNAL.value,
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            "name": ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.0.5",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": f"{InstrumentName.QBLOX_QRM.value}_1",
+                "slot_id": 0,
+            }
+        ],
+        INSTRUMENTCONTROLLER.RESET: True,
+    }
+
+    qblox_qrm_1: dict[str, Any] = {
+        "name": InstrumentName.QBLOX_QRM,
+        "alias": f"{InstrumentName.QBLOX_QRM.value}_1",
+        RUNCARD.FIRMWARE: "0.7.0",
+        Parameter.NUM_SEQUENCERS.value: 1,
+        Parameter.ACQUISITION_DELAY_TIME.value: 100,
+        AWGTypes.OUT_OFFSETS.value: [0.123, 1.23],
+        AWGTypes.AWG_SEQUENCERS.value: [
+            {
+                "identifier": 0,
+                "chip_port_id": "feedline_input_1",
+                "qubit": 2,
+                "output_i": 0,
+                "output_q": 1,
+                Parameter.NUM_BINS.value: 1,
+                Parameter.IF.value: 100_000_000,
+                Parameter.GAIN_I.value: 1,
+                Parameter.GAIN_Q.value: 1,
+                Parameter.GAIN_IMBALANCE.value: 0,
+                Parameter.PHASE_IMBALANCE.value: 0,
+                Parameter.OFFSET_I.value: 0,
+                Parameter.OFFSET_Q.value: 0,
+                Parameter.HARDWARE_MODULATION.value: False,
+                Parameter.SCOPE_ACQUIRE_TRIGGER_MODE.value: AcquireTriggerMode.SEQUENCER.value,
+                Parameter.SCOPE_HARDWARE_AVERAGING.value: True,
+                Parameter.SAMPLING_RATE.value: 1.0e09,
+                Parameter.INTEGRATION_LENGTH.value: 2_123,
+                Parameter.INTEGRATION_MODE.value: IntegrationMode.SSB.value,
+                Parameter.SEQUENCE_TIMEOUT.value: 1,
+                Parameter.ACQUISITION_TIMEOUT.value: 1,
+                Parameter.HARDWARE_DEMODULATION.value: True,
+                Parameter.SCOPE_STORE_ENABLED.value: True,
+                Parameter.WEIGHTS_I.value: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+                Parameter.WEIGHTS_Q.value: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
+                Parameter.WEIGHED_ACQ_ENABLED.value: True,
                 Parameter.THRESHOLD.value: 0.5,
                 Parameter.THRESHOLD_ROTATION.value: 45.0,
             },
@@ -423,10 +505,19 @@ class Galadriel:
         Parameter.MAX_VOLTAGE.value: 20.0,
     }
 
-    instruments: list[dict] = [qblox_qcm_0, qblox_qrm_0, rohde_schwarz_0, rohde_schwarz_1, attenuator, keithley_2600]
+    instruments: list[dict] = [
+        qblox_qcm_0,
+        qblox_qrm_0,
+        qblox_qrm_1,
+        rohde_schwarz_0,
+        rohde_schwarz_1,
+        attenuator,
+        keithley_2600,
+    ]
     instrument_controllers: list[dict] = [
         pulsar_controller_qcm_0,
         pulsar_controller_qrm_0,
+        pulsar_controller_qrm_1,
         rohde_schwarz_controller_0,
         rohde_schwarz_controller_1,
         attenuator_controller_0,
@@ -448,8 +539,18 @@ class Galadriel:
             "alias": "feedline_input_output_bus",
             "system_control": {
                 "name": SystemControlName.READOUT_SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QRM.value, "rs_1"],
+                RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_0", "rs_1"],
             },
+            RUNCARD.DISTORTIONS: [],
+            RUNCARD.DELAY: 0,
+        },
+        {
+            "alias": "feedline_input_output_bus_1",
+            "system_control": {
+                "name": SystemControlName.READOUT_SYSTEM_CONTROL,
+                RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_1"],
+            },
+            "port": "feedline_input_1",
             RUNCARD.DISTORTIONS: [],
             RUNCARD.DELAY: 0,
         },
@@ -547,6 +648,8 @@ results_two_loops: dict[str, Any] = {
                         "threshold": [0],
                         "avg_cnt": [1],
                     },
+                    "qubit": 0,
+                    "measurement": 0,
                 }
             ],
         },
@@ -564,6 +667,8 @@ results_two_loops: dict[str, Any] = {
                         "threshold": [0],
                         "avg_cnt": [1],
                     },
+                    "qubit": 0,
+                    "measurement": 0,
                 }
             ],
         },
@@ -598,6 +703,8 @@ results_one_loops: dict[str, Any] = {
                         "threshold": [0],
                         "avg_cnt": [1],
                     },
+                    "qubit": 1,
+                    "measurement": 0,
                 }
             ],
         },
@@ -615,6 +722,8 @@ results_one_loops: dict[str, Any] = {
                         "threshold": [0],
                         "avg_cnt": [1],
                     },
+                    "qubit": 1,
+                    "measurement": 0,
                 }
             ],
         },

@@ -25,6 +25,7 @@ Waveforms
     ~Waveform
     ~Arbitrary
     ~Gaussian
+    ~DragCorrection
     ~Square
     ~IQPair
     ~DragPair
@@ -32,6 +33,7 @@ Waveforms
 
 from .arbitrary import Arbitrary
 from .drag import Drag as DragPair
+from .drag_correction import DragCorrection
 from .gaussian import Gaussian
 from .iq_pair import IQPair
 from .square import Square
