@@ -47,104 +47,6 @@ def fixture_platform_quantum_machines():
     return build_platform(runcard=SauronQuantumMachines.runcard)
 
 
-@pytest.fixture(name="platform_multiple_qrm")
-def fixture_platform_multiple_qrm():
-    readout_buses = [
-        {
-            "alias": "feedline_input_output_bus_0",
-            "system_control": {
-                "name": "readout_system_control",
-                RUNCARD.INSTRUMENTS: ["QRM1", "rs_1"],
-            },
-            "port": "feedline_input_0",
-            RUNCARD.DISTORTIONS: [],
-            RUNCARD.DELAY: 0,
-        },
-        {
-            "alias": "feedline_input_output_bus_1",
-            "system_control": {
-                "name": "readout_system_control",
-                RUNCARD.INSTRUMENTS: ["QRM2", "rs_1"],
-            },
-            "port": "feedline_input_1",
-            RUNCARD.DISTORTIONS: [],
-            RUNCARD.DELAY: 0,
-        },
-    ]
-
-    runcard_2qrm = copy.deepcopy(Galadriel.runcard)
-
-    # change readout buses to 2
-    _ = runcard_2qrm["buses"].pop(1)
-    runcard_2qrm["buses"].extend(readout_buses)
-
-    # fix feedline inputs in awgs for each qrm module
-    qblox_qrm_0 = runcard_2qrm["instruments"].pop(1)
-    qblox_qrm_0["alias"] = "QRM1"
-    qblox_qrm_0["awg_sequencers"][0]["chip_port_id"] = "feedline_input_0"
-    qblox_qrm_0["awg_sequencers"][1]["chip_port_id"] = "feedline_input_0"
-
-    qblox_qrm_1 = qblox_qrm_0.copy()
-    qblox_qrm_1["alias"] = "QRM2"
-    qblox_qrm_1["num_sequencers"] = 1
-    qblox_qrm_1["awg_sequencers"] = [qblox_qrm_1["awg_sequencers"][0]]
-    qblox_qrm_1["awg_sequencers"][0]["chip_port_id"] = "feedline_input_1"
-
-    runcard_2qrm["instruments"].extend([qblox_qrm_0, qblox_qrm_1])
-    chip: dict[str, Any] = {
-        "nodes": [
-            {"name": "port", "alias": "flux_q0", "line": "flux", "nodes": ["q0"]},
-            {"name": "port", "alias": "drive_q0", "line": "drive", "nodes": ["q0"]},
-            {"name": "port", "alias": "feedline_input_0", "line": "feedline_input", "nodes": ["resonator_q0"]},
-            {"name": "port", "alias": "feedline_output_0", "line": "feedline_output", "nodes": ["resonator_q0"]},
-            {"name": "port", "alias": "feedline_input_1", "line": "feedline_input", "nodes": ["resonator_q1"]},
-            {"name": "port", "alias": "feedline_output_1", "line": "feedline_output", "nodes": ["resonator_q1"]},
-            {
-                "name": "resonator",
-                "alias": "resonator_q0",
-                "frequency": 7.34730e09,
-                "nodes": ["feedline_input_0", "feedline_output_0", "q0"],
-            },
-            {
-                "name": "qubit",
-                "alias": "q0",
-                "qubit_index": 0,
-                "frequency": 3.451e09,
-                "nodes": ["flux_q0", "drive_q0", "resonator_q0"],
-            },
-            {
-                "name": "resonator",
-                "alias": "resonator_q1",
-                "frequency": 7.34730e09,
-                "nodes": ["feedline_input_1", "feedline_output_1", "q1"],
-            },
-            {
-                "name": "qubit",
-                "alias": "q1",
-                "qubit_index": 1,
-                "frequency": 3.451e09,
-                "nodes": ["resonator_q1"],
-            },
-        ],
-    }
-    runcard_2qrm["chip"] = chip
-
-    pulsar_controller_qrm_0 = runcard_2qrm["instrument_controllers"].pop(1)
-    pulsar_controller_qrm_0["modules"][0]["alias"] = "QRM1"
-
-    pulsar_controller_qrm_1 = pulsar_controller_qrm_0.copy()
-    pulsar_controller_qrm_1["modules"][0]["alias"] = "QRM2"
-
-    runcard_2qrm["instrument_controllers"].extend([pulsar_controller_qrm_0, pulsar_controller_qrm_1])
-
-    with patch("qililab.data_management.yaml.safe_load", return_value=runcard_2qrm) as mock_load:
-        with patch("qililab.data_management.open") as mock_open:
-            pl = ql.build_platform(runcard="_")
-            mock_load.assert_called()
-            mock_open.assert_called()
-    return pl
-
-
 @pytest.fixture(name="runcard")
 def fixture_runcard():
     return Runcard(**copy.deepcopy(Galadriel.runcard))
@@ -643,7 +545,7 @@ class TestMethods:
         ):
             platform.execute(program=program, num_avg=1000, repetition_duration=2000, num_bins=1)
 
-    def test_execute_stack_2qrm(self, platform_multiple_qrm: Platform):
+    def test_execute_stack_2qrm(self, platform: Platform):
         """Test that the execute stacks results when more than one qrm is called."""
         # build mock qblox results
         qblox_raw_results = QbloxResult(
@@ -663,13 +565,16 @@ class TestMethods:
             ],
         )
         pulse_schedule = PulseSchedule()
+        # mock compile method
+        platform.compile = MagicMock()
+        platform.compile.return_value = {"feedline_input_output_bus": None, "feedline_input_output_bus_1": None}
         # mock execution
         with patch.object(Bus, "upload"):
             with patch.object(Bus, "run"):
                 with patch.object(Bus, "acquire_result") as acquire_result:
                     with patch.object(QbloxModule, "desync_sequencers"):
                         acquire_result.return_value = qblox_raw_results
-                        result = platform_multiple_qrm.execute(
+                        result = platform.execute(
                             program=pulse_schedule, num_avg=1000, repetition_duration=2000, num_bins=1
                         )
         assert len(result.qblox_raw_results) == 2
