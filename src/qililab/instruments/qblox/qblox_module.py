@@ -494,15 +494,6 @@ class QbloxModule(AWG):
                 getattr(sequencer, f"connect_out{output}")(path)
 
     @property
-    def final_wait_time(self) -> int:
-        """QbloxPulsar 'final_wait_time' property.
-
-        Returns:
-            int: Final wait time.
-        """
-        return self._MIN_WAIT_TIME
-
-    @property
     def out_offsets(self):
         """Returns the offsets of each output of the qblox module."""
         return self.settings.out_offsets

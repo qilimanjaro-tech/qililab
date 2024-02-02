@@ -712,7 +712,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         repetition_duration: int,
         num_bins: int = 1,
         queue: Queue | None = None,
-    ) -> Result:
+    ) -> Result | QbloxResult:
         """Compiles and executes a circuit or a pulse schedule, using the platform instruments.
 
         If the ``program`` argument is a :class:`Circuit`, it will first be translated into a :class:`PulseSchedule` using the transpilation
