@@ -35,6 +35,7 @@ class FlatTop(Waveform):  # pylint: disable=too-few-public-methods
     @requires_domain("amplitude", Domain.Voltage)
     @requires_domain("duration", Domain.Time)
     def __init__(self, amplitude: float, duration: int, gaussian: float = 0.5, buffer: float = 3.0):
+        super().__init__()
         self.amplitude = amplitude
         self.duration = duration
         self.gaussian = gaussian
