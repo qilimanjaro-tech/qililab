@@ -20,7 +20,6 @@ from qililab.typings.enums import (
     PulseDistortionName,
     PulseShapeName,
     ResultName,
-    SystemControlName,
 )
 
 
@@ -28,13 +27,7 @@ class FactoryElement:  # pylint: disable=too-few-public-methods
     """Class FactoryElement"""
 
     name: (
-        SystemControlName
-        | PulseDistortionName
-        | PulseShapeName
-        | ResultName
-        | InstrumentName
-        | ConnectionName
-        | InstrumentControllerName
+        PulseDistortionName | PulseShapeName | ResultName | InstrumentName | ConnectionName | InstrumentControllerName
     )  #: Enumerate for name
 
     def __hash__(self) -> int:

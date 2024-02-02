@@ -26,11 +26,11 @@ from qililab.typings.enums import (
     InstrumentControllerName,
     InstrumentName,
     IntegrationMode,
+    Line,
     Parameter,
     PulseShapeName,
     ReferenceClock,
     ResetMethod,
-    SystemControlName,
 )
 
 
@@ -527,42 +527,35 @@ class Galadriel:
     buses: list[dict[str, Any]] = [
         {
             RUNCARD.ALIAS: "drive_line_q0_bus",
-            "system_control": {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
-            },
+            RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
+            "channels": [[0], None],
+            "qubits": [[0], None],
             RUNCARD.DISTORTIONS: [],
             RUNCARD.DELAY: 0,
-            "qubit": 0,
         },
         {
             "alias": "feedline_input_output_bus",
-            "system_control": {
-                "name": SystemControlName.READOUT_SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_0", "rs_1"],
-            },
+            RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_0", "rs_1"],
+            "channels": [[0, 1], None],
+            "qubits": [[0, 1], None],
             RUNCARD.DISTORTIONS: [],
             RUNCARD.DELAY: 0,
         },
         {
             "alias": "feedline_input_output_bus_1",
-            "system_control": {
-                "name": SystemControlName.READOUT_SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_1"],
-            },
-            "port": "feedline_input_1",
+            RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_1"],
+            "channels": [[1]],
+            "qubits": [[0]],
             RUNCARD.DISTORTIONS: [],
             RUNCARD.DELAY: 0,
         },
         {
             RUNCARD.ALIAS: "flux_line_q0_bus",
-            "system_control": {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
-            },
+            RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
+            "channels": [[0], None],
+            "qubits": [[0], None],
             RUNCARD.DISTORTIONS: [],
             RUNCARD.DELAY: 0,
-            "qubit": 0,
         },
     ]
 
@@ -868,18 +861,18 @@ class SauronVNA:
     buses: list[dict[str, Any]] = [
         {
             "alias": "keysight_e5080b_readout_bus",
-            "system_control": {
-                "name": SystemControlName.READOUT_SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: [InstrumentName.KEYSIGHT_E5080B.value],
-            },
+            "instruments": [InstrumentName.KEYSIGHT_E5080B.value],
+            "channels": [None],
+            "qubits": [None],
+            "line": Line.READOUT,
             RUNCARD.DISTORTIONS: [],
         },
         {
             "alias": "agilent_e5071b_readout_bus",
-            "system_control": {
-                "name": SystemControlName.READOUT_SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: [InstrumentName.AGILENT_E5071B.value],
-            },
+            "instruments": [InstrumentName.AGILENT_E5071B.value],
+            "channels": [None],
+            "qubits": [None],
+            "line": Line.READOUT,
             RUNCARD.DISTORTIONS: [],
         },
     ]
@@ -1020,36 +1013,21 @@ class SauronYokogawa:
         yokogawa_gs200_controller_wrong_module,
     ]
 
-    chip: dict[str, Any] = {
-        "nodes": [
-            {"name": "port", "alias": "flux_q0", "line": "flux", "nodes": ["q0"]},
-            {
-                "name": "qubit",
-                "alias": "q0",
-                "qubit_index": 0,
-                "frequency": 3.451e09,
-                "nodes": ["flux_q0"],
-            },
-        ],
-    }
-
     buses: list[dict[str, Any]] = [
         {
             RUNCARD.ALIAS: "yokogawa_gs200_current_bus",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["yokogawa_current"],
-            },
-            "port": "flux_q0",
+            "instruments": ["yokogawa_current"],
+            "channels": [None],
+            "qubits": [None],
+            "line": Line.FLUX,
             RUNCARD.DISTORTIONS: [],
         },
         {
             RUNCARD.ALIAS: "yokogawa_gs200_voltage_bus",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["yokogawa_voltage"],
-            },
-            "port": "flux_q0",
+            "instruments": ["yokogawa_voltage"],
+            "channels": [None],
+            "qubits": [None],
+            "line": Line.FLUX,
             RUNCARD.DISTORTIONS: [],
         },
     ]
@@ -1154,27 +1132,13 @@ class SauronQDevil:
         qdevil_qdac2_controller_wrong_module,
     ]
 
-    chip: dict[str, Any] = {
-        "nodes": [
-            {"name": "port", "alias": "port_q0", "line": "flux", "nodes": ["q0"]},
-            {
-                "name": "qubit",
-                "alias": "q0",
-                "qubit_index": 0,
-                "frequency": 3.451e09,
-                "nodes": ["port_q0"],
-            },
-        ],
-    }
-
     buses: list[dict[str, Any]] = [
         {
             RUNCARD.ALIAS: "qdac_bus",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["qdac"],
-            },
-            "port": "port_q0",
+            "instruments": ["qdac"],
+            "channels": [0],
+            "qubits": [[0]],
+            "line": Line.FLUX,
             RUNCARD.DISTORTIONS: [],
         }
     ]
@@ -1379,63 +1343,45 @@ class SauronQuantumMachines:
     instruments = [qmm, qmm_with_octave, rohde_schwarz]
     instrument_controllers = [qmm_controller, qmm_with_octave_controller, qmm_controller_wrong_module]
 
-    chip: dict[str, Any] = {
-        "nodes": [
-            {"name": "port", "alias": "port_q0", "line": "flux", "nodes": ["q0"]},
-            {
-                "name": "qubit",
-                "alias": "q0",
-                "qubit_index": 0,
-                "frequency": 3.451e09,
-                "nodes": ["port_q0"],
-            },
-        ],
-    }
-
     buses: list[dict[str, Any]] = [
         {
             RUNCARD.ALIAS: "drive_q0",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["qmm"],
-            },
-            "port": "port_q0",
+            "instruments": ["qmm"],
+            "channels": [["drive_q0"]],
+            "qubits": [[0]],
+            "line": Line.DRIVE,
             RUNCARD.DISTORTIONS: [],
         },
         {
             RUNCARD.ALIAS: "readout_q0",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["qmm"],
-            },
-            "port": "port_q0",
+            "instruments": ["qmm"],
+            "channels": [["readout_q0"]],
+            "qubits": [[0]],
+            "line": Line.READOUT,
             RUNCARD.DISTORTIONS: [],
         },
         {
             RUNCARD.ALIAS: "flux_q0",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["qmm"],
-            },
-            "port": "port_q0",
+            "instruments": ["qmm"],
+            "channels": [["flux_q0"]],
+            "qubits": [[0]],
+            "line": Line.FLUX,
             RUNCARD.DISTORTIONS: [],
         },
         {
             RUNCARD.ALIAS: "drive_q0_rf",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["qmm_with_octave"],
-            },
-            "port": "port_q0",
+            "instruments": ["qmm_with_octave"],
+            "channels": [["drive_q0_rf"]],
+            "qubits": [[0]],
+            "line": Line.DRIVE,
             RUNCARD.DISTORTIONS: [],
         },
         {
             RUNCARD.ALIAS: "readout_q0_rf",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["qmm_with_octave"],
-            },
-            "port": "port_q0",
+            "instruments": ["qmm_with_octave"],
+            "channels": [["readout_q0_rf"]],
+            "qubits": [[0]],
+            "line": Line.READOUT,
             RUNCARD.DISTORTIONS: [],
         },
     ]

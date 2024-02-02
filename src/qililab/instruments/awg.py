@@ -66,14 +66,14 @@ class AWG(Instrument):
     settings: AWGSettings
 
     @abstractmethod
-    def run(self, bus_alias: str):
+    def run(self, channel_id: int | str | None):
         """Run the uploaded program"""
 
     @abstractmethod
-    def upload(self, bus_alias: str):
+    def upload(self, channel_id: int | str | None):
         """Upload compiled program."""
 
-    def upload_qpysequence(self, qpysequence: QpySequence, bus_alias: str):
+    def upload_qpysequence(self, qpysequence: QpySequence, channel_id: int | str | None):
         """Upload qpysequence."""
 
     @property

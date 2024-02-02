@@ -206,19 +206,6 @@ class InstrumentControllerName(str, Enum):
     QDEVIL_QDAC2 = "qdevil_qdac2"
 
 
-class SystemControlName(str, Enum):
-    """System Control names.
-
-    Args:
-        enum (str): Available system control element names:
-        * system_control
-        * readout_system_control
-    """
-
-    SYSTEM_CONTROL = "system_control"
-    READOUT_SYSTEM_CONTROL = "readout_system_control"
-
-
 class Parameter(str, Enum):
     """Parameter names."""
 
@@ -494,5 +481,4 @@ class Line(str, Enum):
 
     FLUX = "flux"
     DRIVE = "drive"
-    FEEDLINE_INPUT = "feedline_input"
-    FEEDLINE_OUTPUT = "feedline_output"
+    READOUT = "readout"

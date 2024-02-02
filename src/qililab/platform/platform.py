@@ -44,8 +44,7 @@ from qililab.result import Result
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.quantum_machines_results import QuantumMachinesMeasurementResult
 from qililab.settings import Runcard
-from qililab.system_control import ReadoutSystemControl
-from qililab.typings.enums import InstrumentName, Parameter
+from qililab.typings.enums import Line, Parameter
 from qililab.utils import hash_qpy_sequence, hash_qua_program
 
 from .components import Bus, Buses
@@ -418,48 +417,23 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         Returns:
             int: sequencer id
         """
-        bus = next((bus for bus in self._get_bus_by_qubit_index(qubit_index=qubit_index) if bus.alias == alias), None)
-        if bus is None:
-            raise ValueError(f"Could not find bus with alias {alias} for qubit {qubit_index}")
-        if instrument := next(
-            (
-                instrument
-                for instrument in bus.system_control.instruments
-                if instrument.name in [InstrumentName.QBLOX_QRM, InstrumentName.QRMRF]
-            ),
-            None,
-        ):
-            return next(
-                sequencer.identifier for sequencer in instrument.awg_sequencers if sequencer.qubit == qubit_index
-            )
-        # if the alias is not in the QRMs, it should be in the QCM
-        instrument = next(
-            instrument
-            for instrument in bus.system_control.instruments
-            if instrument.name in [InstrumentName.QBLOX_QCM, InstrumentName.QCMRF]
-        )
-        return next(
-            (sequencer.identifier for sequencer in instrument.awg_sequencers if sequencer.bus_alias == bus.alias),
-            None,
-        )
+        bus = self._get_bus_by_alias(alias=alias)
+        _, channel_id = bus.get_instrument_and_channel_of_qubit(qubit=qubit_index)
+        return channel_id
 
     def _get_bus_by_qubit_index(self, qubit_index: int) -> tuple[Bus, Bus, Bus]:
         """Finds buses associated with the given qubit index.
 
-        #     Args:
-        #         qubit_index (int): Qubit index to get the buses from.
+        Args:
+            qubit_index (int): Qubit index to get the buses from.
 
-        #     Returns:
-        #         tuple[:class:`Bus`, :class:`Bus`, :class:`Bus`]: Tuple of Bus objects containing the flux, control and readout buses of the given qubit.
-        #"""
-
-    #     flux_port = self.chip.get_port_from_qubit_idx(idx=qubit_index, line=Line.FLUX)
-    #     control_port = self.chip.get_port_from_qubit_idx(idx=qubit_index, line=Line.DRIVE)
-    #     readout_port = self.chip.get_port_from_qubit_idx(idx=qubit_index, line=Line.FEEDLINE_INPUT)
-    #     flux_bus = self.buses.get(port=flux_port)
-    #     control_bus = self.buses.get(port=control_port)
-    #     readout_bus = self.buses.get(port=readout_port)
-    #     return flux_bus, control_bus, readout_bus
+        Returns:
+            tuple[:class:`Bus`, :class:`Bus`, :class:`Bus`]: Tuple of Bus objects containing the flux, control and readout buses of the given qubit.
+        """
+        flux_bus = next(bus for bus in self.buses if qubit_index in bus.qubits and bus.line == Line.FLUX)
+        control_bus = next(bus for bus in self.buses if qubit_index in bus.qubits and bus.line == Line.DRIVE)
+        readout_bus = next(bus for bus in self.buses if qubit_index in bus.qubits and bus.line == Line.READOUT)
+        return flux_bus, control_bus, readout_bus
 
     def _get_bus_by_alias(self, alias: str | None = None):
         """Gets buses given their alias.
@@ -473,7 +447,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """
         return next((bus for bus in self.buses if bus.alias == alias), None)
 
-    def get_parameter(self, parameter: Parameter, alias: str, channel_id: int | None = None):
+    def get_parameter(self, parameter: Parameter, alias: str, channel_id: int | str | None = None):
         """Get platform parameter.
 
         Args:
@@ -492,7 +466,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         parameter: Parameter,
         value: float | str | bool,
         alias: str,
-        channel_id: int | None = None,
+        channel_id: int | str | None = None,
     ):
         """Set a parameter for a platform element.
 
@@ -594,7 +568,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         instruments = {
             instrument
             for bus in buses
-            for instrument in bus.system_control.instruments
+            for instrument in bus.instruments
             if isinstance(instrument, (QbloxModule, QuantumMachinesCluster))
         }
         if all(isinstance(instrument, QbloxModule) for instrument in instruments):
@@ -639,7 +613,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         # Acquire results
         results: dict[str, list[Result]] = {}
         for bus_alias in buses:
-            if isinstance(buses[bus_alias].system_control, ReadoutSystemControl):
+            if buses[bus_alias].line == Line.READOUT:
                 acquisitions = list(sequences[bus_alias].todict()["acquisitions"])
                 bus_results = buses[bus_alias].acquire_qprogram_results(acquisitions=acquisitions)
                 results[bus_alias] = bus_results
@@ -732,9 +706,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             bus.run()
 
         # Acquire results
-        readout_buses = [
-            bus for bus in self.buses if isinstance(bus.system_control, ReadoutSystemControl) and bus.alias in programs
-        ]
+        readout_buses = [bus for bus in self.buses if bus.line == Line.READOUT and bus.alias in programs]
         results: list[Result] = []
         for bus in readout_buses:
             result = bus.acquire_result()

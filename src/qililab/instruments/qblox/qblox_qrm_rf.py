@@ -60,7 +60,7 @@ class QbloxQRMRF(QbloxQRM):
         for parameter in self.parameters:
             self.setup(parameter, getattr(self.settings, parameter.value))
 
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | str | None = None):
         """Set a parameter of the Qblox QCM-RF module.
         Args:
             parameter (Parameter): Parameter name.
@@ -76,7 +76,7 @@ class QbloxQRMRF(QbloxQRM):
             return
         super().setup(parameter, value, channel_id)
 
-    def get(self, parameter: Parameter, channel_id: int | None = None):
+    def get(self, parameter: Parameter, channel_id: int | str | None = None):
         """Set a parameter of the Qblox QCM-RF module.
         Args:
             parameter (Parameter): Parameter name.

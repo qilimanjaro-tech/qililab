@@ -121,20 +121,15 @@ class QbloxModule(AWG):
         """returns the qblox module type. Options: QCM or QRM"""
         return self.device.module_type()
 
-    def run(self, bus_alias: str):
+    def run(self, channel_id: int | str | None):
         """Run the uploaded program"""
-        self.start_sequencer(bus_alias=bus_alias)
-
-    def start_sequencer(self, bus_alias: str):
-        """Start sequencer and execute the uploaded instructions."""
-        sequencers = self.get_sequencers_from_bus_alias(bus_alias=bus_alias)
-        for sequencer in sequencers:
-            if sequencer.identifier in self.sequences:
-                self.device.arm_sequencer(sequencer=sequencer.identifier)
-                self.device.start_sequencer(sequencer=sequencer.identifier)
+        sequencer = next((sequencer for sequencer in self.awg_sequencers if sequencer.identifier == channel_id), None)
+        if sequencer is not None and sequencer.identifier in self.sequences:
+            self.device.arm_sequencer(sequencer=sequencer.identifier)
+            self.device.start_sequencer(sequencer=sequencer.identifier)
 
     def setup(  # pylint: disable=too-many-branches, too-many-return-statements
-        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None
+        self, parameter: Parameter, value: float | str | bool, channel_id: int | str | None = None
     ):
         """Set Qblox instrument calibration settings."""
         if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
@@ -184,7 +179,7 @@ class QbloxModule(AWG):
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
-    def get(self, parameter: Parameter, channel_id: int | None = None):
+    def get(self, parameter: Parameter, channel_id: int | str | None = None):
         """Get instrument parameter.
 
         Args:
@@ -201,7 +196,7 @@ class QbloxModule(AWG):
             else:
                 raise ParameterNotFound(f"Cannot update parameter {parameter.value} without specifying a channel_id.")
 
-        sequencer = self._get_sequencer_by_id(id=channel_id)
+        sequencer = self._get_sequencer_by_id(id=cast(int, channel_id))
 
         if parameter == Parameter.GAIN:
             return sequencer.gain_i, sequencer.gain_q
@@ -391,36 +386,30 @@ class QbloxModule(AWG):
         self.clear_cache()
         self.device.reset()
 
-    def upload_qpysequence(self, qpysequence: QpySequence, bus_alias: str):
+    def upload_qpysequence(self, qpysequence: QpySequence, channel_id: int | str | None):
         """Upload the qpysequence to its corresponding sequencer.
 
         Args:
             qpysequence (QpySequence): The qpysequence to upload.
             port (str): The port of the sequencer to upload to.
         """
-        sequencers = self.get_sequencers_from_bus_alias(bus_alias=bus_alias)
-        for sequencer in sequencers:
+        sequencer = next((sequencer for sequencer in self.awg_sequencers if sequencer.identifier == channel_id), None)
+        if sequencer is not None:
             logger.info("Sequence program: \n %s", repr(qpysequence._program))  # pylint: disable=protected-access
             self.device.sequencers[sequencer.identifier].sequence(qpysequence.todict())
             self.device.sequencers[sequencer.identifier].sync_en(True)
             self.sequences[sequencer.identifier] = qpysequence
 
-    def upload(self, bus_alias: str):
+    def upload(self, channel_id: int | str | None):
         """Upload all the previously compiled programs to its corresponding sequencers.
 
         This method must be called after the method ``compile``."""
-        sequencers = self.get_sequencers_from_bus_alias(bus_alias=bus_alias)
-        for sequencer in sequencers:
-            seq_idx = sequencer.identifier
-            # check is sequence has already been uploaded in a previous execution
-            if seq_idx in self.sequences:
-                # if the sequence was in the cache then it is to be run so we sync the sequencer to the others
-                sequence = self.sequences[seq_idx]
-                logger.info(
-                    "Uploaded sequence program: \n %s", repr(sequence._program)  # pylint: disable=protected-access
-                )
-                self.device.sequencers[seq_idx].sequence(sequence.todict())
-                self.device.sequencers[sequencer.identifier].sync_en(True)
+        sequencer = next((sequencer for sequencer in self.awg_sequencers if sequencer.identifier == channel_id), None)
+        if sequencer is not None and sequencer.identifier in self.sequences:
+            sequence = self.sequences[sequencer.identifier]
+            logger.info("Uploaded sequence program: \n %s", repr(sequence._program))  # pylint: disable=protected-access
+            self.device.sequencers[sequencer.identifier].sequence(sequence.todict())
+            self.device.sequencers[sequencer.identifier].sync_en(True)
 
     def _set_nco(self, sequencer_id: int):
         """Enable modulation of pulses and setup NCO frequency."""

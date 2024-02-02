@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 
 from qililab.platform import Bus
 from qililab.pulse import PulseBusSchedule
-from qililab.system_control import ReadoutSystemControl, SystemControl
+from qililab.typings import Line
 from qililab.utils import Waveforms
 
 
@@ -57,8 +57,8 @@ class BusExecution:
             raise IndexError(f"Index {idx} is out of bounds for pulse_schedule list of length {num_sequences}")
         readout_schedule = self.pulse_bus_schedules[idx]
         time = readout_schedule.timeline[-1].start_time
-        if isinstance(self.system_control, ReadoutSystemControl):
-            time += self.system_control.acquisition_delay_time
+        if self.bus.line == Line.READOUT:
+            time += self.bus.acquisition_delay_time
         return time
 
     def waveforms(self, modulation: bool = True, resolution: float = 1.0, idx: int = 0) -> Waveforms:
@@ -75,15 +75,6 @@ class BusExecution:
         if idx >= num_sequences:
             raise IndexError(f"Index {idx} is out of bounds for pulse_sequences list of length {num_sequences}")
         return self.pulse_bus_schedules[idx].waveforms(modulation=modulation, resolution=resolution)
-
-    @property
-    def system_control(self) -> SystemControl:
-        """BusExecution 'system_control' property.
-
-        Returns:
-            SystemControl: bus.system_control
-        """
-        return self.bus.system_control
 
     @property
     def alias(self):

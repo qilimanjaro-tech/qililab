@@ -65,11 +65,20 @@ class Runcard:
             delay (int, optional): Delay applied to all pulses sent in this bus. Defaults to 0.
         """
 
+        @nested_dataclass
+        class InstrumentRelation:
+            """Dataclass for the relation between the bus and an instrument"""
+
+            instrument: str
+            channels: list[int | str] | None = None
+            qubits: list[int] | None = None
+
         alias: str
-        system_control: dict
+        instruments: list[str]
+        channels: list[int | str | list[int | str] | None]
+        qubits: list[int | list[int] | None]
         distortions: list[dict]
         delay: int = 0
-        qubit: int | None = None
 
     @nested_dataclass
     class GatesSettings(Settings):
@@ -184,7 +193,7 @@ class Runcard:
             self,
             parameter: Parameter,
             value: float | str | bool,
-            channel_id: int | None = None,
+            channel_id: int | str | None = None,
             alias: str | None = None,
         ):
             """Cast the new value to its corresponding type and set the new attribute.
@@ -211,7 +220,7 @@ class Runcard:
         def get_parameter(
             self,
             parameter: Parameter,
-            channel_id: int | None = None,
+            channel_id: int | str | None = None,
             alias: str | None = None,
         ):
             """Get parameter from gate settings.

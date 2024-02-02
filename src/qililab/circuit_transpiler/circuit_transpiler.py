@@ -208,18 +208,14 @@ class CircuitTranspiler:
                     # add event
                     pulse_schedule.add_event(pulse_event=pulse_event, bus_alias=bus.alias, delay=bus.settings.delay)  # type: ignore
 
-            for qubit in self.platform.chip.qubits:
-                with contextlib.suppress(ValueError):
-                    # If we find a flux port, create empty schedule for that port.
-                    # This is needed because for Qblox instrument working in flux buses as DC sources, if we don't
-                    # add an empty schedule its offsets won't be activated and the results will be misleading.
-                    flux_port = self.platform.chip.get_port_from_qubit_idx(idx=qubit, line=Line.FLUX)
-                    if flux_port is not None:
-                        flux_bus = next((bus for bus in self.platform.buses if bus.port == flux_port), None)
-                        if flux_bus and any(
-                            isinstance(instrument, AWG) for instrument in flux_bus.system_control.instruments
-                        ):
-                            pulse_schedule.create_schedule(bus_alias=flux_bus.alias)
+            # for qubit in self.platform.chip.qubits:
+            #     with contextlib.suppress(ValueError):
+            #         # If we find a flux port, create empty schedule for that port.
+            #         # This is needed because for Qblox instrument working in flux buses as DC sources, if we don't
+            #         # add an empty schedule its offsets won't be activated and the results will be misleading.
+            #         flux_bus, _, _ = self.platform._get_bus_by_qubit_index(qubit_index=qubit)
+            #         if any(isinstance(instrument, AWG) for instrument in flux_bus.instruments):
+            #             pulse_schedule.create_schedule(bus_alias=flux_bus.alias)
 
             pulse_schedule_list.append(pulse_schedule)
 

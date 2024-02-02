@@ -171,7 +171,7 @@ class Instrument(BusElement, ABC):
     def initial_setup(self):
         """Set initial instrument settings."""
 
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | str | None = None):
         """Set instrument settings parameter to the corresponding value
 
         Args:
@@ -181,7 +181,7 @@ class Instrument(BusElement, ABC):
         """
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
-    def get(self, parameter: Parameter, channel_id: int | None = None):  # pylint: disable=unused-argument
+    def get(self, parameter: Parameter, channel_id: int | str | None = None):  # pylint: disable=unused-argument
         """Get instrument parameter.
 
         Args:
@@ -246,7 +246,7 @@ class Instrument(BusElement, ABC):
         """String representation of an instrument."""
         return f"{self.alias}"
 
-    def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | str | None = None):
         """Sets the parameter of a specific instrument.
 
         Args:
@@ -264,7 +264,7 @@ class Instrument(BusElement, ABC):
 
         return self.setup(parameter=parameter, value=value, channel_id=channel_id)
 
-    def get_parameter(self, parameter: Parameter, channel_id: int | None = None):
+    def get_parameter(self, parameter: Parameter, channel_id: int | str | None = None):
         """Gets the parameter of a specific instrument.
 
         Args:

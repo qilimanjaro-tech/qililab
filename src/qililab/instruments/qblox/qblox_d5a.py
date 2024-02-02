@@ -18,7 +18,7 @@ Class to interface with the voltage source Qblox D5a
 
 from dataclasses import dataclass
 from time import sleep
-from typing import Any
+from typing import Any, cast
 
 from qililab.config import logger
 from qililab.instruments.instrument import Instrument, ParameterNotFound
@@ -74,11 +74,12 @@ class QbloxD5a(VoltageSource):
         while channel.is_ramping():
             sleep(0.1)
 
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | str | None = None):
         """Set Qblox instrument calibration settings."""
 
         if channel_id is None:
             raise ValueError(f"channel not specified to update instrument {self.name.value}")
+        channel_id = cast(int, channel_id)
         if channel_id > 3:
             raise ValueError(
                 f"the specified dac index:{channel_id} is out of range."
@@ -101,7 +102,7 @@ class QbloxD5a(VoltageSource):
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
-    def get(self, parameter: Parameter, channel_id: int | None = None):
+    def get(self, parameter: Parameter, channel_id: int | str | None = None):
         """Get instrument parameter.
 
         Args:
@@ -110,6 +111,7 @@ class QbloxD5a(VoltageSource):
         """
         if channel_id is None:
             raise ValueError(f"channel not specified to update instrument {self.name.value}")
+        channel_id = cast(int, channel_id)
         if channel_id > 3:
             raise ValueError(
                 f"the specified dac index:{channel_id} is out of range."

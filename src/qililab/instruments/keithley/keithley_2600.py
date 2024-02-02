@@ -45,7 +45,7 @@ class Keithley2600(Instrument):
     device: Keithley2600Driver
 
     @Instrument.CheckParameterValueFloatOrInt
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):  # type: ignore
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | str | None = None):  # type: ignore
         """Setup instrument."""
         if parameter == Parameter.MAX_CURRENT:
             self.max_current = float(value)
