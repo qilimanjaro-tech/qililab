@@ -1,7 +1,7 @@
 Installation
 ============
 
-Before installing Qililab it is recommended to create a virtual environment, to do it so
+Before installing Qililab it is recommended to create a virtual environment to use for the library installation, to do it so
 please run:
 
 .. code-block:: console
@@ -18,9 +18,7 @@ To install Qililab, please run:
 
 .. code-block:: console
 
-    $ git clone https://github.com/qilimanjaro-tech/qililab
-    $ cd qililab
-    $ pip install -r requirements.txt
+    $ pip install qililab
 
 This will install all necessary dependencies to start using Qililab.
 
