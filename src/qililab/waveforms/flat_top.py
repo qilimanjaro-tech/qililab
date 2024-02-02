@@ -25,12 +25,13 @@ from .waveform import Waveform
 class FlatTop(Waveform):  # pylint: disable=too-few-public-methods
     """Flat top Gaussian rise waveform.
 
-        Args:
-            duration (int): Duration of the pulse (ns).
-            amplitude (float): Maximum amplitude of the pulse.
-            gaussian (float, optional): Sigma number of the gaussian pulse shape. Defaults to 0.5.
-            buffer (float, optional): Buffer of the waveform. Defaults to 3.0.
-        """
+    Args:
+        duration (int): Duration of the pulse (ns).
+        amplitude (float): Maximum amplitude of the pulse.
+        gaussian (float, optional): Sigma number of the gaussian pulse shape. Defaults to 0.5.
+        buffer (float, optional): Buffer of the waveform. Defaults to 3.0.
+    """
+
     @requires_domain("amplitude", Domain.Voltage)
     @requires_domain("duration", Domain.Time)
     def __init__(self, amplitude: float, duration: int, gaussian: float = 0.5, buffer: float = 3.0):
@@ -53,7 +54,7 @@ class FlatTop(Waveform):  # pylint: disable=too-few-public-methods
         g = self.gaussian
         buf = self.buffer
         dur = self.duration
-        return 0.5*A*np.real((erf(g*x-buf) - erf(g*(x-(dur + -buf/g)))))
+        return 0.5 * A * np.real((erf(g * x - buf) - erf(g * (x - (dur + -buf / g)))))
 
     def get_duration(self) -> int:
         """Get the duration of the waveform.
