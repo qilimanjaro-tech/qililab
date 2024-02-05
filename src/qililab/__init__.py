@@ -25,9 +25,8 @@ from .config import __version__, logger
 from .data_management import build_platform, load_results, save_platform, save_results
 from .execute_circuit import execute
 from .qprogram import Domain, QbloxCompiler, QProgram, QuantumMachinesCompiler
-from .result import Results, stream_results
-from .typings import ExperimentOptions, ExperimentSettings, Parameter
-from .utils.load_data import load
+from .result import stream_results
+from .typings import Parameter
 from .waveforms import *
 
 # moving circuit_transpiler module imports here because it has instruments module dependencies so circular imports can be avoided

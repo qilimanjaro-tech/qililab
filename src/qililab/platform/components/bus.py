@@ -63,7 +63,7 @@ class Bus:
         qubits: list[list[int] | None]
         distortions: list[PulseDistortion]
         delay: int
-
+        platform_instruments: InitVar[Instruments]
         line: Line | None = None
 
         def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
@@ -149,7 +149,7 @@ class Bus:
 
     def __str__(self):
         """String representation of a bus. Prints a drawing of the bus elements."""
-        instruments = "".join(f"-|{instrument}|-" for instrument in self.instruments)
+        instruments = "--".join(f"|{instrument}|" for instrument in self.instruments)
         return f"Bus {self.alias}:  ----{instruments}----"
 
     def __eq__(self, other: object) -> bool:

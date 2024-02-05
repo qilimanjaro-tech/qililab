@@ -173,29 +173,34 @@ gates_settings:
 
 buses:
   - alias: feedline_bus
-    system_control:
-      name: readout_system_control
-      instruments: [QRM1, rs_1]
+    instruments: [QRM1, rs_1]
+    channels: [[0], None]
+    qubits: [[0], None]
+    line: readout
     distortions: []
   - alias: drive_line_q0_bus
-    system_control:
-      name: system_control
-      instruments: [QCM-RF1]
+    instruments: [QCM-RF1]
+    channels: [[0]]
+    qubits: [[0]]
+    line: drive
     distortions: []
   - alias: flux_line_q0_bus
-    system_control:
-      name: system_control
-      instruments: [QCM1]
+    instruments: [QCM1]
+    channels: [[0]]
+    qubits: [[0]]
+    line: flux
     distortions: []
   - alias: drive_line_q1_bus
-    system_control:
-      name: system_control
-      instruments: [QCM-RF1]
+    instruments: [QCM-RF1]
+    channels: [[1]]
+    qubits: [[1]]
+    line: drive
     distortions: []
   - alias: flux_line_q1_bus
-    system_control:
-      name: system_control
-      instruments: [QCM1]
+    instruments: [QCM1]
+    channels: [[1]]
+    qubits: [[1]]
+    line: flux
     distortions:
       - name: bias_tee
         tau_bias_tee: 11000
@@ -256,34 +261,40 @@ buses:
         b: [1.]
         norm_factor: 1.
   - alias: drive_line_q2_bus
-    system_control:
-      name: system_control
-      instruments: [QCM-RF2]
+    instruments: [QCM-RF2]
+    channels: [[0]]
+    qubits: [[2]]
+    line: drive
     distortions: []
   - alias: flux_line_q2_bus
-    system_control:
-      name: system_control
-      instruments: [QCM2]
+    instruments: [QCM2]
+    channels: [[0]]
+    qubits: [[2]]
+    line: flux
     distortions: []
   - alias: drive_line_q3_bus
-    system_control:
-      name: system_control
-      instruments: [QCM-RF3]
+    instruments: [QCM-RF3]
+    channels: [[0]]
+    qubits: [[3]]
+    line: drive
     distortions: []
   - alias: flux_line_q3_bus
-    system_control:
-      name: system_control
-      instruments: [QCM1]
+    instruments: [QCM1]
+    channels: [[2]]
+    qubits: [[3]]
+    line: flux
     distortions: []
   - alias: drive_line_q4_bus
-    system_control:
-      name: system_control
-      instruments: [QCM-RF3]
+    instruments: [QCM-RF3]
+    channels: [[0]]
+    qubits: [[4]]
+    line: drive
     distortions: []
   - alias: flux_line_q4_bus
-    system_control:
-      name: system_control
-      instruments: [QCM1]
+    instruments: [QCM1]
+    channels: [[3]]
+    qubits: [[4]]
+    line: flux
     distortions: []
 
 instruments:

@@ -27,7 +27,6 @@ from qililab.result.qblox_results import QbloxResult
 from qililab.result.quantum_machines_results import QuantumMachinesMeasurementResult
 from qililab.settings import Runcard
 from qililab.settings.gate_event_settings import GateEventSettings
-from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import IQPair, Square
 from tests.data import Galadriel, SauronQuantumMachines
@@ -576,7 +575,7 @@ class TestMethods:
         id."""
         bus = platform._get_bus_by_alias(alias="drive_line_q0_bus")
         assert isinstance(bus, Bus)
-        qblox_module = bus.system_control.instruments[0]
+        qblox_module = bus.instruments[0]
         assert isinstance(qblox_module, QbloxModule)
         qblox_module.settings.num_sequencers = 1
         assert platform.get_parameter(parameter=Parameter.GAIN, alias="drive_line_q0_bus") == bus.get_parameter(

@@ -296,7 +296,12 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """Boolean indicating the connection status to the instruments. Defaults to False (not connected)."""
 
         if any(isinstance(instrument, QbloxModule) for instrument in self.instruments.elements):
-            self.compiler = PulseQbloxCompiler(platform=self)  # TODO: integrate with qprogram compiler
+            qblox_modules = [
+                instrument for instrument in self.instruments.elements if isinstance(instrument, QbloxModule)
+            ]
+            self.compiler = PulseQbloxCompiler(
+                qblox_modules=qblox_modules, buses=self.buses
+            )  # TODO: integrate with qprogram compiler
             """Compiler to translate given programs to instructions for a given awg vendor."""
 
         self._qua_program_cache: dict[str, str] = {}

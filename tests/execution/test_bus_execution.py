@@ -2,12 +2,9 @@
 import numpy as np
 import pytest
 
-from qililab.execution import BusExecution, ExecutionManager
-from qililab.experiment.experiment import Experiment
+from qililab.execution import BusExecution
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
 from qililab.typings import Parameter
-from qililab.typings.experiment import ExperimentOptions
-from qililab.utils import Loop
 from tests.data import experiment_params
 from tests.test_utils import build_platform
 
@@ -24,47 +21,10 @@ def fixture_pulse_event() -> PulseEvent:
     return PulseEvent(pulse=pulse, start_time=0)
 
 
-@pytest.fixture(name="execution_manager")
-def fixture_execution_manager(experiment: Experiment) -> ExecutionManager:
-    """Load ExecutionManager.
-
-    Returns:
-        ExecutionManager: Instance of the ExecutionManager class.
-    """
-    experiment.build_execution()
-    return experiment.execution_manager  # pylint: disable=protected-access
-
-
-@pytest.fixture(name="experiment", params=experiment_params)
-def fixture_experiment(request: pytest.FixtureRequest):
-    """Return Experiment object."""
-    runcard, circuits = request.param  # type: ignore
-    platform = build_platform(runcard)
-    loop = Loop(
-        alias="X(0)",
-        parameter=Parameter.DURATION,
-        values=np.arange(start=4, stop=1000, step=40),
-    )
-    options = ExperimentOptions(loops=[loop])
-    return Experiment(
-        platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
-    )
-
-
 @pytest.fixture(name="pulse_bus_schedule")
 def fixture_pulse_bus_schedule(pulse_event: PulseEvent) -> PulseBusSchedule:
     """Return PulseBusSchedule instance."""
     return PulseBusSchedule(timeline=[pulse_event], bus_alias="drive_0")
-
-
-@pytest.fixture(name="bus_execution")
-def fixture_bus_execution(execution_manager: ExecutionManager) -> BusExecution:
-    """Load BusExecution.
-
-    Returns:
-        BusExecution: Instance of the BusExecution class.
-    """
-    return execution_manager.buses[0]
 
 
 class TestBusExecution:

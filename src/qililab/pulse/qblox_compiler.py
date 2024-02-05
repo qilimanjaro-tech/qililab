@@ -23,7 +23,6 @@ from qpysequence.utils.constants import AWG_MAX_GAIN, INST_MAX_WAIT
 
 from qililab.config import logger
 from qililab.instruments.awg_settings import AWGQbloxADCSequencer, AWGQbloxSequencer
-from qililab.instruments.qblox import QbloxModule
 from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
@@ -42,11 +41,9 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         ValueError: at init if no readout module (QRM) is found in platform.
     """
 
-    def __init__(self, platform):
-        self.qblox_modules = [
-            instrument for instrument in platform.instruments.elements if isinstance(instrument, QbloxModule)
-        ]
-        self.buses = platform.buses
+    def __init__(self, qblox_modules, buses):
+        self.qblox_modules = qblox_modules
+        self.buses = buses
         # init variables as empty
         self.nshots = None
         self.num_bins = None
@@ -87,9 +84,7 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
             for qblox_module in self.qblox_modules:
                 qblox_module.clear_cache()
 
-        sequencer_qrm_bus_schedules, sequencer_qcm_bus_schedules = self.get_sequencer_schedule(
-            pulse_schedule, self.qblox_modules
-        )
+        sequencer_qrm_bus_schedules, sequencer_qcm_bus_schedules = self.get_sequencer_schedule(pulse_schedule)
 
         compiled_sequences = {}  # type: dict[str, list[QpySequence]]
 
@@ -344,7 +339,7 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         setup_block.append_components([move_0, move_1], bot_position=1)
 
     def get_sequencer_schedule(
-        self, pulse_schedule: PulseSchedule, qblox_instruments: list[QbloxModule]
+        self, pulse_schedule: PulseSchedule
     ) -> tuple[list[tuple[AWGQbloxSequencer, PulseBusSchedule]], list[tuple[AWGQbloxSequencer, PulseBusSchedule]]]:
         """This method returns a dictionary containing the pulse schedule to be sent to each sequencer.
         This corresponds to a PulseBusSchedule object. Note that for multiplexed QRM more than one PulseBusSchedule is sent to the same
@@ -364,14 +359,14 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         """
         qrm_sequencers = [
             sequencer
-            for instrument in qblox_instruments
+            for instrument in self.qblox_modules
             for sequencer in instrument.awg_sequencers
             if instrument.name in self.readout_modules
         ]
         feedline_buses = {sequencer.bus_alias for sequencer in qrm_sequencers}
         qcm_sequencers = [
             sequencer
-            for instrument in qblox_instruments
+            for instrument in self.qblox_modules
             for sequencer in instrument.awg_sequencers
             if instrument.name in self.control_modules
         ]
@@ -404,7 +399,7 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         ]
         return qrm_bus_schedules, qcm_bus_schedules
 
-    def _get_instrument_from_sequencer(self, sequencer: AWGQbloxSequencer) -> QbloxModule:
+    def _get_instrument_from_sequencer(self, sequencer: AWGQbloxSequencer):
         """Get the qblox module to which a given sequencer belongs
 
         Args:

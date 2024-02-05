@@ -287,7 +287,7 @@ class Galadriel:
         AWGTypes.AWG_SEQUENCERS.value: [
             {
                 "identifier": 0,
-                "bus_alias": "feedline_input",
+                "bus_alias": "feedline_input_output_bus",
                 "qubit": 0,
                 "output_i": 0,
                 "output_q": 1,
@@ -317,7 +317,7 @@ class Galadriel:
             },
             {
                 "identifier": 1,
-                "bus_alias": "feedline_input",
+                "bus_alias": "feedline_input_output_bus",
                 "qubit": 1,
                 "output_i": 0,
                 "output_q": 1,
@@ -375,7 +375,7 @@ class Galadriel:
         AWGTypes.AWG_SEQUENCERS.value: [
             {
                 "identifier": 0,
-                "chip_port_id": "feedline_input_1",
+                "bus_alias": "feedline_input_output_bus_1",
                 "qubit": 2,
                 "output_i": 0,
                 "output_q": 1,

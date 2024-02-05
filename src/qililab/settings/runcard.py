@@ -20,7 +20,7 @@ from typing import Literal
 
 from qililab.constants import GATE_ALIAS_REGEX
 from qililab.settings.gate_event_settings import GateEventSettings
-from qililab.typings.enums import OperationTimingsCalculationMethod, Parameter, ResetMethod
+from qililab.typings.enums import Line, OperationTimingsCalculationMethod, Parameter, ResetMethod
 from qililab.utils import nested_dataclass
 
 from .settings import Settings
@@ -79,6 +79,7 @@ class Runcard:
         qubits: list[int | list[int] | None]
         distortions: list[dict]
         delay: int = 0
+        line: Line | None = None
 
     @nested_dataclass
     class GatesSettings(Settings):

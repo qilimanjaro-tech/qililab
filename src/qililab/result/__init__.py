@@ -25,5 +25,4 @@ Results Class
     ~Results
 """
 from .result import Result
-from .results import Results
 from .stream_results import stream_results
