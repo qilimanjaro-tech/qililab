@@ -15,7 +15,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from qililab.typings.enums import Parameter
+from qililab.typings.enums import Line, Parameter
 
 
 @dataclass

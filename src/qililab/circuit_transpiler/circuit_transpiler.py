@@ -25,8 +25,10 @@ from qibo.models import Circuit
 
 from qililab.constants import RUNCARD
 from qililab.instruments import AWG
+from qililab.platform.components import Buses
 from qililab.pulse import Pulse, PulseEvent, PulseSchedule
 from qililab.settings.gate_event_settings import GateEventSettings
+from qililab.settings.runcard import Runcard
 from qililab.typings.enums import Line
 from qililab.utils import Factory
 
@@ -41,8 +43,9 @@ class CircuitTranspiler:
     - `transpile_circuit`: runs both of the methods above sequentially
     """
 
-    def __init__(self, platform):  # type: ignore # ignore typing to avoid importing platform and causing circular imports
-        self.platform = platform
+    def __init__(self, gates_settings: Runcard.GatesSettings, buses: Buses):  # type: ignore # ignore typing to avoid importing platform and causing circular imports
+        self.gates_settings = gates_settings
+        self.buses = buses
 
     def transpile_circuit(self, circuits: list[Circuit]) -> list[PulseSchedule]:
         """Transpiles a list of qibo.models.Circuit to a list of pulse schedules.
@@ -110,7 +113,7 @@ class CircuitTranspiler:
                 shift[gate.qubits[0]] += gate.parameters[0]
             # add CZ phase correction
             elif isinstance(gate, gates.CZ):
-                gate_settings = self.platform.gates_settings.get_gate(name=gate.__class__.__name__, qubits=gate.qubits)
+                gate_settings = self.gates_settings.get_gate(name=gate.__class__.__name__, qubits=gate.qubits)
                 control_qubit, target_qubit = gate.qubits
                 corrections = next(
                     (
@@ -195,27 +198,22 @@ class CircuitTranspiler:
                 self._sync_qubit_times(gate_qubits, time=time)
                 # apply gate schedule
                 for gate_event in gate_schedule:
-                    # find bus
-                    bus = self.platform._get_bus_by_alias(gate_event.bus)  # pylint: disable=protected-access
                     # add control gate schedule
-                    pulse_event = self._gate_element_to_pulse_event(
-                        time=start_time, gate=gate, gate_event=gate_event, bus=bus
-                    )
+                    pulse_event = self._gate_element_to_pulse_event(time=start_time, gate=gate, gate_event=gate_event)
                     # pop first qubit from gate if it is measurement
                     # this is so that the target qubit for multiM gates is every qubit in the M gate
                     if isinstance(gate, M):
                         gate = M(*gate.qubits[1:])
                     # add event
+                    bus = self.buses.get(gate_event.bus)
                     pulse_schedule.add_event(pulse_event=pulse_event, bus_alias=bus.alias, delay=bus.settings.delay)  # type: ignore
 
-            # for qubit in self.platform.chip.qubits:
-            #     with contextlib.suppress(ValueError):
-            #         # If we find a flux port, create empty schedule for that port.
-            #         # This is needed because for Qblox instrument working in flux buses as DC sources, if we don't
-            #         # add an empty schedule its offsets won't be activated and the results will be misleading.
-            #         flux_bus, _, _ = self.platform._get_bus_by_qubit_index(qubit_index=qubit)
-            #         if any(isinstance(instrument, AWG) for instrument in flux_bus.instruments):
-            #             pulse_schedule.create_schedule(bus_alias=flux_bus.alias)
+            for bus in self.buses:
+                # If we find a flux port, create empty schedule for that port.
+                # This is needed because for Qblox instrument working in flux buses as DC sources, if we don't
+                # add an empty schedule its offsets won't be activated and the results will be misleading.
+                if bus.is_flux() and bus.has_awg():
+                    pulse_schedule.create_schedule(bus_alias=bus.alias)
 
             pulse_schedule_list.append(pulse_schedule)
 
@@ -232,7 +230,7 @@ class CircuitTranspiler:
             list[GateEventSettings]: schedule list with each of the pulses settings
         """
 
-        gate_schedule = self.platform.gates_settings.get_gate(name=gate.__class__.__name__, qubits=gate.qubits)
+        gate_schedule = self.gates_settings.get_gate(name=gate.__class__.__name__, qubits=gate.qubits)
 
         if not isinstance(gate, Drag):
             return gate_schedule
@@ -292,10 +290,11 @@ class CircuitTranspiler:
             list[int]: list of qubits
         """
         schedule_qubits: list[int] = []
+        # TODO RUNCARD
         if schedule is not None:
             for schedule_element in schedule:
-                bus = self.platform._get_bus_by_alias(schedule_element.bus)
-                qubit = bus.qubit if bus is not None else None
+                bus = self.buses.get(schedule_element.bus)
+                qubit = bus.qubits[0] if bus is not None and bus.qubits is not None else None
                 if qubit is not None:
                     schedule_qubits.append(qubit)
 
@@ -303,9 +302,7 @@ class CircuitTranspiler:
 
         return tuple(set(schedule_qubits + gate_qubits))  # convert to set and back to list to remove repeated items
 
-    def _gate_element_to_pulse_event(
-        self, time: int, gate: Gate, gate_event: GateEventSettings, bus  # type: ignore
-    ) -> PulseEvent:
+    def _gate_element_to_pulse_event(self, time: int, gate: Gate, gate_event: GateEventSettings) -> PulseEvent:
         """Translates a gate element into a pulse.
 
         Args:
@@ -325,7 +322,8 @@ class CircuitTranspiler:
         pulse_shape = Factory.get(pulse_shape_copy.pop(RUNCARD.NAME))(**pulse_shape_copy)
 
         # handle measurement gates and target qubits for control gates which might have multi-qubit schedules
-        qubit = gate.qubits[0] if isinstance(gate, M) else bus.qubit
+        bus = self.buses.get(gate_event.bus)
+        qubit = gate.qubits[0] if isinstance(gate, M) else bus.qubits[0] if bus.qubits is not None else None
         return PulseEvent(
             pulse=Pulse(
                 amplitude=pulse.amplitude,
@@ -334,7 +332,7 @@ class CircuitTranspiler:
                 frequency=0,
                 pulse_shape=pulse_shape,
             ),
-            start_time=time + gate_event.wait_time + self.platform.gates_settings.delay_before_readout,
+            start_time=time + gate_event.wait_time + self.gates_settings.delay_before_readout,
             pulse_distortions=bus.distortions,
             qubit=qubit,
         )
@@ -350,9 +348,9 @@ class CircuitTranspiler:
         if qubit not in time:
             time[qubit] = 0
         old_time = time[qubit]
-        residue = (gate_time) % self.platform.gates_settings.minimum_clock_time
+        residue = (gate_time) % self.gates_settings.minimum_clock_time
         if residue != 0:
-            gate_time += self.platform.gates_settings.minimum_clock_time - residue
+            gate_time += self.gates_settings.minimum_clock_time - residue
         time[qubit] += gate_time
         return old_time
 

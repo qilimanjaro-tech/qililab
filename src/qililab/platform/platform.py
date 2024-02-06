@@ -296,12 +296,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """Boolean indicating the connection status to the instruments. Defaults to False (not connected)."""
 
         if any(isinstance(instrument, QbloxModule) for instrument in self.instruments.elements):
-            qblox_modules = [
-                instrument for instrument in self.instruments.elements if isinstance(instrument, QbloxModule)
-            ]
-            self.compiler = PulseQbloxCompiler(
-                qblox_modules=qblox_modules, buses=self.buses
-            )  # TODO: integrate with qprogram compiler
+            self.compiler = PulseQbloxCompiler(platform=self)  # TODO: integrate with qprogram compiler
             """Compiler to translate given programs to instructions for a given awg vendor."""
 
         self._qua_program_cache: dict[str, str] = {}
@@ -423,8 +418,13 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             int: sequencer id
         """
         bus = self._get_bus_by_alias(alias=alias)
-        _, channel_id = bus.get_instrument_and_channel_of_qubit(qubit=qubit_index)
-        return channel_id
+        if bus is not None:
+            for _, channel_ids in zip(bus.instruments, bus.channels):
+                if channel_ids is not None:
+                    for channel_id, qubit in zip(channel_ids, bus.qubits):
+                        if qubit == qubit_index:
+                            return channel_id
+        raise ValueError(f"Could not find bus with alias {alias} for qubit {qubit_index}")
 
     def _get_bus_by_qubit_index(self, qubit_index: int) -> tuple[Bus, Bus, Bus]:
         """Finds buses associated with the given qubit index.
@@ -555,7 +555,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         Returns:
             str: Name of the platform.
         """
-        return str(YAML().dump(self.to_dict(), io.BytesIO()))
+        return str(YAML(typ="safe").dump(self.to_dict(), io.BytesIO()))
 
     def execute_qprogram(
         self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None, debug: bool = False
@@ -790,7 +790,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         # We have a circular import because Platform uses CircuitToPulses and vice versa
 
         if isinstance(program, Circuit):
-            transpiler = CircuitTranspiler(platform=self)
+            transpiler = CircuitTranspiler(gates_settings=self.gates_settings, buses=self.buses)
             pulse_schedule = transpiler.transpile_circuit(circuits=[program])[0]
         elif isinstance(program, PulseSchedule):
             pulse_schedule = program

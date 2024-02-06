@@ -48,24 +48,6 @@ class Galadriel:
         PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
         PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
         PLATFORM.PASSIVE_RESET_DURATION: 100,
-        "operations": [
-            {
-                "name": "Rxy",
-                "pulse": {"name": "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
-            },
-            {
-                "name": "R180",
-                "pulse": {"name": "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
-            },
-            {
-                "name": "X",
-                "pulse": {"name": "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
-            },
-            {
-                "name": "Measure",
-                "pulse": {"name": "Square", "amplitude": 1.0, "duration": 6000, "parameters": {}},
-            },
-        ],
         "gates": {
             "M(0)": [
                 {
@@ -229,7 +211,7 @@ class Galadriel:
         AWGTypes.AWG_SEQUENCERS.value: [
             {
                 "identifier": 0,
-                "bus_alias": "drive_q0",
+                "bus_alias": "drive_line_q0_bus",
                 "output_i": 0,
                 "output_q": 1,
                 Parameter.NUM_BINS.value: 1,
@@ -244,7 +226,7 @@ class Galadriel:
             },
             {
                 "identifier": 1,
-                "bus_alias": "flux_q0",
+                "bus_alias": "flux_line_q0_bus",
                 "output_i": 0,
                 "output_q": 1,
                 Parameter.NUM_BINS.value: 1,
@@ -529,7 +511,8 @@ class Galadriel:
             RUNCARD.ALIAS: "drive_line_q0_bus",
             RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
             "channels": [[0], None],
-            "qubits": [[0], None],
+            "qubits": [0],
+            "line": Line.DRIVE,
             RUNCARD.DISTORTIONS: [],
             RUNCARD.DELAY: 0,
         },
@@ -537,7 +520,8 @@ class Galadriel:
             "alias": "feedline_input_output_bus",
             RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_0", "rs_1"],
             "channels": [[0, 1], None],
-            "qubits": [[0, 1], None],
+            "qubits": [0, 1],
+            "line": Line.READOUT,
             RUNCARD.DISTORTIONS: [],
             RUNCARD.DELAY: 0,
         },
@@ -545,7 +529,8 @@ class Galadriel:
             "alias": "feedline_input_output_bus_1",
             RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_1"],
             "channels": [[1]],
-            "qubits": [[0]],
+            "qubits": [0],
+            "line": Line.READOUT,
             RUNCARD.DISTORTIONS: [],
             RUNCARD.DELAY: 0,
         },
@@ -553,7 +538,8 @@ class Galadriel:
             RUNCARD.ALIAS: "flux_line_q0_bus",
             RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
             "channels": [[0], None],
-            "qubits": [[0], None],
+            "qubits": [0],
+            "line": Line.FLUX,
             RUNCARD.DISTORTIONS: [],
             RUNCARD.DELAY: 0,
         },
@@ -806,7 +792,6 @@ class SauronVNA:
         PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
         PLATFORM.PASSIVE_RESET_DURATION: 100,
         "gates": {},
-        "operations": [],
     }
 
     keysight_e5080b_controller: dict[str, Any] = {
@@ -922,7 +907,6 @@ class SauronYokogawa:
         PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
         PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
         PLATFORM.PASSIVE_RESET_DURATION: 100,
-        "operations": [],
         "gates": {},
     }
 
@@ -1055,7 +1039,6 @@ class SauronQDevil:
         PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
         PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
         PLATFORM.PASSIVE_RESET_DURATION: 100,
-        "operations": [],
         "gates": {},
     }
 
@@ -1166,7 +1149,6 @@ class SauronQuantumMachines:
         PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
         PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
         PLATFORM.PASSIVE_RESET_DURATION: 100,
-        "operations": [],
         "gates": {},
     }
 

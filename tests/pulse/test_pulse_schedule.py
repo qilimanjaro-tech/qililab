@@ -29,7 +29,9 @@ def fixture_platform() -> Platform:
 @pytest.fixture(name="pulse_schedule", params=experiment_params)
 def fixture_pulse_schedule(platform: Platform) -> PulseSchedule:
     """Return PulseSchedule instance."""
-    return CircuitTranspiler(platform=platform).circuit_to_pulses(circuits=[circuit])[0]
+    return CircuitTranspiler(gates_settings=platform.gates_settings, buses=platform.buses).circuit_to_pulses(
+        circuits=[circuit]
+    )[0]
 
 
 class TestPulseSequences:

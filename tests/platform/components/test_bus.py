@@ -39,18 +39,6 @@ class TestBus:
         for instrument in bus.settings.instruments:
             assert isinstance(instrument, Instrument)
 
-    def test_init_with_a_wrong_instrument_alias_raises_an_error(self, bus: Bus, platform: Platform):
-        """Test that an error is raised when initializing a SystemControl with an instrument alias that is not
-        present in the platform.
-        """
-        alias = "UnknownInstrument"
-        wrong_settings = {"instruments": [alias]}
-        with pytest.raises(
-            NameError,
-            match=f"The instrument with alias {alias} could not be found within the instruments of the platform",
-        ):
-            Bus(settings=wrong_settings, platform_instruments=platform.instruments)
-
     def test_iter_and_getitem_methods(self, bus: Bus):
         """Test __iter__ magic method."""
         for element in bus:

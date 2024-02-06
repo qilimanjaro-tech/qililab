@@ -18,6 +18,7 @@ from qililab.pulse.pulse_shape import Drag as Drag_pulse
 from qililab.pulse.pulse_shape import Gaussian, Rectangular
 from qililab.settings import Runcard
 from qililab.settings.gate_event_settings import GateEventSettings
+from qililab.typings import Line
 from tests.data import Galadriel
 from tests.test_utils import build_platform
 
@@ -385,7 +386,11 @@ platform_gates = {
 
 @pytest.fixture(name="platform")
 def fixture_platform() -> Platform:
-    """Fixture that returns an instance of a ``Runcard.GatesSettings`` class."""
+    return build_platform(runcard=Galadriel.runcard)
+
+
+@pytest.fixture(name="gates_settings")
+def fixture_gates_settings() -> Runcard.GatesSettings:
     gates_settings = {
         "minimum_clock_time": 5,
         "delay_between_pulses": 0,
@@ -393,132 +398,137 @@ def fixture_platform() -> Platform:
         "reset_method": "passive",
         "passive_reset_duration": 100,
         "timings_calculation_method": "as_soon_as_possible",
-        "operations": [],
         "gates": {},
     }
+    gates_settings = Runcard.GatesSettings(**gates_settings)  # type: ignore[assignment]  # pylint: disable=unexpected-keyword-arg
+    gates_settings.gates = {  # type: ignore
+        gate: [GateEventSettings(**event) for event in schedule] for gate, schedule in platform_gates.items()  # type: ignore
+    }
+    return gates_settings  # type: ignore[return-value]
+
+
+@pytest.fixture(name="buses")
+def fixture_buses(platform) -> Buses:
+    """Fixture that returns an instance of a ``Runcard.GatesSettings`` class."""
     bus_settings = [
         {
             "alias": "feedline_bus",
-            "system_control": {
-                "name": "readout_system_control",
-                "instruments": ["QRM_0", "rs_1"],
-            },
+            "instruments": ["QRM_0", "rs_1"],
+            "channels": [[0, 1, 2, 3, 4], None],
+            "qubits": [0, 1, 2, 3, 4],
+            "line": Line.READOUT,
             "distortions": [],
             "delay": 0,
         },
         {
             "alias": "drive_q0_bus",
-            "system_control": {
-                "name": "system_control",
-                "instruments": ["QCM"],
-            },
+            "instruments": ["QCM"],
+            "channels": [[0]],
+            "qubits": [0],
+            "line": Line.DRIVE,
             "distortions": [],
             "delay": 0,
-            "qubit": 0,
         },
         {
             "alias": "flux_q0_bus",
-            "system_control": {
-                "name": "system_control",
-                "instruments": ["QCM"],
-            },
+            "instruments": ["QCM"],
+            "channels": [[0]],
+            "qubits": [0],
+            "line": Line.FLUX,
             "distortions": [],
             "delay": 0,
-            "qubit": 0,
         },
         {
             "alias": "drive_q1_bus",
-            "system_control": {
-                "name": "system_control",
-                "instruments": ["QCM"],
-            },
+            "instruments": ["QCM"],
+            "channels": [[1]],
+            "qubits": [1],
+            "line": Line.DRIVE,
             "distortions": [],
             "delay": 0,
-            "qubit": 0,
         },
         {
             "alias": "flux_q1_bus",
-            "system_control": {
-                "name": "system_control",
-                "instruments": ["QCM"],
-            },
+            "instruments": ["QCM"],
+            "channels": [[1]],
+            "qubits": [1],
+            "line": Line.FLUX,
             "distortions": [],
             "delay": 0,
         },
         {
             "alias": "drive_q2_bus",
-            "system_control": {
-                "name": "system_control",
-                "instruments": ["QCM"],
-            },
+            "instruments": ["QCM"],
+            "channels": [[2]],
+            "qubits": [2],
+            "line": Line.DRIVE,
             "distortions": [],
             "delay": 0,
         },
         {
             "alias": "flux_q2_bus",
-            "system_control": {
-                "name": "system_control",
-                "instruments": ["QCM"],
-            },
+            "instruments": ["QCM"],
+            "channels": [[2]],
+            "qubits": [2],
+            "line": Line.FLUX,
             "distortions": [],
             "delay": 0,
         },
         {
             "alias": "flux_c2_bus",  # c2 coupler
-            "system_control": {
-                "name": "system_control",
-                "instruments": ["QCM"],
-            },
+            "instruments": ["QCM"],
+            "channels": [[2]],
+            "qubits": None,
+            "line": Line.FLUX,
             "distortions": [],
             "delay": 0,
         },
         {
             "alias": "drive_q3_bus",
-            "system_control": {
-                "name": "system_control",
-                "instruments": ["QCM"],
-            },
+            "instruments": ["QCM"],
+            "channels": [[3]],
+            "qubits": [3],
+            "line": Line.DRIVE,
             "distortions": [],
             "delay": 0,
         },
         {
             "alias": "flux_q3_bus",
-            "system_control": {
-                "name": "system_control",
-                "instruments": ["QCM"],
-            },
+            "instruments": ["QCM"],
+            "channels": [[3]],
+            "qubits": [3],
+            "line": Line.FLUX,
             "distortions": [],
             "delay": 0,
         },
         {
             "alias": "drive_q4_bus",
-            "system_control": {
-                "name": "system_control",
-                "instruments": ["QCM"],
-            },
+            "instruments": ["QCM"],
+            "channels": [[4]],
+            "qubits": [4],
+            "line": Line.DRIVE,
             "distortions": [],
             "delay": 0,
         },
         {
             "alias": "flux_q4_bus",
-            "system_control": {
-                "name": "system_control",
-                "instruments": ["QCM"],
-            },
+            "instruments": ["QCM"],
+            "channels": [[4]],
+            "qubits": [4],
+            "line": Line.FLUX,
             "distortions": [],
             "delay": 0,
         },
     ]
 
-    gates_settings = Runcard.GatesSettings(**gates_settings)  # type: ignore  # pylint: disable=unexpected-keyword-arg
-    platform = build_platform(runcard=Galadriel.runcard)
-    platform.gates_settings = gates_settings  # type: ignore
     buses = Buses(elements=[Bus(settings=bus, platform_instruments=platform.instruments) for bus in bus_settings])
-    platform.buses = buses
-    platform.gates_settings.gates = {  # type: ignore
-        gate: [GateEventSettings(**event) for event in schedule] for gate, schedule in platform_gates.items()  # type: ignore
-    }
-    return platform
+    return buses
+
+
+@pytest.fixture(name="transpiler")
+def fixture_transpiler(gates_settings, buses) -> CircuitTranspiler:
+    """Fixture that returns CircuitTranspiler"""
+    return CircuitTranspiler(gates_settings=gates_settings, buses=buses)
 
 
 def get_pulse0(time: int, qubit: int) -> PulseEvent:
@@ -562,7 +572,7 @@ class TestCircuitTranspiler:
         """
         # FIXME: do these equality tests for the unitary matrix resulting from the circuit rather
         # than from the state vectors for a more full-proof test
-        transpiler = CircuitTranspiler(platform=MagicMock())
+        transpiler = CircuitTranspiler(gates_settings=MagicMock(), buses=MagicMock())
 
         # Test with optimizer=False
         rng = np.random.default_rng(seed=42)  # init random number generator
@@ -608,9 +618,8 @@ class TestCircuitTranspiler:
             z1_exp, z2_exp = compare_exp_z(c1, c2, nqubits)
             assert np.allclose(z1_exp, z2_exp)
 
-    def test_optimize_transpilation(self, platform):
+    def test_optimize_transpilation(self, transpiler):
         """Test that optimize_transpilation behaves as expected"""
-        transpiler = CircuitTranspiler(platform=platform)
 
         # gate list to optimize
         test_gates = [
@@ -643,7 +652,7 @@ class TestCircuitTranspiler:
             assert gate_r.parameters == gate_opt.parameters
             assert gate_r.qubits == gate_opt.qubits
 
-    def test_translate_for_no_awg(self, platform):
+    def test_translate_for_no_awg(self, transpiler, buses, platform):
         """Test translate method adding/removing AWG instruments to test empty schedules.
 
         This test ensures that the correct number of pulse schedules are added when we have a flux bus
@@ -651,7 +660,7 @@ class TestCircuitTranspiler:
         AWG instruments. This test is designed to test this bug is not reintroduced as a regression:
         https://github.com/qilimanjaro-tech/qililab/issues/626
         """
-        transpiler = CircuitTranspiler(platform=platform)
+
         # test circuit
         circuit = Circuit(5)
         circuit.add(X(0))
@@ -667,11 +676,12 @@ class TestCircuitTranspiler:
         pulse_schedules = transpiler.circuit_to_pulses(circuits=[circuit])
         pulse_schedule = pulse_schedules[0]
         # there should be 9 pulse_schedules in this configuration
-        assert len(pulse_schedule) == 12
+        assert len(pulse_schedule) == 9
 
-        buses_elements = [bus for bus in platform.buses.elements if bus.settings.alias != "flux_q4_bus"]
-        buses = Buses(elements=buses_elements)
-        platform.buses = buses
+        transpiler.buses = Buses(
+            elements=[bus for bus in transpiler.buses.elements if bus.settings.alias != "flux_q4_bus"]
+        )
+
         pulse_schedules = transpiler.circuit_to_pulses(circuits=[circuit])
 
         pulse_schedule = pulse_schedules[0]
@@ -680,23 +690,23 @@ class TestCircuitTranspiler:
 
         flux_bus_no_awg_settings = {
             "alias": "flux_q4_bus",
-            "system_control": {
-                "name": "system_control",
-                "instruments": ["rs_1"],
-            },
+            "instruments": ["rs_1"],
+            "channels": [None],
+            "qubits": [None],
+            "line": Line.FLUX,
             "distortions": [],
             "delay": 0,
         }
 
-        platform.buses.add(Bus(settings=flux_bus_no_awg_settings, platform_instruments=platform.instruments))
+        buses.add(Bus(settings=flux_bus_no_awg_settings, platform_instruments=platform.instruments))
         pulse_schedules = transpiler.circuit_to_pulses(circuits=[circuit])
         pulse_schedule = pulse_schedules[0]
         # there should not be any extra pulse schedule added
         assert len(pulse_schedule) == 8
 
-    def test_circuit_to_pulses(self, platform):  # pylint: disable=R0914 # disable pyling too many variables
+    def test_circuit_to_pulses(self, transpiler):  # pylint: disable=R0914 # disable pyling too many variables
         """Test translate method"""
-        transpiler = CircuitTranspiler(platform=platform)
+
         # test circuit
         circuit = Circuit(5)
         circuit.add(X(0))
@@ -718,7 +728,7 @@ class TestCircuitTranspiler:
 
         pulse_schedule = pulse_schedules[0]
         # there are 6 different buses + 3 empty for unused flux lines
-        assert len(pulse_schedule) == 12
+        assert len(pulse_schedule) == 9
         assert all(len(schedule_element.timeline) == 0 for schedule_element in pulse_schedule.elements[-3:])
 
         # we can ignore empty elements from here on
@@ -728,7 +738,7 @@ class TestCircuitTranspiler:
         pulse_bus_schedule = {
             pulse_bus_schedule.bus_alias: pulse_bus_schedule.timeline for pulse_bus_schedule in pulse_schedule
         }
-        m_schedule = pulse_bus_schedule["feedline_input"]
+        m_schedule = pulse_bus_schedule["feedline_bus"]
 
         # check measurement gates
         assert len(m_schedule) == 5
@@ -753,7 +763,7 @@ class TestCircuitTranspiler:
         assert m_schedule[-1] == m_pulse1
 
         # assert wait gate delayed drive pulse of bus "drive_q0" for 10ns (time should be 930+200+10=1140)
-        assert pulse_bus_schedule["drive_q0"][-1].start_time == 1140
+        assert pulse_bus_schedule["drive_q0_bus"][-1].start_time == 1140
 
         # test actions for control gates
 
@@ -882,62 +892,64 @@ class TestCircuitTranspiler:
         ]
 
         # drive q0
-        transpiled_drive_q0 = get_bus_schedule(pulse_bus_schedule, "drive_q0")
+        transpiled_drive_q0 = get_bus_schedule(pulse_bus_schedule, "drive_q0_bus")
         assert len(transpiled_drive_q0) == len(drive_q0)
         assert all(i == k for i, k in zip(transpiled_drive_q0, drive_q0))
 
         # flux q0
-        transpiled_flux_q0 = get_bus_schedule(pulse_bus_schedule, "flux_q0")
+        transpiled_flux_q0 = get_bus_schedule(pulse_bus_schedule, "flux_q0_bus")
         assert len(transpiled_flux_q0) == len(flux_q0)
         assert all(i == k for i, k in zip(transpiled_flux_q0, flux_q0))
 
         # drive q4
-        transpiled_drive_q4 = get_bus_schedule(pulse_bus_schedule, "drive_q4")
+        transpiled_drive_q4 = get_bus_schedule(pulse_bus_schedule, "drive_q4_bus")
         assert len(transpiled_drive_q4) == len(drive_q4)
         assert all(i == k for i, k in zip(transpiled_drive_q4, drive_q4))
 
         # flux q2
-        transpiled_flux_q2 = get_bus_schedule(pulse_bus_schedule, "flux_q2")
+        transpiled_flux_q2 = get_bus_schedule(pulse_bus_schedule, "flux_q2_bus")
         assert len(transpiled_flux_q2) == len(flux_q2)
         assert all(i == k for i, k in zip(transpiled_flux_q2, flux_q2))
 
         # flux c2
-        transpiled_flux_c2 = get_bus_schedule(pulse_bus_schedule, "flux_c2")
+        transpiled_flux_c2 = get_bus_schedule(pulse_bus_schedule, "flux_c2_bus")
         assert len(transpiled_flux_c2) == len(flux_c2)
         assert all(i == k for i, k in zip(transpiled_flux_c2, flux_c2))
 
-    def test_normalize_angle(self, platform):
+    def test_normalize_angle(self, transpiler):
         """Test that the angle is normalized properly for drag pulses"""
         c = Circuit(1)
         c.add(Drag(0, 2 * np.pi + 0.1, 0))
-        transpiler = CircuitTranspiler(platform=platform)
+
         pulse_schedules = transpiler.circuit_to_pulses(circuits=[c])
         assert np.allclose(pulse_schedules[0].elements[0].timeline[0].pulse.amplitude, 0.1 * 0.8 / np.pi)
         c = Circuit(1)
         c.add(Drag(0, np.pi + 0.1, 0))
-        transpiler = CircuitTranspiler(platform=platform)
+
         pulse_schedules = transpiler.circuit_to_pulses(circuits=[c])
         assert np.allclose(pulse_schedules[0].elements[0].timeline[0].pulse.amplitude, abs(-0.7745352091052967))
 
-    def test_negative_amplitudes_add_extra_phase(self, platform):
+    def test_negative_amplitudes_add_extra_phase(self, transpiler):
         """Test that transpiling negative amplitudes results in an added PI phase."""
         c = Circuit(1)
         c.add(Drag(0, -np.pi / 2, 0))
-        transpiler = CircuitTranspiler(platform=platform)
+
         pulse_schedule = transpiler.circuit_to_pulses(circuits=[c])[0]
         assert np.allclose(pulse_schedule.elements[0].timeline[0].pulse.amplitude, (np.pi / 2) * 0.8 / np.pi)
         assert np.allclose(pulse_schedule.elements[0].timeline[0].pulse.phase, 0 + np.pi)
 
-    def test_drag_schedule_error(self, platform: Platform):
+    def test_drag_schedule_error(self, gates_settings, buses):
         """Test error is raised if len(drag schedule) > 1"""
         # append schedule of M(0) to Drag(0) so that Drag(0)'s gate schedule has 2 elements
-        platform.gates_settings.gates["Drag(0)"].append(platform.gates_settings.gates["M(0)"][0])
-        gate_schedule = platform.gates_settings.gates["Drag(0)"]
+        gates_settings.gates["Drag(0)"].append(gates_settings.gates["M(0)"][0])
+        gate_schedule = gates_settings.gates["Drag(0)"]
         error_string = re.escape(
             f"Schedule for the drag gate is expected to have only 1 pulse but instead found {len(gate_schedule)} pulses"
         )
+
         circuit = Circuit(1)
         circuit.add(Drag(0, 1, 1))
-        transpiler = CircuitTranspiler(platform=platform)
+
+        transpiler = CircuitTranspiler(gates_settings=gates_settings, buses=buses)
         with pytest.raises(ValueError, match=error_string):
             transpiler.circuit_to_pulses(circuits=[circuit])

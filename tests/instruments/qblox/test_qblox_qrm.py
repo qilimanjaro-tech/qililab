@@ -272,7 +272,7 @@ class TestQbloxQRM:
 
     def test_start_sequencer_method(self, qrm: QbloxQRM):
         """Test start_sequencer method"""
-        qrm.start_sequencer(bus_alias="feedline_input")
+        qrm.run(channel_id="feedline_input")
         qrm.device.arm_sequencer.assert_not_called()
         qrm.device.start_sequencer.assert_not_called()
 

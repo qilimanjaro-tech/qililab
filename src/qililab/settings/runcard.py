@@ -76,30 +76,14 @@ class Runcard:
         alias: str
         instruments: list[str]
         channels: list[int | str | list[int | str] | None]
-        qubits: list[int | list[int] | None]
         distortions: list[dict]
         delay: int = 0
+        qubits: list[int] | None = None
         line: Line | None = None
 
     @nested_dataclass
     class GatesSettings(Settings):
         """Dataclass with all the settings and gates definitions needed to decompose gates into pulses."""
-
-        @nested_dataclass
-        class OperationSettings:
-            """Dataclass with all the settings an operation needs."""
-
-            @dataclass
-            class PulseSettings:
-                """Dataclass with all the settings a pulse needs."""
-
-                name: str
-                amplitude: float
-                duration: int
-                parameters: dict
-
-            name: str
-            pulse: PulseSettings
 
         minimum_clock_time: int
         delay_between_pulses: int
@@ -109,7 +93,6 @@ class Runcard:
         ]
         reset_method: Literal[ResetMethod.ACTIVE, ResetMethod.PASSIVE]
         passive_reset_duration: int
-        operations: list[OperationSettings]
         gates: dict[str, list[GateEventSettings]]
 
         def __post_init__(self):
@@ -129,26 +112,6 @@ class Runcard:
                 return data
 
             return remove_none_values(data=asdict(self))
-
-        def get_operation_settings(self, name: str) -> OperationSettings:
-            """Get OperationSettings by operation's name.
-
-            Args:
-                name (str): Name of the operation
-
-            Raises:
-                ValueError: If no operation is found
-
-            Returns:
-                OperationSettings: Operation's settings
-            """
-            for operation in self.operations:
-                # TODO: Fix bug that parses settings as dict instead of defined classes
-                if isinstance(operation, dict):
-                    operation = Runcard.GatesSettings.OperationSettings(**operation)
-                if operation.name == name:
-                    return operation
-            raise ValueError(f"Operation {name} not found in gates settings.")
 
         def get_gate(self, name: str, qubits: int | tuple[int, int] | tuple[int]):
             """Get gates settings from runcard for a given gate name and qubits.

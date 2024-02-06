@@ -23,6 +23,7 @@ from qpysequence.utils.constants import AWG_MAX_GAIN, INST_MAX_WAIT
 
 from qililab.config import logger
 from qililab.instruments.awg_settings import AWGQbloxADCSequencer, AWGQbloxSequencer
+from qililab.instruments.qblox import QbloxModule
 from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
@@ -41,9 +42,11 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         ValueError: at init if no readout module (QRM) is found in platform.
     """
 
-    def __init__(self, qblox_modules, buses):
-        self.qblox_modules = qblox_modules
-        self.buses = buses
+    def __init__(self, platform):
+        self.qblox_modules = [
+            instrument for instrument in platform.instruments.elements if isinstance(instrument, QbloxModule)
+        ]
+        self.buses = platform.buses
         # init variables as empty
         self.nshots = None
         self.num_bins = None
@@ -363,7 +366,6 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
             for sequencer in instrument.awg_sequencers
             if instrument.name in self.readout_modules
         ]
-        feedline_buses = {sequencer.bus_alias for sequencer in qrm_sequencers}
         qcm_sequencers = [
             sequencer
             for instrument in self.qblox_modules
@@ -374,12 +376,12 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         control_pulses = [
             pulse_bus_schedule
             for pulse_bus_schedule in pulse_schedule.elements
-            if pulse_bus_schedule.bus_alias not in feedline_buses
+            if not self.buses.get(pulse_bus_schedule.bus_alias).is_readout()
         ]
         readout_pulses = [
             pulse_bus_schedule
             for pulse_bus_schedule in pulse_schedule.elements
-            if pulse_bus_schedule.bus_alias in feedline_buses
+            if self.buses.get(pulse_bus_schedule.bus_alias).is_readout()
         ]
 
         qcm_bus_schedules = [

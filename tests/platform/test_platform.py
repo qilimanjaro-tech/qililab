@@ -285,9 +285,9 @@ class TestMethods:
             amplitude=1, phase=0.5, duration=200, frequency=1e9, pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
         )
         readout_pulse = Pulse(amplitude=1, phase=0.5, duration=1500, frequency=1e9, pulse_shape=Rectangular())
-        pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), bus_alias="drive_q0", delay=0)
+        pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), bus_alias="drive_line_q0_bus", delay=0)
         pulse_schedule.add_event(
-            PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), bus_alias="feedline_input", delay=0
+            PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), bus_alias="feedline_input_output_bus", delay=0
         )
 
         self._compile_and_assert(platform, pulse_schedule, 2)
@@ -406,9 +406,9 @@ class TestMethods:
             amplitude=1, phase=0.5, duration=200, frequency=1e9, pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
         )
         readout_pulse = Pulse(amplitude=1, phase=0.5, duration=1500, frequency=1e9, pulse_shape=Rectangular())
-        pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), bus_alias="drive_q0", delay=0)
+        pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), bus_alias="drive_line_q0_bus", delay=0)
         pulse_schedule.add_event(
-            PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), bus_alias="feedline_input", delay=0
+            PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), bus_alias="feedline_input_output_bus", delay=0
         )
         with patch.object(Bus, "upload") as upload:
             with patch.object(Bus, "run") as run:
@@ -435,7 +435,7 @@ class TestMethods:
                 start_time=200,
                 qubit=0,
             ),
-            bus_alias="feedline_input",
+            bus_alias="feedline_input_output_bus",
             delay=0,
         )
         with patch.object(Bus, "upload"):
@@ -563,10 +563,9 @@ class TestMethods:
         """Test that getting a parameter of a ``QbloxModule`` with multiple sequencers without specifying a channel
         id still works."""
         bus = platform._get_bus_by_alias(alias="drive_line_q0_bus")
-        awg = bus.system_control.instruments[0]
+        awg = bus.instruments[0]
         assert isinstance(awg, QbloxModule)
-        sequencer = awg.get_sequencers_from_bus_alias(bus.alias)[0]
-        assert (sequencer.gain_i, sequencer.gain_q) == platform.get_parameter(
+        assert bus.get_parameter(parameter=Parameter.GAIN) == platform.get_parameter(
             parameter=Parameter.GAIN, alias="drive_line_q0_bus"
         )
 

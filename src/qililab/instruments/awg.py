@@ -99,22 +99,6 @@ class AWG(Instrument):
         """Return a dict representation of an AWG instrument."""
         return {RUNCARD.NAME: self.name.value} | self.settings.to_dict()
 
-    def get_sequencers_from_bus_alias(self, bus_alias: str):
-        """Get the ids of the sequencers that are connected to the given bus alias.
-
-        Args:
-            bus_alias (str): Alias of the bus the sequencer is connected to.
-
-        Returns:
-            list[AWGSequencer]: list of integers containing the indices of the sequencers connected to the given bus.
-        """
-        if seqs := [sequencer for sequencer in self.awg_sequencers if sequencer.bus_alias == bus_alias]:
-            return seqs
-        raise IndexError(
-            f"No sequencer found connected to bus {bus_alias}. Please make sure the `bus_alias` "
-            "attribute of the sequencer is correct."
-        )
-
     def get_sequencer(self, sequencer_id: int) -> AWGSequencer:
         """Get sequencer from the sequencer identifier
 

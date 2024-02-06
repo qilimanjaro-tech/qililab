@@ -1,12 +1,16 @@
 """Tests for the BusExecution class."""
-import numpy as np
 import pytest
 
 from qililab.execution import BusExecution
+from qililab.platform import Platform
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
-from qililab.typings import Parameter
-from tests.data import experiment_params
+from tests.data import Galadriel
 from tests.test_utils import build_platform
+
+
+@pytest.fixture(name="platform")
+def fixture_platform():
+    return build_platform(runcard=Galadriel.runcard)
 
 
 @pytest.fixture(name="pulse_event")
@@ -25,6 +29,13 @@ def fixture_pulse_event() -> PulseEvent:
 def fixture_pulse_bus_schedule(pulse_event: PulseEvent) -> PulseBusSchedule:
     """Return PulseBusSchedule instance."""
     return PulseBusSchedule(timeline=[pulse_event], bus_alias="drive_0")
+
+
+@pytest.fixture(name="bus_execution")
+def fixture_bus_execution(platform: Platform, pulse_bus_schedule: PulseBusSchedule):
+    """Return BusExecution instance."""
+    bus = platform.get_element(alias="drive_line_q0_bus")
+    return BusExecution(bus=bus, pulse_bus_schedules=[pulse_bus_schedule])
 
 
 class TestBusExecution:

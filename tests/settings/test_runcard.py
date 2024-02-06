@@ -89,27 +89,10 @@ class TestGatesSettings:
         )
         assert isinstance(gates_settings.reset_method, str)
         assert isinstance(gates_settings.passive_reset_duration, int)
-        assert isinstance(gates_settings.operations, list)
-
-    def test_get_operation_settings(self, gates_settings):
-        """Test the ``get_operation_settings`` method of the Runcard.GatesSettings class."""
-        for operation in gates_settings.operations:
-            if isinstance(operation, dict):
-                operation = Runcard.GatesSettings.OperationSettings(**operation)
-            assert isinstance(
-                gates_settings.get_operation_settings(name=operation.name),
-                gates_settings.OperationSettings,
-            )
 
     def test_get_parameter_fails(self, gates_settings):
         with pytest.raises(ValueError, match="Could not find gate alias in gate settings."):
             gates_settings.get_parameter(alias="alias", parameter=Parameter.DURATION)
-
-    def test_get_operation_settings_raises_error_when_operation_does_not_exist(self, gates_settings):
-        """Test the ``get_gate`` method of the Runcard.GatesSettings class."""
-        name = "unkown_operation"
-        with pytest.raises(ValueError, match=f"Operation {name} not found in gates settings."):
-            gates_settings.get_operation_settings(name)
 
     def test_get_gate(self, gates_settings):
         """Test the ``get_gate`` method of the Runcard.GatesSettings class."""

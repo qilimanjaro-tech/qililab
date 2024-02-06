@@ -19,20 +19,11 @@ from dataclasses import InitVar, dataclass
 from qpysequence import Sequence as QpySequence
 
 from qililab.constants import RUNCARD
-from qililab.instruments import (
-    AWG,
-    AWGAnalogDigitalConverter,
-    Instrument,
-    Instruments,
-    ParameterNotFound,
-    QuantumMachinesCluster,
-)
-from qililab.instruments.qblox import QbloxModule
+from qililab.instruments import AWG, AWGAnalogDigitalConverter, Instrument, Instruments, ParameterNotFound
 from qililab.pulse import PulseDistortion
 from qililab.result import Result
 from qililab.settings import Settings
 from qililab.typings import Line, Parameter
-from qililab.utils import Factory
 
 
 class Bus:
@@ -60,10 +51,10 @@ class Bus:
         alias: str
         instruments: list[Instrument]
         channels: list[list[int | str] | None]
-        qubits: list[list[int] | None]
         distortions: list[PulseDistortion]
         delay: int
         platform_instruments: InitVar[Instruments]
+        qubits: list[int] | None = None
         line: Line | None = None
 
         def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
@@ -80,6 +71,7 @@ class Bus:
             self.instruments = instruments
             super().__post_init__()
 
+            self.line = Line(self.line) if isinstance(self.line, str) else self.line
             self.distortions = [
                 PulseDistortion.from_dict(distortion) for distortion in self.distortions if isinstance(distortion, dict)  # type: ignore[arg-type]
             ]
@@ -118,7 +110,7 @@ class Bus:
         Returns:
             str: Qubit the bus is connected to.
         """
-        return {qubit for qubits in self.settings.qubits for qubit in qubits}
+        return self.settings.qubits
 
     @property
     def distortions(self):
@@ -169,12 +161,24 @@ class Bus:
             RUNCARD.DISTORTIONS: [distortion.to_dict() for distortion in self.distortions],
             RUNCARD.DELAY: self.delay,
             "qubits": self.qubits,
-            "line": self.settings.line,
+            "line": str(self.settings.line.value),
         }
 
     def is_readout(self) -> bool:
         """Return true if bus is readout bus."""
         return self.line == Line.READOUT
+
+    def is_flux(self) -> bool:
+        """Return true if bus is readout bus."""
+        return self.line == Line.FLUX
+
+    def is_drive(self) -> bool:
+        """Return true if bus is readout bus."""
+        return self.line == Line.DRIVE
+
+    def has_awg(self) -> bool:
+        """Return true if bus is readout bus."""
+        return any(isinstance(instrument, AWG) for instrument in self.instruments)
 
     def get_instrument_and_channel_of_qubit(self, qubit: int):
         """Get instrument and channel_id associated with qubit.
@@ -185,17 +189,19 @@ class Bus:
         Returns:
             (_type_): A tuple o
         """
-        for instrument, channel_ids, qubit_ids in zip(self.instruments, self.channels, self.qubits):
+        results: list[tuple[Instrument, int | str | None]] = []
+        for instrument, channel_ids in zip(self.instruments, self.channels):
             if channel_ids is not None:
-                for channel_id, qubit_id in zip(channel_ids, qubit_ids):
+                for channel_id, qubit_id in zip(channel_ids, self.qubits):
                     if qubit_id == qubit:
-                        return instrument, channel_id
-            if qubit in qubit_ids:
-                return instrument, None
+                        results.append((instrument, channel_id))
+            else:
+                if qubit in self.qubits:
+                    results.append((instrument, None))
 
-        return None, None
+        return results
 
-    def set_parameter(self, parameter: Parameter, value: int | float | str | bool):
+    def set_parameter(self, parameter: Parameter, value: int | float | str | bool, channel_id: int | str | None = None):
         """Set a parameter to the bus.
 
         Args:
@@ -211,6 +217,9 @@ class Bus:
                     if channel_ids is None:
                         instrument.set_parameter(parameter, value)
                         return
+                    if channel_id is not None:
+                        instrument.set_parameter(parameter, value, channel_id)
+                        return
                     for channel_id in channel_ids:
                         instrument.set_parameter(parameter, value, channel_id)
                     return
@@ -218,7 +227,7 @@ class Bus:
                 f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
             )
 
-    def get_parameter(self, parameter: Parameter):
+    def get_parameter(self, parameter: Parameter, channel_id: int | str | None = None):
         """Gets a parameter of the bus.
 
         Args:
@@ -230,10 +239,10 @@ class Bus:
             return self.settings.delay
         for instrument, channel_ids in zip(self.instruments, self.channels):
             with contextlib.suppress(ParameterNotFound):
-                if channel_ids is None:
+                if channel_ids is None or channel_id is None:
                     return instrument.get_parameter(parameter)
                 return instrument.get_parameter(
-                    parameter, channel_ids[0]
+                    parameter, channel_id
                 )  # TODO: Change this to get parameters from multiple channels
         raise ParameterNotFound(
             f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"

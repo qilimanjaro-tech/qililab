@@ -53,7 +53,6 @@ Runcard YAML file example:
         reset_method: passive
         passive_reset_duration: 100
         minimum_clock_time: 4
-        operations: []
         gates:
             M(0):
                 -   bus: feedline_bus # alias of the bus

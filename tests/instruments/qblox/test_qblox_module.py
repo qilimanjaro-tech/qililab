@@ -126,7 +126,7 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     pulse_shape = Gaussian(num_sigmas=4)
     pulse = Pulse(amplitude=0.8, phase=np.pi / 2 + 12.2, duration=50, frequency=1e9, pulse_shape=pulse_shape)
     pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=0)
-    return PulseBusSchedule(timeline=[pulse_event], bus_alias="feedline_input")
+    return PulseBusSchedule(timeline=[pulse_event], bus_alias="feedline_input_output_bus")
 
 
 @pytest.fixture(name="pulse_bus_schedule2")
@@ -135,7 +135,7 @@ def fixture_pulse_bus_schedule2() -> PulseBusSchedule:
     pulse_shape = Gaussian(num_sigmas=4)
     pulse = Pulse(amplitude=0.8, phase=np.pi / 2 + 12.2, duration=50, frequency=1e9, pulse_shape=pulse_shape)
     pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=1)
-    return PulseBusSchedule(timeline=[pulse_event], bus_alias="feedline_input")
+    return PulseBusSchedule(timeline=[pulse_event], bus_alias="feedline_input_output_bus")
 
 
 class TestQbloxModule:  # pylint: disable=too-few-public-methods
@@ -147,7 +147,7 @@ class TestQbloxModule:  # pylint: disable=too-few-public-methods
         sequences = qblox_compiler.compile(pulse_schedule, num_avg=1000, repetition_duration=2000, num_bins=1)[
             "feedline_input_output_bus"
         ]
-        qrm.upload(port=pulse_bus_schedule.port)
+        qrm.upload(channel_id=pulse_bus_schedule.bus_alias)
         assert qrm.sequences[0] is sequences[0]
 
         qrm.device.sequencers[0].sequence.assert_called_once()
@@ -177,7 +177,8 @@ class TestQbloxModule:  # pylint: disable=too-few-public-methods
         qrm_settings = copy.deepcopy(Galadriel.qblox_qrm_0)
         qrm_settings.pop("name")
         qrm = DummyQRM(settings=qrm_settings)
-        qrm.upload_qpysequence(qpysequence=qpysequence, bus_alias="feedline_input")
+        qrm.upload_qpysequence(qpysequence=qpysequence, channel_id=0)
+        qrm.upload_qpysequence(qpysequence=qpysequence, channel_id=1)
         assert qrm.sequences[0] is qpysequence
         assert qrm.sequences[1] is qpysequence
 

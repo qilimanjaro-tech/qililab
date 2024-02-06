@@ -76,7 +76,7 @@ def fixture_settings_6_sequencers():
     sequencers = [
         {
             "identifier": seq_idx,
-            "chip_port_id": "feedline_input",
+            "bus_alias": "feedline_input_output_bus",
             "qubit": 5 - seq_idx,
             "output_i": 1,
             "output_q": 0,
@@ -122,7 +122,7 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     pulse_shape = Gaussian(num_sigmas=4)
     pulse = Pulse(amplitude=0.8, phase=np.pi / 2 + 12.2, duration=50, frequency=1e9, pulse_shape=pulse_shape)
     pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=0)
-    return PulseBusSchedule(timeline=[pulse_event], port="feedline_input")
+    return PulseBusSchedule(timeline=[pulse_event], bus_alias="feedline_input_output_bus")
 
 
 @pytest.fixture(name="pulse_bus_schedule2")
@@ -131,7 +131,7 @@ def fixture_pulse_bus_schedule2() -> PulseBusSchedule:
     pulse_shape = Gaussian(num_sigmas=4)
     pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
     pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=1)
-    return PulseBusSchedule(timeline=[pulse_event], port="feedline_input")
+    return PulseBusSchedule(timeline=[pulse_event], bus_alias="feedline_input_output_bus")
 
 
 @pytest.fixture(name="pulse_bus_schedule_long_wait")
@@ -141,7 +141,7 @@ def fixture_pulse_bus_schedule_long_wait() -> PulseBusSchedule:
     pulse = Pulse(amplitude=0.8, phase=np.pi / 2 + 12.2, duration=50, frequency=1e9, pulse_shape=pulse_shape)
     pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=0)
     pulse_event2 = PulseEvent(pulse=pulse, start_time=200_000, qubit=0)
-    return PulseBusSchedule(timeline=[pulse_event, pulse_event2], port="feedline_input")
+    return PulseBusSchedule(timeline=[pulse_event, pulse_event2], bus_alias="feedline_input_output_bus")
 
 
 @pytest.fixture(name="pulse_schedule_2qrm")
@@ -161,8 +161,8 @@ def fixture_pulse_schedule() -> PulseSchedule:
     )
     return PulseSchedule(
         [
-            PulseBusSchedule(timeline=[pulse_event_0], port="feedline_input"),
-            PulseBusSchedule(timeline=[pulse_event_1], port="feedline_input_1"),
+            PulseBusSchedule(timeline=[pulse_event_0], bus_alias="feedline_input_output_bus"),
+            PulseBusSchedule(timeline=[pulse_event_1], bus_alias="feedline_input_output_bus_1"),
         ]
     )
 
@@ -172,7 +172,7 @@ def fixture_long_pulse_bus_schedule() -> PulseBusSchedule:
     """Return PulseBusSchedule instance."""
     pulse = Pulse(amplitude=0.8, phase=np.pi / 2 + 12.2, duration=10**6, frequency=1e9, pulse_shape=Rectangular())
     pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=0)
-    return PulseBusSchedule(timeline=[pulse_event], port="feedline_input")
+    return PulseBusSchedule(timeline=[pulse_event], bus_alias="feedline_input_output_bus")
 
 
 @pytest.fixture(name="multiplexed_pulse_bus_schedule")
@@ -196,7 +196,7 @@ def fixture_multiplexed_pulse_bus_schedule() -> PulseBusSchedule:
         )
         for n in range(2)
     ]
-    return PulseBusSchedule(timeline=timeline, port="feedline_input")
+    return PulseBusSchedule(timeline=timeline, bus_alias="feedline_input_output_bus")
 
 
 @pytest.fixture(name="pulse_schedule_odd_qubits")
@@ -204,7 +204,7 @@ def fixture_pulse_schedule_odd_qubits() -> PulseSchedule:
     """Returns a PulseBusSchedule with readout pulses for qubits 1, 3 and 5."""
     pulse = Pulse(amplitude=1.0, phase=0, duration=1000, frequency=7.0e9, pulse_shape=Rectangular())
     timeline = [PulseEvent(pulse=pulse, start_time=0, qubit=qubit) for qubit in [3, 1, 5]]
-    return PulseSchedule([PulseBusSchedule(timeline=timeline, port="feedline_input")])
+    return PulseSchedule([PulseBusSchedule(timeline=timeline, bus_alias="feedline_input_output_bus")])
 
 
 def are_q1asm_equal(a: str, b: str):
@@ -223,7 +223,7 @@ class TestQbloxCompiler:
         amplitude = pulse_bus_schedule.timeline[0].pulse.amplitude
         phase = pulse_bus_schedule.timeline[0].pulse.phase
         pulse_bus_schedule_qcm = copy.copy(pulse_bus_schedule)
-        pulse_bus_schedule_qcm.port = "drive_q0"
+        pulse_bus_schedule_qcm.bus_alias = "drive_q0"
 
         pulse_schedule = PulseSchedule([pulse_bus_schedule_qcm, pulse_bus_schedule])
 
@@ -507,7 +507,11 @@ class TestQbloxCompiler:
         # We create a pulse bus schedule
         pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=Gaussian(num_sigmas=4))
         pulse_schedule = PulseSchedule(
-            [PulseBusSchedule(timeline=[PulseEvent(pulse=pulse, start_time=0, qubit=0)], port="feedline_input")]
+            [
+                PulseBusSchedule(
+                    timeline=[PulseEvent(pulse=pulse, start_time=0, qubit=0)], bus_alias="feedline_input_output_bus"
+                )
+            ]
         )
         sequences = qblox_compiler.compile(pulse_schedule, num_avg=1000, repetition_duration=2000, num_bins=1)[
             "feedline_input_output_bus"
