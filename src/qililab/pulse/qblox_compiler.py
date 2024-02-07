@@ -28,7 +28,7 @@ from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
-from qililab.typings import InstrumentName
+from qililab.typings import InstrumentName, Line
 
 
 class QbloxCompiler:  # pylint: disable=too-many-locals
@@ -46,7 +46,7 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         self.qblox_modules = [
             instrument for instrument in platform.instruments.elements if isinstance(instrument, QbloxModule)
         ]
-        self.buses = platform.buses
+        self.buses = platform.gate_settings.buses
         # init variables as empty
         self.nshots = None
         self.num_bins = None
@@ -376,12 +376,12 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         control_pulses = [
             pulse_bus_schedule
             for pulse_bus_schedule in pulse_schedule.elements
-            if not self.buses.get(pulse_bus_schedule.bus_alias).is_readout()
+            if not self.buses[pulse_bus_schedule.bus_alias].line == Line.READOUT
         ]
         readout_pulses = [
             pulse_bus_schedule
             for pulse_bus_schedule in pulse_schedule.elements
-            if self.buses.get(pulse_bus_schedule.bus_alias).is_readout()
+            if self.buses[pulse_bus_schedule.bus_alias].line == Line.READOUT
         ]
 
         qcm_bus_schedules = [

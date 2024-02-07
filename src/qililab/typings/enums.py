@@ -424,46 +424,6 @@ class VNASweepModes(str, Enum):
     GRO = "group"
 
 
-class Qubits(str, Enum):  # pylint: disable=missing-class-docstring
-    ANY = "any"
-    ONE = "one"
-    TWO = "two"
-
-
-class OperationName(str, Enum):
-    """Operation names.
-
-    Args:
-        enum (str): Available types of operation names:
-        * RXY
-        * R180
-        * X
-        * WAIT
-        * RESET
-        * MEASURE
-        * BARRIER
-    """
-
-    RXY = "Rxy"  # noqa: E741
-    R180 = "R180"
-    X = "X"
-    CPHASE = "CPhase"
-    WAIT = "Wait"
-    RESET = "Reset"
-    MEASURE = "Measure"
-    BARRIER = "Barrier"
-    PARKING = "Parking"
-    PULSE = "Pulse"
-    GAUSSIAN = "Gaussian"
-    DRAG = "DRAG"
-    SQUARE = "Square"
-
-
-class OperationTimingsCalculationMethod(str, Enum):  # pylint: disable=missing-class-docstring
-    AS_SOON_AS_POSSIBLE = "as_soon_as_possible"
-    AS_LATE_AS_POSSIBLE = "as_late_as_possible"
-
-
 class ResetMethod(str, Enum):  # pylint: disable=missing-class-docstring
     PASSIVE = "passive"
     ACTIVE = "active"

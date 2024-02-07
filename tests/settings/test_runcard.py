@@ -8,7 +8,9 @@ import pytest
 
 from qililab.constants import GATE_ALIAS_REGEX
 from qililab.settings import Runcard
-from qililab.settings.gate_event_settings import GateEventSettings
+from qililab.settings.bus_settings import BusSettings
+from qililab.settings.circuit_compilation.gate_event_settings import GateEventSettings
+from qililab.settings.circuit_compilation.gates_settings import GatesSettings
 from qililab.typings import Parameter
 from tests.data import Galadriel
 
@@ -36,11 +38,11 @@ class TestRuncard:
         assert isinstance(runcard.device_id, int)
         assert runcard.device_id == Galadriel.runcard["device_id"]
 
-        assert isinstance(runcard.gates_settings, runcard.GatesSettings)
+        assert isinstance(runcard.gates_settings, GatesSettings)
         assert runcard.gates_settings.to_dict() == Galadriel.runcard["gates_settings"]
 
         assert isinstance(runcard.buses, list)
-        assert isinstance(runcard.buses[0], runcard.Bus)
+        assert isinstance(runcard.buses[0], BusSettings)
         for index, bus in enumerate(runcard.buses):
             assert asdict(bus) == Galadriel.runcard["buses"][index]
 

@@ -39,7 +39,6 @@ class AWGSequencer:  # pylint: disable=too-many-instance-attributes
     """
 
     identifier: int
-    bus_alias: str | None
     output_i: int | None
     output_q: int | None
     intermediate_frequency: float

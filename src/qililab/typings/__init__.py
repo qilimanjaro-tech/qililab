@@ -22,7 +22,6 @@ from .enums import (
     InstrumentName,
     IntegrationMode,
     Line,
-    OperationName,
     Parameter,
     PulseDistortionName,
     PulseShapeName,

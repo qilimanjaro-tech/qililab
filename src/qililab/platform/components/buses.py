@@ -41,19 +41,13 @@ class Buses:
             bus (Bus): Bus object to append."""
         self.elements.append(bus)
 
-    def get(self, alias: str):
+    def get_bus(self, alias: str):
         """Get bus with the given alias.
 
         Args:
             bus_alias (str): Alias of the bus we want to get.
         """
-        bus = [bus for bus in self.elements if bus.alias == alias]
-        if len(bus) == 1:
-            return bus[0]
-
-        raise ValueError(
-            f"There can only be one bus with a specific alias. There are {len(bus)} buses with alias {alias}."
-        )
+        return next((bus for bus in self.elements if bus.alias == alias), None)
 
     def __iter__(self):
         """Redirect __iter__ magic method to iterate over buses."""
@@ -82,4 +76,4 @@ class Buses:
     @property
     def readout_buses(self) -> list[Bus]:
         """Returns a list of buses containing system controls used for readout."""
-        return [bus for bus in self.elements if bus.line == Line.READOUT]
+        return [bus for bus in self.elements if bus.has_adc()]

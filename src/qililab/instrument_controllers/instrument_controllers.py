@@ -27,7 +27,7 @@ class InstrumentControllers:
 
     elements: list[InstrumentController]
 
-    def get_instrument_controller(self, alias: str | None = None):
+    def get_instrument_controller(self, alias: str):
         """Get instrument controller given an id and category"""
         return next((instrument for instrument in self.elements if instrument.alias == alias), None)
 

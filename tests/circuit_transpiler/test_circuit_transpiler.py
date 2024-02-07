@@ -16,8 +16,8 @@ from qililab.pulse import Pulse, PulseEvent, PulseSchedule
 from qililab.pulse.pulse_shape import SNZ
 from qililab.pulse.pulse_shape import Drag as Drag_pulse
 from qililab.pulse.pulse_shape import Gaussian, Rectangular
-from qililab.settings import Runcard
-from qililab.settings.gate_event_settings import GateEventSettings
+from qililab.settings.circuit_compilation.gate_event_settings import GateEventSettings
+from qililab.settings.circuit_compilation.gates_settings import GatesSettings
 from qililab.typings import Line
 from tests.data import Galadriel
 from tests.test_utils import build_platform
@@ -390,7 +390,7 @@ def fixture_platform() -> Platform:
 
 
 @pytest.fixture(name="gates_settings")
-def fixture_gates_settings() -> Runcard.GatesSettings:
+def fixture_gates_settings() -> GatesSettings:
     gates_settings = {
         "minimum_clock_time": 5,
         "delay_between_pulses": 0,
@@ -400,7 +400,7 @@ def fixture_gates_settings() -> Runcard.GatesSettings:
         "timings_calculation_method": "as_soon_as_possible",
         "gates": {},
     }
-    gates_settings = Runcard.GatesSettings(**gates_settings)  # type: ignore[assignment]  # pylint: disable=unexpected-keyword-arg
+    gates_settings = GatesSettings(**gates_settings)  # type: ignore[assignment]  # pylint: disable=unexpected-keyword-arg
     gates_settings.gates = {  # type: ignore
         gate: [GateEventSettings(**event) for event in schedule] for gate, schedule in platform_gates.items()  # type: ignore
     }
@@ -526,9 +526,9 @@ def fixture_buses(platform) -> Buses:
 
 
 @pytest.fixture(name="transpiler")
-def fixture_transpiler(gates_settings, buses) -> CircuitTranspiler:
+def fixture_transpiler(gates_settings) -> CircuitTranspiler:
     """Fixture that returns CircuitTranspiler"""
-    return CircuitTranspiler(gates_settings=gates_settings, buses=buses)
+    return CircuitTranspiler(gates_settings=gates_settings)
 
 
 def get_pulse0(time: int, qubit: int) -> PulseEvent:
@@ -572,7 +572,7 @@ class TestCircuitTranspiler:
         """
         # FIXME: do these equality tests for the unitary matrix resulting from the circuit rather
         # than from the state vectors for a more full-proof test
-        transpiler = CircuitTranspiler(gates_settings=MagicMock(), buses=MagicMock())
+        transpiler = CircuitTranspiler(gates_settings=MagicMock())
 
         # Test with optimizer=False
         rng = np.random.default_rng(seed=42)  # init random number generator
@@ -938,7 +938,7 @@ class TestCircuitTranspiler:
         assert np.allclose(pulse_schedule.elements[0].timeline[0].pulse.amplitude, (np.pi / 2) * 0.8 / np.pi)
         assert np.allclose(pulse_schedule.elements[0].timeline[0].pulse.phase, 0 + np.pi)
 
-    def test_drag_schedule_error(self, gates_settings, buses):
+    def test_drag_schedule_error(self, gates_settings):
         """Test error is raised if len(drag schedule) > 1"""
         # append schedule of M(0) to Drag(0) so that Drag(0)'s gate schedule has 2 elements
         gates_settings.gates["Drag(0)"].append(gates_settings.gates["M(0)"][0])
@@ -950,6 +950,6 @@ class TestCircuitTranspiler:
         circuit = Circuit(1)
         circuit.add(Drag(0, 1, 1))
 
-        transpiler = CircuitTranspiler(gates_settings=gates_settings, buses=buses)
+        transpiler = CircuitTranspiler(gates_settings=gates_settings)
         with pytest.raises(ValueError, match=error_string):
             transpiler.circuit_to_pulses(circuits=[circuit])

@@ -44,7 +44,7 @@ from qililab.result import Result
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.quantum_machines_results import QuantumMachinesMeasurementResult
 from qililab.settings import Runcard
-from qililab.typings.enums import Line, Parameter
+from qililab.typings.enums import Parameter
 from qililab.utils import hash_qpy_sequence, hash_qua_program
 
 from .components import Bus, Buses
@@ -286,8 +286,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         self.buses = Buses(
             elements=[Bus(settings=asdict(bus), platform_instruments=self.instruments) for bus in runcard.buses]
-            if runcard.buses is not None
-            else []
         )
         """All the buses of the platform and their necessary settings (``dataclass``). Each individual bus is contained in a list within the dataclass."""
 
@@ -296,10 +294,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         self._connected_to_instruments: bool = False
         """Boolean indicating the connection status to the instruments. Defaults to False (not connected)."""
-
-        if any(isinstance(instrument, QbloxModule) for instrument in self.instruments.elements):
-            self.compiler = PulseQbloxCompiler(platform=self)  # TODO: integrate with qprogram compiler
-            """Compiler to translate given programs to instructions for a given awg vendor."""
 
         self._qua_program_cache: dict[str, str] = {}
         """Dictionary for caching compiled qua programs."""
@@ -386,61 +380,22 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         Returns:
             tuple[object, list | None]: Element class together with the index of the bus where the element is located.
         """
-        if alias is not None:
-            if alias == "platform":
-                return self.gates_settings
-            regex_match = re.search(GATE_ALIAS_REGEX, alias.split("_")[0])
-            if regex_match is not None:
-                name = regex_match["gate"]
-                qubits_str = regex_match["qubits"]
-                qubits = ast.literal_eval(qubits_str)
-                if f"{name}({qubits_str})" in self.gates_settings.gate_names:
-                    return self.gates_settings.get_gate(name=name, qubits=qubits)
+        if alias == "platform":
+            return self.gates_settings
+        regex_match = re.search(GATE_ALIAS_REGEX, alias.split("_")[0])
+        if regex_match is not None:
+            name = regex_match["gate"]
+            qubits_str = regex_match["qubits"]
+            qubits = ast.literal_eval(qubits_str)
+            if self.gates_settings is not None and f"{name}({qubits_str})" in self.gates_settings.gate_names:
+                return self.gates_settings.get_gate(name=name, qubits=qubits)
 
         element = self.instruments.get_instrument(alias=alias)
         if element is None:
             element = self.instrument_controllers.get_instrument_controller(alias=alias)
         if element is None:
-            element = self._get_bus_by_alias(alias=alias)
+            element = self.buses.get_bus(alias=alias)
         return element
-
-    def get_ch_id_from_qubit_and_bus(self, alias: str, qubit_index: int) -> int | None:
-        """Finds a sequencer id for a given qubit given a bus alias. This utility is added so that one can get a qrm's
-        channel id easily in case the setup contains more than one qrm and / or there is not a one to one correspondance
-        between sequencer id in the instrument and the qubit id. This one to one correspondance used to be the norm for
-        5 qubit chips with non-RF QRM modules with 5 sequencers, each mapped to a qubit with the same numerical id as the
-        sequencer.
-        For QCMs it is also useful since the sequencer id is not always the same as the qubit id.
-
-        Args:
-            alias (str): bus alias
-            qubit_index (int): qubit index
-
-        Returns:
-            int: sequencer id
-        """
-        bus = self._get_bus_by_alias(alias=alias)
-        if bus is not None:
-            for _, channel_ids in zip(bus.instruments, bus.channels):
-                if channel_ids is not None:
-                    for channel_id, qubit in zip(channel_ids, bus.qubits):
-                        if qubit == qubit_index:
-                            return channel_id
-        raise ValueError(f"Could not find bus with alias {alias} for qubit {qubit_index}")
-
-    def _get_bus_by_qubit_index(self, qubit_index: int) -> tuple[Bus, Bus, Bus]:
-        """Finds buses associated with the given qubit index.
-
-        Args:
-            qubit_index (int): Qubit index to get the buses from.
-
-        Returns:
-            tuple[:class:`Bus`, :class:`Bus`, :class:`Bus`]: Tuple of Bus objects containing the flux, control and readout buses of the given qubit.
-        """
-        flux_bus = next(bus for bus in self.buses if qubit_index in bus.qubits and bus.line == Line.FLUX)
-        control_bus = next(bus for bus in self.buses if qubit_index in bus.qubits and bus.line == Line.DRIVE)
-        readout_bus = next(bus for bus in self.buses if qubit_index in bus.qubits and bus.line == Line.READOUT)
-        return flux_bus, control_bus, readout_bus
 
     def _get_bus_by_alias(self, alias: str | None = None):
         """Gets buses given their alias.
@@ -463,7 +418,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             channel_id (int, optional): ID of the channel we want to use to set the parameter. Defaults to None.
         """
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
-        if alias == "platform" or regex_match is not None:
+        if alias == "platform" or parameter == Parameter.DELAY or regex_match is not None:
+            if self.gates_settings is None:
+                raise ValueError("Trying to get parameter of gates settings, but no gates settings exist in platform.")
             return self.gates_settings.get_parameter(alias=alias, parameter=parameter, channel_id=channel_id)
         element = self.get_element(alias=alias)
         return element.get_parameter(parameter=parameter, channel_id=channel_id)
@@ -491,7 +448,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             channel_id (int, optional): ID of the channel you want to use to set the parameter. Defaults to None.
         """
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
-        if alias == "platform" or regex_match is not None:
+        if alias == "platform" or parameter == Parameter.DELAY or regex_match is not None:
+            if self.gates_settings is None:
+                raise ValueError("Trying to get parameter of gates settings, but no gates settings exist in platform.")
             self.gates_settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             return
         element = self.get_element(alias=alias)
@@ -540,14 +499,12 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """
         name_dict = {RUNCARD.NAME: self.name}
         device_id = {RUNCARD.DEVICE_ID: self.device_id}
-        gates_settings_dict = {RUNCARD.GATES_SETTINGS: self.gates_settings.to_dict()}
-        buses_dict = {RUNCARD.BUSES: self.buses.to_dict() if self.buses is not None else None}
-        instrument_dict = {RUNCARD.INSTRUMENTS: self.instruments.to_dict() if self.instruments is not None else None}
-        instrument_controllers_dict = {
-            RUNCARD.INSTRUMENT_CONTROLLERS: self.instrument_controllers.to_dict()
-            if self.instrument_controllers is not None
-            else None,
+        gates_settings_dict = {
+            RUNCARD.GATES_SETTINGS: self.gates_settings.to_dict() if self.gates_settings is not None else None
         }
+        buses_dict = {RUNCARD.BUSES: self.buses.to_dict()}
+        instrument_dict = {RUNCARD.INSTRUMENTS: self.instruments.to_dict()}
+        instrument_controllers_dict = {RUNCARD.INSTRUMENT_CONTROLLERS: self.instrument_controllers.to_dict()}
 
         return name_dict | device_id | gates_settings_dict | buses_dict | instrument_dict | instrument_controllers_dict
 
@@ -620,7 +577,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         # Acquire results
         results: dict[str, list[Result]] = {}
         for bus_alias in buses:
-            if buses[bus_alias].line == Line.READOUT:
+            if buses[bus_alias].has_adc():
                 acquisitions = list(sequences[bus_alias].todict()["acquisitions"])
                 bus_results = buses[bus_alias].acquire_qprogram_results(acquisitions=acquisitions)
                 results[bus_alias] = bus_results
@@ -713,7 +670,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             bus.run()
 
         # Acquire results
-        readout_buses = [bus for bus in self.buses if bus.line == Line.READOUT and bus.alias in programs]
+        readout_buses = [bus for bus in self.buses if bus.has_adc() and bus.alias in programs]
         results: list[Result] = []
         for bus in readout_buses:
             result = bus.acquire_result()
@@ -790,9 +747,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             ValueError: raises value error if the circuit execution time is longer than ``repetition_duration`` for some qubit.
         """
         # We have a circular import because Platform uses CircuitToPulses and vice versa
-
+        if self.gates_settings is None:
+            raise ValueError("Cannot compile Qibo Circuit or Pulse Schedule without gates settings.")
         if isinstance(program, Circuit):
-            transpiler = CircuitTranspiler(gates_settings=self.gates_settings, buses=self.buses)
+            transpiler = CircuitTranspiler(gates_settings=self.gates_settings)
             pulse_schedule = transpiler.transpile_circuit(circuits=[program])[0]
         elif isinstance(program, PulseSchedule):
             pulse_schedule = program
@@ -800,6 +758,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             raise ValueError(
                 f"Program to execute can only be either a single circuit or a pulse schedule. Got program of type {type(program)} instead"
             )
-        return self.compiler.compile(
+        compiler = PulseQbloxCompiler(platform=self)
+        return compiler.compile(
             pulse_schedule=pulse_schedule, num_avg=num_avg, repetition_duration=repetition_duration, num_bins=num_bins
         )

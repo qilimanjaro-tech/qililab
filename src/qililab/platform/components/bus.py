@@ -20,6 +20,7 @@ from qpysequence import Sequence as QpySequence
 
 from qililab.constants import RUNCARD
 from qililab.instruments import AWG, AWGAnalogDigitalConverter, Instrument, Instruments, ParameterNotFound
+from qililab.instruments.qblox import QbloxModule
 from qililab.pulse import PulseDistortion
 from qililab.result import Result
 from qililab.settings import Settings
@@ -50,12 +51,8 @@ class Bus:
 
         alias: str
         instruments: list[Instrument]
-        channels: list[list[int | str] | None]
-        distortions: list[PulseDistortion]
-        delay: int
+        channels: list[int | str | list[int | str] | None]
         platform_instruments: InitVar[Instruments]
-        qubits: list[int] | None = None
-        line: Line | None = None
 
         def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
             instruments = []
@@ -70,11 +67,6 @@ class Bus:
                 instruments.append(inst_class)
             self.instruments = instruments
             super().__post_init__()
-
-            self.line = Line(self.line) if isinstance(self.line, str) else self.line
-            self.distortions = [
-                PulseDistortion.from_dict(distortion) for distortion in self.distortions if isinstance(distortion, dict)  # type: ignore[arg-type]
-            ]
 
     settings: BusSettings
     """Bus settings. Containing the alias of the bus, the system control used to control and readout its qubits, the
@@ -99,45 +91,9 @@ class Bus:
         return self.settings.instruments
 
     @property
-    def channels(self) -> list[list[int | str] | None]:
+    def channels(self) -> list[int | str | list[int | str] | None]:
         """Instruments controlled by this system control."""
         return self.settings.channels
-
-    @property
-    def qubits(self):
-        """
-
-        Returns:
-            str: Qubit the bus is connected to.
-        """
-        return self.settings.qubits
-
-    @property
-    def distortions(self):
-        """Bus 'distortions' property.
-
-        Returns:
-            list[PulseDistortion]: settings.distortions.
-        """
-        return self.settings.distortions
-
-    @property
-    def delay(self):
-        """Bus 'delay' property.
-
-        Returns:
-            int: settings.delay.
-        """
-        return self.settings.delay
-
-    @property
-    def line(self):
-        """Bus 'delay' property.
-
-        Returns:
-            int: settings.delay.
-        """
-        return self.settings.line
 
     def __str__(self):
         """String representation of a bus. Prints a drawing of the bus elements."""
@@ -158,48 +114,15 @@ class Bus:
             RUNCARD.ALIAS: self.alias,
             RUNCARD.INSTRUMENTS: [instrument.alias for instrument in self.instruments],
             "channels": self.settings.channels,
-            RUNCARD.DISTORTIONS: [distortion.to_dict() for distortion in self.distortions],
-            RUNCARD.DELAY: self.delay,
-            "qubits": self.qubits,
-            "line": str(self.settings.line.value),
         }
 
-    def is_readout(self) -> bool:
-        """Return true if bus is readout bus."""
-        return self.line == Line.READOUT
-
-    def is_flux(self) -> bool:
-        """Return true if bus is readout bus."""
-        return self.line == Line.FLUX
-
-    def is_drive(self) -> bool:
-        """Return true if bus is readout bus."""
-        return self.line == Line.DRIVE
-
     def has_awg(self) -> bool:
-        """Return true if bus is readout bus."""
+        """Return true if bus has AWG capabilities."""
         return any(isinstance(instrument, AWG) for instrument in self.instruments)
 
-    def get_instrument_and_channel_of_qubit(self, qubit: int):
-        """Get instrument and channel_id associated with qubit.
-
-        Args:
-            qubit (int): qubit index
-
-        Returns:
-            (_type_): A tuple o
-        """
-        results: list[tuple[Instrument, int | str | None]] = []
-        for instrument, channel_ids in zip(self.instruments, self.channels):
-            if channel_ids is not None:
-                for channel_id, qubit_id in zip(channel_ids, self.qubits):
-                    if qubit_id == qubit:
-                        results.append((instrument, channel_id))
-            else:
-                if qubit in self.qubits:
-                    results.append((instrument, None))
-
-        return results
+    def has_adc(self) -> bool:
+        """Return true if bus has ADC capabilities."""
+        return any(isinstance(instrument, AWGAnalogDigitalConverter) for instrument in self.instruments)
 
     def set_parameter(self, parameter: Parameter, value: int | float | str | bool, channel_id: int | str | None = None):
         """Set a parameter to the bus.
@@ -209,23 +132,20 @@ class Bus:
             value (int | float | str | bool): value to update
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
-        if parameter == Parameter.DELAY:
-            self.settings.delay = int(value)
-        else:
-            for instrument, channel_ids in zip(self.instruments, self.channels):
-                with contextlib.suppress(ParameterNotFound):
-                    if channel_ids is None:
-                        instrument.set_parameter(parameter, value)
-                        return
-                    if channel_id is not None:
-                        instrument.set_parameter(parameter, value, channel_id)
-                        return
-                    for channel_id in channel_ids:
-                        instrument.set_parameter(parameter, value, channel_id)
+        for instrument, instrument_channels in zip(self.instruments, self.channels):
+            with contextlib.suppress(ParameterNotFound):
+                if channel_id is not None:
+                    instrument.set_parameter(parameter, value, channel_id)
                     return
-            raise ParameterNotFound(
-                f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
-            )
+                if instrument_channels is None or isinstance(instrument_channels, (int, str)):
+                    instrument.set_parameter(parameter, value, instrument_channels)
+                    return
+                for channel in instrument_channels:
+                    instrument.set_parameter(parameter, value, channel)
+                return
+        raise ParameterNotFound(
+            f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
+        )
 
     def get_parameter(self, parameter: Parameter, channel_id: int | str | None = None):
         """Gets a parameter of the bus.
@@ -235,8 +155,6 @@ class Bus:
             value (int | float | str | bool): value to update
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
-        if parameter == Parameter.DELAY:
-            return self.settings.delay
         for instrument, channel_ids in zip(self.instruments, self.channels):
             with contextlib.suppress(ParameterNotFound):
                 if channel_ids is None or channel_id is None:
@@ -248,38 +166,41 @@ class Bus:
             f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
         )
 
-    def upload_qpysequence(self, qpysequence: QpySequence):
+    def upload_qpysequence(self, qpysequence: QpySequence, channel_id: int | str | None = None):
         """Uploads the qpysequence into the instrument."""
-        for instrument, channel_ids in zip(self.instruments, self.channels):
-            if isinstance(instrument, AWG):
-                if channel_ids is None:
-                    instrument.upload_qpysequence(qpysequence=qpysequence, channel_id=None)
-                    return
-                for channel_id in channel_ids:
+        for instrument, instrument_channels in zip(self.instruments, self.channels):
+            if isinstance(instrument, QbloxModule):
+                if channel_id is not None:
                     instrument.upload_qpysequence(qpysequence=qpysequence, channel_id=channel_id)
+                    return
+                if instrument_channels is None or isinstance(instrument_channels, (int, str)):
+                    instrument.upload_qpysequence(qpysequence=qpysequence, channel_id=instrument_channels)
+                    return
+                for channel in instrument_channels:
+                    instrument.upload_qpysequence(qpysequence=qpysequence, channel_id=channel)
                 return
 
-        raise AttributeError("The system control doesn't have any AWG to upload a qpysequence.")
+        raise AttributeError(f"Bus {self.alias} doesn't have any QbloxModule to upload a qpysequence.")
 
     def upload(self):
         """Uploads any previously compiled program into the instrument."""
-        for instrument, channel_ids in zip(self.instruments, self.channels):
+        for instrument, instrument_channels in zip(self.instruments, self.channels):
             if isinstance(instrument, AWG):
-                if channel_ids is None:
+                if instrument_channels is None:
                     instrument.upload(channel_id=None)
                     return
-                for channel_id in channel_ids:
+                for channel_id in instrument_channels:
                     instrument.upload(channel_id=channel_id)
                 return
 
     def run(self) -> None:
         """Runs any previously uploaded program into the instrument."""
-        for instrument, channel_ids in zip(self.instruments, self.channels):
+        for instrument, instrument_channels in zip(self.instruments, self.channels):
             if isinstance(instrument, AWG):
-                if channel_ids is None:
-                    instrument.run(channel_id=None)
+                if instrument_channels is None or isinstance(instrument_channels, (int, str)):
+                    instrument.run(channel_id=instrument_channels)
                     return
-                for channel_id in channel_ids:
+                for channel_id in instrument_channels:
                     instrument.run(channel_id=channel_id)
                 return
 
@@ -289,24 +210,24 @@ class Bus:
         Returns:
             Result: Acquired result
         """
-        if self.settings.line == Line.READOUT:
-            # TODO: Support acquisition from multiple instruments
-            results: list[Result] = []
-            for instrument in self.instruments:
-                result = instrument.acquire_result()
-                if result is not None:
-                    results.append(result)
+        # TODO: Support acquisition from multiple instruments
+        results: list[Result] = []
+        for instrument in self.instruments:
+            result = instrument.acquire_result()
+            if result is not None:
+                results.append(result)
 
-            if len(results) > 1:
-                raise ValueError(
-                    f"Acquisition from multiple instruments is not supported. Obtained a total of {len(results)} results. "
-                )
+        if len(results) > 1:
+            raise ValueError(
+                f"Acquisition from multiple instruments is not supported. Obtained a total of {len(results)} results. "
+            )
 
-            return results[0]
+        if len(results) == 0:
+            raise AttributeError(
+                f"The bus {self.alias} cannot acquire results because it doesn't have a readout system control."
+            )
 
-        raise AttributeError(
-            f"The bus {self.alias} cannot acquire results because it doesn't have a readout system control."
-        )
+        return results[0]
 
     def acquire_qprogram_results(self, acquisitions: list[str]) -> list[Result]:
         """Read the result from the instruments
@@ -314,24 +235,15 @@ class Bus:
         Returns:
             list[Result]: Acquired results in chronological order
         """
-        if self.settings.line == Line.READOUT:
-            # TODO: Support acquisition from multiple instruments
-            total_results: list[list[Result]] = []
-            for instrument in self.instruments:
-                instrument_results = instrument.acquire_qprogram_results(acquisitions=acquisitions)
-                total_results.append(instrument_results)
-
-            return total_results[0]
-
-        raise AttributeError(
-            f"The bus {self.alias} cannot acquire results because it doesn't have a readout system control."
-        )
-
-    @property
-    def acquisition_delay_time(self) -> int:
-        """SystemControl 'acquisition_delay_time' property.
-        Delay (in ns) between the readout pulse and the acquisition."""
+        # TODO: Support acquisition from multiple instruments
+        total_results: list[list[Result]] = []
         for instrument in self.instruments:
-            if isinstance(instrument, AWGAnalogDigitalConverter):
-                return instrument.acquisition_delay_time
-        raise ValueError(f"The bus {self.alias} doesn't have an AWGAnalogDigitalConverter instrument.")
+            instrument_results = instrument.acquire_qprogram_results(acquisitions=acquisitions)
+            total_results.append(instrument_results)
+
+        if len(total_results) == 0:
+            raise AttributeError(
+                f"The bus {self.alias} cannot acquire results because it doesn't have a readout system control."
+            )
+
+        return total_results[0]

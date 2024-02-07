@@ -15,6 +15,7 @@
 import os
 from datetime import datetime
 from pathlib import Path
+from typing import cast
 from warnings import warn
 
 import h5py
@@ -246,5 +247,6 @@ def build_platform(
             yaml = YAML(typ="safe")
             runcard = yaml.load(stream=file)
 
+    runcard = cast(dict, runcard)
     runcard_class = Runcard(**runcard)
     return Platform(runcard=runcard_class, connection=connection)

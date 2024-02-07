@@ -26,7 +26,8 @@ from qililab.qprogram import QProgram
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.quantum_machines_results import QuantumMachinesMeasurementResult
 from qililab.settings import Runcard
-from qililab.settings.gate_event_settings import GateEventSettings
+from qililab.settings.circuit_compilation.gate_event_settings import GateEventSettings
+from qililab.settings.circuit_compilation.gates_settings import GatesSettings
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import IQPair, Square
 from tests.data import Galadriel, SauronQuantumMachines
@@ -118,7 +119,7 @@ class TestPlatformInitialization:
         assert platform.device_id == runcard.device_id
         assert isinstance(platform.device_id, int)
         assert platform.gates_settings == runcard.gates_settings
-        assert isinstance(platform.gates_settings, Runcard.GatesSettings)
+        assert isinstance(platform.gates_settings, GatesSettings)
         assert isinstance(platform.instruments, Instruments)
         assert isinstance(platform.instrument_controllers, InstrumentControllers)
         assert isinstance(platform.buses, Buses)
@@ -161,20 +162,6 @@ class TestPlatform:
             platform.disconnect()
         mock_logger.info.assert_called_once_with("Already disconnected from the instruments")
 
-    @pytest.mark.parametrize("alias", ["feedline_input_output_bus", "drive_line_q0_bus"])
-    def test_get_ch_id_from_qubit_and_bus(self, alias: str, platform: Platform):
-        """Test that get_ch_id_from_qubits gets the channel id it should get from the runcard"""
-        channel_id = platform.get_ch_id_from_qubit_and_bus(alias=alias, qubit_index=0)
-        assert channel_id == 0
-
-    def test_get_ch_id_from_qubit_and_bus_error_no_bus(self, platform: Platform):
-        """Test that the method raises an error if the alias is not in the buses returned."""
-        alias = "dummy"
-        qubit_id = 0
-        error_string = f"Could not find bus with alias {alias} for qubit {qubit_id}"
-        with pytest.raises(ValueError, match=re.escape(error_string)):
-            platform.get_ch_id_from_qubit_and_bus(alias=alias, qubit_index=qubit_id)
-
     def test_get_element_method_unknown_returns_none(self, platform: Platform):
         """Test get_element method with unknown element."""
         element = platform.get_element(alias="ABC")
@@ -191,7 +178,7 @@ class TestPlatform:
 
     def test_gates_settings_instance(self, platform: Platform):
         """Test settings instance."""
-        assert isinstance(platform.gates_settings, Runcard.GatesSettings)
+        assert isinstance(platform.gates_settings, GatesSettings)
 
     def test_buses_instance(self, platform: Platform):
         """Test buses instance."""

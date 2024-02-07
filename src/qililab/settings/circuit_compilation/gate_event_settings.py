@@ -15,7 +15,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from qililab.typings.enums import Line, Parameter
+from qililab.typings.enums import Parameter
 
 
 @dataclass
@@ -51,6 +51,7 @@ class GateEventSettings:
         options: Optional[dict] = None
 
     bus: str
+    channel: int | str | None
     pulse: GatePulseSettings
     wait_time: int = 0
 

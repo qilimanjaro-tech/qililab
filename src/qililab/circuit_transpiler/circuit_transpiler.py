@@ -24,11 +24,9 @@ from qibo.gates import Gate, M
 from qibo.models import Circuit
 
 from qililab.constants import RUNCARD
-from qililab.instruments import AWG
-from qililab.platform.components import Buses
 from qililab.pulse import Pulse, PulseEvent, PulseSchedule
-from qililab.settings.gate_event_settings import GateEventSettings
-from qililab.settings.runcard import Runcard
+from qililab.settings.circuit_compilation.gate_event_settings import GateEventSettings
+from qililab.settings.circuit_compilation.gates_settings import GatesSettings
 from qililab.typings.enums import Line
 from qililab.utils import Factory
 
@@ -43,9 +41,8 @@ class CircuitTranspiler:
     - `transpile_circuit`: runs both of the methods above sequentially
     """
 
-    def __init__(self, gates_settings: Runcard.GatesSettings, buses: Buses):  # type: ignore # ignore typing to avoid importing platform and causing circular imports
+    def __init__(self, gates_settings: GatesSettings):  # type: ignore # ignore typing to avoid importing platform and causing circular imports
         self.gates_settings = gates_settings
-        self.buses = buses
 
     def transpile_circuit(self, circuits: list[Circuit]) -> list[PulseSchedule]:
         """Transpiles a list of qibo.models.Circuit to a list of pulse schedules.
@@ -205,15 +202,15 @@ class CircuitTranspiler:
                     if isinstance(gate, M):
                         gate = M(*gate.qubits[1:])
                     # add event
-                    bus = self.buses.get(gate_event.bus)
-                    pulse_schedule.add_event(pulse_event=pulse_event, bus_alias=bus.alias, delay=bus.settings.delay)  # type: ignore
+                    delay = self.gates_settings.buses[gate.bus].delay
+                    pulse_schedule.add_event(pulse_event=pulse_event, bus_alias=gate_event.bus, delay=delay)  # type: ignore
 
-            for bus in self.buses:
+            for bus_alias in self.gates_settings.buses:
                 # If we find a flux port, create empty schedule for that port.
                 # This is needed because for Qblox instrument working in flux buses as DC sources, if we don't
                 # add an empty schedule its offsets won't be activated and the results will be misleading.
-                if bus.is_flux() and bus.has_awg():
-                    pulse_schedule.create_schedule(bus_alias=bus.alias)
+                if self.gates_settings.buses[bus_alias].line == Line.FLUX:
+                    pulse_schedule.create_schedule(bus_alias=bus_alias)
 
             pulse_schedule_list.append(pulse_schedule)
 
@@ -289,14 +286,16 @@ class CircuitTranspiler:
         Returns:
             list[int]: list of qubits
         """
-        schedule_qubits: list[int] = []
-        # TODO RUNCARD
-        if schedule is not None:
-            for schedule_element in schedule:
-                bus = self.buses.get(schedule_element.bus)
-                qubit = bus.qubits[0] if bus is not None and bus.qubits is not None else None
-                if qubit is not None:
-                    schedule_qubits.append(qubit)
+        schedule_qubits = (
+            [
+                qubit
+                for schedule_element in schedule
+                for qubit in self.gates_settings.buses[schedule_element.bus].qubits
+                if schedule_element.bus in self.gates_settings.buses
+            ]
+            if schedule is not None
+            else []
+        )
 
         gate_qubits = list(gate.qubits)
 
@@ -322,8 +321,14 @@ class CircuitTranspiler:
         pulse_shape = Factory.get(pulse_shape_copy.pop(RUNCARD.NAME))(**pulse_shape_copy)
 
         # handle measurement gates and target qubits for control gates which might have multi-qubit schedules
-        bus = self.buses.get(gate_event.bus)
-        qubit = gate.qubits[0] if isinstance(gate, M) else bus.qubits[0] if bus.qubits is not None else None
+        bus = self.gates_settings.buses[gate_event.bus]
+        qubit = (
+            gate.qubits[0]
+            if isinstance(gate, M)
+            else next((qubit for qubit in bus.qubits), None)
+            if bus is not None
+            else None
+        )
         return PulseEvent(
             pulse=Pulse(
                 amplitude=pulse.amplitude,

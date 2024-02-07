@@ -3,12 +3,8 @@ name: galadriel_soprano_master
 device_id: 9
 
 gates_settings:
-  delay_between_pulses: 0
-  delay_before_readout: 4
-  timings_calculation_method: as_soon_as_possible
-  reset_method: passive
-  passive_reset_duration: 100
   minimum_clock_time: 4
+  delay_before_readout: 4
   gates:
     M(0):
       - bus: feedline_bus # alias of the bus
@@ -28,7 +24,6 @@ gates_settings:
             name: drag
             num_sigmas: 4
             drag_coefficient: 0.0
-
     M(1):
       - bus: feedline_bus # alias of the bus
         pulse:
@@ -47,7 +42,6 @@ gates_settings:
             name: drag
             num_sigmas: 4
             drag_coefficient: 0.0
-
     M(2):
       - bus: feedline_bus # alias of the bus
         pulse:
@@ -66,7 +60,6 @@ gates_settings:
             name: drag
             num_sigmas: 4
             drag_coefficient: 0.0
-
     M(3):
       - bus: feedline_bus # alias of the bus
         pulse:
@@ -85,7 +78,6 @@ gates_settings:
             name: drag
             num_sigmas: 4
             drag_coefficient: 0.0
-
     M(4):
       - bus: feedline_bus # alias of the bus
         pulse:
@@ -94,7 +86,6 @@ gates_settings:
           duration: 2000
           shape:
             name: rectangular
-
     Drag(4):
       - bus: drive_line_q4_bus
         pulse:
@@ -105,7 +96,6 @@ gates_settings:
             name: drag
             num_sigmas: 4
             drag_coefficient: 0.0
-
     CZ(0,2):
       - bus: flux_line_q2_bus
         pulse:
@@ -119,7 +109,6 @@ gates_settings:
           options:
             q0_phase_correction: 0.1
             q2_phase_correction: 0.2
-
       - bus: flux_line_q1_bus # park pulse
         wait_time: 20
         pulse:
@@ -128,7 +117,6 @@ gates_settings:
           duration: 121
           shape:
             name: rectangular
-
     CZ(1,2):
       - bus: flux_line_q2_bus
         pulse:
@@ -147,7 +135,6 @@ gates_settings:
           duration: 121
           shape:
             name: rectangular
-
     CZ(4,2):
       - bus: flux_line_q4_bus
         pulse:
@@ -158,7 +145,6 @@ gates_settings:
             name: snz
             t_phi: 1
             b: 0.5
-
     CZ(3,2):
       - bus: flux_line_q3_bus
         pulse:
@@ -169,132 +155,87 @@ gates_settings:
             name: snz
             t_phi: 1
             b: 0.5
+  buses:
+    feedline_bus:
+      line: readout
+      qubits: [0, 1, 2, 3, 4]
+      distortions: []
+    drive_line_q0_bus:
+      line: drive
+      qubits: [0]
+      distortions: []
+    drive_line_q1_bus:
+      line: drive
+      qubits: [1]
+      distortions: []
+    drive_line_q2_bus:
+      line: drive
+      qubits: [2]
+      distortions: []
+    drive_line_q3_bus:
+      line: drive
+      qubits: [3]
+      distortions: []
+    drive_line_q4_bus:
+      line: drive
+      qubits: [4]
+      distortions: []
+    flux_line_q0_bus:
+      line: flux
+      qubits: [0]
+      distortions: []
+    flux_line_q1_bus:
+      line: flux
+      qubits: [1]
+      distortions: []
+    flux_line_q2_bus:
+      line: flux
+      qubits: [2]
+      distortions: []
+    flux_line_q3_bus:
+      line: flux
+      qubits: [3]
+      distortions: []
+    flux_line_q4_bus:
+      line: flux
+      qubits: [4]
+      distortions: []
+
 
 buses:
   - alias: feedline_bus
     instruments: [QRM1, rs_1]
-    channels: [[0], None]
-    qubits: [[0], None]
-    line: readout
-    distortions: []
+    channels: [[0, 1, 2, 3, 4], None]
   - alias: drive_line_q0_bus
     instruments: [QCM-RF1]
-    channels: [[0]]
-    qubits: [[0]]
-    line: drive
-    distortions: []
+    channels: [0]
   - alias: flux_line_q0_bus
     instruments: [QCM1]
-    channels: [[0]]
-    qubits: [[0]]
-    line: flux
-    distortions: []
+    channels: [0]
   - alias: drive_line_q1_bus
     instruments: [QCM-RF1]
-    channels: [[1]]
-    qubits: [[1]]
-    line: drive
-    distortions: []
+    channels: [1]
   - alias: flux_line_q1_bus
     instruments: [QCM1]
-    channels: [[1]]
-    qubits: [[1]]
-    line: flux
-    distortions:
-      - name: bias_tee
-        tau_bias_tee: 11000
-      - name: lfilter
-        a:
-          [
-            4.46297950e-01,
-            -4.74695321e-02,
-            -6.35339660e-02,
-            6.90858657e-03,
-            7.21417336e-03,
-            1.34171108e-02,
-            1.54624140e-02,
-            4.44887896e-03,
-            1.76451157e-03,
-            -2.18655651e-04,
-            1.26421111e-03,
-            7.46639107e-03,
-            8.73383280e-04,
-            -1.02437299e-02,
-            -1.98913205e-02,
-            -2.94920516e-02,
-            -2.68926933e-03,
-            1.12518838e-02,
-            8.49538664e-04,
-            -5.64832645e-03,
-            -1.50532773e-02,
-            7.80205124e-04,
-            1.65796141e-02,
-            6.89980673e-04,
-            -7.25549782e-03,
-            3.32391693e-03,
-            9.97813872e-03,
-            -8.12679733e-03,
-            -1.00578281e-02,
-            6.97338810e-03,
-            2.05574979e-02,
-            -4.22533696e-04,
-            -5.30573522e-03,
-            -5.63574725e-03,
-            -7.72052668e-03,
-            1.53987162e-02,
-            7.62955256e-03,
-            -8.98278390e-03,
-            -7.90292832e-04,
-            -1.11828133e-03,
-            -6.62307356e-03,
-            8.23195094e-03,
-            1.10523437e-02,
-            -6.44999221e-03,
-            -7.18305957e-03,
-            1.52176963e-03,
-            -9.89509796e-03,
-            3.00056075e-03,
-            1.01091160e-02,
-            -3.77361876e-03,
-          ]
-        b: [1.]
-        norm_factor: 1.
+    channels: [1]
   - alias: drive_line_q2_bus
     instruments: [QCM-RF2]
-    channels: [[0]]
-    qubits: [[2]]
-    line: drive
-    distortions: []
+    channels: [0]
   - alias: flux_line_q2_bus
     instruments: [QCM2]
-    channels: [[0]]
-    qubits: [[2]]
-    line: flux
-    distortions: []
+    channels: [0]
   - alias: drive_line_q3_bus
     instruments: [QCM-RF3]
-    channels: [[0]]
-    qubits: [[3]]
-    line: drive
-    distortions: []
+    channels: [0]
   - alias: flux_line_q3_bus
     instruments: [QCM1]
-    channels: [[2]]
-    qubits: [[3]]
-    line: flux
-    distortions: []
+    channels: [2]
   - alias: drive_line_q4_bus
     instruments: [QCM-RF3]
-    channels: [[0]]
-    qubits: [[4]]
-    line: drive
-    distortions: []
+    channels: [0]
   - alias: flux_line_q4_bus
     instruments: [QCM1]
-    channels: [[3]]
-    qubits: [[4]]
-    line: flux
-    distortions: []
+    channels: [3]
 
 instruments:
   - name: QRM
@@ -305,8 +246,6 @@ instruments:
     out_offsets: [0, 0]
     awg_sequencers:
       - identifier: 0
-        bus_alias: feedline_input
-        qubit: 0
         output_i: 0
         output_q: 1
         gain_i: .5
@@ -333,8 +272,6 @@ instruments:
         hardware_demodulation: true
         scope_store_enabled: false
       - identifier: 1
-        bus_alias: feedline_input
-        qubit: 1
         output_i: 0
         output_q: 1
         gain_i: .5
@@ -361,8 +298,6 @@ instruments:
         hardware_demodulation: true
         scope_store_enabled: false
       - identifier: 2
-        bus_alias: feedline_input
-        qubit: 2
         output_i: 0
         output_q: 1
         gain_i: .5
@@ -389,8 +324,6 @@ instruments:
         hardware_demodulation: true
         scope_store_enabled: false
       - identifier: 3
-        bus_alias: feedline_input
-        qubit: 3
         output_i: 0
         output_q: 1
         gain_i: .5
@@ -417,8 +350,6 @@ instruments:
         hardware_demodulation: true
         scope_store_enabled: false
       - identifier: 4
-        bus_alias: feedline_input
-        qubit: 4
         output_i: 0
         output_q: 1
         gain_i: .5
@@ -460,7 +391,6 @@ instruments:
     out1_offset_path1: 0.
     awg_sequencers:
       - identifier: 0
-        bus_alias: drive_line_q0
         output_i: 0
         output_q: 1
         gain_i: 0.1
@@ -473,7 +403,6 @@ instruments:
         phase_imbalance: 14.482
         hardware_modulation: true
       - identifier: 1
-        bus_alias: drive_line_q1
         output_i: 2
         output_q: 3
         gain_i: 1
@@ -501,7 +430,6 @@ instruments:
     out1_offset_path1: 0.
     awg_sequencers:
       - identifier: 0
-        bus_alias: drive_line_q2
         output_i: 0
         output_q: 1
         gain_i: 0.1
@@ -529,7 +457,6 @@ instruments:
     out1_offset_path1: 0.
     awg_sequencers:
       - identifier: 0
-        bus_alias: drive_line_q3
         output_i: 0
         output_q: 1
         gain_i: 0.1
@@ -542,7 +469,6 @@ instruments:
         phase_imbalance: 0.
         hardware_modulation: true
       - identifier: 1
-        bus_alias: drive_line_q4
         output_i: 2
         output_q: 3
         gain_i: 1
@@ -561,7 +487,6 @@ instruments:
     out_offsets: [0.0, 5.0, 0.0, 10.0]
     awg_sequencers:
       - identifier: 0
-        bus_alias: flux_line_q0
         output_i: 0
         output_q: 1
         gain_i: 0.1
@@ -574,7 +499,6 @@ instruments:
         phase_imbalance: 0.
         hardware_modulation: true
       - identifier: 1
-        bus_alias: flux_line_q1
         output_i: 1
         output_q: 0
         gain_i: 1
@@ -587,7 +511,6 @@ instruments:
         phase_imbalance: 0
         hardware_modulation: true
       - identifier: 2
-        bus_alias: flux_line_q3
         output_i: 2
         output_q: 3
         gain_i: 1
@@ -600,7 +523,6 @@ instruments:
         phase_imbalance: 0
         hardware_modulation: true
       - identifier: 3
-        bus_alias: flux_line_q4
         output_i: 3
         output_q: 2
         gain_i: 1
@@ -619,7 +541,6 @@ instruments:
     out_offsets: [0.0, 0.0, 0.0, 0.0]
     awg_sequencers:
       - identifier: 0
-        bus_alias: flux_line_q2
         output_i: 0
         output_q: 1
         gain_i: 1.

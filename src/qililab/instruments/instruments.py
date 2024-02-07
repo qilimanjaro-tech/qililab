@@ -27,7 +27,7 @@ class Instruments:
 
     elements: list[Instrument]
 
-    def get_instrument(self, alias: str | None = None):
+    def get_instrument(self, alias: str):
         """Get element given an alias."""
         return next((element for element in self.elements if element.alias == alias), None)
 
