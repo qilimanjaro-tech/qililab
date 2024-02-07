@@ -15,7 +15,7 @@
 from dataclasses import dataclass
 
 from qililab.pulse.pulse_distortion import PulseDistortion
-from qililab.typings.enums import Line, Parameter
+from qililab.typings.enums import Line
 
 
 @dataclass

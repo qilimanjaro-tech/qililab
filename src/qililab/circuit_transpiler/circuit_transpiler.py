@@ -13,9 +13,6 @@
 # limitations under the License.
 
 """Circuit Transpiler class"""
-
-
-import contextlib
 from dataclasses import asdict
 
 import numpy as np

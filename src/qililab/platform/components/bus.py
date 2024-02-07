@@ -21,10 +21,9 @@ from qpysequence import Sequence as QpySequence
 from qililab.constants import RUNCARD
 from qililab.instruments import AWG, AWGAnalogDigitalConverter, Instrument, Instruments, ParameterNotFound
 from qililab.instruments.qblox import QbloxModule
-from qililab.pulse import PulseDistortion
 from qililab.result import Result
 from qililab.settings import Settings
-from qililab.typings import Line, Parameter
+from qililab.typings import Parameter
 
 
 class Bus:

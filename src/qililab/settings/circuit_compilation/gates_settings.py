@@ -1,16 +1,15 @@
 import ast
 import re
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 
 from qililab.constants import GATE_ALIAS_REGEX
 from qililab.settings.circuit_compilation.bus_settings import BusSettings
 from qililab.settings.circuit_compilation.gate_event_settings import GateEventSettings
 from qililab.settings.settings import Settings
 from qililab.typings.enums import Parameter
-from qililab.utils import nested_dataclass
 
 
-@nested_dataclass
+@dataclass
 class GatesSettings(Settings):
     """Dataclass with all the settings and gates definitions needed to decompose gates into pulses."""
 
