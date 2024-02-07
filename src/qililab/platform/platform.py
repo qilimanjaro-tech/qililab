@@ -286,6 +286,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         self.buses = Buses(
             elements=[Bus(settings=asdict(bus), platform_instruments=self.instruments) for bus in runcard.buses]
+            if runcard.buses is not None
+            else []
         )
         """All the buses of the platform and their necessary settings (``dataclass``). Each individual bus is contained in a list within the dataclass."""
 

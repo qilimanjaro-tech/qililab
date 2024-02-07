@@ -209,10 +209,10 @@ class Runcard:
     # Runcard class actual initialization
     name: str
     device_id: int
-    buses: list[Bus]  # This actually is a list[dict] until the post_init is called
     instruments: list[dict]
     instrument_controllers: list[dict]
-    gates_settings: GatesSettings
+    buses: list[Bus] | None = None  # This actually is a list[dict] until the post_init is called
+    gates_settings: GatesSettings | None = None
 
     def __post_init__(self):
         self.buses = [self.Bus(**bus) for bus in self.buses] if self.buses is not None else None
