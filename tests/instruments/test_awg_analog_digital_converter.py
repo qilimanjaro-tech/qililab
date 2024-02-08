@@ -6,7 +6,8 @@ import pytest
 from qpysequence import Sequence as QpySequence
 
 from qililab.constants import RUNCARD
-from qililab.instruments import AWG, AWGAnalogDigitalConverter
+from qililab.instruments.awg import AWG
+from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
 from qililab.instruments.awg_settings.awg_adc_sequencer import AWGADCSequencer
 from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.pulse import PulseBusSchedule
@@ -24,10 +25,10 @@ class DummyAWG(AWGAnalogDigitalConverter):
     def run(self):  # pylint: disable=arguments-differ
         pass
 
-    def upload(self, bus_alias: str):
+    def upload(self, channel_id: int | str | None):
         pass
 
-    def upload_qpysequence(self, qpysequence: QpySequence, port: str):
+    def upload_qpysequence(self, qpysequence: QpySequence, channel_id: int | str | None):
         pass
 
     def acquire_result(self):

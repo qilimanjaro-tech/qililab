@@ -19,8 +19,11 @@ from dataclasses import InitVar, dataclass
 from qpysequence import Sequence as QpySequence
 
 from qililab.constants import RUNCARD
-from qililab.instruments import AWG, AWGAnalogDigitalConverter, Instrument, Instruments, ParameterNotFound
-from qililab.instruments.qblox import QbloxModule
+from qililab.instruments.awg import AWG
+from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
+from qililab.instruments.instrument import Instrument, ParameterNotFound
+from qililab.instruments.instruments import Instruments
+from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.result import Result
 from qililab.settings import Settings
 from qililab.typings import Parameter
