@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 0.23.1 (2024-02-09)
+
+### Bug fixes
+
+- Fixes an equality issue of QProgram's variables that resulted in a slightly different QProgram when serializing and then deserializing.
+  [#684](https://github.com/qilimanjaro-tech/qililab/pull/684)
+
 ## 0.23.0 (2024-02-09)
 
 ### New features since last release
