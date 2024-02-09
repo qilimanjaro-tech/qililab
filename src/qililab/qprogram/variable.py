@@ -68,6 +68,9 @@ class Variable(DictSerializable):
     def __hash__(self):
         return hash(self._uuid)
 
+    def __eq__(self, other):
+        return other is not None and isinstance(other, Variable) and self._uuid == other._uuid
+
 
 class IntVariable(Variable, int):  # type: ignore
     """Integer variable. This class is used to define a variable of type int, such that Python recognizes this class
