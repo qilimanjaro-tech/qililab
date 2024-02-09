@@ -15,11 +15,12 @@
 """IQPair dataclass."""
 from dataclasses import dataclass
 
+from qililab.utils import DictSerializable
 from qililab.waveforms.waveform import Waveform
 
 
 @dataclass
-class IQPair:  # pylint: disable=missing-class-docstring
+class IQPair(DictSerializable):  # pylint: disable=missing-class-docstring
     """IQPair dataclass, containing the 'in-phase' (I) and 'quadrature' (Q) parts of a signal."""
 
     I: Waveform
