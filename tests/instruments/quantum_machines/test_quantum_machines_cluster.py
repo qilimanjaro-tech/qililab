@@ -7,7 +7,7 @@ import pytest
 from qm import Program, QmPendingJob, QmQueue
 from qm.qua import play, program
 
-from qililab.instruments.instrument import ParameterNotFound
+from qililab.exceptions import ParameterNotFound
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Platform
 from qililab.settings import Settings

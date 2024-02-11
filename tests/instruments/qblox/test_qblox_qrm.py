@@ -5,8 +5,8 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
+from qililab.exceptions import ParameterNotFound
 from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
-from qililab.instruments import ParameterNotFound
 from qililab.instruments.awg_settings.awg_qblox_adc_sequencer import AWGQbloxADCSequencer
 from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.instruments.qblox import QbloxQRM

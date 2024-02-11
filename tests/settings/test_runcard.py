@@ -7,10 +7,10 @@ from dataclasses import asdict
 import pytest
 
 from qililab.constants import GATE_ALIAS_REGEX
-from qililab.settings import Runcard
 from qililab.settings.bus_settings import BusSettings
 from qililab.settings.circuit_compilation.gate_event_settings import GateEventSettings
 from qililab.settings.circuit_compilation.gates_settings import GatesSettings
+from qililab.settings.runcard import Runcard
 from qililab.typings import Parameter
 from tests.data import Galadriel
 

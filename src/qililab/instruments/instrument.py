@@ -18,10 +18,12 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Callable, get_type_hints
 
-from qililab.config import logger
+from qililab.config.config import logger
+from qililab.exceptions import ParameterNotFound
+from qililab.instruments.decorators import check_device_initialized
 from qililab.platform.components.bus_element import BusElement
-from qililab.result import Result
-from qililab.settings import Settings
+from qililab.result.result import Result
+from qililab.settings.settings import Settings
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.typings.instruments.device import Device
 
@@ -51,106 +53,6 @@ class Instrument(BusElement, ABC):
     settings: InstrumentSettings  # a subtype of settings must be specified by the subclass
     device: Device
 
-    class CheckParameterValueString:
-        """Property used to check if the set parameter value is a string."""
-
-        def __init__(self, method: Callable):
-            self._method = method
-
-        def __get__(self, obj, objtype):
-            """Support instance methods."""
-            return partial(self.__call__, obj)
-
-        def __call__(self, ref: "Instrument", *args, **kwargs):
-            """
-            Args:
-                method (Callable): Class method.
-
-            Raises:
-                ValueError: If value is neither a float or int.
-            """
-            if "value" not in kwargs:
-                raise ValueError("'value' not specified to update instrument settings.")
-            value = kwargs["value"]
-            if not isinstance(value, str):
-                raise ValueError(f"value must be a string. Current type: {type(value)}")
-            return self._method(ref, *args, **kwargs)
-
-    class CheckParameterValueBool:
-        """Property used to check if the set parameter value is a bool."""
-
-        def __init__(self, method: Callable):
-            self._method = method
-
-        def __get__(self, obj, objtype):
-            """Support instance methods."""
-            return partial(self.__call__, obj)
-
-        def __call__(self, ref: "Instrument", *args, **kwargs):
-            """
-            Args:
-                method (Callable): Class method.
-
-            Raises:
-                ValueError: If value is neither a float or int.
-            """
-            if "value" not in kwargs:
-                raise ValueError("'value' not specified to update instrument settings.")
-            value = kwargs["value"]
-            if not isinstance(value, bool):
-                raise ValueError(f"value must be a bool. Current type: {type(value)}")
-            return self._method(ref, *args, **kwargs)
-
-    class CheckParameterValueFloatOrInt:
-        """Property used to check if the set parameter value is a float or int."""
-
-        def __init__(self, method: Callable):
-            self._method = method
-
-        def __get__(self, obj, objtype):
-            """Support instance methods."""
-            return partial(self.__call__, obj)
-
-        def __call__(self, ref: "Instrument", *args, **kwargs):
-            """
-            Args:
-                method (Callable): Class method.
-
-            Raises:
-                ValueError: If value is neither a float or int.
-            """
-            if "value" not in kwargs:
-                raise ValueError("'value' not specified to update instrument settings.")
-            value = kwargs["value"]
-            if not isinstance(value, float) and not isinstance(value, int):
-                raise ValueError(f"value must be a float or an int. Current type: {type(value)}")
-            if isinstance(value, int):
-                # setting a float as type as expected
-                kwargs["value"] = float(value)
-            return self._method(ref, *args, **kwargs)
-
-    class CheckDeviceInitialized:
-        """Property used to check if the device has been initialized."""
-
-        def __init__(self, method: Callable):
-            self._method = method
-
-        def __get__(self, obj, objtype):
-            """Support instance methods."""
-            return partial(self.__call__, obj)
-
-        def __call__(self, ref: "Instrument", *args, **kwargs):
-            """
-            Args:
-                method (Callable): Class method.
-
-            Raises:
-                AttributeError: If device has not been initialized.
-            """
-            if not hasattr(ref, "device") and (not args or not hasattr(args[0], "device")):
-                raise AttributeError("Instrument Device has not been initialized")
-            return self._method(ref, *args, **kwargs) if hasattr(ref, "device") else self._method(*args, **kwargs)
-
     def is_device_active(self) -> bool:
         """Check wether or not the device is currently active, for instrument childs.
 
@@ -166,7 +68,7 @@ class Instrument(BusElement, ABC):
         settings_class: type[self.InstrumentSettings] = get_type_hints(self).get("settings")  # type: ignore
         self.settings = settings_class(**settings)
 
-    @CheckDeviceInitialized
+    @check_device_initialized
     @abstractmethod
     def initial_setup(self):
         """Set initial instrument settings."""
@@ -192,7 +94,7 @@ class Instrument(BusElement, ABC):
             return getattr(self.settings, parameter.value)
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
-    @CheckDeviceInitialized
+    @check_device_initialized
     @abstractmethod
     def turn_on(self):
         """Turn on an instrument."""
@@ -214,12 +116,12 @@ class Instrument(BusElement, ABC):
             list[Result]: The acquired results in chronological order.
         """
 
-    @CheckDeviceInitialized
+    @check_device_initialized
     @abstractmethod
     def reset(self):
         """Reset instrument settings."""
 
-    @CheckDeviceInitialized
+    @check_device_initialized
     @abstractmethod
     def turn_off(self):
         """Turn off an instrument."""
@@ -275,14 +177,3 @@ class Instrument(BusElement, ABC):
             str | int | float | bool: Parameter value.
         """
         return self.get(parameter=parameter, channel_id=channel_id)
-
-
-class ParameterNotFound(Exception):
-    """Error raised when a parameter in an instrument is not found."""
-
-    def __init__(self, message):
-        self.message = message
-        super().__init__(self.message)
-
-    def __str__(self):
-        return f"ParameterNotFound: {self.message}"

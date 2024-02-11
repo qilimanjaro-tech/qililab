@@ -15,8 +15,9 @@
 """This file contains the QbloxQCMRF class."""
 from dataclasses import dataclass, field
 
+from qililab.exceptions import ParameterNotFound  # pylint: disable=cyclic-import
 from qililab.instruments.awg_settings import AWGQbloxSequencer  # pylint: disable=cyclic-import
-from qililab.instruments.instrument import Instrument, ParameterNotFound  # pylint: disable=cyclic-import
+from qililab.instruments.decorators import check_device_initialized
 from qililab.instruments.utils.instrument_factory import InstrumentFactory  # pylint: disable=cyclic-import
 from qililab.typings import InstrumentName, Parameter
 
@@ -63,7 +64,7 @@ class QbloxQCMRF(QbloxQCM):
         Parameter.OUT1_OFFSET_PATH1,
     }
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def initial_setup(self):
         """Initial setup"""
         super().initial_setup()

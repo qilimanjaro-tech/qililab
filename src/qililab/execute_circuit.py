@@ -16,9 +16,8 @@
 from qibo.models import Circuit
 from tqdm.auto import tqdm
 
+from qililab.data_management import build_platform
 from qililab.result import Result
-
-from .data_management import build_platform
 
 
 def execute(program: Circuit | list[Circuit], runcard: str | dict, nshots: int = 1) -> Result | list[Result]:

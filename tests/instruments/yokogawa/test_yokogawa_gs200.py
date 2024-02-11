@@ -4,8 +4,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from qililab.exceptions import ParameterNotFound
 from qililab.instrument_controllers.yokogawa.gs200_controller import GS200Controller
-from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.yokogawa.gs200 import GS200
 from qililab.platform import Platform
 from qililab.typings.enums import Parameter, SourceMode

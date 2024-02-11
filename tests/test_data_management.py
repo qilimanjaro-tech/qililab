@@ -8,11 +8,10 @@ import numpy as np
 import pytest
 from ruamel.yaml import YAML
 
-import qililab as ql
-from qililab.data_management import load_results, save_platform, save_results
+from qililab.data_management import build_platform, load_results, save_platform, save_results
 from qililab.platform import Platform
 from tests.data import Galadriel
-from tests.test_utils import build_platform
+from tests.test_utils import build_platform as mock_build_platform
 
 
 @patch("ruamel.yaml.YAML.load", return_value=copy.deepcopy(Galadriel.runcard))
@@ -23,7 +22,7 @@ class TestPlatformData:
     def test_build_platform_passing_a_path_to_old_path_argument(self, mock_open: MagicMock, mock_load: MagicMock):
         """Test build method."""
         with pytest.warns() as record:
-            platform = ql.build_platform(path="_")
+            platform = build_platform(path="_")  # pylint: disable
         assert isinstance(platform, Platform)
         assert len(record) == 1
         assert (
@@ -35,14 +34,14 @@ class TestPlatformData:
 
     def test_build_platform_passing_a_path_to_runcard_argument(self, mock_open: MagicMock, mock_load: MagicMock):
         """Test build method."""
-        platform = ql.build_platform(runcard="_")
+        platform = build_platform(runcard="_")
         assert isinstance(platform, Platform)
         mock_load.assert_called_once()
         mock_open.assert_called_once()
 
     def test_build_platform_passing_a_dict_to_runcard_argument(self, mock_open: MagicMock, mock_load: MagicMock):
         """Test build method."""
-        platform = ql.build_platform(runcard=copy.deepcopy(Galadriel.runcard))
+        platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
         assert isinstance(platform, Platform)
         mock_load.assert_not_called()
         mock_open.assert_not_called()
@@ -72,7 +71,7 @@ class TestBuildPlatformCornerCases:
     def test_build_method_with_no_arguments(self):
         """Test build method with the new drivers."""
         with pytest.raises(ValueError) as no_arg_error:
-            ql.build_platform()
+            build_platform()
         # We do it like this only for this case, best practice is to use match=... like in the following tests.
         (msg,) = no_arg_error.value.args
         assert msg == "`runcard` argument (str | dict) has not been passed to the `build_platform()` function."
@@ -83,12 +82,12 @@ class TestBuildPlatformCornerCases:
             ValueError,
             match="Use only the `runcard` argument, `path` argument is deprecated.",
         ):
-            _ = ql.build_platform(runcard="_", path="_")
+            _ = build_platform(runcard="_", path="_")
 
     def test_build_method_with_new_drivers(self):
         """Test build method with the new drivers."""
         with pytest.raises(NotImplementedError, match="New drivers are not supported yet"):
-            _ = ql.build_platform(runcard="_", new_drivers=True)
+            _ = build_platform(runcard="_", new_drivers=True)
 
     def test_platform_serialization_from_imported_dict(self):
         """Test platform serialization by building a platform, saving it and then load it back again twice. Starting from a given dict."""
@@ -99,13 +98,13 @@ class TestBuildPlatformCornerCases:
         original_dict["instruments"][1]["awg_sequencers"][0]["sampling_rate"] = 7.24730e09  # Test scientific notation
         original_dict["instruments"][4]["firmware"] = None  # Test None values
 
-        original_platform = ql.build_platform(original_dict)
+        original_platform = build_platform(original_dict)
 
         path = save_platform(path="./test.yml", platform=original_platform)
-        saved_platform = ql.build_platform(path)
+        saved_platform = build_platform(path)
 
         new_path = save_platform(path="./test.yml", platform=saved_platform)
-        new_saved_platform = ql.build_platform(new_path)
+        new_saved_platform = build_platform(new_path)
 
         with open(file="./test.yml", mode="r", encoding="utf8") as generated_f:
             yaml = YAML(typ="safe")
@@ -122,11 +121,11 @@ class TestBuildPlatformCornerCases:
 
     def test_platform_serialization_from_yaml_file(self):
         """Test platform serialization by building a platform, saving it and then load it back again twice. Starting from a yaml file."""
-        original_platform = ql.build_platform("examples/runcards/galadriel.yml")
+        original_platform = build_platform("examples/runcards/galadriel.yml")
         path = save_platform(path="./test.yml", platform=original_platform)
-        saved_platform = ql.build_platform(path)
+        saved_platform = build_platform(path)
         new_path = save_platform(path="./test.yml", platform=saved_platform)
-        new_saved_platform = ql.build_platform(new_path)
+        new_saved_platform = build_platform(new_path)
 
         with open(file="examples/runcards/galadriel.yml", mode="r", encoding="utf8") as yaml_f:
             yaml = YAML(typ="safe")

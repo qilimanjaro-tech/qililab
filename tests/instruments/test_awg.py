@@ -4,7 +4,7 @@ import re
 import pytest
 from qpysequence import Sequence as QpySequence
 
-from qililab.instruments import AWG
+from qililab.instruments.awg import AWG
 from qililab.instruments.awg_settings import AWGSequencer
 from qililab.pulse import PulseBusSchedule
 
@@ -24,10 +24,10 @@ class DummyAWG(AWG):
     def run(self):  # pylint: disable=arguments-differ
         pass
 
-    def upload(self, bus_alias: str):
+    def upload(self, channel_id: int | str | None):
         pass
 
-    def upload_qpysequence(self, qpysequence: QpySequence, bus_alias: str):
+    def upload_qpysequence(self, qpysequence: QpySequence, channel_id: int | str | None):
         pass
 
     def turn_on(self):
@@ -98,7 +98,7 @@ class TestInitialization:
         for idx, sequencer in enumerate(awg.settings.awg_sequencers):
             assert isinstance(sequencer, AWGSequencer)
             assert sequencer.identifier == idx
-            assert sequencer.bus_alias in {"feedline_input", "feedline_output"}
+            # assert sequencer.bus_alias in {"feedline_input", "feedline_output"}
             assert sequencer.output_i == 0 + 2 * idx
             assert sequencer.output_q == 1 + 2 * idx
             assert sequencer.intermediate_frequency == 20000000

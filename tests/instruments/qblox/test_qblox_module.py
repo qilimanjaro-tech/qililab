@@ -7,8 +7,8 @@ import numpy as np
 import pytest
 from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 
+from qililab.exceptions import ParameterNotFound
 from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
-from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.qblox import QbloxModule, QbloxQCM, QbloxQRM
 from qililab.platform import Platform
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseSchedule

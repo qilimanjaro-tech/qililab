@@ -17,9 +17,10 @@ from dataclasses import dataclass
 from typing import Sequence, cast
 
 from qililab.config import logger
+from qililab.exceptions import ParameterNotFound
 from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
 from qililab.instruments.awg_settings import AWGQbloxADCSequencer
-from qililab.instruments.instrument import Instrument, ParameterNotFound
+from qililab.instruments.decorators import check_device_initialized
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
 from qililab.result.qblox_results import QbloxQProgramMeasurementResult, QbloxResult
@@ -71,7 +72,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
 
     settings: QbloxQRMSettings
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def initial_setup(self):
         """Initial setup"""
         super().initial_setup()
@@ -129,7 +130,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """
         return self._get_qprogram_acquisitions(acquisitions=acquisitions)
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def _get_qprogram_acquisitions(self, acquisitions: list[str]) -> list[QbloxQProgramMeasurementResult]:
         results = []
         for acquisition in acquisitions:
@@ -229,7 +230,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 value=self.get_sequencer(sequencer_id).hardware_modulation, sequencer_id=sequencer_id
             )
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def get_acquisitions(self) -> QbloxResult:
         """Wait for sequencer to finish sequence, wait for acquisition to finish and get the acquisition results.
         If any of the timeouts is reached, a TimeoutError is raised.

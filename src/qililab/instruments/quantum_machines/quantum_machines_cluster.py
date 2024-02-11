@@ -23,7 +23,9 @@ from qm.jobs.running_qm_job import RunningQmJob
 from qm.octave import QmOctaveConfig
 from qm.qua import Program
 
-from qililab.instruments.instrument import Instrument, ParameterNotFound
+from qililab.exceptions import ParameterNotFound
+from qililab.instruments.decorators import check_device_initialized
+from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import InstrumentName, Parameter, QMMDriver
 from qililab.utils import merge_dictionaries
@@ -251,7 +253,7 @@ class QuantumMachinesCluster(Instrument):
         """Get the QUA config dictionary."""
         return self._config
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def initial_setup(self):
         """Sets initial instrument settings.
 
@@ -268,7 +270,7 @@ class QuantumMachinesCluster(Instrument):
 
         self._config = self.settings.to_qua_config()
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def turn_on(self):
         """Turns on the instrument."""
         if not self._is_connected_to_qm:
@@ -278,11 +280,11 @@ class QuantumMachinesCluster(Instrument):
             if self.settings.run_octave_calibration:
                 self.run_octave_calibration()
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def reset(self):
         """Resets instrument settings."""
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def turn_off(self):
         """Turns off an instrument."""
         if self._is_connected_to_qm:

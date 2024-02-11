@@ -23,9 +23,6 @@ import numpy as np
 from qiboconnection.api import API
 from ruamel.yaml import YAML
 
-from .platform import Platform
-from .settings import Runcard
-
 
 def save_results(results: np.ndarray, loops: dict[str, np.ndarray], data_path: str, name: str | None = None) -> str:
     """Save the given results and the platform.
@@ -136,7 +133,7 @@ def load_results(path: str) -> tuple[np.ndarray, dict[str, np.ndarray]]:
     return results, loops  # type: ignore
 
 
-def save_platform(path: str, platform: Platform) -> str:
+def save_platform(path: str, platform) -> str:
     """Serialize and save the given platform to the specified path.
 
     This function saves the cache values of the :class:`.Platform` object during execution as a YAML file.
@@ -176,7 +173,7 @@ def save_platform(path: str, platform: Platform) -> str:
 
 def build_platform(
     runcard: str | dict | None = None, path: str | None = None, connection: API | None = None, new_drivers: bool = False
-) -> Platform:
+):
     """Builds a :class:`.Platform` object, given a :ref:`runcard <runcards>`.
 
     Such runcard can be passed in one of the following two ways:
@@ -227,6 +224,9 @@ def build_platform(
         >>> platform.name
         galadriel
     """
+    from qililab.platform.platform import Platform
+    from qililab.settings.runcard import Runcard
+
     if path is None and runcard is None:
         raise ValueError("`runcard` argument (str | dict) has not been passed to the `build_platform()` function.")
     if path is not None:

@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, call
 
 import pytest
 
-from qililab.instruments.instrument import ParameterNotFound
+from qililab.exceptions import ParameterNotFound
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
 from qililab.typings.enums import Parameter
 

@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from qililab.instrument_controllers.rohde_schwarz.sgs100a_controller import SGS100AController
-from qililab.instruments import SGS100A
+from qililab.instruments.rohde_schwarz.sgs100a import SGS100A
 from qililab.platform import Platform
 from qililab.typings.enums import Parameter
 from tests.data import Galadriel

@@ -13,12 +13,13 @@
 # limitations under the License.
 
 """InstrumentFactory class."""
-from typing import TypeVar
+from __future__ import annotations
 
-from qililab.instruments.instrument import Instrument
-from qililab.typings.enums import InstrumentName
+from typing import TYPE_CHECKING
 
-Element = TypeVar("Element", bound=Instrument)
+if TYPE_CHECKING:
+    from qililab.instruments.instrument import Instrument
+    from qililab.typings.enums import InstrumentName
 
 
 class InstrumentFactory:
@@ -27,7 +28,7 @@ class InstrumentFactory:
     handlers: dict[str, type[Instrument]] = {}
 
     @classmethod
-    def register(cls, handler_cls: type[Element]) -> type[Instrument]:
+    def register(cls, handler_cls: type[Instrument]) -> type[Instrument]:
         """Register handler in the factory.
 
         Args:

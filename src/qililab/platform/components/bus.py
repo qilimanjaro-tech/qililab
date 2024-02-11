@@ -13,20 +13,24 @@
 # limitations under the License.
 
 """Bus class."""
+from __future__ import annotations
+
 import contextlib
 from dataclasses import InitVar, dataclass
+from typing import TYPE_CHECKING
 
 from qpysequence import Sequence as QpySequence
 
 from qililab.constants import RUNCARD
-from qililab.instruments.awg import AWG
-from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
-from qililab.instruments.instrument import Instrument, ParameterNotFound
+from qililab.exceptions import ParameterNotFound
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.result import Result
 from qililab.settings import Settings
 from qililab.typings import Parameter
+
+if TYPE_CHECKING:
+    from qililab.instruments.instrument import Instrument
 
 
 class Bus:
@@ -120,10 +124,14 @@ class Bus:
 
     def has_awg(self) -> bool:
         """Return true if bus has AWG capabilities."""
+        from qililab.instruments.awg import AWG
+
         return any(isinstance(instrument, AWG) for instrument in self.instruments)
 
     def has_adc(self) -> bool:
         """Return true if bus has ADC capabilities."""
+        from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
+
         return any(isinstance(instrument, AWGAnalogDigitalConverter) for instrument in self.instruments)
 
     def set_parameter(self, parameter: Parameter, value: int | float | str | bool, channel_id: int | str | None = None):
@@ -186,6 +194,8 @@ class Bus:
 
     def upload(self):
         """Uploads any previously compiled program into the instrument."""
+        from qililab.instruments.awg import AWG
+
         for instrument, instrument_channels in zip(self.instruments, self.channels):
             if isinstance(instrument, AWG):
                 if instrument_channels is None:
@@ -197,6 +207,8 @@ class Bus:
 
     def run(self) -> None:
         """Runs any previously uploaded program into the instrument."""
+        from qililab.instruments.awg import AWG
+
         for instrument, instrument_channels in zip(self.instruments, self.channels):
             if isinstance(instrument, AWG):
                 if instrument_channels is None or isinstance(instrument_channels, (int, str)):

@@ -19,7 +19,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from qililab.typings.factory_element import FactoryElement
-from qililab.utils import Factory
+from qililab.utils.factory import Factory
 
 
 @dataclass(frozen=True, eq=True, kw_only=True)

@@ -15,7 +15,7 @@
 """This file contains the QbloxQCMRF class."""
 from dataclasses import dataclass, field
 
-from qililab.instruments.instrument import Instrument  # pylint: disable=cyclic-import
+from qililab.instruments.decorators import check_device_initialized  # pylint: disable=cyclic-import
 from qililab.instruments.utils.instrument_factory import InstrumentFactory  # pylint: disable=cyclic-import
 from qililab.typings import InstrumentName, Parameter
 
@@ -53,7 +53,7 @@ class QbloxQRMRF(QbloxQRM):
 
     settings: QbloxQRMRFSettings
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def initial_setup(self):
         """Initial setup"""
         super().initial_setup()

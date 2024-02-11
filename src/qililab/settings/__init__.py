@@ -14,5 +14,6 @@
 
 """__init__.py"""
 from .bus_settings import BusSettings
+from .circuit_compilation import GatesSettings
 from .runcard import Runcard
 from .settings import Settings

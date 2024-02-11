@@ -13,7 +13,12 @@
 # limitations under the License.
 
 """InstrumentDriverFactory class module."""
-from ..interfaces.base_instrument import BaseInstrument
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from qililab.drivers.interfaces.base_instrument import BaseInstrument
 
 
 class InstrumentDriverFactory:

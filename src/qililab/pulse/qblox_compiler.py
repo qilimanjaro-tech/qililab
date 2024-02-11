@@ -21,7 +21,7 @@ from qpysequence.program import Block, Loop, Register
 from qpysequence.program.instructions import Acquire, AcquireWeighed, Move, Play, ResetPh, SetAwgGain, SetPh, Stop
 from qpysequence.utils.constants import AWG_MAX_GAIN, INST_MAX_WAIT
 
-from qililab.config import logger
+from qililab.config.config import logger
 from qililab.instruments.awg_settings import AWGQbloxADCSequencer, AWGQbloxSequencer
 from qililab.instruments.qblox import QbloxModule
 from qililab.pulse.pulse_bus_schedule import PulseBusSchedule

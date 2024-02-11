@@ -13,12 +13,15 @@
 # limitations under the License.
 
 """Platform class."""
+from __future__ import annotations
+
 import ast
 import io
 import re
 from copy import deepcopy
 from dataclasses import asdict
 from queue import Queue
+from typing import TYPE_CHECKING
 
 from qibo.gates import M
 from qibo.models import Circuit
@@ -32,22 +35,24 @@ from qililab.config import logger
 from qililab.constants import GATE_ALIAS_REGEX, RUNCARD
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
 from qililab.instrument_controllers.utils import InstrumentControllerFactory
-from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.instruments.utils import InstrumentFactory
-from qililab.pulse import PulseSchedule
-from qililab.pulse import QbloxCompiler as PulseQbloxCompiler
+from qililab.platform.components.bus import Bus
+from qililab.platform.components.buses import Buses
+from qililab.pulse.pulse_schedule import PulseSchedule
+from qililab.pulse.qblox_compiler import QbloxCompiler as PulseQbloxCompiler
 from qililab.qprogram import QbloxCompiler, QProgram, QuantumMachinesCompiler
 from qililab.result import Result
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.quantum_machines_results import QuantumMachinesMeasurementResult
-from qililab.settings import Runcard
+from qililab.settings.runcard import Runcard
 from qililab.typings.enums import Parameter
 from qililab.utils import hash_qpy_sequence, hash_qua_program
 
-from .components import Bus, Buses
+if TYPE_CHECKING:
+    from qililab.instruments.instrument import Instrument
 
 
 class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-attributes

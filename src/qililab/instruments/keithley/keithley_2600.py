@@ -17,7 +17,9 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from qililab.instruments.instrument import Instrument, ParameterNotFound
+from qililab.exceptions import ParameterNotFound
+from qililab.instruments.decorators import check_device_initialized
+from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import InstrumentName, Keithley2600Driver
 from qililab.typings.enums import Parameter
@@ -44,7 +46,6 @@ class Keithley2600(Instrument):
     settings: Keithley2600Settings
     device: Keithley2600Driver
 
-    @Instrument.CheckParameterValueFloatOrInt
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | str | None = None):  # type: ignore
         """Setup instrument."""
         if parameter == Parameter.MAX_CURRENT:
@@ -59,21 +60,21 @@ class Keithley2600(Instrument):
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def initial_setup(self):
         """performs an initial setup"""
         self.device.smua.limiti(self.max_current)
         self.device.smua.limitv(self.max_voltage)
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def turn_on(self):
         """Turn on an instrument."""
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def turn_off(self):
         """Turn off an instrument."""
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def reset(self):
         """Reset instrument."""
         self.device.reset()

@@ -7,7 +7,7 @@ from qcodes.instrument_drivers.tektronix.Keithley_2600_channels import KeithleyC
 from qpysequence import Sequence as QPySequence
 from qpysequence.program import Program as QPyProgram
 
-import qililab as ql
+from qililab.data_management import build_platform
 from qililab.platform import Platform
 
 
@@ -125,15 +125,15 @@ dummy_qrm_name_generator = name_generator("dummy_qrm")
 dummy_qcm_name_generator = name_generator("dummy_qcm")
 
 
-def build_platform(runcard: dict) -> Platform:
-    """Return PlatformBuilderDB instance with loaded platform."""
-    runcard = copy.deepcopy(runcard)
-    with patch("ruamel.yaml.YAML.load", return_value=runcard) as mock_load:
-        with patch("qililab.data_management.open") as mock_open:
-            pl = ql.build_platform(runcard="_")
-            mock_load.assert_called()
-            mock_open.assert_called()
-    return pl
+# def build_platform(runcard: dict) -> Platform:
+#     """Return PlatformBuilderDB instance with loaded platform."""
+#     runcard = copy.deepcopy(runcard)
+#     with patch("ruamel.yaml.YAML.load", return_value=runcard) as mock_load:
+#         with patch("qililab.data_management.open") as mock_open:
+#             pl = build_platform(runcard="_")
+#             mock_load.assert_called()
+#             mock_open.assert_called()
+#     return pl
 
 
 def is_q1asm_equal(a: str | QPySequence | QPyProgram, b: str | QPySequence | QPyProgram) -> bool:

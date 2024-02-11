@@ -7,9 +7,10 @@ import pytest
 from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 
 import qililab as ql
-from qililab.instruments import Instrument, ParameterNotFound
-from qililab.platform import Bus, Buses, Platform
-from qililab.typings import Line, Parameter
+from qililab.exceptions import ParameterNotFound
+from qililab.instruments.instrument import Instrument
+from qililab.platform import Bus, Buses
+from qililab.typings import Line
 from tests.data import Galadriel
 from tests.test_utils import build_platform
 

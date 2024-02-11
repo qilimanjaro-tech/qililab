@@ -15,7 +15,8 @@
 """__init__.py"""
 from .awg import AWG
 from .awg_analog_digital_converter import AWGAnalogDigitalConverter
-from .instrument import Instrument, ParameterNotFound
+from .decorators import check_device_initialized
+from .instrument import Instrument
 from .instruments import Instruments
 from .mini_circuits import Attenuator
 from .quantum_machines import QuantumMachinesCluster

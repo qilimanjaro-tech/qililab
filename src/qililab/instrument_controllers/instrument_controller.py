@@ -13,15 +13,16 @@
 # limitations under the License.
 
 """Instrument Controller class"""
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import partial
-from typing import Callable, Sequence, get_type_hints
+from typing import TYPE_CHECKING, Callable, Sequence, get_type_hints
 
 from qililab.config import logger
 from qililab.constants import INSTRUMENTCONTROLLER, RUNCARD
 from qililab.instrument_connections.connection import Connection
-from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.utils.instrument_reference import InstrumentReference
 from qililab.instruments.utils.loader import Loader
@@ -30,6 +31,9 @@ from qililab.settings import Settings
 from qililab.typings.enums import InstrumentControllerName, Parameter
 from qililab.typings.instruments.device import Device
 from qililab.utils import Factory
+
+if TYPE_CHECKING:
+    from qililab.instruments.instrument import Instrument
 
 
 @dataclass(kw_only=True)

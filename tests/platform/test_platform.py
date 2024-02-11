@@ -13,13 +13,15 @@ from qibo.models import Circuit
 from qpysequence import Sequence
 from ruamel.yaml import YAML
 
-from qililab import save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
+from qililab.data_management import save_platform
 from qililab.instrument_controllers import InstrumentControllers
-from qililab.instruments import AWG, AWGAnalogDigitalConverter, SignalGenerator
+from qililab.instruments.awg import AWG
+from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
+from qililab.instruments.signal_generator import SignalGenerator
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
 from qililab.qprogram import QProgram
