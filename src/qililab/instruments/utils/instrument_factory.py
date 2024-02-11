@@ -17,9 +17,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from qililab.typings.enums import InstrumentName
+
 if TYPE_CHECKING:
     from qililab.instruments.instrument import Instrument
-    from qililab.typings.enums import InstrumentName
 
 
 class InstrumentFactory:

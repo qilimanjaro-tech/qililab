@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import numpy as np
 from qpysequence import Acquisitions, Program
@@ -22,13 +25,16 @@ from qpysequence.program.instructions import Acquire, AcquireWeighed, Move, Play
 from qpysequence.utils.constants import AWG_MAX_GAIN, INST_MAX_WAIT
 
 from qililab.config.config import logger
-from qililab.instruments.awg_settings import AWGQbloxADCSequencer, AWGQbloxSequencer
-from qililab.instruments.qblox import QbloxModule
-from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
 from qililab.typings import InstrumentName, Line
+
+if TYPE_CHECKING:
+    from qililab.instruments.awg_settings import AWGQbloxADCSequencer, AWGQbloxSequencer
+    from qililab.instruments.qblox import QbloxModule
+    from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
+    from qililab.settings.circuit_compilation.gates_settings import GatesSettings
 
 
 class QbloxCompiler:  # pylint: disable=too-many-locals
@@ -42,11 +48,9 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         ValueError: at init if no readout module (QRM) is found in platform.
     """
 
-    def __init__(self, platform):
-        self.qblox_modules = [
-            instrument for instrument in platform.instruments.elements if isinstance(instrument, QbloxModule)
-        ]
-        self.buses = platform.gate_settings.buses
+    def __init__(self, qblox_modules: list[QbloxModule], gates_settings: GatesSettings):
+        self.qblox_modules = qblox_modules
+        self.buses = gates_settings.buses
         # init variables as empty
         self.nshots = None
         self.num_bins = None
@@ -81,9 +85,9 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
             dict[str, list[QpySequence]]: dictionary where the keys correspond to the bus which has to execute a list of QpySequences, given in the values
         """
         if num_avg != self.nshots or repetition_duration != self.repetition_duration or num_bins != self.num_bins:
-            self.nshots = num_avg
-            self.repetition_duration = repetition_duration
-            self.num_bins = num_bins
+            self.nshots = num_avg  # type: ignore
+            self.repetition_duration = repetition_duration  # type: ignore
+            self.num_bins = num_bins  # type: ignore
             for qblox_module in self.qblox_modules:
                 qblox_module.clear_cache()
 

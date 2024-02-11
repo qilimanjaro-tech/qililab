@@ -11,7 +11,6 @@ from ruamel.yaml import YAML
 from qililab.data_management import build_platform, load_results, save_platform, save_results
 from qililab.platform import Platform
 from tests.data import Galadriel
-from tests.test_utils import build_platform as mock_build_platform
 
 
 @patch("ruamel.yaml.YAML.load", return_value=copy.deepcopy(Galadriel.runcard))
