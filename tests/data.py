@@ -43,15 +43,12 @@ class Galadriel:
 
     gates_settings: dict[str, Any] = {
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
-        PLATFORM.DELAY_BETWEEN_PULSES: 0,
         PLATFORM.DELAY_BEFORE_READOUT: 0,
-        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
-        PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
-        PLATFORM.PASSIVE_RESET_DURATION: 100,
         "gates": {
             "M(0)": [
                 {
                     "bus": "feedline_input_output_bus",
+                    "channel": 0,
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -64,6 +61,7 @@ class Galadriel:
             "M(1)": [
                 {
                     "bus": "feedline_input_output_bus",
+                    "channel": 0,
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -76,6 +74,7 @@ class Galadriel:
             "M(2)": [
                 {
                     "bus": "feedline_input_output_bus_1",
+                    "channel": 0,
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -88,6 +87,7 @@ class Galadriel:
             "I(0)": [
                 {
                     "bus": "drive_line_q0_bus",
+                    "channel": 0,
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -100,6 +100,7 @@ class Galadriel:
             "Drag(0)": [
                 {
                     "bus": "drive_line_q0_bus",
+                    "channel": 0,
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -112,6 +113,7 @@ class Galadriel:
             "X(0)": [
                 {
                     "bus": "drive_line_q0_bus",
+                    "channel": 0,
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -124,6 +126,7 @@ class Galadriel:
             "Y(0)": [
                 {
                     "bus": "drive_line_q0_bus",
+                    "channel": 0,
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -136,6 +139,7 @@ class Galadriel:
             "RY(0)": [
                 {
                     "bus": "drive_line_q0_bus",
+                    "channel": 0,
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -148,6 +152,7 @@ class Galadriel:
             "RX(0)": [
                 {
                     "bus": "drive_line_q0_bus",
+                    "channel": 0,
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -160,6 +165,7 @@ class Galadriel:
             "CZ(0,1)": [
                 {
                     "bus": "flux_line_q1_bus",
+                    "channel": 0,
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -173,6 +179,7 @@ class Galadriel:
             "CZ(0, 2)": [
                 {
                     "bus": "flux_line_q0_bus",
+                    "channel": 0,
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -183,6 +190,7 @@ class Galadriel:
                 }
             ],
         },
+        "buses": {"drive_line_q0_bus": {"line": Line.DRIVE, "qubits": [0], "distortions": []}},
     }
 
     pulsar_controller_qcm_0: dict[str, Any] = {
@@ -1027,20 +1035,10 @@ class SauronYokogawa:
 
 
 class SauronQDevil:
-    """Test data of the sauron with yokogawa platform."""
+    """Test data for QDevil instruments in sauron platform."""
 
     name = "sauron_qdevil"
     device_id = 9
-
-    gates_settings: dict[str, Any] = {
-        PLATFORM.MINIMUM_CLOCK_TIME: 4,
-        PLATFORM.DELAY_BETWEEN_PULSES: 0,
-        PLATFORM.DELAY_BEFORE_READOUT: 0,
-        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
-        PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
-        PLATFORM.PASSIVE_RESET_DURATION: 100,
-        "gates": {},
-    }
 
     qdevil_qdac2 = {
         RUNCARD.NAME: InstrumentName.QDEVIL_QDAC2,
@@ -1120,16 +1118,12 @@ class SauronQDevil:
             RUNCARD.ALIAS: "qdac_bus",
             "instruments": ["qdac"],
             "channels": [0],
-            "qubits": [[0]],
-            "line": Line.FLUX,
-            RUNCARD.DISTORTIONS: [],
         }
     ]
 
     runcard = {
         RUNCARD.NAME: name,
         RUNCARD.DEVICE_ID: device_id,
-        RUNCARD.GATES_SETTINGS: gates_settings,
         RUNCARD.BUSES: buses,
         RUNCARD.INSTRUMENTS: instruments,
         RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,

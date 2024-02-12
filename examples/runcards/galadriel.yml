@@ -8,6 +8,7 @@ gates_settings:
   gates:
     M(0):
       - bus: feedline_bus # alias of the bus
+        channel: 0
         pulse:
           amplitude: 1.0
           phase: 0
@@ -16,6 +17,7 @@ gates_settings:
             name: rectangular
     Drag(0):
       - bus: drive_line_q0_bus
+        channel: 0
         pulse:
           amplitude: 1.0
           phase: 0
@@ -26,6 +28,7 @@ gates_settings:
             drag_coefficient: 0.0
     M(1):
       - bus: feedline_bus # alias of the bus
+        channel: 1
         pulse:
           amplitude: 1.0
           phase: 0
@@ -34,6 +37,7 @@ gates_settings:
             name: rectangular
     Drag(1):
       - bus: drive_line_q1_bus
+        channel: 1
         pulse:
           amplitude: 1.0
           phase: 0
@@ -44,6 +48,7 @@ gates_settings:
             drag_coefficient: 0.0
     M(2):
       - bus: feedline_bus # alias of the bus
+        channel: 2
         pulse:
           amplitude: 1.0
           phase: 0
@@ -52,6 +57,7 @@ gates_settings:
             name: rectangular
     Drag(2):
       - bus: drive_line_q2_bus
+        channel: 2
         pulse:
           amplitude: 1.0
           phase: 0
@@ -62,6 +68,7 @@ gates_settings:
             drag_coefficient: 0.0
     M(3):
       - bus: feedline_bus # alias of the bus
+        channel: 3
         pulse:
           amplitude: 1.0
           phase: 0
@@ -70,6 +77,7 @@ gates_settings:
             name: rectangular
     Drag(3):
       - bus: drive_line_q3_bus
+        channel: 3
         pulse:
           amplitude: 1.0
           phase: 0
@@ -80,6 +88,7 @@ gates_settings:
             drag_coefficient: 0.0
     M(4):
       - bus: feedline_bus # alias of the bus
+        channel: 4
         pulse:
           amplitude: 1.0
           phase: 0
@@ -88,6 +97,7 @@ gates_settings:
             name: rectangular
     Drag(4):
       - bus: drive_line_q4_bus
+        channel: 4
         pulse:
           amplitude: 1.0
           phase: 0
@@ -98,6 +108,7 @@ gates_settings:
             drag_coefficient: 0.0
     CZ(0,2):
       - bus: flux_line_q2_bus
+        channel: 2
         pulse:
           amplitude: 1.0
           phase: 0
@@ -110,6 +121,7 @@ gates_settings:
             q0_phase_correction: 0.1
             q2_phase_correction: 0.2
       - bus: flux_line_q1_bus # park pulse
+        channel: 2
         wait_time: 20
         pulse:
           amplitude: 1.0
@@ -119,6 +131,7 @@ gates_settings:
             name: rectangular
     CZ(1,2):
       - bus: flux_line_q2_bus
+        channel: 2
         pulse:
           amplitude: 1.0
           phase: 0
@@ -128,6 +141,7 @@ gates_settings:
             t_phi: 1
             b: 0.5
       - bus: flux_line_q0_bus # park pulse
+        channel: 2
         wait_time: 20
         pulse:
           amplitude: 1.0
@@ -137,6 +151,7 @@ gates_settings:
             name: rectangular
     CZ(4,2):
       - bus: flux_line_q4_bus
+        channel: 2
         pulse:
           amplitude: 1.0
           phase: 0
@@ -147,6 +162,7 @@ gates_settings:
             b: 0.5
     CZ(3,2):
       - bus: flux_line_q3_bus
+        channel: 2
         pulse:
           amplitude: 1.0
           phase: 0
@@ -164,6 +180,7 @@ gates_settings:
       line: drive
       qubits: [0]
       distortions: []
+      delay: 0
     drive_line_q1_bus:
       line: drive
       qubits: [1]
@@ -200,7 +217,6 @@ gates_settings:
       line: flux
       qubits: [4]
       distortions: []
-
 
 buses:
   - alias: feedline_bus

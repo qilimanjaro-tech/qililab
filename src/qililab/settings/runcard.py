@@ -54,3 +54,4 @@ class Runcard:
 
     def __post_init__(self):
         self.buses = [BusSettings(**bus) for bus in self.buses]
+        self.gates_settings = GatesSettings(**self.gates_settings) if self.gates_settings is not None else None

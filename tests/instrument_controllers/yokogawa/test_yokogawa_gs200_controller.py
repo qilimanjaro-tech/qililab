@@ -2,12 +2,12 @@ import copy
 
 import pytest
 
+from qililab.data_management import build_platform  # pylint: disable=import-error
 from qililab.instrument_controllers.yokogawa.gs200_controller import GS200Controller
 from qililab.instruments.yokogawa.gs200 import GS200
 from qililab.platform import Platform
 from qililab.settings import Settings
 from tests.data import SauronYokogawa  # pylint: disable=import-error
-from tests.test_utils import build_platform  # pylint: disable=import-error
 
 
 @pytest.fixture(name="platform")

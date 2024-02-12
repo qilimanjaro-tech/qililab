@@ -14,8 +14,8 @@ from qpysequence import Sequence
 from ruamel.yaml import YAML
 
 from qililab.constants import DEFAULT_PLATFORM_NAME
-from qililab.data_management import save_platform
-from qililab.instrument_controllers import InstrumentControllers
+from qililab.data_management import build_platform, save_platform
+from qililab.instrument_controllers.instrument_controllers import InstrumentControllers
 from qililab.instruments.awg import AWG
 from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
 from qililab.instruments.instruments import Instruments
@@ -33,7 +33,6 @@ from qililab.settings.circuit_compilation.gates_settings import GatesSettings
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import IQPair, Square
 from tests.data import Galadriel, SauronQuantumMachines
-from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="platform")

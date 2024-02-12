@@ -146,6 +146,7 @@ class QbloxD5a(VoltageSource):
         if self.is_device_active():
             channel.ramp_rate(self.ramp_rate[channel_id])
 
+    @check_device_initialized
     def initial_setup(self):
         """performs an initial setup."""
         for dac_index in self.dacs:

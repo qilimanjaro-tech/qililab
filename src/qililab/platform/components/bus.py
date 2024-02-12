@@ -237,9 +237,7 @@ class Bus:
             )
 
         if len(results) == 0:
-            raise AttributeError(
-                f"The bus {self.alias} cannot acquire results because it doesn't have a readout system control."
-            )
+            raise AttributeError(f"The bus {self.alias} cannot acquire results.")
 
         return results[0]
 
