@@ -6,12 +6,13 @@ import pytest
 from qblox_instruments.qcodes_drivers.cluster import Cluster
 from qblox_instruments.types import ClusterType
 
-from qililab.instruments.qblox import QbloxQRMRF
+from qililab.instruments.qblox.qblox_qrm_rf import QbloxQRMRF
 from qililab.typings import Parameter
 
 
 @pytest.fixture(name="settings")
 def fixture_settings():
+    """Settings of the instrument"""
     return {
         "alias": "test",
         "firmware": "0.7.0",
@@ -26,8 +27,6 @@ def fixture_settings():
         "awg_sequencers": [
             {
                 "identifier": 0,
-                "bus_alias": "feedline_input",
-                "qubit": 0,
                 "output_i": 1,
                 "output_q": 0,
                 "weights_i": [1, 1, 1, 1],

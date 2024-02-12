@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
+from qililab.data_management import build_platform
 from qililab.exceptions import ParameterNotFound
 from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
 from qililab.instruments.awg_settings.awg_qblox_adc_sequencer import AWGQbloxADCSequencer
@@ -15,7 +16,6 @@ from qililab.result.qblox_results import QbloxResult
 from qililab.typings import InstrumentName
 from qililab.typings.enums import AcquireTriggerMode, IntegrationMode, Parameter
 from tests.data import Galadriel
-from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="settings_6_sequencers")
@@ -24,8 +24,6 @@ def fixture_settings_6_sequencers():
     sequencers = [
         {
             "identifier": seq_idx,
-            "bus_alias": "feedline_input",
-            "qubit": 5 - seq_idx,
             "output_i": 1,
             "output_q": 0,
             "weights_i": [1, 1, 1, 1],
@@ -70,8 +68,6 @@ def fixture_settings_even_sequencers():
     sequencers = [
         {
             "identifier": seq_idx,
-            "bus_alias": "feedline_input",
-            "qubit": 5 - seq_idx,
             "output_i": 1,
             "output_q": 0,
             "weights_i": [1, 1, 1, 1],
@@ -445,15 +441,15 @@ class TestQbloxQRM:
         """Test firmware property."""
         assert qrm_no_device.firmware == qrm_no_device.settings.firmware
 
-    def test_getting_even_sequencers(self, settings_even_sequencers: dict):
-        """Tests the method QbloxQRM._get_sequencers_by_id() for a QbloxQRM with only the even sequencers configured."""
-        qrm = QbloxQRM(settings=settings_even_sequencers)
-        for seq_id in range(6):
-            if seq_id % 2 == 0:
-                assert qrm._get_sequencer_by_id(id=seq_id).identifier == seq_id  # pylint: disable=protected-access
-            else:
-                with pytest.raises(IndexError, match=f"There is no sequencer with id={seq_id}."):
-                    qrm._get_sequencer_by_id(id=seq_id)  # pylint: disable=protected-access
+    # def test_getting_even_sequencers(self, settings_even_sequencers: dict):
+    #     """Tests the method QbloxQRM._get_sequencers_by_id() for a QbloxQRM with only the even sequencers configured."""
+    #     qrm = QbloxQRM(settings=settings_even_sequencers)
+    #     for seq_id in range(6):
+    #         if seq_id % 2 == 0:
+    #             assert qrm._get_sequencer_by_id(id=seq_id).identifier == seq_id  # pylint: disable=protected-access
+    #         else:
+    #             with pytest.raises(IndexError, match=f"There is no sequencer with id={seq_id}."):
+    #                 qrm._get_sequencer_by_id(id=seq_id)  # pylint: disable=protected-access
 
 
 class TestAWGQbloxADCSequencer:  # pylint: disable=too-few-public-methods

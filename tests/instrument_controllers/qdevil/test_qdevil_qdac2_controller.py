@@ -3,13 +3,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from qililab.data_management import build_platform  # pylint: disable=import-error, no-name-in-module
 from qililab.instrument_controllers.qdevil.qdevil_qdac2_controller import QDevilQDac2Controller
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
 from qililab.platform import Platform
 from qililab.settings import Settings
 from qililab.typings import ConnectionName
 from tests.data import SauronQDevil  # pylint: disable=import-error, no-name-in-module
-from tests.test_utils import build_platform  # pylint: disable=import-error, no-name-in-module
 
 
 @pytest.fixture(name="platform")

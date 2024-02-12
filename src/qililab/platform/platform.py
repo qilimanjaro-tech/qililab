@@ -33,7 +33,7 @@ from ruamel.yaml import YAML
 from qililab.circuit_transpiler import CircuitTranspiler
 from qililab.config import logger
 from qililab.constants import GATE_ALIAS_REGEX, RUNCARD
-from qililab.instrument_controllers import InstrumentController, InstrumentControllers
+from qililab.instrument_controllers.instrument_controllers import InstrumentControllers
 from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
@@ -52,6 +52,7 @@ from qililab.typings.enums import Parameter
 from qililab.utils import hash_qpy_sequence, hash_qua_program
 
 if TYPE_CHECKING:
+    from qililab.instrument_controllers.instrument_controller import InstrumentController
     from qililab.instruments.instrument import Instrument
 
 

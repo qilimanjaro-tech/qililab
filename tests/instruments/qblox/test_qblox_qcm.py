@@ -5,12 +5,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from qililab.data_management import build_platform
 from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
 from qililab.instruments.qblox import QbloxQCM
 from qililab.typings import InstrumentName
 from qililab.typings.enums import Parameter
 from tests.data import Galadriel
-from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="pulsar_controller_qcm")

@@ -13,10 +13,10 @@
 # limitations under the License.
 
 """__init__.py"""
-# from .instrument import Instrument
 # from .awg import AWG
 # from .awg_analog_digital_converter import AWGAnalogDigitalConverter
 # from .decorators import check_device_initialized
+# from .instrument import Instrument
 # from .instruments import Instruments
 # from .mini_circuits import Attenuator
 # from .quantum_machines import QuantumMachinesCluster

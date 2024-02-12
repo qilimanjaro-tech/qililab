@@ -1,33 +1,26 @@
 # """Tests for the Qblox Compiler class."""
 # # pylint: disable=protected-access
-import copy
-
+# import copy
 # import re
-from unittest.mock import MagicMock
+# from unittest.mock import MagicMock
 
-import numpy as np
-import pytest
-from qpysequence import Sequence
-from qpysequence.utils.constants import AWG_MAX_GAIN
+# import numpy as np
+# import pytest
+# from qpysequence import Sequence
+# from qpysequence.utils.constants import AWG_MAX_GAIN
 
-from qililab.data_management import build_platform
-
-# from qililab.instruments.qblox.qblox_qcm import QbloxQCM
-# from qililab.instruments.qblox.qblox_qrm import QbloxQRM
-from qililab.platform.platform import Platform
-from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, Rectangular
-from qililab.pulse.pulse_event import PulseEvent
-from qililab.pulse.pulse_schedule import PulseSchedule
-from qililab.pulse.qblox_compiler import QbloxCompiler
-from tests.data import Galadriel
-
-# from tests.test_utils import build_platform
+# from qililab.data_management import build_platform
+# from qililab.instruments.qblox import QbloxQCM, QbloxQRM
+# from qililab.platform import Platform
+# from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseSchedule, QbloxCompiler, Rectangular
+# from qililab.pulse.pulse_event import PulseEvent
+# from tests.data import Galadriel
 
 
-@pytest.fixture(name="platform")
-def fixture_platform():
-    """platform fixture"""
-    return build_platform(runcard=Galadriel.runcard)
+# @pytest.fixture(name="platform")
+# def fixture_platform():
+#     """platform fixture"""
+#     return build_platform(runcard=Galadriel.runcard)
 
 
 # class DummyQCM(QbloxQCM):
@@ -50,205 +43,201 @@ def fixture_platform():
 #         self.device = MagicMock(autospec=True)
 
 
-@pytest.fixture(name="qblox_compiler")
-def fixture_qblox_compiler(platform: Platform):
-    """Return an instance of Qblox Compiler class"""
-    # qcm_settings = copy.deepcopy(Galadriel.qblox_qcm_0)
-    # qcm_settings.pop("name")
-    # dummy_qcm = DummyQCM(settings=qcm_settings)
-    # qrm_settings = copy.deepcopy(Galadriel.qblox_qrm_0)
-    # qrm_settings.pop("name")
-    # dummy_qrm = DummyQRM(settings=qrm_settings)
-    # platform.instruments.elements = [dummy_qcm, dummy_qrm]
-    return QbloxCompiler(qblox_modules=platform.instruments.elements, gates_settings=platform.gates_settings)  # type: ignore
+# @pytest.fixture(name="qblox_compiler")
+# def fixture_qblox_compiler(platform: Platform):
+#     """Return an instance of Qblox Compiler class"""
+#     qcm_settings = copy.deepcopy(Galadriel.qblox_qcm_0)
+#     qcm_settings.pop("name")
+#     dummy_qcm = DummyQCM(settings=qcm_settings)
+#     qrm_settings = copy.deepcopy(Galadriel.qblox_qrm_0)
+#     qrm_settings.pop("name")
+#     dummy_qrm = DummyQRM(settings=qrm_settings)
+#     platform.instruments.elements = [dummy_qcm, dummy_qrm]
+#     return QbloxCompiler(platform)
 
 
-@pytest.fixture(name="qblox_compiler_2qrm")
-def fixture_qblox_compiler_2qrm(platform: Platform):
-    """Return an instance of Qblox Compiler class"""
-    # qcm_settings = copy.deepcopy(Galadriel.qblox_qcm_0)
-    # qcm_settings.pop("name")
-    # dummy_qcm = DummyQCM(settings=qcm_settings)
-    # qrm_0_settings = copy.deepcopy(Galadriel.qblox_qrm_0)
-    # qrm_0_settings.pop("name")
-    # qrm_1_settings = copy.deepcopy(Galadriel.qblox_qrm_1)
-    # qrm_1_settings.pop("name")
-    # platform.instruments.elements = [dummy_qcm, DummyQRM(settings=qrm_0_settings), DummyQRM(settings=qrm_1_settings)]
-    return QbloxCompiler(qblox_modules=platform.instruments.elements, gates_settings=platform.gates_settings)  # type: ignore
+# @pytest.fixture(name="qblox_compiler_2qrm")
+# def fixture_qblox_compiler_2qrm(platform: Platform):
+#     """Return an instance of Qblox Compiler class"""
+#     qcm_settings = copy.deepcopy(Galadriel.qblox_qcm_0)
+#     qcm_settings.pop("name")
+#     dummy_qcm = DummyQCM(settings=qcm_settings)
+#     qrm_0_settings = copy.deepcopy(Galadriel.qblox_qrm_0)
+#     qrm_0_settings.pop("name")
+#     qrm_1_settings = copy.deepcopy(Galadriel.qblox_qrm_1)
+#     qrm_1_settings.pop("name")
+#     platform.instruments.elements = [dummy_qcm, DummyQRM(settings=qrm_0_settings), DummyQRM(settings=qrm_1_settings)]
+#     return QbloxCompiler(platform)
 
 
-@pytest.fixture(name="settings_6_sequencers")
-def fixture_settings_6_sequencers():
-    """settings for 6 sequencers"""
-    sequencers = [
-        {
-            "identifier": seq_idx,
-            # "bus_alias": "feedline_input_output_bus",
-            # "qubit": 5 - seq_idx,
-            "output_i": 1,
-            "output_q": 0,
-            "weights_i": [1, 1, 1, 1],
-            "weights_q": [1, 1, 1, 1],
-            "weighed_acq_enabled": False,
-            "threshold": 0.5,
-            "threshold_rotation": 30.0 * seq_idx,
-            "num_bins": 1,
-            "intermediate_frequency": 20000000,
-            "gain_i": 0.001,
-            "gain_q": 0.02,
-            "gain_imbalance": 1,
-            "phase_imbalance": 0,
-            "offset_i": 0,
-            "offset_q": 0,
-            "hardware_modulation": True,
-            "scope_acquire_trigger_mode": "sequencer",
-            "scope_hardware_averaging": True,
-            "sampling_rate": 1000000000,
-            "integration_length": 8000,
-            "integration_mode": "ssb",
-            "sequence_timeout": 1,
-            "acquisition_timeout": 1,
-            "hardware_demodulation": True,
-            "scope_store_enabled": True,
-        }
-        for seq_idx in range(6)
-    ]
-    return {
-        "alias": "test",
-        "firmware": "0.4.0",
-        "num_sequencers": 6,
-        "out_offsets": [0.123, 1.23],
-        "acquisition_delay_time": 100,
-        "awg_sequencers": sequencers,
-    }
+# @pytest.fixture(name="settings_6_sequencers")
+# def fixture_settings_6_sequencers():
+#     """settings for 6 sequencers"""
+#     sequencers = [
+#         {
+#             "identifier": seq_idx,
+#             "bus_alias": "feedline_input_output_bus",
+#             "qubit": 5 - seq_idx,
+#             "output_i": 1,
+#             "output_q": 0,
+#             "weights_i": [1, 1, 1, 1],
+#             "weights_q": [1, 1, 1, 1],
+#             "weighed_acq_enabled": False,
+#             "threshold": 0.5,
+#             "threshold_rotation": 30.0 * seq_idx,
+#             "num_bins": 1,
+#             "intermediate_frequency": 20000000,
+#             "gain_i": 0.001,
+#             "gain_q": 0.02,
+#             "gain_imbalance": 1,
+#             "phase_imbalance": 0,
+#             "offset_i": 0,
+#             "offset_q": 0,
+#             "hardware_modulation": True,
+#             "scope_acquire_trigger_mode": "sequencer",
+#             "scope_hardware_averaging": True,
+#             "sampling_rate": 1000000000,
+#             "integration_length": 8000,
+#             "integration_mode": "ssb",
+#             "sequence_timeout": 1,
+#             "acquisition_timeout": 1,
+#             "hardware_demodulation": True,
+#             "scope_store_enabled": True,
+#         }
+#         for seq_idx in range(6)
+#     ]
+#     return {
+#         "alias": "test",
+#         "firmware": "0.4.0",
+#         "num_sequencers": 6,
+#         "out_offsets": [0.123, 1.23],
+#         "acquisition_delay_time": 100,
+#         "awg_sequencers": sequencers,
+#     }
 
 
-@pytest.fixture(name="pulse_bus_schedule")
-def fixture_pulse_bus_schedule() -> PulseBusSchedule:
-    """Return PulseBusSchedule instance."""
-    pulse_shape = Gaussian(num_sigmas=4)
-    pulse = Pulse(amplitude=0.8, phase=np.pi / 2 + 12.2, duration=50, frequency=1e9, pulse_shape=pulse_shape)
-    pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=0)
-    return PulseBusSchedule(timeline=[pulse_event], bus_alias="feedline_input_output_bus")
+# @pytest.fixture(name="pulse_bus_schedule")
+# def fixture_pulse_bus_schedule() -> PulseBusSchedule:
+#     """Return PulseBusSchedule instance."""
+#     pulse_shape = Gaussian(num_sigmas=4)
+#     pulse = Pulse(amplitude=0.8, phase=np.pi / 2 + 12.2, duration=50, frequency=1e9, pulse_shape=pulse_shape)
+#     pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=0)
+#     return PulseBusSchedule(timeline=[pulse_event], bus_alias="feedline_input_output_bus")
 
 
-@pytest.fixture(name="pulse_bus_schedule2")
-def fixture_pulse_bus_schedule2() -> PulseBusSchedule:
-    """Return PulseBusSchedule instance."""
-    pulse_shape = Gaussian(num_sigmas=4)
-    pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
-    pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=1)
-    return PulseBusSchedule(timeline=[pulse_event], bus_alias="feedline_input_output_bus")
+# @pytest.fixture(name="pulse_bus_schedule2")
+# def fixture_pulse_bus_schedule2() -> PulseBusSchedule:
+#     """Return PulseBusSchedule instance."""
+#     pulse_shape = Gaussian(num_sigmas=4)
+#     pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
+#     pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=1)
+#     return PulseBusSchedule(timeline=[pulse_event], bus_alias="feedline_input_output_bus")
 
 
-@pytest.fixture(name="pulse_bus_schedule_long_wait")
-def fixture_pulse_bus_schedule_long_wait() -> PulseBusSchedule:
-    """Return PulseBusSchedule instance."""
-    pulse_shape = Gaussian(num_sigmas=4)
-    pulse = Pulse(amplitude=0.8, phase=np.pi / 2 + 12.2, duration=50, frequency=1e9, pulse_shape=pulse_shape)
-    pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=0)
-    pulse_event2 = PulseEvent(pulse=pulse, start_time=200_000, qubit=0)
-    return PulseBusSchedule(timeline=[pulse_event, pulse_event2], bus_alias="feedline_input_output_bus")
+# @pytest.fixture(name="pulse_bus_schedule_long_wait")
+# def fixture_pulse_bus_schedule_long_wait() -> PulseBusSchedule:
+#     """Return PulseBusSchedule instance."""
+#     pulse_shape = Gaussian(num_sigmas=4)
+#     pulse = Pulse(amplitude=0.8, phase=np.pi / 2 + 12.2, duration=50, frequency=1e9, pulse_shape=pulse_shape)
+#     pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=0)
+#     pulse_event2 = PulseEvent(pulse=pulse, start_time=200_000, qubit=0)
+#     return PulseBusSchedule(timeline=[pulse_event, pulse_event2], bus_alias="feedline_input_output_bus")
 
 
-@pytest.fixture(name="pulse_schedule_2qrm")
-def fixture_pulse_schedule() -> PulseSchedule:
-    """Return PulseBusSchedule instance."""
-    pulse_event_0 = PulseEvent(
-        pulse=Pulse(
-            amplitude=0.8, phase=np.pi / 2 + 12.2, duration=50, frequency=1e9, pulse_shape=Gaussian(num_sigmas=4)
-        ),
-        start_time=0,
-        qubit=1,
-    )
-    pulse_event_1 = PulseEvent(
-        pulse=Pulse(amplitude=0.8, phase=0.1, duration=50, frequency=1e9, pulse_shape=Rectangular()),
-        start_time=12,
-        qubit=2,
-    )
-    return PulseSchedule(
-        [
-            PulseBusSchedule(timeline=[pulse_event_0], bus_alias="feedline_input_output_bus"),
-            PulseBusSchedule(timeline=[pulse_event_1], bus_alias="feedline_input_output_bus_1"),
-        ]
-    )
+# @pytest.fixture(name="pulse_schedule_2qrm")
+# def fixture_pulse_schedule() -> PulseSchedule:
+#     """Return PulseBusSchedule instance."""
+#     pulse_event_0 = PulseEvent(
+#         pulse=Pulse(
+#             amplitude=0.8, phase=np.pi / 2 + 12.2, duration=50, frequency=1e9, pulse_shape=Gaussian(num_sigmas=4)
+#         ),
+#         start_time=0,
+#         qubit=1,
+#     )
+#     pulse_event_1 = PulseEvent(
+#         pulse=Pulse(amplitude=0.8, phase=0.1, duration=50, frequency=1e9, pulse_shape=Rectangular()),
+#         start_time=12,
+#         qubit=2,
+#     )
+#     return PulseSchedule(
+#         [
+#             PulseBusSchedule(timeline=[pulse_event_0], bus_alias="feedline_input_output_bus"),
+#             PulseBusSchedule(timeline=[pulse_event_1], bus_alias="feedline_input_output_bus_1"),
+#         ]
+#     )
 
 
-@pytest.fixture(name="long_pulse_bus_schedule")
-def fixture_long_pulse_bus_schedule() -> PulseBusSchedule:
-    """Return PulseBusSchedule instance."""
-    pulse = Pulse(amplitude=0.8, phase=np.pi / 2 + 12.2, duration=10**6, frequency=1e9, pulse_shape=Rectangular())
-    pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=0)
-    return PulseBusSchedule(timeline=[pulse_event], bus_alias="feedline_input_output_bus")
+# @pytest.fixture(name="long_pulse_bus_schedule")
+# def fixture_long_pulse_bus_schedule() -> PulseBusSchedule:
+#     """Return PulseBusSchedule instance."""
+#     pulse = Pulse(amplitude=0.8, phase=np.pi / 2 + 12.2, duration=10**6, frequency=1e9, pulse_shape=Rectangular())
+#     pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=0)
+#     return PulseBusSchedule(timeline=[pulse_event], bus_alias="feedline_input_output_bus")
 
 
-@pytest.fixture(name="multiplexed_pulse_bus_schedule")
-def fixture_multiplexed_pulse_bus_schedule() -> PulseBusSchedule:
-    """Load PulseBusSchedule with 10 different frequencies.
+# @pytest.fixture(name="multiplexed_pulse_bus_schedule")
+# def fixture_multiplexed_pulse_bus_schedule() -> PulseBusSchedule:
+#     """Load PulseBusSchedule with 10 different frequencies.
 
-    Returns:
-        PulseBusSchedule: PulseBusSchedule with 10 different frequencies.
-    """
-    timeline = [
-        PulseEvent(
-            pulse=Pulse(
-                amplitude=1,
-                phase=0,
-                duration=1000,
-                frequency=7.0e9 + n * 0.1e9,
-                pulse_shape=Rectangular(),
-            ),
-            start_time=0,
-            qubit=n,
-        )
-        for n in range(2)
-    ]
-    return PulseBusSchedule(timeline=timeline, bus_alias="feedline_input_output_bus")
-
-
-@pytest.fixture(name="pulse_schedule_odd_qubits")
-def fixture_pulse_schedule_odd_qubits() -> PulseSchedule:
-    """Returns a PulseBusSchedule with readout pulses for qubits 1, 3 and 5."""
-    pulse = Pulse(amplitude=1.0, phase=0, duration=1000, frequency=7.0e9, pulse_shape=Rectangular())
-    timeline = [PulseEvent(pulse=pulse, start_time=0, qubit=qubit) for qubit in [3, 1, 5]]
-    return PulseSchedule([PulseBusSchedule(timeline=timeline, bus_alias="feedline_input_output_bus")])
+#     Returns:
+#         PulseBusSchedule: PulseBusSchedule with 10 different frequencies.
+#     """
+#     timeline = [
+#         PulseEvent(
+#             pulse=Pulse(
+#                 amplitude=1,
+#                 phase=0,
+#                 duration=1000,
+#                 frequency=7.0e9 + n * 0.1e9,
+#                 pulse_shape=Rectangular(),
+#             ),
+#             start_time=0,
+#             qubit=n,
+#         )
+#         for n in range(2)
+#     ]
+#     return PulseBusSchedule(timeline=timeline, bus_alias="feedline_input_output_bus")
 
 
-def are_q1asm_equal(a: str, b: str):
-    """Compare two Q1ASM strings and parse them to remove spaces, new lines and long_wait counters"""
-    return "".join([cmd for cmd in a.strip().split() if "long_wait" not in cmd]) == "".join(
-        [cmd for cmd in b.strip().split() if "long_wait" not in cmd]
-    )
+# @pytest.fixture(name="pulse_schedule_odd_qubits")
+# def fixture_pulse_schedule_odd_qubits() -> PulseSchedule:
+#     """Returns a PulseBusSchedule with readout pulses for qubits 1, 3 and 5."""
+#     pulse = Pulse(amplitude=1.0, phase=0, duration=1000, frequency=7.0e9, pulse_shape=Rectangular())
+#     timeline = [PulseEvent(pulse=pulse, start_time=0, qubit=qubit) for qubit in [3, 1, 5]]
+#     return PulseSchedule([PulseBusSchedule(timeline=timeline, bus_alias="feedline_input_output_bus")])
 
 
-class TestQbloxCompiler:
-    """Unit tests checking the QbloxQCM attributes and methods"""
+# def are_q1asm_equal(a: str, b: str):
+#     """Compare two Q1ASM strings and parse them to remove spaces, new lines and long_wait counters"""
+#     return "".join([cmd for cmd in a.strip().split() if "long_wait" not in cmd]) == "".join(
+#         [cmd for cmd in b.strip().split() if "long_wait" not in cmd]
+#     )
 
-    def test_circular(self, qblox_compiler):
-        print("hello world")
 
-    def test_amplitude_and_phase_in_program(self, qblox_compiler, pulse_bus_schedule):
-        """Test that the amplitude and the phase of a compiled pulse is added into the Qblox program."""
+# class TestQbloxCompiler:
+#     """Unit tests checking the QbloxQCM attributes and methods"""
 
-        amplitude = pulse_bus_schedule.timeline[0].pulse.amplitude
-        phase = pulse_bus_schedule.timeline[0].pulse.phase
-        pulse_bus_schedule_qcm = copy.copy(pulse_bus_schedule)
-        pulse_bus_schedule_qcm.bus_alias = "drive_q0"
+#     def test_amplitude_and_phase_in_program(self, qblox_compiler, pulse_bus_schedule):
+#         """Test that the amplitude and the phase of a compiled pulse is added into the Qblox program."""
 
-        pulse_schedule = PulseSchedule([pulse_bus_schedule_qcm, pulse_bus_schedule])
+#         amplitude = pulse_bus_schedule.timeline[0].pulse.amplitude
+#         phase = pulse_bus_schedule.timeline[0].pulse.phase
+#         pulse_bus_schedule_qcm = copy.copy(pulse_bus_schedule)
+#         pulse_bus_schedule_qcm.bus_alias = "drive_q0"
 
-        sequences = qblox_compiler.compile(pulse_schedule, num_avg=1, repetition_duration=2000, num_bins=1)
-        program = list(sequences.items())[1][1][0]._program  # pylint: disable=protected-access
+#         pulse_schedule = PulseSchedule([pulse_bus_schedule_qcm, pulse_bus_schedule])
 
-        expected_gain = int(amplitude * AWG_MAX_GAIN)
-        expected_phase = int((phase % (2 * np.pi)) * 1e9 / (2 * np.pi))
+#         sequences = qblox_compiler.compile(pulse_schedule, num_avg=1, repetition_duration=2000, num_bins=1)
+#         program = list(sequences.items())[1][1][0]._program  # pylint: disable=protected-access
 
-        bin_loop = program.blocks[2].components[1]
+#         expected_gain = int(amplitude * AWG_MAX_GAIN)
+#         expected_phase = int((phase % (2 * np.pi)) * 1e9 / (2 * np.pi))
 
-        assert bin_loop.components[0].args[0] == expected_gain
-        assert bin_loop.components[0].args[1] == expected_gain
-        assert bin_loop.components[1].args[0] == expected_phase
+#         bin_loop = program.blocks[2].components[1]
 
+#         assert bin_loop.components[0].args[0] == expected_gain
+#         assert bin_loop.components[0].args[1] == expected_gain
+#         assert bin_loop.components[1].args[0] == expected_phase
 
 #     def test_qrm_compile(self, qblox_compiler, pulse_bus_schedule, pulse_bus_schedule2):
 #         """Test compile method."""

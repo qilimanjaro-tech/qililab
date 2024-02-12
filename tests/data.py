@@ -30,7 +30,6 @@ from qililab.typings.enums import (
     Parameter,
     PulseShapeName,
     ReferenceClock,
-    ResetMethod,
 )
 
 
@@ -976,7 +975,7 @@ class SauronYokogawa:
 
 
 class SauronQDevil:
-    """Test data of the sauron with yokogawa platform."""
+    """Test data for QDevil instruments in sauron platform."""
 
     name = "sauron_qdevil"
     device_id = 9

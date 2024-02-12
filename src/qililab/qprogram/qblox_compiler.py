@@ -483,7 +483,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                 if isinstance(element, Block):
                     yield from collect_operations(element)
                 else:
-                    if any(variable is loop.variable for variable in element.get_variables()):
+                    if any(variable == loop.variable for variable in element.get_variables()):
                         yield element
 
         starting_block = starting_block or loop

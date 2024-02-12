@@ -11,6 +11,7 @@ from qibo.gates import CZ, M, X
 from qibo.models import Circuit
 
 from qililab.circuit_transpiler import CircuitTranspiler, Drag, Wait
+from qililab.data_management import build_platform
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Pulse, PulseEvent, PulseSchedule
 from qililab.pulse.pulse_shape import SNZ
@@ -20,7 +21,6 @@ from qililab.settings.circuit_compilation.gate_event_settings import GateEventSe
 from qililab.settings.circuit_compilation.gates_settings import GatesSettings
 from qililab.typings import Line
 from tests.data import Galadriel
-from tests.test_utils import build_platform
 
 qibo.set_backend("numpy")  # set backend to numpy (this is the faster option for < 15 qubits)
 
@@ -206,184 +206,6 @@ def compare_exp_z(  # pylint: disable=unused-argument
     ]
 
 
-platform_gates = {
-    "M(0)": [
-        {
-            "bus": "feedline_bus",
-            "pulse": {
-                "amplitude": 0.8,
-                "phase": 0,
-                "duration": 200,
-                "shape": {"name": "rectangular"},
-            },
-        }
-    ],
-    "Drag(0)": [
-        {
-            "bus": "drive_q0_bus",
-            "pulse": {
-                "amplitude": 0.8,
-                "phase": 0,
-                "duration": 198,  # try some non-multiple of clock time (4)
-                "shape": {"name": "drag", "drag_coefficient": 0.8, "num_sigmas": 2},
-            },
-        }
-    ],
-    # random X schedule
-    "X(0)": [
-        {
-            "bus": "drive_q0_bus",
-            "pulse": {
-                "amplitude": 0.8,
-                "phase": 0,
-                "duration": 200,
-                "shape": {"name": "drag", "drag_coefficient": 0.8, "num_sigmas": 2},
-            },
-        },
-        {
-            "bus": "flux_q0_bus",
-            "wait_time": 30,
-            "pulse": {
-                "amplitude": 0.8,
-                "phase": 0,
-                "duration": 200,
-                "shape": {"name": "drag", "drag_coefficient": 0.8, "num_sigmas": 2},
-            },
-        },
-        {
-            "bus": "drive_q0_bus",
-            "pulse": {
-                "amplitude": 0.8,
-                "phase": 0,
-                "duration": 100,
-                "shape": {"name": "rectangular"},
-            },
-        },
-        {
-            "bus": "drive_q4_bus",
-            "pulse": {
-                "amplitude": 0.8,
-                "phase": 0,
-                "duration": 100,
-                "shape": {"name": "gaussian", "num_sigmas": 4},
-            },
-        },
-    ],
-    "M(1)": [
-        {
-            "bus": "feedline_bus",
-            "pulse": {
-                "amplitude": 0.8,
-                "phase": 0,
-                "duration": 200,
-                "shape": {"name": "rectangular"},
-            },
-        }
-    ],
-    "M(2)": [
-        {
-            "bus": "feedline_bus",
-            "pulse": {
-                "amplitude": 0.8,
-                "phase": 0,
-                "duration": 200,
-                "shape": {"name": "rectangular"},
-            },
-        }
-    ],
-    "M(3)": [
-        {
-            "bus": "feedline_bus",
-            "pulse": {
-                "amplitude": 0.7,
-                "phase": 0.5,
-                "duration": 100,
-                "shape": {"name": "gaussian", "num_sigmas": 2},
-            },
-        }
-    ],
-    "M(4)": [
-        {
-            "bus": "feedline_bus",
-            "pulse": {
-                "amplitude": 0.7,
-                "phase": 0.5,
-                "duration": 100,
-                "shape": {"name": "gaussian", "num_sigmas": 2},
-            },
-        }
-    ],
-    "CZ(2,3)": [
-        {
-            "bus": "flux_q2_bus",
-            "wait_time": 10,
-            "pulse": {
-                "amplitude": 0.7,
-                "phase": 0,
-                "duration": 90,
-                "shape": {"name": "snz", "b": 0.5, "t_phi": 1},
-            },
-        },
-        # park pulse
-        {
-            "bus": "flux_q0_bus",
-            "pulse": {
-                "amplitude": 0.7,
-                "phase": 0,
-                "duration": 100,
-                "shape": {"name": "rectangular"},
-            },
-        },
-    ],
-    # test couplers
-    "CZ(4, 0)": [
-        {
-            "bus": "flux_c2_bus",
-            "wait_time": 10,
-            "pulse": {
-                "amplitude": 0.7,
-                "phase": 0,
-                "duration": 90,
-                "shape": {"name": "snz", "b": 0.5, "t_phi": 1},
-            },
-        },
-        {
-            "bus": "flux_q0_bus",
-            "pulse": {
-                "amplitude": 0.7,
-                "phase": 0,
-                "duration": 100,
-                "shape": {"name": "rectangular"},
-            },
-        },
-    ],
-    "CZ(0,1)": [
-        {
-            "bus": "flux_line_q1",
-            "pulse": {
-                "amplitude": 0.8,
-                "phase": 0,
-                "duration": 200,
-                "shape": {"name": "rectangular"},
-                "options": {"q0_phase_correction": 1, "q1_phase_correction": 2},
-            },
-        }
-    ],
-    "CZ(0,2)": [
-        {
-            "bus": "flux_line_q2",
-            "pulse": {
-                "amplitude": 0.8,
-                "phase": 0,
-                "duration": 200,
-                "shape": {"name": "rectangular"},
-                "options": {"q1_phase_correction": 2, "q2_phase_correction": 0},
-            },
-        }
-    ],
-}
-
-
 @pytest.fixture(name="platform")
 def fixture_platform() -> Platform:
     return build_platform(runcard=Galadriel.runcard)
@@ -393,18 +215,259 @@ def fixture_platform() -> Platform:
 def fixture_gates_settings() -> GatesSettings:
     gates_settings = {
         "minimum_clock_time": 5,
-        "delay_between_pulses": 0,
         "delay_before_readout": 0,
-        "reset_method": "passive",
-        "passive_reset_duration": 100,
-        "timings_calculation_method": "as_soon_as_possible",
-        "gates": {},
+        "gates": {
+            "M(0)": [
+                {
+                    "bus": "feedline_bus",
+                    "pulse": {
+                        "amplitude": 0.8,
+                        "phase": 0,
+                        "duration": 200,
+                        "shape": {"name": "rectangular"},
+                    },
+                }
+            ],
+            "Drag(0)": [
+                {
+                    "bus": "drive_q0_bus",
+                    "pulse": {
+                        "amplitude": 0.8,
+                        "phase": 0,
+                        "duration": 198,  # try some non-multiple of clock time (4)
+                        "shape": {"name": "drag", "drag_coefficient": 0.8, "num_sigmas": 2},
+                    },
+                }
+            ],
+            # random X schedule
+            "X(0)": [
+                {
+                    "bus": "drive_q0_bus",
+                    "pulse": {
+                        "amplitude": 0.8,
+                        "phase": 0,
+                        "duration": 200,
+                        "shape": {"name": "drag", "drag_coefficient": 0.8, "num_sigmas": 2},
+                    },
+                },
+                {
+                    "bus": "flux_q0_bus",
+                    "wait_time": 30,
+                    "pulse": {
+                        "amplitude": 0.8,
+                        "phase": 0,
+                        "duration": 200,
+                        "shape": {"name": "drag", "drag_coefficient": 0.8, "num_sigmas": 2},
+                    },
+                },
+                {
+                    "bus": "drive_q0_bus",
+                    "pulse": {
+                        "amplitude": 0.8,
+                        "phase": 0,
+                        "duration": 100,
+                        "shape": {"name": "rectangular"},
+                    },
+                },
+                {
+                    "bus": "drive_q4_bus",
+                    "pulse": {
+                        "amplitude": 0.8,
+                        "phase": 0,
+                        "duration": 100,
+                        "shape": {"name": "gaussian", "num_sigmas": 4},
+                    },
+                },
+            ],
+            "M(1)": [
+                {
+                    "bus": "feedline_bus",
+                    "pulse": {
+                        "amplitude": 0.8,
+                        "phase": 0,
+                        "duration": 200,
+                        "shape": {"name": "rectangular"},
+                    },
+                }
+            ],
+            "M(2)": [
+                {
+                    "bus": "feedline_bus",
+                    "pulse": {
+                        "amplitude": 0.8,
+                        "phase": 0,
+                        "duration": 200,
+                        "shape": {"name": "rectangular"},
+                    },
+                }
+            ],
+            "M(3)": [
+                {
+                    "bus": "feedline_bus",
+                    "pulse": {
+                        "amplitude": 0.7,
+                        "phase": 0.5,
+                        "duration": 100,
+                        "shape": {"name": "gaussian", "num_sigmas": 2},
+                    },
+                }
+            ],
+            "M(4)": [
+                {
+                    "bus": "feedline_bus",
+                    "pulse": {
+                        "amplitude": 0.7,
+                        "phase": 0.5,
+                        "duration": 100,
+                        "shape": {"name": "gaussian", "num_sigmas": 2},
+                    },
+                }
+            ],
+            "CZ(2,3)": [
+                {
+                    "bus": "flux_q2_bus",
+                    "wait_time": 10,
+                    "pulse": {
+                        "amplitude": 0.7,
+                        "phase": 0,
+                        "duration": 90,
+                        "shape": {"name": "snz", "b": 0.5, "t_phi": 1},
+                    },
+                },
+                # park pulse
+                {
+                    "bus": "flux_q0_bus",
+                    "pulse": {
+                        "amplitude": 0.7,
+                        "phase": 0,
+                        "duration": 100,
+                        "shape": {"name": "rectangular"},
+                    },
+                },
+            ],
+            # test couplers
+            "CZ(4, 0)": [
+                {
+                    "bus": "flux_c2_bus",
+                    "wait_time": 10,
+                    "pulse": {
+                        "amplitude": 0.7,
+                        "phase": 0,
+                        "duration": 90,
+                        "shape": {"name": "snz", "b": 0.5, "t_phi": 1},
+                    },
+                },
+                {
+                    "bus": "flux_q0_bus",
+                    "pulse": {
+                        "amplitude": 0.7,
+                        "phase": 0,
+                        "duration": 100,
+                        "shape": {"name": "rectangular"},
+                    },
+                },
+            ],
+            "CZ(0,1)": [
+                {
+                    "bus": "flux_line_q1",
+                    "pulse": {
+                        "amplitude": 0.8,
+                        "phase": 0,
+                        "duration": 200,
+                        "shape": {"name": "rectangular"},
+                        "options": {"q0_phase_correction": 1, "q1_phase_correction": 2},
+                    },
+                }
+            ],
+            "CZ(0,2)": [
+                {
+                    "bus": "flux_line_q2",
+                    "pulse": {
+                        "amplitude": 0.8,
+                        "phase": 0,
+                        "duration": 200,
+                        "shape": {"name": "rectangular"},
+                        "options": {"q1_phase_correction": 2, "q2_phase_correction": 0},
+                    },
+                }
+            ],
+        },
+        "buses": {
+            "feedline_input": {
+                "qubits": [0, 1, 2, 3, 4],
+                "line": Line.READOUT,
+                "distortions": [],
+                "delay": 0,
+            },
+            "drive_q0_bus": {
+                "qubits": [0],
+                "line": Line.DRIVE,
+                "distortions": [],
+                "delay": 0,
+            },
+            "drive_q1_bus": {
+                "qubits": [1],
+                "line": Line.DRIVE,
+                "distortions": [],
+                "delay": 0,
+            },
+            "drive_q2_bus": {
+                "qubits": [2],
+                "line": Line.DRIVE,
+                "distortions": [],
+                "delay": 0,
+            },
+            "drive_q3_bus": {
+                "qubits": [3],
+                "line": Line.DRIVE,
+                "distortions": [],
+                "delay": 0,
+            },
+            "drive_q4_bus": {
+                "qubits": [4],
+                "line": Line.DRIVE,
+                "distortions": [],
+                "delay": 0,
+            },
+            "flux_q0_bus": {
+                "qubits": [0],
+                "line": Line.FLUX,
+                "distortions": [],
+                "delay": 0,
+            },
+            "flux_q1_bus": {
+                "qubits": [1],
+                "line": Line.FLUX,
+                "distortions": [],
+                "delay": 0,
+            },
+            "flux_q2_bus": {
+                "qubits": [2],
+                "line": Line.FLUX,
+                "distortions": [],
+                "delay": 0,
+            },
+            "flux_q3_bus": {
+                "qubits": [3],
+                "line": Line.FLUX,
+                "distortions": [],
+                "delay": 0,
+            },
+            "flux_q4_bus": {
+                "qubits": [4],
+                "line": Line.FLUX,
+                "distortions": [],
+                "delay": 0,
+            },
+            "flux_c2_bus": {
+                "qubits": [],
+                "line": Line.FLUX,
+                "distortions": [],
+                "delay": 0,
+            },
+        },
     }
-    gates_settings = GatesSettings(**gates_settings)  # type: ignore[assignment]  # pylint: disable=unexpected-keyword-arg
-    gates_settings.gates = {  # type: ignore
-        gate: [GateEventSettings(**event) for event in schedule] for gate, schedule in platform_gates.items()  # type: ignore
-    }
-    return gates_settings  # type: ignore[return-value]
+    return GatesSettings(**gates_settings)  # type: ignore
 
 
 @pytest.fixture(name="buses")
@@ -415,113 +478,61 @@ def fixture_buses(platform) -> Buses:
             "alias": "feedline_bus",
             "instruments": ["QRM_0", "rs_1"],
             "channels": [[0, 1, 2, 3, 4], None],
-            "qubits": [0, 1, 2, 3, 4],
-            "line": Line.READOUT,
-            "distortions": [],
-            "delay": 0,
         },
-        {
-            "alias": "drive_q0_bus",
-            "instruments": ["QCM"],
-            "channels": [[0]],
-            "qubits": [0],
-            "line": Line.DRIVE,
-            "distortions": [],
-            "delay": 0,
-        },
+        {"alias": "drive_q0_bus", "instruments": ["QCM"], "channels": [0]},
         {
             "alias": "flux_q0_bus",
             "instruments": ["QCM"],
-            "channels": [[0]],
-            "qubits": [0],
-            "line": Line.FLUX,
-            "distortions": [],
-            "delay": 0,
+            "channels": [0],
         },
         {
             "alias": "drive_q1_bus",
             "instruments": ["QCM"],
-            "channels": [[1]],
-            "qubits": [1],
-            "line": Line.DRIVE,
-            "distortions": [],
-            "delay": 0,
+            "channels": [1],
         },
         {
             "alias": "flux_q1_bus",
             "instruments": ["QCM"],
-            "channels": [[1]],
-            "qubits": [1],
-            "line": Line.FLUX,
-            "distortions": [],
-            "delay": 0,
+            "channels": [1],
         },
         {
             "alias": "drive_q2_bus",
             "instruments": ["QCM"],
-            "channels": [[2]],
-            "qubits": [2],
-            "line": Line.DRIVE,
-            "distortions": [],
-            "delay": 0,
+            "channels": [2],
         },
         {
             "alias": "flux_q2_bus",
             "instruments": ["QCM"],
-            "channels": [[2]],
-            "qubits": [2],
-            "line": Line.FLUX,
-            "distortions": [],
-            "delay": 0,
+            "channels": [2],
         },
         {
             "alias": "flux_c2_bus",  # c2 coupler
             "instruments": ["QCM"],
-            "channels": [[2]],
-            "qubits": None,
-            "line": Line.FLUX,
-            "distortions": [],
-            "delay": 0,
+            "channels": [2],
         },
         {
             "alias": "drive_q3_bus",
             "instruments": ["QCM"],
-            "channels": [[3]],
-            "qubits": [3],
-            "line": Line.DRIVE,
-            "distortions": [],
-            "delay": 0,
+            "channels": [3],
         },
         {
             "alias": "flux_q3_bus",
             "instruments": ["QCM"],
-            "channels": [[3]],
-            "qubits": [3],
-            "line": Line.FLUX,
-            "distortions": [],
-            "delay": 0,
+            "channels": [3],
         },
         {
             "alias": "drive_q4_bus",
             "instruments": ["QCM"],
-            "channels": [[4]],
-            "qubits": [4],
-            "line": Line.DRIVE,
-            "distortions": [],
-            "delay": 0,
+            "channels": [4],
         },
         {
             "alias": "flux_q4_bus",
             "instruments": ["QCM"],
-            "channels": [[4]],
-            "qubits": [4],
-            "line": Line.FLUX,
-            "distortions": [],
-            "delay": 0,
+            "channels": [4],
         },
     ]
 
-    buses = Buses(elements=[Bus(settings=bus, platform_instruments=platform.instruments) for bus in bus_settings])
+    buses = Buses(elements=[Bus(settings=bus, platform_instruments=platform.instruments) for bus in bus_settings])  # type: ignore
     return buses
 
 

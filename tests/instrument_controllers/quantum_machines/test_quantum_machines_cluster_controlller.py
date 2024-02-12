@@ -1,12 +1,12 @@
 """This file tests the the ``qmm_controller`` class"""
 import pytest
 
+from qililab.data_management import build_platform
 from qililab.instrument_controllers.quantum_machines import QuantumMachinesClusterController
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Platform
 from qililab.settings import Settings
 from tests.data import SauronQuantumMachines
-from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="platform")

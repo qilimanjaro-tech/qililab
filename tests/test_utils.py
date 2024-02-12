@@ -7,7 +7,7 @@ from qcodes.instrument_drivers.tektronix.Keithley_2600_channels import KeithleyC
 from qpysequence import Sequence as QPySequence
 from qpysequence.program import Program as QPyProgram
 
-from qililab.data_management import build_platform
+# from qililab.data_management import build_platform
 from qililab.platform import Platform
 
 

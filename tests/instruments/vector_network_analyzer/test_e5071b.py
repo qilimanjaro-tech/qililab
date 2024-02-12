@@ -12,7 +12,7 @@
 # from qililab.result.vna_result import VNAResult
 # from qililab.typings.enums import Parameter, VNAScatteringParameters, VNATriggerModes
 # from tests.data import SauronVNA
-# from tests.test_utils import build_platform
+# from qililab.data_management import build_platform
 
 
 # @pytest.fixture(name="sauron_platform")
