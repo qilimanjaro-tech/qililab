@@ -81,7 +81,6 @@ class TestGatesSettings:
 
     def test_attributes(self, gates_settings):
         """Test that the Runcard.GatesSettings dataclass contains the right attributes."""
-        assert isinstance(gates_settings.delay_between_pulses, int)
         assert isinstance(gates_settings.delay_before_readout, int)
         assert isinstance(gates_settings.gates, dict)
         assert all(
@@ -89,8 +88,6 @@ class TestGatesSettings:
             for key, settings in gates_settings.gates.items()
             for event in settings
         )
-        assert isinstance(gates_settings.reset_method, str)
-        assert isinstance(gates_settings.passive_reset_duration, int)
 
     def test_get_parameter_fails(self, gates_settings):
         with pytest.raises(ValueError, match="Could not find gate alias in gate settings."):
@@ -137,9 +134,6 @@ class TestGatesSettings:
         """Test that with ``set_parameter`` we can change all settings of the platform."""
         gates_settings.set_parameter(parameter=Parameter.DELAY_BEFORE_READOUT, value=1234)
         assert gates_settings.delay_before_readout == 1234
-
-        gates_settings.set_parameter(parameter=Parameter.DELAY_BETWEEN_PULSES, value=1234)
-        assert gates_settings.delay_between_pulses == 1234
 
     @pytest.mark.parametrize("alias", ["X(0)", "M(0)"])
     def test_set_gate_parameters(self, alias: str, gates_settings):
