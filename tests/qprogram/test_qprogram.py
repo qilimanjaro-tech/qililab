@@ -1,3 +1,4 @@
+import json
 import math
 from collections import deque
 from itertools import product
@@ -374,6 +375,7 @@ class TestQProgram:
                 )
 
     def test_serialiation_deserialization(self):
+        """Test that QProgram can be serialized and serialized."""
         qp = QProgram()
         duration = qp.variable(Domain.Time)
         frequency = qp.variable(Domain.Frequency)
@@ -405,9 +407,11 @@ class TestQProgram:
         assert "attributes" in serialized_dictionary
 
         deserialized_qp = QProgram.from_dict(serialized_dictionary["attributes"])
-
         assert isinstance(deserialized_qp, QProgram)
 
         again_serialized_dictionary = deserialized_qp.to_dict()
-
         assert serialized_dictionary == again_serialized_dictionary
+
+        as_json = json.dumps(again_serialized_dictionary)
+        dictionary_from_json = json.loads(as_json)
+        assert serialized_dictionary == dictionary_from_json
