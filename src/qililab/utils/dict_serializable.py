@@ -159,6 +159,7 @@ class DictSerializable(Protocol, metaclass=DictSerializableMeta):
                 return from_dict(attribute)
             return attribute
 
+        print(data)
         if is_dataclass(cls):
             # Create an instance with only the init-able fields
             init_fields = {f.name: process_attribute(data[f.name]) for f in fields(cls) if f.init}
@@ -170,6 +171,7 @@ class DictSerializable(Protocol, metaclass=DictSerializableMeta):
             # Set non-init fields
             for f in fields(cls):
                 if not f.init and f.name in data:
+                    print(f)
                     processed_value = process_attribute(data[f.name])
                     if is_frozen:
                         object.__setattr__(dataclass_instance, f.name, processed_value)

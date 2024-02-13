@@ -5,7 +5,7 @@ from itertools import product
 import numpy as np
 import pytest
 
-from qililab import Domain, DragCorrection, DragPair, Gaussian, IQPair, QProgram, Square
+from qililab import Arbitrary, Domain, DragCorrection, Gaussian, IQPair, QProgram, Square
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.operations import (
     Acquire,
@@ -366,9 +366,48 @@ class TestQProgram:
             (voltage, time, scalar, scalar)
         }:
             with pytest.raises(ValueError):
-                _ = DragPair(
+                _ = IQPair.DRAG(
                     amplitude=amplitude_var,
                     duration=duration_var,
                     num_sigmas=num_sigmas_var,
                     drag_coefficient=drag_coefficient_var,
                 )
+
+    def test_serialiation_deserialization(self):
+        qp = QProgram()
+        duration = qp.variable(Domain.Time)
+        frequency = qp.variable(Domain.Frequency)
+        drag_pair = IQPair.DRAG(amplitude=1.0, duration=duration, num_sigmas=4, drag_coefficient=1.2)
+        arbitrary_pair = IQPair(
+            I=Arbitrary(samples=np.linspace(0.0, 1.0, 10)), Q=Arbitrary(samples=np.linspace(-1.0, 0.0, 10))
+        )
+        readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+        weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+
+        qp.set_phase(bus="drive", phase=90)
+        qp.reset_phase(bus="drive")
+        qp.set_gain(bus="drive", gain=0.5)
+        qp.set_offset(bus="drive", offset_path0=0.5, offset_path1=0.5)
+        with qp.average(shots=1000):
+            with qp.for_loop(variable=duration, start=100, stop=200, step=10):
+                qp.play(bus="drive", waveform=drag_pair)
+                qp.sync()
+                qp.wait(bus="readout", duration=100)
+                with qp.for_loop(variable=frequency, start=100e6, stop=200e6, step=10e6):
+                    qp.set_frequency(bus="readout", frequency=frequency)
+                    qp.play(bus="readout", waveform=arbitrary_pair)
+                    qp.play(bus="readout", waveform=readout_pair, wait_time=4)
+                    qp.acquire(bus="readout", weights=weights_pair)
+
+        serialized_dictionary = qp.to_dict()
+
+        assert "type" in serialized_dictionary
+        assert "attributes" in serialized_dictionary
+
+        deserialized_qp = QProgram.from_dict(serialized_dictionary["attributes"])
+
+        assert isinstance(deserialized_qp, QProgram)
+
+        again_serialized_dictionary = deserialized_qp.to_dict()
+
+        assert serialized_dictionary == again_serialized_dictionary
