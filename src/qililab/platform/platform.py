@@ -792,8 +792,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             return self._build_from_qasm(program=program)
         try:  # Qiskit
             qasm_program = program.qasm()
-        except Exception:  # TODO: specify exception
+        except Exception:  # pylint: disable=broad-except
             try:  # Pennylane
+                # pylint: disable=protected-access
                 qasm_program = program.device("default.qubit")._circuit.qasm(formatted=True)
             except Exception as exc:
                 raise ValueError(
