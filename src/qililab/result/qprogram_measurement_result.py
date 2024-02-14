@@ -12,19 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module contains the classes used to return the results of the execution of a program.
+"""MeasurementResult class."""
 
-.. currentmodule:: qililab
+from abc import ABC, abstractmethod
 
-Results Class
-~~~~~~~~~~~~~~~~
+import numpy as np
 
-.. autosummary::
-    :toctree: api
+from qililab.typings.enums import ResultName
+from qililab.utils.dict_serializable import DictSerializable
 
-    ~Results
-"""
-from .qprogram_measurement_result import QProgramMeasurementResult
-from .result import Result
-from .results import Results
-from .stream_results import stream_results
+
+class QProgramMeasurementResult(DictSerializable, ABC):
+    """Result of a single measurement of QProgram."""
+
+    name: ResultName
+
+    @property
+    @abstractmethod
+    def array(self) -> np.ndarray:
+        """Returns the results in a numpy array format.
+
+        Returns:
+            np.ndarray: Numpy array containing the results.
+        """

@@ -1,9 +1,10 @@
 """ Test Results """
 
+import json
+
 import numpy as np
 import pytest
 
-from qililab.constants import QMRESULT, RUNCARD
 from qililab.result.quantum_machines_results import QuantumMachinesMeasurementResult
 
 
@@ -36,41 +37,18 @@ class TestsQMResult:
         assert isinstance(qm_result.array, np.ndarray)
         assert qm_result.array.shape == (2, 10)
 
-    def test_to_dict(self, qm_result: QuantumMachinesMeasurementResult):
-        """Tests that to_dict method serializes a QuantumMachinesResult class.
+    def test_serialization_method(self, qm_result: QuantumMachinesMeasurementResult):
+        """Test serialization and deserialization works."""
+        serialized_dictionary = qm_result.to_dict()
+        assert "type" in serialized_dictionary
+        assert "attributes" in serialized_dictionary
 
-        Args:
-            qm_result (QuantumMachinesResult): QuantumMachinesResult instance.
-        """
-        qm_result_dict = qm_result.to_dict()
+        deserialized_qp = QuantumMachinesMeasurementResult.from_dict(serialized_dictionary["attributes"])
+        assert isinstance(deserialized_qp, QuantumMachinesMeasurementResult)
 
-        assert RUNCARD.NAME in qm_result_dict
-        assert QMRESULT.I in qm_result_dict
-        assert QMRESULT.Q in qm_result_dict
-        assert QMRESULT.ADC1 in qm_result_dict
-        assert QMRESULT.ADC2 in qm_result_dict
-        assert isinstance(qm_result_dict[RUNCARD.NAME], str)
-        assert isinstance(qm_result_dict[QMRESULT.I], np.ndarray)
-        assert isinstance(qm_result_dict[QMRESULT.Q], np.ndarray)
-        assert qm_result_dict[QMRESULT.ADC1] is None
-        assert qm_result_dict[QMRESULT.ADC2] is None
+        again_serialized_dictionary = deserialized_qp.to_dict()
+        assert serialized_dictionary == again_serialized_dictionary
 
-    def test_probabilities(self, qm_result: QuantumMachinesMeasurementResult):
-        """Tests that probabilities method raises a not implemented error.
-
-        Args:
-            qm_result (QuantumMachinesResult): QuantumMachinesResult instance.
-        """
-        with pytest.raises(
-            NotImplementedError, match="Probabilities are not yet supported for Quantum Machines instruments."
-        ):
-            _ = qm_result.probabilities()
-
-    def test_counts_object(self, qm_result: QuantumMachinesMeasurementResult):
-        """Tests that counts_object method raises a not implemented error.
-
-        Args:
-            qm_result (QuantumMachinesResult): QuantumMachinesResult instance.
-        """
-        with pytest.raises(NotImplementedError, match="Counts are not yet supported for Quantum Machines instruments."):
-            _ = qm_result.counts_object()
+        as_json = json.dumps(again_serialized_dictionary)
+        dictionary_from_json = json.loads(as_json)
+        assert serialized_dictionary == dictionary_from_json

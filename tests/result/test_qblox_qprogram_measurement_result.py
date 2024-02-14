@@ -1,5 +1,7 @@
 """ Test Results """
 
+import json
+
 import numpy as np
 import pytest
 from qblox_instruments import DummyBinnedAcquisitionData, DummyScopeAcquisitionData, Pulsar, PulsarType
@@ -134,7 +136,18 @@ class TestsQbloxQProgramMeasurementResult:
         path0, path1 = bin_data["path0"], bin_data["path1"]
         assert np.allclose(array, [path0, path1])
 
-    def test_to_dict_method(self, qblox_measurement_result: QbloxQProgramMeasurementResult):
-        dictionary = qblox_measurement_result.to_dict()
-        assert dictionary[RUNCARD.NAME] == QbloxQProgramMeasurementResult.name.value
-        assert isinstance(dictionary[QBLOXMEASUREMENTRESULT.RAW_MEASUREMENT_DATA], dict)
+    def test_serialization_method(self, qblox_measurement_result: QbloxQProgramMeasurementResult):
+        """Test serialization and deserialization works."""
+        serialized_dictionary = qblox_measurement_result.to_dict()
+        assert "type" in serialized_dictionary
+        assert "attributes" in serialized_dictionary
+
+        deserialized_qp = QbloxQProgramMeasurementResult.from_dict(serialized_dictionary["attributes"])
+        assert isinstance(deserialized_qp, QbloxQProgramMeasurementResult)
+
+        again_serialized_dictionary = deserialized_qp.to_dict()
+        assert serialized_dictionary == again_serialized_dictionary
+
+        as_json = json.dumps(again_serialized_dictionary)
+        dictionary_from_json = json.loads(as_json)
+        assert serialized_dictionary == dictionary_from_json

@@ -12,19 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module contains the classes used to return the results of the execution of a program.
+"""MeasurementResult class."""
+from qililab.result.qprogram_measurement_result import QProgramMeasurementResult
+from qililab.utils.dict_serializable import DictSerializable
 
-.. currentmodule:: qililab
 
-Results Class
-~~~~~~~~~~~~~~~~
+class QProgramResults(DictSerializable):
+    """Results from"""
 
-.. autosummary::
-    :toctree: api
+    def __init__(self):
+        self.results: dict[str, list[QProgramMeasurementResult]] = {}
 
-    ~Results
-"""
-from .qprogram_measurement_result import QProgramMeasurementResult
-from .result import Result
-from .results import Results
-from .stream_results import stream_results
+    def append_result(self, bus: str, result: QProgramMeasurementResult):
+        if bus not in self.results:
+            self.results[bus] = []
+        self.results[bus].append(result)

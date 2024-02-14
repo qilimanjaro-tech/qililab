@@ -350,10 +350,10 @@ class TestMethods:
             patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
             patch.object(QbloxModule, "desync_sequencers") as desync,
         ):
-            acquire_qprogram_results.return_value = 123
+            acquire_qprogram_results.return_value = [123]
             first_execution_results = platform.execute_qprogram(qprogram=qprogram)
 
-            acquire_qprogram_results.return_value = 456
+            acquire_qprogram_results.return_value = [456]
             second_execution_results = platform.execute_qprogram(qprogram=qprogram)
 
             _ = platform.execute_qprogram(qprogram=qprogram, debug=True)
@@ -365,8 +365,8 @@ class TestMethods:
         assert run.call_count == 6
         assert acquire_qprogram_results.call_count == 3  # only readout buses
         assert desync.call_count == 9
-        assert first_execution_results == {"feedline_input_output_bus": 123}
-        assert second_execution_results == {"feedline_input_output_bus": 456}
+        assert first_execution_results.results["feedline_input_output_bus"] == [123]
+        assert second_execution_results.results["feedline_input_output_bus"] == [456]
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -411,17 +411,17 @@ class TestMethods:
         assert run_compiled_program.call_count == 3
         assert get_acquisitions.call_count == 3
 
-        assert "readout_q0_rf" in first_execution_results
-        assert len(first_execution_results["readout_q0_rf"]) == 1
-        assert isinstance(first_execution_results["readout_q0_rf"][0], QuantumMachinesMeasurementResult)
-        np.testing.assert_array_equal(first_execution_results["readout_q0_rf"][0].I, np.array([1, 2, 3]))
-        np.testing.assert_array_equal(first_execution_results["readout_q0_rf"][0].Q, np.array([4, 5, 6]))
+        assert "readout_q0_rf" in first_execution_results.results
+        assert len(first_execution_results.results["readout_q0_rf"]) == 1
+        assert isinstance(first_execution_results.results["readout_q0_rf"][0], QuantumMachinesMeasurementResult)
+        np.testing.assert_array_equal(first_execution_results.results["readout_q0_rf"][0].I, np.array([1, 2, 3]))
+        np.testing.assert_array_equal(first_execution_results.results["readout_q0_rf"][0].Q, np.array([4, 5, 6]))
 
-        assert "readout_q0_rf" in second_execution_results
-        assert len(second_execution_results["readout_q0_rf"]) == 1
-        assert isinstance(second_execution_results["readout_q0_rf"][0], QuantumMachinesMeasurementResult)
-        np.testing.assert_array_equal(second_execution_results["readout_q0_rf"][0].I, np.array([3, 2, 1]))
-        np.testing.assert_array_equal(second_execution_results["readout_q0_rf"][0].Q, np.array([6, 5, 4]))
+        assert "readout_q0_rf" in second_execution_results.results
+        assert len(second_execution_results.results["readout_q0_rf"]) == 1
+        assert isinstance(second_execution_results.results["readout_q0_rf"][0], QuantumMachinesMeasurementResult)
+        np.testing.assert_array_equal(second_execution_results.results["readout_q0_rf"][0].I, np.array([3, 2, 1]))
+        np.testing.assert_array_equal(second_execution_results.results["readout_q0_rf"][0].Q, np.array([6, 5, 4]))
 
         # assure only one debug was called
         assert patched_open.call_count == 1
