@@ -19,6 +19,7 @@ import re
 from copy import deepcopy
 from dataclasses import asdict
 from queue import Queue
+from typing import Any
 
 from qibo.gates import M
 from qibo.models import Circuit
@@ -574,9 +575,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         buses_dict = {RUNCARD.BUSES: self.buses.to_dict() if self.buses is not None else None}
         instrument_dict = {RUNCARD.INSTRUMENTS: self.instruments.to_dict() if self.instruments is not None else None}
         instrument_controllers_dict = {
-            RUNCARD.INSTRUMENT_CONTROLLERS: self.instrument_controllers.to_dict()
-            if self.instrument_controllers is not None
-            else None,
+            RUNCARD.INSTRUMENT_CONTROLLERS: (
+                self.instrument_controllers.to_dict() if self.instrument_controllers is not None else None
+            ),
         }
 
         return (
@@ -708,7 +709,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
     def execute(
         self,
-        program: PulseSchedule | Circuit,
+        program: Any | PulseSchedule | Circuit,
         num_avg: int,
         repetition_duration: int,
         num_bins: int = 1,
@@ -737,6 +738,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
                 - Scope acquisition disabled: An array with dimension `(#sequencers, 2, #bins)`.
         """
+        # Translate language (QASM, Qiskit and Pennylane) into Qibo circuits
+        program = self._translate_language(program=program)
+
         # Compile pulse schedule
         programs = self.compile(program, num_avg, repetition_duration, num_bins)
 
@@ -769,6 +773,49 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         # FIXME: set multiple readout buses
         return results[0]
+
+    def _translate_language(self, program: Any) -> PulseSchedule | Circuit:
+        """Translates Pennylane, Qiskit and QASML programs into Qibo circuits.
+
+        Args:
+            program (Any): Program to translate.
+
+        Raises:
+            ValueError: If the program cannot be translated into a Qibo circuit.
+
+        Returns:
+            PulseSchedule | Circuit: Translated program.
+        """
+        if isinstance(program, PulseSchedule | Circuit):
+            return program
+        if isinstance(program, str):
+            return self._build_from_qasm(program=program)
+        try:  # Qiskit
+            qasm_program = program.qasm()
+        except Exception:  # TODO: specify exception
+            try:  # Pennylane
+                qasm_program = program.device("default.qubit")._circuit.qasm(formatted=True)
+            except Exception as exc:
+                raise ValueError("Could not translate the given program, into a QASM/str representation.") from exc
+
+        return self._build_from_qasm(program=qasm_program)
+
+    def _build_from_qasm(self, program: str) -> Circuit:
+        """Builds a Qibo circuit from a QASM/str representation.
+
+        Args:
+            program (str): QASM/str representation of the program.
+
+        Raises:
+            ValueError: If the program cannot be translated into a Circuit.
+
+        Returns:
+            Circuit: Translated circuit.
+        """
+        try:
+            return Circuit.from_qasm(program)
+        except Exception as exc:
+            raise ValueError("Could not translate the given program QASM/str representation, into a Circuit.") from exc
 
     def _order_result(self, result: Result, circuit: Circuit) -> Result:
         """Order the results of the execution as they are ordered in the input circuit.
