@@ -1,4 +1,5 @@
 """Tests for the Platform class."""
+
 import copy
 import io
 import re
@@ -539,10 +540,23 @@ class TestMethods:
         with pytest.raises(
             ValueError,
             match=re.escape(
-                f"Program to execute can only be either a single circuit or a pulse schedule. Got program of type {type(program)} instead"
+                f"Could not translate the given program, into a QASM/str representation. Got program of type {type(program)}."
             ),
         ):
             platform.execute(program=program, num_avg=1000, repetition_duration=2000, num_bins=1)
+
+    def test_compile_raises_error_if_program_type_wrong(self, platform: Platform):
+        """Test that `Platform.compile` raises an error if the program sent is not a Circuit or a PulseSchedule."""
+        c = Circuit(1)
+        c.add(gates.M(0))
+        program = [c, c]
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                f"Program to execute can only be either a single circuit or a pulse schedule. Got program of type {type(program)} instead"
+            ),
+        ):
+            platform.compile(program=program, num_avg=1000, repetition_duration=2000, num_bins=1)
 
     @pytest.mark.parametrize("parameter", [Parameter.AMPLITUDE, Parameter.DURATION, Parameter.PHASE])
     @pytest.mark.parametrize("gate", ["I(0)", "X(0)", "Y(0)"])

@@ -796,7 +796,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             try:  # Pennylane
                 qasm_program = program.device("default.qubit")._circuit.qasm(formatted=True)
             except Exception as exc:
-                raise ValueError("Could not translate the given program, into a QASM/str representation.") from exc
+                raise ValueError(
+                    f"Could not translate the given program, into a QASM/str representation. Got program of type {type(program)}."
+                ) from exc
 
         return self._build_from_qasm(program=qasm_program)
 
@@ -815,7 +817,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         try:
             return Circuit.from_qasm(program)
         except Exception as exc:
-            raise ValueError("Could not translate the given program QASM/str representation, into a Circuit.") from exc
+            raise ValueError(
+                f"Could not translate the given program QASM/str representation, into a Circuit. Got program of type {type(program)}."
+            ) from exc
 
     def _order_result(self, result: Result, circuit: Circuit) -> Result:
         """Order the results of the execution as they are ordered in the input circuit.
