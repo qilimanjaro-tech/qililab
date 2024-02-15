@@ -24,7 +24,7 @@ from .waveform import Waveform
 # pylint: disable=anomalous-backslash-in-string
 class SNZ(Waveform):  # pylint: disable=too-few-public-methods
     """Sudden Net Zero
-    
+
     Args:
         amplitude (float): Maximum amplitude of the pulse.
         duration (int): Duration of the pulse (ns). Duration - t_phi must be an even number
@@ -40,7 +40,7 @@ class SNZ(Waveform):  # pylint: disable=too-few-public-methods
         self.duration = duration
         self.b = b
         self.t_phi = 1
-    
+
     def envelope(self, resolution: int = 1) -> np.ndarray:
         """Constant amplitude envelope.
 

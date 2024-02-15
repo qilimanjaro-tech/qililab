@@ -27,16 +27,13 @@ from qililab.utils import Factory
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class Depletion(PulseShape):
-    """TODO: write docs
-
-    """
+    """TODO: write docs"""
 
     name = PulseShapeName.DEPLETION  #: Name of the drag pulse shape.
 
-
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0) -> np.ndarray:
         """TODO: add docs
-        
+
         Args:
             duration (int): Duration of the pulse (ns).
             amplitude (float): Maximum amplitude of the pulse.
@@ -47,7 +44,6 @@ class Depletion(PulseShape):
         """
 
         return (1 + 1j) * amplitude * np.ones(round(duration / resolution))
-
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "Depletion":

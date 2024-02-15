@@ -74,9 +74,8 @@ class Wait(ParametrizedGate):
         self.parameters = t
         self.init_args = [q]
         self.init_kwargs = {"t": t}
-        
-        
-        
+
+
 class Depletion(_Un_):
     """
     Args:
