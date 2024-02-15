@@ -74,3 +74,22 @@ class Wait(ParametrizedGate):
         self.parameters = t
         self.init_args = [q]
         self.init_kwargs = {"t": t}
+        
+        
+        
+class Depletion(_Un_):
+    """
+    Args:
+        q (int): qubit where the gate is applied
+        phase (float): phase of  the Drag pulse
+        trainable (bool): whether parameters are trainable (set to false)
+    """
+
+    def __init__(self, q: int, phase: float, trainable: bool = True):
+        super().__init__(q, trainable=trainable)
+        self.name = "depletion"
+        self.nparams = 1
+        self._phi = None
+        self.init_kwargs = {"phase": phase, "trainable": trainable}
+        self.parameter_names = ["phase"]
+        self.parameters = phase
