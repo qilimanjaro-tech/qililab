@@ -558,6 +558,20 @@ class TestMethods:
         ):
             platform.compile(program=program, num_avg=1000, repetition_duration=2000, num_bins=1)
 
+    @pytest.mark.parametrize("program", [Circuit(1), Circuit(1).to_qasm(), "a"])
+    def test_translate_language(self, program, platform: Platform):
+        """Test that `Platform._translate_language` works for any problem."""
+        if program == "a":
+            with pytest.raises(
+                ValueError,
+                match=re.escape(
+                    f"Could not translate the given program QASM/str representation, into a Circuit. Got program of type {type(program)}."
+                ),
+            ):
+                platform._translate_language(program=program)  # pylint: disable=protected-access
+        else:
+            platform._translate_language(program=program)  # pylint: disable=protected-access
+
     @pytest.mark.parametrize("parameter", [Parameter.AMPLITUDE, Parameter.DURATION, Parameter.PHASE])
     @pytest.mark.parametrize("gate", ["I(0)", "X(0)", "Y(0)"])
     def test_get_parameter_of_gates(self, parameter, gate, platform: Platform):
