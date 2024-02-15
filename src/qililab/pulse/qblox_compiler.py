@@ -52,9 +52,9 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         self.qblox_modules = qblox_modules
         self.buses = gates_settings.buses
         # init variables as empty
-        self.nshots = None
-        self.num_bins = None
-        self.repetition_duration = None
+        self.nshots = 0
+        self.num_bins = 0
+        self.repetition_duration = 0
         self.readout_modules = [InstrumentName.QBLOX_QRM, InstrumentName.QRMRF]
         self.control_modules = [InstrumentName.QBLOX_QCM, InstrumentName.QCMRF]
 
@@ -364,6 +364,13 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
             dict[AWGQbloxSequencer, PulseBusSchedule]: dictionary of the pulse schedule (dict value) corresponding to a
             given sequencer (dict key)
         """
+
+        # instrument_and_sequencers = [
+        #     (instrument, sequencer)
+        #     for instrument in self.qblox_modules
+        #     for sequencer in instrument.awg_sequencers
+        # ]
+
         qrm_sequencers = [
             sequencer
             for instrument in self.qblox_modules

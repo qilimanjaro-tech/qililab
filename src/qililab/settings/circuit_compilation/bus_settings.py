@@ -35,7 +35,7 @@ class BusSettings:
     line: Line
     qubits: list[int]
     distortions: list[PulseDistortion]
-    delay: int = 0
+    delay: int
 
     def __post_init__(self):
         self.distortions = [

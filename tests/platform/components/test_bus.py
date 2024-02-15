@@ -4,22 +4,21 @@ from __future__ import annotations
 import re
 from types import NoneType
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, patch
 
 import pytest
 from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 
 from qililab.data_management import build_platform
 from qililab.exceptions import ParameterNotFound
-from qililab.typings.enums import Line, Parameter
+from qililab.typings.enums import Parameter
 from tests.data import SauronQDevil
 
-if TYPE_CHECKING:
-    from qililab.platform import Platform
+# if TYPE_CHECKING:
+#     from qililab.platform import Platform
 
 
 @pytest.fixture(name="platform")
-def fixture_platform() -> Platform:
+def fixture_platform():
     """Return platform"""
     return build_platform(runcard=SauronQDevil.runcard)
 
@@ -47,7 +46,7 @@ class TestBus:
             for element in bus:
                 assert not isinstance(element, (NoneType, str))
 
-    def test_print_bus(self, platform: Platform):
+    def test_print_bus(self, platform):
         """Test print bus."""
         for bus in platform.buses:
             instruments = "--".join(f"|{instrument}|" for instrument in bus.instruments)
@@ -71,18 +70,18 @@ class TestAcquireResults:
 class TestErrors:
     """Unit tests for the errors raised by the Bus class."""
 
-    def test_control_bus_raises_error_when_acquiring_results(self, platform: Platform):
+    def test_control_bus_raises_error_when_acquiring_results(self, platform):
         """Test that an error is raised when calling acquire_result with a drive bus."""
-        control_bus = [bus for bus in platform.buses if not bus.line == Line.READOUT][0]
+        control_bus = [bus for bus in platform.buses if not bus.has_adc()][0]
         with pytest.raises(
             AttributeError,
             match=f"The bus {control_bus.alias} cannot acquire results because it doesn't have a readout system control",
         ):
             control_bus.acquire_result()
 
-    def test_control_bus_raises_error_when_parameter_not_found(self, platform: Platform):
+    def test_control_bus_raises_error_when_parameter_not_found(self, platform):
         """Test that an error is raised when trying to set a parameter not found in bus parameters."""
-        control_bus = [bus for bus in platform.buses if not bus.line == Line.READOUT][0]
+        control_bus = [bus for bus in platform.buses if not bus.has_adc()][0]
         parameter = Parameter.GATE_OPTIONS
         error_string = re.escape(
             f"No parameter with name {parameter.value} was found in the bus with alias {control_bus.alias}"
@@ -90,9 +89,9 @@ class TestErrors:
         with pytest.raises(ParameterNotFound, match=error_string):
             control_bus.get_parameter(parameter=parameter)
 
-    def test_control_bus_raises_error_when_acquiring_qprogram_results(self, platform: Platform):
+    def test_control_bus_raises_error_when_acquiring_qprogram_results(self, platform):
         """Test that an error is raised when calling acquire_result with a drive bus."""
-        control_bus = [bus for bus in platform.buses if not bus.line == Line.READOUT][0]
+        control_bus = [bus for bus in platform.buses if not bus.has_adc()][0]
         with pytest.raises(
             AttributeError,
             match=f"The bus {control_bus.alias} cannot acquire results because it doesn't have a readout system control",

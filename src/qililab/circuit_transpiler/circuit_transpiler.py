@@ -199,7 +199,7 @@ class CircuitTranspiler:
                     if isinstance(gate, M):
                         gate = M(*gate.qubits[1:])
                     # add event
-                    delay = self.gates_settings.buses[gate.bus].delay
+                    delay = self.gates_settings.buses[gate_event.bus].delay
                     pulse_schedule.add_event(pulse_event=pulse_event, bus_alias=gate_event.bus, delay=delay)  # type: ignore
 
             for bus_alias in self.gates_settings.buses:

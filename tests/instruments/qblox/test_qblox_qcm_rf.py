@@ -7,7 +7,7 @@ from qblox_instruments.qcodes_drivers.cluster import Cluster
 from qblox_instruments.types import ClusterType
 
 from qililab.exceptions import ParameterNotFound
-from qililab.instruments.qblox import QbloxQCMRF
+from qililab.instruments.qblox.qblox_qcm_rf import QbloxQCMRF
 from qililab.typings import Parameter
 
 
@@ -30,7 +30,6 @@ def fixture_settings():
         "awg_sequencers": [
             {
                 "identifier": 0,
-                "bus_alias": "drive_q0",
                 "output_i": 0,
                 "output_q": 1,
                 "num_bins": 1,

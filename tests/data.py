@@ -46,8 +46,7 @@ class Galadriel:
         "gates": {
             "M(0)": [
                 {
-                    "bus": "feedline_input_output_bus",
-                    "channel": 0,
+                    "bus": "readout_line_q0_bus",
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -59,8 +58,7 @@ class Galadriel:
             ],
             "M(1)": [
                 {
-                    "bus": "feedline_input_output_bus",
-                    "channel": 1,
+                    "bus": "readout_line_q1_bus",
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -72,8 +70,7 @@ class Galadriel:
             ],
             "M(2)": [
                 {
-                    "bus": "feedline_input_output_bus_1",
-                    "channel": 0,
+                    "bus": "readout_line_q2_bus",
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -86,7 +83,6 @@ class Galadriel:
             "I(0)": [
                 {
                     "bus": "drive_line_q0_bus",
-                    "channel": 0,
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -99,7 +95,6 @@ class Galadriel:
             "Drag(0)": [
                 {
                     "bus": "drive_line_q0_bus",
-                    "channel": 0,
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -112,7 +107,6 @@ class Galadriel:
             "X(0)": [
                 {
                     "bus": "drive_line_q0_bus",
-                    "channel": 0,
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -125,7 +119,6 @@ class Galadriel:
             "Y(0)": [
                 {
                     "bus": "drive_line_q0_bus",
-                    "channel": 0,
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -138,7 +131,6 @@ class Galadriel:
             "RY(0)": [
                 {
                     "bus": "drive_line_q0_bus",
-                    "channel": 0,
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -151,7 +143,6 @@ class Galadriel:
             "RX(0)": [
                 {
                     "bus": "drive_line_q0_bus",
-                    "channel": 0,
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -164,7 +155,6 @@ class Galadriel:
             "CZ(0,1)": [
                 {
                     "bus": "flux_line_q1_bus",
-                    "channel": 0,
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -178,7 +168,6 @@ class Galadriel:
             "CZ(0, 2)": [
                 {
                     "bus": "flux_line_q0_bus",
-                    "channel": 0,
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -190,26 +179,11 @@ class Galadriel:
             ],
         },
         "buses": {
-            "drive_line_q0_bus": {
-                "line": Line.DRIVE,
-                "qubits": [0],
-                "distortions": [],
-            },
-            "flux_line_q0_bus": {
-                "line": Line.FLUX,
-                "qubits": [0],
-                "distortions": [],
-            },
-            "feedline_input_output_bus": {
-                "line": Line.READOUT,
-                "qubits": [0, 1],
-                "distortions": [],
-            },
-            "feedline_input_output_bus_1": {
-                "line": Line.READOUT,
-                "qubits": [2],
-                "distortions": [],
-            },
+            "drive_line_q0_bus": {"line": Line.DRIVE, "qubits": [0], "distortions": [], "delay": 0},
+            "flux_line_q0_bus": {"line": Line.FLUX, "qubits": [0], "distortions": [], "delay": 0},
+            "readout_line_q0_bus": {"line": Line.READOUT, "qubits": [0], "distortions": [], "delay": 0},
+            "readout_line_q1_bus": {"line": Line.READOUT, "qubits": [0], "distortions": [], "delay": 0},
+            "readout_line_q2_bus": {"line": Line.READOUT, "qubits": [2], "distortions": [], "delay": 0},
         },
     }
 
@@ -533,19 +507,24 @@ class Galadriel:
             "channels": [0, None],
         },
         {
-            "alias": "feedline_input_output_bus",
+            "alias": "readout_line_q0_bus",
             RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_0", "rs_1"],
-            "channels": [[0, 1], None],
+            "channels": [0, None],
         },
         {
-            "alias": "feedline_input_output_bus_1",
+            "alias": "readout_line_q1_bus",
+            RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_0", "rs_1"],
+            "channels": [1, None],
+        },
+        {
+            "alias": "readout_line_q2_bus",
             RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_1"],
-            "channels": [1],
+            "channels": [0],
         },
         {
             RUNCARD.ALIAS: "flux_line_q0_bus",
             RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
-            "channels": [0, None],
+            "channels": [1, None],
         },
     ]
 
@@ -556,31 +535,6 @@ class Galadriel:
         RUNCARD.BUSES: buses,
         RUNCARD.INSTRUMENTS: instruments,
         RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
-    }
-
-    qubit_0: dict[str, Any] = {
-        "name": "qubit",
-        "alias": "qubit",
-        "pi_pulse_amplitude": 1,
-        "pi_pulse_duration": 100,
-        "pi_pulse_frequency": 100000000.0,
-        "qubit_frequency": 3544000000.0,
-        "min_voltage": 950,
-        "max_voltage": 1775,
-    }
-
-    resonator_0: dict[str, Any] = {
-        "name": "resonator",
-        "qubits": [
-            {
-                "pi_pulse_amplitude": 1,
-                "pi_pulse_duration": 100,
-                "pi_pulse_frequency": 100000000.0,
-                "qubit_frequency": 3544000000.0,
-                "min_voltage": 950,
-                "max_voltage": 1775,
-            }
-        ],
     }
 
 
@@ -596,189 +550,6 @@ for platform in [Galadriel]:
     if platform == Galadriel:
         circuit.add(M(0))
     experiment_params.extend([[platform.runcard, circuit], [platform.runcard, [circuit, circuit]]])  # type: ignore
-
-results_two_loops: dict[str, Any] = {
-    EXPERIMENT.SOFTWARE_AVERAGE: 1,
-    EXPERIMENT.NUM_SCHEDULES: 1,
-    EXPERIMENT.SHAPE: [75, 100],
-    EXPERIMENT.LOOPS: [
-        {
-            "alias": "attenuator",
-            LOOP.PARAMETER: Parameter.ATTENUATION.value,
-            LOOP.VALUES: (np.arange(start=15, stop=90, step=1)).tolist(),
-            LOOP.CHANNEL_ID: None,
-            LOOP.LOOP: {
-                "alias": "rs_1",
-                LOOP.PARAMETER: "frequency",
-                LOOP.VALUES: (np.arange(start=7342000000, stop=7352000000, step=100000)).tolist(),
-                LOOP.LOOP: None,
-                LOOP.CHANNEL_ID: None,
-            },
-        },
-    ],
-    EXPERIMENT.RESULTS: [
-        {
-            "name": "qblox",
-            "integration_lengths": [8000],
-            "qblox_raw_results": [
-                {
-                    "scope": {
-                        "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
-                        "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
-                    },
-                    "bins": {
-                        "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-                        "threshold": [0],
-                        "avg_cnt": [1],
-                    },
-                    "qubit": 0,
-                    "measurement": 0,
-                }
-            ],
-        },
-        {
-            "name": "qblox",
-            "integration_lengths": [8000],
-            "qblox_raw_results": [
-                {
-                    "scope": {
-                        "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
-                        "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
-                    },
-                    "bins": {
-                        "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
-                        "threshold": [0],
-                        "avg_cnt": [1],
-                    },
-                    "qubit": 0,
-                    "measurement": 0,
-                }
-            ],
-        },
-    ],
-}
-
-results_one_loops: dict[str, Any] = {
-    EXPERIMENT.SOFTWARE_AVERAGE: 1,
-    EXPERIMENT.NUM_SCHEDULES: 1,
-    EXPERIMENT.SHAPE: [100],
-    EXPERIMENT.LOOPS: [
-        {
-            "alias": "rs_1",
-            LOOP.PARAMETER: "frequency",
-            LOOP.VALUES: (np.arange(start=7342000000, stop=7352000000, step=100000)).tolist(),
-            LOOP.LOOP: None,
-            LOOP.CHANNEL_ID: None,
-        }
-    ],
-    EXPERIMENT.RESULTS: [
-        {
-            "name": "qblox",
-            "integration_lengths": [8000],
-            "qblox_raw_results": [
-                {
-                    "scope": {
-                        "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
-                        "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
-                    },
-                    "bins": {
-                        "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-                        "threshold": [0],
-                        "avg_cnt": [1],
-                    },
-                    "qubit": 1,
-                    "measurement": 0,
-                }
-            ],
-        },
-        {
-            "name": "qblox",
-            "integration_lengths": [8000],
-            "qblox_raw_results": [
-                {
-                    "scope": {
-                        "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
-                        "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
-                    },
-                    "bins": {
-                        "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
-                        "threshold": [0],
-                        "avg_cnt": [1],
-                    },
-                    "qubit": 1,
-                    "measurement": 0,
-                }
-            ],
-        },
-    ],
-}
-
-results_one_loops_empty: dict[str, Any] = {
-    EXPERIMENT.SOFTWARE_AVERAGE: 1,
-    EXPERIMENT.NUM_SCHEDULES: 1,
-    EXPERIMENT.SHAPE: [100],
-    EXPERIMENT.LOOPS: [
-        {
-            "alias": "rs_1",
-            LOOP.PARAMETER: "frequency",
-            LOOP.VALUES: np.arange(start=7342000000, stop=7352000000, step=100000),
-            LOOP.LOOP: None,
-        }
-    ],
-    EXPERIMENT.RESULTS: [],
-}
-
-experiment: dict[str, Any] = {
-    RUNCARD.PLATFORM: Galadriel.runcard,
-    EXPERIMENT.OPTIONS: {
-        EXPERIMENT.LOOPS: [
-            {
-                "alias": "qblox_qrm",
-                LOOP.PARAMETER: Parameter.GAIN.value,
-                LOOP.VALUES: np.arange(start=0.1, stop=1, step=0.3),
-                LOOP.CHANNEL_ID: 0,
-                LOOP.LOOP: {
-                    "alias": "attenuator",
-                    LOOP.PARAMETER: Parameter.ATTENUATION.value,
-                    LOOP.VALUES: np.arange(start=15, stop=90, step=1),
-                    LOOP.LOOP: {
-                        "alias": "rs_1",
-                        LOOP.PARAMETER: "frequency",
-                        LOOP.VALUES: np.arange(start=7342000000, stop=7352000000, step=100000),
-                        LOOP.LOOP: None,
-                    },
-                },
-            }
-        ],
-        RUNCARD.NAME: "punchout",
-        RUNCARD.GATES_SETTINGS: {
-            EXPERIMENT.HARDWARE_AVERAGE: 1024,
-            EXPERIMENT.SOFTWARE_AVERAGE: 1,
-            EXPERIMENT.REPETITION_DURATION: 200000,
-        },
-    },
-    EXPERIMENT.PULSE_SCHEDULES: [
-        {
-            PULSESCHEDULES.ELEMENTS: [
-                {
-                    PULSEBUSSCHEDULE.TIMELINE: [
-                        {
-                            PULSEEVENT.PULSE: {
-                                PULSE.AMPLITUDE: 1,
-                                PULSE.FREQUENCY: 1e9,
-                                PULSE.PHASE: 0,
-                                PULSE.DURATION: 2000,
-                                PULSE.PULSE_SHAPE: {"name": PulseShapeName.RECTANGULAR.value},
-                            },
-                            PULSEEVENT.START_TIME: 40,
-                        }
-                    ],
-                    "bus_alias": "drive_q0",
-                }
-            ],
-        }
-    ],
-}
 
 
 class SauronVNA:

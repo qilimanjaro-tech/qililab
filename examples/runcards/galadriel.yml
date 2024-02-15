@@ -7,8 +7,7 @@ gates_settings:
   delay_before_readout: 4
   gates:
     M(0):
-      - bus: feedline_bus # alias of the bus
-        channel: 0
+      - bus: readout_q0_bus # alias of the bus
         pulse:
           amplitude: 1.0
           phase: 0
@@ -16,8 +15,7 @@ gates_settings:
           shape:
             name: rectangular
     Drag(0):
-      - bus: drive_line_q0_bus
-        channel: 0
+      - bus: drive_q0_bus
         pulse:
           amplitude: 1.0
           phase: 0
@@ -27,8 +25,7 @@ gates_settings:
             num_sigmas: 4
             drag_coefficient: 0.0
     M(1):
-      - bus: feedline_bus # alias of the bus
-        channel: 1
+      - bus: readout_q1_bus # alias of the bus
         pulse:
           amplitude: 1.0
           phase: 0
@@ -36,8 +33,7 @@ gates_settings:
           shape:
             name: rectangular
     Drag(1):
-      - bus: drive_line_q1_bus
-        channel: 1
+      - bus: drive_q1_bus
         pulse:
           amplitude: 1.0
           phase: 0
@@ -47,8 +43,7 @@ gates_settings:
             num_sigmas: 4
             drag_coefficient: 0.0
     M(2):
-      - bus: feedline_bus # alias of the bus
-        channel: 2
+      - bus: readout_q2_bus # alias of the bus
         pulse:
           amplitude: 1.0
           phase: 0
@@ -56,8 +51,7 @@ gates_settings:
           shape:
             name: rectangular
     Drag(2):
-      - bus: drive_line_q2_bus
-        channel: 2
+      - bus: drive_q2_bus
         pulse:
           amplitude: 1.0
           phase: 0
@@ -67,8 +61,7 @@ gates_settings:
             num_sigmas: 4
             drag_coefficient: 0.0
     M(3):
-      - bus: feedline_bus # alias of the bus
-        channel: 3
+      - bus: readout_q3_bus # alias of the bus
         pulse:
           amplitude: 1.0
           phase: 0
@@ -76,8 +69,7 @@ gates_settings:
           shape:
             name: rectangular
     Drag(3):
-      - bus: drive_line_q3_bus
-        channel: 3
+      - bus: drive_q3_bus
         pulse:
           amplitude: 1.0
           phase: 0
@@ -87,8 +79,7 @@ gates_settings:
             num_sigmas: 4
             drag_coefficient: 0.0
     M(4):
-      - bus: feedline_bus # alias of the bus
-        channel: 4
+      - bus: readout_q4_bus # alias of the bus
         pulse:
           amplitude: 1.0
           phase: 0
@@ -96,8 +87,7 @@ gates_settings:
           shape:
             name: rectangular
     Drag(4):
-      - bus: drive_line_q4_bus
-        channel: 4
+      - bus: drive_q4_bus
         pulse:
           amplitude: 1.0
           phase: 0
@@ -107,8 +97,7 @@ gates_settings:
             num_sigmas: 4
             drag_coefficient: 0.0
     CZ(0,2):
-      - bus: flux_line_q2_bus
-        channel: 2
+      - bus: flux_q2_bus
         pulse:
           amplitude: 1.0
           phase: 0
@@ -120,8 +109,7 @@ gates_settings:
           options:
             q0_phase_correction: 0.1
             q2_phase_correction: 0.2
-      - bus: flux_line_q1_bus # park pulse
-        channel: 2
+      - bus: flux_q1_bus # park pulse
         wait_time: 20
         pulse:
           amplitude: 1.0
@@ -130,8 +118,7 @@ gates_settings:
           shape:
             name: rectangular
     CZ(1,2):
-      - bus: flux_line_q2_bus
-        channel: 2
+      - bus: flux_q2_bus
         pulse:
           amplitude: 1.0
           phase: 0
@@ -140,8 +127,7 @@ gates_settings:
             name: snz
             t_phi: 1
             b: 0.5
-      - bus: flux_line_q0_bus # park pulse
-        channel: 2
+      - bus: flux_q0_bus # park pulse
         wait_time: 20
         pulse:
           amplitude: 1.0
@@ -150,8 +136,7 @@ gates_settings:
           shape:
             name: rectangular
     CZ(4,2):
-      - bus: flux_line_q4_bus
-        channel: 2
+      - bus: flux_q4_bus
         pulse:
           amplitude: 1.0
           phase: 0
@@ -161,8 +146,7 @@ gates_settings:
             t_phi: 1
             b: 0.5
     CZ(3,2):
-      - bus: flux_line_q3_bus
-        channel: 2
+      - bus: flux_q3_bus
         pulse:
           amplitude: 1.0
           phase: 0
@@ -172,84 +156,126 @@ gates_settings:
             t_phi: 1
             b: 0.5
   buses:
-    feedline_bus:
+    readout_q0_bus:
       line: readout
-      qubits: [0, 1, 2, 3, 4]
+      qubits: [0]
       distortions: []
-    drive_line_q0_bus:
+      delay: 0
+    readout_q1_bus:
+      line: readout
+      qubits: [0]
+      distortions: []
+      delay: 0
+    readout_q2_bus:
+      line: readout
+      qubits: [0]
+      distortions: []
+      delay: 0
+    readout_q3_bus:
+      line: readout
+      qubits: [0]
+      distortions: []
+      delay: 0
+    readout_q4_bus:
+      line: readout
+      qubits: [0]
+      distortions: []
+      delay: 0
+    drive_q0_bus:
       line: drive
       qubits: [0]
       distortions: []
       delay: 0
-    drive_line_q1_bus:
+    drive_q1_bus:
       line: drive
       qubits: [1]
       distortions: []
-    drive_line_q2_bus:
+      delay: 0
+    drive_q2_bus:
       line: drive
       qubits: [2]
       distortions: []
-    drive_line_q3_bus:
+      delay: 0
+    drive_q3_bus:
       line: drive
       qubits: [3]
       distortions: []
-    drive_line_q4_bus:
+      delay: 0
+    drive_q4_bus:
       line: drive
       qubits: [4]
       distortions: []
-    flux_line_q0_bus:
+      delay: 0
+    flux_q0_bus:
       line: flux
       qubits: [0]
       distortions: []
-    flux_line_q1_bus:
+      delay: 0
+    flux_q1_bus:
       line: flux
       qubits: [1]
       distortions: []
-    flux_line_q2_bus:
+      delay: 0
+    flux_q2_bus:
       line: flux
       qubits: [2]
       distortions: []
-    flux_line_q3_bus:
+      delay: 0
+    flux_q3_bus:
       line: flux
       qubits: [3]
       distortions: []
-    flux_line_q4_bus:
+      delay: 0
+    flux_q4_bus:
       line: flux
       qubits: [4]
       distortions: []
+      delay: 0
 
 buses:
-  - alias: feedline_bus
+  - alias: readout_q0_bus
     instruments: [QRM1, rs_1]
-    channels: [[0, 1, 2, 3, 4], None]
-  - alias: drive_line_q0_bus
+    channels: [0, None]
+  - alias: readout_q1_bus
+    instruments: [QRM1, rs_1]
+    channels: [0, None]
+  - alias: readout_q2_bus
+    instruments: [QRM1, rs_1]
+    channels: [0, None]
+  - alias: readout_q3_bus
+    instruments: [QRM1, rs_1]
+    channels: [0, None]
+  - alias: readout_q4_bus
+    instruments: [QRM1, rs_1]
+    channels: [0, None]
+  - alias: drive_q0_bus
     instruments: [QCM-RF1]
     channels: [0]
-  - alias: flux_line_q0_bus
+  - alias: flux_q0_bus
     instruments: [QCM1]
     channels: [0]
-  - alias: drive_line_q1_bus
+  - alias: drive_q1_bus
     instruments: [QCM-RF1]
     channels: [1]
-  - alias: flux_line_q1_bus
+  - alias: flux_q1_bus
     instruments: [QCM1]
     channels: [1]
-  - alias: drive_line_q2_bus
+  - alias: drive_q2_bus
     instruments: [QCM-RF2]
     channels: [0]
-  - alias: flux_line_q2_bus
+  - alias: flux_q2_bus
     instruments: [QCM2]
     channels: [0]
-  - alias: drive_line_q3_bus
+  - alias: drive_q3_bus
     instruments: [QCM-RF3]
     channels: [0]
-  - alias: flux_line_q3_bus
+  - alias: flux_q3_bus
     instruments: [QCM1]
     channels: [2]
-  - alias: drive_line_q4_bus
+  - alias: drive_q4_bus
     instruments: [QCM-RF3]
     channels: [0]
-  - alias: flux_line_q4_bus
+  - alias: flux_q4_bus
     instruments: [QCM1]
     channels: [3]
 

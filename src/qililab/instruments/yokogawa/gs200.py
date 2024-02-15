@@ -219,6 +219,10 @@ class GS200(CurrentSource, VoltageSource):
         """Stop outputing current."""
         self.device.off()
 
+    @check_device_initialized
+    def reset(self):
+        """Reset instrument settings."""
+
     def __source_mode_to_qcodes_str(self, source_mode: SourceMode) -> str:
         mapping = {SourceMode.CURRENT: "CURR", SourceMode.VOLTAGE: "VOLT"}
         return mapping[source_mode]

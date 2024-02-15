@@ -51,7 +51,6 @@ class GateEventSettings:
         options: Optional[dict] = None
 
     bus: str
-    channel: int | str | None
     pulse: GatePulseSettings
     wait_time: int = 0
 

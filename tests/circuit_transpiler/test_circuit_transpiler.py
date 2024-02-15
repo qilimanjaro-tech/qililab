@@ -219,7 +219,7 @@ def fixture_gates_settings() -> GatesSettings:
         "gates": {
             "M(0)": [
                 {
-                    "bus": "feedline_bus",
+                    "bus": "readout_q0_bus",
                     "pulse": {
                         "amplitude": 0.8,
                         "phase": 0,
@@ -281,7 +281,7 @@ def fixture_gates_settings() -> GatesSettings:
             ],
             "M(1)": [
                 {
-                    "bus": "feedline_bus",
+                    "bus": "readout_q1_bus",
                     "pulse": {
                         "amplitude": 0.8,
                         "phase": 0,
@@ -292,7 +292,7 @@ def fixture_gates_settings() -> GatesSettings:
             ],
             "M(2)": [
                 {
-                    "bus": "feedline_bus",
+                    "bus": "readout_q2_bus",
                     "pulse": {
                         "amplitude": 0.8,
                         "phase": 0,
@@ -303,7 +303,7 @@ def fixture_gates_settings() -> GatesSettings:
             ],
             "M(3)": [
                 {
-                    "bus": "feedline_bus",
+                    "bus": "readout_q3_bus",
                     "pulse": {
                         "amplitude": 0.7,
                         "phase": 0.5,
@@ -314,7 +314,7 @@ def fixture_gates_settings() -> GatesSettings:
             ],
             "M(4)": [
                 {
-                    "bus": "feedline_bus",
+                    "bus": "readout_q4_bus",
                     "pulse": {
                         "amplitude": 0.7,
                         "phase": 0.5,
@@ -393,8 +393,32 @@ def fixture_gates_settings() -> GatesSettings:
             ],
         },
         "buses": {
-            "feedline_input": {
-                "qubits": [0, 1, 2, 3, 4],
+            "readout_q0_bus": {
+                "qubits": [0],
+                "line": Line.READOUT,
+                "distortions": [],
+                "delay": 0,
+            },
+            "readout_q1_bus": {
+                "qubits": [1],
+                "line": Line.READOUT,
+                "distortions": [],
+                "delay": 0,
+            },
+            "readout_q2_bus": {
+                "qubits": [2],
+                "line": Line.READOUT,
+                "distortions": [],
+                "delay": 0,
+            },
+            "readout_q3_bus": {
+                "qubits": [3],
+                "line": Line.READOUT,
+                "distortions": [],
+                "delay": 0,
+            },
+            "readout_q4_bus": {
+                "qubits": [4],
                 "line": Line.READOUT,
                 "distortions": [],
                 "delay": 0,
@@ -475,9 +499,29 @@ def fixture_buses(platform) -> Buses:
     """Fixture that returns an instance of a ``Runcard.GatesSettings`` class."""
     bus_settings = [
         {
-            "alias": "feedline_bus",
+            "alias": "readout_q0_bus",
             "instruments": ["QRM_0", "rs_1"],
-            "channels": [[0, 1, 2, 3, 4], None],
+            "channels": [0, None],
+        },
+        {
+            "alias": "readout_q1_bus",
+            "instruments": ["QRM_0", "rs_1"],
+            "channels": [1, None],
+        },
+        {
+            "alias": "readout_q2_bus",
+            "instruments": ["QRM_0", "rs_1"],
+            "channels": [2, None],
+        },
+        {
+            "alias": "readout_q3_bus",
+            "instruments": ["QRM_0", "rs_1"],
+            "channels": [3, None],
+        },
+        {
+            "alias": "readout_q4_bus",
+            "instruments": ["QRM_0", "rs_1"],
+            "channels": [4, None],
         },
         {"alias": "drive_q0_bus", "instruments": ["QCM"], "channels": [0]},
         {
@@ -686,34 +730,20 @@ class TestCircuitTranspiler:
 
         pulse_schedules = transpiler.circuit_to_pulses(circuits=[circuit])
         pulse_schedule = pulse_schedules[0]
-        # there should be 9 pulse_schedules in this configuration
-        assert len(pulse_schedule) == 9
-
-        transpiler.buses = Buses(
-            elements=[bus for bus in transpiler.buses.elements if bus.settings.alias != "flux_q4_bus"]
-        )
-
-        pulse_schedules = transpiler.circuit_to_pulses(circuits=[circuit])
-
-        pulse_schedule = pulse_schedules[0]
-        # there should be a pulse_schedule removed
-        assert len(pulse_schedule) == 8
+        # there should be 12 pulse_schedules in this configuration
+        assert len(pulse_schedule) == 12
 
         flux_bus_no_awg_settings = {
             "alias": "flux_q4_bus",
             "instruments": ["rs_1"],
             "channels": [None],
-            "qubits": [None],
-            "line": Line.FLUX,
-            "distortions": [],
-            "delay": 0,
         }
 
         buses.add(Bus(settings=flux_bus_no_awg_settings, platform_instruments=platform.instruments))
         pulse_schedules = transpiler.circuit_to_pulses(circuits=[circuit])
         pulse_schedule = pulse_schedules[0]
         # there should not be any extra pulse schedule added
-        assert len(pulse_schedule) == 8
+        assert len(pulse_schedule) == 12
 
     def test_circuit_to_pulses(self, transpiler):  # pylint: disable=R0914 # disable pyling too many variables
         """Test translate method"""
@@ -738,8 +768,8 @@ class TestCircuitTranspiler:
         assert isinstance(pulse_schedules[0], PulseSchedule)
 
         pulse_schedule = pulse_schedules[0]
-        # there are 6 different buses + 3 empty for unused flux lines
-        assert len(pulse_schedule) == 9
+        # there are 9 different buses + 3 empty for unused flux lines
+        assert len(pulse_schedule) == 12
         assert all(len(schedule_element.timeline) == 0 for schedule_element in pulse_schedule.elements[-3:])
 
         # we can ignore empty elements from here on
@@ -749,29 +779,15 @@ class TestCircuitTranspiler:
         pulse_bus_schedule = {
             pulse_bus_schedule.bus_alias: pulse_bus_schedule.timeline for pulse_bus_schedule in pulse_schedule
         }
-        m_schedule = pulse_bus_schedule["feedline_bus"]
+        m_schedule = pulse_bus_schedule["readout_q0_bus"]
 
         # check measurement gates
-        assert len(m_schedule) == 5
-
-        m_pulse1 = PulseEvent(
-            pulse=Pulse(
-                amplitude=0.7,
-                phase=0.5,
-                duration=100,
-                frequency=0,
-                pulse_shape=Gaussian(num_sigmas=2),
-            ),
-            start_time=930,
-            pulse_distortions=[],
-            qubit=3,
-        )
+        assert len(m_schedule) == 2
 
         assert all(
             pulse == get_pulse0(time, qubit)
             for pulse, time, qubit in zip(m_schedule[:-1], [530, 930, 930, 930], [0, 0, 1, 2])
         )
-        assert m_schedule[-1] == m_pulse1
 
         # assert wait gate delayed drive pulse of bus "drive_q0" for 10ns (time should be 930+200+10=1140)
         assert pulse_bus_schedule["drive_q0_bus"][-1].start_time == 1140

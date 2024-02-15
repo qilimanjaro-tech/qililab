@@ -11,7 +11,6 @@ def fixture_schedule() -> list[dict]:
     return [
         {
             "bus": "drive_line_q0_bus",
-            "channel": 0,
             "pulse": {
                 "amplitude": 0.8,
                 "phase": 0,
@@ -21,7 +20,6 @@ def fixture_schedule() -> list[dict]:
         },
         {
             "bus": "flux_line_q0_bus",
-            "channel": 0,
             "wait_time": 30,
             "pulse": {
                 "amplitude": 0.8,
@@ -33,7 +31,6 @@ def fixture_schedule() -> list[dict]:
         },
         {
             "bus": "drive_line_q0_bus",
-            "channel": 0,
             "pulse": {
                 "amplitude": 0.8,
                 "phase": 0,

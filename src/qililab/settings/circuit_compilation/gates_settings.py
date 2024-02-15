@@ -7,6 +7,7 @@ from qililab.settings.circuit_compilation.bus_settings import BusSettings
 from qililab.settings.circuit_compilation.gate_event_settings import GateEventSettings
 from qililab.settings.settings import Settings
 from qililab.typings.enums import Parameter
+from qililab.utils.asdict_factory import dict_factory
 
 
 @dataclass
@@ -33,7 +34,7 @@ class GatesSettings(Settings):
                 data = [remove_none_values(item) for item in data if item is not None]
             return data
 
-        return remove_none_values(data=asdict(self))
+        return remove_none_values(data=asdict(self, dict_factory=dict_factory))
 
     def get_gate(self, name: str, qubits: int | tuple[int, int] | tuple[int]):
         """Get gates settings from runcard for a given gate name and qubits.

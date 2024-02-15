@@ -57,7 +57,7 @@ class Bus:
 
         alias: str
         instruments: list[Instrument]
-        channels: list[int | str | list[int | str] | None]
+        channels: list[int | str | None]
         platform_instruments: InitVar[Instruments]
 
         def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
@@ -97,7 +97,7 @@ class Bus:
         return self.settings.instruments
 
     @property
-    def channels(self) -> list[int | str | list[int | str] | None]:
+    def channels(self) -> list[int | str | None]:
         """Instruments controlled by this system control."""
         return self.settings.channels
 
@@ -142,17 +142,14 @@ class Bus:
             value (int | float | str | bool): value to update
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
-        for instrument, instrument_channels in zip(self.instruments, self.channels):
+        for instrument, instrument_channel in zip(self.instruments, self.channels):
             with contextlib.suppress(ParameterNotFound):
-                if channel_id is not None:
+                if channel_id is not None and channel_id == instrument_channel:
                     instrument.set_parameter(parameter, value, channel_id)
                     return
-                if instrument_channels is None or isinstance(instrument_channels, (int, str)):
-                    instrument.set_parameter(parameter, value, instrument_channels)
+                else:
+                    instrument.set_parameter(parameter, value, instrument_channel)
                     return
-                for channel in instrument_channels:
-                    instrument.set_parameter(parameter, value, channel)
-                return
         raise ParameterNotFound(
             f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
         )
@@ -165,30 +162,26 @@ class Bus:
             value (int | float | str | bool): value to update
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
-        for instrument, channel_ids in zip(self.instruments, self.channels):
+        for instrument, instrument_channel in zip(self.instruments, self.channels):
             with contextlib.suppress(ParameterNotFound):
-                if channel_ids is None or channel_id is None:
-                    return instrument.get_parameter(parameter)
-                return instrument.get_parameter(
-                    parameter, channel_id
-                )  # TODO: Change this to get parameters from multiple channels
+                if channel_id is not None and channel_id == instrument_channel:
+                    return instrument.get_parameter(parameter, channel_id)
+                else:
+                    return instrument.get_parameter(parameter, instrument_channel)
         raise ParameterNotFound(
             f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
         )
 
     def upload_qpysequence(self, qpysequence: QpySequence, channel_id: int | str | None = None):
         """Uploads the qpysequence into the instrument."""
-        for instrument, instrument_channels in zip(self.instruments, self.channels):
+        for instrument, instrument_channel in zip(self.instruments, self.channels):
             if isinstance(instrument, QbloxModule):
-                if channel_id is not None:
+                if channel_id is not None and channel_id == instrument_channel:
                     instrument.upload_qpysequence(qpysequence=qpysequence, channel_id=channel_id)
                     return
-                if instrument_channels is None or isinstance(instrument_channels, (int, str)):
-                    instrument.upload_qpysequence(qpysequence=qpysequence, channel_id=instrument_channels)
+                else:
+                    instrument.upload_qpysequence(qpysequence=qpysequence, channel_id=instrument_channel)
                     return
-                for channel in instrument_channels:
-                    instrument.upload_qpysequence(qpysequence=qpysequence, channel_id=channel)
-                return
 
         raise AttributeError(f"Bus {self.alias} doesn't have any QbloxModule to upload a qpysequence.")
 
@@ -196,26 +189,18 @@ class Bus:
         """Uploads any previously compiled program into the instrument."""
         from qililab.instruments.awg import AWG
 
-        for instrument, instrument_channels in zip(self.instruments, self.channels):
+        for instrument, instrument_channel in zip(self.instruments, self.channels):
             if isinstance(instrument, AWG):
-                if instrument_channels is None:
-                    instrument.upload(channel_id=None)
-                    return
-                for channel_id in instrument_channels:
-                    instrument.upload(channel_id=channel_id)
+                instrument.upload(instrument_channel)
                 return
 
     def run(self) -> None:
         """Runs any previously uploaded program into the instrument."""
         from qililab.instruments.awg import AWG
 
-        for instrument, instrument_channels in zip(self.instruments, self.channels):
+        for instrument, instrument_channel in zip(self.instruments, self.channels):
             if isinstance(instrument, AWG):
-                if instrument_channels is None or isinstance(instrument_channels, (int, str)):
-                    instrument.run(channel_id=instrument_channels)
-                    return
-                for channel_id in instrument_channels:
-                    instrument.run(channel_id=channel_id)
+                instrument.run(channel_id=instrument_channel)
                 return
 
     def acquire_result(self) -> Result:

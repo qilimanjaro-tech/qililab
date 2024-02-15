@@ -15,4 +15,4 @@ class BusSettings:
 
     alias: str
     instruments: list[str]
-    channels: list[int | str | list[int | str] | None]
+    channels: list[int | str | None]
