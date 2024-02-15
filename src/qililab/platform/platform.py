@@ -816,6 +816,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         Returns:
             Circuit: Translated circuit.
         """
+        # Remove barriers from the program
         lista = program.split(";")
         lista = [element for element in lista if "barrier" not in element]
         program = ";".join(lista)
