@@ -558,8 +558,9 @@ class TestMethods:
         ):
             platform.compile(program=program, num_avg=1000, repetition_duration=2000, num_bins=1)
 
-    @pytest.mark.parametrize("program", [Circuit(1), Circuit(1).to_qasm(), "a"])
-    def test_translate_language(self, program, platform: Platform):
+    @pytest.mark.parametrize("program", [Circuit(1), Circuit(1).to_qasm(), "a", ["a", "a"]])
+    @patch("qililab.platform.platform.circuit_wrapper")
+    def test_translate_language(self, mock_wrapper: MagicMock, program, platform: Platform):
         """Test that `Platform._translate_language` works for any problem."""
         if program == "a":
             with pytest.raises(
@@ -569,6 +570,12 @@ class TestMethods:
                 ),
             ):
                 platform._translate_language(program=program)  # pylint: disable=protected-access
+
+        elif program == ["a", "a"]:
+            with pytest.raises(Exception):
+                platform._translate_language(program=program)
+            mock_wrapper.assert_called_once_with(program)
+
         else:
             platform._translate_language(program=program)  # pylint: disable=protected-access
 
