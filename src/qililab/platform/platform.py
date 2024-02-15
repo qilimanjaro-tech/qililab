@@ -816,6 +816,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         Returns:
             Circuit: Translated circuit.
         """
+        lista = program.split(";")
+        lista = [element for element in lista if "barrier" not in element]
+        program = ";".join(lista)
+
         try:
             return Circuit.from_qasm(program)
         except Exception as exc:
