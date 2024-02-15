@@ -579,6 +579,14 @@ class TestMethods:
         else:
             platform._translate_language(program=program)  # pylint: disable=protected-access
 
+    @patch("qililab.platform.platform.Circuit.from_qasm")
+    def test_translate_language_good_with_barriers(self, mock_translate: MagicMock, platform: Platform):
+        string = 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg qtest[5];\ncreg ctest[1];\ncreg meas[5];\nrx(pi) qtest[1];\nbarrier qtest[0],qtest[1],qtest[2],qtest[3],qtest[4];\nmeasure qtest[0] -> meas[0];\nmeasure qtest[1] -> meas[1];\nmeasure qtest[2] -> meas[2];\nmeasure qtest[3] -> meas[3];\nmeasure qtest[4] -> meas[4];\n'
+        platform._translate_language(program=string)  # pylint: disable=protected-access
+
+        string_without_barriers = 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg qtest[5];\ncreg ctest[1];\ncreg meas[5];\nrx(pi) qtest[1];\nmeasure qtest[0] -> meas[0];\nmeasure qtest[1] -> meas[1];\nmeasure qtest[2] -> meas[2];\nmeasure qtest[3] -> meas[3];\nmeasure qtest[4] -> meas[4];\n'
+        mock_translate.assert_called_once_with(string_without_barriers)
+
     @pytest.mark.parametrize("parameter", [Parameter.AMPLITUDE, Parameter.DURATION, Parameter.PHASE])
     @pytest.mark.parametrize("gate", ["I(0)", "X(0)", "Y(0)"])
     def test_get_parameter_of_gates(self, parameter, gate, platform: Platform):
