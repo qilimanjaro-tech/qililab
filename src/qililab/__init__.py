@@ -33,7 +33,7 @@ from .utils.load_data import load
 from .waveforms import *
 
 # moving circuit_transpiler module imports here because it has instruments module dependencies so circular imports can be avoided
-from .circuit_transpiler import Drag, Wait
+from .circuit_transpiler import Drag, Wait, Depletion
 
 with contextlib.suppress(NameError, ImportError):
     # Since Ipython magic methods can only be imported from inside a Jupyter Notebook,

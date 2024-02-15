@@ -84,11 +84,11 @@ class Depletion(_Un_):
         trainable (bool): whether parameters are trainable (set to false)
     """
 
-    def __init__(self, q: int, phase: float, trainable: bool = True):
+    def __init__(self, q: int, amp: float, phase: float, trainable: bool = True):
         super().__init__(q, trainable=trainable)
         self.name = "depletion"
-        self.nparams = 1
-        self._phi = None
-        self.init_kwargs = {"phase": phase, "trainable": trainable}
-        self.parameter_names = ["phase"]
-        self.parameters = phase
+        self.nparams = 2
+        self._theta, self._phi = None, None
+        self.init_kwargs = {"amp": amp, "phase": phase, "trainable": trainable}
+        self.parameter_names = ["amp", "phase"]
+        self.parameters = amp, phase

@@ -32,7 +32,7 @@ from qililab.typings.enums import Line
 from qililab.utils import Factory
 
 from .gate_decompositions import translate_gates
-from .native_gates import Drag, Wait
+from .native_gates import Drag, Wait, Depletion
 
 
 class CircuitTranspiler:
@@ -173,7 +173,7 @@ class CircuitTranspiler:
 
                 # Measurement gates need to be handled on their own because qibo allows to define
                 # an M gate as eg. gates.M(*range(5))
-                if isinstance(gate, M):
+                if (isinstance(gate, M) or isinstance(gate, Depletion) or isinstance(gate, gates.Y)):
                     gate_schedule = []
                     gate_qubits = gate.qubits
                     for qubit in gate_qubits:
@@ -239,26 +239,47 @@ class CircuitTranspiler:
 
         gate_schedule = self.platform.gates_settings.get_gate(name=gate.__class__.__name__, qubits=gate.qubits)
 
-        if not isinstance(gate, Drag):
+        if not (isinstance(gate, Drag) or isinstance(gate, Depletion)):
             return gate_schedule
+        
+        if isinstance(gate, Drag):
 
-        # drag gates are currently the only parametric gates we are handling and they are handled here
-        if len(gate_schedule) > 1:
-            raise ValueError(
-                f"Schedule for the drag gate is expected to have only 1 pulse but instead found {len(gate_schedule)} pulses"
-            )
-        drag_schedule = GateEventSettings(
-            **asdict(gate_schedule[0])
-        )  # make new object so that gate_schedule is not overwritten
-        theta = self._normalize_angle(angle=gate.parameters[0])
-        amplitude = drag_schedule.pulse.amplitude * theta / np.pi
-        phase = self._normalize_angle(angle=gate.parameters[1])
-        if amplitude < 0:
-            amplitude = -amplitude
-            phase = self._normalize_angle(angle=gate.parameters[1] + np.pi)
-        drag_schedule.pulse.amplitude = amplitude
-        drag_schedule.pulse.phase = phase
-        return [drag_schedule]
+            # drag gates are currently the only parametric gates we are handling and they are handled here
+            if len(gate_schedule) > 1:
+                raise ValueError(
+                    f"Schedule for the drag gate is expected to have only 1 pulse but instead found {len(gate_schedule)} pulses"
+                )
+            drag_schedule = GateEventSettings(
+                **asdict(gate_schedule[0])
+            )  # make new object so that gate_schedule is not overwritten
+            theta = self._normalize_angle(angle=gate.parameters[0])
+            amplitude = drag_schedule.pulse.amplitude * theta / np.pi
+            phase = self._normalize_angle(angle=gate.parameters[1])
+            if amplitude < 0:
+                amplitude = -amplitude
+                phase = self._normalize_angle(angle=gate.parameters[1] + np.pi)
+            drag_schedule.pulse.amplitude = amplitude
+            drag_schedule.pulse.phase = phase
+            return [drag_schedule]
+        
+        if isinstance(gate, Depletion):
+            # depletion gates are currently the only parametric gates we are handling and they are handled here
+            if len(gate_schedule) > 1:
+                raise ValueError(
+                    f"Schedule for the depletion gate is expected to have only 1 pulse but instead found {len(gate_schedule)} pulses"
+                )
+            dep_schedule = GateEventSettings(
+                **asdict(gate_schedule[0])
+            )  # make new object so that gate_schedule is not overwritten
+            amplitude = gate.parameters[0]
+            phase = self._normalize_angle(angle=gate.parameters[1])
+            if amplitude < 0:
+                amplitude = -amplitude
+                phase = self._normalize_angle(angle=gate.parameters[1] + np.pi)
+            dep_schedule.pulse.amplitude = amplitude
+            dep_schedule.pulse.phase = phase
+            return [dep_schedule]
+        
 
     def _normalize_angle(self, angle: float):
         """Normalizes angle in range [-pi, pi].
@@ -336,7 +357,7 @@ class CircuitTranspiler:
         pulse_shape = Factory.get(pulse_shape_copy.pop(RUNCARD.NAME))(**pulse_shape_copy)
 
         # handle measurement gates and target qubits for control gates which might have multi-qubit schedules
-        if isinstance(gate, M):
+        if (isinstance(gate, M) or isinstance(gate, Depletion) or isinstance(gate, gates.Y)):
             qubit = gate.qubits[0]
         # for couplers we don't need to set the target qubit
         elif isinstance(bus.targets[0], Coupler):

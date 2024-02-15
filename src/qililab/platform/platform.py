@@ -788,9 +788,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         qubits_m = {}
         order = {}
         # iterate over qubits measured in same order as they appear in the circuit
-        for i, qubit in enumerate(
-            qubit for gate in circuit.queue for qubit in gate.qubits if (isinstance(gate, M) or isinstance(gate, Y))
-        ):
+        for i, qubit in enumerate(qubit for gate in circuit.queue for qubit in gate.qubits if isinstance(gate, M)):
             if qubit not in qubits_m:
                 qubits_m[qubit] = 0
             order[(qubit, qubits_m[qubit])] = i
@@ -801,15 +799,13 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             )
 
         # allocate each measurement its corresponding index in the results list
-        # TODO: test
         results = [None] * len(order)  # type: list | list[dict]
         for qblox_result in result.qblox_raw_results:
             measurement = qblox_result["measurement"]
             qubit = qblox_result["qubit"]
-            qblox_result["measurement"] = 0
             results[order[(qubit, measurement)]] = qblox_result
 
-        return QbloxResult(integration_lengths=result.integration_lengths, qblox_raw_results=results[1:])
+        return QbloxResult(integration_lengths=result.integration_lengths, qblox_raw_results=results)
 
     def compile(
         self, program: PulseSchedule | Circuit, num_avg: int, repetition_duration: int, num_bins: int
