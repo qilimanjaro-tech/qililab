@@ -21,6 +21,7 @@ from dataclasses import asdict
 from queue import Queue
 from typing import Any
 
+from qbraid import circuit_wrapper
 from qibo.gates import M
 from qibo.models import Circuit
 from qiboconnection.api import API
@@ -715,7 +716,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         num_bins: int = 1,
         queue: Queue | None = None,
     ) -> Result:
-        """Compiles and executes a circuit or a pulse schedule, using the platform instruments.
+        """Compiles and executes a circuit (Qibo or any language supported by ``QBraid``) or a pulse schedule, using the platform instruments.
 
         If the ``program`` argument is a :class:`Circuit`, it will first be translated into a :class:`PulseSchedule` using the transpilation
         settings of the platform. Then the pulse schedules will be compiled into the assembly programs and executed.
@@ -775,7 +776,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         return results[0]
 
     def _translate_language(self, program: Any) -> PulseSchedule | Circuit:
-        """Translates Pennylane, Qiskit and QASML programs into Qibo circuits.
+        """Translates programs in QASML or any languange supported by ``QBraid``, into Qibo circuits.
 
         Args:
             program (Any): Program to translate.
@@ -786,22 +787,22 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         Returns:
             PulseSchedule | Circuit: Translated program.
         """
+        # No translation needed
         if isinstance(program, PulseSchedule | Circuit):
             return program
+
+        # Direct QASM translation into Qibo
         if isinstance(program, str):
             return self._build_from_qasm(program=program)
-        try:  # Qiskit
-            qasm_program = program.qasm()
-        except Exception:  # pylint: disable=broad-except
-            try:  # Pennylane
-                # pylint: disable=protected-access
-                qasm_program = program.device("default.qubit")._circuit.qasm(formatted=True)
-            except Exception as exc:
-                raise ValueError(
-                    f"Could not translate the given program, into a QASM/str representation. Got program of type {type(program)}."
-                ) from exc
 
-        return self._build_from_qasm(program=qasm_program)
+        # Qbraid translation into QASM and then to Qibo
+        try:
+            return self._build_from_qasm(program=circuit_wrapper(program).transpile("qasm2"))
+
+        except Exception as exc:
+            raise ValueError(
+                f"Could not translate the given program, into a QASM/str representation. Got program of type {type(program)}."
+            ) from exc
 
     def _build_from_qasm(self, program: str) -> Circuit:
         """Builds a Qibo circuit from a QASM/str representation.
