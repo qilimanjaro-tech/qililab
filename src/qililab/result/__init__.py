@@ -24,7 +24,6 @@ Results Class
 
     ~Results
 """
-from .qprogram_measurement_result import QProgramMeasurementResult
 from .result import Result
 from .results import Results
 from .stream_results import stream_results

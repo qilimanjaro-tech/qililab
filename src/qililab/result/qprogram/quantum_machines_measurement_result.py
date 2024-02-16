@@ -15,12 +15,11 @@
 """QuantumMachinesResult class."""
 import numpy as np
 
-from qililab.result.qprogram_measurement_result import QProgramMeasurementResult
+from qililab.result.qprogram.measurement_result import MeasurementResult
 from qililab.typings.enums import ResultName
-from qililab.utils.factory import Factory
 
 
-class QuantumMachinesMeasurementResult(QProgramMeasurementResult):
+class QuantumMachinesMeasurementResult(MeasurementResult):
     """Contains the data obtained from a single measurment in Quantum Machines hardware.
 
     Args:
@@ -39,6 +38,7 @@ class QuantumMachinesMeasurementResult(QProgramMeasurementResult):
         self.Q = Q
         self.adc1 = adc1
         self.adc2 = adc2
+        super().__init__()
 
     @property
     def array(self) -> np.ndarray:

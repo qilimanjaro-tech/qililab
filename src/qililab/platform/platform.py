@@ -43,8 +43,8 @@ from qililab.pulse import QbloxCompiler as PulseQbloxCompiler
 from qililab.qprogram import QbloxCompiler, QProgram, QuantumMachinesCompiler
 from qililab.result import Result
 from qililab.result.qblox_results.qblox_result import QbloxResult
-from qililab.result.qprogram_results import QProgramResults
-from qililab.result.quantum_machines_results.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
+from qililab.result.qprogram.qprogram_results import QProgramResults
+from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName, Line, Parameter
@@ -657,7 +657,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             buses[bus_alias].run()
 
         # Acquire results
-        results: QProgramResults = QProgramResults()
+        results = QProgramResults()
         for bus_alias in buses:
             if isinstance(buses[bus_alias].system_control, ReadoutSystemControl):
                 acquisitions = list(sequences[bus_alias].todict()["acquisitions"])
@@ -698,7 +698,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         acquisitions = cluster.get_acquisitions(job=job)
 
-        results: QProgramResults = QProgramResults()
+        results = QProgramResults()
         for measurement in measurements:
             measurement_result = QuantumMachinesMeasurementResult(
                 *[acquisitions[handle] for handle in measurement.result_handles]

@@ -25,7 +25,7 @@ from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
 from qililab.qprogram import QProgram
 from qililab.result.qblox_results import QbloxResult
-from qililab.result.quantum_machines_results import QuantumMachinesMeasurementResult
+from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.settings import Runcard
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.system_control import ReadoutSystemControl

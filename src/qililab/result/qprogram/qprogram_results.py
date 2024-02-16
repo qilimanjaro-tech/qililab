@@ -13,17 +13,23 @@
 # limitations under the License.
 
 """MeasurementResult class."""
-from qililab.result.qprogram_measurement_result import QProgramMeasurementResult
+from qililab.result.qprogram.measurement_result import MeasurementResult
 from qililab.utils.dict_serializable import DictSerializable
 
 
 class QProgramResults(DictSerializable):
-    """Results from"""
+    """Results from a single execution of QProgram."""
 
-    def __init__(self):
-        self.results: dict[str, list[QProgramMeasurementResult]] = {}
+    def __init__(self) -> None:
+        self.results: dict[str, list[MeasurementResult]] = {}
 
-    def append_result(self, bus: str, result: QProgramMeasurementResult):
+    def append_result(self, bus: str, result: MeasurementResult):
+        """Append a measurement result to bus's results list.
+
+        Args:
+            bus (str): The bus alias
+            result (MeasurementResult): The measurement result to append.
+        """
         if bus not in self.results:
             self.results[bus] = []
         self.results[bus].append(result)
