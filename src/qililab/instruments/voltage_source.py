@@ -16,7 +16,7 @@
 
 from dataclasses import dataclass
 
-from qililab.instruments.instrument import Instrument
+from qililab.instruments import Instrument
 
 
 class VoltageSource(Instrument):

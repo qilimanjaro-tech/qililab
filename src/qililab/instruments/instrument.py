@@ -15,8 +15,7 @@
 """Instrument class"""
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from functools import partial
-from typing import Callable, get_type_hints
+from typing import get_type_hints
 
 from qililab.config.config import logger
 from qililab.exceptions import ParameterNotFound

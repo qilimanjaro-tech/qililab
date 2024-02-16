@@ -19,18 +19,17 @@ import contextlib
 from dataclasses import InitVar, dataclass
 from typing import TYPE_CHECKING
 
-from qpysequence import Sequence as QpySequence
-
 from qililab.constants import RUNCARD
 from qililab.exceptions import ParameterNotFound
-from qililab.instruments.instruments import Instruments
-from qililab.instruments.qblox.qblox_module import QbloxModule
-from qililab.result import Result
 from qililab.settings import Settings
-from qililab.typings import Parameter
 
 if TYPE_CHECKING:
+    from qpysequence import Sequence as QpySequence
+
     from qililab.instruments.instrument import Instrument
+    from qililab.instruments.instruments import Instruments
+    from qililab.result import Result
+    from qililab.typings.enums import Parameter
 
 
 class Bus:
@@ -174,6 +173,8 @@ class Bus:
 
     def upload_qpysequence(self, qpysequence: QpySequence, channel_id: int | str | None = None):
         """Uploads the qpysequence into the instrument."""
+        from qililab.instruments.qblox.qblox_module import QbloxModule
+
         for instrument, instrument_channel in zip(self.instruments, self.channels):
             if isinstance(instrument, QbloxModule):
                 if channel_id is not None and channel_id == instrument_channel:

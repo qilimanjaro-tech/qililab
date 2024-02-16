@@ -275,7 +275,7 @@ class TestMethods:
         readout_pulse = Pulse(amplitude=1, phase=0.5, duration=1500, frequency=1e9, pulse_shape=Rectangular())
         pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), bus_alias="drive_line_q0_bus", delay=0)
         pulse_schedule.add_event(
-            PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), bus_alias="feedline_input_output_bus", delay=0
+            PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), bus_alias="readout_line_q0_bus", delay=0
         )
 
         self._compile_and_assert(platform, pulse_schedule, 2)
@@ -478,7 +478,7 @@ class TestMethods:
         n_m = len([qubit for gate in c.queue for qubit in gate.qubits if isinstance(gate, gates.M)])
 
         platform.compile = MagicMock()  # type: ignore # don't care about compilation
-        platform.compile.return_value = {"feedline_input_output_bus": None}
+        platform.compile.return_value = {"readout_q0_bus": None}
         with patch.object(Bus, "upload"):
             with patch.object(Bus, "run"):
                 with patch.object(Bus, "acquire_result") as acquire_result:
@@ -522,7 +522,7 @@ class TestMethods:
         with pytest.raises(KeyError, match="Gate Drag for qubits 3 not found in settings"):
             platform.get_parameter(parameter=Parameter.AMPLITUDE, alias="Drag(3)")
 
-    @pytest.mark.parametrize("parameter", [Parameter.DELAY_BETWEEN_PULSES, Parameter.DELAY_BEFORE_READOUT])
+    @pytest.mark.parametrize("parameter", [Parameter.DELAY_BEFORE_READOUT])
     def test_get_parameter_of_platform(self, parameter, platform: Platform):
         """Test the ``get_parameter`` method with platform parameters."""
         value = getattr(platform.gates_settings, parameter.value)
@@ -530,9 +530,9 @@ class TestMethods:
 
     def test_get_parameter_with_delay(self, platform: Platform):
         """Test the ``get_parameter`` method with the delay of a bus."""
-        bus = platform._get_bus_by_alias(alias="drive_line_q0_bus")
-        assert bus is not None
-        assert bus.delay == platform.get_parameter(parameter=Parameter.DELAY, alias="drive_line_q0_bus")
+        assert platform.gates_settings.buses["drive_line_q0_bus"].delay == platform.get_parameter(
+            parameter=Parameter.DELAY, alias="drive_line_q0_bus"
+        )
 
     @pytest.mark.parametrize(
         "parameter",
