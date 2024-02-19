@@ -13,17 +13,19 @@
 # limitations under the License.
 
 """Execute function used to execute a qibo Circuit using the given runcard."""
-from typing import Any
+from typing import Any, Iterable
 
 from qibo.models import Circuit
 from tqdm.auto import tqdm
 
+from qililab.platform.platform import Platform
+from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.result import Result
 
 from .data_management import build_platform
 
 
-def execute(program: Any | Circuit | list[Circuit], runcard: str | dict, nshots: int = 1) -> Result | list[Result]:
+def execute(program: Any | Circuit | Iterable[Circuit], runcard: str | dict, nshots: int = 1) -> Result | list[Result]:
     """Executes a Qibo circuit (or a list of circuits) with qililab and returns the results.
 
     Args:
@@ -61,15 +63,14 @@ def execute(program: Any | Circuit | list[Circuit], runcard: str | dict, nshots:
         probabilities = ql.execute(c, runcard="./runcards/galadriel.yml")
     """
     # Initialize platform and connect to the instruments
-    platform = build_platform(runcard=runcard)
+    platform: Platform = build_platform(runcard=runcard)
     platform.connect()
 
     # pylint: disable=protected-access
-    if not (hasattr(program, "__iter__") and all(isinstance(x, Circuit) for x in program)):
-        if hasattr(program, "__iter__"):
-            program = [platform._translate_language(program=progrm) for progrm in program]
-        else:
-            program = [platform._translate_language(program=program)]
+    if not hasattr(program, "__iter__"):
+        translated_program: list[Circuit | PulseSchedule] = [platform._translate_language(program=program)]
+    else:
+        translated_program = [platform._translate_language(program=progrm) for progrm in program]
 
     # Execute circuit
     try:
@@ -77,7 +78,7 @@ def execute(program: Any | Circuit | list[Circuit], runcard: str | dict, nshots:
         platform.turn_on_instruments()
         results = [
             platform.execute(circuit, num_avg=1, repetition_duration=200_000, num_bins=nshots)
-            for circuit in tqdm(program, total=len(program))
+            for circuit in tqdm(translated_program, total=len(translated_program))
         ]
         platform.disconnect()
         return results[0] if len(results) == 1 else results
