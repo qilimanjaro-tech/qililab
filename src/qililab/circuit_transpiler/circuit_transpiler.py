@@ -21,7 +21,9 @@ from qibo.gates import Gate, M
 from qibo.models import Circuit
 
 from qililab.constants import RUNCARD
-from qililab.pulse import Pulse, PulseEvent, PulseSchedule
+from qililab.pulse.pulse import Pulse
+from qililab.pulse.pulse_event import PulseEvent
+from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.settings.circuit_compilation.gate_event_settings import GateEventSettings
 from qililab.settings.circuit_compilation.gates_settings import GatesSettings
 from qililab.typings.enums import Line

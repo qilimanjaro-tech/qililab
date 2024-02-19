@@ -764,11 +764,17 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             raise ValueError(
                 f"Program to execute can only be either a single circuit or a pulse schedule. Got program of type {type(program)} instead"
             )
+        bus_to_module_and_sequencer_mapping = {
+            element.bus_alias: {"module": instrument, "sequencer": instrument.get_sequencer(channel)}
+            for element in pulse_schedule.elements
+            for instrument, channel in zip(
+                self.buses.get_bus(element.bus_alias).instruments, self.buses.get_bus(element.bus_alias).channels
+            )
+            if isinstance(instrument, QbloxModule)
+        }
         compiler = PulseQbloxCompiler(
-            qblox_modules=[
-                instrument for instrument in self.instruments.elements if isinstance(instrument, QbloxModule)
-            ],
             gates_settings=self.gates_settings,
+            bus_to_module_and_sequencer_mapping=bus_to_module_and_sequencer_mapping,
         )
         return compiler.compile(
             pulse_schedule=pulse_schedule, num_avg=num_avg, repetition_duration=repetition_duration, num_bins=num_bins

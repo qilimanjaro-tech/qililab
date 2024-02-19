@@ -16,7 +16,6 @@
 from dataclasses import dataclass
 
 from qililab.platform.components.bus import Bus
-from qililab.typings import Line
 
 
 @dataclass
