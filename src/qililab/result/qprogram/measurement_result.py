@@ -12,5 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Quantum Machines Results format """
-from .quantum_machines_measurement_result import QuantumMachinesMeasurementResult
+"""MeasurementResult class."""
+
+from abc import ABC, abstractmethod
+
+import numpy as np
+
+from qililab.typings.enums import ResultName
+from qililab.utils.dict_serializable import DictSerializable
+
+
+class MeasurementResult(DictSerializable, ABC):
+    """Result of a single measurement of QProgram."""
+
+    name: ResultName
+
+    @property
+    @abstractmethod
+    def array(self) -> np.ndarray:
+        """Returns the results in a numpy array format.
+
+        Returns:
+            np.ndarray: Numpy array containing the results.
+        """
