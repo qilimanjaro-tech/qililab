@@ -15,14 +15,11 @@
 """QbloxResult class."""
 import numpy as np
 
-from qililab.constants import QBLOXMEASUREMENTRESULT, RUNCARD
-from qililab.result.result import Result
+from qililab.result.qprogram.measurement_result import MeasurementResult
 from qililab.typings.enums import ResultName
-from qililab.utils.factory import Factory
 
 
-@Factory.register
-class QbloxQProgramMeasurementResult(Result):
+class QbloxMeasurementResult(MeasurementResult):
     """QbloxQProgramMeasurementResult class. Contains the acquisitions results for a single measurement obtained from the `Cluster.get_acquisitions` method.
 
     The input to the constructor should be a dictionary with the following structure:
@@ -42,6 +39,7 @@ class QbloxQProgramMeasurementResult(Result):
 
     def __init__(self, raw_measurement_data: dict):
         self.raw_measurement_data = raw_measurement_data
+        super().__init__()
 
     @property
     def array(self) -> np.ndarray:
@@ -53,13 +51,3 @@ class QbloxQProgramMeasurementResult(Result):
         path0 = self.raw_measurement_data["bins"]["integration"]["path0"]
         path1 = self.raw_measurement_data["bins"]["integration"]["path1"]
         return np.array([path0, path1])
-
-    def to_dict(self) -> dict:
-        """
-        Returns:
-            dict: Dictionary containing all the class information.
-        """
-        return {
-            RUNCARD.NAME: self.name.value,
-            QBLOXMEASUREMENTRESULT.RAW_MEASUREMENT_DATA: self.raw_measurement_data,
-        }

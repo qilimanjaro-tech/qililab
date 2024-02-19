@@ -129,6 +129,12 @@ class DictSerializable(Protocol, metaclass=DictSerializableMeta):
                 return {"type": set.__name__, "elements": [process_element(item) for item in element]}
             if isinstance(element, np.ndarray):
                 return {"type": np.ndarray.__name__, "elements": [process_element(item) for item in element.tolist()]}
+            if isinstance(element, dict):
+                return {
+                    "type": dict.__name__,
+                    "keys": list(element),
+                    "elements": [process_element(element[key]) for key in element],
+                }
             if isinstance(element, DictSerializable):
                 return element.to_dict()
             return element
@@ -161,6 +167,8 @@ class DictSerializable(Protocol, metaclass=DictSerializableMeta):
                 return set(process_attribute(item) for item in attribute["elements"])
             if isinstance(attribute, dict) and "type" in attribute and attribute["type"] == np.ndarray.__name__:
                 return np.array([process_attribute(item) for item in attribute["elements"]])
+            if isinstance(attribute, dict) and "type" in attribute and attribute["type"] == dict.__name__:
+                return {key: process_attribute(item) for key, item in zip(attribute["keys"], attribute["elements"])}
             if is_dict_serializable_object(attribute):
                 return from_dict(attribute)
             return attribute
