@@ -15,7 +15,7 @@
 """Quantum Machines Manager class."""
 import os
 from dataclasses import dataclass
-from typing import Any, Dict, cast
+from typing import Any, cast
 
 import numpy as np
 from qm import DictQuaConfig, QuantumMachine, QuantumMachinesManager, SimulationConfig
@@ -68,7 +68,7 @@ class QuantumMachinesCluster(Instrument):
         controllers: list[dict[str, Any]]
         elements: list[dict[str, Any]]
 
-        def to_qua_config(self) -> Dict[str, Any]:
+        def to_qua_config(self) -> dict[str, Any]:
             """Creates the Quantum Machines QUA config dictionary.
 
             Creates, an instance of a dictionary in the format that QuantumMachines expects the config dictionary to be.
@@ -82,7 +82,7 @@ class QuantumMachinesCluster(Instrument):
             The values of the rest keys are empty, meant to be updated in runtime.
 
             Returns:
-                config: Dict[str, Any]
+                config: dict[str, Any]
             """
             elements, mixers = self._get_elements_and_mixers_config()
             controllers = self._get_controllers_config()
@@ -104,7 +104,7 @@ class QuantumMachinesCluster(Instrument):
             """Returns the controllers config dictionary.
 
             Returns:
-                controllers: Dict[str, Any]
+                controllers: dict[str, Any]
             """
             return {
                 controller["name"]: {
@@ -131,7 +131,7 @@ class QuantumMachinesCluster(Instrument):
             """Returns the octaves config dictionary.
 
             Returns:
-                octaves: Dict[str, Any]
+                octaves: dict[str, Any]
             """
             return {
                 octave["name"]: {
@@ -164,7 +164,7 @@ class QuantumMachinesCluster(Instrument):
             """Returns the elements config dictionary.
 
             Returns:
-                elements: Dict[str, Any]
+                elements: dict[str, Any]
             """
             elements = {}
             mixers = {}

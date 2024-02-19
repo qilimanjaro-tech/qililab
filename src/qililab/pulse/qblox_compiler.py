@@ -59,11 +59,6 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         self.readout_modules = [InstrumentName.QBLOX_QRM, InstrumentName.QRMRF]
         self.control_modules = [InstrumentName.QBLOX_QCM, InstrumentName.QCMRF]
 
-        if all(
-            qblox.name not in self.readout_modules for qblox in self.bus_to_module_and_sequencer_mapping
-        ):  # Raise error if qrm is not found
-            raise ValueError("No QRM modules found in platform instruments")
-
     def compile(
         self, pulse_schedule: PulseSchedule, num_avg: int, repetition_duration: int, num_bins: int
     ) -> dict[str, list[QpySequence]]:
@@ -89,8 +84,8 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
             self.nshots = num_avg  # type: ignore
             self.repetition_duration = repetition_duration  # type: ignore
             self.num_bins = num_bins  # type: ignore
-            for qblox_module in self.bus_to_module_and_sequencer_mapping:
-                qblox_module.clear_cache()
+            for bus_alias in self.bus_to_module_and_sequencer_mapping:
+                self.bus_to_module_and_sequencer_mapping[bus_alias]["module"].clear_cache()
 
         bus_to_schedule = {schedule.bus_alias: schedule for schedule in pulse_schedule}
 

@@ -5,7 +5,7 @@ from itertools import product
 import numpy as np
 import pytest
 
-from qililab import Domain, DragCorrection, DragPair, Gaussian, IQPair, QProgram, Square
+from qililab.qprogram import Domain, QProgram
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.operations import (
     Acquire,
@@ -20,6 +20,7 @@ from qililab.qprogram.operations import (
     Wait,
 )
 from qililab.qprogram.variable import FloatVariable, IntVariable
+from qililab.waveforms import DragCorrection, DragPair, Gaussian, IQPair, Square
 
 # pylint: disable=maybe-no-member
 

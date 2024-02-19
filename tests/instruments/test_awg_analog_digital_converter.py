@@ -22,6 +22,18 @@ class DummyAWG(AWGAnalogDigitalConverter):
     ) -> list:
         return []
 
+    def initial_setup(self):
+        pass
+
+    def reset(self):
+        pass
+
+    def turn_off(self):
+        pass
+
+    def turn_on(self):
+        pass
+
     def run(self):  # pylint: disable=arguments-differ
         pass
 
