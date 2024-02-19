@@ -408,7 +408,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         ]
         num_bins = math.prod(loop[1].iterations for loop in loops)
         self._buses[element.bus].qpy_sequence._acquisitions.add(
-            name=f"acquisition_{self._buses[element.bus].next_acquisition_index}",
+            name=f"acquisition_{element.bus}_{self._buses[element.bus].next_acquisition_index}",
             num_bins=num_bins,
             index=self._buses[element.bus].next_acquisition_index,
         )
