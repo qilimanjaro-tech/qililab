@@ -148,7 +148,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                     measurement_result = QbloxMeasurementResult(raw_measurement_data=raw_measurement_data)
                     results.append(measurement_result)
 
-                self.device.delete_acquisition_data(sequencer=sequencer.identifier, all=True)
+                    self.device.delete_acquisition_data(sequencer=sequencer.identifier, name=acquisition)
         return results
 
     def _parse_sequencers_from_acquisitions(self, acquisitions: list[str]) -> list[AWGQbloxADCSequencer]:
