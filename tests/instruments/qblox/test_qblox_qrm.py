@@ -407,7 +407,7 @@ class TestQbloxQRM:
     def test_get_qprogram_acquisitions_method(self, qrm: QbloxQRM):
         """Test get_acquisitions_method"""
         qrm.device.get_acquisitions.return_value = {
-            "default": {
+            "default_bus_0": {
                 "index": 0,
                 "acquisition": {
                     "scope": {
@@ -422,10 +422,10 @@ class TestQbloxQRM:
                 },
             }
         }
-        qrm.sequences = {0: None, 1: None}
-        acquisitions = qrm.acquire_qprogram_results(acquisitions=["default"])
+        qrm.sequences = {0: None}
+        acquisitions = qrm.acquire_qprogram_results(acquisitions=["default_bus_0"])
         assert isinstance(acquisitions, list)
-        assert len(acquisitions) == 2
+        assert len(acquisitions) == 1
 
     def test_name_property(self, qrm_no_device: QbloxQRM):
         """Test name property."""
