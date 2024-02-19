@@ -64,20 +64,21 @@ def execute(program: Any | Circuit | list[Circuit], runcard: str | dict, nshots:
     platform = build_platform(runcard=runcard)
     platform.connect()
 
-    if not (isinstance(program, list) and isinstance(program[0], Circuit)):
-        program = platform._translate_language(program=program)
-        if isinstance(program, Circuit):
-            program = [program]
+    # pylint: disable=protected-access
+    if not (hasattr(program, "__iter__") and all(isinstance(x, Circuit) for x in program)):
+        if hasattr(program, "__iter__"):
+            program = [platform._translate_language(program=progrm) for progrm in program]
         else:
-            raise ValueError("The program couldn't be translated into a list of circuits or a single circuit.")
+            program = [platform._translate_language(program=program)]
 
+    # Execute circuit
     try:
         platform.initial_setup()
         platform.turn_on_instruments()
-        results = []
-        for circuit in tqdm(program, total=len(program)):
-            # Execute circuit
-            results.append(platform.execute(circuit, num_avg=1, repetition_duration=200_000, num_bins=nshots))
+        results = [
+            platform.execute(circuit, num_avg=1, repetition_duration=200_000, num_bins=nshots)
+            for circuit in tqdm(program, total=len(program))
+        ]
         platform.disconnect()
         return results[0] if len(results) == 1 else results
     except Exception as e:
