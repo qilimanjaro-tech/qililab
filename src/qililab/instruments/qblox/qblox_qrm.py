@@ -23,7 +23,8 @@ from qililab.instruments.awg_settings import AWGQbloxADCSequencer
 from qililab.instruments.decorators import check_device_initialized
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
-from qililab.result.qblox_results import QbloxQProgramMeasurementResult, QbloxResult
+from qililab.result.qblox_results import QbloxResult
+from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
 from qililab.typings.enums import AcquireTriggerMode, InstrumentName, Parameter
 
 
@@ -119,7 +120,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """
         return self.get_acquisitions()
 
-    def acquire_qprogram_results(self, acquisitions: list[str]) -> list[QbloxQProgramMeasurementResult]:  # type: ignore
+    def acquire_qprogram_results(self, acquisitions: list[str]) -> list[QbloxMeasurementResult]:  # type: ignore
         """Read the result from the AWG instrument
 
         Args:
@@ -131,7 +132,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         return self._get_qprogram_acquisitions(acquisitions=acquisitions)
 
     @check_device_initialized
-    def _get_qprogram_acquisitions(self, acquisitions: list[str]) -> list[QbloxQProgramMeasurementResult]:
+    def _get_qprogram_acquisitions(self, acquisitions: list[str]) -> list[QbloxMeasurementResult]:
         results = []
         for acquisition in acquisitions:
             for sequencer in self.awg_sequencers:
@@ -144,7 +145,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                     raw_measurement_data = self.device.get_acquisitions(sequencer=sequencer.identifier)[acquisition][
                         "acquisition"
                     ]
-                    measurement_result = QbloxQProgramMeasurementResult(raw_measurement_data=raw_measurement_data)
+                    measurement_result = QbloxMeasurementResult(raw_measurement_data=raw_measurement_data)
                     results.append(measurement_result)
         for sequencer in self.awg_sequencers:
             self.device.delete_acquisition_data(sequencer=sequencer.identifier, all=True)

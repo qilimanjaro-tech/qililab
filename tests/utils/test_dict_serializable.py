@@ -5,6 +5,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from uuid import UUID, uuid4
 
+import numpy as np
 import pytest
 
 from qililab.utils import DictSerializable, DictSerializableEnum, from_dict
@@ -25,6 +26,7 @@ class A(DictSerializable):
         self.attr8: dict = {"type": "A", "key": 123}
         self.attr9: ValueSource = ValueSource.Dependent  # type: ignore
         self.attr10: deque[int] = deque([0, 1, 2])
+        self.attr11: np.ndarray = np.linspace(0, 10, 11)
 
 
 class B(DictSerializable):
@@ -89,6 +91,9 @@ class TestDictSerializable:
 
         assert isinstance(deserialized_object.attr10, deque)
         assert all(a == b for a, b in zip(origin_object.attr10, deserialized_object.attr10))
+
+        assert isinstance(deserialized_object.attr11, np.ndarray)
+        assert np.allclose(origin_object.attr11, deserialized_object.attr11)
 
         jsoned = json.dumps(serialized_dictionary)
         jsoned_dictionary = json.loads(jsoned)
