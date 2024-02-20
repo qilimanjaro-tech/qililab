@@ -1,4 +1,6 @@
 """Tests for the Platform class."""
+from __future__ import annotations
+
 import copy
 import io
 import re
@@ -15,19 +17,16 @@ from ruamel.yaml import YAML
 
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.data_management import build_platform, save_platform
-from qililab.instrument_controllers.instrument_controllers import InstrumentControllers
-from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.instruments.signal_generator import SignalGenerator
-from qililab.platform import Bus, Buses, Platform
+from qililab.platform import Bus, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
 from qililab.qprogram import QProgram
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.settings import Runcard
 from qililab.settings.circuit_compilation.gate_event_settings import GateEventSettings
-from qililab.settings.circuit_compilation.gates_settings import GatesSettings
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import IQPair, Square
 from tests.data import Galadriel, SauronQuantumMachines
@@ -111,6 +110,11 @@ class TestPlatformInitialization:
 
     def test_init_method(self, runcard):
         """Test initialization of the class"""
+        from qililab.instrument_controllers.instrument_controllers import InstrumentControllers
+        from qililab.instruments.instruments import Instruments
+        from qililab.platform import Buses
+        from qililab.settings.circuit_compilation.gates_settings import GatesSettings
+
         platform = Platform(runcard=runcard)
 
         assert platform.name == runcard.name
@@ -174,14 +178,6 @@ class TestPlatform:
     def test_str_magic_method(self, platform: Platform):
         """Test __str__ magic method."""
         str(platform)
-
-    def test_gates_settings_instance(self, platform: Platform):
-        """Test settings instance."""
-        assert isinstance(platform.gates_settings, GatesSettings)
-
-    def test_buses_instance(self, platform: Platform):
-        """Test buses instance."""
-        assert isinstance(platform.buses, Buses)
 
     def test_bus_0_signal_generator_instance(self, platform: Platform):
         """Test bus 0 signal generator instance."""

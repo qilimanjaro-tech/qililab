@@ -13,13 +13,17 @@
 # limitations under the License.
 
 """Bus Class Interface."""
+from __future__ import annotations
+
 from abc import ABC
 from copy import deepcopy
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from qililab.drivers.interfaces import AWG, BaseInstrument
 from qililab.drivers.interfaces.instrument_interface_factory import InstrumentInterfaceFactory
-from qililab.pulse import PulseBusSchedule, PulseDistortion
+
+if TYPE_CHECKING:
+    from qililab.pulse import PulseBusSchedule, PulseDistortion
 
 
 class BusDriver(ABC):

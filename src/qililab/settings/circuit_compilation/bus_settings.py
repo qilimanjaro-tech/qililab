@@ -11,11 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
-from qililab.pulse.pulse_distortion import PulseDistortion
-from qililab.typings.enums import Line
+if TYPE_CHECKING:
+    from qililab.pulse.pulse_distortion import PulseDistortion
+    from qililab.typings.enums import Line
 
 
 @dataclass
