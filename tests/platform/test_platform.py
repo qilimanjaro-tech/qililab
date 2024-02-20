@@ -16,8 +16,6 @@ from ruamel.yaml import YAML
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.data_management import build_platform, save_platform
 from qililab.instrument_controllers.instrument_controllers import InstrumentControllers
-from qililab.instruments.awg import AWG
-from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
@@ -193,12 +191,12 @@ class TestPlatform:
     def test_bus_0_awg_instance(self, platform: Platform):
         """Test bus 0 qubit control instance."""
         element = platform.get_element(alias=InstrumentName.QBLOX_QCM.value)
-        assert isinstance(element, AWG)
+        assert element.is_awg()
 
     def test_bus_1_awg_instance(self, platform: Platform):
         """Test bus 1 qubit readout instance."""
         element = platform.get_element(alias=f"{InstrumentName.QBLOX_QRM.value}_0")
-        assert isinstance(element, AWGAnalogDigitalConverter)
+        assert element.is_adc()
 
     @patch("qililab.data_management.open")
     @patch("qililab.data_management.YAML.dump")
@@ -299,8 +297,8 @@ class TestMethods:
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
         qprogram.sync()
-        qprogram.play(bus="feedline_input_output_bus", waveform=readout_wf)
-        qprogram.acquire(bus="feedline_input_output_bus", weights=weights_wf)
+        qprogram.play(bus="readout_line_q0_bus", waveform=readout_wf)
+        qprogram.acquire(bus="readout_line_q0_bus", weights=weights_wf)
 
         with (
             patch("builtins.open") as patched_open,
@@ -324,8 +322,8 @@ class TestMethods:
         assert run.call_count == 6
         assert acquire_qprogram_results.call_count == 3  # only readout buses
         assert desync.call_count == 9
-        assert first_execution_results.results["feedline_input_output_bus"] == [123]
-        assert second_execution_results.results["feedline_input_output_bus"] == [456]
+        assert first_execution_results.results["readout_line_q0_bus"] == [123]
+        assert second_execution_results.results["readout_line_q0_bus"] == [456]
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -396,7 +394,7 @@ class TestMethods:
         readout_pulse = Pulse(amplitude=1, phase=0.5, duration=1500, frequency=1e9, pulse_shape=Rectangular())
         pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), bus_alias="drive_line_q0_bus", delay=0)
         pulse_schedule.add_event(
-            PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), bus_alias="feedline_input_output_bus", delay=0
+            PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), bus_alias="readout_line_q0_bus", delay=0
         )
         with patch.object(Bus, "upload") as upload:
             with patch.object(Bus, "run") as run:
@@ -423,7 +421,7 @@ class TestMethods:
                 start_time=200,
                 qubit=0,
             ),
-            bus_alias="feedline_input_output_bus",
+            bus_alias="readout_line_q0_bus",
             delay=0,
         )
         with patch.object(Bus, "upload"):
@@ -449,7 +447,7 @@ class TestMethods:
         # the order from qblox qrm will be M(0),M(0),M(1),M(1)
 
         platform.compile = MagicMock()  # type: ignore # don't care about compilation
-        platform.compile.return_value = {"feedline_input_output_bus": None}
+        platform.compile.return_value = {"readout_line_q0_bus": None}
         with patch.object(Bus, "upload"):
             with patch.object(Bus, "run"):
                 with patch.object(Bus, "acquire_result") as acquire_result:

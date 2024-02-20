@@ -20,6 +20,7 @@ from typing import Sequence, cast
 from qililab.exceptions import ParameterNotFound
 from qililab.instruments.awg import AWG
 from qililab.instruments.awg_settings.awg_adc_sequencer import AWGADCSequencer
+from qililab.result.qprogram.measurement_result import MeasurementResult
 from qililab.result.result import Result
 from qililab.typings.enums import AcquireTriggerMode, IntegrationMode, Parameter
 
@@ -47,6 +48,17 @@ class AWGAnalogDigitalConverter(AWG):
 
         Returns:
             Result: Acquired result
+        """
+
+    @abstractmethod
+    def acquire_qprogram_results(self, acquisitions: list[str]) -> list[MeasurementResult]:
+        """Read the result from the AWG instrument
+
+        Args:
+            acquisitions (list[str]): A list of acquisitions names.
+
+        Returns:
+            list[MeasurementResult]: Acquired results in chronological order.
         """
 
     def setup(  # pylint: disable=too-many-return-statements, too-many-branches

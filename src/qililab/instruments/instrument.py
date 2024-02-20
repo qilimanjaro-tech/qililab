@@ -21,7 +21,6 @@ from qililab.config.config import logger
 from qililab.exceptions import ParameterNotFound
 from qililab.instruments.decorators import check_device_initialized
 from qililab.platform.components.bus_element import BusElement
-from qililab.result.result import Result
 from qililab.settings.settings import Settings
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.typings.instruments.device import Device
@@ -52,6 +51,20 @@ class Instrument(BusElement, ABC):
     settings: InstrumentSettings  # a subtype of settings must be specified by the subclass
     device: Device
 
+    def is_awg(self) -> bool:
+        """Returns True if instrument is an AWG."""
+        from qililab.instruments.awg import AWG  # pylint: disable=import-outside-toplevel
+
+        return isinstance(self, AWG)
+
+    def is_adc(self) -> bool:
+        """Returns True if instrument is an AWG/ADC."""
+        from qililab.instruments.awg_analog_digital_converter import (  # pylint: disable=import-outside-toplevel
+            AWGAnalogDigitalConverter,
+        )
+
+        return isinstance(self, AWGAnalogDigitalConverter)
+
     def is_device_active(self) -> bool:
         """Check wether or not the device is currently active, for instrument childs.
 
@@ -64,66 +77,8 @@ class Instrument(BusElement, ABC):
         return hasattr(self, "device") and self.device is not None
 
     def __init__(self, settings: dict):
-        settings_class: type[self.InstrumentSettings] = get_type_hints(self).get("settings")  # type: ignore
+        settings_class: type[Instrument.InstrumentSettings] = get_type_hints(self).get("settings")  # type: ignore
         self.settings = settings_class(**settings)
-
-    @check_device_initialized
-    @abstractmethod
-    def initial_setup(self):
-        """Set initial instrument settings."""
-
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | str | None = None):
-        """Set instrument settings parameter to the corresponding value
-
-        Args:
-            parameter (Parameter): settings parameter to be updated
-            value (float | str | bool): new value
-            channel_id (int | None): channel identifier of the parameter to update
-        """
-        raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
-
-    def get(self, parameter: Parameter, channel_id: int | str | None = None):  # pylint: disable=unused-argument
-        """Get instrument parameter.
-
-        Args:
-            parameter (Parameter): Name of the parameter to get.
-            channel_id (int | None): Channel identifier of the parameter to update.
-        """
-        if hasattr(self.settings, parameter.value):
-            return getattr(self.settings, parameter.value)
-        raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
-
-    @check_device_initialized
-    @abstractmethod
-    def turn_on(self):
-        """Turn on an instrument."""
-
-    def acquire_result(self) -> Result | None:
-        """Acquire results of the measurement.
-
-        In some cases this method might do nothing."""
-
-    def acquire_qprogram_results(self, acquisitions: list[str]) -> list[Result]:  # type: ignore[empty-body]
-        """Acquire results of the measurement.
-
-        In some cases this method might do nothing.
-
-        Args:
-            acquisitions (list[str]): A list of acquisitions names.
-
-        Returns:
-            list[Result]: The acquired results in chronological order.
-        """
-
-    @check_device_initialized
-    @abstractmethod
-    def reset(self):
-        """Reset instrument settings."""
-
-    @check_device_initialized
-    @abstractmethod
-    def turn_off(self):
-        """Turn off an instrument."""
 
     @property
     def alias(self):
@@ -147,6 +102,26 @@ class Instrument(BusElement, ABC):
         """String representation of an instrument."""
         return f"{self.alias}"
 
+    @check_device_initialized
+    @abstractmethod
+    def initial_setup(self):
+        """Set initial instrument settings."""
+
+    @check_device_initialized
+    @abstractmethod
+    def turn_on(self):
+        """Turn on an instrument."""
+
+    @check_device_initialized
+    @abstractmethod
+    def turn_off(self):
+        """Turn off an instrument."""
+
+    @check_device_initialized
+    @abstractmethod
+    def reset(self):
+        """Reset instrument settings."""
+
     def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | str | None = None):
         """Sets the parameter of a specific instrument.
 
@@ -165,6 +140,16 @@ class Instrument(BusElement, ABC):
 
         return self.setup(parameter=parameter, value=value, channel_id=channel_id)
 
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | str | None = None):
+        """Set instrument settings parameter to the corresponding value
+
+        Args:
+            parameter (Parameter): settings parameter to be updated
+            value (float | str | bool): new value
+            channel_id (int | None): channel identifier of the parameter to update
+        """
+        raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
+
     def get_parameter(self, parameter: Parameter, channel_id: int | str | None = None):
         """Gets the parameter of a specific instrument.
 
@@ -176,3 +161,14 @@ class Instrument(BusElement, ABC):
             str | int | float | bool: Parameter value.
         """
         return self.get(parameter=parameter, channel_id=channel_id)
+
+    def get(self, parameter: Parameter, channel_id: int | str | None = None):  # pylint: disable=unused-argument
+        """Get instrument parameter.
+
+        Args:
+            parameter (Parameter): Name of the parameter to get.
+            channel_id (int | None): Channel identifier of the parameter to update.
+        """
+        if hasattr(self.settings, parameter.value):
+            return getattr(self.settings, parameter.value)
+        raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")

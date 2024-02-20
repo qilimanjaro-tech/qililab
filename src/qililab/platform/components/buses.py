@@ -13,9 +13,13 @@
 # limitations under the License.
 
 """Buses class."""
-from dataclasses import dataclass
+from __future__ import annotations
 
-from qililab.platform.components.bus import Bus
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from qililab.platform.components.bus import Bus
 
 
 @dataclass

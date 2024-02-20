@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import contextlib
 from dataclasses import InitVar, dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from qililab.constants import RUNCARD
 from qililab.exceptions import ParameterNotFound
@@ -29,6 +29,7 @@ if TYPE_CHECKING:
     from qililab.instruments.instrument import Instrument
     from qililab.instruments.instruments import Instruments
     from qililab.result import Result
+    from qililab.result.qprogram.measurement_result import MeasurementResult
     from qililab.typings.enums import Parameter
 
 
@@ -123,15 +124,11 @@ class Bus:
 
     def has_awg(self) -> bool:
         """Return true if bus has AWG capabilities."""
-        from qililab.instruments.awg import AWG
-
-        return any(isinstance(instrument, AWG) for instrument in self.instruments)
+        return any(instrument.is_awg() for instrument in self.instruments)
 
     def has_adc(self) -> bool:
         """Return true if bus has ADC capabilities."""
-        from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
-
-        return any(isinstance(instrument, AWGAnalogDigitalConverter) for instrument in self.instruments)
+        return any(instrument.is_adc() for instrument in self.instruments)
 
     def set_parameter(self, parameter: Parameter, value: int | float | str | bool, channel_id: int | str | None = None):
         """Set a parameter to the bus.
@@ -188,20 +185,18 @@ class Bus:
 
     def upload(self):
         """Uploads any previously compiled program into the instrument."""
-        from qililab.instruments.awg import AWG
-
         for instrument, instrument_channel in zip(self.instruments, self.channels):
-            if isinstance(instrument, AWG):
+            if instrument.is_awg():
                 instrument.upload(instrument_channel)
                 return
 
     def run(self) -> None:
         """Runs any previously uploaded program into the instrument."""
-        from qililab.instruments.awg import AWG
-
         for instrument, instrument_channel in zip(self.instruments, self.channels):
-            if isinstance(instrument, AWG):
-                instrument.run(channel_id=instrument_channel)
+            if instrument.is_awg():
+                from qililab.instruments.awg import AWG  # pylint: disable=import-outside-toplevel
+
+                cast(AWG, instrument).run(channel_id=instrument_channel)
                 return
 
     def acquire_result(self) -> Result:
@@ -213,9 +208,14 @@ class Bus:
         # TODO: Support acquisition from multiple instruments
         results: list[Result] = []
         for instrument in self.instruments:
-            result = instrument.acquire_result()
-            if result is not None:
-                results.append(result)
+            if instrument.is_adc():
+                from qililab.instruments.awg_analog_digital_converter import (  # pylint: disable=import-outside-toplevel
+                    AWGAnalogDigitalConverter,
+                )
+
+                result = cast(AWGAnalogDigitalConverter, instrument).acquire_result()
+                if result is not None:
+                    results.append(result)
 
         if len(results) > 1:
             raise ValueError(
@@ -227,17 +227,24 @@ class Bus:
 
         return results[0]
 
-    def acquire_qprogram_results(self, acquisitions: list[str]) -> list[Result]:
+    def acquire_qprogram_results(self, acquisitions: list[str]) -> list[MeasurementResult]:
         """Read the result from the instruments
 
         Returns:
             list[Result]: Acquired results in chronological order
         """
         # TODO: Support acquisition from multiple instruments
-        total_results: list[list[Result]] = []
+        total_results: list[list[MeasurementResult]] = []
         for instrument in self.instruments:
-            instrument_results = instrument.acquire_qprogram_results(acquisitions=acquisitions)
-            total_results.append(instrument_results)
+            if instrument.is_adc():
+                from qililab.instruments.awg_analog_digital_converter import (  # pylint: disable=import-outside-toplevel
+                    AWGAnalogDigitalConverter,
+                )
+
+                instrument_results = cast(AWGAnalogDigitalConverter, instrument).acquire_qprogram_results(
+                    acquisitions=acquisitions
+                )
+                total_results.append(instrument_results)
 
         if len(total_results) == 0:
             raise AttributeError(

@@ -73,6 +73,7 @@ class AWG(Instrument):
     def upload(self, channel_id: int | str | None):
         """Upload compiled program."""
 
+    @abstractmethod
     def upload_qpysequence(self, qpysequence: QpySequence, channel_id: int | str | None):
         """Upload qpysequence."""
 

@@ -13,12 +13,16 @@
 # limitations under the License.
 
 """Instrument Controllers class"""
+from __future__ import annotations
+
 import io
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from ruamel.yaml import YAML
 
-from qililab.instrument_controllers.instrument_controller import InstrumentController
+if TYPE_CHECKING:
+    from qililab.instrument_controllers.instrument_controller import InstrumentController
 
 
 @dataclass

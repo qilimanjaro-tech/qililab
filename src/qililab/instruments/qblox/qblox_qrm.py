@@ -120,7 +120,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """
         return self.get_acquisitions()
 
-    def acquire_qprogram_results(self, acquisitions: list[str]) -> list[QbloxMeasurementResult]:  # type: ignore
+    def acquire_qprogram_results(self, acquisitions: list[str]) -> list[QbloxMeasurementResult]:  # type: ignore[override]
         """Read the result from the AWG instrument
 
         Args:
