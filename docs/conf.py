@@ -13,7 +13,7 @@ from sphinxawesome_theme.postprocess import Icons  # pylint: disable=import-erro
 sys.path.insert(0, os.path.abspath(".."))
 
 project = "Qililab"
-copyright = "2023, Qilimanjaro"
+copy_right = "2023, Qilimanjaro"
 author = "Qilimanjaro"
 
 import qililab  # pylint: disable=wrong-import-position  # noqa: E402

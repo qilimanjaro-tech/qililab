@@ -7,13 +7,11 @@ The runcards are the serialized :class:`.Platform`'s in the form of dictionaries
 
 They contain all the laboratory information, settings and parameters, concretely they contain information about the:
 
-- Gates transpilation
-
-- :class:`.Chip`
-
 - Instruments
 
 - Buses
+
+- Gates transpilation
 
 |
 
