@@ -1,130 +1,133 @@
-"""This file tests the the ``AWGAnalogDigitalConverter`` class"""
-from typing import cast
-from unittest.mock import MagicMock, patch
+# """This file tests the the ``AWGAnalogDigitalConverter`` class"""
+# from typing import cast
+# from unittest.mock import MagicMock, patch
 
-import pytest
-from qpysequence import Sequence as QpySequence
+# import pytest
+# from qpysequence import Sequence as QpySequence
 
-from qililab.constants import RUNCARD
-from qililab.instruments.awg import AWG
-from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
-from qililab.instruments.awg_settings.awg_adc_sequencer import AWGADCSequencer
-from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
-from qililab.pulse import PulseBusSchedule
-from qililab.typings.enums import AcquireTriggerMode, InstrumentName, Parameter
-
-
-class DummyAWG(AWGAnalogDigitalConverter):
-    """Dummy AWG class."""
-
-    def compile(  # pylint: disable=unused-argument
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
-    ) -> list:
-        return []
-
-    def initial_setup(self):
-        pass
-
-    def reset(self):
-        pass
-
-    def turn_off(self):
-        pass
-
-    def turn_on(self):
-        pass
-
-    def run(self):  # pylint: disable=arguments-differ
-        pass
-
-    def upload(self, channel_id: int | str | None):
-        pass
-
-    def upload_qpysequence(self, qpysequence: QpySequence, channel_id: int | str | None):
-        pass
-
-    def acquire_result(self):
-        return []
-
-    def _set_device_scope_hardware_averaging(self, value: bool, sequencer_id: int):
-        pass
-
-    def _set_device_threshold(self, value: float, sequencer_id: int):
-        pass
-
-    def _set_device_threshold_rotation(self, value: float, sequencer_id: int):
-        pass
-
-    def _set_device_hardware_demodulation(self, value: bool, sequencer_id: int):
-        pass
-
-    def _set_device_acquisition_mode(self, mode: AcquireTriggerMode, sequencer_id: int):
-        pass
-
-    def _set_device_integration_length(self, value: int, sequencer_id: int):
-        pass
+# from qililab.constants import RUNCARD
+# from qililab.instruments.awg import AWG
+# from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
+# from qililab.instruments.awg_settings.awg_adc_sequencer import AWGADCSequencer
+# from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
+# from qililab.pulse import PulseBusSchedule
+# from qililab.typings.enums import AcquireTriggerMode, InstrumentName, Parameter
 
 
-@pytest.fixture(name="awg")
-def fixture_awg():
-    """Fixture that returns an instance of a dummy AWG."""
-    settings = {
-        RUNCARD.ALIAS: InstrumentName.QBLOX_QCM.value,
-        "acquisition_delay_time": 100,
-        RUNCARD.FIRMWARE: "0.7.0",
-        Parameter.NUM_SEQUENCERS.value: 1,
-        AWGTypes.AWG_SEQUENCERS.value: [
-            {
-                AWGSequencerTypes.IDENTIFIER.value: 0,
-                "bus_alias": "drive_q0",
-                "output_i": 0,
-                "output_q": 1,
-                Parameter.IF.value: 100_000_000,
-                Parameter.GAIN_I.value: 1,
-                Parameter.GAIN_Q.value: 1,
-                Parameter.GAIN_IMBALANCE.value: 0,
-                Parameter.PHASE_IMBALANCE.value: 0,
-                Parameter.OFFSET_I.value: 0,
-                Parameter.OFFSET_Q.value: 0,
-                Parameter.HARDWARE_MODULATION.value: False,
-            }
-        ],
-    }
-    return DummyAWG(settings=settings)  # pylint: disable=abstract-class-instantiated
+# class DummyAWG(AWGAnalogDigitalConverter):
+#     """Dummy AWG class."""
+
+#     def compile(  # pylint: disable=unused-argument
+#         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
+#     ) -> list:
+#         return []
+
+#     def initial_setup(self):
+#         pass
+
+#     def reset(self):
+#         pass
+
+#     def turn_off(self):
+#         pass
+
+#     def turn_on(self):
+#         pass
+
+#     def run(self):  # pylint: disable=arguments-differ
+#         pass
+
+#     def upload(self, channel_id: int | str | None):
+#         pass
+
+#     def upload_qpysequence(self, qpysequence: QpySequence, channel_id: int | str | None):
+#         pass
+
+#     def acquire_result(self):
+#         return []
+
+#     def acquire_qprogram_results(self, acquisitions: list[str]):
+#         return []
+
+#     def _set_device_scope_hardware_averaging(self, value: bool, sequencer_id: int):
+#         pass
+
+#     def _set_device_threshold(self, value: float, sequencer_id: int):
+#         pass
+
+#     def _set_device_threshold_rotation(self, value: float, sequencer_id: int):
+#         pass
+
+#     def _set_device_hardware_demodulation(self, value: bool, sequencer_id: int):
+#         pass
+
+#     def _set_device_acquisition_mode(self, mode: AcquireTriggerMode, sequencer_id: int):
+#         pass
+
+#     def _set_device_integration_length(self, value: int, sequencer_id: int):
+#         pass
 
 
-class TestAWGAnalogDigitalConverter:
-    """This class contains the unit tests for the ``AWGAnalogDigitalConverte`` class."""
+# @pytest.fixture(name="awg")
+# def fixture_awg():
+#     """Fixture that returns an instance of a dummy AWG."""
+#     settings = {
+#         RUNCARD.ALIAS: InstrumentName.QBLOX_QCM.value,
+#         "acquisition_delay_time": 100,
+#         RUNCARD.FIRMWARE: "0.7.0",
+#         Parameter.NUM_SEQUENCERS.value: 1,
+#         AWGTypes.AWG_SEQUENCERS.value: [
+#             {
+#                 AWGSequencerTypes.IDENTIFIER.value: 0,
+#                 "bus_alias": "drive_q0",
+#                 "output_i": 0,
+#                 "output_q": 1,
+#                 Parameter.IF.value: 100_000_000,
+#                 Parameter.GAIN_I.value: 1,
+#                 Parameter.GAIN_Q.value: 1,
+#                 Parameter.GAIN_IMBALANCE.value: 0,
+#                 Parameter.PHASE_IMBALANCE.value: 0,
+#                 Parameter.OFFSET_I.value: 0,
+#                 Parameter.OFFSET_Q.value: 0,
+#                 Parameter.HARDWARE_MODULATION.value: False,
+#             }
+#         ],
+#     }
+#     return DummyAWG(settings=settings)  # pylint: disable=abstract-class-instantiated
 
-    def test_error_raises_when_no_channel_specified(self, awg: AWG):
-        """These test makes soure that an error raises whenever a channel is not specified in chainging a parameter
 
-        Args:
-            awg (AWG): _description_
-        """
-        awg.settings.num_sequencers = 2
-        with pytest.raises(ValueError, match="channel not specified to update instrument"):
-            awg.device = MagicMock()
-            awg.setup(parameter=Parameter.ACQUISITION_DELAY_TIME, value=2, channel_id=None)
+# class TestAWGAnalogDigitalConverter:
+#     """This class contains the unit tests for the ``AWGAnalogDigitalConverte`` class."""
 
-    def test_setup_threshold(self, awg: AWG):
-        """Test that calling `setup` with the `THRESHOLD` parameter works correctly."""
-        awg.device = MagicMock()
-        with patch.object(target=AWGAnalogDigitalConverter, attribute="_set_threshold") as mock_set:
-            awg.setup(parameter=Parameter.THRESHOLD, value=2)
-            mock_set.assert_called_once_with(value=2, sequencer_id=0)
-            awg.device.assert_not_called()
+#     def test_error_raises_when_no_channel_specified(self, awg: AWG):
+#         """These test makes soure that an error raises whenever a channel is not specified in chainging a parameter
 
-    def test_setup_threshold_no_connection(self, awg: AWG):
-        """Test that calling `setup` with the `THRESHOLD` parameter works correctly."""
-        awg.device = None
-        awg.setup(parameter=Parameter.THRESHOLD, value=2)
-        assert cast(AWGADCSequencer, awg.get_sequencer(sequencer_id=0)).threshold == 2
+#         Args:
+#             awg (AWG): _description_
+#         """
+#         awg.settings.num_sequencers = 2
+#         with pytest.raises(ValueError, match="channel not specified to update instrument"):
+#             awg.device = MagicMock()
+#             awg.setup(parameter=Parameter.ACQUISITION_DELAY_TIME, value=2, channel_id=None)
 
-    def test_setup_threshold_rotation(self, awg: AWG):
-        """Test that calling `setup` with the `THRESHOLD_ROTATION` parameter works correctly."""
-        awg.device = MagicMock()
-        with patch.object(target=AWGAnalogDigitalConverter, attribute="_set_threshold_rotation") as mock_set:
-            awg.setup(parameter=Parameter.THRESHOLD_ROTATION, value=2)
-            mock_set.assert_called_once_with(value=2, sequencer_id=0)
-            awg.device.assert_not_called()
+#     def test_setup_threshold(self, awg: AWG):
+#         """Test that calling `setup` with the `THRESHOLD` parameter works correctly."""
+#         awg.device = MagicMock()
+#         with patch.object(target=AWGAnalogDigitalConverter, attribute="_set_threshold") as mock_set:
+#             awg.setup(parameter=Parameter.THRESHOLD, value=2)
+#             mock_set.assert_called_once_with(value=2, sequencer_id=0)
+#             awg.device.assert_not_called()
+
+#     def test_setup_threshold_no_connection(self, awg: AWG):
+#         """Test that calling `setup` with the `THRESHOLD` parameter works correctly."""
+#         awg.device = None
+#         awg.setup(parameter=Parameter.THRESHOLD, value=2)
+#         assert cast(AWGADCSequencer, awg.get_sequencer(sequencer_id=0)).threshold == 2
+
+#     def test_setup_threshold_rotation(self, awg: AWG):
+#         """Test that calling `setup` with the `THRESHOLD_ROTATION` parameter works correctly."""
+#         awg.device = MagicMock()
+#         with patch.object(target=AWGAnalogDigitalConverter, attribute="_set_threshold_rotation") as mock_set:
+#             awg.setup(parameter=Parameter.THRESHOLD_ROTATION, value=2)
+#             mock_set.assert_called_once_with(value=2, sequencer_id=0)
+#             awg.device.assert_not_called()

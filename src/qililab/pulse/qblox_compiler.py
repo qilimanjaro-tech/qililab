@@ -26,7 +26,6 @@ from qpysequence.utils.constants import AWG_MAX_GAIN, INST_MAX_WAIT
 
 from qililab.config.config import logger
 from qililab.instruments.awg_settings import AWGQbloxADCSequencer
-from qililab.instruments.qblox import QbloxModule
 from qililab.typings import InstrumentName
 
 if TYPE_CHECKING:
@@ -205,7 +204,7 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
             Program: Q1ASM program.
         """
         # get qblox module from sequencer
-        MIN_WAIT = QbloxModule._MIN_WAIT_TIME  # pylint: disable=protected-access
+        MIN_WAIT = 4
 
         # Define program's blocks
         program = Program()
