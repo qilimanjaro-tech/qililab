@@ -16,21 +16,17 @@
 This is the top level module from which all basic functions and classes of
 Qililab can be directly imported.
 """
-
-# isort: skip_file
 import contextlib
 
-# from .about import about
-# from .config import __version__, logger
-# from .data_management import build_platform, load_results, save_platform, save_results
-# from .execute_circuit import execute
-# from .qprogram import Domain, QbloxCompiler, QProgram, QuantumMachinesCompiler
-# from .result import stream_results
-# from .typings import Parameter
-# from .waveforms import *
-
-# # moving circuit_transpiler module imports here because it has instruments module dependencies so circular imports can be avoided
-# from .circuit_transpiler import Drag, Wait
+from .about import about
+from .circuit_transpiler import Drag, Wait
+from .config import __version__, logger
+from .data_management import build_platform, load_results, save_platform, save_results
+from .execute_circuit import execute
+from .qprogram import Domain, QbloxCompiler, QProgram, QuantumMachinesCompiler
+from .result import stream_results
+from .typings import Parameter
+from .waveforms import Arbitrary, DragCorrection, Gaussian, IQPair, Square
 
 with contextlib.suppress(NameError, ImportError):
     # Since Ipython magic methods can only be imported from inside a Jupyter Notebook,
