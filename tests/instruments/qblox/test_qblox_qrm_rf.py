@@ -29,9 +29,6 @@ def fixture_settings():
                 "identifier": 0,
                 "output_i": 1,
                 "output_q": 0,
-                "weights_i": [1, 1, 1, 1],
-                "weights_q": [1, 1, 1, 1],
-                "weighed_acq_enabled": False,
                 "threshold": 0.5,
                 "threshold_rotation": 45.0,
                 "num_bins": 1,
@@ -153,7 +150,7 @@ class TestIntegration:
     def test_setup(self, settings):
         """Test the `setup` method of the QbloxQRMRF class."""
         qrm_rf = QbloxQRMRF(settings=settings)
-        cluster = Cluster(name="test", dummy_cfg={"1": ClusterType.CLUSTER_QRM_RF})
+        cluster = Cluster(name="test1", dummy_cfg={"1": ClusterType.CLUSTER_QRM_RF})
         qrm_rf.device = cluster.modules[0]
         qrm_rf.setup(parameter=Parameter.OUT0_ATT, value=58)
         assert qrm_rf.device.get("out0_att") == 58

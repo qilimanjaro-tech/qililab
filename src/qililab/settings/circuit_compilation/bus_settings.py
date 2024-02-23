@@ -13,12 +13,13 @@
 # limitations under the License.
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
+
+from qililab.typings.enums import Line
 
 if TYPE_CHECKING:
     from qililab.pulse.pulse_distortion import PulseDistortion
-    from qililab.typings.enums import Line
 
 
 @dataclass
@@ -39,8 +40,25 @@ class BusSettings:
     qubits: list[int]
     distortions: list[PulseDistortion]
     delay: int
+    weights_i: list[float] = field(default_factory=list)
+    weights_q: list[float] = field(default_factory=list)
+    weighed_acq_enabled: bool = False
 
     def __post_init__(self):
         self.distortions = [
             PulseDistortion.from_dict(distortion) for distortion in self.distortions if isinstance(distortion, dict)  # type: ignore[arg-type]
         ]
+        self._verify_weights()
+
+    def is_readout(self):
+        """Return true if bus is readout."""
+        return self.line == Line.READOUT
+
+    def _verify_weights(self):
+        """Verifies that the length of weights_i and weights_q are equal.
+
+        Raises:
+            IndexError: The length of weights_i and weights_q must be equal.
+        """
+        if len(self.weights_i) != len(self.weights_q):
+            raise IndexError("The length of weights_i and weights_q must be equal.")

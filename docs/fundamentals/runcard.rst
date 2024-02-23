@@ -218,9 +218,6 @@ Runcard YAML file example:
                     gain_q: .5
                     offset_i: 0
                     offset_q: 0
-                    weights_i: [1., 1., 1., 1., 1.] # to calibrate
-                    weights_q: [1., 1., 1., 1., 1.] # to calibrate
-                    weighed_acq_enabled: False
                     threshold: 0.5
                     threshold_rotation: 0.0
                     num_bins: 1
@@ -246,9 +243,6 @@ Runcard YAML file example:
                     gain_q: .5
                     offset_i: 0
                     offset_q: 0
-                    weights_i: [1., 1., 1., 1., 1.] # to calibrate
-                    weights_q: [1., 1., 1., 1., 1.] # to calibrate
-                    weighed_acq_enabled: False
                     threshold: 0.5
                     threshold_rotation: 0.0
                     num_bins: 1

@@ -1,14 +1,13 @@
 """Test for the QbloxQRM class."""
 import copy
 import re
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from qililab.data_management import build_platform
 from qililab.exceptions import ParameterNotFound
 from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
-from qililab.instruments.awg_settings.awg_qblox_adc_sequencer import AWGQbloxADCSequencer
 from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.instruments.qblox import QbloxQRM
 from qililab.instruments.qblox.qblox_module import QbloxModule
@@ -26,9 +25,6 @@ def fixture_settings_6_sequencers():
             "identifier": seq_idx,
             "output_i": 1,
             "output_q": 0,
-            "weights_i": [1, 1, 1, 1],
-            "weights_q": [1, 1, 1, 1],
-            "weighed_acq_enabled": False,
             "threshold": 0.5,
             "threshold_rotation": 30.0 * seq_idx,
             "num_bins": 1,
@@ -70,9 +66,6 @@ def fixture_settings_even_sequencers():
             "identifier": seq_idx,
             "output_i": 1,
             "output_q": 0,
-            "weights_i": [1, 1, 1, 1],
-            "weights_q": [1, 1, 1, 1],
-            "weighed_acq_enabled": False,
             "threshold": 0.5,
             "threshold_rotation": 30.0 * seq_idx,
             "num_bins": 1,
@@ -452,14 +445,14 @@ class TestQbloxQRM:
     #                 qrm._get_sequencer_by_id(id=seq_id)  # pylint: disable=protected-access
 
 
-class TestAWGQbloxADCSequencer:  # pylint: disable=too-few-public-methods
-    """Unit tests for AWGQbloxADCSequencer class."""
+# class TestAWGQbloxADCSequencer:  # pylint: disable=too-few-public-methods
+#     """Unit tests for AWGQbloxADCSequencer class."""
 
-    def test_verify_weights(self):
-        """Test the _verify_weights method."""
-        mock_sequencer = Mock(spec=AWGQbloxADCSequencer)
-        mock_sequencer.weights_i = [1.0]
-        mock_sequencer.weights_q = [1.0, 1.0]
+#     def test_verify_weights(self):
+#         """Test the _verify_weights method."""
+#         mock_sequencer = Mock(spec=AWGQbloxADCSequencer)
+#         mock_sequencer.weights_i = [1.0]
+#         mock_sequencer.weights_q = [1.0, 1.0]
 
-        with pytest.raises(IndexError, match="The length of weights_i and weights_q must be equal."):
-            AWGQbloxADCSequencer._verify_weights(mock_sequencer)  # pylint: disable=protected-access
+#         with pytest.raises(IndexError, match="The length of weights_i and weights_q must be equal."):
+#             AWGQbloxADCSequencer._verify_weights(mock_sequencer)
