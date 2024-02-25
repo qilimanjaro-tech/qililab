@@ -226,7 +226,3 @@ class TestQbloxQCM:
     def test_name_property(self, qcm_no_device: QbloxQCM):
         """Test name property."""
         assert qcm_no_device.name == InstrumentName.QBLOX_QCM
-
-    def test_firmware_property(self, qcm_no_device: QbloxQCM):
-        """Test firmware property."""
-        assert qcm_no_device.firmware == qcm_no_device.settings.firmware

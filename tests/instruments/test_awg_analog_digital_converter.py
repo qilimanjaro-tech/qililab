@@ -74,7 +74,6 @@
 #     settings = {
 #         RUNCARD.ALIAS: InstrumentName.QBLOX_QCM.value,
 #         "acquisition_delay_time": 100,
-#         RUNCARD.FIRMWARE: "0.7.0",
 #         Parameter.NUM_SEQUENCERS.value: 1,
 #         AWGTypes.AWG_SEQUENCERS.value: [
 #             {

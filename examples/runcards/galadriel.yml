@@ -282,7 +282,6 @@ buses:
 instruments:
   - name: QRM
     alias: QRM1
-    firmware: 0.7.0
     num_sequencers: 5
     acquisition_delay_time: 100
     out_offsets: [0, 0]
@@ -404,7 +403,6 @@ instruments:
         scope_store_enabled: false
   - name: QCM-RF
     alias: QCM-RF1
-    firmware: 0.7.0
     num_sequencers: 2
     out0_lo_freq: 6.5e+09
     out0_lo_en: true
@@ -443,7 +441,6 @@ instruments:
         hardware_modulation: true
   - name: QCM-RF
     alias: QCM-RF2
-    firmware: 0.7.0
     num_sequencers: 1
     out0_lo_freq: 6.5e+09
     out0_lo_en: true
@@ -470,7 +467,6 @@ instruments:
         hardware_modulation: true
   - name: QCM-RF
     alias: QCM-RF3
-    firmware: 0.7.0
     num_sequencers: 2
     out0_lo_freq: 5.e+09
     out0_lo_en: true
@@ -509,7 +505,6 @@ instruments:
         hardware_modulation: true
   - name: QCM
     alias: QCM1
-    firmware: 0.7.0
     num_sequencers: 4
     out_offsets: [0.0, 5.0, 0.0, 10.0]
     awg_sequencers:
@@ -563,7 +558,6 @@ instruments:
         hardware_modulation: true
   - name: QCM
     alias: QCM2
-    firmware: 0.7.0
     num_sequencers: 1
     out_offsets: [0.0, 0.0, 0.0, 0.0]
     awg_sequencers:
@@ -581,13 +575,11 @@ instruments:
         hardware_modulation: true
   - name: rohde_schwarz
     alias: rs_1
-    firmware: 4.2.76.0-4.30.046.295
     power: 16
     frequency: 8.0726e+09
     rf_on: true
   - name: mini_circuits
     alias: attenuator
-    firmware: None
     attenuation: 32
 
 instrument_controllers:

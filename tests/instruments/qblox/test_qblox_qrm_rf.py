@@ -15,7 +15,6 @@ def fixture_settings():
     """Settings of the instrument"""
     return {
         "alias": "test",
-        "firmware": "0.7.0",
         "num_sequencers": 1,
         "out0_in0_lo_freq": 3e9,
         "out0_in0_lo_en": True,

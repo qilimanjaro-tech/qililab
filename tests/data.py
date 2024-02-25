@@ -207,7 +207,6 @@ class Galadriel:
     qblox_qcm_0: dict[str, Any] = {
         "name": InstrumentName.QBLOX_QCM,
         "alias": InstrumentName.QBLOX_QCM.value,
-        RUNCARD.FIRMWARE: "0.7.0",
         Parameter.NUM_SEQUENCERS.value: 2,
         AWGTypes.OUT_OFFSETS.value: [0, 0.5, 0.7, 0.8],
         AWGTypes.AWG_SEQUENCERS.value: [
@@ -262,7 +261,6 @@ class Galadriel:
     qblox_qrm_0: dict[str, Any] = {
         "name": InstrumentName.QBLOX_QRM,
         "alias": f"{InstrumentName.QBLOX_QRM.value}_0",
-        RUNCARD.FIRMWARE: "0.7.0",
         Parameter.NUM_SEQUENCERS.value: 2,
         Parameter.ACQUISITION_DELAY_TIME.value: 100,
         AWGTypes.OUT_OFFSETS.value: [0.123, 1.23],
@@ -340,7 +338,6 @@ class Galadriel:
     qblox_qrm_1: dict[str, Any] = {
         "name": InstrumentName.QBLOX_QRM,
         "alias": f"{InstrumentName.QBLOX_QRM.value}_1",
-        RUNCARD.FIRMWARE: "0.7.0",
         Parameter.NUM_SEQUENCERS.value: 1,
         Parameter.ACQUISITION_DELAY_TIME.value: 100,
         AWGTypes.OUT_OFFSETS.value: [0.123, 1.23],
@@ -393,7 +390,6 @@ class Galadriel:
     rohde_schwarz_0: dict[str, Any] = {
         "name": InstrumentName.ROHDE_SCHWARZ,
         "alias": "rs_0",
-        RUNCARD.FIRMWARE: "4.30.046.295",
         Parameter.POWER.value: 15,
         Parameter.LO_FREQUENCY.value: 7.24730e09,
         Parameter.RF_ON.value: True,
@@ -419,7 +415,6 @@ class Galadriel:
     rohde_schwarz_1: dict[str, Any] = {
         "name": InstrumentName.ROHDE_SCHWARZ,
         "alias": "rs_1",
-        RUNCARD.FIRMWARE: "4.30.046.295",
         Parameter.POWER.value: 15,
         Parameter.LO_FREQUENCY.value: 3.351e09,
         Parameter.RF_ON.value: True,
@@ -445,7 +440,6 @@ class Galadriel:
         "name": InstrumentName.MINI_CIRCUITS,
         "alias": "attenuator",
         Parameter.ATTENUATION.value: 30,
-        RUNCARD.FIRMWARE: None,
     }
 
     keithley_2600_controller_0: dict[str, Any] = {
@@ -467,7 +461,6 @@ class Galadriel:
     keithley_2600: dict[str, Any] = {
         "name": InstrumentName.KEITHLEY2600,
         "alias": InstrumentControllerName.KEITHLEY2600.value,
-        RUNCARD.FIRMWARE: None,
         Parameter.MAX_CURRENT.value: 0.1,
         Parameter.MAX_VOLTAGE.value: 20.0,
     }
@@ -569,7 +562,6 @@ class SauronVNA:
     keysight_e5080b: dict[str, Any] = {
         "name": InstrumentName.KEYSIGHT_E5080B,
         "alias": InstrumentName.KEYSIGHT_E5080B.value,
-        RUNCARD.FIRMWARE: "A.15.10.06",
         Parameter.POWER.value: -60.0,
     }
 
@@ -592,7 +584,6 @@ class SauronVNA:
     agilent_e5071b: dict[str, Any] = {
         "name": InstrumentName.AGILENT_E5071B,
         "alias": InstrumentName.AGILENT_E5071B.value,
-        RUNCARD.FIRMWARE: "A.15.10.06",
         Parameter.POWER.value: -60.0,
     }
 
@@ -630,7 +621,6 @@ class SauronYokogawa:
     yokogawa_gs200_current = {
         RUNCARD.NAME: InstrumentName.YOKOGAWA_GS200,
         RUNCARD.ALIAS: "yokogawa_current",
-        RUNCARD.FIRMWARE: "A.15.10.06",
         Parameter.SOURCE_MODE.value: "current",
         Parameter.CURRENT.value: [0.5],
         Parameter.VOLTAGE.value: [0.0],
@@ -643,7 +633,6 @@ class SauronYokogawa:
     yokogawa_gs200_voltage = {
         RUNCARD.NAME: InstrumentName.YOKOGAWA_GS200,
         RUNCARD.ALIAS: "yokogawa_voltage",
-        RUNCARD.FIRMWARE: "A.15.10.06",
         Parameter.SOURCE_MODE.value: "voltage",
         Parameter.CURRENT.value: [0.0],
         Parameter.VOLTAGE.value: [0.5],
@@ -656,7 +645,6 @@ class SauronYokogawa:
     rohde_schwarz: dict[str, Any] = {
         "name": InstrumentName.ROHDE_SCHWARZ,
         "alias": "rohde_schwarz",
-        RUNCARD.FIRMWARE: "4.30.046.295",
         Parameter.POWER.value: 15,
         Parameter.LO_FREQUENCY.value: 7.24730e09,
         Parameter.RF_ON.value: True,
@@ -745,7 +733,6 @@ class SauronQDevil:
     qdevil_qdac2 = {
         RUNCARD.NAME: InstrumentName.QDEVIL_QDAC2,
         RUNCARD.ALIAS: "qdac",
-        RUNCARD.FIRMWARE: "A.15.10.06",
         Parameter.VOLTAGE.value: [0.0],
         Parameter.SPAN.value: ["low"],
         Parameter.RAMPING_ENABLED.value: [True],
@@ -757,7 +744,6 @@ class SauronQDevil:
     rohde_schwarz: dict[str, Any] = {
         "name": InstrumentName.ROHDE_SCHWARZ,
         "alias": "rohde_schwarz",
-        RUNCARD.FIRMWARE: "4.30.046.295",
         Parameter.POWER.value: 15,
         Parameter.LO_FREQUENCY.value: 7.24730e09,
         Parameter.RF_ON.value: True,
@@ -841,7 +827,6 @@ class SauronQuantumMachines:
     qmm = {
         "name": InstrumentName.QUANTUM_MACHINES_CLUSTER,
         "alias": "qmm",
-        RUNCARD.FIRMWARE: "4.30.046.295",
         "address": "192.168.0.1",
         "cluster": "cluster_0",
         "controllers": [
@@ -896,7 +881,6 @@ class SauronQuantumMachines:
     qmm_with_octave = {
         "name": InstrumentName.QUANTUM_MACHINES_CLUSTER,
         "alias": "qmm_with_octave",
-        RUNCARD.FIRMWARE: "4.30.046.295",
         "address": "192.168.0.1",
         "cluster": "cluster_0",
         "controllers": [
@@ -987,7 +971,6 @@ class SauronQuantumMachines:
     rohde_schwarz: dict[str, Any] = {
         "name": InstrumentName.ROHDE_SCHWARZ,
         "alias": "rohde_schwarz",
-        RUNCARD.FIRMWARE: "4.30.046.295",
         Parameter.POWER.value: 15,
         Parameter.LO_FREQUENCY.value: 7.24730e09,
         Parameter.RF_ON.value: True,

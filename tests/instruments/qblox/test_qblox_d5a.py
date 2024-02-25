@@ -18,7 +18,6 @@ def fixture_d5a():
             "ramping_enabled": [],
             "ramp_rate": [],
             "dacs": [],
-            "firmware": "0.7.0",
         }
     )  # pylint: disable=abstract-class-instantiated
 

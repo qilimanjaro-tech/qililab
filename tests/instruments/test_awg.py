@@ -45,7 +45,6 @@ def fixture_awg_settings():
     """Fixture that returns AWG settings."""
     return {
         "alias": "QRM",
-        "firmware": "0.7.0",
         "num_sequencers": 2,
         "awg_sequencers": [
             {
@@ -91,7 +90,6 @@ class TestInitialization:
         """Test the initialization of the AWG class."""
         assert isinstance(awg.settings, AWG.AWGSettings)
         assert awg.settings.alias == "QRM"
-        assert awg.settings.firmware == "0.7.0"
         assert awg.settings.num_sequencers == 2
         for idx, sequencer in enumerate(awg.settings.awg_sequencers):
             assert isinstance(sequencer, AWGSequencer)

@@ -17,7 +17,6 @@ def fixture_pulsar_controller_qcm():
             "span": [],
             "ramping_enabled": [],
             "ramp_rate": [],
-            "firmware": "0.7.0",
             "dacs": [],
         }
     )  # pylint: disable=abstract-class-instantiated

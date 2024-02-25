@@ -42,11 +42,9 @@ class Instrument(BusElement, ABC):
 
         Args:
             alias (str): Alias of the instrument.
-            firmware (str): Firmware version installed on the instrument.
         """
 
         alias: str
-        firmware: str
 
     settings: InstrumentSettings  # a subtype of settings must be specified by the subclass
     device: Device
@@ -88,15 +86,6 @@ class Instrument(BusElement, ABC):
             str: settings.alias.
         """
         return self.settings.alias
-
-    @property
-    def firmware(self):
-        """Instrument 'firmware' property.
-
-        Returns:
-            str: settings.firmware.
-        """
-        return self.settings.firmware
 
     def __str__(self):
         """String representation of an instrument."""

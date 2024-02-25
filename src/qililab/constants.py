@@ -51,7 +51,6 @@ class RUNCARD:
     SYSTEM_CONTROL = "system_control"
     INSTRUMENT_CONTROLLER = "instrument_controller"
     INSTRUMENT_CONTROLLERS = "instrument_controllers"
-    FIRMWARE = "firmware"
     GATES = "gates"
     VOLTAGE_SOURCE = "voltage_source"
     CURRENT_SOURCE = "current_source"

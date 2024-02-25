@@ -50,7 +50,6 @@ def fixture_settings_6_sequencers():
     ]
     return {
         "alias": "test",
-        "firmware": "0.4.0",
         "num_sequencers": 6,
         "out_offsets": [0.123, 1.23],
         "acquisition_delay_time": 100,
@@ -91,7 +90,6 @@ def fixture_settings_even_sequencers():
     ]
     return {
         "alias": "test",
-        "firmware": "0.4.0",
         "num_sequencers": 3,
         "out_offsets": [0.123, 1.23],
         "acquisition_delay_time": 100,
@@ -429,10 +427,6 @@ class TestQbloxQRM:
     def test_integration_length_property(self, qrm_no_device: QbloxQRM):
         """Test integration_length property."""
         assert qrm_no_device.integration_length(0) == qrm_no_device.awg_sequencers[0].integration_length
-
-    def tests_firmware_property(self, qrm_no_device: QbloxQRM):
-        """Test firmware property."""
-        assert qrm_no_device.firmware == qrm_no_device.settings.firmware
 
     # def test_getting_even_sequencers(self, settings_even_sequencers: dict):
     #     """Tests the method QbloxQRM._get_sequencers_by_id() for a QbloxQRM with only the even sequencers configured."""

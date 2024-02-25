@@ -96,7 +96,6 @@ class TestBuildPlatformCornerCases:
         original_dict["gates_settings"]["gates"]["Y(0)"][0]["pulse"]["phase"] = 1.6707963267948966  # Test long decimals
         original_dict["instruments"][0]["awg_sequencers"][0]["intermediate_frequency"] = 100_000_000  # Test underscores
         original_dict["instruments"][1]["awg_sequencers"][0]["sampling_rate"] = 7.24730e09  # Test scientific notation
-        original_dict["instruments"][4]["firmware"] = None  # Test None values
 
         original_platform = build_platform(original_dict)
 
