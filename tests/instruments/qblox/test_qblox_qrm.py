@@ -50,7 +50,6 @@ def fixture_settings_6_sequencers():
     ]
     return {
         "alias": "test",
-        "num_sequencers": 6,
         "out_offsets": [0.123, 1.23],
         "acquisition_delay_time": 100,
         "awg_sequencers": sequencers,
@@ -90,7 +89,6 @@ def fixture_settings_even_sequencers():
     ]
     return {
         "alias": "test",
-        "num_sequencers": 3,
         "out_offsets": [0.123, 1.23],
         "acquisition_delay_time": 100,
         "awg_sequencers": sequencers,
@@ -133,7 +131,6 @@ def fixture_qrm_two_scopes():
     settings = copy.deepcopy(Galadriel.qblox_qrm_0)
     extra_sequencer = copy.deepcopy(settings[AWGTypes.AWG_SEQUENCERS.value][0])
     extra_sequencer[AWGSequencerTypes.IDENTIFIER.value] = 1
-    settings[Parameter.NUM_SEQUENCERS.value] += 1
     settings[AWGTypes.AWG_SEQUENCERS.value].append(extra_sequencer)
     settings.pop("name")
     return QbloxQRM(settings=settings)
@@ -195,11 +192,10 @@ class TestQbloxQRM:
 
     def test_error_post_init_too_many_seqs(self, settings_6_sequencers: dict):
         """test that init raises an error if there are too many sequencers"""
-        num_sequencers = 7
-        settings_6_sequencers["num_sequencers"] = num_sequencers
+        settings_6_sequencers["awg_sequencers"].append(settings_6_sequencers["awg_sequencers"][-1])
         error_string = re.escape(
             "The number of sequencers must be greater than 0 and less or equal than "
-            + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: {num_sequencers}"  # pylint: disable=protected-access
+            + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: 7"  # pylint: disable=protected-access
         )
 
         with pytest.raises(ValueError, match=error_string):
@@ -207,24 +203,12 @@ class TestQbloxQRM:
 
     def test_error_post_init_0_seqs(self, settings_6_sequencers: dict):
         """test that errror is raised in no sequencers are found"""
-        num_sequencers = 0
-        settings_6_sequencers["num_sequencers"] = num_sequencers
+        settings_6_sequencers["awg_sequencers"] = []
         error_string = re.escape(
             "The number of sequencers must be greater than 0 and less or equal than "
-            + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: {num_sequencers}"  # pylint: disable=protected-access
+            + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: {len(settings_6_sequencers['awg_sequencers'])}"  # pylint: disable=protected-access
         )
 
-        with pytest.raises(ValueError, match=error_string):
-            QbloxQRM(settings_6_sequencers)
-
-    def test_error_awg_seqs_neq_seqs(self, settings_6_sequencers: dict):
-        """test taht error is raised if awg sequencers in settings and those in device dont match"""
-        num_sequencers = 5
-        settings_6_sequencers["num_sequencers"] = num_sequencers
-        error_string = re.escape(
-            f"The number of sequencers: {num_sequencers} does not match"
-            + f" the number of AWG Sequencers settings specified: {len(settings_6_sequencers['awg_sequencers'])}"
-        )
         with pytest.raises(ValueError, match=error_string):
             QbloxQRM(settings_6_sequencers)
 

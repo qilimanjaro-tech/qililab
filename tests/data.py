@@ -207,7 +207,6 @@ class Galadriel:
     qblox_qcm_0: dict[str, Any] = {
         "name": InstrumentName.QBLOX_QCM,
         "alias": InstrumentName.QBLOX_QCM.value,
-        Parameter.NUM_SEQUENCERS.value: 2,
         AWGTypes.OUT_OFFSETS.value: [0, 0.5, 0.7, 0.8],
         AWGTypes.AWG_SEQUENCERS.value: [
             {
@@ -261,7 +260,6 @@ class Galadriel:
     qblox_qrm_0: dict[str, Any] = {
         "name": InstrumentName.QBLOX_QRM,
         "alias": f"{InstrumentName.QBLOX_QRM.value}_0",
-        Parameter.NUM_SEQUENCERS.value: 2,
         Parameter.ACQUISITION_DELAY_TIME.value: 100,
         AWGTypes.OUT_OFFSETS.value: [0.123, 1.23],
         AWGTypes.AWG_SEQUENCERS.value: [
@@ -338,7 +336,6 @@ class Galadriel:
     qblox_qrm_1: dict[str, Any] = {
         "name": InstrumentName.QBLOX_QRM,
         "alias": f"{InstrumentName.QBLOX_QRM.value}_1",
-        Parameter.NUM_SEQUENCERS.value: 1,
         Parameter.ACQUISITION_DELAY_TIME.value: 100,
         AWGTypes.OUT_OFFSETS.value: [0.123, 1.23],
         AWGTypes.AWG_SEQUENCERS.value: [

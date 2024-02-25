@@ -204,7 +204,6 @@ Runcard YAML file example:
     instruments:
         -   name: QRM
             alias: QRM1
-            num_sequencers: 2
             acquisition_delay_time: 100
             out_offsets: [0, 0]
             awg_sequencers:
@@ -260,7 +259,6 @@ Runcard YAML file example:
                     scope_store_enabled: false
         -   name: QCM-RF
             alias: QCM-RF1
-            num_sequencers: 2
             out0_lo_freq: 6.5e+09
             out0_lo_en: true
             out0_att: 0
@@ -300,7 +298,6 @@ Runcard YAML file example:
                     hardware_modulation: true
         -   name: QCM
             alias: QCM1
-            num_sequencers: 2
             out_offsets: [0.0, 0.0, 0.0, 0.0]
             awg_sequencers:
                 -   identifier: 0

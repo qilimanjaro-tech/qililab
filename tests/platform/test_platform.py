@@ -558,7 +558,6 @@ class TestMethods:
         assert isinstance(bus, Bus)
         qblox_module = bus.instruments[0]
         assert isinstance(qblox_module, QbloxModule)
-        qblox_module.settings.num_sequencers = 1
         assert platform.get_parameter(parameter=Parameter.GAIN, alias="drive_line_q0_bus") == bus.get_parameter(
             parameter=Parameter.GAIN
         )

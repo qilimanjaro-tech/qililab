@@ -282,7 +282,6 @@ buses:
 instruments:
   - name: QRM
     alias: QRM1
-    num_sequencers: 5
     acquisition_delay_time: 100
     out_offsets: [0, 0]
     awg_sequencers:
@@ -403,7 +402,6 @@ instruments:
         scope_store_enabled: false
   - name: QCM-RF
     alias: QCM-RF1
-    num_sequencers: 2
     out0_lo_freq: 6.5e+09
     out0_lo_en: true
     out0_att: 0
@@ -441,7 +439,6 @@ instruments:
         hardware_modulation: true
   - name: QCM-RF
     alias: QCM-RF2
-    num_sequencers: 1
     out0_lo_freq: 6.5e+09
     out0_lo_en: true
     out0_att: 0
@@ -467,7 +464,6 @@ instruments:
         hardware_modulation: true
   - name: QCM-RF
     alias: QCM-RF3
-    num_sequencers: 2
     out0_lo_freq: 5.e+09
     out0_lo_en: true
     out0_att: 0
@@ -505,7 +501,6 @@ instruments:
         hardware_modulation: true
   - name: QCM
     alias: QCM1
-    num_sequencers: 4
     out_offsets: [0.0, 5.0, 0.0, 10.0]
     awg_sequencers:
       - identifier: 0
@@ -558,7 +553,6 @@ instruments:
         hardware_modulation: true
   - name: QCM
     alias: QCM2
-    num_sequencers: 1
     out_offsets: [0.0, 0.0, 0.0, 0.0]
     awg_sequencers:
       - identifier: 0

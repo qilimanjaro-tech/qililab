@@ -105,7 +105,6 @@
 #     ]
 #     return {
 #         "alias": "test",
-#         "num_sequencers": 6,
 #         "out_offsets": [0.123, 1.23],
 #         "acquisition_delay_time": 100,
 #         "awg_sequencers": sequencers,

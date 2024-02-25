@@ -196,20 +196,6 @@
 #         with pytest.raises(ValueError, match=error_string):
 #             QbloxModule(settings)
 
-#     def test_incorrect_num_sequencers_error(self):
-#         """test that an error is raised if num_sequencers is not the same as len(awg_sequencers)"""
-#         nsequencers = 2
-#         settings = copy.deepcopy(Galadriel.qblox_qcm_0)
-#         settings.pop("name")
-#         settings["num_sequencers"] = nsequencers
-#         settings["awg_sequencers"] = [settings["awg_sequencers"][0]]
-#         error_string = re.escape(
-#             f"The number of sequencers: {nsequencers} does not match "
-#             + "the number of AWG Sequencers settings specified: 1"
-#         )
-#         with pytest.raises(ValueError, match=error_string):
-#             QbloxModule(settings)
-
 #     def test_module_type(self):
 #         qrm_settings = copy.deepcopy(Galadriel.qblox_qrm_0)
 #         qrm_settings.pop("name")

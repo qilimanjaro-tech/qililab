@@ -261,7 +261,6 @@ class Parameter(str, Enum):
     NUMBER_AVERAGES = "number_averages"
     TRIGGER_MODE = "trigger_mode"
     NUMBER_POINTS = "number_points"
-    NUM_SEQUENCERS = "num_sequencers"
     INTEGRATION_MODE = "integration_mode"
     ACQUISITION_TIMEOUT = "acquisition_timeout"
     MAX_CURRENT = "max_current"

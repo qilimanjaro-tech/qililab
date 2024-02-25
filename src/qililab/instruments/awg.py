@@ -34,23 +34,17 @@ class AWG(Instrument):
         """Contains the settings of a AWG.
 
         Args:
-            num_sequencers (int): Number of sequencers (physical I/Q pairs)
             awg_sequencers (Sequence[AWGSequencer]): Properties of each AWG sequencer
         """
 
-        num_sequencers: int
         awg_sequencers: Sequence[AWGSequencer]
 
         def __post_init__(self):
             """build AWGSequencers and IQ channels"""
             super().__post_init__()
-            if self.num_sequencers <= 0:
-                raise ValueError(f"The number of sequencers must be greater than 0. Received: {self.num_sequencers}")
-            if len(self.awg_sequencers) != self.num_sequencers:
-                raise ValueError(
-                    f"The number of sequencers: {self.num_sequencers} does not match"
-                    + f" the number of AWG Sequencers settings specified: {len(self.awg_sequencers)}"
-                )
+            num_sequencers = len(self.awg_sequencers)
+            if num_sequencers <= 0:
+                raise ValueError(f"The number of sequencers must be greater than 0. Received: {num_sequencers}")
             self.awg_sequencers = [
                 AWGSequencer(**sequencer) if isinstance(sequencer, dict) else sequencer  # pylint: disable=not-a-mapping
                 for sequencer in self.awg_sequencers
@@ -84,7 +78,7 @@ class AWG(Instrument):
         Returns:
             int: number of sequencers
         """
-        return self.settings.num_sequencers
+        return len(self.settings.awg_sequencers)
 
     @property
     def awg_sequencers(self):

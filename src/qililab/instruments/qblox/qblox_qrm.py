@@ -49,18 +49,13 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
 
         def __post_init__(self):
             """build AWGQbloxADCSequencer"""
+            num_sequencers = len(self.awg_sequencers)
             if (
-                self.num_sequencers <= 0
-                or self.num_sequencers > QbloxModule._NUM_MAX_SEQUENCERS  # pylint: disable=protected-access
-            ):
+                num_sequencers <= 0 or num_sequencers > QbloxModule._NUM_MAX_SEQUENCERS
+            ):  # pylint: disable=protected-access)
                 raise ValueError(
                     "The number of sequencers must be greater than 0 and less or equal than "
-                    + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: {self.num_sequencers}"  # pylint: disable=protected-access
-                )
-            if len(self.awg_sequencers) != self.num_sequencers:
-                raise ValueError(
-                    f"The number of sequencers: {self.num_sequencers} does not match"
-                    + f" the number of AWG Sequencers settings specified: {len(self.awg_sequencers)}"
+                    + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: {num_sequencers}"  # pylint: disable=protected-access
                 )
 
             self.awg_sequencers = [
