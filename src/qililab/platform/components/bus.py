@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import contextlib
 from dataclasses import InitVar, dataclass
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from qililab.constants import RUNCARD
 from qililab.exceptions import ParameterNotFound
