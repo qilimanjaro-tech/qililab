@@ -29,7 +29,7 @@ class Settings:
         """Cast all enum attributes to its corresponding Enum class."""
         cast_enum_fields(obj=self)
 
-    def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | str | None = None):
         """Cast the new value to its corresponding type and set the new attribute.
 
         Args:
@@ -67,7 +67,7 @@ class Settings:
         self,
         value: float | str | bool,
         attributes: list[float | str | bool],
-        channel_id: int | None,
+        channel_id: int | str | None,
     ):
         """Set the parameter value to its corresponding attribute list element
 
@@ -76,7 +76,7 @@ class Settings:
             attribute (list[float  |  str  |  bool]): _description_
             channel_id (int | None): _description_
         """
-        if channel_id is None:
+        if channel_id is None or isinstance(channel_id, str):
             raise ValueError("No list index specified when updating a list of parameters.")
         if len(attributes) <= channel_id:
             raise ValueError(
@@ -85,7 +85,7 @@ class Settings:
             )
         attributes[channel_id] = value
 
-    def get_parameter(self, parameter: Parameter, channel_id: int | None = None):
+    def get_parameter(self, parameter: Parameter, channel_id: int | str | None = None):
         """Get parameter from settings.
 
         Args:
@@ -102,7 +102,7 @@ class Settings:
         attribute = getattr(self, param)
 
         if isinstance(attribute, list):
-            if channel_id is None:
+            if channel_id is None or isinstance(channel_id, str):
                 raise ValueError(f"channel_id must be specified to get parameter {param}.")
             return attribute[channel_id]
         return attribute

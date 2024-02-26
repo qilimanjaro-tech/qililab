@@ -6,16 +6,15 @@ import pytest
 from qblox_instruments.qcodes_drivers.cluster import Cluster
 from qblox_instruments.types import ClusterType
 
-from qililab.instruments.qblox import QbloxQRMRF
+from qililab.instruments.qblox.qblox_qrm_rf import QbloxQRMRF
 from qililab.typings import Parameter
 
 
 @pytest.fixture(name="settings")
 def fixture_settings():
+    """Settings of the instrument"""
     return {
         "alias": "test",
-        "firmware": "0.7.0",
-        "num_sequencers": 1,
         "out0_in0_lo_freq": 3e9,
         "out0_in0_lo_en": True,
         "out0_att": 34,
@@ -26,13 +25,8 @@ def fixture_settings():
         "awg_sequencers": [
             {
                 "identifier": 0,
-                "chip_port_id": "feedline_input",
-                "qubit": 0,
                 "output_i": 1,
                 "output_q": 0,
-                "weights_i": [1, 1, 1, 1],
-                "weights_q": [1, 1, 1, 1],
-                "weighed_acq_enabled": False,
                 "threshold": 0.5,
                 "threshold_rotation": 45.0,
                 "num_bins": 1,
@@ -154,7 +148,7 @@ class TestIntegration:
     def test_setup(self, settings):
         """Test the `setup` method of the QbloxQRMRF class."""
         qrm_rf = QbloxQRMRF(settings=settings)
-        cluster = Cluster(name="test", dummy_cfg={"1": ClusterType.CLUSTER_QRM_RF})
+        cluster = Cluster(name="test1", dummy_cfg={"1": ClusterType.CLUSTER_QRM_RF})
         qrm_rf.device = cluster.modules[0]
         qrm_rf.setup(parameter=Parameter.OUT0_ATT, value=58)
         assert qrm_rf.device.get("out0_att") == 58

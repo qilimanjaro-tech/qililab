@@ -22,7 +22,6 @@ Waveforms
 .. autosummary::
     :toctree: api
 
-    ~Waveform
     ~Arbitrary
     ~Gaussian
     ~DragCorrection

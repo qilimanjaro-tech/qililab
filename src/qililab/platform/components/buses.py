@@ -13,17 +13,20 @@
 # limitations under the License.
 
 """Buses class."""
-from dataclasses import dataclass
+from __future__ import annotations
 
-from qililab.platform.components.bus import Bus
-from qililab.system_control import ReadoutSystemControl
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from qililab.platform.components.bus import Bus
 
 
 @dataclass
 class Buses:
     """Class used as a container of :class:`Bus` objects, these are inside the `elements` attribute, as a list.
 
-    You can add more :class:`Bus` objects to the list, you can get the :class:`Bus` object connected to a concrete port
+    You can add more :class:`Bus` objects to the list and you can get the :class:`Bus` object
     through the `add()` or `get()` methods respectively.
 
     And you can also get all the :class:`Bus` objects containing system controls used for readout via the `readout_buses` property.
@@ -41,19 +44,13 @@ class Buses:
             bus (Bus): Bus object to append."""
         self.elements.append(bus)
 
-    def get(self, port: str):
-        """Get bus connected to the specified port.
+    def get_bus(self, alias: str):
+        """Get bus with the given alias.
 
         Args:
-            port (int): Port of the Chip where the bus is connected to.
+            bus_alias (str): Alias of the bus we want to get.
         """
-        bus = [bus for bus in self.elements if bus.port == port]
-        if len(bus) == 1:
-            return bus[0]
-
-        raise ValueError(
-            f"There can only be one bus connected to a port. There are {len(bus)} buses connected to port {port}."
-        )
+        return next((bus for bus in self.elements if bus.alias == alias), None)
 
     def __iter__(self):
         """Redirect __iter__ magic method to iterate over buses."""
@@ -82,4 +79,4 @@ class Buses:
     @property
     def readout_buses(self) -> list[Bus]:
         """Returns a list of buses containing system controls used for readout."""
-        return [bus for bus in self.elements if isinstance(bus.system_control, ReadoutSystemControl)]
+        return [bus for bus in self.elements if bus.has_adc()]

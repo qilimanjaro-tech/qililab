@@ -26,11 +26,10 @@ from qililab.typings.enums import (
     InstrumentControllerName,
     InstrumentName,
     IntegrationMode,
+    Line,
     Parameter,
     PulseShapeName,
     ReferenceClock,
-    ResetMethod,
-    SystemControlName,
 )
 
 
@@ -43,33 +42,11 @@ class Galadriel:
 
     gates_settings: dict[str, Any] = {
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
-        PLATFORM.DELAY_BETWEEN_PULSES: 0,
         PLATFORM.DELAY_BEFORE_READOUT: 0,
-        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
-        PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
-        PLATFORM.PASSIVE_RESET_DURATION: 100,
-        "operations": [
-            {
-                "name": "Rxy",
-                "pulse": {"name": "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
-            },
-            {
-                "name": "R180",
-                "pulse": {"name": "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
-            },
-            {
-                "name": "X",
-                "pulse": {"name": "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
-            },
-            {
-                "name": "Measure",
-                "pulse": {"name": "Square", "amplitude": 1.0, "duration": 6000, "parameters": {}},
-            },
-        ],
         "gates": {
             "M(0)": [
                 {
-                    "bus": "feedline_input_output_bus",
+                    "bus": "readout_line_q0_bus",
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -81,7 +58,7 @@ class Galadriel:
             ],
             "M(1)": [
                 {
-                    "bus": "feedline_input_output_bus",
+                    "bus": "readout_line_q1_bus",
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -93,7 +70,7 @@ class Galadriel:
             ],
             "M(2)": [
                 {
-                    "bus": "feedline_input_output_bus_1",
+                    "bus": "readout_line_q2_bus",
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -201,6 +178,13 @@ class Galadriel:
                 }
             ],
         },
+        "buses": {
+            "drive_line_q0_bus": {"line": Line.DRIVE, "qubits": [0], "distortions": [], "delay": 0},
+            "flux_line_q0_bus": {"line": Line.FLUX, "qubits": [0], "distortions": [], "delay": 0},
+            "readout_line_q0_bus": {"line": Line.READOUT, "qubits": [0], "distortions": [], "delay": 0},
+            "readout_line_q1_bus": {"line": Line.READOUT, "qubits": [0], "distortions": [], "delay": 0},
+            "readout_line_q2_bus": {"line": Line.READOUT, "qubits": [2], "distortions": [], "delay": 0},
+        },
     }
 
     pulsar_controller_qcm_0: dict[str, Any] = {
@@ -223,13 +207,10 @@ class Galadriel:
     qblox_qcm_0: dict[str, Any] = {
         "name": InstrumentName.QBLOX_QCM,
         "alias": InstrumentName.QBLOX_QCM.value,
-        RUNCARD.FIRMWARE: "0.7.0",
-        Parameter.NUM_SEQUENCERS.value: 2,
         AWGTypes.OUT_OFFSETS.value: [0, 0.5, 0.7, 0.8],
         AWGTypes.AWG_SEQUENCERS.value: [
             {
                 "identifier": 0,
-                "chip_port_id": "drive_q0",
                 "output_i": 0,
                 "output_q": 1,
                 Parameter.NUM_BINS.value: 1,
@@ -244,7 +225,6 @@ class Galadriel:
             },
             {
                 "identifier": 1,
-                "chip_port_id": "flux_q0",
                 "output_i": 0,
                 "output_q": 1,
                 Parameter.NUM_BINS.value: 1,
@@ -280,15 +260,11 @@ class Galadriel:
     qblox_qrm_0: dict[str, Any] = {
         "name": InstrumentName.QBLOX_QRM,
         "alias": f"{InstrumentName.QBLOX_QRM.value}_0",
-        RUNCARD.FIRMWARE: "0.7.0",
-        Parameter.NUM_SEQUENCERS.value: 2,
         Parameter.ACQUISITION_DELAY_TIME.value: 100,
         AWGTypes.OUT_OFFSETS.value: [0.123, 1.23],
         AWGTypes.AWG_SEQUENCERS.value: [
             {
                 "identifier": 0,
-                "chip_port_id": "feedline_input",
-                "qubit": 0,
                 "output_i": 0,
                 "output_q": 1,
                 Parameter.NUM_BINS.value: 1,
@@ -309,16 +285,11 @@ class Galadriel:
                 Parameter.ACQUISITION_TIMEOUT.value: 1,
                 Parameter.HARDWARE_DEMODULATION.value: True,
                 Parameter.SCOPE_STORE_ENABLED.value: True,
-                Parameter.WEIGHTS_I.value: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
-                Parameter.WEIGHTS_Q.value: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
-                Parameter.WEIGHED_ACQ_ENABLED.value: True,
                 Parameter.THRESHOLD.value: 0.5,
                 Parameter.THRESHOLD_ROTATION.value: 45.0,
             },
             {
                 "identifier": 1,
-                "chip_port_id": "feedline_input",
-                "qubit": 1,
                 "output_i": 0,
                 "output_q": 1,
                 Parameter.NUM_BINS.value: 1,
@@ -339,9 +310,6 @@ class Galadriel:
                 Parameter.ACQUISITION_TIMEOUT.value: 1,
                 Parameter.HARDWARE_DEMODULATION.value: True,
                 Parameter.SCOPE_STORE_ENABLED.value: False,
-                Parameter.WEIGHTS_I.value: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
-                Parameter.WEIGHTS_Q.value: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
-                Parameter.WEIGHED_ACQ_ENABLED.value: False,
                 Parameter.THRESHOLD.value: 0.5,
                 Parameter.THRESHOLD_ROTATION.value: 45.0,
             },
@@ -368,15 +336,11 @@ class Galadriel:
     qblox_qrm_1: dict[str, Any] = {
         "name": InstrumentName.QBLOX_QRM,
         "alias": f"{InstrumentName.QBLOX_QRM.value}_1",
-        RUNCARD.FIRMWARE: "0.7.0",
-        Parameter.NUM_SEQUENCERS.value: 1,
         Parameter.ACQUISITION_DELAY_TIME.value: 100,
         AWGTypes.OUT_OFFSETS.value: [0.123, 1.23],
         AWGTypes.AWG_SEQUENCERS.value: [
             {
                 "identifier": 0,
-                "chip_port_id": "feedline_input_1",
-                "qubit": 2,
                 "output_i": 0,
                 "output_q": 1,
                 Parameter.NUM_BINS.value: 1,
@@ -397,9 +361,6 @@ class Galadriel:
                 Parameter.ACQUISITION_TIMEOUT.value: 1,
                 Parameter.HARDWARE_DEMODULATION.value: True,
                 Parameter.SCOPE_STORE_ENABLED.value: True,
-                Parameter.WEIGHTS_I.value: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
-                Parameter.WEIGHTS_Q.value: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
-                Parameter.WEIGHED_ACQ_ENABLED.value: True,
                 Parameter.THRESHOLD.value: 0.5,
                 Parameter.THRESHOLD_ROTATION.value: 45.0,
             },
@@ -426,7 +387,6 @@ class Galadriel:
     rohde_schwarz_0: dict[str, Any] = {
         "name": InstrumentName.ROHDE_SCHWARZ,
         "alias": "rs_0",
-        RUNCARD.FIRMWARE: "4.30.046.295",
         Parameter.POWER.value: 15,
         Parameter.LO_FREQUENCY.value: 7.24730e09,
         Parameter.RF_ON.value: True,
@@ -452,7 +412,6 @@ class Galadriel:
     rohde_schwarz_1: dict[str, Any] = {
         "name": InstrumentName.ROHDE_SCHWARZ,
         "alias": "rs_1",
-        RUNCARD.FIRMWARE: "4.30.046.295",
         Parameter.POWER.value: 15,
         Parameter.LO_FREQUENCY.value: 3.351e09,
         Parameter.RF_ON.value: True,
@@ -478,7 +437,6 @@ class Galadriel:
         "name": InstrumentName.MINI_CIRCUITS,
         "alias": "attenuator",
         Parameter.ATTENUATION.value: 30,
-        RUNCARD.FIRMWARE: None,
     }
 
     keithley_2600_controller_0: dict[str, Any] = {
@@ -500,7 +458,6 @@ class Galadriel:
     keithley_2600: dict[str, Any] = {
         "name": InstrumentName.KEITHLEY2600,
         "alias": InstrumentControllerName.KEITHLEY2600.value,
-        RUNCARD.FIRMWARE: None,
         Parameter.MAX_CURRENT.value: 0.1,
         Parameter.MAX_VOLTAGE.value: 20.0,
     }
@@ -524,100 +481,31 @@ class Galadriel:
         keithley_2600_controller_0,
     ]
 
-    chip: dict[str, Any] = {
-        "nodes": [
-            {"name": "port", "alias": "flux_q0", "line": "flux", "nodes": ["q0"]},
-            {"name": "port", "alias": "drive_q0", "line": "drive", "nodes": ["q0"]},
-            {
-                "name": "port",
-                "alias": "feedline_input",
-                "line": "feedline_input",
-                "nodes": ["resonator_q0", "resonator_q1"],
-            },
-            {"name": "port", "alias": "feedline_output", "line": "feedline_output", "nodes": ["resonator_q0"]},
-            {"name": "port", "alias": "feedline_input_1", "line": "feedline_input", "nodes": ["resonator_q2"]},
-            {
-                "name": "resonator",
-                "alias": "resonator_q0",
-                "frequency": 7.34730e09,
-                "nodes": ["feedline_input", "feedline_output", "q0"],
-            },
-            {
-                "name": "resonator",
-                "alias": "resonator_q1",
-                "frequency": 7.34730e09,
-                "nodes": ["feedline_input", "feedline_output", "q1"],
-            },
-            {
-                "name": "resonator",
-                "alias": "resonator_q2",
-                "frequency": 7.34730e09,
-                "nodes": ["feedline_input_1", "q2"],
-            },
-            {
-                "name": "qubit",
-                "alias": "q0",
-                "qubit_index": 0,
-                "frequency": 3.451e09,
-                "nodes": ["flux_q0", "drive_q0", "resonator_q0"],
-            },
-            {
-                "name": "qubit",
-                "alias": "q1",
-                "qubit_index": 1,
-                "frequency": 3.351e09,
-                "nodes": ["resonator_q1"],
-            },
-            {
-                "name": "qubit",
-                "alias": "q2",
-                "qubit_index": 2,
-                "frequency": 4.451e09,
-                "nodes": ["resonator_q2"],
-            },
-        ],
-    }
-
     buses: list[dict[str, Any]] = [
         {
             RUNCARD.ALIAS: "drive_line_q0_bus",
-            "system_control": {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
-            },
-            "port": "drive_q0",
-            RUNCARD.DISTORTIONS: [],
-            RUNCARD.DELAY: 0,
+            RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
+            "channels": [0, None],
         },
         {
-            "alias": "feedline_input_output_bus",
-            "system_control": {
-                "name": SystemControlName.READOUT_SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_0", "rs_1"],
-            },
-            "port": "feedline_input",
-            RUNCARD.DISTORTIONS: [],
-            RUNCARD.DELAY: 0,
+            "alias": "readout_line_q0_bus",
+            RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_0", "rs_1"],
+            "channels": [0, None],
         },
         {
-            "alias": "feedline_input_output_bus_1",
-            "system_control": {
-                "name": SystemControlName.READOUT_SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_1"],
-            },
-            "port": "feedline_input_1",
-            RUNCARD.DISTORTIONS: [],
-            RUNCARD.DELAY: 0,
+            "alias": "readout_line_q1_bus",
+            RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_0", "rs_1"],
+            "channels": [1, None],
+        },
+        {
+            "alias": "readout_line_q2_bus",
+            RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_1"],
+            "channels": [0],
         },
         {
             RUNCARD.ALIAS: "flux_line_q0_bus",
-            "system_control": {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
-            },
-            "port": "flux_q0",
-            RUNCARD.DISTORTIONS: [],
-            RUNCARD.DELAY: 0,
+            RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
+            "channels": [1, None],
         },
     ]
 
@@ -625,35 +513,9 @@ class Galadriel:
         RUNCARD.NAME: name,
         RUNCARD.DEVICE_ID: device_id,
         RUNCARD.GATES_SETTINGS: gates_settings,
-        RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,
         RUNCARD.INSTRUMENTS: instruments,
         RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
-    }
-
-    qubit_0: dict[str, Any] = {
-        "name": "qubit",
-        "alias": "qubit",
-        "pi_pulse_amplitude": 1,
-        "pi_pulse_duration": 100,
-        "pi_pulse_frequency": 100000000.0,
-        "qubit_frequency": 3544000000.0,
-        "min_voltage": 950,
-        "max_voltage": 1775,
-    }
-
-    resonator_0: dict[str, Any] = {
-        "name": "resonator",
-        "qubits": [
-            {
-                "pi_pulse_amplitude": 1,
-                "pi_pulse_duration": 100,
-                "pi_pulse_frequency": 100000000.0,
-                "qubit_frequency": 3544000000.0,
-                "min_voltage": 950,
-                "max_voltage": 1775,
-            }
-        ],
     }
 
 
@@ -670,189 +532,6 @@ for platform in [Galadriel]:
         circuit.add(M(0))
     experiment_params.extend([[platform.runcard, circuit], [platform.runcard, [circuit, circuit]]])  # type: ignore
 
-results_two_loops: dict[str, Any] = {
-    EXPERIMENT.SOFTWARE_AVERAGE: 1,
-    EXPERIMENT.NUM_SCHEDULES: 1,
-    EXPERIMENT.SHAPE: [75, 100],
-    EXPERIMENT.LOOPS: [
-        {
-            "alias": "attenuator",
-            LOOP.PARAMETER: Parameter.ATTENUATION.value,
-            LOOP.VALUES: (np.arange(start=15, stop=90, step=1)).tolist(),
-            LOOP.CHANNEL_ID: None,
-            LOOP.LOOP: {
-                "alias": "rs_1",
-                LOOP.PARAMETER: "frequency",
-                LOOP.VALUES: (np.arange(start=7342000000, stop=7352000000, step=100000)).tolist(),
-                LOOP.LOOP: None,
-                LOOP.CHANNEL_ID: None,
-            },
-        },
-    ],
-    EXPERIMENT.RESULTS: [
-        {
-            "name": "qblox",
-            "integration_lengths": [8000],
-            "qblox_raw_results": [
-                {
-                    "scope": {
-                        "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
-                        "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
-                    },
-                    "bins": {
-                        "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-                        "threshold": [0],
-                        "avg_cnt": [1],
-                    },
-                    "qubit": 0,
-                    "measurement": 0,
-                }
-            ],
-        },
-        {
-            "name": "qblox",
-            "integration_lengths": [8000],
-            "qblox_raw_results": [
-                {
-                    "scope": {
-                        "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
-                        "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
-                    },
-                    "bins": {
-                        "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
-                        "threshold": [0],
-                        "avg_cnt": [1],
-                    },
-                    "qubit": 0,
-                    "measurement": 0,
-                }
-            ],
-        },
-    ],
-}
-
-results_one_loops: dict[str, Any] = {
-    EXPERIMENT.SOFTWARE_AVERAGE: 1,
-    EXPERIMENT.NUM_SCHEDULES: 1,
-    EXPERIMENT.SHAPE: [100],
-    EXPERIMENT.LOOPS: [
-        {
-            "alias": "rs_1",
-            LOOP.PARAMETER: "frequency",
-            LOOP.VALUES: (np.arange(start=7342000000, stop=7352000000, step=100000)).tolist(),
-            LOOP.LOOP: None,
-            LOOP.CHANNEL_ID: None,
-        }
-    ],
-    EXPERIMENT.RESULTS: [
-        {
-            "name": "qblox",
-            "integration_lengths": [8000],
-            "qblox_raw_results": [
-                {
-                    "scope": {
-                        "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
-                        "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
-                    },
-                    "bins": {
-                        "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-                        "threshold": [0],
-                        "avg_cnt": [1],
-                    },
-                    "qubit": 1,
-                    "measurement": 0,
-                }
-            ],
-        },
-        {
-            "name": "qblox",
-            "integration_lengths": [8000],
-            "qblox_raw_results": [
-                {
-                    "scope": {
-                        "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
-                        "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
-                    },
-                    "bins": {
-                        "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
-                        "threshold": [0],
-                        "avg_cnt": [1],
-                    },
-                    "qubit": 1,
-                    "measurement": 0,
-                }
-            ],
-        },
-    ],
-}
-
-results_one_loops_empty: dict[str, Any] = {
-    EXPERIMENT.SOFTWARE_AVERAGE: 1,
-    EXPERIMENT.NUM_SCHEDULES: 1,
-    EXPERIMENT.SHAPE: [100],
-    EXPERIMENT.LOOPS: [
-        {
-            "alias": "rs_1",
-            LOOP.PARAMETER: "frequency",
-            LOOP.VALUES: np.arange(start=7342000000, stop=7352000000, step=100000),
-            LOOP.LOOP: None,
-        }
-    ],
-    EXPERIMENT.RESULTS: [],
-}
-
-experiment: dict[str, Any] = {
-    RUNCARD.PLATFORM: Galadriel.runcard,
-    EXPERIMENT.OPTIONS: {
-        EXPERIMENT.LOOPS: [
-            {
-                "alias": "qblox_qrm",
-                LOOP.PARAMETER: Parameter.GAIN.value,
-                LOOP.VALUES: np.arange(start=0.1, stop=1, step=0.3),
-                LOOP.CHANNEL_ID: 0,
-                LOOP.LOOP: {
-                    "alias": "attenuator",
-                    LOOP.PARAMETER: Parameter.ATTENUATION.value,
-                    LOOP.VALUES: np.arange(start=15, stop=90, step=1),
-                    LOOP.LOOP: {
-                        "alias": "rs_1",
-                        LOOP.PARAMETER: "frequency",
-                        LOOP.VALUES: np.arange(start=7342000000, stop=7352000000, step=100000),
-                        LOOP.LOOP: None,
-                    },
-                },
-            }
-        ],
-        RUNCARD.NAME: "punchout",
-        RUNCARD.GATES_SETTINGS: {
-            EXPERIMENT.HARDWARE_AVERAGE: 1024,
-            EXPERIMENT.SOFTWARE_AVERAGE: 1,
-            EXPERIMENT.REPETITION_DURATION: 200000,
-        },
-    },
-    EXPERIMENT.PULSE_SCHEDULES: [
-        {
-            PULSESCHEDULES.ELEMENTS: [
-                {
-                    PULSEBUSSCHEDULE.TIMELINE: [
-                        {
-                            PULSEEVENT.PULSE: {
-                                PULSE.AMPLITUDE: 1,
-                                PULSE.FREQUENCY: 1e9,
-                                PULSE.PHASE: 0,
-                                PULSE.DURATION: 2000,
-                                PULSE.PULSE_SHAPE: {"name": PulseShapeName.RECTANGULAR.value},
-                            },
-                            PULSEEVENT.START_TIME: 40,
-                        }
-                    ],
-                    PULSEBUSSCHEDULE.PORT: 1,
-                }
-            ],
-        }
-    ],
-}
-
 
 class SauronVNA:
     """Test data of the sauron platform."""
@@ -860,17 +539,6 @@ class SauronVNA:
     name = "sauron_vna"
 
     device_id = 9
-
-    gates_settings: dict[str, Any] = {
-        PLATFORM.DELAY_BETWEEN_PULSES: 0,
-        PLATFORM.MINIMUM_CLOCK_TIME: 4,
-        PLATFORM.DELAY_BEFORE_READOUT: 40,
-        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
-        PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
-        PLATFORM.PASSIVE_RESET_DURATION: 100,
-        "gates": {},
-        "operations": [],
-    }
 
     keysight_e5080b_controller: dict[str, Any] = {
         "name": InstrumentControllerName.KEYSIGHT_E5080B,
@@ -891,7 +559,6 @@ class SauronVNA:
     keysight_e5080b: dict[str, Any] = {
         "name": InstrumentName.KEYSIGHT_E5080B,
         "alias": InstrumentName.KEYSIGHT_E5080B.value,
-        RUNCARD.FIRMWARE: "A.15.10.06",
         Parameter.POWER.value: -60.0,
     }
 
@@ -914,80 +581,32 @@ class SauronVNA:
     agilent_e5071b: dict[str, Any] = {
         "name": InstrumentName.AGILENT_E5071B,
         "alias": InstrumentName.AGILENT_E5071B.value,
-        RUNCARD.FIRMWARE: "A.15.10.06",
         Parameter.POWER.value: -60.0,
     }
 
     instruments: list[dict] = [keysight_e5080b, agilent_e5071b]
     instrument_controllers: list[dict] = [keysight_e5080b_controller, agilent_e5071b_controller]
 
-    chip: dict[str, Any] = {
-        "nodes": [
-            {"name": "port", "alias": "drive_q0", "line": "drive", "nodes": ["q0"]},
-            {"name": "port", "alias": "feedline_input", "line": "feedline_input", "nodes": ["resonator_q0"]},
-            {"name": "resonator", "alias": "resonator_q0", "frequency": 8.0726e09, "nodes": ["feedline_input", "q0"]},
-            {
-                "name": "qubit",
-                "alias": "q0",
-                "qubit_index": 0,
-                "frequency": 6.5328e09,
-                "nodes": ["drive_q0", "resonator_q0"],
-            },
-        ],
-    }
-
     buses: list[dict[str, Any]] = [
         {
             "alias": "keysight_e5080b_readout_bus",
-            "system_control": {
-                "name": SystemControlName.READOUT_SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: [InstrumentName.KEYSIGHT_E5080B.value],
-            },
-            "port": "drive_q0",
-            RUNCARD.DISTORTIONS: [],
+            "instruments": [InstrumentName.KEYSIGHT_E5080B.value],
+            "channels": [None],
         },
         {
             "alias": "agilent_e5071b_readout_bus",
-            "system_control": {
-                "name": SystemControlName.READOUT_SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: [InstrumentName.AGILENT_E5071B.value],
-            },
-            "port": "feedline_input",
-            RUNCARD.DISTORTIONS: [],
+            "instruments": [InstrumentName.AGILENT_E5071B.value],
+            "channels": [None],
         },
     ]
 
     runcard: dict[str, Any] = {
         RUNCARD.NAME: name,
         RUNCARD.DEVICE_ID: device_id,
-        RUNCARD.GATES_SETTINGS: gates_settings,
         RUNCARD.INSTRUMENTS: instruments,
-        RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,
         RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
     }
-
-
-class MockedSettingsFactory:
-    """Class that loads a specific class given an object's name."""
-
-    handlers: dict[str, type[Galadriel]] = {"galadriel": Galadriel}
-
-    @classmethod
-    def register(cls, handler_cls: type[Galadriel]):
-        """Register handler in the factory.
-
-        Args:
-            output_type (type): Class type to register.
-        """
-        cls.handlers[handler_cls.name] = handler_cls  # type: ignore
-        return handler_cls
-
-    @classmethod
-    def get(cls, platform_name: str):
-        """Return class attribute."""
-        mocked_platform = cls.handlers[platform_name]
-        return copy.deepcopy(mocked_platform.runcard)
 
 
 class SauronYokogawa:
@@ -996,21 +615,9 @@ class SauronYokogawa:
     name = "sauron_yokogawa"
     device_id = 9
 
-    gates_settings: dict[str, Any] = {
-        PLATFORM.MINIMUM_CLOCK_TIME: 4,
-        PLATFORM.DELAY_BETWEEN_PULSES: 0,
-        PLATFORM.DELAY_BEFORE_READOUT: 0,
-        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
-        PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
-        PLATFORM.PASSIVE_RESET_DURATION: 100,
-        "operations": [],
-        "gates": {},
-    }
-
     yokogawa_gs200_current = {
         RUNCARD.NAME: InstrumentName.YOKOGAWA_GS200,
         RUNCARD.ALIAS: "yokogawa_current",
-        RUNCARD.FIRMWARE: "A.15.10.06",
         Parameter.SOURCE_MODE.value: "current",
         Parameter.CURRENT.value: [0.5],
         Parameter.VOLTAGE.value: [0.0],
@@ -1023,7 +630,6 @@ class SauronYokogawa:
     yokogawa_gs200_voltage = {
         RUNCARD.NAME: InstrumentName.YOKOGAWA_GS200,
         RUNCARD.ALIAS: "yokogawa_voltage",
-        RUNCARD.FIRMWARE: "A.15.10.06",
         Parameter.SOURCE_MODE.value: "voltage",
         Parameter.CURRENT.value: [0.0],
         Parameter.VOLTAGE.value: [0.5],
@@ -1036,7 +642,6 @@ class SauronYokogawa:
     rohde_schwarz: dict[str, Any] = {
         "name": InstrumentName.ROHDE_SCHWARZ,
         "alias": "rohde_schwarz",
-        RUNCARD.FIRMWARE: "4.30.046.295",
         Parameter.POWER.value: 15,
         Parameter.LO_FREQUENCY.value: 7.24730e09,
         Parameter.RF_ON.value: True,
@@ -1094,45 +699,22 @@ class SauronYokogawa:
         yokogawa_gs200_controller_wrong_module,
     ]
 
-    chip: dict[str, Any] = {
-        "nodes": [
-            {"name": "port", "alias": "flux_q0", "line": "flux", "nodes": ["q0"]},
-            {
-                "name": "qubit",
-                "alias": "q0",
-                "qubit_index": 0,
-                "frequency": 3.451e09,
-                "nodes": ["flux_q0"],
-            },
-        ],
-    }
-
     buses: list[dict[str, Any]] = [
         {
             RUNCARD.ALIAS: "yokogawa_gs200_current_bus",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["yokogawa_current"],
-            },
-            "port": "flux_q0",
-            RUNCARD.DISTORTIONS: [],
+            "instruments": ["yokogawa_current"],
+            "channels": [None],
         },
         {
             RUNCARD.ALIAS: "yokogawa_gs200_voltage_bus",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["yokogawa_voltage"],
-            },
-            "port": "flux_q0",
-            RUNCARD.DISTORTIONS: [],
+            "instruments": ["yokogawa_voltage"],
+            "channels": [None],
         },
     ]
 
     runcard = {
         RUNCARD.NAME: name,
         RUNCARD.DEVICE_ID: device_id,
-        RUNCARD.GATES_SETTINGS: gates_settings,
-        RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,
         RUNCARD.INSTRUMENTS: instruments,
         RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
@@ -1140,26 +722,14 @@ class SauronYokogawa:
 
 
 class SauronQDevil:
-    """Test data of the sauron with yokogawa platform."""
+    """Test data for QDevil instruments in sauron platform."""
 
     name = "sauron_qdevil"
     device_id = 9
 
-    gates_settings: dict[str, Any] = {
-        PLATFORM.MINIMUM_CLOCK_TIME: 4,
-        PLATFORM.DELAY_BETWEEN_PULSES: 0,
-        PLATFORM.DELAY_BEFORE_READOUT: 0,
-        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
-        PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
-        PLATFORM.PASSIVE_RESET_DURATION: 100,
-        "operations": [],
-        "gates": {},
-    }
-
     qdevil_qdac2 = {
         RUNCARD.NAME: InstrumentName.QDEVIL_QDAC2,
         RUNCARD.ALIAS: "qdac",
-        RUNCARD.FIRMWARE: "A.15.10.06",
         Parameter.VOLTAGE.value: [0.0],
         Parameter.SPAN.value: ["low"],
         Parameter.RAMPING_ENABLED.value: [True],
@@ -1171,7 +741,6 @@ class SauronQDevil:
     rohde_schwarz: dict[str, Any] = {
         "name": InstrumentName.ROHDE_SCHWARZ,
         "alias": "rohde_schwarz",
-        RUNCARD.FIRMWARE: "4.30.046.295",
         Parameter.POWER.value: 15,
         Parameter.LO_FREQUENCY.value: 7.24730e09,
         Parameter.RF_ON.value: True,
@@ -1229,36 +798,17 @@ class SauronQDevil:
         qdevil_qdac2_controller_wrong_module,
     ]
 
-    chip: dict[str, Any] = {
-        "nodes": [
-            {"name": "port", "alias": "port_q0", "line": "flux", "nodes": ["q0"]},
-            {
-                "name": "qubit",
-                "alias": "q0",
-                "qubit_index": 0,
-                "frequency": 3.451e09,
-                "nodes": ["port_q0"],
-            },
-        ],
-    }
-
     buses: list[dict[str, Any]] = [
         {
             RUNCARD.ALIAS: "qdac_bus",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["qdac"],
-            },
-            "port": "port_q0",
-            RUNCARD.DISTORTIONS: [],
+            "instruments": ["qdac"],
+            "channels": [0],
         }
     ]
 
     runcard = {
         RUNCARD.NAME: name,
         RUNCARD.DEVICE_ID: device_id,
-        RUNCARD.GATES_SETTINGS: gates_settings,
-        RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,
         RUNCARD.INSTRUMENTS: instruments,
         RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
@@ -1271,21 +821,9 @@ class SauronQuantumMachines:
     name = "sauron_quantum_machines"
     device_id = 9
 
-    gates_settings: dict[str, Any] = {
-        PLATFORM.MINIMUM_CLOCK_TIME: 4,
-        PLATFORM.DELAY_BETWEEN_PULSES: 0,
-        PLATFORM.DELAY_BEFORE_READOUT: 0,
-        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
-        PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
-        PLATFORM.PASSIVE_RESET_DURATION: 100,
-        "operations": [],
-        "gates": {},
-    }
-
     qmm = {
         "name": InstrumentName.QUANTUM_MACHINES_CLUSTER,
         "alias": "qmm",
-        RUNCARD.FIRMWARE: "4.30.046.295",
         "address": "192.168.0.1",
         "cluster": "cluster_0",
         "controllers": [
@@ -1340,7 +878,6 @@ class SauronQuantumMachines:
     qmm_with_octave = {
         "name": InstrumentName.QUANTUM_MACHINES_CLUSTER,
         "alias": "qmm_with_octave",
-        RUNCARD.FIRMWARE: "4.30.046.295",
         "address": "192.168.0.1",
         "cluster": "cluster_0",
         "controllers": [
@@ -1431,7 +968,6 @@ class SauronQuantumMachines:
     rohde_schwarz: dict[str, Any] = {
         "name": InstrumentName.ROHDE_SCHWARZ,
         "alias": "rohde_schwarz",
-        RUNCARD.FIRMWARE: "4.30.046.295",
         Parameter.POWER.value: 15,
         Parameter.LO_FREQUENCY.value: 7.24730e09,
         Parameter.RF_ON.value: True,
@@ -1455,72 +991,37 @@ class SauronQuantumMachines:
     instruments = [qmm, qmm_with_octave, rohde_schwarz]
     instrument_controllers = [qmm_controller, qmm_with_octave_controller, qmm_controller_wrong_module]
 
-    chip: dict[str, Any] = {
-        "nodes": [
-            {"name": "port", "alias": "port_q0", "line": "flux", "nodes": ["q0"]},
-            {
-                "name": "qubit",
-                "alias": "q0",
-                "qubit_index": 0,
-                "frequency": 3.451e09,
-                "nodes": ["port_q0"],
-            },
-        ],
-    }
-
     buses: list[dict[str, Any]] = [
         {
             RUNCARD.ALIAS: "drive_q0",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["qmm"],
-            },
-            "port": "port_q0",
-            RUNCARD.DISTORTIONS: [],
+            "instruments": ["qmm"],
+            "channels": ["drive_q0"],
         },
         {
             RUNCARD.ALIAS: "readout_q0",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["qmm"],
-            },
-            "port": "port_q0",
-            RUNCARD.DISTORTIONS: [],
+            "instruments": ["qmm"],
+            "channels": ["readout_q0"],
         },
         {
             RUNCARD.ALIAS: "flux_q0",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["qmm"],
-            },
-            "port": "port_q0",
-            RUNCARD.DISTORTIONS: [],
+            "instruments": ["qmm"],
+            "channels": ["flux_q0"],
         },
         {
             RUNCARD.ALIAS: "drive_q0_rf",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["qmm_with_octave"],
-            },
-            "port": "port_q0",
-            RUNCARD.DISTORTIONS: [],
+            "instruments": ["qmm_with_octave"],
+            "channels": ["drive_q0_rf"],
         },
         {
             RUNCARD.ALIAS: "readout_q0_rf",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["qmm_with_octave"],
-            },
-            "port": "port_q0",
-            RUNCARD.DISTORTIONS: [],
+            "instruments": ["qmm_with_octave"],
+            "channels": ["readout_q0_rf"],
         },
     ]
 
     runcard = {
         RUNCARD.NAME: name,
         RUNCARD.DEVICE_ID: device_id,
-        RUNCARD.GATES_SETTINGS: gates_settings,
-        RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,
         RUNCARD.INSTRUMENTS: instruments,
         RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,

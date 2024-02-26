@@ -1,12 +1,10 @@
 import json
-import math
 from collections import deque
 from itertools import product
 
 import numpy as np
 import pytest
 
-from qililab import Arbitrary, Domain, DragCorrection, Gaussian, IQPair, QProgram, Square
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.operations import (
     Acquire,
@@ -20,7 +18,9 @@ from qililab.qprogram.operations import (
     Sync,
     Wait,
 )
+from qililab.qprogram.qprogram import Domain, QProgram
 from qililab.qprogram.variable import FloatVariable, IntVariable
+from qililab.waveforms import Arbitrary, DragCorrection, Gaussian, IQPair, Square
 
 # pylint: disable=maybe-no-member
 

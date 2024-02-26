@@ -143,23 +143,6 @@ class PulseShapeName(str, Enum):
     COSINE = "cosine"
 
 
-class NodeName(str, Enum):
-    """Node names.
-
-    Args:
-        enum (str): Available node names:
-        * qubit
-        * resonator
-        * coupler
-    """
-
-    QUBIT = "qubit"
-    RESONATOR = "resonator"
-    COUPLER = "coupler"
-    COIL = "coil"
-    PORT = "port"
-
-
 class InstrumentName(str, Enum):
     """Instrument names.
 
@@ -223,19 +206,6 @@ class InstrumentControllerName(str, Enum):
     QDEVIL_QDAC2 = "qdevil_qdac2"
 
 
-class SystemControlName(str, Enum):
-    """System Control names.
-
-    Args:
-        enum (str): Available system control element names:
-        * system_control
-        * readout_system_control
-    """
-
-    SYSTEM_CONTROL = "system_control"
-    READOUT_SYSTEM_CONTROL = "readout_system_control"
-
-
 class Parameter(str, Enum):
     """Parameter names."""
 
@@ -291,7 +261,6 @@ class Parameter(str, Enum):
     NUMBER_AVERAGES = "number_averages"
     TRIGGER_MODE = "trigger_mode"
     NUMBER_POINTS = "number_points"
-    NUM_SEQUENCERS = "num_sequencers"
     INTEGRATION_MODE = "integration_mode"
     ACQUISITION_TIMEOUT = "acquisition_timeout"
     MAX_CURRENT = "max_current"
@@ -454,55 +423,6 @@ class VNASweepModes(str, Enum):
     GRO = "group"
 
 
-class Line(str, Enum):
-    """Chip line"""
-
-    FLUX = "flux"
-    DRIVE = "drive"
-    FEEDLINE_INPUT = "feedline_input"
-    FEEDLINE_OUTPUT = "feedline_output"
-
-
-class Qubits(str, Enum):  # pylint: disable=missing-class-docstring
-    ANY = "any"
-    ONE = "one"
-    TWO = "two"
-
-
-class OperationName(str, Enum):
-    """Operation names.
-
-    Args:
-        enum (str): Available types of operation names:
-        * RXY
-        * R180
-        * X
-        * WAIT
-        * RESET
-        * MEASURE
-        * BARRIER
-    """
-
-    RXY = "Rxy"  # noqa: E741
-    R180 = "R180"
-    X = "X"
-    CPHASE = "CPhase"
-    WAIT = "Wait"
-    RESET = "Reset"
-    MEASURE = "Measure"
-    BARRIER = "Barrier"
-    PARKING = "Parking"
-    PULSE = "Pulse"
-    GAUSSIAN = "Gaussian"
-    DRAG = "DRAG"
-    SQUARE = "Square"
-
-
-class OperationTimingsCalculationMethod(str, Enum):  # pylint: disable=missing-class-docstring
-    AS_SOON_AS_POSSIBLE = "as_soon_as_possible"
-    AS_LATE_AS_POSSIBLE = "as_late_as_possible"
-
-
 class ResetMethod(str, Enum):  # pylint: disable=missing-class-docstring
     PASSIVE = "passive"
     ACTIVE = "active"
@@ -513,3 +433,11 @@ class SourceMode(str, Enum):
 
     CURRENT = "current"
     VOLTAGE = "voltage"
+
+
+class Line(str, Enum):
+    """Chip line"""
+
+    FLUX = "flux"
+    DRIVE = "drive"
+    READOUT = "readout"

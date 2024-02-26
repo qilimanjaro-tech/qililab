@@ -13,12 +13,16 @@
 # limitations under the License.
 
 """Instrument Controllers class"""
+from __future__ import annotations
+
 import io
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from ruamel.yaml import YAML
 
-from qililab.instrument_controllers.instrument_controller import InstrumentController
+if TYPE_CHECKING:
+    from qililab.instrument_controllers.instrument_controller import InstrumentController
 
 
 @dataclass
@@ -27,7 +31,7 @@ class InstrumentControllers:
 
     elements: list[InstrumentController]
 
-    def get_instrument_controller(self, alias: str | None = None):
+    def get_instrument_controller(self, alias: str):
         """Get instrument controller given an id and category"""
         return next((instrument for instrument in self.elements if instrument.alias == alias), None)
 

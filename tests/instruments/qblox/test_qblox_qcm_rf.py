@@ -6,8 +6,8 @@ import pytest
 from qblox_instruments.qcodes_drivers.cluster import Cluster
 from qblox_instruments.types import ClusterType
 
-from qililab.instruments import ParameterNotFound
-from qililab.instruments.qblox import QbloxQCMRF
+from qililab.exceptions import ParameterNotFound
+from qililab.instruments.qblox.qblox_qcm_rf import QbloxQCMRF
 from qililab.typings import Parameter
 
 
@@ -15,8 +15,6 @@ from qililab.typings import Parameter
 def fixture_settings():
     return {
         "alias": "test",
-        "firmware": "0.7.0",
-        "num_sequencers": 1,
         "out0_lo_freq": 3.7e9,
         "out0_lo_en": True,
         "out0_att": 10,
@@ -30,7 +28,6 @@ def fixture_settings():
         "awg_sequencers": [
             {
                 "identifier": 0,
-                "chip_port_id": "drive_q0",
                 "output_i": 0,
                 "output_q": 1,
                 "num_bins": 1,
@@ -224,8 +221,7 @@ class TestIntegration:
         sequencer.output_i = 3
         sequencer.output_q = 2
         qcm_rf.device = MagicMock()
-        channel_id = qcm_rf.get_sequencers_from_chip_port_id(sequencer.chip_port_id)[0].identifier
-        qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=channel_id)
+        qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=sequencer.identifier)
         qcm_rf.device.set.assert_called_once_with("out1_lo_freq", 2e9)
 
     def test_setup_with_lo_frequency_without_channel_id_raises_error(self, settings):

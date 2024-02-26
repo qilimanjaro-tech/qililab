@@ -5,7 +5,7 @@ import pytest
 from qibo.gates import CNOT, RY, H, M, X
 from qibo.models import Circuit
 
-import qililab as ql
+from qililab.execute_circuit import execute
 
 
 class TestExecute:
@@ -18,7 +18,7 @@ class TestExecute:
         runcard = "galadriel.yml"
         mock_platform = MagicMock()
         with patch("qililab.execute_circuit.build_platform", return_value=mock_platform) as mock_build:
-            results = ql.execute(circuit, runcard)
+            results = execute(circuit, runcard)
             assert isinstance(results, MagicMock)
             mock_build.assert_called_with(runcard="galadriel.yml")
         mock_platform.connect.assert_called_once_with()
@@ -36,7 +36,7 @@ class TestExecute:
             mock_platform = MagicMock()
             mock_platform.turn_on_instruments.side_effect = Exception()
             with patch("qililab.execute_circuit.build_platform", return_value=mock_platform) as mock_build:
-                ql.execute(circuit, runcard)
+                execute(circuit, runcard)
             mock_build.assert_called_with(runcard="galadriel.yml")
             mock_platform.connect.assert_called_once_with()
             mock_platform.initial_setup.assert_called_once_with()
@@ -52,7 +52,7 @@ class TestExecute:
         runcard = "galadriel.yml"
         mock_platform = MagicMock()
         with patch("qililab.execute_circuit.build_platform", return_value=mock_platform) as mock_build:
-            results = ql.execute([circuit, circuit], runcard)
+            results = execute([circuit, circuit], runcard)
             assert isinstance(results, list)
             mock_build.assert_called_with(runcard="galadriel.yml")
         mock_platform.connect.assert_called_once_with()

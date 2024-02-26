@@ -15,8 +15,9 @@
 """Yokogawa GS200 Instrument"""
 from dataclasses import dataclass
 
+from qililab.exceptions import ParameterNotFound
 from qililab.instruments.current_source import CurrentSource
-from qililab.instruments.instrument import Instrument, ParameterNotFound
+from qililab.instruments.decorators import check_device_initialized
 from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.voltage_source import VoltageSource
 from qililab.typings import InstrumentName
@@ -161,7 +162,7 @@ class GS200(CurrentSource, VoltageSource):
             else:
                 self.device.voltage(value)
 
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | str | None = None):
         """Set instrument settings parameter to the corresponding value
 
         Args:
@@ -195,7 +196,7 @@ class GS200(CurrentSource, VoltageSource):
 
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def initial_setup(self):
         """Performs an initial setup."""
         self.device.off()
@@ -208,15 +209,19 @@ class GS200(CurrentSource, VoltageSource):
         else:
             self.voltage = self.settings.voltage[0]
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def turn_on(self):
         """Start outputting current."""
         self.device.on()
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def turn_off(self):
         """Stop outputing current."""
         self.device.off()
+
+    @check_device_initialized
+    def reset(self):
+        """Reset instrument settings."""
 
     def __source_mode_to_qcodes_str(self, source_mode: SourceMode) -> str:
         mapping = {SourceMode.CURRENT: "CURR", SourceMode.VOLTAGE: "VOLT"}

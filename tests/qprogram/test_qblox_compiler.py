@@ -2,8 +2,9 @@
 import pytest
 import qpysequence as QPy
 
-from qililab import Domain, Gaussian, IQPair, QbloxCompiler, QProgram, Square
+from qililab.qprogram import Domain, QbloxCompiler, QProgram
 from qililab.qprogram.blocks import ForLoop
+from qililab.waveforms import Gaussian, IQPair, Square
 from tests.test_utils import is_q1asm_equal  # pylint: disable=import-error, no-name-in-module
 
 

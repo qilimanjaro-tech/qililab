@@ -7,13 +7,13 @@ import pytest
 from qm import Program, QmPendingJob, QmQueue
 from qm.qua import play, program
 
-from qililab.instruments.instrument import ParameterNotFound
+from qililab.data_management import build_platform  # pylint: disable=import-error, no-name-in-module
+from qililab.exceptions import ParameterNotFound
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Platform
 from qililab.settings import Settings
 from qililab.typings import Parameter
 from tests.data import SauronQuantumMachines  # pylint: disable=import-error, no-name-in-module
-from tests.test_utils import build_platform  # pylint: disable=import-error, no-name-in-module
 
 
 @pytest.fixture(name="qua_program")
@@ -116,11 +116,9 @@ class TestQuantumMachinesCluster:
     """This class contains the unit tests for the ``QuantumMachinesCluster`` class."""
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.Instrument.initial_setup")
+    # @patch("qililab.instruments.instrument.Instrument.initial_setup")
     @pytest.mark.parametrize("qmm_name", ["qmm", "qmm_with_octave"])
-    def test_initial_setup(
-        self, mock_instrument_init: MagicMock, mock_init: MagicMock, qmm_name, request
-    ):  # pylint: disable=unused-argument
+    def test_initial_setup(self, mock_init: MagicMock, qmm_name, request):  # pylint: disable=unused-argument
         """Test QMM class initialization."""
         qmm = request.getfixturevalue(qmm_name)
         qmm.initial_setup()

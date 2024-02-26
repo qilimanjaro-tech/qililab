@@ -11,8 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from qblox_instruments.qcodes_drivers.sequencer import Sequencer
@@ -30,7 +31,9 @@ from qpysequence.weights import Weights
 from qililab.config import logger
 from qililab.drivers.instruments.instrument_driver_factory import InstrumentDriverFactory
 from qililab.drivers.interfaces import AWG
-from qililab.pulse import PulseBusSchedule, PulseShape
+
+if TYPE_CHECKING:
+    from qililab.pulse import PulseBusSchedule, PulseShape
 
 
 @InstrumentDriverFactory.register

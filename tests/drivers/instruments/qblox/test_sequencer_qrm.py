@@ -35,7 +35,7 @@ def get_pulse_bus_schedule(start_time):
     )
     pulse_event = PulseEvent(pulse=pulse, start_time=start_time)
 
-    return PulseBusSchedule(timeline=[pulse_event], port=0)
+    return PulseBusSchedule(timeline=[pulse_event], bus_alias=0)
 
 
 expected_program_str_0 = """
@@ -198,47 +198,6 @@ class TestSequencerQRM:
         assert isinstance(program, Program)
         is_q1asm_equal(program, expected_program_str)
 
-    def test_generate_empty_weights(self, sequencer):
-        """Test the ``_generate_weights`` method when no weights have been set beforehand."""
-        weights = sequencer._generate_weights()
-        assert isinstance(weights, Weights)
-
-        weights = weights.to_dict()
-        # must be empty dictionary
-        assert not weights
-
-        # Set values only for channel i
-        weights_i = [1, 2, 3, 4]
-        sequencer.set("weights_i", weights_i)
-        weights = sequencer._generate_weights().to_dict()
-
-        # must be empty dictionary
-        assert not weights
-
-        # Set values only for channel q
-        weights_q = [1, 2, 3, 4]
-        sequencer.set("weights_i", [])
-        sequencer.set("weights_q", weights_q)
-        weights = sequencer._generate_weights().to_dict()
-
-        # must be empty dictionary
-        assert not weights
-
-    def test_generate_weights(self, sequencer):
-        """Test the ``_generate_weights`` method."""
-        # Set values
-        weights_i = [1, 2, 3, 4]
-        weights_q = [5, 6, 7, 8]
-        sequencer.set("weights_i", weights_i)
-        sequencer.set("weights_q", weights_q)
-
-        weights = sequencer._generate_weights()
-
-        assert len(weights._weight_pairs) == 1
-        pair = weights._weight_pairs[0]
-        assert pair.weight_i.data == weights_i
-        assert pair.weight_q.data == weights_q
-
     def test_generate_acquisitions(self, sequencer):
         """Test the ``_generate_acquisitions`` method."""
         num_bins = 1
@@ -251,22 +210,6 @@ class TestSequencerQRM:
 
         assert "num_bins" in default_acq
         assert default_acq["num_bins"] == num_bins
-
-    def test_generate_weights_with_swap(self, sequencer):
-        """Test the ``_generate_weights`` method when `swap_paths` is True."""
-        # Set values
-        weights_i = [1, 2, 3, 4]
-        weights_q = [5, 6, 7, 8]
-        sequencer.set("weights_i", weights_i)
-        sequencer.set("weights_q", weights_q)
-        sequencer.set("swap_paths", True)
-
-        weights = sequencer._generate_weights()
-
-        assert len(weights._weight_pairs) == 1
-        pair = weights._weight_pairs[0]
-        assert pair.weight_i.data == weights_q
-        assert pair.weight_q.data == weights_i
 
     def test_execute(self, pulse_bus_schedule):
         """Unit tests for execute method"""

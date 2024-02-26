@@ -23,17 +23,15 @@ Transpilation
 .. autosummary::
     :toctree: api
 
-    ~translate_circuit
-
 Gate Decomposition
 ~~~~~~~~~~~~~~~~~~
 
-.. currentmodule:: qililab.transpiler
+.. currentmodule:: qililab.circuit_transpiler
 
 .. autosummary::
     :toctree: api
 
-    ~translate_gates
+    ~CircuitTranspiler
 """
 
 from .circuit_transpiler import CircuitTranspiler

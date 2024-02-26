@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, call
 
 import pytest
 
-from qililab.instruments.instrument import ParameterNotFound
+from qililab.exceptions import ParameterNotFound
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
 from qililab.typings.enums import Parameter
 
@@ -19,7 +19,6 @@ def fixture_qdac() -> QDevilQDac2:
             "ramp_rate": [0.01, 0.01],
             "dacs": [10, 11],
             "low_pass_filter": ["dc", "dc"],
-            "firmware": "0.7.0",
         }
     )
     qdac.device = MagicMock()

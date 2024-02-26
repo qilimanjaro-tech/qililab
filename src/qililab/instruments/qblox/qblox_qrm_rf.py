@@ -15,7 +15,7 @@
 """This file contains the QbloxQCMRF class."""
 from dataclasses import dataclass, field
 
-from qililab.instruments import Instrument  # pylint: disable=cyclic-import
+from qililab.instruments.decorators import check_device_initialized  # pylint: disable=cyclic-import
 from qililab.instruments.utils.instrument_factory import InstrumentFactory  # pylint: disable=cyclic-import
 from qililab.typings import InstrumentName, Parameter
 
@@ -53,14 +53,14 @@ class QbloxQRMRF(QbloxQRM):
 
     settings: QbloxQRMRFSettings
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def initial_setup(self):
         """Initial setup"""
         super().initial_setup()
         for parameter in self.parameters:
             self.setup(parameter, getattr(self.settings, parameter.value))
 
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | str | None = None):
         """Set a parameter of the Qblox QCM-RF module.
         Args:
             parameter (Parameter): Parameter name.
@@ -72,13 +72,12 @@ class QbloxQRMRF(QbloxQRM):
 
         if parameter in self.parameters:
             setattr(self.settings, parameter.value, value)
-
             if self.is_device_active():
                 self.device.set(parameter.value, value)
             return
         super().setup(parameter, value, channel_id)
 
-    def get(self, parameter: Parameter, channel_id: int | None = None):
+    def get(self, parameter: Parameter, channel_id: int | str | None = None):
         """Set a parameter of the Qblox QCM-RF module.
         Args:
             parameter (Parameter): Parameter name.

@@ -34,23 +34,17 @@ class AWG(Instrument):
         """Contains the settings of a AWG.
 
         Args:
-            num_sequencers (int): Number of sequencers (physical I/Q pairs)
             awg_sequencers (Sequence[AWGSequencer]): Properties of each AWG sequencer
         """
 
-        num_sequencers: int
         awg_sequencers: Sequence[AWGSequencer]
 
         def __post_init__(self):
             """build AWGSequencers and IQ channels"""
             super().__post_init__()
-            if self.num_sequencers <= 0:
-                raise ValueError(f"The number of sequencers must be greater than 0. Received: {self.num_sequencers}")
-            if len(self.awg_sequencers) != self.num_sequencers:
-                raise ValueError(
-                    f"The number of sequencers: {self.num_sequencers} does not match"
-                    + f" the number of AWG Sequencers settings specified: {len(self.awg_sequencers)}"
-                )
+            num_sequencers = len(self.awg_sequencers)
+            if num_sequencers <= 0:
+                raise ValueError(f"The number of sequencers must be greater than 0. Received: {num_sequencers}")
             self.awg_sequencers = [
                 AWGSequencer(**sequencer) if isinstance(sequencer, dict) else sequencer  # pylint: disable=not-a-mapping
                 for sequencer in self.awg_sequencers
@@ -66,16 +60,16 @@ class AWG(Instrument):
     settings: AWGSettings
 
     @abstractmethod
-    def run(self, port: str):
+    def run(self, channel_id: int | str | None):
         """Run the uploaded program"""
 
     @abstractmethod
-    def upload_qpysequence(self, qpysequence: QpySequence, port: str):
-        """Upload qpysequence."""
+    def upload(self, channel_id: int | str | None):
+        """Upload compiled program."""
 
     @abstractmethod
-    def upload(self, port: str):
-        """Upload compiled program."""
+    def upload_qpysequence(self, qpysequence: QpySequence, channel_id: int | str | None):
+        """Upload qpysequence."""
 
     @property
     def num_sequencers(self):
@@ -84,7 +78,7 @@ class AWG(Instrument):
         Returns:
             int: number of sequencers
         """
-        return self.settings.num_sequencers
+        return len(self.settings.awg_sequencers)
 
     @property
     def awg_sequencers(self):
@@ -99,22 +93,6 @@ class AWG(Instrument):
     def to_dict(self):
         """Return a dict representation of an AWG instrument."""
         return {RUNCARD.NAME: self.name.value} | self.settings.to_dict()
-
-    def get_sequencers_from_chip_port_id(self, chip_port_id: str):
-        """Get sequencer ids from the chip port identifier
-
-        Args:
-            chip_port_id (str): chip port identifier
-
-        Returns:
-            list[AWGSequencer]: list of integers containing the indices of the sequencers connected to the chip port
-        """
-        if seqs := [sequencer for sequencer in self.awg_sequencers if sequencer.chip_port_id == chip_port_id]:
-            return seqs
-        raise IndexError(
-            f"No sequencer found connected to port {chip_port_id}. Please make sure the `chip_port_id` "
-            "attribute is correct."
-        )
 
     def get_sequencer(self, sequencer_id: int) -> AWGSequencer:
         """Get sequencer from the sequencer identifier

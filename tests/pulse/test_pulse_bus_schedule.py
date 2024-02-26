@@ -20,7 +20,7 @@ def fixture_pulse_event() -> PulseEvent:
 @pytest.fixture(name="pulse_bus_schedule")
 def fixture_pulse_bus_schedule(pulse_event: PulseEvent) -> PulseBusSchedule:
     """Return PulseBusSchedule instance."""
-    return PulseBusSchedule(timeline=[pulse_event], port=0)
+    return PulseBusSchedule(timeline=[pulse_event], bus_alias="drive_q0")
 
 
 @pytest.fixture(name="mux_pulse_bus_schedule")
@@ -34,7 +34,7 @@ def fixture_mux_pulse_bus_schedule() -> PulseBusSchedule:
         pulse=Pulse(amplitude=1, phase=0.0, duration=1000, frequency=7.1, pulse_shape=Gaussian(num_sigmas=5)),
         start_time=0,
     )
-    return PulseBusSchedule(timeline=[pulse_event_1, pulse_event_2], port=0)
+    return PulseBusSchedule(timeline=[pulse_event_1, pulse_event_2], bus_alias="drive_q0")
 
 
 class TestPulseBusSchedule:

@@ -18,7 +18,6 @@ from qcodes import validators as vals
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.program import Loop, Program, Register
 from qpysequence.program.instructions import Acquire, AcquireWeighed, Move
-from qpysequence.weights import Weights
 
 from qililab.config import logger
 from qililab.drivers.instruments.instrument_driver_factory import InstrumentDriverFactory
@@ -92,20 +91,6 @@ class SequencerQRM(SequencerQCM, Digitiser):
         acquisitions.add(name="default", num_bins=num_bins, index=0)
 
         return acquisitions
-
-    def _generate_weights(self) -> Weights:
-        """Generate acquisition weights.
-
-        Returns:
-            Weights: Acquisition weights.
-        """
-        weights = Weights()
-        if len(self.get("weights_i")) > 0 and len(self.get("weights_q")) > 0:
-            pair = (self.get("weights_i"), self.get("weights_q"))
-            if self.get("swap_paths"):
-                pair = pair[::-1]  # swap paths
-            weights.add_pair(pair=pair, indices=(0, 1))
-        return weights
 
     def _append_acquire_instruction(
         self, loop: Loop, bin_index: Register | int, weight_regs: tuple[Register, Register]

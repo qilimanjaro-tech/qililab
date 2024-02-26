@@ -17,7 +17,6 @@ from qililab.pulse.pulse_event import PulseEvent
 
 NUM_SLOTS = 20
 PRESENT_SUBMODULES = [2, 4, 6, 8, 10, 12, 16, 18, 20]
-NUM_SEQUENCERS = 6
 DUMMY_CFG = {1: ClusterType.CLUSTER_QCM_RF}
 PULSE_SIGMAS = 4
 PULSE_AMPLITUDE = 1
@@ -141,7 +140,7 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
         pulse_shape=pulse_shape,
     )
     pulse_event = PulseEvent(pulse=pulse, start_time=0)
-    return PulseBusSchedule(timeline=[pulse_event], port=0)
+    return PulseBusSchedule(timeline=[pulse_event], bus_alias="drive_q0")
 
 
 @pytest.fixture(name="cluster")
@@ -243,7 +242,6 @@ class TestQcmQrm:
         expected_names = [f"{qcm_qrm_name}_sequencer{idx}" for idx in range(6)]
         registered_names = [submodules[seq_idx].name for seq_idx in seq_idxs]
 
-        assert len(submodules) == NUM_SEQUENCERS
         assert all(isinstance(submodules[seq_idx], SequencerQCM) for seq_idx in seq_idxs)
         assert expected_names == registered_names
 
@@ -265,7 +263,6 @@ class TestQcmQrm:
         expected_names = [f"{qcm_qrn_name}_sequencer{idx}" for idx in range(6)]
         registered_names = [submodules[seq_idx].name for seq_idx in seq_idxs]
 
-        assert len(submodules) == NUM_SEQUENCERS
         assert all(isinstance(submodules[seq_idx], SequencerQRM) for seq_idx in seq_idxs)
         assert expected_names == registered_names
 

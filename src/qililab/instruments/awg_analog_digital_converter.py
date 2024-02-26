@@ -17,9 +17,10 @@ from abc import abstractmethod
 from dataclasses import dataclass
 from typing import Sequence, cast
 
+from qililab.exceptions import ParameterNotFound
 from qililab.instruments.awg import AWG
 from qililab.instruments.awg_settings.awg_adc_sequencer import AWGADCSequencer
-from qililab.instruments.instrument import Instrument, ParameterNotFound
+from qililab.result.qprogram.measurement_result import MeasurementResult
 from qililab.result.result import Result
 from qililab.typings.enums import AcquireTriggerMode, IntegrationMode, Parameter
 
@@ -49,11 +50,22 @@ class AWGAnalogDigitalConverter(AWG):
             Result: Acquired result
         """
 
+    @abstractmethod
+    def acquire_qprogram_results(self, acquisitions: list[str]) -> list[MeasurementResult]:
+        """Read the result from the AWG instrument
+
+        Args:
+            acquisitions (list[str]): A list of acquisitions names.
+
+        Returns:
+            list[MeasurementResult]: Acquired results in chronological order.
+        """
+
     def setup(  # pylint: disable=too-many-return-statements, too-many-branches
-        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None
+        self, parameter: Parameter, value: float | str | bool, channel_id: int | str | None = None
     ):
         """set a specific parameter to the instrument"""
-        if channel_id is None:
+        if channel_id is None or isinstance(channel_id, str):
             if self.num_sequencers == 1:
                 channel_id = 0
             else:
@@ -164,7 +176,6 @@ class AWGAnalogDigitalConverter(AWG):
             ValueError: when value type is not float
         """
 
-    @Instrument.CheckParameterValueBool
     def _set_scope_hardware_averaging(self, value: float | str | bool, sequencer_id: int):
         """set scope_hardware_averaging for the specific channel
 
@@ -180,7 +191,6 @@ class AWGAnalogDigitalConverter(AWG):
         if self.is_device_active():
             self._set_device_scope_hardware_averaging(value=bool(value), sequencer_id=sequencer_id)
 
-    @Instrument.CheckParameterValueFloatOrInt
     def _set_threshold(self, value: float | str | bool, sequencer_id: int):
         """Set threshold value for the specific channel.
 
@@ -193,7 +203,6 @@ class AWGAnalogDigitalConverter(AWG):
         if self.is_device_active():
             self._set_device_threshold(value=float(value), sequencer_id=sequencer_id)
 
-    @Instrument.CheckParameterValueFloatOrInt
     def _set_threshold_rotation(self, value: float | str | bool, sequencer_id: int):
         """Set threshold rotation value for the specific channel.
 
@@ -205,7 +214,6 @@ class AWGAnalogDigitalConverter(AWG):
         if self.is_device_active():
             self._set_device_threshold_rotation(value=float(value), sequencer_id=sequencer_id)
 
-    @Instrument.CheckParameterValueBool
     def _set_hardware_demodulation(self, value: float | str | bool, sequencer_id: int):
         """set hardware demodulation
 
@@ -236,7 +244,6 @@ class AWGAnalogDigitalConverter(AWG):
         if self.is_device_active():
             self._set_device_acquisition_mode(mode=AcquireTriggerMode(value), sequencer_id=sequencer_id)
 
-    @Instrument.CheckParameterValueFloatOrInt
     def _set_integration_length(self, value: int | float | str | bool, sequencer_id: int):
         """set integration_length for the specific channel
 
@@ -251,7 +258,6 @@ class AWGAnalogDigitalConverter(AWG):
         if self.is_device_active():
             self._set_device_integration_length(value=int(value), sequencer_id=sequencer_id)
 
-    @Instrument.CheckParameterValueFloatOrInt
     def _set_sampling_rate(self, value: int | float | str | bool, sequencer_id: int):
         """set sampling_rate for the specific channel
 
@@ -279,7 +285,6 @@ class AWGAnalogDigitalConverter(AWG):
         else:
             raise ValueError(f"value must be a string or IntegrationMode. Current type: {type(value)}")
 
-    @Instrument.CheckParameterValueFloatOrInt
     def _set_sequence_timeout(self, value: int | float | str | bool, sequencer_id: int):
         """set sequence_timeout for the specific channel
 
@@ -292,7 +297,6 @@ class AWGAnalogDigitalConverter(AWG):
         """
         cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).sequence_timeout = int(value)
 
-    @Instrument.CheckParameterValueFloatOrInt
     def _set_acquisition_timeout(self, value: int | float | str | bool, sequencer_id: int):
         """set acquisition_timeout for the specific channel
 
@@ -305,7 +309,6 @@ class AWGAnalogDigitalConverter(AWG):
         """
         cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).acquisition_timeout = int(value)
 
-    @Instrument.CheckParameterValueFloatOrInt
     def _set_acquisition_delay_time(self, value: int | float | str | bool):
         """set acquisition_delaty_time for the specific channel
 
@@ -317,7 +320,6 @@ class AWGAnalogDigitalConverter(AWG):
         """
         self.settings.acquisition_delay_time = int(value)
 
-    @Instrument.CheckParameterValueBool
     def _set_scope_store_enabled(self, value: float | str | bool, sequencer_id: int):
         """set scope_store_enable
 

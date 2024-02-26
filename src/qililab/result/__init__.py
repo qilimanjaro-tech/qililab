@@ -21,9 +21,6 @@ Results Class
 
 .. autosummary::
     :toctree: api
-
-    ~Results
 """
 from .result import Result
-from .results import Results
 from .stream_results import stream_results

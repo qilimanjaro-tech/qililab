@@ -13,12 +13,16 @@
 # limitations under the License.
 
 """Instruments class"""
+from __future__ import annotations
+
 import io
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from ruamel.yaml import YAML
 
-from qililab.instruments.instrument import Instrument
+if TYPE_CHECKING:
+    from qililab.instruments.instrument import Instrument
 
 
 @dataclass
@@ -27,7 +31,7 @@ class Instruments:
 
     elements: list[Instrument]
 
-    def get_instrument(self, alias: str | None = None):
+    def get_instrument(self, alias: str):
         """Get element given an alias."""
         return next((element for element in self.elements if element.alias == alias), None)
 

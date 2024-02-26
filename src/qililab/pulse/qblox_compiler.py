@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import numpy as np
 from qpysequence import Acquisitions, Program
@@ -21,17 +24,18 @@ from qpysequence.program import Block, Loop, Register
 from qpysequence.program.instructions import Acquire, AcquireWeighed, Move, Play, ResetPh, SetAwgGain, SetPh, Stop
 from qpysequence.utils.constants import AWG_MAX_GAIN, INST_MAX_WAIT
 
-from qililab.config import logger
-from qililab.instruments.awg_settings import AWGQbloxADCSequencer, AWGQbloxSequencer
-from qililab.instruments.qblox import QbloxModule
-from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
-from qililab.pulse.pulse_event import PulseEvent
-from qililab.pulse.pulse_schedule import PulseSchedule
-from qililab.pulse.pulse_shape.pulse_shape import PulseShape
+from qililab.config.config import logger
 from qililab.typings import InstrumentName
 
+if TYPE_CHECKING:
+    from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
+    from qililab.pulse.pulse_schedule import PulseSchedule
+    from qililab.pulse.pulse_shape.pulse_shape import PulseShape
+    from qililab.settings.circuit_compilation.bus_settings import BusSettings
+    from qililab.settings.circuit_compilation.gates_settings import GatesSettings
 
-class QbloxCompiler:  # pylint: disable=too-many-locals
+
+class QbloxCompiler:  # pylint: disable=too-many-locals, too-few-public-methods
     """Qblox compiler for pulse schedules. Its only public method is `compile`, which compiles a pulse schedule to qpysequences (see docs for `QBloxCompiler.compile`).
     The class object is meant to be initialized once, with `compile` running as many times as necessary. This way the class attributes do not have to be initialized
     at each single compilation.
@@ -42,22 +46,15 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         ValueError: at init if no readout module (QRM) is found in platform.
     """
 
-    def __init__(self, platform):
-        self.qblox_modules = [
-            instrument for instrument in platform.instruments.elements if isinstance(instrument, QbloxModule)
-        ]
-        self.buses = platform.buses
+    def __init__(self, gates_settings: GatesSettings, bus_to_module_and_sequencer_mapping: dict):
+        self.bus_to_module_and_sequencer_mapping = bus_to_module_and_sequencer_mapping
+        self.buses = gates_settings.buses
         # init variables as empty
-        self.nshots = None
-        self.num_bins = None
-        self.repetition_duration = None
+        self.nshots = 0
+        self.num_bins = 0
+        self.repetition_duration = 0
         self.readout_modules = [InstrumentName.QBLOX_QRM, InstrumentName.QRMRF]
         self.control_modules = [InstrumentName.QBLOX_QCM, InstrumentName.QCMRF]
-
-        if all(
-            qblox.name not in self.readout_modules for qblox in self.qblox_modules
-        ):  # Raise error if qrm is not found
-            raise ValueError("No QRM modules found in platform instruments")
 
     def compile(
         self, pulse_schedule: PulseSchedule, num_avg: int, repetition_duration: int, num_bins: int
@@ -81,30 +78,29 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
             dict[str, list[QpySequence]]: dictionary where the keys correspond to the bus which has to execute a list of QpySequences, given in the values
         """
         if num_avg != self.nshots or repetition_duration != self.repetition_duration or num_bins != self.num_bins:
-            self.nshots = num_avg
-            self.repetition_duration = repetition_duration
-            self.num_bins = num_bins
-            for qblox_module in self.qblox_modules:
-                qblox_module.clear_cache()
+            self.nshots = num_avg  # type: ignore
+            self.repetition_duration = repetition_duration  # type: ignore
+            self.num_bins = num_bins  # type: ignore
+            for bus_alias in self.bus_to_module_and_sequencer_mapping:
+                self.bus_to_module_and_sequencer_mapping[bus_alias]["module"].clear_cache()
 
-        sequencer_qrm_bus_schedules, sequencer_qcm_bus_schedules = self.get_sequencer_schedule(
-            pulse_schedule, self.qblox_modules
-        )
+        bus_to_schedule = {schedule.bus_alias: schedule for schedule in pulse_schedule}
 
         compiled_sequences = {}  # type: dict[str, list[QpySequence]]
 
         # generally a sequencer_schedule is the schedule sent to a specific bus, except for readout,
         # where multiple schedules for different sequencers are sent to the same bus
-        for sequencer, sequencer_schedule in sequencer_qrm_bus_schedules + sequencer_qcm_bus_schedules:
+        for bus_alias in bus_to_schedule:
+            qblox_module = self.bus_to_module_and_sequencer_mapping[bus_alias]["module"]
+            sequencer = self.bus_to_module_and_sequencer_mapping[bus_alias]["sequencer"]
+            sequencer_schedule = bus_to_schedule[bus_alias]
             # check if circuit lasts longer than repetition duration
             end_time = None if len(sequencer_schedule.timeline) == 0 else sequencer_schedule.timeline[-1].end_time
             if end_time is not None and end_time > self.repetition_duration:
                 raise ValueError(
                     f"Circuit execution time cannnot be longer than repetition duration but found circuit time {end_time } > {repetition_duration} for qubit {sequencer_schedule.qubit}"
                 )
-            # get qblox module for this sequencer
-            qblox_module = self._get_instrument_from_sequencer(sequencer)
-            bus_alias = self.buses.get(sequencer_schedule.port).alias
+
             # create empty list if key does not exist
             if bus_alias not in compiled_sequences:
                 compiled_sequences[bus_alias] = []
@@ -121,30 +117,14 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
 
             else:
                 # compile the sequences
-                sequence = self._translate_pulse_bus_schedule(sequencer_schedule, sequencer)
+                sequence = self._translate_pulse_bus_schedule(sequencer_schedule)
                 compiled_sequences[bus_alias].append(sequence)
                 qblox_module.cache[sequencer.identifier] = sequencer_schedule
                 qblox_module.sequences[sequencer.identifier] = sequence
 
-        # check for sequences which where not in the PulseSchedule but are uploaded to a given qrm and erase them from cache
-        # this is only needed for the qrm since it has multiple sequencers for the same bus
-        for qrm in self.qblox_modules:
-            # skip if not qrm
-            if qrm.name not in self.readout_modules:
-                continue
-            compiled_seqs = {
-                sequencer.identifier for sequencer, _ in sequencer_qrm_bus_schedules if sequencer in qrm.awg_sequencers
-            }
-            # pop from cache if a sequencer id is cached in the qrm but not present in compiled sequences for that qrm
-            for seq_id in [cached_seq_id for cached_seq_id in qrm.cache.keys() if cached_seq_id not in compiled_seqs]:
-                _ = qrm.cache.pop(seq_id)
-                _ = qrm.sequences.pop(seq_id)
-
         return compiled_sequences
 
-    def _translate_pulse_bus_schedule(
-        self, pulse_bus_schedule: PulseBusSchedule, sequencer: AWGQbloxSequencer
-    ) -> QpySequence:
+    def _translate_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule) -> QpySequence:
         """Translate a pulse sequence into a Q1ASM program, a waveform dictionary and
         acquisitions dictionary (that is, a QpySequence sequence).
 
@@ -155,15 +135,13 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         Returns:
             Sequence: Qblox Sequence object containing the program and waveforms.
         """
-        waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule, sequencer=sequencer)
-        acquisitions = self._generate_acquisitions(sequencer, timeline=pulse_bus_schedule.timeline)
-        program = self._generate_program(
-            pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, sequencer=sequencer
-        )
-        weights = self._generate_weights(sequencer=sequencer)  # type: ignore
+        waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
+        acquisitions = self._generate_acquisitions(pulse_bus_schedule=pulse_bus_schedule)
+        program = self._generate_program(pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms)
+        weights = self._generate_weights(bus=self.buses[pulse_bus_schedule.bus_alias])  # type: ignore
         return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
 
-    def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule, sequencer: AWGQbloxSequencer):
+    def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule):
         """Generate I and Q waveforms from a PulseSequence object.
         Args:
             pulse_bus_schedule (PulseBusSchedule): PulseSequence object.
@@ -183,13 +161,11 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
                 real = np.real(envelope)
                 imag = np.imag(envelope)
                 pair = (real, imag)
-                if (sequencer.path_i, sequencer.path_q) == (1, 0):
-                    pair = pair[::-1]  # swap paths
                 waveforms.add_pair(pair=pair, name=pulse_event.pulse.label())
 
         return waveforms
 
-    def _generate_acquisitions(self, sequencer: AWGQbloxSequencer, timeline: list[PulseEvent]) -> Acquisitions:
+    def _generate_acquisitions(self, pulse_bus_schedule: PulseBusSchedule) -> Acquisitions:
         """Generate Acquisitions object, currently containing a single acquisition named "default", with num_bins = 1
         and index = 0.
 
@@ -200,16 +176,14 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         Returns:
             Acquisitions: Acquisitions object.
         """
-        # FIXME: is it really necessary to generate acquisitions for a QCM??
         acquisitions = Acquisitions()
-        if self._get_instrument_from_sequencer(sequencer).name in self.control_modules:
-            return acquisitions
-        for i, pulse in enumerate(timeline):
-            acquisitions.add(name=f"acq_q{pulse.qubit}_{i}", num_bins=self.num_bins, index=i)
+        if self.buses[pulse_bus_schedule.bus_alias].is_readout():
+            for i, pulse in enumerate(pulse_bus_schedule.timeline):
+                acquisitions.add(name=f"acq_q{pulse.qubit}_{i}", num_bins=self.num_bins, index=i)
         return acquisitions
 
     def _generate_program(  # pylint: disable=too-many-locals
-        self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, sequencer: AWGQbloxSequencer
+        self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms
     ) -> Program:
         """Generate Q1ASM program
 
@@ -221,9 +195,10 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         Returns:
             Program: Q1ASM program.
         """
+        bus = self.buses[pulse_bus_schedule.bus_alias]
+
         # get qblox module from sequencer
-        qblox_module = self._get_instrument_from_sequencer(sequencer)
-        MIN_WAIT = qblox_module._MIN_WAIT_TIME  # pylint: disable=protected-access
+        MIN_WAIT = 4
 
         # Define program's blocks
         program = Program()
@@ -232,7 +207,7 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         program.append_block(block=start)
         # Create registers with 0 and 1 (necessary for qblox)
         weight_registers = Register(), Register()
-        if qblox_module.name in self.readout_modules:
+        if bus.is_readout():
             self._init_weights_registers(registers=weight_registers, program=program)
         avg_loop = Loop(name="average", begin=int(self.nshots))  # type: ignore
         bin_loop = Loop(name="bin", begin=0, end=self.num_bins, step=1)
@@ -264,17 +239,15 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
                     waveform_0=waveform_pair.waveform_i.index,
                     waveform_1=waveform_pair.waveform_q.index,
                     # wait until next pulse if QCM. If QRM wait min time (4) and wait time is added after acquiring
-                    wait_time=int(wait_time)
-                    if qblox_module.name not in self.readout_modules
-                    else MIN_WAIT,  # TODO: add time of flight
+                    wait_time=int(wait_time) if not bus.is_readout() else MIN_WAIT,  # TODO: add time of flight
                 )
             )
-            if qblox_module.name in self.readout_modules:
+            if bus.is_readout():
                 self._append_acquire_instruction(
                     loop=bin_loop,
                     bin_index=bin_loop.counter_register,
                     acq_index=i,
-                    sequencer=sequencer,  # type: ignore
+                    bus=bus,
                     weight_regs=weight_registers,
                     wait=wait_time - MIN_WAIT if (i < len(timeline) - 1) else MIN_WAIT,
                 )
@@ -285,13 +258,13 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
 
         if self.repetition_duration is not None:
             wait_time = self.repetition_duration - bin_loop.duration_iter
-            if wait_time > qblox_module._MIN_WAIT_TIME:  # pylint: disable=protected-access
+            if wait_time > MIN_WAIT:
                 bin_loop.append_component(long_wait(wait_time=wait_time))
 
-        logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
+        logger.info("Q1ASM program: \n %s", repr(program))
         return program
 
-    def _generate_weights(self, sequencer: AWGQbloxADCSequencer) -> Weights:
+    def _generate_weights(self, bus: BusSettings) -> Weights:
         """Generate acquisition weights.
 
         Returns:
@@ -299,12 +272,9 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         """
         weights = Weights()
 
-        if self._get_instrument_from_sequencer(sequencer).name in self.control_modules:
-            return weights
-        pair = ([float(w) for w in sequencer.weights_i], [float(w) for w in sequencer.weights_q])
-        if (sequencer.path_i, sequencer.path_q) == (1, 0):
-            pair = pair[::-1]  # swap paths
-        weights.add_pair(pair=pair, indices=(0, 1))
+        if bus.is_readout():
+            pair = ([float(w) for w in bus.weights_i], [float(w) for w in bus.weights_q])
+            weights.add_pair(pair=pair, indices=(0, 1))
         return weights
 
     def _append_acquire_instruction(
@@ -312,13 +282,11 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         loop: Loop,
         bin_index: Register | int,
         acq_index: int,
-        sequencer: AWGQbloxADCSequencer,
+        bus: BusSettings,
         weight_regs: tuple[Register, Register],
         wait: int,
     ):
         """Append an acquire instruction to the loop."""
-        weighed_acq = sequencer.weighed_acq_enabled
-
         acq_instruction = (
             AcquireWeighed(
                 acq_index=acq_index,
@@ -327,7 +295,7 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
                 weight_index_1=weight_regs[1],
                 wait_time=wait,
             )
-            if weighed_acq
+            if bus.weighed_acq_enabled
             else Acquire(
                 acq_index=acq_index,
                 bin_index=bin_index,
@@ -342,77 +310,3 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         move_1 = Move(1, registers[1])
         setup_block = program.get_block(name="setup")
         setup_block.append_components([move_0, move_1], bot_position=1)
-
-    def get_sequencer_schedule(
-        self, pulse_schedule: PulseSchedule, qblox_instruments: list[QbloxModule]
-    ) -> tuple[list[tuple[AWGQbloxSequencer, PulseBusSchedule]], list[tuple[AWGQbloxSequencer, PulseBusSchedule]]]:
-        """This method returns a dictionary containing the pulse schedule to be sent to each sequencer.
-        This corresponds to a PulseBusSchedule object. Note that for multiplexed QRM more than one PulseBusSchedule is sent to the same
-        bus (feedline) but to different sequencers (as qubit schedules), which is why QRM and QCM pulses are handled asymetrically
-        in the methods below - and also why it is not possible to just group QRM and QCM pulses together under a single dictionary.
-
-        Args:
-            pulse_schedule (PulseSchedule): pulse schedule to be executed
-            qblox_instruments (list[QbloxModule]): list of connected qblox modules
-
-        Raises:
-            ValueError: raises an error if readoud pulses are targeted at more tan one port
-
-        Returns:
-            dict[AWGQbloxSequencer, PulseBusSchedule]: dictionary of the pulse schedule (dict value) corresponding to a
-            given sequencer (dict key)
-        """
-        qrm_sequencers = [
-            sequencer
-            for instrument in qblox_instruments
-            for sequencer in instrument.awg_sequencers
-            if instrument.name in self.readout_modules
-        ]
-        feedline_ports = {sequencer.chip_port_id for sequencer in qrm_sequencers}
-        qcm_sequencers = [
-            sequencer
-            for instrument in qblox_instruments
-            for sequencer in instrument.awg_sequencers
-            if instrument.name in self.control_modules
-        ]
-
-        control_pulses = [
-            pulse_bus_schedule
-            for pulse_bus_schedule in pulse_schedule.elements
-            if pulse_bus_schedule.port not in feedline_ports
-        ]
-        readout_pulses = [
-            pulse_bus_schedule
-            for pulse_bus_schedule in pulse_schedule.elements
-            if pulse_bus_schedule.port in feedline_ports
-        ]
-
-        qcm_bus_schedules = [
-            (sequencer, schedule)
-            for sequencer in qcm_sequencers
-            for schedule in control_pulses
-            if sequencer.chip_port_id == schedule.port
-        ]
-
-        # Readout pulses should all be in one bus pulse schedule since they are all in the same line (feedline_input), so we separate them qubit-wise
-        qrm_bus_schedules = [
-            (sequencer, qubit_schedule)
-            for sequencer in qrm_sequencers
-            for schedule in readout_pulses
-            for qubit_schedule in schedule.qubit_schedules()
-            if sequencer.qubit == qubit_schedule.qubit
-        ]
-        return qrm_bus_schedules, qcm_bus_schedules
-
-    def _get_instrument_from_sequencer(self, sequencer: AWGQbloxSequencer) -> QbloxModule:
-        """Get the qblox module to which a given sequencer belongs
-
-        Args:
-            sequencer (AWGQbloxSequencer): qblox sequencer
-
-        Returns:
-            QbloxModule: qblox module
-        """
-        return next(
-            instrument for instrument in self.qblox_modules for seq in instrument.awg_sequencers if seq == sequencer
-        )

@@ -5,12 +5,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from qililab.data_management import build_platform
 from qililab.instrument_controllers.mini_circuits.mini_circuits_controller import MiniCircuitsController
-from qililab.instruments import Attenuator
+from qililab.instruments.mini_circuits import Attenuator
 from qililab.platform import Platform
 from qililab.typings.enums import Parameter
 from tests.data import Galadriel
-from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="platform")

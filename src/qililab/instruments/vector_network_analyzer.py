@@ -16,7 +16,9 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-from qililab.instruments.instrument import Instrument, ParameterNotFound
+from qililab.exceptions import ParameterNotFound
+from qililab.instruments.decorators import check_device_initialized
+from qililab.instruments.instrument import Instrument
 from qililab.typings.enums import Parameter, VNAScatteringParameters, VNATriggerModes
 from qililab.typings.instruments.vector_network_analyzer import VectorNetworkAnalyzerDriver
 
@@ -61,7 +63,7 @@ class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instan
     settings: VectorNetworkAnalyzerSettings
     device: VectorNetworkAnalyzerDriver
 
-    def setup(self, parameter: Parameter, value: float | str | bool | int, channel_id: int | None = None):
+    def setup(self, parameter: Parameter, value: float | str | bool | int, channel_id: int | str | None = None):
         """Set instrument settings parameter to the corresponding value
 
         Args:
@@ -379,22 +381,22 @@ class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instan
         """Return a dict representation of the VectorNetworkAnalyzer class."""
         return dict(super().to_dict().items())
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def initial_setup(self):
         """Set initial instrument settings."""
         self.device.initial_setup()
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def reset(self):
         """Reset instrument settings."""
         self.device.reset()
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def turn_on(self):
         """Start an instrument."""
         return self.send_command(command=":OUTP", arg="ON")
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def turn_off(self):
         """Stop an instrument."""
         return self.send_command(command=":OUTP", arg="OFF")

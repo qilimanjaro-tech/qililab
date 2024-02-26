@@ -7,13 +7,11 @@ The runcards are the serialized :class:`.Platform`'s in the form of dictionaries
 
 They contain all the laboratory information, settings and parameters, concretely they contain information about the:
 
-- Gates transpilation
-
-- :class:`.Chip`
-
 - Instruments
 
 - Buses
+
+- Gates transpilation
 
 |
 
@@ -53,7 +51,6 @@ Runcard YAML file example:
         reset_method: passive
         passive_reset_duration: 100
         minimum_clock_time: 4
-        operations: []
         gates:
             M(0):
                 -   bus: feedline_bus # alias of the bus
@@ -207,8 +204,6 @@ Runcard YAML file example:
     instruments:
         -   name: QRM
             alias: QRM1
-            firmware: 0.7.0
-            num_sequencers: 2
             acquisition_delay_time: 100
             out_offsets: [0, 0]
             awg_sequencers:
@@ -221,9 +216,6 @@ Runcard YAML file example:
                     gain_q: .5
                     offset_i: 0
                     offset_q: 0
-                    weights_i: [1., 1., 1., 1., 1.] # to calibrate
-                    weights_q: [1., 1., 1., 1., 1.] # to calibrate
-                    weighed_acq_enabled: False
                     threshold: 0.5
                     threshold_rotation: 0.0
                     num_bins: 1
@@ -249,9 +241,6 @@ Runcard YAML file example:
                     gain_q: .5
                     offset_i: 0
                     offset_q: 0
-                    weights_i: [1., 1., 1., 1., 1.] # to calibrate
-                    weights_q: [1., 1., 1., 1., 1.] # to calibrate
-                    weighed_acq_enabled: False
                     threshold: 0.5
                     threshold_rotation: 0.0
                     num_bins: 1
@@ -270,8 +259,6 @@ Runcard YAML file example:
                     scope_store_enabled: false
         -   name: QCM-RF
             alias: QCM-RF1
-            firmware: 0.7.0
-            num_sequencers: 2
             out0_lo_freq: 6.5e+09
             out0_lo_en: true
             out0_att: 0
@@ -311,8 +298,6 @@ Runcard YAML file example:
                     hardware_modulation: true
         -   name: QCM
             alias: QCM1
-            firmware: 0.7.0
-            num_sequencers: 2
             out_offsets: [0.0, 0.0, 0.0, 0.0]
             awg_sequencers:
                 -   identifier: 0
@@ -343,13 +328,11 @@ Runcard YAML file example:
                     hardware_modulation: true
         -   name: RS
             alias: rs_1
-            firmware: 4.2.76.0-3.30.046.294
             power: 16
             frequency: 8.0726e+09
             rf_on: true
         -   name: mini_circuits
             alias: attenuator
-            firmware: None
             attenuation: 32
 
     instrument_controllers:

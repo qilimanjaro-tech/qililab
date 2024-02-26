@@ -1,8 +1,9 @@
 import numpy as np
 import pytest
 
-from qililab import Domain, IQPair, QProgram, QuantumMachinesCompiler, Square
+from qililab.qprogram import Domain, QProgram, QuantumMachinesCompiler
 from qililab.qprogram.blocks import ForLoop, Loop
+from qililab.waveforms import IQPair, Square
 
 
 @pytest.fixture(name="play_operation")

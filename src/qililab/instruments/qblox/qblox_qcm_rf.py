@@ -15,8 +15,9 @@
 """This file contains the QbloxQCMRF class."""
 from dataclasses import dataclass, field
 
+from qililab.exceptions import ParameterNotFound  # pylint: disable=cyclic-import
 from qililab.instruments.awg_settings import AWGQbloxSequencer  # pylint: disable=cyclic-import
-from qililab.instruments.instrument import Instrument, ParameterNotFound  # pylint: disable=cyclic-import
+from qililab.instruments.decorators import check_device_initialized
 from qililab.instruments.utils.instrument_factory import InstrumentFactory  # pylint: disable=cyclic-import
 from qililab.typings import InstrumentName, Parameter
 
@@ -63,14 +64,14 @@ class QbloxQCMRF(QbloxQCM):
         Parameter.OUT1_OFFSET_PATH1,
     }
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def initial_setup(self):
         """Initial setup"""
         super().initial_setup()
         for parameter in self.parameters:
             self.setup(parameter, getattr(self.settings, parameter.value))
 
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | str | None = None):
         """Set a parameter of the Qblox QCM-RF module.
 
         Args:
@@ -79,7 +80,7 @@ class QbloxQCMRF(QbloxQCM):
             channel_id (int | None, optional): ID of the sequencer. Defaults to None.
         """
         if parameter == Parameter.LO_FREQUENCY:
-            if channel_id is not None:
+            if channel_id is not None and isinstance(channel_id, int):
                 sequencer: AWGQbloxSequencer = self._get_sequencer_by_id(channel_id)
             else:
                 raise ParameterNotFound(
@@ -108,7 +109,7 @@ class QbloxQCMRF(QbloxQCM):
             return
         super().setup(parameter, value, channel_id)
 
-    def get(self, parameter: Parameter, channel_id: int | None = None):
+    def get(self, parameter: Parameter, channel_id: int | str | None = None):
         """Set a parameter of the Qblox QCM-RF module.
 
         Args:
@@ -117,7 +118,7 @@ class QbloxQCMRF(QbloxQCM):
             channel_id (int | None, optional): ID of the sequencer. Defaults to None.
         """
         if parameter == Parameter.LO_FREQUENCY:
-            if channel_id is not None:
+            if channel_id is not None and isinstance(channel_id, int):
                 sequencer: AWGQbloxSequencer = self._get_sequencer_by_id(channel_id)
             else:
                 raise ParameterNotFound(

@@ -15,15 +15,13 @@
 import os
 from datetime import datetime
 from pathlib import Path
+from typing import cast
 from warnings import warn
 
 import h5py
 import numpy as np
 from qiboconnection.api import API
 from ruamel.yaml import YAML
-
-from .platform import Platform
-from .settings import Runcard
 
 
 def save_results(results: np.ndarray, loops: dict[str, np.ndarray], data_path: str, name: str | None = None) -> str:
@@ -135,7 +133,7 @@ def load_results(path: str) -> tuple[np.ndarray, dict[str, np.ndarray]]:
     return results, loops  # type: ignore
 
 
-def save_platform(path: str, platform: Platform) -> str:
+def save_platform(path: str, platform) -> str:
     """Serialize and save the given platform to the specified path.
 
     This function saves the cache values of the :class:`.Platform` object during execution as a YAML file.
@@ -175,7 +173,7 @@ def save_platform(path: str, platform: Platform) -> str:
 
 def build_platform(
     runcard: str | dict | None = None, path: str | None = None, connection: API | None = None, new_drivers: bool = False
-) -> Platform:
+):
     """Builds a :class:`.Platform` object, given a :ref:`runcard <runcards>`.
 
     Such runcard can be passed in one of the following two ways:
@@ -192,13 +190,12 @@ def build_platform(
             "name": name,                                           # str
             "device_id": device_id,                                 # int
             "gates_settings": gates_settings,                       # dict
-            "chip": chip,                                           # dict
             "buses": buses,                                         # list[dict]
             "instruments": instruments,                             # list[dict]
             "instrument_controllers": instrument_controllers        # list[dict]
         }
 
-    which contains the information the :class:`.Platform` class uses to connect, setup and control the actual chip, buses and instruments of the laboratory.
+    which contains the information the :class:`.Platform` class uses to connect, setup and control the actual buses and instruments of the laboratory.
 
     .. note::
 
@@ -227,6 +224,9 @@ def build_platform(
         >>> platform.name
         galadriel
     """
+    from qililab.platform.platform import Platform  # pylint: disable=import-outside-toplevel
+    from qililab.settings.runcard import Runcard  # pylint: disable=import-outside-toplevel
+
     if path is None and runcard is None:
         raise ValueError("`runcard` argument (str | dict) has not been passed to the `build_platform()` function.")
     if path is not None:
@@ -247,5 +247,6 @@ def build_platform(
             yaml = YAML(typ="safe")
             runcard = yaml.load(stream=file)
 
+    runcard = cast(dict, runcard)
     runcard_class = Runcard(**runcard)
     return Platform(runcard=runcard_class, connection=connection)

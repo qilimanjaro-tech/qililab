@@ -11,13 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
 from abc import abstractmethod
-
-from qililab.pulse import PulseBusSchedule
+from typing import TYPE_CHECKING
 
 from .base_instrument import BaseInstrument
 from .instrument_interface_factory import InstrumentInterfaceFactory
+
+if TYPE_CHECKING:
+    from qililab.pulse import PulseBusSchedule
 
 
 @InstrumentInterfaceFactory.register

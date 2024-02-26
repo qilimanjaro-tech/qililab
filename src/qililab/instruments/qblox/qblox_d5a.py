@@ -18,11 +18,12 @@ Class to interface with the voltage source Qblox D5a
 
 from dataclasses import dataclass
 from time import sleep
-from typing import Any
+from typing import Any, cast
 
-from qililab.config import logger
-from qililab.instruments.instrument import Instrument, ParameterNotFound
-from qililab.instruments.utils import InstrumentFactory
+from qililab.config.config import logger
+from qililab.exceptions.parameter_not_found import ParameterNotFound
+from qililab.instruments.decorators import check_device_initialized
+from qililab.instruments.utils.instrument_factory import InstrumentFactory
 from qililab.instruments.voltage_source import VoltageSource
 from qililab.typings import InstrumentName
 from qililab.typings import QbloxD5a as QbloxD5aDriver
@@ -74,11 +75,12 @@ class QbloxD5a(VoltageSource):
         while channel.is_ramping():
             sleep(0.1)
 
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | str | None = None):
         """Set Qblox instrument calibration settings."""
 
         if channel_id is None:
             raise ValueError(f"channel not specified to update instrument {self.name.value}")
+        channel_id = cast(int, channel_id)
         if channel_id > 3:
             raise ValueError(
                 f"the specified dac index:{channel_id} is out of range."
@@ -101,7 +103,7 @@ class QbloxD5a(VoltageSource):
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
-    def get(self, parameter: Parameter, channel_id: int | None = None):
+    def get(self, parameter: Parameter, channel_id: int | str | None = None):
         """Get instrument parameter.
 
         Args:
@@ -110,6 +112,7 @@ class QbloxD5a(VoltageSource):
         """
         if channel_id is None:
             raise ValueError(f"channel not specified to update instrument {self.name.value}")
+        channel_id = cast(int, channel_id)
         if channel_id > 3:
             raise ValueError(
                 f"the specified dac index:{channel_id} is out of range."
@@ -119,45 +122,41 @@ class QbloxD5a(VoltageSource):
             return getattr(self.settings, parameter.value)[channel_id]
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
-    @Instrument.CheckParameterValueFloatOrInt
     def _set_voltage(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the voltage"""
         self.settings.voltage[channel_id] = float(value)
         if self.is_device_active():
             channel.voltage(self.voltage[channel_id])
 
-    @Instrument.CheckParameterValueString
     def _set_span(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the span"""
         self.settings.span[channel_id] = str(value)
         if self.is_device_active():
             channel.span(self.span[channel_id])
 
-    @Instrument.CheckParameterValueBool
     def _set_ramping_enabled(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the ramping_enabled"""
         self.settings.ramping_enabled[channel_id] = bool(value)
         if self.is_device_active():
             channel.ramping_enabled(self.ramping_enabled[channel_id])
 
-    @Instrument.CheckParameterValueFloatOrInt
     def _set_ramping_rate(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the ramp_rate"""
         self.settings.ramp_rate[channel_id] = float(value)
         if self.is_device_active():
             channel.ramp_rate(self.ramp_rate[channel_id])
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def initial_setup(self):
         """performs an initial setup."""
         for dac_index in self.dacs:
             self._channel_setup(dac_index=dac_index)
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def turn_on(self):
         """Dummy method."""
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def turn_off(self):
         """Stop outputing voltage."""
         self.device.set_dacs_zero()
@@ -165,7 +164,7 @@ class QbloxD5a(VoltageSource):
             channel = self.dac(dac_index=dac_index)
             logger.debug("Dac%d voltage resetted to  %f", dac_index, channel.voltage())
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def reset(self):
         """Reset instrument."""
         self.device.set_dacs_zero()
