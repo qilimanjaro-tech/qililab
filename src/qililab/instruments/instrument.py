@@ -13,9 +13,11 @@
 # limitations under the License.
 
 """Instrument class"""
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import get_type_hints
+from typing import cast, get_type_hints
 
 from qililab.config.config import logger
 from qililab.exceptions import ParameterNotFound
@@ -51,17 +53,31 @@ class Instrument(BusElement, ABC):
 
     def is_awg(self) -> bool:
         """Returns True if instrument is an AWG."""
-        from qililab.instruments.awg import AWG  # pylint: disable=import-outside-toplevel
+        from qililab.instruments.awg import AWG  # pylint: disable=import-outside-toplevel, cyclic-import
 
         return isinstance(self, AWG)
 
+    def as_awg(self):
+        """Cast instrument to AWG."""
+        from qililab.instruments.awg import AWG  # pylint: disable=import-outside-toplevel, cyclic-import
+
+        return cast(AWG, self)
+
     def is_adc(self) -> bool:
         """Returns True if instrument is an AWG/ADC."""
-        from qililab.instruments.awg_analog_digital_converter import (  # pylint: disable=import-outside-toplevel
+        from qililab.instruments.awg_analog_digital_converter import (  # pylint: disable=import-outside-toplevel, cyclic-import
             AWGAnalogDigitalConverter,
         )
 
         return isinstance(self, AWGAnalogDigitalConverter)
+
+    def as_adc(self):
+        """Cast instrument to AWG/ADC."""
+        from qililab.instruments.awg_analog_digital_converter import (  # pylint: disable=import-outside-toplevel, cyclic-import
+            AWGAnalogDigitalConverter,
+        )
+
+        return cast(AWGAnalogDigitalConverter, self)
 
     def is_device_active(self) -> bool:
         """Check wether or not the device is currently active, for instrument childs.

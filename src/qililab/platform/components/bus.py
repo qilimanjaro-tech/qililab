@@ -191,9 +191,7 @@ class Bus:
         """Runs any previously uploaded program into the instrument."""
         for instrument, instrument_channel in zip(self.instruments, self.channels):
             if instrument.is_awg():
-                from qililab.instruments.awg import AWG  # pylint: disable=import-outside-toplevel
-
-                cast(AWG, instrument).run(channel_id=instrument_channel)
+                instrument.as_awg().run(channel_id=instrument_channel)
                 return
 
     def acquire_result(self) -> Result:
@@ -206,11 +204,7 @@ class Bus:
         results: list[Result] = []
         for instrument in self.instruments:
             if instrument.is_adc():
-                from qililab.instruments.awg_analog_digital_converter import (  # pylint: disable=import-outside-toplevel
-                    AWGAnalogDigitalConverter,
-                )
-
-                result = cast(AWGAnalogDigitalConverter, instrument).acquire_result()
+                result = instrument.as_adc().acquire_result()
                 if result is not None:
                     results.append(result)
 
@@ -234,13 +228,7 @@ class Bus:
         total_results: list[list[MeasurementResult]] = []
         for instrument in self.instruments:
             if instrument.is_adc():
-                from qililab.instruments.awg_analog_digital_converter import (  # pylint: disable=import-outside-toplevel
-                    AWGAnalogDigitalConverter,
-                )
-
-                instrument_results = cast(AWGAnalogDigitalConverter, instrument).acquire_qprogram_results(
-                    acquisitions=acquisitions
-                )
+                instrument_results = instrument.as_adc().acquire_qprogram_results(acquisitions=acquisitions)
                 total_results.append(instrument_results)
 
         if len(total_results) == 0:
