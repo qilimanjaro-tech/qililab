@@ -224,8 +224,8 @@ def build_platform(
         >>> platform.name
         galadriel
     """
-    from qililab.platform.platform import Platform
-    from qililab.settings.runcard import Runcard
+    from qililab.platform.platform import Platform  # pylint: disable=import-outside-toplevel
+    from qililab.settings.runcard import Runcard  # pylint: disable=import-outside-toplevel
 
     if path is None and runcard is None:
         raise ValueError("`runcard` argument (str | dict) has not been passed to the `build_platform()` function.")

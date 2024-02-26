@@ -58,7 +58,8 @@ class QbloxModule(AWG):
             """build AWGQbloxSequencer"""
             num_sequencers = len(self.awg_sequencers)
             if (
-                num_sequencers <= 0 or num_sequencers > QbloxModule._NUM_MAX_SEQUENCERS
+                num_sequencers <= 0
+                or num_sequencers > QbloxModule._NUM_MAX_SEQUENCERS  # pylint: disable=protected-access
             ):  # pylint: disable=protected-access)
                 raise ValueError(
                     "The number of sequencers must be greater than 0 and less or equal than "

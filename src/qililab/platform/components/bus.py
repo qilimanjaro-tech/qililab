@@ -143,9 +143,8 @@ class Bus:
                 if channel_id is not None and channel_id == instrument_channel:
                     instrument.set_parameter(parameter, value, channel_id)
                     return
-                else:
-                    instrument.set_parameter(parameter, value, instrument_channel)
-                    return
+                instrument.set_parameter(parameter, value, instrument_channel)
+                return
         raise ParameterNotFound(
             f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
         )
@@ -162,24 +161,22 @@ class Bus:
             with contextlib.suppress(ParameterNotFound):
                 if channel_id is not None and channel_id == instrument_channel:
                     return instrument.get_parameter(parameter, channel_id)
-                else:
-                    return instrument.get_parameter(parameter, instrument_channel)
+                return instrument.get_parameter(parameter, instrument_channel)
         raise ParameterNotFound(
             f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
         )
 
     def upload_qpysequence(self, qpysequence: QpySequence, channel_id: int | str | None = None):
         """Uploads the qpysequence into the instrument."""
-        from qililab.instruments.qblox.qblox_module import QbloxModule
+        from qililab.instruments.qblox.qblox_module import QbloxModule  # pylint: disable=import-outside-toplevel
 
         for instrument, instrument_channel in zip(self.instruments, self.channels):
             if isinstance(instrument, QbloxModule):
                 if channel_id is not None and channel_id == instrument_channel:
                     instrument.upload_qpysequence(qpysequence=qpysequence, channel_id=channel_id)
                     return
-                else:
-                    instrument.upload_qpysequence(qpysequence=qpysequence, channel_id=instrument_channel)
-                    return
+                instrument.upload_qpysequence(qpysequence=qpysequence, channel_id=instrument_channel)
+                return
 
         raise AttributeError(f"Bus {self.alias} doesn't have any QbloxModule to upload a qpysequence.")
 

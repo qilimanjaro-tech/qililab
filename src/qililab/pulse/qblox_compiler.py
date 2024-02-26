@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from qililab.settings.circuit_compilation.gates_settings import GatesSettings
 
 
-class QbloxCompiler:  # pylint: disable=too-many-locals
+class QbloxCompiler:  # pylint: disable=too-many-locals, too-few-public-methods
     """Qblox compiler for pulse schedules. Its only public method is `compile`, which compiles a pulse schedule to qpysequences (see docs for `QBloxCompiler.compile`).
     The class object is meant to be initialized once, with `compile` running as many times as necessary. This way the class attributes do not have to be initialized
     at each single compilation.
