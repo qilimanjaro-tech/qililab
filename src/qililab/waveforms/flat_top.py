@@ -42,7 +42,7 @@ class FlatTop(Waveform):  # pylint: disable=too-few-public-methods
         self.buffer = buffer
 
     def envelope(self, resolution: int = 1) -> np.ndarray:
-        """Constant amplitude envelope.
+        """Flat top Gaussian rise envelope.
 
         Args:
             resolution (float, optional): Resolution of the pulse. Defaults to 1.
