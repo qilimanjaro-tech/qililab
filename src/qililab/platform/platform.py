@@ -757,8 +757,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         results: list[Result] = []
         for bus in readout_buses:
             result = bus.acquire_result()
-            if isinstance(program, Circuit):
-                result = self._order_result(result, program)
             if queue is not None:
                 queue.put_nowait(item=result)
             results.append(result)
@@ -769,13 +767,19 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         # Flatten results if more than one readout bus was used for a qblox module
         if len(results) > 1:
-            return QbloxResult(
-                integration_lengths=[length for result in results for length in result.integration_lengths],  # type: ignore [attr-defined]
-                qblox_raw_results=[raw_result for result in results for raw_result in result.qblox_raw_results],  # type: ignore [attr-defined]
-            )
+            results = [
+                QbloxResult(
+                    integration_lengths=[length for result in results for length in result.integration_lengths],  # type: ignore [attr-defined]
+                    qblox_raw_results=[raw_result for result in results for raw_result in result.qblox_raw_results],  # type: ignore [attr-defined]
+                )
+            ]
         if not results:
             raise ValueError("There are no readout buses in the platform.")
 
+        if isinstance(program, Circuit):
+            results = [self._order_result(results[0], program)]
+
+        # FIXME: resurn result instead of results[0]
         return results[0]
 
     def _order_result(self, result: Result, circuit: Circuit) -> Result:
