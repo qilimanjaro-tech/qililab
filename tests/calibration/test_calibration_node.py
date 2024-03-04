@@ -465,7 +465,11 @@ class TestPrivateMethodsFromCalibrationNode:
         ],
     )
     @patch("qililab.calibration.calibration_node.pm.execute_notebook")
-    def test_execute_notebook(self, mocked_pm_exec, output, methods_node: CalibrationNode):
+    @patch("qililab.calibration.calibration_node.os.chdir")
+    @patch("qililab.calibration.calibration_node.os.getcwd")
+    def test_execute_notebook(
+        self, mocked_pm_exec, mocked_os_chdir, mocked_os_getcwd, output, methods_node: CalibrationNode
+    ):
         """Testing general behavior of ``execute_notebook()``."""
         # Creating expected values for assert
         sweep_interval = [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48]
@@ -478,6 +482,8 @@ class TestPrivateMethodsFromCalibrationNode:
         test_value = methods_node._execute_notebook(methods_node.nb_path, "", {})
 
         # Asserts
+        mocked_os_getcwd.assert_called_once()
+        assert mocked_os_chdir.call_count == 2
         mocked_pm_exec.assert_called_once_with(
             methods_node.nb_path, "", {}, log_output=True, stdout_file=methods_node._stream
         )

@@ -503,7 +503,12 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         Raises:
             IncorrectCalibrationOutput: In case no outputs, incorrect outputs or multiple outputs where found. Incorrect outputs are those that do not contain `check_parameters` or is empty.
         """
+        # Save previous working directory and setup notebook folder as working directory
+        original_wd = os.getcwd()
+        os.chdir(self.nb_folder)
         pm.execute_notebook(input_path, output_path, parameters, log_output=True, stdout_file=self._stream)
+        # Restore previous working directory after execution is done
+        os.chdir(original_wd)
 
         # Retrieve the logger info and extract the output from it:
         logger_string = self._stream.getvalue()
