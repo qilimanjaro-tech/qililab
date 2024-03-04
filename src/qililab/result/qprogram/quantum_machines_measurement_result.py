@@ -15,15 +15,11 @@
 """QuantumMachinesResult class."""
 import numpy as np
 
-from qililab.constants import QMRESULT, RUNCARD
-from qililab.result.counts import Counts
-from qililab.result.result import Result
+from qililab.result.qprogram.measurement_result import MeasurementResult
 from qililab.typings.enums import ResultName
-from qililab.utils.factory import Factory
 
 
-@Factory.register
-class QuantumMachinesMeasurementResult(Result):
+class QuantumMachinesMeasurementResult(MeasurementResult):
     """Contains the data obtained from a single measurment in Quantum Machines hardware.
 
     Args:
@@ -42,6 +38,7 @@ class QuantumMachinesMeasurementResult(Result):
         self.Q = Q
         self.adc1 = adc1
         self.adc2 = adc2
+        super().__init__()
 
     @property
     def array(self) -> np.ndarray:
@@ -56,37 +53,3 @@ class QuantumMachinesMeasurementResult(Result):
             if self.Q is not None
             else self.I.reshape(1, *self.I.shape)
         )
-
-    def to_dict(self) -> dict:
-        """Returns a serialized dictionary of the QuantumMachinesResult class.
-
-        Returns:
-            dict[str: str | np.ndarray]: Dictionary containing all the class information.
-        """
-        return {
-            RUNCARD.NAME: self.name.value,
-            QMRESULT.I: self.I,
-            QMRESULT.Q: self.Q,
-            QMRESULT.ADC1: self.adc1,
-            QMRESULT.ADC2: self.adc2,
-        }
-
-    def probabilities(self) -> dict[str, float]:
-        """Return probabilities of being in the ground and excited state.
-
-        Returns:
-            dict[str, float]: Dictionary containing the quantum states as the keys of the dictionary, and the
-                probabilities obtained for each state as the values of the dictionary.
-        """
-        raise NotImplementedError("Probabilities are not yet supported for Quantum Machines instruments.")
-
-    def counts_object(self) -> Counts:
-        """Returns a Counts object containing the amount of times each state was measured.
-
-        Raises:
-            NotImplementedError: Not implemented.
-
-        Returns:
-            Counts: Counts object containing the amount of times each state was measured.
-        """
-        raise NotImplementedError("Counts are not yet supported for Quantum Machines instruments.")

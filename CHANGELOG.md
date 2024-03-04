@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## 0.23.3 (2024-02-19)
+
+### Bug fixes
+
+- Fixed an issue when serializing / deserializing a QProgram so results are returned in a standard results class.
+  [#688](https://github.com/qilimanjaro-tech/qililab/pull/688)
+
+## 0.23.2 (2024-02-13)
+
+### Bug fixes
+
+- Fixed an issue when serializing / deserializing a QProgram that contained an Arbitrary waveform or a DRAG pulse.
+  [#686](https://github.com/qilimanjaro-tech/qililab/pull/686)
+
 ## 0.23.1 (2024-02-09)
 
 ### Bug fixes

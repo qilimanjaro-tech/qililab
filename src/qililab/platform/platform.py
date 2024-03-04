@@ -42,8 +42,9 @@ from qililab.pulse import PulseSchedule
 from qililab.pulse import QbloxCompiler as PulseQbloxCompiler
 from qililab.qprogram import QbloxCompiler, QProgram, QuantumMachinesCompiler
 from qililab.result import Result
-from qililab.result.qblox_results import QbloxResult
-from qililab.result.quantum_machines_results import QuantumMachinesMeasurementResult
+from qililab.result.qblox_results.qblox_result import QbloxResult
+from qililab.result.qprogram.qprogram_results import QProgramResults
+from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName, Line, Parameter
@@ -599,7 +600,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
     def execute_qprogram(
         self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None, debug: bool = False
-    ) -> dict[str, list[Result]]:
+    ) -> QProgramResults:
         """Execute a QProgram using the platform instruments.
 
         Args:
@@ -631,7 +632,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
     def _execute_qprogram_with_qblox(
         self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None, debug: bool = False
-    ) -> dict[str, list[Result]]:
+    ) -> QProgramResults:
         # Compile QProgram
         qblox_compiler = QbloxCompiler()
         sequences = qblox_compiler.compile(qprogram=qprogram, bus_mapping=bus_mapping)
@@ -656,12 +657,13 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             buses[bus_alias].run()
 
         # Acquire results
-        results: dict[str, list[Result]] = {}
+        results = QProgramResults()
         for bus_alias in buses:
             if isinstance(buses[bus_alias].system_control, ReadoutSystemControl):
                 acquisitions = list(sequences[bus_alias].todict()["acquisitions"])
                 bus_results = buses[bus_alias].acquire_qprogram_results(acquisitions=acquisitions)
-                results[bus_alias] = bus_results
+                for bus_result in bus_results:
+                    results.append_result(bus=bus_alias, result=bus_result)
 
         # Reset instrument settings
         for instrument in self.instruments.elements:
@@ -677,7 +679,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,
         debug: bool = False,
-    ) -> dict[str, list[Result]]:
+    ) -> QProgramResults:
         compiler = QuantumMachinesCompiler()
         qua_program, configuration, measurements = compiler.compile(qprogram=qprogram, bus_mapping=bus_mapping)
 
@@ -696,13 +698,12 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         acquisitions = cluster.get_acquisitions(job=job)
 
-        results: dict[str, list[Result]] = {}
+        results = QProgramResults()
         for measurement in measurements:
-            if measurement.bus not in results:
-                results[measurement.bus] = []
-            results[measurement.bus].append(
-                QuantumMachinesMeasurementResult(*[acquisitions[handle] for handle in measurement.result_handles])
+            measurement_result = QuantumMachinesMeasurementResult(
+                *[acquisitions[handle] for handle in measurement.result_handles]
             )
+            results.append_result(bus=measurement.bus, result=measurement_result)
 
         return results
 
