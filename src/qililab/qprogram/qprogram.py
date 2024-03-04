@@ -66,7 +66,9 @@ class QProgram(DictSerializable):
                 qp.acquire(bus="readout")
     """
 
-    def __init__(self):
+    def __init__(self, disable_autosync: bool = False) -> None:
+        self.disable_autosync: bool = disable_autosync
+
         self._body: Block = Block()
         self._buses: set[str] = set()
         self._variables: list[Variable] = []
