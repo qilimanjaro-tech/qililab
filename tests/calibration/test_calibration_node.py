@@ -468,7 +468,7 @@ class TestPrivateMethodsFromCalibrationNode:
     @patch("qililab.calibration.calibration_node.os.chdir")
     @patch("qililab.calibration.calibration_node.os.getcwd")
     def test_execute_notebook(
-        self, mocked_pm_exec, mocked_os_chdir, mocked_os_getcwd, output, methods_node: CalibrationNode
+        self, mocked_os_getcwd, mocked_os_chdir, mocked_pm_exec, output, methods_node: CalibrationNode
     ):
         """Testing general behavior of ``execute_notebook()``."""
         # Creating expected values for assert
