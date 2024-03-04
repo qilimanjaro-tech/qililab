@@ -506,7 +506,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         # Save previous working directory and setup notebook folder as working directory
         original_wd = os.getcwd()
         os.chdir(self.nb_folder)
-        pm.execute_notebook(input_path, output_path, parameters, log_output=True, stdout_file=self._stream)
+        nb_filename = input_path.split("/")[-1]
+        pm.execute_notebook(nb_filename, output_path, parameters, log_output=True, stdout_file=self._stream)
         # Restore previous working directory after execution is done
         os.chdir(original_wd)
 
