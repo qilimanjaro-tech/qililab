@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 0.24.3 (2024-03-05)
+## 0.24.0 (2024-03-05)
 
 ### New features since last release
 
