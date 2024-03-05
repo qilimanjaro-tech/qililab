@@ -12,5 +12,5 @@
 
 ### Bug fixes
 
-- Fix a bug when acquiring results from QProgram execution in Qblox, that would sometimes delete acquisition data from other sequencers.
+- Resolved an issue encountered during the retrieval of results from QProgram executions on Qblox hardware, where acquisition data from other sequencers would unintentionally be deleted.
   [#691](https://github.com/qilimanjaro-tech/qililab/pull/691)
