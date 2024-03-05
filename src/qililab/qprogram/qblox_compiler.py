@@ -524,7 +524,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
     def _convert_value(operation: Operation) -> Callable[[Any], int]:
         conversion_map: dict[type[Operation], Callable[[Any], int]] = {
             SetFrequency: lambda x: int(x * 4),
-            SetPhase: lambda x: int(x * 1e9 / 360),
+            SetPhase: lambda x: int(x * 1e9 / (2 * np.pi)),
             SetGain: lambda x: int(x * 32_767),
             SetOffset: lambda x: int(x * 32_767),
             Wait: lambda x: int(max(x, QbloxCompiler.minimum_wait_duration)),
