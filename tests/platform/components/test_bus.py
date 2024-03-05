@@ -85,7 +85,9 @@ class TestAcquireResults:
         with patch.object(ReadoutSystemControl, "acquire_qprogram_results") as acquire_qprogram_results:
             readout_bus.acquire_qprogram_results(acquisitions=["acquisition_0", "acquisition_1"])
 
-        acquire_qprogram_results.assert_called_once_with(acquisitions=["acquisition_0", "acquisition_1"])
+        acquire_qprogram_results.assert_called_once_with(
+            acquisitions=["acquisition_0", "acquisition_1"], port=readout_bus.port
+        )
 
 
 class TestErrors:
