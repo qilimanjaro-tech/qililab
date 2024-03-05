@@ -6,6 +6,8 @@
 
 ### Breaking changes
 
+- Phases in QProgram are now measured in radians instead of degrees.
+
 ### Deprecations / Removals
 
 ### Documentation
