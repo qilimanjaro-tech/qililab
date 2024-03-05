@@ -69,7 +69,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
     """A class for compiling QProgram to Quantum Machines hardware."""
 
     FREQUENCY_COEFF = 1
-    PHASE_COEFF = 360.0
+    PHASE_COEFF = 2 * np.pi
     VOLTAGE_COEFF = 2
     MINIMUM_TIME = 4
 

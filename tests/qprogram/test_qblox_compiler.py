@@ -1,4 +1,5 @@
 # pylint: disable=protected-access
+import numpy as np
 import pytest
 import qpysequence as QPy
 
@@ -14,7 +15,7 @@ def fixture_no_loops_all_operations() -> QProgram:
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
     qp.set_frequency(bus="drive", frequency=300)
-    qp.set_phase(bus="drive", phase=90)
+    qp.set_phase(bus="drive", phase=np.pi / 2)
     qp.reset_phase(bus="drive")
     qp.set_gain(bus="drive", gain=0.5)
     qp.set_offset(bus="drive", offset_path0=0.5, offset_path1=0.5)
