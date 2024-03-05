@@ -6,7 +6,8 @@
 
 ### Breaking changes
 
-- Phases in QProgram are now measured in radians instead of degrees.
+- The unit of measurement for phases within QProgram has been updated from degrees to radians.
+  [#695](https://github.com/qilimanjaro-tech/qililab/pull/695)
 
 ### Deprecations / Removals
 
