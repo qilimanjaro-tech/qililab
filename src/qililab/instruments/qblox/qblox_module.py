@@ -70,9 +70,9 @@ class QbloxModule(AWG):
                 )
 
             self.awg_sequencers = [
-                AWGQbloxSequencer(**sequencer)
-                if isinstance(sequencer, dict)
-                else sequencer  # pylint: disable=not-a-mapping
+                (
+                    AWGQbloxSequencer(**sequencer) if isinstance(sequencer, dict) else sequencer
+                )  # pylint: disable=not-a-mapping
                 for sequencer in self.awg_sequencers
             ]
             super().__post_init__()
@@ -115,6 +115,11 @@ class QbloxModule(AWG):
         """Desyncs all sequencers."""
         for sequencer in self.awg_sequencers:
             self.device.sequencers[sequencer.identifier].sync_en(False)
+
+    def sync_sequencers(self) -> None:
+        """Syncs all sequencers."""
+        for sequencer in self.awg_sequencers:
+            self.device.sequencers[sequencer.identifier].sync_en(True)
 
     @property
     def module_type(self):
@@ -403,10 +408,10 @@ class QbloxModule(AWG):
         for sequencer in sequencers:
             logger.info("Sequence program: \n %s", repr(qpysequence._program))  # pylint: disable=protected-access
             self.device.sequencers[sequencer.identifier].sequence(qpysequence.todict())
-            self.device.sequencers[sequencer.identifier].sync_en(True)
+            # self.device.sequencers[sequencer.identifier].sync_en(True)
             self.sequences[sequencer.identifier] = qpysequence
 
-    def upload(self, port: str):  # TODO: check compatibility with QPrgram
+    def upload(self, port: str):  # TODO: check compatibility with QProgram
         """Upload all the previously compiled programs to its corresponding sequencers.
 
         This method must be called after the method ``compile`` in the compiler

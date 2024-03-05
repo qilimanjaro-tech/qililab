@@ -22,11 +22,11 @@ from queue import Queue
 
 from qibo.gates import M
 from qibo.models import Circuit
-from qiboconnection.api import API
 from qm import generate_qua_script
 from qpysequence import Sequence as QpySequence
 from ruamel.yaml import YAML
 
+from qiboconnection.api import API
 from qililab.chip import Chip
 from qililab.circuit_transpiler import CircuitTranspiler
 from qililab.config import logger
@@ -575,9 +575,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         buses_dict = {RUNCARD.BUSES: self.buses.to_dict() if self.buses is not None else None}
         instrument_dict = {RUNCARD.INSTRUMENTS: self.instruments.to_dict() if self.instruments is not None else None}
         instrument_controllers_dict = {
-            RUNCARD.INSTRUMENT_CONTROLLERS: self.instrument_controllers.to_dict()
-            if self.instrument_controllers is not None
-            else None,
+            RUNCARD.INSTRUMENT_CONTROLLERS: (
+                self.instrument_controllers.to_dict() if self.instrument_controllers is not None else None
+            ),
         }
 
         return (
@@ -651,6 +651,12 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             if bus_alias not in self._qpy_sequence_cache or self._qpy_sequence_cache[bus_alias] != sequence_hash:
                 buses[bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
                 self._qpy_sequence_cache[bus_alias] = sequence_hash
+
+        # sync all instruments
+        # TODO: check what are those instruments while debugging
+        for instrument in self.instruments.elements:
+            if isinstance(instrument, QbloxModule):
+                instrument.sync_sequencers()
 
         # Execute sequences
         for bus_alias in sequences:
