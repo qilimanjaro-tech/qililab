@@ -407,7 +407,7 @@ class TestQbloxQRM:
     def test_get_qprogram_acquisitions_method(self, qrm: QbloxQRM):
         """Test get_acquisitions_method"""
         qrm.device.get_acquisitions.return_value = {
-            "default_bus_0": {
+            "default": {
                 "index": 0,
                 "acquisition": {
                     "scope": {
@@ -423,7 +423,7 @@ class TestQbloxQRM:
             }
         }
         qrm.sequences = {0: None}
-        acquisitions = qrm.acquire_qprogram_results(acquisitions=["default_bus_0"])
+        acquisitions = qrm.acquire_qprogram_results(acquisitions=["default"], port="feedline_input")
         assert isinstance(acquisitions, list)
         assert len(acquisitions) == 1
 

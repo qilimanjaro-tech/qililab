@@ -232,7 +232,7 @@ class Bus:
             list[Result]: Acquired results in chronological order
         """
         if isinstance(self.system_control, ReadoutSystemControl):
-            return self.system_control.acquire_qprogram_results(acquisitions=acquisitions)
+            return self.system_control.acquire_qprogram_results(acquisitions=acquisitions, port=self.port)
 
         raise AttributeError(
             f"The bus {self.alias} cannot acquire results because it doesn't have a readout system control."

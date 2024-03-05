@@ -119,7 +119,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """
         return self.get_acquisitions()
 
-    def acquire_qprogram_results(self, acquisitions: list[str]) -> list[QbloxMeasurementResult]:  # type: ignore
+    def acquire_qprogram_results(self, acquisitions: list[str], port: str) -> list[QbloxMeasurementResult]:  # type: ignore
         """Read the result from the AWG instrument
 
         Args:
@@ -128,14 +128,14 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         Returns:
             list[QbloxQProgramMeasurementResult]: Acquired Qblox results in chronological order.
         """
-        return self._get_qprogram_acquisitions(acquisitions=acquisitions)
+        return self._get_qprogram_acquisitions(acquisitions=acquisitions, port=port)
 
     @Instrument.CheckDeviceInitialized
-    def _get_qprogram_acquisitions(self, acquisitions: list[str]) -> list[QbloxMeasurementResult]:
+    def _get_qprogram_acquisitions(self, acquisitions: list[str], port: str) -> list[QbloxMeasurementResult]:
         results = []
         for acquisition in acquisitions:
-            # TODO: iterate over self.awg_sequencers instead once chip class is removed
-            for sequencer in self._parse_sequencers_from_acquisitions(acquisitions):
+            sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
+            for sequencer in sequencers:
                 if sequencer.identifier in self.sequences:
                     self.device.get_acquisition_state(
                         sequencer=sequencer.identifier,
@@ -150,22 +150,6 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
 
                     self.device.delete_acquisition_data(sequencer=sequencer.identifier, name=acquisition)
         return results
-
-    def _parse_sequencers_from_acquisitions(self, acquisitions: list[str]) -> list[AWGQbloxADCSequencer]:
-        """Temporary fix to get the list of sequencers from a list of acquisitions.
-        Remove once chip class is removed and the new bus mapping is added so we can just get the
-        sequencers pointed at by a specific bus
-
-        Args:
-            acquisitions (list[str]): A list of acquisitions names.
-
-        Returns:
-            list[AWGQbloxADCSequencer]: List of awg sequencers with qubit id corresponding to a given acquisition key
-        """
-        # get the first integer in acquisitions name, which should be the qubit number
-        qubit_id = int(next((item for acquisition in list(acquisitions) for item in acquisition if item.isdigit())))
-        # get the sequencer with the qubit id found above
-        return [sequencer for sequencer in self.awg_sequencers if sequencer.qubit == qubit_id]
 
     def _set_device_hardware_demodulation(self, value: bool, sequencer_id: int):
         """set hardware demodulation
