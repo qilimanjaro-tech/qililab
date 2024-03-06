@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """SignalGenerator class."""
-from typing import Any
 
 from qcodes.instrument.base import InstrumentBase
 
