@@ -554,7 +554,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         # If doesn't exist, create the needed folder for the path
         os.makedirs(self.nb_folder, exist_ok=True)
-        abs_path = os.path.abspath(self.nb_path)
+        abs_path = os.path.abspath(self.nb_folder)
 
         if dirty and not error:  # return the path of the execution
             return f"{abs_path}/{self.node_id}_{now_path}_dirty.ipynb"
