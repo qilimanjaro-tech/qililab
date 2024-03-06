@@ -23,7 +23,7 @@ from qililab.drivers.interfaces import BaseInstrument
 
 
 @InstrumentDriverFactory.register
-class GS200(BaseInstrument, QCodesGS200):
+class GS200(QCodesGS200, BaseInstrument):
     """
     Qililab's driver for the Yokogawa GS200 acting as VoltageSource and CurrentSource
 

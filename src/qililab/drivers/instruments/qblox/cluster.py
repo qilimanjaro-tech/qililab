@@ -27,7 +27,7 @@ from .sequencer_qrm import SequencerQRM
 
 
 @InstrumentDriverFactory.register
-class Cluster(BaseInstrument, QcodesCluster):
+class Cluster(QcodesCluster, BaseInstrument):
     """Qililab's driver for QBlox-instruments Cluster.
 
     Args:
@@ -66,7 +66,7 @@ class Cluster(BaseInstrument, QcodesCluster):
                 self.add_submodule(f"module{slot_idx}", old_module)
 
 
-class QcmQrm(BaseInstrument, QcodesQcmQrm):
+class QcmQrm(QcodesQcmQrm, BaseInstrument):
     """Qililab's driver for QBlox-instruments QcmQrm
 
     Args:
@@ -104,7 +104,7 @@ class QcmQrm(BaseInstrument, QcodesQcmQrm):
                 self.add_submodule(f"{name}_attenuator_{channel}", att)
 
 
-class QcmQrmRfLo(LocalOscillator, InstrumentModule):
+class QcmQrmRfLo(InstrumentModule, LocalOscillator):
     """LO driver for the QCM / QRM - RF instrument
     Set and get methods from InstrumentModule override LocalOscillator's
     """
@@ -135,7 +135,7 @@ class QcmQrmRfLo(LocalOscillator, InstrumentModule):
         self.set("status", False)
 
 
-class QcmQrmRfAtt(Attenuator, InstrumentModule):
+class QcmQrmRfAtt(InstrumentModule, Attenuator):
     """Attenuator driver for the QCM / QRM - RF instrument
     Set and get methods from InstrumentModule override Attenuator's
     """

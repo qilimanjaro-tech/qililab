@@ -34,7 +34,7 @@ from qililab.pulse import PulseBusSchedule, PulseShape
 
 
 @InstrumentDriverFactory.register
-class SequencerQCM(AWG, Sequencer):
+class SequencerQCM(Sequencer, AWG):
     """Qililab's driver for QBlox-instruments Sequencer
 
     Args:

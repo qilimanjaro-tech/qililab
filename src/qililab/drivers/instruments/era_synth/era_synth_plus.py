@@ -34,7 +34,7 @@ from qililab.drivers.interfaces import LocalOscillator
 
 
 @InstrumentDriverFactory.register
-class ERASynthPlus(LocalOscillator, QcdERASynthPlus):
+class ERASynthPlus(QcdERASynthPlus, LocalOscillator):
     """Qililab's driver for the ERASynthPlus local oscillator
 
     QcdEraSynth: QCoDeS contributors driver for the ERASynthPlus instrument

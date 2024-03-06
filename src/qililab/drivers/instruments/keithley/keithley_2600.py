@@ -22,7 +22,7 @@ from qililab.drivers.interfaces import BaseInstrument, CurrentSource, VoltageSou
 
 
 @InstrumentDriverFactory.register
-class Keithley2600(BaseInstrument, QCodesKeithley2600):
+class Keithley2600(QCodesKeithley2600, BaseInstrument):
     """
     This is the driver for the Keithley_2600 Source-Meter series,tested with Keithley_2614B
 
@@ -45,7 +45,7 @@ class Keithley2600(BaseInstrument, QCodesKeithley2600):
             self.channels.append(channel)
 
 
-class Keithley2600Channel(VoltageSource, CurrentSource, QCodesKeithley2600Channel):
+class Keithley2600Channel(QCodesKeithley2600Channel, VoltageSource, CurrentSource):
     """
     Class to hold the two Keithley channels, i.e. SMUA and SMUB.
 
