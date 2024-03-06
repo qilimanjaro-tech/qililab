@@ -111,15 +111,15 @@ class QbloxModule(AWG):
         for idx, offset in enumerate(self.out_offsets):
             self._set_out_offset(output=idx, value=offset)
 
-    def desync_sequencers(self) -> None:
-        """Desyncs all sequencers."""
-        for sequencer in self.awg_sequencers:
-            self.device.sequencers[sequencer.identifier].sync_en(False)
-
     def sync_sequencers(self) -> None:
         """Syncs all sequencers."""
         for sequencer in self.awg_sequencers:
             self.device.sequencers[sequencer.identifier].sync_en(True)
+
+    def desync_sequencers(self) -> None:
+        """Desyncs all sequencers."""
+        for sequencer in self.awg_sequencers:
+            self.device.sequencers[sequencer.identifier].sync_en(False)
 
     @property
     def module_type(self):
@@ -408,7 +408,6 @@ class QbloxModule(AWG):
         for sequencer in sequencers:
             logger.info("Sequence program: \n %s", repr(qpysequence._program))  # pylint: disable=protected-access
             self.device.sequencers[sequencer.identifier].sequence(qpysequence.todict())
-            # self.device.sequencers[sequencer.identifier].sync_en(True)
             self.sequences[sequencer.identifier] = qpysequence
 
     def upload(self, port: str):  # TODO: check compatibility with QProgram
