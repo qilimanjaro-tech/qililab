@@ -29,7 +29,7 @@ from qililab.drivers.interfaces import BaseInstrument, CurrentSource, VoltageSou
 
 # MAIN SpiRack CLASS
 @InstrumentDriverFactory.register
-class SpiRack(QcodesSpiRack, BaseInstrument):
+class SpiRack(BaseInstrument, QcodesSpiRack):
     """
     Qililab's driver for the Qblox SpiRack.
 
@@ -50,7 +50,7 @@ class SpiRack(QcodesSpiRack, BaseInstrument):
 
 
 # MODULE CLASSES that select the channels
-class D5aModule(QcodesD5aModule, BaseInstrument):
+class D5aModule(BaseInstrument, QcodesD5aModule):
     """
     Qililab's driver for the Qblox D5a Module.
 
@@ -77,7 +77,7 @@ class D5aModule(QcodesD5aModule, BaseInstrument):
             self.add_submodule(old_channel._chan_name, new_channel)
 
 
-class S4gModule(QcodesS4gModule, BaseInstrument):
+class S4gModule(BaseInstrument, QcodesS4gModule):
     """
     Qililab's driver for the Qblox S4g Module.
 
@@ -106,7 +106,7 @@ class S4gModule(QcodesS4gModule, BaseInstrument):
 
 
 # CHANNELS CLASSES that act as the corresponding Voltage/Current sources.
-class D5aDacChannel(QcodesD5aDacChannel, VoltageSource):
+class D5aDacChannel(VoltageSource, QcodesD5aDacChannel):
     """
     Qililab's driver for the Qblox D5a DAC Channel x16, acting as VoltageSource.
 
@@ -126,7 +126,7 @@ class D5aDacChannel(QcodesD5aDacChannel, VoltageSource):
         self.set(param_name="voltage", value=0)
 
 
-class S4gDacChannel(QcodesS4gDacChannel, CurrentSource):
+class S4gDacChannel(CurrentSource, QcodesS4gDacChannel):
     """
     Qililab's driver for the Qblox S4g DAC Channel x4, acting as CurrentSource.
 

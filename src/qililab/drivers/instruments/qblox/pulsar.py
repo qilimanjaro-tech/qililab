@@ -24,7 +24,7 @@ from .sequencer_qrm import SequencerQRM
 
 
 @InstrumentDriverFactory.register
-class Pulsar(QcodesPulsar, BaseInstrument):
+class Pulsar(BaseInstrument, QcodesPulsar):
     """Qililab's driver for QBlox-instruments Pulsar
 
     Args:

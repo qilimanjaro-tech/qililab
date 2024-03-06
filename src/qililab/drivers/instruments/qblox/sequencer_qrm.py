@@ -29,7 +29,7 @@ from .sequencer_qcm import SequencerQCM
 
 
 @InstrumentDriverFactory.register
-class SequencerQRM(SequencerQCM, Digitiser):
+class SequencerQRM(Digitiser, SequencerQCM):
     """Qililab's driver for QBlox-instruments digitiser Sequencer
 
     Args:
