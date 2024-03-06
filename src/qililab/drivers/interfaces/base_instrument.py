@@ -19,7 +19,7 @@ from typing import Any
 from qcodes.instrument.base import InstrumentBase
 
 
-class BaseInstrument(InstrumentBase):
+class BaseInstrument(InstrumentBase, ABC):
     """Base Interface for all instruments."""
 
     @property
