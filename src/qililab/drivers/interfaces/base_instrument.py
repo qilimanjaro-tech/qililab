@@ -21,16 +21,6 @@ from typing import Any
 class BaseInstrument(ABC):
     """Base Interface for all instruments."""
 
-    @property
-    def params(self):
-        """return the parameters of the instrument"""
-        return self.parameters
-
-    @property
-    def alias(self):
-        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
-        return self.name
-
     @abstractmethod
     def set(self, param_name: str, value: Any) -> None:
         """Set instrument parameter.

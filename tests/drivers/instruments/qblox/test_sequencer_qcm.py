@@ -1,4 +1,5 @@
 """Tests for the SequencerQCM class."""
+
 # pylint: disable=protected-access
 from unittest.mock import MagicMock, patch
 
@@ -295,11 +296,3 @@ class TestSequencer:
         acquisitions = acquisitions.to_dict()
         # must be empty dictionary
         assert not acquisitions
-
-    def test_params(self, sequencer):
-        """Unittest to test the params property."""
-        assert sequencer.params == sequencer.parameters
-
-    def test_alias(self, sequencer):
-        """Unittest to test the alias property."""
-        assert sequencer.alias == sequencer.name
