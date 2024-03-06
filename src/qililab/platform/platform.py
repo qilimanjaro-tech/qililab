@@ -653,7 +653,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 self._qpy_sequence_cache[bus_alias] = sequence_hash
 
         # sync all instruments
-        # TODO: check what are those instruments while debugging
         for instrument in self.instruments.elements:
             if isinstance(instrument, QbloxModule):
                 instrument.sync_sequencers()
