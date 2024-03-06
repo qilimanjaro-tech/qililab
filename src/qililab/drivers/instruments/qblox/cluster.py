@@ -65,16 +65,6 @@ class Cluster(QcodesCluster, BaseInstrument):  # pylint: disable=abstract-method
                 old_module = old_submodules[f"module{slot_idx}"]
                 self.add_submodule(f"module{slot_idx}", old_module)
 
-    @property
-    def params(self):
-        """return the parameters of the instrument"""
-        return self.parameters
-
-    @property
-    def alias(self):
-        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
-        return self.name
-
 
 class QcmQrm(QcodesQcmQrm, BaseInstrument):
     """Qililab's driver for QBlox-instruments QcmQrm
@@ -138,16 +128,6 @@ class QcmQrmRfLo(InstrumentModule, LocalOscillator):
             parameter_class=DelegateParameter,
         )
 
-    @property
-    def params(self):
-        """return the parameters of the instrument"""
-        return self.parameters
-
-    @property
-    def alias(self):
-        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
-        return self.name
-
     def on(self):
         self.set("status", True)
 
@@ -172,13 +152,3 @@ class QcmQrmRfAtt(InstrumentModule, Attenuator):
             source=parent.parameters[f"{channel}_att"],
             parameter_class=DelegateParameter,
         )
-
-    @property
-    def params(self):
-        """return the parameters of the instrument"""
-        return self.parameters
-
-    @property
-    def alias(self):
-        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
-        return self.name

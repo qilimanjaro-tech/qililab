@@ -44,16 +44,6 @@ class Keithley2600(QCodesKeithley2600, BaseInstrument):
             self.add_submodule(ch_name, channel)
             self.channels.append(channel)
 
-    @property
-    def params(self):
-        """return the parameters of the instrument"""
-        return self.parameters
-
-    @property
-    def alias(self):
-        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
-        return self.name
-
 
 class Keithley2600Channel(QCodesKeithley2600Channel, VoltageSource, CurrentSource):
     """
