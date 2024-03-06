@@ -113,16 +113,6 @@ class QcmQrm(QcodesQcmQrm, BaseInstrument):
                 att = QcmQrmRfAtt(name=f"{name}_attenuator_{channel}", parent=self, channel=channel)
                 self.add_submodule(f"{name}_attenuator_{channel}", att)
 
-    @property
-    def params(self):
-        """return the parameters of the instrument"""
-        return self.parameters
-
-    @property
-    def alias(self):
-        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
-        return self.name
-
 
 class QcmQrmRfLo(InstrumentModule, LocalOscillator):
     """LO driver for the QCM / QRM - RF instrument

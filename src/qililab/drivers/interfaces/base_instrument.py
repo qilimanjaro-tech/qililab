@@ -16,19 +16,21 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
+from qcodes.instrument.base import InstrumentBase
 
-class BaseInstrument(ABC):
+
+class BaseInstrument(InstrumentBase):
     """Base Interface for all instruments."""
 
     @property
-    @abstractmethod
     def params(self):
-        """parameters property."""
+        """return the parameters of the instrument"""
+        return self.parameters
 
     @property
-    @abstractmethod
     def alias(self):
-        """alias property."""
+        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
+        return self.name
 
     @abstractmethod
     def set(self, param_name: str, value: Any) -> None:

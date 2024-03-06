@@ -42,13 +42,3 @@ class GS200(QCodesGS200, BaseInstrument):
         self.add_submodule("measure", QCodesGS200Monitor(self, name="measure", present=True))
         # Add the Program to the instrument
         self.add_submodule("program", QCodesGS200Program(self, name="program"))
-
-    @property
-    def params(self):
-        """return the parameters of the instrument"""
-        return self.parameters
-
-    @property
-    def alias(self):
-        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
-        return self.name

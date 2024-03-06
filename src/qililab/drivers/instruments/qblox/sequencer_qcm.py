@@ -49,16 +49,6 @@ class SequencerQCM(Sequencer, AWG):
         super().__init__(parent=parent, name=name, seq_idx=seq_idx)
         self.add_parameter(name="swap_paths", set_cmd=None, vals=vals.Bool(), initial_value=False)
 
-    @property
-    def params(self):
-        """return the parameters of the instrument"""
-        return self.parameters
-
-    @property
-    def alias(self):
-        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
-        return self.name
-
     def set(self, param_name: str, value: Any):
         """Sets a parameter value checking if is an output mapping.
 

@@ -51,13 +51,3 @@ class ERASynthPlus(QcdERASynthPlus, LocalOscillator):
             source=self.parameters["frequency"],
             parameter_class=DelegateParameter,
         )
-
-    @property
-    def params(self):
-        """return the parameters of the instrument"""
-        return self.parameters
-
-    @property
-    def alias(self):
-        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
-        return self.name

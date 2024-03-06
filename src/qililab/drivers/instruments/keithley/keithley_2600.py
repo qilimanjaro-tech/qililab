@@ -67,16 +67,6 @@ class Keithley2600Channel(QCodesKeithley2600Channel, VoltageSource, CurrentSourc
         channel (str): The name used by the Keithley, i.e. either 'smua' or 'smub'
     """
 
-    @property
-    def params(self):
-        """return the parameters of the instrument"""
-        return self.parameters
-
-    @property
-    def alias(self):
-        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
-        return self.name
-
     def on(self) -> None:
         """Turn output on"""
         self.set(param_name="output", value="on")
