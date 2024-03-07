@@ -1,4 +1,5 @@
 """Unittests for the FluxBus class"""
+
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -313,7 +314,7 @@ class TestFluxBus:
         """Unittest for __str__ method."""
         expected_str = (
             f"{ALIAS} ({flux_bus_current_source.__class__.__name__}): "
-            + "".join(f"--|{instrument.alias}|" for instrument in flux_bus_current_source.instruments.values())
+            + "".join(f"--|{instrument.name}|" for instrument in flux_bus_current_source.instruments.values())
             + f"--> port {flux_bus_current_source.port}"
         )
 
@@ -371,7 +372,7 @@ def fixture_current_flux_bus_dictionary() -> dict:
         "alias": ALIAS,
         "type": "FluxBus",
         "AWG": {
-            "alias": AWG_ALIAS,
+            "name": AWG_ALIAS,
             "parameters": {
                 "path0_out": PATH0_OUT,
                 "path1_out": PATH1_OUT,
@@ -380,7 +381,7 @@ def fixture_current_flux_bus_dictionary() -> dict:
             },
         },
         "CurrentSource": {
-            "alias": SOURCE_ALIAS,
+            "name": SOURCE_ALIAS,
         },
         "port": PORT,
         "distortions": [],
@@ -412,7 +413,7 @@ class TestCurrentFluxBusSerialization:
 
             assert flux_bus.instruments["awg"] == sequencer_qcm
             for param, value in current_flux_bus_dictionary["AWG"]["parameters"].items():
-                assert param in flux_bus.instruments["awg"].params
+                assert param in flux_bus.instruments["awg"].parameters
                 mock_set.assert_any_call(param, value)
 
             assert flux_bus.instruments["source"] == current_source_api
@@ -438,7 +439,7 @@ class TestCurrentFluxBusSerialization:
                 "alias": ALIAS,
                 "type": "FluxBus",
                 "AWG": {
-                    "alias": AWG_ALIAS,
+                    "name": AWG_ALIAS,
                     "parameters": {
                         "channel_map_path0_out0_en": True,
                         "channel_map_path1_out1_en": True,
@@ -512,7 +513,7 @@ class TestCurrentFluxBusSerialization:
                     },
                 },
                 "CurrentSource": {
-                    "alias": SOURCE_ALIAS,
+                    "name": SOURCE_ALIAS,
                     "parameters": {
                         "current": True,
                         "span": True,
@@ -542,7 +543,7 @@ def fixture_voltage_flux_bus_dictionary() -> dict:
         "alias": ALIAS,
         "type": "FluxBus",
         "AWG": {
-            "alias": AWG_ALIAS,
+            "name": AWG_ALIAS,
             "parameters": {
                 "path0_out": PATH0_OUT,
                 "path1_out": PATH1_OUT,
@@ -551,7 +552,7 @@ def fixture_voltage_flux_bus_dictionary() -> dict:
             },
         },
         "VoltageSource": {
-            "alias": SOURCE_ALIAS,
+            "name": SOURCE_ALIAS,
         },
         "port": PORT,
         "distortions": [],
@@ -583,7 +584,7 @@ class TestVoltageFluxBusSerialization:
 
             assert flux_bus.instruments["awg"] == sequencer_qcm
             for param, value in voltage_flux_bus_dictionary["AWG"]["parameters"].items():
-                assert param in flux_bus.instruments["awg"].params
+                assert param in flux_bus.instruments["awg"].parameters
                 mock_set.assert_any_call(param, value)
 
             assert flux_bus.instruments["source"] == voltage_source_api
@@ -609,7 +610,7 @@ class TestVoltageFluxBusSerialization:
                 "alias": ALIAS,
                 "type": "FluxBus",
                 "AWG": {
-                    "alias": AWG_ALIAS,
+                    "name": AWG_ALIAS,
                     "parameters": {
                         "channel_map_path0_out0_en": True,
                         "channel_map_path1_out1_en": True,
@@ -683,7 +684,7 @@ class TestVoltageFluxBusSerialization:
                     },
                 },
                 "VoltageSource": {
-                    "alias": SOURCE_ALIAS,
+                    "name": SOURCE_ALIAS,
                     "parameters": {
                         "voltage": True,
                         "span": True,

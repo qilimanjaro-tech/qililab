@@ -1,4 +1,5 @@
 """Unittest for testing readout_bus class methods"""
+
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -244,7 +245,7 @@ class TestReadoutBus:
         """Unittest for __str__ method."""
         expected_str = (
             f"{ALIAS} ({readout_bus.__class__.__name__}): "
-            + "".join(f"--|{instrument.alias}|" for instrument in readout_bus.instruments.values())
+            + "".join(f"--|{instrument.name}|" for instrument in readout_bus.instruments.values())
             + f"--> port {readout_bus.port}"
         )
 
@@ -303,7 +304,7 @@ def fixture_readout_bus_dictionary() -> dict:
         "alias": ALIAS,
         "type": "ReadoutBus",
         "AWG": {
-            "alias": AWG_ALIAS,
+            "name": AWG_ALIAS,
             "parameters": {
                 "path0_out": PATH0_OUT,
                 "path1_out": PATH1_OUT,
@@ -312,16 +313,16 @@ def fixture_readout_bus_dictionary() -> dict:
             },
         },
         "Digitiser": {
-            "alias": AWG_ALIAS,
+            "name": AWG_ALIAS,
         },
         "LocalOscillator": {
-            "alias": LO_ALIAS,
+            "name": LO_ALIAS,
             "parameters": {
                 "lo_frequency": LO_FREQUENCY,
             },
         },
         "Attenuator": {
-            "alias": ATT_ALIAS,
+            "name": ATT_ALIAS,
         },
         "port": PORT,
         "distortions": [],
@@ -354,18 +355,18 @@ class TestReadoutBusSerialization:
 
             assert readout_bus.instruments["awg"] == digitiser
             for param, value in readout_bus_dictionary["AWG"]["parameters"].items():
-                assert param in readout_bus.instruments["awg"].params
+                assert param in readout_bus.instruments["awg"].parameters
                 mock_set.assert_any_call(param, value)
 
             # Here we are checking that the parameters of the digitiser are the same than the one of AWG, since it the same instrument!
             assert readout_bus.instruments["digitiser"] == digitiser
             for param, value in readout_bus_dictionary["AWG"]["parameters"].items():
-                assert param in readout_bus.instruments["digitiser"].params
+                assert param in readout_bus.instruments["digitiser"].parameters
                 mock_set.assert_any_call(param, value)
 
             assert readout_bus.instruments["local_oscillator"] == qcmqrm_lo
             for param, value in readout_bus_dictionary["LocalOscillator"]["parameters"].items():
-                assert param in readout_bus.instruments["local_oscillator"].params
+                assert param in readout_bus.instruments["local_oscillator"].parameters
                 mock_set.assert_any_call(param, value)
 
             assert readout_bus.instruments["attenuator"] == qcmqrm_att
@@ -393,7 +394,7 @@ class TestReadoutBusSerialization:
                 "alias": ALIAS,
                 "type": "ReadoutBus",
                 "AWG": {
-                    "alias": AWG_ALIAS,
+                    "name": AWG_ALIAS,
                     "parameters": {
                         "channel_map_path0_out0_en": True,
                         "channel_map_path1_out1_en": True,
@@ -472,14 +473,14 @@ class TestReadoutBusSerialization:
                     },
                 },
                 "Digitiser": {
-                    "alias": AWG_ALIAS,
+                    "name": AWG_ALIAS,
                 },
                 "LocalOscillator": {
-                    "alias": LO_ALIAS,
+                    "name": LO_ALIAS,
                     "parameters": {"lo_frequency": True, "status": True},
                 },
                 "Attenuator": {
-                    "alias": ATT_ALIAS,
+                    "name": ATT_ALIAS,
                     "parameters": {
                         "attenuation": True,
                         "lo_frequency": True,

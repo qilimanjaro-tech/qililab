@@ -1,4 +1,5 @@
 """Unittest for DriveBus class"""
+
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -227,7 +228,7 @@ class TestDriveBus:
         """Unittest for __str__ method."""
         expected_str = (
             f"{ALIAS} ({drive_bus.__class__.__name__}): "
-            + "".join(f"--|{instrument.alias}|" for instrument in drive_bus.instruments.values())
+            + "".join(f"--|{instrument.name}|" for instrument in drive_bus.instruments.values())
             + f"--> port {drive_bus.port}"
         )
 
@@ -286,7 +287,7 @@ def fixture_drive_bus_dictionary() -> dict:
         "alias": ALIAS,
         "type": "DriveBus",
         "AWG": {
-            "alias": AWG_ALIAS,
+            "name": AWG_ALIAS,
             "parameters": {
                 "path0_out": PATH0_OUT,
                 "path1_out": PATH1_OUT,
@@ -295,10 +296,10 @@ def fixture_drive_bus_dictionary() -> dict:
             },
         },
         "LocalOscillator": {
-            "alias": LO_ALIAS,
+            "name": LO_ALIAS,
         },
         "Attenuator": {
-            "alias": ATT_ALIAS,
+            "name": ATT_ALIAS,
             "parameters": {
                 "lo_frequency": LO_FREQUENCY,
             },
@@ -334,12 +335,12 @@ class TestDriveBusSerialization:
 
             assert drive_bus.instruments["awg"] == sequencer_qcm
             for param, value in drive_bus_dictionary["AWG"]["parameters"].items():
-                assert param in drive_bus.instruments["awg"].params
+                assert param in drive_bus.instruments["awg"].parameters
                 mock_set.assert_any_call(param, value)
 
             assert drive_bus.instruments["attenuator"] == qcmqrm_att
             for param, value in drive_bus_dictionary["Attenuator"]["parameters"].items():
-                assert param in drive_bus.instruments["attenuator"].params
+                assert param in drive_bus.instruments["attenuator"].parameters
                 mock_set.assert_any_call(param, value)
 
             assert drive_bus.instruments["local_oscillator"] == qcmqrm_lo
@@ -366,7 +367,7 @@ class TestDriveBusSerialization:
                 "alias": ALIAS,
                 "type": "DriveBus",
                 "AWG": {
-                    "alias": AWG_ALIAS,
+                    "name": AWG_ALIAS,
                     "parameters": {
                         "channel_map_path0_out0_en": True,
                         "channel_map_path1_out1_en": True,
@@ -440,11 +441,11 @@ class TestDriveBusSerialization:
                     },
                 },
                 "LocalOscillator": {
-                    "alias": LO_ALIAS,
+                    "name": LO_ALIAS,
                     "parameters": {"lo_frequency": True, "status": True},
                 },
                 "Attenuator": {
-                    "alias": ATT_ALIAS,
+                    "name": ATT_ALIAS,
                     "parameters": {
                         "attenuation": True,
                         "lo_frequency": True,
