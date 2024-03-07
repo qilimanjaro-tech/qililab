@@ -44,7 +44,7 @@ from qililab.waveforms import IQPair, Waveform
 class BusCompilationInfo:  # pylint: disable=too-many-instance-attributes, too-few-public-methods
     """Class representing the information stored by QBloxCompiler for a bus."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         # The generated Sequence
         self.qpy_sequence = QPy.Sequence(
             program=QPy.Program(), waveforms=QPy.Waveforms(), acquisitions=QPy.Acquisitions(), weights=QPy.Weights()
@@ -84,7 +84,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
 
     minimum_wait_duration: int = 4
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Handlers to map each operation to a corresponding handler function
         self._handlers: dict[type, Callable] = {
             InfiniteLoop: self._handle_infinite_loop,
@@ -129,7 +129,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                 appended = handler(element)
                 if isinstance(element, Block):
                     traverse(element)
-                    if isinstance(element, (ForLoop, Parallel, Loop, Average)):
+                    if not self._qprogram.disable_autosync and isinstance(element, (ForLoop, Parallel, Loop, Average)):
                         self._handle_sync(element=Sync(buses=None))
                     if appended:
                         for bus in self._buses:
@@ -524,7 +524,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
     def _convert_value(operation: Operation) -> Callable[[Any], int]:
         conversion_map: dict[type[Operation], Callable[[Any], int]] = {
             SetFrequency: lambda x: int(x * 4),
-            SetPhase: lambda x: int(x * 1e9 / 360),
+            SetPhase: lambda x: int(x * 1e9 / (2 * np.pi)),
             SetGain: lambda x: int(x * 32_767),
             SetOffset: lambda x: int(x * 32_767),
             Wait: lambda x: int(max(x, QbloxCompiler.minimum_wait_duration)),
