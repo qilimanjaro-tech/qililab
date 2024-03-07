@@ -1,4 +1,5 @@
 """Tests for the Platform class."""
+
 import copy
 import io
 import re
@@ -12,6 +13,8 @@ from qibo import gates
 from qibo.models import Circuit
 from qpysequence import Sequence
 from ruamel.yaml import YAML
+from tests.data import Galadriel, SauronQuantumMachines
+from tests.test_utils import build_platform
 
 from qililab import save_platform
 from qililab.chip import Chip, Qubit
@@ -31,8 +34,6 @@ from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import IQPair, Square
-from tests.data import Galadriel, SauronQuantumMachines
-from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="platform")
@@ -348,7 +349,8 @@ class TestMethods:
             patch.object(Bus, "upload_qpysequence") as upload,
             patch.object(Bus, "run") as run,
             patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
-            patch.object(QbloxModule, "desync_sequencers") as desync,
+            patch.object(QbloxModule, "sync_by_port") as sync_port,
+            patch.object(QbloxModule, "desync_by_port") as desync_port,
         ):
             acquire_qprogram_results.return_value = [123]
             first_execution_results = platform.execute_qprogram(qprogram=qprogram)
@@ -364,7 +366,8 @@ class TestMethods:
         # assert run executed all three times (6 because there are 2 buses)
         assert run.call_count == 6
         assert acquire_qprogram_results.call_count == 3  # only readout buses
-        assert desync.call_count == 9
+        assert sync_port.call_count == 6  # called as many times as run
+        assert desync_port.call_count == 6
         assert first_execution_results.results["feedline_input_output_bus"] == [123]
         assert second_execution_results.results["feedline_input_output_bus"] == [456]
 
