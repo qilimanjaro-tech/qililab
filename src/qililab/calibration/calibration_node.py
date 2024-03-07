@@ -452,7 +452,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         # When notebook execution fails, generate error folder and move there the notebook:
         except Exception as exc:  # pylint: disable = broad-exception-caught
-            if output_path in [os.getcwd()]:
+            if output_path in [os.scandir(os.getcwd())]:
                 timestamp = datetime.timestamp(datetime.now())
                 error_path = self._create_notebook_datetime_path(
                     timestamp=timestamp, error=True
