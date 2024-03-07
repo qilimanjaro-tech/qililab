@@ -111,11 +111,6 @@ class QbloxModule(AWG):
         for idx, offset in enumerate(self.out_offsets):
             self._set_out_offset(output=idx, value=offset)
 
-    # def sync_sequencers(self) -> None:
-    #     """Syncs all sequencers."""
-    #     for sequencer in self.awg_sequencers:
-    #         self.device.sequencers[sequencer.identifier].sync_en(True)
-
     def sync_by_port(self, port: str) -> None:
         """Syncs all sequencers."""
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)

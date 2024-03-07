@@ -22,11 +22,11 @@ from queue import Queue
 
 from qibo.gates import M
 from qibo.models import Circuit
+from qiboconnection.api import API
 from qm import generate_qua_script
 from qpysequence import Sequence as QpySequence
 from ruamel.yaml import YAML
 
-from qiboconnection.api import API
 from qililab.chip import Chip
 from qililab.circuit_transpiler import CircuitTranspiler
 from qililab.config import logger
