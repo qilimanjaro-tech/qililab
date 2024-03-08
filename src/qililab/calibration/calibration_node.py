@@ -282,7 +282,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         the :class:`.CalibrationController` won't do the graph mapping properly, and the calibration will fail. Defaults to None.
         """
 
-        self.node_id, self.nb_folder = self._path_to_name_and_folder(nb_path)
+        self.node_id, self.nb_folder = self._path_to_name_and_folder(os.path.abspath(nb_path))
         """Node name and folder, separated, and without the ``.ipynb`` extension."""
 
         self.in_spec_threshold: float = in_spec_threshold
@@ -438,7 +438,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         # Execute notebook without problems:
         try:
-            self.output_parameters = self._execute_notebook(os.path.abspath(self.nb_path), output_path, params)
+            self.output_parameters = self._execute_notebook(self.nb_path, output_path, params)
             timestamp = datetime.timestamp(datetime.now())
             # remove the _dirty tag, since it finished.
             new_output_path = self._create_notebook_datetime_path(timestamp=timestamp)
@@ -556,17 +556,16 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         # If doesn't exist, create the needed folder for the path
         os.makedirs(self.nb_folder, exist_ok=True)
-        abs_path = os.path.abspath(self.nb_folder)
 
         if dirty and not error:  # return the path of the execution
-            return f"{abs_path}/{self.node_id}_{now_path}_dirty.ipynb"
+            return f"{self.nb_folder}/{self.node_id}_{now_path}_dirty.ipynb"
         if error:
             # CREATE FOLDERS FOR CALIBRATED EXECUTIONS, COMPARISONS, etc.
-            os.makedirs(f"{abs_path}/error_executions", exist_ok=True)
-            return f"{abs_path}/error_executions/{self.node_id}_{now_path}_error.ipynb"
+            os.makedirs(f"{self.nb_folder}/error_executions", exist_ok=True)
+            return f"{self.nb_folder}/error_executions/{self.node_id}_{now_path}_error.ipynb"
 
         # return the string where saved
-        return f"{abs_path}/{self.node_id}_{now_path}.ipynb"
+        return f"{self.nb_folder}/{self.node_id}_{now_path}.ipynb"
 
     def _path_to_name_and_folder(self, original_path: str) -> tuple[str, str]:
         """Extract the name and folder from a notebook path. Name will be extended with the qubit it acts on.
