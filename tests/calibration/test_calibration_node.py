@@ -105,11 +105,11 @@ class TestInitializationCalibrationNode:
         """Test a valid initialization of the class, without passing optional arguments."""
         # sourcery skip: class-extract-method
         # Assert:
-        assert initialize_node_no_optional.nb_path == "tests/calibration/notebook_test/zeroth.ipynb"
+        assert initialize_node_no_optional.nb_path == os.path.abspath("tests/calibration/notebook_test/zeroth.ipynb")
         assert initialize_node_no_optional.qubit_index == 0
         assert initialize_node_no_optional.node_distinguisher is None
         assert initialize_node_no_optional.node_id == "zeroth_q0"
-        assert initialize_node_no_optional.nb_folder == "tests/calibration/notebook_test"
+        assert initialize_node_no_optional.nb_folder == os.path.abspath("tests/calibration/notebook_test")
         assert initialize_node_no_optional.in_spec_threshold == 0.6
         assert initialize_node_no_optional.bad_data_threshold == 0.9
         assert initialize_node_no_optional.comparison_model == dummy_comparison_model
@@ -128,11 +128,11 @@ class TestInitializationCalibrationNode:
     def test_good_init_method_with_optional(self, initialize_node_optional):
         """Test a valid initialization of the class, passing all optional arguments."""
         # Assert:
-        assert initialize_node_optional.nb_path == "tests/calibration/notebook_test/zeroth.ipynb"
+        assert initialize_node_optional.nb_path == os.path.abspath("tests/calibration/notebook_test/zeroth.ipynb")
         assert initialize_node_optional.qubit_index == [0, 1]
         assert initialize_node_optional.node_distinguisher == 1
         assert initialize_node_optional.node_id == "zeroth_1_q0q1"
-        assert initialize_node_optional.nb_folder == "tests/calibration/notebook_test"
+        assert initialize_node_optional.nb_folder == os.path.abspath("tests/calibration/notebook_test")
         assert initialize_node_optional.in_spec_threshold == 0.6
         assert initialize_node_optional.bad_data_threshold == 0.9
         assert initialize_node_optional.comparison_model == dummy_comparison_model
