@@ -546,7 +546,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             error (bool, optional): Flag indicating if the notebook comes from an execution error. Defaults to False.
 
         Returns:
-            str: The timestamped notebook absoulute path.
+            str: The timestamped notebook absolute path.
         """
         # Create datetime pathHM
         now = datetime.now() if timestamp is None else datetime.fromtimestamp(timestamp)
