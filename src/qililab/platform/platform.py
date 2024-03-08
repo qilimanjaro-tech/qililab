@@ -672,8 +672,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         # Reset instrument settings
         for bus_alias in sequences:
             for instrument in buses[bus_alias].system_control.instruments:
-                if isinstance(instrument, QbloxModule):
-                    instrument.desync_by_port(buses[bus_alias].port)
+                if isinstance(instrument, QbloxModule): instrument.desync_by_port(buses[bus_alias].port)
 
         return results
 
