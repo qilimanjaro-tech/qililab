@@ -282,7 +282,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         the :class:`.CalibrationController` won't do the graph mapping properly, and the calibration will fail. Defaults to None.
         """
 
-        self.node_id, self.nb_folder = self._path_to_name_and_folder(os.path.abspath(nb_path))
+        self.node_id, self.nb_folder = self._path_to_name_and_folder(self.nb_path)
         """Node name and folder, separated, and without the ``.ipynb`` extension."""
 
         self.in_spec_threshold: float = in_spec_threshold
