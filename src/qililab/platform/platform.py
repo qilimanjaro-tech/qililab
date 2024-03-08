@@ -575,9 +575,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         buses_dict = {RUNCARD.BUSES: self.buses.to_dict() if self.buses is not None else None}
         instrument_dict = {RUNCARD.INSTRUMENTS: self.instruments.to_dict() if self.instruments is not None else None}
         instrument_controllers_dict = {
-            RUNCARD.INSTRUMENT_CONTROLLERS: self.instrument_controllers.to_dict()
-            if self.instrument_controllers is not None
-            else None,
+            RUNCARD.INSTRUMENT_CONTROLLERS: (
+                self.instrument_controllers.to_dict() if self.instrument_controllers is not None else None
+            ),
         }
 
         return (
@@ -671,7 +671,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         # Reset instrument settings
         for bus_alias in sequences:
-            qblox_modules = filter(lambda instrument: isinstance(instrument, QbloxModule), buses[bus_alias].system_control.instruments)
+            qblox_modules = filter(
+                lambda instrument: isinstance(instrument, QbloxModule), buses[bus_alias].system_control.instruments
+            )
             for instrument in qblox_modules:
                 instrument.desync_by_port(buses[bus_alias].port)
 
