@@ -491,6 +491,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
     def _execute_notebook(self, input_path: str, output_path: str, parameters: dict | None = None) -> dict:
         """Executes a Jupyter Notebook overwriting the `parameters` cell, and capturing the execution ``output``.
+        The execution of the notebook will happen in the notebook folder. In case the workflow is not beeing executed in the notebook folder,
+        this method will change the working directory before the execution and restore the original `cwd` after.
 
         Args:
             input_path (str): The input path of the notebook to be executed.
@@ -545,7 +547,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             error (bool, optional): Flag indicating if the notebook comes from an execution error. Defaults to False.
 
         Returns:
-            str: The timestamped notebook path.
+            str: The timestamped notebook absoulute path.
         """
         # Create datetime pathHM
         now = datetime.now() if timestamp is None else datetime.fromtimestamp(timestamp)
