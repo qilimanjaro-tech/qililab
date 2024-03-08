@@ -116,7 +116,6 @@ class QbloxModule(AWG):
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
         for sequencer in sequencers:
             self.device.sequencers[sequencer.identifier].sync_en(True)
-        return None
 
     # TODO: merge both desyncs or decide if desync_sequencers is enough
     def desync_by_port(self, port: str) -> None:
@@ -124,7 +123,6 @@ class QbloxModule(AWG):
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
         for sequencer in sequencers:
             self.device.sequencers[sequencer.identifier].sync_en(False)
-        return None
 
     def desync_sequencers(self) -> None:
         """Desyncs all sequencers."""
