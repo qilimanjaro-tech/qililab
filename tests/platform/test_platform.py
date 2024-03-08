@@ -1,5 +1,4 @@
 """Tests for the Platform class."""
-
 import copy
 import io
 import re
