@@ -271,7 +271,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         if isinstance(qubit_index, list) and len(qubit_index) != 2:
             raise ValueError("List of `qubit_index` only accepts two qubit index")
 
-        self.nb_path: str = nb_path
+        self.nb_path: str = os.path.abspath(nb_path)
         """Absolute notebook path, with folder, nb_name and ``.ipynb`` extension."""
 
         self.qubit_index: int | list[int] | None = qubit_index
