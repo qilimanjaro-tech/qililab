@@ -13,8 +13,6 @@ from qibo import gates
 from qibo.models import Circuit
 from qpysequence import Sequence
 from ruamel.yaml import YAML
-from tests.data import Galadriel, SauronQuantumMachines
-from tests.test_utils import build_platform
 
 from qililab import save_platform
 from qililab.chip import Chip, Qubit
@@ -34,6 +32,8 @@ from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import IQPair, Square
+from tests.data import Galadriel, SauronQuantumMachines
+from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="platform")
