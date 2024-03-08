@@ -20,4 +20,4 @@ disable=
     missing-class-docstring,
     missing-function-docstring,
     import-error,
-    R0912
+    too-many-branches
