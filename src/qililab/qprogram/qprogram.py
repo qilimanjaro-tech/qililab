@@ -44,26 +44,25 @@ class QProgram(DictSerializable):
     the execution flow of quantum operations within a program.
 
     Attributes:
-        _program (Block): The main program block.
-        _variables (list[Variable]): List of variables used within the program.
-        _block_stack (deque[Block]): A stack to manage nested blocks within the program.
+        disable_autosync (bool): If set to True, then loop iterations are not automatically synced.
 
     Examples:
 
         The following example illustrates how to define a Rabi sequence using QProgram.
 
         .. code-block:: python3
+            from qililab import QProgram, IQPair, Square
 
             qp = QProgram()
-            amplitude = qp.variable(float)
-            drag = DRAG(amplitude=amplitude, duration=40, num_sigmas=4, drag_correction=1.2)
-            square_wf = Square(amplitude=1.0, duration=1000)
-            zeros_wf = Square(amplitude=0.0, duration=1000)
-            with qp.loop(variable=amplitude, values=np.arange(0, 1, 101)):
-                qp.play(bus="drive", waveform=drag)
+            control_wf = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_correction=-2.5)
+            readout_wf = IQPair(I=Square(amplitude=1.0, duration=400), Q=Square(amplitude=0.0, duration=400))
+            weights = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=1.0, duration=2000))
+            with qp.loop(variable=gain, values=np.arange(0, 1, 101)):
+                qp.set_gain(bus="drive_bus", gain=gain)
+                qp.play(bus="drive_bus", waveform=control_wf)
                 qp.sync()
-                qp.play(bus="readout", waveform=IQPair(I=square_wf, Q=zeros_wf))
-                qp.acquire(bus="readout")
+                qp.play(bus="readout_bus", waveform=readout_wf, wait_time=120)
+                qp.acquire(bus="readout_bus", weights=weights)
     """
 
     def __init__(self, disable_autosync: bool = False) -> None:
