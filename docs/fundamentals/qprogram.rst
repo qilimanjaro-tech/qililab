@@ -1,22 +1,109 @@
 QProgram
 =========
 
-:class:`.QProgram` is a hardware-agnostic programming interface for describing quantum programs. It provides an intuitive API that simplifies the process of defining quantum operations, managing variables, and orchestrating the execution flow of quantum algorithms.
+:class:`.QProgram` is a hardware-agnostic pulse-level programming interface for describing quantum programs.
 
-Blocks and Operations
+Extracting the greatest performance from quantum hardware requires real-time pulse-level instructions. QProgram answers that need: it enables the quantum physicist user to specify the exact time dynamics of an experiment.
+
+The input is given as arbitrary, time-ordered operations scheduled in parallel over multiple virtual hardware resources, called buses. The system also allows the user to recover the time dynamics of the measured output. This lower level of programming offers the user more control than programming with `Circuit`.
+
+Moreover, it provides advanced features such as variables, and execution flow structures.
+
+Buses
+-----
+QProgram is meant to be agnostic to the underlying hardware implementation, while still allowing low-level control. Therefore, our references are **virtual** buses. The backend which executes our programs is responsible for mapping these virtual buses to the proper physical instrument channel within the quantum control hardware.
+
+Buses are identified by their alias.
+
+Operations
 -----------------------
 
-Central to `QProgram` is the :class:`Block` class, a versatile container designed to hold a sequence of quantum operations. These operations range from pulse manipulations like `Play` to data acquisition like `Acquire`. Each operation can be parameterized using variables, offering unparalleled control over the quantum program's behavior. All blocks and operations are exposed through methods.
+Operations are a central part of :class:`QProgram`. They range from playing a pulse, acquiring data, or changing physical parameters of the system in real-time. All operations are exposed through public methods.
 
-Variable Management
+Variables
 ---------------------
 
-The `variable` method in QProgram allows for the dynamic declaration of variables. These variables can be utilized to parameterize quantum operations, thereby facilitating easy adjustments and iterations over different experimental configurations. When declaring a variable, its `Domain` must be specified. The `Domain` associates a variable with a specific physical property. For instance, you can define a variable with `Domain.Frequency` and use it to change the frequency of the NCO.
+The `variable` method in QProgram allows for the dynamic declaration of variables. These variables can be utilized to parameterize quantum operations, thereby facilitating easy adjustments and iterations over different experimental configurations. When declaring a variable, its `Domain` must be specified. The `Domain` associates a variable with a specific physical property.
+
+For instance, you can define a variable with `Domain.Frequency` and use it to change the frequency of the NCO.
+
+.. code-block:: python3
+
+    qp = QProgram()
+    frequency = qp.variable(Domain.Frequency)
+
+If the variable is not accossiated with any physical property, it should be declared as `Domain.Scalar`. In that case, the data type of the variable must also be specificied. Available data types are `int` and `float`.
+
+.. code-block:: python3
+
+    qp = QProgram()
+    int_scalar = qp.variable(Domain.Scalar, type=int)
+    float_scalar = qp.variable(Domain.Scalar, type=float)
+
+In the future, these variables will be treated as mathematical objects, allowing the user to evaluate complex expressions.
+
+For now, the only way to assign values to a variable is through loops.
 
 Loops
 -------
 
-QProgram offers a rich set of control structures, including various types of loops. The `loop` method enables you to iterate over an array of values for a given variable. This is particularly useful for sweeping over a range of parameters in an experiment. Similarly, the `for_loop` method provides a more traditional loop structure, allowing you to specify the `start`, `stop`, and `step` values for a variable, thereby creating a range over which the loop will iterate. Additionally, loops can be nested, which is invaluable for experiments that require multi-dimensional sweeps. Finally, the `parallel` method is provided, which allows multiple loops to be run in parallel.
+QProgram offers a rich set of control structures, including various types of loops.
+
+These loops enable the user to iterate over a sequence of values for a given variable. Additionally, loops can be nested, which is invaluable for experiments that require multi-dimensional sweeps. There are currently three flavours of loops.
+
+For-Loop
+^^^^^
+The `for_loop` method provides the traditional loop structure, allowing the user to specify the `start`, `stop`, and `step` values for a variable, thereby creating a range over which the loop will iterate. Both `start` and `stop` are inclusive.
+
+.. code-block:: python3
+
+    qp = QProgram()
+    frequency = qp.variable(Domain.Frequency)
+    with qp.for_loop(variable=frequency, start=100e6, stop=200e6, step=10e6):
+        qp.set_frequency(bus="drive_bus", frequency=frequency)
+
+Loops with numpy
+^^^^^
+
+The `loop` method allows the user to iterate over a numpy array of arbitrary values.
+
+.. code-block:: python3
+    frequency_values = np.random.uniform(low=100e6, high=200e6, size=201)
+
+    qp = QProgram()
+    frequency = qp.variable(Domain.Frequency)
+    with qp.loop(variable=frequency, values=frequency_values):
+        qp.set_frequency(bus="drive_bus", frequency=frequency)
+
+Inner Loops
+^^^^^
+
+Loops can be nested, which is invaluable for experiments that require multi-dimensional sweeps. In the following example, we loop over frequencies and for each frequency value we loop over gains.
+
+.. code-block:: python3
+    qp = QProgram()
+    frequency = qp.variable(Domain.Frequency)
+    gain = qp.variable(Domain.Voltage)
+    with qp.for_loop(variable=frequency, start=100e6, stop=200e6, step=10e6):
+        qp.set_frequency(bus="drive_bus", frequency=frequency)
+        with qp.for_loop(variable=gain, start=0.0, stop=1.0, step=0.1):
+            qp.set_gain(bus="drive_bus", gain=gain)
+
+Parallel Loops
+^^^^^
+
+Finally, the `parallel` method is provided, which allows multiple loops to be run in parallel.
+
+.. code-block:: python3
+    from qililab.qprogram.blocks import ForLoop
+
+    qp = QProgram()
+    frequency = qp.variable(Domain.Frequency)
+    gain = qp.variable(Domain.Voltage)
+    with qp.parallel(loops=[ForLoop(variable=frequency, start=100e6, stop=200e6, step=10e6),
+                            ForLoop(variable=gain, start=0.0, stop=1.0, step=0.1)]):
+        qp.set_frequency(bus="drive_bus", frequency=frequency)
+        qp.set_gain(bus="drive_bus", gain=gain)
 
 Synchronization and Timing
 ----------------------------
