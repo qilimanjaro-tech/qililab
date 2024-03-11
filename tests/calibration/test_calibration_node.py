@@ -620,23 +620,13 @@ class TestPrivateMethodsFromCalibrationNode:
                 # assert os.path.join(methods_node.nb_path, methods_node.node_id) in test_value
                 assert f"_{test_path}" in test_value
             if dirty and not error:
-                # Check relative paths will not appear in the output path
-                if methods_node.nb_folder == ".." or methods_node.nb_folder == ".":
-                    assert methods_node.node_id in test_value
-                else:
-                    path_and_node_id = os.path.join(methods_node.nb_folder, methods_node.node_id)
-                    assert path_and_node_id in test_value
+                path_and_node_id = os.path.join(methods_node.nb_folder, methods_node.node_id)
+                assert path_and_node_id in test_value
                 assert "_dirty.ipynb" in test_value
             if error:
                 assert mocked_os.makedirs.call_count == 2
-                # Check relative paths will not appear in the output path
-                if methods_node.nb_folder == ".." or methods_node.nb_folder == ".":
-                    assert os.path.join("error_executions", methods_node.node_id) in test_value
-                else:
-                    path_and_node_id_error = os.path.join(
-                        methods_node.nb_folder, "error_executions", methods_node.node_id
-                    )
-                    assert path_and_node_id_error in test_value
+                path_and_node_id_error = os.path.join(methods_node.nb_folder, "error_executions", methods_node.node_id)
+                assert path_and_node_id_error in test_value
                 assert "_error.ipynb" in test_value
 
     ####################################
