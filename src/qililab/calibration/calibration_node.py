@@ -271,7 +271,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         if isinstance(qubit_index, list) and len(qubit_index) != 2:
             raise ValueError("List of `qubit_index` only accepts two qubit index")
 
-        self.nb_path: str = nb_path
+        self.nb_path: str = os.path.abspath(nb_path)
         """Absolute notebook path, with folder, nb_name and ``.ipynb`` extension."""
 
         self.qubit_index: int | list[int] | None = qubit_index
@@ -282,7 +282,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         the :class:`.CalibrationController` won't do the graph mapping properly, and the calibration will fail. Defaults to None.
         """
 
-        self.node_id, self.nb_folder = self._path_to_name_and_folder(nb_path)
+        self.node_id, self.nb_folder = self._path_to_name_and_folder(self.nb_path)
         """Node name and folder, separated, and without the ``.ipynb`` extension."""
 
         self.in_spec_threshold: float = in_spec_threshold
@@ -452,7 +452,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         # When notebook execution fails, generate error folder and move there the notebook:
         except Exception as exc:  # pylint: disable = broad-exception-caught
-            if output_path in [os.scandir(self.nb_folder)]:
+            if output_path in [os.scandir(os.getcwd())]:
                 timestamp = datetime.timestamp(datetime.now())
                 error_path = self._create_notebook_datetime_path(
                     timestamp=timestamp, error=True
@@ -492,6 +492,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
     def _execute_notebook(self, input_path: str, output_path: str, parameters: dict | None = None) -> dict:
         """Executes a Jupyter Notebook overwriting the `parameters` cell, and capturing the execution ``output``.
 
+        This method changes the working directory to the notebook folder before executing the notebook and restores the original working directory after execution if necessary.
+
         Args:
             input_path (str): The input path of the notebook to be executed.
             output_path (str): The output path where the executed noteboo will be saved. If None, no file will be saved.
@@ -503,7 +505,12 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         Raises:
             IncorrectCalibrationOutput: In case no outputs, incorrect outputs or multiple outputs where found. Incorrect outputs are those that do not contain `check_parameters` or is empty.
         """
+        # Save previous working directory and setup notebook folder as working directory
+        original_wd = os.getcwd()
+        os.chdir(self.nb_folder)
         pm.execute_notebook(input_path, output_path, parameters, log_output=True, stdout_file=self._stream)
+        # Restore previous working directory after execution is done
+        os.chdir(original_wd)
 
         # Retrieve the logger info and extract the output from it:
         logger_string = self._stream.getvalue()
@@ -540,7 +547,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             error (bool, optional): Flag indicating if the notebook comes from an execution error. Defaults to False.
 
         Returns:
-            str: The timestamped notebook path.
+            str: The timestamped notebook absolute path.
         """
         # Create datetime pathHM
         now = datetime.now() if timestamp is None else datetime.fromtimestamp(timestamp)
