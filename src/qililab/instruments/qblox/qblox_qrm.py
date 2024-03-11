@@ -20,7 +20,7 @@ from qpysequence import Program
 from qpysequence import Sequence as QpySequence
 from qpysequence import Weights
 from qpysequence.program import Loop, Register
-from qpysequence.program.instructions import Acquire, AcquireWeighed, Move
+from qpysequence.program.instructions import Acquire, AcquireWeighed, Move, Wait
 
 from qililab.config import logger
 from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
@@ -69,9 +69,9 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 )
 
             self.awg_sequencers = [
-                AWGQbloxADCSequencer(**sequencer)
-                if isinstance(sequencer, dict)
-                else sequencer  # pylint: disable=not-a-mapping
+                (
+                    AWGQbloxADCSequencer(**sequencer) if isinstance(sequencer, dict) else sequencer
+                )  # pylint: disable=not-a-mapping
                 for sequencer in self.awg_sequencers
             ]
             super().__post_init__()
@@ -103,6 +103,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             self._set_threshold_rotation(
                 value=cast(AWGQbloxADCSequencer, sequencer).threshold_rotation, sequencer_id=sequencer_id
             )
+
 
     def _map_connections(self):
         """Disable all connections and map sequencer paths with output/input channels."""
@@ -358,6 +359,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             if weighed_acq
             else Acquire(acq_index=0, bin_index=bin_index, wait_time=self._MIN_WAIT_TIME)
         )
+        loop.append_component(Wait(wait_time=210))
         loop.append_component(acq_instruction)
 
     def _init_weights_registers(self, registers: tuple[Register, Register], values: tuple[int, int], program: Program):
