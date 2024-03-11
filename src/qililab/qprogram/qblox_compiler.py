@@ -405,11 +405,11 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
 
         if num_bins == 1:
             self._buses[element.bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.AcquireWeighed(
+                component=QPyInstructions.Acquire(
                     acq_index=self._buses[element.bus].next_acquisition_index,
                     bin_index=self._buses[element.bus].next_bin_index,
-                    weight_index_0=index_I,
-                    weight_index_1=index_Q,
+                    # weight_index_0=index_I,
+                    # weight_index_1=index_Q,
                     wait_time=integration_length,
                 )
             )
@@ -431,11 +431,11 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                 bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
             )
             self._buses[element.bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.AcquireWeighed(
+                component=QPyInstructions.Acquire(
                     acq_index=self._buses[element.bus].next_acquisition_index,
                     bin_index=bin_register,
-                    weight_index_0=register_I,
-                    weight_index_1=register_Q,
+                    # weight_index_0=register_I,
+                    # weight_index_1=register_Q,
                     wait_time=integration_length,
                 )
             )
