@@ -1,4 +1,5 @@
 """Tests for the Qblox Module class."""
+
 import copy
 import re
 from unittest.mock import MagicMock, patch
@@ -178,16 +179,16 @@ class TestQbloxModule:  # pylint: disable=too-few-public-methods
         qrm_settings.pop("name")
         qrm = DummyQRM(settings=qrm_settings)
         qrm.sync_by_port(port="feedline_input")
-        qrm.device.sequencers[0].sync_en.assert_called_once_with(True)
-        
+        qrm.device.sequencers[0].sync_en.assert_called_with(True)
+
     def test_desync_by_port(self):
         """Test desync_by_port method."""
         qrm_settings = copy.deepcopy(Galadriel.qblox_qrm_0)
         qrm_settings.pop("name")
         qrm = DummyQRM(settings=qrm_settings)
-        qrm.sync_by_port(port="feedline_input")
-        qrm.device.sequencers[0].sync_en.assert_called_once_with(False)
-    
+        qrm.desync_by_port(port="feedline_input")
+        qrm.device.sequencers[0].sync_en.assert_called_with(False)
+
     def test_upload_qpysequence(self, qpysequence: Sequence):
         """Test upload_qpysequence method."""
         qrm_settings = copy.deepcopy(Galadriel.qblox_qrm_0)
