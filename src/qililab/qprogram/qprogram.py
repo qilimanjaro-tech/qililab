@@ -36,7 +36,7 @@ from qililab.waveforms import IQPair, Waveform
 
 
 class QProgram(DictSerializable):
-    """A class for building quantum programs.
+    """QProgram is a hardware-agnostic pulse-level programming interface for describing quantum programs.
 
     This class provides an interface for building quantum programs,
     including defining operations, managing variables, and handling blocks.
@@ -51,18 +51,40 @@ class QProgram(DictSerializable):
         The following example illustrates how to define a Rabi sequence using QProgram.
 
         .. code-block:: python3
-            from qililab import QProgram, IQPair, Square
+
+            from qililab import QProgram, Domain, IQPair, Square
 
             qp = QProgram()
-            control_wf = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_correction=-2.5)
+
+            # Pulse used for changing the state of qubit
+            control_wf = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4.0, drag_correction=-2.5)
+
+            # Pulse used for exciting the resonator for readout
             readout_wf = IQPair(I=Square(amplitude=1.0, duration=400), Q=Square(amplitude=0.0, duration=400))
+
+            # Weights used during integration
             weights = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=1.0, duration=2000))
-            with qp.loop(variable=gain, values=np.arange(0, 1, 101)):
+
+            # Declare a variable
+            gain = qp.variable(Domain.Voltage)
+
+            # Loop the variable's value over the range [0.0, 1.0]
+            with qp.for_loop(variable=gain, start=0.0, stop=1.0, step=0.01):
+                # Change the gain output of the drive_bus
                 qp.set_gain(bus="drive_bus", gain=gain)
+
+                # Play the control pulse
                 qp.play(bus="drive_bus", waveform=control_wf)
+
+                # Sync the buses
                 qp.sync()
+
+                # Play the readout pulse
                 qp.play(bus="readout_bus", waveform=readout_wf, wait_time=120)
+
+                # Acquire results
                 qp.acquire(bus="readout_bus", weights=weights)
+
     """
 
     def __init__(self, disable_autosync: bool = False) -> None:
