@@ -70,9 +70,9 @@ class QbloxModule(AWG):
                 )
 
             self.awg_sequencers = [
-                (
-                    AWGQbloxSequencer(**sequencer) if isinstance(sequencer, dict) else sequencer
-                )  # pylint: disable=not-a-mapping
+                AWGQbloxSequencer(**sequencer)
+                if isinstance(sequencer, dict)
+                else sequencer  # pylint: disable=not-a-mapping
                 for sequencer in self.awg_sequencers
             ]
             super().__post_init__()
@@ -117,7 +117,6 @@ class QbloxModule(AWG):
         for sequencer in sequencers:
             self.device.sequencers[sequencer.identifier].sync_en(True)
 
-    # TODO: merge both desyncs or decide if desync_sequencers is enough
     def desync_by_port(self, port: str) -> None:
         """Syncs all sequencers."""
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)

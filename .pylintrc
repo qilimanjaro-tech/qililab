@@ -20,4 +20,4 @@ disable=
     too-many-ancestors,
     missing-module-docstring,
     too-many-arguments,
-    R0912
+    too-many-branches
