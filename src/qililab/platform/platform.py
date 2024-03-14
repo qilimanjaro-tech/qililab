@@ -48,7 +48,7 @@ from qililab.result.qprogram.quantum_machines_measurement_result import QuantumM
 from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName, Line, Parameter
-from qililab.utils import hash_qpy_sequence, hash_qua_program
+from qililab.utils import hash_qpy_sequence
 
 from .components import Bus, Buses
 
@@ -309,9 +309,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         if any(isinstance(instrument, QbloxModule) for instrument in self.instruments.elements):
             self.compiler = PulseQbloxCompiler(platform=self)  # TODO: integrate with qprogram compiler
             """Compiler to translate given programs to instructions for a given awg vendor."""
-
-        self._qua_program_cache: dict[str, str] = {}
-        """Dictionary for caching compiled qua programs."""
 
         self._qpy_sequence_cache: dict[str, str] = {}
         """Dictionary for caching qpysequences."""
@@ -693,11 +690,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             with open("debug_qm_execution.py", "w", encoding="utf-8") as sourceFile:
                 print(generate_qua_script(qua_program, cluster.config), file=sourceFile)
 
-        qua_program_hash = hash_qua_program(program=qua_program)
-        if qua_program_hash not in self._qua_program_cache:
-            self._qua_program_cache[qua_program_hash] = cluster.compile(program=qua_program)
-        compiled_program_id = self._qua_program_cache[qua_program_hash]
-
+        compiled_program_id = cluster.compile(program=qua_program)
         job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
 
         acquisitions = cluster.get_acquisitions(job=job)

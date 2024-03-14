@@ -199,10 +199,15 @@ class TestQuantumMachinesCluster:
         qmm.initial_setup()
         qmm.turn_on()
 
+        assert len(qmm._compiled_program_cache) == 0
         qmm._qm.compile.return_value = "123"
-        compile_program_id = qmm.compile(qua_program)
 
-        qmm._qm.compile.assert_called_once_with(qua_program)
+        compile_program_id = qmm.compile(qua_program)
+        assert len(qmm._compiled_program_cache) == 1
+        assert compile_program_id == "123"
+
+        compile_program_id = qmm.compile(qua_program)
+        assert len(qmm._compiled_program_cache) == 1
         assert compile_program_id == "123"
 
     @patch("qm.QuantumMachine")

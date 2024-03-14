@@ -406,9 +406,7 @@ class TestMethods:
 
             _ = platform_quantum_machines.execute_qprogram(qprogram=qprogram, debug=True)
 
-        # assure only one compilation happened
-        assert compile_program.call_count == 1
-        # assure the rest were executed three times
+        assert compile_program.call_count == 3
         assert append_configuration.call_count == 3
         assert run_compiled_program.call_count == 3
         assert get_acquisitions.call_count == 3
