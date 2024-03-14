@@ -31,18 +31,18 @@ class TestFunctions(unittest.TestCase):
         self.assertIsNone(path)
 
         # Creating a mock folder structure for testing
-        test_subdir = os.path.join(self.test_dir, "20240101/120003")
+        test_subdir = os.path.join(self.test_dir, "20240101/120003_Mock")
         os.makedirs(test_subdir, exist_ok=True)
         result_path = tsys.get_path_from_timestamp(timestamp, self.test_dir)
-        self.assertEqual(result_path, test_subdir)
+        self.assertEqual(result_path, 'test_data/20240101/120003_Mock')
 
     def test_get_timestamp_from_file(self):
         test_file_path = os.path.join(self.test_dir, "20240101/120000_blah/example.yml")
         timestamp = tsys.get_timestamp_from_file(test_file_path)
         self.assertEqual(timestamp, "20240101_120000")
 
-    # def test_get_last_folder(self):
-    #     last_folder = tsys.get_last_folder(self.test_dir)
+    # def test_get_last_data_folder(self):
+    #     last_folder = tsys.get_last_data_folder(self.test_dir)
     #     self.assertEqual(last_folder, "folder2")
 
     # def test_get_last_timestamp(self):

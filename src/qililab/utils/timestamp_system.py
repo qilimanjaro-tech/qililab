@@ -12,23 +12,20 @@ def get_timestamp():
 
 def get_path_from_timestamp(timestamp, data_folder):
     """
-    Given a timestamp and a data folder path, returns the path to the corresponding result file.
+    Given a timestamp and a data folder path, returns the path to the corresponding folder if exists.
     """
     target_folder = timestamp.split("_")[0]  # Extract the folder name from the timestamp
     target_file = timestamp.split("_")[1]  # Extract the file name from the timestamp 
 
-    folder_path = os.path.join(data_folder, target_folder) 
+    folder_path = os.path.join(data_folder, target_folder)
+    all_dirs = os.listdir(folder_path)
+    matching_dirs = [this_dir for this_dir in all_dirs if target_file in this_dir]
 
-    if os.path.isdir(data_folder):
-        for root, dirs, files in os.walk(folder_path):
-            for folder in dirs:
-                desired_part = folder.split("_")[0]
-
-                if desired_part == target_file:
-                    path = os.path.join(root, folder)
-                    files = os.listdir(path)
-                    if files:
-                        return os.path.join(path, "results.yml")
+    # more than one directory matching the timestamp
+    assert len(matching_dirs)<2
+    if len(matching_dirs)==1:
+        if os.path.isdir(os.path.join(data_folder,matching_dirs[0])):
+            return folder_path
     return None
 
 def get_timestamp_from_file(path):
@@ -36,9 +33,9 @@ def get_timestamp_from_file(path):
     Given a file path, extracts and returns the timestamp associated with it.
     """
     parent_dir = os.path.dirname(path)
-    desired_part = os.path.basename(parent_dir)
-    first_part, second_part = os.path.split(path)
-    return desired_part + '_' + second_part[:6]
+    splitted = parent_dir.split('/')
+    splitted[-1]
+    return splitted[-2][-8:] + '_' + splitted[-1][:6]
 
 def get_last_folder(directory):
     """
@@ -48,6 +45,11 @@ def get_last_folder(directory):
     folders.sort()
     last_folder = folders[-1] if folders else None
     return last_folder
+
+def get_last_data_folder(directory):
+    last_day_folder = get_last_folder(directory)
+    last_data_folder = get_last_folder(directory+'/'+last_day_folder)
+    return directory+'/'+last_day_folder+'/'+last_data_folder
 
 def get_last_timestamp(data_folder):
     """
