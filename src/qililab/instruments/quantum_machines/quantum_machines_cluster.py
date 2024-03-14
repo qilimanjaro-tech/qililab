@@ -274,6 +274,7 @@ class QuantumMachinesCluster(Instrument):
         """Turns on the instrument."""
         if not self._is_connected_to_qm:
             self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)
+            self._compiled_program_cache = {}
             self._is_connected_to_qm = True
 
             if self.settings.run_octave_calibration:
@@ -298,6 +299,7 @@ class QuantumMachinesCluster(Instrument):
             # If we are already connected, reopen the connection with the new configuration
             if self._is_connected_to_qm:
                 self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)
+                self._compiled_program_cache = {}
 
     def run_octave_calibration(self):
         """Run calibration procedure for the buses with octaves, if any."""
