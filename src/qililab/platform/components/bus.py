@@ -23,7 +23,7 @@ from qililab.constants import RUNCARD
 from qililab.exceptions import ParameterNotFound
 from qililab.settings import Settings
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no_cover
     from qpysequence import Sequence as QpySequence
 
     from qililab.instruments.instrument import Instrument
