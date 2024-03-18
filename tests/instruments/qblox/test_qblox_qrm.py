@@ -413,10 +413,10 @@ class TestQbloxQRM:
                 },
             }
         }
-        qrm.sequences = {0: None, 1: None}
-        acquisitions = qrm.acquire_qprogram_results(acquisitions=["default"])
+        qrm.sequences = {0: None}
+        acquisitions = qrm.acquire_qprogram_results(acquisitions=["default"], port="feedline_input")
         assert isinstance(acquisitions, list)
-        assert len(acquisitions) == 2
+        assert len(acquisitions) == 1
 
     def test_name_property(self, qrm_no_device: QbloxQRM):
         """Test name property."""

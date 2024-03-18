@@ -47,7 +47,7 @@ class ReadoutSystemControl(SystemControl):
 
         return results[0]
 
-    def acquire_qprogram_results(self, acquisitions: list[str]) -> list[Result]:
+    def acquire_qprogram_results(self, acquisitions: list[str], port: str) -> list[Result]:
         """Read the result from the vector network analyzer instrument
 
         Returns:
@@ -56,7 +56,7 @@ class ReadoutSystemControl(SystemControl):
         # TODO: Support acquisition from multiple instruments
         total_results: list[list[Result]] = []
         for instrument in self.instruments:
-            instrument_results = instrument.acquire_qprogram_results(acquisitions=acquisitions)
+            instrument_results = instrument.acquire_qprogram_results(acquisitions=acquisitions, port=port)
             total_results.append(instrument_results)
 
         return total_results[0]

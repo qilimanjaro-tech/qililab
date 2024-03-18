@@ -105,11 +105,11 @@ class TestInitializationCalibrationNode:
         """Test a valid initialization of the class, without passing optional arguments."""
         # sourcery skip: class-extract-method
         # Assert:
-        assert initialize_node_no_optional.nb_path == "tests/calibration/notebook_test/zeroth.ipynb"
+        assert initialize_node_no_optional.nb_path == os.path.abspath("tests/calibration/notebook_test/zeroth.ipynb")
         assert initialize_node_no_optional.qubit_index == 0
         assert initialize_node_no_optional.node_distinguisher is None
         assert initialize_node_no_optional.node_id == "zeroth_q0"
-        assert initialize_node_no_optional.nb_folder == "tests/calibration/notebook_test"
+        assert initialize_node_no_optional.nb_folder == os.path.abspath("tests/calibration/notebook_test")
         assert initialize_node_no_optional.in_spec_threshold == 0.6
         assert initialize_node_no_optional.bad_data_threshold == 0.9
         assert initialize_node_no_optional.comparison_model == dummy_comparison_model
@@ -128,11 +128,11 @@ class TestInitializationCalibrationNode:
     def test_good_init_method_with_optional(self, initialize_node_optional):
         """Test a valid initialization of the class, passing all optional arguments."""
         # Assert:
-        assert initialize_node_optional.nb_path == "tests/calibration/notebook_test/zeroth.ipynb"
+        assert initialize_node_optional.nb_path == os.path.abspath("tests/calibration/notebook_test/zeroth.ipynb")
         assert initialize_node_optional.qubit_index == [0, 1]
         assert initialize_node_optional.node_distinguisher == 1
         assert initialize_node_optional.node_id == "zeroth_1_q0q1"
-        assert initialize_node_optional.nb_folder == "tests/calibration/notebook_test"
+        assert initialize_node_optional.nb_folder == os.path.abspath("tests/calibration/notebook_test")
         assert initialize_node_optional.in_spec_threshold == 0.6
         assert initialize_node_optional.bad_data_threshold == 0.9
         assert initialize_node_optional.comparison_model == dummy_comparison_model
@@ -465,7 +465,11 @@ class TestPrivateMethodsFromCalibrationNode:
         ],
     )
     @patch("qililab.calibration.calibration_node.pm.execute_notebook")
-    def test_execute_notebook(self, mocked_pm_exec, output, methods_node: CalibrationNode):
+    @patch("qililab.calibration.calibration_node.os.chdir")
+    @patch("qililab.calibration.calibration_node.os.getcwd")
+    def test_execute_notebook(
+        self, mocked_os_getcwd, mocked_os_chdir, mocked_pm_exec, output, methods_node: CalibrationNode
+    ):
         """Testing general behavior of ``execute_notebook()``."""
         # Creating expected values for assert
         sweep_interval = [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48]
@@ -478,6 +482,8 @@ class TestPrivateMethodsFromCalibrationNode:
         test_value = methods_node._execute_notebook(methods_node.nb_path, "", {})
 
         # Asserts
+        mocked_os_getcwd.assert_called_once()
+        assert mocked_os_chdir.call_count == 2
         mocked_pm_exec.assert_called_once_with(
             methods_node.nb_path, "", {}, log_output=True, stdout_file=methods_node._stream
         )
@@ -618,8 +624,8 @@ class TestPrivateMethodsFromCalibrationNode:
                 assert path_and_node_id in test_value
                 assert "_dirty.ipynb" in test_value
             if error:
-                path_and_node_id_error = os.path.join(methods_node.nb_folder, "error_executions", methods_node.node_id)
                 assert mocked_os.makedirs.call_count == 2
+                path_and_node_id_error = os.path.join(methods_node.nb_folder, "error_executions", methods_node.node_id)
                 assert path_and_node_id_error in test_value
                 assert "_error.ipynb" in test_value
 

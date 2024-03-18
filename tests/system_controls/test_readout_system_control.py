@@ -27,10 +27,15 @@ class TestReadoutSystemControl:
     """This class contains the unit tests for the ``ReadoutSystemControl`` class."""
 
     def test_acquire_qprogram_results_method(self, system_control):
+        """Test acquire_qprogram_results calls instrument method correctly."""
         with patch.object(Instrument, "acquire_qprogram_results") as acquire_qprogram_results:
-            system_control.acquire_qprogram_results(acquisitions=["acquisition_0", "acquisition_1"])
+            system_control.acquire_qprogram_results(
+                acquisitions=["acquisition_0", "acquisition_1"], port="feedline_input"
+            )
 
-        acquire_qprogram_results.assert_called_with(acquisitions=["acquisition_0", "acquisition_1"])
+        acquire_qprogram_results.assert_called_with(
+            acquisitions=["acquisition_0", "acquisition_1"], port="feedline_input"
+        )
 
     def test_error_raises_when_no_awg(self, system_control):
         """Testing that an error raises if a readout system control does not have an AWG
