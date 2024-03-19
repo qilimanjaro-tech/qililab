@@ -22,6 +22,7 @@ from qililab.drivers.interfaces.instrument_interface_factory import InstrumentIn
 from qililab.pulse import PulseBusSchedule, PulseDistortion
 
 
+# mypy: disable-error-code="attr-defined"
 class BusDriver(ABC):
     """Derived: :class:`DriveBus`, :class:`FluxBus` and :class:`ReadoutBus`
 
@@ -85,7 +86,9 @@ class BusDriver(ABC):
             raise NotImplementedError("Setting distortion parameters of a bus is not yet implemented..")
         else:
             candidates: list[BaseInstrument | None] = [
-                instrument for instrument in self.instruments.values() if instrument and param_name in instrument.params
+                instrument
+                for instrument in self.instruments.values()
+                if instrument and param_name in instrument.parameters
             ]
             if len(candidates) == 1 and isinstance(candidates[0], BaseInstrument):
                 candidates[0].set(param_name, value)
@@ -116,7 +119,7 @@ class BusDriver(ABC):
         if param_name == "distortions":
             raise NotImplementedError("Getting distortion parameters of a bus is not yet implemented.")
         candidates: list[BaseInstrument | None] = [
-            instrument for instrument in self.instruments.values() if instrument and param_name in instrument.params
+            instrument for instrument in self.instruments.values() if instrument and param_name in instrument.parameters
         ]
         if len(candidates) == 1 and isinstance(candidates[0], BaseInstrument):
             return candidates[0].get(param_name)
@@ -274,7 +277,7 @@ class BusDriver(ABC):
                     # If the alias and the interface of the dictionary coincide with one of the given instruments:
                     if (
                         issubclass(instrument.__class__, InstrumentInterfaceFactory.get(key))
-                        and instrument.alias == instrument_dict["alias"]
+                        and instrument.name == instrument_dict["name"]
                     ):
                         # Set parameters of the initialized instrument
                         if "parameters" in instrument_dict:
@@ -329,14 +332,14 @@ class BusDriver(ABC):
             for instrument in instruments:
                 if issubclass(instrument.__class__, InstrumentInterfaceFactory.get(key)):
                     # Add alias of the instrument to the dictionary
-                    instruments_dict[key] = {"alias": instrument.alias}
+                    instruments_dict[key] = {"name": instrument.name}
 
                     # This ensures that instruments with multiple interfaces, don't write the same parameters two times
-                    if instrument.alias not in saved_instruments and instrument.params:
+                    if instrument.name not in saved_instruments and instrument.parameters:
                         # Add parameters of the instrument to the dictionary
                         instruments_dict[key]["parameters"] = {
                             parameter: instrument.get(parameter)
-                            for parameter in instrument.params.keys()
+                            for parameter in instrument.parameters.keys()
                             if parameter
                             not in (
                                 "IDN",
@@ -345,7 +348,7 @@ class BusDriver(ABC):
                         }
 
                     # Save already saved instruments, to not write same parameters twice (in different interfaces)
-                    saved_instruments.add(instrument.alias)
+                    saved_instruments.add(instrument.name)
                     break
 
         return instruments_dict
@@ -375,6 +378,6 @@ class BusDriver(ABC):
         """String representation of a Bus."""
         return (
             f"{self.alias} ({self.__class__.__name__}): "
-            + "".join(f"--|{instrument.alias}|" for instrument in self.instruments.values())
+            + "".join(f"--|{instrument.name}|" for instrument in self.instruments.values())
             + f"--> port {self.port}"
         )

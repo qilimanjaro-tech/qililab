@@ -29,7 +29,7 @@ from qililab.drivers.interfaces import BaseInstrument, CurrentSource, VoltageSou
 
 # MAIN SpiRack CLASS
 @InstrumentDriverFactory.register
-class SpiRack(QcodesSpiRack, BaseInstrument):  # pylint: disable=abstract-method
+class SpiRack(QcodesSpiRack, BaseInstrument):
     """
     Qililab's driver for the Qblox SpiRack.
 
@@ -47,16 +47,6 @@ class SpiRack(QcodesSpiRack, BaseInstrument):  # pylint: disable=abstract-method
 
         self._MODULES_MAP["S4g"] = S4gModule
         self._MODULES_MAP["D5a"] = D5aModule
-
-    @property
-    def params(self):
-        """return the parameters of the instrument"""
-        return self.parameters
-
-    @property
-    def alias(self):
-        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
-        return self.name
 
 
 # MODULE CLASSES that select the channels
@@ -86,16 +76,6 @@ class D5aModule(QcodesD5aModule, BaseInstrument):
             self._channels[dac] = new_channel
             self.add_submodule(old_channel._chan_name, new_channel)
 
-    @property
-    def params(self):
-        """return the parameters of the instrument"""
-        return self.parameters
-
-    @property
-    def alias(self):
-        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
-        return self.name
-
 
 class S4gModule(QcodesS4gModule, BaseInstrument):
     """
@@ -124,16 +104,6 @@ class S4gModule(QcodesS4gModule, BaseInstrument):
             self._channels[dac] = new_channel
             self.add_submodule(old_channel._chan_name, new_channel)
 
-    @property
-    def params(self):
-        """return the parameters of the instrument"""
-        return self.parameters
-
-    @property
-    def alias(self):
-        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
-        return self.name
-
 
 # CHANNELS CLASSES that act as the corresponding Voltage/Current sources.
 class D5aDacChannel(QcodesD5aDacChannel, VoltageSource):
@@ -147,16 +117,6 @@ class D5aDacChannel(QcodesD5aDacChannel, VoltageSource):
         name (str): Name for the instrument channel
         dac (int): Number of the dac that this channel corresponds to
     """
-
-    @property
-    def params(self):
-        """return the parameters of the instrument"""
-        return self.parameters
-
-    @property
-    def alias(self):
-        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
-        return self.name
 
     def on(self) -> None:
         """Start D5aDacChannel"""
@@ -177,16 +137,6 @@ class S4gDacChannel(QcodesS4gDacChannel, CurrentSource):
         name (str): Name for the instrument channel
         dac (int): Number of the dac that this channel corresponds to
     """
-
-    @property
-    def params(self):
-        """return the parameters of the instrument"""
-        return self.parameters
-
-    @property
-    def alias(self):
-        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
-        return self.name
 
     def on(self) -> None:
         """Start S4gDacChannel"""

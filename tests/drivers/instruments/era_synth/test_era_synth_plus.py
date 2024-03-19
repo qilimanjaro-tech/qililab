@@ -57,11 +57,3 @@ class TestERASynthPlus:
         era_synth_plus.set("frequency", 2)
         assert era_synth_plus.get("lo_frequency") == 2
         assert era_synth_plus.lo_frequency.label == "Delegated parameter for local oscillator frequency"
-
-    def test_params(self, era_synth_plus):
-        """Unittest to test the params property."""
-        assert era_synth_plus.params == era_synth_plus.parameters
-
-    def test_alias(self, era_synth_plus):
-        """Unittest to test the alias property."""
-        assert era_synth_plus.alias == era_synth_plus.name

@@ -27,7 +27,7 @@ from .sequencer_qrm import SequencerQRM
 
 
 @InstrumentDriverFactory.register
-class Cluster(QcodesCluster, BaseInstrument):  # pylint: disable=abstract-method
+class Cluster(QcodesCluster, BaseInstrument):
     """Qililab's driver for QBlox-instruments Cluster.
 
     Args:
@@ -64,16 +64,6 @@ class Cluster(QcodesCluster, BaseInstrument):  # pylint: disable=abstract-method
             else:
                 old_module = old_submodules[f"module{slot_idx}"]
                 self.add_submodule(f"module{slot_idx}", old_module)
-
-    @property
-    def params(self):
-        """return the parameters of the instrument"""
-        return self.parameters
-
-    @property
-    def alias(self):
-        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
-        return self.name
 
 
 class QcmQrm(QcodesQcmQrm, BaseInstrument):
@@ -113,16 +103,6 @@ class QcmQrm(QcodesQcmQrm, BaseInstrument):
                 att = QcmQrmRfAtt(name=f"{name}_attenuator_{channel}", parent=self, channel=channel)
                 self.add_submodule(f"{name}_attenuator_{channel}", att)
 
-    @property
-    def params(self):
-        """return the parameters of the instrument"""
-        return self.parameters
-
-    @property
-    def alias(self):
-        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
-        return self.name
-
 
 class QcmQrmRfLo(InstrumentModule, LocalOscillator):
     """LO driver for the QCM / QRM - RF instrument
@@ -148,16 +128,6 @@ class QcmQrmRfLo(InstrumentModule, LocalOscillator):
             parameter_class=DelegateParameter,
         )
 
-    @property
-    def params(self):
-        """return the parameters of the instrument"""
-        return self.parameters
-
-    @property
-    def alias(self):
-        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
-        return self.name
-
     def on(self):
         self.set("status", True)
 
@@ -182,13 +152,3 @@ class QcmQrmRfAtt(InstrumentModule, Attenuator):
             source=parent.parameters[f"{channel}_att"],
             parameter_class=DelegateParameter,
         )
-
-    @property
-    def params(self):
-        """return the parameters of the instrument"""
-        return self.parameters
-
-    @property
-    def alias(self):
-        """return the alias of the instrument, which corresponds to the QCodes name attribute"""
-        return self.name

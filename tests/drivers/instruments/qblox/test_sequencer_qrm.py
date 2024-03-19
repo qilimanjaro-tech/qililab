@@ -1,4 +1,5 @@
 """Tests for the SequencerQRM class."""
+
 # pylint: disable=protected-access
 from unittest.mock import MagicMock, patch
 
@@ -282,11 +283,3 @@ class TestSequencerQRM:
                 mock_translate.assert_called_once()
                 parent.arm_sequencer.assert_called_once()
                 parent.start_sequencer.assert_called_once()
-
-    def test_params(self, sequencer):
-        """Unittest to test the params property."""
-        assert sequencer.params == sequencer.parameters
-
-    def test_alias(self, sequencer):
-        """Unittest to test the alias property."""
-        assert sequencer.alias == sequencer.name

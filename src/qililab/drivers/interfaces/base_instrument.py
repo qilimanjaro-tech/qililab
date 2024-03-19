@@ -17,18 +17,9 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 
+# pylint: disable=no-member
 class BaseInstrument(ABC):
     """Base Interface for all instruments."""
-
-    @property
-    @abstractmethod
-    def params(self):
-        """parameters property."""
-
-    @property
-    @abstractmethod
-    def alias(self):
-        """alias property."""
 
     @abstractmethod
     def set(self, param_name: str, value: Any) -> None:

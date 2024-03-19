@@ -1,4 +1,5 @@
 """Unittest for BusDriver class"""
+
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -270,25 +271,25 @@ class TestBusDriver:
                         "CurrentSource",
                     )
                     assert isinstance(instrument_dict, dict)
-                    assert isinstance(instrument_dict["alias"], str)
+                    assert isinstance(instrument_dict["name"], str)
                     if "parameters" in instrument_dict:
                         assert isinstance(instrument_dict["parameters"], dict)
 
                 # TEST ALIASES
                 if key in ("VoltageSource", "CurrentSource", "Digitiser"):
-                    assert instrument_dict["alias"] == "test"
+                    assert instrument_dict["name"] == "test"
 
                 elif key == "LocalOscillator":
-                    assert instrument_dict["alias"] == LO_ALIAS
+                    assert instrument_dict["name"] == LO_ALIAS
 
                 elif key == "Attenuator":
-                    assert instrument_dict["alias"] == ATT_ALIAS
+                    assert instrument_dict["name"] == ATT_ALIAS
 
                 elif key == "AWG":
                     if isinstance(bus, ReadoutBus):
-                        assert instrument_dict["alias"] == "test"
+                        assert instrument_dict["name"] == "test"
                     else:
-                        assert instrument_dict["alias"] == AWG_ALIAS
+                        assert instrument_dict["name"] == AWG_ALIAS
 
                 # TEST PARAMETERS
                 if key == "AWG":

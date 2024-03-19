@@ -1,4 +1,5 @@
 """ Test empty abstract class, Yokogawa GS200"""
+
 from unittest.mock import MagicMock
 
 from qcodes import Instrument
@@ -76,16 +77,6 @@ class TestGS200:
         )
         assert yokogawa_monitor.present is True
         assert yokogawa_gs_200._channel_lists == {}
-
-    def test_params(self):
-        """Unittest to test the params property."""
-        yokogawa_gs_200 = GS200(name="test_params", address="")
-        assert yokogawa_gs_200.params == yokogawa_gs_200.parameters
-
-    def test_alias(self):
-        """Unittest to test the alias property."""
-        yokogawa_gs_200 = GS200(name="test_alias", address="")
-        assert yokogawa_gs_200.alias == yokogawa_gs_200.name
 
 
 class TestGS200Monitor:
