@@ -119,7 +119,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """
         return self.get_acquisitions()
 
-    def acquire_qprogram_results(self, acquisitions: list[str]) -> list[QbloxMeasurementResult]:  # type: ignore
+    def acquire_qprogram_results(self, acquisitions: list[str], port: str) -> list[QbloxMeasurementResult]:  # type: ignore
         """Read the result from the AWG instrument
 
         Args:
@@ -128,13 +128,14 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         Returns:
             list[QbloxQProgramMeasurementResult]: Acquired Qblox results in chronological order.
         """
-        return self._get_qprogram_acquisitions(acquisitions=acquisitions)
+        return self._get_qprogram_acquisitions(acquisitions=acquisitions, port=port)
 
     @Instrument.CheckDeviceInitialized
-    def _get_qprogram_acquisitions(self, acquisitions: list[str]) -> list[QbloxMeasurementResult]:
+    def _get_qprogram_acquisitions(self, acquisitions: list[str], port: str) -> list[QbloxMeasurementResult]:
         results = []
         for acquisition in acquisitions:
-            for sequencer in self.awg_sequencers:
+            sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
+            for sequencer in sequencers:
                 if sequencer.identifier in self.sequences:
                     self.device.get_acquisition_state(
                         sequencer=sequencer.identifier,
@@ -146,8 +147,8 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                     ]
                     measurement_result = QbloxMeasurementResult(raw_measurement_data=raw_measurement_data)
                     results.append(measurement_result)
-        for sequencer in self.awg_sequencers:
-            self.device.delete_acquisition_data(sequencer=sequencer.identifier, all=True)
+
+                    self.device.delete_acquisition_data(sequencer=sequencer.identifier, name=acquisition)
         return results
 
     def _set_device_hardware_demodulation(self, value: bool, sequencer_id: int):

@@ -349,7 +349,8 @@ class TestMethods:
             patch.object(Bus, "upload_qpysequence") as upload,
             patch.object(Bus, "run") as run,
             patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
-            patch.object(QbloxModule, "desync_sequencers") as desync,
+            patch.object(QbloxModule, "sync_by_port") as sync_port,
+            patch.object(QbloxModule, "desync_by_port") as desync_port,
         ):
             acquire_qprogram_results.return_value = [123]
             first_execution_results = platform.execute_qprogram(qprogram=qprogram)
@@ -365,7 +366,8 @@ class TestMethods:
         # assert run executed all three times (6 because there are 2 buses)
         assert run.call_count == 6
         assert acquire_qprogram_results.call_count == 3  # only readout buses
-        assert desync.call_count == 9
+        assert sync_port.call_count == 6  # called as many times as run
+        assert desync_port.call_count == 6
         assert first_execution_results.results["feedline_input_output_bus"] == [123]
         assert second_execution_results.results["feedline_input_output_bus"] == [456]
 
@@ -405,9 +407,7 @@ class TestMethods:
 
             _ = platform_quantum_machines.execute_qprogram(qprogram=qprogram, debug=True)
 
-        # assure only one compilation happened
-        assert compile_program.call_count == 1
-        # assure the rest were executed three times
+        assert compile_program.call_count == 3
         assert append_configuration.call_count == 3
         assert run_compiled_program.call_count == 3
         assert get_acquisitions.call_count == 3

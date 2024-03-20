@@ -19,4 +19,5 @@ disable=
     too-many-public-methods,
     missing-class-docstring,
     missing-function-docstring,
-    import-error
+    import-error,
+    too-many-branches
