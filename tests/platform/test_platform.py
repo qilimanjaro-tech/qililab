@@ -1,4 +1,5 @@
 """Tests for the Platform class."""
+
 import copy
 import io
 import re
@@ -539,10 +540,52 @@ class TestMethods:
         with pytest.raises(
             ValueError,
             match=re.escape(
-                f"Program to execute can only be either a single circuit or a pulse schedule. Got program of type {type(program)} instead"
+                f"Could not translate the given program, into a QASM/str representation. Got program of type {type(program)}."
             ),
         ):
             platform.execute(program=program, num_avg=1000, repetition_duration=2000, num_bins=1)
+
+    def test_compile_raises_error_if_program_type_wrong(self, platform: Platform):
+        """Test that `Platform.compile` raises an error if the program sent is not a Circuit or a PulseSchedule."""
+        c = Circuit(1)
+        c.add(gates.M(0))
+        program = [c, c]
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                f"Program to execute can only be either a single circuit or a pulse schedule. Got program of type {type(program)} instead"
+            ),
+        ):
+            platform.compile(program=program, num_avg=1000, repetition_duration=2000, num_bins=1)
+
+    @pytest.mark.parametrize("program", [Circuit(1), Circuit(1).to_qasm(), "a", ["a", "a"]])
+    @patch("qililab.platform.platform.circuit_wrapper")
+    def test_translate_language(self, mock_wrapper: MagicMock, program, platform: Platform):
+        """Test that `Platform._translate_language` works for any problem."""
+        if program == "a":
+            with pytest.raises(
+                ValueError,
+                match=re.escape(
+                    f"Could not translate the given program QASM/str representation, into a Circuit. Got program of type {type(program)}."
+                ),
+            ):
+                platform._translate_language(program=program)  # pylint: disable=protected-access
+
+        elif program == ["a", "a"]:
+            with pytest.raises(Exception):
+                platform._translate_language(program=program)
+            mock_wrapper.assert_called_once_with(program)
+
+        else:
+            platform._translate_language(program=program)  # pylint: disable=protected-access
+
+    @patch("qililab.platform.platform.Circuit.from_qasm")
+    def test_translate_language_good_with_barriers(self, mock_translate: MagicMock, platform: Platform):
+        string = 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg qtest[5];\ncreg ctest[1];\ncreg meas[5];\nrx(pi) qtest[1];\nbarrier qtest[0],qtest[1],qtest[2],qtest[3],qtest[4];\nmeasure qtest[0] -> meas[0];\nmeasure qtest[1] -> meas[1];\nmeasure qtest[2] -> meas[2];\nmeasure qtest[3] -> meas[3];\nmeasure qtest[4] -> meas[4];\n'
+        platform._translate_language(program=string)  # pylint: disable=protected-access
+
+        string_without_barriers = 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg qtest[5];\ncreg ctest[1];\ncreg meas[5];\nrx(pi) qtest[1];\nmeasure qtest[0] -> meas[0];\nmeasure qtest[1] -> meas[1];\nmeasure qtest[2] -> meas[2];\nmeasure qtest[3] -> meas[3];\nmeasure qtest[4] -> meas[4];\n'
+        mock_translate.assert_called_once_with(string_without_barriers)
 
     @pytest.mark.parametrize("parameter", [Parameter.AMPLITUDE, Parameter.DURATION, Parameter.PHASE])
     @pytest.mark.parametrize("gate", ["I(0)", "X(0)", "Y(0)"])
