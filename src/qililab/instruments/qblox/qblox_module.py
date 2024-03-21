@@ -111,6 +111,18 @@ class QbloxModule(AWG):
         for idx, offset in enumerate(self.out_offsets):
             self._set_out_offset(output=idx, value=offset)
 
+    def sync_by_port(self, port: str) -> None:
+        """Syncs all sequencers."""
+        sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
+        for sequencer in sequencers:
+            self.device.sequencers[sequencer.identifier].sync_en(True)
+
+    def desync_by_port(self, port: str) -> None:
+        """Syncs all sequencers."""
+        sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
+        for sequencer in sequencers:
+            self.device.sequencers[sequencer.identifier].sync_en(False)
+
     def desync_sequencers(self) -> None:
         """Desyncs all sequencers."""
         for sequencer in self.awg_sequencers:
@@ -403,10 +415,9 @@ class QbloxModule(AWG):
         for sequencer in sequencers:
             logger.info("Sequence program: \n %s", repr(qpysequence._program))  # pylint: disable=protected-access
             self.device.sequencers[sequencer.identifier].sequence(qpysequence.todict())
-            self.device.sequencers[sequencer.identifier].sync_en(True)
             self.sequences[sequencer.identifier] = qpysequence
 
-    def upload(self, port: str):  # TODO: check compatibility with QPrgram
+    def upload(self, port: str):  # TODO: check compatibility with QProgram
         """Upload all the previously compiled programs to its corresponding sequencers.
 
         This method must be called after the method ``compile`` in the compiler
