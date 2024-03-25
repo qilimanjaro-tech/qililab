@@ -26,7 +26,7 @@ from qm.qua import Program
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import InstrumentName, Parameter, QMMDriver
-from qililab.utils import merge_dictionaries
+from qililab.utils import hash_qua_program, merge_dictionaries
 
 
 @InstrumentFactory.register
@@ -245,6 +245,7 @@ class QuantumMachinesCluster(Instrument):
     _config: DictQuaConfig
     _octave_config: QmOctaveConfig | None = None
     _is_connected_to_qm: bool = False
+    _compiled_program_cache: dict[str, str] = {}
 
     @property
     def config(self) -> DictQuaConfig:
@@ -273,6 +274,7 @@ class QuantumMachinesCluster(Instrument):
         """Turns on the instrument."""
         if not self._is_connected_to_qm:
             self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)
+            self._compiled_program_cache = {}
             self._is_connected_to_qm = True
 
             if self.settings.run_octave_calibration:
@@ -297,6 +299,7 @@ class QuantumMachinesCluster(Instrument):
             # If we are already connected, reopen the connection with the new configuration
             if self._is_connected_to_qm:
                 self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)
+                self._compiled_program_cache = {}
 
     def run_octave_calibration(self):
         """Run calibration procedure for the buses with octaves, if any."""
@@ -384,11 +387,38 @@ class QuantumMachinesCluster(Instrument):
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
     def compile(self, program: Program) -> str:
-        """Compiles a QUA program and returns the id."""
-        return self._qm.compile(program)
+        """Compiles and stores a given QUA program on the Quantum Machines instance,
+        and returns a unique identifier associated with the compiled program.
+
+        The method first generates a hash for the input QUA program. If this hash is not already present in
+        the cache, it proceeds to compile the program using QM's compile method and stores the result in the cache
+        indexed by the generated hash. This caching mechanism prevents recompiling the same program multiple times,
+        thus optimizing performance.
+
+        Args:
+            program (Program): The QUA program to be compiled.
+
+        Returns:
+            str: A unique identifier (hash) for the compiled QUA program. This identifier can be used to retrieve the compiled program from the cache, or run it  with `run_compiled_program` method.
+        """
+        qua_program_hash = hash_qua_program(program=program)
+        if qua_program_hash not in self._compiled_program_cache:
+            self._compiled_program_cache[qua_program_hash] = self._qm.compile(program=program)
+        return self._compiled_program_cache[qua_program_hash]
 
     def run_compiled_program(self, compiled_program_id: str) -> RunningQmJob:
-        """Runs a compiled QUA Program."""
+        """Executes a previously compiled QUA program identified by its unique compiled program ID.
+
+        This method submits the compiled program to the Quantum Machines (QM) execution queue and waits for
+        its execution to complete. The execution of the program is managed by the QM's queuing system,
+        which schedules and runs the job on the quantum hardware or simulator as per availability and queue status.
+
+        Args:
+            compiled_program_id (str): The unique identifier of the compiled QUA program to be executed. This ID should correspond to a program that has already been compiled and is present in the program cache.
+
+        Returns:
+            RunningQmJob: An object representing the running job. This object provides methods and properties to check the status of the job, retrieve results upon completion, and manage or investigate the job's execution.
+        """
         pending_job = self._qm.queue.add_compiled(compiled_program_id)
         return pending_job.wait_for_execution()
 
