@@ -114,6 +114,7 @@ Playing Waveforms
 QProgram's play method is a versatile function that allows you to play either a singular waveform or an I/Q pair of waveforms on a designated bus. This provides granular control over the signal's amplitude, frequency, and phase. You can even use custom waveforms, making it adaptable for a wide range of quantum experiments.
 
 .. code-block:: python3
+
     from qililab.waveforms import Square, Gaussian, IQPair
 
     square_wf = Square(amplitude=1.0, duration=40)
