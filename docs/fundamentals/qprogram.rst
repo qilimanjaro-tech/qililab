@@ -105,22 +105,30 @@ Finally, the `parallel` method is provided, which allows multiple loops to be ru
         qp.set_frequency(bus="drive_bus", frequency=frequency)
         qp.set_gain(bus="drive_bus", gain=gain)
 
-Synchronization and Timing
-----------------------------
-
-The sync operation in QProgram is a powerful feature for experiments requiring precise timing. It ensures that all operations across specified buses are synchronized, allowing for a coordinated start. This is crucial in multi-qubit experiments where the timing between different qubit operations must be exact to achieve the desired quantum state.
-
-Waveforms
+Playing Waveforms
 ------------------------------
 
 QProgram's play method is a versatile function that allows you to play either a singular waveform or an I/Q pair of waveforms on a designated bus. This provides granular control over the signal's amplitude, frequency, and phase. You can even use custom waveforms, making it adaptable for a wide range of quantum experiments.
+
+.. code-block:: python3
+    from qililab.waveforms import Square, Gaussian, IQPair
+
+    square_wf = Square(amplitude=1.0, duration=40)
+    gaussian_wf = Gaussian(amplitude=1.0, duration=100, num_sigmas=4.5)
+    drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=4.5, drag_coefficient=-2.0)
+
+    qp = QProgram()
+    qp.play(bus="flux_bus", waveform=square_wf)
+    qp.play(bus="drive_bus", waveform=gaussian_wf)
+    qp.play(bus="drive_bus", waveform=IQPair(I=square_wf, Q=square_wf))
+    qp.play(bus="drive_bus", waveform=drag_wf)
 
 Acquisition and Real-Time Averaging
 --------------------------------------
 
 The average and acquire methods in QProgram are designed for experiments that require real-time data analysis. The average method performs real-time averaging over a specified number of shots, providing immediate feedback for optimizing parameters. The acquire method allows for data collection based on either a set duration or a set of weights, offering flexibility in how you gather and interpret your data.
 
-AWG and NCO manipulation
+Synchronization and Timing
 ----------------------------
 
-For those looking to fine-tune their quantum experiments, QProgram offers operations like :meth:`.set_phase`, :meth:`.reset_phase` :meth:`.set_frequency`, :meth:`set_gain`, and :meth:`set_offset`. These methods allow you to make real-time adjustments to the Numerically Controlled Oscillator (NCO) and the Arbitrary Waveform Generator (AWG) associated with a specific bus, providing an extra layer of control.
+The sync operation in QProgram is a powerful feature for experiments requiring precise timing. It ensures that all operations across specified buses are synchronized, allowing for a coordinated start. This is crucial in multi-qubit experiments where the timing between different qubit operations must be exact to achieve the desired quantum state.
