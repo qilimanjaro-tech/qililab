@@ -141,7 +141,7 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
         pulse_shape=pulse_shape,
     )
     pulse_event = PulseEvent(pulse=pulse, start_time=0)
-    return PulseBusSchedule(timeline=[pulse_event], port=0)
+    return PulseBusSchedule(timeline=[pulse_event], port="0")
 
 
 @pytest.fixture(name="cluster")
@@ -285,6 +285,8 @@ class TestQcmQrm:
         parent._is_rf_type.return_value = True
         parent._is_qcm_type.return_value = qrm_qcm == "qcm"
         parent._is_qrm_type.return_value = qrm_qcm == "qrm"
+        parent._get_max_out_att_0.return_value = 1
+        parent._get_max_out_att_1.return_value = 1
 
         qcm_qrm_rf = "qcm_qrm_rf"
         qcm_qrm_rf = QcmQrm(parent=parent, name=qcm_qrm_rf, slot_idx=0)
@@ -293,12 +295,21 @@ class TestQcmQrm:
 
     def test_params(self):
         """Unittest to test the params property."""
-        qcm_qrm_rf = QcmQrm(parent=MagicMock(), name="qcm_qrm_rf", slot_idx=0)
+        parent = MagicMock()
+        parent._get_max_out_att_0.return_value = 1
+        parent._get_max_out_att_1.return_value = 1
+
+        qcm_qrm_rf = QcmQrm(parent=parent, name="qcm_qrm_rf", slot_idx=0)
+
         assert qcm_qrm_rf.params == qcm_qrm_rf.parameters
 
     def test_alias(self):
         """Unittest to test the alias property."""
-        qcm_qrm_rf = QcmQrm(parent=MagicMock(), name="qcm_qrm_rf", slot_idx=0)
+        parent = MagicMock()
+        parent._get_max_out_att_0.return_value = 1
+        parent._get_max_out_att_1.return_value = 1
+
+        qcm_qrm_rf = QcmQrm(parent=parent, name="qcm_qrm_rf", slot_idx=0)
         assert qcm_qrm_rf.alias == qcm_qrm_rf.name
 
 

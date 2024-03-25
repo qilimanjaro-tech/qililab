@@ -29,7 +29,6 @@ class AWGQbloxADCSequencer(AWGQbloxSequencer, AWGADCSequencer):
     weighed_acq_enabled: bool
 
     def __post_init__(self):
-        super().__post_init__()
         self._verify_weights()
 
     def _verify_weights(self):

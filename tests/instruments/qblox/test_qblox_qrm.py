@@ -26,8 +26,7 @@ def fixture_settings_6_sequencers():
             "identifier": seq_idx,
             "chip_port_id": "feedline_input",
             "qubit": 5 - seq_idx,
-            "output_i": 1,
-            "output_q": 0,
+            "outputs": [0, 1],
             "weights_i": [1, 1, 1, 1],
             "weights_q": [1, 1, 1, 1],
             "weighed_acq_enabled": False,
@@ -72,8 +71,7 @@ def fixture_settings_even_sequencers():
             "identifier": seq_idx,
             "chip_port_id": "feedline_input",
             "qubit": 5 - seq_idx,
-            "output_i": 1,
-            "output_q": 0,
+            "outputs": [0, 1],
             "weights_i": [1, 1, 1, 1],
             "weights_q": [1, 1, 1, 1],
             "weighed_acq_enabled": False,
@@ -108,19 +106,6 @@ def fixture_settings_even_sequencers():
         "acquisition_delay_time": 100,
         "awg_sequencers": sequencers,
     }
-
-
-@pytest.fixture(name="local_cfg_qrm")
-def fixture_local_cfg_qrm(settings_6_sequencers: dict) -> QbloxQRM:
-    """qblox module fixture
-
-    Args:
-        settings_6_sequencers (dict): qrm with 6 sequencers settings
-
-    Returns:
-        QbloxQRM: QRM object
-    """
-    return QbloxQRM(settings=settings_6_sequencers)
 
 
 @pytest.fixture(name="pulsar_controller_qrm")
@@ -171,6 +156,8 @@ def fixture_qrm(mock_pulsar: MagicMock, pulsar_controller_qrm: QbloxPulsarContro
             "scope_acq_avg_mode_en_path0",
             "scope_acq_avg_mode_en_path1",
             "get_acquisitions",
+            "disconnect_outputs",
+            "disconnect_inputs",
         ]
     )
     mock_instance.sequencers = [mock_instance.sequencer0, mock_instance.sequencer1]
@@ -196,6 +183,10 @@ def fixture_qrm(mock_pulsar: MagicMock, pulsar_controller_qrm: QbloxPulsarContro
             "thresholded_acq_rotation",
             "marker_ovr_en",
             "marker_ovr_value",
+            "connect_acq_I",
+            "connect_acq_Q",
+            "connect_out0",
+            "connect_out1",
         ]
     )
     # connect to instrument

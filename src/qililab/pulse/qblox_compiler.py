@@ -155,7 +155,7 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         Returns:
             Sequence: Qblox Sequence object containing the program and waveforms.
         """
-        waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule, sequencer=sequencer)
+        waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
         acquisitions = self._generate_acquisitions(sequencer, timeline=pulse_bus_schedule.timeline)
         program = self._generate_program(
             pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, sequencer=sequencer
@@ -163,7 +163,7 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         weights = self._generate_weights(sequencer=sequencer)  # type: ignore
         return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
 
-    def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule, sequencer: AWGQbloxSequencer):
+    def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule):
         """Generate I and Q waveforms from a PulseSequence object.
         Args:
             pulse_bus_schedule (PulseBusSchedule): PulseSequence object.
@@ -183,8 +183,6 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
                 real = np.real(envelope)
                 imag = np.imag(envelope)
                 pair = (real, imag)
-                if (sequencer.path_i, sequencer.path_q) == (1, 0):
-                    pair = pair[::-1]  # swap paths
                 waveforms.add_pair(pair=pair, name=pulse_event.pulse.label())
 
         return waveforms
@@ -291,19 +289,17 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
         return program
 
-    def _generate_weights(self, sequencer: AWGQbloxADCSequencer) -> Weights:
+    def _generate_weights(self, sequencer: AWGQbloxADCSequencer) -> Weights:  # type: ignore
         """Generate acquisition weights.
 
         Returns:
-            dict: Acquisition weights.
+            Weights: Acquisition weights.
         """
         weights = Weights()
 
         if self._get_instrument_from_sequencer(sequencer).name in self.control_modules:
             return weights
         pair = ([float(w) for w in sequencer.weights_i], [float(w) for w in sequencer.weights_q])
-        if (sequencer.path_i, sequencer.path_q) == (1, 0):
-            pair = pair[::-1]  # swap paths
         weights.add_pair(pair=pair, indices=(0, 1))
         return weights
 
