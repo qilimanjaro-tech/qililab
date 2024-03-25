@@ -15,6 +15,8 @@
 """This file contains the QbloxQCMRF class."""
 from dataclasses import dataclass, field
 
+from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm
+
 from qililab.instruments.awg_settings import AWGQbloxSequencer  # pylint: disable=cyclic-import
 from qililab.instruments.instrument import Instrument, ParameterNotFound  # pylint: disable=cyclic-import
 from qililab.instruments.utils.instrument_factory import InstrumentFactory  # pylint: disable=cyclic-import
@@ -28,6 +30,7 @@ class QbloxQCMRF(QbloxQCM):
     """Qblox QCM-RF driver."""
 
     name = InstrumentName.QCMRF
+    device: QcmQrm
 
     @dataclass
     class QbloxQCMRFSettings(QbloxQCM.QbloxQCMSettings):  # pylint: disable=too-many-instance-attributes
@@ -70,6 +73,15 @@ class QbloxQCMRF(QbloxQCM):
         for parameter in self.parameters:
             self.setup(parameter, getattr(self.settings, parameter.value))
 
+    def _map_connections(self):
+        """Disable all connections and map sequencer paths with output/input channels."""
+        # Disable all connections
+        self.device.disconnect_outputs()
+
+        for sequencer_dataclass in self.awg_sequencers:
+            sequencer = self.device.sequencers[sequencer_dataclass.identifier]
+            getattr(sequencer, f"connect_out{sequencer_dataclass.outputs[0]}")("IQ")
+
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Set a parameter of the Qblox QCM-RF module.
 
@@ -87,19 +99,7 @@ class QbloxQCMRF(QbloxQCM):
                     "Please specify the sequencer index or use the specific Qblox parameter."
                 )
 
-            # Remember that a set is ordered! Thus `{1, 0} == {0, 1}` returns True.
-            # For this reason, the following checks also take into account swapped paths!
-            if {sequencer.output_i, sequencer.output_q} == {0, 1}:
-                output = 0
-            elif {sequencer.output_i, sequencer.output_q} == {2, 3}:
-                output = 1
-            else:
-                raise ValueError(
-                    f"Cannot set the LO frequency of sequencer {channel_id} because it is connected to two LOs. "
-                    f"The paths of the sequencer are mapped to outputs {sequencer.output_i} and {sequencer.output_q} "
-                    "respectively."
-                )
-            parameter = Parameter(f"out{output}_lo_freq")
+            parameter = Parameter(f"out{sequencer.outputs[0]}_lo_freq")
 
         if parameter in self.parameters:
             setattr(self.settings, parameter.value, value)
@@ -124,19 +124,7 @@ class QbloxQCMRF(QbloxQCM):
                     "`channel_id` cannot be None when setting the `LO_FREQUENCY` parameter."
                     "Please specify the sequencer index or use the specific Qblox parameter."
                 )
-            # Remember that a set is ordered! Thus `{1, 0} == {0, 1}` returns True.
-            # For this reason, the following checks also take into account swapped paths!
-            if {sequencer.output_i, sequencer.output_q} == {0, 1}:
-                output = 0
-            elif {sequencer.output_i, sequencer.output_q} == {2, 3}:
-                output = 1
-            else:
-                raise ValueError(
-                    f"Cannot set the LO frequency of sequencer {channel_id} because it is connected to two LOs. "
-                    f"The paths of the sequencer are mapped to outputs {sequencer.output_i} and {sequencer.output_q} "
-                    "respectively."
-                )
-            parameter = Parameter(f"out{output}_lo_freq")
+            parameter = Parameter(f"out{sequencer.outputs[0]}_lo_freq")
 
         if parameter in self.parameters:
             return getattr(self.settings, parameter.value)

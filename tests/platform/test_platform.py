@@ -508,6 +508,33 @@ class TestMethods:
             (1, 1),
         ]
 
+    def test_execute_no_readout_raises_error(self, platform: Platform, qblox_results: list[dict]):
+        """Test that executing with some circuit returns acquisitions with multiple measurements in same order
+        as they appear in circuit"""
+
+        # Define circuit
+        c = Circuit(2)
+        c.add([gates.M(1), gates.M(0), gates.M(0, 1)])  # without ordering, these are retrieved for each sequencer, so
+        # the order from qblox qrm will be M(0),M(0),M(1),M(1)
+
+        # compile will return nothing and thus
+        # readout_buses = [
+        #     bus for bus in self.buses if isinstance(bus.system_control, ReadoutSystemControl) and bus.alias in programs
+        # ]
+        # in platform will be empty
+        platform.compile = MagicMock()  # type: ignore # don't care about compilation
+        platform.compile.return_value = {"drive_line_q0_bus": None}
+        with patch.object(Bus, "upload"):
+            with patch.object(Bus, "run"):
+                with patch.object(Bus, "acquire_result") as acquire_result:
+                    with patch.object(QbloxModule, "desync_sequencers"):
+                        acquire_result.return_value = QbloxResult(
+                            qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1]
+                        )
+                        error_string = "There are no readout buses in the platform."
+                        with pytest.raises(ValueError, match=error_string):
+                            _ = platform.execute(program=c, num_avg=1000, repetition_duration=20_000, num_bins=1)
+
     def test_order_results_circuit_M_neq_acquisitions(self, platform: Platform, qblox_results: list[dict]):
         """Test that executing with some circuit returns acquisitions with multiple measurements in same order
         as they appear in circuit"""
@@ -518,7 +545,7 @@ class TestMethods:
         # the order from qblox qrm will be M(0),M(1),M(1)
         n_m = len([qubit for gate in c.queue for qubit in gate.qubits if isinstance(gate, gates.M)])
 
-        platform.compile = MagicMock()  # type: ignore # don't care about compilation
+        platform.compile = MagicMock()  # type: ignore[method-assign] # don't care about compilation
         platform.compile.return_value = {"feedline_input_output_bus": None}
         with patch.object(Bus, "upload"):
             with patch.object(Bus, "run"):
@@ -543,6 +570,42 @@ class TestMethods:
             ),
         ):
             platform.execute(program=program, num_avg=1000, repetition_duration=2000, num_bins=1)
+
+    def test_execute_stack_2qrm(self, platform: Platform):
+        """Test that the execute stacks results when more than one qrm is called."""
+        # build mock qblox results
+        qblox_raw_results = QbloxResult(
+            integration_lengths=[20],
+            qblox_raw_results=[
+                {
+                    "scope": {
+                        "path0": {"data": [1, 1, 1, 1, 1, 1, 1, 1], "out-of-range": False, "avg_cnt": 1000},
+                        "path1": {"data": [0, 0, 0, 0, 0, 0, 0, 0], "out-of-range": False, "avg_cnt": 1000},
+                    },
+                    "bins": {
+                        "integration": {"path0": [1, 1, 1, 1], "path1": [0, 0, 0, 0]},
+                        "threshold": [0.5, 0.5, 0.5, 0.5],
+                        "avg_cnt": [1000, 1000, 1000, 1000],
+                    },
+                }
+            ],
+        )
+        pulse_schedule = PulseSchedule()
+        # mock compile method
+        platform.compile = MagicMock()  # type: ignore[method-assign]
+        platform.compile.return_value = {"feedline_input_output_bus": None, "feedline_input_output_bus_1": None}
+        # mock execution
+        with patch.object(Bus, "upload"):
+            with patch.object(Bus, "run"):
+                with patch.object(Bus, "acquire_result") as acquire_result:
+                    with patch.object(QbloxModule, "desync_sequencers"):
+                        acquire_result.return_value = qblox_raw_results
+                        result = platform.execute(
+                            program=pulse_schedule, num_avg=1000, repetition_duration=2000, num_bins=1
+                        )
+        assert len(result.qblox_raw_results) == 2  # type: ignore[attr-defined]
+        assert qblox_raw_results.qblox_raw_results[0] == result.qblox_raw_results[0]  # type: ignore[attr-defined]
+        assert qblox_raw_results.qblox_raw_results[0] == result.qblox_raw_results[1]  # type: ignore[attr-defined]
 
     @pytest.mark.parametrize("parameter", [Parameter.AMPLITUDE, Parameter.DURATION, Parameter.PHASE])
     @pytest.mark.parametrize("gate", ["I(0)", "X(0)", "Y(0)"])

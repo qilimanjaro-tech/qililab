@@ -78,8 +78,7 @@ def fixture_settings_6_sequencers():
             "identifier": seq_idx,
             "chip_port_id": "feedline_input",
             "qubit": 5 - seq_idx,
-            "output_i": 1,
-            "output_q": 0,
+            "outputs": [0],
             "weights_i": [1, 1, 1, 1],
             "weights_q": [1, 1, 1, 1],
             "weighed_acq_enabled": False,
@@ -142,6 +141,14 @@ def fixture_pulse_bus_schedule_long_wait() -> PulseBusSchedule:
     pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=0)
     pulse_event2 = PulseEvent(pulse=pulse, start_time=200_000, qubit=0)
     return PulseBusSchedule(timeline=[pulse_event, pulse_event2], port="feedline_input")
+
+
+@pytest.fixture(name="pulse_bus_schedule_odd_qubits")
+def fixture_pulse_bus_schedule_odd_qubits() -> PulseBusSchedule:
+    """Returns a PulseBusSchedule with readout pulses for qubits 1, 3 and 5."""
+    pulse = Pulse(amplitude=1.0, phase=0, duration=1000, frequency=7.0e9, pulse_shape=Rectangular())
+    timeline = [PulseEvent(pulse=pulse, start_time=0, qubit=qubit) for qubit in [3, 1, 5]]
+    return PulseBusSchedule(timeline=timeline, port="feedline_input")
 
 
 @pytest.fixture(name="pulse_schedule_2qrm")
@@ -493,32 +500,6 @@ class TestQbloxCompiler:
 
         sequences_program = program["feedline_input_output_bus"][0]._program
         assert are_q1asm_equal(q1asm, repr(sequences_program))
-
-    def test_compile_swaps_the_i_and_q_channels_when_mapping_is_not_supported_in_hw(self, qblox_compiler):
-        """Test that the compile method swaps the I and Q channels when the output mapping is not supported in HW."""
-        # We change the dictionary and initialize the QCM
-        qrm = qblox_compiler.qblox_modules[1]
-        qrm_settings = qrm.to_dict()
-        qrm_settings.pop("name")
-        qrm.settings.awg_sequencers[0].path_i = 1
-        qrm.settings.awg_sequencers[0].path_q = 0
-        qrm.settings.awg_sequencers[0].weights_i = [1, 2, 3]
-        qrm.settings.awg_sequencers[0].weights_q = [4, 5, 6]
-        # We create a pulse bus schedule
-        pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=Gaussian(num_sigmas=4))
-        pulse_schedule = PulseSchedule(
-            [PulseBusSchedule(timeline=[PulseEvent(pulse=pulse, start_time=0, qubit=0)], port="feedline_input")]
-        )
-        sequences = qblox_compiler.compile(pulse_schedule, num_avg=1000, repetition_duration=2000, num_bins=1)[
-            "feedline_input_output_bus"
-        ]
-        # We assert that the waveform/weights of the first path is all zeros and the waveform of the second path is the gaussian
-        waveforms = sequences[0]._waveforms._waveforms  # pylint: disable=protected-access
-        assert np.allclose(waveforms[0].data, 0)
-        assert np.allclose(waveforms[1].data, pulse.envelope(amplitude=1))
-        weights = sequences[0]._weights.to_dict()  # pylint: disable=protected-access
-        assert np.allclose(weights["pair_0_I"]["data"], [4, 5, 6])
-        assert np.allclose(weights["pair_0_Q"]["data"], [1, 2, 3])
 
     def test_qubit_to_sequencer_mapping(
         self, qblox_compiler: QbloxCompiler, pulse_schedule_odd_qubits: PulseSchedule, settings_6_sequencers: dict
