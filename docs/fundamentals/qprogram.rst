@@ -97,6 +97,7 @@ Parallel Loops
 Finally, the `parallel` method is provided, which allows multiple loops to be run in parallel.
 
 .. code-block:: python3
+
     from qililab.qprogram.blocks import ForLoop
 
     qp = QProgram()
