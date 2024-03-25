@@ -68,6 +68,7 @@ Loops with numpy
 The `loop` method allows the user to iterate over a numpy array of arbitrary values.
 
 .. code-block:: python3
+
     frequency_values = np.random.uniform(low=100e6, high=200e6, size=201)
 
     qp = QProgram()
