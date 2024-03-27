@@ -45,10 +45,8 @@ class FlatTop(PulseShape):
     """
 
     name = PulseShapeName.FLATTOP  #: Name of the rectangular pulse shape.
-
-    def envelope(
-        self, duration: int, amplitude: float, resolution: float = 1.0, gaussian: float = 0.5, buffer: float = 3.0
-    ) -> np.ndarray:
+    gaussian: float
+    def envelope(self, duration: int, amplitude: float, resolution: float = 1.0, buffer: float = 3.0) -> np.ndarray:
         """Constant amplitude envelope.
 
         Args:
@@ -61,13 +59,13 @@ class FlatTop(PulseShape):
         """
         x = np.arange(0, duration, resolution)
         A = amplitude
-        g = gaussian
+        g = self.gaussian
         buf = buffer
         dur = duration
-        return 0.5 * A * np.real((erf(g * x - buf) - erf(g * (x - (dur + -buf / g)))))
+        return 0.5*A*np.real((erf(g*x-buf) - erf(g*(x-(dur + -buf/g)))))
 
     @classmethod
-    def from_dict(cls, dictionary: dict) -> "FlatTop":
+    def from_dict(cls, dictionary: dict) -> "Rectangular":
         """Loads Rectangular object/shape from dictionary.
 
         Args:
