@@ -11,6 +11,3 @@
 ### Documentation
 
 ### Bug fixes
-
-- Appended hardcoded Time of Flight
-  [#711](https://github.com/qilimanjaro-tech/qililab/pull/711)
