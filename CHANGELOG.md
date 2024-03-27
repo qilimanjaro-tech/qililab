@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 0.25.1 (2024-03-26)
+
+### Bug fixes
+
+- Appended hardcoded Time of Flight
+  [#711](https://github.com/qilimanjaro-tech/qililab/pull/711)
+
 ## 0.25.0 (2024-03-25)
 
 ### New features since last release
