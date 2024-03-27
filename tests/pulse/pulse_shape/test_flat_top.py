@@ -19,9 +19,7 @@ BUFFER = [2.0, 4.0]
     name="env_params",
     params=[
         {"duration": duration, "amplitude": amplitude, "resolution": resolution, "buffer": buffer}
-        for duration, amplitude, resolution, buffer in itertools.product(
-            DURATION, AMPLITUDE, RESOLUTION, BUFFER
-        )
+        for duration, amplitude, resolution, buffer in itertools.product(DURATION, AMPLITUDE, RESOLUTION, BUFFER)
     ],
 )
 def fixture_env_params(request: pytest.FixtureRequest) -> list:
@@ -105,14 +103,7 @@ class TestPulseShape:
             assert dict_ is not None
             assert isinstance(dict_, dict)
 
-        assert (
-            dictionary
-            == dictionary2
-            == {
-                "name": pulse_shape.name.value,
-                "gaussian": pulse_shape.gaussian
-            }
-        )
+        assert dictionary == dictionary2 == {"name": pulse_shape.name.value, "gaussian": pulse_shape.gaussian}
 
     def test_envelope_with_amplitude_0(self, pulse_shape: FlatTop):
         """Testing that the corner case amplitude = 0 works properly."""
