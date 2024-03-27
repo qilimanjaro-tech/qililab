@@ -85,7 +85,4 @@ class FlatTop(PulseShape):
         Returns:
             dict: Dictionary representation of the pulse shape including its name.
         """
-        return {
-            "name": self.name.value,
-            "gaussian": self.gaussian
-        }
+        return {"name": self.name.value, "gaussian": self.gaussian}
