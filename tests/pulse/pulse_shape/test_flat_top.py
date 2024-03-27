@@ -12,16 +12,15 @@ from .helper_functions import return_envelope
 DURATION = [50, 25, 500]
 AMPLITUDE = [0, 0.9, -1.0, 1.2]
 RESOLUTION = [1.0, 0.1]
-GAUSSIAN = [0.3]
 BUFFER = [2.0, 4.0]
 
 
 @pytest.fixture(
     name="env_params",
     params=[
-        {"duration": duration, "amplitude": amplitude, "resolution": resolution, "gaussian": gaussian, "buffer": buffer}
-        for duration, amplitude, resolution, gaussian, buffer in itertools.product(
-            DURATION, AMPLITUDE, RESOLUTION, GAUSSIAN, BUFFER
+        {"duration": duration, "amplitude": amplitude, "resolution": resolution, "buffer": buffer}
+        for duration, amplitude, resolution, buffer in itertools.product(
+            DURATION, AMPLITUDE, RESOLUTION, BUFFER
         )
     ],
 )
