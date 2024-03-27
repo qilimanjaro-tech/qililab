@@ -338,9 +338,10 @@ class TestQbloxCompiler:
                             set_awg_gain     26213, 26213
                             set_ph           191690305
                             play             0, 1, 4
+                            wait             220
                             acquire          0, R3, 4
             long_wait_1:
-                            wait             1992
+                            wait             1772
 
                             add              R3, 1, R3
                             nop
@@ -369,9 +370,10 @@ class TestQbloxCompiler:
                             set_awg_gain     26213, 26213
                             set_ph           15915494
                             play             0, 1, 4
+                            wait             220 
                             acquire_weighed  0, R3, R0, R1, 4
             long_wait_3:
-                            wait             1980
+                            wait             1760
 
                             add              R3, 1, R3
                             nop
@@ -382,6 +384,7 @@ class TestQbloxCompiler:
         """
         seq_0_q1asm = sequences_0._program
         seq_1_q1asm = sequences_1._program
+        
         assert are_q1asm_equal(q1asm_0, repr(seq_0_q1asm))
         assert are_q1asm_equal(q1asm_1, repr(seq_1_q1asm))
 
@@ -435,9 +438,10 @@ class TestQbloxCompiler:
                             set_awg_gain     26213, 26213
                             set_ph           191690305
                             play             0, 1, 4
+                            wait             220
                             acquire_weighed  0, R3, R0, R1, 4
             long_wait_4:
-                            wait             1992
+                            wait             1772
 
                             add              R3, 1, R3
                             nop
@@ -471,6 +475,7 @@ class TestQbloxCompiler:
                         set_awg_gain     26213, 26213
                         set_ph           191690305
                         play             0, 1, 4
+                        wait             220 
                         acquire_weighed  0, R3, R0, R1, 4
         long_wait_1:
                         move             3, R4
@@ -482,13 +487,14 @@ class TestQbloxCompiler:
                         set_awg_gain     26213, 26213
                         set_ph           191690305
                         play             0, 1, 4
+                        wait             220 
                         acquire_weighed  1, R3, R0, R1, 4
         long_wait_2:
                         move             3, R5
         long_wait_2_loop:
                         wait             65532
                         loop             R5, @long_wait_2_loop
-                        wait             3396
+                        wait             2956
 
                         add              R3, 1, R3
                         nop
