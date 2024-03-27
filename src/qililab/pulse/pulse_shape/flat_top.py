@@ -87,4 +87,5 @@ class FlatTop(PulseShape):
         """
         return {
             "name": self.name.value,
+            "gaussian": self.gaussian
         }

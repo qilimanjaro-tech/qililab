@@ -12,7 +12,7 @@ from .helper_functions import return_envelope
 DURATION = [50, 25, 500]
 AMPLITUDE = [0, 0.9, -1.0, 1.2]
 RESOLUTION = [1.0, 0.1]
-GAUSSIAN = [0, 0.8]
+GAUSSIAN = [0.3]
 BUFFER = [2.0, 4.0]
 
 
@@ -30,7 +30,7 @@ def fixture_env_params(request: pytest.FixtureRequest) -> list:
     return request.param
 
 
-@pytest.mark.parametrize("pulse_shape", [FlatTop(), FlatTop()])
+@pytest.mark.parametrize("pulse_shape", [FlatTop(gaussian=0.3), FlatTop(gaussian=0.3)])
 class TestPulseShape:
     """Unit tests checking the PulseShape attributes and methods"""
 
@@ -111,6 +111,7 @@ class TestPulseShape:
             == dictionary2
             == {
                 "name": pulse_shape.name.value,
+                "gaussian": pulse_shape.gaussian
             }
         )
 
