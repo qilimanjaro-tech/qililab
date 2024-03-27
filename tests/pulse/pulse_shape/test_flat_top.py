@@ -12,17 +12,14 @@ from .helper_functions import return_envelope
 DURATION = [50, 25, 500]
 AMPLITUDE = [0, 0.9, -1.0, 1.2]
 RESOLUTION = [1.0, 0.1]
-GAUSSIAN = [0, 0.8]
 BUFFER = [2.0, 4.0]
 
 
 @pytest.fixture(
     name="env_params",
     params=[
-        {"duration": duration, "amplitude": amplitude, "resolution": resolution, "gaussian": gaussian, "buffer": buffer}
-        for duration, amplitude, resolution, gaussian, buffer in itertools.product(
-            DURATION, AMPLITUDE, RESOLUTION, GAUSSIAN, BUFFER
-        )
+        {"duration": duration, "amplitude": amplitude, "resolution": resolution, "buffer": buffer}
+        for duration, amplitude, resolution, buffer in itertools.product(DURATION, AMPLITUDE, RESOLUTION, BUFFER)
     ],
 )
 def fixture_env_params(request: pytest.FixtureRequest) -> list:
@@ -30,7 +27,7 @@ def fixture_env_params(request: pytest.FixtureRequest) -> list:
     return request.param
 
 
-@pytest.mark.parametrize("pulse_shape", [FlatTop(), FlatTop()])
+@pytest.mark.parametrize("pulse_shape", [FlatTop(gaussian=1), FlatTop(gaussian=1)])
 class TestPulseShape:
     """Unit tests checking the PulseShape attributes and methods"""
 
@@ -106,13 +103,7 @@ class TestPulseShape:
             assert dict_ is not None
             assert isinstance(dict_, dict)
 
-        assert (
-            dictionary
-            == dictionary2
-            == {
-                "name": pulse_shape.name.value,
-            }
-        )
+        assert dictionary == dictionary2 == {"name": pulse_shape.name.value, "gaussian": pulse_shape.gaussian}
 
     def test_envelope_with_amplitude_0(self, pulse_shape: FlatTop):
         """Testing that the corner case amplitude = 0 works properly."""

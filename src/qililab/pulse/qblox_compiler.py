@@ -18,7 +18,7 @@ from qpysequence import Sequence as QpySequence
 from qpysequence import Waveforms, Weights
 from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Register
-from qpysequence.program.instructions import Acquire, AcquireWeighed, Move, Play, ResetPh, SetAwgGain, SetPh, Stop
+from qpysequence.program.instructions import Acquire, AcquireWeighed, Move, Play, ResetPh, SetAwgGain, SetPh, Stop, Wait
 from qpysequence.utils.constants import AWG_MAX_GAIN, INST_MAX_WAIT
 
 from qililab.config import logger
@@ -330,6 +330,8 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
                 wait_time=wait,
             )
         )
+        # TODO: implement time of flight properly to remove this hack
+        loop.append_component(Wait(wait_time=220))
         loop.append_component(acq_instruction)
 
     def _init_weights_registers(self, registers: tuple[Register, Register], program: Program):
