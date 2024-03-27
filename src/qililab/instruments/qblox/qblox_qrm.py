@@ -359,7 +359,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             if weighed_acq
             else Acquire(acq_index=0, bin_index=bin_index, wait_time=self._MIN_WAIT_TIME)
         )
-        loop.append_component(Wait(wait_time=210))
+        loop.append_component(Wait(wait_time=220))
         loop.append_component(acq_instruction)
 
     def _init_weights_registers(self, registers: tuple[Register, Register], values: tuple[int, int], program: Program):
