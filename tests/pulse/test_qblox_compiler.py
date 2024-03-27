@@ -370,7 +370,7 @@ class TestQbloxCompiler:
                             set_awg_gain     26213, 26213
                             set_ph           15915494
                             play             0, 1, 4
-                            wait             220 
+                            wait             220
                             acquire_weighed  0, R3, R0, R1, 4
             long_wait_3:
                             wait             1760
@@ -475,7 +475,7 @@ class TestQbloxCompiler:
                         set_awg_gain     26213, 26213
                         set_ph           191690305
                         play             0, 1, 4
-                        wait             220 
+                        wait             220
                         acquire_weighed  0, R3, R0, R1, 4
         long_wait_1:
                         move             3, R4
@@ -487,7 +487,7 @@ class TestQbloxCompiler:
                         set_awg_gain     26213, 26213
                         set_ph           191690305
                         play             0, 1, 4
-                        wait             220 
+                        wait             220
                         acquire_weighed  1, R3, R0, R1, 4
         long_wait_2:
                         move             3, R5
