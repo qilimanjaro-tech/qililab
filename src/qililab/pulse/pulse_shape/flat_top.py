@@ -66,7 +66,7 @@ class FlatTop(PulseShape):
         return 0.5 * A * np.real((erf(g * x - buf) - erf(g * (x - (dur + -buf / g)))))
 
     @classmethod
-    def from_dict(cls, dictionary: dict) -> "Rectangular":
+    def from_dict(cls, dictionary: dict) -> "FlatTop":
         """Loads Rectangular object/shape from dictionary.
 
         Args:
