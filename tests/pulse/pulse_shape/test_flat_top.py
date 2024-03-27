@@ -27,7 +27,7 @@ def fixture_env_params(request: pytest.FixtureRequest) -> list:
     return request.param
 
 
-@pytest.mark.parametrize("pulse_shape", [FlatTop(gaussian=0.3), FlatTop(gaussian=0.3)])
+@pytest.mark.parametrize("pulse_shape", [FlatTop(gaussian=1), FlatTop(gaussian=1)])
 class TestPulseShape:
     """Unit tests checking the PulseShape attributes and methods"""
 
