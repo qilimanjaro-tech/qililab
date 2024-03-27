@@ -384,7 +384,7 @@ class TestQbloxCompiler:
         """
         seq_0_q1asm = sequences_0._program
         seq_1_q1asm = sequences_1._program
-        
+
         assert are_q1asm_equal(q1asm_0, repr(seq_0_q1asm))
         assert are_q1asm_equal(q1asm_1, repr(seq_1_q1asm))
 
