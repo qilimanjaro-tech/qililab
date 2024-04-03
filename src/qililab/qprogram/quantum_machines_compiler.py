@@ -526,7 +526,6 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         attributes = [
             f"{key}: {(QuantumMachinesCompiler.__hash_waveform(value) if isinstance(value, Waveform) else str(value))}"
             for key, value in waveform.__dict__.items()
-            if key != "duration"
         ]
         string_to_hash = f"{waveform.__class__.__name__}({','.join(attributes)})"
         hash_result = hashlib.md5(string_to_hash.encode("utf-8"), usedforsecurity=False)
