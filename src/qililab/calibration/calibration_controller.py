@@ -589,12 +589,12 @@ class CalibrationController:
             node (CalibrationNode): The node which parameters need to be updated in the platform.
         """
         if node.output_parameters is not None and "platform_parameters" in node.output_parameters:
-            for bus_alias, qubit, param_name, param_value in node.output_parameters["platform_parameters"]:
+            for bus_alias, param_name, param_value, channel_id in node.output_parameters["platform_parameters"]:
                 logger.info(
-                    "Platform updated with: (bus: %s, q: %s, %s, %s).", bus_alias, qubit, param_name, param_value
+                    "Platform updated with: (bus: %s, %s, %s, ch: %s).", bus_alias, param_name, param_value, channel_id
                 )
                 self.platform.set_parameter(
-                    alias=bus_alias, parameter=ql.Parameter(param_name), value=param_value, channel_id=qubit
+                    alias=bus_alias, parameter=ql.Parameter(param_name), value=param_value, channel_id=channel_id
                 )
 
             save_platform(self.runcard, self.platform)
