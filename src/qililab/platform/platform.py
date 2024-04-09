@@ -49,7 +49,7 @@ from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName, Line, Parameter
 from qililab.utils import hash_qpy_sequence
-
+from qililab.waveforms import *
 from .components import Bus, Buses
 
 
@@ -852,3 +852,25 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         return self.compiler.compile(
             pulse_schedule=pulse_schedule, num_avg=num_avg, repetition_duration=repetition_duration, num_bins=num_bins
         )
+
+    def load_calibration(self, path):
+        possible_waveforms = {
+            'drag': DragCorrection,
+            'arbitrary': Arbitrary,
+            'flat_top': FlatTop,
+            'gaussian': Gaussian,
+            'iq_pair': IQPair,
+            'square': Square,            
+        }
+        
+        with open(file=path, mode="r", encoding="utf8") as file:
+            yaml = YAML(typ="safe")
+            calibration = yaml.load(stream=file)
+        
+        for bus_entry in calibration['buses']:
+            bus = self._get_bus_by_alias(alias=bus_entry['name'])
+            
+            for operation in bus_entry['operations']:
+                if operation['type'] not in possible_waveforms.keys():
+                    raise NameError(f'{operation['type']} not defined in qililab')
+                bus.operations[operation['name']] = possible_waveforms[operation['type']](**operation['parameters'])

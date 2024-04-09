@@ -26,7 +26,7 @@ from qililab.settings import Settings
 from qililab.system_control import ReadoutSystemControl, SystemControl
 from qililab.typings import Parameter
 from qililab.utils import Factory
-
+from qililab.waveforms import Waveform
 
 class Bus:
     """Bus class.
@@ -53,6 +53,7 @@ class Bus:
             port (str): Alias of the port where bus is connected.
             distortions (list[PulseDistotion]): List of the distortions to apply to the Bus.
             delay (int): Bus delay
+            operations (dict[Waveform]): dictionary with list of calibrated operations
         """
 
         alias: str
@@ -61,6 +62,7 @@ class Bus:
         platform_instruments: InitVar[Instruments]
         distortions: list[PulseDistortion]
         delay: int
+        operations: dict[Waveform] = {}
 
         def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
             if isinstance(self.system_control, dict):
@@ -83,6 +85,15 @@ class Bus:
         self.settings = self.BusSettings(**settings, platform_instruments=platform_instruments)  # type: ignore
         self.targets = chip.get_port_nodes(alias=self.port)
 
+    @property
+    def operations(self):
+        """ Operations of the bus
+
+        Returns:
+            dict[Waveform]: Dictionary with calibrated operations
+        """
+        return self.settings.operations
+    
     @property
     def alias(self):
         """Alias of the bus.
