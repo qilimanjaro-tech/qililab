@@ -49,7 +49,7 @@ from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName, Line, Parameter
 from qililab.utils import hash_qpy_sequence
-from qililab.waveforms import *
+# from qililab.waveforms import *
 from .components import Bus, Buses
 
 
