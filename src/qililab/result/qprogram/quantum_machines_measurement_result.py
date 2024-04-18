@@ -53,3 +53,12 @@ class QuantumMachinesMeasurementResult(MeasurementResult):
             if self.Q is not None
             else self.I.reshape(1, *self.I.shape)
         )
+
+    @property
+    def thresholded(self) -> np.ndarray:
+        """Get the thresholded data as an np.ndarray.
+
+        Returns:
+            np.ndarray: The thresholded data.
+        """
+        raise NotImplementedError("Thresholding is not implemented for Quantum Machines results.")
