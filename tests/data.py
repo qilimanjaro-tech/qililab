@@ -211,8 +211,7 @@ class Galadriel:
         AWGTypes.AWG_SEQUENCERS.value: [
             {
                 "identifier": 0,
-                "output_i": 0,
-                "output_q": 1,
+                "outputs": [0, 1],
                 Parameter.NUM_BINS.value: 1,
                 Parameter.IF.value: 100_000_000,
                 Parameter.GAIN_I.value: 1,
@@ -225,8 +224,7 @@ class Galadriel:
             },
             {
                 "identifier": 1,
-                "output_i": 0,
-                "output_q": 1,
+                "outputs": [0, 1],
                 Parameter.NUM_BINS.value: 1,
                 Parameter.IF.value: 100_000_000,
                 Parameter.GAIN_I.value: 1,
@@ -265,8 +263,8 @@ class Galadriel:
         AWGTypes.AWG_SEQUENCERS.value: [
             {
                 "identifier": 0,
-                "output_i": 0,
-                "output_q": 1,
+                "qubit": 0,
+                "outputs": [0, 1],
                 Parameter.NUM_BINS.value: 1,
                 Parameter.IF.value: 100_000_000,
                 Parameter.GAIN_I.value: 1,
@@ -290,8 +288,8 @@ class Galadriel:
             },
             {
                 "identifier": 1,
-                "output_i": 0,
-                "output_q": 1,
+                "qubit": 1,
+                "outputs": [0, 1],
                 Parameter.NUM_BINS.value: 1,
                 Parameter.IF.value: 200_000_000,
                 Parameter.GAIN_I.value: 1,
@@ -341,8 +339,8 @@ class Galadriel:
         AWGTypes.AWG_SEQUENCERS.value: [
             {
                 "identifier": 0,
-                "output_i": 0,
-                "output_q": 1,
+                "qubit": 2,
+                "outputs": [0],
                 Parameter.NUM_BINS.value: 1,
                 Parameter.IF.value: 100_000_000,
                 Parameter.GAIN_I.value: 1,

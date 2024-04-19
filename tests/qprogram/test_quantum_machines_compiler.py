@@ -46,7 +46,7 @@ def fixture_set_frequency_operation() -> QProgram:
 @pytest.fixture(name="set_phase_operation")
 def fixture_set_phase_operation() -> QProgram:
     qp = QProgram()
-    qp.set_phase(bus="drive", phase=90)
+    qp.set_phase(bus="drive", phase=np.pi / 2)
 
     return qp
 
@@ -270,7 +270,7 @@ def fixture_for_loop() -> QProgram:
     with qp.for_loop(variable=frequency, start=100, stop=200, step=10):
         qp.set_frequency(bus="drive", frequency=frequency)
 
-    with qp.for_loop(variable=phase, start=0, stop=90, step=10):
+    with qp.for_loop(variable=phase, start=0, stop=np.pi / 2, step=np.pi / 18):
         qp.set_phase(bus="drive", phase=phase)
 
     with qp.for_loop(variable=time, start=100, stop=200, step=10):
@@ -293,7 +293,7 @@ def fixture_for_loop_with_negative_step() -> QProgram:
     with qp.for_loop(variable=frequency, start=200, stop=100, step=-10):
         qp.set_frequency(bus="drive", frequency=frequency)
 
-    with qp.for_loop(variable=phase, start=90, stop=0, step=-10):
+    with qp.for_loop(variable=phase, start=np.pi / 2, stop=0, step=-np.pi / 18):
         qp.set_phase(bus="drive", phase=phase)
 
     with qp.for_loop(variable=time, start=200, stop=100, step=-10):

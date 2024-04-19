@@ -186,7 +186,7 @@ class TestFluxBus:
     def test_set_with_voltage_source(self, flux_bus_voltage_source: FluxBus):
         """Test set method with voltage source"""
         # Testing with parameters that exists
-        sequencer_param = "channel_map_path0_out0_en"
+        sequencer_param = "marker_ovr_en"
         voltage_source_param = "voltage"
         voltage_source_param_value = 0.03
         flux_bus_voltage_source.set(param_name=sequencer_param, value=True)
@@ -212,7 +212,7 @@ class TestFluxBus:
     def test_set_with_current_source(self, flux_bus_current_source: FluxBus):
         """Test set method with current source"""
         # Testing with parameters that exist
-        sequencer_param = "channel_map_path0_out0_en"
+        sequencer_param = "marker_ovr_en"
         current_source_param = "current"
         current_source_param_value = 0.03
         flux_bus_current_source.set(param_name=sequencer_param, value=True)
@@ -238,7 +238,7 @@ class TestFluxBus:
     def test_get_with_voltage_source(self, flux_bus_voltage_source: FluxBus):
         """Test get method with voltage source"""
         # testing with parameters that exist
-        sequencer_param = "channel_map_path0_out0_en"
+        sequencer_param = "marker_ovr_en"
         voltage_source_param = "voltage"
         voltage_source_param_value = 0.03
         flux_bus_voltage_source.set(param_name=sequencer_param, value=True)
@@ -264,7 +264,7 @@ class TestFluxBus:
     def test_get_with_current_source(self, flux_bus_current_source: FluxBus):
         """Test get method with voltage source"""
         # testing with parameters that exist
-        sequencer_param = "channel_map_path0_out0_en"
+        sequencer_param = "marker_ovr_en"
         current_source_param = "current"
         current_source_param_value = 0.03
         flux_bus_current_source.set(param_name=sequencer_param, value=True)
@@ -440,10 +440,8 @@ class TestCurrentFluxBusSerialization:
                 "AWG": {
                     "alias": AWG_ALIAS,
                     "parameters": {
-                        "channel_map_path0_out0_en": True,
-                        "channel_map_path1_out1_en": True,
-                        "channel_map_path0_out2_en": True,
-                        "channel_map_path1_out3_en": True,
+                        "connect_out0": True,
+                        "connect_acq": True,
                         "sync_en": True,
                         "nco_freq": True,
                         "nco_phase_offs": True,
@@ -504,7 +502,6 @@ class TestCurrentFluxBusSerialization:
                         "thresholded_acq_trigger_en": True,
                         "thresholded_acq_trigger_address": True,
                         "thresholded_acq_trigger_invert": True,
-                        "swap_paths": True,
                         "path0_out": True,
                         "path1_out": True,
                         "intermediate_frequency": True,
@@ -611,10 +608,8 @@ class TestVoltageFluxBusSerialization:
                 "AWG": {
                     "alias": AWG_ALIAS,
                     "parameters": {
-                        "channel_map_path0_out0_en": True,
-                        "channel_map_path1_out1_en": True,
-                        "channel_map_path0_out2_en": True,
-                        "channel_map_path1_out3_en": True,
+                        "connect_out0": True,
+                        "connect_acq": True,
                         "sync_en": True,
                         "nco_freq": True,
                         "nco_phase_offs": True,
@@ -675,7 +670,6 @@ class TestVoltageFluxBusSerialization:
                         "thresholded_acq_trigger_en": True,
                         "thresholded_acq_trigger_address": True,
                         "thresholded_acq_trigger_invert": True,
-                        "swap_paths": True,
                         "path0_out": True,
                         "path1_out": True,
                         "intermediate_frequency": True,

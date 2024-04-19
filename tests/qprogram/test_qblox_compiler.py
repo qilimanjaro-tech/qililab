@@ -1,4 +1,5 @@
 # pylint: disable=protected-access
+import numpy as np
 import pytest
 import qpysequence as QPy
 
@@ -15,7 +16,7 @@ def fixture_no_loops_all_operations() -> QProgram:
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
     qp.set_frequency(bus="drive", frequency=300)
-    qp.set_phase(bus="drive", phase=90)
+    qp.set_phase(bus="drive", phase=np.pi / 2)
     qp.reset_phase(bus="drive")
     qp.set_gain(bus="drive", gain=0.5)
     qp.set_offset(bus="drive", offset_path0=0.5, offset_path1=0.5)
@@ -36,6 +37,30 @@ def fixture_dynamic_wait() -> QProgram:
     with qp.for_loop(variable=duration, start=100, stop=200, step=10):
         qp.play(bus="drive", waveform=drag_pair)
         qp.wait(bus="drive", duration=duration)
+    return qp
+
+
+@pytest.fixture(name="dynamic_wait_multiple_buses")
+def fixture_dynamic_wait_multiple_buses() -> QProgram:
+    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    qp = QProgram()
+    duration = qp.variable(Domain.Time)
+    with qp.for_loop(variable=duration, start=100, stop=200, step=10):
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.wait(bus="readout", duration=duration)
+        qp.play(bus="readout", waveform=drag_pair)
+    return qp
+
+
+@pytest.fixture(name="dynamic_wait_multiple_buses_with_disable_autosync")
+def fixture_dynamic_wait_multiple_buses_with_disable_autosync() -> QProgram:
+    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    qp = QProgram(disable_autosync=True)
+    duration = qp.variable(Domain.Time)
+    with qp.for_loop(variable=duration, start=100, stop=200, step=10):
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.wait(bus="readout", duration=duration)
+        qp.play(bus="readout", waveform=drag_pair)
     return qp
 
 
@@ -345,6 +370,59 @@ class TestQBloxCompiler:
         """
 
         assert is_q1asm_equal(sequences["drive"], drive_str)
+
+    def test_dynamic_wait_multiple_buses_with_disable_autosync(
+        self, dynamic_wait_multiple_buses_with_disable_autosync: QProgram
+    ):
+        compiler = QbloxCompiler()
+        sequences = compiler.compile(qprogram=dynamic_wait_multiple_buses_with_disable_autosync)
+
+        assert len(sequences) == 2
+        assert "drive" in sequences
+        assert "readout" in sequences
+
+        drive_str = """
+            setup:
+                wait_sync        4
+
+            main:
+                move             11, R0
+                move             100, R1
+            loop_0:
+                play             0, 1, 40
+                add              R1, 10, R1
+                loop             R0, @loop_0
+                stop
+        """
+
+        readout_str = """
+            setup:
+                wait_sync        4
+
+            main:
+                move             11, R0
+                move             100, R1
+            loop_0:
+                wait             R1
+                play             0, 1, 40
+                add              R1, 10, R1
+                loop             R0, @loop_0
+                nop
+                stop
+        """
+
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+        assert is_q1asm_equal(sequences["readout"], readout_str)
+
+    def test_dynamic_wait_multiple_buses_throws_exception(self, dynamic_wait_multiple_buses: QProgram):
+        with pytest.raises(NotImplementedError, match="Dynamic syncing is not implemented yet."):
+            compiler = QbloxCompiler()
+            _ = compiler.compile(qprogram=dynamic_wait_multiple_buses)
+
+    def test_sync_operation_with_dynamic_timings_throws_exception(self, sync_with_dynamic_wait: QProgram):
+        with pytest.raises(NotImplementedError, match="Dynamic syncing is not implemented yet."):
+            compiler = QbloxCompiler()
+            _ = compiler.compile(qprogram=sync_with_dynamic_wait)
 
     def test_average_with_long_wait(self, average_loop_long_wait: QProgram):
         compiler = QbloxCompiler()
@@ -869,11 +947,6 @@ class TestQBloxCompiler:
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
-
-    def test_sync_operation_with_dynamic_timings_throws_exception(self, sync_with_dynamic_wait: QProgram):
-        with pytest.raises(NotImplementedError, match="Dynamic syncing is not implemented yet."):
-            compiler = QbloxCompiler()
-            _ = compiler.compile(qprogram=sync_with_dynamic_wait)
 
     def test_multiple_play_operations_with_same_waveform(self, multiple_play_operations_with_same_waveform: QProgram):
         compiler = QbloxCompiler()

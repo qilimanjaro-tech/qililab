@@ -27,10 +27,12 @@ Waveforms
     ~DragCorrection
     ~Square
     ~IQPair
+    ~FlatTop
 """
 
 from .arbitrary import Arbitrary
 from .drag_correction import DragCorrection
+from .flat_top import FlatTop
 from .gaussian import Gaussian
 from .iq_pair import IQPair
 from .square import Square

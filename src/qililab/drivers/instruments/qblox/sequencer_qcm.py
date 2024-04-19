@@ -13,12 +13,8 @@
 # limitations under the License.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
-
 import numpy as np
 from qblox_instruments.qcodes_drivers.sequencer import Sequencer
-from qcodes import Instrument
-from qcodes import validators as vals
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Program, Register
@@ -31,9 +27,7 @@ from qpysequence.weights import Weights
 from qililab.config import logger
 from qililab.drivers.instruments.instrument_driver_factory import InstrumentDriverFactory
 from qililab.drivers.interfaces import AWG
-
-if TYPE_CHECKING:
-    from qililab.pulse import PulseBusSchedule, PulseShape
+from qililab.pulse import PulseBusSchedule, PulseShape
 
 
 @InstrumentDriverFactory.register
@@ -48,10 +42,6 @@ class SequencerQCM(Sequencer, AWG):
 
     _MIN_WAIT_TIME: int = 4
 
-    def __init__(self, parent: Instrument, name: str, seq_idx: int):
-        super().__init__(parent=parent, name=name, seq_idx=seq_idx)
-        self.add_parameter(name="swap_paths", set_cmd=None, vals=vals.Bool(), initial_value=False)
-
     @property
     def params(self):
         """return the parameters of the instrument"""
@@ -61,37 +51,6 @@ class SequencerQCM(Sequencer, AWG):
     def alias(self):
         """return the alias of the instrument, which corresponds to the QCodes name attribute"""
         return self.name
-
-    def set(self, param_name: str, value: Any):
-        """Sets a parameter value checking if is an output mapping.
-
-        Args:
-            param_name (str): Parameter name
-            value (Any): Parameter value
-        """
-        if param_name in {"path0", "path1"}:
-            self._map_outputs(param_name, value)
-        else:
-            super().set(param_name, value)
-
-    def _map_outputs(self, param_name: str, param_value: Any):
-        """Map sequencer paths with output channels and set the swapping.
-
-        Args:
-            param_name (str): Parameter name
-            param_value (Any): Parameter value
-        """
-        allowed_conf = {("path0", 0), ("path0", 2), ("path1", 1), ("path1", 3)}
-        swappable_conf = {("path0", 1), ("path0", 3), ("path1", 0), ("path1", 2)}
-        if (param_name, param_value) in allowed_conf:
-            self.set(f"channel_map_{param_name}_out{param_value}_en", True)
-        elif (param_name, param_value) in swappable_conf:
-            self.set("swap_paths", True)
-            self.set(f"channel_map_{param_name}_out{1 - param_value}_en", True)
-        else:
-            raise ValueError(
-                f"Impossible path configuration detected. {param_name} cannot be mapped to output {param_value}."
-            )
 
     def execute(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int):
         """Execute a PulseBusSchedule on the instrument.
@@ -175,8 +134,6 @@ class SequencerQCM(Sequencer, AWG):
                 real = np.real(envelope)
                 imag = np.imag(envelope)
                 pair = (real, imag)
-                if self.get("swap_paths"):
-                    pair = pair[::-1]  # swap paths
                 waveforms.add_pair(pair=pair, name=pulse_event.pulse.label())
 
         return waveforms

@@ -51,10 +51,12 @@ from qililab.result.result import Result
 from qililab.settings.runcard import Runcard
 from qililab.typings.enums import Parameter
 from qililab.utils import hash_qpy_sequence, hash_qua_program
+from qililab.settings import Runcard
+from qililab.typings.enums import InstrumentName, Line, Parameter
+from qililab.utils import hash_qpy_sequence
 
-if TYPE_CHECKING:
-    from qililab.instrument_controllers.instrument_controller import InstrumentController
-    from qililab.instruments.instrument import Instrument
+from qililab.instrument_controllers.instrument_controller import InstrumentController
+from qililab.instruments.instrument import Instrument
 
 
 class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-attributes
@@ -304,6 +306,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         self._qua_program_cache: dict[str, str] = {}
         """Dictionary for caching compiled qua programs."""
+        
+        if any(isinstance(instrument, QbloxModule) for instrument in self.instruments.elements):
+            self.compiler = None  # TODO: integrate with qprogram compiler #FIXME: temporary fix set as none so object exists
+            """Compiler to translate given programs to instructions for a given awg vendor."""
 
         self._qpy_sequence_cache: dict[str, str] = {}
         """Dictionary for caching qpysequences."""
@@ -576,6 +582,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             if bus_alias not in self._qpy_sequence_cache or self._qpy_sequence_cache[bus_alias] != sequence_hash:
                 buses[bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
                 self._qpy_sequence_cache[bus_alias] = sequence_hash
+            # sync all rellevant sequences
+            for instrument in buses[bus_alias].system_control.instruments:
+                if isinstance(instrument, QbloxModule):
+                    instrument.sync_by_port(buses[bus_alias].port)
 
         # Execute sequences
         for bus_alias in sequences:
@@ -591,10 +601,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                     results.append_result(bus=bus_alias, result=bus_result)
 
         # Reset instrument settings
-        for instrument in self.instruments.elements:
-            if isinstance(instrument, QbloxModule):
-                # instrument.clear_cache()
-                instrument.desync_sequencers()
+        for bus_alias in sequences:
+            for instrument in buses[bus_alias].system_control.instruments:
+                if isinstance(instrument, QbloxModule):
+                    instrument.desync_by_port(buses[bus_alias].port)
 
         return results
 
@@ -614,11 +624,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             with open("debug_qm_execution.py", "w", encoding="utf-8") as sourceFile:
                 print(generate_qua_script(qua_program, cluster.config), file=sourceFile)
 
-        qua_program_hash = hash_qua_program(program=qua_program)
-        if qua_program_hash not in self._qua_program_cache:
-            self._qua_program_cache[qua_program_hash] = cluster.compile(program=qua_program)
-        compiled_program_id = self._qua_program_cache[qua_program_hash]
-
+        compiled_program_id = cluster.compile(program=qua_program)
         job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
 
         acquisitions = cluster.get_acquisitions(job=job)
@@ -639,7 +645,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         repetition_duration: int,
         num_bins: int = 1,
         queue: Queue | None = None,
-    ) -> Result:
+    ) -> Result | QbloxResult:
         """Compiles and executes a circuit or a pulse schedule, using the platform instruments.
 
         If the ``program`` argument is a :class:`Circuit`, it will first be translated into a :class:`PulseSchedule` using the transpilation
@@ -681,8 +687,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         results: list[Result] = []
         for bus in readout_buses:
             result = bus.acquire_result()
-            if isinstance(program, Circuit):
-                result = self._order_result(result, program)
             if queue is not None:
                 queue.put_nowait(item=result)
             results.append(result)
@@ -691,7 +695,21 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             if isinstance(instrument, QbloxModule):
                 instrument.desync_sequencers()
 
-        # FIXME: set multiple readout buses
+        # Flatten results if more than one readout bus was used for a qblox module
+        if len(results) > 1:
+            results = [
+                QbloxResult(
+                    integration_lengths=[length for result in results for length in result.integration_lengths],  # type: ignore [attr-defined]
+                    qblox_raw_results=[raw_result for result in results for raw_result in result.qblox_raw_results],  # type: ignore [attr-defined]
+                )
+            ]
+        if not results:
+            raise ValueError("There are no readout buses in the platform.")
+
+        if isinstance(program, Circuit):
+            results = [self._order_result(results[0], program)]
+
+        # FIXME: resurn result instead of results[0]
         return results[0]
 
     def _order_result(self, result: Result, circuit: Circuit) -> Result:
@@ -765,18 +783,20 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             raise ValueError(
                 f"Program to execute can only be either a single circuit or a pulse schedule. Got program of type {type(program)} instead"
             )
-        bus_to_module_and_sequencer_mapping = {
-            element.bus_alias: {"module": instrument, "sequencer": instrument.get_sequencer(channel)}
-            for element in pulse_schedule.elements
-            for instrument, channel in zip(
-                self.buses.get_bus(element.bus_alias).instruments, self.buses.get_bus(element.bus_alias).channels
+        # construct compiler object if it has not been done previously
+        if self.compiler is None:
+            bus_to_module_and_sequencer_mapping = {
+                element.bus_alias: {"module": instrument, "sequencer": instrument.get_sequencer(channel)}
+                for element in pulse_schedule.elements
+                for instrument, channel in zip(
+                    self.buses.get_bus(element.bus_alias).instruments, self.buses.get_bus(element.bus_alias).channels
+                )
+                if isinstance(instrument, QbloxModule)
+            }
+            self.compiler = PulseQbloxCompiler(
+                gates_settings=self.gates_settings,
+                bus_to_module_and_sequencer_mapping=bus_to_module_and_sequencer_mapping,
             )
-            if isinstance(instrument, QbloxModule)
-        }
-        compiler = PulseQbloxCompiler(
-            gates_settings=self.gates_settings,
-            bus_to_module_and_sequencer_mapping=bus_to_module_and_sequencer_mapping,
-        )
-        return compiler.compile(
+        return self.compiler.compile(
             pulse_schedule=pulse_schedule, num_avg=num_avg, repetition_duration=repetition_duration, num_bins=num_bins
         )

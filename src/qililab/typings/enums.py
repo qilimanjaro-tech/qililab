@@ -141,6 +141,7 @@ class PulseShapeName(str, Enum):
     RECTANGULAR = "rectangular"
     SNZ = "snz"
     COSINE = "cosine"
+    FLATTOP = "flat_top"
 
 
 class InstrumentName(str, Enum):

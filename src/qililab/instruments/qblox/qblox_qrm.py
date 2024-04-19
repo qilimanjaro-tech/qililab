@@ -17,10 +17,9 @@ from dataclasses import dataclass
 from typing import Sequence, cast
 
 from qililab.config import logger
-from qililab.exceptions import ParameterNotFound
 from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
 from qililab.instruments.awg_settings import AWGQbloxADCSequencer
-from qililab.instruments.decorators import check_device_initialized
+from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
 from qililab.result.qblox_results import QbloxResult
@@ -49,14 +48,18 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
 
         def __post_init__(self):
             """build AWGQbloxADCSequencer"""
-            num_sequencers = len(self.awg_sequencers)
             if (
-                num_sequencers <= 0
-                or num_sequencers > QbloxModule._NUM_MAX_SEQUENCERS  # pylint: disable=protected-access
-            ):  # pylint: disable=protected-access)
+                self.num_sequencers <= 0
+                or self.num_sequencers > QbloxModule._NUM_MAX_SEQUENCERS  # pylint: disable=protected-access
+            ):
                 raise ValueError(
                     "The number of sequencers must be greater than 0 and less or equal than "
-                    + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: {num_sequencers}"  # pylint: disable=protected-access
+                    + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: {self.num_sequencers}"  # pylint: disable=protected-access
+                )
+            if len(self.awg_sequencers) != self.num_sequencers:
+                raise ValueError(
+                    f"The number of sequencers: {self.num_sequencers} does not match"
+                    + f" the number of AWG Sequencers settings specified: {len(self.awg_sequencers)}"
                 )
 
             self.awg_sequencers = [
@@ -69,7 +72,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
 
     settings: QbloxQRMSettings
 
-    @check_device_initialized
+    @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """Initial setup"""
         super().initial_setup()
@@ -95,6 +98,20 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 value=cast(AWGQbloxADCSequencer, sequencer).threshold_rotation, sequencer_id=sequencer_id
             )
 
+    def _map_connections(self):
+        """Disable all connections and map sequencer paths with output/input channels."""
+        # Disable all connections
+        self.device.disconnect_outputs()
+        self.device.disconnect_inputs()
+
+        for sequencer_dataclass in self.awg_sequencers:
+            sequencer = self.device.sequencers[sequencer_dataclass.identifier]
+            for path, output in zip(["I", "Q"], sequencer_dataclass.outputs):
+                getattr(sequencer, f"connect_out{output}")(path)
+
+            sequencer.connect_acq_I("in0")
+            sequencer.connect_acq_Q("in1")
+
     def _obtain_scope_sequencer(self):
         """Checks that only one sequencer is storing the scope and saves that sequencer in `_scoping_sequencer`
 
@@ -116,7 +133,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """
         return self.get_acquisitions()
 
-    def acquire_qprogram_results(self, acquisitions: list[str]) -> list[QbloxMeasurementResult]:  # type: ignore[override]
+    def acquire_qprogram_results(self, acquisitions: list[str], port: str) -> list[QbloxMeasurementResult]:  # type: ignore
         """Read the result from the AWG instrument
 
         Args:
@@ -125,13 +142,14 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         Returns:
             list[QbloxQProgramMeasurementResult]: Acquired Qblox results in chronological order.
         """
-        return self._get_qprogram_acquisitions(acquisitions=acquisitions)
+        return self._get_qprogram_acquisitions(acquisitions=acquisitions, port=port)
 
-    @check_device_initialized
-    def _get_qprogram_acquisitions(self, acquisitions: list[str]) -> list[QbloxMeasurementResult]:
+    @Instrument.CheckDeviceInitialized
+    def _get_qprogram_acquisitions(self, acquisitions: list[str], port: str) -> list[QbloxMeasurementResult]:
         results = []
         for acquisition in acquisitions:
-            for sequencer in self.awg_sequencers:
+            sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
+            for sequencer in sequencers:
                 if sequencer.identifier in self.sequences:
                     self.device.get_acquisition_state(
                         sequencer=sequencer.identifier,
@@ -143,8 +161,8 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                     ]
                     measurement_result = QbloxMeasurementResult(raw_measurement_data=raw_measurement_data)
                     results.append(measurement_result)
-        for sequencer in self.awg_sequencers:
-            self.device.delete_acquisition_data(sequencer=sequencer.identifier, all=True)
+
+                    self.device.delete_acquisition_data(sequencer=sequencer.identifier, name=acquisition)
         return results
 
     def _set_device_hardware_demodulation(self, value: bool, sequencer_id: int):
@@ -207,8 +225,8 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             value (float): integrated value of the threshold
             sequencer_id (int): sequencer to update the value
         """
-        # integrated_value = value * self._get_sequencer_by_id(id=sequencer_id).used_integration_length
-        self.device.sequencers[sequencer_id].thresholded_acq_threshold(value)
+        integrated_value = value * self._get_sequencer_by_id(id=sequencer_id).used_integration_length
+        self.device.sequencers[sequencer_id].thresholded_acq_threshold(integrated_value)
 
     def _set_device_threshold_rotation(self, value: float, sequencer_id: int):
         """Sets the threshold rotation for classification at the specific channel.
@@ -227,7 +245,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 value=self.get_sequencer(sequencer_id).hardware_modulation, sequencer_id=sequencer_id
             )
 
-    @check_device_initialized
+    @Instrument.CheckDeviceInitialized
     def get_acquisitions(self) -> QbloxResult:
         """Wait for sequencer to finish sequence, wait for acquisition to finish and get the acquisition results.
         If any of the timeouts is reached, a TimeoutError is raised.
@@ -274,7 +292,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """
         return cast(AWGQbloxADCSequencer, self.get_sequencer(sequencer_id)).integration_length
 
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | str | None = None):
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """set a specific parameter to the instrument"""
         try:
             AWGAnalogDigitalConverter.setup(self, parameter=parameter, value=value, channel_id=channel_id)

@@ -50,6 +50,8 @@ def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarContro
             "scope_acq_trigger_mode_path0",
             "scope_acq_trigger_mode_path1",
             "scope_acq_sequencer_select",
+            "disconnect_outputs",
+            "disconnect_inputs",
         ]
     )
     mock_instance.sequencers = [mock_instance.sequencer0, mock_instance.sequencer1]
@@ -72,6 +74,8 @@ def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarContro
         "offset_awg_path1",
         "marker_ovr_en",
         "marker_ovr_value",
+        "connect_out0",
+        "connect_out1",
     ]
     mock_instance.sequencer0.mock_add_spec(spec)
     mock_instance.sequencer1.mock_add_spec(spec)

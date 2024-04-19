@@ -13,9 +13,8 @@
 # limitations under the License.
 
 """ AWG Sequencer """
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 
-from qililab.config import logger
 from qililab.utils.asdict_factory import dict_factory
 
 
@@ -26,7 +25,8 @@ class AWGSequencer:  # pylint: disable=too-many-instance-attributes
     Args:
         identifier (int): The identifier of the sequencer
         bus_alias (str | None): Alias of the bus where a sequencer is connected to.
-        output_i (int): AWG output associated with the I channel of the sequencer
+        outputs (list(int)): List of integers containing the outputs of the I and Q paths respectively. If the list only
+            contains one item, then only one output will be connected.
         output_q (int): AWG output associated with the Q channel of the sequencer
         intermediate_frequency (float): Frequency for each sequencer
         gain_imbalance (float): Amplitude added to the Q channel.
@@ -39,8 +39,8 @@ class AWGSequencer:  # pylint: disable=too-many-instance-attributes
     """
 
     identifier: int
-    output_i: int | None
-    output_q: int | None
+    # list containing the outputs for the I and Q paths e.g. [3, 2] means I path is connected to output 3 and Q path is connected to output 2
+    outputs: list[int]
     intermediate_frequency: float
     gain_imbalance: float | None
     phase_imbalance: float | None
@@ -49,33 +49,7 @@ class AWGSequencer:  # pylint: disable=too-many-instance-attributes
     gain_q: float
     offset_i: float
     offset_q: float
-    path_i: int = field(init=False)  # sequencer path that corresponds to the I channel
-    path_q: int = field(init=False)  # sequencer path that corresponds to the Q channel
-
-    def __post_init__(self):
-        if self.output_i in {0, 2, None} and self.output_q in {1, 3, None}:
-            self.path_i = 0
-            self.path_q = 1
-        elif self.output_i in {1, 3, None} and self.output_q in {0, 2, None}:
-            logger.warning(
-                "Cannot set `output_i=%i` and `output_q=%i` in hardware. The I/Q signals sent to sequencer %i will "
-                "be swapped to allow this setting.",
-                self.output_i,
-                self.output_q,
-                self.identifier,
-            )
-            self.path_i = 1
-            self.path_q = 0
-        else:
-            raise ValueError(
-                f"Cannot map both paths of sequencer {self.identifier} into an even/odd output."
-                f" Obtained `output_i={self.output_i}` and `output_q={self.output_q}`."
-            )
 
     def to_dict(self):
         """Return a dict representation of an AWG Sequencer."""
-        dictionary = asdict(self, dict_factory=dict_factory) | {"output_i": self.output_i, "output_q": self.output_q}
-        # Remove values not present in the __init__ function
-        dictionary.pop("path_i")
-        dictionary.pop("path_q")
-        return dictionary
+        return asdict(self, dict_factory=dict_factory) | {"outputs": self.outputs}

@@ -589,12 +589,12 @@ class CalibrationController:
             node (CalibrationNode): The node which parameters need to be updated in the platform.
         """
         if node.output_parameters is not None and "platform_parameters" in node.output_parameters:
-            for bus_alias, qubit, param_name, param_value in node.output_parameters["platform_parameters"]:
+            for bus_alias, param_name, param_value, channel_id in node.output_parameters["platform_parameters"]:
                 logger.info(
-                    "Platform updated with: (bus: %s, q: %s, %s, %s).", bus_alias, qubit, param_name, param_value
+                    "Platform updated with: (bus: %s, %s, %s, ch: %s).", bus_alias, param_name, param_value, channel_id
                 )
                 self.platform.set_parameter(
-                    alias=bus_alias, parameter=ql.Parameter(param_name), value=param_value, channel_id=qubit
+                    alias=bus_alias, parameter=ql.Parameter(param_name), value=param_value, channel_id=channel_id
                 )
 
             save_platform(self.runcard, self.platform)
@@ -614,9 +614,9 @@ class CalibrationController:
                 and node.previous_timestamp is not None
                 and "platform_parameters" in node.output_parameters
             ):
-                for bus, qubit, parameter, value in node.output_parameters["platform_parameters"]:
-                    parameters[(parameter, bus, qubit)] = (
-                        value,
+                for bus_alias, param_name, param_value, channel_id in node.output_parameters["platform_parameters"]:
+                    parameters[(param_name, bus_alias, channel_id)] = (
+                        param_value,
                         node.node_id,
                         datetime.fromtimestamp(node.previous_timestamp),
                     )
@@ -734,12 +734,12 @@ class CalibrationController:
                         col.append(fidelity)
 
             if "platform_parameters" in node.output_parameters:
-                for bus, _, parameter, _ in node.output_parameters["platform_parameters"]:
-                    bus_list = str(bus).split("_")
+                for bus_alias, param_name, _, _ in node.output_parameters["platform_parameters"]:
+                    bus_list = str(bus_alias).split("_")
                     bus = "_".join([x for x in bus_list if not any(char.isdigit() for char in x)])
 
-                    if f"{str(parameter)}_{bus}" not in col:
-                        col.append(f"{str(parameter)}_{bus}")
+                    if f"{str(param_name)}_{bus}" not in col:
+                        col.append(f"{str(param_name)}_{bus}")
 
         return idx, col
 
@@ -761,10 +761,10 @@ class CalibrationController:
                     df[fidelity][qubit] = value
 
             if "platform_parameters" in node.output_parameters:
-                for bus, _, parameter, value in node.output_parameters["platform_parameters"]:
-                    bus_list = str(bus).split("_")
+                for bus_alias, param_name, param_value, _ in node.output_parameters["platform_parameters"]:
+                    bus_list = str(bus_alias).split("_")
                     bus = "_".join([x for x in bus_list if not any(char.isdigit() for char in x)])
-                    df[f"{str(parameter)}_{bus}"][qubit] = value
+                    df[f"{str(param_name)}_{bus}"][qubit] = param_value
 
         return df
 

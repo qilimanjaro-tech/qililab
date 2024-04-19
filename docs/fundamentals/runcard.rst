@@ -210,8 +210,7 @@ Runcard YAML file example:
                 -   identifier: 0
                     chip_port_id: feedline_input
                     qubit: 0
-                    output_i: 0
-                    output_q: 1
+                    outputs: [0, 1]
                     gain_i: .5
                     gain_q: .5
                     offset_i: 0
@@ -235,8 +234,7 @@ Runcard YAML file example:
                 -   identifier: 1
                     chip_port_id: feedline_input
                     qubit: 1
-                    output_i: 0
-                    output_q: 1
+                    outputs: [0, 1]
                     gain_i: .5
                     gain_q: .5
                     offset_i: 0
@@ -272,8 +270,7 @@ Runcard YAML file example:
             awg_sequencers:
                 -   identifier: 0
                     chip_port_id: drive_line_q0
-                    output_i: 0
-                    output_q: 1
+                    outputs: [0, 1]
                     gain_i: 0.1
                     gain_q: 0.1
                     offset_i: 0. # -0.012
@@ -285,8 +282,7 @@ Runcard YAML file example:
                     hardware_modulation: true
                 -   identifier: 1
                     chip_port_id: drive_line_q1
-                    output_i: 2
-                    output_q: 3
+                    outputs: [2, 3]
                     gain_i: 1
                     gain_q: 1
                     offset_i: 0
@@ -302,8 +298,7 @@ Runcard YAML file example:
             awg_sequencers:
                 -   identifier: 0
                     chip_port_id: flux_line_q0
-                    output_i: 0
-                    output_q: 1
+                    outputs: [0, 1]
                     gain_i: 0.1
                     gain_q: 0.1
                     offset_i: 0.
@@ -315,8 +310,7 @@ Runcard YAML file example:
                     hardware_modulation: true
                 -   identifier: 1
                     chip_port_id: flux_line_q1
-                    output_i: 1
-                    output_q: 0
+                    outputs: [1, 0]
                     gain_i: 1
                     gain_q: 1
                     offset_i: 0

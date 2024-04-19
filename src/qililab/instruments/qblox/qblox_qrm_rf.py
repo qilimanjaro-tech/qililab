@@ -15,7 +15,9 @@
 """This file contains the QbloxQCMRF class."""
 from dataclasses import dataclass, field
 
-from qililab.instruments.decorators import check_device_initialized  # pylint: disable=cyclic-import
+from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm
+
+from qililab.instruments import Instrument  # pylint: disable=cyclic-import
 from qililab.instruments.utils.instrument_factory import InstrumentFactory  # pylint: disable=cyclic-import
 from qililab.typings import InstrumentName, Parameter
 
@@ -27,6 +29,7 @@ class QbloxQRMRF(QbloxQRM):
     """Qblox QRM-RF driver."""
 
     name = InstrumentName.QRMRF
+    device: QcmQrm
 
     @dataclass
     class QbloxQRMRFSettings(QbloxQRM.QbloxQRMSettings):
@@ -53,14 +56,25 @@ class QbloxQRMRF(QbloxQRM):
 
     settings: QbloxQRMRFSettings
 
-    @check_device_initialized
+    @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """Initial setup"""
         super().initial_setup()
         for parameter in self.parameters:
             self.setup(parameter, getattr(self.settings, parameter.value))
 
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | str | None = None):
+    def _map_connections(self):
+        """Disable all connections and map sequencer paths with output/input channels."""
+        # Disable all connections
+        self.device.disconnect_outputs()
+        self.device.disconnect_inputs()
+
+        for sequencer_dataclass in self.awg_sequencers:
+            sequencer = self.device.sequencers[sequencer_dataclass.identifier]
+            sequencer.connect_out0("IQ")
+            sequencer.connect_acq("in0")
+
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Set a parameter of the Qblox QCM-RF module.
         Args:
             parameter (Parameter): Parameter name.
@@ -72,12 +86,13 @@ class QbloxQRMRF(QbloxQRM):
 
         if parameter in self.parameters:
             setattr(self.settings, parameter.value, value)
+
             if self.is_device_active():
                 self.device.set(parameter.value, value)
             return
         super().setup(parameter, value, channel_id)
 
-    def get(self, parameter: Parameter, channel_id: int | str | None = None):
+    def get(self, parameter: Parameter, channel_id: int | None = None):
         """Set a parameter of the Qblox QCM-RF module.
         Args:
             parameter (Parameter): Parameter name.

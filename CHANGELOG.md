@@ -1,5 +1,64 @@
 # CHANGELOG
 
+## 0.25.1 (2024-03-26)
+
+### Bug fixes
+
+- Appended hardcoded Time of Flight
+  [#711](https://github.com/qilimanjaro-tech/qililab/pull/711)
+
+## 0.25.0 (2024-03-25)
+
+### New features since last release
+
+- Add FlatTop pulse shape
+  [#680](https://github.com/qilimanjaro-tech/qililab/pull/680)
+
+- Add FlatTop waveform
+  [#680](https://github.com/qilimanjaro-tech/qililab/pull/680)
+
+- Add support for multiple QRM modules
+  [#680](https://github.com/qilimanjaro-tech/qililab/pull/680)
+
+- Update qpysequence to 10.1
+  [#680](https://github.com/qilimanjaro-tech/qililab/pull/680)
+
+### Improvements
+
+- The method `CalibrationNode._execute_notebook()` now changes the working directory to the notebook directory before the execution and restores the previous one after the papermill execution. It allows the notebooks now to use relative paths. Also, the initialization of `CalibrationNode` will now contain absolute paths for the attributes `nb_folder` and `nb_path`
+  [#693](https://github.com/qilimanjaro-tech/qililab/pull/693)
+
+### Breaking changes
+
+- Added support for Qblox cluster firmware v0.6.1 and qblox-instruments v0.11.2. This changes some of the i/o mappings in the runcard for qblox sequencers so  with older versions is broken.
+  [#680](https://github.com/qilimanjaro-tech/qililab/pull/680)
+
+### Documentation
+
+- Added documentation for QProgram.
+
+### Bug fixes
+
+- Resolved an issue where attempting to execute a previously compiled QUA program on a newly instantiated Quantum Machine resulted in errors due to cache invalidation.
+  [#706](https://github.com/qilimanjaro-tech/qililab/pull/706)
+
+## 0.24.0 (2024-03-05)
+
+### New features since last release
+
+- Introduced a new parameter, `disable_autosync`, to the `QProgram` constructor. This parameter allows users to control the automatic synchronization behavior of loops within their quantum programs. By default, the parameter is set to `False`, enabling the compiler to automatically insert synchronization operations at the conclusion of each loop. Users have the option to set `disable_autosync` to `True` to indicate that they prefer to manage loop timing manually. This feature is particularly useful for operations on Qblox hardware, due to its constraints on dynamic synchronization. It's important to note that Quantum Machines will disregard this setting and adhere to the default synchronization behavior.
+  [#694](https://github.com/qilimanjaro-tech/qililab/pull/694)
+
+### Breaking changes
+
+- The unit of measurement for phases within QProgram has been updated from degrees to radians.
+  [#695](https://github.com/qilimanjaro-tech/qililab/pull/695)
+
+### Bug fixes
+
+- Resolved an issue encountered during the retrieval of results from QProgram executions on Qblox hardware, where acquisition data from other sequencers would unintentionally be deleted.
+  [#691](https://github.com/qilimanjaro-tech/qililab/pull/691)
+
 ## 0.23.3 (2024-02-19)
 
 ### Bug fixes
