@@ -56,7 +56,6 @@ class QbloxQRMRF(QbloxQRM):
 
     settings: QbloxQRMRFSettings
 
-    @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """Initial setup"""
         super().initial_setup()

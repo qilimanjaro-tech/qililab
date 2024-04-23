@@ -66,7 +66,6 @@ class QbloxQCMRF(QbloxQCM):
         Parameter.OUT1_OFFSET_PATH1,
     }
 
-    @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """Initial setup"""
         super().initial_setup()

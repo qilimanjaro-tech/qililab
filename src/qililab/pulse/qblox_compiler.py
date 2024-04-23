@@ -21,7 +21,7 @@ from qpysequence import Sequence as QpySequence
 from qpysequence import Waveforms, Weights
 from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Register
-from qpysequence.program.instructions import Acquire, AcquireWeighed, Move, Play, ResetPh, SetAwgGain, SetPh, Stop, Wait
+from qpysequence.program.instructions import Acquire, AcquireWeighed, Move, Play, ResetPh, SetAwgGain, SetPh, Stop
 from qpysequence.utils.constants import AWG_MAX_GAIN, INST_MAX_WAIT
 
 from qililab.config.config import logger
@@ -136,17 +136,9 @@ class QbloxCompiler:  # pylint: disable=too-many-locals, too-few-public-methods
             Sequence: Qblox Sequence object containing the program and waveforms.
         """
         waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
-<<<<<<< HEAD
         acquisitions = self._generate_acquisitions(pulse_bus_schedule=pulse_bus_schedule)
         program = self._generate_program(pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms)
         weights = self._generate_weights(bus=self.buses[pulse_bus_schedule.bus_alias])  # type: ignore
-=======
-        acquisitions = self._generate_acquisitions(sequencer, timeline=pulse_bus_schedule.timeline)
-        program = self._generate_program(
-            pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, sequencer=sequencer
-        )
-        weights = self._generate_weights(sequencer=sequencer)  # type: ignore
->>>>>>> main
         return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
 
     def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule):
@@ -272,28 +264,17 @@ class QbloxCompiler:  # pylint: disable=too-many-locals, too-few-public-methods
         logger.info("Q1ASM program: \n %s", repr(program))
         return program
 
-<<<<<<< HEAD
     def _generate_weights(self, bus: BusSettings) -> Weights:
-=======
-    def _generate_weights(self, sequencer: AWGQbloxADCSequencer) -> Weights:  # type: ignore
->>>>>>> main
         """Generate acquisition weights.
 
         Returns:
-            Weights: Acquisition weights.
+            dict: Acquisition weights.
         """
         weights = Weights()
 
-<<<<<<< HEAD
         if bus.is_readout():
             pair = ([float(w) for w in bus.weights_i], [float(w) for w in bus.weights_q])
             weights.add_pair(pair=pair, indices=(0, 1))
-=======
-        if self._get_instrument_from_sequencer(sequencer).name in self.control_modules:
-            return weights
-        pair = ([float(w) for w in sequencer.weights_i], [float(w) for w in sequencer.weights_q])
-        weights.add_pair(pair=pair, indices=(0, 1))
->>>>>>> main
         return weights
 
     def _append_acquire_instruction(
@@ -321,8 +302,6 @@ class QbloxCompiler:  # pylint: disable=too-many-locals, too-few-public-methods
                 wait_time=wait,
             )
         )
-        # TODO: implement time of flight properly to remove this hack
-        loop.append_component(Wait(wait_time=220))
         loop.append_component(acq_instruction)
 
     def _init_weights_registers(self, registers: tuple[Register, Register], program: Program):

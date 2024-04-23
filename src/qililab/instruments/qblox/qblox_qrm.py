@@ -72,7 +72,6 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
 
     settings: QbloxQRMSettings
 
-    @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """Initial setup"""
         super().initial_setup()
@@ -144,7 +143,6 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """
         return self._get_qprogram_acquisitions(acquisitions=acquisitions, port=port)
 
-    @Instrument.CheckDeviceInitialized
     def _get_qprogram_acquisitions(self, acquisitions: list[str], port: str) -> list[QbloxMeasurementResult]:
         results = []
         for acquisition in acquisitions:
@@ -245,7 +243,6 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 value=self.get_sequencer(sequencer_id).hardware_modulation, sequencer_id=sequencer_id
             )
 
-    @Instrument.CheckDeviceInitialized
     def get_acquisitions(self) -> QbloxResult:
         """Wait for sequencer to finish sequence, wait for acquisition to finish and get the acquisition results.
         If any of the timeouts is reached, a TimeoutError is raised.
