@@ -589,6 +589,8 @@ class TestMethods:
                         "threshold": [0.5, 0.5, 0.5, 0.5],
                         "avg_cnt": [1000, 1000, 1000, 1000],
                     },
+                    "qubit": 0,
+                    "measurement": 0,
                 }
             ],
         )
