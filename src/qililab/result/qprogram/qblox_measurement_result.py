@@ -53,7 +53,7 @@ class QbloxMeasurementResult(MeasurementResult):
         return np.array([path0, path1])
 
     @property
-    def thresholded(self) -> np.ndarray:
+    def threshold(self) -> np.ndarray:
         """Get the thresholded data as an np.ndarray.
 
         Returns:

@@ -55,7 +55,7 @@ class QuantumMachinesMeasurementResult(MeasurementResult):
         )
 
     @property
-    def thresholded(self) -> np.ndarray:
+    def threshold(self) -> np.ndarray:
         """Get the thresholded data as an np.ndarray.
 
         Returns:

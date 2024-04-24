@@ -38,7 +38,7 @@ class MeasurementResult(DictSerializable, ABC):
 
     @property
     @abstractmethod
-    def thresholded(self) -> np.ndarray:
+    def threshold(self) -> np.ndarray:
         """Returns the thresholded data for the result.
 
         Returns:
