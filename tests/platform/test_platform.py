@@ -427,7 +427,7 @@ class TestMethods:
         assert patched_open.call_count == 1
         assert generate_qua.call_count == 1
 
-    def test_execute(self, platform: Platform):
+    def test_execute(self, platform: Platform, qblox_results: list[dict]):
         """Test that the execute method calls the buses to run and return the results."""
         # Define pulse schedule
         pulse_schedule = PulseSchedule()
@@ -439,11 +439,12 @@ class TestMethods:
         pulse_schedule.add_event(
             PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), port="feedline_input", port_delay=0
         )
+        qblox_result = QbloxResult(qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1])
         with patch.object(Bus, "upload") as upload:
             with patch.object(Bus, "run") as run:
                 with patch.object(Bus, "acquire_result") as acquire_result:
                     with patch.object(QbloxModule, "desync_sequencers") as desync:
-                        acquire_result.return_value = 123
+                        acquire_result.return_value = qblox_result
                         result = platform.execute(
                             program=pulse_schedule, num_avg=1000, repetition_duration=2000, num_bins=1
                         )
@@ -451,10 +452,10 @@ class TestMethods:
         assert upload.call_count == len(pulse_schedule.elements)
         assert run.call_count == len(pulse_schedule.elements)
         acquire_result.assert_called_once_with()
-        assert result == 123
+        assert result == qblox_result
         desync.assert_called()
 
-    def test_execute_with_queue(self, platform: Platform):
+    def test_execute_with_queue(self, platform: Platform, qblox_results: list[dict]):
         """Test that the execute method adds the obtained results to the given queue."""
         queue: Queue = Queue()
         pulse_schedule = PulseSchedule()
@@ -467,17 +468,18 @@ class TestMethods:
             port="feedline_input",
             port_delay=0,
         )
+        qblox_result = QbloxResult(qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1])
         with patch.object(Bus, "upload"):
             with patch.object(Bus, "run"):
                 with patch.object(Bus, "acquire_result") as acquire_result:
                     with patch.object(QbloxModule, "desync_sequencers") as desync:
-                        acquire_result.return_value = 123
+                        acquire_result.return_value = qblox_result
                         _ = platform.execute(
                             program=pulse_schedule, num_avg=1000, repetition_duration=2000, num_bins=1, queue=queue
                         )
 
         assert len(queue.queue) == 1
-        assert queue.get() == 123
+        assert queue.get() == qblox_result
         desync.assert_called()
 
     def test_execute_returns_ordered_measurements(self, platform: Platform, qblox_results: list[dict]):
@@ -587,6 +589,8 @@ class TestMethods:
                         "threshold": [0.5, 0.5, 0.5, 0.5],
                         "avg_cnt": [1000, 1000, 1000, 1000],
                     },
+                    "qubit": 0,
+                    "measurement": 0,
                 }
             ],
         )

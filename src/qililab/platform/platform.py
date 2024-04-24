@@ -20,6 +20,7 @@ from copy import deepcopy
 from dataclasses import asdict
 from queue import Queue
 
+import numpy as np
 from qibo.gates import M
 from qibo.models import Circuit
 from qiboconnection.api import API
@@ -756,7 +757,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             result = bus.acquire_result()
             if queue is not None:
                 queue.put_nowait(item=result)
-            results.append(result)
+            if not np.all(np.isnan(result.array)):
+                results.append(result)
 
         for instrument in self.instruments.elements:
             if isinstance(instrument, QbloxModule):
