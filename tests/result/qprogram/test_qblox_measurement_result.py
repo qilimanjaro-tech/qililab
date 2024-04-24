@@ -1,4 +1,5 @@
 """ Test Results """
+
 import json
 
 import numpy as np
@@ -10,7 +11,7 @@ from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementRes
 @pytest.fixture(name="raw_measurement_data")
 def fixture_raw_measurement_data() -> dict:
     """Dictionary of raw measurement data as returned from QRM instruments."""
-    return {"bins": {"integration": {"path0": [1, 2, 3], "path1": [4, 5, 6]}}}
+    return {"bins": {"integration": {"path0": [1, 2, 3], "path1": [4, 5, 6]}, "threshold": [0.1, 0.2, 0.3]}}
 
 
 @pytest.fixture(name="qblox_measurement_result")
@@ -53,3 +54,10 @@ class TestsQbloxQProgramMeasurementResult:
         as_json = json.dumps(again_serialized_dictionary)
         dictionary_from_json = json.loads(as_json)
         assert serialized_dictionary == dictionary_from_json
+
+    def test_threshold(self, qblox_measurement_result: QbloxMeasurementResult):
+        """Test the thresholded data as an np.ndarray"""
+        thresholded_data = qblox_measurement_result.threshold
+
+        assert isinstance(thresholded_data, np.ndarray)
+        assert np.all(thresholded_data == np.array(qblox_measurement_result.raw_measurement_data["bins"]["threshold"]))
