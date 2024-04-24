@@ -757,7 +757,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             result = bus.acquire_result()
             if queue is not None:
                 queue.put_nowait(item=result)
-            if not np.all(np.isnan(result.qblox_raw_results[0]['bins']["integration"]["path0"])):
+            if not np.all(np.isnan(result.qblox_raw_results[0]["bins"]["integration"]["path0"])):
                 results.append(result)
 
         for instrument in self.instruments.elements:
