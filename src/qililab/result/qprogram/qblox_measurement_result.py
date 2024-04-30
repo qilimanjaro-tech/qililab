@@ -51,3 +51,12 @@ class QbloxMeasurementResult(MeasurementResult):
         path0 = self.raw_measurement_data["bins"]["integration"]["path0"]
         path1 = self.raw_measurement_data["bins"]["integration"]["path1"]
         return np.array([path0, path1])
+
+    @property
+    def threshold(self) -> np.ndarray:
+        """Get the thresholded data as an np.ndarray.
+
+        Returns:
+            np.ndarray: The thresholded data.
+        """
+        return np.array(self.raw_measurement_data["bins"]["threshold"])

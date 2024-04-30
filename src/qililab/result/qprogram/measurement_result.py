@@ -35,3 +35,12 @@ class MeasurementResult(DictSerializable, ABC):
         Returns:
             np.ndarray: Numpy array containing the results.
         """
+
+    @property
+    @abstractmethod
+    def threshold(self) -> np.ndarray:
+        """Returns the thresholded data for the result.
+
+        Returns:
+            np.ndarray: Thresholded data for the result.
+        """

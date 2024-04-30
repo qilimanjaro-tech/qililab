@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 0.26.1 (2024-04-26)
+
+### Bug fixes
+
+- Hotfix for the 2readout problem
+  [#720](https://github.com/qilimanjaro-tech/qililab/pull/720)
+
 ## 0.25.1 (2024-03-26)
 
 ### Bug fixes
