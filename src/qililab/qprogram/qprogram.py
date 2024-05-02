@@ -267,14 +267,14 @@ class QProgram(DictSerializable):
         self._active_block.append(operation)
         self._buses.add(bus)
 
-    def acquire(self, bus: str, weights: IQPair):
+    def acquire(self, bus: str):
         """Acquire results based on the given weights.
 
         Args:
             bus (str): Unique identifier of the bus.
             weights (IQPair): Weights used during acquisition.
         """
-        operation = Acquire(bus=bus, weights=weights)
+        operation = Acquire(bus=bus)
         self._active_block.append(operation)
         self._buses.add(bus)
 

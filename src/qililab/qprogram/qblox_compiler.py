@@ -413,14 +413,11 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             index=self._buses[element.bus].next_acquisition_index,
         )
 
-        index_I, index_Q, integration_length = self._append_to_weights_of_bus(element.bus, weights=element.weights)
-
         if num_bins == 1:
             self._buses[element.bus].qpy_block_stack[-1].append_component(
                 component=QPyInstructions.Acquire(
                     acq_index=self._buses[element.bus].next_acquisition_index,
                     bin_index=self._buses[element.bus].next_bin_index,
-                    wait_time=integration_length,
                 )
             )
         else:
@@ -435,13 +432,12 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                 component=QPyInstructions.Acquire(
                     acq_index=self._buses[element.bus].next_acquisition_index,
                     bin_index=bin_register,
-                    wait_time=integration_length,
                 )
             )
             self._buses[element.bus].qpy_block_stack[block_index_for_add_instruction].append_component(
                 component=QPyInstructions.Add(origin=bin_register, var=1, destination=bin_register)
             )
-        self._buses[element.bus].static_duration += integration_length
+        self._buses[element.bus].static_duration += 4
         self._buses[element.bus].next_bin_index = 0  # maybe this counter can be removed completely
         self._buses[element.bus].next_acquisition_index += 1
         self._buses[element.bus].marked_for_sync = True
