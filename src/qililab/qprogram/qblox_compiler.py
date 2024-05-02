@@ -431,15 +431,6 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                 component=QPyInstructions.Move(var=self._buses[element.bus].next_bin_index, register=bin_register),
                 bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
             )
-            register_I, register_Q = QPyProgram.Register(), QPyProgram.Register()
-            self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
-                component=QPyInstructions.Move(var=index_I, register=register_I),
-                bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
-            )
-            self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
-                component=QPyInstructions.Move(var=index_Q, register=register_Q),
-                bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
-            )
             self._buses[element.bus].qpy_block_stack[-1].append_component(
                 component=QPyInstructions.Acquire(
                     acq_index=self._buses[element.bus].next_acquisition_index,
