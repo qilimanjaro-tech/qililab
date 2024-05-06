@@ -585,6 +585,13 @@ class CalibrationController:
         If the node does not have an associated parameter, or the parameter attribute of the node is None,
         this function does nothing.
 
+        The `node.output_parameters["platform_parameters"]` needs to be a list with the same order as in
+        `platform.set_parameter()`:
+            - `param_name`: The name of the parameter to be updated.
+            - `param_value`: The value of the parameter to be updated.
+            - `bus_alias`: The bus alias where the parameter is located.
+            - `channel_id`: The channel id where the parameter is located.
+
         Args:
             node (CalibrationNode): The node which parameters need to be updated in the platform.
         """
