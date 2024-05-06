@@ -6,6 +6,7 @@ import networkx as nx
 import pandas as pd
 import pytest
 
+from qililab import Parameter
 from qililab.calibration import CalibrationController, CalibrationNode
 from qililab.data_management import build_platform
 from qililab.platform.platform import Platform
@@ -800,26 +801,26 @@ class TestCalibrationController:
     ##############################
 
     # TODO: Check why this test doesn't work, "params" not a valid Parameter:
-    # @patch("qililab.calibration.calibration_controller.Platform.set_parameter")
-    # @patch("qililab.calibration.calibration_controller.save_platform")
-    # def test_update_parameters(self, mock_save_platform, mock_set_params, controller):
-    #     """Test that the update parameters method, calls ``platform.set_parameter()`` and ``save_platform()``."""
-    #     for node in controller.node_sequence.values():
-    #         node.output_parameters = {
-    #             "platform_parameters": [
-    #                 ("test_bus", node.qubit_index, "param", 0),
-    #                 ("test_bus2", node.qubit_index, "param2", 1),
-    #             ]
-    #         }
-    #         controller._update_parameters(node)
+    @patch("qililab.calibration.calibration_controller.Platform.set_parameter")
+    @patch("qililab.calibration.calibration_controller.save_platform")
+    def test_update_parameters(self, mock_save_platform, mock_set_params, controller):
+        """Test that the update parameters method, calls ``platform.set_parameter()`` and ``save_platform()``."""
+        for node in controller.node_sequence.values():
+            node.output_parameters = {
+                "platform_parameters": [
+                    (Parameter.AMPLITUDE, 0, "test_bus", node.qubit_index),
+                    (Parameter.AMPLITUDE, 1, "test_bus2", node.qubit_index),
+                ]
+            }
+            controller._update_parameters(node)
 
-    #         mock_set_params.assert_called_with(
-    #             alias="test_bus2", parameter="param2", value=1, channel_id=node.qubit_index
-    #         )  # Checking the last call of the 2 there are.
-    #         mock_save_platform.assert_called_with(controller.runcard, controller.platform)  # Checking the save call
+            mock_set_params.assert_called_with(
+                parameter=Parameter.AMPLITUDE, value=1, alias="test_bus2", channel_id=node.qubit_index
+            )  # Checking the last call of the 2 there are.
+            mock_save_platform.assert_called_with(controller.runcard, controller.platform)  # Checking the save call
 
-    #     assert mock_set_params.call_count == 2 * len(controller.node_sequence)
-    #     assert mock_save_platform.call_count == len(controller.node_sequence)
+        assert mock_set_params.call_count == 2 * len(controller.node_sequence)
+        assert mock_save_platform.call_count == len(controller.node_sequence)
 
     ####################################
     ### TEST GET LAST SET PARAMETERS ###
