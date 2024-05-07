@@ -448,7 +448,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         duration = (
             self._qprogram_to_qua_variables[element.duration]
             if isinstance(element.duration, Variable)
-            else max(element.duration, self.MINIMUM_TIME)
+            else max(element.duration, self.MINIMUM_TIME)//4
         )
         qua.wait(duration, bus)
 
