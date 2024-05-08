@@ -71,6 +71,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
     FREQUENCY_COEFF = 1
     PHASE_COEFF = 2 * np.pi
     VOLTAGE_COEFF = 2
+    WAIT_COEFF = 4
     MINIMUM_TIME = 4
 
     def __init__(self) -> None:
@@ -448,9 +449,9 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         duration = (
             self._qprogram_to_qua_variables[element.duration]
             if isinstance(element.duration, Variable)
-            else max(element.duration, self.MINIMUM_TIME)//4
+            else max(element.duration, self.MINIMUM_TIME)
         )
-        qua.wait(duration, bus)
+        qua.wait(duration // self.WAIT_COEFF, bus)
 
     def _handle_sync(self, element: Sync):
         if element.buses:
