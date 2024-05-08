@@ -621,7 +621,7 @@ class CalibrationController:
                 and node.previous_timestamp is not None
                 and "platform_parameters" in node.output_parameters
             ):
-                for bus_alias, param_name, param_value, channel_id in node.output_parameters["platform_parameters"]:
+                for param_name, param_value, bus_alias, channel_id in node.output_parameters["platform_parameters"]:
                     parameters[(param_name, bus_alias, channel_id)] = (
                         param_value,
                         node.node_id,
@@ -741,7 +741,7 @@ class CalibrationController:
                         col.append(fidelity)
 
             if "platform_parameters" in node.output_parameters:
-                for bus_alias, param_name, _, _ in node.output_parameters["platform_parameters"]:
+                for param_name, _, bus_alias, _ in node.output_parameters["platform_parameters"]:
                     bus_list = str(bus_alias).split("_")
                     bus = "_".join([x for x in bus_list if not any(char.isdigit() for char in x)])
 
@@ -768,7 +768,7 @@ class CalibrationController:
                     df[fidelity][qubit] = value
 
             if "platform_parameters" in node.output_parameters:
-                for bus_alias, param_name, param_value, _ in node.output_parameters["platform_parameters"]:
+                for param_name, param_value, bus_alias, _ in node.output_parameters["platform_parameters"]:
                     bus_list = str(bus_alias).split("_")
                     bus = "_".join([x for x in bus_list if not any(char.isdigit() for char in x)])
                     df[f"{str(param_name)}_{bus}"][qubit] = param_value
