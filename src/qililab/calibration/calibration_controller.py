@@ -585,16 +585,23 @@ class CalibrationController:
         If the node does not have an associated parameter, or the parameter attribute of the node is None,
         this function does nothing.
 
+        The `node.output_parameters["platform_parameters"]` needs to be a list with the same order as in
+        `platform.set_parameter()`:
+            - `param_name`: The name of the parameter to be updated.
+            - `param_value`: The value of the parameter to be updated.
+            - `bus_alias`: The bus alias where the parameter is located.
+            - `channel_id`: The channel id where the parameter is located.
+
         Args:
             node (CalibrationNode): The node which parameters need to be updated in the platform.
         """
         if node.output_parameters is not None and "platform_parameters" in node.output_parameters:
-            for bus_alias, param_name, param_value, channel_id in node.output_parameters["platform_parameters"]:
+            for param_name, param_value, bus_alias, channel_id in node.output_parameters["platform_parameters"]:
                 logger.info(
-                    "Platform updated with: (bus: %s, %s, %s, ch: %s).", bus_alias, param_name, param_value, channel_id
+                    "Platform updated with: %s, %s, (bus: %s, ch: %s).", param_name, param_value, bus_alias, channel_id
                 )
                 self.platform.set_parameter(
-                    alias=bus_alias, parameter=ql.Parameter(param_name), value=param_value, channel_id=channel_id
+                    parameter=ql.Parameter(param_name), value=param_value, alias=bus_alias, channel_id=channel_id
                 )
 
             save_platform(self.runcard, self.platform)
