@@ -240,7 +240,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                 export_nb_outputs(
                     {
                         "check_parameters": {"x": sweep_interval, "y": results},
-                        "platform_parameters": [(bus_alias0, param_name0, fitted_values[0], qubit), (bus_alias1, param_name1, fitted_values[1], qubit)],
+                        "platform_parameters": [(param_name0, fitted_values[0], bus_alias0, qubit), (param_name1, fitted_values[1], bus_alias1, qubit)],
                         "fidelities": [(qubit, "fidelity1", 0.9), (qubit, "fidelity2", 0.95)]  # Fidelities in the output dictionary are optional.
                     }
                 )

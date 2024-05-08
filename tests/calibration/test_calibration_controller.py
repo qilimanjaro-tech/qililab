@@ -830,7 +830,7 @@ class TestCalibrationController:
         for i, node in controller.node_sequence.items():
             node.output_parameters = {
                 "check_parameters": {"x": [0, 1, 2, 3, 4, 5], "y": [0, 1, 2, 3, 4, 5]},
-                "platform_parameters": [(f"test_bus_{i}", "param", 0, 0), (f"test_bus_{i}", "param", 1, 1)],
+                "platform_parameters": [("param", 0, f"test_bus_{i}", 0), ("param", 1, f"test_bus_{i}", 1)],
                 "fidelities": [(0, f"param_{i}", 1), (1, f"param_{i}", 0.967)],
             }
             node.previous_timestamp = 1999
@@ -924,7 +924,7 @@ class TestCalibrationController:
             if node.node_id == "zeroth_q0q1":
                 node.output_parameters = {
                     "check_parameters": {"x": [0, 1, 2, 3, 4, 5], "y": [0, 1, 2, 3, 4, 5]},
-                    "platform_parameters": [("test_bus", f"param_{ind}", 1, "0-1")],
+                    "platform_parameters": [(f"param_{ind}", 1, "test_bus", "0-1")],
                     "fidelities": [("0-1", f"fidelity_{ind}", 0.967)],
                 }
 
@@ -932,14 +932,14 @@ class TestCalibrationController:
                 node.node_id = "fourth_q1"
                 node.output_parameters = {
                     "check_parameters": {"x": [0, 1, 2, 3, 4, 5], "y": [0, 1, 2, 3, 4, 5]},
-                    "platform_parameters": [("test_bus", f"param_{ind}", 1, 1)],
+                    "platform_parameters": [(f"param_{ind}", 1, "test_bus", 1)],
                     "fidelities": [(1, f"fidelity_{ind}", 0.967)],
                 }
 
             else:
                 node.output_parameters = {
                     "check_parameters": {"x": [0, 1, 2, 3, 4, 5], "y": [0, 1, 2, 3, 4, 5]},
-                    "platform_parameters": [("test_bus", f"param_{ind}", 1, 0)],
+                    "platform_parameters": [(f"param_{ind}", 1, "test_bus", 0)],
                     "fidelities": [(0, f"fidelity_{ind}", 0.967)],
                 }
             node.previous_timestamp = 1999
