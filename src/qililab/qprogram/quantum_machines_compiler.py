@@ -451,7 +451,13 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             if isinstance(element.duration, Variable)
             else max(element.duration, self.MINIMUM_TIME)
         )
-        qua.wait(duration // self.WAIT_COEFF, bus)
+
+        qua.wait(
+            duration / int(self.WAIT_COEFF)
+            if isinstance(element.duration, Variable)
+            else int(duration / self.WAIT_COEFF),
+            bus,
+        )
 
     def _handle_sync(self, element: Sync):
         if element.buses:
