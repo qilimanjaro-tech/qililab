@@ -331,9 +331,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             logger.info("Already connected to the instruments")
             return
 
-        if self.connection is not None and not manual_override:
-            self.connection.block_device_id(device_id=self.device_id)
-
         self.instrument_controllers.connect()
         self._connected_to_instruments = True
         logger.info("Connected to the instruments")
@@ -375,8 +372,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
     def disconnect(self):
         """Closes the connection to all the instruments."""
-        if self.connection is not None:
-            self.connection.release_device(device_id=self.device_id)
         if not self._connected_to_instruments:
             logger.info("Already disconnected from the instruments")
             return
