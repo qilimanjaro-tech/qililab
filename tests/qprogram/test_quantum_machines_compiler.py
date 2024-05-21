@@ -442,7 +442,7 @@ class TestQuantumMachinesCompiler:
         wait = statements[0].wait
         assert len(wait.qe) == 1
         assert wait.qe[0].name == "drive"
-        assert int(wait.time.literal.value) == 100
+        assert int(wait.time.literal.value) == 100 / 4
 
     def test_sync_operation(self, sync_operation: QProgram):
         compiler = QuantumMachinesCompiler()
