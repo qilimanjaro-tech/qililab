@@ -71,6 +71,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
     FREQUENCY_COEFF = 1
     PHASE_COEFF = 2 * np.pi
     VOLTAGE_COEFF = 2
+    WAIT_COEFF = 4
     MINIMUM_TIME = 4
 
     def __init__(self) -> None:
@@ -450,7 +451,13 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             if isinstance(element.duration, Variable)
             else max(element.duration, self.MINIMUM_TIME)
         )
-        qua.wait(duration, bus)
+
+        qua.wait(
+            duration / int(self.WAIT_COEFF)
+            if isinstance(element.duration, Variable)
+            else int(duration / self.WAIT_COEFF),
+            bus,
+        )
 
     def _handle_sync(self, element: Sync):
         if element.buses:
@@ -526,7 +533,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         attributes = [
             f"{key}: {(QuantumMachinesCompiler.__hash_waveform(value) if isinstance(value, Waveform) else str(value))}"
             for key, value in waveform.__dict__.items()
-            if key != "duration"
+            if key != "duration" or not isinstance(waveform, Square)
         ]
         string_to_hash = f"{waveform.__class__.__name__}({','.join(attributes)})"
         hash_result = hashlib.md5(string_to_hash.encode("utf-8"), usedforsecurity=False)
