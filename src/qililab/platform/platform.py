@@ -41,7 +41,7 @@ from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSchedule
 from qililab.pulse import QbloxCompiler as PulseQbloxCompiler
-from qililab.qprogram import QbloxCompiler, QProgram, QuantumMachinesCompiler
+from qililab.qprogram import Calibration, QbloxCompiler, QProgram, QuantumMachinesCompiler
 from qililab.result import Result
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
@@ -313,6 +313,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         self._qpy_sequence_cache: dict[str, str] = {}
         """Dictionary for caching qpysequences."""
+
+        self._calibration: Calibration = Calibration()
 
     def connect(self):
         """Connects to all the instruments and blocks the connection for other users.
@@ -586,8 +588,20 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """
         return str(YAML().dump(self.to_dict(), io.BytesIO()))
 
+    def load_calibration(self, file: str) -> None:
+        """Load calibration from file.
+
+        Args:
+            file (str): The YAML file containing the calibration.
+        """
+        self._calibration = Calibration.load(file)
+
     def execute_qprogram(
-        self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None, debug: bool = False
+        self,
+        qprogram: QProgram,
+        bus_mapping: dict[str, str] | None = None,
+        calibration: Calibration | None = None,
+        debug: bool = False,
     ) -> QProgramResults:
         """Execute a QProgram using the platform instruments.
 
@@ -606,7 +620,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             if isinstance(instrument, (QbloxModule, QuantumMachinesCluster))
         }
         if all(isinstance(instrument, QbloxModule) for instrument in instruments):
-            return self._execute_qprogram_with_qblox(qprogram=qprogram, bus_mapping=bus_mapping, debug=debug)
+            return self._execute_qprogram_with_qblox(
+                qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration, debug=debug
+            )
         if all(isinstance(instrument, QuantumMachinesCluster) for instrument in instruments):
             if len(instruments) != 1:
                 raise NotImplementedError(
@@ -614,16 +630,20 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 )
             cluster: QuantumMachinesCluster = instruments.pop()  # type: ignore[assignment]
             return self._execute_qprogram_with_quantum_machines(
-                cluster=cluster, qprogram=qprogram, bus_mapping=bus_mapping, debug=debug
+                cluster=cluster, qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration, debug=debug
             )
         raise NotImplementedError("Executing QProgram in a mixture of instruments is not supported.")
 
     def _execute_qprogram_with_qblox(
-        self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None, debug: bool = False
+        self,
+        qprogram: QProgram,
+        bus_mapping: dict[str, str] | None = None,
+        calibration: Calibration | None = None,
+        debug: bool = False,
     ) -> QProgramResults:
         # Compile QProgram
         qblox_compiler = QbloxCompiler()
-        sequences = qblox_compiler.compile(qprogram=qprogram, bus_mapping=bus_mapping)
+        sequences = qblox_compiler.compile(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
         buses = {bus_alias: self._get_bus_by_alias(alias=bus_alias) for bus_alias in sequences}
 
         if debug:
@@ -670,10 +690,13 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         cluster: QuantumMachinesCluster,
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,
+        calibration: Calibration | None = None,
         debug: bool = False,
     ) -> QProgramResults:
         compiler = QuantumMachinesCompiler()
-        qua_program, configuration, measurements = compiler.compile(qprogram=qprogram, bus_mapping=bus_mapping)
+        qua_program, configuration, measurements = compiler.compile(
+            qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration
+        )
 
         cluster.append_configuration(configuration=configuration)
 

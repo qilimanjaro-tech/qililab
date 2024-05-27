@@ -13,15 +13,20 @@
 # limitations under the License.
 
 from collections import deque
+from copy import deepcopy
+from dataclasses import replace
+from typing import overload
 
 import numpy as np
 
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
+from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.decorators import requires_domain
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
     Play,
+    PlayCalibratedOperation,
     ResetPhase,
     SetFrequency,
     SetGain,
@@ -131,6 +136,73 @@ class QProgram(DictSerializable):
     @property
     def _active_block(self) -> Block:
         return self._block_stack[-1]
+
+    def has_named_operations(self) -> bool:
+        """Checks if QProgram has named operations. These need to be mapped before compiling to hardware-native code.
+
+        Returns:
+            bool: True, if QProgram has named operations.
+        """
+
+        def traverse(block: Block):
+            for element in block.elements:
+                if isinstance(element, Block):
+                    if traverse(element):
+                        return True
+                elif isinstance(element, PlayCalibratedOperation):
+                    return True
+            return False
+
+        return traverse(self.body)
+
+    def with_bus_mapping(self, bus_mapping: dict[str, str]) -> "QProgram":
+        """Returns a copy of the QProgram with bus mappings applied.
+
+        Args:
+            bus_mapping (dict[str, str]): A dictionary mapping old bus names to new bus names.
+
+        Returns:
+            QProgram: A new instance of QProgram with updated bus names.
+        """
+
+        def traverse(block: Block):
+            for index, element in enumerate(block.elements):
+                if isinstance(element, Block):
+                    traverse(element)
+                elif hasattr(element, "bus"):
+                    bus = getattr(element, "bus")
+                    if isinstance(bus, str) and bus in bus_mapping:
+                        block.elements[index] = replace(block.elements[index], bus=bus_mapping[bus])  # type: ignore[call-arg]
+                elif hasattr(element, "buses"):
+                    buses = getattr(element, "buses")
+                    if isinstance(buses, list):
+                        block.elements[index] = replace(block.elements[index], buses=[bus_mapping[bus] if bus in bus_mapping else bus for bus in buses])  # type: ignore[call-arg]
+
+        # Copy qprogram so the original remain unaffected
+        copied_qprogram = deepcopy(self)
+
+        # Recursively traverse qprogram applying the bus mapping
+        traverse(copied_qprogram.body)
+
+        # Apply the mapping to _buses property
+        copied_qprogram._buses.symmetric_difference_update({item for pair in bus_mapping.items() for item in pair})
+
+        return copied_qprogram
+
+    def with_calibration(self, calibration: Calibration):
+        def traverse(block: Block):
+            for index, element in enumerate(block.elements):
+                if isinstance(element, Block):
+                    traverse(element)
+                elif isinstance(element, PlayCalibratedOperation):
+                    waveform = calibration.get_operation(bus=element.bus, operation=element.operation)
+                    if waveform is not None:
+                        play_operation = Play(bus=element.bus, waveform=waveform, wait_time=element.wait_time)
+                        block.elements[index] = play_operation
+
+        copied_qprogram = deepcopy(self)
+        traverse(copied_qprogram.body)
+        return copied_qprogram
 
     def block(self):
         """Define a generic block for scoping operations.
@@ -244,14 +316,39 @@ class QProgram(DictSerializable):
 
         return QProgram._ForLoopContext(qprogram=self, variable=variable, start=start, stop=stop, step=step)
 
-    def play(self, bus: str, waveform: Waveform | IQPair, wait_time: int | None = None):
+    @overload
+    def play(self, bus: str, waveform: Waveform | IQPair, wait_time: int | None = None) -> None:
         """Play a single waveform or an I/Q pair of waveforms on the bus.
 
         Args:
             bus (str): Unique identifier of the bus.
             waveform (Waveform | IQPair): A single waveform or an I/Q pair of waveforms
         """
-        operation = Play(bus=bus, waveform=waveform, wait_time=wait_time)
+
+    @overload
+    def play(self, bus: str, waveform: str, wait_time: int | None = None) -> None:
+        """Play a named waveform on the bus.
+
+        Args:
+            bus (str): Unique identifier of the bus.
+            waveform (str): An identifier of a named waveform.
+        """
+
+    def play(self, bus: str, waveform: Waveform | IQPair | str, wait_time: int | None = None) -> None:
+        """Play a waveform, IQPair, or calibrated operation on the specified bus.
+
+        This method handles both playing a waveform or IQPair, and playing a
+        calibrated operation based on the type of the argument provided.
+
+        Args:
+            bus (str): Unique identifier of the bus.
+            waveform (Waveform | IQPair | str): The waveform, IQPair, or alias of named waveform to play.
+        """
+        operation = (
+            PlayCalibratedOperation(bus=bus, operation=waveform, wait_time=wait_time)
+            if isinstance(waveform, str)
+            else Play(bus=bus, waveform=waveform, wait_time=wait_time)
+        )
         self._active_block.append(operation)
         self._buses.add(bus)
 

@@ -20,6 +20,13 @@ from qililab.waveforms import IQPair, Waveform
 
 
 @dataclass(frozen=True)
+class PlayCalibratedOperation(Operation):  # pylint: disable=missing-class-docstring
+    bus: str
+    operation: str
+    wait_time: int | None = None
+
+
+@dataclass(frozen=True)
 class Play(Operation):  # pylint: disable=missing-class-docstring
     bus: str
     waveform: Waveform | IQPair
