@@ -101,7 +101,15 @@ class TestPulseShape:
             assert dict_ is not None
             assert isinstance(dict_, dict)
 
-        assert dictionary == dictionary2 == {"name": pulse_shape.name.value, "step_amplitude": pulse_shape.step_amplitude, "step_duration": pulse_shape.step_duration}
+        assert (
+            dictionary
+            == dictionary2
+            == {
+                "name": pulse_shape.name.value,
+                "step_amplitude": pulse_shape.step_amplitude,
+                "step_duration": pulse_shape.step_duration,
+            }
+        )
 
     def test_envelope_with_amplitude_0(self, pulse_shape: TwoStep):
         """Testing that the corner case amplitude = 0 works properly."""
