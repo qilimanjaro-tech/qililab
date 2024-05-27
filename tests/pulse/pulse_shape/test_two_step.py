@@ -41,7 +41,12 @@ class TestPulseShape:
 
         # Assert size of np.ndarray
         assert len(env) == env_params["duration"] / env_params["resolution"]
-        envelope = np.concatenate((env_params['amplitude'] * np.ones(pulse_shape.step_duration), pulse_shape.step_amplitude * np.ones(env_params['duration'] - pulse_shape.step_duration)))
+        envelope = np.concatenate(
+            (
+                env_params["amplitude"] * np.ones(pulse_shape.step_duration),
+                pulse_shape.step_amplitude * np.ones(env_params["duration"] - pulse_shape.step_duration),
+            )
+        )
         assert np.allclose(env, envelope)
 
     def test_max_min_of_envelope_method(self, pulse_shape: TwoStep, env_params: dict[str, int]):
