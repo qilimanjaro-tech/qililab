@@ -8,10 +8,12 @@ import pytest
 
 from qililab import Arbitrary, Domain, DragCorrection, Gaussian, IQPair, QProgram, Square
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
+from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
     Play,
+    PlayCalibratedOperation,
     ResetPhase,
     SetFrequency,
     SetGain,
@@ -54,6 +56,43 @@ class TestQProgram:
         # __exit__
         assert len(qp._body.elements) == 1
         assert qp._body.elements[0] is block
+
+    def test_with_bus_mapping_method(self):
+        """Test with_bus_mapping method"""
+        qp = QProgram()
+        qp.wait(bus="drive_bus", duration=100)
+        qp.sync(buses=["drive_bus", "readout_bus"])
+        qp.play(bus="drive_bus", waveform=Square(1.0, 100))
+
+        new_qp = qp.with_bus_mapping(bus_mapping={"drive_bus": "drive_q0_bus", "readout_bus": "readout_q0_bus"})
+
+        assert "drive_bus" not in new_qp.buses
+        assert "readout_bus" not in new_qp.buses
+        assert "drive_q0_bus" in new_qp.buses
+        assert "readout_q0_bus" in new_qp.buses
+
+        assert new_qp.body.elements[0].bus == "drive_q0_bus"
+        assert new_qp.body.elements[1].buses[0] == "drive_q0_bus"
+        assert new_qp.body.elements[1].buses[1] == "readout_q0_bus"
+        assert new_qp.body.elements[2].bus == "drive_q0_bus"
+
+    def test_with_calibration_method(self):
+        """Test with_bus_mapping method"""
+        calibration = Calibration()
+        calibration.add_operation(bus="drive_q0_bus", operation="Xpi", waveform=Square(1.0, 100))
+
+        qp = QProgram()
+        qp.play(bus="drive_q0_bus", waveform="Xpi")
+
+        new_qp = qp.with_calibration(calibration=calibration)
+
+        assert isinstance(qp.body.elements[0], PlayCalibratedOperation)
+        assert qp.body.elements[0].operation == "Xpi"
+
+        assert isinstance(new_qp.body.elements[0], Play)
+        assert isinstance(new_qp.body.elements[0].waveform, Square)
+        assert new_qp.body.elements[0].waveform.amplitude == 1.0
+        assert new_qp.body.elements[0].waveform.duration == 100
 
     def test_infinite_loop_method(self):
         """Test infinite_loop method"""
