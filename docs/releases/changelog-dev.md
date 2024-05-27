@@ -2,6 +2,9 @@
 
 ### New features since last release
 
+- Introduce the Two-Step pulse shape to improve readout
+  [#730](https://github.com/qilimanjaro-tech/qililab/pull/730)
+
 ### Improvements
 
 ### Breaking changes
