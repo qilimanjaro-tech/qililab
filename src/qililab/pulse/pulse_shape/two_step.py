@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Rectangular pulse shape."""
+"""Two-Step pulse shape."""
 from copy import deepcopy
 from dataclasses import dataclass
 
@@ -29,18 +29,12 @@ class TwoStep(PulseShape):
     """Two step pulse shape. Given by two concatenated square pulses.
 
     Examples:
-        To get the envelope of a rectangular shape, with ``amplitude`` equal to ``X``, you need to do:
+        To get the envelope of a two-step shape, with ``amplitude`` equal to ``X``, you need to do:
 
         .. code-block:: python
 
-            from qililab.pulse.pulse_shape import Rectangular
-            rectangular_envelope = Rectangular().envelope(amplitude=X, duration=50)
-
-        which for ``X`` being ``1.`` and ``0.75``, look respectively like:
-
-        .. image:: /classes_images/rectangulars.png
-            :width: 800
-            :align: center
+            from qililab.pulse.pulse_shape import TwoStep
+            two_step_envelope = TwoStep().envelope(amplitude=X, duration=50)
     """
 
     name = PulseShapeName.TWOSTEP  #: Name of the two-step pulse shape.
@@ -68,10 +62,10 @@ class TwoStep(PulseShape):
         """Loads Twostep object/shape from dictionary.
 
         Args:
-            dictionary (dict): Dictionary representation of the Rectangular object/shape including the name of the pulse shape.
+            dictionary (dict): Dictionary representation of the Two-Step object/shape including the name of the pulse shape.
 
         Returns:
-            Rectangular: Loaded class.
+            TwoStep: Loaded class.
         """
         local_dictionary = deepcopy(dictionary)
         local_dictionary.pop("name", None)
