@@ -142,6 +142,7 @@ class PulseShapeName(str, Enum):
     SNZ = "snz"
     COSINE = "cosine"
     FLATTOP = "flat_top"
+    TWOSTEP = "two_step"
 
 
 class NodeName(str, Enum):
