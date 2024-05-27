@@ -17,7 +17,6 @@ from copy import deepcopy
 from dataclasses import dataclass
 
 import numpy as np
-from scipy.special import erf
 
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
 from qililab.typings import PulseShapeName
