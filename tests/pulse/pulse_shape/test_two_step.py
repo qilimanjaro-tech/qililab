@@ -4,7 +4,7 @@ import itertools
 import numpy as np
 import pytest
 
-from qililab.pulse.pulse_shape import TwoStep, PulseShape
+from qililab.pulse.pulse_shape import PulseShape, TwoStep
 
 from .helper_functions import return_envelope
 
