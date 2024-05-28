@@ -4,6 +4,7 @@ import pytest
 
 from qililab.qprogram.calibration import Calibration
 from qililab.waveforms import Arbitrary, FlatTop, Gaussian, IQPair, Square
+from qililab.yaml import yaml
 
 
 class TestCalibration:
@@ -94,5 +95,16 @@ class TestCalibration:
         assert isinstance(readout, Square)
         assert readout.amplitude == 1.0
         assert readout.duration == 2000
+
+        os.remove(path="calibration.yml")
+
+        # Test that loading a different yaml produces an error
+        square = Square(1.0, 100)
+
+        with open(file="calibration.yml", mode="w", encoding="utf-8") as stream:
+            yaml.dump(data=square, stream=stream)
+
+        with pytest.raises(TypeError):
+            _ = Calibration.load(file="calibration.yml")
 
         os.remove(path="calibration.yml")
