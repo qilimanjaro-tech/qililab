@@ -2,17 +2,11 @@
 
 ### New features since last release
 
-- Introduce the Two-Step pulse shape to improve readout
-  [#730](https://github.com/qilimanjaro-tech/qililab/pull/730)
-
 ### Improvements
 
 ### Breaking changes
 
 ### Deprecations / Removals
-
-- Remove qiboconnection_api.block_device() and release_device()
-  [#728](https://github.com/qilimanjaro-tech/qililab/pull/728)
 
 ### Documentation
 
