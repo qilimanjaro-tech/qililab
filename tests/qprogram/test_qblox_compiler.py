@@ -3,9 +3,29 @@ import numpy as np
 import pytest
 import qpysequence as QPy
 
-from qililab import Domain, Gaussian, IQPair, QbloxCompiler, QProgram, Square
+from qililab import Calibration, Domain, Gaussian, IQPair, QbloxCompiler, QProgram, Square
 from qililab.qprogram.blocks import ForLoop
 from tests.test_utils import is_q1asm_equal  # pylint: disable=import-error, no-name-in-module
+
+
+@pytest.fixture(name="calibration")
+def fixture_calibration() -> Calibration:
+    calibration = Calibration()
+    calibration.add_operation(bus="drive_q0", operation="Xpi", waveform=Square(1.0, 100))
+    calibration.add_operation(bus="drive_q1", operation="Xpi", waveform=Square(1.0, 150))
+    calibration.add_operation(bus="drive_q2", operation="Xpi", waveform=Square(1.0, 200))
+
+    return calibration
+
+
+@pytest.fixture(name="play_named_operation")
+def fixture_play_named_operation() -> QProgram:
+    drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
+    qp = QProgram()
+    qp.play(bus="drive", waveform="Xpi")
+    qp.play(bus="drive", waveform=drag_wf)
+
+    return qp
 
 
 @pytest.fixture(name="no_loops_all_operations")
@@ -295,6 +315,16 @@ def fixture_multiple_play_operations_with_no_Q_waveform() -> QProgram:
 
 
 class TestQBloxCompiler:
+    def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
+        compiler = QbloxCompiler()
+        sequences = compiler.compile(
+            qprogram=play_named_operation, bus_mapping={"drive": "drive_q0"}, calibration=calibration
+        )
+
+        assert len(sequences) == 1
+        assert "drive_q0" in sequences
+        assert isinstance(sequences["drive_q0"], QPy.Sequence)
+
     def test_no_loops_all_operations(self, no_loops_all_operations: QProgram):
         compiler = QbloxCompiler()
         sequences = compiler.compile(qprogram=no_loops_all_operations)

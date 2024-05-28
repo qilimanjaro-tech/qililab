@@ -314,8 +314,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         self._qpy_sequence_cache: dict[str, str] = {}
         """Dictionary for caching qpysequences."""
 
-        self._calibration: Calibration = Calibration()
-
     def connect(self):
         """Connects to all the instruments and blocks the connection for other users.
 
@@ -587,14 +585,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             str: Name of the platform.
         """
         return str(YAML().dump(self.to_dict(), io.BytesIO()))
-
-    def load_calibration(self, file: str) -> None:
-        """Load calibration from file.
-
-        Args:
-            file (str): The YAML file containing the calibration.
-        """
-        self._calibration = Calibration.load(file)
 
     def execute_qprogram(
         self,

@@ -185,13 +185,25 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
         traverse(copied_qprogram.body)
 
         # Apply the mapping to _buses property
-        copied_qprogram._buses.symmetric_difference_update(
+        copied_qprogram._buses.symmetric_difference_update(  # pylint: disable=protected-access
             {item for pair in bus_mapping.items() for item in pair}
-        )  # pylint: disable=protected-access
-
+        )
         return copied_qprogram
 
     def with_calibration(self, calibration: Calibration):
+        """Apply calibration to the operations within the QProgram.
+
+        This method traverses the elements of the QProgram, replacing any
+        named operations with the corresponding calibrated waveforms specified
+        in the given Calibration instance.
+
+        Args:
+            calibration (Calibration): The calibration data to apply to the operations.
+
+        Returns:
+            QProgram: A new instance of QProgram with calibrated operations.
+        """
+
         def traverse(block: Block):
             for index, element in enumerate(block.elements):
                 if isinstance(element, Block):
