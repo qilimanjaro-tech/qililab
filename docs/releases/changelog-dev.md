@@ -81,6 +81,17 @@ calibrated_qprogram = qprogram.with_calibration(calibration=calibration)
 
 [#729](https://github.com/qilimanjaro-tech/qililab/pull/729)
 
+- Extended `Platform.execute_qprogram` method to accept a calibration instance.
+
+```
+# Load the calibration data from a file
+calibration = Calibration.load('calibration_data.yml')
+
+platform.execute_qprogram(qprogram=qprogram, calibration=calibration)
+```
+
+[#729](https://github.com/qilimanjaro-tech/qililab/pull/729)
+
 ### Breaking changes
 
 ### Deprecations / Removals
