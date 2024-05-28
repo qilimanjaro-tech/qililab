@@ -14,14 +14,16 @@
 
 """Square waveform."""
 import numpy as np
-from scipy.special import erf
+from scipy.special import erf  # pylint: disable=no-name-in-module
 
 from qililab.qprogram.decorators import requires_domain
 from qililab.qprogram.variable import Domain
+from qililab.yaml import yaml
 
 from .waveform import Waveform
 
 
+@yaml.register_class
 class FlatTop(Waveform):  # pylint: disable=too-few-public-methods
     """Flat top Gaussian rise waveform.
 

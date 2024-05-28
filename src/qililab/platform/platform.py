@@ -634,7 +634,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             )
         raise NotImplementedError("Executing QProgram in a mixture of instruments is not supported.")
 
-    def _execute_qprogram_with_qblox(
+    def _execute_qprogram_with_qblox(  # pylint: disable=too-many-locals
         self,
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,

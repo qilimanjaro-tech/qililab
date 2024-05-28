@@ -40,7 +40,7 @@ from qililab.utils import DictSerializable
 from qililab.waveforms import IQPair, Waveform
 
 
-class QProgram(DictSerializable):
+class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
     """QProgram is a hardware-agnostic pulse-level programming interface for describing quantum programs.
 
     This class provides an interface for building quantum programs,
@@ -185,7 +185,9 @@ class QProgram(DictSerializable):
         traverse(copied_qprogram.body)
 
         # Apply the mapping to _buses property
-        copied_qprogram._buses.symmetric_difference_update({item for pair in bus_mapping.items() for item in pair})
+        copied_qprogram._buses.symmetric_difference_update(
+            {item for pair in bus_mapping.items() for item in pair}
+        )  # pylint: disable=protected-access
 
         return copied_qprogram
 
