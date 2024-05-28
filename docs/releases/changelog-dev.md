@@ -40,9 +40,11 @@ from qililab.yaml import yaml
 
 my_instance = MyClass()
 
+# Save to file
 with open(file="my_file.yml", mode="w", encoding="utf-8") as stream:
     yaml.dump(data=my_instance, stream=stream)
 
+# Load from file
 with open(file="my_file.yml", mode="r", encoding="utf8") as stream:
     loaded_instance = yaml.load(stream)
 ```
