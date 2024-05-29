@@ -1,6 +1,6 @@
 qiboconnection
 pandas==1.5.3
-qibo==0.1.12
+qibo==0.2.8
 PyYAML==6.0
 qblox-instruments==0.11.2
 qcodes==0.42.0
@@ -15,6 +15,6 @@ h5py==3.9.0
 papermill==2.4.0
 qm-qua==1.1.6
 qualang-tools==0.15.2
-networkx==3.1
+networkx==3.2.1
 ruamel.yaml==0.18.2
 submitit==1.5.0
