@@ -39,7 +39,7 @@ from qililab.qprogram.operations import (
 )
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable import Variable
-from qililab.waveforms import IQPair, Waveform
+from qililab.waveforms import IQPair, Square, Waveform
 
 
 class BusCompilationInfo:  # pylint: disable=too-many-instance-attributes, too-few-public-methods
@@ -409,14 +409,22 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         Args:
             element (Measure): measure operation
         """
-        if not isinstance(element.weights, IQPair):
+        # create square weights if only integration length is given
+        if element.weights is None:
+            weights = IQPair(
+                I=Square(amplitude=1.0, duration=element.integration_length),
+                Q=Square(amplitude=0.0, duration=element.integration_length),
+            )
+
+        if not isinstance(weights, IQPair):
             raise NotImplementedError("Qblox measure operation only supports weight format as IQPairs")
         play = Play(bus=element.bus, waveform=element.waveform)
-        acquire = Acquire(bus=element.bus, weights=element.weights)
+        acquire = Acquire(bus=element.bus, weights=weights)
         self._handle_play(play)
         self._handle_acquire(acquire)
 
     def _handle_acquire(self, element: Acquire):
+        # FIXME: this willl be deprecated soon
         # TODO: unify with measure when time of flight is implemented
         loops = [
             (i, loop)

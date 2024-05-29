@@ -285,6 +285,7 @@ class QProgram(DictSerializable):
         weights: IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair, IQPair] | None = None,
         demodulation: bool = True,
         save_raw_adc: bool = False,
+        integration_length: int | None = None,
     ):
         """Play a pulse and acquire results.
 
@@ -296,7 +297,12 @@ class QProgram(DictSerializable):
             save_raw_adc (bool, optional): If raw adc data should be saved. Defaults to True.
         """
         operation = Measure(
-            bus=bus, waveform=waveform, weights=weights, demodulation=demodulation, save_raw_adc=save_raw_adc
+            bus=bus,
+            waveform=waveform,
+            weights=weights,
+            demodulation=demodulation,
+            save_raw_adc=save_raw_adc,
+            integration_length=integration_length,
         )
         self._active_block.append(operation)
         self._buses.add(bus)
