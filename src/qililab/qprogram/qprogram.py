@@ -25,8 +25,9 @@ from qililab.qprogram.decorators import requires_domain
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
+    MeasureWithNamedOperation,
     Play,
-    PlayCalibratedOperation,
+    PlayWithNamedOperation,
     ResetPhase,
     SetFrequency,
     SetGain,
@@ -149,7 +150,7 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
                 if isinstance(element, Block):
                     if traverse(element):
                         return True
-                elif isinstance(element, PlayCalibratedOperation):
+                elif isinstance(element, (PlayWithNamedOperation, MeasureWithNamedOperation)):
                     return True
             return False
 
@@ -208,11 +209,24 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
             for index, element in enumerate(block.elements):
                 if isinstance(element, Block):
                     traverse(element)
-                elif isinstance(element, PlayCalibratedOperation):
-                    if calibration.has_operation(bus=element.bus, operation=element.operation):
-                        waveform = calibration.get_operation(bus=element.bus, operation=element.operation)
-                        play_operation = Play(bus=element.bus, waveform=waveform, wait_time=element.wait_time)
-                        block.elements[index] = play_operation
+                elif isinstance(element, PlayWithNamedOperation) and calibration.has_operation(
+                    bus=element.bus, operation=element.operation
+                ):
+                    waveform = calibration.get_operation(bus=element.bus, operation=element.operation)
+                    play_operation = Play(bus=element.bus, waveform=waveform, wait_time=element.wait_time)
+                    block.elements[index] = play_operation
+                elif isinstance(element, MeasureWithNamedOperation) and calibration.has_operation(
+                    bus=element.bus, operation=element.operation
+                ):
+                    waveform = calibration.get_operation(bus=element.bus, operation=element.operation)
+                    measure_operation = Measure(
+                        bus=element.bus,
+                        waveform=waveform,
+                        weights=element.weights,
+                        demodulation=element.demodulation,
+                        save_raw_adc=element.save_raw_adc,
+                    )
+                    block.elements[index] = measure_operation
 
         copied_qprogram = deepcopy(self)
         traverse(copied_qprogram.body)
@@ -359,7 +373,7 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
             waveform (Waveform | IQPair | str): The waveform, IQPair, or alias of named waveform to play.
         """
         operation = (
-            PlayCalibratedOperation(bus=bus, operation=waveform, wait_time=wait_time)
+            PlayWithNamedOperation(bus=bus, operation=waveform, wait_time=wait_time)
             if isinstance(waveform, str)
             else Play(bus=bus, waveform=waveform, wait_time=wait_time)
         )
@@ -389,6 +403,7 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
         self._active_block.append(operation)
         self._buses.add(bus)
 
+    @overload
     def measure(
         self,
         bus: str,
@@ -406,8 +421,51 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
             demodulation (bool, optional): If demodulation is enabled. Defaults to True.
             save_raw_adc (bool, optional): If raw adc data should be saved. Defaults to True.
         """
-        operation = Measure(
-            bus=bus, waveform=waveform, weights=weights, demodulation=demodulation, save_raw_adc=save_raw_adc
+
+    @overload
+    def measure(
+        self,
+        bus: str,
+        waveform: str,
+        weights: IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair, IQPair] | None = None,
+        demodulation: bool = True,
+        save_raw_adc: bool = False,
+    ):
+        """Play a named pulse and acquire results.
+
+        Args:
+            bus (str): Unique identifier of the bus.
+            waveform (str): Waveform played during measurement.
+            weights (IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair, IQPair] | None, optional): Weights used during acquisition. Defaults to None.
+            demodulation (bool, optional): If demodulation is enabled. Defaults to True.
+            save_raw_adc (bool, optional): If raw adc data should be saved. Defaults to True.
+        """
+
+    def measure(
+        self,
+        bus: str,
+        waveform: IQPair | str,
+        weights: IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair, IQPair] | None = None,
+        demodulation: bool = True,
+        save_raw_adc: bool = False,
+    ):
+        """Play a pulse and acquire results.
+
+        Args:
+            bus (str): Unique identifier of the bus.
+            waveform (IQPair): Waveform played during measurement.
+            weights (IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair, IQPair] | None, optional): Weights used during acquisition. Defaults to None.
+            demodulation (bool, optional): If demodulation is enabled. Defaults to True.
+            save_raw_adc (bool, optional): If raw adc data should be saved. Defaults to True.
+        """
+        operation = (
+            MeasureWithNamedOperation(
+                bus=bus, operation=waveform, weights=weights, demodulation=demodulation, save_raw_adc=save_raw_adc
+            )
+            if isinstance(waveform, str)
+            else Measure(
+                bus=bus, waveform=waveform, weights=weights, demodulation=demodulation, save_raw_adc=save_raw_adc
+            )
         )
         self._active_block.append(operation)
         self._buses.add(bus)

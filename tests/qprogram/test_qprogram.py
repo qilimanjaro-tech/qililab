@@ -12,8 +12,9 @@ from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
+    MeasureWithNamedOperation,
     Play,
-    PlayCalibratedOperation,
+    PlayWithNamedOperation,
     ResetPhase,
     SetFrequency,
     SetGain,
@@ -85,18 +86,23 @@ class TestQProgram:
         qp = QProgram()
         with qp.average(1000):
             qp.play(bus="drive_q0_bus", waveform="Xpi")
+            qp.measure(bus="drive_q0_bus", waveform="Xpi")
 
         # Check that qp has named operations
         assert qp.has_named_operations() is True
-        assert isinstance(qp.body.elements[0].elements[0], PlayCalibratedOperation)
+        assert isinstance(qp.body.elements[0].elements[0], PlayWithNamedOperation)
         assert qp.body.elements[0].elements[0].operation == "Xpi"
+        assert isinstance(qp.body.elements[0].elements[1], MeasureWithNamedOperation)
+        assert qp.body.elements[0].elements[1].operation == "Xpi"
 
         new_qp = qp.with_calibration(calibration=calibration)
 
         # Check that qp remain unchanged
         assert qp.has_named_operations() is True
-        assert isinstance(qp.body.elements[0].elements[0], PlayCalibratedOperation)
+        assert isinstance(qp.body.elements[0].elements[0], PlayWithNamedOperation)
         assert qp.body.elements[0].elements[0].operation == "Xpi"
+        assert isinstance(qp.body.elements[0].elements[1], MeasureWithNamedOperation)
+        assert qp.body.elements[0].elements[1].operation == "Xpi"
 
         # Check that new_qp has no named operations
         assert new_qp.has_named_operations() is False
@@ -105,6 +111,11 @@ class TestQProgram:
         assert isinstance(play.waveform, Square)
         assert play.waveform.amplitude == 1.0
         assert play.waveform.duration == 100
+        measure = new_qp.body.elements[0].elements[1]
+        assert isinstance(measure, Measure)
+        assert isinstance(measure.waveform, Square)
+        assert measure.waveform.amplitude == 1.0
+        assert measure.waveform.duration == 100
 
     def test_infinite_loop_method(self):
         """Test infinite_loop method"""

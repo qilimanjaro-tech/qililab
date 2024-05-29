@@ -13,9 +13,9 @@
 # limitations under the License.
 
 from .acquire import Acquire
-from .measure import Measure
+from .measure import Measure, MeasureWithNamedOperation
 from .operation import Operation
-from .play import Play, PlayCalibratedOperation
+from .play import Play, PlayWithNamedOperation
 from .reset_phase import ResetPhase
 from .set_frequency import SetFrequency
 from .set_gain import SetGain
