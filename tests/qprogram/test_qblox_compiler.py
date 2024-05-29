@@ -325,6 +325,12 @@ class TestQBloxCompiler:
         assert "drive_q0" in sequences
         assert isinstance(sequences["drive_q0"], QPy.Sequence)
 
+    def test_play_named_operation_raises_error_if_operations_not_in_calibration(self, play_named_operation: QProgram):
+        calibration = Calibration()
+        compiler = QbloxCompiler()
+        with pytest.raises(RuntimeError):
+            _ = compiler.compile(play_named_operation, bus_mapping={"drive": "drive_q0"}, calibration=calibration)
+
     def test_no_loops_all_operations(self, no_loops_all_operations: QProgram):
         compiler = QbloxCompiler()
         sequences = compiler.compile(qprogram=no_loops_all_operations)

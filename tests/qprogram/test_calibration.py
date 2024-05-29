@@ -47,6 +47,20 @@ class TestCalibration:
         assert "readout" in calibration.operations["readout_bus"]
         assert calibration.operations["readout_bus"]["readout"] == readout
 
+    def test_has_operation_method(self):
+        """Test has_operation method"""
+        xpi = Square(1.0, 100)
+        xpi2 = Square(1.0, 50)
+
+        calibration = Calibration()
+        calibration.add_operation(bus="drive_bus", operation="Xpi", waveform=xpi)
+        calibration.add_operation(bus="drive_bus", operation="Xpi2", waveform=xpi2)
+
+        assert calibration.has_operation(bus="drive_bus", operation="Xpi") is True
+        assert calibration.has_operation(bus="drive_bus", operation="Xpi2") is True
+        assert calibration.has_operation(bus="drive_bus", operation="non_existant") is False
+        assert calibration.has_operation(bus="non_existant", operation="Xpi") is False
+
     def test_get_operation_method(self):
         """Test get_operation method"""
         xpi = Square(1.0, 100)

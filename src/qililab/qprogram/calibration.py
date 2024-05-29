@@ -24,6 +24,20 @@ class Calibration:
             self.operations[bus] = {}
         self.operations[bus][operation] = waveform
 
+    def has_operation(self, bus: str, operation: str) -> bool:
+        """Check if there is an associated operation with bus.
+
+        Args:
+            bus (str): The bus to check the operation.
+            operation (str): The name of the operation to check.
+
+        Returns:
+            bool: True, if there is an associated operation with bus. False otherwise.
+        """
+        if bus not in self.operations or operation not in self.operations[bus]:
+            return False
+        return True
+
     def get_operation(self, bus: str, operation: str):
         """Retrieve a specific operation from a bus.
 

@@ -133,6 +133,10 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             self._qprogram = self._qprogram.with_bus_mapping(bus_mapping=bus_mapping)
         if calibration is not None:
             self._qprogram = self._qprogram.with_calibration(calibration=calibration)
+        if self._qprogram.has_named_operations():
+            raise RuntimeError(
+                "Cannot compile to hardware-native instructions because QProgram contains named operations that are not mapped. Provide a calibration instance containing all necessary mappings."
+            )
 
         self._qprogram_block_stack = deque()
         self._qprogram_to_qua_variables = {}

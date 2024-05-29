@@ -434,6 +434,12 @@ class TestQuantumMachinesCompiler:
         play2 = statements[1].play
         assert play2.qe.name == "drive_q0"
 
+    def test_play_named_operation_raises_error_if_operations_not_in_calibration(self, play_named_operation: QProgram):
+        calibration = Calibration()
+        compiler = QuantumMachinesCompiler()
+        with pytest.raises(RuntimeError):
+            _, _, _ = compiler.compile(play_named_operation, bus_mapping={"drive": "drive_q0"}, calibration=calibration)
+
     def test_set_frequency_operation(self, set_frequency_operation: QProgram):
         compiler = QuantumMachinesCompiler()
         qua_program, _, _ = compiler.compile(set_frequency_operation)

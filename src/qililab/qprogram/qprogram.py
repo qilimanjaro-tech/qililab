@@ -209,8 +209,8 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
                 if isinstance(element, Block):
                     traverse(element)
                 elif isinstance(element, PlayCalibratedOperation):
-                    waveform = calibration.get_operation(bus=element.bus, operation=element.operation)
-                    if waveform is not None:
+                    if calibration.has_operation(bus=element.bus, operation=element.operation):
+                        waveform = calibration.get_operation(bus=element.bus, operation=element.operation)
                         play_operation = Play(bus=element.bus, waveform=waveform, wait_time=element.wait_time)
                         block.elements[index] = play_operation
 
