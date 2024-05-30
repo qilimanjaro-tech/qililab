@@ -411,6 +411,8 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         """
         # create square weights if only integration length is given
         if element.weights is None:
+            if element.integration_length is None:
+                raise ValueError("Either weights or integration length must be defined.")
             weights = IQPair(
                 I=Square(amplitude=1.0, duration=element.integration_length),
                 Q=Square(amplitude=0.0, duration=element.integration_length),

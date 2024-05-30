@@ -335,8 +335,6 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             stream_raw_adc = qua.declare_stream(adc_trace=True)
 
         if element.integration_length is not None:
-            if element.weights is not None:
-                raise ValueError("Weights and integration length cannot be defined at the same time.")
             # default weights for square measurements
             one_wf = Square(amplitude=1, duration=element.integration_length)
             minus_one_wf = Square(amplitude=-1, duration=element.integration_length)
