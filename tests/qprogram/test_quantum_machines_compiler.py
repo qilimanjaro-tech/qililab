@@ -136,6 +136,14 @@ def fixture_measure_operation_with_four_weights() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="measure_operation_with_default_weights")
+def fixture_measure_operation_with_default_weights() -> QProgram:
+    drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
+    qp = QProgram()
+    qp.measure(bus="drive", waveform=drag_wf, integration_length=1000)
+    return qp
+
+
 @pytest.fixture(name="measure_operation_with_one_weight_no_demodulation")
 def fixture_measure_operation_with_one_weight_no_demodulation() -> QProgram:
     drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
@@ -564,6 +572,16 @@ class TestQuantumMachinesCompiler:
         assert len(measurements[0].result_handles) == 2
         assert "I_0" in measurements[0].result_handles
         assert "Q_0" in measurements[0].result_handles
+
+    def test_measure_operation_with_default_weights(self, measure_operation_with_default_weights: QProgram):
+        # only test that weights are created as intended, the rest of the measure method is already tested
+        # at the test_measure_operation_with_four_weights method above
+        compiler = QuantumMachinesCompiler()
+        _, configuration, _ = compiler.compile(measure_operation_with_default_weights)
+        assert len(configuration["integration_weights"]) == 3
+        weights = list(configuration["integration_weights"].values())
+        assert weights[0]["sine"] == weights[1]["cosine"] == weights[2]["cosine"]
+        assert weights[0]["cosine"] == weights[1]["sine"] == [(-1 * i, j) for i, j in weights[2]["sine"]]
 
     def test_measure_operation_with_one_weight_no_demodulation(
         self, measure_operation_with_one_weight_no_demodulation: QProgram

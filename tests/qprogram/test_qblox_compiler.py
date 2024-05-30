@@ -243,6 +243,22 @@ def fixture_measure_program() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="measure_program_default_weights")
+def fixture_measure_program_default_weights() -> QProgram:
+    readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+    qp = QProgram()
+    qp.measure(bus="readout", waveform=readout_pair, integration_length=1000)
+    return qp
+
+
+@pytest.fixture(name="measure_program_no_weights_or_integration_length")
+def fixture_measure_program_no_weights_or_integration_length() -> QProgram:
+    readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+    qp = QProgram()
+    qp.measure(bus="readout", waveform=readout_pair)
+    return qp
+
+
 @pytest.fixture(name="measure_iqtuple")
 def fixture_measure_iqtuple() -> QProgram:
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
@@ -1055,3 +1071,18 @@ class TestQBloxCompiler:
     def test_calculate_iterations_with_zero_step_throws_error(self):
         with pytest.raises(ValueError, match="Step value cannot be zero"):
             QbloxCompiler._calculate_iterations(100, 200, 0)
+
+    def test_measure_default_weights(self, measure_program_default_weights):
+        compiler = QbloxCompiler()
+
+        with (patch.object(QbloxCompiler, "_handle_acquire") as handle_acquire,):
+            compiler.compile(measure_program_default_weights)
+        integration_length = measure_program_default_weights.body.elements[0].integration_length
+        weights = IQPair(
+            I=Square(amplitude=1.0, duration=integration_length),
+            Q=Square(amplitude=0.0, duration=integration_length),
+        )
+        assert handle_acquire.call_args[0][0].weights.to_dict() == weights.to_dict()
+
+    def test_error_measure_no_weights_or_integration_length(self, measure_program_no_weights_or_integration_length):
+        ...

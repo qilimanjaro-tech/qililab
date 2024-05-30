@@ -23,8 +23,13 @@ class Measure(Operation):  # pylint: disable=missing-class-docstring
     bus: str
     waveform: IQPair
     weights: IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair, IQPair] | None
+    integration_length: int | None
     demodulation: bool
     save_raw_adc: bool
+
+    def __post_init__(self):
+        if self.weights is not None and self.integration_length is not None:
+            raise ValueError("Weights and integration length cannot be defined at the same time.")
 
     def get_waveforms(self) -> tuple[Waveform, Waveform]:
         """Get the waveforms.
