@@ -316,6 +316,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
     def _handle_measure(
         self, element: Measure
     ):  # pylint: disable=too-many-locals, too-many-branches, too-many-statements
+        # sourcery skip: extract-method
         bus = self._bus_mapping[element.bus] if self._bus_mapping and element.bus in self._bus_mapping else element.bus
         waveform_I, waveform_Q = element.get_waveforms()
 
@@ -333,17 +334,36 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         if element.save_raw_adc:
             stream_raw_adc = qua.declare_stream(adc_trace=True)
 
-        if element.weights is None:
+        if element.integration_length is not None:
+            if element.weights is not None:
+                raise ValueError("Weights and integration length cannot be defined at the same time.")
+            # default weights for square measurements
+            one_wf = Square(amplitude=1, duration=element.integration_length)
+            minus_one_wf = Square(amplitude=-1, duration=element.integration_length)
+            zero_wf = Square(amplitude=0.0, duration=element.integration_length)
+            cosine_weight = IQPair(one_wf, zero_wf)
+            sine_weight = IQPair(zero_wf, one_wf)
+            minus_sine_weight = IQPair(zero_wf, minus_one_wf)
+            weights = (
+                cosine_weight,
+                sine_weight,
+                minus_sine_weight,
+                cosine_weight,
+            )  # type: IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair, IQPair] | None
+        else:
+            weights = element.weights
+
+        if weights is None:
             pulse_name = self.__add_or_update_measurement_pulse_to_configuration(
                 waveform_I_name, waveform_Q_name, duration=waveform_I.get_duration(), integration_weights=[]
             )
             operation_name = self.__add_pulse_to_element_operations(bus, pulse_name)
             pulse = operation_name * gain if gain is not None else operation_name
             qua.measure(pulse, element.bus, stream_raw_adc)
-        elif isinstance(element.weights, IQPair):
+        elif isinstance(weights, IQPair):
             variable_I = qua.declare(qua.fixed)
             stream_I = qua.declare_stream()
-            weight_I = self.__add_integration_weight_to_configuration(element.weights.I, element.weights.Q)
+            weight_I = self.__add_integration_weight_to_configuration(weights.I, weights.Q)
             pulse_name = self.__add_or_update_measurement_pulse_to_configuration(
                 waveform_I_name, waveform_Q_name, duration=waveform_I.get_duration(), integration_weights=[weight_I]
             )
@@ -354,13 +374,13 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             else:
                 qua.measure(pulse, bus, stream_raw_adc, qua.integration.full(weight_I, variable_I, "out1"))
             qua.save(variable_I, stream_I)
-        elif isinstance(element.weights, tuple) and len(element.weights) == 2:
+        elif isinstance(weights, tuple) and len(weights) == 2:
             variable_I = qua.declare(qua.fixed)
             variable_Q = qua.declare(qua.fixed)
             stream_I = qua.declare_stream()
             stream_Q = qua.declare_stream()
-            weight_I = self.__add_integration_weight_to_configuration(element.weights[0].I, element.weights[0].Q)
-            weight_Q = self.__add_integration_weight_to_configuration(element.weights[1].I, element.weights[1].Q)
+            weight_I = self.__add_integration_weight_to_configuration(weights[0].I, weights[0].Q)
+            weight_Q = self.__add_integration_weight_to_configuration(weights[1].I, weights[1].Q)
             pulse_name = self.__add_or_update_measurement_pulse_to_configuration(
                 waveform_I_name,
                 waveform_Q_name,
@@ -387,15 +407,15 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
                 )
             qua.save(variable_I, stream_I)
             qua.save(variable_Q, stream_Q)
-        elif isinstance(element.weights, tuple) and len(element.weights) == 4:
+        elif isinstance(weights, tuple) and len(weights) == 4:
             variable_I = qua.declare(qua.fixed)
             variable_Q = qua.declare(qua.fixed)
             stream_I = qua.declare_stream()
             stream_Q = qua.declare_stream()
-            weight_A = self.__add_integration_weight_to_configuration(element.weights[0].I, element.weights[0].Q)
-            weight_B = self.__add_integration_weight_to_configuration(element.weights[1].I, element.weights[1].Q)
-            weight_C = self.__add_integration_weight_to_configuration(element.weights[2].I, element.weights[2].Q)  # type: ignore[misc]
-            weight_D = self.__add_integration_weight_to_configuration(element.weights[3].I, element.weights[3].Q)  # type: ignore[misc]
+            weight_A = self.__add_integration_weight_to_configuration(weights[0].I, weights[0].Q)
+            weight_B = self.__add_integration_weight_to_configuration(weights[1].I, weights[1].Q)
+            weight_C = self.__add_integration_weight_to_configuration(weights[2].I, weights[2].Q)  # type: ignore[misc]
+            weight_D = self.__add_integration_weight_to_configuration(weights[3].I, weights[3].Q)  # type: ignore[misc]
             pulse_name = self.__add_or_update_measurement_pulse_to_configuration(
                 waveform_I_name,
                 waveform_Q_name,
