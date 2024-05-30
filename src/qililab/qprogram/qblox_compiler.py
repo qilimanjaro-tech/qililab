@@ -416,7 +416,9 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             weights = IQPair(
                 I=Square(amplitude=1.0, duration=element.integration_length),
                 Q=Square(amplitude=0.0, duration=element.integration_length),
-            )
+            )  # type: IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair, IQPair] | None
+        else:
+            weights = element.weights
 
         if not isinstance(weights, IQPair):
             raise NotImplementedError("Qblox measure operation only supports weight format as IQPairs")
