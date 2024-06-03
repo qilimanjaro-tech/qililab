@@ -72,6 +72,10 @@
 
   [#729](https://github.com/qilimanjaro-tech/qililab/pull/729)
 
+- Add qblox support for `qprogram.measure`. Now this method can be use for both Qblox Instruments
+  and Quantum Machines. In the near future the `qprogram.acquire` method will be removed.
+  [#734](https://github.com/qilimanjaro-tech/qililab/pull/734)
+
 ### Improvements
 
 - Introduced `QProgram.with_bus_mapping` method to remap buses within the QProgram.

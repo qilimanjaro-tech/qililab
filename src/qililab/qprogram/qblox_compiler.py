@@ -27,6 +27,7 @@ from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop,
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
     Acquire,
+    Measure,
     Operation,
     Play,
     ResetPhase,
@@ -100,6 +101,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             SetOffset: self._handle_set_offset,
             Wait: self._handle_wait,
             Sync: self._handle_sync,
+            Measure: self._handle_measure,
             Acquire: self._handle_acquire,
             Play: self._handle_play,
         }
@@ -407,7 +409,22 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
     def __handle_dynamic_sync(self, buses: set[str]):
         raise NotImplementedError("Dynamic syncing is not implemented yet.")
 
+    def _handle_measure(self, element: Measure):
+        """Wrapper for qblox play and acquire methods to be called in a single operation for consistency with QuantumMachines
+        measure operation
+
+        Args:
+            element (Measure): measure operation
+        """
+        if not isinstance(element.weights, IQPair):
+            raise NotImplementedError("Qblox measure operation only supports weight format as IQPairs")
+        play = Play(bus=element.bus, waveform=element.waveform)
+        acquire = Acquire(bus=element.bus, weights=element.weights)
+        self._handle_play(play)
+        self._handle_acquire(acquire)
+
     def _handle_acquire(self, element: Acquire):
+        # TODO: unify with measure when time of flight is implemented
         loops = [
             (i, loop)
             for i, loop in enumerate(self._buses[element.bus].qpy_block_stack)

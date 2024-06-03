@@ -1,10 +1,13 @@
 # pylint: disable=protected-access
+from unittest.mock import patch
+
 import numpy as np
 import pytest
 import qpysequence as QPy
 
 from qililab import Calibration, Domain, Gaussian, IQPair, QbloxCompiler, QProgram, Square
 from qililab.qprogram.blocks import ForLoop
+from qililab.qprogram.operations import Acquire, Play
 from tests.test_utils import is_q1asm_equal  # pylint: disable=import-error, no-name-in-module
 
 
@@ -248,6 +251,24 @@ def fixture_average_with_nested_for_loops() -> QProgram:
                 qp.set_frequency(bus="readout", frequency=frequency)
                 qp.play(bus="readout", waveform=readout_pair)
                 qp.acquire(bus="readout", weights=weights_pair)
+    return qp
+
+
+@pytest.fixture(name="measure_program")
+def fixture_measure_program() -> QProgram:
+    readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+    weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+    qp = QProgram()
+    qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
+    return qp
+
+
+@pytest.fixture(name="measure_iqtuple")
+def fixture_measure_iqtuple() -> QProgram:
+    readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+    weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+    qp = QProgram()
+    qp.measure(bus="readout", waveform=readout_pair, weights=(weights_pair, weights_pair))
     return qp
 
 
@@ -710,6 +731,28 @@ class TestQBloxCompiler:
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
+
+    def test_measure_calls_play_acquire(self, measure_program):
+        compiler = QbloxCompiler()
+
+        with (
+            patch.object(QbloxCompiler, "_handle_play") as handle_play,
+            patch.object(QbloxCompiler, "_handle_acquire") as handle_acquire,
+        ):
+            compiler.compile(measure_program)
+
+        measure = measure_program.body.elements[0]
+        assert handle_play.call_count == 1
+        assert handle_acquire.call_count == 1
+        assert handle_play.call_args[0][0].bus == measure.bus
+        assert handle_play.call_args[0][0].waveform == measure.waveform
+        assert handle_acquire.call_args[0][0].bus == measure.bus
+        assert handle_acquire.call_args[0][0].weights == measure.weights
+
+    def test_measure_raises_error_iqtuple_weights(self, measure_iqtuple):
+        compiler = QbloxCompiler()
+        with pytest.raises(NotImplementedError, match="Qblox measure operation only supports weight format as IQPairs"):
+            compiler.compile(measure_iqtuple)
 
     def test_acquire_loop_with_for_loop_with_weights_of_same_waveform(
         self, acquire_loop_with_for_loop_with_weights_of_same_waveform: QProgram
