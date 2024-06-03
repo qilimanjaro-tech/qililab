@@ -1,6 +1,5 @@
-qiboconnection
 pandas==1.5.3
-qibo==0.1.13
+qibo==0.2.8
 PyYAML==6.0
 qblox-instruments==0.11.2
 qcodes==0.42.0
