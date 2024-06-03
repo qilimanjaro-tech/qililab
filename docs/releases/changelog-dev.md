@@ -2,7 +2,7 @@
 
 ### New features since last release
 
-- Added `Calibration` class to manage calibrated operations for QProgram, including methods to add (`add_operation`), retrieve (`get_operation`), save (`dump`), and load (`load`) calibration data.
+- Added `Calibration` class to manage calibrated operations for QProgram, including methods to add (`add_operation`), check (`has_operation`), retrieve (`get_operation`), save (`dump`), and load (`load`) calibration data.
 
   Example:
 
