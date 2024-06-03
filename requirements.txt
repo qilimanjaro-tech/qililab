@@ -1,6 +1,5 @@
-qiboconnection
+qibo==0.2.8
 pandas==1.5.3
-qibo==0.2.7
 PyYAML==6.0
 qblox-instruments==0.11.2
 qcodes==0.42.0
@@ -18,3 +17,4 @@ qualang-tools==0.15.2
 networkx==3.2.1
 ruamel.yaml==0.18.2
 submitit==1.5.0
+qiboconnection
