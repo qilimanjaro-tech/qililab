@@ -84,88 +84,32 @@ def fixture_sync_operation_no_parameters() -> QProgram:
     return qp
 
 
-@pytest.fixture(name="measure_operation_with_no_weights_no_adc")
-def fixture_measure_operation_with_no_weights_no_adc() -> QProgram:
+@pytest.fixture(name="measure_operation")
+def fixture_measure_operation() -> QProgram:
     drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
+    weights = IQPair(I=Square(1.0, duration=200), Q=Square(1.0, duration=200))
     qp = QProgram()
-    qp.measure(bus="drive", waveform=drag_wf)
+    qp.measure(bus="readout", waveform=drag_wf, weights=weights)
 
     return qp
 
 
-@pytest.fixture(name="measure_operation_with_no_weights")
-def fixture_measure_operation_with_no_weights() -> QProgram:
+@pytest.fixture(name="measure_operation_save_raw_adc")
+def fixture_measure_operation_save_raw_adc() -> QProgram:
     drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
+    weights = IQPair(I=Square(1.0, duration=200), Q=Square(1.0, duration=200))
     qp = QProgram()
-    qp.measure(bus="drive", waveform=drag_wf, save_raw_adc=True)
+    qp.qm.measure(bus="readout", waveform=drag_wf, weights=weights, save_raw_adc=True)
 
     return qp
 
 
-@pytest.fixture(name="measure_operation_with_one_weight")
-def fixture_measure_operation_with_one_weight() -> QProgram:
+@pytest.fixture(name="measure_operation_no_demodulation")
+def fixture_measure_operation_no_demodulation() -> QProgram:
     drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
-    weight_wf = IQPair(I=Square(1.0, duration=200), Q=Square(0.0, duration=200))
+    weights = IQPair(I=Square(1.0, duration=200), Q=Square(1.0, duration=200))
     qp = QProgram()
-    qp.measure(bus="drive", waveform=drag_wf, weights=weight_wf)
-
-    return qp
-
-
-@pytest.fixture(name="measure_operation_with_two_weights")
-def fixture_measure_operation_with_two_weights() -> QProgram:
-    drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
-    weight_I = IQPair(I=Square(1.0, duration=200), Q=Square(0.0, duration=200))
-    weight_Q = IQPair(I=Square(0.5, duration=200), Q=Square(0.5, duration=200))
-    qp = QProgram()
-    qp.measure(bus="drive", waveform=drag_wf, weights=(weight_I, weight_Q))
-
-    return qp
-
-
-@pytest.fixture(name="measure_operation_with_four_weights")
-def fixture_measure_operation_with_four_weights() -> QProgram:
-    drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
-    weight_A = IQPair(I=Square(1.0, duration=200), Q=Square(0.0, duration=200))
-    weight_B = IQPair(I=Square(0.5, duration=200), Q=Square(0.5, duration=200))
-    weight_C = IQPair(I=Square(0.0, duration=200), Q=Square(1.0, duration=200))
-    weight_D = weight_A
-    qp = QProgram()
-    qp.measure(bus="drive", waveform=drag_wf, weights=(weight_A, weight_B, weight_C, weight_D))
-
-    return qp
-
-
-@pytest.fixture(name="measure_operation_with_one_weight_no_demodulation")
-def fixture_measure_operation_with_one_weight_no_demodulation() -> QProgram:
-    drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
-    weight_wf = IQPair(I=Square(1.0, duration=200), Q=Square(0.0, duration=200))
-    qp = QProgram()
-    qp.measure(bus="drive", waveform=drag_wf, weights=weight_wf, demodulation=False)
-
-    return qp
-
-
-@pytest.fixture(name="measure_operation_with_two_weights_no_demodulation")
-def fixture_measure_operation_with_two_weights_no_demodulation() -> QProgram:
-    drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
-    weight_I = IQPair(I=Square(1.0, duration=200), Q=Square(0.0, duration=200))
-    weight_Q = IQPair(I=Square(0.5, duration=200), Q=Square(0.5, duration=200))
-    qp = QProgram()
-    qp.measure(bus="drive", waveform=drag_wf, weights=(weight_I, weight_Q), demodulation=False)
-
-    return qp
-
-
-@pytest.fixture(name="measure_operation_with_four_weights_no_demodulation")
-def fixture_measure_operation_with_four_weights_no_demodulation() -> QProgram:
-    drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
-    weight_A = IQPair(I=Square(1.0, duration=200), Q=Square(0.0, duration=200))
-    weight_B = IQPair(I=Square(0.5, duration=200), Q=Square(0.5, duration=200))
-    weight_C = IQPair(I=Square(0.0, duration=200), Q=Square(1.0, duration=200))
-    weight_D = weight_A
-    qp = QProgram()
-    qp.measure(bus="drive", waveform=drag_wf, weights=(weight_A, weight_B, weight_C, weight_D), demodulation=False)
+    qp.qm.measure(bus="readout", waveform=drag_wf, weights=weights, demodulation=False)
 
     return qp
 
@@ -173,15 +117,12 @@ def fixture_measure_operation_with_four_weights_no_demodulation() -> QProgram:
 @pytest.fixture(name="measure_operation_with_same_pulse")
 def fixture_measure_operation_with_same_pulse() -> QProgram:
     drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
-    weight_A = IQPair(I=Square(1.0, duration=200), Q=Square(0.0, duration=200))
-    weight_B = IQPair(I=Square(0.5, duration=200), Q=Square(0.5, duration=200))
-    weight_C = IQPair(I=Square(0.0, duration=200), Q=Square(1.0, duration=200))
-    weight_D = weight_A
+    weights = IQPair(I=Square(1.0, duration=200), Q=Square(1.0, duration=200))
+    weights2 = IQPair(I=Square(0.5, duration=200), Q=Square(0.5, duration=200))
 
-    weight_E = IQPair(I=Square(1.0, 200), Q=Square(1.0, 200))
     qp = QProgram()
-    qp.measure(bus="drive", waveform=drag_wf, weights=(weight_A, weight_B, weight_C, weight_D), demodulation=False)
-    qp.measure(bus="drive", waveform=drag_wf, weights=(weight_E, weight_B, weight_C, weight_E), demodulation=False)
+    qp.qm.measure(bus="readout", waveform=drag_wf, weights=weights, demodulation=False)
+    qp.qm.measure(bus="readout", waveform=drag_wf, weights=weights2, demodulation=False)
 
     return qp
 
@@ -189,13 +130,10 @@ def fixture_measure_operation_with_same_pulse() -> QProgram:
 @pytest.fixture(name="measure_operation_with_average")
 def fixture_measure_operation_with_average() -> QProgram:
     drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
-    weight_A = IQPair(I=Square(1.0, duration=200), Q=Square(0.0, duration=200))
-    weight_B = IQPair(I=Square(0.5, duration=200), Q=Square(0.5, duration=200))
-    weight_C = IQPair(I=Square(0.0, duration=200), Q=Square(1.0, duration=200))
-    weight_D = weight_A
+    weights = IQPair(I=Square(1.0, duration=200), Q=Square(1.0, duration=200))
     qp = QProgram()
     with qp.average(shots=1000):
-        qp.measure(bus="drive", waveform=drag_wf, weights=(weight_A, weight_B, weight_C, weight_D))
+        qp.measure(bus="readout", waveform=drag_wf, weights=weights)
 
     return qp
 
@@ -203,15 +141,12 @@ def fixture_measure_operation_with_average() -> QProgram:
 @pytest.fixture(name="measure_operation_in_for_loop")
 def fixture_measure_operation_in_for_loop() -> QProgram:
     drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
-    weight_A = IQPair(I=Square(1.0, duration=200), Q=Square(0.0, duration=200))
-    weight_B = IQPair(I=Square(0.5, duration=200), Q=Square(0.5, duration=200))
-    weight_C = IQPair(I=Square(0.0, duration=200), Q=Square(1.0, duration=200))
-    weight_D = weight_A
+    weights = IQPair(I=Square(1.0, duration=200), Q=Square(1.0, duration=200))
     qp = QProgram()
     gain = qp.variable(Domain.Voltage)
     with qp.for_loop(variable=gain, start=0, stop=1.0, step=0.1):
-        qp.set_gain(bus="drive", gain=gain)
-        qp.measure(bus="drive", waveform=drag_wf, weights=(weight_A, weight_B, weight_C, weight_D))
+        qp.set_gain(bus="readout", gain=gain)
+        qp.measure(bus="readout", waveform=drag_wf, weights=weights)
 
     return qp
 
@@ -219,15 +154,12 @@ def fixture_measure_operation_in_for_loop() -> QProgram:
 @pytest.fixture(name="measure_operation_in_loop")
 def fixture_measure_operation_in_loop() -> QProgram:
     drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
-    weight_A = IQPair(I=Square(1.0, duration=200), Q=Square(0.0, duration=200))
-    weight_B = IQPair(I=Square(0.5, duration=200), Q=Square(0.5, duration=200))
-    weight_C = IQPair(I=Square(0.0, duration=200), Q=Square(1.0, duration=200))
-    weight_D = weight_A
+    weights = IQPair(I=Square(1.0, duration=200), Q=Square(1.0, duration=200))
     qp = QProgram()
     gain = qp.variable(Domain.Voltage)
     with qp.loop(variable=gain, values=np.arange(start=0, stop=1.05, step=0.1)):
-        qp.set_gain(bus="drive", gain=gain)
-        qp.measure(bus="drive", waveform=drag_wf, weights=(weight_A, weight_B, weight_C, weight_D))
+        qp.set_gain(bus="readout", gain=gain)
+        qp.measure(bus="readout", waveform=drag_wf, weights=weights)
 
     return qp
 
@@ -235,10 +167,7 @@ def fixture_measure_operation_in_loop() -> QProgram:
 @pytest.fixture(name="measure_operation_in_parallel")
 def fixture_measure_operation_in_parallel() -> QProgram:
     drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
-    weight_A = IQPair(I=Square(1.0, duration=200), Q=Square(0.0, duration=200))
-    weight_B = IQPair(I=Square(0.5, duration=200), Q=Square(0.5, duration=200))
-    weight_C = IQPair(I=Square(0.0, duration=200), Q=Square(1.0, duration=200))
-    weight_D = weight_A
+    weights = IQPair(I=Square(1.0, duration=200), Q=Square(1.0, duration=200))
     qp = QProgram()
     gain = qp.variable(Domain.Voltage)
     frequency = qp.variable(Domain.Frequency)
@@ -248,9 +177,9 @@ def fixture_measure_operation_in_parallel() -> QProgram:
             Loop(variable=frequency, values=np.arange(start=100, stop=205, step=10)),
         ]
     ):
-        qp.set_frequency(bus="drive", frequency=frequency)
-        qp.set_gain(bus="drive", gain=gain)
-        qp.measure(bus="drive", waveform=drag_wf, weights=(weight_A, weight_B, weight_C, weight_D))
+        qp.set_frequency(bus="readout", frequency=frequency)
+        qp.set_gain(bus="readout", gain=gain)
+        qp.measure(bus="readout", waveform=drag_wf, weights=weights)
 
     return qp
 
@@ -466,89 +395,15 @@ class TestQuantumMachinesCompiler:
         align = statements[2].align
         assert len(align.qe) == 0
 
-    def test_measure_operation_with_no_weights_no_adc(self, measure_operation_with_no_weights_no_adc: QProgram):
+    def test_measure_operation(self, measure_operation: QProgram):
         compiler = QuantumMachinesCompiler()
-        qua_program, configuration, measurements = compiler.compile(measure_operation_with_no_weights_no_adc)
-
-        statements = qua_program._program.script.body.statements
-        assert len(statements) == 1
-
-        measure = statements[0].measure
-        assert measure.qe.name == "drive"
-        assert measure.pulse.name in configuration["pulses"]
-
-        assert len(measurements) == 1
-        assert len(measurements[0].result_handles) == 0
-
-    def test_measure_operation_with_no_weights(self, measure_operation_with_no_weights: QProgram):
-        compiler = QuantumMachinesCompiler()
-        qua_program, configuration, measurements = compiler.compile(measure_operation_with_no_weights)
-
-        statements = qua_program._program.script.body.statements
-        assert len(statements) == 1
-
-        measure = statements[0].measure
-        assert measure.qe.name == "drive"
-        assert measure.pulse.name in configuration["pulses"]
-
-        assert len(measurements) == 1
-        assert len(measurements[0].result_handles) == 2
-        assert "adc1_0" in measurements[0].result_handles
-        assert "adc2_0" in measurements[0].result_handles
-
-    def test_measure_operation_with_one_weight(self, measure_operation_with_one_weight: QProgram):
-        compiler = QuantumMachinesCompiler()
-        qua_program, configuration, measurements = compiler.compile(measure_operation_with_one_weight)
-
-        statements = qua_program._program.script.body.statements
-        assert len(statements) == 2
-
-        measure = statements[0].measure
-        assert measure.qe.name == "drive"
-        assert measure.pulse.name in configuration["pulses"]
-
-        assert len(measure.measure_processes) == 1
-        assert measure.measure_processes[0].analog.demod_integration.element_output == "out1"
-
-        measurement_pulse = configuration["pulses"][measure.pulse.name]
-        assert len(measurement_pulse["integration_weights"]) == 1
-
-        assert len(measurements) == 1
-        assert len(measurements[0].result_handles) == 1
-        assert "I_0" in measurements[0].result_handles
-
-    def test_measure_operation_with_two_weights(self, measure_operation_with_two_weights: QProgram):
-        compiler = QuantumMachinesCompiler()
-        qua_program, configuration, measurements = compiler.compile(measure_operation_with_two_weights)
+        qua_program, configuration, measurements = compiler.compile(measure_operation)
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 3
 
         measure = statements[0].measure
-        assert measure.qe.name == "drive"
-        assert measure.pulse.name in configuration["pulses"]
-
-        assert len(measure.measure_processes) == 2
-        assert measure.measure_processes[0].analog.demod_integration.element_output == "out1"
-        assert measure.measure_processes[1].analog.demod_integration.element_output == "out2"
-
-        measurement_pulse = configuration["pulses"][measure.pulse.name]
-        assert len(measurement_pulse["integration_weights"]) == 2
-
-        assert len(measurements) == 1
-        assert len(measurements[0].result_handles) == 2
-        assert "I_0" in measurements[0].result_handles
-        assert "Q_0" in measurements[0].result_handles
-
-    def test_measure_operation_with_four_weights(self, measure_operation_with_four_weights: QProgram):
-        compiler = QuantumMachinesCompiler()
-        qua_program, configuration, measurements = compiler.compile(measure_operation_with_four_weights)
-
-        statements = qua_program._program.script.body.statements
-        assert len(statements) == 3
-
-        measure = statements[0].measure
-        assert measure.qe.name == "drive"
+        assert measure.qe.name == "readout"
         assert measure.pulse.name in configuration["pulses"]
 
         assert len(measure.measure_processes) == 2
@@ -558,72 +413,49 @@ class TestQuantumMachinesCompiler:
         assert measure.measure_processes[1].analog.dual_demod_integration.element_output2 == "out2"
 
         measurement_pulse = configuration["pulses"][measure.pulse.name]
-        assert len(measurement_pulse["integration_weights"]) == 3
+        assert len(measurement_pulse["integration_weights"]) == 4
 
         assert len(measurements) == 1
         assert len(measurements[0].result_handles) == 2
         assert "I_0" in measurements[0].result_handles
         assert "Q_0" in measurements[0].result_handles
 
-    def test_measure_operation_with_one_weight_no_demodulation(
-        self, measure_operation_with_one_weight_no_demodulation: QProgram
-    ):
+    def test_measure_operation_save_raw_adc(self, measure_operation_save_raw_adc: QProgram):
         compiler = QuantumMachinesCompiler()
-        qua_program, configuration, measurements = compiler.compile(measure_operation_with_one_weight_no_demodulation)
-
-        statements = qua_program._program.script.body.statements
-        assert len(statements) == 2
-
-        measure = statements[0].measure
-        assert measure.qe.name == "drive"
-        assert measure.pulse.name in configuration["pulses"]
-
-        assert len(measure.measure_processes) == 1
-        assert measure.measure_processes[0].analog.bare_integration.element_output == "out1"
-
-        measurement_pulse = configuration["pulses"][measure.pulse.name]
-        assert len(measurement_pulse["integration_weights"]) == 1
-
-        assert len(measurements) == 1
-        assert len(measurements[0].result_handles) == 1
-        assert "I_0" in measurements[0].result_handles
-
-    def test_measure_operation_with_two_weights_no_demodulation(
-        self, measure_operation_with_two_weights_no_demodulation: QProgram
-    ):
-        compiler = QuantumMachinesCompiler()
-        qua_program, configuration, measurements = compiler.compile(measure_operation_with_two_weights_no_demodulation)
+        qua_program, configuration, measurements = compiler.compile(measure_operation_save_raw_adc)
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 3
 
         measure = statements[0].measure
-        assert measure.qe.name == "drive"
+        assert measure.qe.name == "readout"
         assert measure.pulse.name in configuration["pulses"]
 
         assert len(measure.measure_processes) == 2
-        assert measure.measure_processes[0].analog.bare_integration.element_output == "out1"
-        assert measure.measure_processes[1].analog.bare_integration.element_output == "out2"
+        assert measure.measure_processes[0].analog.dual_demod_integration.element_output1 == "out1"
+        assert measure.measure_processes[0].analog.dual_demod_integration.element_output2 == "out2"
+        assert measure.measure_processes[1].analog.dual_demod_integration.element_output1 == "out1"
+        assert measure.measure_processes[1].analog.dual_demod_integration.element_output2 == "out2"
 
         measurement_pulse = configuration["pulses"][measure.pulse.name]
-        assert len(measurement_pulse["integration_weights"]) == 2
+        assert len(measurement_pulse["integration_weights"]) == 4
 
         assert len(measurements) == 1
-        assert len(measurements[0].result_handles) == 2
+        assert len(measurements[0].result_handles) == 4
         assert "I_0" in measurements[0].result_handles
         assert "Q_0" in measurements[0].result_handles
+        assert "adc1_0" in measurements[0].result_handles
+        assert "adc2_0" in measurements[0].result_handles
 
-    def test_measure_operation_with_four_weights_no_demodulation(
-        self, measure_operation_with_four_weights_no_demodulation: QProgram
-    ):
+    def test_measure_operation_no_demodulation(self, measure_operation_no_demodulation: QProgram):
         compiler = QuantumMachinesCompiler()
-        qua_program, configuration, measurements = compiler.compile(measure_operation_with_four_weights_no_demodulation)
+        qua_program, configuration, measurements = compiler.compile(measure_operation_no_demodulation)
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 3
 
         measure = statements[0].measure
-        assert measure.qe.name == "drive"
+        assert measure.qe.name == "readout"
         assert measure.pulse.name in configuration["pulses"]
 
         assert len(measure.measure_processes) == 2
@@ -633,19 +465,7 @@ class TestQuantumMachinesCompiler:
         assert measure.measure_processes[0].analog.dual_bare_integration.element_output2 == "out2"
 
         measurement_pulse = configuration["pulses"][measure.pulse.name]
-        assert len(measurement_pulse["integration_weights"]) == 3
-
-        assert len(measurements) == 1
-        assert len(measurements[0].result_handles) == 2
-        assert "I_0" in measurements[0].result_handles
-        assert "Q_0" in measurements[0].result_handles
-
-    def test_measure_operation_with_average(self, measure_operation_with_average: QProgram):
-        compiler = QuantumMachinesCompiler()
-        qua_program, _, measurements = compiler.compile(measure_operation_with_average)
-
-        statements = qua_program._program.script.body.statements
-        assert len(statements) == 1
+        assert len(measurement_pulse["integration_weights"]) == 4
 
         assert len(measurements) == 1
         assert len(measurements[0].result_handles) == 2
@@ -660,14 +480,28 @@ class TestQuantumMachinesCompiler:
         assert len(statements) == 6
 
         measure_0 = statements[0].measure
-        assert measure_0.qe.name == "drive"
+        assert measure_0.qe.name == "readout"
         assert measure_0.pulse.name in configuration["pulses"]
 
         measure_1 = statements[3].measure
-        assert measure_1.qe.name == "drive"
+        assert measure_1.qe.name == "readout"
         assert measure_1.pulse.name in configuration["pulses"]
 
         assert measure_0.pulse.name == measure_1.pulse.name
+
+        assert len(configuration["pulses"][measure_0.pulse.name]["integration_weights"]) == 8
+
+    def test_measure_operation_with_average(self, measure_operation_with_average: QProgram):
+        compiler = QuantumMachinesCompiler()
+        qua_program, _, measurements = compiler.compile(measure_operation_with_average)
+
+        statements = qua_program._program.script.body.statements
+        assert len(statements) == 1
+
+        assert len(measurements) == 1
+        assert len(measurements[0].result_handles) == 2
+        assert "I_0" in measurements[0].result_handles
+        assert "Q_0" in measurements[0].result_handles
 
     def test_measure_operation_in_for_loop(self, measure_operation_in_for_loop: QProgram):
         compiler = QuantumMachinesCompiler()

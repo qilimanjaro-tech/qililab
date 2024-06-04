@@ -89,6 +89,8 @@ class QProgram(DictSerializable):
 
     def __init__(self, disable_autosync: bool = False) -> None:
         self.disable_autosync: bool = disable_autosync
+        self.qblox = self._QbloxInterface(self)
+        self.qm = self._QuantumMachinesInterface(self)
 
         self._body: Block = Block()
         self._buses: set[str] = set()
@@ -278,26 +280,15 @@ class QProgram(DictSerializable):
         self._active_block.append(operation)
         self._buses.add(bus)
 
-    def measure(
-        self,
-        bus: str,
-        waveform: IQPair,
-        weights: IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair, IQPair] | None = None,
-        demodulation: bool = True,
-        save_raw_adc: bool = False,
-    ):
+    def measure(self, bus: str, waveform: IQPair, weights: IQPair):
         """Play a pulse and acquire results.
 
         Args:
             bus (str): Unique identifier of the bus.
             waveform (IQPair): Waveform played during measurement.
-            weights (IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair, IQPair] | None, optional): Weights used during acquisition. Defaults to None.
-            demodulation (bool, optional): If demodulation is enabled. Defaults to True.
-            save_raw_adc (bool, optional): If raw adc data should be saved. Defaults to True.
+            weights (IQPair): Weights used during demodulation/integration.
         """
-        operation = Measure(
-            bus=bus, waveform=waveform, weights=weights, demodulation=demodulation, save_raw_adc=save_raw_adc
-        )
+        operation = Measure(bus=bus, waveform=waveform, weights=weights)
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -484,3 +475,43 @@ class QProgram(DictSerializable):
         def __init__(self, qprogram: "QProgram", shots: int):  # pylint: disable=super-init-not-called
             self.qprogram = qprogram
             self.block: Average = Average(shots=shots)
+
+    # pylint: disable=protected-access, too-few-public-methods
+    class _QbloxInterface:
+        def __init__(self, qprogram: "QProgram"):
+            self.qprogram = qprogram
+
+    # pylint: disable=protected-access, too-few-public-methods
+    class _QuantumMachinesInterface:
+        def __init__(self, qprogram: "QProgram"):
+            self.qprogram = qprogram
+
+        def measure(
+            self,
+            bus: str,
+            waveform: IQPair,
+            weights: IQPair,
+            rotation: float = 0.0,
+            demodulation: bool = True,
+            save_raw_adc: bool = False,
+        ):
+            """Play a pulse and acquire results.
+
+            Args:
+                bus (str): Unique identifier of the bus.
+                waveform (IQPair): Waveform played during measurement.
+                weights (IQPair): Weights used during demodulation/integration.
+                rotation (float): Angle in radians to rotate the IQ plane during demodulation/integration.
+                demodulation (bool, optional): If demodulation is enabled. Defaults to True.
+                save_raw_adc (bool, optional): If raw ADC data should be saved. Defaults to False.
+            """
+            operation = Measure(
+                bus=bus,
+                waveform=waveform,
+                weights=weights,
+                rotation=rotation,
+                demodulation=demodulation,
+                save_raw_adc=save_raw_adc,
+            )
+            self.qprogram._active_block.append(operation)
+            self.qprogram._buses.add(bus)

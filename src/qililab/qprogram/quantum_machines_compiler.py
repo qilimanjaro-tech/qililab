@@ -41,17 +41,17 @@ class _MeasurementCompilationInfo:  # pylint: disable=too-few-public-methods, to
     def __init__(
         self,
         bus: str,
-        variable_I: qua.QuaVariableType | None = None,
-        variable_Q: qua.QuaVariableType | None = None,
-        stream_I: qua_dsl._ResultSource | None = None,
-        stream_Q: qua_dsl._ResultSource | None = None,
+        variable_I: qua.QuaVariableType,
+        variable_Q: qua.QuaVariableType,
+        stream_I: qua_dsl._ResultSource,
+        stream_Q: qua_dsl._ResultSource,
         stream_raw_adc: qua_dsl._ResultSource | None = None,
     ) -> None:
         self.bus: str = bus
-        self.variable_I: qua.QuaVariableType | None = variable_I
-        self.variable_Q: qua.QuaVariableType | None = variable_Q
-        self.stream_I: qua_dsl._ResultSource | None = stream_I
-        self.stream_Q: qua_dsl._ResultSource | None = stream_Q
+        self.variable_I: qua.QuaVariableType = variable_I
+        self.variable_Q: qua.QuaVariableType = variable_Q
+        self.stream_I: qua_dsl._ResultSource = stream_I
+        self.stream_Q: qua_dsl._ResultSource = stream_Q
         self.stream_raw_adc: qua_dsl._ResultSource | None = stream_raw_adc
         self.loops_iterations: list[int] = []
         self.average: bool = False
@@ -169,12 +169,9 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
                 processing_stream.save(save_as)
                 result_handles.append(save_as)
 
-            if measurement.stream_I is not None:
-                _process_stream(measurement.stream_I, f"I_{index}")
-            if measurement.stream_Q is not None:
-                _process_stream(measurement.stream_Q, f"Q_{index}")
+            _process_stream(measurement.stream_I, f"I_{index}")
+            _process_stream(measurement.stream_Q, f"Q_{index}")
             if measurement.stream_raw_adc is not None:
-                # TODO: Check if both inputs are available
                 _process_stream(measurement.stream_raw_adc.input1(), f"adc1_{index}")
                 _process_stream(measurement.stream_raw_adc.input2(), f"adc2_{index}")
 
@@ -328,100 +325,40 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             else None
         )
 
-        variable_I, variable_Q, stream_I, stream_Q, stream_raw_adc = None, None, None, None, None
+        variable_I = qua.declare(qua.fixed)
+        variable_Q = qua.declare(qua.fixed)
+        stream_I = qua.declare_stream()
+        stream_Q = qua.declare_stream()
+        stream_raw_adc = qua.declare_stream(adc_trace=True) if element.save_raw_adc else None
 
-        if element.save_raw_adc:
-            stream_raw_adc = qua.declare_stream(adc_trace=True)
+        A, B, C, D = self.__add_weights_to_configuration(weights=element.weights, rotation=element.rotation)
 
-        if element.weights is None:
-            pulse_name = self.__add_or_update_measurement_pulse_to_configuration(
-                waveform_I_name, waveform_Q_name, duration=waveform_I.get_duration(), integration_weights=[]
+        pulse_name = self.__add_or_update_measurement_pulse_to_configuration(
+            waveform_I_name,
+            waveform_Q_name,
+            duration=waveform_I.get_duration(),
+            integration_weights=[A, B, C, D],
+        )
+        operation_name = self.__add_pulse_to_element_operations(bus, pulse_name)
+        pulse = operation_name * gain if gain is not None else operation_name
+        if element.demodulation:
+            qua.measure(
+                pulse,
+                bus,
+                stream_raw_adc,
+                qua.dual_demod.full(A, "out1", B, "out2", variable_I),
+                qua.dual_demod.full(C, "out1", D, "out2", variable_Q),
             )
-            operation_name = self.__add_pulse_to_element_operations(bus, pulse_name)
-            pulse = operation_name * gain if gain is not None else operation_name
-            qua.measure(pulse, element.bus, stream_raw_adc)
-        elif isinstance(element.weights, IQPair):
-            variable_I = qua.declare(qua.fixed)
-            stream_I = qua.declare_stream()
-            weight_I = self.__add_integration_weight_to_configuration(element.weights.I, element.weights.Q)
-            pulse_name = self.__add_or_update_measurement_pulse_to_configuration(
-                waveform_I_name, waveform_Q_name, duration=waveform_I.get_duration(), integration_weights=[weight_I]
+        else:
+            qua.measure(
+                pulse,
+                bus,
+                stream_raw_adc,
+                qua.dual_integration.full(A, "out1", B, "out2", variable_I),
+                qua.dual_integration.full(C, "out1", D, "out2", variable_Q),
             )
-            operation_name = self.__add_pulse_to_element_operations(bus, pulse_name)
-            pulse = operation_name * gain if gain is not None else operation_name
-            if element.demodulation:
-                qua.measure(pulse, bus, stream_raw_adc, qua.demod.full(weight_I, variable_I, "out1"))
-            else:
-                qua.measure(pulse, bus, stream_raw_adc, qua.integration.full(weight_I, variable_I, "out1"))
-            qua.save(variable_I, stream_I)
-        elif isinstance(element.weights, tuple) and len(element.weights) == 2:
-            variable_I = qua.declare(qua.fixed)
-            variable_Q = qua.declare(qua.fixed)
-            stream_I = qua.declare_stream()
-            stream_Q = qua.declare_stream()
-            weight_I = self.__add_integration_weight_to_configuration(element.weights[0].I, element.weights[0].Q)
-            weight_Q = self.__add_integration_weight_to_configuration(element.weights[1].I, element.weights[1].Q)
-            pulse_name = self.__add_or_update_measurement_pulse_to_configuration(
-                waveform_I_name,
-                waveform_Q_name,
-                duration=waveform_I.get_duration(),
-                integration_weights=[weight_I, weight_Q],
-            )
-            operation_name = self.__add_pulse_to_element_operations(bus, pulse_name)
-            pulse = operation_name * gain if gain is not None else operation_name
-            if element.demodulation:
-                qua.measure(
-                    pulse,
-                    bus,
-                    stream_raw_adc,
-                    qua.demod.full(weight_I, variable_I, "out1"),
-                    qua.demod.full(weight_Q, variable_Q, "out2"),
-                )
-            else:
-                qua.measure(
-                    pulse,
-                    bus,
-                    stream_raw_adc,
-                    qua.integration.full(weight_I, variable_I, "out1"),
-                    qua.integration.full(weight_Q, variable_Q, "out2"),
-                )
-            qua.save(variable_I, stream_I)
-            qua.save(variable_Q, stream_Q)
-        elif isinstance(element.weights, tuple) and len(element.weights) == 4:
-            variable_I = qua.declare(qua.fixed)
-            variable_Q = qua.declare(qua.fixed)
-            stream_I = qua.declare_stream()
-            stream_Q = qua.declare_stream()
-            weight_A = self.__add_integration_weight_to_configuration(element.weights[0].I, element.weights[0].Q)
-            weight_B = self.__add_integration_weight_to_configuration(element.weights[1].I, element.weights[1].Q)
-            weight_C = self.__add_integration_weight_to_configuration(element.weights[2].I, element.weights[2].Q)  # type: ignore[misc]
-            weight_D = self.__add_integration_weight_to_configuration(element.weights[3].I, element.weights[3].Q)  # type: ignore[misc]
-            pulse_name = self.__add_or_update_measurement_pulse_to_configuration(
-                waveform_I_name,
-                waveform_Q_name,
-                duration=waveform_I.get_duration(),
-                integration_weights=[weight_A, weight_B, weight_C, weight_D],
-            )
-            operation_name = self.__add_pulse_to_element_operations(bus, pulse_name)
-            pulse = operation_name * gain if gain is not None else operation_name
-            if element.demodulation:
-                qua.measure(
-                    pulse,
-                    bus,
-                    stream_raw_adc,
-                    qua.dual_demod.full(weight_A, "out1", weight_B, "out2", variable_I),
-                    qua.dual_demod.full(weight_C, "out1", weight_D, "out2", variable_Q),
-                )
-            else:
-                qua.measure(
-                    pulse,
-                    bus,
-                    stream_raw_adc,
-                    qua.dual_integration.full(weight_A, "out1", weight_B, "out2", variable_I),
-                    qua.dual_integration.full(weight_C, "out1", weight_D, "out2", variable_Q),
-                )
-            qua.save(variable_I, stream_I)
-            qua.save(variable_Q, stream_Q)
+        qua.save(variable_I, stream_I)
+        qua.save(variable_Q, stream_Q)
 
         measurement_info = _MeasurementCompilationInfo(bus, variable_I, variable_Q, stream_I, stream_Q, stream_raw_adc)
         for block in reversed(self._qprogram_block_stack):
@@ -514,13 +451,42 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             )
         return pulse_name
 
-    def __add_integration_weight_to_configuration(self, cosine_part: Waveform, sine_part: Waveform):
-        weight_name = f"{QuantumMachinesCompiler.__hash_waveform(cosine_part)}_{QuantumMachinesCompiler.__hash_waveform(sine_part)}"
-        if weight_name not in self._configuration["integration_weights"]:
-            self._configuration["integration_weights"][
-                weight_name
-            ] = QuantumMachinesCompiler.__integration_weight_to_config(cosine_part, sine_part)
-        return weight_name
+    def __add_weights_to_configuration(self, weights: IQPair, rotation: float):
+        prefix = f"{QuantumMachinesCompiler.__hash_waveform(weights.I)}_{QuantumMachinesCompiler.__hash_waveform(weights.Q)}_{rotation}"
+
+        envelope_I = weights.I.envelope(4)
+        envelope_Q = weights.Q.envelope(4)
+
+        # Define weights as numpy array
+        cos_I = np.cos(rotation) * envelope_I
+        sin_I = np.sin(rotation) * envelope_I
+        cos_Q = np.cos(rotation) * envelope_Q
+        minus_sin_I = -np.sin(rotation) * envelope_I
+        minus_cos_Q = -np.cos(rotation) * envelope_Q
+        minus_sin_Q = -np.sin(rotation) * envelope_Q
+
+        # Convert weights to QM-specific format
+        cos_I_converted = convert_integration_weights(integration_weights=cos_I, N=len(cos_I))
+        sin_I_converted = convert_integration_weights(integration_weights=sin_I, N=len(sin_I))
+        cos_Q_converted = convert_integration_weights(integration_weights=cos_Q, N=len(cos_Q))
+        minus_sin_I_converted = convert_integration_weights(integration_weights=minus_sin_I, N=len(minus_sin_I))
+        minus_cos_Q_converted = convert_integration_weights(integration_weights=minus_cos_Q, N=len(minus_cos_Q))
+        minus_sin_Q_converted = convert_integration_weights(integration_weights=minus_sin_Q, N=len(minus_sin_Q))
+
+        # Define weights names
+        A = f"{prefix}_A"
+        B = f"{prefix}_B"
+        C = f"{prefix}_C"
+        D = f"{prefix}_D"
+
+        # Add weights to configuration dictionary
+        self._configuration["integration_weights"][A] = {"cosine": cos_I_converted, "sine": minus_sin_I_converted}
+        self._configuration["integration_weights"][B] = {"cosine": sin_I_converted, "sine": cos_I_converted}
+        self._configuration["integration_weights"][C] = {"cosine": minus_sin_Q_converted, "sine": minus_cos_Q_converted}
+        self._configuration["integration_weights"][D] = {"cosine": cos_Q_converted, "sine": minus_sin_Q_converted}
+
+        # Return weights names
+        return A, B, C, D
 
     def __add_waveform_to_configuration(self, waveform: Waveform):
         waveform_name = QuantumMachinesCompiler.__hash_waveform(waveform)
@@ -547,14 +513,6 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
 
         envelope = waveform.envelope() / QuantumMachinesCompiler.VOLTAGE_COEFF
         return {"type": "arbitrary", "samples": envelope.tolist()}
-
-    @staticmethod
-    def __integration_weight_to_config(cosine_part: Waveform, sine_part: Waveform):
-        cosine_envelope, sine_envelope = cosine_part.envelope(resolution=4), sine_part.envelope(resolution=4)
-        converted_cosine_part = convert_integration_weights(integration_weights=cosine_envelope, N=len(cosine_envelope))
-        converted_sine_part = convert_integration_weights(integration_weights=sine_envelope, N=len(sine_envelope))
-
-        return {"cosine": converted_cosine_part, "sine": converted_sine_part}
 
     @staticmethod
     def _calculate_iterations(start: int | float, stop: int | float, step: int | float):
