@@ -24,6 +24,7 @@ from qualang_tools.config.integration_weights_tools import convert_integration_w
 
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.blocks.infinite_loop import InfiniteLoop
+from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import Measure, Play, ResetPhase, SetFrequency, SetGain, SetPhase, Sync, Wait
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable import Domain, Variable
@@ -93,7 +94,6 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         }
 
         self._qprogram: QProgram
-        self._bus_mapping: dict[str, str] | None
         self._qprogram_block_stack: deque[Block]
         self._qprogram_to_qua_variables: dict[Variable, qua.QuaVariableType]
         self._measurements: list[_MeasurementCompilationInfo]
@@ -101,7 +101,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         self._buses: dict[str, _BusCompilationInfo]
 
     def compile(
-        self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None
+        self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None, calibration: Calibration | None = None
     ) -> tuple[qua.Program, dict, list[MeasurementInfo]]:
         """Compile QProgram to QUA's Program.
 
@@ -129,7 +129,14 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             self._qprogram_block_stack.pop()
 
         self._qprogram = qprogram
-        self._bus_mapping = bus_mapping
+        if bus_mapping is not None:
+            self._qprogram = self._qprogram.with_bus_mapping(bus_mapping=bus_mapping)
+        if calibration is not None:
+            self._qprogram = self._qprogram.with_calibration(calibration=calibration)
+        if self._qprogram.has_named_operations():
+            raise RuntimeError(
+                "Cannot compile to hardware-native instructions because QProgram contains named operations that are not mapped. Provide a calibration instance containing all necessary mappings."
+            )
 
         self._qprogram_block_stack = deque()
         self._qprogram_to_qua_variables = {}
@@ -195,10 +202,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
     def _populate_buses(self):
         """Map each bus in the QProgram to a BusCompilationInfo instance."""
 
-        buses = set(
-            self._bus_mapping[bus] if self._bus_mapping and bus in self._bus_mapping else bus
-            for bus in self._qprogram.buses
-        )
+        buses = self._qprogram.buses
         self._configuration["elements"] = {bus: {"operations": {}} for bus in buses}
         self._buses = {bus: _BusCompilationInfo() for bus in buses}
 
@@ -261,44 +265,39 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         return qua.for_(variable, 0, variable < element.shots, variable + 1)
 
     def _handle_set_frequency(self, element: SetFrequency):
-        bus = self._bus_mapping[element.bus] if self._bus_mapping and element.bus in self._bus_mapping else element.bus
         frequency = (
             self._qprogram_to_qua_variables[element.frequency]
             if isinstance(element.frequency, Variable)
             else element.frequency
         )
-        qua.update_frequency(element=bus, new_frequency=frequency)
+        qua.update_frequency(element=element.bus, new_frequency=frequency)
 
     def _handle_set_phase(self, element: SetPhase):
-        bus = self._bus_mapping[element.bus] if self._bus_mapping and element.bus in self._bus_mapping else element.bus
         phase = (
             self._qprogram_to_qua_variables[element.phase]
             if isinstance(element.phase, Variable)
             else element.phase / self.PHASE_COEFF
         )
-        qua.frame_rotation_2pi(phase, bus)
+        qua.frame_rotation_2pi(phase, element.bus)
 
     def _handle_reset_phase(self, element: ResetPhase):
-        bus = self._bus_mapping[element.bus] if self._bus_mapping and element.bus in self._bus_mapping else element.bus
-        qua.reset_frame(bus)
+        qua.reset_frame(element.bus)
 
     def _handle_set_gain(self, element: SetGain):
-        bus = self._bus_mapping[element.bus] if self._bus_mapping and element.bus in self._bus_mapping else element.bus
         gain = self._qprogram_to_qua_variables[element.gain] if isinstance(element.gain, Variable) else element.gain
         # QUA doesn't have a method for setting the gain directly.
         # Instead, it uses an amplitude multiplication with `amp()`.
         # Thus, we store the current gain to multiply with in the next play instructions.
-        self._buses[bus].current_gain = gain
+        self._buses[element.bus].current_gain = gain
 
     def _handle_play(self, element: Play):
-        bus = self._bus_mapping[element.bus] if self._bus_mapping and element.bus in self._bus_mapping else element.bus
         waveform_I, waveform_Q = element.get_waveforms()
         waveform_variables = element.get_waveform_variables()
         duration = waveform_I.get_duration()
 
         gain = (
-            qua.amp(self._buses[bus].current_gain * self.VOLTAGE_COEFF)
-            if self._buses[bus].current_gain is not None
+            qua.amp(self._buses[element.bus].current_gain * self.VOLTAGE_COEFF)
+            if self._buses[element.bus].current_gain is not None
             else None
         )
 
@@ -306,22 +305,21 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             waveform_I_name = self.__add_waveform_to_configuration(waveform_I)
             waveform_Q_name = self.__add_waveform_to_configuration(waveform_Q) if waveform_Q else None
             pulse_name = self.__add_or_update_control_pulse_to_configuration(waveform_I_name, waveform_Q_name, duration)
-            operation_name = self.__add_pulse_to_element_operations(bus, pulse_name)
+            operation_name = self.__add_pulse_to_element_operations(element.bus, pulse_name)
             pulse = operation_name * gain if gain is not None else operation_name
-            qua.play(pulse, bus)
+            qua.play(pulse, element.bus)
 
     def _handle_measure(
         self, element: Measure
     ):  # pylint: disable=too-many-locals, too-many-branches, too-many-statements
-        bus = self._bus_mapping[element.bus] if self._bus_mapping and element.bus in self._bus_mapping else element.bus
         waveform_I, waveform_Q = element.get_waveforms()
 
         waveform_I_name = self.__add_waveform_to_configuration(waveform_I)
         waveform_Q_name = self.__add_waveform_to_configuration(waveform_Q)
 
         gain = (
-            qua.amp(self._buses[bus].current_gain * self.VOLTAGE_COEFF)
-            if self._buses[bus].current_gain is not None
+            qua.amp(self._buses[element.bus].current_gain * self.VOLTAGE_COEFF)
+            if self._buses[element.bus].current_gain is not None
             else None
         )
 
@@ -339,12 +337,12 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             duration=waveform_I.get_duration(),
             integration_weights=[A, B, C, D],
         )
-        operation_name = self.__add_pulse_to_element_operations(bus, pulse_name)
+        operation_name = self.__add_pulse_to_element_operations(element.bus, pulse_name)
         pulse = operation_name * gain if gain is not None else operation_name
         if element.demodulation:
             qua.measure(
                 pulse,
-                bus,
+                element.bus,
                 stream_raw_adc,
                 qua.dual_demod.full(A, "out1", B, "out2", variable_I),
                 qua.dual_demod.full(C, "out1", D, "out2", variable_Q),
@@ -352,7 +350,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         else:
             qua.measure(
                 pulse,
-                bus,
+                element.bus,
                 stream_raw_adc,
                 qua.dual_integration.full(A, "out1", B, "out2", variable_I),
                 qua.dual_integration.full(C, "out1", D, "out2", variable_Q),
@@ -360,7 +358,9 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         qua.save(variable_I, stream_I)
         qua.save(variable_Q, stream_Q)
 
-        measurement_info = _MeasurementCompilationInfo(bus, variable_I, variable_Q, stream_I, stream_Q, stream_raw_adc)
+        measurement_info = _MeasurementCompilationInfo(
+            element.bus, variable_I, variable_Q, stream_I, stream_Q, stream_raw_adc
+        )
         for block in reversed(self._qprogram_block_stack):
             if isinstance(block, ForLoop):
                 iterations = QuantumMachinesCompiler._calculate_iterations(block.start, block.stop, block.step)
@@ -382,7 +382,6 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         self._measurements.append(measurement_info)
 
     def _handle_wait(self, element: Wait):
-        bus = self._bus_mapping[element.bus] if self._bus_mapping and element.bus in self._bus_mapping else element.bus
         duration = (
             self._qprogram_to_qua_variables[element.duration]
             if isinstance(element.duration, Variable)
@@ -393,16 +392,12 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             duration / int(self.WAIT_COEFF)
             if isinstance(element.duration, Variable)
             else int(duration / self.WAIT_COEFF),
-            bus,
+            element.bus,
         )
 
     def _handle_sync(self, element: Sync):
         if element.buses:
-            buses = [
-                self._bus_mapping[bus] if self._bus_mapping and bus in self._bus_mapping else bus
-                for bus in element.buses
-            ]
-            qua.align(*buses)
+            qua.align(*element.buses)
         else:
             qua.align()
 

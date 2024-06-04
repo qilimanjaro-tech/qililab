@@ -46,3 +46,13 @@ class Measure(Operation):  # pylint: disable=missing-class-docstring
         wf_I: Waveform = self.weights.I
         wf_Q: Waveform = self.weights.Q
         return wf_I, wf_Q
+
+
+@dataclass(frozen=True)
+class MeasureWithNamedOperation(Operation):  # pylint: disable=missing-class-docstring
+    bus: str
+    operation: str
+    weights: IQPair
+    rotation: float = 0.0
+    demodulation: bool = True
+    save_raw_adc: bool = False

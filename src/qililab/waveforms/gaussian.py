@@ -17,10 +17,12 @@ import numpy as np
 
 from qililab.qprogram.decorators import requires_domain
 from qililab.qprogram.variable import Domain
+from qililab.yaml import yaml
 
 from .waveform import Waveform
 
 
+@yaml.register_class
 # pylint: disable=anomalous-backslash-in-string
 class Gaussian(Waveform):  # pylint: disable=too-few-public-methods
     """Gaussian waveform with peak at duration/2 and spanning for num_sigmas over the pulse duration.

@@ -1,8 +1,18 @@
 import numpy as np
 import pytest
 
-from qililab import Domain, IQPair, QProgram, QuantumMachinesCompiler, Square
+from qililab import Calibration, Domain, IQPair, QProgram, QuantumMachinesCompiler, Square
 from qililab.qprogram.blocks import ForLoop, Loop
+
+
+@pytest.fixture(name="calibration")
+def fixture_calibration() -> Calibration:
+    calibration = Calibration()
+    calibration.add_operation(bus="drive_q0", operation="Xpi", waveform=Square(1.0, 100))
+    calibration.add_operation(bus="drive_q1", operation="Xpi", waveform=Square(1.0, 150))
+    calibration.add_operation(bus="drive_q2", operation="Xpi", waveform=Square(1.0, 200))
+
+    return calibration
 
 
 @pytest.fixture(name="play_operation")
@@ -29,6 +39,16 @@ def fixture_set_gain_and_play_operation() -> QProgram:
     drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
     qp = QProgram()
     qp.set_gain(bus="drive", gain=0.5)
+    qp.play(bus="drive", waveform=drag_wf)
+
+    return qp
+
+
+@pytest.fixture(name="play_named_operation")
+def fixture_play_named_operation() -> QProgram:
+    drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
+    qp = QProgram()
+    qp.play(bus="drive", waveform="Xpi")
     qp.play(bus="drive", waveform=drag_wf)
 
     return qp
@@ -327,6 +347,27 @@ class TestQuantumMachinesCompiler:
         assert play.qe.name == "drive"
         assert play.named_pulse.name in configuration["pulses"]
         assert float(play.amp.v0.literal.value) == 0.5 * 2
+
+    def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
+        compiler = QuantumMachinesCompiler()
+        qua_program, configuration, _ = compiler.compile(
+            play_named_operation, bus_mapping={"drive": "drive_q0"}, calibration=calibration
+        )
+
+        statements = qua_program._program.script.body.statements
+        assert len(statements) == 2
+
+        play1 = statements[0].play
+        assert play1.qe.name == "drive_q0"
+
+        play2 = statements[1].play
+        assert play2.qe.name == "drive_q0"
+
+    def test_play_named_operation_raises_error_if_operations_not_in_calibration(self, play_named_operation: QProgram):
+        calibration = Calibration()
+        compiler = QuantumMachinesCompiler()
+        with pytest.raises(RuntimeError):
+            _, _, _ = compiler.compile(play_named_operation, bus_mapping={"drive": "drive_q0"}, calibration=calibration)
 
     def test_set_frequency_operation(self, set_frequency_operation: QProgram):
         compiler = QuantumMachinesCompiler()

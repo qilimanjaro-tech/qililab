@@ -15,9 +15,12 @@
 """Arbitrary waveform."""
 import numpy as np
 
+from qililab.yaml import yaml
+
 from .waveform import Waveform
 
 
+@yaml.register_class
 class Arbitrary(Waveform):  # pylint: disable=too-few-public-methods, disable=missing-class-docstring
     """Arbitrary waveform. Creates a waveform with the passed envelope.
 
