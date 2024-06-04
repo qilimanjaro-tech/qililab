@@ -65,12 +65,9 @@ class Calibration:
         Returns:
             str: The path of the saved file.
         """
-        path = Path(file) if file.endswith(".yml") or file.endswith(".yaml") else Path(f"{file}.yml")
+        yaml.dump(self, Path(file))
 
-        with open(file=path, mode="w", encoding="utf-8") as stream:
-            yaml.dump(data=self, stream=stream)
-
-        return str(path)
+        return file
 
     @classmethod
     def load(cls, file: str):
@@ -85,8 +82,7 @@ class Calibration:
         Returns:
             Calibration: An instance of the Calibration class with data loaded from the file.
         """
-        with open(file=file, mode="r", encoding="utf8") as stream:
-            data = yaml.load(stream)
+        data = yaml.load(Path(file))
         if not isinstance(data, cls):
             raise TypeError("The loaded data is not an instance of the Calibration class.")
         return data
