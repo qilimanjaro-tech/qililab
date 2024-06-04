@@ -20,6 +20,7 @@ from typing import Callable, get_type_hints
 
 from qililab.config import logger
 from qililab.platform.components.bus_element import BusElement
+from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.result import Result
 from qililab.settings import Settings
 from qililab.typings.enums import InstrumentName, Parameter
@@ -202,7 +203,7 @@ class Instrument(BusElement, ABC):
 
         In some cases this method might do nothing."""
 
-    def acquire_qprogram_results(self, acquisitions: list[str], port: str) -> list[Result]:  # type: ignore[empty-body]
+    def acquire_qprogram_results(self, acquisitions: dict[str, AcquisitionData], port: str) -> list[Result]:  # type: ignore[empty-body]
         """Acquire results of the measurement.
 
         In some cases this method might do nothing.

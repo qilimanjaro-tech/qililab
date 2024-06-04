@@ -119,7 +119,7 @@ def fixture_measure_operation_save_raw_adc() -> QProgram:
     drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
     weights = IQPair(I=Square(1.0, duration=200), Q=Square(1.0, duration=200))
     qp = QProgram()
-    qp.qm.measure(bus="readout", waveform=drag_wf, weights=weights, save_raw_adc=True)
+    qp.quantum_machines.measure(bus="readout", waveform=drag_wf, weights=weights, save_adc=True)
 
     return qp
 
@@ -129,7 +129,7 @@ def fixture_measure_operation_no_demodulation() -> QProgram:
     drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
     weights = IQPair(I=Square(1.0, duration=200), Q=Square(1.0, duration=200))
     qp = QProgram()
-    qp.qm.measure(bus="readout", waveform=drag_wf, weights=weights, demodulation=False)
+    qp.quantum_machines.measure(bus="readout", waveform=drag_wf, weights=weights, demodulation=False)
 
     return qp
 
@@ -141,8 +141,8 @@ def fixture_measure_operation_with_same_pulse() -> QProgram:
     weights2 = IQPair(I=Square(0.5, duration=200), Q=Square(0.5, duration=200))
 
     qp = QProgram()
-    qp.qm.measure(bus="readout", waveform=drag_wf, weights=weights, demodulation=False)
-    qp.qm.measure(bus="readout", waveform=drag_wf, weights=weights2, demodulation=False)
+    qp.quantum_machines.measure(bus="readout", waveform=drag_wf, weights=weights, demodulation=False)
+    qp.quantum_machines.measure(bus="readout", waveform=drag_wf, weights=weights2, demodulation=False)
 
     return qp
 

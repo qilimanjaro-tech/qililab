@@ -23,9 +23,9 @@ class Measure(Operation):  # pylint: disable=missing-class-docstring
     bus: str
     waveform: IQPair
     weights: IQPair
+    save_adc: bool = False
     rotation: float = 0.0
     demodulation: bool = True
-    save_raw_adc: bool = False
 
     def get_waveforms(self) -> tuple[Waveform, Waveform]:
         """Get the waveforms.
@@ -53,6 +53,6 @@ class MeasureWithNamedOperation(Operation):  # pylint: disable=missing-class-doc
     bus: str
     operation: str
     weights: IQPair
+    save_adc: bool = False
     rotation: float = 0.0
     demodulation: bool = True
-    save_raw_adc: bool = False

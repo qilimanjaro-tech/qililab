@@ -49,9 +49,6 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
     It contains methods for creating, manipulating and controlling
     the execution flow of quantum operations within a program.
 
-    Attributes:
-        disable_autosync (bool): If set to True, then loop iterations are not automatically synced.
-
     Examples:
 
         The following example illustrates how to define a Rabi sequence using QProgram.
@@ -85,18 +82,14 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
                 # Sync the buses
                 qp.sync()
 
-                # Play the readout pulse
-                qp.play(bus="readout_bus", waveform=readout_wf, wait_time=120)
-
-                # Acquire results
-                qp.acquire(bus="readout_bus", weights=weights)
+                # Measure
+                qp.measure(bus="readout_bus", waveform=readout_wf, weights=weights)
 
     """
 
-    def __init__(self, disable_autosync: bool = False) -> None:
-        self.disable_autosync: bool = disable_autosync
+    def __init__(self) -> None:
         self.qblox = self._QbloxInterface(self)
-        self.qm = self._QuantumMachinesInterface(self)
+        self.quantum_machines = self._QuantumMachinesInterface(self)
 
         self._body: Block = Block()
         self._buses: set[str] = set()
@@ -226,7 +219,7 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
                         waveform=waveform,
                         weights=element.weights,
                         demodulation=element.demodulation,
-                        save_raw_adc=element.save_raw_adc,
+                        save_adc=element.save_adc,
                     )
                     block.elements[index] = measure_operation
 
@@ -278,12 +271,12 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
             iterations (int): The number of acquire iterations.
 
         Returns:
-            AcquireLoop: The acquire_loop block.
+            Average: The average block.
 
         Examples:
 
-            >>> with qp.acquire_loop(iterations=1000):
-            >>>    # operations that shall be executed in the acquire_loop block
+            >>> with qp.average(shots=1000):
+            >>>    # operations that shall be executed in the average block
         """
         return QProgram._AverageContext(qprogram=self, shots=shots)
 
@@ -347,7 +340,7 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
         return QProgram._ForLoopContext(qprogram=self, variable=variable, start=start, stop=stop, step=step)
 
     @overload
-    def play(self, bus: str, waveform: Waveform | IQPair, wait_time: int | None = None) -> None:
+    def play(self, bus: str, waveform: Waveform | IQPair) -> None:
         """Play a single waveform or an I/Q pair of waveforms on the bus.
 
         Args:
@@ -356,7 +349,7 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
         """
 
     @overload
-    def play(self, bus: str, waveform: str, wait_time: int | None = None) -> None:
+    def play(self, bus: str, waveform: str) -> None:
         """Play a named waveform on the bus.
 
         Args:
@@ -364,7 +357,7 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
             waveform (str): An identifier of a named waveform.
         """
 
-    def play(self, bus: str, waveform: Waveform | IQPair | str, wait_time: int | None = None) -> None:
+    def play(self, bus: str, waveform: Waveform | IQPair | str) -> None:
         """Play a waveform, IQPair, or calibrated operation on the specified bus.
 
         This method handles both playing a waveform or IQPair, and playing a
@@ -375,9 +368,9 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
             waveform (Waveform | IQPair | str): The waveform, IQPair, or alias of named waveform to play.
         """
         operation = (
-            PlayWithNamedOperation(bus=bus, operation=waveform, wait_time=wait_time)
+            PlayWithNamedOperation(bus=bus, operation=waveform)
             if isinstance(waveform, str)
-            else Play(bus=bus, waveform=waveform, wait_time=wait_time)
+            else Play(bus=bus, waveform=waveform)
         )
         self._active_block.append(operation)
         self._buses.add(bus)
@@ -394,51 +387,41 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
         self._active_block.append(operation)
         self._buses.add(bus)
 
-    def acquire(self, bus: str, weights: IQPair):
-        """Acquire results based on the given weights.
-
-        Args:
-            bus (str): Unique identifier of the bus.
-            weights (IQPair): Weights used during acquisition.
-        """
-        operation = Acquire(bus=bus, weights=weights)
-        self._active_block.append(operation)
-        self._buses.add(bus)
-
     @overload
-    def measure(self, bus: str, waveform: IQPair, weights: IQPair):
+    def measure(self, bus: str, waveform: IQPair, weights: IQPair, save_adc: bool = False):
         """Play a pulse and acquire results.
 
         Args:
             bus (str): Unique identifier of the bus.
             waveform (IQPair): Waveform played during measurement.
             weights (IQPair): Weights used during demodulation/integration.
+            save_adc (bool, optional): If ADC data should be saved. Defaults to False.
         """
 
     @overload
-    def measure(self, bus: str, waveform: str, weights: IQPair):
+    def measure(self, bus: str, waveform: str, weights: IQPair, save_adc: bool = False):
         """Play a named pulse and acquire results.
 
         Args:
             bus (str): Unique identifier of the bus.
             waveform (str): Waveform played during measurement.
             weights (IQPair): Weights used during demodulation/integration.
+            save_adc (bool, optional): If ADC data should be saved. Defaults to False.
         """
 
-    def measure(self, bus: str, waveform: IQPair | str, weights: IQPair):
+    def measure(self, bus: str, waveform: IQPair | str, weights: IQPair, save_adc: bool = False):
         """Play a pulse and acquire results.
 
         Args:
             bus (str): Unique identifier of the bus.
             waveform (IQPair): Waveform played during measurement.
-            weights (IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair, IQPair] | None, optional): Weights used during acquisition. Defaults to None.
-            demodulation (bool, optional): If demodulation is enabled. Defaults to True.
-            save_raw_adc (bool, optional): If raw adc data should be saved. Defaults to True.
+            weights (IQPair): Weights used during demodulation/integration.
+            save_adc (bool, optional): If ADC data should be saved. Defaults to False.
         """
         operation = (
-            MeasureWithNamedOperation(bus=bus, operation=waveform, weights=weights)
+            MeasureWithNamedOperation(bus=bus, operation=waveform, weights=weights, save_adc=save_adc)
             if isinstance(waveform, str)
-            else Measure(bus=bus, waveform=waveform, weights=weights)
+            else Measure(bus=bus, waveform=waveform, weights=weights, save_adc=save_adc)
         )
         self._active_block.append(operation)
         self._buses.add(bus)
@@ -631,6 +614,55 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
     class _QbloxInterface:
         def __init__(self, qprogram: "QProgram"):
             self.qprogram = qprogram
+            self.disable_autosync: bool = False
+
+        def acquire(self, bus: str, weights: IQPair, save_adc: bool = False):
+            """Acquire results based on the given weights.
+
+            Args:
+                bus (str): Unique identifier of the bus.
+                weights (IQPair): Weights used during acquisition.
+            """
+            operation = Acquire(bus=bus, weights=weights, save_adc=save_adc)
+            self.qprogram._active_block.append(operation)
+            self.qprogram._buses.add(bus)
+
+        @overload
+        def play(self, bus: str, waveform: Waveform | IQPair, wait_time: int) -> None:
+            """Play a single waveform or an I/Q pair of waveforms on the bus.
+
+            Args:
+                bus (str): Unique identifier of the bus.
+                waveform (Waveform | IQPair): A single waveform or an I/Q pair of waveforms
+            """
+
+        @overload
+        def play(self, bus: str, waveform: str, wait_time: int) -> None:
+            """Play a named waveform on the bus.
+
+            Args:
+                bus (str): Unique identifier of the bus.
+                waveform (str): An identifier of a named waveform.
+            """
+
+        def play(self, bus: str, waveform: Waveform | IQPair | str, wait_time: int) -> None:
+            """Play a waveform, IQPair, or calibrated operation on the specified bus.
+
+            This method handles both playing a waveform or IQPair, and playing a
+            calibrated operation based on the type of the argument provided.
+
+            Args:
+                bus (str): Unique identifier of the bus.
+                waveform (Waveform | IQPair | str): The waveform, IQPair, or alias of named waveform to play.
+                wait_time (int): Overwrite the value of Q1ASM play instruction's wait_time parameter.
+            """
+            operation = (
+                PlayWithNamedOperation(bus=bus, operation=waveform, wait_time=wait_time)
+                if isinstance(waveform, str)
+                else Play(bus=bus, waveform=waveform, wait_time=wait_time)
+            )
+            self.qprogram._active_block.append(operation)
+            self.qprogram._buses.add(bus)
 
     # pylint: disable=protected-access, too-few-public-methods
     class _QuantumMachinesInterface:
@@ -642,9 +674,9 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
             bus: str,
             waveform: IQPair,
             weights: IQPair,
+            save_adc: bool = False,
             rotation: float = 0.0,
             demodulation: bool = True,
-            save_raw_adc: bool = False,
         ):
             """Play a pulse and acquire results.
 
@@ -662,7 +694,7 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
                 weights=weights,
                 rotation=rotation,
                 demodulation=demodulation,
-                save_raw_adc=save_raw_adc,
+                save_adc=save_adc,
             )
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)

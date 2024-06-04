@@ -327,7 +327,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         variable_Q = qua.declare(qua.fixed)
         stream_I = qua.declare_stream()
         stream_Q = qua.declare_stream()
-        stream_raw_adc = qua.declare_stream(adc_trace=True) if element.save_raw_adc else None
+        stream_raw_adc = qua.declare_stream(adc_trace=True) if element.save_adc else None
 
         A, B, C, D = self.__add_weights_to_configuration(weights=element.weights, rotation=element.rotation)
 

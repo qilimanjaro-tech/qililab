@@ -25,9 +25,8 @@ from qililab.qprogram.operations import (
 )
 from qililab.qprogram.variable import FloatVariable, IntVariable
 
-# pylint: disable=maybe-no-member
 
-
+# pylint: disable=maybe-no-member, protected-access
 class TestQProgram:
     """Unit tests checking the QProgram attributes and methods"""
 
@@ -86,7 +85,7 @@ class TestQProgram:
         qp = QProgram()
         with qp.average(1000):
             qp.play(bus="drive_q0_bus", waveform="Xpi")
-            qp.measure(bus="drive_q0_bus", waveform="Xpi")
+            qp.measure(bus="drive_q0_bus", waveform="Xpi", weights=IQPair(Square(1.0, 200), Square(1.0, 200)))
 
         # Check that qp has named operations
         assert qp.has_named_operations() is True
@@ -247,7 +246,7 @@ class TestQProgram:
         one_wf = Square(amplitude=1.0, duration=40)
         zero_wf = Square(amplitude=0.0, duration=40)
         qp = QProgram()
-        qp.acquire(bus="readout", weights=IQPair(I=one_wf, Q=zero_wf))
+        qp.qblox.acquire(bus="readout", weights=IQPair(I=one_wf, Q=zero_wf))
 
         assert len(qp._active_block.elements) == 1
         assert len(qp._body.elements) == 1
@@ -460,8 +459,8 @@ class TestQProgram:
                 with qp.for_loop(variable=frequency, start=100e6, stop=200e6, step=10e6):
                     qp.set_frequency(bus="readout", frequency=frequency)
                     qp.play(bus="readout", waveform=arbitrary_pair)
-                    qp.play(bus="readout", waveform=readout_pair, wait_time=4)
-                    qp.acquire(bus="readout", weights=weights_pair)
+                    qp.qblox.play(bus="readout", waveform=readout_pair, wait_time=4)
+                    qp.qblox.acquire(bus="readout", weights=weights_pair)
 
         serialized_dictionary = qp.to_dict()
 

@@ -127,7 +127,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
 
     def compile(
         self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None, calibration: Calibration | None = None
-    ) -> Sequences:
+    ) -> tuple[Sequences, Acquisitions]:
         """Compile QProgram to qpysequence.Sequence
 
         Args:
@@ -148,7 +148,9 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                 appended = handler(element)
                 if isinstance(element, Block):
                     traverse(element)
-                    if not self._qprogram.disable_autosync and isinstance(element, (ForLoop, Parallel, Loop, Average)):
+                    if not self._qprogram.qblox.disable_autosync and isinstance(
+                        element, (ForLoop, Parallel, Loop, Average)
+                    ):
                         self._handle_sync(element=Sync(buses=None))
                     if appended:
                         for bus in self._buses:
@@ -178,7 +180,9 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             self._buses[bus].qpy_sequence._program.compile()
 
         # Return a dictionary with bus names as keys and the compiled Sequence as values.
-        return {bus: bus_info.qpy_sequence for bus, bus_info in self._buses.items()}
+        sequences = {bus: bus_info.qpy_sequence for bus, bus_info in self._buses.items()}
+        acquisitions = {bus: bus_info.acquisitions for bus, bus_info in self._buses.items()}
+        return sequences, acquisitions
 
     def _populate_buses(self):
         """Map each bus in the QProgram to a BusCompilationInfo instance.
@@ -434,7 +438,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         if not isinstance(element.weights, IQPair):
             raise NotImplementedError("Qblox measure operation only supports weight format as IQPairs")
         play = Play(bus=element.bus, waveform=element.waveform)
-        acquire = Acquire(bus=element.bus, weights=element.weights)
+        acquire = Acquire(bus=element.bus, weights=element.weights, save_adc=element.save_adc)
         self._handle_play(play)
         self._handle_acquire(acquire)
 
@@ -446,11 +450,13 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             if isinstance(loop, QPyProgram.IterativeLoop) and not loop.name.startswith("avg")
         ]
         num_bins = math.prod(loop[1].iterations for loop in loops)
+        acquisition_name = f"acquisition_{self._buses[element.bus].next_acquisition_index}"
         self._buses[element.bus].qpy_sequence._acquisitions.add(
-            name=f"acquisition_{self._buses[element.bus].next_acquisition_index}",
+            name=acquisition_name,
             num_bins=num_bins,
             index=self._buses[element.bus].next_acquisition_index,
         )
+        self._buses[element.bus].acquisitions[acquisition_name] = AcquisitionData(save_adc=element.save_adc)
 
         index_I, index_Q, integration_length = self._append_to_weights_of_bus(element.bus, weights=element.weights)
 

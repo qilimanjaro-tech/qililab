@@ -21,6 +21,7 @@ from qililab.chip import Chip, Coil, Coupler, Qubit, Resonator
 from qililab.constants import BUS, NODE, RUNCARD
 from qililab.instruments import Instruments, ParameterNotFound
 from qililab.pulse import PulseDistortion
+from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.result import Result
 from qililab.settings import Settings
 from qililab.system_control import ReadoutSystemControl, SystemControl
@@ -225,7 +226,7 @@ class Bus:
             f"The bus {self.alias} cannot acquire results because it doesn't have a readout system control."
         )
 
-    def acquire_qprogram_results(self, acquisitions: list[str]) -> list[Result]:
+    def acquire_qprogram_results(self, acquisitions: dict[str, AcquisitionData]) -> list[Result]:
         """Read the result from the instruments
 
         Returns:
