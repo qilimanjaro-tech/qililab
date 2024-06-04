@@ -18,7 +18,6 @@ from itertools import count
 from warnings import warn
 
 import numpy as np
-from qiboconnection.api import API
 
 from qililab.typings.enums import LivePlotTypes
 from qililab.utils.loop import Loop
@@ -40,7 +39,7 @@ class LivePlot:  # pylint: disable=too-many-instance-attributes
         loops (list[Loop]): List of loops.
     """
 
-    def __init__(self, connection: API, num_schedules: int, title: str = "", loops: list[Loop] | None = None):
+    def __init__(self, connection, num_schedules: int, title: str = "", loops: list[Loop] | None = None):
         self.connection = connection
         self.num_schedules = num_schedules
         # We use the loop with more nested loops, or the first loop if all of them have the same amount of nested loops

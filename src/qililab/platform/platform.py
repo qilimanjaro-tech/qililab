@@ -23,7 +23,6 @@ from queue import Queue
 import numpy as np
 from qibo.gates import M
 from qibo.models import Circuit
-from qiboconnection.api import API
 from qm import generate_qua_script
 from qpysequence import Sequence as QpySequence
 from ruamel.yaml import YAML
@@ -272,7 +271,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         TODO: !!! Change this results for the actual sinusoidal ones (change wait_times of execution if needed) !!!
     """
 
-    def __init__(self, runcard: Runcard, connection: API | None = None):
+    def __init__(self, runcard: Runcard, connection=None):
         self.name = runcard.name
         """Name of the platform (``str``) """
 

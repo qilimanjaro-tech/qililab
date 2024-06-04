@@ -19,7 +19,6 @@ from warnings import warn
 
 import h5py
 import numpy as np
-from qiboconnection.api import API
 from ruamel.yaml import YAML
 
 from .platform import Platform
@@ -174,7 +173,7 @@ def save_platform(path: str, platform: Platform) -> str:
 
 
 def build_platform(
-    runcard: str | dict | None = None, path: str | None = None, connection: API | None = None, new_drivers: bool = False
+    runcard: str | dict | None = None, path: str | None = None, connection=None, new_drivers: bool = False
 ) -> Platform:
     """Builds a :class:`.Platform` object, given a :ref:`runcard <runcards>`.
 
