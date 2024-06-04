@@ -446,6 +446,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             )
         return pulse_name
 
+    # pylint: disable=too-many-locals
     def __add_weights_to_configuration(self, weights: IQPair, rotation: float):
         prefix = f"{QuantumMachinesCompiler.__hash_waveform(weights.I)}_{QuantumMachinesCompiler.__hash_waveform(weights.Q)}_{rotation}"
 

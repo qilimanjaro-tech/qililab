@@ -11,6 +11,7 @@ from qililab.instruments.awg_settings.awg_qblox_adc_sequencer import AWGQbloxADC
 from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.instruments.qblox import QbloxQRM
 from qililab.instruments.qblox.qblox_module import QbloxModule
+from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.result.qblox_results import QbloxResult
 from qililab.typings import InstrumentName
 from qililab.typings.enums import AcquireTriggerMode, IntegrationMode, Parameter
@@ -414,7 +415,9 @@ class TestQbloxQRM:
             }
         }
         qrm.sequences = {0: None}
-        acquisitions = qrm.acquire_qprogram_results(acquisitions=["default"], port="feedline_input")
+        acquisitions = qrm.acquire_qprogram_results(
+            acquisitions={"default": AcquisitionData(save_adc=False)}, port="feedline_input"
+        )
         assert isinstance(acquisitions, list)
         assert len(acquisitions) == 1
 

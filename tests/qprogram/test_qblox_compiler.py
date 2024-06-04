@@ -263,15 +263,6 @@ def fixture_measure_program() -> QProgram:
     return qp
 
 
-@pytest.fixture(name="measure_iqtuple")
-def fixture_measure_iqtuple() -> QProgram:
-    readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
-    weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
-    qp = QProgram()
-    qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
-    return qp
-
-
 @pytest.fixture(name="average_with_parallel_for_loops")
 def fixture_average_with_parallel_for_loops() -> QProgram:
     drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
@@ -748,11 +739,6 @@ class TestQBloxCompiler:
         assert handle_play.call_args[0][0].waveform == measure.waveform
         assert handle_acquire.call_args[0][0].bus == measure.bus
         assert handle_acquire.call_args[0][0].weights == measure.weights
-
-    def test_measure_raises_error_iqtuple_weights(self, measure_iqtuple):
-        compiler = QbloxCompiler()
-        with pytest.raises(NotImplementedError, match="Qblox measure operation only supports weight format as IQPairs"):
-            compiler.compile(measure_iqtuple)
 
     def test_acquire_loop_with_for_loop_with_weights_of_same_waveform(
         self, acquire_loop_with_for_loop_with_weights_of_same_waveform: QProgram

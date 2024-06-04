@@ -435,8 +435,6 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         Args:
             element (Measure): measure operation
         """
-        if not isinstance(element.weights, IQPair):
-            raise NotImplementedError("Qblox measure operation only supports weight format as IQPairs")
         play = Play(bus=element.bus, waveform=element.waveform)
         acquire = Acquire(bus=element.bus, weights=element.weights, save_adc=element.save_adc)
         self._handle_play(play)
