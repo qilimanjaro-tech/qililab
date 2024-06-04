@@ -7,10 +7,16 @@
 - Introduce the Two-Step pulse shape to improve readout
   [#730](https://github.com/qilimanjaro-tech/qililab/pull/730)
 
+- Update Qibo version to `v.0.2.8`.
+  [#732](https://github.com/qilimanjaro-tech/qililab/pull/732)
+
 ### Deprecations / Removals
 
 - Remove qiboconnection_api.block_device() and release_device()
   [#728](https://github.com/qilimanjaro-tech/qililab/pull/728)
+
+- Remove `qiboconnection` dependency from Qililab. It is not a requirement anymore.
+  [#732](https://github.com/qilimanjaro-tech/qililab/pull/732)
 
 ## 0.26.1 (2024-04-26)
 
