@@ -394,21 +394,6 @@ class InstrumentTypeName(str, Enum):
     QDEVIL_QDAC2 = "QDevilQDac2"
 
 
-class LivePlotTypes(str, Enum):
-    """Live Plot Types.
-
-    Args:
-        enum (str): Available plot element types:
-        * LINES
-        * SCATTER
-        * HEATMAP
-    """
-
-    LINES = "LINES"
-    SCATTER = "SCATTER"
-    HEATMAP = "HEATMAP"
-
-
 class VNATriggerModes(str, Enum):
     """Vector Network Analyzers Trigger Modes
 

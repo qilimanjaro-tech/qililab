@@ -59,13 +59,10 @@ class BaseExperiment(ABC):
 
     def run(self, save_experiment=True, save_results=True) -> Results:
         """This method is responsible for:
-        * Creating the live plotting (if connection is provided).
         * Preparing the `Results` class and the `results.yml` file.
         * Looping over all given loops and/or software averages. And for each loop:
             * Saving the results to the ``results.yml`` file.
-            * Sending the data to the live plotting (if asked to).
             * Save the results to the ``results`` attribute.
-            * Save the results to the remote database (if asked to).
         """
 
         if not hasattr(self, "execution_manager"):
@@ -83,8 +80,7 @@ class BaseExperiment(ABC):
         return self.results
 
     def _asynchronous_data_handling(self, queue: Queue):
-        """Starts a thread that asynchronously gets the results from the queue, sends them to the live plot (if any)
-        and saves them to a file.
+        """Starts a thread that asynchronously gets the results from the queue and saves them to a file.
 
         If no items are received in the queue for 5 seconds, the thread will exit.
 
@@ -116,7 +112,6 @@ class BaseExperiment(ABC):
             * Apply settings of the runcard to the instruments.
             * Translate circuit into pulses and create the ``ExecutionManager`` class.
             * Turn on instruments.
-            * Create the results files & class and connect to live plotting.
             * Runs the experiment.
             * Turn off instruments.
             * Disconnect from the instruments.

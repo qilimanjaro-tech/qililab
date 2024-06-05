@@ -61,8 +61,6 @@ class Experiment(BaseExperiment):
     def run(self, save_experiment=True, save_results=True) -> Results:
         """This method is responsible for:
 
-        * Creating the live plotting (if connection is provided).
-
         * Preparing the `Results` class and the `results.yml` file.
 
         * Looping over all the given circuits, loops and/or software averages. And for each loop:
@@ -73,11 +71,7 @@ class Experiment(BaseExperiment):
 
             * Saving the results to the ``results.yml`` file.
 
-            * Sending the data to the live plotting (if asked to).
-
             * Save the results to the ``results`` attribute.
-
-            * Save the results to the remote database (if asked to).
         """
 
         if not hasattr(self, "execution_manager"):
