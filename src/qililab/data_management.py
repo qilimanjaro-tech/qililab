@@ -172,9 +172,7 @@ def save_platform(path: str, platform: Platform) -> str:
     return str(new_path)
 
 
-def build_platform(
-    runcard: str | dict | None = None, path: str | None = None, connection=None, new_drivers: bool = False
-) -> Platform:
+def build_platform(runcard: str | dict | None = None, path: str | None = None, new_drivers: bool = False) -> Platform:
     """Builds a :class:`.Platform` object, given a :ref:`runcard <runcards>`.
 
     Such runcard can be passed in one of the following two ways:
@@ -247,4 +245,4 @@ def build_platform(
             runcard = yaml.load(stream=file)
 
     runcard_class = Runcard(**runcard)
-    return Platform(runcard=runcard_class, connection=connection)
+    return Platform(runcard=runcard_class)

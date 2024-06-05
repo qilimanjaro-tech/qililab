@@ -32,7 +32,6 @@ from qililab.result.results import Results
 from qililab.settings import Runcard
 from qililab.typings.enums import Instrument, Parameter
 from qililab.typings.experiment import ExperimentOptions
-from qililab.utils.live_plot import LivePlot
 from qililab.utils.loop import Loop
 
 
@@ -80,16 +79,6 @@ class Experiment(BaseExperiment):
 
             * Save the results to the remote database (if asked to).
         """
-        # Generate live plotting
-        if self.platform.connection is None:
-            self._plot = None
-        else:
-            self._plot = LivePlot(
-                connection=self.platform.connection,
-                loops=self.options.loops or [],
-                num_schedules=len(self.pulse_schedules),
-                title=self.options.name,
-            )
 
         if not hasattr(self, "execution_manager"):
             raise ValueError("Please build the execution_manager before running an experiment.")
@@ -107,9 +96,6 @@ class Experiment(BaseExperiment):
             range(self.software_average),
         ):
             self._execute_recursive_loops(loops=self.options.loops, idx=idx, queue=data_queue)
-
-        if self.options.remote_save:
-            self.remote_save_experiment()
 
         return self.results
 

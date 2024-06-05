@@ -84,7 +84,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
     Args:
         runcard (Runcard): Dataclass containing the serialized platform (chip, instruments, buses...), created during :meth:`ql.build_platform()` with the given runcard dictionary.
-        connection (API | None = None): `Qiboconnection's <https://pypi.org/project/qiboconnection>`_ API class used to block access to other users when connected to the platform.
 
     Examples:
 
@@ -271,7 +270,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         TODO: !!! Change this results for the actual sinusoidal ones (change wait_times of execution if needed) !!!
     """
 
-    def __init__(self, runcard: Runcard, connection=None):
+    def __init__(self, runcard: Runcard):
         self.name = runcard.name
         """Name of the platform (``str``) """
 
@@ -300,9 +299,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         )
         """All the buses of the platform and their necessary settings (``dataclass``). Each individual bus is contained in a list within the dataclass."""
 
-        self.connection = connection
-        """API ``qiboconnection`` of the platform (``API | None``). It is the same as the passed argument. Defaults to None."""
-
         self._connected_to_instruments: bool = False
         """Boolean indicating the connection status to the instruments. Defaults to False (not connected)."""
 
@@ -319,8 +315,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         You must be connected in order to set up and turn on instruments, or in order to execute the platform.
 
         To connect, your computer must be in the same network of the instruments specified in the :ref:`runcard <runcards>` (with their corresponding `device_id` and IP's addresses).
-
-        Such connection is handled via `qiboconnection's <https://pypi.org/project/qiboconnection>`_ `API` in the ``platform.connection`` attribute.
         """
         if self._connected_to_instruments:
             logger.info("Already connected to the instruments")

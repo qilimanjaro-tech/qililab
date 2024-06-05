@@ -35,7 +35,6 @@ from qililab.settings import Runcard
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.typings.enums import Instrument, Parameter
 from qililab.typings.experiment import ExperimentOptions
-from qililab.utils.live_plot import LivePlot
 from qililab.utils.loop import Loop
 from qililab.utils.util_loops import compute_shapes_from_loops
 
@@ -47,7 +46,6 @@ class BaseExperiment(ABC):
     execution_manager: ExecutionManager
     results: Results
     results_path: Path | None
-    _plot: LivePlot | None
     _remote_id: int
 
     def __init__(self, platform: Platform, options: ExperimentOptions = ExperimentOptions()):
@@ -69,17 +67,6 @@ class BaseExperiment(ABC):
             * Save the results to the ``results`` attribute.
             * Save the results to the remote database (if asked to).
         """
-        # Generate live plotting
-        if self.platform.connection is None:
-            self._plot = None
-        else:
-            # TODO: Live plotting should be able to hable num_schedules=0
-            self._plot = LivePlot(
-                connection=self.platform.connection,
-                loops=self.options.loops or [],
-                num_schedules=1,
-                title=self.options.name,
-            )
 
         if not hasattr(self, "execution_manager"):
             raise ValueError("Please build the execution_manager before running an experiment.")
@@ -92,9 +79,6 @@ class BaseExperiment(ABC):
         data_queue: Queue = Queue()  # queue used to store the experiment results
         self._asynchronous_data_handling(queue=data_queue)
         self._execute_recursive_loops(loops=self.options.loops, queue=data_queue)
-
-        if self.options.remote_save:
-            self.remote_save_experiment()
 
         return self.results
 
@@ -116,13 +100,6 @@ class BaseExperiment(ABC):
                     result = queue.get(timeout=timeout)  # get new result from the queue
                 except Empty:
                     return  # exit thread if no results are received for 10 times the duration of the program
-
-                if self._plot is not None:
-                    acq = result.acquisitions()
-                    i = np.array(acq["i"])
-                    q = np.array(acq["q"])
-                    amplitude = 20 * np.log10(np.abs(i + 1j * q)).astype(np.float64)
-                    self._plot.send_points(value=amplitude[0])
 
                 if self.results_path is not None:
                     with open(file=self.results_path / "results.yml", mode="a", encoding="utf8") as data_file:
@@ -157,27 +134,6 @@ class BaseExperiment(ABC):
         self.platform.disconnect()
         QcodesInstrument.close_all()
         return results
-
-    def remote_save_experiment(self) -> None:
-        """Saves the experiment and the results to the remote database and updates the ``_remote_id`` attribute.
-
-        Raises:
-            ValueError: if connection is not specified
-        """
-        if self.platform.connection is None:
-            return
-
-        logger.debug("Sending experiment and results to remote database.")
-        self._remote_id = self.platform.connection.save_experiment(
-            name=self.options.name,
-            description=self.options.description,
-            experiment_dict=self.to_dict(),
-            results_dict=self.results.to_dict(),
-            device_id=self.platform.device_id,
-            user_id=self.platform.connection.user_id,
-            qililab_version=__version__,
-            favorite=False,
-        )
 
     @abstractmethod
     def _execute_recursive_loops(self, loops: list[Loop] | None, queue: Queue, depth=0):

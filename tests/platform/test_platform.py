@@ -125,7 +125,6 @@ class TestPlatformInitialization:
         assert isinstance(platform.instrument_controllers, InstrumentControllers)
         assert isinstance(platform.chip, Chip)
         assert isinstance(platform.buses, Buses)
-        assert platform.connection is None
         assert platform._connected_to_instruments is False
 
 

@@ -45,7 +45,6 @@ class ExperimentOptions:
     loops: list[Loop] | None = None
     settings: ExperimentSettings = field(default_factory=ExperimentSettings)
     name: str = DEFAULT_EXPERIMENT_NAME
-    remote_save: bool = True
     description: str = ""
 
     def to_dict(self):
@@ -58,7 +57,6 @@ class ExperimentOptions:
             EXPERIMENT.LOOPS: [loop.to_dict() for loop in self.loops] if self.loops is not None else None,
             RUNCARD.GATES_SETTINGS: asdict(self.settings),
             RUNCARD.NAME: self.name,
-            EXPERIMENT.REMOTE_SAVE: self.remote_save,
             EXPERIMENT.DESCRIPTION: self.description,
         }
 
@@ -78,6 +76,5 @@ class ExperimentOptions:
             if RUNCARD.GATES_SETTINGS in dictionary
             else ExperimentSettings(),
             name=dictionary[RUNCARD.NAME] if RUNCARD.NAME in dictionary else DEFAULT_EXPERIMENT_NAME,
-            remote_save=dictionary.get(EXPERIMENT.REMOTE_SAVE, True),
             description=dictionary.get(EXPERIMENT.DESCRIPTION, ""),
         )
