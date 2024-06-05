@@ -18,6 +18,9 @@
 - Remove `qiboconnection` dependency from Qililab. It is not a requirement anymore.
   [#732](https://github.com/qilimanjaro-tech/qililab/pull/732)
 
+- Following the remove of Qiboconnection, `LivePlot` is no longer supported along with the creation of a `Platform` via API.
+  [#732](https://github.com/qilimanjaro-tech/qililab/pull/732)
+
 ## 0.26.1 (2024-04-26)
 
 ### Bug fixes
