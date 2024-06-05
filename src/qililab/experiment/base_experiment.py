@@ -20,13 +20,12 @@ from pathlib import Path
 from queue import Empty, Queue
 from threading import Thread
 
-import numpy as np
 from qcodes.instrument import Instrument as QcodesInstrument
 from ruamel.yaml import YAML
 from tqdm.auto import tqdm
 
 from qililab.chip import Node
-from qililab.config import __version__, logger
+from qililab.config import __version__
 from qililab.constants import DATA, EXPERIMENT, EXPERIMENT_FILENAME, RESULTS_FILENAME, RUNCARD
 from qililab.execution import EXECUTION_BUILDER, ExecutionManager
 from qililab.platform.platform import Platform
