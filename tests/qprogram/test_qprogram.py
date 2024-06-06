@@ -462,6 +462,10 @@ class TestQProgram:
                     qp.qblox.play(bus="readout", waveform=readout_pair, wait_time=4)
                     qp.qblox.acquire(bus="readout", weights=weights_pair)
 
+        # Temp hack until next PR that deletes these methods
+        del qp.qblox
+        del qp.quantum_machines
+
         serialized_dictionary = qp.to_dict()
 
         assert "type" in serialized_dictionary
