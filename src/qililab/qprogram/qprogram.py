@@ -27,7 +27,7 @@ from qililab.qprogram.operations import (
     Measure,
     MeasureWithNamedOperation,
     Play,
-    PlayWithNamedOperation,
+    PlayWithCalibratedWaveform,
     ResetPhase,
     SetFrequency,
     SetGain,
@@ -150,7 +150,7 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
                 if isinstance(element, Block):
                     if traverse(element):
                         return True
-                elif isinstance(element, (PlayWithNamedOperation, MeasureWithNamedOperation)):
+                elif isinstance(element, (PlayWithCalibratedWaveform, MeasureWithNamedOperation)):
                     return True
             return False
 
@@ -209,7 +209,7 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
             for index, element in enumerate(block.elements):
                 if isinstance(element, Block):
                     traverse(element)
-                elif isinstance(element, PlayWithNamedOperation) and calibration.has_waveform(
+                elif isinstance(element, PlayWithCalibratedWaveform) and calibration.has_waveform(
                     bus=element.bus, name=element.operation
                 ):
                     waveform = calibration.get_waveform(bus=element.bus, name=element.operation)
@@ -373,7 +373,7 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
             waveform (Waveform | IQPair | str): The waveform, IQPair, or alias of named waveform to play.
         """
         operation = (
-            PlayWithNamedOperation(bus=bus, operation=waveform, wait_time=wait_time)
+            PlayWithCalibratedWaveform(bus=bus, operation=waveform, wait_time=wait_time)
             if isinstance(waveform, str)
             else Play(bus=bus, waveform=waveform, wait_time=wait_time)
         )

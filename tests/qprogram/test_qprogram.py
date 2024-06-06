@@ -14,7 +14,7 @@ from qililab.qprogram.operations import (
     Measure,
     MeasureWithNamedOperation,
     Play,
-    PlayWithNamedOperation,
+    PlayWithCalibratedWaveform,
     ResetPhase,
     SetFrequency,
     SetGain,
@@ -90,7 +90,7 @@ class TestQProgram:
 
         # Check that qp has named operations
         assert qp.has_named_operations() is True
-        assert isinstance(qp.body.elements[0].elements[0], PlayWithNamedOperation)
+        assert isinstance(qp.body.elements[0].elements[0], PlayWithCalibratedWaveform)
         assert qp.body.elements[0].elements[0].operation == "Xpi"
         assert isinstance(qp.body.elements[0].elements[1], MeasureWithNamedOperation)
         assert qp.body.elements[0].elements[1].operation == "Xpi"
@@ -99,7 +99,7 @@ class TestQProgram:
 
         # Check that qp remain unchanged
         assert qp.has_named_operations() is True
-        assert isinstance(qp.body.elements[0].elements[0], PlayWithNamedOperation)
+        assert isinstance(qp.body.elements[0].elements[0], PlayWithCalibratedWaveform)
         assert qp.body.elements[0].elements[0].operation == "Xpi"
         assert isinstance(qp.body.elements[0].elements[1], MeasureWithNamedOperation)
         assert qp.body.elements[0].elements[1].operation == "Xpi"

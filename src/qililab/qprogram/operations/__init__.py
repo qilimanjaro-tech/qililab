@@ -15,7 +15,7 @@
 from .acquire import Acquire
 from .measure import Measure, MeasureWithNamedOperation
 from .operation import Operation
-from .play import Play, PlayWithNamedOperation
+from .play import Play, PlayWithCalibratedWaveform
 from .reset_phase import ResetPhase
 from .set_frequency import SetFrequency
 from .set_gain import SetGain

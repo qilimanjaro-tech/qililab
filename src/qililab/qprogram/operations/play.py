@@ -58,7 +58,7 @@ class Play(Operation):  # pylint: disable=missing-class-docstring
 
 
 @dataclass(frozen=True)
-class PlayWithNamedOperation(Operation):  # pylint: disable=missing-class-docstring
+class PlayWithCalibratedWaveform(Operation):  # pylint: disable=missing-class-docstring
     bus: str
     operation: str
     wait_time: int | None = None
