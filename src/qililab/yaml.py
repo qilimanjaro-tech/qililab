@@ -6,11 +6,13 @@ from ruamel.yaml import YAML
 
 
 def ndarray_representer(representer, data):
+    """Representer for ndarray"""
     value = {"dtype": str(data.dtype), "shape": data.shape, "data": data.ravel().tolist()}
     return representer.represent_mapping("!ndarray", value)
 
 
 def ndarray_constructor(constructor, node):
+    """Constructor for ndarray"""
     mapping = constructor.construct_mapping(node, deep=True)
     dtype = np.dtype(mapping["dtype"])
     shape = tuple(mapping["shape"])
@@ -19,10 +21,12 @@ def ndarray_constructor(constructor, node):
 
 
 def deque_representer(representer, data):
+    """Representer for deque"""
     return representer.represent_sequence("!deque", list(data))
 
 
 def deque_constructor(constructor, node):
+    """Constructor for ndarray"""
     return deque(constructor.construct_sequence(node))
 
 
