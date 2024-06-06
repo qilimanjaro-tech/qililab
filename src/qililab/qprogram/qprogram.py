@@ -24,8 +24,11 @@ from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.decorators import requires_domain
 from qililab.qprogram.operations import (
     Acquire,
+    AcquireWithCalibratedWeights,
     Measure,
-    MeasureWithNamedOperation,
+    MeasureWithCalibratedWaveform,
+    MeasureWithCalibratedWaveformWeights,
+    MeasureWithCalibratedWeights,
     Play,
     PlayWithCalibratedWaveform,
     ResetPhase,
@@ -133,11 +136,11 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
     def _active_block(self) -> Block:
         return self._block_stack[-1]
 
-    def has_named_operations(self) -> bool:
-        """Checks if QProgram has named operations. These need to be mapped before compiling to hardware-native code.
+    def has_calibrated_waveforms_or_weights(self) -> bool:
+        """Checks if QProgram has named waveforms or weights. These need to be mapped before compiling to hardware-native code.
 
         Returns:
-            bool: True, if QProgram has named operations.
+            bool: True, if QProgram has waveforms or weights that need to be mapped from calibration.
         """
 
         def traverse(block: Block):
@@ -145,7 +148,16 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
                 if isinstance(element, Block):
                     if traverse(element):
                         return True
-                elif isinstance(element, (PlayWithCalibratedWaveform, MeasureWithNamedOperation)):
+                elif isinstance(
+                    element,
+                    (
+                        PlayWithCalibratedWaveform,
+                        AcquireWithCalibratedWeights,
+                        MeasureWithCalibratedWaveform,
+                        MeasureWithCalibratedWeights,
+                        MeasureWithCalibratedWaveformWeights,
+                    ),
+                ):
                     return True
             return False
 
@@ -205,19 +217,52 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
                 if isinstance(element, Block):
                     traverse(element)
                 elif isinstance(element, PlayWithCalibratedWaveform) and calibration.has_waveform(
-                    bus=element.bus, name=element.operation
+                    bus=element.bus, name=element.waveform
                 ):
-                    waveform = calibration.get_waveform(bus=element.bus, name=element.operation)
+                    waveform = calibration.get_waveform(bus=element.bus, name=element.waveform)
                     play_operation = Play(bus=element.bus, waveform=waveform, wait_time=element.wait_time)
                     block.elements[index] = play_operation
-                elif isinstance(element, MeasureWithNamedOperation) and calibration.has_waveform(
-                    bus=element.bus, name=element.operation
+                elif isinstance(element, AcquireWithCalibratedWeights) and calibration.has_weights(
+                    bus=element.bus, name=element.weights
                 ):
-                    waveform = calibration.get_waveform(bus=element.bus, name=element.operation)
+                    weights = calibration.get_weights(bus=element.bus, name=element.weights)
+                    acquire_operation = Acquire(bus=element.bus, weights=weights, save_adc=element.save_adc)
+                    block.elements[index] = acquire_operation
+                elif isinstance(element, MeasureWithCalibratedWaveform) and calibration.has_waveform(
+                    bus=element.bus, name=element.waveform
+                ):
+                    waveform = calibration.get_waveform(bus=element.bus, name=element.waveform)
                     measure_operation = Measure(
                         bus=element.bus,
                         waveform=waveform,
                         weights=element.weights,
+                        demodulation=element.demodulation,
+                        save_adc=element.save_adc,
+                    )
+                    block.elements[index] = measure_operation
+                elif isinstance(element, MeasureWithCalibratedWeights) and calibration.has_weights(
+                    bus=element.bus, name=element.weights
+                ):
+                    weights = calibration.get_weights(bus=element.bus, name=element.weights)
+                    measure_operation = Measure(
+                        bus=element.bus,
+                        waveform=element.waveform,
+                        weights=weights,
+                        demodulation=element.demodulation,
+                        save_adc=element.save_adc,
+                    )
+                    block.elements[index] = measure_operation
+                elif (
+                    isinstance(element, MeasureWithCalibratedWaveformWeights)
+                    and calibration.has_waveform(bus=element.bus, name=element.waveform)
+                    and calibration.has_weights(bus=element.bus, name=element.weights)
+                ):
+                    waveform = calibration.get_waveform(bus=element.bus, name=element.waveform)
+                    weights = calibration.get_weights(bus=element.bus, name=element.weights)
+                    measure_operation = Measure(
+                        bus=element.bus,
+                        waveform=waveform,
+                        weights=weights,
                         demodulation=element.demodulation,
                         save_adc=element.save_adc,
                     )
@@ -368,7 +413,7 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
             waveform (Waveform | IQPair | str): The waveform, IQPair, or alias of named waveform to play.
         """
         operation = (
-            PlayWithCalibratedWaveform(bus=bus, operation=waveform)
+            PlayWithCalibratedWaveform(bus=bus, waveform=waveform)
             if isinstance(waveform, str)
             else Play(bus=bus, waveform=waveform)
         )
@@ -409,7 +454,29 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
             save_adc (bool, optional): If ADC data should be saved. Defaults to False.
         """
 
-    def measure(self, bus: str, waveform: IQPair | str, weights: IQPair, save_adc: bool = False):
+    @overload
+    def measure(self, bus: str, waveform: IQPair, weights: str, save_adc: bool = False):
+        """Play a named pulse and acquire results.
+
+        Args:
+            bus (str): Unique identifier of the bus.
+            waveform (IQPair): Waveform played during measurement.
+            weights (str): Weights used during demodulation/integration.
+            save_adc (bool, optional): If ADC data should be saved. Defaults to False.
+        """
+
+    @overload
+    def measure(self, bus: str, waveform: str, weights: str, save_adc: bool = False):
+        """Play a named pulse and acquire results.
+
+        Args:
+            bus (str): Unique identifier of the bus.
+            waveform (str): Waveform played during measurement.
+            weights (str): Weights used during demodulation/integration.
+            save_adc (bool, optional): If ADC data should be saved. Defaults to False.
+        """
+
+    def measure(self, bus: str, waveform: IQPair | str, weights: IQPair | str, save_adc: bool = False):
         """Play a pulse and acquire results.
 
         Args:
@@ -418,11 +485,17 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
             weights (IQPair): Weights used during demodulation/integration.
             save_adc (bool, optional): If ADC data should be saved. Defaults to False.
         """
-        operation = (
-            MeasureWithNamedOperation(bus=bus, operation=waveform, weights=weights, save_adc=save_adc)
-            if isinstance(waveform, str)
-            else Measure(bus=bus, waveform=waveform, weights=weights, save_adc=save_adc)
-        )
+        operation: Measure | MeasureWithCalibratedWaveform | MeasureWithCalibratedWeights | MeasureWithCalibratedWaveformWeights
+        if isinstance(waveform, IQPair) and isinstance(weights, IQPair):
+            operation = Measure(bus=bus, waveform=waveform, weights=weights, save_adc=save_adc)
+        elif isinstance(waveform, str) and isinstance(weights, IQPair):
+            operation = MeasureWithCalibratedWaveform(bus=bus, waveform=waveform, weights=weights, save_adc=save_adc)
+        elif isinstance(waveform, IQPair) and isinstance(weights, str):
+            operation = MeasureWithCalibratedWeights(bus=bus, waveform=waveform, weights=weights, save_adc=save_adc)
+        elif isinstance(waveform, str) and isinstance(weights, str):
+            operation = MeasureWithCalibratedWaveformWeights(
+                bus=bus, waveform=waveform, weights=weights, save_adc=save_adc
+            )
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -616,6 +689,7 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
             self.qprogram = qprogram
             self.disable_autosync: bool = False
 
+        @overload
         def acquire(self, bus: str, weights: IQPair, save_adc: bool = False):
             """Acquire results based on the given weights.
 
@@ -623,7 +697,28 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
                 bus (str): Unique identifier of the bus.
                 weights (IQPair): Weights used during acquisition.
             """
-            operation = Acquire(bus=bus, weights=weights, save_adc=save_adc)
+
+        @overload
+        def acquire(self, bus: str, weights: str, save_adc: bool = False):
+            """Acquire results based on the given weights.
+
+            Args:
+                bus (str): Unique identifier of the bus.
+                weights (str): Weights used during acquisition.
+            """
+
+        def acquire(self, bus: str, weights: IQPair | str, save_adc: bool = False):
+            """Acquire results based on the given weights.
+
+            Args:
+                bus (str): Unique identifier of the bus.
+                weights (IQPair | str): Weights used during acquisition.
+            """
+            operation = (
+                Acquire(bus=bus, weights=weights, save_adc=save_adc)
+                if isinstance(weights, IQPair)
+                else AcquireWithCalibratedWeights(bus=bus, weights=weights, save_adc=save_adc)
+            )
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
@@ -657,7 +752,7 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
                 wait_time (int): Overwrite the value of Q1ASM play instruction's wait_time parameter.
             """
             operation = (
-                PlayWithCalibratedWaveform(bus=bus, operation=waveform, wait_time=wait_time)
+                PlayWithCalibratedWaveform(bus=bus, waveform=waveform, wait_time=wait_time)
                 if isinstance(waveform, str)
                 else Play(bus=bus, waveform=waveform, wait_time=wait_time)
             )
@@ -669,6 +764,7 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
         def __init__(self, qprogram: "QProgram"):
             self.qprogram = qprogram
 
+        @overload
         def measure(
             self,
             bus: str,
@@ -684,17 +780,125 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
                 bus (str): Unique identifier of the bus.
                 waveform (IQPair): Waveform played during measurement.
                 weights (IQPair): Weights used during demodulation/integration.
-                rotation (float): Angle in radians to rotate the IQ plane during demodulation/integration.
+                save_adc (bool, optional): If ADC data should be saved. Defaults to False.
                 demodulation (bool, optional): If demodulation is enabled. Defaults to True.
-                save_raw_adc (bool, optional): If raw ADC data should be saved. Defaults to False.
             """
-            operation = Measure(
-                bus=bus,
-                waveform=waveform,
-                weights=weights,
-                rotation=rotation,
-                demodulation=demodulation,
-                save_adc=save_adc,
-            )
+
+        @overload
+        def measure(
+            self,
+            bus: str,
+            waveform: str,
+            weights: IQPair,
+            save_adc: bool = False,
+            rotation: float = 0.0,
+            demodulation: bool = True,
+        ):
+            """Play a named pulse and acquire results.
+
+            Args:
+                bus (str): Unique identifier of the bus.
+                waveform (str): Waveform played during measurement.
+                weights (IQPair): Weights used during demodulation/integration.
+                save_adc (bool, optional): If ADC data should be saved. Defaults to False.
+                demodulation (bool, optional): If demodulation is enabled. Defaults to True.
+            """
+
+        @overload
+        def measure(
+            self,
+            bus: str,
+            waveform: IQPair,
+            weights: str,
+            save_adc: bool = False,
+            rotation: float = 0.0,
+            demodulation: bool = True,
+        ):
+            """Play a named pulse and acquire results.
+
+            Args:
+                bus (str): Unique identifier of the bus.
+                waveform (IQPair): Waveform played during measurement.
+                weights (str): Weights used during demodulation/integration.
+                save_adc (bool, optional): If ADC data should be saved. Defaults to False.
+                demodulation (bool, optional): If demodulation is enabled. Defaults to True.
+            """
+
+        @overload
+        def measure(
+            self,
+            bus: str,
+            waveform: str,
+            weights: str,
+            save_adc: bool = False,
+            rotation: float = 0.0,
+            demodulation: bool = True,
+        ):
+            """Play a named pulse and acquire results.
+
+            Args:
+                bus (str): Unique identifier of the bus.
+                waveform (str): Waveform played during measurement.
+                weights (str): Weights used during demodulation/integration.
+                save_adc (bool, optional): If ADC data should be saved. Defaults to False.
+                demodulation (bool, optional): If demodulation is enabled. Defaults to True.
+            """
+
+        def measure(
+            self,
+            bus: str,
+            waveform: IQPair | str,
+            weights: IQPair | str,
+            save_adc: bool = False,
+            rotation: float = 0.0,
+            demodulation: bool = True,
+        ):
+            """Play a pulse and acquire results.
+
+            Args:
+                bus (str): Unique identifier of the bus.
+                waveform (IQPair): Waveform played during measurement.
+                weights (IQPair): Weights used during demodulation/integration.
+                rotation (float): Angle in radians to rotate the IQ plane during demodulation/integration.
+                save_adc (bool, optional): If raw ADC data should be saved. Defaults to False.
+                demodulation (bool, optional): If demodulation is enabled. Defaults to True.
+            """
+            operation: Measure | MeasureWithCalibratedWaveform | MeasureWithCalibratedWeights | MeasureWithCalibratedWaveformWeights
+            if isinstance(waveform, IQPair) and isinstance(weights, IQPair):
+                operation = Measure(
+                    bus=bus,
+                    waveform=waveform,
+                    weights=weights,
+                    save_adc=save_adc,
+                    rotation=rotation,
+                    demodulation=demodulation,
+                )
+            elif isinstance(waveform, str) and isinstance(weights, IQPair):
+                operation = MeasureWithCalibratedWaveform(
+                    bus=bus,
+                    waveform=waveform,
+                    weights=weights,
+                    save_adc=save_adc,
+                    rotation=rotation,
+                    demodulation=demodulation,
+                )
+            elif isinstance(waveform, IQPair) and isinstance(weights, str):
+                operation = MeasureWithCalibratedWeights(
+                    bus=bus,
+                    waveform=waveform,
+                    weights=weights,
+                    save_adc=save_adc,
+                    rotation=rotation,
+                    demodulation=demodulation,
+                )
+            elif isinstance(waveform, str) and isinstance(weights, str):
+                operation = MeasureWithCalibratedWaveformWeights(
+                    bus=bus,
+                    waveform=waveform,
+                    weights=weights,
+                    save_adc=save_adc,
+                    rotation=rotation,
+                    demodulation=demodulation,
+                )
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)

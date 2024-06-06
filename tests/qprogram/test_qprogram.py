@@ -12,7 +12,7 @@ from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
-    MeasureWithNamedOperation,
+    MeasureWithCalibratedWaveform,
     Play,
     PlayWithCalibratedWaveform,
     ResetPhase,
@@ -88,23 +88,23 @@ class TestQProgram:
             qp.measure(bus="drive_q0_bus", waveform="Xpi", weights=IQPair(Square(1.0, 200), Square(1.0, 200)))
 
         # Check that qp has named operations
-        assert qp.has_named_operations() is True
+        assert qp.has_calibrated_waveforms_or_weights() is True
         assert isinstance(qp.body.elements[0].elements[0], PlayWithCalibratedWaveform)
         assert qp.body.elements[0].elements[0].operation == "Xpi"
-        assert isinstance(qp.body.elements[0].elements[1], MeasureWithNamedOperation)
+        assert isinstance(qp.body.elements[0].elements[1], MeasureWithCalibratedWaveform)
         assert qp.body.elements[0].elements[1].operation == "Xpi"
 
         new_qp = qp.with_calibration(calibration=calibration)
 
         # Check that qp remain unchanged
-        assert qp.has_named_operations() is True
+        assert qp.has_calibrated_waveforms_or_weights() is True
         assert isinstance(qp.body.elements[0].elements[0], PlayWithCalibratedWaveform)
         assert qp.body.elements[0].elements[0].operation == "Xpi"
-        assert isinstance(qp.body.elements[0].elements[1], MeasureWithNamedOperation)
+        assert isinstance(qp.body.elements[0].elements[1], MeasureWithCalibratedWaveform)
         assert qp.body.elements[0].elements[1].operation == "Xpi"
 
         # Check that new_qp has no named operations
-        assert new_qp.has_named_operations() is False
+        assert new_qp.has_calibrated_waveforms_or_weights() is False
         play = new_qp.body.elements[0].elements[0]
         assert isinstance(play, Play)
         assert isinstance(play.waveform, Square)

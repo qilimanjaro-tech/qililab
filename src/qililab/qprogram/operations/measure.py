@@ -49,10 +49,30 @@ class Measure(Operation):  # pylint: disable=missing-class-docstring
 
 
 @dataclass(frozen=True)
-class MeasureWithNamedOperation(Operation):  # pylint: disable=missing-class-docstring
+class MeasureWithCalibratedWaveform(Operation):  # pylint: disable=missing-class-docstring
     bus: str
-    operation: str
+    waveform: str
     weights: IQPair
+    save_adc: bool = False
+    rotation: float = 0.0
+    demodulation: bool = True
+
+
+@dataclass(frozen=True)
+class MeasureWithCalibratedWeights(Operation):  # pylint: disable=missing-class-docstring
+    bus: str
+    waveform: IQPair
+    weights: str
+    save_adc: bool = False
+    rotation: float = 0.0
+    demodulation: bool = True
+
+
+@dataclass(frozen=True)
+class MeasureWithCalibratedWaveformWeights(Operation):  # pylint: disable=missing-class-docstring
+    bus: str
+    waveform: str
+    weights: str
     save_adc: bool = False
     rotation: float = 0.0
     demodulation: bool = True
