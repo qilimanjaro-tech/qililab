@@ -37,16 +37,6 @@ class Measure(Operation):  # pylint: disable=missing-class-docstring
         wf_Q: Waveform = self.waveform.Q
         return wf_I, wf_Q
 
-    def get_weights(self) -> tuple[Waveform, Waveform]:
-        """Get the weights.
-
-        Returns:
-            tuple[Waveform, Waveform | None]: The weights as tuple.
-        """
-        wf_I: Waveform = self.weights.I
-        wf_Q: Waveform = self.weights.Q
-        return wf_I, wf_Q
-
 
 @dataclass(frozen=True)
 class MeasureWithCalibratedWaveform(Operation):  # pylint: disable=missing-class-docstring

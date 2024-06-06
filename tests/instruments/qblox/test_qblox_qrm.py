@@ -415,11 +415,21 @@ class TestQbloxQRM:
             }
         }
         qrm.sequences = {0: None}
-        acquisitions = qrm.acquire_qprogram_results(
+        acquisitions_no_adc = qrm.acquire_qprogram_results(
             acquisitions={"default": AcquisitionData(save_adc=False)}, port="feedline_input"
         )
-        assert isinstance(acquisitions, list)
-        assert len(acquisitions) == 1
+        qrm.device.store_scope_acquisition.assert_not_called()
+        qrm.device.delete_acquisition_data.assert_not_called()
+        assert isinstance(acquisitions_no_adc, list)
+        assert len(acquisitions_no_adc) == 1
+
+        acquisitions_with_adc = qrm.acquire_qprogram_results(
+            acquisitions={"default": AcquisitionData(save_adc=True)}, port="feedline_input"
+        )
+        qrm.device.store_scope_acquisition.assert_called()
+        qrm.device.delete_acquisition_data.assert_called()
+        assert isinstance(acquisitions_with_adc, list)
+        assert len(acquisitions_with_adc) == 1
 
     def test_name_property(self, qrm_no_device: QbloxQRM):
         """Test name property."""

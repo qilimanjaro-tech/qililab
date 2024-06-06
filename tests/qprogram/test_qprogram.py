@@ -11,8 +11,11 @@ from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop,
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
     Acquire,
+    AcquireWithCalibratedWeights,
     Measure,
     MeasureWithCalibratedWaveform,
+    MeasureWithCalibratedWaveformWeights,
+    MeasureWithCalibratedWeights,
     Play,
     PlayWithCalibratedWaveform,
     ResetPhase,
@@ -79,42 +82,86 @@ class TestQProgram:
 
     def test_with_calibration_method(self):
         """Test with_bus_mapping method"""
+        xgate = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4.5, drag_coefficient=-4.5)
+        readout = IQPair(I=Square(1.0, 200), Q=Square(1.0, 200))
+        weights = IQPair(I=Square(1.0, 2000), Q=Square(1.0, 2000))
+
         calibration = Calibration()
-        calibration.add_waveform(bus="drive_q0_bus", name="Xpi", waveform=Square(1.0, 100))
+        calibration.add_waveform(bus="drive_q0_bus", name="xgate", waveform=xgate)
+        calibration.add_waveform(bus="readout_q0_bus", name="readout", waveform=readout)
+        calibration.add_weights(bus="readout_q0_bus", name="weights", weights=weights)
 
         qp = QProgram()
         with qp.average(1000):
-            qp.play(bus="drive_q0_bus", waveform="Xpi")
-            qp.measure(bus="drive_q0_bus", waveform="Xpi", weights=IQPair(Square(1.0, 200), Square(1.0, 200)))
+            qp.play(bus="drive_q0_bus", waveform="xgate")
+            qp.qblox.play(bus="drive_q0_bus", waveform="xgate", wait_time=100)
+            qp.qblox.acquire(bus="readout_q0_bus", weights="weights")
+            qp.measure(bus="readout_q0_bus", waveform="readout", weights=weights)
+            qp.measure(bus="readout_q0_bus", waveform=readout, weights="weights")
+            qp.measure(bus="readout_q0_bus", waveform="readout", weights="weights")
+            qp.quantum_machines.measure(bus="readout_q0_bus", waveform="readout", weights=weights, rotation=np.pi)
+            qp.quantum_machines.measure(bus="readout_q0_bus", waveform=readout, weights="weights", rotation=np.pi)
+            qp.quantum_machines.measure(bus="readout_q0_bus", waveform="readout", weights="weights", rotation=np.pi)
 
         # Check that qp has named operations
         assert qp.has_calibrated_waveforms_or_weights() is True
         assert isinstance(qp.body.elements[0].elements[0], PlayWithCalibratedWaveform)
-        assert qp.body.elements[0].elements[0].waveform == "Xpi"
-        assert isinstance(qp.body.elements[0].elements[1], MeasureWithCalibratedWaveform)
-        assert qp.body.elements[0].elements[1].waveform == "Xpi"
+        assert qp.body.elements[0].elements[0].waveform == "xgate"
+        assert isinstance(qp.body.elements[0].elements[1], PlayWithCalibratedWaveform)
+        assert qp.body.elements[0].elements[1].waveform == "xgate"
+        assert isinstance(qp.body.elements[0].elements[2], AcquireWithCalibratedWeights)
+        assert qp.body.elements[0].elements[2].weights == "weights"
+        assert isinstance(qp.body.elements[0].elements[3], MeasureWithCalibratedWaveform)
+        assert qp.body.elements[0].elements[3].waveform == "readout"
+        assert isinstance(qp.body.elements[0].elements[4], MeasureWithCalibratedWeights)
+        assert qp.body.elements[0].elements[4].weights == "weights"
+        assert isinstance(qp.body.elements[0].elements[5], MeasureWithCalibratedWaveformWeights)
+        assert qp.body.elements[0].elements[5].waveform == "readout"
+        assert qp.body.elements[0].elements[5].weights == "weights"
+        assert isinstance(qp.body.elements[0].elements[6], MeasureWithCalibratedWaveform)
+        assert qp.body.elements[0].elements[6].waveform == "readout"
+        assert isinstance(qp.body.elements[0].elements[7], MeasureWithCalibratedWeights)
+        assert qp.body.elements[0].elements[7].weights == "weights"
+        assert isinstance(qp.body.elements[0].elements[8], MeasureWithCalibratedWaveformWeights)
+        assert qp.body.elements[0].elements[8].waveform == "readout"
+        assert qp.body.elements[0].elements[8].weights == "weights"
 
         new_qp = qp.with_calibration(calibration=calibration)
 
         # Check that qp remain unchanged
         assert qp.has_calibrated_waveforms_or_weights() is True
         assert isinstance(qp.body.elements[0].elements[0], PlayWithCalibratedWaveform)
-        assert qp.body.elements[0].elements[0].waveform == "Xpi"
-        assert isinstance(qp.body.elements[0].elements[1], MeasureWithCalibratedWaveform)
-        assert qp.body.elements[0].elements[1].waveform == "Xpi"
+        assert qp.body.elements[0].elements[0].waveform == "xgate"
+        assert isinstance(qp.body.elements[0].elements[1], PlayWithCalibratedWaveform)
+        assert qp.body.elements[0].elements[1].waveform == "xgate"
+        assert isinstance(qp.body.elements[0].elements[2], AcquireWithCalibratedWeights)
+        assert qp.body.elements[0].elements[2].weights == "weights"
+        assert isinstance(qp.body.elements[0].elements[3], MeasureWithCalibratedWaveform)
+        assert qp.body.elements[0].elements[3].waveform == "readout"
+        assert isinstance(qp.body.elements[0].elements[4], MeasureWithCalibratedWeights)
+        assert qp.body.elements[0].elements[4].weights == "weights"
+        assert isinstance(qp.body.elements[0].elements[5], MeasureWithCalibratedWaveformWeights)
+        assert qp.body.elements[0].elements[5].waveform == "readout"
+        assert qp.body.elements[0].elements[5].weights == "weights"
+        assert isinstance(qp.body.elements[0].elements[6], MeasureWithCalibratedWaveform)
+        assert qp.body.elements[0].elements[6].waveform == "readout"
+        assert isinstance(qp.body.elements[0].elements[7], MeasureWithCalibratedWeights)
+        assert qp.body.elements[0].elements[7].weights == "weights"
+        assert isinstance(qp.body.elements[0].elements[8], MeasureWithCalibratedWaveformWeights)
+        assert qp.body.elements[0].elements[8].waveform == "readout"
+        assert qp.body.elements[0].elements[8].weights == "weights"
 
         # Check that new_qp has no named operations
         assert new_qp.has_calibrated_waveforms_or_weights() is False
-        play = new_qp.body.elements[0].elements[0]
-        assert isinstance(play, Play)
-        assert isinstance(play.waveform, Square)
-        assert play.waveform.amplitude == 1.0
-        assert play.waveform.duration == 100
-        measure = new_qp.body.elements[0].elements[1]
-        assert isinstance(measure, Measure)
-        assert isinstance(measure.waveform, Square)
-        assert measure.waveform.amplitude == 1.0
-        assert measure.waveform.duration == 100
+        assert isinstance(new_qp.body.elements[0].elements[0], Play)
+        assert isinstance(new_qp.body.elements[0].elements[1], Play)
+        assert isinstance(new_qp.body.elements[0].elements[2], Acquire)
+        assert isinstance(new_qp.body.elements[0].elements[3], Measure)
+        assert isinstance(new_qp.body.elements[0].elements[4], Measure)
+        assert isinstance(new_qp.body.elements[0].elements[5], Measure)
+        assert isinstance(new_qp.body.elements[0].elements[6], Measure)
+        assert isinstance(new_qp.body.elements[0].elements[7], Measure)
+        assert isinstance(new_qp.body.elements[0].elements[8], Measure)
 
     def test_infinite_loop_method(self):
         """Test infinite_loop method"""
