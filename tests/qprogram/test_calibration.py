@@ -62,7 +62,7 @@ class TestCalibration:
         assert isinstance(calibration.weights["readout_bus"], dict)
         assert len(calibration.weights["readout_bus"]) == 1
         assert "optimal_weights" in calibration.weights["readout_bus"]
-        assert calibration.waveforms["readout_bus"]["optimal_weights"] == weights
+        assert calibration.weights["readout_bus"]["optimal_weights"] == weights
 
     def test_has_waveform_method(self):
         """Test has_operation method"""
