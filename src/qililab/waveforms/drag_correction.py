@@ -17,11 +17,13 @@ import numpy as np
 
 from qililab.qprogram.decorators import requires_domain
 from qililab.qprogram.variable import Domain
+from qililab.yaml import yaml
 
 from .gaussian import Gaussian
 from .waveform import Waveform
 
 
+@yaml.register_class
 class DragCorrection(Waveform):  # pylint: disable=too-few-public-methods
     """Calculates the first order drag correction of the imaginary (Ey) channel of a drive pulse. See https://arxiv.org/abs/0901.0534 (10).
 

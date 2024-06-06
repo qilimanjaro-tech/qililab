@@ -55,3 +55,10 @@ class Play(Operation):  # pylint: disable=missing-class-docstring
             set[Variable]: The set of variables used in operation.
         """
         return super().get_variables() | self.get_waveform_variables()
+
+
+@dataclass(frozen=True)
+class PlayWithCalibratedWaveform(Operation):  # pylint: disable=missing-class-docstring
+    bus: str
+    operation: str
+    wait_time: int | None = None

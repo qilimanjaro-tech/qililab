@@ -17,10 +17,12 @@ import numpy as np
 
 from qililab.qprogram.decorators import requires_domain
 from qililab.qprogram.variable import Domain
+from qililab.yaml import yaml
 
 from .waveform import Waveform
 
 
+@yaml.register_class
 class Square(Waveform):  # pylint: disable=too-few-public-methods
     """Square (rectangular) waveform. Given by a constant height line.
 

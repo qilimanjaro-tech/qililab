@@ -8,10 +8,13 @@ import pytest
 
 from qililab import Arbitrary, Domain, DragCorrection, Gaussian, IQPair, QProgram, Square
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
+from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
+    MeasureWithNamedOperation,
     Play,
+    PlayWithCalibratedWaveform,
     ResetPhase,
     SetFrequency,
     SetGain,
@@ -54,6 +57,65 @@ class TestQProgram:
         # __exit__
         assert len(qp._body.elements) == 1
         assert qp._body.elements[0] is block
+
+    def test_with_bus_mapping_method(self):
+        """Test with_bus_mapping method"""
+        qp = QProgram()
+        with qp.average(1000):
+            qp.wait(bus="drive_bus", duration=100)
+            qp.sync(buses=["drive_bus", "readout_bus"])
+            qp.play(bus="drive_bus", waveform=Square(1.0, 100))
+
+        new_qp = qp.with_bus_mapping(bus_mapping={"drive_bus": "drive_q0_bus", "readout_bus": "readout_q0_bus"})
+
+        assert "drive_bus" not in new_qp.buses
+        assert "readout_bus" not in new_qp.buses
+        assert "drive_q0_bus" in new_qp.buses
+        assert "readout_q0_bus" in new_qp.buses
+
+        assert new_qp.body.elements[0].elements[0].bus == "drive_q0_bus"
+        assert new_qp.body.elements[0].elements[1].buses[0] == "drive_q0_bus"
+        assert new_qp.body.elements[0].elements[1].buses[1] == "readout_q0_bus"
+        assert new_qp.body.elements[0].elements[2].bus == "drive_q0_bus"
+
+    def test_with_calibration_method(self):
+        """Test with_bus_mapping method"""
+        calibration = Calibration()
+        calibration.add_waveform(bus="drive_q0_bus", name="Xpi", waveform=Square(1.0, 100))
+
+        qp = QProgram()
+        with qp.average(1000):
+            qp.play(bus="drive_q0_bus", waveform="Xpi")
+            qp.measure(bus="drive_q0_bus", waveform="Xpi")
+
+        # Check that qp has named operations
+        assert qp.has_named_operations() is True
+        assert isinstance(qp.body.elements[0].elements[0], PlayWithCalibratedWaveform)
+        assert qp.body.elements[0].elements[0].operation == "Xpi"
+        assert isinstance(qp.body.elements[0].elements[1], MeasureWithNamedOperation)
+        assert qp.body.elements[0].elements[1].operation == "Xpi"
+
+        new_qp = qp.with_calibration(calibration=calibration)
+
+        # Check that qp remain unchanged
+        assert qp.has_named_operations() is True
+        assert isinstance(qp.body.elements[0].elements[0], PlayWithCalibratedWaveform)
+        assert qp.body.elements[0].elements[0].operation == "Xpi"
+        assert isinstance(qp.body.elements[0].elements[1], MeasureWithNamedOperation)
+        assert qp.body.elements[0].elements[1].operation == "Xpi"
+
+        # Check that new_qp has no named operations
+        assert new_qp.has_named_operations() is False
+        play = new_qp.body.elements[0].elements[0]
+        assert isinstance(play, Play)
+        assert isinstance(play.waveform, Square)
+        assert play.waveform.amplitude == 1.0
+        assert play.waveform.duration == 100
+        measure = new_qp.body.elements[0].elements[1]
+        assert isinstance(measure, Measure)
+        assert isinstance(measure.waveform, Square)
+        assert measure.waveform.amplitude == 1.0
+        assert measure.waveform.duration == 100
 
     def test_infinite_loop_method(self):
         """Test infinite_loop method"""
