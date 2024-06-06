@@ -14,7 +14,7 @@ from qililab.qprogram.operations import (
     Measure,
     MeasureWithNamedOperation,
     Play,
-    PlayWithNamedOperation,
+    PlayWithCalibratedWaveform,
     ResetPhase,
     SetFrequency,
     SetGain,
@@ -80,7 +80,7 @@ class TestQProgram:
     def test_with_calibration_method(self):
         """Test with_bus_mapping method"""
         calibration = Calibration()
-        calibration.add_operation(bus="drive_q0_bus", operation="Xpi", waveform=Square(1.0, 100))
+        calibration.add_waveform(bus="drive_q0_bus", name="Xpi", waveform=Square(1.0, 100))
 
         qp = QProgram()
         with qp.average(1000):
@@ -89,7 +89,7 @@ class TestQProgram:
 
         # Check that qp has named operations
         assert qp.has_named_operations() is True
-        assert isinstance(qp.body.elements[0].elements[0], PlayWithNamedOperation)
+        assert isinstance(qp.body.elements[0].elements[0], PlayWithCalibratedWaveform)
         assert qp.body.elements[0].elements[0].operation == "Xpi"
         assert isinstance(qp.body.elements[0].elements[1], MeasureWithNamedOperation)
         assert qp.body.elements[0].elements[1].operation == "Xpi"
@@ -98,7 +98,7 @@ class TestQProgram:
 
         # Check that qp remain unchanged
         assert qp.has_named_operations() is True
-        assert isinstance(qp.body.elements[0].elements[0], PlayWithNamedOperation)
+        assert isinstance(qp.body.elements[0].elements[0], PlayWithCalibratedWaveform)
         assert qp.body.elements[0].elements[0].operation == "Xpi"
         assert isinstance(qp.body.elements[0].elements[1], MeasureWithNamedOperation)
         assert qp.body.elements[0].elements[1].operation == "Xpi"

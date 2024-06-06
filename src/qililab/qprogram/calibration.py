@@ -6,56 +6,100 @@ from qililab.yaml import yaml
 
 @yaml.register_class
 class Calibration:
-    """A class to manage calibration operations for various buses."""
+    """A class to manage calibration data."""
 
     def __init__(self) -> None:
         """Initialize a Calibration instance."""
-        self.operations: dict[str, dict[str, Waveform | IQPair]] = {}
+        self.waveforms: dict[str, dict[str, Waveform | IQPair]] = {}
+        self.weights: dict[str, dict[str, IQPair]] = {}
 
-    def add_operation(self, bus: str, operation: str, waveform: Waveform | IQPair):
-        """Add a waveform or IQPair operation to the specified bus.
+    def add_waveform(self, bus: str, name: str, waveform: Waveform | IQPair):
+        """Add a waveform or IQPair for the specified bus.
 
         Args:
             bus (str): The bus to which the operation will be added.
             operation (str): The name of the operation to add.
             waveform (Waveform | IQPair): The waveform or IQPair instance representing the operation.
         """
-        if bus not in self.operations:
-            self.operations[bus] = {}
-        self.operations[bus][operation] = waveform
+        if bus not in self.waveforms:
+            self.waveforms[bus] = {}
+        self.waveforms[bus][name] = waveform
 
-    def has_operation(self, bus: str, operation: str) -> bool:
-        """Check if there is an associated operation with bus.
+    def add_weights(self, bus: str, name: str, weights: IQPair):
+        """Add a weight for the specified bus.
 
         Args:
-            bus (str): The bus to check the operation.
-            operation (str): The name of the operation to check.
+            bus (str): The bus to which the operation will be added.
+            operation (str): The name of the operation to add.
+            waveform (Waveform | IQPair): The waveform or IQPair instance representing the operation.
+        """
+        if bus not in self.weights:
+            self.weights[bus] = {}
+        self.weights[bus][name] = weights
+
+    def has_waveform(self, bus: str, name: str) -> bool:
+        """Check if there is an associated waveform for the bus.
+
+        Args:
+            bus (str): The bus to check for the waveform.
+            operation (str): The name of the waveform to check.
 
         Returns:
-            bool: True, if there is an associated operation with bus. False otherwise.
+            bool: True if there is an associated waveform with the bus, False otherwise.
         """
-        if bus not in self.operations or operation not in self.operations[bus]:
+        if bus not in self.waveforms or name not in self.waveforms[bus]:
             return False
         return True
 
-    def get_operation(self, bus: str, operation: str):
-        """Retrieve a specific operation from a bus.
+    def has_weights(self, bus: str, name: str) -> bool:
+        """Check if there are associated weights for the bus.
 
         Args:
-            bus (str): The bus from which to retrieve the operation.
-            operation (str): The name of the operation to retrieve.
-
-        Raises:
-            KeyError: If the specified bus or operation does not exist.
+            bus (str): The bus to check for the weights.
+            operation (str): The name of the weights to check.
 
         Returns:
-            Waveform | IQPair: The waveform or IQPair associated with the specified operation.
+            bool: True if there are associated weights with the bus, False otherwise.
         """
-        if bus not in self.operations or operation not in self.operations[bus]:
-            raise KeyError("The specified bus or operation does not exist.")
-        return self.operations[bus][operation]
+        if bus not in self.weights or name not in self.weights[bus]:
+            return False
+        return True
 
-    def dump(self, file: str):
+    def get_waveform(self, bus: str, name: str):
+        """Retrieve waveform for the bus.
+
+        Args:
+            bus (str): The bus to check for the waveform.
+            name (str): The name of the operation to retrieve.
+
+        Raises:
+            KeyError: If the waveform does not exist for the bus.
+
+        Returns:
+            Waveform | IQPair: The waveform associated with the bus.
+        """
+        if bus not in self.waveforms or name not in self.waveforms[bus]:
+            raise KeyError(f"The waveform {name} does not exist for the bus {bus}.")
+        return self.waveforms[bus][name]
+
+    def get_weights(self, bus: str, name: str):
+        """Retrieve weights for the bus.
+
+        Args:
+            bus (str): The bus to check for the weights.
+            name (str): The name of the weights to retrieve.
+
+        Raises:
+            KeyError: If the weights do not exist for the bus.
+
+        Returns:
+            IQPair: The weights associated with the bus.
+        """
+        if bus not in self.weights or name not in self.weights[bus]:
+            raise KeyError(f"The weights {name} do not exist for the bus {bus}.")
+        return self.weights[bus][name]
+
+    def save_to(self, file: str):
         """Dump the current calibration data to a YAML file.
 
         Args:
@@ -70,7 +114,7 @@ class Calibration:
         return file
 
     @classmethod
-    def load(cls, file: str):
+    def load_from(cls, file: str):
         """Load calibration data from a YAML file.
 
         Args:
