@@ -61,7 +61,7 @@ class Play(Operation):  # pylint: disable=missing-class-docstring
 
 @yaml.register_class
 @dataclass(frozen=True)
-class PlayWithNamedOperation(Operation):  # pylint: disable=missing-class-docstring
+class PlayWithCalibratedWaveform(Operation):  # pylint: disable=missing-class-docstring
     bus: str
-    operation: str
+    waveform: str
     wait_time: int | None = None

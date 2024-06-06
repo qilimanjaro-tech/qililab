@@ -8,9 +8,9 @@ from qililab.qprogram.blocks import ForLoop, Loop
 @pytest.fixture(name="calibration")
 def fixture_calibration() -> Calibration:
     calibration = Calibration()
-    calibration.add_operation(bus="drive_q0", operation="Xpi", waveform=Square(1.0, 100))
-    calibration.add_operation(bus="drive_q1", operation="Xpi", waveform=Square(1.0, 150))
-    calibration.add_operation(bus="drive_q2", operation="Xpi", waveform=Square(1.0, 200))
+    calibration.add_waveform(bus="drive_q0", name="Xpi", waveform=Square(1.0, 100))
+    calibration.add_waveform(bus="drive_q1", name="Xpi", waveform=Square(1.0, 150))
+    calibration.add_waveform(bus="drive_q2", name="Xpi", waveform=Square(1.0, 200))
 
     return calibration
 

@@ -163,7 +163,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             self._qprogram = self._qprogram.with_bus_mapping(bus_mapping=bus_mapping)
         if calibration is not None:
             self._qprogram = self._qprogram.with_calibration(calibration=calibration)
-        if self._qprogram.has_named_operations():
+        if self._qprogram.has_calibrated_waveforms_or_weights():
             raise RuntimeError(
                 "Cannot compile to hardware-native instructions because QProgram contains named operations that are not mapped. Provide a calibration instance containing all necessary mappings."
             )

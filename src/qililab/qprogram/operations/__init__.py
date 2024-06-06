@@ -12,10 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .acquire import Acquire
-from .measure import Measure, MeasureWithNamedOperation
+from .acquire import Acquire, AcquireWithCalibratedWeights
+from .measure import (
+    Measure,
+    MeasureWithCalibratedWaveform,
+    MeasureWithCalibratedWaveformWeights,
+    MeasureWithCalibratedWeights,
+)
 from .operation import Operation
-from .play import Play, PlayWithNamedOperation
+from .play import Play, PlayWithCalibratedWaveform
 from .reset_phase import ResetPhase
 from .set_frequency import SetFrequency
 from .set_gain import SetGain
