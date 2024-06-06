@@ -209,16 +209,16 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
             for index, element in enumerate(block.elements):
                 if isinstance(element, Block):
                     traverse(element)
-                elif isinstance(element, PlayWithNamedOperation) and calibration.has_operation(
-                    bus=element.bus, operation=element.operation
+                elif isinstance(element, PlayWithNamedOperation) and calibration.has_waveform(
+                    bus=element.bus, name=element.operation
                 ):
-                    waveform = calibration.get_operation(bus=element.bus, operation=element.operation)
+                    waveform = calibration.get_waveform(bus=element.bus, name=element.operation)
                     play_operation = Play(bus=element.bus, waveform=waveform, wait_time=element.wait_time)
                     block.elements[index] = play_operation
-                elif isinstance(element, MeasureWithNamedOperation) and calibration.has_operation(
-                    bus=element.bus, operation=element.operation
+                elif isinstance(element, MeasureWithNamedOperation) and calibration.has_waveform(
+                    bus=element.bus, name=element.operation
                 ):
-                    waveform = calibration.get_operation(bus=element.bus, operation=element.operation)
+                    waveform = calibration.get_waveform(bus=element.bus, name=element.operation)
                     measure_operation = Measure(
                         bus=element.bus,
                         waveform=waveform,

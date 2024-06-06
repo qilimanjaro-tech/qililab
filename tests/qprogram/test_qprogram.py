@@ -81,7 +81,7 @@ class TestQProgram:
     def test_with_calibration_method(self):
         """Test with_bus_mapping method"""
         calibration = Calibration()
-        calibration.add_operation(bus="drive_q0_bus", operation="Xpi", waveform=Square(1.0, 100))
+        calibration.add_waveform(bus="drive_q0_bus", name="Xpi", waveform=Square(1.0, 100))
 
         qp = QProgram()
         with qp.average(1000):

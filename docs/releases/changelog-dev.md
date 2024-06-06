@@ -2,7 +2,7 @@
 
 ### New features since last release
 
-- Added `Calibration` class to manage calibrated operations for QProgram, including methods to add (`add_operation`), check (`has_operation`), retrieve (`get_operation`), save (`dump`), and load (`load`) calibration data.
+- Added `Calibration` class to manage calibrated waveforms and weights for QProgram. Included methods to add (`add_waveform`/`add_weights`), check (`has_waveform`/`has_weights`), retrieve (`get_waveform`/`get_weights`), save (`save_to`), and load (`load_from`) calibration data.
 
   Example:
 
@@ -10,41 +10,50 @@
   # Create a Calibration instance
   calibration = Calibration()
 
-  # Define waveforms
+  # Define waveforms and weights
   drag_wf = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4.5, drag_coefficient=-2.5)
   readout_wf = ql.IQPair(I=ql.Square(amplitude=1.0, duration=200), Q=ql.Square(amplitude=0.0, duration=200))
+  weights = ql.IQPair(I=ql.Square(amplitude=1.0, duration=200), Q=ql.Square(amplitude=1.0, duration=200))
 
-  # Add waveforms to the calibration as named operations
-  calibration.add_operation(bus='drive_q0_bus', operation='Xpi', waveform=drag_wf)
-  calibration.add_operation(bus='readout_q0_bus', operation='Measure', waveform=readout_wf)
+  # Add waveforms to the calibration
+  calibration.add_waveform(bus='drive_q0_bus', name='Xpi', waveform=drag_wf)
+  calibration.add_waveform(bus='readout_q0_bus', name='Measure', waveform=readout_wf)
+
+  # Add weights to the calibration
+  calibration.add_weights(bus='readout_q0_bus', name='optimal_weights', weights=weights)
 
   # Save the calibration data to a file
-  calibration.dump('calibration_data.yml')
+  calibration.save_to('calibration_data.yml')
 
   # Load the calibration data from a file
-  loaded_calibration = Calibration.load('calibration_data.yml')
+  loaded_calibration = Calibration.load_from('calibration_data.yml')
   ```
 
   The contents of `calibration_data.yml` will be:
 
   ```YAML
   !Calibration
-  operations:
-  drive_q0_bus:
+  waveforms:
+    drive_q0_bus:
       Xpi: !IQPair
-      I: &id001 !Gaussian {amplitude: 1.0, duration: 40, num_sigmas: 4.5}
-      Q: !DragCorrection
+        I: &id001 !Gaussian {amplitude: 1.0, duration: 40, num_sigmas: 4.5}
+        Q: !DragCorrection
           drag_coefficient: -2.5
           waveform: *id001
-  readout_q0_bus:
+    readout_q0_bus:
       Measure: !IQPair
-      I: !Square {amplitude: 1.0, duration: 200}
-      Q: !Square {amplitude: 0.0, duration: 200}
+        I: !Square {amplitude: 1.0, duration: 200}
+        Q: !Square {amplitude: 0.0, duration: 200}
+  weights:
+    readout_q0_bus:
+      optimal_weights: !IQPair
+        I: !Square {amplitude: 1.0, duration: 200}
+        Q: !Square {amplitude: 1.0, duration: 200}
   ```
 
   [#729](https://github.com/qilimanjaro-tech/qililab/pull/729)
 
-- Introduced `qililab.yaml` namespace that exports a single `YAML` instance for common use throughout qililab. Classes can be registered to this instance with the `@yaml.register_class` decorator.
+- Introduced `qililab.yaml` namespace that exports a single `YAML` instance for common use throughout qililab. Classes should be registered to this instance with the `@yaml.register_class` decorator.
 
   ```Python
   from qililab.yaml import yaml
@@ -98,7 +107,7 @@
 
   ```Python
   # Load the calibration data from a file
-  calibration = Calibration.load('calibration_data.yml')
+  calibration = Calibration.load_from('calibration_data.yml')
 
   # Apply the calibration to a QProgram instance
   calibrated_qprogram = qprogram.with_calibration(calibration=calibration)
@@ -110,7 +119,7 @@
 
   ```Python
   # Load the calibration data from a file
-  calibration = Calibration.load('calibration_data.yml')
+  calibration = Calibration.load_from('calibration_data.yml')
 
   platform.execute_qprogram(qprogram=qprogram, calibration=calibration)
   ```
