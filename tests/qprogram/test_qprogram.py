@@ -90,18 +90,18 @@ class TestQProgram:
         # Check that qp has named operations
         assert qp.has_calibrated_waveforms_or_weights() is True
         assert isinstance(qp.body.elements[0].elements[0], PlayWithCalibratedWaveform)
-        assert qp.body.elements[0].elements[0].operation == "Xpi"
+        assert qp.body.elements[0].elements[0].waveform == "Xpi"
         assert isinstance(qp.body.elements[0].elements[1], MeasureWithCalibratedWaveform)
-        assert qp.body.elements[0].elements[1].operation == "Xpi"
+        assert qp.body.elements[0].elements[1].waveform == "Xpi"
 
         new_qp = qp.with_calibration(calibration=calibration)
 
         # Check that qp remain unchanged
         assert qp.has_calibrated_waveforms_or_weights() is True
         assert isinstance(qp.body.elements[0].elements[0], PlayWithCalibratedWaveform)
-        assert qp.body.elements[0].elements[0].operation == "Xpi"
+        assert qp.body.elements[0].elements[0].waveform == "Xpi"
         assert isinstance(qp.body.elements[0].elements[1], MeasureWithCalibratedWaveform)
-        assert qp.body.elements[0].elements[1].operation == "Xpi"
+        assert qp.body.elements[0].elements[1].waveform == "Xpi"
 
         # Check that new_qp has no named operations
         assert new_qp.has_calibrated_waveforms_or_weights() is False
