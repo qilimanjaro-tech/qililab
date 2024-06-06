@@ -20,8 +20,8 @@ class TestCalibration:
         assert len(calibration.waveforms) == 0
         assert len(calibration.weights) == 0
 
-    def test_add_waveform(self):
-        """Test add_operation method"""
+    def test_add_waveform_method(self):
+        """Test add_waveform method"""
         xpi = Square(1.0, 100)
         xpi2 = Square(1.0, 50)
         readout = Square(1.0, 2000)
@@ -49,8 +49,8 @@ class TestCalibration:
         assert "readout" in calibration.waveforms["readout_bus"]
         assert calibration.waveforms["readout_bus"]["readout"] == readout
 
-    def test_add_weight(self):
-        """Test add_operation method"""
+    def test_add_weights_method(self):
+        """Test add_weights method"""
         weights = IQPair(Square(1.0, 2000), Square(1.0, 2000))
 
         calibration = Calibration()
