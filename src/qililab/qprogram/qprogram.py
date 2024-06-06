@@ -37,11 +37,12 @@ from qililab.qprogram.operations import (
     Wait,
 )
 from qililab.qprogram.variable import Domain, FloatVariable, IntVariable, ValueSource, Variable
-from qililab.utils import DictSerializable
 from qililab.waveforms import IQPair, Waveform
+from qililab.yaml import yaml
 
 
-class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
+@yaml.register_class
+class QProgram:  # pylint: disable=too-many-public-methods
     """QProgram is a hardware-agnostic pulse-level programming interface for describing quantum programs.
 
     This class provides an interface for building quantum programs,
@@ -611,6 +612,7 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
             self.block: Average = Average(shots=shots)
 
     # pylint: disable=protected-access, too-few-public-methods
+    @yaml.register_class
     class _QbloxInterface:
         def __init__(self, qprogram: "QProgram"):
             self.qprogram = qprogram
@@ -665,6 +667,7 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
             self.qprogram._buses.add(bus)
 
     # pylint: disable=protected-access, too-few-public-methods
+    @yaml.register_class
     class _QuantumMachinesInterface:
         def __init__(self, qprogram: "QProgram"):
             self.qprogram = qprogram

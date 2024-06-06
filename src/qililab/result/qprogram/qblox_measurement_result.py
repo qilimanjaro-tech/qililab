@@ -17,8 +17,10 @@ import numpy as np
 
 from qililab.result.qprogram.measurement_result import MeasurementResult
 from qililab.typings.enums import ResultName
+from qililab.yaml import yaml
 
 
+@yaml.register_class
 class QbloxMeasurementResult(MeasurementResult):
     """QbloxQProgramMeasurementResult class. Contains the acquisitions results for a single measurement obtained from the `Cluster.get_acquisitions` method.
 

@@ -19,10 +19,9 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 from qililab.typings.enums import ResultName
-from qililab.utils.dict_serializable import DictSerializable
 
 
-class MeasurementResult(DictSerializable, ABC):
+class MeasurementResult(ABC):
     """Result of a single measurement of QProgram."""
 
     name: ResultName

@@ -16,8 +16,10 @@ from dataclasses import dataclass
 
 from qililab.qprogram.operations.operation import Operation
 from qililab.waveforms import IQPair, Waveform
+from qililab.yaml import yaml
 
 
+@yaml.register_class
 @dataclass(frozen=True)
 class Measure(Operation):  # pylint: disable=missing-class-docstring
     bus: str
@@ -48,6 +50,7 @@ class Measure(Operation):  # pylint: disable=missing-class-docstring
         return wf_I, wf_Q
 
 
+@yaml.register_class
 @dataclass(frozen=True)
 class MeasureWithNamedOperation(Operation):  # pylint: disable=missing-class-docstring
     bus: str
