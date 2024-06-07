@@ -485,6 +485,11 @@ class TestQProgram:
     def test_serialization_deserialization(self):
         """Test serialization and deserialization works."""
         qp = QProgram()
+        gain = qp.variable(domain=Domain.Voltage)
+        with qp.for_loop(variable=gain, start=0.0, stop=1.0, step=0.1):
+            qp.set_gain(bus="drive_bus", gain=gain)
+            qp.play(bus="drive_bus", waveform=IQPair(I=Square(1.0, 200), Q=Square(1.0, 200)))
+
         serialized = serialize(qp)
         deserialized_qprogram = deserialize(serialized, QProgram)
 
