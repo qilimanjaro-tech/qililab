@@ -1,11 +1,11 @@
 """ Test Results """
-
-import json
+import os
 
 import numpy as np
 import pytest
 
 from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
+from qililab.utils.serialization import deserialize, deserialize_from, serialize, serialize_to
 
 
 @pytest.fixture(name="raw_measurement_data")
@@ -39,21 +39,19 @@ class TestsQbloxQProgramMeasurementResult:
         expected_array = np.array([path0, path1])
         assert np.allclose(qblox_measurement_result.array, expected_array)
 
-    def test_serialization_method(self, qblox_measurement_result: QbloxMeasurementResult):
+    def test_serialization_deserialization(self, qblox_measurement_result: QbloxMeasurementResult):
         """Test serialization and deserialization works."""
-        serialized_dictionary = qblox_measurement_result.to_dict()
-        assert "type" in serialized_dictionary
-        assert "attributes" in serialized_dictionary
+        serialized = serialize(qblox_measurement_result)
+        deserialized_qblox_measurement_result = deserialize(serialized, QbloxMeasurementResult)
 
-        deserialized_qp = QbloxMeasurementResult.from_dict(serialized_dictionary["attributes"])
-        assert isinstance(deserialized_qp, QbloxMeasurementResult)
+        assert isinstance(deserialized_qblox_measurement_result, QbloxMeasurementResult)
 
-        again_serialized_dictionary = deserialized_qp.to_dict()
-        assert serialized_dictionary == again_serialized_dictionary
+        serialize_to(qblox_measurement_result, file="qblox_measurement_result.yml")
+        deserialized_qblox_measurement_result = deserialize_from("qblox_measurement_result.yml", QbloxMeasurementResult)
 
-        as_json = json.dumps(again_serialized_dictionary)
-        dictionary_from_json = json.loads(as_json)
-        assert serialized_dictionary == dictionary_from_json
+        assert isinstance(deserialized_qblox_measurement_result, QbloxMeasurementResult)
+
+        os.remove("qblox_measurement_result.yml")
 
     def test_threshold(self, qblox_measurement_result: QbloxMeasurementResult):
         """Test the thresholded data as an np.ndarray"""

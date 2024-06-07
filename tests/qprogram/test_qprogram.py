@@ -1,3 +1,4 @@
+import os
 from collections import deque
 from itertools import product
 
@@ -25,6 +26,7 @@ from qililab.qprogram.operations import (
     Wait,
 )
 from qililab.qprogram.variable import FloatVariable, IntVariable
+from qililab.utils.serialization import deserialize, deserialize_from, serialize, serialize_to
 
 
 # pylint: disable=maybe-no-member, protected-access
@@ -479,3 +481,18 @@ class TestQProgram:
                     num_sigmas=num_sigmas_var,
                     drag_coefficient=drag_coefficient_var,
                 )
+
+    def test_serialization_deserialization(self):
+        """Test serialization and deserialization works."""
+        qp = QProgram()
+        serialized = serialize(qp)
+        deserialized_qprogram = deserialize(serialized, QProgram)
+
+        assert isinstance(deserialized_qprogram, QProgram)
+
+        serialize_to(qp, file="qprogram.yml")
+        deserialized_qprogram = deserialize_from("qprogram.yml", QProgram)
+
+        assert isinstance(deserialized_qprogram, QProgram)
+
+        os.remove("qprogram.yml")

@@ -14,7 +14,6 @@
 
 """MeasurementResult class."""
 from qililab.result.qprogram.measurement_result import MeasurementResult
-from qililab.utils.dict_serializable import DictSerializable
 from qililab.yaml import yaml
 
 

@@ -1,5 +1,5 @@
 """ Test Results """
-import json
+import os
 
 import numpy as np
 import pytest
@@ -7,6 +7,7 @@ import pytest
 from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
+from qililab.utils.serialization import deserialize, deserialize_from, serialize, serialize_to
 
 
 @pytest.fixture(name="qblox_qprogram_results")
@@ -85,18 +86,32 @@ class TestsQProgramResult:
         assert "another_readout" in qblox_qprogram_results.results
         assert len(qblox_qprogram_results.results["another_readout"]) == 1
 
-    def test_serialization_method(self, qblox_qprogram_results: QProgramResults):
+    def test_serialization_method(
+        self, qblox_qprogram_results: QProgramResults, quantum_machines_qprogram_results: QProgramResults
+    ):
         """Test serialization and deserialization works."""
-        serialized_dictionary = qblox_qprogram_results.to_dict()
-        assert "type" in serialized_dictionary
-        assert "attributes" in serialized_dictionary
+        serialized = serialize(qblox_qprogram_results)
+        deserialized_qblox_qprogram_results = deserialize(serialized, QProgramResults)
 
-        deserialized_qp = QProgramResults.from_dict(serialized_dictionary["attributes"])
-        assert isinstance(deserialized_qp, QProgramResults)
+        assert isinstance(deserialized_qblox_qprogram_results, QProgramResults)
 
-        again_serialized_dictionary = deserialized_qp.to_dict()
-        assert serialized_dictionary == again_serialized_dictionary
+        serialize_to(qblox_qprogram_results, file="qblox_qprogram_results.yml")
+        deserialized_qblox_qprogram_results = deserialize_from("qblox_qprogram_results.yml", QProgramResults)
 
-        as_json = json.dumps(again_serialized_dictionary)
-        dictionary_from_json = json.loads(as_json)
-        assert serialized_dictionary == dictionary_from_json
+        assert isinstance(deserialized_qblox_qprogram_results, QProgramResults)
+
+        os.remove("qblox_qprogram_results.yml")
+
+        serialized = serialize(quantum_machines_qprogram_results)
+        deserialized_quantum_machines_qprogram_results = deserialize(serialized, QProgramResults)
+
+        assert isinstance(deserialized_quantum_machines_qprogram_results, QProgramResults)
+
+        serialize_to(qblox_qprogram_results, file="quantum_machines_qprogram_results.yml")
+        deserialized_quantum_machines_qprogram_results = deserialize_from(
+            "quantum_machines_qprogram_results.yml", QProgramResults
+        )
+
+        assert isinstance(deserialized_quantum_machines_qprogram_results, QProgramResults)
+
+        os.remove("quantum_machines_qprogram_results.yml")
