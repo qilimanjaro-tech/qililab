@@ -144,10 +144,6 @@
 
   [#736](https://github.com/qilimanjaro-tech/qililab/pull/736)
 
-- Updated `qm_qua==1.1.7` and `qualang-tools==0.17.4`
-
-  [#736](https://github.com/qilimanjaro-tech/qililab/pull/736)
-
 ### Breaking changes
 
 - QProgram interface now contains methods and parameters that have common functionality for all hardware vendors. Vendor-specific methods and parameters have been move to their respective interface.
