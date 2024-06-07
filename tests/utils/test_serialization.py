@@ -24,8 +24,6 @@ class TestSerialization:
         with pytest.raises(SerializationError):
             serialize_to(compiler, "compiler.yml")
 
-        os.remove("compiler.yml")
-
     def test_deserialization_with_wrong_yaml_raises_error(self):
         not_valid_yaml = "&id006 !QProgram"
 
