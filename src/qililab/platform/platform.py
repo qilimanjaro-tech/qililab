@@ -610,8 +610,17 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             if isinstance(instrument, (QbloxModule, QuantumMachinesCluster))
         }
         if all(isinstance(instrument, QbloxModule) for instrument in instruments):
+            times_of_flight = {
+                bus.alias: int(bus.get_parameter(Parameter.TIME_OF_FLIGHT))
+                for bus in buses
+                if isinstance(bus.system_control, ReadoutSystemControl)
+            }
             return self._execute_qprogram_with_qblox(
-                qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration, debug=debug
+                qprogram=qprogram,
+                times_of_flight=times_of_flight,
+                bus_mapping=bus_mapping,
+                calibration=calibration,
+                debug=debug,
             )
         if all(isinstance(instrument, QuantumMachinesCluster) for instrument in instruments):
             if len(instruments) != 1:
@@ -627,6 +636,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
     def _execute_qprogram_with_qblox(  # pylint: disable=too-many-locals
         self,
         qprogram: QProgram,
+        times_of_flight: dict[str, int],
         bus_mapping: dict[str, str] | None = None,
         calibration: Calibration | None = None,
         debug: bool = False,
@@ -634,7 +644,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         # Compile QProgram
         qblox_compiler = QbloxCompiler()
         sequences, acquisitions = qblox_compiler.compile(
-            qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration
+            qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration, times_of_flight=times_of_flight
         )
         buses = {bus_alias: self._get_bus_by_alias(alias=bus_alias) for bus_alias in sequences}
 
