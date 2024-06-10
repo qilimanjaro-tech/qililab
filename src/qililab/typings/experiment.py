@@ -16,8 +16,6 @@
 import io
 from dataclasses import asdict, dataclass, field
 
-from ruamel.yaml import YAML
-
 from qililab.constants import EXPERIMENT, RUNCARD
 from qililab.utils.loop import Loop
 
