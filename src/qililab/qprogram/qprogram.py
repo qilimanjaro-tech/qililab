@@ -13,15 +13,21 @@
 # limitations under the License.
 
 from collections import deque
+from copy import deepcopy
+from dataclasses import replace
+from typing import overload
 
 import numpy as np
 
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
+from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.decorators import requires_domain
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
+    MeasureWithNamedOperation,
     Play,
+    PlayWithCalibratedWaveform,
     ResetPhase,
     SetFrequency,
     SetGain,
@@ -35,7 +41,7 @@ from qililab.utils import DictSerializable
 from qililab.waveforms import IQPair, Waveform
 
 
-class QProgram(DictSerializable):
+class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
     """QProgram is a hardware-agnostic pulse-level programming interface for describing quantum programs.
 
     This class provides an interface for building quantum programs,
@@ -131,6 +137,100 @@ class QProgram(DictSerializable):
     @property
     def _active_block(self) -> Block:
         return self._block_stack[-1]
+
+    def has_named_operations(self) -> bool:
+        """Checks if QProgram has named operations. These need to be mapped before compiling to hardware-native code.
+
+        Returns:
+            bool: True, if QProgram has named operations.
+        """
+
+        def traverse(block: Block):
+            for element in block.elements:
+                if isinstance(element, Block):
+                    if traverse(element):
+                        return True
+                elif isinstance(element, (PlayWithCalibratedWaveform, MeasureWithNamedOperation)):
+                    return True
+            return False
+
+        return traverse(self.body)
+
+    def with_bus_mapping(self, bus_mapping: dict[str, str]) -> "QProgram":
+        """Returns a copy of the QProgram with bus mappings applied.
+
+        Args:
+            bus_mapping (dict[str, str]): A dictionary mapping old bus names to new bus names.
+
+        Returns:
+            QProgram: A new instance of QProgram with updated bus names.
+        """
+
+        def traverse(block: Block):
+            for index, element in enumerate(block.elements):
+                if isinstance(element, Block):
+                    traverse(element)
+                elif hasattr(element, "bus"):
+                    bus = getattr(element, "bus")
+                    if isinstance(bus, str) and bus in bus_mapping:
+                        block.elements[index] = replace(block.elements[index], bus=bus_mapping[bus])  # type: ignore[call-arg]
+                elif hasattr(element, "buses"):
+                    buses = getattr(element, "buses")
+                    if isinstance(buses, list):
+                        block.elements[index] = replace(block.elements[index], buses=[bus_mapping[bus] if bus in bus_mapping else bus for bus in buses])  # type: ignore[call-arg]
+
+        # Copy qprogram so the original remain unaffected
+        copied_qprogram = deepcopy(self)
+
+        # Recursively traverse qprogram applying the bus mapping
+        traverse(copied_qprogram.body)
+
+        # Apply the mapping to _buses property
+        copied_qprogram._buses.symmetric_difference_update(  # pylint: disable=protected-access
+            {item for pair in bus_mapping.items() for item in pair}
+        )
+        return copied_qprogram
+
+    def with_calibration(self, calibration: Calibration):
+        """Apply calibration to the operations within the QProgram.
+
+        This method traverses the elements of the QProgram, replacing any
+        named operations with the corresponding calibrated waveforms specified
+        in the given Calibration instance.
+
+        Args:
+            calibration (Calibration): The calibration data to apply to the operations.
+
+        Returns:
+            QProgram: A new instance of QProgram with calibrated operations.
+        """
+
+        def traverse(block: Block):
+            for index, element in enumerate(block.elements):
+                if isinstance(element, Block):
+                    traverse(element)
+                elif isinstance(element, PlayWithCalibratedWaveform) and calibration.has_waveform(
+                    bus=element.bus, name=element.operation
+                ):
+                    waveform = calibration.get_waveform(bus=element.bus, name=element.operation)
+                    play_operation = Play(bus=element.bus, waveform=waveform, wait_time=element.wait_time)
+                    block.elements[index] = play_operation
+                elif isinstance(element, MeasureWithNamedOperation) and calibration.has_waveform(
+                    bus=element.bus, name=element.operation
+                ):
+                    waveform = calibration.get_waveform(bus=element.bus, name=element.operation)
+                    measure_operation = Measure(
+                        bus=element.bus,
+                        waveform=waveform,
+                        weights=element.weights,
+                        demodulation=element.demodulation,
+                        save_raw_adc=element.save_raw_adc,
+                    )
+                    block.elements[index] = measure_operation
+
+        copied_qprogram = deepcopy(self)
+        traverse(copied_qprogram.body)
+        return copied_qprogram
 
     def block(self):
         """Define a generic block for scoping operations.
@@ -244,14 +344,39 @@ class QProgram(DictSerializable):
 
         return QProgram._ForLoopContext(qprogram=self, variable=variable, start=start, stop=stop, step=step)
 
-    def play(self, bus: str, waveform: Waveform | IQPair, wait_time: int | None = None):
+    @overload
+    def play(self, bus: str, waveform: Waveform | IQPair, wait_time: int | None = None) -> None:
         """Play a single waveform or an I/Q pair of waveforms on the bus.
 
         Args:
             bus (str): Unique identifier of the bus.
             waveform (Waveform | IQPair): A single waveform or an I/Q pair of waveforms
         """
-        operation = Play(bus=bus, waveform=waveform, wait_time=wait_time)
+
+    @overload
+    def play(self, bus: str, waveform: str, wait_time: int | None = None) -> None:
+        """Play a named waveform on the bus.
+
+        Args:
+            bus (str): Unique identifier of the bus.
+            waveform (str): An identifier of a named waveform.
+        """
+
+    def play(self, bus: str, waveform: Waveform | IQPair | str, wait_time: int | None = None) -> None:
+        """Play a waveform, IQPair, or calibrated operation on the specified bus.
+
+        This method handles both playing a waveform or IQPair, and playing a
+        calibrated operation based on the type of the argument provided.
+
+        Args:
+            bus (str): Unique identifier of the bus.
+            waveform (Waveform | IQPair | str): The waveform, IQPair, or alias of named waveform to play.
+        """
+        operation = (
+            PlayWithCalibratedWaveform(bus=bus, operation=waveform, wait_time=wait_time)
+            if isinstance(waveform, str)
+            else Play(bus=bus, waveform=waveform, wait_time=wait_time)
+        )
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -278,6 +403,7 @@ class QProgram(DictSerializable):
         self._active_block.append(operation)
         self._buses.add(bus)
 
+    @overload
     def measure(
         self,
         bus: str,
@@ -295,8 +421,51 @@ class QProgram(DictSerializable):
             demodulation (bool, optional): If demodulation is enabled. Defaults to True.
             save_raw_adc (bool, optional): If raw adc data should be saved. Defaults to True.
         """
-        operation = Measure(
-            bus=bus, waveform=waveform, weights=weights, demodulation=demodulation, save_raw_adc=save_raw_adc
+
+    @overload
+    def measure(
+        self,
+        bus: str,
+        waveform: str,
+        weights: IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair, IQPair] | None = None,
+        demodulation: bool = True,
+        save_raw_adc: bool = False,
+    ):
+        """Play a named pulse and acquire results.
+
+        Args:
+            bus (str): Unique identifier of the bus.
+            waveform (str): Waveform played during measurement.
+            weights (IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair, IQPair] | None, optional): Weights used during acquisition. Defaults to None.
+            demodulation (bool, optional): If demodulation is enabled. Defaults to True.
+            save_raw_adc (bool, optional): If raw adc data should be saved. Defaults to True.
+        """
+
+    def measure(
+        self,
+        bus: str,
+        waveform: IQPair | str,
+        weights: IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair, IQPair] | None = None,
+        demodulation: bool = True,
+        save_raw_adc: bool = False,
+    ):
+        """Play a pulse and acquire results.
+
+        Args:
+            bus (str): Unique identifier of the bus.
+            waveform (IQPair): Waveform played during measurement.
+            weights (IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair, IQPair] | None, optional): Weights used during acquisition. Defaults to None.
+            demodulation (bool, optional): If demodulation is enabled. Defaults to True.
+            save_raw_adc (bool, optional): If raw adc data should be saved. Defaults to True.
+        """
+        operation = (
+            MeasureWithNamedOperation(
+                bus=bus, operation=waveform, weights=weights, demodulation=demodulation, save_raw_adc=save_raw_adc
+            )
+            if isinstance(waveform, str)
+            else Measure(
+                bus=bus, waveform=waveform, weights=weights, demodulation=demodulation, save_raw_adc=save_raw_adc
+            )
         )
         self._active_block.append(operation)
         self._buses.add(bus)

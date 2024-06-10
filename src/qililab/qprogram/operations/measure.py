@@ -35,3 +35,12 @@ class Measure(Operation):  # pylint: disable=missing-class-docstring
         wf_I: Waveform = self.waveform.I
         wf_Q: Waveform = self.waveform.Q
         return wf_I, wf_Q
+
+
+@dataclass(frozen=True)
+class MeasureWithNamedOperation(Operation):  # pylint: disable=missing-class-docstring
+    bus: str
+    operation: str
+    weights: IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair, IQPair] | None
+    demodulation: bool
+    save_raw_adc: bool

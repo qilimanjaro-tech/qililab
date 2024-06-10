@@ -24,6 +24,7 @@ import qpysequence.program.instructions as QPyInstructions
 from qpysequence.utils.constants import INST_MAX_WAIT
 
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
+from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
@@ -106,11 +107,12 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         }
 
         self._qprogram: QProgram
-        self._bus_mapping: dict[str, str] | None
         self._buses: dict[str, BusCompilationInfo]
         self._sync_counter: int
 
-    def compile(self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None) -> dict[str, QPy.Sequence]:
+    def compile(
+        self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None, calibration: Calibration | None = None
+    ) -> dict[str, QPy.Sequence]:
         """Compile QProgram to qpysequence.Sequence
 
         Args:
@@ -140,7 +142,15 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                 self._buses[bus].qprogram_block_stack.pop()
 
         self._qprogram = qprogram
-        self._bus_mapping = bus_mapping
+        if bus_mapping is not None:
+            self._qprogram = self._qprogram.with_bus_mapping(bus_mapping=bus_mapping)
+        if calibration is not None:
+            self._qprogram = self._qprogram.with_calibration(calibration=calibration)
+        if self._qprogram.has_named_operations():
+            raise RuntimeError(
+                "Cannot compile to hardware-native instructions because QProgram contains named operations that are not mapped. Provide a calibration instance containing all necessary mappings."
+            )
+
         self._sync_counter = 0
         self._buses = self._populate_buses()
 
@@ -153,10 +163,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             self._buses[bus].qpy_sequence._program.compile()
 
         # Return a dictionary with bus names as keys and the compiled Sequence as values.
-        return {
-            self._bus_mapping[bus] if self._bus_mapping and bus in self._bus_mapping else bus: bus_info.qpy_sequence
-            for bus, bus_info in self._buses.items()
-        }
+        return {bus: bus_info.qpy_sequence for bus, bus_info in self._buses.items()}
 
     def _populate_buses(self):
         """Map each bus in the QProgram to a BusCompilationInfo instance.
