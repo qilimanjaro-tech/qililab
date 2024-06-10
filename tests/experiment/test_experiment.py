@@ -294,7 +294,7 @@ class TestAttributes:
         assert not hasattr(experiment, "_remote_id")
 
     def test_experiment_settings_attributes_to_str(self, experiment: Experiment):
-        """"""
+        """Test attribute serialization of experiment settings"""
         str_settings = str(experiment.options.settings)
         expercted_string = f"hardware_awg: {experiment.options.settings.hardware_average}\tsoftware_average: {experiment.options.settings.software_average}\trepetition_duration: {experiment.options.settings.repetition_duration}\tnum_bins: {experiment.options.settings.num_bins}"
         assert str_settings == expercted_string
