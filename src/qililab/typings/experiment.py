@@ -35,7 +35,7 @@ class ExperimentSettings:
 
     def __str__(self):
         """Returns a string representation of the experiment settings."""
-        return str(YAML().dump(asdict(self), io.BytesIO()))
+        return f"hardware_awg: {self.hardware_average}\tsoftware_average: {self.software_average}\trepetition_duration: {self.repetition_duration}\tnum_bins: {self.num_bins}"
 
 
 @dataclass
