@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """ Experiment Options Typings """
-import io
 from dataclasses import asdict, dataclass, field
 
 from qililab.constants import EXPERIMENT, RUNCARD
