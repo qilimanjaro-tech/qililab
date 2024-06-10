@@ -27,14 +27,12 @@ def serialize(obj: Any) -> str:
     Returns:
         str: The serialized YAML string.
     """
-    stream = StringIO()
     try:
-        yaml.dump(obj, stream)
-        return stream.getvalue()
+        with StringIO() as stream:
+            yaml.dump(obj, stream)
+            return stream.getvalue()
     except Exception as e:
         raise SerializationError(f"Failed to serialize object {e}") from e
-    finally:
-        stream.close()
 
 
 def serialize_to(obj: Any, file: str) -> None:

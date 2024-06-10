@@ -36,14 +36,14 @@ class TestSerialization:
             _ = deserialize_from("not_valid_yaml.yml")
         os.remove("not_valid_yaml.yml")
 
-    # def test_deserialization_with_wrong_cls_raises_error(self):
-    #     waveform = Square(amplitude=1.0, duration=2000)
+    def test_deserialization_with_wrong_cls_raises_error(self):
+        serialized = "!Square {amplitude: 1.0, duration: 2000}\n"
 
-    #     serialized = serialize(waveform)
-    #     with pytest.raises(DeserializationError):
-    #         _ = deserialize(serialized, Gaussian)
+        with pytest.raises(DeserializationError):
+            _ = deserialize(serialized, Gaussian)
 
-    #     serialize_to(waveform, "waveform.yml")
-    #     with pytest.raises(DeserializationError):
-    #         _ = deserialize_from("waveform.yml", Gaussian)
-    #     os.remove("waveform.yml")
+        with open("waveform.yml", "w", encoding="utf-8") as file:
+            file.write(serialized)
+        with pytest.raises(DeserializationError):
+            _ = deserialize_from("waveform.yml", Gaussian)
+        os.remove("waveform.yml")
