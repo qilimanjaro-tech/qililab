@@ -79,10 +79,8 @@ def deserialize(string: str, cls: type[T] | None = None) -> Any | T:
             result = yaml.load(stream)
     except Exception as e:
         raise DeserializationError(f"Failed to deserialize YAML string: {e}") from e
-    if cls is not None:
-        if not isinstance(result, cls):
-            raise DeserializationError(f"Deserialized object is not of type {cls.__name__}")
-        return result
+    if cls is not None and not isinstance(result, cls):
+        raise DeserializationError(f"Deserialized object is not of type {cls.__name__}")
     return result
 
 
@@ -113,8 +111,6 @@ def deserialize_from(file: str, cls: type[T] | None = None) -> Any | T:
         result = yaml.load(Path(file))
     except Exception as e:
         raise DeserializationError(f"Failed to deserialize YAML string {e} from file {file}") from e
-    if cls is not None:
-        if not isinstance(result, cls):
-            raise DeserializationError(f"Deserialized object is not of type {cls.__name__}")
-        return result
+    if cls is not None and not isinstance(result, cls):
+        raise DeserializationError(f"Deserialized object is not of type {cls.__name__}")
     return result
