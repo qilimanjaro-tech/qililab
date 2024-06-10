@@ -4,7 +4,7 @@ import copy
 from typing import Any
 
 import numpy as np
-from qibo.gates import I, M, X, Y
+from qibo.gates import Align, I, M, X, Y
 from qibo.models.circuit import Circuit
 
 from qililab.constants import (
@@ -664,6 +664,17 @@ for platform in [Galadriel]:
     if platform == Galadriel:
         circuit.add(M(0))
     experiment_params.extend([[platform.runcard, circuit], [platform.runcard, [circuit, circuit]]])  # type: ignore
+
+parametrized_experiment_params: list[list[str | Circuit | list[Circuit]]] = []
+for platform in [Galadriel]:
+    circuit = Circuit(1)
+    circuit.add(I(0))
+    circuit.add(Align(0))  # Parametrized gate
+    circuit.add(X(0))
+    circuit.add(Y(0))
+    if platform == Galadriel:
+        circuit.add(M(0))
+    parametrized_experiment_params.extend([[platform.runcard, circuit], [platform.runcard, [circuit, circuit]]])  # type: ignore
 
 results_two_loops: dict[str, Any] = {
     EXPERIMENT.SOFTWARE_AVERAGE: 1,

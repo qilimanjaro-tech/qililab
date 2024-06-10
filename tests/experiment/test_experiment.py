@@ -19,7 +19,7 @@ from qililab.pulse import PulseSchedule
 from qililab.typings import InstrumentName, Parameter
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils import Loop
-from tests.data import Galadriel, experiment_params
+from tests.data import Galadriel, experiment_params, parametrized_experiment_params
 from tests.test_utils import build_platform, mock_instruments
 
 
@@ -48,6 +48,22 @@ def fixture_nested_experiment(request: pytest.FixtureRequest):
 
 @pytest.fixture(name="experiment", params=experiment_params)
 def fixture_experiment(request: pytest.FixtureRequest):
+    """Return Experiment object."""
+    runcard, circuits = request.param  # type: ignore
+    platform = build_platform(runcard)
+    loop = Loop(
+        alias="X(0)",
+        parameter=Parameter.DURATION,
+        values=np.arange(start=4, stop=1000, step=40),
+    )
+    options = ExperimentOptions(loops=[loop])
+    return Experiment(
+        platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
+    )
+
+
+@pytest.fixture(name="experiment_w_parametrized_gates", params=parametrized_experiment_params)
+def fixture_experiment_w_parametrized_gates(request: pytest.FixtureRequest):
     """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
     platform = build_platform(runcard)
@@ -240,10 +256,14 @@ class TestMethods:
         experiment.set_parameter(alias="X(0)", parameter=Parameter.DURATION, value=123)
         assert experiment.platform.gates_settings.get_gate(name="X", qubits=0)[0].pulse.duration == 123
 
-    def test_set_parameter_method_with_gate_parameter_in_circuit(self, experiment: Experiment):
+    @patch("qililab.experiment.Experiment.build_execution")
+    def test_set_parameter_method_with_gate_parameter_in_circuit(
+        self, mock_build_execution: MagicMock, experiment_w_parametrized_gates: Experiment
+    ):
         """Test the ``set_parameter`` method with a parameter of a gate in circuit."""
-        experiment.set_parameter(alias="0", parameter=Parameter.GATE_PARAMETER, value=123)
-        assert experiment.circuits[0].get_parameters()[0][0] == 123
+        experiment_w_parametrized_gates.set_parameter(alias="0", parameter=Parameter.GATE_PARAMETER, value=123)
+        assert experiment_w_parametrized_gates.circuits[0].get_parameters()[0][0] == 123
+        mock_build_execution.assert_called_once()
 
     def test_from_dict_method_loop(self, nested_experiment: Experiment):
         """Test from_dict method with a Experiment that contains a nested loop."""
