@@ -428,6 +428,7 @@ instruments:
         acquisition_timeout: 1
         hardware_demodulation: true
         scope_store_enabled: false
+        time_of_flight: 40
       - identifier: 1
         chip_port_id: feedline_input
         qubit: 1
@@ -455,6 +456,7 @@ instruments:
         acquisition_timeout: 1
         hardware_demodulation: true
         scope_store_enabled: false
+        time_of_flight: 40
       - identifier: 2
         chip_port_id: feedline_input
         qubit: 2
@@ -482,6 +484,7 @@ instruments:
         acquisition_timeout: 1
         hardware_demodulation: true
         scope_store_enabled: false
+        time_of_flight: 40
       - identifier: 3
         chip_port_id: feedline_input
         qubit: 3
@@ -509,6 +512,7 @@ instruments:
         acquisition_timeout: 1
         hardware_demodulation: true
         scope_store_enabled: false
+        time_of_flight: 40
       - identifier: 4
         chip_port_id: feedline_input
         qubit: 4
@@ -536,6 +540,7 @@ instruments:
         acquisition_timeout: 1
         hardware_demodulation: true
         scope_store_enabled: false
+        time_of_flight: 40
   - name: QCM-RF
     alias: QCM-RF1
     firmware: 0.7.0

@@ -94,6 +94,9 @@ class AWGAnalogDigitalConverter(AWG):
         if parameter == Parameter.THRESHOLD_ROTATION:
             self._set_threshold_rotation(value=value, sequencer_id=channel_id)
             return
+        if parameter == Parameter.TIME_OF_FLIGHT:
+            self._set_time_of_flight(value=value, sequencer_id=channel_id)
+            return
 
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
@@ -329,6 +332,19 @@ class AWGAnalogDigitalConverter(AWG):
             ValueError: when value type is not bool
         """
         cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).scope_store_enabled = bool(value)
+
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_time_of_flight(self, value: float | str | bool, sequencer_id: int):
+        """set scope_store_enable
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not bool
+        """
+        cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).time_of_flight = int(value)
 
     @property
     def acquisition_delay_time(self):
