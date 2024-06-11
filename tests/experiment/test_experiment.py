@@ -1,5 +1,6 @@
 """Tests for the Experiment class."""
 import copy
+from dataclasses import asdict
 from queue import Queue
 from unittest.mock import MagicMock, patch
 
@@ -296,7 +297,7 @@ class TestAttributes:
     def test_experiment_settings_attributes_to_str(self, experiment: Experiment):
         """Test attribute serialization of experiment settings"""
         str_settings = str(experiment.options.settings)
-        expercted_string = f"hardware_awg: {experiment.options.settings.hardware_average}\tsoftware_average: {experiment.options.settings.software_average}\trepetition_duration: {experiment.options.settings.repetition_duration}\tnum_bins: {experiment.options.settings.num_bins}"
+        expercted_string = asdict(experiment.options.settings)
         assert str_settings == expercted_string
 
 
