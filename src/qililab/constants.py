@@ -105,7 +105,6 @@ class EXPERIMENT:
     NUM_SCHEDULES = "num_schedules"
     LOOPS = "loops"
     OPTIONS = "options"
-    REMOTE_DEVICE_MANUAL_OVERRIDE = "remote_device_manual_override"
     CIRCUITS = "circuits"
     PULSE_SCHEDULES = "pulse_schedules"
     DESCRIPTION = "description"
