@@ -3,6 +3,7 @@ import ast
 import copy
 import re
 from dataclasses import asdict
+from warnings import catch_warnings, simplefilter
 
 import pytest
 
@@ -10,7 +11,7 @@ from qililab.constants import GATE_ALIAS_REGEX
 from qililab.settings import Runcard
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.typings import Parameter
-from tests.data import Galadriel
+from tests.data import Galadriel, GaladrielDeviceID
 
 
 @pytest.fixture(name="runcard")
@@ -32,9 +33,6 @@ class TestRuncard:
 
         assert isinstance(runcard.name, str)
         assert runcard.name == Galadriel.runcard["name"]
-
-        assert isinstance(runcard.device_id, int)
-        assert runcard.device_id == Galadriel.runcard["device_id"]
 
         assert isinstance(runcard.gates_settings, runcard.GatesSettings)
         assert runcard.gates_settings.to_dict() == Galadriel.runcard["gates_settings"]
@@ -67,7 +65,6 @@ class TestRuncard:
         assert isinstance(new_runcard, Runcard)
         assert str(new_runcard) == str(runcard)
         assert str(new_runcard.name) == str(runcard.name)
-        assert str(new_runcard.device_id) == str(runcard.device_id)
         assert str(new_runcard.buses) == str(runcard.buses)
         assert str(new_runcard.chip) == str(runcard.chip)
         assert str(new_runcard.instruments) == str(runcard.instruments)
@@ -76,6 +73,18 @@ class TestRuncard:
         new_runcard_dict = asdict(new_runcard)
         assert isinstance(new_runcard_dict, dict)
         assert new_runcard_dict == runcard_dict
+
+    def test_device_id_warning(self):
+        """Test that the initialization of a rncard with `device_id` present raises a deprecation warning"""
+        with catch_warnings(record=True) as w:
+            simplefilter("always")
+            Runcard(**copy.deepcopy(GaladrielDeviceID.runcard))
+            assert len(w) == 1
+            assert issubclass(w[0].category, DeprecationWarning)
+            assert (
+                w[0].message
+                == "`device_id` argument is deprecated and will be removed soon. Please remove it from your runcard file."
+            )
 
 
 class TestGatesSettings:

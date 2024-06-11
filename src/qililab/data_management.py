@@ -187,7 +187,6 @@ def build_platform(runcard: str | dict | None = None, path: str | None = None, n
 
         {
             "name": name,                                           # str
-            "device_id": device_id,                                 # int
             "gates_settings": gates_settings,                       # dict
             "chip": chip,                                           # dict
             "buses": buses,                                         # list[dict]

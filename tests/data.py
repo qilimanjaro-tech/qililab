@@ -39,8 +39,6 @@ class Galadriel:
 
     name = "galadriel"
 
-    device_id = 9
-
     gates_settings: dict[str, Any] = {
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
@@ -618,7 +616,6 @@ class Galadriel:
 
     runcard: dict[str, Any] = {
         RUNCARD.NAME: name,
-        RUNCARD.DEVICE_ID: device_id,
         RUNCARD.GATES_SETTINGS: gates_settings,
         RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,
@@ -649,6 +646,44 @@ class Galadriel:
                 "max_voltage": 1775,
             }
         ],
+    }
+
+
+class GaladrielDeviceID:
+    """Test data of the galadriel platform."""
+
+    name = "galadriel"
+
+    device_id = 9
+
+    gates_settings: dict[str, Any] = {
+        PLATFORM.MINIMUM_CLOCK_TIME: 4,
+        PLATFORM.DELAY_BETWEEN_PULSES: 0,
+        PLATFORM.DELAY_BEFORE_READOUT: 0,
+        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
+        PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
+        PLATFORM.PASSIVE_RESET_DURATION: 100,
+        "operations": [],
+        "gates": {},
+    }
+
+    instruments: list[dict] = []
+    instrument_controllers: list[dict] = []
+
+    chip: dict[str, Any] = {
+        "nodes": [],
+    }
+
+    buses: list[dict[str, Any]] = []
+
+    runcard: dict[str, Any] = {
+        RUNCARD.NAME: name,
+        RUNCARD.DEVICE_ID: device_id,
+        RUNCARD.GATES_SETTINGS: gates_settings,
+        RUNCARD.CHIP: chip,
+        RUNCARD.BUSES: buses,
+        RUNCARD.INSTRUMENTS: instruments,
+        RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
     }
 
 
@@ -866,8 +901,6 @@ class SauronVNA:
 
     name = "sauron_vna"
 
-    device_id = 9
-
     gates_settings: dict[str, Any] = {
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
@@ -966,7 +999,6 @@ class SauronVNA:
 
     runcard: dict[str, Any] = {
         RUNCARD.NAME: name,
-        RUNCARD.DEVICE_ID: device_id,
         RUNCARD.GATES_SETTINGS: gates_settings,
         RUNCARD.INSTRUMENTS: instruments,
         RUNCARD.CHIP: chip,
@@ -1001,7 +1033,6 @@ class SauronYokogawa:
     """Test data of the sauron with yokogawa platform."""
 
     name = "sauron_yokogawa"
-    device_id = 9
 
     gates_settings: dict[str, Any] = {
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
@@ -1137,7 +1168,6 @@ class SauronYokogawa:
 
     runcard = {
         RUNCARD.NAME: name,
-        RUNCARD.DEVICE_ID: device_id,
         RUNCARD.GATES_SETTINGS: gates_settings,
         RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,
@@ -1150,7 +1180,6 @@ class SauronQDevil:
     """Test data of the sauron with yokogawa platform."""
 
     name = "sauron_qdevil"
-    device_id = 9
 
     gates_settings: dict[str, Any] = {
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
@@ -1263,7 +1292,6 @@ class SauronQDevil:
 
     runcard = {
         RUNCARD.NAME: name,
-        RUNCARD.DEVICE_ID: device_id,
         RUNCARD.GATES_SETTINGS: gates_settings,
         RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,
@@ -1276,7 +1304,6 @@ class SauronQuantumMachines:
     """Test data of the sauron with quantum machines platform."""
 
     name = "sauron_quantum_machines"
-    device_id = 9
 
     gates_settings: dict[str, Any] = {
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
@@ -1525,7 +1552,6 @@ class SauronQuantumMachines:
 
     runcard = {
         RUNCARD.NAME: name,
-        RUNCARD.DEVICE_ID: device_id,
         RUNCARD.GATES_SETTINGS: gates_settings,
         RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,

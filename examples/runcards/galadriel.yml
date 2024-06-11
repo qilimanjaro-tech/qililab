@@ -1,7 +1,5 @@
 name: galadriel_soprano_master
 
-device_id: 9
-
 gates_settings:
   delay_between_pulses: 0
   delay_before_readout: 4

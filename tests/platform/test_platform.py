@@ -117,8 +117,6 @@ class TestPlatformInitialization:
 
         assert platform.name == runcard.name
         assert isinstance(platform.name, str)
-        assert platform.device_id == runcard.device_id
-        assert isinstance(platform.device_id, int)
         assert platform.gates_settings == runcard.gates_settings
         assert isinstance(platform.gates_settings, Runcard.GatesSettings)
         assert isinstance(platform.instruments, Instruments)
@@ -273,7 +271,6 @@ class TestPlatform:
         assert isinstance(new_platform, Platform)
         assert str(new_platform) == str(platform)
         assert str(new_platform.name) == str(platform.name)
-        assert str(new_platform.device_id) == str(platform.device_id)
         assert str(new_platform.buses) == str(platform.buses)
         assert str(new_platform.chip) == str(platform.chip)
         assert str(new_platform.instruments) == str(platform.instruments)
@@ -287,7 +284,6 @@ class TestPlatform:
         assert isinstance(newest_platform, Platform)
         assert str(newest_platform) == str(new_platform)
         assert str(newest_platform.name) == str(new_platform.name)
-        assert str(newest_platform.device_id) == str(new_platform.device_id)
         assert str(newest_platform.buses) == str(new_platform.buses)
         assert str(newest_platform.chip) == str(new_platform.chip)
         assert str(newest_platform.instruments) == str(new_platform.instruments)

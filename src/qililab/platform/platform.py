@@ -274,9 +274,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         self.name = runcard.name
         """Name of the platform (``str``) """
 
-        self.device_id = runcard.device_id
-        """Device ID of the platform (``int``). This attribute is required for ``qiboconnection`` to save the results remotely."""
-
         self.gates_settings = runcard.gates_settings
         """Gate settings and definitions (``dataclass``). These setting contain how to decompose gates into pulses."""
 
@@ -550,7 +547,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             dict: Dictionary of the serialized platform
         """
         name_dict = {RUNCARD.NAME: self.name}
-        device_id = {RUNCARD.DEVICE_ID: self.device_id}
         gates_settings_dict = {RUNCARD.GATES_SETTINGS: self.gates_settings.to_dict()}
         chip_dict = {RUNCARD.CHIP: self.chip.to_dict() if self.chip is not None else None}
         buses_dict = {RUNCARD.BUSES: self.buses.to_dict() if self.buses is not None else None}
@@ -561,15 +557,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             else None,
         }
 
-        return (
-            name_dict
-            | device_id
-            | gates_settings_dict
-            | chip_dict
-            | buses_dict
-            | instrument_dict
-            | instrument_controllers_dict
-        )
+        return name_dict | gates_settings_dict | chip_dict | buses_dict | instrument_dict | instrument_controllers_dict
 
     def __str__(self) -> str:
         """String representation of the platform.
