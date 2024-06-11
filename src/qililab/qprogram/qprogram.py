@@ -784,7 +784,7 @@ class QProgram:  # pylint: disable=too-many-public-methods
                 waveform (IQPair): Waveform played during measurement.
                 weights (IQPair): Weights used during demodulation/integration.
                 save_adc (bool, optional): If ADC data should be saved. Defaults to False.
-                rotation (float): Angle in radians to rotate the IQ plane during demodulation/integration.
+                rotation (float, optional): Angle in radians to rotate the IQ plane during demodulation/integration. Defaults to 0.0
                 demodulation (bool, optional): If demodulation is enabled. Defaults to True.
             """
 
@@ -805,7 +805,7 @@ class QProgram:  # pylint: disable=too-many-public-methods
                 waveform (str): Waveform played during measurement.
                 weights (IQPair): Weights used during demodulation/integration.
                 save_adc (bool, optional): If ADC data should be saved. Defaults to False.
-                rotation (float): Angle in radians to rotate the IQ plane during demodulation/integration.
+                rotation (float, optional): Angle in radians to rotate the IQ plane during demodulation/integration. Defaults to 0.0
                 demodulation (bool, optional): If demodulation is enabled. Defaults to True.
             """
 
@@ -826,7 +826,7 @@ class QProgram:  # pylint: disable=too-many-public-methods
                 waveform (IQPair): Waveform played during measurement.
                 weights (str): Weights used during demodulation/integration.
                 save_adc (bool, optional): If ADC data should be saved. Defaults to False.
-                rotation (float): Angle in radians to rotate the IQ plane during demodulation/integration.
+                rotation (float, optional): Angle in radians to rotate the IQ plane during demodulation/integration. Defaults to 0.0
                 demodulation (bool, optional): If demodulation is enabled. Defaults to True.
             """
 
@@ -847,7 +847,7 @@ class QProgram:  # pylint: disable=too-many-public-methods
                 waveform (str): Waveform played during measurement.
                 weights (str): Weights used during demodulation/integration.
                 save_adc (bool, optional): If ADC data should be saved. Defaults to False.
-                rotation (float): Angle in radians to rotate the IQ plane during demodulation/integration.
+                rotation (float, optional): Angle in radians to rotate the IQ plane during demodulation/integration. Defaults to 0.0
                 demodulation (bool, optional): If demodulation is enabled. Defaults to True.
             """
 
@@ -866,8 +866,8 @@ class QProgram:  # pylint: disable=too-many-public-methods
                 bus (str): Unique identifier of the bus.
                 waveform (IQPair): Waveform played during measurement.
                 weights (IQPair): Weights used during demodulation/integration.
-                rotation (float): Angle in radians to rotate the IQ plane during demodulation/integration.
                 save_adc (bool, optional): If raw ADC data should be saved. Defaults to False.
+                rotation (float, optional): Angle in radians to rotate the IQ plane during demodulation/integration. Defaults to 0.0
                 demodulation (bool, optional): If demodulation is enabled. Defaults to True.
             """
             operation: Measure | MeasureWithCalibratedWaveform | MeasureWithCalibratedWeights | MeasureWithCalibratedWaveformWeights
