@@ -204,8 +204,6 @@ def build_platform(runcard: str | dict | None = None, path: str | None = None, n
     Args:
         path (str): Path to the platform's runcard YAML file. This argument is deprecated and will be removed soon.
         runcard (str | dict): Path to the platform's runcard YAML file, or direct dictionary of the platform's runcard info.
-        connection (API | None, optional): Qiboconnection's API class used to block access to the Platform when connected to it.
-            Defaults to None.
         new_drivers (bool, optional): Whether to use the new drivers or not. Defaults to False.
 
     Returns:
