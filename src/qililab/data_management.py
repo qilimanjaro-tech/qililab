@@ -15,7 +15,6 @@
 import os
 from datetime import datetime
 from pathlib import Path
-from warnings import warn
 
 import h5py
 import numpy as np
@@ -174,7 +173,7 @@ def save_platform(path: str, platform: Platform) -> str:
 
 
 def build_platform(
-    runcard: str | dict | None = None, path: str | None = None, connection: API | None = None, new_drivers: bool = False
+    runcard: str | dict | None = None, connection: API | None = None, new_drivers: bool = False
 ) -> Platform:
     """Builds a :class:`.Platform` object, given a :ref:`runcard <runcards>`.
 
@@ -205,7 +204,6 @@ def build_platform(
         You can find more information about the complete structure of such dictionary, in the :ref:`Runcards <runcards>` section of the documentation.
 
     Args:
-        path (str): Path to the platform's runcard YAML file. This argument is deprecated and will be removed soon.
         runcard (str | dict): Path to the platform's runcard YAML file, or direct dictionary of the platform's runcard info.
         connection (API | None, optional): Qiboconnection's API class used to block access to the Platform when connected to it.
             Defaults to None.
@@ -227,17 +225,13 @@ def build_platform(
         >>> platform.name
         galadriel
     """
-    if path is None and runcard is None:
-        raise ValueError("`runcard` argument (str | dict) has not been passed to the `build_platform()` function.")
-    if path is not None:
-        if runcard is not None:
-            raise ValueError("Use only the `runcard` argument, `path` argument is deprecated.")
-        warn(
-            "`path` argument is deprecated and will be removed soon. Use the `runcard` argument instead.",
-            DeprecationWarning,
-            stacklevel=2,
+    if runcard is None:
+        raise ValueError("Mandatory `runcard` argument `(str | dict)` not been passed to `build_platform()`.")
+
+    if not isinstance(runcard, (str, dict)):
+        raise ValueError(
+            f"`runcard` argument in `build_platform()`, is not a supported type: (str, dict), is type: {type(runcard)}."
         )
-        runcard = path
 
     if new_drivers:
         raise NotImplementedError("New drivers are not supported yet.")
