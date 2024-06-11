@@ -35,7 +35,6 @@ class RUNCARD:
     """YAML constants."""
 
     NAME = "name"
-    DEVICE_ID = "device_id"
     ALIAS = "alias"
     INSTRUMENT = "instrument"
     INSTRUMENTS = "instruments"
@@ -109,7 +108,6 @@ class EXPERIMENT:
     REMOTE_DEVICE_MANUAL_OVERRIDE = "remote_device_manual_override"
     CIRCUITS = "circuits"
     PULSE_SCHEDULES = "pulse_schedules"
-    REMOTE_SAVE = "remote_save"
     DESCRIPTION = "description"
 
 
