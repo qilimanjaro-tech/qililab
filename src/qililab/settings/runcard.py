@@ -254,7 +254,7 @@ class Runcard:
     instruments: list[dict]
     instrument_controllers: list[dict]
     gates_settings: GatesSettings
-    device_id: int = field(default=None)
+    device_id: int | None = None
 
     def __post_init__(self):
         self.buses = [self.Bus(**bus) for bus in self.buses] if self.buses is not None else None

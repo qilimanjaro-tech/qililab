@@ -1,4 +1,5 @@
 """Unit tests for the Runcard class."""
+
 import ast
 import copy
 import re
@@ -82,7 +83,7 @@ class TestRuncard:
             assert len(w) == 1
             assert issubclass(w[0].category, DeprecationWarning)
             assert (
-                w[0].message
+                w[0].message.args[0]
                 == "`device_id` argument is deprecated and will be removed soon. Please remove it from your runcard file."
             )
 
