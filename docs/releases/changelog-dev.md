@@ -85,6 +85,9 @@
   and Quantum Machines. In the near future the `qprogram.acquire` method will be removed.
   [#734](https://github.com/qilimanjaro-tech/qililab/pull/734)
 
+- Update Qibo version to `v.0.2.8`.
+  [#732](https://github.com/qilimanjaro-tech/qililab/pull/732)
+
 ### Improvements
 
 - Introduced `QProgram.with_bus_mapping` method to remap buses within the QProgram.
@@ -129,6 +132,12 @@
 ### Breaking changes
 
 ### Deprecations / Removals
+
+- Remove `qiboconnection` dependency from Qililab. It is not a requirement anymore.
+  [#732](https://github.com/qilimanjaro-tech/qililab/pull/732)
+
+- Following the remove of Qiboconnection, `LivePlot` has been removed along with the creation of a `Platform` via API.
+  [#732](https://github.com/qilimanjaro-tech/qililab/pull/732)
 
 ### Documentation
 
