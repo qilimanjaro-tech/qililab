@@ -107,7 +107,6 @@ class EXPERIMENT:
     LOOPS = "loops"
     OPTIONS = "options"
     REMOTE_DEVICE_MANUAL_OVERRIDE = "remote_device_manual_override"
-    CONNECTION = "connection"
     CIRCUITS = "circuits"
     PULSE_SCHEDULES = "pulse_schedules"
     REMOTE_SAVE = "remote_save"
