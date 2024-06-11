@@ -314,7 +314,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         You must be connected in order to set up and turn on instruments, or in order to execute the platform.
 
-        To connect, your computer must be in the same network of the instruments specified in the :ref:`runcard <runcards>` (with their corresponding `device_id` and IP's addresses).
+        To connect, your computer must be in the same network of the instruments specified in the :ref:`runcard <runcards>` (with their corresponding IP's addresses).
         """
         if self._connected_to_instruments:
             logger.info("Already connected to the instruments")
