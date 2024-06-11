@@ -130,7 +130,7 @@
 
 ### Deprecations / Removals
 
-- [#729](https://github.com/qilimanjaro-tech/qililab/pull/729) Remove the already deprecated `path` argument, from `build_platform()`.
+- [#739](https://github.com/qilimanjaro-tech/qililab/pull/739) Remove the already deprecated `path` argument, from `build_platform()`.
 
 ### Documentation
 
