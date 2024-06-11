@@ -155,7 +155,6 @@ class TestMethods:
         assert not hasattr(experiment, "results")
         assert not hasattr(experiment, "results_path")
         assert not hasattr(experiment, "_plot")
-        assert not hasattr(experiment, "_remote_id")
         experiment.build_execution()
         # Check that the ``pulse_schedules`` attribute is NOT empty
         assert len(experiment.pulse_schedules) == len(experiment.circuits)
@@ -164,7 +163,6 @@ class TestMethods:
         assert not hasattr(experiment, "results")
         assert not hasattr(experiment, "results_path")
         assert not hasattr(experiment, "_plot")
-        assert not hasattr(experiment, "_remote_id")
 
     def test_compile(self, experiment: Experiment):
         """Test the compile method of the ``Execution`` class."""
@@ -292,7 +290,6 @@ class TestAttributes:
         assert not hasattr(experiment, "results")
         assert not hasattr(experiment, "results_path")
         assert not hasattr(experiment, "_plot")
-        assert not hasattr(experiment, "_remote_id")
 
     def test_experiment_settings_attributes_to_str(self, experiment: Experiment):
         """Test attribute serialization of experiment settings"""

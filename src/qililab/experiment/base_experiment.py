@@ -45,7 +45,6 @@ class BaseExperiment(ABC):
     execution_manager: ExecutionManager
     results: Results
     results_path: Path | None
-    _remote_id: int
 
     def __init__(self, platform: Platform, options: ExperimentOptions = ExperimentOptions()):
         self.platform = platform
