@@ -65,7 +65,7 @@ class TestBuildPlatformCornerCases:
             (msg,) = wrong_runcard_error.value.args
             assert (
                 msg
-                == f"Mandatory `runcard` argument in `build_platform()`, is not a supported type: (str, dict), is type: {type(runcard)}."
+                == f"Incorrect type for `runcard` argument in `build_platform()`. Expected (str | dict), got: {type(runcard)}"
             )
 
     def test_build_method_with_new_drivers(self):
