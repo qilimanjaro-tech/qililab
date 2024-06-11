@@ -1,4 +1,5 @@
 """Unit tests for the Runcard class."""
+
 import ast
 import copy
 import re
@@ -75,14 +76,14 @@ class TestRuncard:
         assert new_runcard_dict == runcard_dict
 
     def test_device_id_warning(self):
-        """Test that the initialization of a rncard with `device_id` present raises a deprecation warning"""
+        """Test that the initialization of a runcard with `device_id` present raises a deprecation warning"""
         with catch_warnings(record=True) as w:
             simplefilter("always")
             Runcard(**copy.deepcopy(GaladrielDeviceID.runcard))
             assert len(w) == 1
             assert issubclass(w[0].category, DeprecationWarning)
             assert (
-                w[0].message
+                w[0].message.args[0]
                 == "`device_id` argument is deprecated and will be removed soon. Please remove it from your runcard file."
             )
 
