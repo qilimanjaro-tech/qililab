@@ -1,0 +1,9 @@
+# coverage.py does not currently handle @overload decorated
+# methods gracefully. Because they are not allowed to contain
+# code, their method bodies should be ignored.
+#
+# See https://github.com/nedbat/coveragepy/issues/970#issuecomment-612602180
+[report]
+exclude_lines =
+    pragma: not covered
+    @overload
