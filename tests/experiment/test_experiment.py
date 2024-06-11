@@ -297,7 +297,7 @@ class TestAttributes:
     def test_experiment_settings_attributes_to_str(self, experiment: Experiment):
         """Test attribute serialization of experiment settings"""
         str_settings = str(experiment.options.settings)
-        expercted_string = asdict(experiment.options.settings)
+        expercted_string = f"{asdict(experiment.options.settings)}"
         assert str_settings == expercted_string
 
 
