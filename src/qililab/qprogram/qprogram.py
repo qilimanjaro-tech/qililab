@@ -781,6 +781,7 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
                 waveform (IQPair): Waveform played during measurement.
                 weights (IQPair): Weights used during demodulation/integration.
                 save_adc (bool, optional): If ADC data should be saved. Defaults to False.
+                rotation (float): Angle in radians to rotate the IQ plane during demodulation/integration.
                 demodulation (bool, optional): If demodulation is enabled. Defaults to True.
             """
 
@@ -801,6 +802,7 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
                 waveform (str): Waveform played during measurement.
                 weights (IQPair): Weights used during demodulation/integration.
                 save_adc (bool, optional): If ADC data should be saved. Defaults to False.
+                rotation (float): Angle in radians to rotate the IQ plane during demodulation/integration.
                 demodulation (bool, optional): If demodulation is enabled. Defaults to True.
             """
 
@@ -821,6 +823,7 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
                 waveform (IQPair): Waveform played during measurement.
                 weights (str): Weights used during demodulation/integration.
                 save_adc (bool, optional): If ADC data should be saved. Defaults to False.
+                rotation (float): Angle in radians to rotate the IQ plane during demodulation/integration.
                 demodulation (bool, optional): If demodulation is enabled. Defaults to True.
             """
 
@@ -841,6 +844,7 @@ class QProgram(DictSerializable):  # pylint: disable=too-many-public-methods
                 waveform (str): Waveform played during measurement.
                 weights (str): Weights used during demodulation/integration.
                 save_adc (bool, optional): If ADC data should be saved. Defaults to False.
+                rotation (float): Angle in radians to rotate the IQ plane during demodulation/integration.
                 demodulation (bool, optional): If demodulation is enabled. Defaults to True.
             """
 
