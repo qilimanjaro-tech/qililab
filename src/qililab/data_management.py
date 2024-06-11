@@ -225,7 +225,7 @@ def build_platform(runcard: str | dict, connection: API | None = None, new_drive
     """
     if not isinstance(runcard, (str, dict)):
         raise ValueError(
-            f"Mandatory `runcard` argument in `build_platform()`, is not a supported type: (str, dict), is type: {type(runcard)}."
+            f"Incorrect type for `runcard` argument in `build_platform()`. Expected (str | dict), got: {type(runcard)}"
         )
 
     if new_drivers:
