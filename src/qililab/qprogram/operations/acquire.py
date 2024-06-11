@@ -21,5 +21,4 @@ from qililab.waveforms import IQPair
 @dataclass(frozen=True)
 class Acquire(Operation):  # pylint: disable=missing-class-docstring
     bus: str
-    weights: IQPair
     name: str | None = None
