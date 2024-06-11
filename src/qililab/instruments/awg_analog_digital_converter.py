@@ -334,11 +334,11 @@ class AWGAnalogDigitalConverter(AWG):
         cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).scope_store_enabled = bool(value)
 
     @Instrument.CheckParameterValueFloatOrInt
-    def _set_time_of_flight(self, value: float | str | bool, sequencer_id: int):
-        """set scope_store_enable
+    def _set_time_of_flight(self, value: int | float | str | bool, sequencer_id: int):
+        """set time_of_flight
 
         Args:
-            value (float | str | bool): value to update
+            value (int | float | str | bool): value to update
             sequencer_id (int): sequencer to update the value
 
         Raises:
