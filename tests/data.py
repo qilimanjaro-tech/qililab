@@ -678,7 +678,7 @@ class GaladrielDeviceID:
 
     runcard: dict[str, Any] = {
         RUNCARD.NAME: name,
-        RUNCARD.DEVICE_ID: device_id,
+        "device_id": device_id,
         RUNCARD.GATES_SETTINGS: gates_settings,
         RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,
