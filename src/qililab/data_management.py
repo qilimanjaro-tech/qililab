@@ -172,9 +172,7 @@ def save_platform(path: str, platform: Platform) -> str:
     return str(new_path)
 
 
-def build_platform(
-    runcard: str | dict | None = None, connection: API | None = None, new_drivers: bool = False
-) -> Platform:
+def build_platform(runcard: str | dict, connection: API | None = None, new_drivers: bool = False) -> Platform:
     """Builds a :class:`.Platform` object, given a :ref:`runcard <runcards>`.
 
     Such runcard can be passed in one of the following two ways:
@@ -225,12 +223,9 @@ def build_platform(
         >>> platform.name
         galadriel
     """
-    if runcard is None:
-        raise ValueError("Mandatory `runcard` argument `(str | dict)` not been passed to `build_platform()`.")
-
     if not isinstance(runcard, (str, dict)):
         raise ValueError(
-            f"`runcard` argument in `build_platform()`, is not a supported type: (str, dict), is type: {type(runcard)}."
+            f"Mandatory `runcard` argument in `build_platform()`, is not a supported type: (str, dict), is type: {type(runcard)}."
         )
 
     if new_drivers:
