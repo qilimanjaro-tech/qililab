@@ -139,6 +139,8 @@
 - Following the remove of Qiboconnection, `LivePlot` has been removed along with the creation of a `Platform` via API.
   [#732](https://github.com/qilimanjaro-tech/qililab/pull/732)
 
+- [#739](https://github.com/qilimanjaro-tech/qililab/pull/739) Remove the already deprecated `path` argument, from `build_platform()`.
+
 ### Documentation
 
 ### Bug fixes
