@@ -656,7 +656,7 @@ parametrized_experiment_params: list[list[str | Circuit | list[Circuit]]] = []
 for platform in [Galadriel]:
     circuit = Circuit(1)
     circuit.add(I(0))
-    circuit.add(Align(0))  # Parametrized gate
+    circuit.add(Align(0, delay=0))  # Parametrized gate
     circuit.add(X(0))
     circuit.add(Y(0))
     if platform == Galadriel:
