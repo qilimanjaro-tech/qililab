@@ -1,4 +1,5 @@
 """Tests for the BaseExperiment class."""
+
 import copy
 import os
 from queue import Queue
@@ -171,7 +172,6 @@ class TestAttributes:
         assert not hasattr(exp, "results")
         assert not hasattr(exp, "results_path")
         assert not hasattr(exp, "_plot")
-        assert not hasattr(exp, "_remote_id")
 
 
 class TestProperties:
@@ -200,14 +200,12 @@ class TestMethods:
         assert not hasattr(exp, "results")
         assert not hasattr(exp, "results_path")
         assert not hasattr(exp, "_plot")
-        assert not hasattr(exp, "_remote_id")
         exp.build_execution()
         # Check that new attributes are created
         assert isinstance(exp.execution_manager, ExecutionManager)
         assert not hasattr(exp, "results")
         assert not hasattr(exp, "results_path")
         assert not hasattr(exp, "_plot")
-        assert not hasattr(exp, "_remote_id")
 
     def test_run_without_data_path_raises_error(self, exp: BaseExperiment):
         """Test that the ``build_execution`` method of the ``BaseExperiment`` class raises an error when no DATA
