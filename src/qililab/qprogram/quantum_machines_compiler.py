@@ -457,17 +457,17 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         cos_I = np.cos(rotation) * envelope_I
         sin_I = np.sin(rotation) * envelope_I
         cos_Q = np.cos(rotation) * envelope_Q
+        sin_Q = np.sin(rotation) * envelope_Q
         minus_sin_I = -np.sin(rotation) * envelope_I
         minus_cos_Q = -np.cos(rotation) * envelope_Q
-        minus_sin_Q = -np.sin(rotation) * envelope_Q
 
         # Convert weights to QM-specific format
         cos_I_converted = convert_integration_weights(integration_weights=cos_I, N=len(cos_I))
         sin_I_converted = convert_integration_weights(integration_weights=sin_I, N=len(sin_I))
         cos_Q_converted = convert_integration_weights(integration_weights=cos_Q, N=len(cos_Q))
+        sin_Q_converted = convert_integration_weights(integration_weights=sin_Q, N=len(sin_Q))
         minus_sin_I_converted = convert_integration_weights(integration_weights=minus_sin_I, N=len(minus_sin_I))
         minus_cos_Q_converted = convert_integration_weights(integration_weights=minus_cos_Q, N=len(minus_cos_Q))
-        minus_sin_Q_converted = convert_integration_weights(integration_weights=minus_sin_Q, N=len(minus_sin_Q))
 
         # Define weights names
         A = f"{prefix}_A"
@@ -476,10 +476,10 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         D = f"{prefix}_D"
 
         # Add weights to configuration dictionary
-        self._configuration["integration_weights"][A] = {"cosine": cos_I_converted, "sine": minus_sin_I_converted}
-        self._configuration["integration_weights"][B] = {"cosine": sin_I_converted, "sine": cos_I_converted}
-        self._configuration["integration_weights"][C] = {"cosine": minus_sin_Q_converted, "sine": minus_cos_Q_converted}
-        self._configuration["integration_weights"][D] = {"cosine": cos_Q_converted, "sine": minus_sin_Q_converted}
+        self._configuration["integration_weights"][A] = {"cosine": cos_I_converted, "sine": sin_I_converted}
+        self._configuration["integration_weights"][B] = {"cosine": minus_sin_I_converted, "sine": cos_I_converted}
+        self._configuration["integration_weights"][C] = {"cosine": sin_Q_converted, "sine": minus_cos_Q_converted}
+        self._configuration["integration_weights"][D] = {"cosine": cos_Q_converted, "sine": sin_Q_converted}
 
         # Return weights names
         return A, B, C, D
