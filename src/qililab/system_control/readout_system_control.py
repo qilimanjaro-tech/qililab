@@ -14,6 +14,7 @@
 
 """ReadoutSystemControl class."""
 from qililab.instruments import AWGAnalogDigitalConverter
+from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.result import Result
 from qililab.typings.enums import SystemControlName
 from qililab.utils import Factory
@@ -47,7 +48,7 @@ class ReadoutSystemControl(SystemControl):
 
         return results[0]
 
-    def acquire_qprogram_results(self, acquisitions: list[str], port: str) -> list[Result]:
+    def acquire_qprogram_results(self, acquisitions: dict[str, AcquisitionData], port: str) -> list[Result]:
         """Read the result from the vector network analyzer instrument
 
         Returns:

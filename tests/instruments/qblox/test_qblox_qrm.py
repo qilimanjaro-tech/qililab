@@ -11,6 +11,7 @@ from qililab.instruments.awg_settings.awg_qblox_adc_sequencer import AWGQbloxADC
 from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.instruments.qblox import QbloxQRM
 from qililab.instruments.qblox.qblox_module import QbloxModule
+from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.result.qblox_results import QbloxResult
 from qililab.typings import InstrumentName
 from qililab.typings.enums import AcquireTriggerMode, IntegrationMode, Parameter
@@ -414,9 +415,21 @@ class TestQbloxQRM:
             }
         }
         qrm.sequences = {0: None}
-        acquisitions = qrm.acquire_qprogram_results(acquisitions=["default"], port="feedline_input")
-        assert isinstance(acquisitions, list)
-        assert len(acquisitions) == 1
+        acquisitions_no_adc = qrm.acquire_qprogram_results(
+            acquisitions={"default": AcquisitionData(save_adc=False)}, port="feedline_input"
+        )
+        qrm.device.store_scope_acquisition.assert_not_called()
+        qrm.device.delete_acquisition_data.assert_not_called()
+        assert isinstance(acquisitions_no_adc, list)
+        assert len(acquisitions_no_adc) == 1
+
+        acquisitions_with_adc = qrm.acquire_qprogram_results(
+            acquisitions={"default": AcquisitionData(save_adc=True)}, port="feedline_input"
+        )
+        qrm.device.store_scope_acquisition.assert_called()
+        qrm.device.delete_acquisition_data.assert_called()
+        assert isinstance(acquisitions_with_adc, list)
+        assert len(acquisitions_with_adc) == 1
 
     def test_name_property(self, qrm_no_device: QbloxQRM):
         """Test name property."""

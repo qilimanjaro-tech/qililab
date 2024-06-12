@@ -45,8 +45,8 @@ def fixture_no_loops_all_operations() -> QProgram:
     qp.sync()
     qp.wait(bus="readout", duration=100)
     qp.play(bus="readout", waveform=readout_pair)
-    qp.play(bus="readout", waveform=readout_pair, wait_time=4)
-    qp.acquire(bus="readout", weights=weights_pair)
+    qp.qblox.play(bus="readout", waveform=readout_pair, wait_time=4)
+    qp.qblox.acquire(bus="readout", weights=weights_pair)
     return qp
 
 
@@ -76,7 +76,8 @@ def fixture_dynamic_wait_multiple_buses() -> QProgram:
 @pytest.fixture(name="dynamic_wait_multiple_buses_with_disable_autosync")
 def fixture_dynamic_wait_multiple_buses_with_disable_autosync() -> QProgram:
     drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
-    qp = QProgram(disable_autosync=True)
+    qp = QProgram()
+    qp.qblox.disable_autosync = True
     duration = qp.variable(Domain.Time)
     with qp.for_loop(variable=duration, start=100, stop=200, step=10):
         qp.play(bus="drive", waveform=drag_pair)
@@ -121,7 +122,7 @@ def fixture_average_loop() -> QProgram:
         qp.sync()
         qp.wait(bus="readout", duration=100)
         qp.play(bus="readout", waveform=readout_pair)
-        qp.acquire(bus="readout", weights=weights)
+        qp.qblox.acquire(bus="readout", weights=weights)
     return qp
 
 
@@ -139,7 +140,7 @@ def fixture_average_loop_long_wait() -> QProgram:
         qp.wait(bus="drive", duration=100_000)
         qp.sync()
         qp.play(bus="readout", waveform=readout_pair)
-        qp.acquire(bus="readout", weights=weights)
+        qp.qblox.acquire(bus="readout", weights=weights)
     return qp
 
 
@@ -157,7 +158,7 @@ def fixture_acquire_with_weights_of_different_lengths() -> QProgram:
         qp.sync()
         qp.wait(bus="readout", duration=100)
         qp.play(bus="readout", waveform=readout_pair)
-        qp.acquire(bus="readout", weights=weights)
+        qp.qblox.acquire(bus="readout", weights=weights)
     return qp
 
 
@@ -173,7 +174,7 @@ def fixture_average_with_for_loop() -> QProgram:
             qp.play(bus="drive", waveform=drag_pair)
             qp.set_gain(bus="readout", gain=gain)
             qp.play(bus="readout", waveform=readout_pair)
-            qp.acquire(bus="readout", weights=weights_pair)
+            qp.qblox.acquire(bus="readout", weights=weights_pair)
     return qp
 
 
@@ -188,7 +189,7 @@ def fixture_average_with_for_loop_nshots() -> QProgram:
         with qp.for_loop(variable=nshots, start=0, stop=2, step=1):
             qp.play(bus="drive", waveform=drag_pair)
             qp.play(bus="readout", waveform=readout_pair)
-            qp.acquire(bus="readout", weights=weights_pair)
+            qp.qblox.acquire(bus="readout", weights=weights_pair)
     return qp
 
 
@@ -207,7 +208,7 @@ def fixture_acquire_loop_with_for_loop_with_weights_of_same_waveform() -> QProgr
             qp.play(bus="drive", waveform=drag_pair)
             qp.set_gain(bus="readout", gain=gain)
             qp.play(bus="readout", waveform=readout_pair)
-            qp.acquire(bus="readout", weights=weights)
+            qp.qblox.acquire(bus="readout", weights=weights)
     return qp
 
 
@@ -224,12 +225,12 @@ def fixture_average_with_multiple_for_loops_and_acquires() -> QProgram:
         with qp.for_loop(variable=frequency, start=0, stop=500, step=10):
             qp.set_frequency(bus="readout", frequency=frequency)
             qp.play(bus="readout", waveform=readout_pair)
-            qp.acquire(bus="readout", weights=weights_pair_0)
-        qp.acquire(bus="readout", weights=weights_pair_1)
+            qp.qblox.acquire(bus="readout", weights=weights_pair_0)
+        qp.qblox.acquire(bus="readout", weights=weights_pair_1)
         with qp.for_loop(variable=gain, start=0.0, stop=1.0, step=0.1):
             qp.set_gain(bus="readout", gain=gain)
             qp.play(bus="readout", waveform=readout_pair)
-            qp.acquire(bus="readout", weights=weights_pair_2)
+            qp.qblox.acquire(bus="readout", weights=weights_pair_2)
     return qp
 
 
@@ -249,7 +250,7 @@ def fixture_average_with_nested_for_loops() -> QProgram:
                 qp.sync()
                 qp.set_frequency(bus="readout", frequency=frequency)
                 qp.play(bus="readout", waveform=readout_pair)
-                qp.acquire(bus="readout", weights=weights_pair)
+                qp.qblox.acquire(bus="readout", weights=weights_pair)
     return qp
 
 
@@ -259,15 +260,6 @@ def fixture_measure_program() -> QProgram:
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
     qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
-    return qp
-
-
-@pytest.fixture(name="measure_iqtuple")
-def fixture_measure_iqtuple() -> QProgram:
-    readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
-    weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
-    qp = QProgram()
-    qp.measure(bus="readout", waveform=readout_pair, weights=(weights_pair, weights_pair))
     return qp
 
 
@@ -291,7 +283,7 @@ def fixture_average_with_parallel_for_loops() -> QProgram:
             qp.play(bus="drive", waveform=drag_pair)
             qp.sync()
             qp.play(bus="readout", waveform=readout_pair)
-            qp.acquire(bus="readout", weights=weights_pair)
+            qp.qblox.acquire(bus="readout", weights=weights_pair)
     return qp
 
 
@@ -337,7 +329,7 @@ def fixture_multiple_play_operations_with_no_Q_waveform() -> QProgram:
 class TestQBloxCompiler:
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
         compiler = QbloxCompiler()
-        sequences = compiler.compile(
+        sequences, _ = compiler.compile(
             qprogram=play_named_operation, bus_mapping={"drive": "drive_q0"}, calibration=calibration
         )
 
@@ -353,7 +345,7 @@ class TestQBloxCompiler:
 
     def test_no_loops_all_operations(self, no_loops_all_operations: QProgram):
         compiler = QbloxCompiler()
-        sequences = compiler.compile(qprogram=no_loops_all_operations)
+        sequences, _ = compiler.compile(qprogram=no_loops_all_operations)
 
         assert len(sequences) == 2
         assert "drive" in sequences
@@ -404,7 +396,7 @@ class TestQBloxCompiler:
 
     def test_dynamic_wait(self, dynamic_wait: QProgram):
         compiler = QbloxCompiler()
-        sequences = compiler.compile(qprogram=dynamic_wait)
+        sequences, _ = compiler.compile(qprogram=dynamic_wait)
 
         assert len(sequences) == 1
         assert "drive" in sequences
@@ -430,7 +422,7 @@ class TestQBloxCompiler:
         self, dynamic_wait_multiple_buses_with_disable_autosync: QProgram
     ):
         compiler = QbloxCompiler()
-        sequences = compiler.compile(qprogram=dynamic_wait_multiple_buses_with_disable_autosync)
+        sequences, _ = compiler.compile(qprogram=dynamic_wait_multiple_buses_with_disable_autosync)
 
         assert len(sequences) == 2
         assert "drive" in sequences
@@ -481,7 +473,7 @@ class TestQBloxCompiler:
 
     def test_average_with_long_wait(self, average_loop_long_wait: QProgram):
         compiler = QbloxCompiler()
-        sequences = compiler.compile(qprogram=average_loop_long_wait)
+        sequences, _ = compiler.compile(qprogram=average_loop_long_wait)
 
         assert len(sequences) == 2
         assert "drive" in sequences
@@ -533,7 +525,7 @@ class TestQBloxCompiler:
 
     def test_infinite_loop(self, infinite_loop: QProgram):
         compiler = QbloxCompiler()
-        sequences = compiler.compile(qprogram=infinite_loop)
+        sequences, _ = compiler.compile(qprogram=infinite_loop)
 
         assert len(sequences) == 1
         assert "drive" in sequences
@@ -553,7 +545,7 @@ class TestQBloxCompiler:
 
     def test_average_loop(self, average_loop: QProgram):
         compiler = QbloxCompiler()
-        sequences = compiler.compile(qprogram=average_loop)
+        sequences, _ = compiler.compile(qprogram=average_loop)
 
         assert len(sequences) == 2
         assert "drive" in sequences
@@ -605,7 +597,7 @@ class TestQBloxCompiler:
 
     def test_average_with_for_loop_variable_does_nothing(self, average_with_for_loop_nshots: QProgram):
         compiler = QbloxCompiler()
-        sequences = compiler.compile(qprogram=average_with_for_loop_nshots)
+        sequences, _ = compiler.compile(qprogram=average_with_for_loop_nshots)
 
         assert len(sequences) == 2
         assert "drive" in sequences
@@ -668,7 +660,7 @@ class TestQBloxCompiler:
 
     def test_average_with_for_loop(self, average_with_for_loop: QProgram):
         compiler = QbloxCompiler()
-        sequences = compiler.compile(qprogram=average_with_for_loop)
+        sequences, _ = compiler.compile(qprogram=average_with_for_loop)
 
         assert len(sequences) == 2
         assert "drive" in sequences
@@ -748,16 +740,11 @@ class TestQBloxCompiler:
         assert handle_acquire.call_args[0][0].bus == measure.bus
         assert handle_acquire.call_args[0][0].weights == measure.weights
 
-    def test_measure_raises_error_iqtuple_weights(self, measure_iqtuple):
-        compiler = QbloxCompiler()
-        with pytest.raises(NotImplementedError, match="Qblox measure operation only supports weight format as IQPairs"):
-            compiler.compile(measure_iqtuple)
-
     def test_acquire_loop_with_for_loop_with_weights_of_same_waveform(
         self, acquire_loop_with_for_loop_with_weights_of_same_waveform: QProgram
     ):
         compiler = QbloxCompiler()
-        sequences = compiler.compile(qprogram=acquire_loop_with_for_loop_with_weights_of_same_waveform)
+        sequences, _ = compiler.compile(qprogram=acquire_loop_with_for_loop_with_weights_of_same_waveform)
 
         assert len(sequences) == 2
         assert "drive" in sequences
@@ -822,7 +809,7 @@ class TestQBloxCompiler:
 
     def test_average_with_multiple_for_loops_and_acquires(self, average_with_multiple_for_loops_and_acquires: QProgram):
         compiler = QbloxCompiler()
-        sequences = compiler.compile(qprogram=average_with_multiple_for_loops_and_acquires)
+        sequences, _ = compiler.compile(qprogram=average_with_multiple_for_loops_and_acquires)
 
         assert len(sequences) == 1
         assert "readout" in sequences
@@ -879,7 +866,7 @@ class TestQBloxCompiler:
 
     def test_average_with_nested_for_loops(self, average_with_nested_for_loops: QProgram):
         compiler = QbloxCompiler()
-        sequences = compiler.compile(qprogram=average_with_nested_for_loops)
+        sequences, _ = compiler.compile(qprogram=average_with_nested_for_loops)
 
         assert len(sequences) == 2
         assert "drive" in sequences
@@ -956,7 +943,7 @@ class TestQBloxCompiler:
 
     def test_average_with_parallel_for_loops(self, average_with_parallel_for_loops: QProgram):
         compiler = QbloxCompiler()
-        sequences = compiler.compile(qprogram=average_with_parallel_for_loops)
+        sequences, _ = compiler.compile(qprogram=average_with_parallel_for_loops)
 
         assert len(sequences) == 2
         assert "drive" in sequences
@@ -1027,7 +1014,7 @@ class TestQBloxCompiler:
 
     def test_multiple_play_operations_with_same_waveform(self, multiple_play_operations_with_same_waveform: QProgram):
         compiler = QbloxCompiler()
-        sequences = compiler.compile(qprogram=multiple_play_operations_with_same_waveform)
+        sequences, _ = compiler.compile(qprogram=multiple_play_operations_with_same_waveform)
 
         assert len(sequences) == 1
         assert "drive" in sequences
@@ -1054,7 +1041,7 @@ class TestQBloxCompiler:
 
     def test_multiple_play_operations_with_no_Q_waveform(self, multiple_play_operations_with_no_Q_waveform: QProgram):
         compiler = QbloxCompiler()
-        sequences = compiler.compile(qprogram=multiple_play_operations_with_no_Q_waveform)
+        sequences, _ = compiler.compile(qprogram=multiple_play_operations_with_no_Q_waveform)
 
         assert len(sequences) == 1
         assert "drive" in sequences

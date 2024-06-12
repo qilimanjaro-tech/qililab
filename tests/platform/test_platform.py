@@ -336,7 +336,7 @@ class TestMethods:
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
         qprogram.sync()
         qprogram.play(bus="feedline_input_output_bus", waveform=readout_wf)
-        qprogram.acquire(bus="feedline_input_output_bus", weights=weights_wf)
+        qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=weights_wf)
 
         with (
             patch("builtins.open") as patched_open,
@@ -379,7 +379,7 @@ class TestMethods:
         qprogram.play(bus="drive_q0_rf", waveform=drive_wf)
         qprogram.sync()
         qprogram.play(bus="readout_q0_rf", waveform=readout_wf)
-        qprogram.measure(bus="readout_q0_rf", waveform=readout_wf, weights=(weights_wf, weights_wf))
+        qprogram.measure(bus="readout_q0_rf", waveform=readout_wf, weights=weights_wf)
 
         with (
             patch("builtins.open") as patched_open,

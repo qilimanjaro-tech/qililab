@@ -22,15 +22,16 @@ from qililab.waveforms import IQPair, Waveform
 class Measure(Operation):  # pylint: disable=missing-class-docstring
     bus: str
     waveform: IQPair
-    weights: IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair, IQPair] | None
-    demodulation: bool
-    save_raw_adc: bool
+    weights: IQPair
+    save_adc: bool = False
+    rotation: float = 0.0
+    demodulation: bool = True
 
     def get_waveforms(self) -> tuple[Waveform, Waveform]:
         """Get the waveforms.
 
         Returns:
-            tuple[Waveform, Waveform | None]: The waveforms as tuple. The second waveform can be None.
+            tuple[Waveform, Waveform | None]: The waveforms as tuple.
         """
         wf_I: Waveform = self.waveform.I
         wf_Q: Waveform = self.waveform.Q
@@ -38,9 +39,30 @@ class Measure(Operation):  # pylint: disable=missing-class-docstring
 
 
 @dataclass(frozen=True)
-class MeasureWithNamedOperation(Operation):  # pylint: disable=missing-class-docstring
+class MeasureWithCalibratedWaveform(Operation):  # pylint: disable=missing-class-docstring
     bus: str
-    operation: str
-    weights: IQPair | tuple[IQPair, IQPair] | tuple[IQPair, IQPair, IQPair, IQPair] | None
-    demodulation: bool
-    save_raw_adc: bool
+    waveform: str
+    weights: IQPair
+    save_adc: bool = False
+    rotation: float = 0.0
+    demodulation: bool = True
+
+
+@dataclass(frozen=True)
+class MeasureWithCalibratedWeights(Operation):  # pylint: disable=missing-class-docstring
+    bus: str
+    waveform: IQPair
+    weights: str
+    save_adc: bool = False
+    rotation: float = 0.0
+    demodulation: bool = True
+
+
+@dataclass(frozen=True)
+class MeasureWithCalibratedWaveformWeights(Operation):  # pylint: disable=missing-class-docstring
+    bus: str
+    waveform: str
+    weights: str
+    save_adc: bool = False
+    rotation: float = 0.0
+    demodulation: bool = True

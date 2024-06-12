@@ -22,6 +22,7 @@ from qililab.instruments.awg_settings import AWGQbloxADCSequencer
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
+from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
 from qililab.typings.enums import AcquireTriggerMode, InstrumentName, Parameter
@@ -133,7 +134,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """
         return self.get_acquisitions()
 
-    def acquire_qprogram_results(self, acquisitions: list[str], port: str) -> list[QbloxMeasurementResult]:  # type: ignore
+    def acquire_qprogram_results(self, acquisitions: dict[str, AcquisitionData], port: str) -> list[QbloxMeasurementResult]:  # type: ignore
         """Read the result from the AWG instrument
 
         Args:
@@ -145,7 +146,9 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         return self._get_qprogram_acquisitions(acquisitions=acquisitions, port=port)
 
     @Instrument.CheckDeviceInitialized
-    def _get_qprogram_acquisitions(self, acquisitions: list[str], port: str) -> list[QbloxMeasurementResult]:
+    def _get_qprogram_acquisitions(
+        self, acquisitions: dict[str, AcquisitionData], port: str
+    ) -> list[QbloxMeasurementResult]:
         results = []
         for acquisition in acquisitions:
             sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
@@ -155,14 +158,15 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                         sequencer=sequencer.identifier,
                         timeout=cast(AWGQbloxADCSequencer, sequencer).acquisition_timeout,
                     )
-                    self.device.store_scope_acquisition(sequencer=sequencer.identifier, name=acquisition)
+                    if acquisitions[acquisition].save_adc:
+                        self.device.store_scope_acquisition(sequencer=sequencer.identifier, name=acquisition)
                     raw_measurement_data = self.device.get_acquisitions(sequencer=sequencer.identifier)[acquisition][
                         "acquisition"
                     ]
                     measurement_result = QbloxMeasurementResult(raw_measurement_data=raw_measurement_data)
                     results.append(measurement_result)
-
-                    self.device.delete_acquisition_data(sequencer=sequencer.identifier, name=acquisition)
+                    if acquisitions[acquisition].save_adc:
+                        self.device.delete_acquisition_data(sequencer=sequencer.identifier, name=acquisition)
         return results
 
     def _set_device_hardware_demodulation(self, value: bool, sequencer_id: int):

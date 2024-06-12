@@ -614,7 +614,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
     ) -> QProgramResults:
         # Compile QProgram
         qblox_compiler = QbloxCompiler()
-        sequences = qblox_compiler.compile(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
+        sequences, acquisitions = qblox_compiler.compile(
+            qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration
+        )
         buses = {bus_alias: self._get_bus_by_alias(alias=bus_alias) for bus_alias in sequences}
 
         if debug:
@@ -643,8 +645,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         results = QProgramResults()
         for bus_alias in buses:
             if isinstance(buses[bus_alias].system_control, ReadoutSystemControl):
-                acquisitions = list(sequences[bus_alias].todict()["acquisitions"])
-                bus_results = buses[bus_alias].acquire_qprogram_results(acquisitions=acquisitions)
+                bus_results = buses[bus_alias].acquire_qprogram_results(acquisitions=acquisitions[bus_alias])
                 for bus_result in bus_results:
                     results.append_result(bus=bus_alias, result=bus_result)
 
