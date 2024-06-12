@@ -113,11 +113,22 @@
 
   [#737](https://github.com/qilimanjaro-tech/qililab/pull/737)
 
-- Added qblox support for `qprogram.measure`. Now this method can be use for both Qblox Instruments
-  and Quantum Machines.
+- Added Qblox support for QProgram's `measure` operation. The method can now be used for both Qblox
+  and Quantum Machines, and the expected behaviour is the same.
+
+  ```Python
+  readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+  weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+  qp = QProgram()
+
+  # The measure operation has the same behaviour in both vendors.
+  # Time of flight between readout pulse and beginning of acquisition is retrieved from the instrument's settings.
+  qp.measure(bus="readout_bus", waveform=readout_pair, weights=weights_pair, save_adc=True)
+  ```
 
   [#734](https://github.com/qilimanjaro-tech/qililab/pull/734)
   [#736](https://github.com/qilimanjaro-tech/qililab/pull/736)
+  [#738](https://github.com/qilimanjaro-tech/qililab/pull/738)
 
 ### Improvements
 
@@ -165,6 +176,10 @@
 
   [#736](https://github.com/qilimanjaro-tech/qililab/pull/736)
 
+- Added `time_of_flight` setting to Qblox QRM and QRM-RF sequencers.
+
+  [#738](https://github.com/qilimanjaro-tech/qililab/pull/738)
+
 ### Breaking changes
 
 - QProgram interface now contains methods and parameters that have common functionality for all hardware vendors. Vendor-specific methods and parameters have been move to their respective interface.
@@ -196,9 +211,15 @@
 
   [#736](https://github.com/qilimanjaro-tech/qililab/pull/736)
 
+- `time_of_flight` parameter must be added to Qblox QRM and QRM-RF sequencers's runcard settings.
+
+  [#738](https://github.com/qilimanjaro-tech/qililab/pull/738)
+
 ### Deprecations / Removals
 
-- [#739](https://github.com/qilimanjaro-tech/qililab/pull/739) Remove the already deprecated `path` argument, from `build_platform()`.
+- Remove the deprecated `path` argument from `build_platform()`.
+
+  [#739](https://github.com/qilimanjaro-tech/qililab/pull/739)
 
 ### Documentation
 

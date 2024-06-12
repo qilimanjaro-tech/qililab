@@ -726,19 +726,37 @@ class TestQBloxCompiler:
     def test_measure_calls_play_acquire(self, measure_program):
         compiler = QbloxCompiler()
 
+        # Test measure with default time of flight
         with (
             patch.object(QbloxCompiler, "_handle_play") as handle_play,
             patch.object(QbloxCompiler, "_handle_acquire") as handle_acquire,
         ):
             compiler.compile(measure_program)
 
-        measure = measure_program.body.elements[0]
-        assert handle_play.call_count == 1
-        assert handle_acquire.call_count == 1
-        assert handle_play.call_args[0][0].bus == measure.bus
-        assert handle_play.call_args[0][0].waveform == measure.waveform
-        assert handle_acquire.call_args[0][0].bus == measure.bus
-        assert handle_acquire.call_args[0][0].weights == measure.weights
+            measure = measure_program.body.elements[0]
+            assert handle_play.call_count == 1
+            assert handle_acquire.call_count == 1
+            assert handle_play.call_args[0][0].bus == measure.bus
+            assert handle_play.call_args[0][0].waveform == measure.waveform
+            assert handle_play.call_args[0][0].wait_time == QbloxCompiler.minimum_wait_duration
+            assert handle_acquire.call_args[0][0].bus == measure.bus
+            assert handle_acquire.call_args[0][0].weights == measure.weights
+
+        # Test measure with provided time of flight
+        with (
+            patch.object(QbloxCompiler, "_handle_play") as handle_play,
+            patch.object(QbloxCompiler, "_handle_acquire") as handle_acquire,
+        ):
+            compiler.compile(measure_program, times_of_flight={"readout": 123})
+
+            measure = measure_program.body.elements[0]
+            assert handle_play.call_count == 1
+            assert handle_acquire.call_count == 1
+            assert handle_play.call_args[0][0].bus == measure.bus
+            assert handle_play.call_args[0][0].waveform == measure.waveform
+            assert handle_play.call_args[0][0].wait_time == 123
+            assert handle_acquire.call_args[0][0].bus == measure.bus
+            assert handle_acquire.call_args[0][0].weights == measure.weights
 
     def test_acquire_loop_with_for_loop_with_weights_of_same_waveform(
         self, acquire_loop_with_for_loop_with_weights_of_same_waveform: QProgram
