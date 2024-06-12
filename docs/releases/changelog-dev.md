@@ -211,7 +211,15 @@
 
   [#736](https://github.com/qilimanjaro-tech/qililab/pull/736)
 
+- `time_of_flight` parameter must be added to Qblox QRM and QRM-RF sequencers's runcard settings.
+
+  [#738](https://github.com/qilimanjaro-tech/qililab/pull/738)
+
 ### Deprecations / Removals
+
+- Remove the deprecated `path` argument from `build_platform()`.
+
+  [#739](https://github.com/qilimanjaro-tech/qililab/pull/739)
 
 ### Documentation
 
