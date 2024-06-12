@@ -23,7 +23,6 @@ from queue import Queue
 import numpy as np
 from qibo.gates import M
 from qibo.models import Circuit
-from qiboconnection.api import API
 from qm import generate_qua_script
 from qpysequence import Sequence as QpySequence
 from ruamel.yaml import YAML
@@ -85,7 +84,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
     Args:
         runcard (Runcard): Dataclass containing the serialized platform (chip, instruments, buses...), created during :meth:`ql.build_platform()` with the given runcard dictionary.
-        connection (API | None = None): `Qiboconnection's <https://pypi.org/project/qiboconnection>`_ API class used to block access to other users when connected to the platform.
 
     Examples:
 
@@ -272,12 +270,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         TODO: !!! Change this results for the actual sinusoidal ones (change wait_times of execution if needed) !!!
     """
 
-    def __init__(self, runcard: Runcard, connection: API | None = None):
+    def __init__(self, runcard: Runcard):
         self.name = runcard.name
         """Name of the platform (``str``) """
-
-        self.device_id = runcard.device_id
-        """Device ID of the platform (``int``). This attribute is required for ``qiboconnection`` to save the results remotely."""
 
         self.gates_settings = runcard.gates_settings
         """Gate settings and definitions (``dataclass``). These setting contain how to decompose gates into pulses."""
@@ -301,9 +296,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         )
         """All the buses of the platform and their necessary settings (``dataclass``). Each individual bus is contained in a list within the dataclass."""
 
-        self.connection = connection
-        """API ``qiboconnection`` of the platform (``API | None``). It is the same as the passed argument. Defaults to None."""
-
         self._connected_to_instruments: bool = False
         """Boolean indicating the connection status to the instruments. Defaults to False (not connected)."""
 
@@ -319,9 +311,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         You must be connected in order to set up and turn on instruments, or in order to execute the platform.
 
-        To connect, your computer must be in the same network of the instruments specified in the :ref:`runcard <runcards>` (with their corresponding `device_id` and IP's addresses).
-
-        Such connection is handled via `qiboconnection's <https://pypi.org/project/qiboconnection>`_ `API` in the ``platform.connection`` attribute.
+        To connect, your computer must be in the same network of the instruments specified in the :ref:`runcard <runcards>` (with their corresponding IP's addresses).
         """
         if self._connected_to_instruments:
             logger.info("Already connected to the instruments")
@@ -557,7 +547,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             dict: Dictionary of the serialized platform
         """
         name_dict = {RUNCARD.NAME: self.name}
-        device_id = {RUNCARD.DEVICE_ID: self.device_id}
         gates_settings_dict = {RUNCARD.GATES_SETTINGS: self.gates_settings.to_dict()}
         chip_dict = {RUNCARD.CHIP: self.chip.to_dict() if self.chip is not None else None}
         buses_dict = {RUNCARD.BUSES: self.buses.to_dict() if self.buses is not None else None}
@@ -568,15 +557,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             else None,
         }
 
-        return (
-            name_dict
-            | device_id
-            | gates_settings_dict
-            | chip_dict
-            | buses_dict
-            | instrument_dict
-            | instrument_controllers_dict
-        )
+        return name_dict | gates_settings_dict | chip_dict | buses_dict | instrument_dict | instrument_controllers_dict
 
     def __str__(self) -> str:
         """String representation of the platform.

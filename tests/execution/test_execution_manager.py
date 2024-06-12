@@ -113,42 +113,6 @@ class TestExecutionManager:
 class TestExecutionManagerPlatform:
     """Unit tests checking a platform with instruments of the ExecutionManager."""
 
-    @patch("qililab.platform.platform.API")
-    def test_execute_with_remote_save(
-        self,
-        mocked_remote_connection: MagicMock,
-        mock_makedirs: MagicMock,
-        mock_open: MagicMock,
-        mock_dump: MagicMock,
-        mock_rs: MagicMock,
-        mock_pulsar: MagicMock,
-        mock_urllib: MagicMock,
-        mock_keithley: MagicMock,
-        nested_experiment: Experiment,
-    ):
-        """Test execute method with nested loops."""
-        saved_experiment_id = 0
-
-        mocked_remote_connection.save_experiment.return_value = saved_experiment_id
-        mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
-
-        nested_experiment.options.settings.software_average = 1
-        nested_experiment.options.remote_save = True
-        nested_experiment.options.name = "TEST"
-        nested_experiment.options.description = "TEST desc"
-        nested_experiment.platform.connection = mocked_remote_connection
-        nested_experiment.execute()  # type: ignore
-        nested_experiment.to_dict()
-
-        mocked_remote_connection.save_experiment.assert_called()
-        assert nested_experiment._remote_id == saved_experiment_id
-
-        mock_urllib.request.Request.assert_called()
-        mock_urllib.request.urlopen.assert_called()
-        mock_dump.assert_called()
-        mock_open.assert_called()
-        mock_makedirs.assert_called()
-
     def test_execute_method_with_nested_loop(
         self,
         mock_makedirs: MagicMock,

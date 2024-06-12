@@ -18,7 +18,6 @@ from pathlib import Path
 
 import h5py
 import numpy as np
-from qiboconnection.api import API
 from ruamel.yaml import YAML
 
 from .platform import Platform
@@ -172,7 +171,7 @@ def save_platform(path: str, platform: Platform) -> str:
     return str(new_path)
 
 
-def build_platform(runcard: str | dict, connection: API | None = None, new_drivers: bool = False) -> Platform:
+def build_platform(runcard: str | dict, new_drivers: bool = False) -> Platform:
     """Builds a :class:`.Platform` object, given a :ref:`runcard <runcards>`.
 
     Such runcard can be passed in one of the following two ways:
@@ -187,7 +186,6 @@ def build_platform(runcard: str | dict, connection: API | None = None, new_drive
 
         {
             "name": name,                                           # str
-            "device_id": device_id,                                 # int
             "gates_settings": gates_settings,                       # dict
             "chip": chip,                                           # dict
             "buses": buses,                                         # list[dict]
@@ -203,8 +201,6 @@ def build_platform(runcard: str | dict, connection: API | None = None, new_drive
 
     Args:
         runcard (str | dict): Path to the platform's runcard YAML file, or direct dictionary of the platform's runcard info.
-        connection (API | None, optional): Qiboconnection's API class used to block access to the Platform when connected to it.
-            Defaults to None.
         new_drivers (bool, optional): Whether to use the new drivers or not. Defaults to False.
 
     Returns:
@@ -237,4 +233,4 @@ def build_platform(runcard: str | dict, connection: API | None = None, new_drive
             runcard = yaml.load(stream=file)
 
     runcard_class = Runcard(**runcard)
-    return Platform(runcard=runcard_class, connection=connection)
+    return Platform(runcard=runcard_class)

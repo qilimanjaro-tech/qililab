@@ -28,7 +28,6 @@ Such dictionaries have the following main structure:
 
     {
         "name": name,                                           # str
-        "device_id": device_id,                                 # int
         "gates_settings": gates_settings,                       # dict
         "chip": chip,                                           # dict
         "buses": buses,                                         # list[dict]
@@ -43,8 +42,6 @@ Runcard YAML file example:
 .. code-block:: yaml
 
     name: galadriel_soprano_master
-
-    device_id: 9
 
     gates_settings:
         delay_between_pulses: 0

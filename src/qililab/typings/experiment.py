@@ -13,10 +13,7 @@
 # limitations under the License.
 
 """ Experiment Options Typings """
-import io
 from dataclasses import asdict, dataclass, field
-
-from ruamel.yaml import YAML
 
 from qililab.constants import EXPERIMENT, RUNCARD
 from qililab.utils.loop import Loop
@@ -35,7 +32,7 @@ class ExperimentSettings:
 
     def __str__(self):
         """Returns a string representation of the experiment settings."""
-        return str(YAML().dump(asdict(self), io.BytesIO()))
+        return str(asdict(self))
 
 
 @dataclass
@@ -45,7 +42,6 @@ class ExperimentOptions:
     loops: list[Loop] | None = None
     settings: ExperimentSettings = field(default_factory=ExperimentSettings)
     name: str = DEFAULT_EXPERIMENT_NAME
-    remote_save: bool = True
     description: str = ""
 
     def to_dict(self):
@@ -58,7 +54,6 @@ class ExperimentOptions:
             EXPERIMENT.LOOPS: [loop.to_dict() for loop in self.loops] if self.loops is not None else None,
             RUNCARD.GATES_SETTINGS: asdict(self.settings),
             RUNCARD.NAME: self.name,
-            EXPERIMENT.REMOTE_SAVE: self.remote_save,
             EXPERIMENT.DESCRIPTION: self.description,
         }
 
@@ -78,6 +73,5 @@ class ExperimentOptions:
             if RUNCARD.GATES_SETTINGS in dictionary
             else ExperimentSettings(),
             name=dictionary[RUNCARD.NAME] if RUNCARD.NAME in dictionary else DEFAULT_EXPERIMENT_NAME,
-            remote_save=dictionary.get(EXPERIMENT.REMOTE_SAVE, True),
             description=dictionary.get(EXPERIMENT.DESCRIPTION, ""),
         )
