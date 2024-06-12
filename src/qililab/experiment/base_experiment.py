@@ -20,13 +20,12 @@ from pathlib import Path
 from queue import Empty, Queue
 from threading import Thread
 
-import numpy as np
 from qcodes.instrument import Instrument as QcodesInstrument
 from ruamel.yaml import YAML
 from tqdm.auto import tqdm
 
 from qililab.chip import Node
-from qililab.config import __version__, logger
+from qililab.config import __version__
 from qililab.constants import DATA, EXPERIMENT, EXPERIMENT_FILENAME, RESULTS_FILENAME, RUNCARD
 from qililab.execution import EXECUTION_BUILDER, ExecutionManager
 from qililab.platform.platform import Platform
@@ -35,7 +34,6 @@ from qililab.settings import Runcard
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.typings.enums import Instrument, Parameter
 from qililab.typings.experiment import ExperimentOptions
-from qililab.utils.live_plot import LivePlot
 from qililab.utils.loop import Loop
 from qililab.utils.util_loops import compute_shapes_from_loops
 
@@ -47,8 +45,6 @@ class BaseExperiment(ABC):
     execution_manager: ExecutionManager
     results: Results
     results_path: Path | None
-    _plot: LivePlot | None
-    _remote_id: int
 
     def __init__(self, platform: Platform, options: ExperimentOptions = ExperimentOptions()):
         self.platform = platform
@@ -61,25 +57,11 @@ class BaseExperiment(ABC):
 
     def run(self, save_experiment=True, save_results=True) -> Results:
         """This method is responsible for:
-        * Creating the live plotting (if connection is provided).
         * Preparing the `Results` class and the `results.yml` file.
         * Looping over all given loops and/or software averages. And for each loop:
             * Saving the results to the ``results.yml`` file.
-            * Sending the data to the live plotting (if asked to).
             * Save the results to the ``results`` attribute.
-            * Save the results to the remote database (if asked to).
         """
-        # Generate live plotting
-        if self.platform.connection is None:
-            self._plot = None
-        else:
-            # TODO: Live plotting should be able to hable num_schedules=0
-            self._plot = LivePlot(
-                connection=self.platform.connection,
-                loops=self.options.loops or [],
-                num_schedules=1,
-                title=self.options.name,
-            )
 
         if not hasattr(self, "execution_manager"):
             raise ValueError("Please build the execution_manager before running an experiment.")
@@ -93,14 +75,10 @@ class BaseExperiment(ABC):
         self._asynchronous_data_handling(queue=data_queue)
         self._execute_recursive_loops(loops=self.options.loops, queue=data_queue)
 
-        if self.options.remote_save:
-            self.remote_save_experiment()
-
         return self.results
 
     def _asynchronous_data_handling(self, queue: Queue):
-        """Starts a thread that asynchronously gets the results from the queue, sends them to the live plot (if any)
-        and saves them to a file.
+        """Starts a thread that asynchronously gets the results from the queue and saves them to a file.
 
         If no items are received in the queue for 5 seconds, the thread will exit.
 
@@ -117,13 +95,6 @@ class BaseExperiment(ABC):
                 except Empty:
                     return  # exit thread if no results are received for 10 times the duration of the program
 
-                if self._plot is not None:
-                    acq = result.acquisitions()
-                    i = np.array(acq["i"])
-                    q = np.array(acq["q"])
-                    amplitude = 20 * np.log10(np.abs(i + 1j * q)).astype(np.float64)
-                    self._plot.send_points(value=amplitude[0])
-
                 if self.results_path is not None:
                     with open(file=self.results_path / "results.yml", mode="a", encoding="utf8") as data_file:
                         result_dict = result.to_dict()
@@ -139,7 +110,6 @@ class BaseExperiment(ABC):
             * Apply settings of the runcard to the instruments.
             * Translate circuit into pulses and create the ``ExecutionManager`` class.
             * Turn on instruments.
-            * Create the results files & class and connect to live plotting.
             * Runs the experiment.
             * Turn off instruments.
             * Disconnect from the instruments.
@@ -157,27 +127,6 @@ class BaseExperiment(ABC):
         self.platform.disconnect()
         QcodesInstrument.close_all()
         return results
-
-    def remote_save_experiment(self) -> None:
-        """Saves the experiment and the results to the remote database and updates the ``_remote_id`` attribute.
-
-        Raises:
-            ValueError: if connection is not specified
-        """
-        if self.platform.connection is None:
-            return
-
-        logger.debug("Sending experiment and results to remote database.")
-        self._remote_id = self.platform.connection.save_experiment(
-            name=self.options.name,
-            description=self.options.description,
-            experiment_dict=self.to_dict(),
-            results_dict=self.results.to_dict(),
-            device_id=self.platform.device_id,
-            user_id=self.platform.connection.user_id,
-            qililab_version=__version__,
-            favorite=False,
-        )
 
     @abstractmethod
     def _execute_recursive_loops(self, loops: list[Loop] | None, queue: Queue, depth=0):

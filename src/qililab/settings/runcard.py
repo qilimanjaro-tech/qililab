@@ -17,6 +17,7 @@ import ast
 import re
 from dataclasses import asdict, dataclass
 from typing import Literal
+from warnings import warn
 
 from qililab.constants import GATE_ALIAS_REGEX
 from qililab.settings.gate_event_settings import GateEventSettings
@@ -248,12 +249,18 @@ class Runcard:
 
     # Runcard class actual initialization
     name: str
-    device_id: int
     chip: Chip
     buses: list[Bus]  # This actually is a list[dict] until the post_init is called
     instruments: list[dict]
     instrument_controllers: list[dict]
     gates_settings: GatesSettings
+    device_id: int | None = None
 
     def __post_init__(self):
         self.buses = [self.Bus(**bus) for bus in self.buses] if self.buses is not None else None
+        if self.device_id is not None:
+            warn(
+                "`device_id` argument is deprecated and will be removed soon. Please remove it from your runcard file.",
+                DeprecationWarning,
+                stacklevel=2,
+            )

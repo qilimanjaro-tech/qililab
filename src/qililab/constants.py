@@ -23,7 +23,6 @@ RESULTS_FILENAME = "results.yml"
 EXPERIMENT_FILENAME = "experiment.yml"
 
 DEFAULT_PLATFORM_NAME = "galadriel"
-GALADRIEL_DEVICE_ID = 9
 
 DEFAULT_TIMEOUT = 10 * 1000  # 10 seconds
 
@@ -36,7 +35,6 @@ class RUNCARD:
     """YAML constants."""
 
     NAME = "name"
-    DEVICE_ID = "device_id"
     ALIAS = "alias"
     INSTRUMENT = "instrument"
     INSTRUMENTS = "instruments"
@@ -68,7 +66,6 @@ class PLATFORM:
     TIMINGS_CALCULATION_METHOD = "timings_calculation_method"
     RESET_METHOD = "reset_method"
     PASSIVE_RESET_DURATION = "passive_reset_duration"
-    DEVICE_ID = "device_id"
     MINIMUM_CLOCK_TIME = "minimum_clock_time"
 
 
@@ -108,12 +105,8 @@ class EXPERIMENT:
     NUM_SCHEDULES = "num_schedules"
     LOOPS = "loops"
     OPTIONS = "options"
-    DEVICE_ID = "device_id"
-    REMOTE_DEVICE_MANUAL_OVERRIDE = "remote_device_manual_override"
-    CONNECTION = "connection"
     CIRCUITS = "circuits"
     PULSE_SCHEDULES = "pulse_schedules"
-    REMOTE_SAVE = "remote_save"
     DESCRIPTION = "description"
 
 
