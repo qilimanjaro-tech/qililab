@@ -145,6 +145,7 @@
   ```
 
   [#729](https://github.com/qilimanjaro-tech/qililab/pull/729)
+  [#740](https://github.com/qilimanjaro-tech/qililab/pull/740)
 
 - Introduced `QProgram.with_calibration` method to apply calibrated waveforms and weights to the QProgram.
 
