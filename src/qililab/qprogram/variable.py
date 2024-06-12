@@ -13,29 +13,57 @@
 # limitations under the License.
 
 """This file contains all the variables used inside a QProgram."""
+from enum import Enum
 from uuid import UUID, uuid4
 
-from qililab.utils import DictSerializable, DictSerializableEnum
+from qililab.yaml import yaml
 
 
-class Domain(DictSerializableEnum):
+@yaml.register_class
+class Domain(Enum):
     """Domain class."""
 
-    Scalar = (0,)
-    Time = (1,)
-    Frequency = (2,)
-    Phase = (3,)
+    Scalar = 0
+    Time = 1
+    Frequency = 2
+    Phase = 3
     Voltage = 4
 
+    @classmethod
+    def to_yaml(cls, representer, node):
+        """Method to be called automatically during YAML serialization."""
+        return representer.represent_scalar("!Domain", f"{node.name}-{node.value}")
 
-class ValueSource(DictSerializableEnum):
+    @classmethod
+    def from_yaml(cls, _, node):
+        """Method to be called automatically during YAML deserialization."""
+        _, value = node.value.split("-")
+        value = int(value)
+        return cls(value)
+
+
+@yaml.register_class
+class ValueSource(Enum):
     """ValueSource class"""
 
-    Free = (0,)
+    Free = 0
     Dependent = 1
 
+    @classmethod
+    def to_yaml(cls, representer, node):
+        """Method to be called automatically during YAML serialization."""
+        return representer.represent_scalar("!ValueSource", f"{node.name}-{node.value}")
 
-class Variable(DictSerializable):
+    @classmethod
+    def from_yaml(cls, _, node):
+        """Method to be called automatically during YAML deserialization."""
+        _, value = node.value.split("-")
+        value = int(value)
+        return cls(value)
+
+
+@yaml.register_class
+class Variable:
     """Variable class used to define variables inside a QProgram."""
 
     @property
@@ -72,6 +100,7 @@ class Variable(DictSerializable):
         return other is not None and isinstance(other, Variable) and self._uuid == other._uuid
 
 
+@yaml.register_class
 class IntVariable(Variable, int):  # type: ignore
     """Integer variable. This class is used to define a variable of type int, such that Python recognizes this class
     as an integer."""
@@ -85,6 +114,7 @@ class IntVariable(Variable, int):  # type: ignore
         Variable.__init__(self, domain)
 
 
+@yaml.register_class
 class FloatVariable(Variable, float):  # type: ignore
     """Float variable. This class is used to define a variable of type float, such that Python recognizes this class
     as a float."""

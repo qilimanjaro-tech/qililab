@@ -30,6 +30,7 @@ from .result import Results, stream_results
 from .typings import ExperimentOptions, ExperimentSettings, Parameter
 from .utils import Loop
 from .utils.load_data import load
+from .utils.serialization import serialize, serialize_to, deserialize, deserialize_from
 from .waveforms import *
 
 # moving circuit_transpiler module imports here because it has instruments module dependencies so circular imports can be avoided

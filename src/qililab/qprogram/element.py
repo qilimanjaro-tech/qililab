@@ -15,11 +15,12 @@
 from dataclasses import dataclass, field
 from uuid import UUID, uuid4
 
-from qililab.utils import DictSerializable
+from qililab.yaml import yaml
 
 
+@yaml.register_class
 @dataclass(frozen=True)
-class Element(DictSerializable):
+class Element:
     """Class representing an element of QProgram."""
 
     _uuid: UUID = field(default_factory=uuid4, init=False)

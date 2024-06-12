@@ -92,6 +92,27 @@
 
   [#729](https://github.com/qilimanjaro-tech/qililab/pull/729)
 
+- Added `serialize()`, `serialize_to()`, `deserialize()`, `deserialize_from()` functions to enable a unified method for serializing and deserializing Qililab classes to and from YAML memory strings and files.
+
+  ```Python
+  import qililab as ql
+
+  qp = QProgram()
+
+  # Serialize QProgram to a memory string and deserialize from it.
+  yaml_string = ql.serialize(qp)
+  deserialized_qprogram = ql.deserialize(yaml_string)
+
+  # Specify the class for deserialization using the `cls` parameter.
+  deserialized_qprogram = ql.deserialize(yaml_string, cls=ql.QProgram)
+
+  # Serialize to and deserialize from a file.
+  ql.serialize_to(qp, 'qprogram.yml')
+  deserialized_qprogram = ql.deserialize_from('qprogram.yml', cls=ql.QProgram)
+  ```
+
+  [#737](https://github.com/qilimanjaro-tech/qililab/pull/737)
+
 - Added qblox support for `qprogram.measure`. Now this method can be use for both Qblox Instruments
   and Quantum Machines.
 

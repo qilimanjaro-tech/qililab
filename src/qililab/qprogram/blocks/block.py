@@ -18,8 +18,10 @@ from dataclasses import dataclass, field
 
 from qililab.qprogram.element import Element
 from qililab.qprogram.operations.operation import Operation
+from qililab.yaml import yaml
 
 
+@yaml.register_class
 @dataclass(frozen=True)
 class Block(Element):  # pylint: disable=missing-class-docstring
     elements: list[Block | Operation] = field(default_factory=list, init=False)

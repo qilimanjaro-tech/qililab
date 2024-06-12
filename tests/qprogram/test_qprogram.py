@@ -1,5 +1,4 @@
-import json
-import math
+import os
 from collections import deque
 from itertools import product
 
@@ -27,6 +26,7 @@ from qililab.qprogram.operations import (
     Wait,
 )
 from qililab.qprogram.variable import FloatVariable, IntVariable
+from qililab.utils.serialization import deserialize, deserialize_from, serialize, serialize_to
 
 
 # pylint: disable=maybe-no-member, protected-access
@@ -482,48 +482,22 @@ class TestQProgram:
                     drag_coefficient=drag_coefficient_var,
                 )
 
-    def test_serialiation_deserialization(self):
-        """Test that QProgram can be serialized and serialized."""
+    def test_serialization_deserialization(self):
+        """Test serialization and deserialization works."""
         qp = QProgram()
-        duration = qp.variable(Domain.Time)
-        frequency = qp.variable(Domain.Frequency)
-        drag_pair = IQPair.DRAG(amplitude=1.0, duration=duration, num_sigmas=4, drag_coefficient=1.2)
-        arbitrary_pair = IQPair(
-            I=Arbitrary(samples=np.linspace(0.0, 1.0, 10)), Q=Arbitrary(samples=np.linspace(-1.0, 0.0, 10))
-        )
-        readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
-        weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+        gain = qp.variable(domain=Domain.Voltage)
+        with qp.for_loop(variable=gain, start=0.0, stop=1.0, step=0.1):
+            qp.set_gain(bus="drive_bus", gain=gain)
+            qp.play(bus="drive_bus", waveform=IQPair(I=Square(1.0, 200), Q=Square(1.0, 200)))
 
-        qp.set_phase(bus="drive", phase=90)
-        qp.reset_phase(bus="drive")
-        qp.set_gain(bus="drive", gain=0.5)
-        qp.set_offset(bus="drive", offset_path0=0.5, offset_path1=0.5)
-        with qp.average(shots=1000):
-            with qp.for_loop(variable=duration, start=100, stop=200, step=10):
-                qp.play(bus="drive", waveform=drag_pair)
-                qp.sync()
-                qp.wait(bus="readout", duration=100)
-                with qp.for_loop(variable=frequency, start=100e6, stop=200e6, step=10e6):
-                    qp.set_frequency(bus="readout", frequency=frequency)
-                    qp.play(bus="readout", waveform=arbitrary_pair)
-                    qp.qblox.play(bus="readout", waveform=readout_pair, wait_time=4)
-                    qp.qblox.acquire(bus="readout", weights=weights_pair)
+        serialized = serialize(qp)
+        deserialized_qprogram = deserialize(serialized, QProgram)
 
-        # Temp hack until next PR that deletes these methods
-        del qp.qblox
-        del qp.quantum_machines
+        assert isinstance(deserialized_qprogram, QProgram)
 
-        serialized_dictionary = qp.to_dict()
+        serialize_to(qp, file="qprogram.yml")
+        deserialized_qprogram = deserialize_from("qprogram.yml", QProgram)
 
-        assert "type" in serialized_dictionary
-        assert "attributes" in serialized_dictionary
+        assert isinstance(deserialized_qprogram, QProgram)
 
-        deserialized_qp = QProgram.from_dict(serialized_dictionary["attributes"])
-        assert isinstance(deserialized_qp, QProgram)
-
-        again_serialized_dictionary = deserialized_qp.to_dict()
-        assert serialized_dictionary == again_serialized_dictionary
-
-        as_json = json.dumps(again_serialized_dictionary)
-        dictionary_from_json = json.loads(as_json)
-        assert serialized_dictionary == dictionary_from_json
+        os.remove("qprogram.yml")

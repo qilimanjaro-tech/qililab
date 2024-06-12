@@ -15,8 +15,10 @@
 from dataclasses import dataclass
 
 from qililab.qprogram.blocks.block import Block
+from qililab.yaml import yaml
 
 
+@yaml.register_class
 @dataclass(frozen=True)
 class InfiniteLoop(Block):  # pylint: disable=missing-class-docstring
     ...
