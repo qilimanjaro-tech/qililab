@@ -193,10 +193,12 @@ class QProgram:  # pylint: disable=too-many-public-methods
         # Recursively traverse qprogram applying the bus mapping
         traverse(copied_qprogram.body)
 
-        # Apply the mapping to _buses property
-        copied_qprogram._buses.symmetric_difference_update(  # pylint: disable=protected-access
-            {item for pair in bus_mapping.items() for item in pair}
-        )
+        # Apply the mapping to buses property
+        for bus in list(copied_qprogram.buses):
+            if bus in bus_mapping:
+                copied_qprogram.buses.remove(bus)
+                copied_qprogram.buses.add(bus_mapping[bus])
+
         return copied_qprogram
 
     def with_calibration(self, calibration: Calibration):
