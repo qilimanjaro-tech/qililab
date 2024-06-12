@@ -95,6 +95,9 @@ class BusCompilationInfo:  # pylint: disable=too-many-instance-attributes, too-f
         # Syncing marker. If true, a real-time instruction has been added since the last sync or the beginning of the program.
         self.marked_for_sync = False
 
+        # Time of flight. Defaults to minimum_wait_duration and is updated if times_of_flight parameter is provided during compilation.
+        self.time_of_flight = QbloxCompiler.minimum_wait_duration
+
 
 class QbloxCompiler:  # pylint: disable=too-few-public-methods
     """A class for compiling QProgram to QBlox hardware."""
@@ -126,13 +129,18 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         self._sync_counter: int
 
     def compile(
-        self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None, calibration: Calibration | None = None
+        self,
+        qprogram: QProgram,
+        bus_mapping: dict[str, str] | None = None,
+        calibration: Calibration | None = None,
+        times_of_flight: dict[str, int] | None = None,
     ) -> tuple[Sequences, Acquisitions]:
         """Compile QProgram to qpysequence.Sequence
 
         Args:
             qprogram (QProgram): The QProgram to be compiled
             bus_mapping (dict[str, str] | None, optional): Optional mapping of bus names. Defaults to None.
+            times_of_flight (dict[str, int] | None, optional): Optional time of flight of bus. Defaults to None.
 
         Returns:
             dict[str, QPy.Sequence]: A dictionary with the buses participating in the QProgram as keys and the corresponding Sequence as values.
@@ -170,6 +178,11 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
 
         self._sync_counter = 0
         self._buses = self._populate_buses()
+
+        # Pre-processing: Update time of flight
+        if times_of_flight is not None:
+            for bus in self._buses.keys() & times_of_flight.keys():
+                self._buses[bus].time_of_flight = times_of_flight[bus]
 
         # Recursive traversal to convert QProgram blocks to Sequence
         traverse(self._qprogram._body)
@@ -435,7 +448,8 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         Args:
             element (Measure): measure operation
         """
-        play = Play(bus=element.bus, waveform=element.waveform)
+        time_of_flight = self._buses[element.bus].time_of_flight
+        play = Play(bus=element.bus, waveform=element.waveform, wait_time=time_of_flight)
         acquire = Acquire(bus=element.bus, weights=element.weights, save_adc=element.save_adc)
         self._handle_play(play)
         self._handle_acquire(acquire)

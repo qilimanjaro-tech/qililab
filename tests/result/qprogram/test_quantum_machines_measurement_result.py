@@ -1,11 +1,12 @@
 """ Test Results """
 
-import json
+import os
 
 import numpy as np
 import pytest
 
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
+from qililab.utils.serialization import deserialize, deserialize_from, serialize, serialize_to
 
 
 @pytest.fixture(name="quantum_machines_measurement_result")
@@ -34,16 +35,16 @@ class TestsQMResult:
 
     def test_serialization_method(self, quantum_machines_measurement_result: QuantumMachinesMeasurementResult):
         """Test serialization and deserialization works."""
-        serialized_dictionary = quantum_machines_measurement_result.to_dict()
-        assert "type" in serialized_dictionary
-        assert "attributes" in serialized_dictionary
+        serialized = serialize(quantum_machines_measurement_result)
+        deserialized_quantum_machines_measurement_result = deserialize(serialized, QuantumMachinesMeasurementResult)
 
-        deserialized_qp = QuantumMachinesMeasurementResult.from_dict(serialized_dictionary["attributes"])
-        assert isinstance(deserialized_qp, QuantumMachinesMeasurementResult)
+        assert isinstance(deserialized_quantum_machines_measurement_result, QuantumMachinesMeasurementResult)
 
-        again_serialized_dictionary = deserialized_qp.to_dict()
-        assert serialized_dictionary == again_serialized_dictionary
+        serialize_to(quantum_machines_measurement_result, file="quantum_machines_measurement_result.yml")
+        deserialized_quantum_machines_measurement_result = deserialize_from(
+            "quantum_machines_measurement_result.yml", QuantumMachinesMeasurementResult
+        )
 
-        as_json = json.dumps(again_serialized_dictionary)
-        dictionary_from_json = json.loads(as_json)
-        assert serialized_dictionary == dictionary_from_json
+        assert isinstance(deserialized_quantum_machines_measurement_result, QuantumMachinesMeasurementResult)
+
+        os.remove("quantum_machines_measurement_result.yml")

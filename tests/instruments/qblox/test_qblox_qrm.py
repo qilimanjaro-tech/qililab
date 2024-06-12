@@ -51,6 +51,7 @@ def fixture_settings_6_sequencers():
             "acquisition_timeout": 1,
             "hardware_demodulation": True,
             "scope_store_enabled": True,
+            "time_of_flight": 40,
         }
         for seq_idx in range(6)
     ]
@@ -96,6 +97,7 @@ def fixture_settings_even_sequencers():
             "acquisition_timeout": 1,
             "hardware_demodulation": True,
             "scope_store_enabled": True,
+            "time_of_flight": 40,
         }
         for seq_idx in range(0, 6, 2)
     ]
@@ -290,6 +292,7 @@ class TestQbloxQRM:
             (Parameter.SEQUENCE_TIMEOUT, 2, 0),
             (Parameter.ACQUISITION_TIMEOUT, 2, 0),
             (Parameter.ACQUISITION_DELAY_TIME, 200, 0),
+            (Parameter.TIME_OF_FLIGHT, 80, 0),
         ],
     )
     def test_setup_method(  # pylint: disable=too-many-branches # noqa: C901
@@ -342,6 +345,8 @@ class TestQbloxQRM:
                 assert qrms.awg_sequencers[channel_id].sequence_timeout == value
             if parameter == Parameter.ACQUISITION_TIMEOUT:
                 assert qrms.awg_sequencers[channel_id].acquisition_timeout == value
+            if parameter == Parameter.TIME_OF_FLIGHT:
+                assert qrms.awg_sequencers[channel_id].time_of_flight == value
             if parameter == Parameter.ACQUISITION_DELAY_TIME:
                 assert qrms.acquisition_delay_time == value
             if parameter in {

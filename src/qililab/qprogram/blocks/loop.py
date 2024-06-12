@@ -18,8 +18,10 @@ import numpy as np
 
 from qililab.qprogram.blocks.block import Block
 from qililab.qprogram.variable import Variable
+from qililab.yaml import yaml
 
 
+@yaml.register_class
 @dataclass(frozen=True)
 class Loop(Block):  # pylint: disable=missing-class-docstring
     variable: Variable

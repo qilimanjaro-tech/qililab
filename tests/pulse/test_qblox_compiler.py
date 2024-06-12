@@ -102,6 +102,7 @@ def fixture_settings_6_sequencers():
             "acquisition_timeout": 1,
             "hardware_demodulation": True,
             "scope_store_enabled": True,
+            "time_of_flight": 40,
         }
         for seq_idx in range(6)
     ]

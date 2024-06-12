@@ -17,23 +17,23 @@ import numpy as np
 
 from qililab.result.qprogram.measurement_result import MeasurementResult
 from qililab.typings.enums import ResultName
+from qililab.yaml import yaml
 
 
+@yaml.register_class
 class QuantumMachinesMeasurementResult(MeasurementResult):
     """Contains the data obtained from a single measurment in Quantum Machines hardware.
 
     Args:
         I (np.ndarray): Data obtained from I stream.
-        Q (np.ndarray, Optional): Data obtained from Q stream. Defaults to None.
+        Q (np.ndarray): Data obtained from Q stream.
         adc1 (np.ndarray, Optional): Data obtained from adc1 stream. Defaults to None.
         adc2 (np.ndarray, Optional): Data obtained from adc2 stream. Defaults to None.
     """
 
     name = ResultName.QUANTUM_MACHINES_MEASUREMENT
 
-    def __init__(
-        self, I: np.ndarray, Q: np.ndarray | None = None, adc1: np.ndarray | None = None, adc2: np.ndarray | None = None
-    ):
+    def __init__(self, I: np.ndarray, Q: np.ndarray, adc1: np.ndarray | None = None, adc2: np.ndarray | None = None):
         self.I = I
         self.Q = Q
         self.adc1 = adc1
@@ -48,11 +48,7 @@ class QuantumMachinesMeasurementResult(MeasurementResult):
             np.ndarray: The I/Q data as a compined nummpy array.
         """
 
-        return (
-            np.concatenate((self.I.reshape(1, *self.I.shape), self.Q.reshape(1, *self.Q.shape)), axis=0)
-            if self.Q is not None
-            else self.I.reshape(1, *self.I.shape)
-        )
+        return np.concatenate((self.I.reshape(1, *self.I.shape), self.Q.reshape(1, *self.Q.shape)), axis=0)
 
     @property
     def threshold(self) -> np.ndarray:

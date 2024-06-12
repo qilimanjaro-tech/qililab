@@ -17,8 +17,10 @@ from dataclasses import dataclass
 from qililab.qprogram.operations.operation import Operation
 from qililab.qprogram.variable import Variable
 from qililab.waveforms import IQPair, Waveform
+from qililab.yaml import yaml
 
 
+@yaml.register_class
 @dataclass(frozen=True)
 class Play(Operation):  # pylint: disable=missing-class-docstring
     bus: str
@@ -57,6 +59,7 @@ class Play(Operation):  # pylint: disable=missing-class-docstring
         return super().get_variables() | self.get_waveform_variables()
 
 
+@yaml.register_class
 @dataclass(frozen=True)
 class PlayWithCalibratedWaveform(Operation):  # pylint: disable=missing-class-docstring
     bus: str
