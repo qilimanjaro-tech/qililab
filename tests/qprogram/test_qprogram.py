@@ -70,6 +70,7 @@ class TestQProgram:
 
         new_qp = qp.with_bus_mapping(bus_mapping={"drive_bus": "drive_q0_bus", "readout_bus": "readout_q0_bus"})
 
+        assert len(new_qp.buses) == 2
         assert "drive_bus" not in new_qp.buses
         assert "readout_bus" not in new_qp.buses
         assert "drive_q0_bus" in new_qp.buses
@@ -79,6 +80,30 @@ class TestQProgram:
         assert new_qp.body.elements[0].elements[1].buses[0] == "drive_q0_bus"
         assert new_qp.body.elements[0].elements[1].buses[1] == "readout_q0_bus"
         assert new_qp.body.elements[0].elements[2].bus == "drive_q0_bus"
+
+        self_mapping_qp = qp.with_bus_mapping(bus_mapping={"drive_bus": "drive_bus", "readout_bus": "readout_bus"})
+
+        assert len(self_mapping_qp.buses) == 2
+        assert "drive_bus" in self_mapping_qp.buses
+        assert "readout_bus" in self_mapping_qp.buses
+
+        assert self_mapping_qp.body.elements[0].elements[0].bus == "drive_bus"
+        assert self_mapping_qp.body.elements[0].elements[1].buses[0] == "drive_bus"
+        assert self_mapping_qp.body.elements[0].elements[1].buses[1] == "readout_bus"
+        assert self_mapping_qp.body.elements[0].elements[2].bus == "drive_bus"
+
+        non_existant_mapping_qp = qp.with_bus_mapping(
+            bus_mapping={"non_existant": "drive_bus", "non_existant_readout": "readout_bus"}
+        )
+
+        assert len(non_existant_mapping_qp.buses) == 2
+        assert "drive_bus" in non_existant_mapping_qp.buses
+        assert "readout_bus" in non_existant_mapping_qp.buses
+
+        assert non_existant_mapping_qp.body.elements[0].elements[0].bus == "drive_bus"
+        assert non_existant_mapping_qp.body.elements[0].elements[1].buses[0] == "drive_bus"
+        assert non_existant_mapping_qp.body.elements[0].elements[1].buses[1] == "readout_bus"
+        assert non_existant_mapping_qp.body.elements[0].elements[2].bus == "drive_bus"
 
     def test_with_calibration_method(self):
         """Test with_bus_mapping method"""
