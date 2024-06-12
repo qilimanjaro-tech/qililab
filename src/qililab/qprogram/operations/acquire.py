@@ -22,4 +22,11 @@ from qililab.waveforms import IQPair
 class Acquire(Operation):  # pylint: disable=missing-class-docstring
     bus: str
     weights: IQPair
-    name: str | None = None
+    save_adc: bool = False
+
+
+@dataclass(frozen=True)
+class AcquireWithCalibratedWeights(Operation):  # pylint: disable=missing-class-docstring
+    bus: str
+    weights: str
+    save_adc: bool = False

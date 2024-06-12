@@ -51,7 +51,18 @@
         Q: !Square {amplitude: 1.0, duration: 200}
   ```
 
+  Calibrated waveforms and weights can be used in QProgram by providing their name.
+
+  ```Python
+  qp = QProgram()
+  qp.play(bus='drive_q0_bus', waveform='Xpi')
+  qp.measure(bus='readout_q0_bus', waveform='Measure', weights='optimal_weights')
+  ```
+
+  In that case, a `Calibration` instance must be provided when executing the QProgram. (see following changelog entries)
+
   [#729](https://github.com/qilimanjaro-tech/qililab/pull/729)
+  [#736](https://github.com/qilimanjaro-tech/qililab/pull/736)
 
 - Introduced `qililab.yaml` namespace that exports a single `YAML` instance for common use throughout qililab. Classes should be registered to this instance with the `@yaml.register_class` decorator.
 
@@ -81,9 +92,11 @@
 
   [#729](https://github.com/qilimanjaro-tech/qililab/pull/729)
 
-- Add qblox support for `qprogram.measure`. Now this method can be use for both Qblox Instruments
-  and Quantum Machines. In the near future the `qprogram.acquire` method will be removed.
+- Added qblox support for `qprogram.measure`. Now this method can be use for both Qblox Instruments
+  and Quantum Machines.
+
   [#734](https://github.com/qilimanjaro-tech/qililab/pull/734)
+  [#736](https://github.com/qilimanjaro-tech/qililab/pull/736)
 
 ### Improvements
 
@@ -101,7 +114,7 @@
 
   [#729](https://github.com/qilimanjaro-tech/qililab/pull/729)
 
-- Introduced `QProgram.with_calibration` method to apply calibration to operations within the QProgram.
+- Introduced `QProgram.with_calibration` method to apply calibrated waveforms and weights to the QProgram.
 
   Example:
 
@@ -114,6 +127,7 @@
   ```
 
   [#729](https://github.com/qilimanjaro-tech/qililab/pull/729)
+  [#736](https://github.com/qilimanjaro-tech/qililab/pull/736)
 
 - Extended `Platform.execute_qprogram` method to accept a calibration instance.
 
@@ -126,7 +140,40 @@
 
   [#729](https://github.com/qilimanjaro-tech/qililab/pull/729)
 
+- Added interfaces for Qblox and Quantum Machines to QProgram. The interfaces contain vendor-specific methods and parameters. They can be accessed by `qprogram.qblox` and `qprogram.quantum_machines` properties.
+
+  [#736](https://github.com/qilimanjaro-tech/qililab/pull/736)
+
 ### Breaking changes
+
+- QProgram interface now contains methods and parameters that have common functionality for all hardware vendors. Vendor-specific methods and parameters have been move to their respective interface.
+
+  Examples:
+
+  ```Python
+  # Acquire method has been moved to Qblox interface. Instead of running
+  # qp.acquire(bus="readout_q0_bus", weights=weights)
+  # you should run
+  qp.qblox.acquire(bus="readout_q0_bus", weights=weights)
+
+  # Play method with `wait_time` parameter has been moved to Qblox interface. Instead of running
+  # qp.play(bus="readout_q0_bus", waveform=waveform, wait_time=40)
+  # you should run
+  qp.qblox.play(bus="readout_q0_bus", waveform=waveform, wait_time=40)
+
+  # `disable_autosync` parameter has been moved to Qblox interface. Instead of running
+  # qp = QProgram(disable_autosync=True)
+  # you should run
+  qp = QProgram()
+  qp.qblox.disable_autosync = True
+
+  # Measure method with parameters `rotation` and `demodulation` has been moved to Quantum Machines interface. Instead of running
+  # qp.measure(bus="readout_q0_bus", waveform=waveform, weights=weights, save_adc=True, rotation=np.pi, demodulation=True)
+  # you should run
+  qp.quantum_machines.measure(bus="readout_q0_bus", waveform=waveform, weights=weights, save_adc=True, rotation=np.pi, demodulation=True)
+  ```
+
+  [#736](https://github.com/qilimanjaro-tech/qililab/pull/736)
 
 ### Deprecations / Removals
 
