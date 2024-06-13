@@ -109,6 +109,7 @@ def native_gates():
 # returned as a list must be  [B, A] so that B is applied to |psi> 1st
 qili_dec = GateDecompositions()
 qili_dec.add(gates.I, [gates.RZ(0, 0)])
+qili_dec.add(gates.Align, lambda gate: [Wait(0, gate.parameters[0])])
 qili_dec.add(gates.H, [Drag(0, np.pi / 2, -np.pi / 2), gates.RZ(0, np.pi)])
 qili_dec.add(gates.X, [Drag(0, np.pi, 0)])
 qili_dec.add(
