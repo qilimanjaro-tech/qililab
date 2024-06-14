@@ -3,13 +3,13 @@ import pytest
 from qibo import gates
 
 from qililab.circuit_transpiler.gate_decompositions import GateDecompositions, native_gates, translate_gates
-from qililab.circuit_transpiler.native_gates import Drag
+from qililab.circuit_transpiler.native_gates import Drag, Wait
 
 
 @pytest.fixture(name="test_gates")
 def get_gates() -> list[gates.Gate]:
     """Fixture that returns a set of gates for the test"""
-    return [gates.X(0), gates.CNOT(0, 1), gates.RY(0, 2.5)]
+    return [gates.X(0), gates.Align(0, 16), gates.CNOT(0, 1), gates.RY(0, 2.5)]
 
 
 def test_gatedecompositions(test_gates: list[gates.Gate]):
@@ -23,9 +23,10 @@ def test_gatedecompositions(test_gates: list[gates.Gate]):
     decomp.add(gates.RY, lambda gate: [gates.U3(0, gate.parameters[0], 2, 0)])
     decomp.add(gates.X, [gates.Y(0), gates.Z(0)])
     decomp.add(gates.CNOT, lambda gate: [gates.SWAP(0, 1)])
+    decomp.add(gates.Align, lambda gate: [Wait(0, gate.parameters[0])])
 
     # decomposed gates from fixture should look like this
-    decomposed_gates = [gates.Y(0), gates.Z(0), gates.SWAP(0, 1), gates.U3(0, 2.5, 2, 0)]
+    decomposed_gates = [gates.Y(0), gates.Z(0), Wait(0, 16), gates.SWAP(0, 1), gates.U3(0, 2.5, 2, 0)]
 
     assert isinstance(decomp.decompositions, dict)
 
@@ -50,6 +51,7 @@ def test_translate_gates(test_gates: list[gates.Gate]):
     # decomposed gates from fixture should look like this
     decomposed_gates = [
         Drag(0, np.pi, 0),
+        Wait(0, 16),
         Drag(1, np.pi / 2, -np.pi / 2),
         gates.RZ(1, np.pi),
         gates.CZ(0, 1),
@@ -68,4 +70,4 @@ def test_translate_gates(test_gates: list[gates.Gate]):
 def test_native_gates():
     """Test native gates output is the intended set of gates"""
 
-    assert native_gates() == (Drag, gates.CZ)
+    assert native_gates() == (Drag, gates.CZ, Wait)
