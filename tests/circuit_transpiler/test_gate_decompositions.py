@@ -70,4 +70,4 @@ def test_translate_gates(test_gates: list[gates.Gate]):
 def test_native_gates():
     """Test native gates output is the intended set of gates"""
 
-    assert native_gates() == (Drag, gates.CZ)
+    assert native_gates() == (Drag, gates.CZ, Wait)
