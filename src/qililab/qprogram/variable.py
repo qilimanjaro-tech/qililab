@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """This file contains all the variables used inside a QProgram."""
+import math
 from enum import Enum
 from uuid import UUID, uuid4
 
@@ -66,6 +67,12 @@ class ValueSource(Enum):
 class Variable:
     """Variable class used to define variables inside a QProgram."""
 
+    def __init__(self, domain: Domain = Domain.Scalar) -> None:
+        self._uuid: UUID = uuid4()
+        self._source: ValueSource = ValueSource.Free
+        self._value: int | float | None = None
+        self._domain: Domain = domain
+
     @property
     def value(self):
         """Get the value of the variable
@@ -74,6 +81,20 @@ class Variable:
             int | float | None: The value of the variable
         """
         return self._value
+
+    @value.setter
+    def value(self, new_value):
+        """Set the value of the variable
+
+        Args:
+            new_value (int | float | None): The new value to set
+        """
+        if not isinstance(new_value, (int, float)):
+            raise ValueError("Value must be an int or float.")
+        if isinstance(self, IntVariable):
+            self._value = int(new_value)
+        else:
+            self._value = float(new_value)
 
     @property
     def domain(self):
@@ -84,17 +105,89 @@ class Variable:
         """
         return self._domain
 
-    def __init__(self, domain: Domain = Domain.Scalar) -> None:
-        self._uuid: UUID = uuid4()
-        self._source: ValueSource = ValueSource.Free
-        self._value: int | float | None = None
-        self._domain: Domain = domain
+    def __str__(self):
+        return str(self.value)
 
     def __repr__(self):
-        return repr(self._uuid)
+        return repr(self.value)
 
     def __hash__(self):
         return hash(self._uuid)
+
+    def __format__(self, formatstr):
+        return self.value.__format__(formatstr)
+
+    def __pos__(self):
+        return +self.value  # pylint: disable=invalid-unary-operand-type
+
+    def __neg__(self):
+        return -self.value  # pylint: disable=invalid-unary-operand-type
+
+    def __abs__(self):
+        return abs(self.value)
+
+    def __round__(self, ndigits=None):
+        return round(self.value, ndigits)
+
+    def __floor__(self):
+        return math.floor(self.value)
+
+    def __ceil__(self):
+        return math.ceil(self.value)
+
+    def __trunc__(self):
+        return math.trunc(self.value)
+
+    def __int__(self):
+        return int(self.value)
+
+    def __float__(self):
+        return float(self.value)
+
+    def __complex__(self):
+        return complex(self.value)
+
+    def __add__(self, other):
+        return self.value + other
+
+    def __sub__(self, other):
+        return self.value - other
+
+    def __mul__(self, other):
+        return self.value * other
+
+    def __truediv__(self, other):
+        return self.value / other
+
+    def __floordiv__(self, other):
+        return self.value // other
+
+    def __mod__(self, other):
+        return self.value % other
+
+    def __pow__(self, other):
+        return self.value**other
+
+    def __radd__(self, other):
+        return other + self.value
+
+    def __rsub__(self, other):
+        return other - self.value
+
+    def __rmul__(self, other):
+        return other * self.value
+
+    def __rtruediv__(self, other):
+        return other / self.value
+
+    def __rfloordiv__(self, other):
+        return other // self.value
+
+    def __rmod__(self, other):
+        return other % self.value
+
+    def __rpow__(self, other):
+        return other**self.value
 
     def __eq__(self, other):
         return other is not None and isinstance(other, Variable) and self._uuid == other._uuid

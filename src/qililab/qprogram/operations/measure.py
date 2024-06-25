@@ -39,6 +39,16 @@ class Measure(Operation):  # pylint: disable=missing-class-docstring
         wf_Q: Waveform = self.waveform.Q
         return wf_I, wf_Q
 
+    def get_weights(self) -> tuple[Waveform, Waveform]:
+        """Get the weights.
+
+        Returns:
+            tuple[Waveform, Waveform | None]: The weights as tuple.
+        """
+        weight_I: Waveform = self.weights.I
+        weight_Q: Waveform = self.weights.Q
+        return weight_I, weight_Q
+
 
 @yaml.register_class
 @dataclass(frozen=True)
