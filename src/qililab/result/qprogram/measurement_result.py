@@ -43,3 +43,12 @@ class MeasurementResult(ABC):
         Returns:
             np.ndarray: Thresholded data for the result.
         """
+
+    @property
+    @abstractmethod
+    def hw_average(self) -> int:
+        """Returns the number of averages done in hardware.
+
+        Returns:
+            int: number of harware average for the result.
+        """

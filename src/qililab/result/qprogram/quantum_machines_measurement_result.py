@@ -58,3 +58,12 @@ class QuantumMachinesMeasurementResult(MeasurementResult):
             np.ndarray: The thresholded data.
         """
         raise NotImplementedError("Thresholding is not implemented for Quantum Machines results.")
+
+    @property
+    def hw_average(self) -> int:
+        """Returns the number of averages done in hardware.
+
+        Returns:
+            int: number of harware average for the result.
+        """
+        raise NotImplementedError("HW average retrieval is not implemented for Quantum Machines results.")
