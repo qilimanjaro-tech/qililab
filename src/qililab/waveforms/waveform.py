@@ -17,6 +17,8 @@ from abc import abstractmethod
 
 import numpy as np
 
+from qililab.qprogram.variable import Variable
+
 
 class Waveform:  # pylint: disable=too-few-public-methods, disable=missing-class-docstring
     """Waveforms describes the pulses envelope's shapes. ``Waveform`` is their abstract base class.
@@ -43,3 +45,16 @@ class Waveform:  # pylint: disable=too-few-public-methods, disable=missing-class
             int: The duration of the waveform in ns.
         """
         return len(self.envelope())
+
+    def get_variables(self) -> set[Variable]:
+        """Get all variables used in this waveform and its nested waveforms."""
+
+        def collect_variables(obj):
+            """Recursively find variables in the attributes of the given object."""
+            for attribute in obj.__dict__.values():
+                if isinstance(attribute, Variable):
+                    yield attribute
+                elif isinstance(attribute, Waveform):
+                    yield from collect_variables(attribute)
+
+        return set(collect_variables(self))

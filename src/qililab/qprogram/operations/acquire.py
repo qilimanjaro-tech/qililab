@@ -15,7 +15,7 @@
 from dataclasses import dataclass
 
 from qililab.qprogram.operations.operation import Operation
-from qililab.waveforms import IQPair
+from qililab.waveforms import IQPair, Waveform
 from qililab.yaml import yaml
 
 
@@ -25,6 +25,16 @@ class Acquire(Operation):  # pylint: disable=missing-class-docstring
     bus: str
     weights: IQPair
     save_adc: bool = False
+
+    def get_weights(self) -> tuple[Waveform, Waveform]:
+        """Get the weights.
+
+        Returns:
+            tuple[Waveform, Waveform | None]: The weights as tuple.
+        """
+        weight_I: Waveform = self.weights.I
+        weight_Q: Waveform = self.weights.Q
+        return weight_I, weight_Q
 
 
 @dataclass(frozen=True)
