@@ -105,7 +105,6 @@ class TestInitializationCalibrationNode:
         assert initialize_node_no_optional.input_parameters is None
         assert initialize_node_no_optional.sweep_interval is None
         assert initialize_node_no_optional.output_parameters is None
-        assert initialize_node_no_optional.previous_output_parameters is None
         assert initialize_node_no_optional.previous_timestamp is None
         assert isinstance(initialize_node_no_optional._stream, StringIO)
         assert initialize_node_no_optional.fidelity is False
@@ -123,7 +122,6 @@ class TestInitializationCalibrationNode:
         assert initialize_node_optional.input_parameters == {"a": 0, "b": 1}
         assert initialize_node_optional.sweep_interval.all() == np.array([0, 1, 2]).all()
         assert initialize_node_optional.output_parameters == {}
-        assert initialize_node_optional.previous_output_parameters is None
         assert initialize_node_optional.previous_timestamp == 0.0
         assert isinstance(initialize_node_optional._stream, StringIO)
         assert initialize_node_optional.fidelity is True
