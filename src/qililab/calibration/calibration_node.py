@@ -280,9 +280,6 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         If no previous successful calibration, then is None.
         """
 
-        self.previous_output_parameters: dict | None = None
-        """Same output_parameters, but from the previous execution of the Node. Starts at None."""
-
         self.previous_timestamp: float | None = self.get_last_calibrated_timestamp()
         """Last calibrated timestamp. If no previous successful calibration, then is None."""
 
@@ -339,7 +336,6 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             In case of a keyboard interruption or any exception during the execution of the notebook.
         """
         # Create the input parameters for the notebook:)
-        self.previous_output_parameters = self.output_parameters
         params: dict = {}
 
         if isinstance(self.qubit_index, int):
