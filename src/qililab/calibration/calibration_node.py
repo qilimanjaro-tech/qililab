@@ -229,6 +229,11 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                 )
 
         where the ``platform_parameters`` are a list of parameters to set on the platform.
+
+        .. note::
+
+            If more than one `export_nb_outputs()` is used in the notebook, only the last one will be collected.
+
     """
 
     def __init__(
@@ -609,7 +614,6 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             logger.error("No output found in notebook %s.", input_path)
             raise IncorrectCalibrationOutput(f"No output found in notebook {input_path}.")
         # In case more than one output is found, we keep the last one, and raise a warning:
-        # TODO: Rethink removing this, logger shared in same execution
         if len(logger_splitted) > 2:
             logger.warning("If you had multiple outputs exported in %s, the last one found will be used.", input_path)
 
@@ -633,6 +637,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
 def export_nb_outputs(outputs: dict) -> None:
     """Function to export notebook outputs into a stream, later collected by the :class:`CalibrationNode` class.
+
+    If this function is used more than once in a notebook, only the last one will be collected.
 
     Args:
         outputs (dict): Outputs from the notebook to export into the automatic calibration workflow.
