@@ -350,7 +350,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             params |= self.input_parameters
 
         # JSON serialize nb input, no np.ndarrays
-        _json_serialize(params)  # TODO: Add a test, for passing np,arrays as inputs and working after this change
+        _json_serialize(params)
 
         # initially the file is "dirty" until we make sure the execution was not aborted, so we add _dirty tag.
         output_path = self._create_notebook_datetime_path(dirty=True)

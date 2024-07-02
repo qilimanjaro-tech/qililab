@@ -177,8 +177,9 @@ class CalibrationController:
         for n in self._dependencies(node):
             self.calibrate_all(n)
 
-        # You can skip it from 3h time, but also skip it due to `been_calibrated()`
-        # If you want to start the calibration from the start again, just remove the executed files!
+        # TODO: Check if the previous nodes have also been calibrated, and if their drift_timeout have expired.
+        # You can skip it from the `drift_timeout`, but also skip it due to `been_calibrated()`
+        # If you want to start the calibration from the start again, just increase the drift_timeout or remove the executed files!
         if (
             node.previous_timestamp is None or self._is_timeout_expired(node.previous_timestamp, node.drift_timeout)
         ) and not node.been_calibrated:
