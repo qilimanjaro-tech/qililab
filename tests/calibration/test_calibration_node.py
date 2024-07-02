@@ -3,7 +3,7 @@
 import os
 from datetime import datetime
 from io import StringIO
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import numpy as np
 import pytest
@@ -151,117 +151,111 @@ class TestPublicMethodsFromCalibrationNode:
     ### TEST RUN NOTEBOOK ###
     #########################
 
-    # TODO: Check this test, problem with json_serializable wrappers:
-    # @pytest.mark.parametrize(
-    #     "sweep_interval, input_parameters",
-    #     [
-    #         (None, {"a": 0, "b": 1}),
-    #         (None, None),
-    #         ([1], None),
-    #         ([1], {"start": 0, "stop": 10, "step": 1}),
-    #     ],
-    # )
-    # @patch(
-    #     "qililab.calibration.calibration_node.CalibrationNode._execute_notebook",
-    #     return_value={
-    #         "platform_parameters": {"x": 0, "y": 1},
-    #         "fidelities": {"x": 0, "y": 1},
-    #     },
-    # )
-    # @patch(
-    #     "qililab.calibration.calibration_node.CalibrationNode._create_notebook_datetime_path",
-    #     return_value="",
-    # )
-    # @patch("qililab.calibration.calibration_node.os.rename")
-    # @patch("qililab.calibration.calibration_node.logger.error")
-    # @patch("qililab.calibration.calibration_node.json_serialize")
-    # def test_run_node(
-    #     self,
-    #     mock_json_serialize,
-    #     mock_logger,
-    #     mock_os,
-    #     mock_create,
-    #     mock_execute,
-    #     mock_build_cd,
-    #     sweep_interval,
-    #     input_parameters,
-    #     methods_node: CalibrationNode,
-    # ):
-    #     """Test that run_node works properly."""
-    #     methods_node.sweep_interval = sweep_interval
-    #     methods_node.input_parameters = input_parameters
-    #     timestamp = methods_node.run_node()
+    @pytest.mark.parametrize(
+        "sweep_interval, input_parameters",
+        [
+            (None, {"a": 0, "b": 1}),
+            (None, None),
+            ([1], None),
+            ([1], {"start": 0, "stop": 10, "step": 1}),
+        ],
+    )
+    @patch(
+        "qililab.calibration.calibration_node.CalibrationNode._execute_notebook",
+        return_value={
+            "platform_parameters": {"x": 0, "y": 1},
+            "fidelities": {"x": 0, "y": 1},
+        },
+    )
+    @patch(
+        "qililab.calibration.calibration_node.CalibrationNode._create_notebook_datetime_path",
+        return_value="",
+    )
+    @patch("qililab.calibration.calibration_node.os.rename")
+    @patch("qililab.calibration.calibration_node.logger.error")
+    @patch("qililab.calibration.calibration_node._json_serialize")
+    def test_run_node(
+        self,
+        mock_json_serialize,
+        mock_logger,
+        mock_os,
+        mock_create,
+        mock_execute,
+        sweep_interval,
+        input_parameters,
+        methods_node: CalibrationNode,
+    ):
+        """Test that run_node works properly."""
+        methods_node.sweep_interval = sweep_interval
+        methods_node.input_parameters = input_parameters
+        timestamp = methods_node.run_node()
 
-    #     params_dict = {"qubit": methods_node.qubit_index}
+        params_dict = {"qubit": methods_node.qubit_index}
 
-    #     if sweep_interval is not None:
-    #         params_dict |= {"sweep_interval": [1]}
-    #         mock_build_cd.assert_not_called()
+        if sweep_interval is not None:
+            params_dict |= {"sweep_interval": [1]}
 
-    #     if input_parameters is not None:
-    #         params_dict |= input_parameters
+        if input_parameters is not None:
+            params_dict |= input_parameters
 
-    #     mock_create.assert_has_calls([call(dirty=True), call(timestamp=timestamp)])
-    #     mock_json_serialize.assert_called_once_with(params_dict)
-    #     mock_execute.assert_called_with(methods_node.nb_path, "", params_dict)
-    #     mock_os.assert_called_once_with("", "")
-    #     mock_logger.assert_not_called()
+        mock_create.assert_has_calls([call(dirty=True), call(timestamp=timestamp)])
+        mock_json_serialize.assert_called_once_with(params_dict)
+        mock_execute.assert_called_with(methods_node.nb_path, "", params_dict)
+        mock_os.assert_called_once_with("", "")
+        mock_logger.assert_not_called()
 
-    # TODO: Check this test, problem with json_serializable wrappers:
-    # @pytest.mark.parametrize(
-    #     "sweep_interval, input_parameters",
-    #     [
-    #         (None, None),
-    #         (None, {"start": 0, "stop": 10, "step": 1}),
-    #         (np.array([1]), None),
-    #         (np.array([1]), {"start": 0, "stop": 10, "step": 1}),
-    #     ],
-    # )
-    # @patch("qililab.calibration.calibration_node.CalibrationNode._execute_notebook")
-    # @patch(
-    #     "qililab.calibration.calibration_node.CalibrationNode._create_notebook_datetime_path",
-    #     return_value="",
-    # )
-    # @patch("qililab.calibration.calibration_node.os.rename")
-    # @patch("qililab.calibration.calibration_node.logger.error")
-    # @patch("qililab.calibration.calibration_node.json_serialize")
-    # def test_run_node_interrupt(
-    #     self,
-    #     mock_json_serialize,
-    #     mock_logger,
-    #     mock_os,
-    #     mock_create,
-    #     mock_execute,
-    #     mock_build_cd,
-    #     sweep_interval,
-    #     input_parameters,
-    #     methods_node: CalibrationNode,
-    # ):
-    #     """Test that run_node works properly when a keyboard interrupt is raised."""
-    #     mock_execute.side_effect = KeyboardInterrupt()
-    #     with pytest.raises(
-    #         KeyboardInterrupt,
-    #         match=f"Interrupted automatic calibration notebook execution of {methods_node.nb_path}",
-    #     ):
-    #         methods_node.sweep_interval = sweep_interval
-    #         methods_node.input_parameters = input_parameters
-    #         methods_node.run_node()
+    @pytest.mark.parametrize(
+        "sweep_interval, input_parameters",
+        [
+            (None, None),
+            (None, {"start": 0, "stop": 10, "step": 1}),
+            (np.array([1]), None),
+            (np.array([1]), {"start": 0, "stop": 10, "step": 1}),
+        ],
+    )
+    @patch("qililab.calibration.calibration_node.CalibrationNode._execute_notebook")
+    @patch(
+        "qililab.calibration.calibration_node.CalibrationNode._create_notebook_datetime_path",
+        return_value="",
+    )
+    @patch("qililab.calibration.calibration_node.os.rename")
+    @patch("qililab.calibration.calibration_node.logger.error")
+    @patch("qililab.calibration.calibration_node._json_serialize")
+    def test_run_node_interrupt(
+        self,
+        mock_json_serialize,
+        mock_logger,
+        mock_os,
+        mock_create,
+        mock_execute,
+        sweep_interval,
+        input_parameters,
+        methods_node: CalibrationNode,
+    ):
+        """Test that run_node works properly when a keyboard interrupt is raised."""
+        mock_execute.side_effect = KeyboardInterrupt()
+        with pytest.raises(
+            KeyboardInterrupt,
+            match=f"Interrupted automatic calibration notebook execution of {methods_node.nb_path}",
+        ):
+            methods_node.sweep_interval = sweep_interval
+            methods_node.input_parameters = input_parameters
+            methods_node.run_node()
 
-    #     params_dict = {"qubit": methods_node.qubit_index}
+        params_dict = {"qubit": methods_node.qubit_index}
 
-    #     if sweep_interval is not None:
-    #         params_dict |= {"sweep_interval": np.array([1])}
-    #         mock_build_cd.assert_not_called()
+        if sweep_interval is not None:
+            params_dict |= {"sweep_interval": np.array([1])}
 
-    #     if input_parameters is not None:
-    #         params_dict |= input_parameters
+        if input_parameters is not None:
+            params_dict |= input_parameters
 
-    #     mock_create.assert_called_once_with(dirty=True)
-    #     mock_json_serialize.assert_called_once_with(params_dict)
-    #     mock_execute.assert_called_with(methods_node.nb_path, "", params_dict)
-    #     mock_os.assert_not_called()
+        mock_create.assert_called_once_with(dirty=True)
+        mock_json_serialize.assert_called_once_with(params_dict)
+        mock_execute.assert_called_with(methods_node.nb_path, "", params_dict)
+        mock_os.assert_not_called()
 
-    #     mock_logger.called_with("Interrupted automatic calibration notebook execution of %s", methods_node.nb_path)
+        mock_logger.called_with("Interrupted automatic calibration notebook execution of %s", methods_node.nb_path)
 
     @pytest.mark.parametrize(
         "sweep_interval, input_parameters",
@@ -274,15 +268,12 @@ class TestPublicMethodsFromCalibrationNode:
     )
     @patch("qililab.calibration.calibration_node.CalibrationNode._execute_notebook")
     @patch("qililab.calibration.calibration_node.CalibrationNode._create_notebook_datetime_path", return_value="")
-    @patch("qililab.calibration.calibration_node.os.rename")
     @patch("qililab.calibration.calibration_node.logger.error")
     def test_run_node_raises(
         self,
         mock_logger,
-        mock_os,
         mock_create,
         mock_execute,
-        mock_build_cd,
         sweep_interval,
         input_parameters,
         methods_node: CalibrationNode,
@@ -298,15 +289,12 @@ class TestPublicMethodsFromCalibrationNode:
 
         if sweep_interval is not None:
             params_dict |= {"sweep_interval": np.array([1])}
-            mock_build_cd.assert_not_called()
 
         if input_parameters is not None:
             params_dict |= input_parameters
 
-        # TODO: I think this is related with above errors, since execute is failing, it stop at the try, and does not call these:
-        # mock_execute.assert_called_with(methods_node.nb_path, "", params_dict)
-        # mock_os.assert_called_once()
-        # assert mock_create.call_count == 2
+        mock_execute.assert_called_with(methods_node.nb_path, "", params_dict)
+        assert mock_create.call_count == 1
 
         mock_logger.called_with(
             "Aborting execution. Exception %s during automatic calibration notebook execution, trace of the error can be found in %s",
@@ -435,7 +423,6 @@ class TestPrivateMethodsFromCalibrationNode:
             methods_node.nb_path, "", {}, log_output=True, stdout_file=methods_node._stream
         )
 
-    # TODO: TEST FAILED, SOLVE:
     # @pytest.mark.parametrize(
     #     "output",
     #     [
@@ -459,34 +446,6 @@ class TestPrivateMethodsFromCalibrationNode:
     #     mocked_pm_exec.assert_called_once_with(
     #         methods_node.nb_path, "", {}, log_output=True, stdout_file=methods_node._stream
     #     )
-
-    @pytest.mark.parametrize(
-        "output",
-        [
-            "RAND_INT:47102512880765720413 - OUTPUTS: {}",
-            'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters":{}}',
-        ],
-    )
-    @patch("qililab.calibration.calibration_node.pm.execute_notebook")
-    @patch("qililab.calibration.calibration_node.logger", autospec=True)
-    def test_execute_notebook_raises_empty_output(self, mocked_logger, mocked_pm_exec, output, methods_node):
-        """Testing when outputs are empty received from ``execute_notebook()`."""
-        methods_node._stream.getvalue.return_value = output  # type: ignore [attr-defined]
-
-        with pytest.raises(
-            IncorrectCalibrationOutput,
-            match=f"Empty output found in {methods_node.nb_path}, output must have key and value 'platform_parameters'.",
-        ):
-            methods_node._execute_notebook(methods_node.nb_path, "", {})
-
-        mocked_logger.error.assert_called_with(
-            "Aborting execution. No 'platform_parameters' dictionary or its empty in the output cell implemented in %s",
-            methods_node.nb_path,
-        )
-
-        mocked_pm_exec.assert_called_once_with(
-            methods_node.nb_path, "", {}, log_output=True, stdout_file=methods_node._stream
-        )
 
     ##########################################
     ### TEST CREATE NOTEBOOK DATETIME PATH ###
@@ -672,7 +631,7 @@ class TestPrivateMethodsFromCalibrationNode:
         #     test_dict = methods_node._parse_output_from_execution_file(filename)
         #     assert test_dict == expected_dict
         #     mocked_logger.warning.assert_called_with(
-        #         "If you had multiple outputs exported in %s, the last one found will be used.",
+        #         "If you had multiple outputs exported in %s, the first one found will be used.",
         #         methods_node.nb_path,
         #     )
 

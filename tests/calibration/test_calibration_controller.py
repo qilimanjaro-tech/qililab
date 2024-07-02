@@ -277,25 +277,21 @@ class TestRunAutomaticCalibrationFromCalibrationController:
             "fidelities": {"test": (0.0, "test", datetime.fromtimestamp(1999))},
         }
 
-    # TODO: Add functionality for new flags, and new changes to test above!
-    #     # sourcery skip: extract-duplicate-method
-    #     if controller.calibration_graph in [G0, G3]:
-    #         controller.calibrate_all.assert_any_call(fourth)
-    #         controller.calibrate_all.assert_any_call(first)
-    #         assert controller.calibrate_all.call_count == 2
-    #         # assert mock_force_condition.call_count == 2
+        # sourcery skip: extract-duplicate-method
+        if controller.calibration_graph in [G0, G3]:
+            controller.calibrate_all.assert_any_call(fourth)
+            controller.calibrate_all.assert_any_call(first)
+            assert controller.calibrate_all.call_count == 2
 
-    #     elif controller.calibration_graph == G2:
-    #         controller.calibrate_all.assert_any_call(fourth)
-    #         controller.calibrate_all.assert_any_call(second)
-    #         controller.calibrate_all.assert_any_call(first)
-    #         assert controller.calibrate_all.call_count == 3
-    #         # assert mock_force_condition.call_count == 3
+        elif controller.calibration_graph == G2:
+            controller.calibrate_all.assert_any_call(fourth)
+            controller.calibrate_all.assert_any_call(second)
+            controller.calibrate_all.assert_any_call(first)
+            assert controller.calibrate_all.call_count == 3
 
-    #     elif controller.calibration_graph in [G1, G4, G5, G6, G7, G8, G9]:
-    #         controller.calibrate_all.assert_any_call(fourth)
-    #         assert controller.calibrate_all.call_count == 1
-    #         # assert mock_force_condition.call_count == 1
+        elif controller.calibration_graph in [G1, G4, G5, G6, G7, G8, G9]:
+            controller.calibrate_all.assert_any_call(fourth)
+            assert controller.calibrate_all.call_count == 1
 
 
 ##########################
