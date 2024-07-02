@@ -568,7 +568,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             dict | None: A dictionary containing parsed output information or None if parsing fails.
 
         Raises:
-            IncorrectCalibrationOutput: In case no outputs, incorrect outputs or multiple outputs where found. Incorrect outputs are those that do not contain `check_parameters` or is empty.
+            IncorrectCalibrationOutput: In case no outputs, incorrect outputs or multiple outputs where found.
         """
         # Parsing file
         outputs_lines: list[str] = []
@@ -585,15 +585,13 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             logger.error("No output found in notebook %s.", self.nb_path)
             raise IncorrectCalibrationOutput(f"No output found in notebook {self.nb_path}.")
         if len(outputs_lines) > 1:
-            logger.warning(
-                "If you had multiple outputs exported in %s, the first one found will be used.", self.nb_path
-            )
+            logger.warning("If you had multiple outputs exported in %s, the last one found will be used.", self.nb_path)
 
         # When only one line of outputs, use that one:
-        return self._from_logger_string_to_output_dict(outputs_lines[0], self.nb_path)
+        return self._from_logger_string_to_output_dict(outputs_lines[-1], self.nb_path)
 
     def _from_logger_string_to_output_dict(self, logger_string: str, input_path: str) -> dict:
-        """Returns the output dictionary from a logger output string. Raises errors if the ouput doesn't follow the expected format.
+        """Returns the output dictionary from a logger output string. Raises errors if the output doesn't follow the expected format.
 
         Args:
             logger_string (str): The logger string containing the output dictionary to extract.
@@ -618,7 +616,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         # This next line is for taking into account other encodings, where special characters get `\\` in front.
         clean_data = logger_splitted[-1].split("\\n")[0].replace('\\"', '"')
 
-        logger_outputs_string = clean_data.split("\n")[0]
+        logger_outputs_string = clean_data.split("/n")[0].split("\n")[0]  # Remove the last \n for both bars directions
         return json.loads(logger_outputs_string)  # in-dictionary strings will need to be double-quoted "" not ''.
 
     def _add_string_to_checked_nb_name(self, string_to_add: str, timestamp: float) -> None:
@@ -656,13 +654,8 @@ def _json_serialize(_object: Any):
         for k, v in _object.items():
             _object[k] = _json_serialize(v)
 
-    if isinstance(_object, list):
-        for idx, elem in enumerate(_object):
-            _object[idx] = _json_serialize(elem)
-
-    if isinstance(_object, tuple):
-        tuple_list = [_json_serialize(elem) for elem in _object]
-        return tuple(tuple_list)
+    if isinstance(_object, (list, tuple)):
+        return [_json_serialize(elem) for elem in _object]
 
     return _object.tolist() if isinstance(_object, np.ndarray) else _object
 

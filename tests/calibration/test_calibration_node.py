@@ -421,29 +421,29 @@ class TestPrivateMethodsFromCalibrationNode:
             methods_node.nb_path, "", {}, log_output=True, stdout_file=methods_node._stream
         )
 
-    # @pytest.mark.parametrize(
-    #     "output",
-    #     [
-    #         'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": {"fizz":"buzz"}} RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": {"foo": "bar"}}',
-    #         'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": {"a":2}}RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": {"a":2}}RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": {"a":2}}/n',
-    #     ],
-    # )
-    # @patch("qililab.calibration.calibration_node.pm.execute_notebook")
-    # @patch("qililab.calibration.calibration_node.logger", autospec=True)
-    # def test_execute_notebook_warnings_more_than_one_output(self, mocked_logger, mocked_pm_exec, output, methods_node):
-    #     """Testing when no outputs or more than one outputs are received from ``execute_notebook()``."""
-    #     methods_node._stream.getvalue.return_value = output  # type: ignore [attr-defined]
+    @pytest.mark.parametrize(
+        "output",
+        [
+            'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": {"fizz":"buzz"}} RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": {"foo": "bar"}}',
+            'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": {"a":2}}RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": {"a":2}}RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": {"a":2}}/n',
+        ],
+    )
+    @patch("qililab.calibration.calibration_node.pm.execute_notebook")
+    @patch("qililab.calibration.calibration_node.logger", autospec=True)
+    def test_execute_notebook_warnings_more_than_one_output(self, mocked_logger, mocked_pm_exec, output, methods_node):
+        """Testing when no outputs or more than one outputs are received from ``execute_notebook()``."""
+        methods_node._stream.getvalue.return_value = output  # type: ignore [attr-defined]
 
-    #     methods_node._execute_notebook(methods_node.nb_path, "", {})
+        methods_node._execute_notebook(methods_node.nb_path, "", {})
 
-    #     mocked_logger.warning.assert_called_with(
-    #         "If you had multiple outputs exported in %s, the last one found will be used.",
-    #         methods_node.nb_path,
-    #     )
+        mocked_logger.warning.assert_called_with(
+            "If you had multiple outputs exported in %s, the last one found will be used.",
+            methods_node.nb_path,
+        )
 
-    #     mocked_pm_exec.assert_called_once_with(
-    #         methods_node.nb_path, "", {}, log_output=True, stdout_file=methods_node._stream
-    #     )
+        mocked_pm_exec.assert_called_once_with(
+            methods_node.nb_path, "", {}, log_output=True, stdout_file=methods_node._stream
+        )
 
     ##########################################
     ### TEST CREATE NOTEBOOK DATETIME PATH ###
@@ -562,19 +562,19 @@ class TestPrivateMethodsFromCalibrationNode:
             ("no_file", ""),
             (
                 "good",
-                'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["bus_alias", "param_name", 1]]}\n',
+                'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]}\n',
             ),
             (
                 "more_than_one",
-                'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["bus_alias", "param_name", 1]]}RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["bus_alias", "param_name", 1]]}/n',
+                'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]}RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]}/n',
             ),
             ("none", ""),
             (
                 "more_than_one",
-                'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["bus_alias", "param_name", 1]]}\n'
+                'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]}\n'
                 + "\n"
-                + 'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["bus_alias", "param_name", 1]]}\n'
-                + 'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["bus_alias", "param_name", 1]]}\n',
+                + 'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]}\n'
+                + 'RAND_INT:47102512880765720413 - OUTPUsTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]}\n',
             ),
             ("empty", "RAND_INT:47102512880765720413 - OUTPUTS: {}"),
             ("empty", 'RAND_INT:47102512880765720413 - OUTPUTS: {"y":1}'),
@@ -605,7 +605,7 @@ class TestPrivateMethodsFromCalibrationNode:
 
         if type_content in ["good", "two"]:
             # building a fixed dictionary for the test
-            expected_dict = {"platform_parameters": [["bus_alias", "param_name", 1]]}
+            expected_dict = {"platform_parameters": [["test", "bus_alias", "param_name", 1]]}
 
             test_dict = methods_node._parse_output_from_execution_file(filename)
             assert test_dict == expected_dict
@@ -622,16 +622,15 @@ class TestPrivateMethodsFromCalibrationNode:
                 methods_node.nb_path,
             )
 
-        # TODO: Solve problem with multiple outputs tests:
-        # if type_content == "more_than_one":
-        #     expected_dict = {"platform_parameters": [["bus_alias", "param_name", 1]]}
+        if type_content == "more_than_one":
+            expected_dict = {"platform_parameters": [["test", "bus_alias", "param_name", 1]]}
 
-        #     test_dict = methods_node._parse_output_from_execution_file(filename)
-        #     assert test_dict == expected_dict
-        #     mocked_logger.warning.assert_called_with(
-        #         "If you had multiple outputs exported in %s, the first one found will be used.",
-        #         methods_node.nb_path,
-        #     )
+            test_dict = methods_node._parse_output_from_execution_file(filename)
+            assert test_dict == expected_dict
+            mocked_logger.warning.assert_called_with(
+                "If you had multiple outputs exported in %s, the last one found will be used.",
+                methods_node.nb_path,
+            )
 
         if type_content != "no_file":
             os.remove(os.path.join(methods_node.nb_folder, filename))
