@@ -1,8 +1,9 @@
 """Test for the `CalibrationNode` class"""
+
 import os
 from datetime import datetime
 from io import StringIO
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
@@ -37,9 +38,6 @@ def fixture_initialize_node_no_optional(_) -> CalibrationNode:
     return CalibrationNode(
         nb_path="tests/calibration/notebook_test/zeroth.ipynb",
         qubit_index=0,
-        in_spec_threshold=0.6,
-        bad_data_threshold=0.9,
-        comparison_model=dummy_comparison_model,
         drift_timeout=100.0,
     )
 
@@ -63,13 +61,9 @@ def fixture_initialize_node_optional(_, __, ____) -> CalibrationNode:
         nb_path="tests/calibration/notebook_test/zeroth.ipynb",
         qubit_index=[0, 1],
         node_distinguisher=1,
-        in_spec_threshold=0.6,
-        bad_data_threshold=0.9,
-        comparison_model=dummy_comparison_model,
         drift_timeout=100.0,
         input_parameters={"a": 0, "b": 1},
         sweep_interval=np.array([0, 1, 2]),
-        number_of_random_datapoints=1,
         fidelity=True,
     )
 
@@ -83,9 +77,6 @@ def fixture_methods_node(_, __, ____) -> CalibrationNode:
     return CalibrationNode(
         nb_path="./foobar.ipynb",
         qubit_index=0,
-        in_spec_threshold=0.6,
-        bad_data_threshold=0.9,
-        comparison_model=dummy_comparison_model,
         drift_timeout=100.0,
     )
 
@@ -110,17 +101,12 @@ class TestInitializationCalibrationNode:
         assert initialize_node_no_optional.node_distinguisher is None
         assert initialize_node_no_optional.node_id == "zeroth_q0"
         assert initialize_node_no_optional.nb_folder == os.path.abspath("tests/calibration/notebook_test")
-        assert initialize_node_no_optional.in_spec_threshold == 0.6
-        assert initialize_node_no_optional.bad_data_threshold == 0.9
-        assert initialize_node_no_optional.comparison_model == dummy_comparison_model
         assert initialize_node_no_optional.drift_timeout == 100
         assert initialize_node_no_optional.input_parameters is None
         assert initialize_node_no_optional.sweep_interval is None
-        assert initialize_node_no_optional.number_of_random_datapoints == 10
         assert initialize_node_no_optional.output_parameters is None
         assert initialize_node_no_optional.previous_output_parameters is None
         assert initialize_node_no_optional.previous_timestamp is None
-        assert initialize_node_no_optional.previous_inspec is None
         assert isinstance(initialize_node_no_optional._stream, StringIO)
         assert initialize_node_no_optional.fidelity is False
         assert initialize_node_no_optional.been_calibrated is False
@@ -133,37 +119,15 @@ class TestInitializationCalibrationNode:
         assert initialize_node_optional.node_distinguisher == 1
         assert initialize_node_optional.node_id == "zeroth_1_q0q1"
         assert initialize_node_optional.nb_folder == os.path.abspath("tests/calibration/notebook_test")
-        assert initialize_node_optional.in_spec_threshold == 0.6
-        assert initialize_node_optional.bad_data_threshold == 0.9
-        assert initialize_node_optional.comparison_model == dummy_comparison_model
         assert initialize_node_optional.drift_timeout == 100
         assert initialize_node_optional.input_parameters == {"a": 0, "b": 1}
         assert initialize_node_optional.sweep_interval.all() == np.array([0, 1, 2]).all()
-        assert initialize_node_optional.number_of_random_datapoints == 1
         assert initialize_node_optional.output_parameters == {}
         assert initialize_node_optional.previous_output_parameters is None
         assert initialize_node_optional.previous_timestamp == 0.0
-        assert initialize_node_optional.previous_inspec is None
         assert isinstance(initialize_node_optional._stream, StringIO)
         assert initialize_node_optional.fidelity is True
         assert initialize_node_optional.been_calibrated is False
-
-    def test_bad_thresholds_initialization(self):
-        """Test an invalid initialization of the class due to the thresholds.
-
-        This happens when ``bad_data_threshold`` is smaller than ``in_spec`` one.
-        """
-        # Assert:
-        with pytest.raises(ValueError) as error:
-            _ = CalibrationNode(
-                nb_path="./foobar.ipynb",
-                qubit_index=0,
-                in_spec_threshold=0.6,
-                bad_data_threshold=0.5,
-                comparison_model=dummy_comparison_model,
-                drift_timeout=100,
-            )
-        assert str(error.value) == "`in_spec_threshold` must be smaller or equal than `bad_data_threshold`."
 
     def test_bad_nb_path_initialization(self):
         """Test an invalid initialization of the class due to the nb_path.
@@ -175,9 +139,6 @@ class TestInitializationCalibrationNode:
             _ = CalibrationNode(
                 nb_path=".bizzfuzz\\foobar.ipynb",
                 qubit_index=0,
-                in_spec_threshold=0.6,
-                bad_data_threshold=0.7,
-                comparison_model=dummy_comparison_model,
                 drift_timeout=100,
             )
         assert str(error.value) == "`nb_path` must be written in unix format: `folder/subfolder/.../file.ipynb`."
@@ -192,22 +153,17 @@ class TestPublicMethodsFromCalibrationNode:
 
     # TODO: Check this test, problem with json_serializable wrappers:
     # @pytest.mark.parametrize(
-    #     "check, sweep_interval, input_parameters",
+    #     "sweep_interval, input_parameters",
     #     [
-    #         (True, None, {"a": 0, "b": 1}),
-    #         (False, None, None),
-    #         (True, [1], None),
-    #         (False, [1], {"start": 0, "stop": 10, "step": 1}),
+    #         (None, {"a": 0, "b": 1}),
+    #         (None, None),
+    #         ([1], None),
+    #         ([1], {"start": 0, "stop": 10, "step": 1}),
     #     ],
-    # )
-    # @patch(
-    #     "qililab.calibration.calibration_node.CalibrationNode._build_check_data_interval",
-    #     return_value=[0],
     # )
     # @patch(
     #     "qililab.calibration.calibration_node.CalibrationNode._execute_notebook",
     #     return_value={
-    #         "check_parameters": {"x": 0, "y": 1},
     #         "platform_parameters": {"x": 0, "y": 1},
     #         "fidelities": {"x": 0, "y": 1},
     #     },
@@ -227,7 +183,6 @@ class TestPublicMethodsFromCalibrationNode:
     #     mock_create,
     #     mock_execute,
     #     mock_build_cd,
-    #     check,
     #     sweep_interval,
     #     input_parameters,
     #     methods_node: CalibrationNode,
@@ -235,21 +190,13 @@ class TestPublicMethodsFromCalibrationNode:
     #     """Test that run_node works properly."""
     #     methods_node.sweep_interval = sweep_interval
     #     methods_node.input_parameters = input_parameters
-    #     timestamp = methods_node.run_node(check)
+    #     timestamp = methods_node.run_node()
 
-    #     params_dict = (
-    #         {"check": check}
-    #         | {"number_of_random_datapoints": methods_node.number_of_random_datapoints}
-    #         | {"qubit": methods_node.qubit_index}
-    #     )
+    #     params_dict = {"qubit": methods_node.qubit_index}
 
     #     if sweep_interval is not None:
-    #         if check:
-    #             params_dict |= {"sweep_interval": [0]}
-    #             mock_build_cd.assert_called_once_with()
-    #         else:
-    #             params_dict |= {"sweep_interval": [1]}
-    #             mock_build_cd.assert_not_called()
+    #         params_dict |= {"sweep_interval": [1]}
+    #         mock_build_cd.assert_not_called()
 
     #     if input_parameters is not None:
     #         params_dict |= input_parameters
@@ -262,17 +209,13 @@ class TestPublicMethodsFromCalibrationNode:
 
     # TODO: Check this test, problem with json_serializable wrappers:
     # @pytest.mark.parametrize(
-    #     "check, sweep_interval, input_parameters",
+    #     "sweep_interval, input_parameters",
     #     [
-    #         (True, None, None),
-    #         (False, None, {"start": 0, "stop": 10, "step": 1}),
-    #         (True, np.array([1]), None),
-    #         (False, np.array([1]), {"start": 0, "stop": 10, "step": 1}),
+    #         (None, None),
+    #         (None, {"start": 0, "stop": 10, "step": 1}),
+    #         (np.array([1]), None),
+    #         (np.array([1]), {"start": 0, "stop": 10, "step": 1}),
     #     ],
-    # )
-    # @patch(
-    #     "qililab.calibration.calibration_node.CalibrationNode._build_check_data_interval",
-    #     return_value=np.array([0]),
     # )
     # @patch("qililab.calibration.calibration_node.CalibrationNode._execute_notebook")
     # @patch(
@@ -290,7 +233,6 @@ class TestPublicMethodsFromCalibrationNode:
     #     mock_create,
     #     mock_execute,
     #     mock_build_cd,
-    #     check,
     #     sweep_interval,
     #     input_parameters,
     #     methods_node: CalibrationNode,
@@ -303,21 +245,13 @@ class TestPublicMethodsFromCalibrationNode:
     #     ):
     #         methods_node.sweep_interval = sweep_interval
     #         methods_node.input_parameters = input_parameters
-    #         methods_node.run_node(check)
+    #         methods_node.run_node()
 
-    #     params_dict = (
-    #         {"check": check}
-    #         | {"number_of_random_datapoints": methods_node.number_of_random_datapoints}
-    #         | {"qubit": methods_node.qubit_index}
-    #     )
+    #     params_dict = {"qubit": methods_node.qubit_index}
 
     #     if sweep_interval is not None:
-    #         if check:
-    #             params_dict |= {"sweep_interval": np.array([0])}
-    #             mock_build_cd.assert_called_once_with()
-    #         else:
-    #             params_dict |= {"sweep_interval": np.array([1])}
-    #             mock_build_cd.assert_not_called()
+    #         params_dict |= {"sweep_interval": np.array([1])}
+    #         mock_build_cd.assert_not_called()
 
     #     if input_parameters is not None:
     #         params_dict |= input_parameters
@@ -330,17 +264,13 @@ class TestPublicMethodsFromCalibrationNode:
     #     mock_logger.called_with("Interrupted automatic calibration notebook execution of %s", methods_node.nb_path)
 
     @pytest.mark.parametrize(
-        "check, sweep_interval, input_parameters",
+        "sweep_interval, input_parameters",
         [
-            (True, None, {"start": 0, "stop": 10, "step": 1}),
-            (False, None, None),
-            (True, np.array([1]), {"start": 0, "stop": 10, "step": 1}),
-            (False, np.array([1]), None),
+            (None, {"start": 0, "stop": 10, "step": 1}),
+            (None, None),
+            (np.array([1]), {"start": 0, "stop": 10, "step": 1}),
+            (np.array([1]), None),
         ],
-    )
-    @patch(
-        "qililab.calibration.calibration_node.CalibrationNode._build_check_data_interval",
-        return_value=np.array([0]),
     )
     @patch("qililab.calibration.calibration_node.CalibrationNode._execute_notebook")
     @patch("qililab.calibration.calibration_node.CalibrationNode._create_notebook_datetime_path", return_value="")
@@ -353,7 +283,6 @@ class TestPublicMethodsFromCalibrationNode:
         mock_create,
         mock_execute,
         mock_build_cd,
-        check,
         sweep_interval,
         input_parameters,
         methods_node: CalibrationNode,
@@ -363,21 +292,13 @@ class TestPublicMethodsFromCalibrationNode:
         with pytest.raises(Exception):
             methods_node.sweep_interval = sweep_interval
             methods_node.input_parameters = input_parameters
-            methods_node.run_node(check)
+            methods_node.run_node()
 
-        params_dict = (
-            {"check": check}
-            | {"number_of_random_datapoints": methods_node.number_of_random_datapoints}
-            | {"qubit": methods_node.qubit_index}
-        )
+        params_dict = {"qubit": methods_node.qubit_index}
 
         if sweep_interval is not None:
-            if check:
-                params_dict |= {"sweep_interval": np.array([0])}
-                mock_build_cd.assert_called_once_with()
-            else:
-                params_dict |= {"sweep_interval": np.array([1])}
-                mock_build_cd.assert_not_called()
+            params_dict |= {"sweep_interval": np.array([1])}
+            mock_build_cd.assert_not_called()
 
         if input_parameters is not None:
             params_dict |= input_parameters
@@ -459,9 +380,9 @@ class TestPrivateMethodsFromCalibrationNode:
     @pytest.mark.parametrize(
         "output",
         [
-            'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48], "y": [100, 144, 196, 256, 324, 400, 484, 576, 676, 784, 900, 1024, 1156, 1296, 1444, 1600, 1764, 1936, 2116, 2304]}, "platform_parameters": [["bus_alias", "param_name", 1]]}\n',
-            'RAND_INT:47102512880765720413 - OUTPUTS: {\\"check_parameters\\": {\\"x\\": [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48], \\"y\\": [100, 144, 196, 256, 324, 400, 484, 576, 676, 784, 900, 1024, 1156, 1296, 1444, 1600, 1764, 1936, 2116, 2304]}, \\"platform_parameters\\": [[\\"bus_alias\\", \\"param_name\\", 1]]}\\n',
-            'RAND_INT:47102512880765720413 - OUTPUTS: {\\"check_parameters\\": {\\"x\\": [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48], \\"y\\": [100, 144, 196, 256, 324, 400, 484, 576, 676, 784, 900, 1024, 1156, 1296, 1444, 1600, 1764, 1936, 2116, 2304]}, \\"platform_parameters\\": [[\\"bus_alias\\", \\"param_name\\", 1]]}\\n"',
+            'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["bus_alias", "param_name", 1]]}\n',
+            'RAND_INT:47102512880765720413 - OUTPUTS: {\\"platform_parameters\\": [[\\"bus_alias\\", \\"param_name\\", 1]]}\\n',
+            'RAND_INT:47102512880765720413 - OUTPUTS: {\\"platform_parameters\\": [[\\"bus_alias\\", \\"param_name\\", 1]]}\\n"',
         ],
     )
     @patch("qililab.calibration.calibration_node.pm.execute_notebook")
@@ -472,10 +393,7 @@ class TestPrivateMethodsFromCalibrationNode:
     ):
         """Testing general behavior of ``execute_notebook()``."""
         # Creating expected values for assert
-        sweep_interval = [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48]
-        y = [i**2 for i in sweep_interval]
-        results = {"x": sweep_interval, "y": y}
-        expected = {"check_parameters": results, "platform_parameters": [["bus_alias", "param_name", 1]]}
+        expected = {"platform_parameters": [["bus_alias", "param_name", 1]]}
 
         # Mocking return value of stream and calling execute_notebook
         methods_node._stream.getvalue.return_value = output  # type: ignore [attr-defined]
@@ -521,8 +439,8 @@ class TestPrivateMethodsFromCalibrationNode:
     # @pytest.mark.parametrize(
     #     "output",
     #     [
-    #         'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"fizz":"buzz"}} RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"foo": "bar"}}',
-    #         'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"a":2}}RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"a":2}}RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"a":2}}/n',
+    #         'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": {"fizz":"buzz"}} RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": {"foo": "bar"}}',
+    #         'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": {"a":2}}RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": {"a":2}}RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": {"a":2}}/n',
     #     ],
     # )
     # @patch("qililab.calibration.calibration_node.pm.execute_notebook")
@@ -546,7 +464,7 @@ class TestPrivateMethodsFromCalibrationNode:
         "output",
         [
             "RAND_INT:47102512880765720413 - OUTPUTS: {}",
-            'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters":{}}',
+            'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters":{}}',
         ],
     )
     @patch("qililab.calibration.calibration_node.pm.execute_notebook")
@@ -557,39 +475,18 @@ class TestPrivateMethodsFromCalibrationNode:
 
         with pytest.raises(
             IncorrectCalibrationOutput,
-            match=f"Empty output found in {methods_node.nb_path}, output must have key and value 'check_parameters'.",
+            match=f"Empty output found in {methods_node.nb_path}, output must have key and value 'platform_parameters'.",
         ):
             methods_node._execute_notebook(methods_node.nb_path, "", {})
 
         mocked_logger.error.assert_called_with(
-            "Aborting execution. No 'check_parameters' dictionary or its empty in the output cell implemented in %s",
+            "Aborting execution. No 'platform_parameters' dictionary or its empty in the output cell implemented in %s",
             methods_node.nb_path,
         )
 
         mocked_pm_exec.assert_called_once_with(
             methods_node.nb_path, "", {}, log_output=True, stdout_file=methods_node._stream
         )
-
-    ######################################
-    ### TEST BUILD CHECK DATA INTERVAL ###
-    ######################################
-    @pytest.mark.parametrize(
-        "sweep_interval, number_of_random_datapoints",
-        [(np.arange(start=0, stop=5, step=1), 10), (np.arange(start=10, stop=1000, step=20), 200), (None, 1)],
-    )
-    def test_build_check_data_interval(
-        self, methods_node: CalibrationNode, sweep_interval, number_of_random_datapoints
-    ):
-        """Test that ``build_check_data_interval()`` works correctly."""
-        methods_node.sweep_interval = sweep_interval
-        methods_node.number_of_random_datapoints = number_of_random_datapoints
-        test_value = methods_node._build_check_data_interval()
-        if sweep_interval is not None:
-            for value in test_value:
-                assert value in methods_node.sweep_interval
-            assert len(test_value) == methods_node.number_of_random_datapoints
-        else:
-            assert test_value is None
 
     ##########################################
     ### TEST CREATE NOTEBOOK DATETIME PATH ###
@@ -708,22 +605,22 @@ class TestPrivateMethodsFromCalibrationNode:
             ("no_file", ""),
             (
                 "good",
-                'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_parameters": [["bus_alias", "param_name", 1]]}\n',
+                'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["bus_alias", "param_name", 1]]}\n',
             ),
             (
                 "more_than_one",
-                'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_parameters": [["bus_alias", "param_name", 1]]}RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_parameters": [["bus_alias", "param_name", 1]]}/n',
+                'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["bus_alias", "param_name", 1]]}RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["bus_alias", "param_name", 1]]}/n',
             ),
-            ("none", '"check_parameters": {"x": [10, 12, 14, 16,]}'),
+            ("none", ""),
             (
                 "more_than_one",
-                'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_parameters": [["bus_alias", "param_name", 1]]}\n'
+                'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["bus_alias", "param_name", 1]]}\n'
                 + "\n"
-                + 'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_parameters": [["bus_alias", "param_name", 1]]}\n'
-                + 'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters": {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}, "platform_parameters": [["bus_alias", "param_name", 1]]}\n',
+                + 'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["bus_alias", "param_name", 1]]}\n'
+                + 'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["bus_alias", "param_name", 1]]}\n',
             ),
             ("empty", "RAND_INT:47102512880765720413 - OUTPUTS: {}"),
-            ("empty", 'RAND_INT:47102512880765720413 - OUTPUTS: {"check_parameters":{},"y":1}'),
+            ("empty", 'RAND_INT:47102512880765720413 - OUTPUTS: {"y":1}'),
         ],
     )
     @patch("qililab.calibration.calibration_node.logger", autospec=True)
@@ -751,8 +648,7 @@ class TestPrivateMethodsFromCalibrationNode:
 
         if type_content in ["good", "two"]:
             # building a fixed dictionary for the test
-            results = {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}
-            expected_dict = {"check_parameters": results, "platform_parameters": [["bus_alias", "param_name", 1]]}
+            expected_dict = {"platform_parameters": [["bus_alias", "param_name", 1]]}
 
             test_dict = methods_node._parse_output_from_execution_file(filename)
             assert test_dict == expected_dict
@@ -771,8 +667,7 @@ class TestPrivateMethodsFromCalibrationNode:
 
         # TODO: Solve problem with multiple outputs tests:
         # if type_content == "more_than_one":
-        #     results = {"x": [10, 12, 14, 16, 18, 20], "y": [100, 144, 196, 256, 324, 400]}
-        #     expected_dict = {"check_parameters": results, "platform_parameters": [["bus_alias", "param_name", 1]]}
+        #     expected_dict = {"platform_parameters": [["bus_alias", "param_name", 1]]}
 
         #     test_dict = methods_node._parse_output_from_execution_file(filename)
         #     assert test_dict == expected_dict
@@ -780,18 +675,6 @@ class TestPrivateMethodsFromCalibrationNode:
         #         "If you had multiple outputs exported in %s, the last one found will be used.",
         #         methods_node.nb_path,
         #     )
-
-        if type_content == "empty":
-            with pytest.raises(
-                IncorrectCalibrationOutput,
-                match=f"Empty output found in {methods_node.nb_path}, output must have key and value 'check_parameters'.",
-            ):
-                methods_node._parse_output_from_execution_file(filename)
-
-            mocked_logger.error.assert_called_with(
-                "Aborting execution. No 'check_parameters' dictionary or its empty in the output cell implemented in %s",
-                methods_node.nb_path,
-            )
 
         if type_content != "no_file":
             os.remove(os.path.join(methods_node.nb_folder, filename))
