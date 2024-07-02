@@ -562,19 +562,19 @@ class TestPrivateMethodsFromCalibrationNode:
             ("no_file", ""),
             (
                 "good",
-                'dsa RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]} das \n',
+                'dsa RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]}\n',
             ),
             (
                 "more_than_one",
-                'dasd RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]}dsadRAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]} sda /n dad',
+                'dasd RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]}\n adsRAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]}/n',
             ),
             ("none", ""),
             (
                 "more_than_one",
-                'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]}\n'
+                'dsds RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]}\n dsds'
                 + "\n"
                 + 'dsadsa RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]}\n'
-                + 'RAND_INT:47102512880765720413 - OUTPUsTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]} das \n dsd',
+                + 'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]}\n dsd',
             ),
             ("empty", "RAND_INT:47102512880765720413 - OUTPUTS: {}"),
             ("empty", 'RAND_INT:47102512880765720413 - OUTPUTS: {"y":1}'),
@@ -695,26 +695,24 @@ def test_export_nb_outputs(mocked_dumps, test_outputs, test_dumped_outputs):
 @pytest.mark.parametrize(
     "test_objects, expected_test_objects",
     [
-        ({"this_is": "a_test_dict", "foo": np.array([1, 2, 3, 4])}, {"this_is": "a_test_dict", "foo": [1, 2, 3, 4]}),
+        (
+            {"this_is": "a_test_dict", "foo": np.array([1, 2, 3, 4])},
+            {"this_is": "a_test_dict", "foo": [1.0, 2.0, 3.0, 4.0]},
+        ),
         (
             {"this_is": np.array([1, 2, 3, 4, 5]), "foo": {"bar": "jose", "pepe": (np.array([0]), np.array([0]), "a")}},
-            {"this_is": [1, 2, 3, 4, 5], "foo": {"bar": "jose", "pepe": ([0], [0], "a")}},
+            {"this_is": [1.0, 2.0, 3.0, 4.0, 5.0], "foo": {"bar": "jose", "pepe": [[0], [0], "a"]}},
         ),
-        (123, 123),
+        (123, 123.0),
         (
             (np.array([1, 2, 3, 4, 5.5]), {"foo": np.array([0.1, 0.2, 0.3])}),
-            ([1, 2, 3, 4, 5.5], {"foo": [0.1, 0.2, 0.3]}),
+            [[1.0, 2.0, 3.0, 4.0, 5.5], {"foo": [0.1, 0.2, 0.3]}],
         ),
-        (np.array([20, 30, 40]), [20, 30, 40]),
-        ("qililab rocks", "qililab rocks"),
+        (np.array([20, 30, 40]), [20.0, 30.0, 40.0]),
+        ("qililab rocks!", "qililab rocks!"),
     ],
 )
 def test_json_serialize(test_objects, expected_test_objects):
     """Test that ``json_serialize()`` works properly."""
-    if isinstance(test_objects, (dict, list)):
-        # No need to colect return value for objects that are referenced
-        _json_serialize(test_objects)
-        assert test_objects == expected_test_objects
-    else:
-        test_result = _json_serialize(test_objects)
-        assert test_result == expected_test_objects
+    test_result = _json_serialize(test_objects)
+    assert test_result == expected_test_objects

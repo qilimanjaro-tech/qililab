@@ -656,14 +656,16 @@ def _json_serialize(_object: Any):
     Args:
         _object (Any): Object to serialize
     """
-    if isinstance(_object, dict):
-        for k, v in _object.items():
-            _object[k] = _json_serialize(v)
+    if isinstance(_object, np.ndarray):
+        return _json_serialize(_object.tolist())
 
     if isinstance(_object, (list, tuple)):
         return [_json_serialize(elem) for elem in _object]
 
-    return _object.tolist() if isinstance(_object, np.ndarray) else _object
+    if isinstance(_object, dict):
+        return {_json_serialize(k): _json_serialize(v) for k, v in _object.items()}
+
+    return _object
 
 
 class IncorrectCalibrationOutput(Exception):
