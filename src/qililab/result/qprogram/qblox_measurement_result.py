@@ -64,7 +64,7 @@ class QbloxMeasurementResult(MeasurementResult):
         return np.array(self.raw_measurement_data["bins"]["threshold"])
 
     @property
-    def hw_average(self) -> int:
+    def shots(self) -> int:
         """Returns the number of averages done in hardware.
 
         Returns:

@@ -50,8 +50,8 @@ class QProgramResults:
         # Check all buses single results
         if all(len(result) == 1 for result in self.results.values()):
             # Check all buses same HW average
-            hw_avg = self.results[next(iter(self.results))][0].hw_average
-            if not all(result[0].hw_average == hw_avg for result in self.results.values()):
+            hw_avg = self.results[next(iter(self.results))][0].shots
+            if not all(result[0].shots == hw_avg for result in self.results.values()):
                 raise ValueError(
                     f"Inconsistent hardware average count for different results, expected HW average of {hw_avg} on all results"
                 )

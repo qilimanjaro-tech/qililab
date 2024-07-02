@@ -60,7 +60,7 @@ class QuantumMachinesMeasurementResult(MeasurementResult):
         raise NotImplementedError("Thresholding is not implemented for Quantum Machines results.")
 
     @property
-    def hw_average(self) -> int:
+    def shots(self) -> int:
         """Returns the number of averages done in hardware.
 
         Returns:
