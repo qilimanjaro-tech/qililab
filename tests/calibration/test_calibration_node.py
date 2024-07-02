@@ -562,19 +562,19 @@ class TestPrivateMethodsFromCalibrationNode:
             ("no_file", ""),
             (
                 "good",
-                'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]}\n',
+                'dsa RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]} das \n',
             ),
             (
                 "more_than_one",
-                'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]}RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]}/n',
+                'dasd RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]}dsadRAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]} sda /n dad',
             ),
             ("none", ""),
             (
                 "more_than_one",
                 'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]}\n'
                 + "\n"
-                + 'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]}\n'
-                + 'RAND_INT:47102512880765720413 - OUTPUsTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]}\n',
+                + 'dsadsa RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]}\n'
+                + 'RAND_INT:47102512880765720413 - OUTPUsTS: {"platform_parameters": [["test", "bus_alias", "param_name", 1]]} das \n dsd',
             ),
             ("empty", "RAND_INT:47102512880765720413 - OUTPUTS: {}"),
             ("empty", 'RAND_INT:47102512880765720413 - OUTPUTS: {"y":1}'),
