@@ -28,7 +28,7 @@ class TestIQPair:
 
     def test_iq_pair_without_waveform_type_throws_error(self):
         """Test that waveforms of an IQ pair must have Waveform type."""
-        with pytest.raises(ValueError, match="Waveform inside IQPair must have Waveform type."):
+        with pytest.raises(TypeError, match="Waveform inside IQPair must have Waveform type."):
             IQPair(
                 I=IQPair(I=Square(amplitude=0.5, duration=100), Q=Square(amplitude=1.0, duration=100)),
                 Q=IQPair(I=Square(amplitude=0.5, duration=100), Q=Square(amplitude=1.0, duration=100)),
