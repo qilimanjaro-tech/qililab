@@ -25,6 +25,8 @@ import papermill as pm
 
 from qililab.config import logger
 
+from .comparison_models import norm_root_mean_sqrt_error
+
 logger_output_start = "RAND_INT:47102512880765720413 - OUTPUTS: "
 
 
@@ -254,7 +256,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         drift_timeout: float = 0.0,
         in_spec_threshold: float = 0.0,
         bad_data_threshold: float = 0.0,
-        comparison_model: Callable | None = None,
+        comparison_model: Callable = norm_root_mean_sqrt_error,
         qubit_index: int | list[int] | None = None,
         node_distinguisher: int | str | None = None,
         input_parameters: dict | None = None,
@@ -581,14 +583,15 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         Returns:
             tuple[str, str]: A tuple containing the notebook name and its folder.
         """
-        # Create qubit_string to add:
+        # Create qubit_string to add
+        # fmt: off
         qubit_str = (
             f"_q{str(self.qubit_index)}"
             if isinstance(self.qubit_index, int)
             else "_" + "".join(f"q{q}" for q in self.qubit_index)
             if isinstance(self.qubit_index, list)
             else ""
-        )
+        )  # fmt: on
 
         # Create distinguish_string to differentiate multiple calls of the same node:
         distinguish_str = f"_{str(self.node_distinguisher)}" if self.node_distinguisher is not None else ""

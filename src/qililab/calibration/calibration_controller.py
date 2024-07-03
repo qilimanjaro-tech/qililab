@@ -549,10 +549,7 @@ class CalibrationController:
 
             comparison_number = self._obtain_comparison(node, obtain_params, compar_params)
 
-            if comparison_number is None:
-                comparison_result = "Error in comparison model."
-
-            elif comparison_number <= node.in_spec_threshold:
+            if comparison_number <= node.in_spec_threshold:
                 comparison_result = "in_spec"
                 node.previous_inspec = datetime.timestamp(datetime.now())
 
@@ -809,9 +806,7 @@ class CalibrationController:
         return [self.node_sequence[node_name] for node_name in self.calibration_graph.predecessors(node.node_id)]
 
     @staticmethod
-    def _obtain_comparison(
-        node: CalibrationNode, obtained: dict[str, list], comparison: dict[str, list]
-    ) -> float | None:
+    def _obtain_comparison(node: CalibrationNode, obtained: dict[str, list], comparison: dict[str, list]) -> float:
         """Returns the error, given the chosen method, between the comparison and obtained samples.
 
         Args:
