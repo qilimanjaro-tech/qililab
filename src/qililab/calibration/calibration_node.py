@@ -65,7 +65,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         nb_path (str): Full notebook path with the folder, nb_name, and ``.ipynb`` extension, written in unix format: `folder/subfolder/.../file.ipynb`.
         in_spec_threshold (float): Threshold such that the ``check_data()`` methods return `in_spec` or `out_of_spec`. Defaults to 0.0.
         bad_data_threshold (float): Threshold such that the ``check_data()`` methods return `out_of_spec` or `bad_data`. Defaults to 0.0.
-        comparison_model (Callable): Comparison model used, to compare data in this node. Defaults to None.
+        comparison_model (Callable): Comparison model used, to compare data in this node. Defaults to ``norm_root_mean_sqrt_error``.
         drift_timeout (float): Duration in seconds, representing an estimate of how long it takes for the parameter to drift. During that time the parameters of
             this node should be considered calibrated without the need to check the data. Defaults to 0.0.
         qubit_index (int | list[int] | None, optional): Qubit on which this notebook will be executed. Defaults to None.
@@ -293,8 +293,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         self.bad_data_threshold: float = bad_data_threshold
         """Threshold such that the ``check_data()`` methods return `out_of_spec` or `bad_data`. Defaults to 0.0."""
 
-        self.comparison_model: Callable | None = comparison_model
-        """Comparison model used, to compare data in this node. Defaults to None."""
+        self.comparison_model: Callable = comparison_model
+        """Comparison model used, to compare data in this node. Defaults to ``norm_root_mean_sqrt_error``."""
 
         self.drift_timeout: float = drift_timeout
         """A durations in seconds, representing an estimate of how long it takes for the parameter to drift. During that time the parameters of
