@@ -58,13 +58,17 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
     Args:
         nb_path (str): Full notebook path with the folder, nb_name, and ``.ipynb`` extension, written in unix format: `folder/subfolder/.../file.ipynb`.
-        drift_timeout (float): Duration in seconds, representing an estimate of how long it takes for the parameter to drift. During that time the parameters of
-            this node should be considered calibrated without the need to check the data.
         qubit_index (int | list[int] | None, optional): Qubit on which this notebook will be executed. Defaults to None.
         node_distinguishier (int | str | None, optional): Distinguisher for when the same notebook its used multiple times in the same qubit. Mandatory to use in such case, or
             the :class:`.CalibrationController` won't do the graph mapping properly, and the calibration will fail. Defaults to None.
         input_parameters (dict | None, optional): Kwargs for input parameters to pass and be interpreted by the notebook. Defaults to None.
         sweep_interval (np.ndarray | None, optional): Array describing the sweep values of the experiment. Defaults to None, which means the one specified in the notebook will be used.
+        drift_timeout (float, optional): Durations in seconds, representing an estimate of how long it takes for the
+            parameter to drift. During that time the parameters of this node should be considered calibrated.
+            Thus big values will tend to skip nodes, making the calibration process faster, but less accurate,
+            and small values will make the calibration process slower, but more accurate and robust.
+            The skip will actually only happen if no other previous (dependency) node needs to be re-calibrated,
+            and if the ``drift timeout`` is bigger than the time since this node last calibration. Defaults to 0.0.
         fidelity (bool, optional): Flag whether this notebook is a final fidelity experiment. Defaults to False.
 
     Examples:
@@ -239,11 +243,11 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
         nb_path: str,
-        drift_timeout: float,
         qubit_index: int | list[int] | None = None,
         node_distinguisher: int | str | None = None,
         input_parameters: dict | None = None,
         sweep_interval: np.ndarray | None = None,
+        drift_timeout: float = 0.0,
         fidelity: bool = False,
     ):
         if len(nb_path.split("\\")) > 1:
@@ -266,16 +270,22 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         self.node_id, self.nb_folder = self._path_to_name_and_folder(self.nb_path)
         """Node name and folder, separated, and without the ``.ipynb`` extension."""
 
-        self.drift_timeout: float = drift_timeout
-        """A durations in seconds, representing an estimate of how long it takes for the parameter to drift. During that time the parameters of
-        this node should be considered calibrated, without the need to check the data.
-        """
-
         self.input_parameters: dict | None = input_parameters
         """Kwargs for input parameters, to pass and then be interpreted by the notebook. Defaults to None."""
 
         self.sweep_interval: np.ndarray | None = sweep_interval
         """Array describing the sweep values of the experiment. Defaults to None, which means the one specified in the notebook will be used."""
+
+        self.drift_timeout: float = drift_timeout
+        """A durations in seconds, representing an estimate of how long it takes for the parameter to drift. During that
+        time the parameters of this node should be considered calibrated.
+
+        Thus big values will tend to skip nodes, making the calibration process faster, but less accurate, and small
+        values will make the calibration process slower, but more accurate and robust.
+
+        The skip will actually only happen if no other previous (dependency) node needs to be re-calibrated, and if the
+        ``drift timeout`` is bigger than the time since this node last calibration. Defaults to 0.0.
+        """
 
         self.output_parameters: dict | None = self.get_last_calibrated_output_parameters()
         """Output parameters dictionary from the notebook execution, which was extracted with ``ql.export_nb_outputs()``, normally contains
