@@ -806,7 +806,9 @@ class CalibrationController:
         return [self.node_sequence[node_name] for node_name in self.calibration_graph.predecessors(node.node_id)]
 
     @staticmethod
-    def _obtain_comparison(node: CalibrationNode, obtained: dict[str, list], comparison: dict[str, list]) -> float:
+    def _obtain_comparison(
+        node: CalibrationNode, obtained: dict[str, list], comparison: dict[str, list]
+    ) -> float | None:
         """Returns the error, given the chosen method, between the comparison and obtained samples.
 
         Args:
@@ -817,7 +819,9 @@ class CalibrationController:
         Returns:
             float: difference/error between the two samples.
         """
-        return node.comparison_model(obtained, comparison)
+        if node.comparison_model is not None:
+            return node.comparison_model(obtained, comparison)
+        return None
 
     @staticmethod
     def _is_timeout_expired(timestamp: float, timeout: float) -> bool:
