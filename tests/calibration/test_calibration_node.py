@@ -338,24 +338,6 @@ class TestPublicMethodsFromCalibrationNode:
         else:
             assert test_output is None
 
-    ##################################################
-    ### TEST GET LAST CALIBRATED OUTPUT PARAMETERS ###
-    ##################################################
-    @pytest.mark.parametrize("last_exec_output", [None, "tmp_test_foobar.ipynb"])
-    @patch("qililab.calibration.calibration_node.CalibrationNode._parse_output_from_execution_file")
-    @patch("qililab.calibration.calibration_node.CalibrationNode._find_last_executed_calibration")
-    def test_get_last_calibrated_output_parameters(
-        self, mock_last_exec, mocked_parse, last_exec_output, methods_node: CalibrationNode
-    ):
-        """Test that ``get_last_calibrated_output_parameters()`` works correctly."""
-        mock_last_exec.return_value = last_exec_output
-        test_output = methods_node.get_last_calibrated_output_parameters()
-        mock_last_exec.assert_called_once()
-        if last_exec_output is not None:
-            mocked_parse.assert_called_once()
-        else:
-            assert test_output is None
-
 
 class TestPrivateMethodsFromCalibrationNode:
     """Unit tests for the CalibrationNode class private methods."""

@@ -287,12 +287,10 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         ``drift timeout`` is bigger than the time since this node last calibration. Defaults to 0.0.
         """
 
-        self.output_parameters: dict | None = self.get_last_calibrated_output_parameters()
+        self.output_parameters: dict | None = None
         """Output parameters dictionary from the notebook execution, which was extracted with ``ql.export_nb_outputs()``, normally contains
         a ``platform_parameters`` which will be the calibrated parameters to set in the platform and might also contain "fidelities", for
-        the fidelities notebooks.
-
-        If no previous successful calibration, then is None.
+        the fidelities notebooks. If no previous successful calibration, then is None.
         """
 
         self.previous_timestamp: float | None = self.get_last_calibrated_timestamp()
@@ -533,21 +531,6 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         last_modified_file_name = self._find_last_executed_calibration()
         return (
             os.path.getmtime(os.path.join(self.nb_folder, last_modified_file_name))
-            if last_modified_file_name is not None
-            else None
-        )
-
-    def get_last_calibrated_output_parameters(self) -> dict | None:
-        """Gets the output parameters of the last successful calibration.
-
-        Searches the directory for self.node_id+“_calibrated” and gets the outputs from the latest creation time one.
-
-        Returns:
-            dict | None: The output parameters of the last successful calibration, or None if no calibration has been completed.
-        """
-        last_modified_file_name = self._find_last_executed_calibration()
-        return (
-            self._parse_output_from_execution_file(last_modified_file_name)
             if last_modified_file_name is not None
             else None
         )
