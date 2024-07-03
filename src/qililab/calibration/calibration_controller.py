@@ -549,7 +549,10 @@ class CalibrationController:
 
             comparison_number = self._obtain_comparison(node, obtain_params, compar_params)
 
-            if comparison_number <= node.in_spec_threshold:
+            if comparison_number is None:
+                comparison_result = "Error in comparison model."
+
+            elif comparison_number <= node.in_spec_threshold:
                 comparison_result = "in_spec"
                 node.previous_inspec = datetime.timestamp(datetime.now())
 
