@@ -35,11 +35,11 @@ class IQPair(DictSerializable):  # pylint: disable=missing-class-docstring
     Q: Waveform
 
     def __post_init__(self):
-        if self.I.get_duration() != self.Q.get_duration():
-            raise ValueError("Waveforms of an IQ pair must have the same duration.")
-
         if not isinstance(self.I, Waveform) or not isinstance(self.Q, Waveform):
             raise TypeError("Waveform inside IQPair must have Waveform type.")
+
+        if self.I.get_duration() != self.Q.get_duration():
+            raise ValueError("Waveforms of an IQ pair must have the same duration.")
 
     def get_duration(self) -> int:
         """Get the duration of the waveforms
