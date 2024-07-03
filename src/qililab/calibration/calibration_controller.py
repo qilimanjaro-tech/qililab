@@ -61,6 +61,10 @@ class CalibrationController:
             (``out_degree=0``) of the graph.
         node_sequence (dict[str, CalibrationNode]): Mapping for the nodes of the graph, from strings into the actual initialized nodes.
         runcard (str): The runcard path, containing the serialized platform where the experiments will be run.
+        drift_timeout (float, optional): Duration in seconds, representing an estimate of how long it takes for the calibration parameters to drift.
+            During that time the parameters of this node should be considered calibrated. Thus a big value will tend to skip recently calibrated nodes,
+            making the calibration process faster, but less accurate,and a small value will make the calibration process slower, but more accurate and robust.
+            A node will be skipped if the ``drift timeout`` is bigger than the time since its last calibration. Defaults to 7200 (3h).
 
     Examples:
 
@@ -81,7 +85,7 @@ class CalibrationController:
         **Dangerous Behaviors:**
 
         Note that depending on your ``CalibrationController`` construction, you can have dangerous behaviors in the workflow. You need to watch out for:
-        - If you give too long ``drift_timeout``'s, since ``calibrate_all()`` will assume the node is 100% working.. To start the calibration from the start again, just reduce the ``drift_timeout``, or remove the executed files or!
+        - If you give too long ``drift_timeout``'s, since ``calibrate_all()`` will assume the node is 100% working.. To start the calibration from the start again, just reduce the ``drift_timeout``, or remove the executed files!
 
         ----------
 
@@ -106,14 +110,12 @@ class CalibrationController:
                 first[qubit] = CalibrationNode(
                     nb_path="notebooks/first.ipynb",
                     qubit_index=qubit,
-                    drift_timeout=1800.0,
                 )
                 nodes[first[qubit].node_id] = first[qubit]
 
                 second[qubit] = CalibrationNode(
                     nb_path="notebooks/second.ipynb",
                     qubit_index=qubit,
-                    drift_timeout=1.0,
                     sweep_interval=np.arange(start=0, stop=19, step=1),
                 )
                 nodes[second[qubit].node_id] = second[qubit]
@@ -134,7 +136,13 @@ class CalibrationController:
             There you will also find the above code, but without defining ``first`` and ``second`` as lists.
     """
 
-    def __init__(self, calibration_graph: nx.DiGraph, node_sequence: dict[str, CalibrationNode], runcard: str):
+    def __init__(
+        self,
+        calibration_graph: nx.DiGraph,
+        node_sequence: dict[str, CalibrationNode],
+        runcard: str,
+        drift_timeout: float = 7200.0,
+    ):
         if not nx.is_directed_acyclic_graph(calibration_graph):
             raise ValueError("The calibration graph must be a Directed Acyclic Graph (DAG).")
 
@@ -166,6 +174,16 @@ class CalibrationController:
         self.platform: Platform = build_platform(runcard)
         """The initialized platform, where the experiments will be run (Platform)."""
 
+        self.drift_timeout: float = drift_timeout
+        """Duration in seconds, representing an estimate of how long it takes for the calibration parameters to drift.
+        During that time the parameters of this node should be considered calibrated.
+
+        Thus a big value will tend to skip recently calibrated nodes, making the calibration process faster, but less accurate,
+        and a small value will make the calibration process slower, but more accurate and robust.
+
+        A node will be skipped if the ``drift timeout`` is bigger than the time since its last calibration. Defaults to 7200 (3h).
+        """
+
     def calibrate_all(self, node: CalibrationNode):
         """Calibrates all the nodes sequentially.
 
@@ -177,23 +195,20 @@ class CalibrationController:
         for n in self._dependencies(node):
             self.calibrate_all(n)
 
-        # TODO: Check if the previous nodes have also been calibrated, and if their drift_timeout have expired.
         # You can skip it from the `drift_timeout`, but also skip it due to `been_calibrated()`
         # If you want to start the calibration from the start again, just increase the drift_timeout or remove the executed files!
         if (
-            node.previous_timestamp is None or self._is_timeout_expired(node.previous_timestamp, node.drift_timeout)
+            node.previous_timestamp is None or self._is_timeout_expired(node.previous_timestamp, self.drift_timeout)
         ) and not node.been_calibrated:
             self.calibrate(node)
             self._update_parameters(node)
+        node.been_calibrated = True
 
-    def run_automatic_calibration(self, run_fidelities: bool = False) -> dict[str, dict]:
+    def run_automatic_calibration(self) -> dict[str, dict]:
         """Runs the full automatic calibration procedure and retrieves the final set parameters and achieved fidelities dictionaries.
 
         This is the primary interface for our calibration procedure and the highest level algorithm, which finds all the end nodes of the graph
         (`leaves`, those without further `dependents`) and runs ``calibrate_all()`` on them.
-
-        Args:
-            run_fidelities (bool, optional): Flag to run the fidelities notebooks. Defaults to False.
 
         Returns:
             dict[str, dict]: Dictionary for the last set parameters and the last achieved fidelities. It contains two dictionaries (dict[tuple, tuple]) in the keys:
@@ -206,16 +221,11 @@ class CalibrationController:
                     - value: (``float``: parameter value, ``str``: node_id where computed, ``datetime``: updated time).
         """
         highest_level_nodes = [
-            self.node_sequence[node]
-            for node, out_degree in self.calibration_graph.out_degree()
-            if (out_degree == 0 and not self.node_sequence[node].fidelity)
+            self.node_sequence[node] for node, out_degree in self.calibration_graph.out_degree() if out_degree == 0
         ]
 
         for node in highest_level_nodes:
             self.calibrate_all(node)
-
-        if run_fidelities:
-            self.run_fidelities()
 
         logger.info(
             "\n#############################################\n"
@@ -239,12 +249,6 @@ class CalibrationController:
             "fidelities": self.get_last_fidelities(),
         }
 
-    def run_fidelities(self) -> None:
-        """Runs the fidelities notebooks."""
-        fidelities_nodes = (node for node in self.node_sequence.values() if node.fidelity)
-        for node in fidelities_nodes:
-            self.calibrate(node)
-
     def calibrate(self, node: CalibrationNode) -> None:
         """Runs a node's experiment on its default values of the ``sweep_interval``.
 
@@ -258,7 +262,6 @@ class CalibrationController:
         """
         logger.info('WORKFLOW: Calibrating node "%s".\n', node.node_id)
         node.previous_timestamp = node.run_node()
-        node.been_calibrated = True
         node._add_string_to_checked_nb_name("calibrated", node.previous_timestamp)  # pylint: disable=protected-access
         # add _calibrated tag to the file name, which doesn't have a tag.
 

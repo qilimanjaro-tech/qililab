@@ -31,27 +31,22 @@ def dummy_comparison_model(obtained: dict, comparison: dict) -> float:
 zeroth = CalibrationNode(
     nb_path="tests/calibration/notebook_test/zeroth.ipynb",
     qubit_index=[0, 1],  # qubit_index as list
-    drift_timeout=1.0,
 )
 first = CalibrationNode(
     nb_path="tests/calibration/notebook_test/first.ipynb",
     qubit_index=0,
-    drift_timeout=1.0,  # long drift timeout
 )
 second = CalibrationNode(
     nb_path="tests/calibration/notebook_test/second.ipynb",
     qubit_index=0,
-    drift_timeout=1.0,
 )
 third = CalibrationNode(
     nb_path="tests/calibration/notebook_test/third.ipynb",
     qubit_index=0,
-    drift_timeout=1.0,
 )
 fourth = CalibrationNode(
     nb_path="tests/calibration/notebook_test/fourth.ipynb",
     # no qubit index
-    drift_timeout=1.0,
 )
 
 # NODE MAPPING TO THE GRAPH (key = name in graph, value = node object):

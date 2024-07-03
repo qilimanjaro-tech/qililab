@@ -38,7 +38,6 @@ def fixture_initialize_node_no_optional(_) -> CalibrationNode:
     return CalibrationNode(
         nb_path="tests/calibration/notebook_test/zeroth.ipynb",
         qubit_index=0,
-        drift_timeout=100.0,
     )
 
 
@@ -61,10 +60,8 @@ def fixture_initialize_node_optional(_, __, ____) -> CalibrationNode:
         nb_path="tests/calibration/notebook_test/zeroth.ipynb",
         qubit_index=[0, 1],
         node_distinguisher=1,
-        drift_timeout=100.0,
         input_parameters={"a": 0, "b": 1},
         sweep_interval=np.array([0, 1, 2]),
-        fidelity=True,
     )
 
 
@@ -77,7 +74,6 @@ def fixture_methods_node(_, __, ____) -> CalibrationNode:
     return CalibrationNode(
         nb_path="./foobar.ipynb",
         qubit_index=0,
-        drift_timeout=100.0,
     )
 
 
@@ -101,13 +97,11 @@ class TestInitializationCalibrationNode:
         assert initialize_node_no_optional.node_distinguisher is None
         assert initialize_node_no_optional.node_id == "zeroth_q0"
         assert initialize_node_no_optional.nb_folder == os.path.abspath("tests/calibration/notebook_test")
-        assert initialize_node_no_optional.drift_timeout == 100
         assert initialize_node_no_optional.input_parameters is None
         assert initialize_node_no_optional.sweep_interval is None
         assert initialize_node_no_optional.output_parameters is None
         assert initialize_node_no_optional.previous_timestamp is None
         assert isinstance(initialize_node_no_optional._stream, StringIO)
-        assert initialize_node_no_optional.fidelity is False
         assert initialize_node_no_optional.been_calibrated is False
 
     def test_good_init_method_with_optional(self, initialize_node_optional):
@@ -118,13 +112,11 @@ class TestInitializationCalibrationNode:
         assert initialize_node_optional.node_distinguisher == 1
         assert initialize_node_optional.node_id == "zeroth_1_q0q1"
         assert initialize_node_optional.nb_folder == os.path.abspath("tests/calibration/notebook_test")
-        assert initialize_node_optional.drift_timeout == 100
         assert initialize_node_optional.input_parameters == {"a": 0, "b": 1}
         assert initialize_node_optional.sweep_interval.all() == np.array([0, 1, 2]).all()
         assert initialize_node_optional.output_parameters == {}
         assert initialize_node_optional.previous_timestamp == 0.0
         assert isinstance(initialize_node_optional._stream, StringIO)
-        assert initialize_node_optional.fidelity is True
         assert initialize_node_optional.been_calibrated is False
 
     def test_bad_nb_path_initialization(self):
@@ -137,7 +129,6 @@ class TestInitializationCalibrationNode:
             _ = CalibrationNode(
                 nb_path=".bizzfuzz\\foobar.ipynb",
                 qubit_index=0,
-                drift_timeout=100,
             )
         assert str(error.value) == "`nb_path` must be written in unix format: `folder/subfolder/.../file.ipynb`."
 
