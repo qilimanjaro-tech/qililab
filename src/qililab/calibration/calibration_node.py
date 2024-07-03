@@ -556,38 +556,6 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             else None
         )
 
-    def _parse_output_from_execution_file(self, file_name: str) -> dict | None:
-        """Parses the output information, from a notebook execution file.
-
-        Args:
-            file_name (str): The name of the execution file to parse.
-
-        Returns:
-            dict | None: A dictionary containing parsed output information or None if parsing fails.
-
-        Raises:
-            IncorrectCalibrationOutput: In case no outputs, incorrect outputs or multiple outputs where found.
-        """
-        # Parsing file
-        outputs_lines: list[str] = []
-        try:
-            with open(os.path.join(self.nb_folder, file_name), encoding="utf-8") as file:
-                lines = file.readlines()
-                outputs_lines.extend(line for line in lines if line.find(logger_output_start) != -1)
-        except Exception as exc:
-            logger.error("No previous execution found of notebook %s.", self.nb_path)
-            raise FileNotFoundError(f"No previous execution found of notebook {self.nb_path}.") from exc
-
-        # Check how many lines contain an output, to raise the corresponding errors:
-        if not outputs_lines:
-            logger.error("No output found in notebook %s.", self.nb_path)
-            raise IncorrectCalibrationOutput(f"No output found in notebook {self.nb_path}.")
-        if len(outputs_lines) > 1:
-            logger.warning("If you had multiple outputs exported in %s, the last one found will be used.", self.nb_path)
-
-        # When only one line of outputs, use that one:
-        return self._from_logger_string_to_output_dict(outputs_lines[-1], self.nb_path)
-
     def _from_logger_string_to_output_dict(self, logger_string: str, input_path: str) -> dict:
         """Returns the output dictionary from a logger output string. Raises errors if the output doesn't follow the expected format.
 
