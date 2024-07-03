@@ -34,6 +34,7 @@ from qililab.qprogram.operations import (
     ResetPhase,
     SetFrequency,
     SetGain,
+    SetMarkers,
     SetOffset,
     SetPhase,
     Sync,
@@ -692,6 +693,17 @@ class QProgram:  # pylint: disable=too-many-public-methods
         def __init__(self, qprogram: "QProgram"):
             self.qprogram = qprogram
             self.disable_autosync: bool = False
+
+        def set_markers(self, bus: str, mask: str):
+            """Set the markers based on a 4-bit binary mask.
+
+            Args:
+                bus (str): Unique identifier of the bus.
+                mask (str): A 4-bit mask, where 0 means that the associated marker is open (no signal), and 1 means that the marker is closed (signal).
+            """
+            operation = SetMarkers(bus=bus, mask=mask)
+            self.qprogram._active_block.append(operation)
+            self.qprogram._buses.add(bus)
 
         @overload
         def acquire(self, bus: str, weights: IQPair, save_adc: bool = False):

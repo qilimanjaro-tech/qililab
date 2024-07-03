@@ -45,6 +45,7 @@ def fixture_no_loops_all_operations() -> QProgram:
     qp.sync()
     qp.wait(bus="readout", duration=100)
     qp.play(bus="readout", waveform=readout_pair)
+    qp.qblox.set_markers(bus="readout", mask="0111")
     qp.qblox.play(bus="readout", waveform=readout_pair, wait_time=4)
     qp.qblox.acquire(bus="readout", weights=weights_pair)
     return qp
@@ -388,6 +389,7 @@ class TestQBloxCompiler:
                             wait             40
                             wait             100
                             play             0, 1, 1000
+                            set_mrk          7
                             play             0, 1, 4
                             acquire_weighed  0, 0, 0, 1, 2000
                             stop

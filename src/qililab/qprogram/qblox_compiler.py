@@ -34,6 +34,7 @@ from qililab.qprogram.operations import (
     ResetPhase,
     SetFrequency,
     SetGain,
+    SetMarkers,
     SetOffset,
     SetPhase,
     Sync,
@@ -117,6 +118,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             ResetPhase: self._handle_reset_phase,
             SetGain: self._handle_set_gain,
             SetOffset: self._handle_set_offset,
+            SetMarkers: self._handle_set_markers,
             Wait: self._handle_wait,
             Sync: self._handle_sync,
             Measure: self._handle_measure,
@@ -368,6 +370,12 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         )
         self._buses[element.bus].qpy_block_stack[-1].append_component(
             component=QPyInstructions.SetAwgOffs(offset_0=offset_0, offset_1=offset_1)
+        )
+
+    def _handle_set_markers(self, element: SetMarkers):
+        marker_outputs = int(element.mask, 2)
+        self._buses[element.bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.SetMrk(marker_outputs=marker_outputs)
         )
 
     def _handle_wait(self, element: Wait):
