@@ -365,14 +365,15 @@ class TestQBloxCompiler:
 
             main:
                             set_freq         1200
-                            set_ph           250000000
+                            set_ph           51470
                             reset_ph
                             set_awg_gain     16383, 16383
                             set_awg_offs     16383, 16383
                             play             0, 1, 40
                             stop
         """
-        assert is_q1asm_equal(sequences["drive"], drive_str)
+        drive_program = repr(sequences["drive"]._program)
+        assert is_q1asm_equal(drive_program, drive_str)
 
         assert len(sequences["readout"]._waveforms._waveforms) == 2
         assert len(sequences["readout"]._acquisitions._acquisitions) == 1
@@ -428,21 +429,19 @@ class TestQBloxCompiler:
         assert "drive" in sequences
         assert "readout" in sequences
 
-        drive_str = """
+        expected_drive_str = """
             setup:
                 wait_sync        4
 
             main:
                 move             11, R0
-                move             100, R1
             loop_0:
                 play             0, 1, 40
-                add              R1, 10, R1
                 loop             R0, @loop_0
                 stop
         """
 
-        readout_str = """
+        expected_readout_str = """
             setup:
                 wait_sync        4
 
@@ -458,8 +457,11 @@ class TestQBloxCompiler:
                 stop
         """
 
-        assert is_q1asm_equal(sequences["drive"], drive_str)
-        assert is_q1asm_equal(sequences["readout"], readout_str)
+        drive_str = repr(sequences["drive"]._program)
+        readout_str = repr(sequences["readout"]._program)
+
+        assert is_q1asm_equal(drive_str, expected_drive_str)
+        assert is_q1asm_equal(readout_str, expected_readout_str)
 
     def test_dynamic_wait_multiple_buses_throws_exception(self, dynamic_wait_multiple_buses: QProgram):
         with pytest.raises(NotImplementedError, match="Dynamic syncing is not implemented yet."):
@@ -617,46 +619,47 @@ class TestQBloxCompiler:
         assert len(sequences["readout"]._weights._weights) == 2
         assert sequences["readout"]._program._compiled
 
-        drive_str = """
+        expected_drive_str = """
             setup:
-                wait_sync        4
+                            wait_sync        4
 
             main:
                             move             1000, R0
             avg_0:
                             move             3, R1
-                            move             0, R2
             loop_0:
                             play             0, 1, 40
                             wait             2960
+                            loop             R1, @loop_0
+                            loop             R0, @avg_0
+                            stop
+        """
+
+        expected_readout_str = """
+            setup:
+                            wait_sync        4
+
+            main:
+                            move             1000, R0
+            avg_0:
+                            move             1, R4
+                            move             0, R3
+                            move             0, R2
+                            move             3, R1
+            loop_0:
+                            play             0, 1, 1000
+                            acquire_weighed  0, R2, R3, R4, 2000
                             add              R2, 1, R2
                             loop             R1, @loop_0
                             loop             R0, @avg_0
                             stop
         """
-        readout_str = """
-            setup:
-                wait_sync        4
 
-            main:
-                            move             1000, R0
-            avg_0:
-                            move             1, R1
-                            move             0, R2
-                            move             0, R3
-                            move             3, R4
-                            move             0, R5
-            loop_0:
-                            play             0, 1, 1000
-                            acquire_weighed  0, R3, R2, R1, 2000
-                            add              R3, 1, R3
-                            add              R5, 1, R5
-                            loop             R4, @loop_0
-                            loop             R0, @avg_0
-                            stop
-        """
-        assert is_q1asm_equal(sequences["drive"], drive_str)
-        assert is_q1asm_equal(sequences["readout"], readout_str)
+        drive_str = repr(sequences["drive"]._program)
+        readout_str = repr(sequences["readout"]._program)
+
+        assert is_q1asm_equal(drive_str, expected_drive_str)
+        assert is_q1asm_equal(readout_str, expected_readout_str)
 
     def test_average_with_for_loop(self, average_with_for_loop: QProgram):
         compiler = QbloxCompiler()
@@ -680,26 +683,25 @@ class TestQBloxCompiler:
         assert len(sequences["readout"]._weights._weights) == 2
         assert sequences["readout"]._program._compiled
 
-        drive_str = """
+        expected_drive_str = """
             setup:
-                wait_sync        4
+                            wait_sync        4
 
             main:
                             move             1000, R0
             avg_0:
                             move             11, R1
-                            move             0, R2
             loop_0:
                             play             0, 1, 40
                             wait             2960
-                            add              R2, 3276, R2
                             loop             R1, @loop_0
                             loop             R0, @avg_0
                             stop
         """
-        readout_str = """
+
+        expected_readout_str = """
             setup:
-                wait_sync        4
+                            wait_sync        4
 
             main:
                             move             1000, R0
@@ -720,8 +722,12 @@ class TestQBloxCompiler:
                             loop             R0, @avg_0
                             stop
         """
-        assert is_q1asm_equal(sequences["drive"], drive_str)
-        assert is_q1asm_equal(sequences["readout"], readout_str)
+
+        drive_str = repr(sequences["drive"]._program)
+        readout_str = repr(sequences["readout"]._program)
+
+        assert is_q1asm_equal(drive_str, expected_drive_str)
+        assert is_q1asm_equal(readout_str, expected_readout_str)
 
     def test_measure_calls_play_acquire(self, measure_program):
         compiler = QbloxCompiler()

@@ -175,7 +175,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                 self._buses[bus].qprogram_block_stack.pop()
                 if block._uuid in self._buses[bus]._allocated_registers_of_block:
                     for register in self._buses[bus]._allocated_registers_of_block[block._uuid]:
-                        self._buses[bus].qpy_sequence._program._memory.mark_out_of_scope(register)
+                        self._buses[bus].qpy_sequence._program._memory.mark_out_of_use(register)
                     del self._buses[bus]._allocated_registers_of_block[block._uuid]
 
         self._qprogram = qprogram
@@ -302,6 +302,10 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             self._buses[bus].qpy_block_stack[-1].append_component(qpy_loop)
             self._buses[bus].qpy_block_stack.append(qpy_loop)
             self._buses[bus].average_counter += 1
+
+            self._buses[bus]._allocated_registers_of_block[element._uuid] = [qpy_loop.counter_register]
+            for register in self._buses[bus]._allocated_registers_of_block[element._uuid]:
+                self._buses[bus].qpy_sequence._program._memory.allocate_register_and_mark_in_use(register)
         return True
 
     def _handle_infinite_loop(self, _: InfiniteLoop):
@@ -377,7 +381,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             self._buses[bus]._allocated_registers_of_block[element._uuid].append(qpy_loop.iteration_register)
             self._buses[bus]._allocated_registers_of_block[element._uuid].extend(qpy_loop.loop_registers)
             for register in self._buses[bus]._allocated_registers_of_block[element._uuid]:
-                self._buses[bus].qpy_sequence._program._memory.allocate_register_and_mark_in_scope(register)
+                self._buses[bus].qpy_sequence._program._memory.allocate_register_and_mark_in_use(register)
         return True
 
     def _handle_loop(self, _: Loop):
@@ -547,7 +551,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                 component=QPyInstructions.Move(var=self._buses[element.bus].next_bin_index, register=bin_register),
                 bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
             )
-            self._buses[element.bus].qpy_sequence._program._memory.allocate_register_and_mark_in_scope(bin_register)
+            self._buses[element.bus].qpy_sequence._program._memory.allocate_register_and_mark_in_use(bin_register)
             register_I, register_Q = QPyProgram.Register(), QPyProgram.Register()
             self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
                 component=QPyInstructions.Move(var=index_I, register=register_I),
@@ -569,8 +573,8 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             self._buses[element.bus].qpy_block_stack[block_index_for_add_instruction].append_component(
                 component=QPyInstructions.Add(origin=bin_register, var=1, destination=bin_register)
             )
-            self._buses[element.bus].qpy_sequence._program._memory.allocate_register_and_mark_in_scope(register_I)
-            self._buses[element.bus].qpy_sequence._program._memory.allocate_register_and_mark_in_scope(register_Q)
+            self._buses[element.bus].qpy_sequence._program._memory.allocate_register_and_mark_in_use(register_I)
+            self._buses[element.bus].qpy_sequence._program._memory.allocate_register_and_mark_in_use(register_Q)
         self._buses[element.bus].static_duration += integration_length
         self._buses[element.bus].next_bin_index = 0  # maybe this counter can be removed completely
         self._buses[element.bus].next_acquisition_index += 1
@@ -595,7 +599,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                 self._buses[element.bus].qpy_block_stack[-1].append_component(
                     component=QPyInstructions.Move(var=index_I, register=register_I)
                 )
-                self._buses[element.bus].qpy_sequence._program._memory.allocate_register_and_mark_in_scope(register_I)
+                self._buses[element.bus].qpy_sequence._program._memory.allocate_register_and_mark_in_use(register_I)
                 index_I = register_I
             if waveform_Q in self._buses[element.bus].waveform_to_register:
                 index_Q = self._buses[element.bus].waveform_to_register[waveform_Q]
@@ -605,7 +609,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                 self._buses[element.bus].qpy_block_stack[-1].append_component(
                     component=QPyInstructions.Move(var=index_Q, register=register_Q)
                 )
-                self._buses[element.bus].qpy_sequence._program._memory.allocate_register_and_mark_in_scope(register_Q)
+                self._buses[element.bus].qpy_sequence._program._memory.allocate_register_and_mark_in_use(register_Q)
                 index_Q = register_Q
 
         if element.wait_time is not None:
