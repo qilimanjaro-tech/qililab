@@ -478,7 +478,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             tuple[str, str]: A tuple containing the notebook name and its folder.
         """
         # Create qubit_string to add:
-        qubit_str = (  # fmt: off
+        # fmt: off
+        qubit_str = (
             f"_q{str(self.qubit_index)}"
             if isinstance(self.qubit_index, int)
             else "_" + "".join(f"q{q}" for q in self.qubit_index)
