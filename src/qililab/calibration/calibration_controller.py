@@ -817,9 +817,7 @@ class CalibrationController:
         Returns:
             float: difference/error between the two samples.
         """
-        if node.comparison_model is not None:
-            return node.comparison_model(obtained, comparison)
-        return None
+        return node.comparison_model(obtained, comparison)
 
     @staticmethod
     def _is_timeout_expired(timestamp: float, timeout: float) -> bool:
