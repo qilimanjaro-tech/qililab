@@ -29,11 +29,7 @@ dummy_comparison_model = MagicMock()  # Dummy comparison model, to provide to th
 ### MOCKED NODES ###
 ####################
 @pytest.fixture(name="initialize_node_no_optional")
-@patch(
-    "qililab.calibration.calibration_node.CalibrationNode._build_notebooks_logger_stream",
-    return_value=StringIO(),
-)
-def fixture_initialize_node_no_optional(_) -> CalibrationNode:
+def fixture_initialize_node_no_optional() -> CalibrationNode:
     """Return a mocked CalibrationNode object for initialization, with the minimum number of things specified or mocked."""
     return CalibrationNode(
         nb_path="tests/calibration/notebook_test/zeroth.ipynb",
@@ -43,18 +39,10 @@ def fixture_initialize_node_no_optional(_) -> CalibrationNode:
 
 @pytest.fixture(name="initialize_node_optional")
 @patch(
-    "qililab.calibration.calibration_node.CalibrationNode.get_last_calibrated_output_parameters",
-    return_value={},
-)
-@patch(
     "qililab.calibration.calibration_node.CalibrationNode.get_last_calibrated_timestamp",
     return_value=0.0,
 )
-@patch(
-    "qililab.calibration.calibration_node.CalibrationNode._build_notebooks_logger_stream",
-    return_value=StringIO(),
-)
-def fixture_initialize_node_optional(_, __, ____) -> CalibrationNode:
+def fixture_initialize_node_optional(_) -> CalibrationNode:
     """Return a mocked CalibrationNode object for initialization, with everything specified or mocked."""
     return CalibrationNode(
         nb_path="tests/calibration/notebook_test/zeroth.ipynb",
@@ -66,10 +54,9 @@ def fixture_initialize_node_optional(_, __, ____) -> CalibrationNode:
 
 
 @pytest.fixture(name="methods_node")
-@patch("qililab.calibration.calibration_node.CalibrationNode.get_last_calibrated_output_parameters")
 @patch("qililab.calibration.calibration_node.CalibrationNode.get_last_calibrated_timestamp", return_value=1111)
 @patch("qililab.calibration.calibration_node.StringIO", autospec=True)
-def fixture_methods_node(_, __, ____) -> CalibrationNode:
+def fixture_methods_node(_, __) -> CalibrationNode:
     """Return a mocked CalibrationNode object."""
     return CalibrationNode(
         nb_path="./foobar.ipynb",
@@ -114,7 +101,7 @@ class TestInitializationCalibrationNode:
         assert initialize_node_optional.nb_folder == os.path.abspath("tests/calibration/notebook_test")
         assert initialize_node_optional.input_parameters == {"a": 0, "b": 1}
         assert initialize_node_optional.sweep_interval.all() == np.array([0, 1, 2]).all()
-        assert initialize_node_optional.output_parameters == {}
+        assert initialize_node_optional.output_parameters is None
         assert initialize_node_optional.previous_timestamp == 0.0
         assert isinstance(initialize_node_optional._stream, StringIO)
         assert initialize_node_optional.been_calibrated is False
