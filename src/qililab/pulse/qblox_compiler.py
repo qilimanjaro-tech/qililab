@@ -241,9 +241,9 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         start.append_component(ResetPh())
         # Check if any markers should be set ON
         if qblox_module.name == InstrumentName.QCMRF:
-            mask = int("".join(["1" if i in [0, 1] and i in sequencer.outputs else "0" for i in range(4)]), 2)
+            mask = int("".join(["1" if i in [0, 1] and i in sequencer.outputs else "0" for i in range(4)])[::-1], 2)
         elif qblox_module.name == InstrumentName.QRMRF:
-            mask = int("".join(["1" if i in [1] and i - 1 in sequencer.outputs else "0" for i in range(4)]), 2)
+            mask = int("".join(["1" if i in [1] and i - 1 in sequencer.outputs else "0" for i in range(4)])[::-1], 2)
         else:
             mask = 0
         start.append_component(SetMrk(mask))
