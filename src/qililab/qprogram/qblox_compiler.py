@@ -64,6 +64,7 @@ class BusCompilationInfo:  # pylint: disable=too-many-instance-attributes, too-f
         self.qpy_sequence = QPy.Sequence(
             program=QPy.Program(), waveforms=QPy.Waveforms(), acquisitions=QPy.Acquisitions(), weights=QPy.Weights()
         )
+        self.qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetMrk(15))
 
         # Acquisitions information
         self.acquisitions: dict[str, AcquisitionData] = {}

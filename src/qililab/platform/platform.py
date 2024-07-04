@@ -642,9 +642,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             if bus_alias not in self._qpy_sequence_cache or self._qpy_sequence_cache[bus_alias] != sequence_hash:
                 buses[bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
                 self._qpy_sequence_cache[bus_alias] = sequence_hash
-            # sync all rellevant sequences
+            # sync all relevant sequences
             for instrument in buses[bus_alias].system_control.instruments:
                 if isinstance(instrument, QbloxModule):
+                    instrument.set_all_markers_overrride(False)
                     instrument.sync_by_port(buses[bus_alias].port)
 
         # Execute sequences
@@ -663,6 +664,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         for bus_alias in sequences:
             for instrument in buses[bus_alias].system_control.instruments:
                 if isinstance(instrument, QbloxModule):
+                    instrument.set_all_markers_overrride(True)
                     instrument.desync_by_port(buses[bus_alias].port)
 
         return results
