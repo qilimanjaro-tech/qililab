@@ -25,8 +25,6 @@ import papermill as pm
 
 from qililab.config import logger
 
-from .comparison_models import norm_root_mean_sqrt_error
-
 logger_output_start = "RAND_INT:47102512880765720413 - OUTPUTS: "
 
 
