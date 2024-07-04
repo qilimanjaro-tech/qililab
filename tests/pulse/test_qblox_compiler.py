@@ -332,6 +332,8 @@ class TestQbloxCompiler:
 
             start:
                             reset_ph
+                            set_mrk          0
+                            upd_param        4
 
             average:
                             move             0, R3
@@ -349,6 +351,8 @@ class TestQbloxCompiler:
                             jlt              R3, 1, @bin
                             loop             R2, @average
             stop:
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
 
@@ -361,6 +365,8 @@ class TestQbloxCompiler:
 
             start:
                             reset_ph
+                            set_mrk          0
+                            upd_param        4
 
             average:
                             move             0, R3
@@ -381,6 +387,8 @@ class TestQbloxCompiler:
                             jlt              R3, 1, @bin
                             loop             R2, @average
             stop:
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         seq_0_q1asm = sequences_0._program
@@ -432,6 +440,8 @@ class TestQbloxCompiler:
 
             start:
                             reset_ph
+                            set_mrk          0
+                            upd_param        4
 
             average:
                             move             0, R3
@@ -449,6 +459,8 @@ class TestQbloxCompiler:
                             jlt              R3, 1, @bin
                             loop             R2, @average
             stop:
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         sequences_0_program = sequences_0._program
@@ -469,6 +481,8 @@ class TestQbloxCompiler:
 
         start:
                         reset_ph
+                        set_mrk          0
+                        upd_param        4
 
         average:
                         move             0, R3
@@ -502,6 +516,8 @@ class TestQbloxCompiler:
                         jlt              R3, 1, @bin
                         loop             R2, @average
         stop:
+                        set_mrk          0
+                        upd_param        4
                         stop
         """
 

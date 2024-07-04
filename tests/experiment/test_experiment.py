@@ -179,7 +179,8 @@ class TestMethods:
             assert len(bus_schedule) == 1
             assert isinstance(bus_schedule[0], Sequence)
             assert (
-                bus_schedule[0]._program.duration == experiment.hardware_average * experiment.repetition_duration + 4
+                bus_schedule[0]._program.duration
+                == experiment.hardware_average * experiment.repetition_duration + 4 + 4 + 4
             )  # additional 4ns for the initial wait_sync
 
     def test_compile_raises_error(self, experiment: Experiment):

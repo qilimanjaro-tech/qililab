@@ -18,7 +18,19 @@ from qpysequence import Sequence as QpySequence
 from qpysequence import Waveforms, Weights
 from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Register
-from qpysequence.program.instructions import Acquire, AcquireWeighed, Move, Play, ResetPh, SetAwgGain, SetPh, Stop, Wait
+from qpysequence.program.instructions import (
+    Acquire,
+    AcquireWeighed,
+    Move,
+    Play,
+    ResetPh,
+    SetAwgGain,
+    SetMrk,
+    SetPh,
+    Stop,
+    UpdParam,
+    Wait,
+)
 from qpysequence.utils.constants import AWG_MAX_GAIN, INST_MAX_WAIT
 
 from qililab.config import logger
@@ -227,6 +239,15 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         program = Program()
         start = Block(name="start")
         start.append_component(ResetPh())
+        # Check if any markers should be set ON
+        if qblox_module.name == InstrumentName.QCMRF:
+            mask = int("".join(["1" if i in [0, 1] and i in sequencer.outputs else "0" for i in range(4)]), 2)
+        elif qblox_module.name == InstrumentName.QRMRF:
+            mask = int("".join(["1" if i in [1] and i - 1 in sequencer.outputs else "0" for i in range(4)]), 2)
+        else:
+            mask = 0
+        start.append_component(SetMrk(mask))
+        start.append_component(UpdParam(4))
         program.append_block(block=start)
         # Create registers with 0 and 1 (necessary for qblox)
         weight_registers = Register(), Register()
@@ -237,6 +258,9 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         avg_loop.append_component(bin_loop)
         program.append_block(avg_loop)
         stop = Block(name="stop")
+        # Set all markers to OFF
+        stop.append_component(SetMrk(0))
+        stop.append_component(UpdParam(4))
         stop.append_component(Stop())
         program.append_block(block=stop)
         timeline = pulse_bus_schedule.timeline

@@ -363,7 +363,6 @@ class TestQBloxCompiler:
         drive_str = """
             setup:
                             wait_sync        4
-                            set_mrk          15
 
             main:
                             set_freq         1200
@@ -385,7 +384,6 @@ class TestQBloxCompiler:
         readout_str = """
             setup:
                             wait_sync        4
-                            set_mrk          15
 
             main:
                             wait             40

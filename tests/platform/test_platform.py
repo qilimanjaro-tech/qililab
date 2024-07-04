@@ -325,7 +325,7 @@ class TestMethods:
             assert isinstance(sequence, list)
             assert len(sequence) == 1
             assert isinstance(sequence[0], Sequence)
-            assert sequence[0]._program.duration == 200_000 * 1000 + 4
+            assert sequence[0]._program.duration == 200_000 * 1000 + 4 + 4 + 4
 
     def test_execute_qprogram_with_qblox(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
