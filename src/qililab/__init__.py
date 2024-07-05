@@ -26,7 +26,7 @@ from .data_management import build_platform, load_results, save_platform, save_r
 from .execute_circuit import execute
 from .qprogram import Calibration, Domain, QbloxCompiler, QProgram, QuantumMachinesCompiler
 from .result import Results, stream_results
-from .typings import ExperimentOptions, ExperimentSettings, Parameter
+from .typings import Parameter
 from .utils import Loop
 from .utils.serialization import serialize, serialize_to, deserialize, deserialize_from
 from .waveforms import *
