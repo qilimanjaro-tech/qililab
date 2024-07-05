@@ -91,7 +91,7 @@ class Galadriel:
             ],
             "M(2)": [
                 {
-                    "bus": "feedline_input_output_bus_1",
+                    "bus": "feedline_input_output_bus_2",
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -256,6 +256,85 @@ class Galadriel:
         ],
     }
 
+    qblox_qcm_rf_0: dict[str, Any] = {
+        "name": InstrumentName.QCMRF,
+        "alias": InstrumentName.QCMRF.value,
+        "firmware": "0.7.0",
+        "num_sequencers": 1,
+        "out0_lo_freq": 3.7e9,
+        "out0_lo_en": True,
+        "out0_att": 10,
+        "out0_offset_path0": 0.2,
+        "out0_offset_path1": 0.07,
+        "out1_lo_freq": 3.9e9,
+        "out1_lo_en": True,
+        "out1_att": 6,
+        "out1_offset_path0": 0.1,
+        "out1_offset_path1": 0.6,
+        "awg_sequencers": [
+            {
+                "identifier": 0,
+                "chip_port_id": "drive_q1",
+                "outputs": [0],
+                "num_bins": 1,
+                "intermediate_frequency": 20000000,
+                "gain_i": 0.001,
+                "gain_q": 0.02,
+                "gain_imbalance": 1,
+                "phase_imbalance": 0,
+                "offset_i": 0,
+                "offset_q": 0,
+                "hardware_modulation": True,
+            },
+        ],
+    }
+
+    qblox_qrm_rf_0: dict[str, Any] = {
+        "name": InstrumentName.QRMRF,
+        "alias": InstrumentName.QRMRF.value,
+        "firmware": "0.7.0",
+        "num_sequencers": 1,
+        "out0_in0_lo_freq": 3e9,
+        "out0_in0_lo_en": True,
+        "out0_att": 34,
+        "in0_att": 28,
+        "out0_offset_path0": 0.123,
+        "out0_offset_path1": 1.234,
+        "acquisition_delay_time": 100,
+        "awg_sequencers": [
+            {
+                "identifier": 0,
+                "chip_port_id": "feedline_output_2",
+                "qubit": 1,
+                "outputs": [0],
+                "weights_i": [1, 1, 1, 1],
+                "weights_q": [1, 1, 1, 1],
+                "weighed_acq_enabled": False,
+                "threshold": 0.5,
+                "threshold_rotation": 45.0,
+                "num_bins": 1,
+                "intermediate_frequency": 20000000,
+                "gain_i": 0.001,
+                "gain_q": 0.02,
+                "gain_imbalance": 1,
+                "phase_imbalance": 0,
+                "offset_i": 0,
+                "offset_q": 0,
+                "hardware_modulation": True,
+                "scope_acquire_trigger_mode": "sequencer",
+                "scope_hardware_averaging": True,
+                "sampling_rate": 1000000000,
+                "integration_length": 8000,
+                "integration_mode": "ssb",
+                "sequence_timeout": 1,
+                "acquisition_timeout": 1,
+                "hardware_demodulation": True,
+                "scope_store_enabled": True,
+                "time_of_flight": 40,
+            }
+        ],
+    }
+
     pulsar_controller_qrm_0: dict[str, Any] = {
         "name": InstrumentControllerName.QBLOX_PULSAR,
         "alias": "pulsar_controller_qrm_0",
@@ -371,7 +450,7 @@ class Galadriel:
         AWGTypes.AWG_SEQUENCERS.value: [
             {
                 "identifier": 0,
-                "chip_port_id": "feedline_input_1",
+                "chip_port_id": "feedline_output_2",
                 "qubit": 2,
                 "outputs": [0],
                 Parameter.NUM_BINS.value: 1,
@@ -505,6 +584,8 @@ class Galadriel:
         qblox_qcm_0,
         qblox_qrm_0,
         qblox_qrm_1,
+        qblox_qcm_rf_0,
+        qblox_qrm_rf_0,
         rohde_schwarz_0,
         rohde_schwarz_1,
         attenuator,
@@ -524,6 +605,7 @@ class Galadriel:
         "nodes": [
             {"name": "port", "alias": "flux_q0", "line": "flux", "nodes": ["q0"]},
             {"name": "port", "alias": "drive_q0", "line": "drive", "nodes": ["q0"]},
+            {"name": "port", "alias": "drive_q1", "line": "drive", "nodes": ["q1"]},
             {
                 "name": "port",
                 "alias": "feedline_input",
@@ -531,7 +613,8 @@ class Galadriel:
                 "nodes": ["resonator_q0", "resonator_q1"],
             },
             {"name": "port", "alias": "feedline_output", "line": "feedline_output", "nodes": ["resonator_q0"]},
-            {"name": "port", "alias": "feedline_input_1", "line": "feedline_input", "nodes": ["resonator_q2"]},
+            {"name": "port", "alias": "feedline_output_1", "line": "feedline_output", "nodes": ["resonator_q1"]},
+            {"name": "port", "alias": "feedline_output_2", "line": "feedline_input", "nodes": ["resonator_q2"]},
             {
                 "name": "resonator",
                 "alias": "resonator_q0",
@@ -542,13 +625,13 @@ class Galadriel:
                 "name": "resonator",
                 "alias": "resonator_q1",
                 "frequency": 7.34730e09,
-                "nodes": ["feedline_input", "feedline_output", "q1"],
+                "nodes": ["feedline_input", "feedline_output_1", "q1"],
             },
             {
                 "name": "resonator",
                 "alias": "resonator_q2",
                 "frequency": 7.34730e09,
-                "nodes": ["feedline_input_1", "q2"],
+                "nodes": ["feedline_input", "feedline_output_2", "q2"],
             },
             {
                 "name": "qubit",
@@ -562,7 +645,7 @@ class Galadriel:
                 "alias": "q1",
                 "qubit_index": 1,
                 "frequency": 3.351e09,
-                "nodes": ["resonator_q1"],
+                "nodes": ["drive_q1", "resonator_q1"],
             },
             {
                 "name": "qubit",
@@ -586,6 +669,16 @@ class Galadriel:
             RUNCARD.DELAY: 0,
         },
         {
+            RUNCARD.ALIAS: "drive_line_q1_bus",
+            "system_control": {
+                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
+                RUNCARD.INSTRUMENTS: [InstrumentName.QCMRF.value],
+            },
+            "port": "drive_q1",
+            RUNCARD.DISTORTIONS: [],
+            RUNCARD.DELAY: 0,
+        },
+        {
             "alias": "feedline_input_output_bus",
             "system_control": {
                 "name": SystemControlName.READOUT_SYSTEM_CONTROL,
@@ -596,12 +689,22 @@ class Galadriel:
             RUNCARD.DELAY: 0,
         },
         {
-            "alias": "feedline_input_output_bus_1",
+            "alias": "feedline_input_output_bus_2",
             "system_control": {
                 "name": SystemControlName.READOUT_SYSTEM_CONTROL,
                 RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_1"],
             },
-            "port": "feedline_input_1",
+            "port": "feedline_output_2",
+            RUNCARD.DISTORTIONS: [],
+            RUNCARD.DELAY: 0,
+        },
+        {
+            "alias": "feedline_input_output_bus_1",
+            "system_control": {
+                "name": SystemControlName.READOUT_SYSTEM_CONTROL,
+                RUNCARD.INSTRUMENTS: [f"{InstrumentName.QRMRF.value}"],
+            },
+            "port": "feedline_output_1",
             RUNCARD.DISTORTIONS: [],
             RUNCARD.DELAY: 0,
         },

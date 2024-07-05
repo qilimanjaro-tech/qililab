@@ -592,7 +592,7 @@ class TestMethods:
         pulse_schedule = PulseSchedule()
         # mock compile method
         platform.compile = MagicMock()  # type: ignore[method-assign]
-        platform.compile.return_value = {"feedline_input_output_bus": None, "feedline_input_output_bus_1": None}
+        platform.compile.return_value = {"feedline_input_output_bus": None, "feedline_input_output_bus_2": None}
         # mock execution
         with patch.object(Bus, "upload"):
             with patch.object(Bus, "run"):
