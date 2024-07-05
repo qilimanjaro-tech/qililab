@@ -126,16 +126,17 @@ class QbloxModule(AWG):
         for sequencer in self.awg_sequencers:
             self.device.sequencers[sequencer.identifier].sync_en(False)
 
-    def set_all_markers_override_by_port(self, value: bool, port: str):
+    def set_markers_override_enabled_by_port(self, value: bool, port: str):
         """Set markers override flag ON/OFF for the sequencers associated with port."""
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
         for sequencer in sequencers:
             self.device.sequencers[sequencer.identifier].marker_ovr_en(value)
 
-    def set_all_markers_overrride(self, value: bool):
-        """Set markers override flag ON/OFF for all sequencers."""
-        for sequencer in self.awg_sequencers:
-            self.device.sequencers[sequencer.identifier].marker_ovr_en(value)
+    def set_markers_override_value_by_port(self, value: int, port: str):
+        """Set markers override value for all sequencers."""
+        sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
+        for sequencer in sequencers:
+            self.device.sequencers[sequencer.identifier].marker_ovr_value(value)
 
     @property
     def module_type(self):
