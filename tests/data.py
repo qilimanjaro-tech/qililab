@@ -304,7 +304,7 @@ class Galadriel:
         "awg_sequencers": [
             {
                 "identifier": 0,
-                "chip_port_id": "feedline_output_2",
+                "chip_port_id": "feedline_output_1",
                 "qubit": 1,
                 "outputs": [0],
                 "weights_i": [1, 1, 1, 1],

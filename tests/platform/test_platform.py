@@ -334,9 +334,12 @@ class TestMethods:
         weights_wf = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
+        qprogram.play(bus="drive_line_q1_bus", waveform=drive_wf)
         qprogram.sync()
         qprogram.play(bus="feedline_input_output_bus", waveform=readout_wf)
+        qprogram.play(bus="feedline_input_output_bus_1", waveform=readout_wf)
         qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=weights_wf)
+        qprogram.qblox.acquire(bus="feedline_input_output_bus_1", weights=weights_wf)
 
         with (
             patch("builtins.open") as patched_open,
@@ -355,15 +358,17 @@ class TestMethods:
             _ = platform.execute_qprogram(qprogram=qprogram, debug=True)
 
         # assert upload executed only once (2 because there are 2 buses)
-        assert upload.call_count == 2
+        assert upload.call_count == 4
 
         # assert run executed all three times (6 because there are 2 buses)
-        assert run.call_count == 6
-        assert acquire_qprogram_results.call_count == 3  # only readout buses
-        assert sync_port.call_count == 6  # called as many times as run
-        assert desync_port.call_count == 6
+        assert run.call_count == 12
+        assert acquire_qprogram_results.call_count == 6  # only readout buses
+        assert sync_port.call_count == 12  # called as many times as run
+        assert desync_port.call_count == 12
         assert first_execution_results.results["feedline_input_output_bus"] == [123]
+        assert first_execution_results.results["feedline_input_output_bus_1"] == [123]
         assert second_execution_results.results["feedline_input_output_bus"] == [456]
+        assert second_execution_results.results["feedline_input_output_bus_1"] == [456]
 
         # assure only one debug was called
         assert patched_open.call_count == 1
