@@ -181,7 +181,7 @@ class CalibrationController:
         Thus a big value will tend to skip recently calibrated nodes, making the calibration process faster, but less accurate,
         and a small value will make the calibration process slower, but more accurate and robust.
 
-        A node will be skipped if the ``drift timeout`` is bigger than the time since its last calibration. Defaults to 7200 (3h).
+        A node will be skipped if the ``drift timeout`` is bigger than the time since its last calibration. Defaults to 7200 (2h).
         """
 
     def calibrate_all(self, node: CalibrationNode):
@@ -196,7 +196,7 @@ class CalibrationController:
             self.calibrate_all(n)
 
         # You can skip it from the `drift_timeout`, but also skip it due to `been_calibrated()`
-        # If you want to start the calibration from the start again, just increase the drift_timeout or remove the executed files!
+        # If you want to start the calibration from the start again, just decrease the drift_timeout or remove the executed files!
         if (
             node.previous_timestamp is None or self._is_timeout_expired(node.previous_timestamp, self.drift_timeout)
         ) and not node.been_calibrated:
