@@ -591,18 +591,19 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             if isinstance(instrument, (QbloxModule, QuantumMachinesCluster))
         }
         if all(isinstance(instrument, QbloxModule) for instrument in instruments):
+            # Retrieve the time of flight parameter from settings
             times_of_flight = {
                 bus.alias: int(bus.get_parameter(Parameter.TIME_OF_FLIGHT))
                 for bus in buses
                 if isinstance(bus.system_control, ReadoutSystemControl)
             }
+            # Determine what should be the initial value of the markers for each bus.
+            # This depends on the model of the associated Qblox module and the `output` setting of the associated sequencer.
             markers = {}
             for bus in buses:
                 for instrument in bus.system_control.instruments:
                     if isinstance(instrument, QbloxModule):
                         sequencers = instrument.get_sequencers_from_chip_port_id(bus.port)
-                        if instrument.name in [InstrumentName.QCMRF, InstrumentName.QRMRF] and len(sequencers) != 1:
-                            raise RuntimeError("No or many sequencers in one bus.")
                         if instrument.name == InstrumentName.QCMRF:
                             markers[bus.alias] = "".join(
                                 ["1" if i in [0, 1] and i in sequencers[0].outputs else "0" for i in range(4)]
