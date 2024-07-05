@@ -197,12 +197,12 @@ class CalibrationController:
 
         # You can skip it from the `drift_timeout`, but also skip it due to `been_calibrated()`
         # If you want to start the calibration from the start again, just increase the drift_timeout or remove the executed files!
-        if (
-            node.previous_timestamp is None or self._is_timeout_expired(node.previous_timestamp, self.drift_timeout)
-        ) and not node.been_calibrated:
-            self.calibrate(node)
-            self._update_parameters(node)
-        node.been_calibrated = True
+        if not node.been_calibrated:
+            if node.previous_timestamp is None or self._is_timeout_expired(node.previous_timestamp, self.drift_timeout):
+                self.calibrate(node)
+                self._update_parameters(node)
+
+            node.been_calibrated = True
 
     def run_automatic_calibration(self) -> dict[str, dict]:
         """Runs the full automatic calibration procedure and retrieves the final set parameters and achieved fidelities dictionaries.

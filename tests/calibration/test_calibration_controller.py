@@ -49,14 +49,6 @@ fourth = CalibrationNode(
     # no qubit index
 )
 
-# Timestamp needed, to not skip them with `been_calibrated()`
-# TODO: Check if its the previous_timestamps(), and if the first calibration will work (without previous executions)
-zeroth.previous_timestamp = datetime.now()
-first.previous_timestamp = datetime.now()
-second.previous_timestamp = datetime.now()
-third.previous_timestamp = datetime.now()
-fourth.previous_timestamp = datetime.now()
-
 # NODE MAPPING TO THE GRAPH (key = name in graph, value = node object):
 nodes = {"zeroth_q0q1": zeroth, "first_q0": first, "second_q0": second, "third_q0": third, "fourth": fourth}
 
@@ -192,7 +184,6 @@ class RunAutomaticCalibrationMockedController(CalibrationController):
     def __init__(self, node_sequence, calibration_graph, runcard):
         super().__init__(node_sequence=node_sequence, calibration_graph=calibration_graph, runcard=runcard)
         self.calibrate_all = MagicMock(return_value=None)
-        self.drift_timeout = 7200
         self.get_qubits_tables = MagicMock(return_value=(10, 10))
         self.get_last_set_parameters = MagicMock(
             return_value={("test", "test"): (0.0, "test", datetime.fromtimestamp(1999))}
@@ -238,6 +229,7 @@ class TestInitializationCalibrationController:
         assert isinstance(controller[1].runcard, str)
         assert controller[1].platform.to_dict() == build_platform(path_runcard).to_dict()
         assert isinstance(controller[1].platform, Platform)
+        assert controller[1].drift_timeout == 7200
 
     def test_bad_init_method(self):
         """Test an invalid initialization of the class.
