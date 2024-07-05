@@ -324,6 +324,10 @@ class TestCalibrateAllFromCalibrationController:
         # Act:
         controller[2].calibrate_all(fourth)
 
+        # Assert that all the notebooks have been calibrated:
+        for x in controller[1]:
+            assert x.been_calibrated is True
+
         # Asserts recursive calls
         controller[2].calibrate.assert_has_calls(controller[1])
         controller[2]._update_parameters.assert_has_calls(controller[1])
@@ -348,7 +352,6 @@ class TestCalibrationController:
         """Test that the calibration method, calls node.run_node()."""
         for node in controller.node_sequence.values():
             controller.calibrate(node)
-            assert node.been_calibrated
         assert mock_run.call_count == len(controller.node_sequence)
         assert mock_add_str.call_count == len(controller.node_sequence)
 
