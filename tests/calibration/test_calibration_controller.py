@@ -161,17 +161,17 @@ good_graphs = [G0, G1, G2, G3, G4, G5, G6, G7, G8, G9]
 
 # Leaves to Roots recursive calls of each graph. Examples: Calibrate and update_param.
 G0_calls = [call(third), call(zeroth), call(second), call(fourth)]
-G1_calls = [call(zeroth),call(zeroth),call(first),call(second),call(third),call(zeroth),call(zeroth),call(first),call(second),call(fourth)]
+G1_calls = [call(zeroth), call(first), call(second), call(third), call(fourth)]
 G2_calls = [call(zeroth), call(third), call(fourth)]
-G3_calls = [call(zeroth), call(zeroth), call(second), call(third), call(fourth)]
-G4_calls = [call(zeroth), call(second), call(zeroth), call(first), call(third), call(fourth)]
-G5_calls = [call(zeroth), call(zeroth), call(first), call(second), call(zeroth), call(first), call(third), call(fourth)]
-G6_calls = [call(zeroth),call(second),call(zeroth),call(third),call(zeroth),call(second),call(zeroth),call(first),call(fourth)]
-G7_calls = [call(zeroth),call(zeroth),call(first),call(second),call(zeroth),call(third),call(zeroth),call(first),call(fourth)]
-G8_calls = [call(zeroth),call(second),call(zeroth),call(third),call(zeroth),call(second),call(zeroth),call(second),call(zeroth),call(first),call(fourth)]
-G9_calls = [call(zeroth),call(second),call(zeroth),call(zeroth),call(second),call(zeroth),call(first),call(third),call(zeroth),call(second),call(zeroth),call(second),call(zeroth),call(first),call(fourth)]
+G3_calls = [call(zeroth), call(second), call(third), call(fourth)]
+G4_calls = [call(zeroth), call(second), call(first), call(third), call(fourth)]
+G5_calls = [call(zeroth), call(first), call(second), call(third), call(fourth)]
+G6_calls = [call(zeroth), call(second), call(third), call(first), call(fourth)]
+G7_calls = [call(zeroth), call(first), call(second), call(third), call(fourth)]
+G8_calls = [call(zeroth), call(second), call(third), call(first), call(fourth)]
+G9_calls = [call(zeroth), call(second), call(first), call(third), call(fourth)]
 
-leaves_to_roots_good_graphs_calls = [G0_calls,G1_calls,G2_calls,G3_calls,G4_calls,G5_calls,G6_calls,G7_calls,G8_calls,G9_calls]
+leaves_to_roots_good_graphs_calls = [G0_calls,G1_calls ,G2_calls,G3_calls,G4_calls,G5_calls,G6_calls,G7_calls,G8_calls,G9_calls]
 # fmt: on
 
 
@@ -320,13 +320,16 @@ class TestCalibrateAllFromCalibrationController:
         # Reset mock calls:
         controller[2].calibrate.reset_mock()
         controller[2]._update_parameters.reset_mock()
+        for node in controller[2].node_sequence.values():
+            node.been_calibrated = False
 
         # Act:
         controller[2].calibrate_all(fourth)
 
-        # Assert that all the notebooks have been calibrated:
-        for x in controller[1]:
-            assert x.been_calibrated is True
+        # Assert that 0, 3 & 4 notebooks have been calibrated:
+        # (1 and 2 are calibrated in some graphs and not in others)
+        for node in [zeroth, third, fourth]:
+            assert node.been_calibrated is True
 
         # Asserts recursive calls
         controller[2].calibrate.assert_has_calls(controller[1])
