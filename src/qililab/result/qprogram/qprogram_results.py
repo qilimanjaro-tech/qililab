@@ -66,7 +66,7 @@ def probabilities(qprogram_results: QProgramResults, qubit_mapping: list[str] | 
             )
         if not set(qubit_mapping).issubset(set(buses)):
             raise ValueError(
-                "No measurements found for all buses, check the name of the buses provided with the mapping match all the buses specified in runcard."
+                "No measurements found for all specified buses, check the name of the buses provided with the mapping match all the buses specified in runcard."
             )
         buses = qubit_mapping
 
