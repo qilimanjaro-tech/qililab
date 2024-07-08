@@ -62,12 +62,3 @@ class QbloxMeasurementResult(MeasurementResult):
             np.ndarray: The thresholded data.
         """
         return np.array(self.raw_measurement_data["bins"]["threshold"])
-
-    @property
-    def shots(self) -> int:
-        """Returns the number of averages done in hardware.
-
-        Returns:
-            int: number of harware average for the result.
-        """
-        return self.raw_measurement_data["bins"]["avg_cnt"][0]
