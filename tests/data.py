@@ -91,7 +91,7 @@ class Galadriel:
             ],
             "M(2)": [
                 {
-                    "bus": "feedline_input_output_bus_2",
+                    "bus": "feedline_input_output_bus_1",
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -125,6 +125,18 @@ class Galadriel:
                     },
                 }
             ],
+            "Drag(1)": [
+                {
+                    "bus": "drive_line_q1_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 50,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
             "X(0)": [
                 {
                     "bus": "drive_line_q0_bus",
@@ -137,9 +149,33 @@ class Galadriel:
                     },
                 }
             ],
+            "X(1)": [
+                {
+                    "bus": "drive_line_q1_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 50,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
             "Y(0)": [
                 {
                     "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "Y(1)": [
+                {
+                    "bus": "drive_line_q1_bus",
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -604,6 +640,8 @@ class Galadriel:
     chip: dict[str, Any] = {
         "nodes": [
             {"name": "port", "alias": "flux_q0", "line": "flux", "nodes": ["q0"]},
+            {"name": "port", "alias": "flux_q1", "line": "flux", "nodes": ["q1"]},
+            {"name": "port", "alias": "flux_q2", "line": "flux", "nodes": ["q2"]},
             {"name": "port", "alias": "drive_q0", "line": "drive", "nodes": ["q0"]},
             {"name": "port", "alias": "drive_q1", "line": "drive", "nodes": ["q1"]},
             {
@@ -652,7 +690,7 @@ class Galadriel:
                 "alias": "q2",
                 "qubit_index": 2,
                 "frequency": 4.451e09,
-                "nodes": ["resonator_q2"],
+                "nodes": ["drive_q2", "resonator_q2"],
             },
         ],
     }

@@ -295,12 +295,14 @@ class TestMethods:
 
     def test_compile_circuit(self, platform: Platform):
         """Test the compilation of a qibo Circuit."""
-        circuit = Circuit(1)
+        circuit = Circuit(3)
         circuit.add(gates.X(0))
+        circuit.add(gates.X(1))
         circuit.add(gates.Y(0))
-        circuit.add(gates.M(0))
+        circuit.add(gates.Y(1))
+        circuit.add(gates.M(0, 1, 2))
 
-        self._compile_and_assert(platform, circuit, 3)
+        self._compile_and_assert(platform, circuit, 5)
 
     def test_compile_pulse_schedule(self, platform: Platform):
         """Test the compilation of a qibo Circuit."""
@@ -320,12 +322,11 @@ class TestMethods:
         sequences = platform.compile(program=program, num_avg=1000, repetition_duration=200_000, num_bins=1)
         assert isinstance(sequences, dict)
         assert len(sequences) == len_sequences
-        for alias, sequence in sequences.items():
+        for alias, sequences_list in sequences.items():
             assert alias in {bus.alias for bus in platform.buses}
-            assert isinstance(sequence, list)
-            assert len(sequence) == 1
-            assert isinstance(sequence[0], Sequence)
-            assert sequence[0]._program.duration == 200_000 * 1000 + 4 + 4 + 4
+            assert isinstance(sequences_list, list)
+            assert all(isinstance(sequence, Sequence) for sequence in sequences_list)
+            assert sequences_list[0]._program.duration == 200_000 * 1000 + 4 + 4 + 4
 
     def test_execute_qprogram_with_qblox(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""

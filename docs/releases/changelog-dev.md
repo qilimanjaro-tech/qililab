@@ -13,9 +13,15 @@
 
   [#747](https://github.com/qilimanjaro-tech/qililab/pull/747)
 
-### Improvements
+- Added `set_markers_override_enabled_by_port` and `set_markers_override_value_by_port` methods in `QbloxModule` to set markers through QCoDeS, overriding Q1ASM values.
+
+  [#747](https://github.com/qilimanjaro-tech/qililab/pull/747)
 
 ### Improvements
+
+- Improved the algorithm determining which markers should be ON during execution of circuits and qprograms. Now, all markers are OFF by default, and only the markers associated with the `outputs` setting of QCM-RF and QRM-RF sequencers are turned on.
+
+  [#747](https://github.com/qilimanjaro-tech/qililab/pull/747)
 
 ### Breaking changes
 
