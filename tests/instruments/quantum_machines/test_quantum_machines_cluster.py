@@ -381,50 +381,63 @@ class TestQuantumMachinesCluster:
             qmm.set_parameter_of_bus("drive_q0", parameter, value)
 
     @pytest.mark.parametrize(
-        "bus, parameter",
+        "bus, parameter, qmm_name",
         [
-            ("drive_q0", Parameter.LO_FREQUENCY),
-            ("drive_q0", Parameter.IF),
-            ("readout_q0", Parameter.TIME_OF_FLIGHT),
-            ("readout_q0", Parameter.SMEARING),
+            ("drive_q0", Parameter.LO_FREQUENCY, "qmm"),
+            ("drive_q0", Parameter.LO_FREQUENCY, "qmm_with_octave"),
+            ("drive_q0", Parameter.IF, "qmm"),
+            ("readout_q0", Parameter.GAIN, "qmm"),
+            ("drive_q0", Parameter.GAIN, "qmm_with_octave"),
+            ("readout_q0", Parameter.TIME_OF_FLIGHT, "qmm"),
+            ("readout_q0", Parameter.SMEARING, "qmm"),
         ],
     )
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
     def test_get_parameter_of_bus_method(
-        self, mock_qmm, mock_qm, bus: str, parameter: Parameter, qmm: QuantumMachinesCluster
+        self,
+        mock_qmm,
+        mock_qm,
+        bus: str,
+        parameter: Parameter,
+        qmm_name: QuantumMachinesCluster,
     ):
-        """Test the setup method with float value"""
-        qmm._config = qmm.settings.to_qua_config()
-        config_keys = qmm._config["elements"][bus]
 
-        value = qmm.get_parameter_of_bus(bus, parameter)
+        settings = copy.deepcopy(SauronQuantumMachines.qmm_with_octave)
+        settings.pop("name")
+        qmm_with_octave = QuantumMachinesCluster(settings=settings)
+        qmm_with_octave.device = MagicMock
+        """Test the setup method with float value"""
+        qmm_name._config = qmm_name.settings.to_qua_config()
+        config_keys = qmm_name._config["elements"][bus]
+
+        value = qmm_name.get_parameter_of_bus(bus, parameter)
         if parameter == Parameter.LO_FREQUENCY:
             if "mixInputs" in config_keys:
-                assert value == qmm._config["elements"][bus]["mixInputs"]["lo_frequency"]
+                assert value == qmm_name._config["elements"][bus]["mixInputs"]["lo_frequency"]
             if "RF_inputs" in config_keys:
-                port = qmm._config["elements"][bus]["RF_inputs"]["port"]
-                assert value == qmm._config["octaves"][port[0]]["RF_outputs"][port[1]]["LO_frequency"]
+                port = qmm_name._config["elements"][bus]["RF_inputs"]["port"]
+                assert value == qmm_name._config["octaves"][port[0]]["RF_outputs"][port[1]]["LO_frequency"]
         if parameter == Parameter.IF:
             if "intermediate_frequency" in config_keys:
-                assert value == qmm._config["elements"][bus]["intermediate_frequency"]
+                assert value == qmm_name._config["elements"][bus]["intermediate_frequency"]
         if parameter == Parameter.GAIN:
             if "mixInputs" in config_keys and "outputs" in config_keys:
-                port_i = qmm._config["elements"][bus]["outputs"]["out1"]
-                port_q = qmm._config["elements"][bus]["outputs"]["out2"]
+                port_i = qmm_name._config["elements"][bus]["outputs"]["out1"]
+                port_q = qmm_name._config["elements"][bus]["outputs"]["out2"]
                 assert value == (
-                    qmm._config["controllers"][port_i[0]]["analog_inputs"][port_i[1]]["gain_db"],
-                    qmm._config["controllers"][port_q[0]]["analog_inputs"][port_q[1]]["gain_db"],
+                    qmm_name._config["controllers"][port_i[0]]["analog_inputs"][port_i[1]]["gain_db"],
+                    qmm_name._config["controllers"][port_q[0]]["analog_inputs"][port_q[1]]["gain_db"],
                 )
             if "RF_inputs" in config_keys:
-                port = qmm._config["elements"][bus]["RF_inputs"]["port"]
-                assert value == qmm._config["octaves"][port[0]]["RF_outputs"][port[1]]["gain"]
+                port = qmm_name._config["elements"][bus]["RF_inputs"]["port"]
+                assert value == qmm_name._config["octaves"][port[0]]["RF_outputs"][port[1]]["gain"]
         if parameter == Parameter.TIME_OF_FLIGHT:
             if "time_of_flight" in config_keys:
-                assert value == qmm._config["elements"][bus]["time_of_flight"]
+                assert value == qmm_name._config["elements"][bus]["time_of_flight"]
         if parameter == Parameter.SMEARING:
             if "smearing" in config_keys:
-                assert value == qmm._config["elements"][bus]["smearing"]
+                assert value == qmm_name._config["elements"][bus]["smearing"]
 
     @pytest.mark.parametrize("parameter", [(Parameter.MAX_CURRENT), (Parameter.OUT0_ATT)])
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
