@@ -74,7 +74,7 @@ def probabilities(qprogram_results: QProgramResults, qubit_mapping: list[str] | 
     # The threshold inside of a qblox bin is the name they use for already classified data as a value between
     # 0 and 1, not the value used in the comparator to perform such classification.
     th_matrix = np.array(
-        [np.concatenate([measurement.threshold for measurement in qprogram_results.results[bus]]) for bus in buses]
+        [np.concatenate([int(measurement.threshold) for measurement in qprogram_results.results[bus]]) for bus in buses]
     )
     # Transpose it and and concat by rows
     th_matrix_T = th_matrix.transpose()
