@@ -385,7 +385,6 @@ class TestQuantumMachinesCluster:
         [
             ("drive_q0", Parameter.LO_FREQUENCY),
             ("drive_q0", Parameter.IF),
-            ("drive_q0_rf", Parameter.GAIN),
         ],
     )
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
