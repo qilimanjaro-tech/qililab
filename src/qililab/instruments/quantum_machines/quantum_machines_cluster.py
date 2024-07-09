@@ -387,13 +387,13 @@ class QuantumMachinesCluster(Instrument):
         if parameter == Parameter.LO_FREQUENCY:
             if "mixInputs" in config_keys:
                 return self._config["elements"][bus]["mixInputs"]["lo_frequency"]
-            elif "RF_inputs" in config_keys:
+            if "RF_inputs" in config_keys:
                 port = self._config["elements"][bus]["RF_inputs"]["port"]
                 return self._config["octaves"][port[0]]["RF_outputs"][port[1]]["LO_frequency"]
-        elif parameter == Parameter.IF:
+        if parameter == Parameter.IF:
             if "intermediate_frequency" in config_keys:
                 return self._config["elements"][bus]["intermediate_frequency"]
-        elif parameter == Parameter.GAIN:
+        if parameter == Parameter.GAIN:
             if "mixInputs" in config_keys and "outputs" in config_keys:
                 port_i = self._config["elements"][bus]["outputs"]["out1"]
                 port_q = self._config["elements"][bus]["outputs"]["out2"]
@@ -401,15 +401,15 @@ class QuantumMachinesCluster(Instrument):
                     self._config["controllers"][port_i[0]]["analog_inputs"][port_i[1]]["gain_db"],
                     self._config["controllers"][port_q[0]]["analog_inputs"][port_q[1]]["gain_db"],
                 )
-            elif "RF_inputs" in config_keys:
+            if "RF_inputs" in config_keys:
                 port = self._config["elements"][bus]["RF_inputs"]["port"]
                 return self._config["octaves"][port[0]]["RF_outputs"][port[1]]["gain"]
-        elif parameter == Parameter.TIME_OF_FLIGHT:
+        if parameter == Parameter.TIME_OF_FLIGHT:
             if "time_of_flight" in config_keys:
                 return self._config["elements"][bus]["time_of_flight"]
-        elif parameter == Parameter.SMEARING:
+        if parameter == Parameter.SMEARING:
             if "smearing" in config_keys:
-                return self._config["elements"][bus]["smearing"]
+                return self._config["elements"][bus]["smearing"] # pylint: disable=too-many-return-statements
 
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
