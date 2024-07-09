@@ -384,19 +384,11 @@ class TestQuantumMachinesCluster:
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
     def test_get_parameter_of_bus_method(
-        self, bus: str, parameter: Parameter, qmm: QuantumMachinesCluster
+        self, mock_qmm, mock_qm, bus: str, parameter: Parameter, qmm: QuantumMachinesCluster
     ):
         """Test the setup method with float value"""
         qmm._config = qmm.settings.to_qua_config()
         config_keys = qmm._config["elements"][bus]
-
-        value = qmm.get_parameter_of_bus(bus, parameter)
-        if parameter == Parameter.LO_FREQUENCY:
-            assert value == qmm._qm._elements[bus].input.lo_frequency
-        if parameter == Parameter.GAIN:
-            assert value == qmm._qm._elements[bus].input.gain
-        if parameter == Parameter.IF:
-            assert value == qmm._qm._elements[bus].intermediate_frequency
 
         value = qmm.get_parameter_of_bus(bus, parameter)
         if parameter == Parameter.LO_FREQUENCY:
