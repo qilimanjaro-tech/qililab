@@ -378,7 +378,7 @@ class TestQuantumMachinesCluster:
         "bus, parameter",
         [
             ("drive_q0", Parameter.LO_FREQUENCY),
-            ("drive_q0", Parameter.IF),
+            ("drive_q1", Parameter.IF),
             ("drive_q0", Parameter.GAIN),
         ],
     )
