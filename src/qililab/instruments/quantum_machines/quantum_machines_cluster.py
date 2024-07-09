@@ -378,12 +378,39 @@ class QuantumMachinesCluster(Instrument):
             ParameterNotFound: Raised if parameter does not exist
         """
         # TODO: Change private QM API to public when implemented.
+
+        if "_config" not in dir(self):
+            self._config = self.settings.to_qua_config()
+
+        config_keys = self._config["elements"][bus]
+
         if parameter == Parameter.LO_FREQUENCY:
-            return self._qm._elements[bus].input.lo_frequency  # type: ignore[union-attr] # pylint: disable=protected-access
-        if parameter == Parameter.GAIN:
-            return self._qm._elements[bus].input.gain  # type: ignore[union-attr] # pylint: disable=protected-access
-        if parameter == Parameter.IF:
-            return self._qm._elements[bus].intermediate_frequency  # pylint: disable=protected-access
+            if "mixInputs" in config_keys:
+                return self._config["elements"][bus]["mixInputs"]["lo_frequency"]
+            elif "RF_inputs" in config_keys:
+                port = self._config["elements"][bus]["RF_inputs"]["port"]
+                return self._config["octaves"][port[0]]["RF_outputs"][port[1]]["LO_frequency"]
+        elif parameter == Parameter.IF:
+            if "intermediate_frequency" in config_keys:
+                return self._config["elements"][bus]["intermediate_frequency"]
+        elif parameter == Parameter.GAIN:
+            if "mixInputs" in config_keys and "outputs" in config_keys:
+                port_i = self._config["elements"][bus]["outputs"]["out1"]
+                port_q = self._config["elements"][bus]["outputs"]["out2"]
+                return (
+                    self._config["controllers"][port_i[0]]["analog_inputs"][port_i[1]]["gain_db"],
+                    self._config["controllers"][port_q[0]]["analog_inputs"][port_q[1]]["gain_db"],
+                )
+            elif "RF_inputs" in config_keys:
+                port = self._config["elements"][bus]["RF_inputs"]["port"]
+                return self._config["octaves"][port[0]]["RF_outputs"][port[1]]["gain"]
+        elif parameter == Parameter.TIME_OF_FLIGHT:
+            if "time_of_flight" in config_keys:
+                return self._config["elements"][bus]["time_of_flight"]
+        elif parameter == Parameter.SMEARING:
+            if "smearing" in config_keys:
+                return self._config["elements"][bus]["smearing"]
+
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
     def compile(self, program: Program) -> str:
