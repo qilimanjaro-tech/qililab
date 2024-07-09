@@ -384,12 +384,11 @@ class TestQuantumMachinesCluster:
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
     def test_get_parameter_of_bus_method(
-        self, mock_qmm, mock_qm, bus: str, parameter: Parameter, qmm: QuantumMachinesCluster
+        self, bus: str, parameter: Parameter, qmm: QuantumMachinesCluster
     ):
         """Test the setup method with float value"""
-        qmm.initial_setup()
-        qmm.turn_on()
         qmm._config = qmm.settings.to_qua_config()
+        config_keys = qmm._config["elements"][bus]
 
         value = qmm.get_parameter_of_bus(bus, parameter)
         if parameter == Parameter.LO_FREQUENCY:
@@ -398,6 +397,34 @@ class TestQuantumMachinesCluster:
             assert value == qmm._qm._elements[bus].input.gain
         if parameter == Parameter.IF:
             assert value == qmm._qm._elements[bus].intermediate_frequency
+
+        value = qmm.get_parameter_of_bus(bus, parameter)
+        if parameter == Parameter.LO_FREQUENCY:
+            if "mixInputs" in config_keys:
+                assert value == qmm._config["elements"][bus]["mixInputs"]["lo_frequency"]
+            if "RF_inputs" in config_keys:
+                port = qmm._config["elements"][bus]["RF_inputs"]["port"]
+                assert value == qmm._config["octaves"][port[0]]["RF_outputs"][port[1]]["LO_frequency"]
+        if parameter == Parameter.IF:
+            if "intermediate_frequency" in config_keys:
+                assert value == qmm._config["elements"][bus]["intermediate_frequency"]
+        if parameter == Parameter.GAIN:
+            if "mixInputs" in config_keys and "outputs" in config_keys:
+                port_i = qmm._config["elements"][bus]["outputs"]["out1"]
+                port_q = qmm._config["elements"][bus]["outputs"]["out2"]
+                assert value == (
+                    qmm._config["controllers"][port_i[0]]["analog_inputs"][port_i[1]]["gain_db"],
+                    qmm._config["controllers"][port_q[0]]["analog_inputs"][port_q[1]]["gain_db"],
+                )
+            if "RF_inputs" in config_keys:
+                port = qmm._config["elements"][bus]["RF_inputs"]["port"]
+                assert value == qmm._config["octaves"][port[0]]["RF_outputs"][port[1]]["gain"]
+        if parameter == Parameter.TIME_OF_FLIGHT:
+            if "time_of_flight" in config_keys:
+                assert value == qmm._config["elements"][bus]["time_of_flight"]
+        if parameter == Parameter.SMEARING:
+            if "smearing" in config_keys:
+                assert value == qmm._config["elements"][bus]["smearing"]
 
     @pytest.mark.parametrize("parameter", [(Parameter.MAX_CURRENT), (Parameter.OUT0_ATT)])
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
