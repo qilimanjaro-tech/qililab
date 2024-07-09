@@ -409,7 +409,7 @@ class QuantumMachinesCluster(Instrument):
                 return self._config["elements"][bus]["time_of_flight"]
         if parameter == Parameter.SMEARING:
             if "smearing" in config_keys:
-                return self._config["elements"][bus]["smearing"] # pylint: disable=too-many-return-statements
+                return self._config["elements"][bus]["smearing"]  # pylint: disable=too-many-return-statements
 
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
