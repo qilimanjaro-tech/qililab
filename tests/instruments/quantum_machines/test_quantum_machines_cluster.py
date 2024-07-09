@@ -57,7 +57,7 @@ def fixture_qmm_with_octave():
 def fixture_compilation_config() -> dict:
     """Fixture that returns a configuration dictionary as the QuantumMachinesCompiler would."""
     config = {
-        "elements": {"drive_q0": {"operations": {"control_445e964c_fb58e912_100": "control_445e964c_fb58e912_100"}}},
+        "elements": {"drive_q0": {"operations": {"control_445e964c_fb58e912_100": "control_445e964c_fb58e912_100"}, 'RF_inputs':{'port':('octave1',1)}}},
         "pulses": {
             "control_445e964c_fb58e912_100": {
                 "operation": "control",
@@ -66,6 +66,7 @@ def fixture_compilation_config() -> dict:
             },
         },
         "waveforms": {"445e964c": {"type": "constant", "sample": 1.0}, "fb58e912": {"type": "constant", "sample": 0.0}},
+        "octaves": {'octave1':{'RF_outputs':{1:{'gain': 0.5}}}},
     }
     return config
 
