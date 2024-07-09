@@ -384,10 +384,10 @@ class TestQuantumMachinesCluster:
         "bus, parameter, qmm_name",
         [
             ("drive_q0", Parameter.LO_FREQUENCY, "qmm"),
-            ("drive_q0", Parameter.LO_FREQUENCY, "qmm_with_octave"),
+            ("drive_q0_rf", Parameter.LO_FREQUENCY, "qmm_with_octave"),
             ("drive_q0", Parameter.IF, "qmm"),
             ("readout_q0", Parameter.GAIN, "qmm"),
-            ("drive_q0", Parameter.GAIN, "qmm_with_octave"),
+            ("drive_q0_rf", Parameter.GAIN, "qmm_with_octave"),
             ("readout_q0", Parameter.TIME_OF_FLIGHT, "qmm"),
             ("readout_q0", Parameter.SMEARING, "qmm"),
         ],
