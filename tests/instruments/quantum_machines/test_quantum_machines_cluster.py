@@ -388,6 +388,8 @@ class TestQuantumMachinesCluster:
         self, mock_qmm, mock_qm, bus: str, parameter: Parameter, qmm: QuantumMachinesCluster
     ):
         """Test the setup method with float value"""
+        qmm.initial_setup()
+        qmm.turn_on()
         qmm._config = qmm.settings.to_qua_config()
         config_keys = qmm._config["elements"][bus]
 
