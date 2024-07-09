@@ -300,6 +300,7 @@ class Parameter(str, Enum):
     MAX_VOLTAGE = "max_voltage"
     SCOPE_STORE_ENABLED = "scope_store_enabled"
     TIME_OF_FLIGHT = "time_of_flight"
+    SMEARING = "smearing"
     GAIN_I = "gain_i"
     GAIN_Q = "gain_q"
     OFFSET_I = "offset_i"
