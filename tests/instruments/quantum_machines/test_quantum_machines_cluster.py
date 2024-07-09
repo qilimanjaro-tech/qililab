@@ -1,4 +1,5 @@
 """This file tests the the ``qm_manager`` class"""
+
 import copy
 from unittest.mock import MagicMock, call, patch
 
@@ -6,14 +7,14 @@ import numpy as np
 import pytest
 from qm import Program, QmPendingJob, QmQueue
 from qm.qua import play, program
+from tests.data import SauronQuantumMachines  # pylint: disable=import-error, no-name-in-module
+from tests.test_utils import build_platform  # pylint: disable=import-error, no-name-in-module
 
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Platform
 from qililab.settings import Settings
 from qililab.typings import Parameter
-from tests.data import SauronQuantumMachines  # pylint: disable=import-error, no-name-in-module
-from tests.test_utils import build_platform  # pylint: disable=import-error, no-name-in-module
 
 
 @pytest.fixture(name="qua_program")
@@ -57,7 +58,12 @@ def fixture_qmm_with_octave():
 def fixture_compilation_config() -> dict:
     """Fixture that returns a configuration dictionary as the QuantumMachinesCompiler would."""
     config = {
-        "elements": {"drive_q0": {"operations": {"control_445e964c_fb58e912_100": "control_445e964c_fb58e912_100"}, 'RF_inputs':{'port':('octave1',1)}}},
+        "elements": {
+            "drive_q0": {
+                "operations": {"control_445e964c_fb58e912_100": "control_445e964c_fb58e912_100"},
+                "RF_inputs": {"port": ("octave1", 1)},
+            }
+        },
         "pulses": {
             "control_445e964c_fb58e912_100": {
                 "operation": "control",
@@ -66,7 +72,7 @@ def fixture_compilation_config() -> dict:
             },
         },
         "waveforms": {"445e964c": {"type": "constant", "sample": 1.0}, "fb58e912": {"type": "constant", "sample": 0.0}},
-        "octaves": {'octave1':{'RF_outputs':{1:{'gain': 0.5}}}},
+        "octaves": {"octave1": {"RF_outputs": {1: {"gain": 0.5}}}},
     }
     return config
 
@@ -378,8 +384,8 @@ class TestQuantumMachinesCluster:
         "bus, parameter",
         [
             ("drive_q0", Parameter.LO_FREQUENCY),
-            ("drive_q1", Parameter.IF),
-            ("drive_q0", Parameter.GAIN),
+            ("drive_q0", Parameter.IF),
+            ("drive_q0_rf", Parameter.GAIN),
         ],
     )
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
@@ -388,8 +394,6 @@ class TestQuantumMachinesCluster:
         self, mock_qmm, mock_qm, bus: str, parameter: Parameter, qmm: QuantumMachinesCluster
     ):
         """Test the setup method with float value"""
-        qmm.initial_setup()
-        qmm.turn_on()
         qmm._config = qmm.settings.to_qua_config()
         config_keys = qmm._config["elements"][bus]
 
