@@ -10,6 +10,15 @@ from qililab.qprogram.blocks import ForLoop
 from tests.test_utils import is_q1asm_equal  # pylint: disable=import-error, no-name-in-module
 
 
+def setup_q1asm(marker: str):
+    return f"""
+        setup:
+                wait_sync        4
+                set_mrk          {marker}
+                upd_param        4
+    """
+
+
 @pytest.fixture(name="calibration")
 def fixture_calibration() -> Calibration:
     calibration = Calibration()
@@ -45,6 +54,7 @@ def fixture_no_loops_all_operations() -> QProgram:
     qp.sync()
     qp.wait(bus="readout", duration=100)
     qp.play(bus="readout", waveform=readout_pair)
+    qp.qblox.set_markers(bus="readout", mask="0111")
     qp.qblox.play(bus="readout", waveform=readout_pair, wait_time=4)
     qp.qblox.acquire(bus="readout", weights=weights_pair)
     return qp
@@ -362,6 +372,8 @@ class TestQBloxCompiler:
         drive_str = """
             setup:
                             wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
                             set_freq         1200
@@ -370,6 +382,8 @@ class TestQBloxCompiler:
                             set_awg_gain     16383, 16383
                             set_awg_offs     16383, 16383
                             play             0, 1, 40
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
@@ -383,13 +397,18 @@ class TestQBloxCompiler:
         readout_str = """
             setup:
                             wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
                             wait             40
                             wait             100
                             play             0, 1, 1000
+                            set_mrk          7
                             play             0, 1, 4
                             acquire_weighed  0, 0, 0, 1, 2000
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         assert is_q1asm_equal(sequences["readout"], readout_str)
@@ -403,7 +422,9 @@ class TestQBloxCompiler:
 
         drive_str = """
             setup:
-                wait_sync        4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
                             move             11, R0
@@ -413,6 +434,8 @@ class TestQBloxCompiler:
                             wait             R1
                             add              R1, 10, R1
                             loop             R0, @loop_0
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
 
@@ -430,32 +453,40 @@ class TestQBloxCompiler:
 
         drive_str = """
             setup:
-                wait_sync        4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
-                move             11, R0
-                move             100, R1
+                            move             11, R0
+                            move             100, R1
             loop_0:
-                play             0, 1, 40
-                add              R1, 10, R1
-                loop             R0, @loop_0
-                stop
+                            play             0, 1, 40
+                            add              R1, 10, R1
+                            loop             R0, @loop_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
         """
 
         readout_str = """
             setup:
-                wait_sync        4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
-                move             11, R0
-                move             100, R1
+                            move             11, R0
+                            move             100, R1
             loop_0:
-                wait             R1
-                play             0, 1, 40
-                add              R1, 10, R1
-                loop             R0, @loop_0
-                nop
-                stop
+                            wait             R1
+                            play             0, 1, 40
+                            add              R1, 10, R1
+                            loop             R0, @loop_0
+                            nop
+                            set_mrk          0
+                            upd_param        4
+                            stop
         """
 
         assert is_q1asm_equal(sequences["drive"], drive_str)
@@ -495,7 +526,9 @@ class TestQBloxCompiler:
 
         drive_str = """
             setup:
-                wait_sync        4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
             main:
                             move             1000, R0
             avg_0:
@@ -504,12 +537,16 @@ class TestQBloxCompiler:
                             wait             34468
                             wait             2000
                             loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
 
         readout_str = """
             setup:
-                wait_sync        4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
             main:
                             move             1000, R0
             avg_0:
@@ -518,6 +555,8 @@ class TestQBloxCompiler:
                             play             0, 1, 1000
                             acquire_weighed  0, 0, 0, 0, 1000
                             loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
@@ -533,11 +572,15 @@ class TestQBloxCompiler:
         drive_str = """
             setup:
                             wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
             infinite_loop_0:
                             play             0, 1, 40
                             jmp              @infinite_loop_0
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
 
@@ -561,7 +604,9 @@ class TestQBloxCompiler:
 
         drive_str = """
             setup:
-                wait_sync        4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
                             move             1000, R0
@@ -569,6 +614,8 @@ class TestQBloxCompiler:
                             play             0, 1, 40
                             wait             2100
                             loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
@@ -581,7 +628,9 @@ class TestQBloxCompiler:
 
         readout_str = """
             setup:
-                wait_sync        4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
                             move             1000, R0
@@ -591,6 +640,8 @@ class TestQBloxCompiler:
                             play             0, 1, 1000
                             acquire_weighed  0, 0, 0, 0, 1000
                             loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         assert is_q1asm_equal(sequences["readout"], readout_str)
@@ -619,7 +670,9 @@ class TestQBloxCompiler:
 
         drive_str = """
             setup:
-                wait_sync        4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
                             move             1000, R0
@@ -632,11 +685,15 @@ class TestQBloxCompiler:
                             add              R2, 1, R2
                             loop             R1, @loop_0
                             loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         readout_str = """
             setup:
-                wait_sync        4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
                             move             1000, R0
@@ -653,6 +710,8 @@ class TestQBloxCompiler:
                             add              R5, 1, R5
                             loop             R4, @loop_0
                             loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
@@ -682,7 +741,9 @@ class TestQBloxCompiler:
 
         drive_str = """
             setup:
-                wait_sync        4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
                             move             1000, R0
@@ -695,11 +756,15 @@ class TestQBloxCompiler:
                             add              R2, 3276, R2
                             loop             R1, @loop_0
                             loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         readout_str = """
             setup:
-                wait_sync        4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
                             move             1000, R0
@@ -718,6 +783,8 @@ class TestQBloxCompiler:
                             loop             R4, @loop_0
                             nop
                             loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
@@ -784,7 +851,9 @@ class TestQBloxCompiler:
 
         drive_str = """
             setup:
-                wait_sync        4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
                             move             1000, R0
@@ -797,11 +866,15 @@ class TestQBloxCompiler:
                             add              R2, 3276, R2
                             loop             R1, @loop_0
                             loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         readout_str = """
             setup:
-                wait_sync        4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
                             move             1000, R0
@@ -820,6 +893,8 @@ class TestQBloxCompiler:
                             loop             R4, @loop_0
                             nop
                             loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
@@ -845,7 +920,9 @@ class TestQBloxCompiler:
 
         readout_str = """
             setup:
-                wait_sync        4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
                             move             1000, R0
@@ -878,6 +955,8 @@ class TestQBloxCompiler:
                             add              R10, 3276, R10
                             loop             R9, @loop_1
                             loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         assert is_q1asm_equal(sequences["readout"], readout_str)
@@ -906,7 +985,9 @@ class TestQBloxCompiler:
 
         drive_str = """
             setup:
-                wait_sync        4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
                             move             1000, R0
@@ -926,11 +1007,15 @@ class TestQBloxCompiler:
                             loop             R1, @loop_0
                             nop
                             loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         readout_str = """
             setup:
-                wait_sync        4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
                             move             1000, R0
@@ -954,6 +1039,8 @@ class TestQBloxCompiler:
                             add              R5, 3276, R5
                             loop             R4, @loop_0
                             loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
@@ -983,7 +1070,9 @@ class TestQBloxCompiler:
 
         drive_str = """
             setup:
-                wait_sync        4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
                             move             1000, R0
@@ -1000,11 +1089,15 @@ class TestQBloxCompiler:
                             loop             R1, @loop_0
                             nop
                             loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         readout_str = """
             setup:
-                wait_sync        4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
                             move             1000, R0
@@ -1025,6 +1118,8 @@ class TestQBloxCompiler:
                             add              R6, 3276, R6
                             loop             R4, @loop_0
                             loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
@@ -1047,12 +1142,16 @@ class TestQBloxCompiler:
 
         drive_str = """
             setup:
-                wait_sync        4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
                             play             0, 1, 40
                             play             0, 1, 40
                             play             0, 1, 40
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
@@ -1074,12 +1173,16 @@ class TestQBloxCompiler:
 
         drive_str = """
             setup:
-                wait_sync        4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
                             play             0, 1, 40
                             play             0, 1, 40
                             play             0, 1, 40
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)

@@ -170,7 +170,7 @@ def fixture_pulse_schedule() -> PulseSchedule:
     return PulseSchedule(
         [
             PulseBusSchedule(timeline=[pulse_event_0], port="feedline_input"),
-            PulseBusSchedule(timeline=[pulse_event_1], port="feedline_input_1"),
+            PulseBusSchedule(timeline=[pulse_event_1], port="feedline_output_2"),
         ]
     )
 
@@ -304,7 +304,7 @@ class TestQbloxCompiler:
 
         assert len(program.items()) == 2
         assert "feedline_input_output_bus" in program
-        assert "feedline_input_output_bus_1" in program
+        assert "feedline_input_output_bus_2" in program
         assert len(qblox_compiler_2qrm.qblox_modules[1].cache.keys()) == 1
         assert len(qblox_compiler_2qrm.qblox_modules[2].cache.keys()) == 1
 
@@ -312,10 +312,10 @@ class TestQbloxCompiler:
         assert list(qblox_compiler_2qrm.qblox_modules[2].sequences.keys()) == [0]
 
         assert len(program["feedline_input_output_bus"]) == 1
-        assert len(program["feedline_input_output_bus_1"]) == 1
+        assert len(program["feedline_input_output_bus_2"]) == 1
 
         sequences_0 = program["feedline_input_output_bus"][0]
-        sequences_1 = program["feedline_input_output_bus_1"][0]
+        sequences_1 = program["feedline_input_output_bus_2"][0]
 
         assert isinstance(sequences_0, Sequence)
         assert isinstance(sequences_1, Sequence)
@@ -332,6 +332,8 @@ class TestQbloxCompiler:
 
             start:
                             reset_ph
+                            set_mrk          0
+                            upd_param        4
 
             average:
                             move             0, R3
@@ -349,6 +351,8 @@ class TestQbloxCompiler:
                             jlt              R3, 1, @bin
                             loop             R2, @average
             stop:
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
 
@@ -361,6 +365,8 @@ class TestQbloxCompiler:
 
             start:
                             reset_ph
+                            set_mrk          0
+                            upd_param        4
 
             average:
                             move             0, R3
@@ -381,6 +387,8 @@ class TestQbloxCompiler:
                             jlt              R3, 1, @bin
                             loop             R2, @average
             stop:
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         seq_0_q1asm = sequences_0._program
@@ -432,6 +440,8 @@ class TestQbloxCompiler:
 
             start:
                             reset_ph
+                            set_mrk          0
+                            upd_param        4
 
             average:
                             move             0, R3
@@ -449,6 +459,8 @@ class TestQbloxCompiler:
                             jlt              R3, 1, @bin
                             loop             R2, @average
             stop:
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         sequences_0_program = sequences_0._program
@@ -469,6 +481,8 @@ class TestQbloxCompiler:
 
         start:
                         reset_ph
+                        set_mrk          0
+                        upd_param        4
 
         average:
                         move             0, R3
@@ -502,6 +516,8 @@ class TestQbloxCompiler:
                         jlt              R3, 1, @bin
                         loop             R2, @average
         stop:
+                        set_mrk          0
+                        upd_param        4
                         stop
         """
 
