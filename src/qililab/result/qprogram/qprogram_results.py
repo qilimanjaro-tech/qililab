@@ -13,8 +13,6 @@
 # limitations under the License.
 
 """MeasurementResult class."""
-from itertools import product
-
 import numpy as np
 
 from qililab.result.counts import Counts
