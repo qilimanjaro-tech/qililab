@@ -1,5 +1,4 @@
 """This file tests the the ``qm_manager`` class"""
-
 import copy
 from unittest.mock import MagicMock, call, patch
 
@@ -7,14 +6,14 @@ import numpy as np
 import pytest
 from qm import Program, QmPendingJob, QmQueue
 from qm.qua import play, program
-from tests.data import SauronQuantumMachines  # pylint: disable=import-error, no-name-in-module
-from tests.test_utils import build_platform  # pylint: disable=import-error, no-name-in-module
 
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Platform
 from qililab.settings import Settings
 from qililab.typings import Parameter
+from tests.data import SauronQuantumMachines  # pylint: disable=import-error, no-name-in-module
+from tests.test_utils import build_platform  # pylint: disable=import-error, no-name-in-module
 
 
 @pytest.fixture(name="qua_program")
@@ -406,7 +405,6 @@ class TestQuantumMachinesCluster:
         """Test the setup method with float value"""
         qmm = request.getfixturevalue(qmm_name)
         value = qmm.get_parameter_of_bus(bus, parameter)
-        # qmm._config = qmm.settings.to_qua_config()
         config_keys = qmm._config["elements"][bus]
 
         if parameter == Parameter.LO_FREQUENCY:
@@ -435,17 +433,6 @@ class TestQuantumMachinesCluster:
         if parameter == Parameter.SMEARING:
             if "smearing" in config_keys:
                 assert value == qmm._config["elements"][bus]["smearing"]
-
-    # @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    # @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    # def test_get_parameter_of_bus_create_config(self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, compilation_config: dict):
-    #     """Test update_configuration method"""
-    #     value = qmm.get_parameter_of_bus(bus, parameter)
-
-    #     assert "control_445e964c_fb58e912_100" in qmm._config["elements"]["drive_q0"]["operations"]
-    #     assert "control_445e964c_fb58e912_100" in qmm._config["pulses"]
-    #     assert "445e964c" in qmm._config["waveforms"]
-    #     assert "fb58e912" in qmm._config["waveforms"]
 
     @pytest.mark.parametrize("parameter", [(Parameter.MAX_CURRENT), (Parameter.OUT0_ATT)])
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
