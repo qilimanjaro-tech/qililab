@@ -3,6 +3,7 @@
 import os
 from datetime import datetime
 from io import StringIO
+from typing import Any
 from unittest.mock import MagicMock, call, patch
 
 import numpy as np
@@ -64,6 +65,23 @@ def fixture_methods_node(_, __) -> CalibrationNode:
     )
 
 
+@pytest.fixture(name="methods_node_run", params=[0, [0, 2]])
+@patch("qililab.calibration.calibration_node.CalibrationNode.get_last_calibrated_timestamp", return_value=1111)
+@patch("qililab.calibration.calibration_node.StringIO", autospec=True)
+def fixture_methods_node_run(_, __, request: pytest.FixtureRequest) -> CalibrationNode:
+    """Return a mocked CalibrationNode object."""
+    return CalibrationNode(
+        nb_path="./foobar.ipynb",
+        qubit_index=request.param,
+    )
+
+
+def side_efect_execute_create_file_and_raise(*args, **kwargs):
+    """Generates a dummy file and raises an exception"""
+    os.close(os.open("foobar_q0_dirty.ipynb", os.O_CREAT))
+    raise ValueError("Test error")
+
+
 #################################################################################
 ############################## TESTS FOR THE CLASS ##############################
 #################################################################################
@@ -119,6 +137,19 @@ class TestInitializationCalibrationNode:
             )
         assert str(error.value) == "`nb_path` must be written in unix format: `folder/subfolder/.../file.ipynb`."
 
+    def test_bad_qubit_index_initialization(self):
+        """Test an invalid initialization of the class due to `qubit_index`.
+
+        This happens when the `qubit_index` is a list not having exactly two elements.
+        """
+        # Assert:
+        with pytest.raises(ValueError) as error:
+            _ = CalibrationNode(
+                nb_path=".bizzfuzz/foobar.ipynb",
+                qubit_index=[0, 1, 2],
+            )
+        assert str(error.value) == "List of `qubit_index` only accepts two qubit index"
+
 
 class TestPublicMethodsFromCalibrationNode:
     """Unit tests for the CalibrationNode class public methods."""
@@ -159,14 +190,23 @@ class TestPublicMethodsFromCalibrationNode:
         mock_execute,
         sweep_interval,
         input_parameters,
-        methods_node: CalibrationNode,
+        methods_node_run: CalibrationNode,
     ):
         """Test that run_node works properly."""
-        methods_node.sweep_interval = sweep_interval
-        methods_node.input_parameters = input_parameters
-        timestamp = methods_node.run_node()
+        methods_node_run.sweep_interval = sweep_interval
+        methods_node_run.input_parameters = input_parameters
+        timestamp = methods_node_run.run_node()
 
-        params_dict = {"qubit": methods_node.qubit_index}
+        params_dict: dict[str, Any] = {}
+
+        if isinstance(methods_node_run.qubit_index, int):
+            params_dict |= {"qubit": methods_node_run.qubit_index}
+
+        elif isinstance(methods_node_run.qubit_index, list):
+            params_dict |= {
+                "control_qubit": methods_node_run.qubit_index[0],
+                "target_qubit": methods_node_run.qubit_index[1],
+            }
 
         if sweep_interval is not None:
             params_dict |= {"sweep_interval": [1]}
@@ -176,7 +216,7 @@ class TestPublicMethodsFromCalibrationNode:
 
         mock_create.assert_has_calls([call(dirty=True), call(timestamp=timestamp)])
         mock_json_serialize.assert_called_once_with(params_dict)
-        mock_execute.assert_called_with(methods_node.nb_path, "", params_dict)
+        mock_execute.assert_called_with(methods_node_run.nb_path, "", params_dict)
         mock_os.assert_called_once_with("", "")
         mock_logger.assert_not_called()
 
@@ -276,6 +316,58 @@ class TestPublicMethodsFromCalibrationNode:
             "Aborting execution. Exception %s during automatic calibration notebook execution, trace of the error can be found in %s",
             "Test error",
             "error_path/foobar_error.ipynb",
+        )
+
+    @pytest.mark.parametrize(
+        "sweep_interval, input_parameters",
+        [
+            (None, {"start": 0, "stop": 10, "step": 1}),
+            (None, None),
+            (np.array([1]), {"start": 0, "stop": 10, "step": 1}),
+            (np.array([1]), None),
+        ],
+    )
+    @patch(
+        "qililab.calibration.calibration_node.CalibrationNode._execute_notebook",
+        side_effect=side_efect_execute_create_file_and_raise,
+    )
+    @patch(
+        "qililab.calibration.calibration_node.CalibrationNode._create_notebook_datetime_path",
+        return_value=f"{os.getcwd()}/foobar_q0_dirty.ipynb",
+    )
+    @patch("qililab.calibration.calibration_node.logger.error")
+    def test_run_node_raises_error_from_execution(
+        self,
+        mock_logger,
+        mock_create,
+        mock_execute,
+        sweep_interval,
+        input_parameters,
+        methods_node: CalibrationNode,
+    ):
+        """Test that run_node works properly when an exception is raised and the error notebook file is created."""
+        with pytest.raises(Exception):
+            methods_node.sweep_interval = sweep_interval
+            methods_node.input_parameters = input_parameters
+            methods_node.run_node()
+        # Remove created file from the mock
+        os.remove(f"{os.getcwd()}/foobar_q0_dirty.ipynb")
+
+        params_dict = {"qubit": methods_node.qubit_index}
+
+        if sweep_interval is not None:
+            params_dict |= {"sweep_interval": np.array([1])}
+
+        if input_parameters is not None:
+            params_dict |= input_parameters
+
+        mock_execute.assert_called_with(methods_node.nb_path, f"{os.getcwd()}/foobar_q0_dirty.ipynb", params_dict)
+        assert mock_create.call_count == 2
+
+        mock_logger.called_with(
+            "Aborting execution. Exception %s during automatic calibration notebook execution, trace of the error can be found in %s",
+            "Test error",
+            f"{os.getcwd()}/foobar_q0_dirty.ipynb",
         )
 
     @patch(
