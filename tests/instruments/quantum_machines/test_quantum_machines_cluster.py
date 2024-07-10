@@ -405,10 +405,10 @@ class TestQuantumMachinesCluster:
     ):
         """Test the setup method with float value"""
         qmm = request.getfixturevalue(qmm_name)
-        qmm._config = qmm.settings.to_qua_config()
+        value = qmm.get_parameter_of_bus(bus, parameter)
+        # qmm._config = qmm.settings.to_qua_config()
         config_keys = qmm._config["elements"][bus]
 
-        value = qmm.get_parameter_of_bus(bus, parameter)
         if parameter == Parameter.LO_FREQUENCY:
             if "mixInputs" in config_keys:
                 assert value == qmm._config["elements"][bus]["mixInputs"]["lo_frequency"]
@@ -435,6 +435,17 @@ class TestQuantumMachinesCluster:
         if parameter == Parameter.SMEARING:
             if "smearing" in config_keys:
                 assert value == qmm._config["elements"][bus]["smearing"]
+
+    # @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    # @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    # def test_get_parameter_of_bus_create_config(self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, compilation_config: dict):
+    #     """Test update_configuration method"""
+    #     value = qmm.get_parameter_of_bus(bus, parameter)
+
+    #     assert "control_445e964c_fb58e912_100" in qmm._config["elements"]["drive_q0"]["operations"]
+    #     assert "control_445e964c_fb58e912_100" in qmm._config["pulses"]
+    #     assert "445e964c" in qmm._config["waveforms"]
+    #     assert "fb58e912" in qmm._config["waveforms"]
 
     @pytest.mark.parametrize("parameter", [(Parameter.MAX_CURRENT), (Parameter.OUT0_ATT)])
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
