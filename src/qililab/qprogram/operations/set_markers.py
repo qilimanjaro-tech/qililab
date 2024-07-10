@@ -12,20 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .acquire import Acquire, AcquireWithCalibratedWeights
-from .measure import (
-    Measure,
-    MeasureWithCalibratedWaveform,
-    MeasureWithCalibratedWaveformWeights,
-    MeasureWithCalibratedWeights,
-)
-from .operation import Operation
-from .play import Play, PlayWithCalibratedWaveform
-from .reset_phase import ResetPhase
-from .set_frequency import SetFrequency
-from .set_gain import SetGain
-from .set_markers import SetMarkers
-from .set_offset import SetOffset
-from .set_phase import SetPhase
-from .sync import Sync
-from .wait import Wait
+from dataclasses import dataclass
+
+from qililab.qprogram.operations.operation import Operation
+from qililab.yaml import yaml
+
+
+@yaml.register_class
+@dataclass(frozen=True)
+class SetMarkers(Operation):  # pylint: disable=missing-class-docstring
+    bus: str
+    mask: str
+
+    def __post_init__(self):
+        if len(self.mask) != 4 or not set(self.mask).issubset({"0", "1"}):
+            raise AttributeError("Marker should be a 4-bit binary string.")

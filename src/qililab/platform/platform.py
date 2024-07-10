@@ -591,14 +591,33 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             if isinstance(instrument, (QbloxModule, QuantumMachinesCluster))
         }
         if all(isinstance(instrument, QbloxModule) for instrument in instruments):
+            # Retrieve the time of flight parameter from settings
             times_of_flight = {
                 bus.alias: int(bus.get_parameter(Parameter.TIME_OF_FLIGHT))
                 for bus in buses
                 if isinstance(bus.system_control, ReadoutSystemControl)
             }
+            # Determine what should be the initial value of the markers for each bus.
+            # This depends on the model of the associated Qblox module and the `output` setting of the associated sequencer.
+            markers = {}
+            for bus in buses:
+                for instrument in bus.system_control.instruments:
+                    if isinstance(instrument, QbloxModule):
+                        sequencers = instrument.get_sequencers_from_chip_port_id(bus.port)
+                        if instrument.name == InstrumentName.QCMRF:
+                            markers[bus.alias] = "".join(
+                                ["1" if i in [0, 1] and i in sequencers[0].outputs else "0" for i in range(4)]
+                            )[::-1]
+                        elif instrument.name == InstrumentName.QRMRF:
+                            markers[bus.alias] = "".join(
+                                ["1" if i in [1] and i - 1 in sequencers[0].outputs else "0" for i in range(4)]
+                            )[::-1]
+                        else:
+                            markers[bus.alias] = "0000"
             return self._execute_qprogram_with_qblox(
                 qprogram=qprogram,
                 times_of_flight=times_of_flight,
+                markers=markers,
                 bus_mapping=bus_mapping,
                 calibration=calibration,
                 debug=debug,
@@ -618,6 +637,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         self,
         qprogram: QProgram,
         times_of_flight: dict[str, int],
+        markers: dict[str, str],
         bus_mapping: dict[str, str] | None = None,
         calibration: Calibration | None = None,
         debug: bool = False,
@@ -625,7 +645,11 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         # Compile QProgram
         qblox_compiler = QbloxCompiler()
         sequences, acquisitions = qblox_compiler.compile(
-            qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration, times_of_flight=times_of_flight
+            qprogram=qprogram,
+            bus_mapping=bus_mapping,
+            calibration=calibration,
+            times_of_flight=times_of_flight,
+            markers=markers,
         )
         buses = {bus_alias: self._get_bus_by_alias(alias=bus_alias) for bus_alias in sequences}
 
@@ -642,7 +666,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             if bus_alias not in self._qpy_sequence_cache or self._qpy_sequence_cache[bus_alias] != sequence_hash:
                 buses[bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
                 self._qpy_sequence_cache[bus_alias] = sequence_hash
-            # sync all rellevant sequences
+            # sync all relevant sequences
             for instrument in buses[bus_alias].system_control.instruments:
                 if isinstance(instrument, QbloxModule):
                     instrument.sync_by_port(buses[bus_alias].port)
