@@ -66,7 +66,7 @@ class QuantumMachinesCluster(Instrument):
         controllers: list[dict[str, Any]]
         elements: list[dict[str, Any]]
 
-        def to_qua_config(self) -> Dict[str, Any]:
+        def to_qua_config(self) -> DictQuaConfig:
             """Creates the Quantum Machines QUA config dictionary.
 
             Creates, an instance of a dictionary in the format that QuantumMachines expects the config dictionary to be.
