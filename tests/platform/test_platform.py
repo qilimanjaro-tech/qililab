@@ -295,12 +295,14 @@ class TestMethods:
 
     def test_compile_circuit(self, platform: Platform):
         """Test the compilation of a qibo Circuit."""
-        circuit = Circuit(1)
+        circuit = Circuit(3)
         circuit.add(gates.X(0))
+        circuit.add(gates.X(1))
         circuit.add(gates.Y(0))
-        circuit.add(gates.M(0))
+        circuit.add(gates.Y(1))
+        circuit.add(gates.M(0, 1, 2))
 
-        self._compile_and_assert(platform, circuit, 3)
+        self._compile_and_assert(platform, circuit, 5)
 
     def test_compile_pulse_schedule(self, platform: Platform):
         """Test the compilation of a qibo Circuit."""
@@ -320,12 +322,11 @@ class TestMethods:
         sequences = platform.compile(program=program, num_avg=1000, repetition_duration=200_000, num_bins=1)
         assert isinstance(sequences, dict)
         assert len(sequences) == len_sequences
-        for alias, sequence in sequences.items():
+        for alias, sequences_list in sequences.items():
             assert alias in {bus.alias for bus in platform.buses}
-            assert isinstance(sequence, list)
-            assert len(sequence) == 1
-            assert isinstance(sequence[0], Sequence)
-            assert sequence[0]._program.duration == 200_000 * 1000 + 4
+            assert isinstance(sequences_list, list)
+            assert all(isinstance(sequence, Sequence) for sequence in sequences_list)
+            assert sequences_list[0]._program.duration == 200_000 * 1000 + 4 + 4 + 4
 
     def test_execute_qprogram_with_qblox(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
@@ -334,9 +335,12 @@ class TestMethods:
         weights_wf = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
+        qprogram.play(bus="drive_line_q1_bus", waveform=drive_wf)
         qprogram.sync()
         qprogram.play(bus="feedline_input_output_bus", waveform=readout_wf)
+        qprogram.play(bus="feedline_input_output_bus_1", waveform=readout_wf)
         qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=weights_wf)
+        qprogram.qblox.acquire(bus="feedline_input_output_bus_1", weights=weights_wf)
 
         with (
             patch("builtins.open") as patched_open,
@@ -355,15 +359,17 @@ class TestMethods:
             _ = platform.execute_qprogram(qprogram=qprogram, debug=True)
 
         # assert upload executed only once (2 because there are 2 buses)
-        assert upload.call_count == 2
+        assert upload.call_count == 4
 
         # assert run executed all three times (6 because there are 2 buses)
-        assert run.call_count == 6
-        assert acquire_qprogram_results.call_count == 3  # only readout buses
-        assert sync_port.call_count == 6  # called as many times as run
-        assert desync_port.call_count == 6
+        assert run.call_count == 12
+        assert acquire_qprogram_results.call_count == 6  # only readout buses
+        assert sync_port.call_count == 12  # called as many times as run
+        assert desync_port.call_count == 12
         assert first_execution_results.results["feedline_input_output_bus"] == [123]
+        assert first_execution_results.results["feedline_input_output_bus_1"] == [123]
         assert second_execution_results.results["feedline_input_output_bus"] == [456]
+        assert second_execution_results.results["feedline_input_output_bus_1"] == [456]
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -592,7 +598,7 @@ class TestMethods:
         pulse_schedule = PulseSchedule()
         # mock compile method
         platform.compile = MagicMock()  # type: ignore[method-assign]
-        platform.compile.return_value = {"feedline_input_output_bus": None, "feedline_input_output_bus_1": None}
+        platform.compile.return_value = {"feedline_input_output_bus": None, "feedline_input_output_bus_2": None}
         # mock execution
         with patch.object(Bus, "upload"):
             with patch.object(Bus, "run"):

@@ -25,6 +25,8 @@ import papermill as pm
 
 from qililab.config import logger
 
+from .comparison_models import norm_root_mean_sqrt_error
+
 logger_output_start = "RAND_INT:47102512880765720413 - OUTPUTS: "
 
 
@@ -61,11 +63,11 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
     Args:
         nb_path (str): Full notebook path with the folder, nb_name, and ``.ipynb`` extension, written in unix format: `folder/subfolder/.../file.ipynb`.
-        in_spec_threshold (float): Threshold such that the ``check_data()`` methods return `in_spec` or `out_of_spec`.
-        bad_data_threshold (float): Threshold such that the ``check_data()`` methods return `out_of_spec` or `bad_data`.
-        comparison_model (Callable): Comparison model used, to compare data in this node.
+        in_spec_threshold (float): Threshold such that the ``check_data()`` methods return `in_spec` or `out_of_spec`. Defaults to 0.0.
+        bad_data_threshold (float): Threshold such that the ``check_data()`` methods return `out_of_spec` or `bad_data`. Defaults to 0.0.
+        comparison_model (Callable): Comparison model used, to compare data in this node. Defaults to ``norm_root_mean_sqrt_error``.
         drift_timeout (float): Duration in seconds, representing an estimate of how long it takes for the parameter to drift. During that time the parameters of
-            this node should be considered calibrated without the need to check the data.
+            this node should be considered calibrated without the need to check the data. Defaults to 0.0.
         qubit_index (int | list[int] | None, optional): Qubit on which this notebook will be executed. Defaults to None.
         node_distinguishier (int | str | None, optional): Distinguisher for when the same notebook its used multiple times in the same qubit. Mandatory to use in such case, or
             the :class:`.CalibrationController` won't do the graph mapping properly, and the calibration will fail. Defaults to None.
@@ -251,10 +253,10 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
         nb_path: str,
-        in_spec_threshold: float,
-        bad_data_threshold: float,
-        comparison_model: Callable,
-        drift_timeout: float,
+        drift_timeout: float = 0.0,
+        in_spec_threshold: float = 0.0,
+        bad_data_threshold: float = 0.0,
+        comparison_model: Callable = norm_root_mean_sqrt_error,
         qubit_index: int | list[int] | None = None,
         node_distinguisher: int | str | None = None,
         input_parameters: dict | None = None,
@@ -286,17 +288,17 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         """Node name and folder, separated, and without the ``.ipynb`` extension."""
 
         self.in_spec_threshold: float = in_spec_threshold
-        """Threshold such that the ``check_data()`` methods return `in_spec` or `out_of_spec`."""
+        """Threshold such that the ``check_data()`` methods return `in_spec` or `out_of_spec`. Defaults to 0.0."""
 
         self.bad_data_threshold: float = bad_data_threshold
-        """Threshold such that the ``check_data()`` methods return `out_of_spec` or `bad_data`."""
+        """Threshold such that the ``check_data()`` methods return `out_of_spec` or `bad_data`. Defaults to 0.0."""
 
         self.comparison_model: Callable = comparison_model
-        """Comparison model used, to compare data in this node."""
+        """Comparison model used, to compare data in this node. Defaults to ``norm_root_mean_sqrt_error``."""
 
         self.drift_timeout: float = drift_timeout
         """A durations in seconds, representing an estimate of how long it takes for the parameter to drift. During that time the parameters of
-        this node should be considered calibrated, without the need to check the data.
+        this node should be considered calibrated, without the need to check the data. Defaults to 0.0.
         """
 
         self.input_parameters: dict | None = input_parameters
@@ -581,14 +583,15 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         Returns:
             tuple[str, str]: A tuple containing the notebook name and its folder.
         """
-        # Create qubit_string to add:
+        # Create qubit_string to add
+        # fmt: off
         qubit_str = (
             f"_q{str(self.qubit_index)}"
             if isinstance(self.qubit_index, int)
             else "_" + "".join(f"q{q}" for q in self.qubit_index)
             if isinstance(self.qubit_index, list)
             else ""
-        )
+        )  # fmt: on
 
         # Create distinguish_string to differentiate multiple calls of the same node:
         distinguish_str = f"_{str(self.node_distinguisher)}" if self.node_distinguisher is not None else ""
