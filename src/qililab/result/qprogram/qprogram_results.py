@@ -45,8 +45,16 @@ class QProgramResults:
 def probabilities(qprogram_results: QProgramResults, qubit_mapping: list[str] | None = None) -> dict[str, float]:
     """Return probabilities of the quantum states.
 
+    Args:
+        qprogram_results (QProgramResults): The QProgramResults object we want to get the probabilities from.
+        qubit_mapping (list[str], optional): A list containing the name of the busses to map.
+            The buses are map to qubits on the same index, a bus at the i-th element in the list is mapped to the i-th qubit.
+            Defaults to None.
+
     Raises:
-        ValueError: When the `results` attribute is an empty dictionary
+        ValueError: When the `results` attribute from `qprogram_results` is an empty dictionary.
+        ValueError: When a qubit mapping is incomplete and does not map all qubits.
+        ValueError: When a qubit mapping is specified and any of the busses does not match with any on the runcard.
 
     Returns:
         dict[str, float]: Dictionary containing the quantum states as the keys of the dictionary, and the
@@ -60,25 +68,23 @@ def probabilities(qprogram_results: QProgramResults, qubit_mapping: list[str] | 
     buses = list(qprogram_results.results.keys())
 
     if qubit_mapping is not None:
-        if n_qubits != len(qubit_mapping):
+        unique_mapping = set(qubit_mapping)  # Remove possible repeated elements
+        if n_qubits != len(unique_mapping):
             raise ValueError(
-                f"Expected mapping for all qubits. Results have {n_qubits} qubits, but only {len(qubit_mapping)} buses mapping were specified."
+                f"Expected mapping for all qubits. Results have {n_qubits} qubits, but only {len(unique_mapping)} diferent buses were specified on the mapping."
             )
-        if not set(qubit_mapping).issubset(set(buses)):
+        if not unique_mapping.issubset(set(buses)):
             raise ValueError(
                 "No measurements found for all specified buses, check the name of the buses provided with the mapping match all the buses specified in runcard."
             )
         buses = qubit_mapping
 
-    # Build Matrix thresholds by readout bus
     # The threshold inside of a qblox bin is the name they use for already classified data as a value between
     # 0 and 1, not the value used in the comparator to perform such classification.
     th_matrix = np.array(
         [[int(measurement.threshold) for measurement in qprogram_results.results[bus]] for bus in buses]
     )
-    # Transpose it and and concat by rows
     th_matrix_T = th_matrix.transpose()
-    # Iterate and add each collapsed row (now state) into Counter
     for state in th_matrix_T:
         binary_state_str = "".join(state.astype(str))
         counts_object.add_measurement(state=binary_state_str)
