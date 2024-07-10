@@ -15,7 +15,7 @@
 """Quantum Machines Manager class."""
 import os
 from dataclasses import dataclass
-from typing import Any, Dict, cast
+from typing import Any, cast
 
 import numpy as np
 from qm import DictQuaConfig, QuantumMachine, QuantumMachinesManager, SimulationConfig
@@ -80,7 +80,7 @@ class QuantumMachinesCluster(Instrument):
             The values of the rest keys are empty, meant to be updated in runtime.
 
             Returns:
-                config: Dict[str, Any]
+                config: DictQuaConfig
             """
             elements, mixers = self._get_elements_and_mixers_config()
             controllers = self._get_controllers_config()
