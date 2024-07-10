@@ -20,5 +20,5 @@ disable=
     too-many-ancestors,
     missing-module-docstring,
     too-many-arguments,
-    too-many-branches
+    too-many-branches,
     too-many-return-statements
