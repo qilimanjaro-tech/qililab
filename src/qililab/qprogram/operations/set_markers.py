@@ -12,10 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This submodule contains a portfolio of pre-defined experiments."""
-from .experiment_analysis import ExperimentAnalysis
-from .fitting_models import *
-from .flipping_sequence import FlippingSequence
-from .rabi import Rabi
-from .t1 import T1
-from .t2echo import T2Echo
+from dataclasses import dataclass
+
+from qililab.qprogram.operations.operation import Operation
+from qililab.yaml import yaml
+
+
+@yaml.register_class
+@dataclass(frozen=True)
+class SetMarkers(Operation):  # pylint: disable=missing-class-docstring
+    bus: str
+    mask: str
+
+    def __post_init__(self):
+        if len(self.mask) != 4 or not set(self.mask).issubset({"0", "1"}):
+            raise AttributeError("Marker should be a 4-bit binary string.")

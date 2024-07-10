@@ -20,6 +20,7 @@ from qililab.qprogram.operations import (
     ResetPhase,
     SetFrequency,
     SetGain,
+    SetMarkers,
     SetOffset,
     SetPhase,
     Sync,
@@ -391,6 +392,22 @@ class TestQProgram:
         assert qp._body.elements[0].bus == "drive"
         assert qp._body.elements[0].offset_path0 == 1.0
         assert qp._body.elements[0].offset_path1 == 0.0
+
+    def test_set_markers(self):
+        qp = QProgram()
+        qp.qblox.set_markers(bus="drive", mask="0111")
+
+        assert len(qp._active_block.elements) == 1
+        assert len(qp._body.elements) == 1
+        assert isinstance(qp._body.elements[0], SetMarkers)
+        assert qp._body.elements[0].bus == "drive"
+        assert qp._body.elements[0].mask == "0111"
+
+        with pytest.raises(AttributeError):
+            qp.qblox.set_markers(bus="drive", mask="1234")
+
+        with pytest.raises(AttributeError):
+            qp.qblox.set_markers(bus="drive", mask="0111011")
 
     def test_variable_method(self):
         """Test variable method"""
