@@ -64,7 +64,6 @@ class BusCompilationInfo:  # pylint: disable=too-many-instance-attributes, too-f
         self.qpy_sequence = QPy.Sequence(
             program=QPy.Program(), waveforms=QPy.Waveforms(), acquisitions=QPy.Acquisitions(), weights=QPy.Weights()
         )
-        # self.qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetMrk(15))
 
         # Acquisitions information
         self.acquisitions: dict[str, AcquisitionData] = {}
@@ -193,6 +192,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             mask = markers[bus] if markers is not None and bus in markers else "0000"
             self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetMrk(int(mask, 2)))
             self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.UpdParam(4))
+            self._buses[bus].static_duration += 4
 
         # Recursive traversal to convert QProgram blocks to Sequence
         traverse(self._qprogram._body)
@@ -202,6 +202,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.SetMrk(0))
             self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.UpdParam(4))
             self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Stop())
+            self._buses[bus].static_duration += 4
             self._buses[bus].qpy_sequence._program.compile()
 
         # Return a dictionary with bus names as keys and the compiled Sequence as values.
