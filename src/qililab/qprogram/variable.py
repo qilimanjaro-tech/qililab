@@ -190,7 +190,19 @@ class Variable:
         return other**self.value
 
     def __eq__(self, other):
-        return other is not None and isinstance(other, Variable) and self._uuid == other._uuid
+        return other is not None and isinstance(other, Variable) and self._value == other._value
+
+    def __lt__(self, other):
+        return self.value < other
+
+    def __le__(self, other):
+        return self.value <= other
+
+    def __gt__(self, other):
+        return self.value > other
+
+    def __ge__(self, other):
+        return self.value >= other
 
 
 @yaml.register_class

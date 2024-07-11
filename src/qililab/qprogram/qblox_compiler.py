@@ -307,6 +307,13 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             self._buses[bus].qpy_block_stack[-1].append_component(qpy_loop)
             self._buses[bus].qpy_block_stack.append(qpy_loop)
             self._buses[bus].loop_counter += 1
+
+            self._buses[bus]._allocated_registers_of_block[element._uuid] = []
+            self._buses[bus]._allocated_registers_of_block[element._uuid].append(qpy_loop.iteration_register)
+            self._buses[bus]._allocated_registers_of_block[element._uuid].extend(qpy_loop.loop_registers)
+            for register in self._buses[bus]._allocated_registers_of_block[element._uuid]:
+                self._buses[bus].qpy_sequence._program._memory.allocate_register_and_mark_in_use(register)
+
         return True
 
     def _handle_average(self, element: Average):

@@ -421,7 +421,7 @@ class TestQBloxCompiler:
         assert len(sequences) == 1
         assert "drive" in sequences
 
-        drive_str = """
+        expected_drive_str = """
             setup:
                             wait_sync        4
                             set_mrk          0
@@ -440,7 +440,9 @@ class TestQBloxCompiler:
                             stop
         """
 
-        assert is_q1asm_equal(sequences["drive"], drive_str)
+        drive_str = sequences["drive"]
+
+        assert is_q1asm_equal(drive_str, expected_drive_str)
 
     def test_dynamic_wait_multiple_buses_with_disable_autosync(
         self, dynamic_wait_multiple_buses_with_disable_autosync: QProgram
@@ -685,6 +687,8 @@ class TestQBloxCompiler:
                             wait             2960
                             loop             R1, @loop_0
                             loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
 
@@ -769,18 +773,18 @@ class TestQBloxCompiler:
             main:
                             move             1000, R0
             avg_0:
-                            move             1, R1
-                            move             0, R2
+                            move             1, R5
+                            move             0, R4
                             move             0, R3
-                            move             11, R4
-                            move             0, R5
+                            move             11, R1
+                            move             0, R2
             loop_0:
-                            set_awg_gain     R5, R5
+                            set_awg_gain     R2, R2
                             play             0, 1, 1000
-                            acquire_weighed  0, R3, R2, R1, 2000
+                            acquire_weighed  0, R3, R4, R5, 2000
                             add              R3, 1, R3
-                            add              R5, 3276, R5
-                            loop             R4, @loop_0
+                            add              R2, 3276, R2
+                            loop             R1, @loop_0
                             nop
                             loop             R0, @avg_0
                             set_mrk          0
@@ -853,7 +857,7 @@ class TestQBloxCompiler:
         assert len(sequences["readout"]._weights._weights) == 1
         assert sequences["readout"]._program._compiled
 
-        drive_str = """
+        expected_drive_str = """
             setup:
                             wait_sync        4
                             set_mrk          0
@@ -863,18 +867,17 @@ class TestQBloxCompiler:
                             move             1000, R0
             avg_0:
                             move             11, R1
-                            move             0, R2
             loop_0:
                             play             0, 1, 40
                             wait             1960
-                            add              R2, 3276, R2
                             loop             R1, @loop_0
                             loop             R0, @avg_0
                             set_mrk          0
                             upd_param        4
                             stop
         """
-        readout_str = """
+
+        expected_readout_str = """
             setup:
                             wait_sync        4
                             set_mrk          0
@@ -883,26 +886,30 @@ class TestQBloxCompiler:
             main:
                             move             1000, R0
             avg_0:
-                            move             0, R1
-                            move             0, R2
-                            move             0, R3
-                            move             11, R4
                             move             0, R5
+                            move             0, R4
+                            move             0, R3
+                            move             11, R1
+                            move             0, R2
             loop_0:
-                            set_awg_gain     R5, R5
+                            set_awg_gain     R2, R2
                             play             0, 1, 1000
-                            acquire_weighed  0, R3, R2, R1, 1000
+                            acquire_weighed  0, R3, R4, R5, 1000
                             add              R3, 1, R3
-                            add              R5, 3276, R5
-                            loop             R4, @loop_0
+                            add              R2, 3276, R2
+                            loop             R1, @loop_0
                             nop
                             loop             R0, @avg_0
                             set_mrk          0
                             upd_param        4
                             stop
         """
-        assert is_q1asm_equal(sequences["drive"], drive_str)
-        assert is_q1asm_equal(sequences["readout"], readout_str)
+
+        drive_str = repr(sequences["drive"]._program)
+        readout_str = repr(sequences["readout"]._program)
+
+        assert is_q1asm_equal(drive_str, expected_drive_str)
+        assert is_q1asm_equal(readout_str, expected_readout_str)
 
     def test_average_with_multiple_for_loops_and_acquires(self, average_with_multiple_for_loops_and_acquires: QProgram):
         compiler = QbloxCompiler()
@@ -922,7 +929,7 @@ class TestQBloxCompiler:
         assert len(sequences["readout"]._weights._weights) == 6
         assert sequences["readout"]._program._compiled
 
-        readout_str = """
+        expected_readout_str = """
             setup:
                             wait_sync        4
                             set_mrk          0
@@ -931,39 +938,41 @@ class TestQBloxCompiler:
             main:
                             move             1000, R0
             avg_0:
-                            move             5, R1
-                            move             4, R2
-                            move             0, R3
-                            move             1, R4
-                            move             0, R5
+                            move             5, R8
+                            move             4, R7
                             move             0, R6
-                            move             51, R7
-                            move             0, R8
+                            move             1, R5
+                            move             0, R4
+                            move             0, R3
+                            move             51, R1
+                            move             0, R2
             loop_0:
-                            set_freq         R8
+                            set_freq         R2
                             play             0, 1, 1000
-                            acquire_weighed  0, R6, R5, R4, 2000
-                            add              R6, 1, R6
-                            add              R8, 40, R8
-                            loop             R7, @loop_0
+                            acquire_weighed  0, R3, R4, R5, 2000
+                            add              R3, 1, R3
+                            add              R2, 40, R2
+                            loop             R1, @loop_0
                             nop
                             acquire_weighed  1, 0, 2, 3, 1000
-                            move             11, R9
-                            move             0, R10
+                            move             11, R1
+                            move             0, R2
                             nop
             loop_1:
-                            set_awg_gain     R10, R10
+                            set_awg_gain     R2, R2
                             play             0, 1, 1000
-                            acquire_weighed  2, R3, R2, R1, 500
-                            add              R3, 1, R3
-                            add              R10, 3276, R10
-                            loop             R9, @loop_1
+                            acquire_weighed  2, R6, R7, R8, 500
+                            add              R6, 1, R6
+                            add              R2, 3276, R2
+                            loop             R1, @loop_1
                             loop             R0, @avg_0
                             set_mrk          0
                             upd_param        4
                             stop
         """
-        assert is_q1asm_equal(sequences["readout"], readout_str)
+
+        readout_str = repr(sequences["readout"]._program)
+        assert is_q1asm_equal(readout_str, expected_readout_str)
 
     def test_average_with_nested_for_loops(self, average_with_nested_for_loops: QProgram):
         compiler = QbloxCompiler()
@@ -987,7 +996,7 @@ class TestQBloxCompiler:
         assert len(sequences["readout"]._weights._weights) == 2
         assert sequences["readout"]._program._compiled
 
-        drive_str = """
+        expected_drive_str = """
             setup:
                             wait_sync        4
                             set_mrk          0
@@ -1001,11 +1010,9 @@ class TestQBloxCompiler:
             loop_0:
                             set_awg_gain     R2, R2
                             move             51, R3
-                            move             0, R4
             loop_1:
                             play             0, 1, 40
                             wait             3000
-                            add              R4, 40, R4
                             loop             R3, @loop_1
                             add              R2, 3276, R2
                             loop             R1, @loop_0
@@ -1015,7 +1022,8 @@ class TestQBloxCompiler:
                             upd_param        4
                             stop
         """
-        readout_str = """
+
+        expected_readout_str = """
             setup:
                             wait_sync        4
                             set_mrk          0
@@ -1024,31 +1032,35 @@ class TestQBloxCompiler:
             main:
                             move             1000, R0
             avg_0:
-                            move             1, R1
-                            move             0, R2
-                            move             0, R3
-                            move             11, R4
+                            move             1, R7
+                            move             0, R6
                             move             0, R5
+                            move             11, R1
+                            move             0, R2
             loop_0:
-                            move             51, R6
-                            move             0, R7
+                            move             51, R3
+                            move             0, R4
             loop_1:
                             wait             40
-                            set_freq         R7
+                            set_freq         R4
                             play             0, 1, 1000
-                            acquire_weighed  0, R3, R2, R1, 2000
-                            add              R3, 1, R3
-                            add              R7, 40, R7
-                            loop             R6, @loop_1
-                            add              R5, 3276, R5
-                            loop             R4, @loop_0
+                            acquire_weighed  0, R5, R6, R7, 2000
+                            add              R5, 1, R5
+                            add              R4, 40, R4
+                            loop             R3, @loop_1
+                            add              R2, 3276, R2
+                            loop             R1, @loop_0
                             loop             R0, @avg_0
                             set_mrk          0
                             upd_param        4
                             stop
         """
-        assert is_q1asm_equal(sequences["drive"], drive_str)
-        assert is_q1asm_equal(sequences["readout"], readout_str)
+
+        drive_str = repr(sequences["drive"]._program)
+        readout_str = repr(sequences["readout"]._program)
+
+        assert is_q1asm_equal(drive_str, expected_drive_str)
+        assert is_q1asm_equal(readout_str, expected_readout_str)
 
     def test_average_with_parallel_for_loops(self, average_with_parallel_for_loops: QProgram):
         compiler = QbloxCompiler()
@@ -1072,7 +1084,7 @@ class TestQBloxCompiler:
         assert len(sequences["readout"]._weights._weights) == 2
         assert sequences["readout"]._program._compiled
 
-        drive_str = """
+        expected_drive_str = """
             setup:
                             wait_sync        4
                             set_mrk          0
@@ -1097,7 +1109,8 @@ class TestQBloxCompiler:
                             upd_param        4
                             stop
         """
-        readout_str = """
+
+        expected_readout_str = """
             setup:
                             wait_sync        4
                             set_mrk          0
@@ -1106,28 +1119,32 @@ class TestQBloxCompiler:
             main:
                             move             1000, R0
             avg_0:
-                            move             1, R1
-                            move             0, R2
+                            move             1, R6
+                            move             0, R5
+                            move             0, R4
+                            move             11, R1
+                            move             400, R2
                             move             0, R3
-                            move             11, R4
-                            move             400, R5
-                            move             0, R6
             loop_0:
-                            set_freq         R5
+                            set_freq         R2
                             wait             40
                             play             0, 1, 1000
-                            acquire_weighed  0, R3, R2, R1, 2000
-                            add              R3, 1, R3
-                            add              R5, 40, R5
-                            add              R6, 3276, R6
-                            loop             R4, @loop_0
+                            acquire_weighed  0, R4, R5, R6, 2000
+                            add              R4, 1, R4
+                            add              R2, 40, R2
+                            add              R3, 3276, R3
+                            loop             R1, @loop_0
                             loop             R0, @avg_0
                             set_mrk          0
                             upd_param        4
                             stop
         """
-        assert is_q1asm_equal(sequences["drive"], drive_str)
-        assert is_q1asm_equal(sequences["readout"], readout_str)
+
+        drive_str = repr(sequences["drive"]._program)
+        readout_str = repr(sequences["readout"]._program)
+
+        assert is_q1asm_equal(drive_str, expected_drive_str)
+        assert is_q1asm_equal(readout_str, expected_readout_str)
 
     def test_multiple_play_operations_with_same_waveform(self, multiple_play_operations_with_same_waveform: QProgram):
         compiler = QbloxCompiler()
