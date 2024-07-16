@@ -1,4 +1,5 @@
 """Tests for the Platform class."""
+
 import copy
 import io
 import re
@@ -141,11 +142,20 @@ class TestPlatform:
         ):
             platform.initial_setup()
 
-    def test_set_parameter_no_instrument_connection(self, platform: Platform):
+    def test_set_parameter_no_instrument_connection_QBLOX(self, platform: Platform):
         """Test platform raises and error if no instrument connection."""
         platform._connected_to_instruments = False
         platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, value=0.14, channel_id=0)
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, channel_id=0) == 0.14
+
+    def test_set_parameter_no_instrument_connection_QM(self, platform: Platform):
+        """Test platform raises and error if no instrument connection."""
+        # Overwrite platform to use Quantum Machines:
+        platform = build_platform(runcard=SauronQuantumMachines.runcard)
+
+        platform._connected_to_instruments = False
+        platform.set_parameter(alias="drive_q0", parameter=Parameter.IF, value=0.14, channel_id=0)
+        assert platform.get_parameter(alias="drive_q0", parameter=Parameter.IF, channel_id=0) == 0.14
 
     def test_connect_logger(self, platform: Platform):
         platform._connected_to_instruments = True
