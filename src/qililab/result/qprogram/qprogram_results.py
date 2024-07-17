@@ -40,6 +40,7 @@ class QProgramResults:
         self.results[bus].append(result)
 
 
+# TODO: Volver a poner un concat en los resuts, tiene pinta que los thresholds the los pone en single array en un measure
 def probabilities(qprogram_results: QProgramResults, qubit_mapping: list[str] | None = None) -> dict[str, float]:
     """Return probabilities of the quantum states.
 
