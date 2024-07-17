@@ -241,7 +241,7 @@ class QuantumMachinesCluster(Instrument):
     settings: QuantumMachinesClusterSettings
     device: QMMDriver
     _qmm: QuantumMachinesManager
-    _qm: QuantumMachine
+    _qm: QuantumMachine  # TODO: Change private QM API to public when implemented.
     _config: DictQuaConfig
     _octave_config: QmOctaveConfig | None = None
     _is_connected_to_qm: bool = False
@@ -319,9 +319,9 @@ class QuantumMachinesCluster(Instrument):
             NotImplementedError: Raised if not connected to Quantum Machines
             ParameterNotFound: Raised if parameter does not exist
         """
-        # TODO: Change private QM API to public when implemented.
-        if not self._is_connected_to_qm:
-            raise NotImplementedError(f"You should be connected to {self.name} in order to change a parameter.")
+        if "_config" not in dir(self):
+            self._config = self.settings.to_qua_config()
+        # Or with just a: `self._config = self.settings.to_qua_config()`, if we decide the setting to rule!
 
         element = next((element for element in self.settings.elements if element["bus"] == bus), None)
         if element is None:
@@ -342,7 +342,8 @@ class QuantumMachinesCluster(Instrument):
 
             if parameter == Parameter.LO_FREQUENCY:
                 lo_frequency = float(value)
-                self._qm.octave.set_lo_frequency(element=bus, lo_frequency=lo_frequency)
+                if self._is_connected_to_qm:
+                    self._qm.octave.set_lo_frequency(element=bus, lo_frequency=lo_frequency)
                 settings_octave_rf_output["lo_frequency"] = lo_frequency
                 self._config["octaves"][octave_name]["RF_outputs"][out_port]["LO_frequency"] = lo_frequency
 
@@ -355,13 +356,15 @@ class QuantumMachinesCluster(Instrument):
                 return
             if parameter == Parameter.GAIN:
                 gain_in_db = float(value)
-                self._qm.octave.set_rf_output_gain(element=bus, gain_in_db=gain_in_db)
+                if self._is_connected_to_qm:
+                    self._qm.octave.set_rf_output_gain(element=bus, gain_in_db=gain_in_db)
                 settings_octave_rf_output["gain"] = gain_in_db
                 self._config["octaves"][octave_name]["RF_outputs"][out_port]["gain"] = gain_in_db
                 return
         if parameter == Parameter.IF:
             intermediate_frequency = float(value)
-            self._qm.set_intermediate_frequency(element=bus, freq=intermediate_frequency)
+            if self._is_connected_to_qm:
+                self._qm.set_intermediate_frequency(element=bus, freq=intermediate_frequency)
             element["intermediate_frequency"] = intermediate_frequency
             self._config["elements"][bus]["intermediate_frequency"] = intermediate_frequency
             return
@@ -377,7 +380,6 @@ class QuantumMachinesCluster(Instrument):
         Raises:
             ParameterNotFound: Raised if parameter does not exist
         """
-        # TODO: Change private QM API to public when implemented.
 
         if "_config" not in dir(self):
             self._config = self.settings.to_qua_config()

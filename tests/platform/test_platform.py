@@ -148,7 +148,7 @@ class TestPlatform:
         platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, value=0.14, channel_id=0)
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, channel_id=0) == 0.14
 
-    def test_set_parameter_no_instrument_connection_QM(self, platform: Platform):
+    def test_set_parameter_no_instrument_connection_QM(self):
         """Test platform raises and error if no instrument connection."""
         # Overwrite platform to use Quantum Machines:
         platform = build_platform(runcard=SauronQuantumMachines.runcard)
