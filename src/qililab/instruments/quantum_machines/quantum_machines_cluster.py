@@ -352,6 +352,9 @@ class QuantumMachinesCluster(Instrument):
                     )
                     settings_octave_rf_input["lo_frequency"] = lo_frequency
                     self._config["octaves"][octave_name]["RF_inputs"][in_port]["LO_frequency"] = lo_frequency
+
+                if f"mixer_{bus}" in self._config["elements"]:
+                    self._config["elements"][f"mixer_{bus}"][0]["lo_frequency"] = lo_frequency
                 return
             if parameter == Parameter.GAIN:
                 gain_in_db = float(value)
@@ -364,6 +367,9 @@ class QuantumMachinesCluster(Instrument):
             self._qm.set_intermediate_frequency(element=bus, freq=intermediate_frequency)
             element["intermediate_frequency"] = intermediate_frequency
             self._config["elements"][bus]["intermediate_frequency"] = intermediate_frequency
+
+            if f"mixer_{bus}" in self._config["mixers"]:
+                self._config["mixers"][f"mixer_{bus}"][0]["intermediate_frequency"] = intermediate_frequency
             return
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}.")
 
