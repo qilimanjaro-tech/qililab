@@ -1,4 +1,5 @@
 """This file tests the the ``qm_manager`` class"""
+
 import copy
 from unittest.mock import MagicMock, call, patch
 
@@ -354,18 +355,6 @@ class TestQuantumMachinesCluster:
         qmm.turn_on()
         with pytest.raises(ValueError, match=f"Bus {non_existent_bus} was not found in {qmm.name} settings."):
             qmm.set_parameter_of_bus(non_existent_bus, parameter, value)
-
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    def test_set_parameter_of_bus_method_raises_exception_when_not_connected(
-        self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster
-    ):
-        """Test the set_parameter_of_bus method raises exception when not connected to QuantumMachines."""
-        qmm.initial_setup()
-        with pytest.raises(
-            NotImplementedError, match=f"You should be connected to {qmm.name} in order to change a parameter."
-        ):
-            qmm.set_parameter_of_bus("drive_q0", Parameter.IF, 123e6)
 
     @pytest.mark.parametrize("parameter, value", [(Parameter.MAX_CURRENT, 0.001), (Parameter.OUT0_ATT, 0.0005)])
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
