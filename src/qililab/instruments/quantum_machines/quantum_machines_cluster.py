@@ -352,9 +352,6 @@ class QuantumMachinesCluster(Instrument):
                     )
                     settings_octave_rf_input["lo_frequency"] = lo_frequency
                     self._config["octaves"][octave_name]["RF_inputs"][in_port]["LO_frequency"] = lo_frequency
-
-                if f"mixer_{bus}" in self._config["mixers"]:
-                    self._config["mixers"][f"mixer_{bus}"][0]["lo_frequency"] = lo_frequency
                 return
             if parameter == Parameter.GAIN:
                 gain_in_db = float(value)
