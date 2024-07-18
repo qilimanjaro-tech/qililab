@@ -155,6 +155,7 @@ class TestPlatform:
 
         platform._connected_to_instruments = False
         platform.set_parameter(alias="drive_q0", parameter=Parameter.IF, value=0.14, channel_id=0)
+        # TODO: Check why is the parameter setting-getting not working!
         assert platform.get_parameter(alias="drive_q0", parameter=Parameter.IF, channel_id=0) == 0.14
 
     def test_connect_logger(self, platform: Platform):
@@ -400,7 +401,7 @@ class TestMethods:
         with (
             patch("builtins.open") as patched_open,
             patch("qililab.platform.platform.generate_qua_script", return_value=None) as generate_qua,
-            patch.object(QuantumMachinesCluster, "config") as config,
+            patch.object(QuantumMachinesCluster, "_config") as config,
             patch.object(QuantumMachinesCluster, "append_configuration") as append_configuration,
             patch.object(QuantumMachinesCluster, "compile") as compile_program,
             patch.object(QuantumMachinesCluster, "run_compiled_program") as run_compiled_program,

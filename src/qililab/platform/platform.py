@@ -552,9 +552,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         buses_dict = {RUNCARD.BUSES: self.buses.to_dict() if self.buses is not None else None}
         instrument_dict = {RUNCARD.INSTRUMENTS: self.instruments.to_dict() if self.instruments is not None else None}
         instrument_controllers_dict = {
-            RUNCARD.INSTRUMENT_CONTROLLERS: self.instrument_controllers.to_dict()
-            if self.instrument_controllers is not None
-            else None,
+            RUNCARD.INSTRUMENT_CONTROLLERS: (
+                self.instrument_controllers.to_dict() if self.instrument_controllers is not None else None
+            ),
         }
 
         return name_dict | gates_settings_dict | chip_dict | buses_dict | instrument_dict | instrument_controllers_dict
@@ -708,7 +708,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         if debug:
             with open("debug_qm_execution.py", "w", encoding="utf-8") as sourceFile:
-                print(generate_qua_script(qua_program, cluster.config), file=sourceFile)
+                print(generate_qua_script(qua_program, cluster._config), file=sourceFile)
 
         compiled_program_id = cluster.compile(program=qua_program)
         job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
