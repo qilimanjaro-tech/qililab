@@ -11,7 +11,7 @@ lmfit==1.1.0
 rustworkx==0.12.1
 h5py==3.9.0
 papermill==2.4.0
-qm-qua==1.1.6
+qm-qua==1.2.0
 qualang-tools==0.15.2
 networkx==3.2.1
 ruamel.yaml==0.18.6
