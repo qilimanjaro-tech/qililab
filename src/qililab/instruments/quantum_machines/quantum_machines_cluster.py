@@ -104,26 +104,56 @@ class QuantumMachinesCluster(Instrument):
             Returns:
                 controllers: Dict[str, Any]
             """
-            return {
-                controller["name"]: {
-                    "analog_outputs": {
-                        output["port"]: {
-                            "offset": output["offset"] if "offset" in output else 0.0,
-                            "delay": output["delay"] if "delay" in output else 0.0,
+            controllers: dict = {}
+            for controller in self.controllers:
+                controller_type = controller["type"] if "type" in controller else "opx1"
+                if controller_type == "opx1":
+                    controllers[controller["name"]] = {
+                        "analog_outputs": {
+                            output["port"]: {
+                                "offset": output["offset"] if "offset" in output else 0.0,
+                                "delay": output["delay"] if "delay" in output else 0.0,
+                            }
+                            for output in controller.get("analog_outputs", [])
+                        },
+                        "analog_inputs": {
+                            input["port"]: {
+                                "offset": input["offset"] if "offset" in input else 0.0,
+                                "gain_db": input["gain"] if "gain" in input else 0.0,
+                            }
+                            for input in controller.get("analog_inputs", [])
+                        },
+                        "digital_outputs": {output["port"]: {} for output in controller.get("digital_outputs", [])},
+                    }
+                elif controller_type == "opx1000":
+                    controllers[controller["name"]] = {
+                        fem["fem"]: {
+                            "type": fem["type"],
+                            "analog_outputs": {
+                                output["port"]: {
+                                    "offset": output["offset"] if "offset" in output else 0.0,
+                                    "delay": output["delay"] if "delay" in output else 0.0,
+                                    "output_mode": output["output_mode"] if "output_mode" in output else "direct",
+                                    "sampiling_rate": output["sampling_rate"] if "sampling_rate" in output else 1,
+                                    "upsampling_mode": output["upsampling_mode"]
+                                    if "upsampling_mode" in output
+                                    else "mw",
+                                }
+                                for output in fem.get("analog_outputs", [])
+                            },
+                            "analog_inputs": {
+                                input["port"]: {
+                                    "offset": input["offset"] if "offset" in input else 0.0,
+                                    "gain_db": input["gain"] if "gain" in input else 0.0,
+                                    "sampling_rate": input["sampling_rate"] if "sampling_rate" in input else 1,
+                                }
+                                for input in fem.get("analog_inputs", [])
+                            },
+                            "digital_outputs": {output["port"]: {} for output in fem.get("digital_outputs", [])},
                         }
-                        for output in controller.get("analog_outputs", [])
-                    },
-                    "analog_inputs": {
-                        input["port"]: {
-                            "offset": input["offset"] if "offset" in input else 0.0,
-                            "gain_db": input["gain"] if "gain" in input else 0.0,
-                        }
-                        for input in controller.get("analog_inputs", [])
-                    },
-                    "digital_outputs": {output["port"]: {} for output in controller.get("digital_outputs", [])},
-                }
-                for controller in self.controllers
-            }
+                        for fem in controller["fems"]
+                    }
+            return controllers
 
         def _get_octaves_config(self) -> dict[str, Any]:
             """Returns the octaves config dictionary.
@@ -153,7 +183,7 @@ class QuantumMachinesCluster(Instrument):
                         }
                         for output in octave.get("rf_inputs", [])
                     },
-                    "connectivity": octave["controller"],
+                    "connectivity": (octave["controller"], octave["fem"]) if "fem" in octave else octave["controller"],
                 }
                 for octave in self.octaves
             }
@@ -174,7 +204,13 @@ class QuantumMachinesCluster(Instrument):
                 # Flux bus
                 if "single_input" in element:
                     element_dict["singleInput"] = {
-                        "port": (element["single_input"]["controller"], element["single_input"]["port"]),
+                        "port": (
+                            element["single_input"]["controller"],
+                            element["single_input"]["fem"],
+                            element["single_input"]["port"],
+                        )
+                        if "fem" in element["single_input"]
+                        else (element["single_input"]["controller"], element["single_input"]["port"]),
                     }
                 # IQ bus
                 elif "mix_inputs" in element:
@@ -194,7 +230,13 @@ class QuantumMachinesCluster(Instrument):
                         }
                     ]
                     element_dict["mixInputs"] = {
-                        key: (element["mix_inputs"][key]["controller"], element["mix_inputs"][key]["port"])
+                        key: (
+                            element["mix_inputs"][key]["controller"],
+                            element["mix_inputs"][key]["fem"],
+                            element["mix_inputs"][key]["port"],
+                        )
+                        if "fem" in element["mix_inputs"][key]
+                        else (element["mix_inputs"][key]["controller"], element["mix_inputs"][key]["port"])
                         for key in ["I", "Q"]
                     } | {"lo_frequency": lo_frequency, "mixer": mixer_name}
                     element_dict["intermediate_frequency"] = intermediate_frequency
@@ -202,14 +244,28 @@ class QuantumMachinesCluster(Instrument):
                     # readout bus
                     if "outputs" in element:
                         element_dict["outputs"] = {
-                            key: (element["outputs"][key]["controller"], element["outputs"][key]["port"])
+                            key: (
+                                element["outputs"][key]["controller"],
+                                element["outputs"][key]["fem"],
+                                element["outputs"][key]["port"],
+                            )
+                            if "fem" in element["outputs"][key]
+                            else (element["outputs"][key]["controller"], element["outputs"][key]["port"])
                             for key in ["out1", "out2"]
                         }
                         element_dict["time_of_flight"] = element["time_of_flight"]
                         element_dict["smearing"] = element["smearing"]
                 # RF with Octave
                 elif "rf_inputs" in element:
-                    element_dict["RF_inputs"] = {"port": (element["rf_inputs"]["octave"], element["rf_inputs"]["port"])}
+                    element_dict["RF_inputs"] = {
+                        "port": (
+                            element["rf_inputs"]["controller"],
+                            element["rf_inputs"]["fem"],
+                            element["rf_inputs"]["port"],
+                        )
+                        if "fem" in element["rf_inputs"]
+                        else (element["rf_inputs"]["controller"], element["rf_inputs"]["port"])
+                    }
                     element_dict["intermediate_frequency"] = int(element["intermediate_frequency"])
 
                     # readout bus
@@ -224,14 +280,26 @@ class QuantumMachinesCluster(Instrument):
                 if "digital_inputs" in element:
                     element_dict["digitalInputs"] = {
                         "switch": {
-                            "port": (element["digital_inputs"]["controller"], element["digital_inputs"]["port"]),
+                            "port": (
+                                element["digital_inputs"]["controller"],
+                                element["digital_inputs"]["fem"],
+                                element["digital_inputs"]["port"],
+                            )
+                            if "fem" in element["digital_inputs"]
+                            else (element["digital_inputs"]["controller"], element["digital_inputs"]["port"]),
                             "delay": element["digital_inputs"]["delay"],
                             "buffer": element["digital_inputs"]["buffer"],
                         }
                     }
                 if "digital_outputs" in element:
                     element_dict["digitalOutputs"] = {
-                        "port": (element["digital_outputs"]["controller"], element["digital_outputs"]["port"]),
+                        "port": (
+                            element["digital_outputs"]["controller"],
+                            element["digital_outputs"]["fem"],
+                            element["digital_outputs"]["port"],
+                        )
+                        if "fem" in element["digital_outputs"]
+                        else (element["digital_outputs"]["controller"], element["digital_outputs"]["port"]),
                     }
 
                 elements[bus_name] = element_dict
