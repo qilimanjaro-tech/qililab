@@ -134,7 +134,7 @@ class QuantumMachinesCluster(Instrument):
                                     "offset": output["offset"] if "offset" in output else 0.0,
                                     "delay": output["delay"] if "delay" in output else 0.0,
                                     "output_mode": output["output_mode"] if "output_mode" in output else "direct",
-                                    "sampiling_rate": output["sampling_rate"] if "sampling_rate" in output else 1,
+                                    "sampling_rate": output["sampling_rate"] if "sampling_rate" in output else 1,
                                     "upsampling_mode": output["upsampling_mode"]
                                     if "upsampling_mode" in output
                                     else "mw",
