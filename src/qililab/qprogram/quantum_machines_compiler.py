@@ -19,6 +19,7 @@ from typing import Callable
 
 import numpy as np
 from qm import qua
+from qm.program import Program
 from qm.qua import _dsl as qua_dsl
 from qualang_tools.config.integration_weights_tools import convert_integration_weights
 
@@ -102,7 +103,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
 
     def compile(
         self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None, calibration: Calibration | None = None
-    ) -> tuple[qua.Program, dict, list[MeasurementInfo]]:
+    ) -> tuple[Program, dict, list[MeasurementInfo]]:
         """Compile QProgram to QUA's Program.
 
         Args:

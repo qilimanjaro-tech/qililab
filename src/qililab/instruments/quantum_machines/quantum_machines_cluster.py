@@ -21,7 +21,7 @@ import numpy as np
 from qm import DictQuaConfig, QuantumMachine, QuantumMachinesManager, SimulationConfig
 from qm.jobs.running_qm_job import RunningQmJob
 from qm.octave import QmOctaveConfig
-from qm.qua import Program
+from qm.program import Program
 
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
