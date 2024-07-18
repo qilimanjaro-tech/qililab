@@ -188,7 +188,7 @@ class TestQuantumMachinesCluster:
         # assert "fb58e912" in qmm._config["waveforms"]
 
         # Assert that the settings are still synch:
-        # assert qmm._config == qmm.settings.to_qua_config() # TODO: Solve these dictionaries not being the same
+        assert qmm._config == qmm.settings.to_qua_config()  # TODO: Solve these dictionaries not being the same
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
@@ -204,7 +204,7 @@ class TestQuantumMachinesCluster:
         assert isinstance(qmm._qm, MagicMock)
 
         # Assert that the settings are still synch:
-        # assert qmm._config == qmm.settings.to_qua_config() # TODO: Solve these dictionaries not being the same
+        assert qmm._config == qmm.settings.to_qua_config()  # TODO: Solve these dictionaries not being the same
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
@@ -331,7 +331,7 @@ class TestQuantumMachinesCluster:
             qmm._qm.set_intermediate_frequency.assert_called_once()
 
         # Assert that the settings are still synch:
-        # assert qmm._config == qmm.settings.to_qua_config()  # TODO: Solve these dictionaries not being the same
+        assert qmm._config == qmm.settings.to_qua_config()  # TODO: Solve these dictionaries not being the same
 
     @pytest.mark.parametrize(
         "bus, parameter, value",
@@ -350,7 +350,7 @@ class TestQuantumMachinesCluster:
         qmm.set_parameter_of_bus(bus, parameter, value)
 
         # Test that both the local `settings` and `_config` have been changed to 17e6:
-        # assert qmm._config == qmm.settings.to_qua_config() # TODO: Solve these dictionaries not being the same
+        assert qmm._config == qmm.settings.to_qua_config()  # TODO: Solve these dictionaries not being the same
         ## Test `_config` QUA dictionary:
         assert qmm._config["elements"][bus][parameter] == value
         ## Test `settings` qililab dictionary:
