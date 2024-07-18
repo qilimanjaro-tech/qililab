@@ -321,7 +321,8 @@ class QuantumMachinesCluster(Instrument):
         """
         if "_config" not in dir(self):
             self._config = self.settings.to_qua_config()
-        # Or with just a: `self._config = self.settings.to_qua_config()`, if we decide the setting to rule!
+
+        # TODO: Or with just a: `self._config = self.settings.to_qua_config()`, if we decide the setting to rule!
 
         element = next((element for element in self.settings.elements if element["bus"] == bus), None)
         if element is None:
