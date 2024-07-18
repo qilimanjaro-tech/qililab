@@ -128,7 +128,7 @@ class QuantumMachinesCluster(Instrument):
                 elif controller_type == "opx1000":
                     controllers[controller["name"]] = {
                         fem["fem"]: {
-                            "type": fem["type"],
+                            "type": fem["type"] if "type" in fem else "LF",
                             "analog_outputs": {
                                 output["port"]: {
                                     "offset": output["offset"] if "offset" in output else 0.0,
