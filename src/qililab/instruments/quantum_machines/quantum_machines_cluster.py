@@ -257,15 +257,7 @@ class QuantumMachinesCluster(Instrument):
                         element_dict["smearing"] = element["smearing"]
                 # RF with Octave
                 elif "rf_inputs" in element:
-                    element_dict["RF_inputs"] = {
-                        "port": (
-                            element["rf_inputs"]["controller"],
-                            element["rf_inputs"]["fem"],
-                            element["rf_inputs"]["port"],
-                        )
-                        if "fem" in element["rf_inputs"]
-                        else (element["rf_inputs"]["controller"], element["rf_inputs"]["port"])
-                    }
+                    element_dict["RF_inputs"] = {"port": (element["rf_inputs"]["octave"], element["rf_inputs"]["port"])}
                     element_dict["intermediate_frequency"] = int(element["intermediate_frequency"])
 
                     # readout bus
