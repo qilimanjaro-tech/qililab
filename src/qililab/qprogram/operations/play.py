@@ -21,7 +21,7 @@ from qililab.yaml import yaml
 
 
 @yaml.register_class
-@dataclass(frozen=True)
+@dataclass
 class Play(Operation):  # pylint: disable=missing-class-docstring
     bus: str
     waveform: Waveform | IQPair
@@ -53,17 +53,25 @@ class Play(Operation):  # pylint: disable=missing-class-docstring
         """
         return self.get_waveform_I_variables() | self.get_waveform_Q_variables()
 
-    # def get_variables(self) -> set[Variable]:
-    #     """Get a set of the variables used in operation, if any.
+    def replace_variables(self, variables: dict[Variable, int | float]) -> "Play":
+        """Replace variables in the waveform with their values from the provided variable_map.
 
-    #     Returns:
-    #         set[Variable]: The set of variables used in operation.
-    #     """
-    #     return super().get_variables() | self.get_waveform_variables()
+        Args:
+            variable_map (dict[Variable, Union[int, float]]): Mapping of variables to their values.
+
+        Returns:
+            Waveform: A new waveform with variables replaced.
+        """
+        wf_I, wf_Q = self.get_waveforms()
+        wf_I.replace_variables(variables=variables)
+        if wf_Q is not None:
+            wf_Q.replace_variables(variables=variables)
+
+        return super().replace_variables(variables=variables)  # type: ignore[return-value]
 
 
 @yaml.register_class
-@dataclass(frozen=True)
+@dataclass
 class PlayWithCalibratedWaveform(Operation):  # pylint: disable=missing-class-docstring
     bus: str
     waveform: str

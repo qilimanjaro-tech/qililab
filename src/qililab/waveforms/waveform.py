@@ -58,3 +58,24 @@ class Waveform:  # pylint: disable=too-few-public-methods, disable=missing-class
                     yield from collect_variables(attribute)
 
         return set(collect_variables(self))
+
+    def replace_variables(self, variables: dict[Variable, int | float]) -> "Waveform":
+        """Replace variables in the waveform with their values from the provided variable_map.
+
+        Args:
+            variable_map (dict[Variable, Union[int, float]]): Mapping of variables to their values.
+
+        Returns:
+            Waveform: A new waveform with variables replaced.
+        """
+
+        def replace(obj):
+            """Recursively replace variables in the attributes of the given object."""
+            for attribute, variable in obj.__dict__.items():
+                if isinstance(variable, Variable) and variable in variables:
+                    setattr(obj, attribute, variables[variable])
+                elif isinstance(variable, Waveform):
+                    setattr(obj, attribute, replace(variable))
+            return obj
+
+        return replace(self)

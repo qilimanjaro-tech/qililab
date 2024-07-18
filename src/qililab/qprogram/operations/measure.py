@@ -20,7 +20,7 @@ from qililab.yaml import yaml
 
 
 @yaml.register_class
-@dataclass(frozen=True)
+@dataclass
 class Measure(Operation):  # pylint: disable=missing-class-docstring
     bus: str
     waveform: IQPair
@@ -51,7 +51,7 @@ class Measure(Operation):  # pylint: disable=missing-class-docstring
 
 
 @yaml.register_class
-@dataclass(frozen=True)
+@dataclass
 class MeasureWithCalibratedWaveform(Operation):  # pylint: disable=missing-class-docstring
     bus: str
     waveform: str
@@ -61,7 +61,7 @@ class MeasureWithCalibratedWaveform(Operation):  # pylint: disable=missing-class
     demodulation: bool = True
 
 
-@dataclass(frozen=True)
+@dataclass
 class MeasureWithCalibratedWeights(Operation):  # pylint: disable=missing-class-docstring
     bus: str
     waveform: IQPair
@@ -71,7 +71,7 @@ class MeasureWithCalibratedWeights(Operation):  # pylint: disable=missing-class-
     demodulation: bool = True
 
 
-@dataclass(frozen=True)
+@dataclass
 class MeasureWithCalibratedWaveformWeights(Operation):  # pylint: disable=missing-class-docstring
     bus: str
     waveform: str

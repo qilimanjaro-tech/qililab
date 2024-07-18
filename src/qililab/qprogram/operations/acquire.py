@@ -20,7 +20,7 @@ from qililab.yaml import yaml
 
 
 @yaml.register_class
-@dataclass(frozen=True)
+@dataclass
 class Acquire(Operation):  # pylint: disable=missing-class-docstring
     bus: str
     weights: IQPair
@@ -37,7 +37,7 @@ class Acquire(Operation):  # pylint: disable=missing-class-docstring
         return weight_I, weight_Q
 
 
-@dataclass(frozen=True)
+@dataclass
 class AcquireWithCalibratedWeights(Operation):  # pylint: disable=missing-class-docstring
     bus: str
     weights: str

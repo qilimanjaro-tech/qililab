@@ -109,7 +109,7 @@ class Variable:
         return str(self.value)
 
     def __repr__(self):
-        return repr(self.value)
+        return f"{repr(self._uuid)}, {self._value}"
 
     def __hash__(self):
         return hash(self._uuid)

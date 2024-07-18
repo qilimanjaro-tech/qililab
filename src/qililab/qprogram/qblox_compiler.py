@@ -15,6 +15,7 @@
 # pylint: disable=protected-access
 import math
 from collections import deque
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Callable
 from uuid import UUID
@@ -91,6 +92,9 @@ class BusCompilationInfo:  # pylint: disable=too-many-instance-attributes, too-f
         self.next_acquisition_index = 0
         self.loop_counter = 0
         self.average_counter = 0
+
+        # Unwrapped measure operations
+        self.unwrapped_measure_operations: dict = {}
 
         # Syncing durations
         self.static_duration = 0
@@ -181,7 +185,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                         self._buses[bus].qpy_sequence._program._memory.mark_out_of_use(register)
                     del self._buses[bus]._allocated_registers_of_block[block._uuid]
 
-        self._qprogram = qprogram
+        self._qprogram = deepcopy(qprogram)
         if bus_mapping is not None:
             self._qprogram = self._qprogram.with_bus_mapping(bus_mapping=bus_mapping)
         if calibration is not None:
@@ -501,8 +505,8 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             return
 
         # If there is no bus marked for sync, return.
-        if all(not self._buses[bus].marked_for_sync for bus in buses):
-            return
+        # if all(not self._buses[bus].marked_for_sync for bus in buses):
+        #     return
 
         # Is there any bus that has dynamic durations?
         if any(bus for bus in buses if self._buses[bus].dynamic_durations or self._buses[bus].sync_durations):
@@ -538,17 +542,28 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         """
         time_of_flight = self._buses[element.bus].time_of_flight
         play = Play(bus=element.bus, waveform=element.waveform, wait_time=time_of_flight)
+        play._uuid = element._uuid
         acquire = Acquire(bus=element.bus, weights=element.weights, save_adc=element.save_adc)
+        acquire._uuid = element._uuid
         self._handle_play(play)
         self._handle_acquire(acquire)
 
     def _handle_acquire(self, element: Acquire):
+        def collect_same_acquires(block: Block):
+            for _element in block.elements:
+                if isinstance(_element, Block):
+                    yield from collect_same_acquires(_element)
+                elif isinstance(_element, Acquire) and _element._uuid == element._uuid:
+                    yield _element
+
+        len_same_acquires = len(list(collect_same_acquires(self._qprogram.body)))
         loops = [
             (i, loop)
             for i, loop in enumerate(self._buses[element.bus].qpy_block_stack)
             if isinstance(loop, QPyProgram.IterativeLoop) and not loop.name.startswith("avg")
         ]
-        num_bins = math.prod(loop[1].iterations for loop in loops)
+        num_bins = math.prod(loop[1].iterations for loop in loops) * len_same_acquires
+
         acquisition_name = f"acquisition_{self._buses[element.bus].next_acquisition_index}"
         self._buses[element.bus].qpy_sequence._acquisitions.add(
             name=acquisition_name,
@@ -609,7 +624,9 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
     def _handle_play(self, element: Play):
         waveform_I, waveform_Q = element.get_waveforms()
         waveform_variables = element.get_waveform_variables()
-        if any(variable.domain is Domain.Time for variable in waveform_variables):
+        if any(variable.domain is Domain.Time for variable in waveform_variables) or (
+            element.wait_time is not None and isinstance(element.wait_time, Variable)
+        ):
             raise RuntimeError("No dynamic durations are allowed in Qblox.")
         duration = waveform_I.get_duration()
         if not waveform_variables:
