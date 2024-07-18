@@ -320,6 +320,27 @@ class TestQuantumMachinesCluster:
     @pytest.mark.parametrize(
         "bus, parameter, value",
         [
+            ("drive_q0", Parameter.IF, 17e6),
+        ],
+    )
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    def test_set_parameter_without_connection_followed_by_setup_and_turn_on(
+        self, mock_qmm, mock_qm, bus: str, parameter: Parameter, value: float | str | bool, qmm: QuantumMachinesCluster
+    ):
+        """Test the setup method without connection works correctly, with posterior connection."""
+
+        # Set intermidiate frequency to 17e6 locally
+        qmm.set_parameter_of_bus(bus, parameter, value)
+
+        # Test that the local settings have been changed to 17e6
+        if parameter == Parameter.IF:
+            elements = qmm.settings.to_qua_config()["elements"]
+            assert elements[bus]["intermediate_frequency"] == value
+
+    @pytest.mark.parametrize(
+        "bus, parameter, value",
+        [
             ("drive_q0", Parameter.LO_FREQUENCY, 6e9),
             ("drive_q0", Parameter.GAIN, 0.001),
         ],
