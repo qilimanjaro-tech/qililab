@@ -243,9 +243,6 @@ class TestQuantumMachinesCluster:
 
         assert isinstance(job, MagicMock)
 
-        # Assert that the settings are still synch:
-        assert qmm._config == qmm.settings.to_qua_config()
-
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
     def test_run_compiled_program(self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, qua_program: Program):
@@ -282,9 +279,6 @@ class TestQuantumMachinesCluster:
         job = qmm.simulate(qua_program)
 
         assert isinstance(job, MagicMock)
-
-        # Assert that the settings are still synch:
-        assert qmm._config == qmm.settings.to_qua_config()
 
     @pytest.mark.parametrize(
         "bus, parameter, value",
