@@ -161,32 +161,52 @@ class QuantumMachinesCluster(Instrument):
             Returns:
                 octaves: Dict[str, Any]
             """
-            return {
-                octave["name"]: {
-                    "RF_outputs": {
-                        output["port"]: {
-                            "LO_frequency": output["lo_frequency"],  # Should be between 2 and 18 GHz.
-                            "LO_source": "internal",
-                            "gain": output["gain"] if "gain" in output else 0.0,
-                            "output_mode": "always_on",
-                            "input_attenuators": "OFF",  # can be: "OFF" / "ON". Default is "OFF".
-                        }
-                        for output in octave.get("rf_outputs", [])
-                    },
-                    "RF_inputs": {
-                        output["port"]: {
-                            "RF_source": "RF_in",
-                            "LO_frequency": output["lo_frequency"],
-                            "LO_source": "internal",  # can be: "internal" / "external". Default is "internal".
-                            "IF_mode_I": "direct",  # can be: "direct" / "mixer" / "envelope" / "off". Default is "direct".
-                            "IF_mode_Q": "direct",
-                        }
-                        for output in octave.get("rf_inputs", [])
-                    },
-                    "connectivity": (octave["controller"], octave["fem"]) if "fem" in octave else octave["controller"],
-                }
-                for octave in self.octaves
-            }
+            octaves: dict = {}
+            for octave in self.octaves:
+                octaves[octave["name"]] = {}
+                octaves[octave["name"]]["RF_outputs"] = {}
+                octaves[octave["name"]]["RF_inputs"] = {}
+                for rf_output in octave.get("rf_outputs", []):
+                    octaves[octave["name"]]["RF_outputs"][rf_output["port"]] = {
+                        "LO_frequency": rf_output["lo_frequency"],  # Should be between 2 and 18 GHz.
+                        "LO_source": "internal",
+                        "gain": rf_output["gain"] if "gain" in rf_output else 0.0,
+                        "output_mode": "always_on",
+                        "input_attenuators": "OFF",  # can be: "OFF" / "ON". Default is "OFF".
+                    }
+                    if "i_connection" in rf_output:
+                        octaves[octave["name"]]["RF_outputs"][rf_output["port"]]["I_connection"] = (
+                            (
+                                rf_output["i_connection"]["controller"],
+                                rf_output["i_connection"]["fem"],
+                                rf_output["i_connection"]["port"],
+                            )
+                            if "fem" in rf_output["i_connection"]
+                            else (rf_output["i_connection"]["controller"], rf_output["i_connection"]["port"])
+                        )
+                    if "q_connection" in rf_output:
+                        octaves[octave["name"]]["RF_outputs"][rf_output["port"]]["Q_connection"] = (
+                            (
+                                rf_output["q_connection"]["controller"],
+                                rf_output["q_connection"]["fem"],
+                                rf_output["q_connection"]["port"],
+                            )
+                            if "fem" in rf_output["q_connection"]
+                            else (rf_output["q_connection"]["controller"], rf_output["q_connection"]["port"])
+                        )
+                for rf_input in octave.get("rf_inputs", []):
+                    octaves[octave["name"]]["RF_inputs"][rf_input["port"]] = {
+                        "RF_source": "RF_in",
+                        "LO_frequency": rf_input["lo_frequency"],
+                        "LO_source": "internal",  # can be: "internal" / "external". Default is "internal".
+                        "IF_mode_I": "direct",  # can be: "direct" / "mixer" / "envelope" / "off". Default is "direct".
+                        "IF_mode_Q": "direct",
+                    }
+                if "connectivity" in octave:
+                    octaves[octave["name"]]["connectivity"] = (
+                        (octave["controller"], octave["fem"]) if "fem" in octave else octave["controller"]
+                    )
+            return octaves
 
         def _get_elements_and_mixers_config(self) -> tuple:
             """Returns the elements config dictionary.
