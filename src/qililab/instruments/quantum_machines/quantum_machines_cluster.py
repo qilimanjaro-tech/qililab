@@ -127,31 +127,33 @@ class QuantumMachinesCluster(Instrument):
                     }
                 elif controller_type == "opx1000":
                     controllers[controller["name"]] = {
-                        fem["fem"]: {
-                            "type": fem["type"] if "type" in fem else "LF",
-                            "analog_outputs": {
-                                output["port"]: {
-                                    "offset": output["offset"] if "offset" in output else 0.0,
-                                    "delay": output["delay"] if "delay" in output else 0.0,
-                                    "output_mode": output["output_mode"] if "output_mode" in output else "direct",
-                                    "sampling_rate": output["sampling_rate"] if "sampling_rate" in output else 1,
-                                    "upsampling_mode": output["upsampling_mode"]
-                                    if "upsampling_mode" in output
-                                    else "mw",
-                                }
-                                for output in fem.get("analog_outputs", [])
-                            },
-                            "analog_inputs": {
-                                input["port"]: {
-                                    "offset": input["offset"] if "offset" in input else 0.0,
-                                    "gain_db": input["gain"] if "gain" in input else 0.0,
-                                    "sampling_rate": input["sampling_rate"] if "sampling_rate" in input else 1,
-                                }
-                                for input in fem.get("analog_inputs", [])
-                            },
-                            "digital_outputs": {output["port"]: {} for output in fem.get("digital_outputs", [])},
+                        "fems": {
+                            fem["fem"]: {
+                                "type": fem["type"] if "type" in fem else "LF",
+                                "analog_outputs": {
+                                    output["port"]: {
+                                        "offset": output["offset"] if "offset" in output else 0.0,
+                                        "delay": output["delay"] if "delay" in output else 0.0,
+                                        "output_mode": output["output_mode"] if "output_mode" in output else "direct",
+                                        "sampling_rate": output["sampling_rate"] if "sampling_rate" in output else 1,
+                                        "upsampling_mode": output["upsampling_mode"]
+                                        if "upsampling_mode" in output
+                                        else "mw",
+                                    }
+                                    for output in fem.get("analog_outputs", [])
+                                },
+                                "analog_inputs": {
+                                    input["port"]: {
+                                        "offset": input["offset"] if "offset" in input else 0.0,
+                                        "gain_db": input["gain"] if "gain" in input else 0.0,
+                                        "sampling_rate": input["sampling_rate"] if "sampling_rate" in input else 1,
+                                    }
+                                    for input in fem.get("analog_inputs", [])
+                                },
+                                "digital_outputs": {output["port"]: {} for output in fem.get("digital_outputs", [])},
+                            }
+                            for fem in controller["fems"]
                         }
-                        for fem in controller["fems"]
                     }
             return controllers
 
