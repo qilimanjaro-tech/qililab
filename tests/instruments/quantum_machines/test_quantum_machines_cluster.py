@@ -1,5 +1,4 @@
 """This file tests the the ``qm_manager`` class"""
-
 import copy
 from unittest.mock import MagicMock, call, patch
 
