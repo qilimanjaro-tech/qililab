@@ -135,7 +135,7 @@ class QuantumMachinesCluster(Instrument):
                                         "offset": output["offset"] if "offset" in output else 0.0,
                                         "delay": output["delay"] if "delay" in output else 0.0,
                                         "output_mode": output["output_mode"] if "output_mode" in output else "direct",
-                                        "sampling_rate": output["sampling_rate"] if "sampling_rate" in output else 1,
+                                        "sampling_rate": output["sampling_rate"] if "sampling_rate" in output else 1e9,
                                         "upsampling_mode": output["upsampling_mode"]
                                         if "upsampling_mode" in output
                                         else "mw",
@@ -146,7 +146,7 @@ class QuantumMachinesCluster(Instrument):
                                     input["port"]: {
                                         "offset": input["offset"] if "offset" in input else 0.0,
                                         "gain_db": input["gain"] if "gain" in input else 0.0,
-                                        "sampling_rate": input["sampling_rate"] if "sampling_rate" in input else 1,
+                                        "sampling_rate": input["sampling_rate"] if "sampling_rate" in input else 1e9,
                                     }
                                     for input in fem.get("analog_inputs", [])
                                 },
