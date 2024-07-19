@@ -232,8 +232,10 @@ class TestQuantumMachinesCluster:
         compile_program_id = qmm.compile(qua_program)
         _ = qmm.run_compiled_program(compile_program_id)
 
-        qmm._qm.queue.add_compiled.assert_called_once_with(compile_program_id)
-        qmm._qm.queue.add_compiled.return_value.wait_for_execution.assert_called_once()
+        # CHANGES: qm.queue.add_compiled() -> qm.add_compiled()
+        qmm._qm.add_compiled.assert_called_once_with(compile_program_id)
+        # CHANGES: job.wait_for_execution() is deprecated and will be removed in the future. Please use job.wait_until("Running") instead.
+        qmm._qm.add_compiled.return_value.wait_until.assert_called_once()
 
     def test_get_acquisitions(self, qmm: QuantumMachinesCluster):
         """Test get_acquisitions method"""

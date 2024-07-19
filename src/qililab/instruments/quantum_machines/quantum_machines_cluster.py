@@ -441,6 +441,7 @@ class QuantumMachinesCluster(Instrument):
                 return
         if parameter == Parameter.IF:
             intermediate_frequency = float(value)
+            # CHANGE: now job.set_intermediate_frequency()
             self._qm.set_intermediate_frequency(element=bus, freq=intermediate_frequency)
             element["intermediate_frequency"] = intermediate_frequency
             self._config["elements"][bus]["intermediate_frequency"] = intermediate_frequency
@@ -502,8 +503,10 @@ class QuantumMachinesCluster(Instrument):
         Returns:
             RunningQmJob: An object representing the running job. This object provides methods and properties to check the status of the job, retrieve results upon completion, and manage or investigate the job's execution.
         """
-        pending_job = self._qm.queue.add_compiled(compiled_program_id)
-        return pending_job.wait_for_execution()
+        # CHANGES: qm.queue.add_compiled() -> qm.add_compiled()
+        pending_job = self._qm.add_compiled(compiled_program_id)
+        # CHANGES: job.wait_for_execution() is deprecated and will be removed in the future. Please use job.wait_until("Running") instead.
+        return pending_job.wait_until("Running")
 
     def run(self, program: Program) -> RunningQmJob:
         """Runs the QUA Program.
