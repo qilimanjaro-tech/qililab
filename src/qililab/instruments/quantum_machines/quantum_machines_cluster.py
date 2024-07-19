@@ -206,6 +206,29 @@ class QuantumMachinesCluster(Instrument):
                     octaves[octave["name"]]["connectivity"] = (
                         (octave["controller"], octave["fem"]) if "fem" in octave else octave["controller"]
                     )
+                else:
+                    octaves[octave["name"]]["IF_outputs"] = {
+                        "IF_out1": {
+                            "port": (
+                                octave["if_outputs"][0]["controller"],
+                                octave["if_outputs"][0]["fem"],
+                                octave["if_outputs"][0]["port"],
+                            )
+                            if "fem" in octave["if_outputs"][0]
+                            else (octave["if_outputs"][0]["controller"], octave["if_outputs"][0]["port"]),
+                            "name": "out1",
+                        },
+                        "IF_out2": {
+                            "port": (
+                                octave["if_outputs"][1]["controller"],
+                                octave["if_outputs"][1]["fem"],
+                                octave["if_outputs"][1]["port"],
+                            )
+                            if "fem" in octave["if_outputs"][1]
+                            else (octave["if_outputs"][1]["controller"], octave["if_outputs"][1]["port"]),
+                            "name": "out2",
+                        },
+                    }
             return octaves
 
         def _get_elements_and_mixers_config(self) -> tuple:
