@@ -1,4 +1,5 @@
 """This file tests the the ``qm_manager`` class"""
+
 import copy
 from unittest.mock import MagicMock, call, patch
 
@@ -6,14 +7,14 @@ import numpy as np
 import pytest
 from qm import Program, QmPendingJob, QmQueue
 from qm.qua import play, program
+from tests.data import SauronQuantumMachines  # pylint: disable=import-error, no-name-in-module
+from tests.test_utils import build_platform  # pylint: disable=import-error, no-name-in-module
 
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Platform
 from qililab.settings import Settings
 from qililab.typings import Parameter
-from tests.data import SauronQuantumMachines  # pylint: disable=import-error, no-name-in-module
-from tests.test_utils import build_platform  # pylint: disable=import-error, no-name-in-module
 
 
 @pytest.fixture(name="qua_program")
@@ -232,8 +233,10 @@ class TestQuantumMachinesCluster:
         compile_program_id = qmm.compile(qua_program)
         _ = qmm.run_compiled_program(compile_program_id)
 
-        qmm._qm.queue.add_compiled.assert_called_once_with(compile_program_id)
-        qmm._qm.queue.add_compiled.return_value.wait_for_execution.assert_called_once()
+        # CHANGES: qm.queue.add_compiled() -> qm.add_compiled()
+        qmm._qm.add_compiled.assert_called_once_with(compile_program_id)
+        # CHANGES: job.wait_for_execution() is deprecated and will be removed in the future. Please use job.wait_until("Running") instead.
+        qmm._qm.add_compiled.return_value.wait_until.assert_called_once()
 
     def test_get_acquisitions(self, qmm: QuantumMachinesCluster):
         """Test get_acquisitions method"""
