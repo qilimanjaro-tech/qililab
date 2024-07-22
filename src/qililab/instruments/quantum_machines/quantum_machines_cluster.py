@@ -206,7 +206,9 @@ class QuantumMachinesCluster(Instrument):
                     }
                 if "connectivity" in octave:
                     octaves[octave["name"]]["connectivity"] = (
-                        (octave["controller"], octave["fem"]) if "fem" in octave else octave["controller"]
+                        (octave["connectivity"]["controller"], octave["connectivity"]["fem"])
+                        if "fem" in octave
+                        else octave["connectivity"]["controller"]
                     )
                 else:
                     octaves[octave["name"]]["IF_outputs"] = {
