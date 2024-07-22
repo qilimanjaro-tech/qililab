@@ -353,7 +353,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             os.rename(output_path, new_output_path)
             return timestamp
 
-        # When keyboard interrupt (Ctrl+C), generate error, and leave `_dirty`` in the name:
+        # When keyboard interrupt (Ctrl+C), generate error, and leave `_dirty` in the name:
         except KeyboardInterrupt as exc:  # we don't remove the _dirty tag, since it was stopped, not failed.
             logger.error("Interrupted automatic calibration notebook execution of %s", self.nb_path)
             raise KeyboardInterrupt(f"Interrupted automatic calibration notebook execution of {self.nb_path}") from exc
