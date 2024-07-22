@@ -405,7 +405,7 @@ class QuantumMachinesCluster(Instrument):
             self._config = cast(DictQuaConfig, merged_configuration)
             # If we are already connected, reopen the connection with the new configuration
             if self._is_connected_to_qm:
-                self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)
+                self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)  # type: ignore[assignment]
                 self._compiled_program_cache = {}
 
     def run_octave_calibration(self):
@@ -533,7 +533,7 @@ class QuantumMachinesCluster(Instrument):
         # CHANGES: qm.queue.add_compiled() -> qm.add_compiled()
         pending_job = self._qm.queue.add_compiled(compiled_program_id)
         # CHANGES: job.wait_for_execution() is deprecated and will be removed in the future. Please use job.wait_until("Running") instead.
-        return pending_job.wait_for_execution()
+        return pending_job.wait_for_execution()  # type: ignore[return-value]
 
     def run(self, program: Program) -> RunningQmJob:
         """Runs the QUA Program.

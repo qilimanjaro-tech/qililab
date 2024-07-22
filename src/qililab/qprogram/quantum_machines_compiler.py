@@ -247,8 +247,8 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
 
         to_positive = stop >= start
         if to_positive:
-            return qua.for_(qua_variable, start, qua_variable < stop + step / 2, qua_variable + step)
-        return qua.for_(qua_variable, start, qua_variable > stop + step / 2, qua_variable + step)
+            return qua.for_(qua_variable, start, qua_variable < stop + step / 2, qua_variable + step)  # type: ignore[arg-type]
+        return qua.for_(qua_variable, start, qua_variable > stop + step / 2, qua_variable + step)  # type: ignore[arg-type]
 
     def _handle_loop(self, element: Loop):
         qua_variable = self._qprogram_to_qua_variables[element.variable]
@@ -263,7 +263,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
 
     def _handle_average(self, element: Average):
         variable = qua.declare(int)
-        return qua.for_(variable, 0, variable < element.shots, variable + 1)
+        return qua.for_(variable, 0, variable < element.shots, variable + 1)  # type: ignore[arg-type]
 
     def _handle_set_frequency(self, element: SetFrequency):
         frequency = (
@@ -297,7 +297,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         duration = waveform_I.get_duration()
 
         gain = (
-            qua.amp(self._buses[element.bus].current_gain * self.VOLTAGE_COEFF)
+            qua.amp(self._buses[element.bus].current_gain * self.VOLTAGE_COEFF)  # type: ignore[arg-type]
             if self._buses[element.bus].current_gain is not None
             else None
         )
@@ -319,7 +319,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         waveform_Q_name = self.__add_waveform_to_configuration(waveform_Q)
 
         gain = (
-            qua.amp(self._buses[element.bus].current_gain * self.VOLTAGE_COEFF)
+            qua.amp(self._buses[element.bus].current_gain * self.VOLTAGE_COEFF)  # type: ignore[arg-type]
             if self._buses[element.bus].current_gain is not None
             else None
         )
@@ -390,9 +390,9 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         )
 
         qua.wait(
-            duration / int(self.WAIT_COEFF)
+            duration / int(self.WAIT_COEFF)  # type: ignore[arg-type]
             if isinstance(element.duration, Variable)
-            else int(duration / self.WAIT_COEFF),
+            else int(duration / self.WAIT_COEFF),  # type: ignore[arg-type]
             element.bus,
         )
 
