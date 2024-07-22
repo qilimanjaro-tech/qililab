@@ -368,6 +368,9 @@ class QuantumMachinesCluster(Instrument):
             if f"mixer_{bus}" in self._config["mixers"]:
                 self._config["mixers"][f"mixer_{bus}"][0]["intermediate_frequency"] = intermediate_frequency
             return
+        if parameter == Parameter.THRESHOLD_ROTATION:
+            threshold_rotation = float(value)
+            element["threshold_rotation"] = threshold_rotation
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}.")
 
     def get_parameter_of_bus(self, bus: str, parameter: Parameter):
@@ -387,6 +390,11 @@ class QuantumMachinesCluster(Instrument):
             return self._qm._elements[bus].input.gain  # type: ignore[union-attr] # pylint: disable=protected-access
         if parameter == Parameter.IF:
             return self._qm._elements[bus].intermediate_frequency  # pylint: disable=protected-access
+        if parameter == Parameter.THRESHOLD_ROTATION:
+            element = next((element for element in self.settings.elements if element["bus"] == bus), None)
+            if element is None:
+                raise ValueError(f"Bus {bus} was not found in {self.name} settings.")
+            return element["threshold_rotation"]
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
     def compile(self, program: Program) -> str:
