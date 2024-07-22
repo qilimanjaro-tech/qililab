@@ -25,12 +25,13 @@ from qililab.typings.factory_element import FactoryElement
 from qililab.utils import nested_dict_to_pandas_dataframe
 
 
-@dataclass
 class Result(FactoryElement, ABC):
     """Class used to hold the results of a single execution."""
 
     name: ResultName
+    """Name of the result."""
     data_dataframe_indices: set[str]
+    """Set of indices that are used in the data DataFrame."""
 
     def counts(self) -> dict:
         """(Only for `Qblox`) Returns a Counts object containing the counts of each state.
