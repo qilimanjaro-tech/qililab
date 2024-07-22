@@ -105,7 +105,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         self,
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,
-        threshold_rotations: dict[str, float] | None = None,
+        threshold_rotations: dict[str, float | None] | None = None,
         calibration: Calibration | None = None,
     ) -> tuple[qua.Program, dict, list[MeasurementInfo]]:
         """Compile QProgram to QUA's Program.
