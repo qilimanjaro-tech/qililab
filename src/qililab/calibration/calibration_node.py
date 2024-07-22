@@ -104,7 +104,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         **Practical example:**
 
-        To create two linked nodes, and pass them to a :class:`.CalibrationController`**, you need:
+        To create two linked nodes, and pass them to a :class:`.CalibrationController`, you need:
 
         .. code-block:: python
 
