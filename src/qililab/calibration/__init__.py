@@ -8,8 +8,9 @@ can be read from: https://arxiv.org/abs/1803.03226
 
 .. currentmodule:: qililab.calibration
 
-CalibrationController class
+CalibrationController Class
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. autosummary::
     :toctree: api
 
@@ -17,6 +18,7 @@ CalibrationController class
 
 CalibrationNode Class
 ~~~~~~~~~~~~~~~~~~~~~~
+
 .. autosummary::
     :toctree: api
 
@@ -24,6 +26,7 @@ CalibrationNode Class
 
 Calibration-related methods
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. autosummary::
     :toctree: api
 

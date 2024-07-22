@@ -14,6 +14,7 @@
 
 """Result class."""
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
@@ -24,14 +25,47 @@ from qililab.typings.factory_element import FactoryElement
 from qililab.utils import nested_dict_to_pandas_dataframe
 
 
+@dataclass
 class Result(FactoryElement, ABC):
-    """Abstract class used to hold the results of a single execution."""
+    """Class used to hold the results of a single execution."""
 
     name: ResultName
     data_dataframe_indices: set[str]
 
+    def counts(self) -> dict:
+        """(Only for `Qblox`) Returns a Counts object containing the counts of each state.
+
+        Returns:
+            Counts: Counts object containing the counts of each state.
+
+        Raises:
+            NotImplementedError: this method is not implemented for n measurements on the same qubit
+        """
+        raise NotImplementedError
+
+    def samples(self) -> np.ndarray:
+        """(Only for `Qblox`) Returns an array containing the measured samples.
+
+        The shape of the returned array is ``(# sequencers, # bins)``.
+
+        Returns:
+            np.ndarray: An array containing the measured samples (0 or 1).
+
+        Raises:
+            NotImplementedError: this method is not implemented for n measurements on the same qubit
+        """
+        raise NotImplementedError
+
+    def acquisitions(self) -> pd.DataFrame:
+        """Return acquisition values.
+
+        Returns:
+            pd.DataFrame: I, Q, amplitude and phase.
+        """
+        raise NotImplementedError
+
     def probabilities(self) -> dict[str, float]:
-        """Return probabilities of being in the ground and excited state.
+        """(Only for `Qblox`) Return probabilities of being in the ground and excited state.
 
         Returns:
             dict[str, float]: Dictionary containing the quantum states as the keys of the dictionary, and the
@@ -40,7 +74,7 @@ class Result(FactoryElement, ABC):
         return self.counts_object().probabilities()
 
     def counts_object(self) -> Counts:
-        """Returns a Counts object containing the amount of times each state was measured.
+        """(Only for `Qblox`) Returns a Counts object containing the amount of times each state was measured.
 
         Raises:
             NotImplementedError: Not implemented.
