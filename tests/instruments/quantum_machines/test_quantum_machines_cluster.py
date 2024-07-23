@@ -294,6 +294,7 @@ class TestQuantumMachinesCluster:
         "bus, parameter, value",
         [
             ("drive_q0", Parameter.IF, 20e6),
+            ("readout_q0", Parameter.THRESHOLD_ROTATION, 0.5),
         ],
     )
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
@@ -309,6 +310,9 @@ class TestQuantumMachinesCluster:
         qmm.set_parameter_of_bus(bus, parameter, value)
         if parameter == Parameter.IF:
             qmm._qm.set_intermediate_frequency.assert_called_once()
+        if parameter == Parameter.THRESHOLD_ROTATION:
+            element = next((element for element in qmm.settings.elements if element["bus"] == bus), None)
+            assert value == element["threshold_rotation"]
 
     @pytest.mark.parametrize(
         "bus, parameter, value",
@@ -379,6 +383,7 @@ class TestQuantumMachinesCluster:
             ("drive_q0", Parameter.LO_FREQUENCY),
             ("drive_q0", Parameter.IF),
             ("drive_q0", Parameter.GAIN),
+            ("readout_q0", Parameter.THRESHOLD_ROTATION),
         ],
     )
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
@@ -386,7 +391,7 @@ class TestQuantumMachinesCluster:
     def test_get_parameter_of_bus_method(
         self, mock_qmm, mock_qm, bus: str, parameter: Parameter, qmm: QuantumMachinesCluster
     ):
-        """Test the setup method with float value"""
+        """Test the get method with float value"""
         qmm.initial_setup()
         qmm.turn_on()
         qmm._config = qmm.settings.to_qua_config()
@@ -398,6 +403,9 @@ class TestQuantumMachinesCluster:
             assert value == qmm._qm._elements[bus].input.gain
         if parameter == Parameter.IF:
             assert value == qmm._qm._elements[bus].intermediate_frequency
+        if parameter == Parameter.THRESHOLD_ROTATION:
+            element = next((element for element in qmm.settings.elements if element["bus"] == bus), None)
+            assert value == element.get("threshold_rotation", None)
 
     @pytest.mark.parametrize("parameter", [(Parameter.MAX_CURRENT), (Parameter.OUT0_ATT)])
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
@@ -405,8 +413,15 @@ class TestQuantumMachinesCluster:
     def test_get_parameter_of_bus_method_raises_exception_when_parameter_not_found(
         self, mock_qmm, mock_qm, parameter: Parameter, qmm: QuantumMachinesCluster
     ):
-        """Test the set_parameter_of_bus method raises exception when parameter is wrong."""
+        """Test the get_parameter_of_bus method raises exception when parameter is wrong."""
         qmm.initial_setup()
         qmm.turn_on()
         with pytest.raises(ParameterNotFound):
             qmm.get_parameter_of_bus("drive_q0", parameter)
+
+    def test_get_parameter_of_bus_raises_bus_not_found(self, qmm: QuantumMachinesCluster):
+        """Test the get_parameter_of_bus method raises when a bus is not found."""
+        qmm.initial_setup()
+        qmm.tun_on()
+        with pytest.raises(ValueError):
+            qmm.get_parameter_of_bus("foobar_bus_q0", Parameter.THRESHOLD_ROTATION)
