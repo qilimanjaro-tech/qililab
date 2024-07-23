@@ -27,12 +27,21 @@ QProgram Class
 Compilers
 ~~~~~~~~~
 
-.. currentmodule:: qililab.qprogram
-
 .. autosummary::
     :toctree: api
 
     ~QbloxCompiler
+    ~QuantumMachinesCompiler
+
+Other QProgram related Classes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~Calibration
+    ~Domain
+
 """
 from .calibration import Calibration
 from .qblox_compiler import QbloxCompiler
