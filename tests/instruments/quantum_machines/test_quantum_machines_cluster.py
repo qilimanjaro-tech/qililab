@@ -419,7 +419,9 @@ class TestQuantumMachinesCluster:
         with pytest.raises(ParameterNotFound):
             qmm.get_parameter_of_bus("drive_q0", parameter)
 
-    def test_get_parameter_of_bus_raises_bus_not_found(self, qmm: QuantumMachinesCluster):
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    def test_get_parameter_of_bus_raises_bus_not_found(self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster):
         """Test the get_parameter_of_bus method raises when a bus is not found."""
         qmm.initial_setup()
         qmm.tun_on()
