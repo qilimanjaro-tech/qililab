@@ -424,6 +424,6 @@ class TestQuantumMachinesCluster:
     def test_get_parameter_of_bus_raises_bus_not_found(self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster):
         """Test the get_parameter_of_bus method raises when a bus is not found."""
         qmm.initial_setup()
-        qmm.tun_on()
+        qmm.turn_on()
         with pytest.raises(ValueError):
             qmm.get_parameter_of_bus("foobar_bus_q0", Parameter.THRESHOLD_ROTATION)
