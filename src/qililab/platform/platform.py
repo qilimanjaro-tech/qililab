@@ -637,7 +637,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 cluster=cluster,
                 qprogram=qprogram,
                 bus_mapping=bus_mapping,
-                threshold_rotations=threshold_rotations,
+                threshold_rotations=threshold_rotations,  # type: ignore
                 calibration=calibration,
                 debug=debug,
             )
