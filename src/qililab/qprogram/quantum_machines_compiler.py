@@ -332,13 +332,13 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             if self._buses[element.bus].current_gain is not None
             else None
         )
-        rotation = (
+        rotation: float = (
             element.rotation
             if element.rotation is not None
             else self._buses[element.bus].threshold_rotation
             if self._buses[element.bus] and self._buses[element.bus].threshold_rotation is not None
             else 0.0
-        )
+        )  # type: ignore
 
         variable_I = qua.declare(qua.fixed)
         variable_Q = qua.declare(qua.fixed)

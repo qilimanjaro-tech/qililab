@@ -632,7 +632,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 bus.alias: float(bus.get_parameter(parameter=Parameter.THRESHOLD_ROTATION))
                 for bus in buses
                 if isinstance(bus.system_control, ReadoutSystemControl)
-            }
+            }  # type: ignore
             return self._execute_qprogram_with_quantum_machines(
                 cluster=cluster,
                 qprogram=qprogram,
