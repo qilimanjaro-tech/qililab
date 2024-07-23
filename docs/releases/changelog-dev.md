@@ -17,6 +17,10 @@
 
   [#747](https://github.com/qilimanjaro-tech/qililab/pull/747)
 
+- Added `threshold_rotations` argument to `compile()` method in `QProgram`. This argument allows to use rotation angles on measurement instructions if not specified. Currently used to use the angle rotations specified on the runcard (if any) so the user does not have to explicitly pass it as argument to the measure instruction.  Used for classification of results in Quantum Machines's modules.
+
+  [#759](https://github.com/qilimanjaro-tech/qililab/pull/759)
+
 ### Improvements
 
 - Improved the algorithm determining which markers should be ON during execution of circuits and qprograms. Now, all markers are OFF by default, and only the markers associated with the `outputs` setting of QCM-RF and QRM-RF sequencers are turned on.
