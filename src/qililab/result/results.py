@@ -33,7 +33,7 @@ from .result import Result
 
 @dataclass
 class Results:
-    """Results class."""
+    """Class used to hold the results of a full execution."""
 
     software_average: int
     num_schedules: int
