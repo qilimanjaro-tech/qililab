@@ -33,11 +33,19 @@ class QuantumMachinesMeasurementResult(MeasurementResult):
 
     name = ResultName.QUANTUM_MACHINES_MEASUREMENT
 
-    def __init__(self, I: np.ndarray, Q: np.ndarray, adc1: np.ndarray | None = None, adc2: np.ndarray | None = None):
+    def __init__(
+        self,
+        I: np.ndarray,
+        Q: np.ndarray,
+        adc1: np.ndarray | None = None,
+        adc2: np.ndarray | None = None,
+        classification_th: float | None = None,
+    ):
         self.I = I
         self.Q = Q
         self.adc1 = adc1
         self.adc2 = adc2
+        self._classification_threshold = classification_th
         super().__init__()
 
     @property
@@ -57,4 +65,9 @@ class QuantumMachinesMeasurementResult(MeasurementResult):
         Returns:
             np.ndarray: The thresholded data.
         """
-        raise NotImplementedError("Thresholding is not implemented for Quantum Machines results.")
+
+        return (
+            np.where(self.I >= self._classification_threshold, 1, 0)
+            if self._classification_threshold is not None
+            else np.zeros(self.I.shape)
+        )
