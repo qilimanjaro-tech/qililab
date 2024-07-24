@@ -331,6 +331,7 @@ class QuantumMachinesCluster(Instrument):
             NotImplementedError: Raised if not connected to Quantum Machines
             ParameterNotFound: Raised if parameter does not exist
         """
+        # TODO: Don't generate the `_config` here! settings_config_dict = self._config if self._config_exists else self.settings.to_qua_config()
         if "_config" not in dir(self):
             self._config = self.settings.to_qua_config()
 
