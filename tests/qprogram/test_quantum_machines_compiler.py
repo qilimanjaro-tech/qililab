@@ -211,6 +211,7 @@ def fixture_for_loop() -> QProgram:
     frequency = qp.variable(Domain.Frequency)
     phase = qp.variable(Domain.Phase)
     time = qp.variable(Domain.Time)
+    scalar = qp.variable(Domain.Scalar, int)
 
     with qp.for_loop(variable=gain, start=0, stop=1.0, step=0.1):
         qp.set_gain(bus="drive", gain=gain)
@@ -224,6 +225,9 @@ def fixture_for_loop() -> QProgram:
     with qp.for_loop(variable=time, start=100, stop=200, step=10):
         qp.wait(bus="drive", duration=time)
 
+    with qp.for_loop(variable=scalar, start=0, stop=10, step=1):
+        qp.wait(bus="drive", duration=scalar)
+
     return qp
 
 
@@ -234,6 +238,7 @@ def fixture_for_loop_with_negative_step() -> QProgram:
     frequency = qp.variable(Domain.Frequency)
     phase = qp.variable(Domain.Phase)
     time = qp.variable(Domain.Time)
+    scalar = qp.variable(Domain.Scalar, int)
 
     with qp.for_loop(variable=gain, start=1.0, stop=0.0, step=-0.1):
         qp.set_gain(bus="drive", gain=gain)
@@ -247,6 +252,9 @@ def fixture_for_loop_with_negative_step() -> QProgram:
     with qp.for_loop(variable=time, start=200, stop=100, step=-10):
         qp.wait(bus="drive", duration=time)
 
+    with qp.for_loop(variable=scalar, start=10, stop=0, step=-1):
+        qp.wait(bus="drive", duration=scalar)
+
     return qp
 
 
@@ -257,6 +265,7 @@ def fixture_loop() -> QProgram:
     frequency = qp.variable(Domain.Frequency)
     phase = qp.variable(Domain.Phase)
     time = qp.variable(Domain.Time)
+    scalar = qp.variable(Domain.Scalar, int)
 
     with qp.loop(variable=gain, values=np.arange(start=0, stop=1.05, step=0.1)):
         qp.set_gain(bus="drive", gain=gain)
@@ -270,6 +279,9 @@ def fixture_loop() -> QProgram:
     with qp.loop(variable=time, values=np.arange(start=100, stop=205, step=10)):
         qp.wait(bus="drive", duration=time)
 
+    with qp.loop(variable=scalar, values=np.arange(start=0, stop=10, step=1)):
+        qp.wait(bus="drive", duration=scalar)
+
     return qp
 
 
@@ -280,6 +292,7 @@ def fixture_parallel() -> QProgram:
     frequency = qp.variable(Domain.Frequency)
     phase = qp.variable(Domain.Phase)
     time = qp.variable(Domain.Time)
+    scalar = qp.variable(Domain.Scalar, int)
 
     with qp.parallel(
         loops=[
@@ -287,6 +300,7 @@ def fixture_parallel() -> QProgram:
             Loop(variable=frequency, values=np.arange(start=100, stop=205, step=10)),
             ForLoop(variable=phase, start=0, stop=90, step=10),
             Loop(variable=time, values=np.arange(start=100, stop=205, step=10)),
+            ForLoop(variable=scalar, start=0, stop=10, step=1),
         ]
     ):
         qp.set_gain(bus="drive", gain=gain)

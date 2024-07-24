@@ -195,7 +195,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         for variable in self._qprogram.variables:
             if variable.domain in [Domain.Time, Domain.Frequency]:
                 qua_variable = qua.declare(int)
-            elif variable.domain is Domain.Scalar and isinstance(variable,IntVariable):
+            elif variable.domain is Domain.Scalar and isinstance(variable, IntVariable):
                 qua_variable = qua.declare(int)
             else:
                 qua_variable = qua.declare(qua.fixed)
@@ -225,7 +225,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
                 values = values / self.PHASE_COEFF
             if loop.variable.domain is Domain.Frequency:
                 values = values.astype(int)
-            if loop.variable.domain is Domain.Scalar and isinstance(loop.variable,IntVariable):
+            if loop.variable.domain is Domain.Scalar and isinstance(loop.variable, IntVariable):
                 values = values.astype(int)
             if loop.variable.domain is Domain.Time:
                 values = np.maximum(values, self.MINIMUM_TIME).astype(int)
