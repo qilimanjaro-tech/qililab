@@ -256,17 +256,17 @@ class QuantumMachinesCluster(Instrument):
     def initial_setup(self):
         """Sets initial instrument settings.
 
-        Creates an instance of the Qilililab Quantum Machines Manager, and sets the configuration dictionary.
+        Creates an instance of the Qililab Quantum Machines Manager, and sets the configuration dictionary.
         """
         if self.settings.octaves:
             self._octave_config = QmOctaveConfig()
             self._octave_config.set_calibration_db(os.getcwd())
             for octave in self.settings.octaves:
                 self._octave_config.add_device_info(octave["name"], self.settings.address, octave["port"])
+
         self._qmm = QuantumMachinesManager(
             host=self.settings.address, cluster_name=self.settings.cluster, octave=self._octave_config
         )
-
         self._config = self.settings.to_qua_config()
 
     @Instrument.CheckDeviceInitialized
