@@ -331,12 +331,7 @@ class QuantumMachinesCluster(Instrument):
             NotImplementedError: Raised if not connected to Quantum Machines
             ParameterNotFound: Raised if parameter does not exist
         """
-        # TODO: Don't generate the `_config` here! settings_config_dict = self._config if self._config_exists else self.settings.to_qua_config()
-        if "_config" not in dir(self):
-            self._config = self.settings.to_qua_config()
-
-        # TODO: Or with just a: `self._config = self.settings.to_qua_config()`, if we decide the setting to rule!
-
+        # TODO: Clean this messed up code, with so many if's for connections and _configs
         element = next((element for element in self.settings.elements if element["bus"] == bus), None)
         if element is None:
             raise ValueError(f"Bus {bus} was not found in {self.name} settings.")
@@ -359,29 +354,33 @@ class QuantumMachinesCluster(Instrument):
                 if self._is_connected_to_qm:
                     self._qm.octave.set_lo_frequency(element=bus, lo_frequency=lo_frequency)
                 settings_octave_rf_output["lo_frequency"] = lo_frequency
-                self._config["octaves"][octave_name]["RF_outputs"][out_port]["LO_frequency"] = lo_frequency
+                if self._config_exists:
+                    self._config["octaves"][octave_name]["RF_outputs"][out_port]["LO_frequency"] = lo_frequency
 
                 if in_port is not None:
                     settings_octave_rf_input = next(
                         rf_input for rf_input in settings_octave["rf_inputs"] if rf_input["port"] == in_port
                     )
                     settings_octave_rf_input["lo_frequency"] = lo_frequency
-                    self._config["octaves"][octave_name]["RF_inputs"][in_port]["LO_frequency"] = lo_frequency
+                    if self._config_exists:
+                        self._config["octaves"][octave_name]["RF_inputs"][in_port]["LO_frequency"] = lo_frequency
                 return
             if parameter == Parameter.GAIN:
                 gain_in_db = float(value)
                 if self._is_connected_to_qm:
                     self._qm.octave.set_rf_output_gain(element=bus, gain_in_db=gain_in_db)
                 settings_octave_rf_output["gain"] = gain_in_db
-                self._config["octaves"][octave_name]["RF_outputs"][out_port]["gain"] = gain_in_db
+                if self._config_exists:
+                    self._config["octaves"][octave_name]["RF_outputs"][out_port]["gain"] = gain_in_db
                 return
         if parameter == Parameter.IF:
             intermediate_frequency = float(value)
             if self._is_connected_to_qm:
                 self._qm.set_intermediate_frequency(element=bus, freq=intermediate_frequency)
             element["intermediate_frequency"] = intermediate_frequency
-            self._config["elements"][bus]["intermediate_frequency"] = intermediate_frequency
-            if f"mixer_{bus}" in self._config["mixers"]:
+            if self._config_exists:
+                self._config["elements"][bus]["intermediate_frequency"] = intermediate_frequency
+            if self._config_exists and f"mixer_{bus}" in self._config["mixers"]:
                 self._config["mixers"][f"mixer_{bus}"][0]["intermediate_frequency"] = intermediate_frequency
             return
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}.")
