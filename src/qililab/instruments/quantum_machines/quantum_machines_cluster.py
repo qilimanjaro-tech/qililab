@@ -380,7 +380,7 @@ class QuantumMachinesCluster(Instrument):
     def turn_on(self):
         """Turns on the instrument."""
         if not self._is_connected_to_qm:
-            self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)
+            self._qm = self._qmm.open_qm(config=self._config, close_other_machines=False)
             self._compiled_program_cache = {}
             self._is_connected_to_qm = True
 
