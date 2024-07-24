@@ -84,7 +84,6 @@ Qililab Documentation
    code/calibration
    code/chip
    code/drivers
-   code/experiment
    code/platform
    code/pulse
    code/qprogram
