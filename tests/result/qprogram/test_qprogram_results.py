@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
-from qililab.result.qprogram.qprogram_results import QProgramResults, probabilities
+from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.utils.serialization import deserialize, deserialize_from, serialize, serialize_to
 
@@ -33,28 +33,6 @@ def fixture_quantum_machines_qprogram_results():
     results.append_result(
         bus="readout", result=QuantumMachinesMeasurementResult(I=np.linspace(0, 10, 11), Q=np.linspace(90, 100, 11))
     )
-    return results
-
-
-@pytest.fixture(name="qblox_qprogram_results_probs")
-def fixture_raw_measurement_data() -> QProgramResults:
-    """Fixture to obtain proabilities from a QProgramResult"""
-    results = QProgramResults()
-    thresholds_q0 = [1.0, 1.0, 0.0, 1.0, 0.0]
-    thresholds_q1 = [0.0, 1.0, 0.0, 0.0, 1.0]
-    for th_q0, th_q1 in zip(thresholds_q0, thresholds_q1):
-        results.append_result(
-            bus="readout_q0",
-            result=QbloxMeasurementResult(
-                raw_measurement_data={"bins": {"integration": {"path0": [0], "path1": [0]}, "threshold": [th_q0]}}
-            ),
-        )
-        results.append_result(
-            bus="readout_q1",
-            result=QbloxMeasurementResult(
-                raw_measurement_data={"bins": {"integration": {"path0": [0], "path1": [0]}, "threshold": [th_q1]}}
-            ),
-        )
     return results
 
 
@@ -131,52 +109,3 @@ class TestsQProgramResult:
         assert isinstance(deserialized_quantum_machines_qprogram_results, QProgramResults)
 
         os.remove("quantum_machines_qprogram_results.yml")
-
-
-class TestProbabilities:
-    """Class to test the `probabilities` method."""
-
-    @pytest.mark.parametrize(
-        "bus_mapping, expected_probs",
-        [
-            (None, {"00": 0.2, "01": 0.2, "10": 0.4, "11": 0.2}),
-            (["readout_q1", "readout_q0"], {"00": 0.2, "01": 0.4, "10": 0.2, "11": 0.2}),
-        ],
-    )
-    def test_probabilities(self, qblox_qprogram_results_probs: QProgramResults, bus_mapping, expected_probs):
-        """Test probabilities are computed correctly with and without qubit mapping"""
-        assert probabilities(qblox_qprogram_results_probs, bus_mapping) == expected_probs
-
-    def test_probabilities_raises_empty(self):
-        """Test an error is raised when the `qprogram_results` is empty"""
-        qp_results = QProgramResults()
-        with pytest.raises(ValueError) as empty_error:
-            probabilities(qp_results)
-        (msg,) = empty_error.value.args
-        assert msg == f"Can not obtain probabilities with no measurments, {qp_results.__class__} empty"
-
-    @pytest.mark.parametrize(
-        "bus_mapping", [[], ["readout_q1", "readout_q1"], ["readout_q0", "readout_q1", "readout_q2"]]
-    )
-    def test_probabilities_raises_len_missmatch(self, qblox_qprogram_results_probs: QProgramResults, bus_mapping):
-        """Test an error is raised when a mapping is not specified for all qubits"""
-        n_qubits = len(qblox_qprogram_results_probs.results)
-        unique_mapping = set(bus_mapping)
-        with pytest.raises(ValueError) as len_missmatch:
-            probabilities(qblox_qprogram_results_probs, bus_mapping)
-        (msg,) = len_missmatch.value.args
-        assert (
-            msg
-            == f"Expected mapping for all qubits. Results have {n_qubits} qubits, but only {len(unique_mapping)} diferent buses were specified on the mapping."
-        )
-
-    @pytest.mark.parametrize("bus_mapping", [["readout_q1", "readout_q2"], ["readout_q2", "readout_q3"]])
-    def test_probabilities_raises_bus_missmatch(self, qblox_qprogram_results_probs: QProgramResults, bus_mapping):
-        """Test an error is raised when not all buses are mapped into a qubit"""
-        with pytest.raises(ValueError) as bus_missmatch:
-            probabilities(qblox_qprogram_results_probs, bus_mapping)
-        (msg,) = bus_missmatch.value.args
-        assert (
-            msg
-            == "No measurements found for all specified buses, check the name of the buses provided with the mapping match all the buses specified in runcard."
-        )
