@@ -226,7 +226,7 @@ def fixture_for_loop() -> QProgram:
         qp.wait(bus="drive", duration=time)
 
     with qp.for_loop(variable=scalar, start=0, stop=10, step=1):
-        qp.wait(bus="drive", duration=scalar)
+        qp.wait(bus="drive", duration=100)
 
     return qp
 
@@ -253,7 +253,7 @@ def fixture_for_loop_with_negative_step() -> QProgram:
         qp.wait(bus="drive", duration=time)
 
     with qp.for_loop(variable=scalar, start=10, stop=0, step=-1):
-        qp.wait(bus="drive", duration=scalar)
+        qp.wait(bus="drive", duration=100)
 
     return qp
 
@@ -280,7 +280,7 @@ def fixture_loop() -> QProgram:
         qp.wait(bus="drive", duration=time)
 
     with qp.loop(variable=scalar, values=np.arange(start=0, stop=10, step=1)):
-        qp.wait(bus="drive", duration=scalar)
+        qp.wait(bus="drive", duration=100)
 
     return qp
 
@@ -663,11 +663,12 @@ class TestQuantumMachinesCompiler:
         qua_program, _, _ = compiler.compile(loop)
 
         statements = qua_program._program.script.body.statements
-        assert len(statements) == 4
+        assert len(statements) == 5
         assert len(statements[0].for_each.iterator) == 1
         assert len(statements[1].for_each.iterator) == 1
         assert len(statements[2].for_each.iterator) == 1
         assert len(statements[3].for_each.iterator) == 1
+        assert len(statements[4].for_each.iterator) == 1
 
     def test_parallel(self, parallel: QProgram):
         compiler = QuantumMachinesCompiler()
@@ -675,7 +676,7 @@ class TestQuantumMachinesCompiler:
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 1
-        assert len(statements[0].for_each.iterator) == 4
+        assert len(statements[0].for_each.iterator) == 5
 
     def test_infinite_loop(self, infinite_loop: QProgram):
         compiler = QuantumMachinesCompiler()
