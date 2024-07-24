@@ -590,7 +590,7 @@ class TestQuantumMachinesCompiler:
         qua_program, _, _ = compiler.compile(for_loop)
 
         statements = qua_program._program.script.body.statements
-        assert len(statements) == 4
+        assert len(statements) == 5
 
         # Voltage
         assert float(statements[0].for_.init.statements[0].assign.expression.literal.value) == 0
@@ -626,7 +626,7 @@ class TestQuantumMachinesCompiler:
         qua_program, _, _ = compiler.compile(for_loop_with_negative_step)
 
         statements = qua_program._program.script.body.statements
-        assert len(statements) == 4
+        assert len(statements) == 5
 
         # Voltage
         assert float(statements[0].for_.init.statements[0].assign.expression.literal.value) == 1.0
