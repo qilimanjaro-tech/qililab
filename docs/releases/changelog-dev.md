@@ -17,18 +17,19 @@
 
   [#747](https://github.com/qilimanjaro-tech/qililab/pull/747)
 
-- Added `probabilities` method to compute the probability of the quantum states obtained with `QProgram`. Bare in mind this is not a class method as not all `QProgramResult` instances can compute the probabilities, this will depend on the `QProgram` executed so is responsability of the user when it makes sense to compute the probabilities of the states or not.
+- Added `from_qprogram` method to compute the counts of the quantum states obtained with `QProgram`. The `Counts` object is expected to work for circuits which has only a measurement per bus at the end of the eexcution of the circuit so is responsability of the user when it makes sense to compute the probabilities of the states or not of a `QProgram`.
 
   Example:
 
   ```Python
-  from qililab.result.qprogram import probabilities
+  from qililab.result.counts import Counts
 
   qp = QProgram()
   # Define instructions for QProgram
   # ...
   qp_results = platform.execute_qprogram(qp)  # Platform previously defined
-  probs = probabilities(qp_results)
+  counts_object = Counts.from_qprogram(qp_results)
+  probs = counts_object.probabilities()
   ```
 
   [#743](https://github.com/qilimanjaro-tech/qililab/pull/743)
