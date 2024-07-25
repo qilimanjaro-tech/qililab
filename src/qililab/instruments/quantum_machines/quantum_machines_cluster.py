@@ -307,7 +307,9 @@ class QuantumMachinesCluster(Instrument):
         for element in elements:
             self._qm.calibrate_element(element)
 
-    def set_parameter_of_bus(self, bus: str, parameter: Parameter, value: float | str | bool):
+    def set_parameter_of_bus(
+        self, bus: str, parameter: Parameter, value: float | str | bool
+    ):  # pylint: disable=too-many-locals
         """Sets the parameter of the instrument
 
         Args:

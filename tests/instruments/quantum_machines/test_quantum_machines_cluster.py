@@ -313,7 +313,7 @@ class TestQuantumMachinesCluster:
             qmm._qm.set_intermediate_frequency.assert_called_once()
         if parameter in [Parameter.THRESHOLD_ROTATION, Parameter.THRESHOLD]:
             element = next((element for element in qmm.settings.elements if element["bus"] == bus), None)
-            if parameter in Parameter.THRESHOLD_ROTATION:
+            if parameter == Parameter.THRESHOLD_ROTATION:
                 assert value == element["threshold_rotation"]
             if parameter == Parameter.THRESHOLD:
                 assert value == element["threshold"]
