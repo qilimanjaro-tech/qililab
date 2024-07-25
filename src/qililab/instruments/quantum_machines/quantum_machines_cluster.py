@@ -245,7 +245,7 @@ class QuantumMachinesCluster(Instrument):
     _config: DictQuaConfig
     _octave_config: QmOctaveConfig | None = None
     _is_connected_to_qm: bool = False
-    _config_exists: bool = False
+    _config_created: bool = False
     _compiled_program_cache: dict[str, str] = {}
 
     @property
@@ -269,7 +269,7 @@ class QuantumMachinesCluster(Instrument):
             host=self.settings.address, cluster_name=self.settings.cluster, octave=self._octave_config
         )
         self._config = self.settings.to_qua_config()
-        self._config_exists = True
+        self._config_created = True
 
     @Instrument.CheckDeviceInitialized
     def turn_on(self):
@@ -302,7 +302,7 @@ class QuantumMachinesCluster(Instrument):
         Raises:
             ValueError: Raised if the `_config` dictionary does not exist.
         """
-        if not self._config_exists:
+        if not self._config_created:
             raise ValueError("The `config` dictionary does not exist. Please setup the instrument first.")
 
         merged_configuration = merge_dictionaries(dict(self._config), configuration)
@@ -331,7 +331,6 @@ class QuantumMachinesCluster(Instrument):
             NotImplementedError: Raised if not connected to Quantum Machines
             ParameterNotFound: Raised if parameter does not exist
         """
-        # TODO: Clean this messed up code, with so many if's for connections and _configs
         element = next((element for element in self.settings.elements if element["bus"] == bus), None)
         if element is None:
             raise ValueError(f"Bus {bus} was not found in {self.name} settings.")
@@ -351,37 +350,50 @@ class QuantumMachinesCluster(Instrument):
 
             if parameter == Parameter.LO_FREQUENCY:
                 lo_frequency = float(value)
+                # 1) Change settings:
+                settings_octave_rf_output["lo_frequency"] = lo_frequency
+                # 2) Change config if exists:
+                if self._config_created:
+                    self._config["octaves"][octave_name]["RF_outputs"][out_port]["LO_frequency"] = lo_frequency
+                # 3) Change instrument if connected:
                 if self._is_connected_to_qm:
                     self._qm.octave.set_lo_frequency(element=bus, lo_frequency=lo_frequency)
-                settings_octave_rf_output["lo_frequency"] = lo_frequency
-                if self._config_exists:
-                    self._config["octaves"][octave_name]["RF_outputs"][out_port]["LO_frequency"] = lo_frequency
 
                 if in_port is not None:
                     settings_octave_rf_input = next(
                         rf_input for rf_input in settings_octave["rf_inputs"] if rf_input["port"] == in_port
                     )
+                    # 1) Change settings:
                     settings_octave_rf_input["lo_frequency"] = lo_frequency
-                    if self._config_exists:
+                    # 2) Change config if exists:
+                    if self._config_created:
                         self._config["octaves"][octave_name]["RF_inputs"][in_port]["LO_frequency"] = lo_frequency
                 return
+
             if parameter == Parameter.GAIN:
                 gain_in_db = float(value)
+                # 1) Change settings:
+                settings_octave_rf_output["gain"] = gain_in_db
+                # 2) Change config if exists:
+                if self._config_created:
+                    self._config["octaves"][octave_name]["RF_outputs"][out_port]["gain"] = gain_in_db
+                # 3) Change instrument if connected:
                 if self._is_connected_to_qm:
                     self._qm.octave.set_rf_output_gain(element=bus, gain_in_db=gain_in_db)
-                settings_octave_rf_output["gain"] = gain_in_db
-                if self._config_exists:
-                    self._config["octaves"][octave_name]["RF_outputs"][out_port]["gain"] = gain_in_db
                 return
+
         if parameter == Parameter.IF:
             intermediate_frequency = float(value)
+            # 1) Change settings:
+            element["intermediate_frequency"] = intermediate_frequency
+            # 2) Change config if exists:
+            if self._config_created:
+                self._config["elements"][bus]["intermediate_frequency"] = intermediate_frequency
+            if self._config_created and f"mixer_{bus}" in self._config["mixers"]:
+                self._config["mixers"][f"mixer_{bus}"][0]["intermediate_frequency"] = intermediate_frequency
+            # 3) Change instrument if connected:
             if self._is_connected_to_qm:
                 self._qm.set_intermediate_frequency(element=bus, freq=intermediate_frequency)
-            element["intermediate_frequency"] = intermediate_frequency
-            if self._config_exists:
-                self._config["elements"][bus]["intermediate_frequency"] = intermediate_frequency
-            if self._config_exists and f"mixer_{bus}" in self._config["mixers"]:
-                self._config["mixers"][f"mixer_{bus}"][0]["intermediate_frequency"] = intermediate_frequency
             return
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}.")
 
@@ -395,10 +407,8 @@ class QuantumMachinesCluster(Instrument):
         Raises:
             ParameterNotFound: Raised if parameter does not exist
         """
-
-        settings_config_dict = self._config if self._config_exists else self.settings.to_qua_config()
-        # Maybe change to `self.settings.to_qua_config()`` directly, since we wanted to use the `settings` params
-
+        # Just in case, read from the `settings`, even though in theory the config should always be synch:
+        settings_config_dict = self.settings.to_qua_config()
         config_keys = settings_config_dict["elements"][bus]
 
         if parameter == Parameter.LO_FREQUENCY:
