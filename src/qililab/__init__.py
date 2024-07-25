@@ -12,10 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-This is the top level module from which all basic functions and classes of
-Qililab can be directly imported.
-"""
+"""Top level module from which all Qililab basic functions and classes can be directly imported."""
 
 # isort: skip_file
 import contextlib
