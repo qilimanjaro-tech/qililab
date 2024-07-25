@@ -67,7 +67,7 @@ class QuantumMachinesMeasurementResult(MeasurementResult):
         """
 
         return (
-            np.where(self.I >= self._classification_threshold, 1, 0)
+            np.where(self.I >= self._classification_threshold, 1.0, 0.0)
             if self._classification_threshold is not None
             else np.zeros(self.I.shape)
         )
