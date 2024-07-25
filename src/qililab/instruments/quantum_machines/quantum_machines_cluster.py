@@ -245,7 +245,7 @@ class QuantumMachinesCluster(Instrument):
     _config: DictQuaConfig
     _octave_config: QmOctaveConfig | None = None
     _is_connected_to_qm: bool = False
-    _config_exists: bool = False
+    _config_created: bool = False
     _compiled_program_cache: dict[str, str] = {}
 
     @property
@@ -269,7 +269,7 @@ class QuantumMachinesCluster(Instrument):
             host=self.settings.address, cluster_name=self.settings.cluster, octave=self._octave_config
         )
         self._config = self.settings.to_qua_config()
-        self._config_exists = True
+        self._config_created = True
 
     @Instrument.CheckDeviceInitialized
     def turn_on(self):
@@ -302,7 +302,7 @@ class QuantumMachinesCluster(Instrument):
         Raises:
             ValueError: Raised if the `_config` dictionary does not exist.
         """
-        if not self._config_exists:
+        if not self._config_created:
             raise ValueError("The `config` dictionary does not exist. Please setup the instrument first.")
 
         merged_configuration = merge_dictionaries(dict(self._config), configuration)
@@ -391,7 +391,7 @@ class QuantumMachinesCluster(Instrument):
         """
         # TODO: Change private QM API to public when implemented.
 
-        settings_config_dict = self._config if self._config_exists else self.settings.to_qua_config()
+        settings_config_dict = self._config if self._config_created else self.settings.to_qua_config()
         # Maybe change to `self.settings.to_qua_config()`` directly, since we wanted to use the `settings` params
 
         config_keys = settings_config_dict["elements"][bus]
