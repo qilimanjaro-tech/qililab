@@ -48,3 +48,20 @@ class TestsQMResult:
         assert isinstance(deserialized_quantum_machines_measurement_result, QuantumMachinesMeasurementResult)
 
         os.remove("quantum_machines_measurement_result.yml")
+
+    @pytest.mark.parametrize(
+        "threshold, I, expected",
+        [
+            (0.0, np.ones(10), np.ones(10)),
+            (0.5, np.zeros(10), np.zeros(10)),
+            (0.5, np.array([0.2, 0.4, 0.6, 0.5, 0.9]), np.array([0.0, 0.0, 1.0, 1.0, 1.0])),
+        ],
+    )
+    def test_threshold_property(
+        self, threshold, I, expected, quantum_machines_measurement_result: QuantumMachinesMeasurementResult
+    ):
+        """Test the `threshold` property."""
+        quantum_machines_measurement_result._classification_threshold = threshold
+        quantum_machines_measurement_result.I = I
+
+        np.testing.assert_equal(quantum_machines_measurement_result.threshold, expected)
