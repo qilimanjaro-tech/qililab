@@ -633,11 +633,17 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 for bus in buses
                 if isinstance(bus.system_control, ReadoutSystemControl)
             }  # type: ignore
+            thresholds = {
+                bus.alias: float(bus.get_parameter(parameter=Parameter.THRESHOLD))
+                for bus in buses
+                if isinstance(bus.system_control, ReadoutSystemControl)
+            }  # type: ignore
             return self._execute_qprogram_with_quantum_machines(
                 cluster=cluster,
                 qprogram=qprogram,
                 bus_mapping=bus_mapping,
                 threshold_rotations=threshold_rotations,  # type: ignore
+                thresholds=thresholds,  # type: ignore
                 calibration=calibration,
                 debug=debug,
             )
@@ -707,6 +713,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,
         threshold_rotations: dict[str, float | None] | None = None,
+        thresholds: dict[str, float | None] | None = None,
         calibration: Calibration | None = None,
         debug: bool = False,
     ) -> QProgramResults:
@@ -727,11 +734,15 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         acquisitions = cluster.get_acquisitions(job=job)
 
         results = QProgramResults()
+        # Doing manual classification of results as QM does not return thresholded values like Qblox
+        if thresholds is None:
+            thresholds = {}
         for measurement in measurements:
             measurement_result = QuantumMachinesMeasurementResult(
-                *[acquisitions[handle] for handle in measurement.result_handles]
+                *[acquisitions[handle] for handle in measurement.result_handles],
+                classification_th=thresholds.get(measurement.bus, None),  # type: ignore[misc]
             )
-            results.append_result(bus=measurement.bus, result=measurement_result)
+        results.append_result(bus=measurement.bus, result=measurement_result)
 
         return results
 
