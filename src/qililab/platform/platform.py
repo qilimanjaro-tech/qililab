@@ -567,7 +567,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """
         return str(YAML().dump(self.to_dict(), io.BytesIO()))
 
-    def execute_qprogram(
+    def execute_qprogram(  # pylint: disable=too-many-locals
         self,
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,
@@ -742,7 +742,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 *[acquisitions[handle] for handle in measurement.result_handles],
                 classification_th=thresholds.get(measurement.bus, None),  # type: ignore[misc]
             )
-        results.append_result(bus=measurement.bus, result=measurement_result)
+            results.append_result(bus=measurement.bus, result=measurement_result)
 
         return results
 
