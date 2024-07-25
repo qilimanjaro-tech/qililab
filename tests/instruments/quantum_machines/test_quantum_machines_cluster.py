@@ -201,8 +201,15 @@ class TestQuantumMachinesCluster:
         assert "445e964c" in qmm._config["waveforms"]
         assert "fb58e912" in qmm._config["waveforms"]
 
-        # Assert that the settings are still in synch:
-        # assert qmm.settings.to_qua_config().items() <= qmm._config.items()  # TODO: SOLVE THIS DICT COMPARISON
+        # Assert that the `settings.to_qua_config()`` are a subset of the `appended_configuration``, and in synch:
+        for k, v in qmm.settings.to_qua_config().items():
+            if k != "elements" and v:
+                assert v == qmm._config[k]
+            if k == "elements":
+                for element in v:
+                    for key, value in v[element].items():
+                        if value:
+                            assert value == qmm._config[k][element][key]
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
@@ -217,8 +224,15 @@ class TestQuantumMachinesCluster:
         qmm._qmm.open_qm.call_count == 2
         assert isinstance(qmm._qm, MagicMock)
 
-        # Assert that the settings are still in synch:
-        # assert qmm.settings.to_qua_config().items() <= qmm._config.items()  # TODO: SOLVE THIS DICT COMPARISON
+        # Assert that the `settings.to_qua_config()`` are a subset of the `appended_configuration``, and in synch:
+        for k, v in qmm.settings.to_qua_config().items():
+            if k != "elements" and v:
+                assert v == qmm._config[k]
+            if k == "elements":
+                for element in v:
+                    for key, value in v[element].items():
+                        if value:
+                            assert value == qmm._config[k][element][key]
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
