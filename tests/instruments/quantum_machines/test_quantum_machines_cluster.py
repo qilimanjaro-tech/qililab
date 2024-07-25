@@ -202,7 +202,7 @@ class TestQuantumMachinesCluster:
         assert "fb58e912" in qmm._config["waveforms"]
 
         # Assert that the settings are still in synch:
-        assert set(qmm.settings.to_qua_config().items()).issubset(set(qmm._config.items()))
+        assert qmm.settings.to_qua_config().items() <= qmm._config.items()
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
@@ -218,7 +218,7 @@ class TestQuantumMachinesCluster:
         assert isinstance(qmm._qm, MagicMock)
 
         # Assert that the settings are still in synch:
-        assert set(qmm.settings.to_qua_config().items()).issubset(set(qmm._config.items()))
+        assert qmm.settings.to_qua_config().items() <= qmm._config.items()
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
