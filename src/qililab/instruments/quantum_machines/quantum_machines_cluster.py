@@ -245,7 +245,6 @@ class QuantumMachinesCluster(Instrument):
     _config: DictQuaConfig
     _octave_config: QmOctaveConfig | None = None
     _is_connected_to_qm: bool = False
-    _config_created: bool = False
     _compiled_program_cache: dict[str, str] = {}
 
     @property
@@ -265,22 +264,22 @@ class QuantumMachinesCluster(Instrument):
             for octave in self.settings.octaves:
                 self._octave_config.add_device_info(octave["name"], self.settings.address, octave["port"])
 
+        self._config = self.settings.to_qua_config()
+
         self._qmm = QuantumMachinesManager(
             host=self.settings.address, cluster_name=self.settings.cluster, octave=self._octave_config
         )
-        self._config = self.settings.to_qua_config()
-        self._config_created = True
+        self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)
+
+        if not self._is_connected_to_qm:
+            self._compiled_program_cache = {}
+            self._is_connected_to_qm = True
 
     @Instrument.CheckDeviceInitialized
     def turn_on(self):
         """Turns on the instrument."""
-        if not self._is_connected_to_qm:
-            self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)
-            self._compiled_program_cache = {}
-            self._is_connected_to_qm = True
-
-            if self.settings.run_octave_calibration:
-                self.run_octave_calibration()
+        if self.settings.run_octave_calibration:
+            self.run_octave_calibration()
 
     @Instrument.CheckDeviceInitialized
     def reset(self):
@@ -302,7 +301,7 @@ class QuantumMachinesCluster(Instrument):
         Raises:
             ValueError: Raised if the `_config` dictionary does not exist.
         """
-        if not self._config_created:
+        if not self._is_connected_to_qm:
             raise ValueError("The `config` dictionary does not exist. Please setup the instrument first.")
 
         merged_configuration = merge_dictionaries(dict(self._config), configuration)
@@ -353,7 +352,7 @@ class QuantumMachinesCluster(Instrument):
                 # 1) Change settings:
                 settings_octave_rf_output["lo_frequency"] = lo_frequency
                 # 2) Change config if exists:
-                if self._config_created:
+                if self._is_connected_to_qm:
                     self._config["octaves"][octave_name]["RF_outputs"][out_port]["LO_frequency"] = lo_frequency
                 # 3) Change instrument if connected:
                 if self._is_connected_to_qm:
@@ -366,7 +365,7 @@ class QuantumMachinesCluster(Instrument):
                     # 1) Change settings:
                     settings_octave_rf_input["lo_frequency"] = lo_frequency
                     # 2) Change config if exists:
-                    if self._config_created:
+                    if self._is_connected_to_qm:
                         self._config["octaves"][octave_name]["RF_inputs"][in_port]["LO_frequency"] = lo_frequency
                 return
 
@@ -375,7 +374,7 @@ class QuantumMachinesCluster(Instrument):
                 # 1) Change settings:
                 settings_octave_rf_output["gain"] = gain_in_db
                 # 2) Change config if exists:
-                if self._config_created:
+                if self._is_connected_to_qm:
                     self._config["octaves"][octave_name]["RF_outputs"][out_port]["gain"] = gain_in_db
                 # 3) Change instrument if connected:
                 if self._is_connected_to_qm:
@@ -387,9 +386,9 @@ class QuantumMachinesCluster(Instrument):
             # 1) Change settings:
             element["intermediate_frequency"] = intermediate_frequency
             # 2) Change config if exists:
-            if self._config_created:
+            if self._is_connected_to_qm:
                 self._config["elements"][bus]["intermediate_frequency"] = intermediate_frequency
-            if self._config_created and f"mixer_{bus}" in self._config["mixers"]:
+            if self._is_connected_to_qm and f"mixer_{bus}" in self._config["mixers"]:
                 self._config["mixers"][f"mixer_{bus}"][0]["intermediate_frequency"] = intermediate_frequency
             # 3) Change instrument if connected:
             if self._is_connected_to_qm:
