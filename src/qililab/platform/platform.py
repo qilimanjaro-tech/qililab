@@ -712,8 +712,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         cluster: QuantumMachinesCluster,
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,
-        threshold_rotations: dict[str, float | None] | None = None,
-        thresholds: dict[str, float | None] | None = None,
+        threshold_rotations: dict[str, float | None] = {},
+        thresholds: dict[str, float | None] = {},
         calibration: Calibration | None = None,
         debug: bool = False,
     ) -> QProgramResults:
@@ -735,8 +735,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         results = QProgramResults()
         # Doing manual classification of results as QM does not return thresholded values like Qblox
-        if thresholds is None:
-            thresholds = {}
         for measurement in measurements:
             measurement_result = QuantumMachinesMeasurementResult(
                 *[acquisitions[handle] for handle in measurement.result_handles],

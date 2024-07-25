@@ -105,7 +105,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         self,
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,
-        threshold_rotations: dict[str, float | None] | None = None,
+        threshold_rotations: dict[str, float | None] = {},
         calibration: Calibration | None = None,
     ) -> tuple[qua.Program, dict, list[MeasurementInfo]]:
         """Compile QProgram to QUA's Program.
@@ -157,9 +157,8 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         self._populate_buses()
 
         # Pre-processing: Update rotation threshold
-        if threshold_rotations is not None:
-            for bus in self._buses.keys() & threshold_rotations.keys():
-                self._buses[bus].threshold_rotation = threshold_rotations[bus]
+        for bus in self._buses.keys() & threshold_rotations.keys():
+            self._buses[bus].threshold_rotation = threshold_rotations[bus]
 
         with qua.program() as qua_program:
             # Declare variables
