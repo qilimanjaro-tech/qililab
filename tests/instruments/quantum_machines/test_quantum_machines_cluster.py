@@ -1,10 +1,11 @@
 """This file tests the the ``qm_manager`` class"""
+
 import copy
 from unittest.mock import MagicMock, call, patch
 
 import numpy as np
 import pytest
-from qm import Program, QmPendingJob, QmQueue
+from qm import Program
 from qm.qua import play, program
 
 from qililab.instruments.instrument import ParameterNotFound
@@ -129,12 +130,14 @@ class TestQuantumMachinesCluster:
     ):  # pylint: disable=unused-argument
         """Test QMM class initialization."""
         qmm = request.getfixturevalue(qmm_name)
+        assert qmm._config_exists is False
         qmm.initial_setup()
         mock_init.assert_called()
 
         assert isinstance(qmm._qmm, MagicMock)
         assert isinstance(qmm._config, dict)
         assert isinstance(qmm.config, dict)
+        assert qmm._config_exists is True
 
     @pytest.mark.parametrize("qmm_name", ["qmm", "qmm_with_octave"])
     def test_settings(self, qmm_name, request):
@@ -405,34 +408,37 @@ class TestQuantumMachinesCluster:
         """Test the setup method with float value"""
         qmm = request.getfixturevalue(qmm_name)
         value = qmm.get_parameter_of_bus(bus, parameter)
-        config_keys = qmm._config["elements"][bus]
+
+        settings_config_dict = qmm.settings.to_qua_config()
+
+        config_keys = settings_config_dict["elements"][bus]
 
         if parameter == Parameter.LO_FREQUENCY:
             if "mixInputs" in config_keys:
-                assert value == qmm._config["elements"][bus]["mixInputs"]["lo_frequency"]
+                assert value == settings_config_dict["elements"][bus]["mixInputs"]["lo_frequency"]
             if "RF_inputs" in config_keys:
-                port = qmm._config["elements"][bus]["RF_inputs"]["port"]
-                assert value == qmm._config["octaves"][port[0]]["RF_outputs"][port[1]]["LO_frequency"]
+                port = settings_config_dict["elements"][bus]["RF_inputs"]["port"]
+                assert value == settings_config_dict["octaves"][port[0]]["RF_outputs"][port[1]]["LO_frequency"]
         if parameter == Parameter.IF:
             if "intermediate_frequency" in config_keys:
-                assert value == qmm._config["elements"][bus]["intermediate_frequency"]
+                assert value == settings_config_dict["elements"][bus]["intermediate_frequency"]
         if parameter == Parameter.GAIN:
             if "mixInputs" in config_keys and "outputs" in config_keys:
-                port_i = qmm._config["elements"][bus]["outputs"]["out1"]
-                port_q = qmm._config["elements"][bus]["outputs"]["out2"]
+                port_i = settings_config_dict["elements"][bus]["outputs"]["out1"]
+                port_q = settings_config_dict["elements"][bus]["outputs"]["out2"]
                 assert value == (
-                    qmm._config["controllers"][port_i[0]]["analog_inputs"][port_i[1]]["gain_db"],
-                    qmm._config["controllers"][port_q[0]]["analog_inputs"][port_q[1]]["gain_db"],
+                    settings_config_dict["controllers"][port_i[0]]["analog_inputs"][port_i[1]]["gain_db"],
+                    settings_config_dict["controllers"][port_q[0]]["analog_inputs"][port_q[1]]["gain_db"],
                 )
             if "RF_inputs" in config_keys:
-                port = qmm._config["elements"][bus]["RF_inputs"]["port"]
-                assert value == qmm._config["octaves"][port[0]]["RF_outputs"][port[1]]["gain"]
+                port = settings_config_dict["elements"][bus]["RF_inputs"]["port"]
+                assert value == settings_config_dict["octaves"][port[0]]["RF_outputs"][port[1]]["gain"]
         if parameter == Parameter.TIME_OF_FLIGHT:
             if "time_of_flight" in config_keys:
-                assert value == qmm._config["elements"][bus]["time_of_flight"]
+                assert value == settings_config_dict["elements"][bus]["time_of_flight"]
         if parameter == Parameter.SMEARING:
             if "smearing" in config_keys:
-                assert value == qmm._config["elements"][bus]["smearing"]
+                assert value == settings_config_dict["elements"][bus]["smearing"]
 
     @pytest.mark.parametrize("parameter", [(Parameter.MAX_CURRENT), (Parameter.OUT0_ATT)])
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
@@ -445,3 +451,14 @@ class TestQuantumMachinesCluster:
         qmm.turn_on()
         with pytest.raises(ParameterNotFound):
             qmm.get_parameter_of_bus("drive_q0", parameter)
+
+    @pytest.mark.parametrize("parameter", [(Parameter.MAX_CURRENT), (Parameter.OUT0_ATT)])
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    def test_get_parameter_doesnt_create_a_config(
+        self, mock_qmm, mock_qm, parameter: Parameter, qmm: QuantumMachinesCluster
+    ):
+        """Test the set_parameter_of_bus method raises exception when parameter is wrong."""
+        assert qmm._config_exists is False
+        qmm.get_parameter_of_bus("drive_q0", parameter)
+        assert qmm._config_exists is False
