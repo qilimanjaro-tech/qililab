@@ -320,8 +320,9 @@ class QuantumMachinesCluster(Instrument):
             self._qm.calibrate_element(element)
 
     def set_parameter_of_bus(self, bus: str, parameter: Parameter, value: float | str | bool) -> None:
-        """Sets the parameter of the instrument into the cache (runtime dataclasses),
-        and in the instruments if connection to instruments is already established.
+        """Sets the parameter of the instrument into the cache (runtime dataclasses).
+
+        And if connection to instruments is established, then to the instruments as well.
 
         Args:
             bus (str): The assossiated bus to change parameter.
@@ -349,45 +350,42 @@ class QuantumMachinesCluster(Instrument):
                 rf_output for rf_output in settings_octave["rf_outputs"] if rf_output["port"] == out_port
             )
 
-            if parameter == Parameter.LO_FREQUENCY:
-                lo_frequency = float(value)
-                # 1) Change settings and config:
-                settings_octave_rf_output["lo_frequency"] = lo_frequency
-                self._config["octaves"][octave_name]["RF_outputs"][out_port]["LO_frequency"] = lo_frequency
-                # 2) Change instrument if connected:
-                if self._is_connected_to_qm:
-                    self._qm.octave.set_lo_frequency(element=bus, lo_frequency=lo_frequency)
+        # Now we will set the parameter in 3 places:
+        # 1) In the settings runtime dataclass (always).
+        # 2) If created: In the `_config`` dictionary.
+        # 3) If connected: In the instrument itself.
+        if parameter == Parameter.LO_FREQUENCY:
+            lo_frequency = float(value)
+            settings_octave_rf_output["lo_frequency"] = lo_frequency
+            self._config["octaves"][octave_name]["RF_outputs"][out_port]["LO_frequency"] = lo_frequency
+            if self._is_connected_to_qm:
+                self._qm.octave.set_lo_frequency(element=bus, lo_frequency=lo_frequency)
+            if in_port is not None:
+                settings_octave_rf_input = next(
+                    rf_input for rf_input in settings_octave["rf_inputs"] if rf_input["port"] == in_port
+                )
+                settings_octave_rf_input["lo_frequency"] = lo_frequency
+                self._config["octaves"][octave_name]["RF_inputs"][in_port]["LO_frequency"] = lo_frequency
+            return
 
-                if in_port is not None:
-                    settings_octave_rf_input = next(
-                        rf_input for rf_input in settings_octave["rf_inputs"] if rf_input["port"] == in_port
-                    )
-                    # 1) Change settings and config:
-                    settings_octave_rf_input["lo_frequency"] = lo_frequency
-                    self._config["octaves"][octave_name]["RF_inputs"][in_port]["LO_frequency"] = lo_frequency
-                return
-
-            if parameter == Parameter.GAIN:
-                gain_in_db = float(value)
-                # 1) Change settings and config:
-                settings_octave_rf_output["gain"] = gain_in_db
-                self._config["octaves"][octave_name]["RF_outputs"][out_port]["gain"] = gain_in_db
-                # 2) Change instrument if connected:
-                if self._is_connected_to_qm:
-                    self._qm.octave.set_rf_output_gain(element=bus, gain_in_db=gain_in_db)
-                return
+        if parameter == Parameter.GAIN:
+            gain_in_db = float(value)
+            settings_octave_rf_output["gain"] = gain_in_db
+            self._config["octaves"][octave_name]["RF_outputs"][out_port]["gain"] = gain_in_db
+            if self._is_connected_to_qm:
+                self._qm.octave.set_rf_output_gain(element=bus, gain_in_db=gain_in_db)
+            return
 
         if parameter == Parameter.IF:
             intermediate_frequency = float(value)
-            # 1) Change settings and config:
             element["intermediate_frequency"] = intermediate_frequency
             self._config["elements"][bus]["intermediate_frequency"] = intermediate_frequency
             if f"mixer_{bus}" in self._config["mixers"]:
                 self._config["mixers"][f"mixer_{bus}"][0]["intermediate_frequency"] = intermediate_frequency
-            # 2) Change instrument if connected:
             if self._is_connected_to_qm:
                 self._qm.set_intermediate_frequency(element=bus, freq=intermediate_frequency)
             return
+
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}.")
 
     def get_parameter_of_bus(self, bus: str, parameter: Parameter) -> float | str | bool | tuple:
@@ -413,9 +411,11 @@ class QuantumMachinesCluster(Instrument):
             if "RF_inputs" in config_keys:
                 port = settings_config_dict["elements"][bus]["RF_inputs"]["port"]
                 return settings_config_dict["octaves"][port[0]]["RF_outputs"][port[1]]["LO_frequency"]
+
         if parameter == Parameter.IF:
             if "intermediate_frequency" in config_keys:
                 return settings_config_dict["elements"][bus]["intermediate_frequency"]
+
         if parameter == Parameter.GAIN:
             if "mixInputs" in config_keys and "outputs" in config_keys:
                 port_i = settings_config_dict["elements"][bus]["outputs"]["out1"]
@@ -427,9 +427,11 @@ class QuantumMachinesCluster(Instrument):
             if "RF_inputs" in config_keys:
                 port = settings_config_dict["elements"][bus]["RF_inputs"]["port"]
                 return settings_config_dict["octaves"][port[0]]["RF_outputs"][port[1]]["gain"]
+
         if parameter == Parameter.TIME_OF_FLIGHT:
             if "time_of_flight" in config_keys:
                 return settings_config_dict["elements"][bus]["time_of_flight"]
+
         if parameter == Parameter.SMEARING:
             if "smearing" in config_keys:
                 return settings_config_dict["elements"][bus]["smearing"]
