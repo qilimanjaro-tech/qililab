@@ -39,13 +39,12 @@ class QuantumMachinesMeasurementResult(MeasurementResult):
         Q: np.ndarray,
         adc1: np.ndarray | None = None,
         adc2: np.ndarray | None = None,
-        classification_th: float | None = None,
     ):
         self.I = I
         self.Q = Q
         self.adc1 = adc1
         self.adc2 = adc2
-        self._classification_threshold = classification_th
+        self._classification_threshold = None
         super().__init__()
 
     def set_classification_threshold(self, classification_th):
