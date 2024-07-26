@@ -303,7 +303,7 @@ class QuantumMachinesCluster(Instrument):
             ValueError: Raised if the `_config` dictionary does not exist.
         """
         if not self._config_created:
-            raise ValueError("The `config` dictionary does not exist. Please setup the instrument first.")
+            raise ValueError("The QM `config` dictionary does not exist. Please run `initial_setup()` first.")
 
         merged_configuration = merge_dictionaries(dict(self._config), configuration)
         if self._config != merged_configuration:
