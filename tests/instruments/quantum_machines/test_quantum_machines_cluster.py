@@ -1,6 +1,7 @@
 """This file tests the the ``qm_manager`` class"""
 
 import copy
+import re
 from unittest.mock import MagicMock, call, patch
 
 import numpy as np
@@ -241,7 +242,8 @@ class TestQuantumMachinesCluster:
     ):
         """Test update_configuration method raises an error when no config dict has been set."""
         with pytest.raises(
-            ValueError, match="The QM `config` dictionary does not exist. Please run `initial_setup()` first."
+            ValueError,
+            match=re.escape("The QM `config` dictionary does not exist. Please run `initial_setup()` first."),
         ):
             qmm.append_configuration(configuration=compilation_config)
 
