@@ -320,7 +320,8 @@ class QuantumMachinesCluster(Instrument):
             self._qm.calibrate_element(element)
 
     def set_parameter_of_bus(self, bus: str, parameter: Parameter, value: float | str | bool) -> None:
-        """Sets the parameter of the instrument.
+        """Sets the parameter of the instrument into the cache (runtime dataclasses),
+        and in the instruments if connection to instruments is already established.
 
         Args:
             bus (str): The assossiated bus to change parameter.
