@@ -319,13 +319,13 @@ class QuantumMachinesCluster(Instrument):
         for element in elements:
             self._qm.calibrate_element(element)
 
-    def set_parameter_of_bus(self, bus: str, parameter: Parameter, value: float | str | bool):
-        """Sets the parameter of the instrument
+    def set_parameter_of_bus(self, bus: str, parameter: Parameter, value: float | str | bool) -> None:
+        """Sets the parameter of the instrument.
 
         Args:
-            bus (str): The assossiated bus to change parameter
-            parameter (Parameter): The parameter to update
-            value (float | str | bool): The new value of the parameter
+            bus (str): The assossiated bus to change parameter.
+            parameter (Parameter): The parameter to update.
+            value (float | str | bool): The new value of the parameter.
 
         Raises:
             NotImplementedError: Raised if not connected to Quantum Machines
@@ -382,12 +382,15 @@ class QuantumMachinesCluster(Instrument):
             return
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}.")
 
-    def get_parameter_of_bus(self, bus: str, parameter: Parameter):
+    def get_parameter_of_bus(self, bus: str, parameter: Parameter) -> float | str | bool | tuple:
         """Gets the value of a parameter
 
         Args:
             bus (str): The assossiated bus of the parameter
             parameter (Parameter): The parameter to get value
+
+        Returns:
+            float | int | bool | tuple: The value of the parameter.
 
         Raises:
             ParameterNotFound: Raised if parameter does not exist
@@ -424,7 +427,7 @@ class QuantumMachinesCluster(Instrument):
                 return settings_config_dict["elements"][bus]["time_of_flight"]
         if parameter == Parameter.SMEARING:
             if "smearing" in config_keys:
-                return settings_config_dict["elements"][bus]["smearing"]  # pylint: disable=too-many-return-statements
+                return settings_config_dict["elements"][bus]["smearing"]
 
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 

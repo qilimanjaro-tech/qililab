@@ -69,9 +69,9 @@ class QbloxModule(AWG):
                 )
 
             self.awg_sequencers = [
-                AWGQbloxSequencer(**sequencer)
-                if isinstance(sequencer, dict)
-                else sequencer  # pylint: disable=not-a-mapping
+                (
+                    AWGQbloxSequencer(**sequencer) if isinstance(sequencer, dict) else sequencer
+                )  # pylint: disable=not-a-mapping
                 for sequencer in self.awg_sequencers
             ]
             super().__post_init__()
@@ -155,9 +155,7 @@ class QbloxModule(AWG):
                 self.device.arm_sequencer(sequencer=sequencer.identifier)
                 self.device.start_sequencer(sequencer=sequencer.identifier)
 
-    def setup(  # pylint: disable=too-many-branches, too-many-return-statements
-        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None
-    ):
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None) -> None:
         """Set Qblox instrument calibration settings."""
         if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
             output = int(parameter.value[-1])
