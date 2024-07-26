@@ -738,8 +738,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         for measurement in measurements:
             measurement_result = QuantumMachinesMeasurementResult(
                 *[acquisitions[handle] for handle in measurement.result_handles],
-                classification_th=thresholds.get(measurement.bus, None),  # type: ignore[misc]
             )
+            measurement_result.set_classification_threshold(thresholds.get(measurement.bus, None))
             results.append_result(bus=measurement.bus, result=measurement_result)
 
         return results

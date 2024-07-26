@@ -48,6 +48,10 @@ class QuantumMachinesMeasurementResult(MeasurementResult):
         self._classification_threshold = classification_th
         super().__init__()
 
+    def set_classification_threshold(self, classification_th):
+        """Sets the `_classification_threshold` of the class."""
+        self._classification_threshold = classification_th
+
     @property
     def array(self) -> np.ndarray:
         """Returns I/Q data as a combined numpy array.
