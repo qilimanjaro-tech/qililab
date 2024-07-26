@@ -242,7 +242,7 @@ class QuantumMachinesCluster(Instrument):
     device: QMMDriver
     _qmm: QuantumMachinesManager
     _qm: QuantumMachine  # TODO: Change private QM API to public when implemented.
-    _config: DictQuaConfig = None
+    _config: DictQuaConfig = {}
     _octave_config: QmOctaveConfig | None = None
     _is_connected_to_qm: bool = False
     _compiled_program_cache: dict[str, str] = {}
