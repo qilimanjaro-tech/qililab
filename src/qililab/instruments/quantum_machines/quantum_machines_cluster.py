@@ -329,8 +329,8 @@ class QuantumMachinesCluster(Instrument):
             value (float | str | bool): The new value of the parameter.
 
         Raises:
-            NotImplementedError: Raised if not connected to Quantum Machines
-            ParameterNotFound: Raised if parameter does not exist
+            ValueError: Raised when passed bus is not found, or rf_inputs is not connected to an octave.
+            ParameterNotFound: Raised if parameter does not exist.
         """
         element = next((element for element in self.settings.elements if element["bus"] == bus), None)
         if element is None:
@@ -391,17 +391,17 @@ class QuantumMachinesCluster(Instrument):
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}.")
 
     def get_parameter_of_bus(self, bus: str, parameter: Parameter) -> float | str | bool | tuple:
-        """Gets the value of a parameter
+        """Gets the value of a parameter.
 
         Args:
-            bus (str): The assossiated bus of the parameter
-            parameter (Parameter): The parameter to get value
+            bus (str): The associated bus of the parameter.
+            parameter (Parameter): The parameter to get value.
 
         Returns:
             float | int | bool | tuple: The value of the parameter.
 
         Raises:
-            ParameterNotFound: Raised if parameter does not exist
+            ParameterNotFound: Raised if parameter does not exist.
         """
         # Just in case, read from the `settings`, even though in theory the config should always be synch:
         settings_config_dict = self.settings.to_qua_config()

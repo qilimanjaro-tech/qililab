@@ -148,15 +148,28 @@ class TestPlatform:
         platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, value=0.14, channel_id=0)
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, channel_id=0) == 0.14
 
-    def test_set_parameter_no_instrument_connection_QM(self):
+    @pytest.mark.parametrize(
+        "bus, parameter, value",
+        [
+            ("drive_q0_rf", Parameter.LO_FREQUENCY, 5e9),
+            ("drive_q0_rf", Parameter.IF, 14e6),
+            ("drive_q0_rf", Parameter.GAIN, 0.001),
+            ("readout_q0_rf", Parameter.LO_FREQUENCY, 8e9),
+            ("readout_q0_rf", Parameter.IF, 16e6),
+            ("readout_q0_rf", Parameter.GAIN, 0.002),
+            ("drive_q0", Parameter.LO_FREQUENCY, 3e9),
+            ("drive_q0", Parameter.IF, 13e6),
+            ("drive_q0", Parameter.GAIN, 0.003),
+        ],
+    )
+    def test_set_parameter_no_instrument_connection_QM(self, bus: str, parameter: Parameter, value: float | str | bool):
         """Test platform raises and error if no instrument connection."""
         # Overwrite platform to use Quantum Machines:
         platform = build_platform(runcard=SauronQuantumMachines.runcard)
         platform._connected_to_instruments = False
 
-        # TODO: Seems we are not setting config or settings correctly somewhere! Solve!
-        platform.set_parameter(alias="drive_q0", parameter=Parameter.IF, value=0.14, channel_id=0)
-        assert platform.get_parameter(alias="drive_q0", parameter=Parameter.IF, channel_id=0) == 0.14
+        platform.set_parameter(alias=bus, parameter=parameter, value=value)
+        assert platform.get_parameter(alias=bus, parameter=parameter) == value
 
     def test_connect_logger(self, platform: Platform):
         platform._connected_to_instruments = True
