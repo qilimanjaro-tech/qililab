@@ -236,6 +236,17 @@ class TestQuantumMachinesCluster:
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    def test_append_configuration_without_initial_setup_raises_error(
+        self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, compilation_config: dict
+    ):
+        """Test update_configuration method raises an error when no config dict has been set."""
+        with pytest.raises(
+            ValueError, match="The QM `config` dictionary does not exist. Please run `initial_setup()` first."
+        ):
+            qmm.append_configuration(configuration=compilation_config)
+
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
     def test_compile(self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, qua_program: Program):
         qmm.initial_setup()
         qmm.turn_on()
