@@ -101,7 +101,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         self._configuration: dict
         self._buses: dict[str, _BusCompilationInfo]
 
-    def compile(
+    def compile(  # pylint: disable=dangerous-default-value
         self,
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,

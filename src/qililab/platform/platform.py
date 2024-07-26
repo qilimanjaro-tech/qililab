@@ -707,7 +707,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         return results
 
-    def _execute_qprogram_with_quantum_machines(  # pylint: disable=too-many-locals
+    def _execute_qprogram_with_quantum_machines(  # pylint: disable=too-many-locals,dangerous-default-value
         self,
         cluster: QuantumMachinesCluster,
         qprogram: QProgram,
