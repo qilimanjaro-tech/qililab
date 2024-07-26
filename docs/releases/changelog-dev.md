@@ -21,6 +21,10 @@
 
   [#759](https://github.com/qilimanjaro-tech/qililab/pull/759)
 
+- Added `thresholds` argument to `_execute_qprogram_with_quantum_machines` method in `Platform`. This argument allows to threshold results after the execution of the `QProgram`. It is also a new parameter that can be specified on the runcard for each readout bus.
+
+  [#762](https://github.com/qilimanjaro-tech/qililab/pull/762)
+
 ### Improvements
 
 - Improved the algorithm determining which markers should be ON during execution of circuits and qprograms. Now, all markers are OFF by default, and only the markers associated with the `outputs` setting of QCM-RF and QRM-RF sequencers are turned on.
