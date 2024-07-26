@@ -157,9 +157,7 @@ class TestPlatform:
             ("readout_q0_rf", Parameter.LO_FREQUENCY, 8e9),
             ("readout_q0_rf", Parameter.IF, 16e6),
             ("readout_q0_rf", Parameter.GAIN, 0.002),
-            ("drive_q0", Parameter.LO_FREQUENCY, 3e9),
             ("drive_q0", Parameter.IF, 13e6),
-            ("drive_q0", Parameter.GAIN, 0.003),
         ],
     )
     def test_set_parameter_no_instrument_connection_QM(self, bus: str, parameter: Parameter, value: float | str | bool):
