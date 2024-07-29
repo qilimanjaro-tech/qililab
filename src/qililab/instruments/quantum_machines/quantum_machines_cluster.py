@@ -241,7 +241,7 @@ class QuantumMachinesCluster(Instrument):
     settings: QuantumMachinesClusterSettings
     device: QMMDriver
     _qmm: QuantumMachinesManager
-    _qm: QuantumMachine
+    _qm: QuantumMachine  # TODO: Change private QM API to public when implemented.
     _config: DictQuaConfig
     _octave_config: QmOctaveConfig | None = None
     _is_connected_to_qm: bool = False
@@ -320,7 +320,9 @@ class QuantumMachinesCluster(Instrument):
             self._qm.calibrate_element(element)
 
     def set_parameter_of_bus(self, bus: str, parameter: Parameter, value: float | str | bool) -> None:
-        """Sets the parameter of the instrument.
+        """Sets the parameter of the instrument into the cache (runtime dataclasses).
+
+        And if connection to instruments is established, then to the instruments as well.
 
         Args:
             bus (str): The assossiated bus to change parameter.
@@ -328,13 +330,9 @@ class QuantumMachinesCluster(Instrument):
             value (float | str | bool): The new value of the parameter.
 
         Raises:
-            NotImplementedError: Raised if not connected to Quantum Machines
-            ParameterNotFound: Raised if parameter does not exist
+            ValueError: Raised when passed bus is not found, or rf_inputs is not connected to an octave.
+            ParameterNotFound: Raised if parameter does not exist.
         """
-        # TODO: Change private QM API to public when implemented.
-        if not self._is_connected_to_qm:
-            raise NotImplementedError(f"You should be connected to {self.name} in order to change a parameter.")
-
         element = next((element for element in self.settings.elements if element["bus"] == bus), None)
         if element is None:
             raise ValueError(f"Bus {bus} was not found in {self.name} settings.")
@@ -352,54 +350,63 @@ class QuantumMachinesCluster(Instrument):
                 rf_output for rf_output in settings_octave["rf_outputs"] if rf_output["port"] == out_port
             )
 
-            if parameter == Parameter.LO_FREQUENCY:
-                lo_frequency = float(value)
-                self._qm.octave.set_lo_frequency(element=bus, lo_frequency=lo_frequency)
-                settings_octave_rf_output["lo_frequency"] = lo_frequency
+        # Now we will set the parameter in 3 places:
+        # 1) In the settings runtime dataclass (always).
+        # 2) If created: In the `_config`` dictionary.
+        # 3) If connected: In the instrument itself.
+        if parameter == Parameter.LO_FREQUENCY:
+            lo_frequency = float(value)
+            settings_octave_rf_output["lo_frequency"] = lo_frequency
+            if self._config_created:
                 self._config["octaves"][octave_name]["RF_outputs"][out_port]["LO_frequency"] = lo_frequency
-
-                if in_port is not None:
-                    settings_octave_rf_input = next(
-                        rf_input for rf_input in settings_octave["rf_inputs"] if rf_input["port"] == in_port
-                    )
-                    settings_octave_rf_input["lo_frequency"] = lo_frequency
+            if self._is_connected_to_qm:
+                self._qm.octave.set_lo_frequency(element=bus, lo_frequency=lo_frequency)
+            if in_port is not None:
+                settings_octave_rf_input = next(
+                    rf_input for rf_input in settings_octave["rf_inputs"] if rf_input["port"] == in_port
+                )
+                settings_octave_rf_input["lo_frequency"] = lo_frequency
+                if self._config_created:
                     self._config["octaves"][octave_name]["RF_inputs"][in_port]["LO_frequency"] = lo_frequency
-                return
-            if parameter == Parameter.GAIN:
-                gain_in_db = float(value)
-                self._qm.octave.set_rf_output_gain(element=bus, gain_in_db=gain_in_db)
-                settings_octave_rf_output["gain"] = gain_in_db
+            return
+
+        if parameter == Parameter.GAIN:
+            gain_in_db = float(value)
+            settings_octave_rf_output["gain"] = gain_in_db
+            if self._config_created:
                 self._config["octaves"][octave_name]["RF_outputs"][out_port]["gain"] = gain_in_db
-                return
+            if self._is_connected_to_qm:
+                self._qm.octave.set_rf_output_gain(element=bus, gain_in_db=gain_in_db)
+            return
+
         if parameter == Parameter.IF:
             intermediate_frequency = float(value)
-            self._qm.set_intermediate_frequency(element=bus, freq=intermediate_frequency)
             element["intermediate_frequency"] = intermediate_frequency
-            self._config["elements"][bus]["intermediate_frequency"] = intermediate_frequency
-
-            if f"mixer_{bus}" in self._config["mixers"]:
-                self._config["mixers"][f"mixer_{bus}"][0]["intermediate_frequency"] = intermediate_frequency
+            if self._config_created:
+                self._config["elements"][bus]["intermediate_frequency"] = intermediate_frequency
+                if f"mixer_{bus}" in self._config["mixers"]:
+                    self._config["mixers"][f"mixer_{bus}"][0]["intermediate_frequency"] = intermediate_frequency
+            if self._is_connected_to_qm:
+                self._qm.set_intermediate_frequency(element=bus, freq=intermediate_frequency)
             return
+
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}.")
 
     def get_parameter_of_bus(self, bus: str, parameter: Parameter) -> float | str | bool | tuple:
-        """Gets the value of a parameter
+        """Gets the value of a parameter.
 
         Args:
-            bus (str): The assossiated bus of the parameter
-            parameter (Parameter): The parameter to get value
+            bus (str): The associated bus of the parameter.
+            parameter (Parameter): The parameter to get value.
 
         Returns:
             float | int | bool | tuple: The value of the parameter.
 
         Raises:
-            ParameterNotFound: Raised if parameter does not exist
+            ParameterNotFound: Raised if parameter does not exist.
         """
-        # TODO: Change private QM API to public when implemented.
-
-        settings_config_dict = self._config if self._config_created else self.settings.to_qua_config()
-        # Maybe change to `self.settings.to_qua_config()`` directly, since we wanted to use the `settings` params
-
+        # Just in case, read from the `settings`, even though in theory the config should always be synch:
+        settings_config_dict = self.settings.to_qua_config()
         config_keys = settings_config_dict["elements"][bus]
 
         if parameter == Parameter.LO_FREQUENCY:
@@ -408,9 +415,11 @@ class QuantumMachinesCluster(Instrument):
             if "RF_inputs" in config_keys:
                 port = settings_config_dict["elements"][bus]["RF_inputs"]["port"]
                 return settings_config_dict["octaves"][port[0]]["RF_outputs"][port[1]]["LO_frequency"]
+
         if parameter == Parameter.IF:
             if "intermediate_frequency" in config_keys:
                 return settings_config_dict["elements"][bus]["intermediate_frequency"]
+
         if parameter == Parameter.GAIN:
             if "mixInputs" in config_keys and "outputs" in config_keys:
                 port_i = settings_config_dict["elements"][bus]["outputs"]["out1"]
@@ -422,9 +431,11 @@ class QuantumMachinesCluster(Instrument):
             if "RF_inputs" in config_keys:
                 port = settings_config_dict["elements"][bus]["RF_inputs"]["port"]
                 return settings_config_dict["octaves"][port[0]]["RF_outputs"][port[1]]["gain"]
+
         if parameter == Parameter.TIME_OF_FLIGHT:
             if "time_of_flight" in config_keys:
                 return settings_config_dict["elements"][bus]["time_of_flight"]
+
         if parameter == Parameter.SMEARING:
             if "smearing" in config_keys:
                 return settings_config_dict["elements"][bus]["smearing"]

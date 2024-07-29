@@ -388,6 +388,30 @@ class TestQuantumMachinesCluster:
     @pytest.mark.parametrize(
         "bus, parameter, value",
         [
+            ("drive_q0", Parameter.IF, 17e6),
+        ],
+    )
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    def test_set_parameter_without_connection_changes_settings(
+        self, mock_qmm, mock_qm, bus: str, parameter: Parameter, value: float | str | bool, qmm: QuantumMachinesCluster
+    ):
+        """Test that both the local `settings` and `_config` are changed by the set method without connection."""
+
+        # Set intermidiate frequency to 17e6 locally
+        qmm.set_parameter_of_bus(bus, parameter, value)
+        qmm.initial_setup()
+
+        # Test that both the local `settings` and `_config` have been changed to 17e6:
+        assert qmm._config == qmm.settings.to_qua_config()
+        ## Test `_config` QUA dictionary:
+        assert qmm._config["elements"][bus][parameter] == value
+        ## Test `settings` qililab dictionary:
+        assert qmm.settings.to_qua_config()["elements"][bus][parameter] == value
+
+    @pytest.mark.parametrize(
+        "bus, parameter, value",
+        [
             ("drive_q0", Parameter.LO_FREQUENCY, 6e9),
             ("drive_q0", Parameter.GAIN, 0.001),
         ],
@@ -426,21 +450,6 @@ class TestQuantumMachinesCluster:
         qmm.turn_on()
         with pytest.raises(ValueError, match=f"Bus {non_existent_bus} was not found in {qmm.name} settings."):
             qmm.set_parameter_of_bus(non_existent_bus, parameter, value)
-
-        # Assert that the settings are still in synch:
-        assert qmm._config == qmm.settings.to_qua_config()
-
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    def test_set_parameter_of_bus_method_raises_exception_when_not_connected(
-        self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster
-    ):
-        """Test the set_parameter_of_bus method raises exception when not connected to QuantumMachines."""
-        qmm.initial_setup()
-        with pytest.raises(
-            NotImplementedError, match=f"You should be connected to {qmm.name} in order to change a parameter."
-        ):
-            qmm.set_parameter_of_bus("drive_q0", Parameter.IF, 123e6)
 
         # Assert that the settings are still in synch:
         assert qmm._config == qmm.settings.to_qua_config()
