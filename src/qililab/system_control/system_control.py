@@ -126,7 +126,9 @@ class SystemControl(FactoryElement, ABC):
         """
         for instrument in self.instruments:
             with contextlib.suppress(ParameterNotFound):
-                if isinstance(instrument, QuantumMachinesCluster) and bus_alias is not None:
+                if isinstance(instrument, QuantumMachinesCluster):
+                    if bus_alias is None:
+                        raise ValueError("The `bus_alias` is required to set a parameter in a QuantumMachinesCluster.")
                     instrument.set_parameter_of_bus(bus=bus_alias, parameter=parameter, value=value)
                     return
                 if isinstance(instrument, QbloxModule) and channel_id is None and port_id is not None:
@@ -146,7 +148,9 @@ class SystemControl(FactoryElement, ABC):
 
         Args:
             parameter (Parameter): Name of the parameter to get.
-            channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
+            channel_id (int | None, optional): Instrument channel to update, if multiple. Defaults to None.
+            port_id (str | None, optional): Port ID for retrieving the `channel_id` when it is not passed in a `QbloxModule`.
+            bus_alias (str | None, optional): Bus alias from which to get parameters of `QuantumMachinesCluster`.
         """
         for instrument in self.instruments:
             with contextlib.suppress(ParameterNotFound):
