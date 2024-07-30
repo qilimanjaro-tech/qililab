@@ -272,7 +272,6 @@ class QuantumMachinesCluster(Instrument):
             host=self.settings.address, cluster_name=self.settings.cluster, octave=self._octave_config
         )
         self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)
-
         if not self._is_connected_to_qm:
             self._compiled_program_cache = {}
             self._is_connected_to_qm = True
