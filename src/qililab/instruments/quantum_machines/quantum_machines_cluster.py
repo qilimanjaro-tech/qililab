@@ -546,7 +546,9 @@ class QuantumMachinesCluster(Instrument):
             RunningQmJob: An object representing the running job. This object provides methods and properties to check the status of the job, retrieve results upon completion, and manage or investigate the job's execution.
         """
         # TODO: qm.queue.add_compiled() -> qm.add_compiled()
-        self.pending_job = self._qm.queue.add_compiled(compiled_program_id)
+        self.pending_job = self._qm.queue.add_compiled(
+            compiled_program_id
+        )  # pylint: disable=attribute-defined-outside-init
 
         if self._intermediate_frequency:
             for bus, intermediate_frequency in self._intermediate_frequency.items():
