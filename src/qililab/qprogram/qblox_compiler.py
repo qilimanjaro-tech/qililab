@@ -549,20 +549,12 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         self._handle_acquire(acquire)
 
     def _handle_acquire(self, element: Acquire):
-        def collect_same_acquires(block: Block):
-            for _element in block.elements:
-                if isinstance(_element, Block):
-                    yield from collect_same_acquires(_element)
-                elif isinstance(_element, Acquire) and _element._uuid == element._uuid:
-                    yield _element
-
-        len_same_acquires = len(list(collect_same_acquires(self._qprogram.body)))
         loops = [
             (i, loop)
             for i, loop in enumerate(self._buses[element.bus].qpy_block_stack)
             if isinstance(loop, QPyProgram.IterativeLoop) and not loop.name.startswith("avg")
         ]
-        num_bins = math.prod(loop[1].iterations for loop in loops) * len_same_acquires
+        num_bins = math.prod(loop[1].iterations for loop in loops)
 
         acquisition_name = f"acquisition_{self._buses[element.bus].next_acquisition_index}"
         self._buses[element.bus].qpy_sequence._acquisitions.add(

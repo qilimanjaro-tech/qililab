@@ -12,15 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 from qililab.qprogram.element import Element
 from qililab.qprogram.variable import Variable
 
+if TYPE_CHECKING:
+    from qililab.qprogram.blocks.for_loop import ForLoop
+
+
+class UnwrappingInformation:
+    """Stores information about an Operation's unwrapping events."""
+
+    def __init__(self):
+        self.unwrapped_from: list[ForLoop] = []
+        self.unwrapped_values: list[int | float] = []
+
 
 @dataclass
 class Operation(Element):  # pylint: disable=missing-class-docstring
+    unwrapping: UnwrappingInformation = field(repr=False, compare=False, init=False, default=None)
+
     def get_variables(self) -> set[Variable]:
         """Get a set of the variables used in operation, if any.
 
@@ -47,3 +60,33 @@ class Operation(Element):  # pylint: disable=missing-class-docstring
             return obj
 
         return replace(self)
+
+    def replace_variables_from_unwrappings(self) -> "Operation":
+        if not self.has_been_unwrapped:
+            return self
+        variables = {
+            loop.variable: value
+            for loop, value in zip(self.unwrapping.unwrapped_from, self.unwrapping.unwrapped_values)
+        }
+        return self.replace_variables(variables)
+
+    @property
+    def has_been_unwrapped(self) -> bool:
+        """Checks if the operation has been unrwapped at least once.
+
+        Returns:
+            bool: True if the operation has been unwrapped, False otherwise.
+        """
+        return self.unwrapping is not None
+
+    def add_unwrapping(self, unwrapped_from: "ForLoop", unwrapped_value: int | float) -> None:
+        """Add an unwrapping event to the operation.
+
+        Args:
+            unwrapped_from (ForLoop): The loop that was unwrapped
+            unwrapped_value (int | float): The variable's value for the specific operation
+        """
+        if self.unwrapping is None:
+            self.unwrapping = UnwrappingInformation()
+        self.unwrapping.unwrapped_from.append(unwrapped_from)
+        self.unwrapping.unwrapped_values.append(unwrapped_value)
