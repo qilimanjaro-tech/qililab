@@ -413,7 +413,7 @@ class TestQuantumMachinesCluster:
 
         qmm.set_parameter_of_bus(bus, parameter, value)
         if parameter == Parameter.IF:
-            assert value == qmm_with_octave._intermediate_frequency[bus]
+            assert value == qmm._intermediate_frequency[bus]
 
         # Assert that the settings are still in synch:
         assert qmm._config == qmm.settings.to_qua_config()
