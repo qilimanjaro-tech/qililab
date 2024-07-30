@@ -19,6 +19,7 @@ from typing import Any, Dict, cast
 
 import numpy as np
 from qm import DictQuaConfig, QuantumMachine, QuantumMachinesManager, SimulationConfig
+from qm.api.v2.job_api import JobApi
 from qm.jobs.running_qm_job import RunningQmJob
 from qm.octave import QmOctaveConfig
 from qm.program import Program
@@ -361,6 +362,7 @@ class QuantumMachinesCluster(Instrument):
 
     settings: QuantumMachinesClusterSettings
     device: QMMDriver
+    pending_job: JobApi
     _qmm: QuantumMachinesManager
     _qm: QuantumMachine
     _config: DictQuaConfig
