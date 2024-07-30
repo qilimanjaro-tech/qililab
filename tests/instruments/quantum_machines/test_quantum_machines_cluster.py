@@ -8,14 +8,14 @@ import numpy as np
 import pytest
 from qm import Program
 from qm.qua import play, program
+from tests.data import SauronQuantumMachines  # pylint: disable=import-error, no-name-in-module
+from tests.test_utils import build_platform  # pylint: disable=import-error, no-name-in-module
 
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Platform
 from qililab.settings import Settings
 from qililab.typings import Parameter
-from tests.data import SauronQuantumMachines  # pylint: disable=import-error, no-name-in-module
-from tests.test_utils import build_platform  # pylint: disable=import-error, no-name-in-module
 
 
 @pytest.fixture(name="qua_program")
@@ -170,7 +170,9 @@ class TestQuantumMachinesCluster:
         assert qmm._config_created is True
         assert qmm._config == qmm.settings.to_qua_config()
 
-    @pytest.mark.parametrize("qmm_name", ["qmm", "qmm_with_octave", "qmm_with_octave_custom_connectivity", "qmm_with_opx1000"])
+    @pytest.mark.parametrize(
+        "qmm_name", ["qmm", "qmm_with_octave", "qmm_with_octave_custom_connectivity", "qmm_with_opx1000"]
+    )
     def test_settings(self, qmm_name, request):
         """Test QuantumMachinesClusterSettings have been set correctly"""
 
