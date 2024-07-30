@@ -136,9 +136,9 @@ class QuantumMachinesCluster(Instrument):
                                         "delay": output["delay"] if "delay" in output else 0.0,
                                         "output_mode": output["output_mode"] if "output_mode" in output else "direct",
                                         "sampling_rate": output["sampling_rate"] if "sampling_rate" in output else 1e9,
-                                        "upsampling_mode": output["upsampling_mode"]
-                                        if "upsampling_mode" in output
-                                        else "mw",
+                                        "upsampling_mode": (
+                                            output["upsampling_mode"] if "upsampling_mode" in output else "mw"
+                                        ),
                                     }
                                     for output in fem.get("analog_outputs", [])
                                 },
@@ -214,22 +214,26 @@ class QuantumMachinesCluster(Instrument):
                     octaves[octave["name"]]["IF_outputs"] = {
                         "IF_out1": {
                             "port": (
-                                octave["if_outputs"][0]["controller"],
-                                octave["if_outputs"][0]["fem"],
-                                octave["if_outputs"][0]["port"],
-                            )
-                            if "fem" in octave["if_outputs"][0]
-                            else (octave["if_outputs"][0]["controller"], octave["if_outputs"][0]["port"]),
+                                (
+                                    octave["if_outputs"][0]["controller"],
+                                    octave["if_outputs"][0]["fem"],
+                                    octave["if_outputs"][0]["port"],
+                                )
+                                if "fem" in octave["if_outputs"][0]
+                                else (octave["if_outputs"][0]["controller"], octave["if_outputs"][0]["port"])
+                            ),
                             "name": "out1",
                         },
                         "IF_out2": {
                             "port": (
-                                octave["if_outputs"][1]["controller"],
-                                octave["if_outputs"][1]["fem"],
-                                octave["if_outputs"][1]["port"],
-                            )
-                            if "fem" in octave["if_outputs"][1]
-                            else (octave["if_outputs"][1]["controller"], octave["if_outputs"][1]["port"]),
+                                (
+                                    octave["if_outputs"][1]["controller"],
+                                    octave["if_outputs"][1]["fem"],
+                                    octave["if_outputs"][1]["port"],
+                                )
+                                if "fem" in octave["if_outputs"][1]
+                                else (octave["if_outputs"][1]["controller"], octave["if_outputs"][1]["port"])
+                            ),
                             "name": "out2",
                         },
                     }
@@ -252,12 +256,14 @@ class QuantumMachinesCluster(Instrument):
                 if "single_input" in element:
                     element_dict["singleInput"] = {
                         "port": (
-                            element["single_input"]["controller"],
-                            element["single_input"]["fem"],
-                            element["single_input"]["port"],
-                        )
-                        if "fem" in element["single_input"]
-                        else (element["single_input"]["controller"], element["single_input"]["port"]),
+                            (
+                                element["single_input"]["controller"],
+                                element["single_input"]["fem"],
+                                element["single_input"]["port"],
+                            )
+                            if "fem" in element["single_input"]
+                            else (element["single_input"]["controller"], element["single_input"]["port"])
+                        ),
                     }
                 # IQ bus
                 elif "mix_inputs" in element:
@@ -278,12 +284,14 @@ class QuantumMachinesCluster(Instrument):
                     ]
                     element_dict["mixInputs"] = {
                         key: (
-                            element["mix_inputs"][key]["controller"],
-                            element["mix_inputs"][key]["fem"],
-                            element["mix_inputs"][key]["port"],
+                            (
+                                element["mix_inputs"][key]["controller"],
+                                element["mix_inputs"][key]["fem"],
+                                element["mix_inputs"][key]["port"],
+                            )
+                            if "fem" in element["mix_inputs"][key]
+                            else (element["mix_inputs"][key]["controller"], element["mix_inputs"][key]["port"])
                         )
-                        if "fem" in element["mix_inputs"][key]
-                        else (element["mix_inputs"][key]["controller"], element["mix_inputs"][key]["port"])
                         for key in ["I", "Q"]
                     } | {"lo_frequency": lo_frequency, "mixer": mixer_name}
                     element_dict["intermediate_frequency"] = intermediate_frequency
@@ -292,12 +300,14 @@ class QuantumMachinesCluster(Instrument):
                     if "outputs" in element:
                         element_dict["outputs"] = {
                             key: (
-                                element["outputs"][key]["controller"],
-                                element["outputs"][key]["fem"],
-                                element["outputs"][key]["port"],
+                                (
+                                    element["outputs"][key]["controller"],
+                                    element["outputs"][key]["fem"],
+                                    element["outputs"][key]["port"],
+                                )
+                                if "fem" in element["outputs"][key]
+                                else (element["outputs"][key]["controller"], element["outputs"][key]["port"])
                             )
-                            if "fem" in element["outputs"][key]
-                            else (element["outputs"][key]["controller"], element["outputs"][key]["port"])
                             for key in ["out1", "out2"]
                         }
                         element_dict["time_of_flight"] = element["time_of_flight"]
@@ -320,12 +330,14 @@ class QuantumMachinesCluster(Instrument):
                     element_dict["digitalInputs"] = {
                         "switch": {
                             "port": (
-                                element["digital_inputs"]["controller"],
-                                element["digital_inputs"]["fem"],
-                                element["digital_inputs"]["port"],
-                            )
-                            if "fem" in element["digital_inputs"]
-                            else (element["digital_inputs"]["controller"], element["digital_inputs"]["port"]),
+                                (
+                                    element["digital_inputs"]["controller"],
+                                    element["digital_inputs"]["fem"],
+                                    element["digital_inputs"]["port"],
+                                )
+                                if "fem" in element["digital_inputs"]
+                                else (element["digital_inputs"]["controller"], element["digital_inputs"]["port"])
+                            ),
                             "delay": element["digital_inputs"]["delay"],
                             "buffer": element["digital_inputs"]["buffer"],
                         }
@@ -333,12 +345,14 @@ class QuantumMachinesCluster(Instrument):
                 if "digital_outputs" in element:
                     element_dict["digitalOutputs"] = {
                         "port": (
-                            element["digital_outputs"]["controller"],
-                            element["digital_outputs"]["fem"],
-                            element["digital_outputs"]["port"],
-                        )
-                        if "fem" in element["digital_outputs"]
-                        else (element["digital_outputs"]["controller"], element["digital_outputs"]["port"]),
+                            (
+                                element["digital_outputs"]["controller"],
+                                element["digital_outputs"]["fem"],
+                                element["digital_outputs"]["port"],
+                            )
+                            if "fem" in element["digital_outputs"]
+                            else (element["digital_outputs"]["controller"], element["digital_outputs"]["port"])
+                        ),
                     }
 
                 elements[bus_name] = element_dict
@@ -352,6 +366,7 @@ class QuantumMachinesCluster(Instrument):
     _config: DictQuaConfig
     _octave_config: QmOctaveConfig | None = None
     _is_connected_to_qm: bool = False
+    _intermediate_frequency: dict[str, float] = {}
     _compiled_program_cache: dict[str, str] = {}
 
     @property
@@ -380,7 +395,7 @@ class QuantumMachinesCluster(Instrument):
     def turn_on(self):
         """Turns on the instrument."""
         if not self._is_connected_to_qm:
-            self._qm = self._qmm.open_qm(config=self._config, close_other_machines=False)
+            self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)
             self._compiled_program_cache = {}
             self._is_connected_to_qm = True
 
@@ -468,8 +483,8 @@ class QuantumMachinesCluster(Instrument):
                 return
         if parameter == Parameter.IF:
             intermediate_frequency = float(value)
-            # CHANGE: now job.set_intermediate_frequency()
-            self._qm.set_intermediate_frequency(element=bus, freq=intermediate_frequency)
+            self._intermediate_frequency[bus] = intermediate_frequency
+
             element["intermediate_frequency"] = intermediate_frequency
             self._config["elements"][bus]["intermediate_frequency"] = intermediate_frequency
 
@@ -530,10 +545,15 @@ class QuantumMachinesCluster(Instrument):
         Returns:
             RunningQmJob: An object representing the running job. This object provides methods and properties to check the status of the job, retrieve results upon completion, and manage or investigate the job's execution.
         """
-        # CHANGES: qm.queue.add_compiled() -> qm.add_compiled()
-        pending_job = self._qm.queue.add_compiled(compiled_program_id)
-        # CHANGES: job.wait_for_execution() is deprecated and will be removed in the future. Please use job.wait_until("Running") instead.
-        return pending_job.wait_for_execution()  # type: ignore[return-value]
+        # TODO: qm.queue.add_compiled() -> qm.add_compiled()
+        self.pending_job = self._qm.queue.add_compiled(compiled_program_id)
+
+        if self._intermediate_frequency:
+            for bus, intermediate_frequency in self._intermediate_frequency.items():
+                self.pending_job.set_intermediate_frequency(element=bus, freq=intermediate_frequency)
+
+        # TODO: job.wait_for_execution() is deprecated and will be removed in the future. Please use job.wait_until("Running") instead.
+        return self.pending_job.wait_for_execution()  # type: ignore[return-value]
 
     def run(self, program: Program) -> RunningQmJob:
         """Runs the QUA Program.
