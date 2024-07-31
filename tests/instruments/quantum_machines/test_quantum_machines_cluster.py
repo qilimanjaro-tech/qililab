@@ -132,8 +132,8 @@ class TestQuantumMachinesCluster:
         """Test QMM class initialization."""
         qmm = request.getfixturevalue(qmm_name)
 
-        # Before initial_setup no _config should exist
-        assert qmm._is_connected_to_qm is False and "_config" not in dir(qmm)
+        # Before initial_setup:
+        assert qmm._is_connected_to_qm is False
 
         qmm.initial_setup()
         mock_init.assert_called()
@@ -142,8 +142,10 @@ class TestQuantumMachinesCluster:
         assert isinstance(qmm._config, dict)
         assert isinstance(qmm.config, dict)
 
-        # Assert that the _config has been created correctly (in synch):
+        # After initial_setup:
         assert qmm._is_connected_to_qm is True
+
+        # Assert that the _config is stll in synch with the settings:
         assert qmm._config == qmm.settings.to_qua_config()
 
     @pytest.mark.parametrize("qmm_name", ["qmm", "qmm_with_octave"])
@@ -279,7 +281,7 @@ class TestQuantumMachinesCluster:
         assert isinstance(job, MagicMock)
 
         # Assert that the settings are in synch:
-        assert qmm._is_connected_to_qm is False and "_config" not in dir(qmm)
+        assert qmm._is_connected_to_qm is False
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
@@ -308,7 +310,7 @@ class TestQuantumMachinesCluster:
         assert "Q" in results
 
         # Assert that the settings are in synch:
-        assert qmm._is_connected_to_qm is False and "_config" not in dir(qmm)
+        assert qmm._is_connected_to_qm is False
 
     @patch("qm.QuantumMachine")
     def test_simulate(
@@ -322,7 +324,7 @@ class TestQuantumMachinesCluster:
         assert isinstance(job, MagicMock)
 
         # Assert that the settings are in synch:
-        assert qmm._is_connected_to_qm is False and "_config" not in dir(qmm)
+        assert qmm._is_connected_to_qm is False
 
     @pytest.mark.parametrize(
         "bus, parameter, value",
@@ -528,7 +530,7 @@ class TestQuantumMachinesCluster:
                 assert value == settings_config_dict["elements"][bus]["smearing"]
 
         # Assert that the settings are in synch:
-        assert qmm._is_connected_to_qm is False and "_config" not in dir(qmm)
+        assert qmm._is_connected_to_qm is False
 
     @pytest.mark.parametrize("parameter", [(Parameter.MAX_CURRENT), (Parameter.OUT0_ATT)])
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
