@@ -147,6 +147,12 @@ class TestQuantumMachinesCluster:
         # Assert that the _config has been created correctly (in synch):
         assert qmm._is_connected_to_qm is True and "_config" in dir(qmm)
 
+        if qmm.settings.run_octave_calibration:
+            calls = [
+                call(element) for element in qmm._config["elements"] if "RF_inputs" in qmm._config["elements"][element]
+            ]
+            qmm._qm.calibrate_element.assert_has_calls(calls)
+
         # Assert that the _config is stll in synch with the settings:
         assert qmm._config == qmm.settings.to_qua_config()
 
@@ -160,39 +166,35 @@ class TestQuantumMachinesCluster:
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
     @pytest.mark.parametrize("qmm_name", ["qmm", "qmm_with_octave"])
-    def test_turn_on(self, mock_qmm, mock_qm, qmm_name, request):
+    def test_turn_on_after_a_turn_off(self, mock_qmm, mock_qm, qmm_name, request):
         """Test turn_on method"""
 
         qmm = request.getfixturevalue(qmm_name)
         qmm.initial_setup()
+        qmm.turn_off()
         qmm.turn_on()
 
-        if qmm.settings.run_octave_calibration:
-            calls = [
-                call(element) for element in qmm._config["elements"] if "RF_inputs" in qmm._config["elements"][element]
-            ]
-            qmm._qm.calibrate_element.assert_has_calls(calls)
+        assert qmm._is_connected_to_qm is True
 
         # Assert that the settings are still in synch:
         assert qmm._config == qmm.settings.to_qua_config()
 
-    ## TODO: Weird, as in the previous TODO what to put here?
-    # @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    # @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    # @pytest.mark.parametrize("qmm_name", ["qmm", "qmm_with_octave"])
-    # def test_turn_off(self, mock_qmm, mock_qm, qmm_name, request):
-    #     """Test turn_off method"""
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    @pytest.mark.parametrize("qmm_name", ["qmm", "qmm_with_octave"])
+    def test_turn_off(self, mock_qmm, mock_qm, qmm_name, request):
+        """Test turn_off method"""
 
-    #     qmm = request.getfixturevalue(qmm_name)
-    #     qmm.initial_setup()
-    #     qmm.turn_on()
-    #     qmm.turn_off()
+        qmm = request.getfixturevalue(qmm_name)
+        qmm.initial_setup()
+        qmm.turn_on()
+        qmm.turn_off()
 
-    #     # Assert that the settings are still in synch:
-    #     assert qmm._config == qmm.settings.to_qua_config()
+        # Assert that the settings are still in synch:
+        assert qmm._is_connected_to_qm is False
 
-    #     assert isinstance(qmm._qm, MagicMock)
-    #     qmm._qm.close.assert_called_once()
+        assert isinstance(qmm._qm, MagicMock)
+        qmm._qm.close.assert_called_once()
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
