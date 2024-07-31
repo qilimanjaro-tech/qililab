@@ -628,8 +628,18 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                     "Executing QProgram in more than one Quantum Machines Cluster is not supported."
                 )
             cluster: QuantumMachinesCluster = instruments.pop()  # type: ignore[assignment]
+            threshold_rotations = {
+                bus.alias: float(bus.get_parameter(parameter=Parameter.THRESHOLD_ROTATION))
+                for bus in buses
+                if isinstance(bus.system_control, ReadoutSystemControl)
+            }  # type: ignore
             return self._execute_qprogram_with_quantum_machines(
-                cluster=cluster, qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration, debug=debug
+                cluster=cluster,
+                qprogram=qprogram,
+                bus_mapping=bus_mapping,
+                threshold_rotations=threshold_rotations,  # type: ignore
+                calibration=calibration,
+                debug=debug,
             )
         raise NotImplementedError("Executing QProgram in a mixture of instruments is not supported.")
 
@@ -696,12 +706,13 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         cluster: QuantumMachinesCluster,
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,
+        threshold_rotations: dict[str, float | None] | None = None,
         calibration: Calibration | None = None,
         debug: bool = False,
     ) -> QProgramResults:
         compiler = QuantumMachinesCompiler()
         qua_program, configuration, measurements = compiler.compile(
-            qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration
+            qprogram=qprogram, bus_mapping=bus_mapping, threshold_rotations=threshold_rotations, calibration=calibration
         )
 
         cluster.append_configuration(configuration=configuration)
