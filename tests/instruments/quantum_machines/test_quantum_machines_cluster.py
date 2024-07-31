@@ -330,6 +330,7 @@ class TestQuantumMachinesCluster:
         # qmm._qm.queue.add_compiled.return_value.wait_until.assert_called_once()
 
         qmm.pending_job.set_intermediate_frequency.assert_called_once()
+        qmm._qm.calibrate_element.assert_called_once()
         # Assert that the settings are still in synch:
         assert qmm._config == qmm.settings.to_qua_config()
 
@@ -389,6 +390,7 @@ class TestQuantumMachinesCluster:
         qmm_with_octave.set_parameter_of_bus(bus, parameter, value)
         if parameter == Parameter.LO_FREQUENCY:
             qmm_with_octave._qm.octave.set_lo_frequency.assert_called_once()
+            qmm_with_octave._qm.calibrate_element.assert_called_once()
         if parameter == Parameter.GAIN:
             qmm_with_octave._qm.octave.set_rf_output_gain.assert_called_once()
         if parameter == Parameter.IF:
