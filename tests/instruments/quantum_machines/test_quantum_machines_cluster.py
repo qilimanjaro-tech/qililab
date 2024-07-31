@@ -329,7 +329,7 @@ class TestQuantumMachinesCluster:
         # The following stopped working in testing, but we have verified that works in hardware, so I remove it temporarily.
         # qmm._qm.queue.add_compiled.return_value.wait_until.assert_called_once()
 
-        qmm._qm.pending_job.set_intermediate_frequency.assert_called_once()
+        qmm.pending_job.set_intermediate_frequency.assert_called_once()
         # Assert that the settings are still in synch:
         assert qmm._config == qmm.settings.to_qua_config()
 
