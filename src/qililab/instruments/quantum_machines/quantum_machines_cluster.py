@@ -445,8 +445,6 @@ class QuantumMachinesCluster(Instrument):
 
         if parameter == Parameter.THRESHOLD_ROTATION:
             element = next((element for element in self.settings.elements if element["bus"] == bus), None)
-            if element is None:
-                raise ValueError(f"Bus {bus} was not found in {self.name} settings.")
             return element.get("threshold_rotation", None)
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 

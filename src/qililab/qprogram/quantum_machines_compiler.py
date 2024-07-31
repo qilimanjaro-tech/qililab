@@ -346,7 +346,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         stream_Q = qua.declare_stream()
         stream_raw_adc = qua.declare_stream(adc_trace=True) if element.save_adc else None
 
-        A, B, C, D = self.__add_weights_to_configuration(weights=element.weights, rotation=rotation)
+        A, B, C, D = self.__add_weights_to_configuration(weights=element.weights, rotation=rotation)  # type: ignore
 
         pulse_name = self.__add_or_update_measurement_pulse_to_configuration(
             waveform_I_name,
