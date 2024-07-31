@@ -318,16 +318,18 @@ class TestQuantumMachinesCluster:
         qmm.turn_on()
 
         qmm._qm.compile.return_value = "123"
+        qmm._intermediate_frequency = {"drive_q0": 20e6}
 
         compile_program_id = qmm.compile(qua_program)
         _ = qmm.run_compiled_program(compile_program_id)
 
-        # CHANGES: qm.queue.add_compiled() -> qm.add_compiled()
+        # TODO: qm.queue.add_compiled() -> qm.add_compiled()
         qmm._qm.queue.add_compiled.assert_called_once_with(compile_program_id)
-        # CHANGES: job.wait_for_execution() is deprecated and will be removed in the future. Please use job.wait_until("Running") instead.
+        # TODO: job.wait_for_execution() is deprecated and will be removed in the future. Please use job.wait_until("Running") instead.
         # The following stopped working in testing, but we have verified that works in hardware, so I remove it temporarily.
         # qmm._qm.queue.add_compiled.return_value.wait_until.assert_called_once()
 
+        qmm._qm.pending_job.set_intermediate_frequency.assert_called_once()
         # Assert that the settings are still in synch:
         assert qmm._config == qmm.settings.to_qua_config()
 
