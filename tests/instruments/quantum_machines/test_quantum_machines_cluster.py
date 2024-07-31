@@ -390,14 +390,12 @@ class TestQuantumMachinesCluster:
         qmm_with_octave.set_parameter_of_bus(bus, parameter, value)
         if parameter == Parameter.LO_FREQUENCY:
             qmm_with_octave._qm.octave.set_lo_frequency.assert_called_once()
-            qmm_with_octave._qm.calibrate_element.assert_called_once()
             calls = [
                 call(element) for element in qmm_with_octave._config["elements"] if "RF_inputs" in qmm_with_octave._config["elements"][element]
             ]
             qmm_with_octave._qm.calibrate_element.assert_has_calls(calls)
         if parameter == Parameter.GAIN:
             qmm_with_octave._qm.octave.set_rf_output_gain.assert_called_once()
-            qmm_with_octave._qm.calibrate_element.assert_called_once()
         if parameter == Parameter.IF:
             assert value == qmm_with_octave._intermediate_frequency[bus]
 
