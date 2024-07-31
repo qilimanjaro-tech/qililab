@@ -445,7 +445,7 @@ class QuantumMachinesCluster(Instrument):
 
         if parameter == Parameter.THRESHOLD_ROTATION:
             element = next((element for element in self.settings.elements if element["bus"] == bus), None)
-            return element.get("threshold_rotation", None)
+            return element.get("threshold_rotation", None)  # type: ignore
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
     def compile(self, program: Program) -> str:
