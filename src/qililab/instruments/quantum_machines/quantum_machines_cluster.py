@@ -267,7 +267,6 @@ class QuantumMachinesCluster(Instrument):
         self._qmm = QuantumMachinesManager(
             host=self.settings.address, cluster_name=self.settings.cluster, octave=self._octave_config
         )
-
         self._config = self.settings.to_qua_config()
 
         self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)
@@ -303,6 +302,9 @@ class QuantumMachinesCluster(Instrument):
         Raises:
             ValueError: Raised if the `_config` dictionary does not exist.
         """
+        if not self._is_connected_to_qm:
+            raise ValueError("The QM `config` dictionary does not exist. Please run `initial_setup()` first.")
+
         merged_configuration = merge_dictionaries(dict(self._config), configuration)
         if self._config != merged_configuration:
             self._config = cast(DictQuaConfig, merged_configuration)
