@@ -356,8 +356,8 @@ class QuantumMachinesCluster(Instrument):
         if parameter == Parameter.LO_FREQUENCY:
             lo_frequency = float(value)
             settings_octave_rf_output["lo_frequency"] = lo_frequency
-            self._config["octaves"][octave_name]["RF_outputs"][out_port]["LO_frequency"] = lo_frequency
             if self._is_connected_to_qm:
+                self._config["octaves"][octave_name]["RF_outputs"][out_port]["LO_frequency"] = lo_frequency
                 self._qm.octave.set_lo_frequency(element=bus, lo_frequency=lo_frequency)
             if in_port is not None:
                 settings_octave_rf_input = next(
