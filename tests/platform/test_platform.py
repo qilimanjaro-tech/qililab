@@ -455,8 +455,9 @@ class TestMethods:
     ):  # pylint: disable=too-many-locals
         """Test that the execute_qprogram method raises the exception if the qprogram failes"""
 
+        error_string = "Compilation error."
         platform_quantum_machines.compile = MagicMock()  # type: ignore # don't care about compilation
-        platform_quantum_machines.compile.return_value = Exception("Compilation error")
+        platform_quantum_machines.compile.return_value = Exception(error_string)
 
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
@@ -468,7 +469,6 @@ class TestMethods:
         qprogram.measure(bus="readout_q0_rf", waveform=readout_wf, weights=weights_wf)
 
         cluster = platform_quantum_machines.get_element("qmm")
-        error_string = "There are no readout buses in the platform."
         with pytest.raises(ValueError, match=error_string):
             _ = platform_quantum_machines.execute_qprogram(qprogram=qprogram, debug=True)
 
