@@ -456,6 +456,7 @@ class TestMethods:
         """Test that the execute_qprogram method raises the exception if the qprogram failes"""
 
         error_string = "The QM `config` dictionary does not exist. Please run `initial_setup()` first."
+        escaped_error_str = re.escape(error_string)
         platform_quantum_machines.compile = MagicMock()  # type: ignore # don't care about compilation
         platform_quantum_machines.compile.return_value = Exception(error_string)
 
@@ -469,7 +470,7 @@ class TestMethods:
         qprogram.measure(bus="readout_q0_rf", waveform=readout_wf, weights=weights_wf)
 
         with patch.object(QuantumMachinesCluster, "turn_off") as turn_off:
-            with pytest.raises(ValueError, match=error_string):
+            with pytest.raises(ValueError, match=escaped_error_str):
                 _ = platform_quantum_machines.execute_qprogram(qprogram=qprogram, debug=True)
 
         turn_off.assert_called_once_with()
