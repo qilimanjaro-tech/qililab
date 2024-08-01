@@ -319,7 +319,7 @@ class QuantumMachinesCluster(Instrument):
         for element in elements:
             self._qm.calibrate_element(element)
 
-    def set_parameter_of_bus(self, bus: str, parameter: Parameter, value: float | str | bool) -> None:  # noqa: C901
+    def set_parameter_of_bus(self, bus: str, parameter: Parameter, value: float | str | bool) -> None:  # noqa: C901 pylint: disable=too-many-locals
         """Sets the parameter of the instrument into the cache (runtime dataclasses).
 
         And if connection to instruments is established, then to the instruments as well.
