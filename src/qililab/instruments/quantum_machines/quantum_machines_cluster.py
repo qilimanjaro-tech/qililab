@@ -393,10 +393,6 @@ class QuantumMachinesCluster(Instrument):
             threshold_rotation = float(value)
             element["threshold_rotation"] = threshold_rotation
             return
-        if parameter == Parameter.THRESHOLD_ROTATION:
-            threshold_rotation = float(value)
-            element["threshold_rotation"] = threshold_rotation
-            return
         if parameter == Parameter.THRESHOLD:
             threshold = float(value)
             element["threshold"] = threshold
