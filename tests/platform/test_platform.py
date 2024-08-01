@@ -470,14 +470,7 @@ class TestMethods:
 
         error_string = "There are no readout buses in the platform."
         with pytest.raises(ValueError, match=error_string):
-            _ = platform_quantum_machines._execute_qprogram_with_quantum_machines(
-                cluster=cluster,
-                qprogram=qprogram,
-                bus_mapping=[],
-                threshold_rotations=[],
-                calibration=[],
-                debug=False,
-            )
+            _ = platform_quantum_machines.execute_qprogram(qprogram=qprogram, debug=True)
 
         cluster.turn_off.assert_called_once()
 
