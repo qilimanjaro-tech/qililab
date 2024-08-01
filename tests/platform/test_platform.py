@@ -467,7 +467,7 @@ class TestMethods:
         qprogram.play(bus="readout_q0_rf", waveform=readout_wf)
         qprogram.measure(bus="readout_q0_rf", waveform=readout_wf, weights=weights_wf)
         cluster = platform_quantum_machines.get_element("qmm")
-        
+
         with self.assertRaises(Exception) as context:
             self.instance._execute_qprogram_with_quantum_machines(
                 cluster=cluster,
