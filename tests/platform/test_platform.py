@@ -458,14 +458,23 @@ class TestMethods:
         platform_quantum_machines.compile = MagicMock()  # type: ignore # don't care about compilation
         platform_quantum_machines.compile.return_value = Exception("Compilation error")
 
-        # Act & Assert
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_q0_rf", waveform=drive_wf)
+        qprogram.sync()
+        qprogram.play(bus="readout_q0_rf", waveform=readout_wf)
+        qprogram.measure(bus="readout_q0_rf", waveform=readout_wf, weights=weights_wf)
+        cluster = platform_quantum_machines.get_element("qmm")
+        
         with self.assertRaises(Exception) as context:
             self.instance._execute_qprogram_with_quantum_machines(
-                cluster=self.cluster,
-                qprogram=self.qprogram,
-                bus_mapping=self.bus_mapping,
-                threshold_rotations=self.threshold_rotations,
-                calibration=self.calibration,
+                cluster=cluster,
+                qprogram=qprogram,
+                bus_mapping=[],
+                threshold_rotations=[],
+                calibration=[],
                 debug=False,
             )
 
