@@ -455,7 +455,7 @@ class TestMethods:
     ):  # pylint: disable=too-many-locals
         """Test that the execute_qprogram method raises the exception if the qprogram failes"""
 
-        error_string = 'The QM `config` dictionary does not exist. Please run `initial_setup()` first.'
+        error_string = "The QM 'config' dictionary does not exist. Please run 'initial_setup()' first."
         platform_quantum_machines.compile = MagicMock()  # type: ignore # don't care about compilation
         platform_quantum_machines.compile.return_value = Exception(error_string)
 
