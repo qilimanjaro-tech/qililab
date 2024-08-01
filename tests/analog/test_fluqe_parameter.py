@@ -1,6 +1,6 @@
 import pytest
 
-from qililab import FluqeParameter as Parameter
+from qililab.analog import Parameter
 
 
 @pytest.fixture(name="test_parameter")

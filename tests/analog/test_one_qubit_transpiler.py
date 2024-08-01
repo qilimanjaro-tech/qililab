@@ -1,3 +1,4 @@
+"""Test the one qubit 2 level transpiler"""
 from unittest import mock
 from unittest.mock import MagicMock, patch
 
@@ -7,9 +8,10 @@ import qililab
 from qililab.analog import Qubit2LevelTranspiler
 
 
-@patch.object(qililab.fluqe_parameter.Parameter, "foo")
+@patch.object(qililab.analog.fluqe_parameter.Parameter, "foo")
 @pytest.fixture(name="dummy_transpiler")
 def dummy_transpiler():
+    """Transpiler dummy fixture"""
     mock_delta = MagicMock(return_value=2)
     mock_delta.name = "mock_delta"
     mock_epsilon = MagicMock(return_value=3)
@@ -19,6 +21,7 @@ def dummy_transpiler():
 
 class TestQubit2LevelTranspiler:
     def test_init(self, dummy_transpiler):
+        """Test init method"""
         assert dummy_transpiler.delta_model.name == "mock_delta"
         assert dummy_transpiler.epsilon_model.name == "mock_epsilon"
         assert dummy_transpiler.delta.name == "delta"
@@ -27,6 +30,7 @@ class TestQubit2LevelTranspiler:
         assert dummy_transpiler.phix.name == "phix"
 
     def test_transpiler(self, dummy_transpiler):
+        """Test transpiler"""
         # test set delta
         dummy_transpiler.delta(4)
         dummy_transpiler.delta_model.assert_called_once_with(4)

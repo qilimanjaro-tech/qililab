@@ -23,7 +23,6 @@ from .data_management import build_platform, load_results, save_platform, save_r
 from .execute_circuit import execute
 from .qprogram import Calibration, Domain, QbloxCompiler, QProgram, QuantumMachinesCompiler
 from .result import Results, stream_results
-from .fluqe_parameter import Parameter as FluqeParameter
 from .typings import Parameter
 from .utils import Loop
 from .utils.serialization import serialize, serialize_to, deserialize, deserialize_from

@@ -1,13 +1,23 @@
-"""
-Emulator for the single qubit using the 2level approximation
-"""
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from typing import Any, Callable
 
-from qililab.fluqe_parameter import Parameter
+from qililab.analog import Parameter
 
 
-class Qubit2LevelTranspiler:
+class Qubit2LevelTranspiler:  # pylint: disable=too-few-public-methods
     """Implementation of the transpiler for the 2 level qubit. This is done mainly by inverting the same functions
     used int he single_qubit_2level emulator model.
 
@@ -15,6 +25,8 @@ class Qubit2LevelTranspiler:
         eps_model (Callable): epsilon model
         delta_model (Callable): delta model
         qubitData (DataClass): dataclass containing info about the physical parameters of the qubit. Defaults to None.
+
+    Calling an instance of this class returns the fluxes phix, phiz for some given Delta, epsilon.
     """
 
     def __init__(self, epsilon_model: Callable, delta_model: Callable):
