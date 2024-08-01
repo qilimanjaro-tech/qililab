@@ -170,7 +170,6 @@ class TestQuantumMachinesCluster:
         assert qmm._config_created is True
         assert qmm._config == qmm.settings.to_qua_config()
 
-    @pytest.mark.parametrize("qmm_name", ["qmm", "qmm_with_octave"])
     @pytest.mark.parametrize(
         "qmm_name", ["qmm", "qmm_with_octave", "qmm_with_octave_custom_connectivity", "qmm_with_opx1000"]
     )
