@@ -4,7 +4,7 @@ Emulator for the single qubit using the 2level approximation
 
 from typing import Any, Callable
 
-from ..parameter import Parameter
+from qililab.fluqe_parameter import Parameter
 
 
 class Qubit2LevelTranspiler:
@@ -39,8 +39,7 @@ class Qubit2LevelTranspiler:
 
     def _set_delta(self, delta):
         # sets the value of delta via raw and updates phix accordingly
-        phix = self.delta_model(delta, inverse=True)
-        self.phix.set_raw(phix)
+        self.phix.set_raw(self.delta_model(delta))
         return delta
 
     def _set_epsilon(self, epsilon):
@@ -48,5 +47,5 @@ class Qubit2LevelTranspiler:
         since this is meant to be used in the transpiler in conjunction with setting delta (which
         already updates phix)
         """
-        self.phiz.set_raw(self.epsilon_model(phix=self.phix(), phiz_epsilon=epsilon, inverse=True))
+        self.phiz.set_raw(self.epsilon_model(phix=self.phix(), epsilon=epsilon))
         return epsilon

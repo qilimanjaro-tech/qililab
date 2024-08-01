@@ -3,7 +3,6 @@ import pytest
 from qililab import FluqeParameter as Parameter
 
 
-@pytest.fixture
 @pytest.fixture(name="test_parameter")
 def test_parameter():
     """Dummy parameter for testing"""
