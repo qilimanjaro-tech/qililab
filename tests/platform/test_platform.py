@@ -467,21 +467,12 @@ class TestMethods:
         qprogram.play(bus="readout_q0_rf", waveform=readout_wf)
         qprogram.measure(bus="readout_q0_rf", waveform=readout_wf, weights=weights_wf)
 
-        with (
-            patch("builtins.open") as patched_open,
-            patch("qililab.platform.platform.generate_qua_script", return_value=None) as generate_qua,
-            patch.object(QuantumMachinesCluster, "config") as config,
-            patch.object(QuantumMachinesCluster, "append_configuration") as append_configuration,
-            patch.object(QuantumMachinesCluster, "compile") as compile_program,
-            patch.object(QuantumMachinesCluster, "run_compiled_program") as run_compiled_program,
-            patch.object(QuantumMachinesCluster, "get_acquisitions") as get_acquisitions,
-        ):
-            cluster = platform_quantum_machines.get_element("qmm")
-            error_string = "There are no readout buses in the platform."
-            with pytest.raises(ValueError, match=error_string):
-                _ = platform_quantum_machines.execute_qprogram(qprogram=qprogram, debug=True)
+        cluster = platform_quantum_machines.get_element("qmm")
+        error_string = "There are no readout buses in the platform."
+        with pytest.raises(ValueError, match=error_string):
+            _ = platform_quantum_machines.execute_qprogram(qprogram=qprogram, debug=True)
 
-            cluster.turn_off.assert_called_once()
+        cluster.turn_off.assert_called_once()
 
     def test_execute(self, platform: Platform, qblox_results: list[dict]):
         """Test that the execute method calls the buses to run and return the results."""
