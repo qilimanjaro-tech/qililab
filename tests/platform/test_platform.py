@@ -469,10 +469,11 @@ class TestMethods:
         qprogram.measure(bus="readout_q0_rf", waveform=readout_wf, weights=weights_wf)
 
         cluster = platform_quantum_machines.get_element("qmm")
-        with pytest.raises(ValueError, match=error_string):
-            _ = platform_quantum_machines.execute_qprogram(qprogram=qprogram, debug=True)
+        with patch.object(cluster, "turn_off") as turn_off:
+            with pytest.raises(ValueError, match=error_string):
+                _ = platform_quantum_machines.execute_qprogram(qprogram=qprogram, debug=True)
 
-        cluster.turn_off.assert_called_once()
+        turn_off.assert_called_once_with()
 
     def test_execute(self, platform: Platform, qblox_results: list[dict]):
         """Test that the execute method calls the buses to run and return the results."""
