@@ -470,7 +470,7 @@ class TestMethods:
 
         error_string = "There are no readout buses in the platform."
         with pytest.raises(ValueError, match=error_string):
-            self.instance._execute_qprogram_with_quantum_machines(
+            _= platform_quantum_machines._execute_qprogram_with_quantum_machines(
                 cluster=cluster,
                 qprogram=qprogram,
                 bus_mapping=[],
@@ -479,7 +479,7 @@ class TestMethods:
                 debug=False,
             )
 
-        self.cluster.turn_off.assert_called_once()
+        cluster.turn_off.assert_called_once()
 
     def test_execute(self, platform: Platform, qblox_results: list[dict]):
         """Test that the execute method calls the buses to run and return the results."""
