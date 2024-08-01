@@ -735,8 +735,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 results.append_result(bus=measurement.bus, result=measurement_result)
 
             return results
-        except:
+        except Exception as e:
             cluster.turn_off()
+            raise e
 
     def execute(
         self,
