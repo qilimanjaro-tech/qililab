@@ -495,11 +495,14 @@ class QuantumMachinesCluster(Instrument):
                     self._config["mixers"][f"mixer_{bus}"][0]["intermediate_frequency"] = intermediate_frequency
             if self._is_connected_to_qm:
                 self._qm.set_intermediate_frequency(element=bus, freq=intermediate_frequency)
+
             return
         if parameter == Parameter.THRESHOLD_ROTATION:
             threshold_rotation = float(value)
             element["threshold_rotation"] = threshold_rotation
+
             return
+
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}.")
 
     def get_parameter_of_bus(self, bus: str, parameter: Parameter) -> float | str | bool | tuple:
@@ -553,6 +556,7 @@ class QuantumMachinesCluster(Instrument):
         if parameter == Parameter.THRESHOLD_ROTATION:
             element = next((element for element in self.settings.elements if element["bus"] == bus), None)
             return element.get("threshold_rotation", None)  # type: ignore
+
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
     def compile(self, program: Program) -> str:
