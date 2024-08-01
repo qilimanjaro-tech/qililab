@@ -552,9 +552,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         buses_dict = {RUNCARD.BUSES: self.buses.to_dict() if self.buses is not None else None}
         instrument_dict = {RUNCARD.INSTRUMENTS: self.instruments.to_dict() if self.instruments is not None else None}
         instrument_controllers_dict = {
-            RUNCARD.INSTRUMENT_CONTROLLERS: self.instrument_controllers.to_dict()
-            if self.instrument_controllers is not None
-            else None,
+            RUNCARD.INSTRUMENT_CONTROLLERS: (
+                self.instrument_controllers.to_dict() if self.instrument_controllers is not None else None
+            ),
         }
 
         return name_dict | gates_settings_dict | chip_dict | buses_dict | instrument_dict | instrument_controllers_dict
@@ -823,12 +823,16 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
     def _order_result(self, result: Result, circuit: Circuit) -> Result:
         """Order the results of the execution as they are ordered in the input circuit.
+
         Finds the absolute order of each measurement for each qubit and its corresponding key in the
         same format as in qblox's aqcuisitions dictionary (#qubit, #qubit_measurement).
+
         Then it orders results in the same measurement order as the one in circuit.queue.
+
         Args:
             result (Result): Result obtained from the execution
             circuit (Circuit): qibo circuit being executed
+
         Returns:
             Result: Result obtained from the execution, with each measurement in the same order as in circuit.queue
         """

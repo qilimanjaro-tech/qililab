@@ -17,7 +17,38 @@
 
   [#747](https://github.com/qilimanjaro-tech/qililab/pull/747)
 
-- Added `threshold_rotations` argument to `compile()` method in `QProgram`. This argument allows to use rotation angles on measurement instructions if not specified. Currently used to use the angle rotations specified on the runcard (if any) so the user does not have to explicitly pass it as argument to the measure instruction.  Used for classification of results in Quantum Machines's modules.
+- Added `threshold_rotations` argument to `compile()` method in `QProgram`. This argument allows to use rotation angles on measurement instructions if not specified. Currently used to use the angle rotations specified on the runcard (if any) so the user does not have to explicitly pass it as argument to the measure instruction.  Used for classification of results in Quantum Machines's modules. The following example shows how to specify this value on the runcard.
+
+  Example:
+
+  ```JSON
+  buses:
+  - alias: readout_q0_bus
+    system_control:
+      name: readout_system_control
+      instruments: [QMM]
+    port: readout_line_q0
+    distortions: []
+  ...
+  instruments:
+    - name: quantum_machines_cluster
+      alias: QMM
+      firmware: ...
+      ...
+      elements:
+      - bus: readout_q0_bus
+        rf_inputs:
+          octave: octave1
+          port: 1
+        rf_outputs:
+          octave: octave1
+          port: 1
+        time_of_flight: 160
+        smearing: 0
+        intermediate_frequency: 10.0e+6
+        threshold_rotation: 0.5
+      ...
+  ```
 
   [#759](https://github.com/qilimanjaro-tech/qililab/pull/759)
 
@@ -26,6 +57,11 @@
   [#762](https://github.com/qilimanjaro-tech/qililab/pull/762)
 
 ### Improvements
+
+- Now platform.get_parameter works for QM without the need of connecting to the machine.
+
+- Added the option to get the time of flight and smearing information from the QM cluster
+  [#751](https://github.com/qilimanjaro-tech/qililab/pull/751)
 
 - Improved the algorithm determining which markers should be ON during execution of circuits and qprograms. Now, all markers are OFF by default, and only the markers associated with the `outputs` setting of QCM-RF and QRM-RF sequencers are turned on.
 
@@ -41,3 +77,6 @@
 ### Documentation
 
 ### Bug fixes
+
+- get_parameter for QM did not work due to the lack of the variable `bus_alias in self.system_control.get_parameter`. The variable has been added to the function and now get parameter does not return a crash.
+  [#751](https://github.com/qilimanjaro-tech/qililab/pull/751)

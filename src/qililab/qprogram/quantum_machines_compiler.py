@@ -101,11 +101,11 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         self._configuration: dict
         self._buses: dict[str, _BusCompilationInfo]
 
-    def compile(  # pylint: disable=dangerous-default-value
+    def compile(
         self,
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,
-        threshold_rotations: dict[str, float | None] = {},
+        threshold_rotations: dict[str, float | None] | None = None,
         calibration: Calibration | None = None,
     ) -> tuple[qua.Program, dict, list[MeasurementInfo]]:
         """Compile QProgram to QUA's Program.
@@ -157,8 +157,9 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         self._populate_buses()
 
         # Pre-processing: Update rotation threshold
-        for bus in self._buses.keys() & threshold_rotations.keys():
-            self._buses[bus].threshold_rotation = threshold_rotations[bus]
+        if threshold_rotations is not None:
+            for bus in self._buses.keys() & threshold_rotations.keys():
+                self._buses[bus].threshold_rotation = threshold_rotations[bus]
 
         with qua.program() as qua_program:
             # Declare variables
@@ -331,7 +332,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             if self._buses[element.bus].current_gain is not None
             else None
         )
-        rotation: float = (
+        rotation = (
             element.rotation  # type: ignore
             if element.rotation is not None
             else self._buses[element.bus].threshold_rotation
@@ -345,7 +346,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         stream_Q = qua.declare_stream()
         stream_raw_adc = qua.declare_stream(adc_trace=True) if element.save_adc else None
 
-        A, B, C, D = self.__add_weights_to_configuration(weights=element.weights, rotation=rotation)
+        A, B, C, D = self.__add_weights_to_configuration(weights=element.weights, rotation=rotation)  # type: ignore
 
         pulse_name = self.__add_or_update_measurement_pulse_to_configuration(
             waveform_I_name,
