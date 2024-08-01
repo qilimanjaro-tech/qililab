@@ -454,7 +454,7 @@ class QuantumMachinesCluster(Instrument):
             if parameter == Parameter.THRESHOLD_ROTATION:
                 return element.get("threshold_rotation", None)  # type: ignore
             if parameter == Parameter.THRESHOLD:
-                return element.get("threshold", None)
+                return element.get("threshold", None)  # type: ignore
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
     def compile(self, program: Program) -> str:
