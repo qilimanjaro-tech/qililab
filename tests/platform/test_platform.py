@@ -468,7 +468,8 @@ class TestMethods:
         qprogram.measure(bus="readout_q0_rf", waveform=readout_wf, weights=weights_wf)
         cluster = platform_quantum_machines.get_element("qmm")
 
-        with self.assertRaises(Exception) as context:
+        error_string = "There are no readout buses in the platform."
+        with pytest.raises(ValueError, match=error_string):
             self.instance._execute_qprogram_with_quantum_machines(
                 cluster=cluster,
                 qprogram=qprogram,
@@ -478,8 +479,6 @@ class TestMethods:
                 debug=False,
             )
 
-        # Verify that the exception was raised and cluster.turn_off() was called
-        self.assertTrue("Compilation error" in str(context.exception))
         self.cluster.turn_off.assert_called_once()
 
     def test_execute(self, platform: Platform, qblox_results: list[dict]):
