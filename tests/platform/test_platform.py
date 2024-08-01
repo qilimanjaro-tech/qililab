@@ -449,6 +449,29 @@ class TestMethods:
         # assure only one debug was called
         assert patched_open.call_count == 1
         assert generate_qua.call_count == 1
+        
+    def test_execute_qprogram_with_quantum_machines_raises_error(
+        self, platform_quantum_machines: Platform
+    ):  # pylint: disable=too-many-locals
+        """Test that the execute_qprogram method raises the exception if the qprogram failes"""
+        
+        platform_quantum_machines.compile = MagicMock()  # type: ignore # don't care about compilation
+        platform_quantum_machines.compile.return_value = Exception("Compilation error")
+
+        # Act & Assert
+        with self.assertRaises(Exception) as context:
+            self.instance._execute_qprogram_with_quantum_machines(
+                cluster=self.cluster,
+                qprogram=self.qprogram,
+                bus_mapping=self.bus_mapping,
+                threshold_rotations=self.threshold_rotations,
+                calibration=self.calibration,
+                debug=False
+            )
+        
+        # Verify that the exception was raised and cluster.turn_off() was called
+        self.assertTrue("Compilation error" in str(context.exception))
+        self.cluster.turn_off.assert_called_once()
 
     def test_execute(self, platform: Platform, qblox_results: list[dict]):
         """Test that the execute method calls the buses to run and return the results."""
