@@ -469,7 +469,7 @@ class TestMethods:
         qprogram.measure(bus="readout_q0_rf", waveform=readout_wf, weights=weights_wf)
 
         cluster = platform_quantum_machines.get_element("qmm")
-        with patch.object(cluster, "turn_off") as turn_off:
+        with patch.object(QuantumMachinesCluster, "turn_off") as turn_off:
             with pytest.raises(ValueError, match=error_string):
                 _ = platform_quantum_machines.execute_qprogram(qprogram=qprogram, debug=True)
 
