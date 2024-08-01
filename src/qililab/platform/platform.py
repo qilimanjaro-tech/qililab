@@ -715,25 +715,28 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             qprogram=qprogram, bus_mapping=bus_mapping, threshold_rotations=threshold_rotations, calibration=calibration
         )
 
-        cluster.append_configuration(configuration=configuration)
+        try:
+            cluster.append_configuration(configuration=configuration)
 
-        if debug:
-            with open("debug_qm_execution.py", "w", encoding="utf-8") as sourceFile:
-                print(generate_qua_script(qua_program, cluster.config), file=sourceFile)
+            if debug:
+                with open("debug_qm_execution.py", "w", encoding="utf-8") as sourceFile:
+                    print(generate_qua_script(qua_program, cluster.config), file=sourceFile)
 
-        compiled_program_id = cluster.compile(program=qua_program)
-        job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
+            compiled_program_id = cluster.compile(program=qua_program)
+            job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
 
-        acquisitions = cluster.get_acquisitions(job=job)
+            acquisitions = cluster.get_acquisitions(job=job)
 
-        results = QProgramResults()
-        for measurement in measurements:
-            measurement_result = QuantumMachinesMeasurementResult(
-                *[acquisitions[handle] for handle in measurement.result_handles]
-            )
-            results.append_result(bus=measurement.bus, result=measurement_result)
+            results = QProgramResults()
+            for measurement in measurements:
+                measurement_result = QuantumMachinesMeasurementResult(
+                    *[acquisitions[handle] for handle in measurement.result_handles]
+                )
+                results.append_result(bus=measurement.bus, result=measurement_result)
 
-        return results
+            return results
+        except:
+            cluster.turn_off()
 
     def execute(
         self,
