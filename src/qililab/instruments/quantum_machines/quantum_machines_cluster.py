@@ -597,7 +597,7 @@ class QuantumMachinesCluster(Instrument):
 
         if self._intermediate_frequency:
             for bus, intermediate_frequency in self._intermediate_frequency.items():
-                self.pending_job.set_intermediate_frequency(element=bus, freq=intermediate_frequency)  # type: ignore
+                self.pending_job.set_intermediate_frequency(element=bus, freq=intermediate_frequency)  # type: ignore[union-attr]
                 self._qm.calibrate_element(bus)
 
         # TODO: job.wait_for_execution() is deprecated and will be removed in the future. Please use job.wait_until("Running") instead.
