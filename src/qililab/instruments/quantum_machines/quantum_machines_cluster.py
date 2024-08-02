@@ -110,6 +110,16 @@ class QuantumMachinesCluster(Instrument):
                         output["port"]: {
                             "offset": output["offset"] if "offset" in output else 0.0,
                             "delay": output["delay"] if "delay" in output else 0.0,
+                            "filter": (
+                                {
+                                    "feedforward": (
+                                        output["filter"]["feedforward"] if "feedforward" in output["filter"] else []
+                                    ),
+                                    "feedback": output["filter"]["feedback"] if "feedback" in output["filter"] else [],
+                                }
+                                if "filter" in output
+                                else {"feedforward": [], "feedback": []}
+                            ),
                         }
                         for output in controller.get("analog_outputs", [])
                     },
