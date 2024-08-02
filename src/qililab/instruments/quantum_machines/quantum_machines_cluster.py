@@ -512,7 +512,10 @@ class QuantumMachinesCluster(Instrument):
             if self._is_connected_to_qm:
                 self._intermediate_frequency[bus] = intermediate_frequency
             return
-
+        if parameter == Parameter.THRESHOLD_ROTATION:
+            threshold_rotation = float(value)
+            element["threshold_rotation"] = threshold_rotation
+            return
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}.")
 
     def get_parameter_of_bus(self, bus: str, parameter: Parameter) -> float | str | bool | tuple:
@@ -548,8 +551,8 @@ class QuantumMachinesCluster(Instrument):
                 port_i = settings_config_dict["elements"][bus]["outputs"]["out1"]
                 port_q = settings_config_dict["elements"][bus]["outputs"]["out2"]
                 return (
-                    settings_config_dict["controllers"][port_i[0]]["analog_inputs"][port_i[1]]["gain_db"],
-                    settings_config_dict["controllers"][port_q[0]]["analog_inputs"][port_q[1]]["gain_db"],
+                    settings_config_dict["controllers"][port_i[0]]["analog_inputs"][port_i[1]]["gain_db"],  # type: ignore
+                    settings_config_dict["controllers"][port_q[0]]["analog_inputs"][port_q[1]]["gain_db"],  # type: ignore
                 )
             if "RF_inputs" in config_keys:
                 port = settings_config_dict["elements"][bus]["RF_inputs"]["port"]
@@ -563,6 +566,9 @@ class QuantumMachinesCluster(Instrument):
             if "smearing" in config_keys:
                 return settings_config_dict["elements"][bus]["smearing"]
 
+        if parameter == Parameter.THRESHOLD_ROTATION:
+            element = next((element for element in self.settings.elements if element["bus"] == bus), None)
+            return element.get("threshold_rotation", None)  # type: ignore
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
     def compile(self, program: Program) -> str:

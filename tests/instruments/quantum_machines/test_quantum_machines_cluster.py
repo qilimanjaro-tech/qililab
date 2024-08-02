@@ -408,6 +408,7 @@ class TestQuantumMachinesCluster:
         "bus, parameter, value",
         [
             ("drive_q0", Parameter.IF, 20e6),
+            ("readout_q0", Parameter.THRESHOLD_ROTATION, 0.5),
         ],
     )
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
@@ -423,7 +424,9 @@ class TestQuantumMachinesCluster:
         qmm.set_parameter_of_bus(bus, parameter, value)
         if parameter == Parameter.IF:
             assert value == qmm._intermediate_frequency[bus]
-
+        if parameter == Parameter.THRESHOLD_ROTATION:
+            element = next((element for element in qmm.settings.elements if element["bus"] == bus), None)
+            assert value == element["threshold_rotation"]
         # Assert that the settings are still in synch:
         assert qmm._config == qmm.settings.to_qua_config()
 
@@ -521,6 +524,7 @@ class TestQuantumMachinesCluster:
             ("drive_q0_rf", Parameter.GAIN, "qmm_with_octave"),
             ("readout_q0", Parameter.TIME_OF_FLIGHT, "qmm"),
             ("readout_q0", Parameter.SMEARING, "qmm"),
+            ("readout_q0", Parameter.THRESHOLD_ROTATION, "qmm"),
         ],
     )
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
@@ -568,6 +572,9 @@ class TestQuantumMachinesCluster:
         if parameter == Parameter.SMEARING:
             if "smearing" in config_keys:
                 assert value == settings_config_dict["elements"][bus]["smearing"]
+        if parameter == Parameter.THRESHOLD_ROTATION:
+            element = next((element for element in qmm.settings.elements if element["bus"] == bus), None)
+            assert value == element.get("threshold_rotation", None)
 
         # Assert that the settings are in synch:
         assert qmm._config_created is False and "_config" not in dir(qmm)
