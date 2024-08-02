@@ -585,6 +585,49 @@ class TestQuantumMachinesCompiler:
         assert "I_0" in measurements[0].result_handles
         assert "Q_0" in measurements[0].result_handles
 
+    def test_measure_operation_with_threshold_rotations(self, measure_operation: QProgram):
+        """Test compilation of measurement applying the rotations provided in the `threshold_rotations` map"""
+        compiler = QuantumMachinesCompiler()
+        rotation_angle = np.pi
+        threshold_rotations = {"readout": rotation_angle}
+        qua_program, configuration, measurements = compiler.compile(
+            measure_operation, threshold_rotations=threshold_rotations
+        )
+
+        statements = qua_program._program.script.body.statements
+        assert len(statements) == 3
+
+        measure = statements[0].measure
+        assert measure.qe.name == "readout"
+        assert measure.pulse.name in configuration["pulses"]
+
+        assert len(measure.measure_processes) == 2
+        assert measure.measure_processes[0].analog.dual_demod_integration.element_output1 == "out1"
+        assert measure.measure_processes[0].analog.dual_demod_integration.element_output2 == "out2"
+        assert measure.measure_processes[1].analog.dual_demod_integration.element_output1 == "out1"
+        assert measure.measure_processes[1].analog.dual_demod_integration.element_output2 == "out2"
+
+        measurement_pulse = configuration["pulses"][measure.pulse.name]
+        assert len(measurement_pulse["integration_weights"]) == 4
+
+        A, B, C, D = configuration["integration_weights"].values()
+        np.testing.assert_allclose(A["cosine"], [(np.cos(rotation_angle), 200)], atol=1e-15)
+        np.testing.assert_allclose(A["sine"], [(np.sin(rotation_angle), 200)], atol=1e-15)
+
+        np.testing.assert_allclose(B["cosine"], [(-np.sin(rotation_angle), 200)], atol=1e-15)
+        np.testing.assert_allclose(B["sine"], [(np.cos(rotation_angle), 200)], atol=1e-15)
+
+        np.testing.assert_allclose(C["cosine"], [(np.sin(rotation_angle), 200)], atol=1e-15)
+        np.testing.assert_allclose(C["sine"], [(-np.cos(rotation_angle), 200)], atol=1e-15)
+
+        np.testing.assert_allclose(D["cosine"], [(np.cos(rotation_angle), 200)], atol=1e-15)
+        np.testing.assert_allclose(D["sine"], [(np.sin(rotation_angle), 200)], atol=1e-15)
+
+        assert len(measurements) == 1
+        assert len(measurements[0].result_handles) == 2
+        assert "I_0" in measurements[0].result_handles
+        assert "Q_0" in measurements[0].result_handles
+
     def test_for_loop(self, for_loop: QProgram):
         compiler = QuantumMachinesCompiler()
         qua_program, _, _ = compiler.compile(for_loop)
