@@ -538,8 +538,8 @@ class QuantumMachinesCluster(Instrument):
                 port_i = settings_config_dict["elements"][bus]["outputs"]["out1"]
                 port_q = settings_config_dict["elements"][bus]["outputs"]["out2"]
                 return (
-                    settings_config_dict["controllers"][port_i[0]]["analog_inputs"][port_i[1]]["gain_db"],
-                    settings_config_dict["controllers"][port_q[0]]["analog_inputs"][port_q[1]]["gain_db"],
+                    settings_config_dict["controllers"][port_i[0]]["analog_inputs"][port_i[1]]["gain_db"], # type: ignore
+                    settings_config_dict["controllers"][port_q[0]]["analog_inputs"][port_q[1]]["gain_db"], # type: ignore
                 )
             if "RF_inputs" in config_keys:
                 port = settings_config_dict["elements"][bus]["RF_inputs"]["port"]
