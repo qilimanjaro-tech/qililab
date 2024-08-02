@@ -211,6 +211,7 @@ def fixture_for_loop() -> QProgram:
     frequency = qp.variable(Domain.Frequency)
     phase = qp.variable(Domain.Phase)
     time = qp.variable(Domain.Time)
+    scalar = qp.variable(Domain.Scalar, int)
 
     with qp.for_loop(variable=gain, start=0, stop=1.0, step=0.1):
         qp.set_gain(bus="drive", gain=gain)
@@ -224,6 +225,9 @@ def fixture_for_loop() -> QProgram:
     with qp.for_loop(variable=time, start=100, stop=200, step=10):
         qp.wait(bus="drive", duration=time)
 
+    with qp.for_loop(variable=scalar, start=0, stop=10, step=1):
+        qp.wait(bus="drive", duration=100)
+
     return qp
 
 
@@ -234,6 +238,7 @@ def fixture_for_loop_with_negative_step() -> QProgram:
     frequency = qp.variable(Domain.Frequency)
     phase = qp.variable(Domain.Phase)
     time = qp.variable(Domain.Time)
+    scalar = qp.variable(Domain.Scalar, int)
 
     with qp.for_loop(variable=gain, start=1.0, stop=0.0, step=-0.1):
         qp.set_gain(bus="drive", gain=gain)
@@ -247,6 +252,9 @@ def fixture_for_loop_with_negative_step() -> QProgram:
     with qp.for_loop(variable=time, start=200, stop=100, step=-10):
         qp.wait(bus="drive", duration=time)
 
+    with qp.for_loop(variable=scalar, start=10, stop=0, step=-1):
+        qp.wait(bus="drive", duration=100)
+
     return qp
 
 
@@ -257,6 +265,7 @@ def fixture_loop() -> QProgram:
     frequency = qp.variable(Domain.Frequency)
     phase = qp.variable(Domain.Phase)
     time = qp.variable(Domain.Time)
+    scalar = qp.variable(Domain.Scalar, int)
 
     with qp.loop(variable=gain, values=np.arange(start=0, stop=1.05, step=0.1)):
         qp.set_gain(bus="drive", gain=gain)
@@ -270,6 +279,9 @@ def fixture_loop() -> QProgram:
     with qp.loop(variable=time, values=np.arange(start=100, stop=205, step=10)):
         qp.wait(bus="drive", duration=time)
 
+    with qp.loop(variable=scalar, values=np.arange(start=0, stop=10, step=1)):
+        qp.wait(bus="drive", duration=100)
+
     return qp
 
 
@@ -280,6 +292,7 @@ def fixture_parallel() -> QProgram:
     frequency = qp.variable(Domain.Frequency)
     phase = qp.variable(Domain.Phase)
     time = qp.variable(Domain.Time)
+    scalar = qp.variable(Domain.Scalar, int)
 
     with qp.parallel(
         loops=[
@@ -287,6 +300,7 @@ def fixture_parallel() -> QProgram:
             Loop(variable=frequency, values=np.arange(start=100, stop=205, step=10)),
             ForLoop(variable=phase, start=0, stop=90, step=10),
             Loop(variable=time, values=np.arange(start=100, stop=205, step=10)),
+            ForLoop(variable=scalar, start=0, stop=10, step=1),
         ]
     ):
         qp.set_gain(bus="drive", gain=gain)
@@ -571,12 +585,55 @@ class TestQuantumMachinesCompiler:
         assert "I_0" in measurements[0].result_handles
         assert "Q_0" in measurements[0].result_handles
 
+    def test_measure_operation_with_threshold_rotations(self, measure_operation: QProgram):
+        """Test compilation of measurement applying the rotations provided in the `threshold_rotations` map"""
+        compiler = QuantumMachinesCompiler()
+        rotation_angle = np.pi
+        threshold_rotations = {"readout": rotation_angle}
+        qua_program, configuration, measurements = compiler.compile(
+            measure_operation, threshold_rotations=threshold_rotations
+        )
+
+        statements = qua_program._program.script.body.statements
+        assert len(statements) == 3
+
+        measure = statements[0].measure
+        assert measure.qe.name == "readout"
+        assert measure.pulse.name in configuration["pulses"]
+
+        assert len(measure.measure_processes) == 2
+        assert measure.measure_processes[0].analog.dual_demod_integration.element_output1 == "out1"
+        assert measure.measure_processes[0].analog.dual_demod_integration.element_output2 == "out2"
+        assert measure.measure_processes[1].analog.dual_demod_integration.element_output1 == "out1"
+        assert measure.measure_processes[1].analog.dual_demod_integration.element_output2 == "out2"
+
+        measurement_pulse = configuration["pulses"][measure.pulse.name]
+        assert len(measurement_pulse["integration_weights"]) == 4
+
+        A, B, C, D = configuration["integration_weights"].values()
+        np.testing.assert_allclose(A["cosine"], [(np.cos(rotation_angle), 200)], atol=1e-15)
+        np.testing.assert_allclose(A["sine"], [(np.sin(rotation_angle), 200)], atol=1e-15)
+
+        np.testing.assert_allclose(B["cosine"], [(-np.sin(rotation_angle), 200)], atol=1e-15)
+        np.testing.assert_allclose(B["sine"], [(np.cos(rotation_angle), 200)], atol=1e-15)
+
+        np.testing.assert_allclose(C["cosine"], [(np.sin(rotation_angle), 200)], atol=1e-15)
+        np.testing.assert_allclose(C["sine"], [(-np.cos(rotation_angle), 200)], atol=1e-15)
+
+        np.testing.assert_allclose(D["cosine"], [(np.cos(rotation_angle), 200)], atol=1e-15)
+        np.testing.assert_allclose(D["sine"], [(np.sin(rotation_angle), 200)], atol=1e-15)
+
+        assert len(measurements) == 1
+        assert len(measurements[0].result_handles) == 2
+        assert "I_0" in measurements[0].result_handles
+        assert "Q_0" in measurements[0].result_handles
+
     def test_for_loop(self, for_loop: QProgram):
         compiler = QuantumMachinesCompiler()
         qua_program, _, _ = compiler.compile(for_loop)
 
         statements = qua_program._program.script.body.statements
-        assert len(statements) == 4
+        assert len(statements) == 5
 
         # Voltage
         assert float(statements[0].for_.init.statements[0].assign.expression.literal.value) == 0
@@ -612,7 +669,7 @@ class TestQuantumMachinesCompiler:
         qua_program, _, _ = compiler.compile(for_loop_with_negative_step)
 
         statements = qua_program._program.script.body.statements
-        assert len(statements) == 4
+        assert len(statements) == 5
 
         # Voltage
         assert float(statements[0].for_.init.statements[0].assign.expression.literal.value) == 1.0
@@ -649,11 +706,12 @@ class TestQuantumMachinesCompiler:
         qua_program, _, _ = compiler.compile(loop)
 
         statements = qua_program._program.script.body.statements
-        assert len(statements) == 4
+        assert len(statements) == 5
         assert len(statements[0].for_each.iterator) == 1
         assert len(statements[1].for_each.iterator) == 1
         assert len(statements[2].for_each.iterator) == 1
         assert len(statements[3].for_each.iterator) == 1
+        assert len(statements[4].for_each.iterator) == 1
 
     def test_parallel(self, parallel: QProgram):
         compiler = QuantumMachinesCompiler()
@@ -661,7 +719,7 @@ class TestQuantumMachinesCompiler:
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 1
-        assert len(statements[0].for_each.iterator) == 4
+        assert len(statements[0].for_each.iterator) == 5
 
     def test_infinite_loop(self, infinite_loop: QProgram):
         compiler = QuantumMachinesCompiler()
