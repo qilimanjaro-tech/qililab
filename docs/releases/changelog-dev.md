@@ -52,6 +52,27 @@
 
   [#759](https://github.com/qilimanjaro-tech/qililab/pull/759)
 
+- Added `filter` argument inside the qua config file compilation from runcards with qm clusters. This is an optional element for distorsion filters that includes feedforward and feedback, two distorion lists for distorsion compensation and fields in qua config filter. These filters are calibrated and then introduced as compensation for the distorsions of the pulses from external sources such as Bias T. The runcard now might include the new filters (optional):
+
+  ```
+  instruments:
+  - name: quantum_machines_cluster
+    alias: QMM
+    firmware: 0.7.0
+    ...
+    controllers:
+        - name: con1
+          analog_outputs:
+          - port: 1
+            offset: 0.0
+            filter:
+              feedforward: [0.1,0.1,0.1]
+              feedback: [0.1,0.1,0.1]
+    ...
+  ```
+
+  [#768](https://github.com/qilimanjaro-tech/qililab/pull/768)
+
 ### Improvements
 
 - Now platform.get_parameter works for QM without the need of connecting to the machine.
