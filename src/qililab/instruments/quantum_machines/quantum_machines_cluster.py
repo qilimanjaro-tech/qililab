@@ -382,7 +382,7 @@ class QuantumMachinesCluster(Instrument):
     def turn_on(self):
         """Turns on the instrument."""
         if not self._is_connected_to_qm:
-            self._qm = self._qmm.open_qm(config=self._config, close_other_machines=False)
+            self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)
             self._compiled_program_cache = {}
             self._is_connected_to_qm = True
 
@@ -417,7 +417,7 @@ class QuantumMachinesCluster(Instrument):
             self._config = cast(DictQuaConfig, merged_configuration)
             # If we are already connected, reopen the connection with the new configuration
             if self._is_connected_to_qm:
-                self._qm = self._qmm.open_qm(config=self._config, close_other_machines=False)  # type: ignore[assignment]
+                self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)  # type: ignore[assignment]
                 self._compiled_program_cache = {}
 
     def run_octave_calibration(self):
@@ -495,14 +495,11 @@ class QuantumMachinesCluster(Instrument):
                     self._config["mixers"][f"mixer_{bus}"][0]["intermediate_frequency"] = intermediate_frequency
             if self._is_connected_to_qm:
                 self._qm.set_intermediate_frequency(element=bus, freq=intermediate_frequency)
-
             return
         if parameter == Parameter.THRESHOLD_ROTATION:
             threshold_rotation = float(value)
             element["threshold_rotation"] = threshold_rotation
-
             return
-
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}.")
 
     def get_parameter_of_bus(self, bus: str, parameter: Parameter) -> float | str | bool | tuple:
@@ -538,8 +535,8 @@ class QuantumMachinesCluster(Instrument):
                 port_i = settings_config_dict["elements"][bus]["outputs"]["out1"]
                 port_q = settings_config_dict["elements"][bus]["outputs"]["out2"]
                 return (
-                    settings_config_dict["controllers"][port_i[0]]["analog_inputs"][port_i[1]]["gain_db"],  # type: ignore
-                    settings_config_dict["controllers"][port_q[0]]["analog_inputs"][port_q[1]]["gain_db"],  # type: ignore
+                    settings_config_dict["controllers"][port_i[0]]["analog_inputs"][port_i[1]]["gain_db"],  # type: ignore[typeddict-item]
+                    settings_config_dict["controllers"][port_q[0]]["analog_inputs"][port_q[1]]["gain_db"],  # type: ignore[typeddict-item]
                 )
             if "RF_inputs" in config_keys:
                 port = settings_config_dict["elements"][bus]["RF_inputs"]["port"]
@@ -556,7 +553,6 @@ class QuantumMachinesCluster(Instrument):
         if parameter == Parameter.THRESHOLD_ROTATION:
             element = next((element for element in self.settings.elements if element["bus"] == bus), None)
             return element.get("threshold_rotation", None)  # type: ignore
-
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
     def compile(self, program: Program) -> str:
