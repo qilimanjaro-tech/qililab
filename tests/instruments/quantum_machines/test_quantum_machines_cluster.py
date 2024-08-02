@@ -124,26 +124,36 @@ class TestQuantumMachinesCluster:
     """This class contains the unit tests for the ``QuantumMachinesCluster`` class."""
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
     @patch("qililab.instruments.Instrument.initial_setup")
     @pytest.mark.parametrize("qmm_name", ["qmm", "qmm_with_octave"])
     def test_initial_setup(
-        self, mock_instrument_init: MagicMock, mock_init: MagicMock, qmm_name, request
+        self, mock_qmm: MagicMock, mock_qm: MagicMock, mock_init: MagicMock, qmm_name, request
     ):  # pylint: disable=unused-argument
         """Test QMM class initialization."""
         qmm = request.getfixturevalue(qmm_name)
 
         # Before initial_setup no _config should exist
-        assert qmm._config_created is False and "_config" not in dir(qmm)
+        assert qmm._is_connected_to_qm is False and "_config" not in dir(qmm)
 
         qmm.initial_setup()
         mock_init.assert_called()
 
         assert isinstance(qmm._qmm, MagicMock)
+        assert isinstance(qmm._qm, MagicMock)
         assert isinstance(qmm._config, dict)
         assert isinstance(qmm.config, dict)
 
         # Assert that the _config has been created correctly (in synch):
-        assert qmm._config_created is True
+        assert qmm._is_connected_to_qm is True and "_config" in dir(qmm)
+
+        if qmm.settings.run_octave_calibration:
+            calls = [
+                call(element) for element in qmm._config["elements"] if "RF_inputs" in qmm._config["elements"][element]
+            ]
+            qmm._qm.calibrate_element.assert_has_calls(calls)
+
+        # Assert that the _config is stll in synch with the settings:
         assert qmm._config == qmm.settings.to_qua_config()
 
     @pytest.mark.parametrize("qmm_name", ["qmm", "qmm_with_octave"])
@@ -156,19 +166,15 @@ class TestQuantumMachinesCluster:
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
     @pytest.mark.parametrize("qmm_name", ["qmm", "qmm_with_octave"])
-    def test_turn_on(self, mock_qmm, mock_qm, qmm_name, request):
+    def test_turn_on_after_a_turn_off(self, mock_qmm, mock_qm, qmm_name, request):
         """Test turn_on method"""
 
         qmm = request.getfixturevalue(qmm_name)
         qmm.initial_setup()
+        qmm.turn_off()
         qmm.turn_on()
 
-        assert isinstance(qmm._qm, MagicMock)
-        if qmm.settings.run_octave_calibration:
-            calls = [
-                call(element) for element in qmm._config["elements"] if "RF_inputs" in qmm._config["elements"][element]
-            ]
-            qmm._qm.calibrate_element.assert_has_calls(calls)
+        assert qmm._is_connected_to_qm is True
 
         # Assert that the settings are still in synch:
         assert qmm._config == qmm.settings.to_qua_config()
@@ -185,7 +191,7 @@ class TestQuantumMachinesCluster:
         qmm.turn_off()
 
         # Assert that the settings are still in synch:
-        assert qmm._config == qmm.settings.to_qua_config()
+        assert qmm._is_connected_to_qm is False
 
         assert isinstance(qmm._qm, MagicMock)
         qmm._qm.close.assert_called_once()
@@ -279,7 +285,7 @@ class TestQuantumMachinesCluster:
         assert isinstance(job, MagicMock)
 
         # Assert that the settings are in synch:
-        assert qmm._config_created is False and "_config" not in dir(qmm)
+        assert qmm._is_connected_to_qm is False and "_config" not in dir(qmm)
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
@@ -308,7 +314,7 @@ class TestQuantumMachinesCluster:
         assert "Q" in results
 
         # Assert that the settings are in synch:
-        assert qmm._config_created is False and "_config" not in dir(qmm)
+        assert qmm._is_connected_to_qm is False and "_config" not in dir(qmm)
 
     @patch("qm.QuantumMachine")
     def test_simulate(
@@ -322,7 +328,7 @@ class TestQuantumMachinesCluster:
         assert isinstance(job, MagicMock)
 
         # Assert that the settings are in synch:
-        assert qmm._config_created is False and "_config" not in dir(qmm)
+        assert qmm._is_connected_to_qm is False and "_config" not in dir(qmm)
 
     @pytest.mark.parametrize(
         "bus, parameter, value",
@@ -535,7 +541,7 @@ class TestQuantumMachinesCluster:
             assert value == element.get("threshold_rotation", None)
 
         # Assert that the settings are in synch:
-        assert qmm._config_created is False and "_config" not in dir(qmm)
+        assert qmm._is_connected_to_qm is False and "_config" not in dir(qmm)
 
     @pytest.mark.parametrize("parameter", [(Parameter.MAX_CURRENT), (Parameter.OUT0_ATT)])
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
@@ -578,6 +584,6 @@ class TestQuantumMachinesCluster:
         self, mock_qmm, mock_qm, bus: str, parameter: Parameter, qmm: QuantumMachinesCluster
     ):
         """Test the get_parameter_of_bus method doesn't create a `_config`."""
-        assert qmm._config_created is False
+        assert qmm._is_connected_to_qm is False and "_config" not in dir(qmm)
         qmm.get_parameter_of_bus(bus, parameter)
-        assert qmm._config_created is False
+        assert qmm._is_connected_to_qm is False and "_config" not in dir(qmm)

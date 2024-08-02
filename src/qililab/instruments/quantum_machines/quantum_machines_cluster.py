@@ -245,7 +245,6 @@ class QuantumMachinesCluster(Instrument):
     _config: DictQuaConfig
     _octave_config: QmOctaveConfig | None = None
     _is_connected_to_qm: bool = False
-    _config_created: bool = False
     _compiled_program_cache: dict[str, str] = {}
 
     @property
@@ -269,13 +268,9 @@ class QuantumMachinesCluster(Instrument):
             host=self.settings.address, cluster_name=self.settings.cluster, octave=self._octave_config
         )
         self._config = self.settings.to_qua_config()
-        self._config_created = True
 
-    @Instrument.CheckDeviceInitialized
-    def turn_on(self):
-        """Turns on the instrument."""
+        self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)
         if not self._is_connected_to_qm:
-            self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)
             self._compiled_program_cache = {}
             self._is_connected_to_qm = True
 
@@ -283,12 +278,20 @@ class QuantumMachinesCluster(Instrument):
                 self.run_octave_calibration()
 
     @Instrument.CheckDeviceInitialized
+    def turn_on(self):
+        """Turns on the instrument."""
+        if not self._is_connected_to_qm:
+            self.initial_setup()
+
+    @Instrument.CheckDeviceInitialized
     def reset(self):
         """Resets instrument settings."""
 
     @Instrument.CheckDeviceInitialized
     def turn_off(self):
-        """Turns off an instrument."""
+        """Turns off an instrument. To turn it on again, run `initial_setup()`."""
+        # TODO: Weird, since now the `turn_on()`` doesn't do anything... Maybe it should be renamed disconnect?
+        # TODO: I think this is used for handling multiple users, and stuff, take a look into it...
         if self._is_connected_to_qm:
             self._qm.close()
             self._is_connected_to_qm = False
@@ -302,7 +305,7 @@ class QuantumMachinesCluster(Instrument):
         Raises:
             ValueError: Raised if the `_config` dictionary does not exist.
         """
-        if not self._config_created:
+        if not self._is_connected_to_qm:
             raise ValueError("The QM `config` dictionary does not exist. Please run `initial_setup()` first.")
 
         merged_configuration = merge_dictionaries(dict(self._config), configuration)
@@ -352,41 +355,37 @@ class QuantumMachinesCluster(Instrument):
 
         # Now we will set the parameter in 3 places:
         # 1) In the settings runtime dataclass (always).
-        # 2) If created: In the `_config`` dictionary.
-        # 3) If connected: In the instrument itself.
+        # 2) If connected: In the `_config`` dictionary and in the instrument itself.
         if parameter == Parameter.LO_FREQUENCY:
             lo_frequency = float(value)
             settings_octave_rf_output["lo_frequency"] = lo_frequency
-            if self._config_created:
-                self._config["octaves"][octave_name]["RF_outputs"][out_port]["LO_frequency"] = lo_frequency
             if self._is_connected_to_qm:
+                self._config["octaves"][octave_name]["RF_outputs"][out_port]["LO_frequency"] = lo_frequency
                 self._qm.octave.set_lo_frequency(element=bus, lo_frequency=lo_frequency)
             if in_port is not None:
                 settings_octave_rf_input = next(
                     rf_input for rf_input in settings_octave["rf_inputs"] if rf_input["port"] == in_port
                 )
                 settings_octave_rf_input["lo_frequency"] = lo_frequency
-                if self._config_created:
+                if self._is_connected_to_qm:
                     self._config["octaves"][octave_name]["RF_inputs"][in_port]["LO_frequency"] = lo_frequency
             return
 
         if parameter == Parameter.GAIN:
             gain_in_db = float(value)
             settings_octave_rf_output["gain"] = gain_in_db
-            if self._config_created:
-                self._config["octaves"][octave_name]["RF_outputs"][out_port]["gain"] = gain_in_db
             if self._is_connected_to_qm:
+                self._config["octaves"][octave_name]["RF_outputs"][out_port]["gain"] = gain_in_db
                 self._qm.octave.set_rf_output_gain(element=bus, gain_in_db=gain_in_db)
             return
 
         if parameter == Parameter.IF:
             intermediate_frequency = float(value)
             element["intermediate_frequency"] = intermediate_frequency
-            if self._config_created:
+            if self._is_connected_to_qm:
                 self._config["elements"][bus]["intermediate_frequency"] = intermediate_frequency
                 if f"mixer_{bus}" in self._config["mixers"]:
                     self._config["mixers"][f"mixer_{bus}"][0]["intermediate_frequency"] = intermediate_frequency
-            if self._is_connected_to_qm:
                 self._qm.set_intermediate_frequency(element=bus, freq=intermediate_frequency)
             return
         if parameter == Parameter.THRESHOLD_ROTATION:
