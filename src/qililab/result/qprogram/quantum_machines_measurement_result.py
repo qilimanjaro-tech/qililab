@@ -13,6 +13,8 @@
 # limitations under the License.
 
 """QuantumMachinesResult class."""
+from warnings import warn
+
 import numpy as np
 
 from qililab.result.qprogram.measurement_result import MeasurementResult
@@ -63,11 +65,13 @@ class QuantumMachinesMeasurementResult(MeasurementResult):
 
     @property
     def threshold(self) -> np.ndarray:
-        """Get the thresholded data as an np.ndarray.
+        """Get the thresholded data as an np.ndarray. If the threshold is `None` thus not specified, returns an array of zeros.
 
         Returns:
             np.ndarray: The thresholded data.
         """
+        if self._classification_threshold is None:
+            warn("Classification threshold is not specified, returning a `np.zeros` array.", stacklevel=2)
 
         return (
             np.where(self.I >= self._classification_threshold, 1.0, 0.0)
