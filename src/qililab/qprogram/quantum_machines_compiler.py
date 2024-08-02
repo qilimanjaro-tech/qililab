@@ -27,7 +27,7 @@ from qililab.qprogram.blocks.infinite_loop import InfiniteLoop
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import Measure, Play, ResetPhase, SetFrequency, SetGain, SetPhase, Sync, Wait
 from qililab.qprogram.qprogram import QProgram
-from qililab.qprogram.variable import Domain, Variable
+from qililab.qprogram.variable import Domain, IntVariable, Variable
 from qililab.waveforms import IQPair, Square, Waveform
 
 # mypy: disable-error-code="operator"
@@ -205,6 +205,8 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         for variable in self._qprogram.variables:
             if variable.domain in [Domain.Time, Domain.Frequency]:
                 qua_variable = qua.declare(int)
+            elif variable.domain is Domain.Scalar and isinstance(variable, IntVariable):
+                qua_variable = qua.declare(int)
             else:
                 qua_variable = qua.declare(qua.fixed)
             self._qprogram_to_qua_variables[variable] = qua_variable
@@ -232,6 +234,8 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             if loop.variable.domain is Domain.Phase:
                 values = values / self.PHASE_COEFF
             if loop.variable.domain is Domain.Frequency:
+                values = values.astype(int)
+            if loop.variable.domain is Domain.Scalar and isinstance(loop.variable, IntVariable):
                 values = values.astype(int)
             if loop.variable.domain is Domain.Time:
                 values = np.maximum(values, self.MINIMUM_TIME).astype(int)
@@ -265,6 +269,8 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         if element.variable.domain is Domain.Phase:
             values = values / self.PHASE_COEFF
         if element.variable.domain is Domain.Frequency:
+            values = values.astype(int)
+        if element.variable.domain is Domain.Scalar and isinstance(element.variable, IntVariable):
             values = values.astype(int)
         if element.variable.domain is Domain.Time:
             values = np.maximum(values, self.MINIMUM_TIME).astype(int)
