@@ -26,7 +26,7 @@ class Measure(Operation):  # pylint: disable=missing-class-docstring
     waveform: IQPair
     weights: IQPair
     save_adc: bool = False
-    rotation: float = 0.0
+    rotation: float | None = None
     demodulation: bool = True
 
     def get_waveforms(self) -> tuple[Waveform, Waveform]:
@@ -47,7 +47,7 @@ class MeasureWithCalibratedWaveform(Operation):  # pylint: disable=missing-class
     waveform: str
     weights: IQPair
     save_adc: bool = False
-    rotation: float = 0.0
+    rotation: float | None = None
     demodulation: bool = True
 
 
@@ -57,7 +57,7 @@ class MeasureWithCalibratedWeights(Operation):  # pylint: disable=missing-class-
     waveform: IQPair
     weights: str
     save_adc: bool = False
-    rotation: float = 0.0
+    rotation: float | None = None
     demodulation: bool = True
 
 
@@ -67,5 +67,5 @@ class MeasureWithCalibratedWaveformWeights(Operation):  # pylint: disable=missin
     waveform: str
     weights: str
     save_adc: bool = False
-    rotation: float = 0.0
+    rotation: float | None = None
     demodulation: bool = True
