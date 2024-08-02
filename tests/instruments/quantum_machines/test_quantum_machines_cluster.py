@@ -391,7 +391,9 @@ class TestQuantumMachinesCluster:
         if parameter == Parameter.LO_FREQUENCY:
             qmm_with_octave._qm.octave.set_lo_frequency.assert_called_once()
             calls = [
-                call(element) for element in qmm_with_octave._config["elements"] if "RF_inputs" in qmm_with_octave._config["elements"][element]
+                call(element)
+                for element in qmm_with_octave._config["elements"]
+                if "RF_inputs" in qmm_with_octave._config["elements"][element]
             ]
             qmm_with_octave._qm.calibrate_element.assert_has_calls(calls)
         if parameter == Parameter.GAIN:
