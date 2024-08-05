@@ -47,7 +47,7 @@ class Qubit2LevelTranspiler:  # pylint: disable=too-few-public-methods
         """Transpiles Delta and Epsilon to phix, phiz"""
         self.delta(delta)
         self.epsilon(epsilon)
-        return self.phix(), self.phiz()  # type: ignore[func-returns-value]
+        return self.phix(), self.phiz()
 
     def _set_delta(self, delta):
         # sets the value of delta via raw and updates phix accordingly
