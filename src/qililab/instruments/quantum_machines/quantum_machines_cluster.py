@@ -205,10 +205,10 @@ class QuantumMachinesCluster(Instrument):
                         "IF_mode_Q": "direct",
                     }
                 if "loopbacks" in octave:
-                    octaves[octave["name"]]["loopbacks"] = (
+                    octaves[octave["name"]]["loopbacks"] = [(
                         (octave["name"], octave["loopbacks"]["Synth"]),
                         octave["loopbacks"]["Dmd"],
-                    )
+                    )]
                 if "connectivity" in octave:
                     octaves[octave["name"]]["connectivity"] = (
                         (octave["connectivity"]["controller"], octave["connectivity"]["fem"])
