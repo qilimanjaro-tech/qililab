@@ -426,7 +426,9 @@ class QuantumMachinesCluster(Instrument):
         for element in elements:
             self._qm.calibrate_element(element)
 
-    def set_parameter_of_bus(self, bus: str, parameter: Parameter, value: float | str | bool) -> None:
+    def set_parameter_of_bus(  # pylint: disable=too-many-locals
+        self, bus: str, parameter: Parameter, value: float | str | bool
+    ) -> None:  # noqa: C901
         """Sets the parameter of the instrument into the cache (runtime dataclasses).
 
         And if connection to instruments is established, then to the instruments as well.
@@ -500,6 +502,10 @@ class QuantumMachinesCluster(Instrument):
             threshold_rotation = float(value)
             element["threshold_rotation"] = threshold_rotation
             return
+        if parameter == Parameter.THRESHOLD:
+            threshold = float(value)
+            element["threshold"] = threshold
+            return
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}.")
 
     def get_parameter_of_bus(self, bus: str, parameter: Parameter) -> float | str | bool | tuple:
@@ -550,9 +556,12 @@ class QuantumMachinesCluster(Instrument):
             if "smearing" in config_keys:
                 return settings_config_dict["elements"][bus]["smearing"]
 
-        if parameter == Parameter.THRESHOLD_ROTATION:
+        if parameter in [Parameter.THRESHOLD_ROTATION, Parameter.THRESHOLD]:
             element = next((element for element in self.settings.elements if element["bus"] == bus), None)
-            return element.get("threshold_rotation", None)  # type: ignore
+            if parameter == Parameter.THRESHOLD_ROTATION:
+                return element.get("threshold_rotation", None)  # type: ignore
+            if parameter == Parameter.THRESHOLD:
+                return element.get("threshold", None)  # type: ignore
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
     def compile(self, program: Program) -> str:
