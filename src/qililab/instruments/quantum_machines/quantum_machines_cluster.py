@@ -603,13 +603,14 @@ class QuantumMachinesCluster(Instrument):
             compiled_program_id
         )
 
+        # TODO: job.wait_for_execution() is deprecated and will be removed in the future. Please use job.wait_until("Running") instead.
+        job = self.pending_job.wait_for_execution() # type: ignore[return-value]
         if self._intermediate_frequency:
             for bus, intermediate_frequency in self._intermediate_frequency.items():
-                self.pending_job.set_intermediate_frequency(element=bus, freq=intermediate_frequency)
+                job.set_intermediate_frequency(element=bus, freq=intermediate_frequency)
                 self._qm.calibrate_element(bus)
 
-        # TODO: job.wait_for_execution() is deprecated and will be removed in the future. Please use job.wait_until("Running") instead.
-        return self.pending_job.wait_for_execution()  # type: ignore[return-value]
+        return job
 
     def run(self, program: Program) -> RunningQmJob:
         """Runs the QUA Program.
