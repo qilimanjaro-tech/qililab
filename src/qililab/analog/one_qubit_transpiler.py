@@ -19,7 +19,7 @@ from qililab.analog import Parameter
 
 class Qubit2LevelTranspiler:  # pylint: disable=too-few-public-methods
     """Implementation of the transpiler for the 2 level qubit. This is done mainly by inverting the same functions
-    used int he single_qubit_2level emulator model.
+    used in the single_qubit_2level emulator model.
 
     Args:
         eps_model (Callable): epsilon model
