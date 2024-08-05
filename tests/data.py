@@ -1508,6 +1508,8 @@ class SauronQuantumMachines:
                 "outputs": {"out1": {"controller": "con1", "port": 1}, "out2": {"controller": "con1", "port": 2}},
                 "time_of_flight": 40,
                 "smearing": 10,
+                "threshold_rotation": 0.5,
+                "threshold": 0.09,
                 "intermediate_frequency": 6e9,
             },
             {"bus": "flux_q0", "single_input": {"controller": "con1", "port": 5}},

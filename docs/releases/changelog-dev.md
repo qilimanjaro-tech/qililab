@@ -47,10 +47,15 @@
         smearing: 0
         intermediate_frequency: 10.0e+6
         threshold_rotation: 0.5
+        threshold: 0.03
       ...
   ```
 
   [#759](https://github.com/qilimanjaro-tech/qililab/pull/759)
+
+- Added `thresholds` argument to `_execute_qprogram_with_quantum_machines` method in `Platform`. This argument allows to threshold results after the execution of the `QProgram`. It is also a new parameter that can be specified on the runcard for each readout bus. An example of the configuration of this parameter on the runcard can be found above.
+
+  [#762](https://github.com/qilimanjaro-tech/qililab/pull/762)
 
 ### Improvements
 
