@@ -15,7 +15,7 @@
 from typing import Any, Callable
 
 
-class Parameter:
+class FluqeParameter:
     """Basic implementation of a qcodes like parameter class, but much simpler.
     Working, but still work in progress
 

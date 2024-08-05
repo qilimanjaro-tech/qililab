@@ -14,7 +14,7 @@
 
 from typing import Any, Callable
 
-from qililab.analog import Parameter
+from qililab.analog.fluqe_parameter import FluqeParameter
 
 
 class Qubit2LevelTranspiler:  # pylint: disable=too-few-public-methods
@@ -35,12 +35,12 @@ class Qubit2LevelTranspiler:  # pylint: disable=too-few-public-methods
         self.epsilon_model = epsilon_model
 
         # Magnetic energy bias (epsilon)
-        self.epsilon = Parameter(name="epsilon", set_method=self._set_epsilon)
+        self.epsilon = FluqeParameter(name="epsilon", set_method=self._set_epsilon)
         # Qubit gap (delta)
-        self.delta = Parameter(name="delta", set_method=self._set_delta)
+        self.delta = FluqeParameter(name="delta", set_method=self._set_delta)
         # flux parameters
-        self.phiz = Parameter(name="phiz")
-        self.phix = Parameter(name="phix")
+        self.phiz = FluqeParameter(name="phiz")
+        self.phix = FluqeParameter(name="phix")
 
     def __call__(self, delta: float, epsilon: float) -> tuple[Any, Any]:
         """Transpiles Delta and Epsilon to phix, phiz"""

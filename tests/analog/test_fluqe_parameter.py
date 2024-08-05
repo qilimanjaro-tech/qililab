@@ -1,12 +1,12 @@
 import pytest
 
-from qililab.analog import Parameter
+from qililab.analog import FluqeParameter
 
 
 @pytest.fixture(name="test_parameter")
 def test_parameter():
     """Dummy parameter for testing"""
-    return Parameter(name="foo", value=2, set_method=lambda x: 2 * x)
+    return FluqeParameter(name="foo", value=2, set_method=lambda x: 2 * x)
 
 
 class TestParameter:

@@ -7,7 +7,7 @@ import qililab
 from qililab.analog import Qubit2LevelTranspiler
 
 
-@patch.object(qililab.analog.fluqe_parameter.Parameter, "foo")
+@patch.object(qililab.analog.fluqe_parameter.FluqeParameter, "foo")
 @pytest.fixture(name="dummy_transpiler")
 def dummy_transpiler():
     """Transpiler dummy fixture"""
