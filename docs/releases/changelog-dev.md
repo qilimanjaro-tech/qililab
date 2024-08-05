@@ -47,10 +47,15 @@
         smearing: 0
         intermediate_frequency: 10.0e+6
         threshold_rotation: 0.5
+        threshold: 0.03
       ...
   ```
 
   [#759](https://github.com/qilimanjaro-tech/qililab/pull/759)
+
+- Added `thresholds` argument to `_execute_qprogram_with_quantum_machines` method in `Platform`. This argument allows to threshold results after the execution of the `QProgram`. It is also a new parameter that can be specified on the runcard for each readout bus. An example of the configuration of this parameter on the runcard can be found above.
+
+  [#762](https://github.com/qilimanjaro-tech/qililab/pull/762)
 
 - Added loopbacks in the octave config file for qua following the documentation at https://docs.quantum-machines.co/1.2.0/qm-qua-sdk/docs/Guides/octave/?h=octaves#setting-the-octaves-clock. By default only port 1 of the octave is linked with a local demodulator, to work with the rest of the ports at the back ports must be connected based on the Octave Block Diagram [https://docs.quantum-machines.co/1.2.0/qm-qua-sdk/docs/Hardware/octave/#octave-block-diagram]. Where `Synth` is one of the possible 3 synths and `Dmd` is one of the 2 demodulators.
 
@@ -70,6 +75,7 @@
     ```
 
   [#770](https://github.com/qilimanjaro-tech/qililab/pull/770)
+ 
 ### Improvements
 
 - Now platform.get_parameter works for QM without the need of connecting to the machine.

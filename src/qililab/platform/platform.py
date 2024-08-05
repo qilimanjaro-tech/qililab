@@ -567,7 +567,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """
         return str(YAML().dump(self.to_dict(), io.BytesIO()))
 
-    def execute_qprogram(
+    def execute_qprogram(  # pylint: disable=too-many-locals
         self,
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,
@@ -633,11 +633,17 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 for bus in buses
                 if isinstance(bus.system_control, ReadoutSystemControl)
             }  # type: ignore
+            thresholds = {
+                bus.alias: float(bus.get_parameter(parameter=Parameter.THRESHOLD))
+                for bus in buses
+                if isinstance(bus.system_control, ReadoutSystemControl)
+            }  # type: ignore
             return self._execute_qprogram_with_quantum_machines(
                 cluster=cluster,
                 qprogram=qprogram,
                 bus_mapping=bus_mapping,
                 threshold_rotations=threshold_rotations,  # type: ignore
+                thresholds=thresholds,  # type: ignore
                 calibration=calibration,
                 debug=debug,
             )
@@ -701,12 +707,13 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         return results
 
-    def _execute_qprogram_with_quantum_machines(  # pylint: disable=too-many-locals
+    def _execute_qprogram_with_quantum_machines(  # pylint: disable=too-many-locals,dangerous-default-value
         self,
         cluster: QuantumMachinesCluster,
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,
-        threshold_rotations: dict[str, float | None] | None = None,
+        threshold_rotations: dict[str, float | None] = {},
+        thresholds: dict[str, float | None] = {},
         calibration: Calibration | None = None,
         debug: bool = False,
     ) -> QProgramResults:
@@ -727,10 +734,12 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         acquisitions = cluster.get_acquisitions(job=job)
 
         results = QProgramResults()
+        # Doing manual classification of results as QM does not return thresholded values like Qblox
         for measurement in measurements:
             measurement_result = QuantumMachinesMeasurementResult(
-                *[acquisitions[handle] for handle in measurement.result_handles]
+                *[acquisitions[handle] for handle in measurement.result_handles],
             )
+            measurement_result.set_classification_threshold(thresholds.get(measurement.bus, None))
             results.append_result(bus=measurement.bus, result=measurement_result)
 
         return results
