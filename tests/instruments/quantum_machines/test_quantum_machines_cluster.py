@@ -400,6 +400,7 @@ class TestQuantumMachinesCluster:
         [
             ("drive_q0", Parameter.IF, 20e6),
             ("readout_q0", Parameter.THRESHOLD_ROTATION, 0.5),
+            ("readout_q0", Parameter.THRESHOLD, 0.01),
         ],
     )
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
@@ -415,9 +416,12 @@ class TestQuantumMachinesCluster:
         qmm.set_parameter_of_bus(bus, parameter, value)
         if parameter == Parameter.IF:
             qmm._qm.set_intermediate_frequency.assert_called_once()
-        if parameter == Parameter.THRESHOLD_ROTATION:
+        if parameter in [Parameter.THRESHOLD_ROTATION, Parameter.THRESHOLD]:
             element = next((element for element in qmm.settings.elements if element["bus"] == bus), None)
-            assert value == element["threshold_rotation"]
+            if parameter == Parameter.THRESHOLD_ROTATION:
+                assert value == element["threshold_rotation"]
+            if parameter == Parameter.THRESHOLD:
+                assert value == element["threshold"]
         # Assert that the settings are still in synch:
         assert qmm._config == qmm.settings.to_qua_config()
 
@@ -516,6 +520,7 @@ class TestQuantumMachinesCluster:
             ("readout_q0", Parameter.TIME_OF_FLIGHT, "qmm"),
             ("readout_q0", Parameter.SMEARING, "qmm"),
             ("readout_q0", Parameter.THRESHOLD_ROTATION, "qmm"),
+            ("readout_q0", Parameter.THRESHOLD, "qmm"),
         ],
     )
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
@@ -566,6 +571,9 @@ class TestQuantumMachinesCluster:
         if parameter == Parameter.THRESHOLD_ROTATION:
             element = next((element for element in qmm.settings.elements if element["bus"] == bus), None)
             assert value == element.get("threshold_rotation", None)
+        if parameter == Parameter.THRESHOLD:
+            element = next((element for element in qmm.settings.elements if element["bus"] == bus), None)
+            assert value == element.get("threshold", None)
 
         # Assert that the settings are in synch:
         assert qmm._config_created is False and "_config" not in dir(qmm)
