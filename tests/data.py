@@ -1545,6 +1545,7 @@ class SauronQuantumMachines:
                 "name": "octave1",
                 "port": 11555,
                 "connectivity": {"controller": "con1"},
+                "loopbacks": [(("octave1", 'Synth2'), 'Dmd2LO')],
                 "rf_outputs": [
                     {"port": 1, "lo_frequency": 6e9},
                     {"port": 2, "lo_frequency": 6e9},
@@ -1639,6 +1640,7 @@ class SauronQuantumMachines:
                 ],
                 "rf_inputs": [{"port": 1, "lo_frequency": 6e9}, {"port": 2, "lo_frequency": 6e9}],
                 "if_outputs": [{"controller": "con1", "port": 1}, {"controller": "con1", "port": 2}],
+                "loopbacks": [(("octave1", 'Synth2'), 'Dmd2LO')],
             }
         ],
         "elements": [
@@ -1704,6 +1706,7 @@ class SauronQuantumMachines:
                     {"port": 5, "lo_frequency": 6e9},
                 ],
                 "rf_inputs": [{"port": 1, "lo_frequency": 6e9}, {"port": 2, "lo_frequency": 6e9}],
+                "loopbacks": [(("octave1", 'Synth2'), 'Dmd2LO')],
             }
         ],
         "elements": [
