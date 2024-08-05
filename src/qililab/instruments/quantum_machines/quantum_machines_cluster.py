@@ -136,9 +136,9 @@ class QuantumMachinesCluster(Instrument):
                                         "delay": output["delay"] if "delay" in output else 0.0,
                                         "output_mode": output["output_mode"] if "output_mode" in output else "direct",
                                         "sampling_rate": output["sampling_rate"] if "sampling_rate" in output else 1e9,
-                                        "upsampling_mode": output["upsampling_mode"]
-                                        if "upsampling_mode" in output
-                                        else "mw",
+                                        "upsampling_mode": (
+                                            output["upsampling_mode"] if "upsampling_mode" in output else "mw"
+                                        ),
                                     }
                                     for output in fem.get("analog_outputs", [])
                                 },
