@@ -1,5 +1,4 @@
 """Test the one qubit 2 level transpiler"""
-from unittest import mock
 from unittest.mock import MagicMock, patch
 
 import pytest

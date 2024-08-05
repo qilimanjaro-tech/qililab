@@ -22,9 +22,8 @@ class Qubit2LevelTranspiler:  # pylint: disable=too-few-public-methods
     used in the single_qubit_2level emulator model.
 
     Args:
-        eps_model (Callable): epsilon model
+        epsilon_model (Callable): epsilon model
         delta_model (Callable): delta model
-        qubitData (DataClass): dataclass containing info about the physical parameters of the qubit. Defaults to None.
 
     Calling an instance of this class returns the fluxes phix, phiz for some given Delta, epsilon.
     """
