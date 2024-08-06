@@ -629,7 +629,7 @@ class QuantumMachinesCluster(Instrument):
 
         return self._qm.execute(program)
 
-    def get_acquisitions(self, job: RunningQmJob) -> dict[str, np.ndarray]:
+    def get_acquisitions(self, job: QmJob | JobApi) -> dict[str, np.ndarray]:
         """Fetches the results from the execution of a QUA Program.
 
         Once the results have been fetched, they are returned wrapped in a QuantumMachinesResult instance.
