@@ -18,7 +18,8 @@ from dataclasses import dataclass
 from typing import Any, cast
 
 import numpy as np
-from qm import DictQuaConfig, QuantumMachine, QuantumMachinesManager, SimulationConfig
+from qm import DictQuaConfig, QmJob, QuantumMachine, QuantumMachinesManager, SimulationConfig
+from qm.api.v2.job_api import JobApi
 from qm.jobs.running_qm_job import RunningQmJob
 from qm.octave import QmOctaveConfig
 from qm.program import Program
@@ -586,7 +587,7 @@ class QuantumMachinesCluster(Instrument):
             self._compiled_program_cache[qua_program_hash] = self._qm.compile(program=program)
         return self._compiled_program_cache[qua_program_hash]
 
-    def run_compiled_program(self, compiled_program_id: str) -> RunningQmJob:
+    def run_compiled_program(self, compiled_program_id: str) -> QmJob | JobApi:
         """Executes a previously compiled QUA program identified by its unique compiled program ID.
 
         This method submits the compiled program to the Quantum Machines (QM) execution queue and waits for
@@ -608,7 +609,7 @@ class QuantumMachinesCluster(Instrument):
         self.job = self.pending_job.wait_for_execution()  # type: ignore[return-value]  # pylint: disable=attribute-defined-outside-init
         if self._intermediate_frequency:
             for bus, intermediate_frequency in self._intermediate_frequency.items():
-                self.job.set_intermediate_frequency(element=bus, freq=intermediate_frequency)
+                self.job.set_intermediate_frequency(element=bus, freq=intermediate_frequency)  # type: ignore[union-attr]
                 self._qm.calibrate_element(bus)
 
         return self.job
