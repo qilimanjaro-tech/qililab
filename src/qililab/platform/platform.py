@@ -596,7 +596,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             qprogram (QProgram): The :class:`.QProgram` to execute.
             bus_mapping (dict[str, str], optional): A dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values).
                 It is useful for mapping specific experiments to generic :class:`.QProgram` 's. Defaults to None.
-            calibration (Calibration, optional): The calibration to use for the execution. Defaults to None.
+            calibration (Calibration, optional): :class:`.Calibration` file containing information of the experiment in the YAML format. Defaults to None.
             debug (bool, optional): Whether to print debug information. Defaults to False.
 
         Returns:
