@@ -552,9 +552,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         buses_dict = {RUNCARD.BUSES: self.buses.to_dict() if self.buses is not None else None}
         instrument_dict = {RUNCARD.INSTRUMENTS: self.instruments.to_dict() if self.instruments is not None else None}
         instrument_controllers_dict = {
-            RUNCARD.INSTRUMENT_CONTROLLERS: self.instrument_controllers.to_dict()
-            if self.instrument_controllers is not None
-            else None,
+            RUNCARD.INSTRUMENT_CONTROLLERS: (
+                self.instrument_controllers.to_dict() if self.instrument_controllers is not None else None
+            ),
         }
 
         return name_dict | gates_settings_dict | chip_dict | buses_dict | instrument_dict | instrument_controllers_dict
@@ -567,7 +567,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """
         return str(YAML().dump(self.to_dict(), io.BytesIO()))
 
-    def execute_qprogram(
+    def execute_qprogram(  # pylint: disable=too-many-locals
         self,
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,
@@ -628,8 +628,24 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                     "Executing QProgram in more than one Quantum Machines Cluster is not supported."
                 )
             cluster: QuantumMachinesCluster = instruments.pop()  # type: ignore[assignment]
+            threshold_rotations = {
+                bus.alias: float(bus.get_parameter(parameter=Parameter.THRESHOLD_ROTATION))
+                for bus in buses
+                if isinstance(bus.system_control, ReadoutSystemControl)
+            }  # type: ignore
+            thresholds = {
+                bus.alias: float(bus.get_parameter(parameter=Parameter.THRESHOLD))
+                for bus in buses
+                if isinstance(bus.system_control, ReadoutSystemControl)
+            }  # type: ignore
             return self._execute_qprogram_with_quantum_machines(
-                cluster=cluster, qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration, debug=debug
+                cluster=cluster,
+                qprogram=qprogram,
+                bus_mapping=bus_mapping,
+                threshold_rotations=threshold_rotations,  # type: ignore
+                thresholds=thresholds,  # type: ignore
+                calibration=calibration,
+                debug=debug,
             )
         raise NotImplementedError("Executing QProgram in a mixture of instruments is not supported.")
 
@@ -691,17 +707,19 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         return results
 
-    def _execute_qprogram_with_quantum_machines(  # pylint: disable=too-many-locals
+    def _execute_qprogram_with_quantum_machines(  # pylint: disable=too-many-locals,dangerous-default-value
         self,
         cluster: QuantumMachinesCluster,
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,
+        threshold_rotations: dict[str, float | None] = {},
+        thresholds: dict[str, float | None] = {},
         calibration: Calibration | None = None,
         debug: bool = False,
     ) -> QProgramResults:
         compiler = QuantumMachinesCompiler()
         qua_program, configuration, measurements = compiler.compile(
-            qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration
+            qprogram=qprogram, bus_mapping=bus_mapping, threshold_rotations=threshold_rotations, calibration=calibration
         )
 
         cluster.append_configuration(configuration=configuration)
@@ -716,10 +734,12 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         acquisitions = cluster.get_acquisitions(job=job)
 
         results = QProgramResults()
+        # Doing manual classification of results as QM does not return thresholded values like Qblox
         for measurement in measurements:
             measurement_result = QuantumMachinesMeasurementResult(
-                *[acquisitions[handle] for handle in measurement.result_handles]
+                *[acquisitions[handle] for handle in measurement.result_handles],
             )
+            measurement_result.set_classification_threshold(thresholds.get(measurement.bus, None))
             results.append_result(bus=measurement.bus, result=measurement_result)
 
         return results
@@ -803,12 +823,16 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
     def _order_result(self, result: Result, circuit: Circuit) -> Result:
         """Order the results of the execution as they are ordered in the input circuit.
+
         Finds the absolute order of each measurement for each qubit and its corresponding key in the
         same format as in qblox's aqcuisitions dictionary (#qubit, #qubit_measurement).
+
         Then it orders results in the same measurement order as the one in circuit.queue.
+
         Args:
             result (Result): Result obtained from the execution
             circuit (Circuit): qibo circuit being executed
+
         Returns:
             Result: Result obtained from the execution, with each measurement in the same order as in circuit.queue
         """
