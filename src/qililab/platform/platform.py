@@ -588,9 +588,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         **The execution is done in the following way:**
 
-        - If all the buses in the :class:`.QProgram` are associated with Qblox modules, the execution is done using the :class:`.QbloxCompiler`.
-        - If all the buses in the :class:`.QProgram` are associated with Quantum Machines Clusters, the execution is done using the :class:`.QuantumMachinesCompiler`.
-        - If the buses in the :class:`.QProgram` are associated with a mixture of Qblox modules and Quantum Machines Clusters, the execution is not supported.
+        - If all the buses in the :class:`.QProgram` are associated with Qblox modules, the compilation is done using the :class:`.QbloxCompiler`.
+        - If all the buses in the :class:`.QProgram` are associated with Quantum Machines Clusters, the compilation is done using the :class:`.QuantumMachinesCompiler`.
+        - If the buses in the :class:`.QProgram` are associated with a mixture of Qblox modules and Quantum Machines Clusters, the compilation is not supported.
 
         Args:
             qprogram (QProgram): The :class:`.QProgram` to execute.
