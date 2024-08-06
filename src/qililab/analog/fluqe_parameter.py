@@ -15,7 +15,7 @@
 from typing import Any, Callable
 
 
-class Parameter:
+class FluqeParameter:
     """Basic implementation of a qcodes like parameter class, but much simpler.
     Working, but still work in progress
 
@@ -34,14 +34,13 @@ class Parameter:
         self._value = value
         self.set = set_method
 
-    def __call__(self, *args: Any, **kwargs: Any) -> None:
+    def __call__(self, *args: Any, **kwargs: Any) -> Any | None:  # pylint: disable=inconsistent-return-statements
         """Call method for the parameter class"""
         # TODO: implement get_raw like in qcodes
-        if args or kwargs:
-            self._value = self.set(*args, **kwargs) if self.set is not None else self.set_raw(args[0])
-
-        else:
+        if not args and not kwargs:
             return self.get(*args, **kwargs)
+        self._value = self.set(*args, **kwargs) if self.set is not None else self.set_raw(args[0])
+        return None
 
     def get(self) -> Any:
         """Get method. Returns the parameter current value.

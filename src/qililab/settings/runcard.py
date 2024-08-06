@@ -261,7 +261,7 @@ class Runcard:
     instruments: list[dict]
     instrument_controllers: list[dict]
     gates_settings: GatesSettings
-    flux_control_topology: list[FluxControlTopology]
+    flux_control_topology: list[FluxControlTopology] | None = None
     device_id: int | None = None
 
     def __post_init__(self):

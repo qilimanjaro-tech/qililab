@@ -14,17 +14,16 @@
 
 from typing import Any, Callable
 
-from qililab.analog import Parameter
+from qililab.analog.fluqe_parameter import FluqeParameter
 
 
 class Qubit2LevelTranspiler:  # pylint: disable=too-few-public-methods
     """Implementation of the transpiler for the 2 level qubit. This is done mainly by inverting the same functions
-    used int he single_qubit_2level emulator model.
+    used in the single_qubit_2level emulator model.
 
     Args:
-        eps_model (Callable): epsilon model
+        epsilon_model (Callable): epsilon model
         delta_model (Callable): delta model
-        qubitData (DataClass): dataclass containing info about the physical parameters of the qubit. Defaults to None.
 
     Calling an instance of this class returns the fluxes phix, phiz for some given Delta, epsilon.
     """
@@ -36,18 +35,18 @@ class Qubit2LevelTranspiler:  # pylint: disable=too-few-public-methods
         self.epsilon_model = epsilon_model
 
         # Magnetic energy bias (epsilon)
-        self.epsilon = Parameter(name="epsilon", set_method=self._set_epsilon)
+        self.epsilon = FluqeParameter(name="epsilon", set_method=self._set_epsilon)
         # Qubit gap (delta)
-        self.delta = Parameter(name="delta", set_method=self._set_delta)
+        self.delta = FluqeParameter(name="delta", set_method=self._set_delta)
         # flux parameters
-        self.phiz = Parameter(name="phiz")
-        self.phix = Parameter(name="phix")
+        self.phiz = FluqeParameter(name="phiz")
+        self.phix = FluqeParameter(name="phix")
 
     def __call__(self, delta: float, epsilon: float) -> tuple[Any, Any]:
         """Transpiles Delta and Epsilon to phix, phiz"""
         self.delta(delta)
         self.epsilon(epsilon)
-        return self.phix(), self.phiz()  # type: ignore[func-returns-value]
+        return self.phix(), self.phiz()
 
     def _set_delta(self, delta):
         # sets the value of delta via raw and updates phix accordingly
