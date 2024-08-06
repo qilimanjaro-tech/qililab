@@ -574,7 +574,11 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         calibration: Calibration | None = None,
         debug: bool = False,
     ) -> QProgramResults:
-        """Execute a QProgram using the platform instruments. The execution is done in the following steps:
+        """Execute a QProgram using the platform instruments.
+
+        |
+
+        **The execution is done in the following steps:**
 
         1. Compile the QProgram.
         2. Upload the sequences to the instruments.
@@ -582,7 +586,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         4. Acquire the results.
         5. Reset the instrument settings.
 
-        The execution is done in the following way:
+        |
+
+        **The execution is done in the following way:**
 
         - If all the buses in the QProgram are associated with Qblox modules, the execution is done using the QbloxCompiler.
         - If all the buses in the QProgram are associated with Quantum Machines Clusters, the execution is done using the QuantumMachinesCompiler.
