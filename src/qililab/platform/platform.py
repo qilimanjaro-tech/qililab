@@ -600,7 +600,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             debug (bool, optional): Whether to print debug information. Defaults to False.
 
         Returns:
-            QProgramResults: The results of the execution. ``QProgramResults.results()`` returns a dictionary (`dict[str, list[Result]]`) of measurement results.
+            QProgramResults: The results of the execution. ``QProgramResults.results()`` returns a dictionary (``dict[str, list[Result]]``) of measurement results.
                 The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
         """
         bus_aliases = {bus_mapping[bus] if bus_mapping and bus in bus_mapping else bus for bus in qprogram.buses}
