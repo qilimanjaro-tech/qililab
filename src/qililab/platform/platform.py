@@ -734,14 +734,14 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
             acquisitions = cluster.get_acquisitions(job=job)
 
-        results = QProgramResults()
-        # Doing manual classification of results as QM does not return thresholded values like Qblox
-        for measurement in measurements:
-            measurement_result = QuantumMachinesMeasurementResult(
-                *[acquisitions[handle] for handle in measurement.result_handles],
-            )
-            measurement_result.set_classification_threshold(thresholds.get(measurement.bus, None))
-            results.append_result(bus=measurement.bus, result=measurement_result)
+            results = QProgramResults()
+            # Doing manual classification of results as QM does not return thresholded values like Qblox
+            for measurement in measurements:
+                measurement_result = QuantumMachinesMeasurementResult(
+                    *[acquisitions[handle] for handle in measurement.result_handles],
+                )
+                measurement_result.set_classification_threshold(thresholds.get(measurement.bus, None))
+                results.append_result(bus=measurement.bus, result=measurement_result)
 
             return results
         except Exception as e:
