@@ -574,13 +574,30 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         calibration: Calibration | None = None,
         debug: bool = False,
     ) -> QProgramResults:
-        """Execute a QProgram using the platform instruments.
+        """Execute a QProgram using the platform instruments. The execution is done in the following steps:
+
+        1. Compile the QProgram.
+        2. Upload the sequences to the instruments.
+        3. Execute the sequences.
+        4. Acquire the results.
+        5. Reset the instrument settings.
+
+        The execution is done in the following way:
+
+        - If all the buses in the QProgram are associated with Qblox modules, the execution is done using the QbloxCompiler.
+        - If all the buses in the QProgram are associated with Quantum Machines Clusters, the execution is done using the QuantumMachinesCompiler.
+        - If the buses in the QProgram are associated with a mixture of Qblox modules and Quantum Machines Clusters, the execution is not supported.
 
         Args:
             qprogram (QProgram): The QProgram to execute.
+            bus_mapping (dict[str, str], optional): A dictionary mapping the buses in the QProgram to the buses in the platform.
+                The keys are the buses in the QProgram, and the values are the buses in the platform. Defaults to None.
+            calibration (Calibration, optional): The calibration to use for the execution. Defaults to None.
+            debug (bool, optional): Whether to print debug information. Defaults to False.
 
         Returns:
-            dict[str, list[Result]]: A dictionary of measurement results. The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
+            QProgramResults: The results of the execution. QProgramResults.results() returns a dictionary (dict[str, list[Result]]) of measurement results.
+                The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
         """
         bus_aliases = {bus_mapping[bus] if bus_mapping and bus in bus_mapping else bus for bus in qprogram.buses}
         buses = [self._get_bus_by_alias(alias=bus_alias) for bus_alias in bus_aliases]
