@@ -586,18 +586,17 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         |
 
-        **The execution is done in the following way:**
+        **execute_qprogram operates with two different clusters independently:**
 
-        - If all the buses in the :class:`.QProgram` are associated with Qblox modules, the compilation is done using the :class:`.QbloxCompiler`.
-        - If all the buses in the :class:`.QProgram` are associated with Quantum Machines Clusters, the compilation is done using the :class:`.QuantumMachinesCompiler`.
-        - If the buses in the :class:`.QProgram` are associated with a mixture of Qblox modules and Quantum Machines Clusters, the compilation is not supported.
+        - For buses assosiated with Qblox modules, the compilation is done using the :class:`.QbloxCompiler`. This compiler compiles the Qprogram in Q1ASM into multiple sequencers based on each bus, uploads and executes the sequences, acquires the results and resets the settings by desyncing each bus.
+        - For buses assosiated with Quantum Machines Clusters, the compilation is done using the :class:`.QuantumMachinesCompiler`. This compiler transforms the Qprogram in QUA, the compilation language for Quantum Machines, runs the job created by the QUA execution and returns the results ordering them by bus.
 
         Args:
             qprogram (QProgram): The :class:`.QProgram` to execute.
             bus_mapping (dict[str, str], optional): A dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values).
                 It is useful for mapping specific experiments to generic :class:`.QProgram` 's. Defaults to None.
             calibration (Calibration, optional): :class:`.Calibration` file containing information of the experiment in the YAML format. Defaults to None.
-            debug (bool, optional): Whether to print debug information. Defaults to False.
+            debug (bool, optional): Whether to create debug information. For QBlox cluster all the program information is printed on screen. For Quantum Machines cluster a .py file is created containing the QUA and config compilation. Defaults to False.
 
         Returns:
             QProgramResults: The results of the execution. ``QProgramResults.results()`` returns a dictionary (``dict[str, list[Result]]``) of measurement results.
