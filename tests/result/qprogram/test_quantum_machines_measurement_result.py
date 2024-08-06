@@ -1,6 +1,7 @@
 """ Test Results """
 
 import os
+from warnings import catch_warnings
 
 import numpy as np
 import pytest
@@ -28,6 +29,11 @@ class TestsQMResult:
         assert np.allclose(quantum_machines_measurement_result.I, np.zeros(10))
         assert np.allclose(quantum_machines_measurement_result.Q, np.zeros(10))
 
+    def test_set_classification_threshold(self, quantum_machines_measurement_result: QuantumMachinesMeasurementResult):
+        """Test the set_classification_threshold method."""
+        quantum_machines_measurement_result.set_classification_threshold(0.3)
+        assert quantum_machines_measurement_result._classification_threshold == 0.3
+
     def test_array(self, quantum_machines_measurement_result: QuantumMachinesMeasurementResult):
         """Test the array property returns the correct data."""
         assert isinstance(quantum_machines_measurement_result.array, np.ndarray)
@@ -48,3 +54,28 @@ class TestsQMResult:
         assert isinstance(deserialized_quantum_machines_measurement_result, QuantumMachinesMeasurementResult)
 
         os.remove("quantum_machines_measurement_result.yml")
+
+    @pytest.mark.parametrize(
+        "threshold, I, expected",
+        [
+            (0.0, np.ones(10), np.ones(10)),
+            (0.5, np.zeros(10), np.zeros(10)),
+            (0.5, np.array([0.2, 0.4, 0.6, 0.5, 0.9]), np.array([0.0, 0.0, 1.0, 1.0, 1.0])),
+            (None, np.array([0.2, 0.4, 0.6, 0.5, 0.9]), np.array([0.0, 0.0, 0.0, 0.0, 0.0])),
+        ],
+    )
+    def test_threshold_property(
+        self, threshold, I, expected, quantum_machines_measurement_result: QuantumMachinesMeasurementResult
+    ):
+        """Test the `threshold` property."""
+        quantum_machines_measurement_result._classification_threshold = threshold
+        quantum_machines_measurement_result.I = I
+        if threshold is not None:
+            np.testing.assert_equal(quantum_machines_measurement_result.threshold, expected)
+
+        else:
+            with catch_warnings(record=True) as w:
+                np.testing.assert_equal(quantum_machines_measurement_result.threshold, expected)
+                assert (
+                    w[0].message.args[0] == "Classification threshold is not specified, returning a `np.zeros` array."  # type: ignore
+                )

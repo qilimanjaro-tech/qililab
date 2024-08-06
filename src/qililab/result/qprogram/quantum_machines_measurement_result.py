@@ -13,6 +13,8 @@
 # limitations under the License.
 
 """QuantumMachinesResult class."""
+from warnings import warn
+
 import numpy as np
 
 from qililab.result.qprogram.measurement_result import MeasurementResult
@@ -33,12 +35,23 @@ class QuantumMachinesMeasurementResult(MeasurementResult):
 
     name = ResultName.QUANTUM_MACHINES_MEASUREMENT
 
-    def __init__(self, I: np.ndarray, Q: np.ndarray, adc1: np.ndarray | None = None, adc2: np.ndarray | None = None):
+    def __init__(
+        self,
+        I: np.ndarray,
+        Q: np.ndarray,
+        adc1: np.ndarray | None = None,
+        adc2: np.ndarray | None = None,
+    ):
         self.I = I
         self.Q = Q
         self.adc1 = adc1
         self.adc2 = adc2
+        self._classification_threshold = None
         super().__init__()
+
+    def set_classification_threshold(self, classification_th):
+        """Sets the `_classification_threshold` of the class."""
+        self._classification_threshold = classification_th
 
     @property
     def array(self) -> np.ndarray:
@@ -52,9 +65,16 @@ class QuantumMachinesMeasurementResult(MeasurementResult):
 
     @property
     def threshold(self) -> np.ndarray:
-        """Get the thresholded data as an np.ndarray.
+        """Get the thresholded data as an np.ndarray. If the threshold is `None` thus not specified, returns an array of zeros.
 
         Returns:
             np.ndarray: The thresholded data.
         """
-        raise NotImplementedError("Thresholding is not implemented for Quantum Machines results.")
+        if self._classification_threshold is None:
+            warn("Classification threshold is not specified, returning a `np.zeros` array.", stacklevel=2)
+
+        return (
+            np.where(self.I >= self._classification_threshold, 1.0, 0.0)
+            if self._classification_threshold is not None
+            else np.zeros(self.I.shape)
+        )
