@@ -574,7 +574,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         calibration: Calibration | None = None,
         debug: bool = False,
     ) -> QProgramResults:
-        """Execute a QProgram using the platform instruments.
+        """Execute a :class:`.QProgram` using the platform instruments.
 
         |
 
@@ -588,14 +588,14 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         **The execution is done in the following way:**
 
-        - If all the buses in the QProgram are associated with Qblox modules, the execution is done using the QbloxCompiler.
-        - If all the buses in the QProgram are associated with Quantum Machines Clusters, the execution is done using the QuantumMachinesCompiler.
+        - If all the buses in the :class:`.QProgram` are associated with Qblox modules, the execution is done using the :class:`.QbloxCompiler`.
+        - If all the buses in the :class:`.QProgram` are associated with Quantum Machines Clusters, the execution is done using the :class:`.QuantumMachinesCompiler`.
         - If the buses in the QProgram are associated with a mixture of Qblox modules and Quantum Machines Clusters, the execution is not supported.
 
         Args:
-            qprogram (QProgram): The QProgram to execute.
-            bus_mapping (dict[str, str], optional): A dictionary mapping the buses in the QProgram (keys )to the buses in the platform (values).
-                It is useful for mapping specific experiments to generic Qprograms. Defaults to None.
+            qprogram (QProgram): The :class:`.QProgram` to execute.
+            bus_mapping (dict[str, str], optional): A dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values).
+                It is useful for mapping specific experiments to generic :class:`.QProgram` 's. Defaults to None.
             calibration (Calibration, optional): The calibration to use for the execution. Defaults to None.
             debug (bool, optional): Whether to print debug information. Defaults to False.
 
