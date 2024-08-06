@@ -590,7 +590,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         - If all the buses in the :class:`.QProgram` are associated with Qblox modules, the execution is done using the :class:`.QbloxCompiler`.
         - If all the buses in the :class:`.QProgram` are associated with Quantum Machines Clusters, the execution is done using the :class:`.QuantumMachinesCompiler`.
-        - If the buses in the QProgram are associated with a mixture of Qblox modules and Quantum Machines Clusters, the execution is not supported.
+        - If the buses in the :class:`.QProgram` are associated with a mixture of Qblox modules and Quantum Machines Clusters, the execution is not supported.
 
         Args:
             qprogram (QProgram): The :class:`.QProgram` to execute.
@@ -600,7 +600,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             debug (bool, optional): Whether to print debug information. Defaults to False.
 
         Returns:
-            QProgramResults: The results of the execution. QProgramResults.results() returns a dictionary (dict[str, list[Result]]) of measurement results.
+            QProgramResults: The results of the execution. ``QProgramResults.results()`` returns a dictionary (`dict[str, list[Result]]`) of measurement results.
                 The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
         """
         bus_aliases = {bus_mapping[bus] if bus_mapping and bus in bus_mapping else bus for bus in qprogram.buses}
