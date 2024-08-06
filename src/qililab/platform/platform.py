@@ -581,10 +581,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         **The execution is done in the following steps:**
 
         1. Compile the QProgram.
-        2. Upload the sequences to the instruments.
-        3. Execute the sequences.
-        4. Acquire the results.
-        5. Reset the instrument settings.
+        2. Run the compiled QProgram.
+        3. Acquire the results.
 
         |
 
