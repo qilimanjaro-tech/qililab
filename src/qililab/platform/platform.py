@@ -601,7 +601,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         Returns:
             QProgramResults: The results of the execution. ``QProgramResults.results()`` returns a dictionary (``dict[str, list[Result]]``) of measurement results.
-                The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
+            The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
         """
         bus_aliases = {bus_mapping[bus] if bus_mapping and bus in bus_mapping else bus for bus in qprogram.buses}
         buses = [self._get_bus_by_alias(alias=bus_alias) for bus_alias in bus_aliases]
