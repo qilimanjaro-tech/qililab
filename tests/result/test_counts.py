@@ -1,11 +1,13 @@
 """ Test Results """
 from collections import Counter
 
+import numpy as np
 import pytest
 
 from qililab.result.counts import Counts
 from qililab.result.qprogram import QProgramResults
 from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
+from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 
 
 @pytest.fixture(name="psi_plus_counts")
@@ -47,6 +49,24 @@ def fixture_raw_measurement_data() -> QProgramResults:
                 raw_measurement_data={"bins": {"integration": {"path0": [0], "path1": [0]}, "threshold": [th_q1]}}
             ),
         )
+    return results
+
+
+@pytest.fixture(name="qm_qprogram_results_probs")
+def fixture_raw_measurement_data_qm() -> QProgramResults:
+    """Fixture to obtain proabilities from a QProgramResult"""
+    results = QProgramResults()
+
+    res_0 = QuantumMachinesMeasurementResult(np.array([0.2, 1.3, 0.07, 1.0, 0.7]), np.array([0.5, 1.4, 0.6, 1.02, 0.1]))
+    res_1 = QuantumMachinesMeasurementResult(
+        np.array([0.76, 1.2, 1.8, 0.4, 0.9]), np.array([0.9, 1.0, 0.46, 2.6, 0.97])
+    )
+    res_0.set_classification_threshold(0.4)
+    res_1.set_classification_threshold(0.5)
+
+    results.append_result(bus="readout_q0", result=res_0)
+    results.append_result(bus="readout_q1", result=res_1)
+
     return results
 
 
@@ -105,9 +125,22 @@ class TestProbabilitiesWithQProgram:
             (["readout_q1", "readout_q0"], {"00": 0.2, "01": 0.4, "10": 0.2, "11": 0.2}),
         ],
     )
-    def test_probabilities(self, qblox_qprogram_results_probs: QProgramResults, bus_mapping, expected_probs):
+    def test_probabilities_with_qblox(self, qblox_qprogram_results_probs: QProgramResults, bus_mapping, expected_probs):
         """Test probabilities are computed correctly with and without qubit mapping"""
         assert Counts.from_qprogram(qblox_qprogram_results_probs, bus_mapping).probabilities() == expected_probs
+
+    @pytest.mark.parametrize(
+        "bus_mapping, expected_probs",
+        [
+            (None, {"00": 0.0, "01": 0.4, "10": 0.2, "11": 0.4}),
+            (["readout_q1", "readout_q0"], {"00": 0.0, "01": 0.2, "10": 0.4, "11": 0.4}),
+        ],
+    )
+    def test_probabilities_with_quantum_machines(
+        self, qm_qprogram_results_probs: QProgramResults, bus_mapping, expected_probs
+    ):
+        """Test probabilities are computed correctly with and without qubit mapping"""
+        assert Counts.from_qprogram(qm_qprogram_results_probs, bus_mapping).probabilities() == expected_probs
 
     def test_probabilities_raises_empty(self):
         """Test an error is raised when the `qprogram_results` is empty"""
