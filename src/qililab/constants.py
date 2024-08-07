@@ -58,6 +58,7 @@ class RUNCARD:
     CURRENT_SOURCE = "current_source"
     DISTORTIONS = "distortions"
     DELAY = "delay"
+    FLUX_CONTROL_TOPOLOGY = "flux_control_topology"
 
 
 class PLATFORM:
