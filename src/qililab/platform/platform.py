@@ -594,7 +594,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         self, anneal_program_dict: list[dict[str, dict[str, float]]], transpiler: Callable, averages=1
     ):  # TODO: determine default average
         """Given an anneal program execute it as a qprogram.
-
         The anneal program should contain a time ordered list of circuit elements and their corresponging ising coefficients as a dictionary. Example structure:
         [
             {"qubit_0": {"sigma_x" : 0, "sigma_y" : 1, "sigma_z" : 2},
