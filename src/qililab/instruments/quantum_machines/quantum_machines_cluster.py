@@ -151,6 +151,22 @@ class QuantumMachinesCluster(Instrument):
                                         "upsampling_mode": (
                                             output["upsampling_mode"] if "upsampling_mode" in output else "mw"
                                         ),
+                                        "filter": (
+                                            {
+                                                "feedforward": (
+                                                    output["filter"]["feedforward"]
+                                                    if "feedforward" in output["filter"]
+                                                    else []
+                                                ),
+                                                "feedback": (
+                                                    output["filter"]["feedback"]
+                                                    if "feedback" in output["filter"]
+                                                    else []
+                                                ),
+                                            }
+                                            if "filter" in output
+                                            else {"feedforward": [], "feedback": []}
+                                        ),
                                     }
                                     for output in fem.get("analog_outputs", [])
                                 },
