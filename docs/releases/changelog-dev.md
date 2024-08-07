@@ -59,7 +59,8 @@
 
 - Added `filter` argument inside the qua config file compilation from runcards with qm clusters. This is an optional element for distorsion filters that includes feedforward and feedback, two distorion lists for distorsion compensation and fields in qua config filter. These filters are calibrated and then introduced as compensation for the distorsions of the pulses from external sources such as Bias T. The runcard now might include the new filters (optional):
 
-  ```
+  Example:
+    ```
   instruments:
   - name: quantum_machines_cluster
     alias: QMM
