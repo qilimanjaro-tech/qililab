@@ -92,7 +92,7 @@ Qililab Documentation
    code/waveforms
 
 .. toctree::
-   :caption: Realease Notes
+   :caption: Release Notes
    :maxdepth: 1
    :hidden:
 
