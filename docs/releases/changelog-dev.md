@@ -61,21 +61,21 @@
 
   Example:
     ```
-  instruments:
-  - name: quantum_machines_cluster
-    alias: QMM
-    firmware: 0.7.0
-    ...
-    controllers:
-        - name: con1
-          analog_outputs:
-          - port: 1
-            offset: 0.0
-            filter:
-              feedforward: [0.1,0.1,0.1]
-              feedback: [0.1,0.1,0.1]
-    ...
-  ```
+    instruments:
+    - name: quantum_machines_cluster
+      alias: QMM
+      firmware: 0.7.0
+      ...
+      controllers:
+          - name: con1
+            analog_outputs:
+            - port: 1
+              offset: 0.0
+              filter:
+                feedforward: [0.1,0.1,0.1]
+                feedback: [0.1,0.1,0.1]
+      ...
+    ```
 
   [#768](https://github.com/qilimanjaro-tech/qililab/pull/768)
 
