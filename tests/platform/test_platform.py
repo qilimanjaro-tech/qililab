@@ -379,15 +379,14 @@ class TestMethods:
 
     def test_execute_anneal_program(self, platform: Platform, anneal_qprogram):
         mock_execute_qprogram = MagicMock()
-        platform.execute_qprogram = mock_execute_qprogram
+        platform.execute_qprogram = mock_execute_qprogram  # type: ignore[method-assign]
         transpiler = MagicMock()
         transpiler.return_value = (1, 2)
         # with patch(qililab.analog.annealing_program, "AnnealingProgram") as dummy_anneal_program:
         platform.execute_anneal_program(
             anneal_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}], transpiler=transpiler, averages=2
         )
-        assert True
-        pass
+        anneal_qprogram.__dict__() == mock_execute_qprogram.call_args[1]["qprogram"].__dict__()
 
     def test_execute_qprogram_with_qblox(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
