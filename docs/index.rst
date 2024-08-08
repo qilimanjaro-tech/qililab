@@ -90,3 +90,10 @@ Qililab Documentation
    code/result
    code/transpiler
    code/waveforms
+
+.. toctree::
+   :caption: Release Notes
+   :maxdepth: 1
+   :hidden:
+
+   changelog
