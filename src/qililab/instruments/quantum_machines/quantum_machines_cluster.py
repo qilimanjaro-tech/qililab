@@ -514,7 +514,6 @@ class QuantumMachinesCluster(Instrument):
                 if f"mixer_{bus}" in self._config["mixers"]:
                     self._config["mixers"][f"mixer_{bus}"][0]["intermediate_frequency"] = intermediate_frequency
             if self._is_connected_to_qm:
-
                 if self._config["elements"][bus]["RF_inputs"]:
                     octave = self._config["elements"][bus]["RF_inputs"]["port"][0]
                     self.controller = self._config["octaves"][octave]["connectivity"]
@@ -522,7 +521,6 @@ class QuantumMachinesCluster(Instrument):
                     self.controller = self._config["elements"][bus]["mixInputs"]["port"][0]
                 elif self._config["elements"][bus]["singleInput"]:
                     self.controller = self._config["elements"][bus]["singleInput"]["port"][0]
-
                 controller_type = self.controller["type"] if "type" in self.controller else "opx1"
                 if controller_type == "opx1":
                     self._qm.set_intermediate_frequency(element=bus, freq=intermediate_frequency)
