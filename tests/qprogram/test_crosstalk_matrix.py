@@ -21,6 +21,11 @@ class TestCrosstalkMatrix:
         assert len(crosstalk_matrix["bus1"]) == 1
         assert crosstalk_matrix["bus1"]["bus2"] == 0.5
 
+        crosstalk_matrix["bus2"] = {"bus1": 0.1}
+        assert isinstance(crosstalk_matrix["bus2"], dict)
+        assert len(crosstalk_matrix["bus2"]) == 1
+        assert crosstalk_matrix["bus2"]["bus1"] == 0.1
+
     def test_str_method(self):
         """Test __str__ method"""
         crosstalk_matrix = CrosstalkMatrix()
