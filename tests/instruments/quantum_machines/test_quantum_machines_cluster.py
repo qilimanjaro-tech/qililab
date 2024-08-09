@@ -318,16 +318,20 @@ class TestQuantumMachinesCluster:
         qmm.turn_on()
 
         qmm._qm.compile.return_value = "123"
+        qmm._controller = "opx1000"
+        qmm._intermediate_frequency = {"drive_q0": 20e6}
 
         compile_program_id = qmm.compile(qua_program)
         _ = qmm.run_compiled_program(compile_program_id)
 
-        # CHANGES: qm.queue.add_compiled() -> qm.add_compiled()
+        # TODO: qm.queue.add_compiled() -> qm.add_compiled()
         qmm._qm.queue.add_compiled.assert_called_once_with(compile_program_id)
-        # CHANGES: job.wait_for_execution() is deprecated and will be removed in the future. Please use job.wait_until("Running") instead.
+        # TODO: job.wait_for_execution() is deprecated and will be removed in the future. Please use job.wait_until("Running") instead.
         # The following stopped working in testing, but we have verified that works in hardware, so I remove it temporarily.
         # qmm._qm.queue.add_compiled.return_value.wait_until.assert_called_once()
 
+        qmm.job.set_intermediate_frequency.assert_called_once()
+        qmm._qm.calibrate_element.assert_called_once()
         # Assert that the settings are still in synch:
         assert qmm._config == qmm.settings.to_qua_config()
 
@@ -387,10 +391,17 @@ class TestQuantumMachinesCluster:
         qmm_with_octave.set_parameter_of_bus(bus, parameter, value)
         if parameter == Parameter.LO_FREQUENCY:
             qmm_with_octave._qm.octave.set_lo_frequency.assert_called_once()
+            calls = [
+                call(element)
+                for element in qmm_with_octave._config["elements"]
+                if "RF_inputs" in qmm_with_octave._config["elements"][element]
+            ]
+            qmm_with_octave._qm.calibrate_element.assert_has_calls(calls)
         if parameter == Parameter.GAIN:
             qmm_with_octave._qm.octave.set_rf_output_gain.assert_called_once()
         if parameter == Parameter.IF:
             qmm_with_octave._qm.set_intermediate_frequency.assert_called_once()
+            #assert value == qmm_with_octave._intermediate_frequency[bus]
 
         # Assert that the settings are still in synch:
         assert qmm_with_octave._config == qmm_with_octave.settings.to_qua_config()
@@ -415,7 +426,7 @@ class TestQuantumMachinesCluster:
 
         qmm.set_parameter_of_bus(bus, parameter, value)
         if parameter == Parameter.IF:
-            qmm._qm.set_intermediate_frequency.assert_called_once()
+            assert value == qmm._intermediate_frequency[bus]
         if parameter in [Parameter.THRESHOLD_ROTATION, Parameter.THRESHOLD]:
             element = next((element for element in qmm.settings.elements if element["bus"] == bus), None)
             if parameter == Parameter.THRESHOLD_ROTATION:

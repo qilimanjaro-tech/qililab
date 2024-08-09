@@ -18,7 +18,8 @@ from dataclasses import dataclass
 from typing import Any, cast
 
 import numpy as np
-from qm import DictQuaConfig, QuantumMachine, QuantumMachinesManager, SimulationConfig
+from qm import DictQuaConfig, QmJob, QuantumMachine, QuantumMachinesManager, SimulationConfig
+from qm.api.v2.job_api import JobApi
 from qm.jobs.running_qm_job import RunningQmJob
 from qm.octave import QmOctaveConfig
 from qm.program import Program
@@ -261,14 +262,12 @@ class QuantumMachinesCluster(Instrument):
                         },
                         "IF_out2": {
                             "port": (
-                                (
                                     octave["if_outputs"][1]["controller"],
                                     octave["if_outputs"][1]["fem"],
                                     octave["if_outputs"][1]["port"],
                                 )
                                 if "fem" in octave["if_outputs"][1]
-                                else (octave["if_outputs"][1]["controller"], octave["if_outputs"][1]["port"])
-                            ),
+                                else (octave["if_outputs"][1]["controller"], octave["if_outputs"][1]["port"]),
                             "name": "out2",
                         },
                     }
@@ -401,6 +400,8 @@ class QuantumMachinesCluster(Instrument):
     _config: DictQuaConfig
     _octave_config: QmOctaveConfig | None = None
     _is_connected_to_qm: bool = False
+    _intermediate_frequency: dict[str, float] = {}
+    _controller: str | None = None
     _config_created: bool = False
     _compiled_program_cache: dict[str, str] = {}
 
@@ -519,6 +520,7 @@ class QuantumMachinesCluster(Instrument):
                 self._config["octaves"][octave_name]["RF_outputs"][out_port]["LO_frequency"] = lo_frequency
             if self._is_connected_to_qm:
                 self._qm.octave.set_lo_frequency(element=bus, lo_frequency=lo_frequency)
+                self._qm.calibrate_element(bus)
             if in_port is not None:
                 settings_octave_rf_input = next(
                     rf_input for rf_input in settings_octave["rf_inputs"] if rf_input["port"] == in_port
@@ -545,7 +547,18 @@ class QuantumMachinesCluster(Instrument):
                 if f"mixer_{bus}" in self._config["mixers"]:
                     self._config["mixers"][f"mixer_{bus}"][0]["intermediate_frequency"] = intermediate_frequency
             if self._is_connected_to_qm:
-                self._qm.set_intermediate_frequency(element=bus, freq=intermediate_frequency)
+                if "RF_inputs" in self._config["elements"][bus]:
+                    octave = self._config["elements"][bus]["RF_inputs"]["port"][0]
+                    self._controller = self._config["octaves"][octave]["connectivity"]
+                elif "mixInputs" in self._config["elements"][bus]:
+                    self._controller = self._config["elements"][bus]["mixInputs"]["I"]["controller"]
+                elif "singleInput" in self._config["elements"][bus]:
+                    self._controller = self._config["elements"][bus]["singleInput"]["port"][0]
+                controller_type = self._controller["type"] if "type" in self._controller else "opx1"
+                if controller_type == "opx1":
+                    self._qm.set_intermediate_frequency(element=bus, freq=intermediate_frequency)
+                if controller_type == "opx1000":
+                    self._intermediate_frequency[bus] = intermediate_frequency
             return
         if parameter == Parameter.THRESHOLD_ROTATION:
             threshold_rotation = float(value)
@@ -633,7 +646,7 @@ class QuantumMachinesCluster(Instrument):
             self._compiled_program_cache[qua_program_hash] = self._qm.compile(program=program)
         return self._compiled_program_cache[qua_program_hash]
 
-    def run_compiled_program(self, compiled_program_id: str) -> RunningQmJob:
+    def run_compiled_program(self, compiled_program_id: str) -> QmJob | JobApi:
         """Executes a previously compiled QUA program identified by its unique compiled program ID.
 
         This method submits the compiled program to the Quantum Machines (QM) execution queue and waits for
@@ -646,10 +659,20 @@ class QuantumMachinesCluster(Instrument):
         Returns:
             RunningQmJob: An object representing the running job. This object provides methods and properties to check the status of the job, retrieve results upon completion, and manage or investigate the job's execution.
         """
-        # CHANGES: qm.queue.add_compiled() -> qm.add_compiled()
-        pending_job = self._qm.queue.add_compiled(compiled_program_id)
-        # CHANGES: job.wait_for_execution() is deprecated and will be removed in the future. Please use job.wait_until("Running") instead.
-        return pending_job.wait_for_execution()  # type: ignore[return-value]
+        # TODO: qm.queue.add_compiled() -> qm.add_compiled()
+        self.pending_job = self._qm.queue.add_compiled(  # pylint: disable=attribute-defined-outside-init
+            compiled_program_id
+        )
+
+        # TODO: job.wait_for_execution() is deprecated and will be removed in the future. Please use job.wait_until("Running") instead.
+        self.job = self.pending_job.wait_for_execution()  # type: ignore[return-value]  # pylint: disable=attribute-defined-outside-init
+        if self._controller == "opx1000" and self._intermediate_frequency:
+            for bus, intermediate_frequency in self._intermediate_frequency.items():
+                self.job.set_intermediate_frequency(element=bus, freq=intermediate_frequency)  # type: ignore[union-attr]
+                self._qm.calibrate_element(bus)
+            self._intermediate_frequency = {}
+
+        return self.job
 
     def run(self, program: Program) -> RunningQmJob:
         """Runs the QUA Program.
@@ -666,7 +689,7 @@ class QuantumMachinesCluster(Instrument):
 
         return self._qm.execute(program)
 
-    def get_acquisitions(self, job: RunningQmJob) -> dict[str, np.ndarray]:
+    def get_acquisitions(self, job: QmJob | JobApi) -> dict[str, np.ndarray]:
         """Fetches the results from the execution of a QUA Program.
 
         Once the results have been fetched, they are returned wrapped in a QuantumMachinesResult instance.
