@@ -1,4 +1,5 @@
 """ Data to use alongside the test suite. """
+
 # pylint: disable=too-many-lines
 import copy
 from typing import Any
@@ -1480,7 +1481,7 @@ class SauronQuantumMachines:
             {
                 "name": "con1",
                 "analog_outputs": [
-                    {"port": 1},
+                    {"port": 1, "filter": {"feedforward": [0, 0, 0], "feedback": [0, 0, 0]}},
                     {"port": 2},
                     {"port": 3},
                     {"port": 4},
@@ -1537,7 +1538,7 @@ class SauronQuantumMachines:
             {
                 "name": "con1",
                 "analog_outputs": [
-                    {"port": 1},
+                    {"port": 1, "filter": {"feedforward": [0, 0, 0], "feedback": [0, 0, 0]}},
                     {"port": 2},
                     {"port": 3},
                     {"port": 4},
@@ -1598,7 +1599,7 @@ class SauronQuantumMachines:
             {
                 "name": "con1",
                 "analog_outputs": [
-                    {"port": 1},
+                    {"port": 1, "filter": {"feedforward": [0, 0, 0], "feedback": [0, 0, 0]}},
                     {"port": 2},
                     {"port": 3},
                     {"port": 4},
@@ -1688,7 +1689,7 @@ class SauronQuantumMachines:
                     {
                         "fem": 1,
                         "analog_outputs": [
-                            {"port": 1},
+                            {"port": 1, "filter": {"feedforward": [0, 0, 0], "feedback": [0, 0, 0]}},
                             {"port": 2},
                             {"port": 3},
                             {"port": 4},
