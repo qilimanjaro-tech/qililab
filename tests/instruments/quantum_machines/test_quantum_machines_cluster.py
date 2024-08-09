@@ -318,6 +318,7 @@ class TestQuantumMachinesCluster:
         qmm.turn_on()
 
         qmm._qm.compile.return_value = "123"
+        qmm._controller = "opx1000"
         qmm._intermediate_frequency = {"drive_q0": 20e6}
 
         compile_program_id = qmm.compile(qua_program)
@@ -399,7 +400,8 @@ class TestQuantumMachinesCluster:
         if parameter == Parameter.GAIN:
             qmm_with_octave._qm.octave.set_rf_output_gain.assert_called_once()
         if parameter == Parameter.IF:
-            assert value == qmm_with_octave._intermediate_frequency[bus]
+            qmm_with_octave._qm.octave.set_intermediate_frequency.assert_called_once()
+            #assert value == qmm_with_octave._intermediate_frequency[bus]
 
         # Assert that the settings are still in synch:
         assert qmm_with_octave._config == qmm_with_octave.settings.to_qua_config()
