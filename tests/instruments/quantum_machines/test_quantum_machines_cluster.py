@@ -449,6 +449,9 @@ class TestQuantumMachinesCluster:
         ## Test `settings` qililab dictionary:
         assert qmm.settings.to_qua_config()["elements"][bus][parameter] == value
 
+        # Assert that the settings are still in synch:
+        assert qmm._config == qmm.settings.to_qua_config()
+
     @pytest.mark.parametrize(
         "bus, parameter, value",
         [
@@ -568,6 +571,7 @@ class TestQuantumMachinesCluster:
         if parameter == Parameter.SMEARING:
             if "smearing" in config_keys:
                 assert value == settings_config_dict["elements"][bus]["smearing"]
+
         if parameter == Parameter.THRESHOLD_ROTATION:
             element = next((element for element in qmm.settings.elements if element["bus"] == bus), None)
             assert value == element.get("threshold_rotation", None)
