@@ -637,6 +637,7 @@ class QuantumMachinesCluster(Instrument):
             for bus, intermediate_frequency in self._intermediate_frequency.items():
                 self.job.set_intermediate_frequency(element=bus, freq=intermediate_frequency)  # type: ignore[union-attr]
                 self._qm.calibrate_element(bus)
+            self._intermediate_frequency = {}
 
         return self.job
 
