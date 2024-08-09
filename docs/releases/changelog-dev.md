@@ -10,7 +10,7 @@
   # Create an empty crosstalk matrix
   crosstalk_matrix = CrosstalkMatrix()
 
-  # Add crosstalk values
+  # Add crosstalk values, where the keys are in matrix shape [row][column]
   crosstalk_matrix["bus1"]["bus2"] = 0.9
   crosstalk_matrix["bus2"]["bus1"] = 0.1
 
