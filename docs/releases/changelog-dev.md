@@ -2,6 +2,50 @@
 
 ### New features since last release
 
+- Add workflow for the execution of annealing programs.
+  Example:
+
+  ```python
+  import qililab as ql
+
+  platform = ql.build_platform("examples/runcards/galadriel.yml")
+  anneal_program_dict = [
+    {qubit_0": {"sigma_x" : 0, "sigma_y": 0, "sigma_z": 1, "phix":1, "phiz":1},
+      "qubit_1": {"sigma_x" : 0.1, "sigma_y": 0.1, "sigma_z": 0.1},
+      "coupler_0_1": {"sigma_x" : 1, "sigma_y": 0.2, "sigma_z": 0.2}
+     },
+    {"qubit_0": {"sigma_x" : 0.1, "sigma_y": 0.1, "sigma_z": 1.1},
+      "qubit_1": {"sigma_x" : 0.2, "sigma_y": 0.2, "sigma_z": 0.2},
+      "coupler_0_1": {"sigma_x" : 0.9, "sigma_y": 0.1, "sigma_z": 0.1}
+     },
+     {"qubit_0": {"sigma_x" : 0.3, "sigma_y": 0.3, "sigma_z": 0.7},
+      "qubit_1": {"sigma_x" : 0.5, "sigma_y": 0.2, "sigma_z": 0.01},
+      "coupler_0_1": {"sigma_x" : 0.5, "sigma_y": 0, "sigma_z": -1}
+      }
+  ]
+
+  results = platform.execute_anneal_program(anneal_program_dict=anneal_program_dict,transpiler=lambda delta, epsilon: (delta, epsilon), averages=100_000)
+  ```
+
+  Alternatively, each step of the workflow can be executed separately i.e. the following is equivalent to the above:
+
+  ```python
+  import qililab as ql
+  platform = ql.build_platform("examples/runcards/galadriel.yml")
+  anneal_program_dict = [...] # same as in the above example
+  # intialize annealing program class
+  anneal_program = ql.AnnealingProgram(platform=platform, anneal_program=anneal_program_dict)
+  # transpile ising to flux, now flux values can be accessed same as ising coeff values
+  # eg. for phix qubit 0 at t=1ns anneal_program.anneal_program[1]["qubit_0"]["phix"]
+  anneal_program.transpile(lambda delta,epsilon: (delta,epsilon))
+  # get a dictionary {control_flux: (bus, waveform) from the transpiled fluxes
+  anneal_waveforms = anneal_program.get_waveforms()
+  # from here on we can create a qprogram to execute the annealing schedule
+  [#767](https://github.com/qilimanjaro-tech/qililab/pull/767)
+
+
+  ```
+
 - Added the Qblox-specific `set_markers()` method in `QProgram`. This method takes a 4-bit binary mask as input, where `0` means that the associated marker will be open (no signal) and `1` means that the associated marker will be closed (signal). The mapping between bit indexes and markers depends on the Qblox module that the compiled `QProgram` will run on.
 
   Example:

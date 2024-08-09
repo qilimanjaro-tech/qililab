@@ -28,6 +28,8 @@ DEFAULT_TIMEOUT = 10 * 1000  # 10 seconds
 
 GATE_ALIAS_REGEX = r"(?P<gate>[a-zA-Z]+)\((?P<qubits>\d+(?:,\s*\d+)*)\)"
 
+FLUX_CONTROL_REGEX = r"^(?P<flux>phi[xzy])_(?:q(?P<qubit>\d+)|c(?P<coupler>\d+_\d+))$"  # regex to identify flux control to bus mapping. Example flux control "phix_c0_1" corresponding to phix control of the coupler between qubits 0 and 1
+
 # TODO: Distribute constants over different classes
 
 
@@ -56,6 +58,7 @@ class RUNCARD:
     CURRENT_SOURCE = "current_source"
     DISTORTIONS = "distortions"
     DELAY = "delay"
+    FLUX_CONTROL_TOPOLOGY = "flux_control_topology"
 
 
 class PLATFORM:
