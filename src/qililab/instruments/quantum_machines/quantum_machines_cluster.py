@@ -227,14 +227,12 @@ class QuantumMachinesCluster(Instrument):
                         },
                         "IF_out2": {
                             "port": (
-                                (
                                     octave["if_outputs"][1]["controller"],
                                     octave["if_outputs"][1]["fem"],
                                     octave["if_outputs"][1]["port"],
                                 )
                                 if "fem" in octave["if_outputs"][1]
-                                else (octave["if_outputs"][1]["controller"], octave["if_outputs"][1]["port"])
-                            ),
+                                else (octave["if_outputs"][1]["controller"], octave["if_outputs"][1]["port"]),
                             "name": "out2",
                         },
                     }
@@ -516,12 +514,12 @@ class QuantumMachinesCluster(Instrument):
             if self._is_connected_to_qm:
                 if self._config["elements"][bus]["RF_inputs"]:
                     octave = self._config["elements"][bus]["RF_inputs"]["port"][0]
-                    self.controller = self._config["octaves"][octave]["connectivity"]
+                    self._controller = self._config["octaves"][octave]["connectivity"]
                 elif self._config["elements"][bus]["mixInputs"]:
-                    self.controller = self._config["elements"][bus]["mixInputs"]["port"][0]
+                    self._controller = self._config["elements"][bus]["mixInputs"]["port"][0]
                 elif self._config["elements"][bus]["singleInput"]:
-                    self.controller = self._config["elements"][bus]["singleInput"]["port"][0]
-                controller_type = self.controller["type"] if "type" in self.controller else "opx1"
+                    self._controller = self._config["elements"][bus]["singleInput"]["port"][0]
+                controller_type = self._controller["type"] if "type" in self._controller else "opx1"
                 if controller_type == "opx1":
                     self._qm.set_intermediate_frequency(element=bus, freq=intermediate_frequency)
                 if controller_type == "opx1000":
@@ -633,7 +631,7 @@ class QuantumMachinesCluster(Instrument):
 
         # TODO: job.wait_for_execution() is deprecated and will be removed in the future. Please use job.wait_until("Running") instead.
         self.job = self.pending_job.wait_for_execution()  # type: ignore[return-value]  # pylint: disable=attribute-defined-outside-init
-        if self.controller == "opx1000" and self._intermediate_frequency:
+        if self._controller == "opx1000" and self._intermediate_frequency:
             for bus, intermediate_frequency in self._intermediate_frequency.items():
                 self.job.set_intermediate_frequency(element=bus, freq=intermediate_frequency)  # type: ignore[union-attr]
                 self._qm.calibrate_element(bus)
