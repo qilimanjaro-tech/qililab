@@ -22,9 +22,13 @@ from qililab.yaml import yaml
 
 
 @yaml.register_class
-@dataclass(frozen=True)
+@dataclass()
 class Block(Element):  # pylint: disable=missing-class-docstring
+    _parent: Block = field(default=None, init=False)
     elements: list[Block | Operation] = field(default_factory=list, init=False)
 
     def append(self, element: Block | Operation):  # pylint: disable=missing-function-docstring
         self.elements.append(element)
+
+    def set_parent(self, parent: Block):  # pylint: disable=missing-function-docstring
+        object.__setattr__(self, "_parent", parent)

@@ -21,6 +21,6 @@ from qililab.yaml import yaml
 
 
 @yaml.register_class
-@dataclass(frozen=True)
+@dataclass
 class Parallel(Block):  # pylint: disable=missing-class-docstring
     loops: list[ForLoop | Loop]

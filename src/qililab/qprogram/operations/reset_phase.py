@@ -19,6 +19,6 @@ from qililab.yaml import yaml
 
 
 @yaml.register_class
-@dataclass(frozen=True)
+@dataclass
 class ResetPhase(Operation):  # pylint: disable=missing-class-docstring
     bus: str

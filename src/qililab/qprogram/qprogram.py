@@ -29,6 +29,7 @@ from qililab.qprogram.operations import (
     MeasureWithCalibratedWaveform,
     MeasureWithCalibratedWaveformWeights,
     MeasureWithCalibratedWeights,
+    Operation,
     Play,
     PlayWithCalibratedWaveform,
     ResetPhase,
@@ -164,6 +165,65 @@ class QProgram:  # pylint: disable=too-many-public-methods
             return False
 
         return traverse(self.body)
+
+    # def with_loop_unwrapping(self, *domains: Domain):
+    #     def traverse(block: Block):
+    #         if isinstance(block, (ForLoop, Loop)) and (not domains or block.variable.domain in domains):
+    #             variable_value = block.start
+    #             while variable_value <= block.stop:
+    #                 for index, element in enumerate(block.elements):
+
+    def with_loop_unwrapping(self, *domains: "Domain"):
+        unwrapped_from: list[ForLoop] = []
+        unwrapped_values: list[int | float] = []
+
+        def _unwrap_block(block: Block, *domains: Domain) -> Block:
+            new_elements = []
+            for element in block.elements:
+                if isinstance(element, ForLoop) and (not domains or element.variable.domain in domains):
+                    unwrapped_elements = _unwrap_for_loop(element, *domains)
+                    new_elements.extend(unwrapped_elements)
+                elif isinstance(element, Block):
+                    new_block = deepcopy(element)
+                    new_block.elements = _unwrap_block(new_block, *domains).elements
+                    new_elements.append(new_block)
+                else:
+                    new_elements.append(element)
+            block.elements = new_elements
+            return block
+
+        def _unwrap_for_loop(for_loop: ForLoop, *domains: Domain) -> list[Block | Operation]:
+            unwrapped_elements = []
+            unwrapped_from.append(for_loop)
+            unwrapped_values.append(for_loop.start)
+            while unwrapped_values[-1] <= for_loop.stop:
+                for element in for_loop.elements:
+                    if isinstance(element, ForLoop) and (not domains or element.variable.domain in domains):
+                        other_unwrapped_elements = _unwrap_for_loop(deepcopy(element), *domains)
+                        unwrapped_elements.extend(other_unwrapped_elements)
+                    elif isinstance(element, Block):
+                        new_block = _unwrap_block(deepcopy(element), *domains)
+                        unwrapped_elements.append(new_block)
+                    else:
+                        new_element = deepcopy(element)
+                        for loop, value in zip(unwrapped_from, unwrapped_values):
+                            new_element.add_unwrapping(loop, value)
+                        new_element = new_element.replace_variables_from_unwrappings()
+                        unwrapped_elements.append(new_element)
+                if not self.qblox.disable_autosync:
+                    unwrapped_elements.append(Sync(buses=None))
+                unwrapped_values[-1] += for_loop.step
+            unwrapped_from.pop()
+            unwrapped_values.pop()
+            return unwrapped_elements
+
+        # Copy qprogram so the original remains unaffected
+        copied_qprogram = deepcopy(self)
+
+        # Recursively traverse qprogram applying the bus mapping
+        copied_qprogram._body = _unwrap_block(copied_qprogram.body, *domains)
+
+        return copied_qprogram
 
     def with_bus_mapping(self, bus_mapping: dict[str, str]) -> "QProgram":
         """Returns a copy of the QProgram with bus mappings applied.
@@ -622,6 +682,7 @@ class QProgram:  # pylint: disable=too-many-public-methods
             self.block: Block = Block()
 
         def __enter__(self):
+            self.block.set_parent(self.qprogram._block_stack[-1])
             self.qprogram._append_to_block_stack(block=self.block)
             return self.block
 

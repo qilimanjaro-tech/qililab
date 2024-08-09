@@ -21,7 +21,7 @@ from qililab.yaml import yaml
 
 
 @yaml.register_class
-@dataclass(frozen=True)
+@dataclass
 class Play(Operation):  # pylint: disable=missing-class-docstring
     bus: str
     waveform: Waveform | IQPair
@@ -37,30 +37,41 @@ class Play(Operation):  # pylint: disable=missing-class-docstring
         wf_Q: Waveform | None = self.waveform.Q if isinstance(self.waveform, IQPair) else None
         return wf_I, wf_Q
 
+    def get_waveform_I_variables(self) -> set[Variable]:
+        wf_I, _ = self.get_waveforms()
+        return wf_I.get_variables()
+
+    def get_waveform_Q_variables(self) -> set[Variable]:
+        _, wf_Q = self.get_waveforms()
+        return wf_Q.get_variables() if wf_Q else set()
+
     def get_waveform_variables(self) -> set[Variable]:
         """Get a set of the variables used in the waveforms, if any.
 
         Returns:
             set[Variable]: The set of variables used in the waveforms.
         """
-        wf_I, wf_Q = self.get_waveforms()
-        variables_I = [attribute for attribute in wf_I.__dict__.values() if isinstance(attribute, Variable)]
-        variables_Q = (
-            [attribute for attribute in wf_Q.__dict__.values() if isinstance(attribute, Variable)] if wf_Q else []
-        )
-        return set(variables_I + variables_Q)
+        return self.get_waveform_I_variables() | self.get_waveform_Q_variables()
 
-    def get_variables(self) -> set[Variable]:
-        """Get a set of the variables used in operation, if any.
+    def replace_variables(self, variables: dict[Variable, int | float]) -> "Play":
+        """Replace variables in the waveform with their values from the provided variable_map.
+
+        Args:
+            variable_map (dict[Variable, Union[int, float]]): Mapping of variables to their values.
 
         Returns:
-            set[Variable]: The set of variables used in operation.
+            Waveform: A new waveform with variables replaced.
         """
-        return super().get_variables() | self.get_waveform_variables()
+        wf_I, wf_Q = self.get_waveforms()
+        wf_I.replace_variables(variables=variables)
+        if wf_Q is not None:
+            wf_Q.replace_variables(variables=variables)
+
+        return super().replace_variables(variables=variables)  # type: ignore[return-value]
 
 
 @yaml.register_class
-@dataclass(frozen=True)
+@dataclass
 class PlayWithCalibratedWaveform(Operation):  # pylint: disable=missing-class-docstring
     bus: str
     waveform: str
