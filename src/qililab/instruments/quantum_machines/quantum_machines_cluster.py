@@ -114,6 +114,18 @@ class QuantumMachinesCluster(Instrument):
                             output["port"]: {
                                 "offset": output["offset"] if "offset" in output else 0.0,
                                 "delay": output["delay"] if "delay" in output else 0.0,
+                                "filter": (
+                                    {
+                                        "feedforward": (
+                                            output["filter"]["feedforward"] if "feedforward" in output["filter"] else []
+                                        ),
+                                        "feedback": (
+                                            output["filter"]["feedback"] if "feedback" in output["filter"] else []
+                                        ),
+                                    }
+                                    if "filter" in output
+                                    else {"feedforward": [], "feedback": []}
+                                ),
                             }
                             for output in controller.get("analog_outputs", [])
                         },
@@ -139,6 +151,22 @@ class QuantumMachinesCluster(Instrument):
                                         "sampling_rate": output["sampling_rate"] if "sampling_rate" in output else 1e9,
                                         "upsampling_mode": (
                                             output["upsampling_mode"] if "upsampling_mode" in output else "mw"
+                                        ),
+                                        "filter": (
+                                            {
+                                                "feedforward": (
+                                                    output["filter"]["feedforward"]
+                                                    if "feedforward" in output["filter"]
+                                                    else []
+                                                ),
+                                                "feedback": (
+                                                    output["filter"]["feedback"]
+                                                    if "feedback" in output["filter"]
+                                                    else []
+                                                ),
+                                            }
+                                            if "filter" in output
+                                            else {"feedforward": [], "feedback": []}
                                         ),
                                     }
                                     for output in fem.get("analog_outputs", [])
@@ -205,6 +233,13 @@ class QuantumMachinesCluster(Instrument):
                         "IF_mode_I": "direct",  # can be: "direct" / "mixer" / "envelope" / "off". Default is "direct".
                         "IF_mode_Q": "direct",
                     }
+                if "loopbacks" in octave:
+                    octaves[octave["name"]]["loopbacks"] = [
+                        (
+                            (octave["name"], octave["loopbacks"]["Synth"]),
+                            octave["loopbacks"]["Dmd"],
+                        )
+                    ]
                 if "connectivity" in octave:
                     octaves[octave["name"]]["connectivity"] = (
                         (octave["connectivity"]["controller"], octave["connectivity"]["fem"])

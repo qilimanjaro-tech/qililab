@@ -1,4 +1,5 @@
 """ Data to use alongside the test suite. """
+
 # pylint: disable=too-many-lines
 import copy
 from typing import Any
@@ -1470,7 +1471,7 @@ class SauronQuantumMachines:
             {
                 "name": "con1",
                 "analog_outputs": [
-                    {"port": 1},
+                    {"port": 1, "filter": {"feedforward": [0, 0, 0], "feedback": [0, 0, 0]}},
                     {"port": 2},
                     {"port": 3},
                     {"port": 4},
@@ -1527,7 +1528,7 @@ class SauronQuantumMachines:
             {
                 "name": "con1",
                 "analog_outputs": [
-                    {"port": 1},
+                    {"port": 1, "filter": {"feedforward": [0, 0, 0], "feedback": [0, 0, 0]}},
                     {"port": 2},
                     {"port": 3},
                     {"port": 4},
@@ -1547,6 +1548,7 @@ class SauronQuantumMachines:
                 "name": "octave1",
                 "port": 11555,
                 "connectivity": {"controller": "con1"},
+                "loopbacks": {"Synth": "Synth2", "Dmd": "Dmd2LO"},
                 "rf_outputs": [
                     {"port": 1, "lo_frequency": 6e9},
                     {"port": 2, "lo_frequency": 6e9},
@@ -1588,7 +1590,7 @@ class SauronQuantumMachines:
             {
                 "name": "con1",
                 "analog_outputs": [
-                    {"port": 1},
+                    {"port": 1, "filter": {"feedforward": [0, 0, 0], "feedback": [0, 0, 0]}},
                     {"port": 2},
                     {"port": 3},
                     {"port": 4},
@@ -1641,6 +1643,7 @@ class SauronQuantumMachines:
                 ],
                 "rf_inputs": [{"port": 1, "lo_frequency": 6e9}, {"port": 2, "lo_frequency": 6e9}],
                 "if_outputs": [{"controller": "con1", "port": 1}, {"controller": "con1", "port": 2}],
+                "loopbacks": {"Synth": "Synth2", "Dmd": "Dmd2LO"},
             }
         ],
         "elements": [
@@ -1678,7 +1681,7 @@ class SauronQuantumMachines:
                     {
                         "fem": 1,
                         "analog_outputs": [
-                            {"port": 1},
+                            {"port": 1, "filter": {"feedforward": [0, 0, 0], "feedback": [0, 0, 0]}},
                             {"port": 2},
                             {"port": 3},
                             {"port": 4},
@@ -1698,6 +1701,7 @@ class SauronQuantumMachines:
                 "name": "octave1",
                 "port": 11555,
                 "connectivity": {"controller": "con1", "fem": 1},
+                "loopbacks": {"Synth": "Synth2", "Dmd": "Dmd2LO"},
                 "rf_outputs": [
                     {"port": 1, "lo_frequency": 6e9},
                     {"port": 2, "lo_frequency": 6e9},
