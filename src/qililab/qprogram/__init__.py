@@ -44,6 +44,7 @@ Other QProgram related Classes
 
 """
 from .calibration import Calibration
+from .crosstalk_matrix import CrosstalkMatrix
 from .qblox_compiler import QbloxCompiler
 from .qprogram import QProgram
 from .quantum_machines_compiler import QuantumMachinesCompiler
