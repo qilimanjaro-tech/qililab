@@ -44,6 +44,29 @@
   [#767](https://github.com/qilimanjaro-tech/qililab/pull/767)
 
 
+- Added `CrosstalkMatrix` class to represent and manipulate a crosstalk matrix, where each index corresponds to a bus. The class includes methods for initializing the matrix, getting and setting crosstalk values, and generating string representations of the matrix.
+
+  Example:
+
+  ```Python
+  # Create an empty crosstalk matrix
+  crosstalk_matrix = CrosstalkMatrix()
+
+  # Add crosstalk values, where the keys are in matrix shape [row][column]
+  crosstalk_matrix["bus1"]["bus2"] = 0.9
+  crosstalk_matrix["bus2"]["bus1"] = 0.1
+
+  # Alternatively, create a matrix from a collection of buses.
+  # All crosstalk values are initialized to 1.0
+  crosstalk_matrix = CrosstalkMatrix.from_buses({"bus1", "bus2", "bus3"})
+
+  # Get a formatted string representation of the matrix
+  #        bus1     bus2     bus3
+  # bus1   \        1.0      1.0
+  # bus2   1.0      \        1.0
+  # bus3   1.0      1.0      \
+
+  print(crosstalk_matrix)
   ```
 
 - Added the Qblox-specific `set_markers()` method in `QProgram`. This method takes a 4-bit binary mask as input, where `0` means that the associated marker will be open (no signal) and `1` means that the associated marker will be closed (signal). The mapping between bit indexes and markers depends on the Qblox module that the compiled `QProgram` will run on.
