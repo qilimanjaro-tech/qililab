@@ -1,6 +1,4 @@
 """Test the annealing program class"""
-from unittest.mock import MagicMock
-
 import numpy as np
 import pytest
 
@@ -10,7 +8,7 @@ from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="anneal_program_dictionary")
-def anneal_program_dictionary():
+def get_anneal_program_dictionary():
     """Dummy anneal program dictionary"""
     return [
         {
@@ -32,7 +30,7 @@ def anneal_program_dictionary():
 
 
 @pytest.fixture(name="anneal_program_dictionary_with_flux")
-def anneal_program_dictionary_with_flux():
+def get_anneal_program_dictionary_with_flux():
     """Dummy anneal program dictionary with transpiled fluxes"""
     return [
         {
@@ -75,6 +73,8 @@ def dummy_transpiler(delta, epsilon):
 
 
 class TestAnnealingProgram:
+    """Test class for the AnnealingProgram class"""
+
     def test_init(self, annealing_program, anneal_program_dictionary):
         """Test init method"""
         assert annealing_program.platform.to_dict() == Galadriel.runcard
