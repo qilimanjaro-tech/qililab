@@ -93,6 +93,7 @@ class Runcard:
         bus: str
 
         def to_dict(self):
+            """Method to convert to dictionary"""
             return asdict(self)
 
     @nested_dataclass
