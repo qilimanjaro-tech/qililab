@@ -92,6 +92,9 @@ class Runcard:
         flux: str
         bus: str
 
+        def to_dict(self):
+            return asdict(self)
+
     @nested_dataclass
     class GatesSettings(Settings):
         """Dataclass with all the settings and gates definitions needed to decompose gates into pulses."""

@@ -15,7 +15,6 @@ from qibo.models import Circuit
 from qpysequence import Sequence
 from ruamel.yaml import YAML
 
-import qililab
 from qililab import Arbitrary, save_platform
 from qililab.chip import Chip, Qubit
 from qililab.constants import DEFAULT_PLATFORM_NAME
@@ -27,6 +26,7 @@ from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
 from qililab.qprogram import QProgram
+from qililab.qprogram.qprogram import to_readable_dict
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.settings import Runcard
@@ -386,7 +386,7 @@ class TestMethods:
         platform.execute_anneal_program(
             anneal_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}], transpiler=transpiler, averages=2
         )
-        anneal_qprogram.__dict__() == mock_execute_qprogram.call_args[1]["qprogram"].__dict__()
+        to_readable_dict(anneal_qprogram) == to_readable_dict(mock_execute_qprogram.call_args[1]["qprogram"])
 
     def test_execute_qprogram_with_qblox(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""

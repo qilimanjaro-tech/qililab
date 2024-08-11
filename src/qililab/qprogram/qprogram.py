@@ -14,7 +14,7 @@
 
 from collections import deque
 from copy import deepcopy
-from dataclasses import asdict, fields, replace
+from dataclasses import fields, replace
 from typing import overload
 
 import numpy as np
@@ -101,54 +101,6 @@ class QProgram:  # pylint: disable=too-many-public-methods
         self._buses: set[str] = set()
         self._variables: list[Variable] = []
         self._block_stack: deque[Block] = deque([self._body])
-
-    def __dict__(self) -> dict:  # type: ignore[override]
-        """Dictionary representation"""
-        return self._to_dict(self)
-
-    def _to_dict(self, program) -> dict:
-        """Converts qprogram to dictionary containing the instructions
-
-        Args:
-            program (QProgram): qprogram to convert
-
-        Returns:
-            dict: qprogram dictionary
-        """
-        if hasattr(program, "body"):
-            return self._to_dict(program.body)
-
-        temp_dict = {"name": type(program).__name__}
-        for field in fields(program):
-            if field.name in ["_uuid", "variable"]:
-                continue
-            temp_dict[field.name] = (
-                getattr(program, field.name)
-                if field.name != "elements"
-                else [self._to_dict(element) for element in getattr(program, field.name)]
-            )
-
-        if isinstance(program, Operation):
-            if hasattr(program, "waveform"):
-                temp_dict["waveform"] = (
-                    [(type(program.waveform).__name__, program.waveform.envelope())]
-                    if isinstance(program.waveform, Waveform)
-                    else [
-                        (type(program.waveform.I).__name__, program.waveform.I.envelope()),  # type: ignore[assignment]
-                        (type(program.waveform.Q).__name__, program.waveform.Q.envelope()),  # type: ignore[assignment]
-                    ]
-                )
-            if hasattr(program, "weights"):
-                temp_dict["weights"] = [  # type: ignore[assignment]
-                    (type(program.weights.I).__name__, program.weights.I.envelope()),
-                    (type(program.weights.Q).__name__, program.weights.Q.envelope()),
-                ]
-
-        for key, value in temp_dict.copy().items():
-            if "UUID" in str(value):
-                temp_dict[key] = None
-
-        return temp_dict
 
     def _append_to_block_stack(self, block: Block):
         self._block_stack.append(block)
@@ -972,3 +924,48 @@ class QProgram:  # pylint: disable=too-many-public-methods
                 )
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
+
+
+def to_readable_dict(program) -> dict:
+    """Converts qprogram to dictionary containing the instructions
+
+    Args:
+        program (QProgram): qprogram to convert
+
+    Returns:
+        dict: qprogram dictionary
+    """
+    if hasattr(program, "body"):
+        return to_readable_dict(program.body)
+
+    temp_dict = {"name": type(program).__name__}
+    for field in fields(program):
+        if field.name in ["_uuid", "variable"]:
+            continue
+        temp_dict[field.name] = (
+            getattr(program, field.name)
+            if field.name != "elements"
+            else [to_readable_dict(element) for element in getattr(program, field.name)]
+        )
+
+    if isinstance(program, Operation):
+        if hasattr(program, "waveform"):
+            temp_dict["waveform"] = (
+                [(type(program.waveform).__name__, program.waveform.envelope())]
+                if isinstance(program.waveform, Waveform)
+                else [
+                    (type(program.waveform.I).__name__, program.waveform.I.envelope()),  # type: ignore[assignment]
+                    (type(program.waveform.Q).__name__, program.waveform.Q.envelope()),  # type: ignore[assignment]
+                ]
+            )
+        if hasattr(program, "weights"):
+            temp_dict["weights"] = [  # type: ignore[assignment]
+                (type(program.weights.I).__name__, program.weights.I.envelope()),
+                (type(program.weights.Q).__name__, program.weights.Q.envelope()),
+            ]
+
+    for key, value in temp_dict.copy().items():
+        if "UUID" in str(value):
+            temp_dict[key] = None
+
+    return temp_dict

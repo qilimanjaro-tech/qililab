@@ -580,8 +580,19 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 self.instrument_controllers.to_dict() if self.instrument_controllers is not None else None
             ),
         }
+        flux_control_topology_dict = {
+            RUNCARD.FLUX_CONTROL_TOPOLOGY: [flux_control.to_dict() for flux_control in self.flux_to_bus_topology]
+        }
 
-        return name_dict | gates_settings_dict | chip_dict | buses_dict | instrument_dict | instrument_controllers_dict
+        return (
+            name_dict
+            | gates_settings_dict
+            | chip_dict
+            | buses_dict
+            | instrument_dict
+            | instrument_controllers_dict
+            | flux_control_topology_dict
+        )
 
     def __str__(self) -> str:
         """String representation of the platform.
@@ -591,9 +602,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """
         return str(YAML().dump(self.to_dict(), io.BytesIO()))
 
+    # TODO: determine default average
     def execute_anneal_program(
         self, anneal_program_dict: list[dict[str, dict[str, float]]], transpiler: Callable, averages=1
-    ):  # TODO: determine default average
+    ):
         """Given an anneal program execute it as a qprogram.
         The anneal program should contain a time ordered list of circuit elements and their corresponging ising coefficients as a dictionary. Example structure:
         [
