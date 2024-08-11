@@ -111,7 +111,7 @@ def fixture_qblox_results():
 
 
 @pytest.fixture(name="anneal_qprogram")
-def anneal_qprogram(runcard):
+def get_anneal_qprogram(runcard):
     platform = Platform(runcard=runcard)
     anneal_waveforms = {
         "phix_q0": (
