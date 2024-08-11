@@ -5,7 +5,6 @@ import io
 import re
 from pathlib import Path
 from queue import Queue
-from unittest import mock
 from unittest.mock import MagicMock, patch
 
 import numpy as np

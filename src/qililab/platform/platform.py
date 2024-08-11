@@ -610,15 +610,16 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         The anneal program should contain a time ordered list of circuit elements and their corresponging ising coefficients as a dictionary. Example structure:
 
         .. code-block:: python
-        [
-            {"qubit_0": {"sigma_x" : 0, "sigma_y" : 1, "sigma_z" : 2},
-            "coupler_1_0 : {...},
-            },      # time=0ns
-            {...},  # time=1ns
-        .
-        .
-        .
-        ]
+            [
+                {"qubit_0": {"sigma_x" : 0, "sigma_y" : 1, "sigma_z" : 2},
+                "coupler_1_0 : {...},
+                },      # time=0ns
+                {...},  # time=1ns
+            .
+            .
+            .
+            ]
+        
         This dictionary containing ising coefficients is transpiled to fluxes using the given transpiler. Then the correspoinding waveforms are obtained and assigned to a bus
         from the bus to flux mapping given by the runcard.
 
