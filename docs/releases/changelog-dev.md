@@ -101,6 +101,47 @@
 
   [#762](https://github.com/qilimanjaro-tech/qililab/pull/762)
 
+- Added `filter` argument inside the qua config file compilation from runcards with qm clusters. This is an optional element for distorsion filters that includes feedforward and feedback, two distorion lists for distorsion compensation and fields in qua config filter. These filters are calibrated and then introduced as compensation for the distorsions of the pulses from external sources such as Bias T. The runcard now might include the new filters (optional):
+
+  Example:
+    ```
+    instruments:
+    - name: quantum_machines_cluster
+      alias: QMM
+      firmware: 0.7.0
+      ...
+      controllers:
+          - name: con1
+            analog_outputs:
+            - port: 1
+              offset: 0.0
+              filter:
+                feedforward: [0.1,0.1,0.1]
+                feedback: [0.1,0.1,0.1]
+      ...
+    ```
+
+  [#768](https://github.com/qilimanjaro-tech/qililab/pull/768)
+
+- Added loopbacks in the octave config file for qua following the documentation at https://docs.quantum-machines.co/1.2.0/qm-qua-sdk/docs/Guides/octave/?h=octaves#setting-the-octaves-clock. By default only port 1 of the octave is linked with a local demodulator, to work with the rest of the ports at the back ports must be connected based on the Octave Block Diagram [https://docs.quantum-machines.co/1.2.0/qm-qua-sdk/docs/Hardware/octave/#octave-block-diagram]. Where `Synth` is one of the possible 3 synths and `Dmd` is one of the 2 demodulators.
+
+  Example:
+
+    ```
+    - name: quantum_machines_cluster
+        alias: QMM
+        ...
+        octaves:
+          - name: octave1
+            port: 11252
+            ...
+            loopbacks:
+              Synth: Synth2 # Synth1, Synth2, Synth3
+              Dmd: Dmd2LO # Dmd1LO, Dmd2LO
+    ```
+
+  [#770](https://github.com/qilimanjaro-tech/qililab/pull/770)
+
 ### Improvements
 
 - Now platform.get_parameter works for QM without the need of connecting to the machine.
