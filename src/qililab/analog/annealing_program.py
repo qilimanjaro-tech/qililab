@@ -25,15 +25,18 @@ from qililab.waveforms import Arbitrary as ArbitraryWave
 class AnnealingProgram:
     """Class for an Annealing Program. The program should have the format
 
-    [
-        {"qubit_0": {"sigma_x" : 0, "sigma_y" : 1, "sigma_z" : 2},
-         "coupler_1_0 : {...},
-        },      # time=0ns
-        {...},  # time=1ns
-    .
-    .
-    .
-    ]
+    .. code-block:: python
+
+        [
+            {"qubit_0": {"sigma_x" : 0, "sigma_y" : 1, "sigma_z" : 2},
+            "coupler_1_0 : {...},
+            },      # time=0ns
+            {...},  # time=1ns
+        .
+        .
+        .
+        ]
+
     """
 
     platform: Any

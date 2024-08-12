@@ -29,7 +29,6 @@ from qililab.qprogram.operations import (
     MeasureWithCalibratedWaveform,
     MeasureWithCalibratedWaveformWeights,
     MeasureWithCalibratedWeights,
-    Operation,
     Play,
     PlayWithCalibratedWaveform,
     ResetPhase,
@@ -128,7 +127,7 @@ class QProgram:  # pylint: disable=too-many-public-methods
                 if hasattr(element, "waveform"):
                     waveform_string = (
                         [f"\tWaveform {type(element.waveform).__name__}:\n"]
-                        + [f"\t\t{array_line}\n" for array_line in str(element.waveform.envelope().split("\n"))]
+                        + [f"\t\t{array_line}\n" for array_line in str(element.waveform.envelope()).split("\n")]
                         if isinstance(element.waveform, Waveform)
                         else [f"\tWaveform I {type(element.waveform.I).__name__}:\n"]
                         + [f"\t\t{array_line}\n" for array_line in str(element.waveform.I.envelope()).split("\n")]
