@@ -2,6 +2,9 @@
 
 ### New features since last release
 
+- Add `__str__` method to qprogram. The string is a readable qprogram.
+  [#767](https://github.com/qilimanjaro-tech/qililab/pull/767)
+
 - Add workflow for the execution of annealing programs.
   Example:
 
@@ -31,18 +34,22 @@
 
   ```python
   import qililab as ql
+
   platform = ql.build_platform("examples/runcards/galadriel.yml")
-  anneal_program_dict = [...] # same as in the above example
+  anneal_program_dict = [...]  # same as in the above example
   # intialize annealing program class
-  anneal_program = ql.AnnealingProgram(platform=platform, anneal_program=anneal_program_dict)
+  anneal_program = ql.AnnealingProgram(
+      platform=platform, anneal_program=anneal_program_dict
+  )
   # transpile ising to flux, now flux values can be accessed same as ising coeff values
   # eg. for phix qubit 0 at t=1ns anneal_program.anneal_program[1]["qubit_0"]["phix"]
-  anneal_program.transpile(lambda delta,epsilon: (delta,epsilon))
+  anneal_program.transpile(lambda delta, epsilon: (delta, epsilon))
   # get a dictionary {control_flux: (bus, waveform) from the transpiled fluxes
   anneal_waveforms = anneal_program.get_waveforms()
   # from here on we can create a qprogram to execute the annealing schedule
-  [#767](https://github.com/qilimanjaro-tech/qililab/pull/767)
+  ```
 
+  [#767](https://github.com/qilimanjaro-tech/qililab/pull/767)
 
 - Added `CrosstalkMatrix` class to represent and manipulate a crosstalk matrix, where each index corresponds to a bus. The class includes methods for initializing the matrix, getting and setting crosstalk values, and generating string representations of the matrix.
 
@@ -127,41 +134,42 @@
 - Added `filter` argument inside the qua config file compilation from runcards with qm clusters. This is an optional element for distorsion filters that includes feedforward and feedback, two distorion lists for distorsion compensation and fields in qua config filter. These filters are calibrated and then introduced as compensation for the distorsions of the pulses from external sources such as Bias T. The runcard now might include the new filters (optional):
 
   Example:
-    ```
-    instruments:
-    - name: quantum_machines_cluster
-      alias: QMM
-      firmware: 0.7.0
-      ...
-      controllers:
-          - name: con1
-            analog_outputs:
-            - port: 1
-              offset: 0.0
-              filter:
-                feedforward: [0.1,0.1,0.1]
-                feedback: [0.1,0.1,0.1]
-      ...
-    ```
+
+  ```
+  instruments:
+  - name: quantum_machines_cluster
+    alias: QMM
+    firmware: 0.7.0
+    ...
+    controllers:
+        - name: con1
+          analog_outputs:
+          - port: 1
+            offset: 0.0
+            filter:
+              feedforward: [0.1,0.1,0.1]
+              feedback: [0.1,0.1,0.1]
+    ...
+  ```
 
   [#768](https://github.com/qilimanjaro-tech/qililab/pull/768)
 
-- Added loopbacks in the octave config file for qua following the documentation at https://docs.quantum-machines.co/1.2.0/qm-qua-sdk/docs/Guides/octave/?h=octaves#setting-the-octaves-clock. By default only port 1 of the octave is linked with a local demodulator, to work with the rest of the ports at the back ports must be connected based on the Octave Block Diagram [https://docs.quantum-machines.co/1.2.0/qm-qua-sdk/docs/Hardware/octave/#octave-block-diagram]. Where `Synth` is one of the possible 3 synths and `Dmd` is one of the 2 demodulators.
+- Added loopbacks in the octave config file for qua following the documentation at https://docs.quantum-machines.co/1.2.0/qm-qua-sdk/docs/Guides/octave/?h=octaves#setting-the-octaves-clock. By default only port 1 of the octave is linked with a local demodulator, to work with the rest of the ports at the back ports must be connected based on the Octave Block Diagram \[https://docs.quantum-machines.co/1.2.0/qm-qua-sdk/docs/Hardware/octave/#octave-block-diagram\]. Where `Synth` is one of the possible 3 synths and `Dmd` is one of the 2 demodulators.
 
   Example:
 
-    ```
-    - name: quantum_machines_cluster
-        alias: QMM
-        ...
-        octaves:
-          - name: octave1
-            port: 11252
-            ...
-            loopbacks:
-              Synth: Synth2 # Synth1, Synth2, Synth3
-              Dmd: Dmd2LO # Dmd1LO, Dmd2LO
-    ```
+  ```
+  - name: quantum_machines_cluster
+      alias: QMM
+      ...
+      octaves:
+        - name: octave1
+          port: 11252
+          ...
+          loopbacks:
+            Synth: Synth2 # Synth1, Synth2, Synth3
+            Dmd: Dmd2LO # Dmd1LO, Dmd2LO
+  ```
 
   [#770](https://github.com/qilimanjaro-tech/qililab/pull/770)
 
