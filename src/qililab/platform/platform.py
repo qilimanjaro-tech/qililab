@@ -401,7 +401,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                         (
                             element.bus
                             for element in self.flux_to_bus_topology  # type: ignore[union-attr]
-                            if element.flux == f"{flux}_{element_shorthands[element_type]}{regex_match[element_type]}"
+                            if element.flux == f"{flux}_{element_shorthands[element_type]}{regex_match[element_type]}"  # type: ignore[index]
                         ),
                         None,
                     )
