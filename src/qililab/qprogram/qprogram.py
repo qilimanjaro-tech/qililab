@@ -102,6 +102,55 @@ class QProgram:  # pylint: disable=too-many-public-methods
         self._variables: list[Variable] = []
         self._block_stack: deque[Block] = deque([self._body])
 
+    def __str__(self) -> str:
+        def traverse(block: Block):
+            string_elements = []
+            for element in block.elements:
+                string_elements.append(f"{type(element).__name__}:\n")
+                for field in fields(element):
+                    if field.name in [
+                        "_uuid",
+                        "variable",
+                        "elements",
+                        "waveform",
+                        "weights",
+                    ]:  # ignore uuid, variables. elements, waveforms and weights are handled separately
+                        continue
+                    string_elements.append(
+                        f"\t{field.name}: {getattr(element, field.name) if 'UUID' not in str(getattr(element, field.name)) else None}\n"
+                    )
+                if isinstance(element, Block):
+                    # handle blocks
+                    for string_element in traverse(element):
+                        string_elements.append(f"\t{string_element}")
+
+                # if not a block, it is asusmed that element is type Operation
+                if hasattr(element, "waveform"):
+                    waveform_string = (
+                        [f"\tWaveform {type(element.waveform).__name__}:\n"]
+                        + [f"\t\t{array_line}\n" for array_line in str(element.waveform.envelope().split("\n"))]
+                        if isinstance(element.waveform, Waveform)
+                        else [f"\tWaveform I {type(element.waveform.I).__name__}:\n"]
+                        + [f"\t\t{array_line}\n" for array_line in str(element.waveform.I.envelope()).split("\n")]
+                        + [f"\tWaveform Q {type(element.waveform.Q).__name__}):\n"]
+                        + [f"\t\t{array_line}\n" for array_line in str(element.waveform.Q.envelope()).split("\n")]
+                    )
+                    string_elements.extend(waveform_string)
+
+                if hasattr(element, "weights"):
+                    string_elements.append(f"\tWeights I {type(element.weights.I).__name__}:\n")
+                    string_elements.extend(
+                        [f"\t\t{array_element}\n" for array_element in str(element.weights.I.envelope()).split("\n")]
+                    )
+                    string_elements.append(f"\tWeights Q {type(element.weights.Q).__name__}:\n")
+                    string_elements.extend(
+                        [f"\t\t{array_element}\n" for array_element in str(element.weights.Q.envelope()).split("\n")]
+                    )
+
+            return string_elements
+
+        return "".join(traverse(self._body))
+
     def _append_to_block_stack(self, block: Block):
         self._block_stack.append(block)
 
@@ -924,48 +973,3 @@ class QProgram:  # pylint: disable=too-many-public-methods
                 )
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
-
-
-def to_readable_dict(program) -> dict:
-    """Converts qprogram to dictionary containing the instructions
-
-    Args:
-        program (QProgram): qprogram to convert
-
-    Returns:
-        dict: qprogram dictionary
-    """
-    if hasattr(program, "body"):
-        return to_readable_dict(program.body)
-
-    temp_dict = {"name": type(program).__name__}
-    for field in fields(program):
-        if field.name in ["_uuid", "variable"]:
-            continue
-        temp_dict[field.name] = (
-            getattr(program, field.name)
-            if field.name != "elements"
-            else [to_readable_dict(element) for element in getattr(program, field.name)]
-        )
-
-    if isinstance(program, Operation):
-        if hasattr(program, "waveform"):
-            temp_dict["waveform"] = (
-                [(type(program.waveform).__name__, program.waveform.envelope())]
-                if isinstance(program.waveform, Waveform)
-                else [
-                    (type(program.waveform.I).__name__, program.waveform.I.envelope()),  # type: ignore[assignment]
-                    (type(program.waveform.Q).__name__, program.waveform.Q.envelope()),  # type: ignore[assignment]
-                ]
-            )
-        if hasattr(program, "weights"):
-            temp_dict["weights"] = [  # type: ignore[assignment]
-                (type(program.weights.I).__name__, program.weights.I.envelope()),
-                (type(program.weights.Q).__name__, program.weights.Q.envelope()),
-            ]
-
-    for key, value in temp_dict.copy().items():
-        if "UUID" in str(value):
-            temp_dict[key] = None
-
-    return temp_dict
