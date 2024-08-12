@@ -382,7 +382,7 @@ class TestMethods:
         transpiler.return_value = (1, 2)
         # with patch(qililab.analog.annealing_program, "AnnealingProgram") as dummy_anneal_program:
         platform.execute_anneal_program(
-            anneal_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}], transpiler=transpiler, averages=2
+            annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}], transpiler=transpiler, averages=2
         )
         assert str(anneal_qprogram) == str(mock_execute_qprogram.call_args[1]["qprogram"])
 

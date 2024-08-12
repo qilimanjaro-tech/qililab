@@ -21,7 +21,6 @@ from qililab.platform.components import Bus
 from qililab.waveforms import Arbitrary as ArbitraryWave
 
 
-@dataclass
 class AnnealingProgram:
     """Class for an Annealing Program. The program should have the format
 
@@ -37,10 +36,17 @@ class AnnealingProgram:
         .
         ]
 
+
+    Args:
+        platform (Any): platform
+        annealing_program (list[dict[str, dict[str, float]]]): dictionary with the annealing program with the above structure.
     """
 
-    platform: Any
-    anneal_program: list[dict[str, dict[str, float]]]
+    def __init__(self, platform: Any, annealing_program: list[dict[str, dict[str, float]]]):
+        """Init method"""
+        self._platform = platform
+        self._annealing_program = annealing_program
+        self.annealing_program = annealing_program  # TODO: implement as frozenDataclass
 
     def transpile(self, transpiler: Callable):
         """First implementation of a transpiler, pretty basic but good as a first step. Transpiles from ising coefficients to fluxes
@@ -51,13 +57,13 @@ class AnnealingProgram:
         """
 
         # iterate over each anneal step and transpile ising to fluxes
-        for anneal_step in self.anneal_program:
-            for circuit_element in anneal_step:
+        for annealing_step in self._annealing_program:
+            for circuit_element in annealing_step:
                 phix, phiz = transpiler(
-                    delta=anneal_step[circuit_element]["sigma_x"], epsilon=anneal_step[circuit_element]["sigma_z"]
+                    delta=annealing_step[circuit_element]["sigma_x"], epsilon=annealing_step[circuit_element]["sigma_z"]
                 )
-                anneal_step[circuit_element]["phix"] = phix
-                anneal_step[circuit_element]["phiz"] = phiz
+                annealing_step[circuit_element]["phix"] = phix
+                annealing_step[circuit_element]["phiz"] = phiz
 
     def get_waveforms(self) -> dict[str, tuple[Bus, ArbitraryWave]]:
         """Returns a dictionary containing (bus, waveform) for each flux control from the transpiled fluxes. `AnnealingProgram.transpile` should be run first. The waveform is an arbitrary waveform obtained from the transpiled fluxes.
@@ -69,20 +75,20 @@ class AnnealingProgram:
         element_name_map = {"qubit": "q", "coupler": "c"}
         circuit_element_map = {
             (element, flux): f"{flux}_{element_name_map[element.split('_', 1)[0]]}{element.split('_', 1)[1]}"
-            for element in self.anneal_program[0].keys()
-            for flux in self.anneal_program[0][element].keys()
+            for element in self._annealing_program[0].keys()
+            for flux in self._annealing_program[0][element].keys()
             if "phi" in flux
         }  # {(element, flux): flux_line}
 
         # Initialize dictionary with flux_lines pointing to (corresponding bus, waveform)
-        anneal_waveforms = {  # type: ignore[var-annotated]
-            flux_line: (self.platform.get_element(flux_line), []) for flux_line in circuit_element_map.values()
+        annealing_waveforms = {  # type: ignore[var-annotated]
+            flux_line: (self._platform.get_element(flux_line), []) for flux_line in circuit_element_map.values()
         }
         # unravel each point of the anneal program to get timewise arrays of waveforms
-        for anneal_step in self.anneal_program:
+        for annealing_step in self._annealing_program:
             for circuit_element, flux in circuit_element_map.keys():
-                anneal_waveforms[circuit_element_map[circuit_element, flux]][1].append(
-                    anneal_step[circuit_element][flux]
+                annealing_waveforms[circuit_element_map[circuit_element, flux]][1].append(
+                    annealing_step[circuit_element][flux]
                 )
 
-        return {key: (value[0], ArbitraryWave(np.array(value[1]))) for key, value in anneal_waveforms.items()}
+        return {key: (value[0], ArbitraryWave(np.array(value[1]))) for key, value in annealing_waveforms.items()}

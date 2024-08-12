@@ -50,7 +50,7 @@ def get_anneal_program_dictionary_with_flux():
 def dummy_annealing_program(anneal_program_dictionary):
     """Build dummy annealing program"""
     return AnnealingProgram(
-        platform=build_platform(runcard=Galadriel.runcard), anneal_program=anneal_program_dictionary
+        platform=build_platform(runcard=Galadriel.runcard), annealing_program=anneal_program_dictionary
     )
 
 
@@ -58,7 +58,7 @@ def dummy_annealing_program(anneal_program_dictionary):
 def dummy_annealing_program_with_flux(anneal_program_dictionary_with_flux):
     """Build dummy annealing program with fluxes already transpiled"""
     return AnnealingProgram(
-        platform=build_platform(runcard=Galadriel.runcard), anneal_program=anneal_program_dictionary_with_flux
+        platform=build_platform(runcard=Galadriel.runcard), annealing_program=anneal_program_dictionary_with_flux
     )
 
 

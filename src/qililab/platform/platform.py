@@ -604,10 +604,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
     # TODO: determine default average
     def execute_anneal_program(
-        self, anneal_program_dict: list[dict[str, dict[str, float]]], transpiler: Callable, averages=1
+        self, annealing_program_dict: list[dict[str, dict[str, float]]], transpiler: Callable, averages=1
     ):
-        """Given an anneal program execute it as a qprogram.
-        The anneal program should contain a time ordered list of circuit elements and their corresponging ising coefficients as a dictionary. Example structure:
+        """Given an annealing program execute it as a qprogram.
+        The annealing program should contain a time ordered list of circuit elements and their corresponging ising coefficients as a dictionary. Example structure:
 
         .. code-block:: python
 
@@ -625,22 +625,22 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         from the bus to flux mapping given by the runcard.
 
         Args:
-            anneal_program_dict (list[dict[str, dict[str, float]]]): anneal program to run
+            annealing_program_dict (list[dict[str, dict[str, float]]]): annealing program to run
             transpiler (Callable): ising to flux transpiler. The transpiler should take 2 values as arguments (delta, epsilon) and return 2 values (phix, phiz)
             averages (int, optional): Amount of times to run and average the program over. Defaults to 1.
         """
-        anneal_program = AnnealingProgram(self, anneal_program_dict)
-        anneal_program.transpile(transpiler)
-        anneal_waveforms = anneal_program.get_waveforms()
+        annealing_program = AnnealingProgram(self, annealing_program_dict)
+        annealing_program.transpile(transpiler)
+        annealing_waveforms = annealing_program.get_waveforms()
 
-        qp_anneal = QProgram()
-        with qp_anneal.average(averages):
-            for bus, waveform in anneal_waveforms.values():
-                qp_anneal.play(bus=bus.alias, waveform=waveform)
+        qp_annealing = QProgram()
+        with qp_annealing.average(averages):
+            for bus, waveform in annealing_waveforms.values():
+                qp_annealing.play(bus=bus.alias, waveform=waveform)
 
         # TODO: define readout
 
-        self.execute_qprogram(qprogram=qp_anneal)
+        self.execute_qprogram(qprogram=qp_annealing)
 
     def execute_qprogram(  # pylint: disable=too-many-locals
         self,
