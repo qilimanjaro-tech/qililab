@@ -394,8 +394,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             if regex_match is not None:
                 element_type = regex_match.lastgroup
                 element_shorthands = {"qubit": "q", "coupler": "c"}
-                if element_type not in element_shorthands:
-                    raise ValueError("Invalid element selected in runcard for flux {flux} with alias {alias}")
                 flux = regex_match["flux"]
                 # TODO: support commuting the name of the coupler eg. c1_0 = c0_1
                 return self._get_bus_by_alias(
