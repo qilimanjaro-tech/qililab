@@ -8,14 +8,14 @@ import numpy as np
 import pytest
 from qm import Program
 from qm.qua import play, program
+from tests.data import SauronQuantumMachines  # pylint: disable=import-error, no-name-in-module
+from tests.test_utils import build_platform  # pylint: disable=import-error, no-name-in-module
 
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Platform
 from qililab.settings import Settings
 from qililab.typings import Parameter
-from tests.data import SauronQuantumMachines  # pylint: disable=import-error, no-name-in-module
-from tests.test_utils import build_platform  # pylint: disable=import-error, no-name-in-module
 
 
 @pytest.fixture(name="qua_program")
@@ -279,6 +279,26 @@ class TestQuantumMachinesCluster:
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    def test_get_controller_from_bus_singleInput(
+        self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, compilation_config: dict
+    ):
+        controller = qmm.get_controller_from_bus("flux_q0")
+        assert controller == "opx1"
+
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    def test_get_controller_from_bus_without_controller_raises_error(
+        self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, compilation_config: dict
+    ):
+        """Test get_controller_from_bus method raises an error when no controller is inside bus."""
+        with pytest.raises(
+            AttributeError,
+            match=re.escape("Controller with bus bus does not exist"),
+        ):
+            qmm.get_controller_from_bus("bus")
+
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
     def test_compile(self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, qua_program: Program):
         qmm.initial_setup()
         qmm.turn_on()
@@ -425,7 +445,7 @@ class TestQuantumMachinesCluster:
         qmm._config = qmm.settings.to_qua_config()
 
         qmm.set_parameter_of_bus(bus, parameter, value)
-        
+
         element = next((element for element in qmm.settings.elements if element["bus"] == bus), None)
         if parameter == Parameter.IF:
             assert value == element["intermediate_frequency"]
@@ -459,6 +479,32 @@ class TestQuantumMachinesCluster:
         assert qmm._config["elements"][bus][parameter] == value
         ## Test `settings` qililab dictionary:
         assert qmm.settings.to_qua_config()["elements"][bus][parameter] == value
+
+    @pytest.mark.parametrize(
+        "bus, parameter, value",
+        [
+            ("drive_q0", Parameter.IF, 17e6),
+        ],
+    )
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    def test_set_parameter_without_connection_changes_settings(
+        self,
+        mock_qmm,
+        mock_qm,
+        bus: str,
+        parameter: Parameter,
+        value: float | str | bool,
+        qmm_with_opx1000: QuantumMachinesCluster,
+    ):
+        """Test that both the local `settings` and `_config` are changed by the set method without connection."""
+
+        # Set intermidiate frequency to 17e6 locally
+        qmm_with_opx1000.set_parameter_of_bus(bus, parameter, value)
+        qmm_with_opx1000.initial_setup()
+
+        ## Test `_intermediate_frequency[bus]` is created for later use:
+        assert qmm_with_opx1000._intermediate_frequency[bus] == value
 
     @pytest.mark.parametrize(
         "bus, parameter, value",
