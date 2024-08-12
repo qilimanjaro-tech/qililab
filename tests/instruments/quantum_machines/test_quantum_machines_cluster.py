@@ -296,6 +296,9 @@ class TestQuantumMachinesCluster:
         """Test get_controller_from_bus method raises an error when no controller is inside bus."""
         qmm.initial_setup()
         qmm.turn_on()
+        
+        qmm._config["elements"]["bus"] = "singleInput"
+        qmm._config["elements"]["bus"]["singleInput"]["port"][0] = "con1"
 
         with pytest.raises(
             AttributeError,
@@ -503,11 +506,13 @@ class TestQuantumMachinesCluster:
         value: float | str | bool,
         qmm_with_opx1000: QuantumMachinesCluster,
     ):
-        """Test that both the local `settings` and `_config` are changed by the set method without connection."""
+        """Test that both the set method fills the bus _intermediate_frequency correctly."""
 
-        # Set intermidiate frequency to 17e6 locally
-        qmm_with_opx1000.set_parameter_of_bus(bus, parameter, value)
         qmm_with_opx1000.initial_setup()
+        qmm_with_opx1000.turn_on()
+        qmm_with_opx1000._config = qmm_with_opx1000.settings.to_qua_config()
+
+        qmm_with_opx1000.set_parameter_of_bus(bus, parameter, value)
 
         ## Test `_intermediate_frequency[bus]` is created for later use:
         assert qmm_with_opx1000._intermediate_frequency[bus] == value
