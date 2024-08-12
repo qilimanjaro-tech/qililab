@@ -14,6 +14,8 @@
 
 from typing import Collection
 
+import numpy as np
+
 from qililab.yaml import yaml
 
 
@@ -24,6 +26,50 @@ class CrosstalkMatrix:
     def __init__(self):
         """Initializes an empty crosstalk matrix."""
         self.matrix: dict[str, dict[str, float]] = {}
+
+    def to_array(self) -> np.ndarray:
+        """Returns the np.array representation of the crosstalk matrix.
+
+        Returns:
+            np.ndarray: crosstalk matrix as a numpy array.
+        """
+        xtalk_matrix = np.empty(shape=[len(self.matrix), len(self.matrix)])
+        for i, bus1 in enumerate(self.matrix):
+            for j, bus2 in enumerate(self.matrix[bus1]):
+                xtalk_matrix[i, j] = self.matrix[bus1][bus2]
+        return xtalk_matrix
+
+    def inverse(self) -> dict[str, dict[str, float]]:
+        """Returns the inverse version of the crosstalk matrix (as a bus dictionary).
+
+        Returns:
+            dict[str, dict[str, float]]: inverse crosstalk matrix
+        """
+
+        inverse_xtalk_array = np.linalg.inv(self.to_array())
+        inverse_xtalk_matrix = self.matrix.copy()
+        for i, bus1 in enumerate(self.matrix):
+            for j, bus2 in enumerate(self.matrix[bus1]):
+                inverse_xtalk_matrix[bus1][bus2] = inverse_xtalk_array[i, j]
+        return inverse_xtalk_matrix
+
+    def __matmul__(self, flux: dict[str, float]) -> dict[str, float]:
+        """Matrix multiplication for flux correction. Corrects a flux vector using the inverse crosstalk matrix
+
+        Args:
+            flux (dict[str,float]): Flux vector to correct
+
+        Returns:
+            dict[str,float]: Corrected flux vector
+        """
+        # TODO: test that we're not mixing up rows and columns
+        inverse_matrix = self.inverse()
+        return {
+            xtalk_bus1: sum(
+                inverse_matrix[xtalk_bus1][xtalk_bus2] * flux[xtalk_bus2] for xtalk_bus2 in inverse_matrix[xtalk_bus1]
+            )
+            for xtalk_bus1 in flux
+        }
 
     def __getitem__(self, bus: str) -> dict[str, float]:
         """Returns the dictionary of crosstalk values for the given bus.
