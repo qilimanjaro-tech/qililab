@@ -296,9 +296,8 @@ class TestQuantumMachinesCluster:
         """Test get_controller_from_bus method raises an error when no controller is inside bus."""
         qmm.initial_setup()
         qmm.turn_on()
-        
-        qmm._config["elements"]["bus"] = "singleInput"
-        qmm._config["elements"]["bus"]["singleInput"]["port"][0] = "con1"
+
+        qmm._config["elements"]["bus"] = {"singleInput": {"port": ("con1", 1)}}
 
         with pytest.raises(
             AttributeError,
