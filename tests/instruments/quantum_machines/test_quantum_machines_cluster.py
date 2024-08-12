@@ -425,14 +425,14 @@ class TestQuantumMachinesCluster:
         qmm._config = qmm.settings.to_qua_config()
 
         qmm.set_parameter_of_bus(bus, parameter, value)
+        
+        element = next((element for element in qmm.settings.elements if element["bus"] == bus), None)
         if parameter == Parameter.IF:
-            assert value == qmm._intermediate_frequency[bus]
-        if parameter in [Parameter.THRESHOLD_ROTATION, Parameter.THRESHOLD]:
-            element = next((element for element in qmm.settings.elements if element["bus"] == bus), None)
-            if parameter == Parameter.THRESHOLD_ROTATION:
-                assert value == element["threshold_rotation"]
-            if parameter == Parameter.THRESHOLD:
-                assert value == element["threshold"]
+            assert value == element["intermediate_frequency"]
+        if parameter == Parameter.THRESHOLD_ROTATION:
+            assert value == element["threshold_rotation"]
+        if parameter == Parameter.THRESHOLD:
+            assert value == element["threshold"]
         # Assert that the settings are still in synch:
         assert qmm._config == qmm.settings.to_qua_config()
 

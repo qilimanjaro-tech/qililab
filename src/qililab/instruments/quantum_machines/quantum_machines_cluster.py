@@ -503,9 +503,9 @@ class QuantumMachinesCluster(Instrument):
                 return controller["type"] if "type" in controller else "opx1"
         raise AttributeError(f"Controller with bus {bus} does not exist")
 
-    def set_parameter_of_bus(  # pylint: disable=too-many-locals
+    def set_parameter_of_bus(  # pylint: disable=too-many-locals  # noqa: C901
         self, bus: str, parameter: Parameter, value: float | str | bool
-    ) -> None:  # noqa: C901
+    ) -> None:
         """Sets the parameter of the instrument into the cache (runtime dataclasses).
 
         And if connection to instruments is established, then to the instruments as well.
