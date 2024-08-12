@@ -17,6 +17,7 @@ from typing import Any, Callable
 import numpy as np
 
 from qililab.platform.components import Bus
+from qililab.qprogram import CrosstalkMatrix
 from qililab.waveforms import Arbitrary as ArbitraryWave
 
 
@@ -57,37 +58,50 @@ class AnnealingProgram:
 
         # iterate over each anneal step and transpile ising to fluxes
         for annealing_step in self._annealing_program:
-            for circuit_element in annealing_step:
+            for chip_element in annealing_step:
                 phix, phiz = transpiler(
-                    delta=annealing_step[circuit_element]["sigma_x"], epsilon=annealing_step[circuit_element]["sigma_z"]
+                    delta=annealing_step[chip_element]["sigma_x"], epsilon=annealing_step[chip_element]["sigma_z"]
                 )
-                annealing_step[circuit_element]["phix"] = phix
-                annealing_step[circuit_element]["phiz"] = phiz
+                annealing_step[chip_element]["phix"] = phix
+                annealing_step[chip_element]["phiz"] = phiz
 
-    def get_waveforms(self) -> dict[str, tuple[Bus, ArbitraryWave]]:
+    def get_waveforms(self, xtalk_matrix: CrosstalkMatrix | None = None) -> dict[str, tuple[Bus, ArbitraryWave]]:
         """Returns a dictionary containing (bus, waveform) for each flux control from the transpiled fluxes. `AnnealingProgram.transpile` should be run first. The waveform is an arbitrary waveform obtained from the transpiled fluxes.
 
         Returns:
             dict[str,tuple[Bus,ArbitraryWave]]: Dictionary containing (bus, waveform) for each flux control (i.e. phix or phiz).
         """
+        # TODO: clean and optimize
         # parse names from algorithm notation (e.g. qubit_0) to runcard notation (e.g. q0)
         element_name_map = {"qubit": "q", "coupler": "c"}
-        circuit_element_map = {
+        chip_element_map = {
             (element, flux): f"{flux}_{element_name_map[element.split('_', 1)[0]]}{element.split('_', 1)[1]}"
             for element in self._annealing_program[0].keys()
             for flux in self._annealing_program[0][element].keys()
             if "phi" in flux
-        }  # {(element, flux): flux_line}
+        }  # {(chip element(qubit/coupler), flux): flux_line}
+        chip_element_map_inverse = {v: k for k, v in chip_element_map.items()}
 
         # Initialize dictionary with flux_lines pointing to (corresponding bus, waveform)
         annealing_waveforms = {  # type: ignore[var-annotated]
-            flux_line: (self._platform.get_element(flux_line), []) for flux_line in circuit_element_map.values()
+            flux_line: (self._platform.get_element(flux_line), []) for flux_line in chip_element_map.values()
         }
         # unravel each point of the anneal program to get timewise arrays of waveforms
         for annealing_step in self._annealing_program:
-            for circuit_element, flux in circuit_element_map.keys():
-                annealing_waveforms[circuit_element_map[circuit_element, flux]][1].append(
-                    annealing_step[circuit_element][flux]
-                )
+            bus_flux_dict = {
+                bus: annealing_step[chip_element][flux] for (chip_element, flux), bus in chip_element_map.items()
+            }
+            corrected_flux = xtalk_matrix @ bus_flux_dict
+            for bus, value in corrected_flux.items():
+                annealing_waveforms[chip_element_map_inverse[bus][1]][1].append(value)
+
+            # for chip_element, flux in chip_element_map.keys():
+
+            #     flux = annealing_step[chip_element][flux]
+            #     bus_flux_dict =
+
+            #     annealing_waveforms[chip_element_map[chip_element, flux]][1].append(
+            #         annealing_step[chip_element][flux]
+            #     )
 
         return {key: (value[0], ArbitraryWave(np.array(value[1]))) for key, value in annealing_waveforms.items()}
