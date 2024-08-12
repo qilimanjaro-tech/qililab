@@ -297,7 +297,7 @@ class TestQuantumMachinesCluster:
         qmm.initial_setup()
         qmm.turn_on()
 
-        qmm._config["elements"]["bus"] = {"singleInput": {"port": ("con1", 1)}}
+        qmm._config["elements"]["bus"] = {"singleInput": {"port": ("con10", 1)}}
 
         with pytest.raises(
             AttributeError,
