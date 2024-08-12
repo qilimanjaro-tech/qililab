@@ -8,14 +8,14 @@ import numpy as np
 import pytest
 from qm import Program
 from qm.qua import play, program
-from tests.data import SauronQuantumMachines  # pylint: disable=import-error, no-name-in-module
-from tests.test_utils import build_platform  # pylint: disable=import-error, no-name-in-module
 
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Platform
 from qililab.settings import Settings
 from qililab.typings import Parameter
+from tests.data import SauronQuantumMachines  # pylint: disable=import-error, no-name-in-module
+from tests.test_utils import build_platform  # pylint: disable=import-error, no-name-in-module
 
 
 @pytest.fixture(name="qua_program")
@@ -282,6 +282,9 @@ class TestQuantumMachinesCluster:
     def test_get_controller_from_bus_singleInput(
         self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, compilation_config: dict
     ):
+        qmm.initial_setup()
+        qmm.turn_on()
+
         controller = qmm.get_controller_from_bus("flux_q0")
         assert controller == "opx1"
 
@@ -291,6 +294,9 @@ class TestQuantumMachinesCluster:
         self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, compilation_config: dict
     ):
         """Test get_controller_from_bus method raises an error when no controller is inside bus."""
+        qmm.initial_setup()
+        qmm.turn_on()
+
         with pytest.raises(
             AttributeError,
             match=re.escape("Controller with bus bus does not exist"),
@@ -483,12 +489,12 @@ class TestQuantumMachinesCluster:
     @pytest.mark.parametrize(
         "bus, parameter, value",
         [
-            ("drive_q0", Parameter.IF, 17e6),
+            ("readout_q0_rf", Parameter.IF, 17e6),
         ],
     )
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    def test_set_parameter_without_connection_changes_settings(
+    def test_set_parameter_if_with_opx1000(
         self,
         mock_qmm,
         mock_qm,
