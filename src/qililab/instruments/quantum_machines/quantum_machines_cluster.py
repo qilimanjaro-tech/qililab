@@ -262,12 +262,14 @@ class QuantumMachinesCluster(Instrument):
                         },
                         "IF_out2": {
                             "port": (
+                                (
                                     octave["if_outputs"][1]["controller"],
                                     octave["if_outputs"][1]["fem"],
                                     octave["if_outputs"][1]["port"],
                                 )
                                 if "fem" in octave["if_outputs"][1]
-                                else (octave["if_outputs"][1]["controller"], octave["if_outputs"][1]["port"]),
+                                else (octave["if_outputs"][1]["controller"], octave["if_outputs"][1]["port"])
+                            ),
                             "name": "out2",
                         },
                     }
@@ -476,6 +478,31 @@ class QuantumMachinesCluster(Instrument):
         for element in elements:
             self._qm.calibrate_element(element)
 
+    def get_controller_from_bus(self, bus: str) -> str | None:
+        """Gets the OPX controller name of the bus used
+
+        Args:
+            bus (str): Alias of the bus
+
+        Raises:
+            AttributeError: Raised when given bus does not exist
+
+        Returns:
+            str | None: Alias of the controller, either opx1 or opx1000.
+        """
+        if "RF_inputs" in self._config["elements"][bus]:
+            octave = self._config["elements"][bus]["RF_inputs"]["port"][0]
+            controller_name = self._config["octaves"][octave]["connectivity"]
+        elif "mixInputs" in self._config["elements"][bus]:
+            controller_name = self._config["elements"][bus]["mixInputs"]["I"][0]
+        elif "singleInput" in self._config["elements"][bus]:
+            controller_name = self._config["elements"][bus]["singleInput"]["port"][0]
+
+        for controller in self.settings.controllers:
+            if controller["name"] is controller_name:
+                return controller["type"] if "type" in controller else "opx1"
+        raise AttributeError(f"Controller with bus {bus} does not exist")
+
     def set_parameter_of_bus(  # pylint: disable=too-many-locals
         self, bus: str, parameter: Parameter, value: float | str | bool
     ) -> None:  # noqa: C901
@@ -547,17 +574,10 @@ class QuantumMachinesCluster(Instrument):
                 if f"mixer_{bus}" in self._config["mixers"]:
                     self._config["mixers"][f"mixer_{bus}"][0]["intermediate_frequency"] = intermediate_frequency
             if self._is_connected_to_qm:
-                if "RF_inputs" in self._config["elements"][bus]:
-                    octave = self._config["elements"][bus]["RF_inputs"]["port"][0]
-                    self._controller = self._config["octaves"][octave]["connectivity"]
-                elif "mixInputs" in self._config["elements"][bus]:
-                    self._controller = self._config["elements"][bus]["mixInputs"]["I"]["controller"]
-                elif "singleInput" in self._config["elements"][bus]:
-                    self._controller = self._config["elements"][bus]["singleInput"]["port"][0]
-                controller_type = self._controller["type"] if "type" in self._controller else "opx1"
-                if controller_type == "opx1":
+                self._controller = self.get_controller_from_bus(bus)
+                if self._controller == "opx1":
                     self._qm.set_intermediate_frequency(element=bus, freq=intermediate_frequency)
-                if controller_type == "opx1000":
+                if self._controller == "opx1000":
                     self._intermediate_frequency[bus] = intermediate_frequency
             return
         if parameter == Parameter.THRESHOLD_ROTATION:
