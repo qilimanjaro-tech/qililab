@@ -401,7 +401,7 @@ class TestQuantumMachinesCluster:
             qmm_with_octave._qm.octave.set_rf_output_gain.assert_called_once()
         if parameter == Parameter.IF:
             qmm_with_octave._qm.set_intermediate_frequency.assert_called_once()
-            #assert value == qmm_with_octave._intermediate_frequency[bus]
+            # assert value == qmm_with_octave._intermediate_frequency[bus]
 
         # Assert that the settings are still in synch:
         assert qmm_with_octave._config == qmm_with_octave.settings.to_qua_config()
