@@ -578,19 +578,34 @@ def export_nb_outputs(outputs: dict) -> None:
     print(f"{logger_output_start}{json.dumps(outputs)}")
 
 
-def _json_serialize(_object: Any):
+def _json_serialize(obj: Any):
     """Function to JSON serialize the input argument.
 
     Needed to handle input/output of notebook executions from the :class:`CalibrationNode` class.
     This method only looks for np.ndarrays objects to JSON serialize. Any other non-JSON serializable won't be serialized.
 
     Args:
-        _object (Any): Object to serialize
+        obj (Any): Object to serialize
     """
-    if isinstance(_object, (list, tuple, np.ndarray)):
-        return [_json_serialize(elem) for elem in _object]
+    if isinstance(obj, (list, tuple, np.ndarray)):
+        return [_json_serialize(elem) for elem in obj]
 
-    if isinstance(_object, dict):
-        return {_json_serialize(k): _json_serialize(v) for k, v in _object.items()}
+    if isinstance(obj, dict):
+        return {_json_serialize(k): _json_serialize(v) for k, v in obj.items()}
 
-    return _object
+    if isinstance(obj, np.integer):
+        return int(obj)
+
+    elif isinstance(obj, np.floating):
+        return float(obj)
+
+    elif isinstance(obj, (np.complex_, np.complex64, np.complex128)):
+        return {"real": float(obj.real), "imag": float(obj.imag)}
+
+    elif isinstance(obj, (np.bool_)):
+        return bool(obj)
+
+    elif isinstance(obj, (np.void)):
+        return None
+
+    return obj
