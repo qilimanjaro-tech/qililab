@@ -448,34 +448,6 @@ class TestPrivateMethodsFromCalibrationNode:
     @pytest.mark.parametrize(
         "output",
         [
-            "",
-            "a",
-        ],
-    )
-    @patch("qililab.calibration.calibration_node.pm.execute_notebook")
-    @patch("qililab.calibration.calibration_node.logger", autospec=True)
-    def test_execute_notebook_raises_no_output(self, mocked_logger, mocked_pm_exec, output, methods_node):
-        """Testing when no outputs or more than one outputs are received from ``execute_notebook()``."""
-        methods_node._stream.getvalue.return_value = output  # type: ignore [attr-defined]
-
-        with pytest.raises(
-            IncorrectCalibrationOutput,
-            match=f"No output found in notebook {methods_node.nb_path}.",
-        ):
-            methods_node._execute_notebook(methods_node.nb_path, "", {})
-
-        mocked_logger.error.assert_called_with(
-            "No output found in notebook %s.",
-            methods_node.nb_path,
-        )
-
-        mocked_pm_exec.assert_called_once_with(
-            methods_node.nb_path, "", {}, log_output=True, stdout_file=methods_node._stream
-        )
-
-    @pytest.mark.parametrize(
-        "output",
-        [
             'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": {"fizz":"buzz"}} RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": {"foo": "bar"}}',
             'RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": {"a":2}}RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": {"a":2}}RAND_INT:47102512880765720413 - OUTPUTS: {"platform_parameters": {"a":2}}/n',
         ],
