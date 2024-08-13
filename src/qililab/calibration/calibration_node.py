@@ -397,7 +397,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         return stream
 
-    def _execute_notebook(self, input_path: str, output_path: str, parameters: dict | None = None) -> dict:
+    def _execute_notebook(self, input_path: str, output_path: str, parameters: dict | None = None) -> dict | None:
         """Executes a Jupyter Notebook overwriting the `parameters` cell, and capturing the execution ``output``.
 
         This method changes the working directory to the notebook folder before executing the notebook and restores the original working directory after execution if necessary.
@@ -533,7 +533,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             else None
         )
 
-    def _from_logger_string_to_output_dict(self, logger_string: str, input_path: str) -> dict:
+    def _from_logger_string_to_output_dict(self, logger_string: str, input_path: str) -> dict | None:
         """Returns the output dictionary from a logger output string. Raises errors if the output doesn't follow the expected format.
 
         Args:
