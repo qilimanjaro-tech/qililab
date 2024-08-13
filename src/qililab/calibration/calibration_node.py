@@ -587,10 +587,7 @@ def _json_serialize(_object: Any):
     Args:
         _object (Any): Object to serialize
     """
-    if isinstance(_object, np.ndarray):
-        return _json_serialize(_object.tolist())
-
-    if isinstance(_object, (list, tuple)):
+    if isinstance(_object, (list, tuple, np.ndarray)):
         return [_json_serialize(elem) for elem in _object]
 
     if isinstance(_object, dict):
