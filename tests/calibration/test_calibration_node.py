@@ -215,6 +215,8 @@ class TestPublicMethodsFromCalibrationNode:
         mock_os.assert_called_once_with("", "")
         mock_logger.assert_not_called()
 
+        assert methods_node_run.output_parameters == mock_execute.return_value
+
     @pytest.mark.parametrize(
         "sweep_interval, input_parameters",
         [
@@ -440,6 +442,27 @@ class TestPrivateMethodsFromCalibrationNode:
         )
         assert test_value == expected
 
+    @patch("qililab.calibration.calibration_node.pm.execute_notebook")
+    @patch("qililab.calibration.calibration_node.os.chdir")
+    @patch("qililab.calibration.calibration_node.os.getcwd")
+    def test_execute_notebook_without_output(
+        self, mocked_os_getcwd, mocked_os_chdir, mocked_pm_exec, methods_node: CalibrationNode
+    ):
+        """Testing general behavior of ``execute_notebook()``."""
+        # Creating expected values for assert
+
+        # Mocking return value of stream and calling execute_notebook
+        methods_node._stream.getvalue.return_value = ""  # type: ignore [attr-defined]
+        test_value = methods_node._execute_notebook(methods_node.nb_path, "", {})
+
+        # Asserts
+        mocked_os_getcwd.assert_called_once()
+        assert mocked_os_chdir.call_count == 2
+        mocked_pm_exec.assert_called_once_with(
+            methods_node.nb_path, "", {}, log_output=True, stdout_file=methods_node._stream
+        )
+        assert methods_node.output_parameters == test_value is None
+
     @pytest.mark.parametrize(
         "output",
         [
@@ -631,6 +654,10 @@ def test_export_nb_outputs(mocked_dumps, test_outputs, test_dumped_outputs):
 @pytest.mark.parametrize(
     "test_objects, expected_test_objects",
     [
+        (
+            [np.array([1, 2, 3, 4]), [np.array([1, 2, 3, 4]), [1, 2, 3, 4]]],
+            [[1.0, 2.0, 3.0, 4.0], [[1.0, 2.0, 3.0, 4.0], [1.0, 2.0, 3.0, 4.0]]],
+        ),
         (
             {"this_is": "a_test_dict", "foo": np.array([1, 2, 3, 4])},
             {"this_is": "a_test_dict", "foo": [1.0, 2.0, 3.0, 4.0]},
