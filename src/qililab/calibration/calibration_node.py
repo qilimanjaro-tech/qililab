@@ -408,7 +408,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             parameters (dict | None, optional): Input parameters kwargs, to overwrite the notebook `parameters` cell with. Defaults to None.
 
         Returns:
-            dict: A dictionary containing the output parameters of the execution.
+            dict | None: A dictionary containing the output parameters of the execution.
 
         Raises:
             IncorrectCalibrationOutput: In case no outputs or multiple outputs where found.
@@ -541,16 +541,15 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             input_path (str): Path of the notebook that generated the output, to raise errors.
 
         Returns:
-            dict: The output dictionary of the file execution.
+            dict | None: The output dictionary of the file execution.
 
         Raises:
-            IncorrectCalibrationOutput: In case no outputs, incorrect outputs or multiple outputs where found.
+            IncorrectCalibrationOutput: In case multiple outputs where found.
         """
         logger_splitted = logger_string.split(logger_output_start)
-        # In case no output is found we raise an error:
+        # In case no output is found we return None:
         if len(logger_splitted) < 2:
-            logger.error("No output found in notebook %s.", input_path)
-            raise IncorrectCalibrationOutput(f"No output found in notebook {input_path}.")
+            return None
         # In case more than one output is found, we keep the last one, and raise a warning:
         if len(logger_splitted) > 2:
             logger.warning("If you had multiple outputs exported in %s, the last one found will be used.", input_path)
