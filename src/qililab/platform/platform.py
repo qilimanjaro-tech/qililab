@@ -42,7 +42,7 @@ from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSchedule
 from qililab.pulse import QbloxCompiler as PulseQbloxCompiler
-from qililab.qprogram import Calibration, QbloxCompiler, QProgram, QuantumMachinesCompiler
+from qililab.qprogram import Calibration, CrosstalkMatrix, QbloxCompiler, QProgram, QuantumMachinesCompiler
 from qililab.result import Result
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
@@ -633,8 +633,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         qp_annealing = QProgram()
         with qp_annealing.average(averages):
-            for bus, waveform in annealing_waveforms.values():
-                qp_annealing.play(bus=bus.alias, waveform=waveform)
+            for bus, waveform in annealing_waveforms.items():
+                qp_annealing.play(bus=bus, waveform=waveform)
 
         # TODO: define readout
 
