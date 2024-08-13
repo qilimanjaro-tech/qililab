@@ -659,8 +659,8 @@ def test_export_nb_outputs(mocked_dumps, test_outputs, test_serializable_outputs
     "test_objects, expected_test_objects",
     [
         (
-            [np.array([1, 2, 3, 4]), [np.array([1, 2, 3, 4]), [1, 2, 3, 4]]],
-            [[1.0, 2.0, 3.0, 4.0], [[1.0, 2.0, 3.0, 4.0], [1.0, 2.0, 3.0, 4.0]]],
+            [np.array([1, 2, 3, 4]), [np.array([1, 2, 3, 4]), 2 + 1j]],
+            [[1.0, 2.0, 3.0, 4.0], [[1.0, 2.0, 3.0, 4.0], {"real": 2.0, "imag": 1.0}]],
         ),
         (
             [np.True_, [np.float64(12.9), np.void(5)]],
