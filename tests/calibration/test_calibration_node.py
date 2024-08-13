@@ -9,12 +9,7 @@ from unittest.mock import MagicMock, call, patch
 import numpy as np
 import pytest
 
-from qililab.calibration.calibration_node import (
-    CalibrationNode,
-    IncorrectCalibrationOutput,
-    _json_serialize,
-    export_nb_outputs,
-)
+from qililab.calibration.calibration_node import CalibrationNode, _json_serialize, export_nb_outputs
 
 # pylint: disable=protected-access, unspecified-encoding
 

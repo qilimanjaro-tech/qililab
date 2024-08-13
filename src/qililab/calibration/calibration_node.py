@@ -597,14 +597,3 @@ def _json_serialize(_object: Any):
         return {_json_serialize(k): _json_serialize(v) for k, v in _object.items()}
 
     return _object
-
-
-class IncorrectCalibrationOutput(Exception):
-    """Error raised when the output of a calibration node is incorrect."""
-
-    def __init__(self, message):
-        self.message = message
-        super().__init__(self.message)
-
-    def __str__(self):
-        return f"IncorrectCalibrationOutput: {self.message}"
