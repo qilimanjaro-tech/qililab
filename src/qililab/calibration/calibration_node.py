@@ -337,7 +337,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             params |= self.input_parameters
 
         # JSON serialize nb input, no np.ndarrays
-        _json_serialize(params)
+        params = _json_serialize(params)
 
         # initially the file is "dirty" until we make sure the execution was not aborted, so we add _dirty tag.
         output_path = self._create_notebook_datetime_path(dirty=True)
@@ -574,7 +574,7 @@ def export_nb_outputs(outputs: dict) -> None:
     Args:
         outputs (dict): Outputs from the notebook to export into the automatic calibration workflow.
     """
-    _json_serialize(outputs)
+    outputs = _json_serialize(outputs)
     print(f"{logger_output_start}{json.dumps(outputs)}")
 
 
