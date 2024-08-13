@@ -659,6 +659,10 @@ def test_export_nb_outputs(mocked_dumps, test_outputs, test_dumped_outputs):
             [[1.0, 2.0, 3.0, 4.0], [[1.0, 2.0, 3.0, 4.0], [1.0, 2.0, 3.0, 4.0]]],
         ),
         (
+            [np.True_, [np.float128(12.90), np.void]],
+            [True, [12.90, None]],
+        ),
+        (
             {"this_is": "a_test_dict", "foo": np.array([1, 2, 3, 4])},
             {"this_is": "a_test_dict", "foo": [1.0, 2.0, 3.0, 4.0]},
         ),
