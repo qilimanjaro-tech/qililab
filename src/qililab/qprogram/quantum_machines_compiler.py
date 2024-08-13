@@ -19,6 +19,7 @@ from typing import Callable
 
 import numpy as np
 from qm import qua
+from qm.program import Program
 from qm.qua import _dsl as qua_dsl
 from qualang_tools.config.integration_weights_tools import convert_integration_weights
 
@@ -27,7 +28,7 @@ from qililab.qprogram.blocks.infinite_loop import InfiniteLoop
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import Measure, Play, ResetPhase, SetFrequency, SetGain, SetPhase, Sync, Wait
 from qililab.qprogram.qprogram import QProgram
-from qililab.qprogram.variable import Domain, Variable
+from qililab.qprogram.variable import Domain, IntVariable, Variable
 from qililab.waveforms import IQPair, Square, Waveform
 
 # mypy: disable-error-code="operator"
@@ -36,6 +37,7 @@ from qililab.waveforms import IQPair, Square, Waveform
 class _BusCompilationInfo:  # pylint: disable=too-few-public-methods
     def __init__(self) -> None:
         self.current_gain: float | qua.QuaVariableType | None = None
+        self.threshold_rotation: float | None = None
 
 
 class _MeasurementCompilationInfo:  # pylint: disable=too-few-public-methods, too-many-instance-attributes
@@ -101,8 +103,12 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         self._buses: dict[str, _BusCompilationInfo]
 
     def compile(
-        self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None, calibration: Calibration | None = None
-    ) -> tuple[qua.Program, dict, list[MeasurementInfo]]:
+        self,
+        qprogram: QProgram,
+        bus_mapping: dict[str, str] | None = None,
+        threshold_rotations: dict[str, float | None] | None = None,
+        calibration: Calibration | None = None,
+    ) -> tuple[Program, dict, list[MeasurementInfo]]:
         """Compile QProgram to QUA's Program.
 
         Args:
@@ -151,6 +157,11 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
 
         self._populate_buses()
 
+        # Pre-processing: Update rotation threshold
+        if threshold_rotations is not None:
+            for bus in self._buses.keys() & threshold_rotations.keys():
+                self._buses[bus].threshold_rotation = threshold_rotations[bus]
+
         with qua.program() as qua_program:
             # Declare variables
             self._declare_variables()
@@ -195,6 +206,8 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         for variable in self._qprogram.variables:
             if variable.domain in [Domain.Time, Domain.Frequency]:
                 qua_variable = qua.declare(int)
+            elif variable.domain is Domain.Scalar and isinstance(variable, IntVariable):
+                qua_variable = qua.declare(int)
             else:
                 qua_variable = qua.declare(qua.fixed)
             self._qprogram_to_qua_variables[variable] = qua_variable
@@ -223,6 +236,8 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
                 values = values / self.PHASE_COEFF
             if loop.variable.domain is Domain.Frequency:
                 values = values.astype(int)
+            if loop.variable.domain is Domain.Scalar and isinstance(loop.variable, IntVariable):
+                values = values.astype(int)
             if loop.variable.domain is Domain.Time:
                 values = np.maximum(values, self.MINIMUM_TIME).astype(int)
 
@@ -246,8 +261,8 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
 
         to_positive = stop >= start
         if to_positive:
-            return qua.for_(qua_variable, start, qua_variable < stop + step / 2, qua_variable + step)
-        return qua.for_(qua_variable, start, qua_variable > stop + step / 2, qua_variable + step)
+            return qua.for_(qua_variable, start, qua_variable < stop + step / 2, qua_variable + step)  # type: ignore[arg-type]
+        return qua.for_(qua_variable, start, qua_variable > stop + step / 2, qua_variable + step)  # type: ignore[arg-type]
 
     def _handle_loop(self, element: Loop):
         qua_variable = self._qprogram_to_qua_variables[element.variable]
@@ -256,13 +271,15 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             values = values / self.PHASE_COEFF
         if element.variable.domain is Domain.Frequency:
             values = values.astype(int)
+        if element.variable.domain is Domain.Scalar and isinstance(element.variable, IntVariable):
+            values = values.astype(int)
         if element.variable.domain is Domain.Time:
             values = np.maximum(values, self.MINIMUM_TIME).astype(int)
         return qua.for_each_(qua_variable, values.tolist())
 
     def _handle_average(self, element: Average):
         variable = qua.declare(int)
-        return qua.for_(variable, 0, variable < element.shots, variable + 1)
+        return qua.for_(variable, 0, variable < element.shots, variable + 1)  # type: ignore[arg-type]
 
     def _handle_set_frequency(self, element: SetFrequency):
         frequency = (
@@ -296,7 +313,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         duration = waveform_I.get_duration()
 
         gain = (
-            qua.amp(self._buses[element.bus].current_gain * self.VOLTAGE_COEFF)
+            qua.amp(self._buses[element.bus].current_gain * self.VOLTAGE_COEFF)  # type: ignore[arg-type]
             if self._buses[element.bus].current_gain is not None
             else None
         )
@@ -318,9 +335,16 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         waveform_Q_name = self.__add_waveform_to_configuration(waveform_Q)
 
         gain = (
-            qua.amp(self._buses[element.bus].current_gain * self.VOLTAGE_COEFF)
+            qua.amp(self._buses[element.bus].current_gain * self.VOLTAGE_COEFF)  # type: ignore[arg-type]
             if self._buses[element.bus].current_gain is not None
             else None
+        )
+        rotation = (
+            element.rotation  # type: ignore
+            if element.rotation is not None
+            else self._buses[element.bus].threshold_rotation
+            if self._buses[element.bus] and self._buses[element.bus].threshold_rotation is not None
+            else 0.0
         )
 
         variable_I = qua.declare(qua.fixed)
@@ -329,7 +353,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         stream_Q = qua.declare_stream()
         stream_raw_adc = qua.declare_stream(adc_trace=True) if element.save_adc else None
 
-        A, B, C, D = self.__add_weights_to_configuration(weights=element.weights, rotation=element.rotation)
+        A, B, C, D = self.__add_weights_to_configuration(weights=element.weights, rotation=rotation)  # type: ignore
 
         pulse_name = self.__add_or_update_measurement_pulse_to_configuration(
             waveform_I_name,
@@ -389,9 +413,9 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         )
 
         qua.wait(
-            duration / int(self.WAIT_COEFF)
+            duration / int(self.WAIT_COEFF)  # type: ignore[arg-type]
             if isinstance(element.duration, Variable)
-            else int(duration / self.WAIT_COEFF),
+            else int(duration / self.WAIT_COEFF),  # type: ignore[arg-type]
             element.bus,
         )
 

@@ -34,6 +34,7 @@ from qililab.qprogram.operations import (
     ResetPhase,
     SetFrequency,
     SetGain,
+    SetMarkers,
     SetOffset,
     SetPhase,
     Sync,
@@ -117,6 +118,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             ResetPhase: self._handle_reset_phase,
             SetGain: self._handle_set_gain,
             SetOffset: self._handle_set_offset,
+            SetMarkers: self._handle_set_markers,
             Wait: self._handle_wait,
             Sync: self._handle_sync,
             Measure: self._handle_measure,
@@ -134,6 +136,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         bus_mapping: dict[str, str] | None = None,
         calibration: Calibration | None = None,
         times_of_flight: dict[str, int] | None = None,
+        markers: dict[str, str] | None = None,
     ) -> tuple[Sequences, Acquisitions]:
         """Compile QProgram to qpysequence.Sequence
 
@@ -184,12 +187,22 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             for bus in self._buses.keys() & times_of_flight.keys():
                 self._buses[bus].time_of_flight = times_of_flight[bus]
 
+        # Pre-processing: Set markers ON/OFF
+        for bus in self._buses:
+            mask = markers[bus] if markers is not None and bus in markers else "0000"
+            self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetMrk(int(mask, 2)))
+            self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.UpdParam(4))
+            self._buses[bus].static_duration += 4
+
         # Recursive traversal to convert QProgram blocks to Sequence
         traverse(self._qprogram._body)
 
-        # Post-processing: Add stop instructions and compile
+        # Post-processing: Set all markers OFF, add stop instructions and compile
         for bus in self._buses:
+            self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.SetMrk(0))
+            self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.UpdParam(4))
             self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Stop())
+            self._buses[bus].static_duration += 4
             self._buses[bus].qpy_sequence._program.compile()
 
         # Return a dictionary with bus names as keys and the compiled Sequence as values.
@@ -368,6 +381,12 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         )
         self._buses[element.bus].qpy_block_stack[-1].append_component(
             component=QPyInstructions.SetAwgOffs(offset_0=offset_0, offset_1=offset_1)
+        )
+
+    def _handle_set_markers(self, element: SetMarkers):
+        marker_outputs = int(element.mask, 2)
+        self._buses[element.bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.SetMrk(marker_outputs=marker_outputs)
         )
 
     def _handle_wait(self, element: Wait):

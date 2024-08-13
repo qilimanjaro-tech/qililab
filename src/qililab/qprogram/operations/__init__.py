@@ -24,6 +24,7 @@ from .play import Play, PlayWithCalibratedWaveform
 from .reset_phase import ResetPhase
 from .set_frequency import SetFrequency
 from .set_gain import SetGain
+from .set_markers import SetMarkers
 from .set_offset import SetOffset
 from .set_phase import SetPhase
 from .sync import Sync

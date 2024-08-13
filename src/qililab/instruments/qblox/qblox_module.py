@@ -69,9 +69,9 @@ class QbloxModule(AWG):
                 )
 
             self.awg_sequencers = [
-                AWGQbloxSequencer(**sequencer)
-                if isinstance(sequencer, dict)
-                else sequencer  # pylint: disable=not-a-mapping
+                (
+                    AWGQbloxSequencer(**sequencer) if isinstance(sequencer, dict) else sequencer
+                )  # pylint: disable=not-a-mapping
                 for sequencer in self.awg_sequencers
             ]
             super().__post_init__()
@@ -96,6 +96,7 @@ class QbloxModule(AWG):
             sequencer_id = sequencer.identifier
             # Set `sync_en` flag to False (this value will be set to True if the sequencer is used in the execution)
             self.device.sequencers[sequencer_id].sync_en(False)
+            self.device.sequencers[sequencer_id].marker_ovr_en(False)
             self._set_nco(sequencer_id=sequencer_id)
             self._set_gain_i(value=sequencer.gain_i, sequencer_id=sequencer_id)
             self._set_gain_q(value=sequencer.gain_q, sequencer_id=sequencer_id)
@@ -104,8 +105,6 @@ class QbloxModule(AWG):
             self._set_hardware_modulation(value=sequencer.hardware_modulation, sequencer_id=sequencer_id)
             self._set_gain_imbalance(value=sequencer.gain_imbalance, sequencer_id=sequencer_id)
             self._set_phase_imbalance(value=sequencer.phase_imbalance, sequencer_id=sequencer_id)
-            ALL_ON = 15  # 1111 in binary
-            self._set_markers(value=ALL_ON, sequencer_id=sequencer_id)
 
         for idx, offset in enumerate(self.out_offsets):
             self._set_out_offset(output=idx, value=offset)
@@ -127,6 +126,18 @@ class QbloxModule(AWG):
         for sequencer in self.awg_sequencers:
             self.device.sequencers[sequencer.identifier].sync_en(False)
 
+    def set_markers_override_enabled_by_port(self, value: bool, port: str):
+        """Set markers override flag ON/OFF for the sequencers associated with port."""
+        sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
+        for sequencer in sequencers:
+            self.device.sequencers[sequencer.identifier].marker_ovr_en(value)
+
+    def set_markers_override_value_by_port(self, value: int, port: str):
+        """Set markers override value for all sequencers."""
+        sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
+        for sequencer in sequencers:
+            self.device.sequencers[sequencer.identifier].marker_ovr_value(value)
+
     @property
     def module_type(self):
         """returns the qblox module type. Options: QCM or QRM"""
@@ -144,9 +155,7 @@ class QbloxModule(AWG):
                 self.device.arm_sequencer(sequencer=sequencer.identifier)
                 self.device.start_sequencer(sequencer=sequencer.identifier)
 
-    def setup(  # pylint: disable=too-many-branches, too-many-return-statements
-        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None
-    ):
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None) -> None:
         """Set Qblox instrument calibration settings."""
         if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
             output = int(parameter.value[-1])
@@ -473,26 +482,6 @@ class QbloxModule(AWG):
         self._get_sequencer_by_id(id=sequencer_id).phase_imbalance = float(value)
         if self.is_device_active():
             self.device.sequencers[sequencer_id].mixer_corr_phase_offset_degree(float(value))
-
-    @Instrument.CheckParameterValueFloatOrInt
-    def _set_markers(self, value: int, sequencer_id: int):
-        """Set markers ON/OFF on qblox modules.
-
-        For the RF modules, this command is also used to enable/disable:
-            - The 2 outputs (for the QCM-RF).
-            - The input and the output (for QRM-RF).
-
-         Args:
-            value (int): ON/OFF of the 4 markers in binary (range: 0-15 -> (0000)-(1111)). For the RF modules, the
-                first 2 bits correspond to the ON/OFF value of the outputs/inputs and the last 2 bits correspond
-                to the 2 markers.
-            sequencer_id (int): sequencer to update the value
-
-        Raises:
-            ValueError: when value type is not int
-        """
-        self.device.sequencers[sequencer_id].marker_ovr_en(True)
-        self.device.sequencers[sequencer_id].marker_ovr_value(value)
 
     def _map_connections(self):
         """Disable all connections and map sequencer paths with output channels."""

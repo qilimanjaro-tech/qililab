@@ -52,7 +52,7 @@ QProgram offers a rich set of control structures, including various types of loo
 These loops enable the user to iterate over a sequence of values for a given variable. Additionally, loops can be nested, which is invaluable for experiments that require multi-dimensional sweeps. There are currently three flavours of loops.
 
 For-Loop
-^^^^^
+^^^^^^^^^
 The `for_loop` method provides the traditional loop structure, allowing the user to specify the `start`, `stop`, and `step` values for a variable, thereby creating a range over which the loop will iterate. Both `start` and `stop` are inclusive.
 
 .. code-block:: python3
@@ -63,7 +63,7 @@ The `for_loop` method provides the traditional loop structure, allowing the user
         qp.set_frequency(bus="drive_bus", frequency=frequency)
 
 Loops with numpy
-^^^^^
+^^^^^^^^^^^^^^^^^
 
 The `loop` method allows the user to iterate over a numpy array of arbitrary values.
 
@@ -77,7 +77,7 @@ The `loop` method allows the user to iterate over a numpy array of arbitrary val
         qp.set_frequency(bus="drive_bus", frequency=frequency)
 
 Inner Loops
-^^^^^
+^^^^^^^^^^^^
 
 Loops can be nested, which is invaluable for experiments that require multi-dimensional sweeps. In the following example, we loop over frequencies and for each frequency value we loop over gains.
 
@@ -92,7 +92,7 @@ Loops can be nested, which is invaluable for experiments that require multi-dime
             qp.set_gain(bus="drive_bus", gain=gain)
 
 Parallel Loops
-^^^^^
+^^^^^^^^^^^^^^^
 
 Finally, the `parallel` method is provided, which allows multiple loops to be run in parallel.
 

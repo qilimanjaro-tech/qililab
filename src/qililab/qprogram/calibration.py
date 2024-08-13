@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.waveforms import IQPair, Waveform
 from qililab.yaml import yaml
 
@@ -12,6 +13,7 @@ class Calibration:
         """Initialize a Calibration instance."""
         self.waveforms: dict[str, dict[str, Waveform | IQPair]] = {}
         self.weights: dict[str, dict[str, IQPair]] = {}
+        self.crosstalk_matrix: CrosstalkMatrix | None = None
 
     def add_waveform(self, bus: str, name: str, waveform: Waveform | IQPair):
         """Add a waveform or IQPair for the specified bus.

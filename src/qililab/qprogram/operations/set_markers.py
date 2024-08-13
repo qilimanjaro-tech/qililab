@@ -12,27 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module contains the classes used to return the results of the execution of a program.
+from dataclasses import dataclass
 
-.. currentmodule:: qililab
+from qililab.qprogram.operations.operation import Operation
+from qililab.yaml import yaml
 
-Classes
-~~~~~~~~~~~~~~~~
 
-.. autosummary::
-    :toctree: api
+@yaml.register_class
+@dataclass(frozen=True)
+class SetMarkers(Operation):  # pylint: disable=missing-class-docstring
+    bus: str
+    mask: str
 
-    ~Results
-    ~result.Result
-
-Functions
-~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~stream_results
-"""
-from .result import Result
-from .results import Results
-from .stream_results import stream_results
+    def __post_init__(self):
+        if len(self.mask) != 4 or not set(self.mask).issubset({"0", "1"}):
+            raise AttributeError("Marker should be a 4-bit binary string.")

@@ -15,13 +15,13 @@
 """Quantum Machines Manager class."""
 import os
 from dataclasses import dataclass
-from typing import Any, Dict, cast
+from typing import Any, cast
 
 import numpy as np
 from qm import DictQuaConfig, QuantumMachine, QuantumMachinesManager, SimulationConfig
 from qm.jobs.running_qm_job import RunningQmJob
 from qm.octave import QmOctaveConfig
-from qm.qua import Program
+from qm.program import Program
 
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
@@ -66,7 +66,7 @@ class QuantumMachinesCluster(Instrument):
         controllers: list[dict[str, Any]]
         elements: list[dict[str, Any]]
 
-        def to_qua_config(self) -> Dict[str, Any]:
+        def to_qua_config(self) -> DictQuaConfig:
             """Creates the Quantum Machines QUA config dictionary.
 
             Creates, an instance of a dictionary in the format that QuantumMachines expects the config dictionary to be.
@@ -80,7 +80,7 @@ class QuantumMachinesCluster(Instrument):
             The values of the rest keys are empty, meant to be updated in runtime.
 
             Returns:
-                config: Dict[str, Any]
+                config: DictQuaConfig
             """
             elements, mixers = self._get_elements_and_mixers_config()
             controllers = self._get_controllers_config()
@@ -104,26 +104,86 @@ class QuantumMachinesCluster(Instrument):
             Returns:
                 controllers: Dict[str, Any]
             """
-            return {
-                controller["name"]: {
-                    "analog_outputs": {
-                        output["port"]: {
-                            "offset": output["offset"] if "offset" in output else 0.0,
-                            "delay": output["delay"] if "delay" in output else 0.0,
+            controllers: dict = {}
+            for controller in self.controllers:
+                controller_type = controller["type"] if "type" in controller else "opx1"
+                if controller_type == "opx1":
+                    controllers[controller["name"]] = {
+                        "analog_outputs": {
+                            output["port"]: {
+                                "offset": output["offset"] if "offset" in output else 0.0,
+                                "delay": output["delay"] if "delay" in output else 0.0,
+                                "filter": (
+                                    {
+                                        "feedforward": (
+                                            output["filter"]["feedforward"] if "feedforward" in output["filter"] else []
+                                        ),
+                                        "feedback": (
+                                            output["filter"]["feedback"] if "feedback" in output["filter"] else []
+                                        ),
+                                    }
+                                    if "filter" in output
+                                    else {"feedforward": [], "feedback": []}
+                                ),
+                            }
+                            for output in controller.get("analog_outputs", [])
+                        },
+                        "analog_inputs": {
+                            input["port"]: {
+                                "offset": input["offset"] if "offset" in input else 0.0,
+                                "gain_db": input["gain"] if "gain" in input else 0.0,
+                            }
+                            for input in controller.get("analog_inputs", [])
+                        },
+                        "digital_outputs": {output["port"]: {} for output in controller.get("digital_outputs", [])},
+                    }
+                elif controller_type == "opx1000":
+                    controllers[controller["name"]] = {
+                        "fems": {
+                            fem["fem"]: {
+                                "type": fem["type"] if "type" in fem else "LF",
+                                "analog_outputs": {
+                                    output["port"]: {
+                                        "offset": output["offset"] if "offset" in output else 0.0,
+                                        "delay": output["delay"] if "delay" in output else 0.0,
+                                        "output_mode": output["output_mode"] if "output_mode" in output else "direct",
+                                        "sampling_rate": output["sampling_rate"] if "sampling_rate" in output else 1e9,
+                                        "upsampling_mode": (
+                                            output["upsampling_mode"] if "upsampling_mode" in output else "mw"
+                                        ),
+                                        "filter": (
+                                            {
+                                                "feedforward": (
+                                                    output["filter"]["feedforward"]
+                                                    if "feedforward" in output["filter"]
+                                                    else []
+                                                ),
+                                                "feedback": (
+                                                    output["filter"]["feedback"]
+                                                    if "feedback" in output["filter"]
+                                                    else []
+                                                ),
+                                            }
+                                            if "filter" in output
+                                            else {"feedforward": [], "feedback": []}
+                                        ),
+                                    }
+                                    for output in fem.get("analog_outputs", [])
+                                },
+                                "analog_inputs": {
+                                    input["port"]: {
+                                        "offset": input["offset"] if "offset" in input else 0.0,
+                                        "gain_db": input["gain"] if "gain" in input else 0.0,
+                                        "sampling_rate": input["sampling_rate"] if "sampling_rate" in input else 1e9,
+                                    }
+                                    for input in fem.get("analog_inputs", [])
+                                },
+                                "digital_outputs": {output["port"]: {} for output in fem.get("digital_outputs", [])},
+                            }
+                            for fem in controller["fems"]
                         }
-                        for output in controller.get("analog_outputs", [])
-                    },
-                    "analog_inputs": {
-                        input["port"]: {
-                            "offset": input["offset"] if "offset" in input else 0.0,
-                            "gain_db": input["gain"] if "gain" in input else 0.0,
-                        }
-                        for input in controller.get("analog_inputs", [])
-                    },
-                    "digital_outputs": {output["port"]: {} for output in controller.get("digital_outputs", [])},
-                }
-                for controller in self.controllers
-            }
+                    }
+            return controllers
 
         def _get_octaves_config(self) -> dict[str, Any]:
             """Returns the octaves config dictionary.
@@ -131,32 +191,88 @@ class QuantumMachinesCluster(Instrument):
             Returns:
                 octaves: Dict[str, Any]
             """
-            return {
-                octave["name"]: {
-                    "RF_outputs": {
-                        output["port"]: {
-                            "LO_frequency": output["lo_frequency"],  # Should be between 2 and 18 GHz.
-                            "LO_source": "internal",
-                            "gain": output["gain"] if "gain" in output else 0.0,
-                            "output_mode": "always_on",
-                            "input_attenuators": "OFF",  # can be: "OFF" / "ON". Default is "OFF".
-                        }
-                        for output in octave.get("rf_outputs", [])
-                    },
-                    "RF_inputs": {
-                        output["port"]: {
-                            "RF_source": "RF_in",
-                            "LO_frequency": output["lo_frequency"],
-                            "LO_source": "internal",  # can be: "internal" / "external". Default is "internal".
-                            "IF_mode_I": "direct",  # can be: "direct" / "mixer" / "envelope" / "off". Default is "direct".
-                            "IF_mode_Q": "direct",
-                        }
-                        for output in octave.get("rf_inputs", [])
-                    },
-                    "connectivity": octave["controller"],
-                }
-                for octave in self.octaves
-            }
+            octaves: dict = {}
+            for octave in self.octaves:
+                octaves[octave["name"]] = {}
+                octaves[octave["name"]]["RF_outputs"] = {}
+                octaves[octave["name"]]["RF_inputs"] = {}
+                for rf_output in octave.get("rf_outputs", []):
+                    octaves[octave["name"]]["RF_outputs"][rf_output["port"]] = {
+                        "LO_frequency": rf_output["lo_frequency"],  # Should be between 2 and 18 GHz.
+                        "LO_source": "internal",
+                        "gain": rf_output["gain"] if "gain" in rf_output else 0.0,
+                        "output_mode": "always_on",
+                        "input_attenuators": "OFF",  # can be: "OFF" / "ON". Default is "OFF".
+                    }
+                    if "i_connection" in rf_output:
+                        octaves[octave["name"]]["RF_outputs"][rf_output["port"]]["I_connection"] = (
+                            (
+                                rf_output["i_connection"]["controller"],
+                                rf_output["i_connection"]["fem"],
+                                rf_output["i_connection"]["port"],
+                            )
+                            if "fem" in rf_output["i_connection"]
+                            else (rf_output["i_connection"]["controller"], rf_output["i_connection"]["port"])
+                        )
+                    if "q_connection" in rf_output:
+                        octaves[octave["name"]]["RF_outputs"][rf_output["port"]]["Q_connection"] = (
+                            (
+                                rf_output["q_connection"]["controller"],
+                                rf_output["q_connection"]["fem"],
+                                rf_output["q_connection"]["port"],
+                            )
+                            if "fem" in rf_output["q_connection"]
+                            else (rf_output["q_connection"]["controller"], rf_output["q_connection"]["port"])
+                        )
+                for rf_input in octave.get("rf_inputs", []):
+                    octaves[octave["name"]]["RF_inputs"][rf_input["port"]] = {
+                        "RF_source": "RF_in",
+                        "LO_frequency": rf_input["lo_frequency"],
+                        "LO_source": "internal",  # can be: "internal" / "external". Default is "internal".
+                        "IF_mode_I": "direct",  # can be: "direct" / "mixer" / "envelope" / "off". Default is "direct".
+                        "IF_mode_Q": "direct",
+                    }
+                if "loopbacks" in octave:
+                    octaves[octave["name"]]["loopbacks"] = [
+                        (
+                            (octave["name"], octave["loopbacks"]["Synth"]),
+                            octave["loopbacks"]["Dmd"],
+                        )
+                    ]
+                if "connectivity" in octave:
+                    octaves[octave["name"]]["connectivity"] = (
+                        (octave["connectivity"]["controller"], octave["connectivity"]["fem"])
+                        if "fem" in octave
+                        else octave["connectivity"]["controller"]
+                    )
+                else:
+                    octaves[octave["name"]]["IF_outputs"] = {
+                        "IF_out1": {
+                            "port": (
+                                (
+                                    octave["if_outputs"][0]["controller"],
+                                    octave["if_outputs"][0]["fem"],
+                                    octave["if_outputs"][0]["port"],
+                                )
+                                if "fem" in octave["if_outputs"][0]
+                                else (octave["if_outputs"][0]["controller"], octave["if_outputs"][0]["port"])
+                            ),
+                            "name": "out1",
+                        },
+                        "IF_out2": {
+                            "port": (
+                                (
+                                    octave["if_outputs"][1]["controller"],
+                                    octave["if_outputs"][1]["fem"],
+                                    octave["if_outputs"][1]["port"],
+                                )
+                                if "fem" in octave["if_outputs"][1]
+                                else (octave["if_outputs"][1]["controller"], octave["if_outputs"][1]["port"])
+                            ),
+                            "name": "out2",
+                        },
+                    }
+            return octaves
 
         def _get_elements_and_mixers_config(self) -> tuple:
             """Returns the elements config dictionary.
@@ -174,7 +290,15 @@ class QuantumMachinesCluster(Instrument):
                 # Flux bus
                 if "single_input" in element:
                     element_dict["singleInput"] = {
-                        "port": (element["single_input"]["controller"], element["single_input"]["port"]),
+                        "port": (
+                            (
+                                element["single_input"]["controller"],
+                                element["single_input"]["fem"],
+                                element["single_input"]["port"],
+                            )
+                            if "fem" in element["single_input"]
+                            else (element["single_input"]["controller"], element["single_input"]["port"])
+                        ),
                     }
                 # IQ bus
                 elif "mix_inputs" in element:
@@ -194,7 +318,15 @@ class QuantumMachinesCluster(Instrument):
                         }
                     ]
                     element_dict["mixInputs"] = {
-                        key: (element["mix_inputs"][key]["controller"], element["mix_inputs"][key]["port"])
+                        key: (
+                            (
+                                element["mix_inputs"][key]["controller"],
+                                element["mix_inputs"][key]["fem"],
+                                element["mix_inputs"][key]["port"],
+                            )
+                            if "fem" in element["mix_inputs"][key]
+                            else (element["mix_inputs"][key]["controller"], element["mix_inputs"][key]["port"])
+                        )
                         for key in ["I", "Q"]
                     } | {"lo_frequency": lo_frequency, "mixer": mixer_name}
                     element_dict["intermediate_frequency"] = intermediate_frequency
@@ -202,7 +334,15 @@ class QuantumMachinesCluster(Instrument):
                     # readout bus
                     if "outputs" in element:
                         element_dict["outputs"] = {
-                            key: (element["outputs"][key]["controller"], element["outputs"][key]["port"])
+                            key: (
+                                (
+                                    element["outputs"][key]["controller"],
+                                    element["outputs"][key]["fem"],
+                                    element["outputs"][key]["port"],
+                                )
+                                if "fem" in element["outputs"][key]
+                                else (element["outputs"][key]["controller"], element["outputs"][key]["port"])
+                            )
                             for key in ["out1", "out2"]
                         }
                         element_dict["time_of_flight"] = element["time_of_flight"]
@@ -224,14 +364,30 @@ class QuantumMachinesCluster(Instrument):
                 if "digital_inputs" in element:
                     element_dict["digitalInputs"] = {
                         "switch": {
-                            "port": (element["digital_inputs"]["controller"], element["digital_inputs"]["port"]),
+                            "port": (
+                                (
+                                    element["digital_inputs"]["controller"],
+                                    element["digital_inputs"]["fem"],
+                                    element["digital_inputs"]["port"],
+                                )
+                                if "fem" in element["digital_inputs"]
+                                else (element["digital_inputs"]["controller"], element["digital_inputs"]["port"])
+                            ),
                             "delay": element["digital_inputs"]["delay"],
                             "buffer": element["digital_inputs"]["buffer"],
                         }
                     }
                 if "digital_outputs" in element:
                     element_dict["digitalOutputs"] = {
-                        "port": (element["digital_outputs"]["controller"], element["digital_outputs"]["port"]),
+                        "port": (
+                            (
+                                element["digital_outputs"]["controller"],
+                                element["digital_outputs"]["fem"],
+                                element["digital_outputs"]["port"],
+                            )
+                            if "fem" in element["digital_outputs"]
+                            else (element["digital_outputs"]["controller"], element["digital_outputs"]["port"])
+                        ),
                     }
 
                 elements[bus_name] = element_dict
@@ -241,10 +397,11 @@ class QuantumMachinesCluster(Instrument):
     settings: QuantumMachinesClusterSettings
     device: QMMDriver
     _qmm: QuantumMachinesManager
-    _qm: QuantumMachine
+    _qm: QuantumMachine  # TODO: Change private QM API to public when implemented.
     _config: DictQuaConfig
     _octave_config: QmOctaveConfig | None = None
     _is_connected_to_qm: bool = False
+    _config_created: bool = False
     _compiled_program_cache: dict[str, str] = {}
 
     @property
@@ -256,18 +413,19 @@ class QuantumMachinesCluster(Instrument):
     def initial_setup(self):
         """Sets initial instrument settings.
 
-        Creates an instance of the Qilililab Quantum Machines Manager, and sets the configuration dictionary.
+        Creates an instance of the Qililab Quantum Machines Manager, and sets the configuration dictionary.
         """
         if self.settings.octaves:
             self._octave_config = QmOctaveConfig()
             self._octave_config.set_calibration_db(os.getcwd())
             for octave in self.settings.octaves:
                 self._octave_config.add_device_info(octave["name"], self.settings.address, octave["port"])
+
         self._qmm = QuantumMachinesManager(
             host=self.settings.address, cluster_name=self.settings.cluster, octave=self._octave_config
         )
-
         self._config = self.settings.to_qua_config()
+        self._config_created = True
 
     @Instrument.CheckDeviceInitialized
     def turn_on(self):
@@ -292,13 +450,23 @@ class QuantumMachinesCluster(Instrument):
             self._is_connected_to_qm = False
 
     def append_configuration(self, configuration: dict):
-        """Update the configuration dictionary by appending the configuration generated by compilation."""
+        """Update the `_config` dictionary by appending the configuration generated by compilation.
+
+        Args:
+            configuration (dict): Configuration dictionary to append to the existing configuration.
+
+        Raises:
+            ValueError: Raised if the `_config` dictionary does not exist.
+        """
+        if not self._config_created:
+            raise ValueError("The QM `config` dictionary does not exist. Please run `initial_setup()` first.")
+
         merged_configuration = merge_dictionaries(dict(self._config), configuration)
         if self._config != merged_configuration:
             self._config = cast(DictQuaConfig, merged_configuration)
             # If we are already connected, reopen the connection with the new configuration
             if self._is_connected_to_qm:
-                self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)
+                self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)  # type: ignore[assignment]
                 self._compiled_program_cache = {}
 
     def run_octave_calibration(self):
@@ -307,22 +475,22 @@ class QuantumMachinesCluster(Instrument):
         for element in elements:
             self._qm.calibrate_element(element)
 
-    def set_parameter_of_bus(self, bus: str, parameter: Parameter, value: float | str | bool):
-        """Sets the parameter of the instrument
+    def set_parameter_of_bus(  # pylint: disable=too-many-locals
+        self, bus: str, parameter: Parameter, value: float | str | bool
+    ) -> None:  # noqa: C901
+        """Sets the parameter of the instrument into the cache (runtime dataclasses).
+
+        And if connection to instruments is established, then to the instruments as well.
 
         Args:
-            bus (str): The assossiated bus to change parameter
-            parameter (Parameter): The parameter to update
-            value (float | str | bool): The new value of the parameter
+            bus (str): The assossiated bus to change parameter.
+            parameter (Parameter): The parameter to update.
+            value (float | str | bool): The new value of the parameter.
 
         Raises:
-            NotImplementedError: Raised if not connected to Quantum Machines
-            ParameterNotFound: Raised if parameter does not exist
+            ValueError: Raised when passed bus is not found, or rf_inputs is not connected to an octave.
+            ParameterNotFound: Raised if parameter does not exist.
         """
-        # TODO: Change private QM API to public when implemented.
-        if not self._is_connected_to_qm:
-            raise NotImplementedError(f"You should be connected to {self.name} in order to change a parameter.")
-
         element = next((element for element in self.settings.elements if element["bus"] == bus), None)
         if element is None:
             raise ValueError(f"Bus {bus} was not found in {self.name} settings.")
@@ -340,50 +508,109 @@ class QuantumMachinesCluster(Instrument):
                 rf_output for rf_output in settings_octave["rf_outputs"] if rf_output["port"] == out_port
             )
 
-            if parameter == Parameter.LO_FREQUENCY:
-                lo_frequency = float(value)
-                self._qm.octave.set_lo_frequency(element=bus, lo_frequency=lo_frequency)
-                settings_octave_rf_output["lo_frequency"] = lo_frequency
+        # Now we will set the parameter in 3 places:
+        # 1) In the settings runtime dataclass (always).
+        # 2) If created: In the `_config`` dictionary.
+        # 3) If connected: In the instrument itself.
+        if parameter == Parameter.LO_FREQUENCY:
+            lo_frequency = float(value)
+            settings_octave_rf_output["lo_frequency"] = lo_frequency
+            if self._config_created:
                 self._config["octaves"][octave_name]["RF_outputs"][out_port]["LO_frequency"] = lo_frequency
-
-                if in_port is not None:
-                    settings_octave_rf_input = next(
-                        rf_input for rf_input in settings_octave["rf_inputs"] if rf_input["port"] == in_port
-                    )
-                    settings_octave_rf_input["lo_frequency"] = lo_frequency
+            if self._is_connected_to_qm:
+                self._qm.octave.set_lo_frequency(element=bus, lo_frequency=lo_frequency)
+            if in_port is not None:
+                settings_octave_rf_input = next(
+                    rf_input for rf_input in settings_octave["rf_inputs"] if rf_input["port"] == in_port
+                )
+                settings_octave_rf_input["lo_frequency"] = lo_frequency
+                if self._config_created:
                     self._config["octaves"][octave_name]["RF_inputs"][in_port]["LO_frequency"] = lo_frequency
-                return
-            if parameter == Parameter.GAIN:
-                gain_in_db = float(value)
-                self._qm.octave.set_rf_output_gain(element=bus, gain_in_db=gain_in_db)
-                settings_octave_rf_output["gain"] = gain_in_db
+            return
+
+        if parameter == Parameter.GAIN:
+            gain_in_db = float(value)
+            settings_octave_rf_output["gain"] = gain_in_db
+            if self._config_created:
                 self._config["octaves"][octave_name]["RF_outputs"][out_port]["gain"] = gain_in_db
-                return
+            if self._is_connected_to_qm:
+                self._qm.octave.set_rf_output_gain(element=bus, gain_in_db=gain_in_db)
+            return
+
         if parameter == Parameter.IF:
             intermediate_frequency = float(value)
-            self._qm.set_intermediate_frequency(element=bus, freq=intermediate_frequency)
             element["intermediate_frequency"] = intermediate_frequency
-            self._config["elements"][bus]["intermediate_frequency"] = intermediate_frequency
+            if self._config_created:
+                self._config["elements"][bus]["intermediate_frequency"] = intermediate_frequency
+                if f"mixer_{bus}" in self._config["mixers"]:
+                    self._config["mixers"][f"mixer_{bus}"][0]["intermediate_frequency"] = intermediate_frequency
+            if self._is_connected_to_qm:
+                self._qm.set_intermediate_frequency(element=bus, freq=intermediate_frequency)
+            return
+        if parameter == Parameter.THRESHOLD_ROTATION:
+            threshold_rotation = float(value)
+            element["threshold_rotation"] = threshold_rotation
+            return
+        if parameter == Parameter.THRESHOLD:
+            threshold = float(value)
+            element["threshold"] = threshold
             return
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}.")
 
-    def get_parameter_of_bus(self, bus: str, parameter: Parameter):
-        """Gets the value of a parameter
+    def get_parameter_of_bus(self, bus: str, parameter: Parameter) -> float | str | bool | tuple:
+        """Gets the value of a parameter.
 
         Args:
-            bus (str): The assossiated bus of the parameter
-            parameter (Parameter): The parameter to get value
+            bus (str): The associated bus of the parameter.
+            parameter (Parameter): The parameter to get value.
+
+        Returns:
+            float | int | bool | tuple: The value of the parameter.
 
         Raises:
-            ParameterNotFound: Raised if parameter does not exist
+            ParameterNotFound: Raised if parameter does not exist.
         """
-        # TODO: Change private QM API to public when implemented.
+        # Just in case, read from the `settings`, even though in theory the config should always be synch:
+        settings_config_dict = self.settings.to_qua_config()
+        config_keys = settings_config_dict["elements"][bus]
+
         if parameter == Parameter.LO_FREQUENCY:
-            return self._qm._elements[bus].input.lo_frequency  # type: ignore[union-attr] # pylint: disable=protected-access
-        if parameter == Parameter.GAIN:
-            return self._qm._elements[bus].input.gain  # type: ignore[union-attr] # pylint: disable=protected-access
+            if "mixInputs" in config_keys:
+                return settings_config_dict["elements"][bus]["mixInputs"]["lo_frequency"]
+            if "RF_inputs" in config_keys:
+                port = settings_config_dict["elements"][bus]["RF_inputs"]["port"]
+                return settings_config_dict["octaves"][port[0]]["RF_outputs"][port[1]]["LO_frequency"]
+
         if parameter == Parameter.IF:
-            return self._qm._elements[bus].intermediate_frequency  # pylint: disable=protected-access
+            if "intermediate_frequency" in config_keys:
+                return settings_config_dict["elements"][bus]["intermediate_frequency"]
+
+        if parameter == Parameter.GAIN:
+            if "mixInputs" in config_keys and "outputs" in config_keys:
+                port_i = settings_config_dict["elements"][bus]["outputs"]["out1"]
+                port_q = settings_config_dict["elements"][bus]["outputs"]["out2"]
+                return (
+                    settings_config_dict["controllers"][port_i[0]]["analog_inputs"][port_i[1]]["gain_db"],  # type: ignore[typeddict-item]
+                    settings_config_dict["controllers"][port_q[0]]["analog_inputs"][port_q[1]]["gain_db"],  # type: ignore[typeddict-item]
+                )
+            if "RF_inputs" in config_keys:
+                port = settings_config_dict["elements"][bus]["RF_inputs"]["port"]
+                return settings_config_dict["octaves"][port[0]]["RF_outputs"][port[1]]["gain"]
+
+        if parameter == Parameter.TIME_OF_FLIGHT:
+            if "time_of_flight" in config_keys:
+                return settings_config_dict["elements"][bus]["time_of_flight"]
+
+        if parameter == Parameter.SMEARING:
+            if "smearing" in config_keys:
+                return settings_config_dict["elements"][bus]["smearing"]
+
+        if parameter in [Parameter.THRESHOLD_ROTATION, Parameter.THRESHOLD]:
+            element = next((element for element in self.settings.elements if element["bus"] == bus), None)
+            if parameter == Parameter.THRESHOLD_ROTATION:
+                return element.get("threshold_rotation", None)  # type: ignore
+            if parameter == Parameter.THRESHOLD:
+                return element.get("threshold", None)  # type: ignore
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
     def compile(self, program: Program) -> str:
@@ -419,8 +646,10 @@ class QuantumMachinesCluster(Instrument):
         Returns:
             RunningQmJob: An object representing the running job. This object provides methods and properties to check the status of the job, retrieve results upon completion, and manage or investigate the job's execution.
         """
+        # CHANGES: qm.queue.add_compiled() -> qm.add_compiled()
         pending_job = self._qm.queue.add_compiled(compiled_program_id)
-        return pending_job.wait_for_execution()
+        # CHANGES: job.wait_for_execution() is deprecated and will be removed in the future. Please use job.wait_until("Running") instead.
+        return pending_job.wait_for_execution()  # type: ignore[return-value]
 
     def run(self, program: Program) -> RunningQmJob:
         """Runs the QUA Program.

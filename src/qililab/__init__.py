@@ -12,10 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-This is the top level module from which all basic functions and classes of
-Qililab can be directly imported.
-"""
+"""Top level module from which all Qililab basic functions and classes can be directly imported."""
 
 # isort: skip_file
 import contextlib
@@ -24,7 +21,7 @@ from .about import about
 from .config import __version__, logger
 from .data_management import build_platform, load_results, save_platform, save_results
 from .execute_circuit import execute
-from .qprogram import Calibration, Domain, QbloxCompiler, QProgram, QuantumMachinesCompiler
+from .qprogram import Calibration, CrosstalkMatrix, Domain, QbloxCompiler, QProgram, QuantumMachinesCompiler
 from .result import Results, stream_results
 from .typings import Parameter
 from .utils import Loop
