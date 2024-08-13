@@ -362,7 +362,6 @@ class TestCalibrationController:
     ### TEST UPDATE PARAMETERS ###
     ##############################
 
-    # TODO: Check why this test doesn't work, "params" not a valid Parameter:
     @patch("qililab.calibration.calibration_controller.Platform.set_parameter")
     @patch("qililab.calibration.calibration_controller.save_platform")
     def test_update_parameters(self, mock_save_platform, mock_set_params, controller):
