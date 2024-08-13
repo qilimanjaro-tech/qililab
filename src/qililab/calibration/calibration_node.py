@@ -599,7 +599,7 @@ def _json_serialize(obj: Any):
     if isinstance(obj, np.floating):
         return float(obj)
 
-    if isinstance(obj, (np.complex_, np.complex64, np.complex128)):
+    if isinstance(obj, (complex, np.complex_, np.complex64, np.complex128)):
         return {"real": float(obj.real), "imag": float(obj.imag)}
 
     if isinstance(obj, np.bool_):
