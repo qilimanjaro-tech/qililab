@@ -411,7 +411,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             dict: A dictionary containing the output parameters of the execution.
 
         Raises:
-            IncorrectCalibrationOutput: In case no outputs, incorrect outputs or multiple outputs where found. Incorrect outputs are those that do not contain `check_parameters` or is empty.
+            IncorrectCalibrationOutput: In case no outputs or multiple outputs where found.
         """
         # Save previous working directory and setup notebook folder as working directory
         original_wd = os.getcwd()

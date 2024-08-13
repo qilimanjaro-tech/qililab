@@ -391,7 +391,6 @@ class TestCalibrationController:
         """Test that the ``get_last_set_parameters()`` method, gets the correct parameters."""
         for i, node in controller.node_sequence.items():
             node.output_parameters = {
-                "check_parameters": {"x": [0, 1, 2, 3, 4, 5], "y": [0, 1, 2, 3, 4, 5]},
                 "platform_parameters": [("param", 0, f"test_bus_{i}", 0), ("param", 1, f"test_bus_{i}", 1)],
                 "fidelities": [(0, f"param_{i}", 1), (1, f"param_{i}", 0.967)],
             }
@@ -438,7 +437,6 @@ class TestCalibrationController:
         """Test that the ``get_last_fidelities()`` method, gets the correct parameters."""
         for i, node in controller.node_sequence.items():
             node.output_parameters = {
-                "check_parameters": {"x": [0, 1, 2, 3, 4, 5], "y": [0, 1, 2, 3, 4, 5]},
                 "platform_parameters": [(f"test_bus_{i}", 0, "param", 0), (f"test_bus_{i}", 1, "param", 1)],
                 "fidelities": [(0, f"param_{i}", 1), (1, f"param_{i}", 0.967)],
             }
@@ -485,7 +483,6 @@ class TestCalibrationController:
         for ind, (_, node) in enumerate(controller.node_sequence.items()):
             if node.node_id == "zeroth_q0q1":
                 node.output_parameters = {
-                    "check_parameters": {"x": [0, 1, 2, 3, 4, 5], "y": [0, 1, 2, 3, 4, 5]},
                     "platform_parameters": [(f"param_{ind}", 1, "test_bus", "0-1")],
                     "fidelities": [("0-1", f"fidelity_{ind}", 0.967)],
                 }
@@ -493,14 +490,12 @@ class TestCalibrationController:
             elif node.node_id == "fourth":
                 node.node_id = "fourth_q1"
                 node.output_parameters = {
-                    "check_parameters": {"x": [0, 1, 2, 3, 4, 5], "y": [0, 1, 2, 3, 4, 5]},
                     "platform_parameters": [(f"param_{ind}", 1, "test_bus", 1)],
                     "fidelities": [(1, f"fidelity_{ind}", 0.967)],
                 }
 
             else:
                 node.output_parameters = {
-                    "check_parameters": {"x": [0, 1, 2, 3, 4, 5], "y": [0, 1, 2, 3, 4, 5]},
                     "platform_parameters": [(f"param_{ind}", 1, "test_bus", 0)],
                     "fidelities": [(0, f"fidelity_{ind}", 0.967)],
                 }
