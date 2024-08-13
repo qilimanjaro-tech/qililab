@@ -596,16 +596,16 @@ def _json_serialize(obj: Any):
     if isinstance(obj, np.integer):
         return int(obj)
 
-    elif isinstance(obj, np.floating):
+    if isinstance(obj, np.floating):
         return float(obj)
 
-    elif isinstance(obj, (np.complex_, np.complex64, np.complex128)):
+    if isinstance(obj, (np.complex_, np.complex64, np.complex128)):
         return {"real": float(obj.real), "imag": float(obj.imag)}
 
-    elif isinstance(obj, (np.bool_)):
+    if isinstance(obj, (np.bool_)):
         return bool(obj)
 
-    elif isinstance(obj, (np.void)):
+    if isinstance(obj, (np.void)):
         return None
 
     return obj
