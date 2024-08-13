@@ -154,12 +154,16 @@ class TestPublicMethodsFromCalibrationNode:
     #########################
 
     @pytest.mark.parametrize(
-        "sweep_interval, input_parameters",
+        "sweep_interval, input_parameters, json_serialize_return",
         [
-            (None, {"a": 0, "b": 1}),
-            (None, None),
-            ([1], None),
-            ([1], {"start": 0, "stop": 10, "step": 1}),
+            (None, {"a": 0, "b": 1}, {"a": 0, "b": 1}),
+            (None, None, {}),
+            ([1], None, {"sweep_interval": [1]}),
+            (
+                [1],
+                {"start": 0, "stop": 10, "step": 1},
+                {"sweep_interval": [1], "start": 0, "stop": 10, "step": 1},
+            ),
         ],
     )
     @patch(
@@ -185,45 +189,43 @@ class TestPublicMethodsFromCalibrationNode:
         mock_execute,
         sweep_interval,
         input_parameters,
+        json_serialize_return,
         methods_node_run: CalibrationNode,
     ):
         """Test that run_node works properly."""
+        if isinstance(methods_node_run.qubit_index, int):
+            test_qubit_dict = {"qubit": methods_node_run.qubit_index}
+        elif isinstance(methods_node_run.qubit_index, list):
+            test_qubit_dict = {
+                "control_qubit": methods_node_run.qubit_index[0],
+                "target_qubit": methods_node_run.qubit_index[1],
+            }
+        test_params_dict = json_serialize_return | test_qubit_dict
+
+        mock_json_serialize.return_value = test_params_dict
         methods_node_run.sweep_interval = sweep_interval
         methods_node_run.input_parameters = input_parameters
         timestamp = methods_node_run.run_node()
 
-        params_dict: dict[str, Any] = {}
-
-        if isinstance(methods_node_run.qubit_index, int):
-            params_dict |= {"qubit": methods_node_run.qubit_index}
-
-        elif isinstance(methods_node_run.qubit_index, list):
-            params_dict |= {
-                "control_qubit": methods_node_run.qubit_index[0],
-                "target_qubit": methods_node_run.qubit_index[1],
-            }
-
-        if sweep_interval is not None:
-            params_dict |= {"sweep_interval": [1]}
-
-        if input_parameters is not None:
-            params_dict |= input_parameters
-
         mock_create.assert_has_calls([call(dirty=True), call(timestamp=timestamp)])
-        mock_json_serialize.assert_called_once_with(params_dict)
-        mock_execute.assert_called_with(methods_node_run.nb_path, "", params_dict)
+        mock_json_serialize.assert_called_once_with(test_params_dict)
+        mock_execute.assert_called_with(methods_node_run.nb_path, "", test_params_dict)
         mock_os.assert_called_once_with("", "")
         mock_logger.assert_not_called()
 
         assert methods_node_run.output_parameters == mock_execute.return_value
 
     @pytest.mark.parametrize(
-        "sweep_interval, input_parameters",
+        "sweep_interval, input_parameters, json_serialize_return",
         [
-            (None, None),
-            (None, {"start": 0, "stop": 10, "step": 1}),
-            (np.array([1]), None),
-            (np.array([1]), {"start": 0, "stop": 10, "step": 1}),
+            (None, None, {"qubit": 0}),
+            (None, {"start": 0, "stop": 10, "step": 1}, {"qubit": 0, "start": 0, "stop": 10, "step": 1}),
+            (np.array([1]), None, {"qubit": 0, "sweep_interval": [1]}),
+            (
+                np.array([1]),
+                {"start": 0, "stop": 10, "step": 1},
+                {"qubit": 0, "sweep_interval": [1], "start": 0, "stop": 10, "step": 1},
+            ),
         ],
     )
     @patch("qililab.calibration.calibration_node.CalibrationNode._execute_notebook")
@@ -243,9 +245,11 @@ class TestPublicMethodsFromCalibrationNode:
         mock_execute,
         sweep_interval,
         input_parameters,
+        json_serialize_return,
         methods_node: CalibrationNode,
     ):
         """Test that run_node works properly when a keyboard interrupt is raised."""
+        mock_json_serialize.return_value = json_serialize_return
         mock_execute.side_effect = KeyboardInterrupt()
         with pytest.raises(
             KeyboardInterrupt,
@@ -629,23 +633,23 @@ class TestStaticMethodsFromCalibrationNode:
 ### TEST EXPORT CALIBRATION OUTPUTS ###
 #######################################
 @pytest.mark.parametrize(
-    "test_outputs, test_dumped_outputs",
+    "test_outputs, test_serializable_outputs",
     [
-        ({"this_is": "a_test_dict", "foo": [1, 2, 3, 4]}, '{"this_is": "a_test_dict", "foo": [1, 2, 3, 4]}'),
+        ({"this_is": "a_test_dict", "foo": [1, 2, 3, 4]}, {"this_is": "a_test_dict", "foo": [1, 2, 3, 4]}),
         (
             {"this_is": np.array([1, 2, 3, 4, 5]), "foo": {"bar": "jose", "pepe": (np.array([0]), np.array([0]), "a")}},
-            '{"this_is": [1, 2, 3, 4, 5], "foo": {"bar": "jose", "pepe": [[0], [0], "a"]}}',
+            {"this_is": [1, 2, 3, 4, 5], "foo": {"bar": "jose", "pepe": [[0], [0], "a"]}},
         ),
     ],
 )
 @patch("qililab.calibration.calibration_node.json.dumps", autospec=True)
-def test_export_nb_outputs(mocked_dumps, test_outputs, test_dumped_outputs):
+def test_export_nb_outputs(mocked_dumps, test_outputs, test_serializable_outputs):
     """Test that ``export_nb_outputs()`` works properly."""
-    mocked_dumps.return_value = test_dumped_outputs
+    mocked_dumps.return_value = test_serializable_outputs
     with patch("builtins.print") as mocked_print:
         export_nb_outputs(test_outputs)
-        mocked_dumps.assert_called_with(test_outputs)
-        mocked_print.assert_called_with(f"{logger_output_start}{test_dumped_outputs}")
+        mocked_dumps.assert_called_with(test_serializable_outputs)
+        mocked_print.assert_called_with(f"{logger_output_start}{test_serializable_outputs}")
 
 
 #######################################
@@ -659,8 +663,8 @@ def test_export_nb_outputs(mocked_dumps, test_outputs, test_dumped_outputs):
             [[1.0, 2.0, 3.0, 4.0], [[1.0, 2.0, 3.0, 4.0], [1.0, 2.0, 3.0, 4.0]]],
         ),
         (
-            [np.True_, [np.float128(12.90), np.void]],
-            [True, [12.90, None]],
+            [np.True_, [np.float64(12.9), np.void(5)]],
+            [True, [12.9, None]],
         ),
         (
             {"this_is": "a_test_dict", "foo": np.array([1, 2, 3, 4])},
