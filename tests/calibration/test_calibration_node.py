@@ -502,8 +502,7 @@ class TestPrivateMethodsFromCalibrationNode:
                 assert path_and_node_id in test_value
                 assert "_dirty.ipynb" in test_value
             if error:
-                assert mocked_os.makedirs.call_count == 2
-                path_and_node_id_error = os.path.join(methods_node.nb_folder, "error_executions", methods_node.node_id)
+                path_and_node_id_error = os.path.join(methods_node.nb_folder, methods_node.node_id)
                 assert path_and_node_id_error in test_value
                 assert "_error.ipynb" in test_value
 

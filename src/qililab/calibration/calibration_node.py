@@ -89,8 +89,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                 ``NameOfTheNode_TimeExecutionStarted_dirty.ipynb``
 
             3.2) An exception is thrown. This case is not controlled by the user like interruptions. Instead, exceptions are automatically thrown when
-            an error is detected. When an execution error is found, the execution file is moved to a new subfolder ``/error_executions`` and renamed with the
-            time the error occurred, adding the `_error` flag, and the program exits:
+            an error is detected. When an execution error is found, the execution file is renamed with the time the error occurred, adding the `_error` flag, and the program exits:
 
                 ``NameOfTheNode_TimeExecutionFoundError_error.ipynb``
 
@@ -307,8 +306,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                 ``NameOfTheNode_TimeExecutionStarted_dirty.ipynb``
 
             3.2) An exception is thrown. This case is not controlled by the user like the interruptions, instead those exceptions are automatically
-            thrown when an error is detected. When an execution error is found, the execution file is moved to a new subfolder ``/error_executions``
-            and renamed with the time that the error ocurred and adding the flag "_error":
+            thrown when an error is detected. When an execution error is found, the execution file is renamed with the time that the error ocurred and adding the flag "_error":
 
                 ``NameOfTheNode_TimeExecutionFoundError_error.ipynb``
 
@@ -453,15 +451,11 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         # If doesn't exist, create the needed folder for the path
         os.makedirs(self.nb_folder, exist_ok=True)
 
-        if dirty and not error:  # return the path of the execution
-            return f"{self.nb_folder}/{self.node_id}_{now_path}_dirty.ipynb"
-        if error:
-            # CREATE FOLDERS FOR CALIBRATED EXECUTIONS, COMPARISONS, etc.
-            os.makedirs(f"{self.nb_folder}/error_executions", exist_ok=True)
-            return f"{self.nb_folder}/error_executions/{self.node_id}_{now_path}_error.ipynb"
+        # Path of the execution
+        flag = "_error" if error else ("_dirty" if dirty else "")
 
-        # return the string where saved
-        return f"{self.nb_folder}/{self.node_id}_{now_path}.ipynb"
+        # Return the string where saved
+        return f"{self.nb_folder}/{self.node_id}_{now_path}{flag}.ipynb"
 
     def _path_to_name_and_folder(self, original_path: str) -> tuple[str, str]:
         """Extract the name and folder from a notebook path. Name will be extended with the qubit it acts on.
