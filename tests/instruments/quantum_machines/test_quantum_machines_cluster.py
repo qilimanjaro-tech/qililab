@@ -279,21 +279,21 @@ class TestQuantumMachinesCluster:
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    def test_get_controller_from_bus_singleInput(
+    def test_get_controller_type_from_bus_singleInput(
         self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, compilation_config: dict
     ):
         qmm.initial_setup()
         qmm.turn_on()
 
-        controller = qmm.get_controller_from_bus("flux_q0")
+        controller = qmm.get_controller_type_from_bus("flux_q0")
         assert controller == "opx1"
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    def test_get_controller_from_bus_without_controller_raises_error(
+    def test_get_controller_type_from_bus_without_controller_raises_error(
         self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, compilation_config: dict
     ):
-        """Test get_controller_from_bus method raises an error when no controller is inside bus."""
+        """Test get_controller_type_from_bus method raises an error when no controller is inside bus."""
         qmm.initial_setup()
         qmm.turn_on()
 
@@ -303,7 +303,7 @@ class TestQuantumMachinesCluster:
             AttributeError,
             match=re.escape("Controller with bus bus does not exist"),
         ):
-            qmm.get_controller_from_bus("bus")
+            qmm.get_controller_type_from_bus("bus")
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
@@ -347,7 +347,7 @@ class TestQuantumMachinesCluster:
 
         qmm._qm.compile.return_value = "123"
         qmm._controller = "opx1000"
-        qmm._intermediate_frequency = {"drive_q0": 20e6}
+        qmm._pending_set_intermediate_frequency = {"drive_q0": 20e6}
 
         compile_program_id = qmm.compile(qua_program)
         _ = qmm.run_compiled_program(compile_program_id)
@@ -358,7 +358,7 @@ class TestQuantumMachinesCluster:
         # The following stopped working in testing, but we have verified that works in hardware, so I remove it temporarily.
         # qmm._qm.queue.add_compiled.return_value.wait_until.assert_called_once()
 
-        qmm.job.set_intermediate_frequency.assert_called_once()
+        job.set_intermediate_frequency.assert_called_once()
         qmm._qm.calibrate_element.assert_called_once()
         # Assert that the settings are still in synch:
         assert qmm._config == qmm.settings.to_qua_config()
@@ -429,7 +429,6 @@ class TestQuantumMachinesCluster:
             qmm_with_octave._qm.octave.set_rf_output_gain.assert_called_once()
         if parameter == Parameter.IF:
             qmm_with_octave._qm.set_intermediate_frequency.assert_called_once()
-            # assert value == qmm_with_octave._intermediate_frequency[bus]
 
         # Assert that the settings are still in synch:
         assert qmm_with_octave._config == qmm_with_octave.settings.to_qua_config()
@@ -505,7 +504,7 @@ class TestQuantumMachinesCluster:
         value: float | str | bool,
         qmm_with_opx1000: QuantumMachinesCluster,
     ):
-        """Test that both the set method fills the bus _intermediate_frequency correctly."""
+        """Test that both the set method fills the bus _pending_set_intermediate_frequency correctly."""
 
         qmm_with_opx1000.initial_setup()
         qmm_with_opx1000.turn_on()
@@ -514,7 +513,7 @@ class TestQuantumMachinesCluster:
         qmm_with_opx1000.set_parameter_of_bus(bus, parameter, value)
 
         ## Test `_intermediate_frequency[bus]` is created for later use:
-        assert qmm_with_opx1000._intermediate_frequency[bus] == value
+        assert qmm_with_opx1000._pending_set_intermediate_frequency[bus] == value
 
     @pytest.mark.parametrize(
         "bus, parameter, value",

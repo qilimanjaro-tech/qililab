@@ -403,7 +403,6 @@ class QuantumMachinesCluster(Instrument):
     _octave_config: QmOctaveConfig | None = None
     _is_connected_to_qm: bool = False
     _pending_set_intermediate_frequency: dict[str, float] = {}
-    _controller: str | None = None
     _config_created: bool = False
     _compiled_program_cache: dict[str, str] = {}
 
@@ -574,11 +573,11 @@ class QuantumMachinesCluster(Instrument):
                 if f"mixer_{bus}" in self._config["mixers"]:
                     self._config["mixers"][f"mixer_{bus}"][0]["intermediate_frequency"] = intermediate_frequency
             if self._is_connected_to_qm:
-                self._controller = self.get_controller_from_bus(bus)
-                if self._controller == "opx1":
+                controller_type = self.get_controller_type_from_bus(bus)
+                if controller_type == "opx1":
                     self._qm.set_intermediate_frequency(element=bus, freq=intermediate_frequency)
-                if self._controller == "opx1000":
-                    self._intermediate_frequency[bus] = intermediate_frequency
+                if controller_type == "opx1000":
+                    self._pending_set_intermediate_frequency[bus] = intermediate_frequency
             return
         if parameter == Parameter.THRESHOLD_ROTATION:
             threshold_rotation = float(value)
@@ -680,19 +679,19 @@ class QuantumMachinesCluster(Instrument):
             RunningQmJob: An object representing the running job. This object provides methods and properties to check the status of the job, retrieve results upon completion, and manage or investigate the job's execution.
         """
         # TODO: qm.queue.add_compiled() -> qm.add_compiled()
-        self.pending_job = self._qm.queue.add_compiled(  # pylint: disable=attribute-defined-outside-init
+        pending_job = self._qm.queue.add_compiled(
             compiled_program_id
         )
 
         # TODO: job.wait_for_execution() is deprecated and will be removed in the future. Please use job.wait_until("Running") instead.
-        self.job = self.pending_job.wait_for_execution()  # type: ignore[return-value]  # pylint: disable=attribute-defined-outside-init
-        if self._controller == "opx1000" and self._intermediate_frequency:
-            for bus, intermediate_frequency in self._intermediate_frequency.items():
-                self.job.set_intermediate_frequency(element=bus, freq=intermediate_frequency)  # type: ignore[union-attr]
+        job = pending_job.wait_for_execution()  # type: ignore[return-value]
+        if self._pending_set_intermediate_frequency:
+            for bus, intermediate_frequency in self._pending_set_intermediate_frequency.items():
+                job.set_intermediate_frequency(element=bus, freq=intermediate_frequency)  # type: ignore[union-attr]
                 self._qm.calibrate_element(bus)
-            self._intermediate_frequency = {}
+            self._pending_set_intermediate_frequency = {}
 
-        return self.job
+        return job
 
     def run(self, program: Program) -> RunningQmJob:
         """Runs the QUA Program.
