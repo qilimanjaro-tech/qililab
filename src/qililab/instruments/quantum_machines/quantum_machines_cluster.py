@@ -402,7 +402,7 @@ class QuantumMachinesCluster(Instrument):
     _config: DictQuaConfig
     _octave_config: QmOctaveConfig | None = None
     _is_connected_to_qm: bool = False
-    _intermediate_frequency: dict[str, float] = {}
+    _pending_set_intermediate_frequency: dict[str, float] = {}
     _controller: str | None = None
     _config_created: bool = False
     _compiled_program_cache: dict[str, str] = {}
@@ -478,7 +478,7 @@ class QuantumMachinesCluster(Instrument):
         for element in elements:
             self._qm.calibrate_element(element)
 
-    def get_controller_from_bus(self, bus: str) -> str | None:
+    def get_controller_type_from_bus(self, bus: str) -> str | None:
         """Gets the OPX controller name of the bus used
 
         Args:
