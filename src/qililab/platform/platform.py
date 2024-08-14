@@ -627,7 +627,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             transpiler (Callable): ising to flux transpiler. The transpiler should take 2 values as arguments (delta, epsilon) and return 2 values (phix, phiz)
             averages (int, optional): Amount of times to run and average the program over. Defaults to 1.
         """
-        annealing_program = AnnealingProgram(self, annealing_program_dict)
+        annealing_program = AnnealingProgram(self.flux_to_bus_topology, annealing_program_dict)
         annealing_program.transpile(transpiler)
         annealing_waveforms = annealing_program.get_waveforms()
 

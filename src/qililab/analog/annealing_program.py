@@ -19,6 +19,7 @@ import numpy as np
 
 from qililab.platform.components import Bus
 from qililab.qprogram import CrosstalkMatrix
+from qililab.settings.runcard import Runcard
 from qililab.waveforms import Arbitrary as ArbitraryWave
 
 
@@ -43,9 +44,13 @@ class AnnealingProgram:
         annealing_program (list[dict[str, dict[str, float]]]): dictionary with the annealing program with the above structure.
     """
 
-    def __init__(self, platform: Any, annealing_program: list[dict[str, dict[str, float]]]):
+    def __init__(
+        self,
+        flux_to_bus_topology: list[Runcard.FluxControlTopology],
+        annealing_program: list[dict[str, dict[str, float]]],
+    ):
         """Init method"""
-        self._platform = platform
+        self._flux_to_bus_topology = flux_to_bus_topology
         self._annealing_program = annealing_program
         self._transpiled_program = []  # type: list # [anneal_step[chip_element_flux_line,value]]
 
@@ -92,11 +97,15 @@ class AnnealingProgram:
         """
 
         # Initialize maps for bus to flux and flux to bus translation
-        bus_to_flux_map = {self._platform.get_element(flux_line): flux_line for flux_line in self._transpiled_program}
+        bus_to_flux_map = {
+            flux_bus.bus: flux_bus.flux
+            for flux_bus in self._flux_to_bus_topology
+            if flux_bus.flux in self._transpiled_program
+        }
         flux_to_bus_map = {v: k for k, v in bus_to_flux_map.items()}
 
         # Initialize annealing waveforms
-        annealing_waveforms = {bus.alias: [] for bus in bus_to_flux_map}  # type: ignore[var-annotated]
+        annealing_waveforms = {bus: [] for bus in bus_to_flux_map}  # type: ignore[var-annotated]
         # get xtalk matrix
         if correct_xtalk:
             xtalk_matrix = CrosstalkMatrix.from_buses(set(bus_to_flux_map))
