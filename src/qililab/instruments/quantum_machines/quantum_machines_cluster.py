@@ -679,9 +679,7 @@ class QuantumMachinesCluster(Instrument):
             RunningQmJob: An object representing the running job. This object provides methods and properties to check the status of the job, retrieve results upon completion, and manage or investigate the job's execution.
         """
         # TODO: qm.queue.add_compiled() -> qm.add_compiled()
-        pending_job = self._qm.queue.add_compiled(
-            compiled_program_id
-        )
+        pending_job = self._qm.queue.add_compiled(compiled_program_id)
 
         # TODO: job.wait_for_execution() is deprecated and will be removed in the future. Please use job.wait_until("Running") instead.
         job = pending_job.wait_for_execution()  # type: ignore[return-value]
