@@ -63,6 +63,10 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             the :class:`.CalibrationController` won't do the graph mapping properly, and the calibration will fail. Defaults to None.
         input_parameters (dict | None, optional): Kwargs for input parameters to pass and be interpreted by the notebook. Defaults to None.
         sweep_interval (np.ndarray | None, optional): Array describing the sweep values of the experiment. Defaults to None, which means the one specified in the notebook will be used.
+        check_point (bool, optional): Flag whether this notebook will be used to check if execute or not the ones before them. Checkpoints should ideally be fast and
+            reliable, and its dependency with previous notebooks strictly and phisically dependant.
+        check_value (float | None, optional): Value to decide whether the checkpoint was passed successfully.
+
 
     Examples:
 
@@ -238,6 +242,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         node_distinguisher: int | str | None = None,
         input_parameters: dict | None = None,
         sweep_interval: np.ndarray | None = None,
+        check_point: bool = False,
+        check_value: float | None = None,
     ):
         if len(nb_path.split("\\")) > 1:
             raise ValueError("`nb_path` must be written in unix format: `folder/subfolder/.../file.ipynb`.")
@@ -279,6 +285,16 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         self.been_calibrated: bool = False
         """Flag whether this notebook has been already calibrated in a concrete run. Defaults to False."""
+
+        self.check_point: bool = check_point
+        """Flag whether this notebook will be used to check if execute or not the ones before them. Checkpoints should ideally be fast and
+        reliable, and its dependency with previous notebooks strictly and phisically dependant."""
+
+        self.check_value: float | None = check_value if self.check_point else None
+        """Value to decide whether the checkpoint was passed successfully."""
+
+        self.check_point_passed: bool | None = None
+        """Flag whether this notebook has passed the check value when checked. If the notebook is not a check_point, then is None."""
 
     def run_node(self) -> float:
         """Executes the notebook, passing the needed parameters and flags.

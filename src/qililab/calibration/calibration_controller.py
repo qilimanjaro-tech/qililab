@@ -184,27 +184,6 @@ class CalibrationController:
         A node will be skipped if the ``drift timeout`` is bigger than the time since its last calibration. Defaults to 7200 (2h).
         """
 
-    def calibrate_all(self, node: CalibrationNode):
-        """Calibrates all the nodes sequentially.
-
-        Args:
-            node (CalibrationNode): The node where we want to start the `calibration_all()` on. Normally you would want
-                this node to be the furthest node in the calibration graph.
-        """
-        logger.info("WORKFLOW: Calibrating all %s.\n", node.node_id)
-        for n in self._dependencies(node):
-            self.calibrate_all(n)
-
-        # You can skip it from the `drift_timeout`, but also skip it due to `been_calibrated()`
-        # If you want to start the calibration from the start again, just decrease the `drift_timeout` or remove the executed files!
-        if not node.been_calibrated:
-            if node.previous_timestamp is None or self._is_timeout_expired(node.previous_timestamp, self.drift_timeout):
-                self.calibrate(node)
-                self._update_parameters(node)
-
-            node.been_calibrated = True
-        # After passing this block `node.been_calibrated` will always be True, so it will not be recalibrated again.
-
     def run_automatic_calibration(self) -> dict[str, dict]:
         """Runs the full automatic calibration procedure and retrieves the final set parameters and achieved fidelities dictionaries.
 
@@ -226,6 +205,9 @@ class CalibrationController:
         ]
 
         for node in highest_level_nodes:
+            self.diagnose(node)
+
+        for node in highest_level_nodes:
             self.calibrate_all(node)
 
         logger.info(
@@ -234,6 +216,84 @@ class CalibrationController:
             "#############################################\n"
         )
         return self.get_qubit_fidelities_and_parameters_df_tables()
+
+    def diagnose(self, node: CalibrationNode) -> bool:
+        """We search for the first checkpoint bad, and if we find it, we start the calibration process in the recursive
+        ``calibrate_all()`` calls, just after the last passed checkpoint before that one.
+
+        Example:
+        # O - [V] - [O] - [V] - [0] - [X] - [ ] - [ ] - [ ] - ... we leave the next ones empty (.), after finding the first bad
+        # checkpoint, so that we can just find the first [V], going from right to left in ``calibrate_all()`` calls and start there.
+
+        Args:
+            node (CalibrationNode): The node to diagnose.
+
+        Returns:
+            bool: Wether the diagnose process has finished or not.
+        """
+        logger.info("WORKFLOW: Diagnosing  %s.\n", node.node_id)
+        for n in self._dependencies(node):
+            diagnose_finished = self.diagnose(n)
+
+        # When we have encountered a dependency checkpoint bad, we should not diagnose further:
+        # O - [V] - [O] - [V] - [0] - [X] - [ ] - [ ] - [ ] - ... we leave the next ones empty (.), after finding the first bad
+        # checkpoint, so that we can just find the first [V], going from right to left in ``calibrate_all()`` calls and start there.
+        if diagnose_finished is True:
+            return True
+
+        # You can skip it from the `drift_timeout`, but also skip it due to `been_calibrated()`
+        # If you want to start the calibration from the start again, just decrease the `drift_timeout` or remove the executed files!
+        if (
+            node.check_point
+            and not node.been_calibrated
+            and (
+                node.previous_timestamp is None or self._is_timeout_expired(node.previous_timestamp, self.drift_timeout)
+            )
+        ):
+            self.calibrate(node)
+            # TODO: CHange comparison to correct, can be multiple fidelities and be in a weird path in output_parameters
+            if node.output_parameters is not None and node.output_parameters["fidelities"] > node.check_value:
+                self._update_parameters(node)
+                node.check_point_passed = True
+                node.been_calibrated = True  # TODO: Think about this, where together with its conditional above...
+
+            else:
+                logger.info(
+                    "WORKFLOW: %s checkpoint failed, calibration will start just after the previously passed checkpoint.\n",
+                    node.node_id,
+                )
+                node.check_point_passed = False
+
+            return not node.check_point_passed
+        return False
+
+    def calibrate_all(self, node: CalibrationNode) -> None:
+        """Calibrates all the nodes sequentially.
+
+        Args:
+            node (CalibrationNode): The node where we want to start the `calibration_all()` on. Normally you would want
+                this node to be the furthest node in the calibration graph.
+        """
+        logger.info("WORKFLOW: Calibrating all %s.\n", node.node_id)
+
+        # If diagnose has found a checkpoint bad, start the calibration just after the last passed checkpoint before that bad one.
+        # O - [V] - [O] - [V] - [0] - [X] - [ ] - [ ] - [ ] - ... we leave the next ones empty (.), after finding the first bad
+        # checkpoint, so that we can just find the first [V], going from right to left in ``calibrate_all()`` calls and start there.
+        if node.check_point_passed is True:
+            return
+
+        for n in self._dependencies(node):
+            self.calibrate_all(n)
+
+        # You can skip it from the `drift_timeout`, but also skip it due to `been_calibrated()`
+        # If you want to start the calibration from the start again, just decrease the `drift_timeout` or remove the executed files!
+        if not node.been_calibrated:
+            if node.previous_timestamp is None or self._is_timeout_expired(node.previous_timestamp, self.drift_timeout):
+                self.calibrate(node)
+                self._update_parameters(node)
+
+            node.been_calibrated = True
+        # After passing this block `node.been_calibrated` will always be True, so it will not be recalibrated again.
 
     def get_qubit_fidelities_and_parameters_df_tables(self) -> dict[str, pd.DataFrame]:
         """Generates the 1q, 2q, fidelities and parameters dataframes, with the last calibrations.
