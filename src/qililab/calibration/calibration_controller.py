@@ -264,7 +264,10 @@ class CalibrationController:
                 )
                 node.check_point_passed = False
 
+            # If the node was a checkpoint, depending on the results, we can stop or not diagnosing the next nodes.
             return not node.check_point_passed
+
+        # If no checkpoint is found, we can continue diagnosing the next nodes.
         return False
 
     def calibrate_all(self, node: CalibrationNode) -> None:
