@@ -243,7 +243,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         input_parameters: dict | None = None,
         sweep_interval: np.ndarray | None = None,
         check_point: bool = False,
-        check_value: float | None = None,
+        check_value: dict | None = None,
     ):
         if len(nb_path.split("\\")) > 1:
             raise ValueError("`nb_path` must be written in unix format: `folder/subfolder/.../file.ipynb`.")
@@ -288,13 +288,14 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
         self.check_point: bool = check_point
         """Flag whether this notebook will be used to check if execute or not the ones before them. Checkpoints should ideally be fast and
-        reliable, and its dependency with previous notebooks strictly and phisically dependant."""
+        reliable, and its dependency with previous notebooks strictly and phisically dependant. If not a check_point (default), then is False."""
 
-        self.check_value: float | None = check_value if self.check_point else None
-        """Value to decide whether the checkpoint was passed successfully."""
+        self.check_value: dict | None = check_value if self.check_point else None
+        """Values to decide whether the checkpoint was passed successfully. They have to have the same structure as the ``output_parameters["fidelities"]``
+        dictionary, in the corresponding notebook itself. If node is not a check_point (default), then its None."""
 
         self.check_point_passed: bool | None = None
-        """Flag whether this notebook has passed the check value when checked. If the notebook is not a check_point, then is None."""
+        """Flag whether this notebook has passed the check value when checked. If the notebook is not a check_point (default), then is None."""
 
     def run_node(self) -> float:
         """Executes the notebook, passing the needed parameters and flags.

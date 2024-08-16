@@ -252,7 +252,7 @@ class CalibrationController:
         ):
             self.calibrate(node)
             # TODO: CHange comparison to correct, can be multiple fidelities and be in a weird path in output_parameters
-            if node.output_parameters is not None and node.output_parameters["fidelities"] > node.check_value:
+            if node.output_parameters is not None and self.check_points_passed_comparison(node):
                 self._update_parameters(node)
                 node.check_point_passed = True
                 node.been_calibrated = True  # TODO: Think about this, where together with its conditional above...
@@ -269,6 +269,20 @@ class CalibrationController:
 
         # If no checkpoint is found, we can continue diagnosing the next nodes.
         return False
+
+    def check_points_passed_comparison(self, node: CalibrationNode) -> bool:
+        """Computes whetter a checkpoint passed, based on whether the fidelities of the node are greater or equal to the check values.
+
+        Args:
+            node (CalibrationNode): The node to check the fidelities of.
+
+        Returns:
+            bool: Whether the fidelities of the node are greater or equal to the check values.
+        """
+        return all(
+            fidelity_v >= node.check_value[fidelity_k]
+            for fidelity_k, fidelity_v in node.output_parameters["fidelities"]
+        )
 
     def calibrate_all(self, node: CalibrationNode) -> None:
         """Calibrates all the nodes sequentially.
