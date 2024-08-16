@@ -690,6 +690,12 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         )
         buses = {bus_alias: self._get_bus_by_alias(alias=bus_alias) for bus_alias in sequences}
 
+        for bus_alias, bus in buses.items():
+            if bus.distortions:
+                for distrortion in bus.distortions:
+                    for waveforms in sequences[bus_alias]._waveforms._waveforms:
+                        sequences[bus_alias]._waveforms.modify(waveforms.name, distrortion.apply(waveforms.data))
+
         if debug:
             with open("debug_qblox_execution.txt", "w", encoding="utf-8") as sourceFile:
                 for bus_alias in sequences:
