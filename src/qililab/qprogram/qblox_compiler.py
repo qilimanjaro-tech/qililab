@@ -250,7 +250,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         return index_I, index_Q, length_I
 
     def _append_to_weights_of_bus(self, bus: str, weights: IQPair):
-        def handle_waveform(waveform: Waveform):
+        def handle_weight(waveform: Waveform):
             _hash = QbloxCompiler._hash_waveform(waveform)
 
             if _hash in self._buses[bus].weight_to_index:
@@ -268,8 +268,8 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             self._buses[bus].weight_to_index[_hash] = index
             return index, length
 
-        index_I, length_I = handle_waveform(weights.I)
-        index_Q, _ = handle_waveform(weights.Q)
+        index_I, length_I = handle_weight(weights.I)
+        index_Q, _ = handle_weight(weights.Q)
         return index_I, index_Q, length_I
 
     def _handle_parallel(self, element: Parallel):
