@@ -280,9 +280,9 @@ class CalibrationController:
         ):
             self.calibrate(node)
             # TODO: CHange comparison to correct, can be multiple fidelities and be in a weird path in output_parameters
-            if node.output_parameters is not None and self.check_points_passed_comparison(node):
-                self._update_parameters(node)
+            if node.output_parameters is not None and self._check_point_passed_comparison(node):
                 node.check_point_passed = True
+                self._update_parameters(node)
                 node.been_calibrated = True  # TODO: Think about this, where together with its conditional above...
 
             else:
@@ -298,7 +298,7 @@ class CalibrationController:
         # If no checkpoint is found, we can continue diagnosing the next nodes.
         return False
 
-    def check_points_passed_comparison(self, node: CalibrationNode) -> bool:
+    def _check_point_passed_comparison(self, node: CalibrationNode) -> bool:
         """Computes whetter a checkpoint passed, based on whether the fidelities of the node are greater or equal to the check values.
 
         Args:
