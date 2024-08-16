@@ -227,7 +227,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                     }
                 )
 
-        where the ``platform_parameters`` are a list of parameters to set on the platform.
+        where the ``platform_parameters`` are a list of parameters to set on the platform. And the ``fidelities`` are for showing results in the calibration report,
+        or for using the checkpoints in the calibration with the ``check_point`` and ``check_value`` arguments.
 
         .. note::
 

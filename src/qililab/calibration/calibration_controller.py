@@ -279,7 +279,6 @@ class CalibrationController:
             )
         ):
             self.calibrate(node)
-            # TODO: CHange comparison to correct, can be multiple fidelities and be in a weird path in output_parameters
             if node.output_parameters is not None and self._check_point_passed_comparison(node):
                 node.check_point_passed = True
                 self._update_parameters(node)
