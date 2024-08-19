@@ -635,30 +635,31 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             transpiler (Callable): ising to flux transpiler. The transpiler should take 2 values as arguments (delta, epsilon) and return 2 values (phix, phiz)
             averages (int, optional): Amount of times to run and average the program over. Defaults to 1.
         """
-        annealing_program = AnnealingProgram(self, annealing_program_dict)
-        annealing_program.transpile(transpiler)
-        annealing_waveforms = annealing_program.get_waveforms()
+        if calibration and calibration.has_waveform(bus=readout_bus, name=measurement_name):
+            annealing_program = AnnealingProgram(self, annealing_program_dict)
+            annealing_program.transpile(transpiler)
+            annealing_waveforms = annealing_program.get_waveforms()
 
-        qp_annealing = QProgram()
-        with qp_annealing.average(averages):
-            for bus, waveform in annealing_waveforms.values():
-                qp_annealing.play(bus=bus.alias, waveform=waveform)
+            qp_annealing = QProgram()
+            with qp_annealing.average(averages):
+                for bus, waveform in annealing_waveforms.values():
+                    qp_annealing.play(bus=bus.alias, waveform=waveform)
 
-            if calibration and calibration.has_waveform(bus=readout_bus, name=measurement_name):
-                if weights and calibration.has_weights(bus=readout_bus, name=weights):
-                    qp_annealing.measure(bus=readout_bus, waveform=measurement_name, weights=weights)
-                else:
-                    r_duration = calibration.get_waveform(bus=readout_bus, name=measurement_name).get_duration()
-                    weights_shape = Square(amplitude=1, duration=r_duration)
-                    qp_annealing.measure(
-                        bus=readout_bus, waveform=measurement_name, weights=IQPair(I=weights_shape, Q=weights_shape)
-                    )
-            else:
-                raise ValueError(
-                    "A calibration instance and calibrated measurement must be provided to run an annealing schedule."
-                )
-
-        self.execute_qprogram(qprogram=qp_annealing, calibration=calibration)
+                    if weights and calibration.has_weights(bus=readout_bus, name=weights):
+                        qp_annealing.measure(bus=readout_bus, waveform=measurement_name, weights=weights)
+                    else:
+                        r_duration = calibration.get_waveform(bus=readout_bus, name=measurement_name).get_duration()
+                        weights_shape = Square(amplitude=1, duration=r_duration)
+                        qp_annealing.measure(
+                            bus=readout_bus, waveform=measurement_name, weights=IQPair(I=weights_shape, Q=weights_shape)
+                        )
+            
+            qp_annealing = qp_annealing.with_calibration()
+            self.execute_qprogram(qprogram=qp_annealing, calibration=calibration)
+        else:
+            raise ValueError(
+                "A calibration instance and calibrated measurement must be provided to run an annealing schedule."
+            )
 
     def execute_qprogram(  # pylint: disable=too-many-locals
         self,
