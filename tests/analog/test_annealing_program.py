@@ -49,8 +49,9 @@ def get_anneal_program_dictionary_with_flux():
 @pytest.fixture(name="annealing_program")
 def dummy_annealing_program(anneal_program_dictionary):
     """Build dummy annealing program"""
+    platform = build_platform(runcard=Galadriel.runcard)
     return AnnealingProgram(
-        platform=build_platform(runcard=Galadriel.runcard), annealing_program=anneal_program_dictionary
+        flux_to_bus_topology=platform.flux_to_bus_topology, annealing_program=anneal_program_dictionary
     )
 
 
