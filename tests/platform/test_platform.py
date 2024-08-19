@@ -398,6 +398,25 @@ class TestMethods:
             calibration=calibration
         )
         assert str(anneal_qprogram) == str(mock_execute_qprogram.call_args[1]["qprogram"])
+        
+        platform.execute_anneal_program(
+            annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}], transpiler=transpiler, averages=2,
+            readout_bus="readout_bus", measurement_name="readout",
+            calibration=calibration
+        )
+        assert str(anneal_qprogram) == str(mock_execute_qprogram.call_args[1]["qprogram"])
+        
+    def test_execute_anneal_program_no_calibration_raises_error(self, platform: Platform, anneal_qprogram, calibration):
+        mock_execute_qprogram = MagicMock()
+        platform.execute_qprogram = mock_execute_qprogram  # type: ignore[method-assign]
+        transpiler = MagicMock()
+        transpiler.return_value = (1, 2)
+        error_string = "A calibration instance and calibrated measurement must be provided to run an annealing schedule."
+        with pytest.raises(ValueError, match=error_string):
+            platform.execute_anneal_program(
+                annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}], transpiler=transpiler, averages=2,
+                readout_bus="readout_bus", measurement_name="readout",
+            )
 
     def test_execute_qprogram_with_qblox(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
