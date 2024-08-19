@@ -208,3 +208,6 @@
 
 - get_parameter for QM did not work due to the lack of the variable `bus_alias in self.system_control.get_parameter`. The variable has been added to the function and now get parameter does not return a crash.
   [#751](https://github.com/qilimanjaro-tech/qililab/pull/751)
+
+- set_parameter for intermediate frequency in quantum machines has been adapted for both OPX+ and OPX1000 following the new requirements for OPX1000 with qm-qua job.set_intermediate_frequency.
+  [#764](https://github.com/qilimanjaro-tech/qililab/pull/764)
