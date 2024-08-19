@@ -602,10 +602,14 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         return str(YAML().dump(self.to_dict(), io.BytesIO()))
 
     def execute_anneal_program(
-        self, annealing_program_dict: list[dict[str, dict[str, float]]],
-        readout_bus: str, measurement_name: str, weights: str,
-        transpiler: Callable, averages=1,
-        calibration: Calibration | None = None
+        self,
+        annealing_program_dict: list[dict[str, dict[str, float]]],
+        readout_bus: str,
+        measurement_name: str,
+        weights: str,
+        transpiler: Callable,
+        averages=1,
+        calibration: Calibration | None = None,
     ):
         """Given an annealing program execute it as a qprogram.
         The annealing program should contain a time ordered list of circuit elements and their corresponging ising coefficients as a dictionary. Example structure:
@@ -641,13 +645,13 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
             if calibration and calibration.has_waveform(bus=readout_bus, name=measurement_name):
                 if calibration.has_weights(bus=readout_bus, name=weights):
-                    qp_annealing.measure(bus=readout_bus, waveform=measurement_name,
-                                         weights=weights)
+                    qp_annealing.measure(bus=readout_bus, waveform=measurement_name, weights=weights)
                 else:
                     r_duration = calibration.get_waveform(bus=readout_bus, name=measurement_name).get_duration()
                     weights_shape = Square(amplitude=1, duration=r_duration)
-                    qp_annealing.measure(bus=readout_bus, waveform=measurement_name,
-                                        weights=IQPair(I=weights_shape, Q=weights_shape))
+                    qp_annealing.measure(
+                        bus=readout_bus, waveform=measurement_name, weights=IQPair(I=weights_shape, Q=weights_shape)
+                    )
             else:
                 raise ValueError("A calibration must be provided to run an annealing schedule.")
 
