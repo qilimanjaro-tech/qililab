@@ -115,7 +115,7 @@ def get_calibration():
     readout_amplitude = 1.0
     r_wf_I = Square(amplitude=readout_amplitude, duration=readout_duration)
     r_wf_Q = Square(amplitude=0.0, duration=readout_duration)
-    readout_waveform = (IQPair(I=r_wf_I, Q=r_wf_Q),)
+    readout_waveform = IQPair(I=r_wf_I, Q=r_wf_Q)
     weights_shape = Square(amplitude=1, duration=readout_duration)
     weights = IQPair(I=weights_shape, Q=weights_shape)
 
@@ -148,7 +148,7 @@ def get_anneal_qprogram(runcard):
     readout_amplitude = 1.0
     r_wf_I = Square(amplitude=readout_amplitude, duration=readout_duration)
     r_wf_Q = Square(amplitude=0.0, duration=readout_duration)
-    readout_waveform = (IQPair(I=r_wf_I, Q=r_wf_Q),)
+    readout_waveform = IQPair(I=r_wf_I, Q=r_wf_Q)
     weights_shape = Square(amplitude=1, duration=readout_duration)
     weights = IQPair(I=weights_shape, Q=weights_shape)
     qp_anneal = QProgram()
