@@ -51,7 +51,6 @@ from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName, Line, Parameter
 from qililab.utils import hash_qpy_sequence
-from qililab.waveforms import IQPair, Square
 
 from .components import Bus, Buses
 
@@ -601,15 +600,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """
         return str(YAML().dump(self.to_dict(), io.BytesIO()))
 
+    # TODO: determine default average
     def execute_anneal_program(
-        self,
-        annealing_program_dict: list[dict[str, dict[str, float]]],
-        readout_bus: str,
-        measurement_name: str,
-        transpiler: Callable,
-        averages=1,
-        calibration: Calibration | None = None,
-        weights: str | None = None,
+        self, annealing_program_dict: list[dict[str, dict[str, float]]], transpiler: Callable, averages=1
     ):
         """Given an annealing program execute it as a qprogram.
         The annealing program should contain a time ordered list of circuit elements and their corresponging ising coefficients as a dictionary. Example structure:
@@ -643,17 +636,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             for bus, waveform in annealing_waveforms.values():
                 qp_annealing.play(bus=bus.alias, waveform=waveform)
 
-            if calibration and calibration.has_waveform(bus=readout_bus, name=measurement_name):
-                if weights and calibration.has_weights(bus=readout_bus, name=weights):
-                    qp_annealing.measure(bus=readout_bus, waveform=measurement_name, weights=weights)
-                else:
-                    r_duration = calibration.get_waveform(bus=readout_bus, name=measurement_name).get_duration()
-                    weights_shape = Square(amplitude=1, duration=r_duration)
-                    qp_annealing.measure(
-                        bus=readout_bus, waveform=measurement_name, weights=IQPair(I=weights_shape, Q=weights_shape)
-                    )
-            else:
-                raise ValueError("A calibration instance and calibrated measurement must be provided to run an annealing schedule.")
+        # TODO: define readout
 
         self.execute_qprogram(qprogram=qp_annealing)
 
