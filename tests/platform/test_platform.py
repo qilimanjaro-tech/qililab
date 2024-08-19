@@ -417,7 +417,7 @@ class TestMethods:
         )
         assert str(anneal_qprogram) == str(mock_execute_qprogram.call_args[1]["qprogram"])
 
-    def test_execute_anneal_program_no_calibration_raises_error(self, platform: Platform, anneal_qprogram, calibration):
+    def test_execute_anneal_program_no_calibration_raises_error(self, platform: Platform):
         mock_execute_qprogram = MagicMock()
         platform.execute_qprogram = mock_execute_qprogram  # type: ignore[method-assign]
         transpiler = MagicMock()
