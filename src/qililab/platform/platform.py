@@ -653,7 +653,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                         bus=readout_bus, waveform=measurement_name, weights=IQPair(I=weights_shape, Q=weights_shape)
                     )
             else:
-                raise ValueError("A calibration instance and calibrated measurement must be provided to run an annealing schedule.")
+                raise ValueError(
+                    "A calibration instance and calibrated measurement must be provided to run an annealing schedule."
+                )
 
         self.execute_qprogram(qprogram=qp_annealing)
 
