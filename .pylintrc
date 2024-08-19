@@ -21,4 +21,5 @@ disable=
     missing-module-docstring,
     too-many-arguments,
     too-many-branches,
-    too-many-return-statements
+    too-many-return-statements,
+    too-many-instance-attributes
