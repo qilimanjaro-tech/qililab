@@ -606,10 +606,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         annealing_program_dict: list[dict[str, dict[str, float]]],
         readout_bus: str,
         measurement_name: str,
-        weights: str,
         transpiler: Callable,
         averages=1,
         calibration: Calibration | None = None,
+        weights: str | None = None,
     ):
         """Given an annealing program execute it as a qprogram.
         The annealing program should contain a time ordered list of circuit elements and their corresponging ising coefficients as a dictionary. Example structure:
@@ -644,7 +644,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 qp_annealing.play(bus=bus.alias, waveform=waveform)
 
             if calibration and calibration.has_waveform(bus=readout_bus, name=measurement_name):
-                if calibration.has_weights(bus=readout_bus, name=weights):
+                if weights and calibration.has_weights(bus=readout_bus, name=weights):
                     qp_annealing.measure(bus=readout_bus, waveform=measurement_name, weights=weights)
                 else:
                     r_duration = calibration.get_waveform(bus=readout_bus, name=measurement_name).get_duration()
