@@ -121,18 +121,6 @@ def get_calibration():
     return calibration
 
 
-@pytest.fixture(name="calibration")
-def get_calibration():
-    readout = Square(1.0, 2000)
-    weights = IQPair(Square(1.0, 2000), Square(1.0, 2000))
-
-    calibration = Calibration()
-    calibration.add_waveform(bus="readout_bus", name="readout", waveform=readout)
-    calibration.add_weights(bus="readout_bus", name="optimal_weights", weights=weights)
-
-    return calibration
-
-
 @pytest.fixture(name="anneal_qprogram")
 def get_anneal_qprogram(runcard):
     platform = Platform(runcard=runcard)
