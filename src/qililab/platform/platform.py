@@ -653,8 +653,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                         qp_annealing.measure(
                             bus=readout_bus, waveform=measurement_name, weights=IQPair(I=weights_shape, Q=weights_shape)
                         )
-            
-            qp_annealing = qp_annealing.with_calibration()
+
             self.execute_qprogram(qprogram=qp_annealing, calibration=calibration)
         else:
             raise ValueError(

@@ -415,7 +415,8 @@ class TestMethods:
             weights="optimal_weights",
             calibration=calibration,
         )
-        assert str(anneal_qprogram) == str(mock_execute_qprogram.call_args[1]["qprogram"])
+        qprogram = mock_execute_qprogram.call_args[1]["qprogram"].with_calibration(calibration)
+        assert str(anneal_qprogram) == str(qprogram)
 
         platform.execute_anneal_program(
             annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
@@ -425,7 +426,8 @@ class TestMethods:
             measurement_name="readout",
             calibration=calibration,
         )
-        assert str(anneal_qprogram) == str(mock_execute_qprogram.call_args[1]["qprogram"])
+        qprogram = mock_execute_qprogram.call_args[1]["qprogram"].with_calibration(calibration)
+        assert str(anneal_qprogram) == str(qprogram)
 
     def test_execute_anneal_program_no_calibration_raises_error(self, platform: Platform):
         mock_execute_qprogram = MagicMock()
