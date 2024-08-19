@@ -131,7 +131,7 @@ def get_calibration():
     return calibration
 
 @pytest.fixture(name="anneal_qprogram")
-def get_anneal_qprogram(runcard, calibration):
+def get_anneal_qprogram(runcard):
     platform = Platform(runcard=runcard)
     anneal_waveforms = {
         "phix_q0": (
@@ -148,11 +148,13 @@ def get_anneal_qprogram(runcard, calibration):
         ),
     }
     averages = 2
+    readout = Square(1.0, 2000)
+    weights = IQPair(Square(1.0, 2000), Square(1.0, 2000))
     qp_anneal = QProgram()
     with qp_anneal.average(averages):
         for bus, waveform in anneal_waveforms.values():
             qp_anneal.play(bus=bus.alias, waveform=waveform)
-            qp_anneal.measure(bus="readout_bus", name="readout", weights="optimal_weights")
+            qp_anneal.measure(bus="readout_bus", waveform=readout, weights=weights)
     return qp_anneal
 
 
