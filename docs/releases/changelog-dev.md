@@ -186,6 +186,17 @@
 
 ### Breaking changes
 
+- Big code refactor for the `calibration` module/directory, where all `comparisons`, `check_parameters`, `check_data()`,
+  `check_state()`, `maintain()`, `diagnose()` and other complex unused methods have been deleted, leaving only linear calibration.
+
+  Also some other minor improvements like:
+
+  - `drift_timeout` is now a single one for the full controller, instead of a different one for each node.
+  - Notebooks without an export are also accepted now (we will only raise error for multiple exports in a NB).
+  - Extended/Improved the accepted type for parameters to input/output in notebooks, thorught json serialization.
+
+  [#746](https://github.com/qilimanjaro-tech/qililab/pull/746)
+
 ### Deprecations / Removals
 
 - Deleted all the files in `execution` and `experiment` directories (Already obsolete).
@@ -197,3 +208,6 @@
 
 - get_parameter for QM did not work due to the lack of the variable `bus_alias in self.system_control.get_parameter`. The variable has been added to the function and now get parameter does not return a crash.
   [#751](https://github.com/qilimanjaro-tech/qililab/pull/751)
+
+- set_parameter for intermediate frequency in quantum machines has been adapted for both OPX+ and OPX1000 following the new requirements for OPX1000 with qm-qua job.set_intermediate_frequency.
+  [#764](https://github.com/qilimanjaro-tech/qililab/pull/764)
