@@ -24,7 +24,7 @@ from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
-from qililab.qprogram import QProgram, Calibration
+from qililab.qprogram import QProgram
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.settings import Runcard
@@ -109,19 +109,8 @@ def fixture_qblox_results():
     ]
 
 
-@pytest.fixture(name="calibration")
-def get_calibration():
-    readout = Square(1.0, 2000)
-    weights = IQPair(Square(1.0, 2000), Square(1.0, 2000))
-
-    calibration = Calibration()
-    calibration.add_waveform(bus="readout_bus", name="readout", waveform=readout)
-    calibration.add_weights(bus="readout_bus", name="optimal_weights", weights=weights)
-
-    return calibration
-
 @pytest.fixture(name="anneal_qprogram")
-def get_anneal_qprogram(runcard, calibration):
+def get_anneal_qprogram(runcard):
     platform = Platform(runcard=runcard)
     anneal_waveforms = {
         "phix_q0": (
@@ -142,7 +131,6 @@ def get_anneal_qprogram(runcard, calibration):
     with qp_anneal.average(averages):
         for bus, waveform in anneal_waveforms.values():
             qp_anneal.play(bus=bus.alias, waveform=waveform)
-            qp_anneal.measure(bus="readout_bus", name="readout", weights="optimal_weights")
     return qp_anneal
 
 
@@ -387,37 +375,16 @@ class TestMethods:
             assert all(isinstance(sequence, Sequence) for sequence in sequences_list)
             assert sequences_list[0]._program.duration == 200_000 * 1000 + 4 + 4 + 4
 
-    def test_execute_anneal_program(self, platform: Platform, anneal_qprogram, calibration):
+    def test_execute_anneal_program(self, platform: Platform, anneal_qprogram):
         mock_execute_qprogram = MagicMock()
         platform.execute_qprogram = mock_execute_qprogram  # type: ignore[method-assign]
         transpiler = MagicMock()
         transpiler.return_value = (1, 2)
         # with patch(qililab.analog.annealing_program, "AnnealingProgram") as dummy_anneal_program:
         platform.execute_anneal_program(
-            annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}], transpiler=transpiler, averages=2,
-            readout_bus="readout_bus", measurement_name="readout", weights="optimal_weights",
-            calibration=calibration
+            annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}], transpiler=transpiler, averages=2
         )
         assert str(anneal_qprogram) == str(mock_execute_qprogram.call_args[1]["qprogram"])
-
-        platform.execute_anneal_program(
-            annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}], transpiler=transpiler, averages=2,
-            readout_bus="readout_bus", measurement_name="readout",
-            calibration=calibration
-        )
-        assert str(anneal_qprogram) == str(mock_execute_qprogram.call_args[1]["qprogram"])
-
-    def test_execute_anneal_program_no_calibration_raises_error(self, platform: Platform, anneal_qprogram, calibration):
-        mock_execute_qprogram = MagicMock()
-        platform.execute_qprogram = mock_execute_qprogram  # type: ignore[method-assign]
-        transpiler = MagicMock()
-        transpiler.return_value = (1, 2)
-        error_string = "A calibration instance and calibrated measurement must be provided to run an annealing schedule."
-        with pytest.raises(ValueError, match=error_string):
-            platform.execute_anneal_program(
-                annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}], transpiler=transpiler, averages=2,
-                readout_bus="readout_bus", measurement_name="readout",
-            )
 
     def test_execute_qprogram_with_qblox(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
