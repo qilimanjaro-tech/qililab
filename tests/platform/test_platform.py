@@ -144,13 +144,18 @@ def get_anneal_qprogram(runcard):
         ),
     }
     averages = 2
-    readout = Square(1.0, 2000)
-    weights = IQPair(Square(1.0, 2000), Square(1.0, 2000))
+    readout_duration = 2000
+    readout_amplitude = 1.0
+    r_wf_I = Square(amplitude=readout_amplitude, duration=readout_duration)
+    r_wf_Q = Square(amplitude=0.0, duration=readout_duration)
+    readout_waveform = (IQPair(I=r_wf_I, Q=r_wf_Q),)
+    weights_shape = Square(amplitude=1, duration=readout_duration)
+    weights = IQPair(I=weights_shape, Q=weights_shape)
     qp_anneal = QProgram()
     with qp_anneal.average(averages):
         for bus, waveform in anneal_waveforms.values():
             qp_anneal.play(bus=bus.alias, waveform=waveform)
-            qp_anneal.measure(bus="readout_bus", waveform=readout, weights=weights)
+            qp_anneal.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
     return qp_anneal
 
 
