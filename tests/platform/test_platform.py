@@ -108,16 +108,6 @@ def fixture_qblox_results():
         },
     ]
 
-@pytest.fixture(name="calibration")
-def get_calibration():
-    readout = Square(1.0, 2000)
-    weights = IQPair(Square(1.0, 2000), Square(1.0, 2000))
-
-    calibration = Calibration()
-    calibration.add_waveform(bus="readout_bus", name="readout", waveform=readout)
-    calibration.add_weights(bus="readout_bus", name="optimal_weights", weights=weights)
-    
-    return calibration
 
 @pytest.fixture(name="calibration")
 def get_calibration():
@@ -129,6 +119,19 @@ def get_calibration():
     calibration.add_weights(bus="readout_bus", name="optimal_weights", weights=weights)
 
     return calibration
+
+
+@pytest.fixture(name="calibration")
+def get_calibration():
+    readout = Square(1.0, 2000)
+    weights = IQPair(Square(1.0, 2000), Square(1.0, 2000))
+
+    calibration = Calibration()
+    calibration.add_waveform(bus="readout_bus", name="readout", waveform=readout)
+    calibration.add_weights(bus="readout_bus", name="optimal_weights", weights=weights)
+
+    return calibration
+
 
 @pytest.fixture(name="anneal_qprogram")
 def get_anneal_qprogram(runcard):
@@ -406,35 +409,50 @@ class TestMethods:
         transpiler.return_value = (1, 2)
         # with patch(qililab.analog.annealing_program, "AnnealingProgram") as dummy_anneal_program:
         platform.execute_anneal_program(
-            annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}], transpiler=transpiler, averages=2,
-            readout_bus="readout_bus", measurement_name="readout", weights="optimal_weights",
-            calibration=calibration
+            annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
+            transpiler=transpiler,
+            averages=2,
+            readout_bus="readout_bus",
+            measurement_name="readout",
+            weights="optimal_weights",
+            calibration=calibration,
         )
         assert str(anneal_qprogram) == str(mock_execute_qprogram.call_args[1]["qprogram"])
-        
+
         platform.execute_anneal_program(
-            annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}], transpiler=transpiler, averages=2,
-            readout_bus="readout_bus", measurement_name="readout",
-            calibration=calibration
+            annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
+            transpiler=transpiler,
+            averages=2,
+            readout_bus="readout_bus",
+            measurement_name="readout",
+            calibration=calibration,
         )
         assert str(anneal_qprogram) == str(mock_execute_qprogram.call_args[1]["qprogram"])
-        
+
     def test_execute_anneal_program_no_calibration_raises_error(self, platform: Platform, anneal_qprogram, calibration):
         mock_execute_qprogram = MagicMock()
         platform.execute_qprogram = mock_execute_qprogram  # type: ignore[method-assign]
         transpiler = MagicMock()
         transpiler.return_value = (1, 2)
-        error_string = "A calibration instance and calibrated measurement must be provided to run an annealing schedule."
+        error_string = (
+            "A calibration instance and calibrated measurement must be provided to run an annealing schedule."
+        )
         with pytest.raises(ValueError, match=error_string):
             platform.execute_anneal_program(
-                annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}], transpiler=transpiler, averages=2,
-                readout_bus="readout_bus", measurement_name="readout",
+                annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
+                transpiler=transpiler,
+                averages=2,
+                readout_bus="readout_bus",
+                measurement_name="readout",
             )
 
         platform.execute_anneal_program(
-            annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}], transpiler=transpiler, averages=2,
-            readout_bus="readout_bus", measurement_name="readout",
-            calibration=calibration
+            annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
+            transpiler=transpiler,
+            averages=2,
+            readout_bus="readout_bus",
+            measurement_name="readout",
+            calibration=calibration,
         )
         assert str(anneal_qprogram) == str(mock_execute_qprogram.call_args[1]["qprogram"])
 
@@ -443,11 +461,16 @@ class TestMethods:
         platform.execute_qprogram = mock_execute_qprogram  # type: ignore[method-assign]
         transpiler = MagicMock()
         transpiler.return_value = (1, 2)
-        error_string = "A calibration instance and calibrated measurement must be provided to run an annealing schedule."
+        error_string = (
+            "A calibration instance and calibrated measurement must be provided to run an annealing schedule."
+        )
         with pytest.raises(ValueError, match=error_string):
             platform.execute_anneal_program(
-                annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}], transpiler=transpiler, averages=2,
-                readout_bus="readout_bus", measurement_name="readout",
+                annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
+                transpiler=transpiler,
+                averages=2,
+                readout_bus="readout_bus",
+                measurement_name="readout",
             )
 
     def test_execute_qprogram_with_qblox(self, platform: Platform):
