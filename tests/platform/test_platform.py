@@ -111,11 +111,16 @@ def fixture_qblox_results():
 
 @pytest.fixture(name="calibration")
 def get_calibration():
-    readout = Square(1.0, 2000)
-    weights = IQPair(Square(1.0, 2000), Square(1.0, 2000))
+    readout_duration = 2000
+    readout_amplitude = 1.0
+    r_wf_I = Square(amplitude=readout_amplitude, duration=readout_duration)
+    r_wf_Q = Square(amplitude=0.0, duration=readout_duration)
+    readout_waveform = IQPair(I=r_wf_I, Q=r_wf_Q),
+    weights_shape = Square(amplitude=1, duration=readout_duration)
+    weights = IQPair(I=weights_shape, Q=weights_shape)
 
     calibration = Calibration()
-    calibration.add_waveform(bus="readout_bus", name="readout", waveform=readout)
+    calibration.add_waveform(bus="readout_bus", name="readout", waveform=readout_waveform)
     calibration.add_weights(bus="readout_bus", name="optimal_weights", weights=weights)
 
     return calibration
