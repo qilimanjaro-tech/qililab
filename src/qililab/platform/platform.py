@@ -658,7 +658,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                     "A calibration instance and calibrated measurement must be provided to run an annealing schedule."
                 )
 
-        self.execute_qprogram(qprogram=qp_annealing)
+        self.execute_qprogram(qprogram=qp_annealing, calibration=calibration)
 
     def execute_qprogram(  # pylint: disable=too-many-locals
         self,
