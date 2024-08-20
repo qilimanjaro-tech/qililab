@@ -704,13 +704,7 @@ class Galadriel:
                 RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
             },
             "port": "drive_q0",
-            RUNCARD.DISTORTIONS: [
-                {
-                    "name": "lfilter",
-                    "a": [1.0],
-                    "b": [1.0],
-                }
-            ],
+            RUNCARD.DISTORTIONS: [{"name": "lfilter", "a": [1.0], "b": [1.0], "norm_factor": 1.0}],
             RUNCARD.DELAY: 0,
         },
         {
