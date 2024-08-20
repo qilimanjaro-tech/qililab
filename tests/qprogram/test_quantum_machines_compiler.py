@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from qililab import Calibration, Domain, IQPair, QProgram, QuantumMachinesCompiler, Square
+from qililab import Arbitrary, Calibration, Domain, IQPair, QProgram, QuantumMachinesCompiler, Square
 from qililab.qprogram.blocks import ForLoop, Loop
 
 
@@ -728,6 +728,14 @@ class TestQuantumMachinesCompiler:
         statements = qua_program._program.script.body.statements
         assert len(statements) == 1
         assert bool(statements[0].for_.condition.literal.value) is True
+
+    def test_hash_arbitrary_waveforms(self):
+        compiler = QuantumMachinesCompiler()
+        waveform0 = Arbitrary(np.ones(3000))
+        waveform1 = Arbitrary(np.ones(3004))
+        assert compiler._QuantumMachinesCompiler__hash_waveform(
+            waveform0
+        ) != compiler._QuantumMachinesCompiler__hash_waveform(waveform1)
 
     @pytest.mark.parametrize(
         "start,stop,step,expected_result",
