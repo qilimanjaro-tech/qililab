@@ -78,9 +78,10 @@ class TestAnnealingProgram:
 
     def test_init(self, annealing_program, anneal_program_dictionary):
         """Test init method"""
-        assert annealing_program._platform.to_dict() == Galadriel.runcard
+        assert [flux_bus.to_dict() for flux_bus in annealing_program._flux_to_bus_topology] == Galadriel.runcard[
+            "flux_control_topology"
+        ]
         assert annealing_program._annealing_program == anneal_program_dictionary
-        assert annealing_program.annealing_program == anneal_program_dictionary
 
     def test_transpile(self, annealing_program, anneal_program_dictionary):
         """Test transpile method"""
