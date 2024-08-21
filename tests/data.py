@@ -714,7 +714,7 @@ class Galadriel:
             },
             "port": "drive_q0",
             RUNCARD.DISTORTIONS: [
-                {"name": "lfilter", "a": [1.,0.,1.], "auto_norm": True, "b": [0.5, 0.5], "norm_factor": 1.0}
+                {"name": "lfilter", "a": [1.0, 0.0, 1.0], "auto_norm": True, "b": [0.5, 0.5], "norm_factor": 1.0}
             ],
             RUNCARD.DELAY: 0,
         },
