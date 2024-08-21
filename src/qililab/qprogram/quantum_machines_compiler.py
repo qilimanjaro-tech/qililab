@@ -517,7 +517,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
     @staticmethod
     def __hash_waveform(waveform: Waveform):
         attributes = [
-            f"{key}: {(QuantumMachinesCompiler.__hash_waveform(value) if isinstance(value, Waveform) else str(value))}"
+            f"{key}: {(QuantumMachinesCompiler.__hash_waveform(value) if isinstance(value, Waveform) else value.tobytes() if isinstance(value, np.ndarray) else str(value))}"
             for key, value in waveform.__dict__.items()
             if key != "duration" or not isinstance(waveform, Square)
         ]
