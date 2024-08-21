@@ -32,7 +32,7 @@ from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import IQPair, Square
-from src.qililab.result.qprogram.qprogram_results import QProgramResults
+from qililab.result.qprogram.qprogram_results import QProgramResults
 from tests.data import Galadriel, SauronQuantumMachines
 from tests.test_utils import build_platform
 
