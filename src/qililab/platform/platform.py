@@ -644,15 +644,15 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             with qp_annealing.average(averages):
                 for bus, waveform in annealing_waveforms.values():
                     qp_annealing.play(bus=bus.alias, waveform=waveform)
-                    qp_annealing.sync()
-                    if weights and calibration.has_weights(bus=readout_bus, name=weights):
-                        qp_annealing.measure(bus=readout_bus, waveform=measurement_name, weights=weights)
-                    else:
-                        r_duration = calibration.get_waveform(bus=readout_bus, name=measurement_name).get_duration()
-                        weights_shape = Square(amplitude=1, duration=r_duration)
-                        qp_annealing.measure(
-                            bus=readout_bus, waveform=measurement_name, weights=IQPair(I=weights_shape, Q=weights_shape)
-                        )
+                qp_annealing.sync()
+                if weights and calibration.has_weights(bus=readout_bus, name=weights):
+                    qp_annealing.measure(bus=readout_bus, waveform=measurement_name, weights=weights)
+                else:
+                    r_duration = calibration.get_waveform(bus=readout_bus, name=measurement_name).get_duration()
+                    weights_shape = Square(amplitude=1, duration=r_duration)
+                    qp_annealing.measure(
+                        bus=readout_bus, waveform=measurement_name, weights=IQPair(I=weights_shape, Q=weights_shape)
+                    )
 
             return self.execute_qprogram(qprogram=qp_annealing, calibration=calibration)
         raise ValueError("The calibrated measurement is not present in the calibration file.")
