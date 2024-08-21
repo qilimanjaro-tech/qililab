@@ -655,9 +655,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                         )
 
             return self.execute_qprogram(qprogram=qp_annealing, calibration=calibration)
-        raise ValueError(
-            "The calibrated measurement is not present in the calibration file."
-        )
+        raise ValueError("The calibrated measurement is not present in the calibration file.")
 
     def execute_qprogram(  # pylint: disable=too-many-locals
         self,
