@@ -14,7 +14,7 @@ from qibo.models import Circuit
 from qpysequence import Sequence
 from ruamel.yaml import YAML
 
-from qililab import save_platform
+from qililab import Arbitrary, save_platform
 from qililab.chip import Chip, Qubit
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.instrument_controllers import InstrumentControllers
@@ -107,6 +107,31 @@ def fixture_qblox_results():
             "measurement": 1,
         },
     ]
+
+
+@pytest.fixture(name="anneal_qprogram")
+def get_anneal_qprogram(runcard):
+    platform = Platform(runcard=runcard)
+    anneal_waveforms = {
+        "phix_q0": (
+            platform._get_bus_by_alias(
+                next(element.bus for element in platform.flux_to_bus_topology if element.flux == "phix_q0")
+            ),
+            Arbitrary(np.array([1])),
+        ),
+        "phiz_q0": (
+            platform._get_bus_by_alias(
+                next(element.bus for element in platform.flux_to_bus_topology if element.flux == "phiz_q0")
+            ),
+            Arbitrary(np.array([2])),
+        ),
+    }
+    averages = 2
+    qp_anneal = QProgram()
+    with qp_anneal.average(averages):
+        for bus, waveform in anneal_waveforms.values():
+            qp_anneal.play(bus=bus.alias, waveform=waveform)
+    return qp_anneal
 
 
 class TestPlatformInitialization:
@@ -349,6 +374,17 @@ class TestMethods:
             assert isinstance(sequences_list, list)
             assert all(isinstance(sequence, Sequence) for sequence in sequences_list)
             assert sequences_list[0]._program.duration == 200_000 * 1000 + 4 + 4 + 4
+
+    def test_execute_anneal_program(self, platform: Platform, anneal_qprogram):
+        mock_execute_qprogram = MagicMock()
+        platform.execute_qprogram = mock_execute_qprogram  # type: ignore[method-assign]
+        transpiler = MagicMock()
+        transpiler.return_value = (1, 2)
+        # with patch(qililab.analog.annealing_program, "AnnealingProgram") as dummy_anneal_program:
+        platform.execute_anneal_program(
+            annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}], transpiler=transpiler, averages=2
+        )
+        assert str(anneal_qprogram) == str(mock_execute_qprogram.call_args[1]["qprogram"])
 
     def test_execute_qprogram_with_qblox(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
