@@ -644,7 +644,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             with qp_annealing.average(averages):
                 for bus, waveform in annealing_waveforms.values():
                     qp_annealing.play(bus=bus.alias, waveform=waveform)
-
+                    qp_annealing.sync()
                     if weights and calibration.has_weights(bus=readout_bus, name=weights):
                         qp_annealing.measure(bus=readout_bus, waveform=measurement_name, weights=weights)
                     else:
