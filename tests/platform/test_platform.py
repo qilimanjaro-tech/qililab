@@ -550,6 +550,31 @@ class TestMethods:
         assert patched_open.call_count == 1
         assert generate_qua.call_count == 1
 
+    def test_execute_qprogram_with_quantum_machines_raises_error(
+        self, platform_quantum_machines: Platform
+    ):  # pylint: disable=too-many-locals
+        """Test that the execute_qprogram method raises the exception if the qprogram failes"""
+
+        error_string = "The QM `config` dictionary does not exist. Please run `initial_setup()` first."
+        escaped_error_str = re.escape(error_string)
+        platform_quantum_machines.compile = MagicMock()  # type: ignore # don't care about compilation
+        platform_quantum_machines.compile.return_value = Exception(escaped_error_str)
+
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_q0_rf", waveform=drive_wf)
+        qprogram.sync()
+        qprogram.play(bus="readout_q0_rf", waveform=readout_wf)
+        qprogram.measure(bus="readout_q0_rf", waveform=readout_wf, weights=weights_wf)
+
+        with patch.object(QuantumMachinesCluster, "turn_off") as turn_off:
+            with pytest.raises(ValueError, match=escaped_error_str):
+                _ = platform_quantum_machines.execute_qprogram(qprogram=qprogram, debug=True)
+
+        turn_off.assert_called_once_with()
+
     def test_execute(self, platform: Platform, qblox_results: list[dict]):
         """Test that the execute method calls the buses to run and return the results."""
         # Define pulse schedule
