@@ -15,7 +15,6 @@ from qpysequence import Sequence
 from ruamel.yaml import YAML
 
 from qililab import Arbitrary, save_platform
-from qililab import Arbitrary, save_platform
 from qililab.chip import Chip, Qubit
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.instrument_controllers import InstrumentControllers
@@ -125,7 +124,6 @@ def get_calibration():
     calibration.add_weights(bus="readout_bus", name="optimal_weights", weights=weights)
 
     return calibration
-
 
 @pytest.fixture(name="anneal_qprogram")
 def get_anneal_qprogram(runcard):
@@ -401,11 +399,13 @@ class TestMethods:
             assert all(isinstance(sequence, Sequence) for sequence in sequences_list)
             assert sequences_list[0]._program.duration == 200_000 * 1000 + 4 + 4 + 4
 
+
     def test_execute_anneal_program(self, platform: Platform, anneal_qprogram, calibration):
         mock_execute_qprogram = MagicMock()
         platform.execute_qprogram = mock_execute_qprogram  # type: ignore[method-assign]
         transpiler = MagicMock()
         transpiler.return_value = (1, 2)
+
         platform.execute_anneal_program(
             annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
             transpiler=transpiler,
@@ -445,6 +445,7 @@ class TestMethods:
                 readout_bus="readout_bus",
                 measurement_name="readout",
             )
+
 
     def test_execute_qprogram_with_qblox(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
