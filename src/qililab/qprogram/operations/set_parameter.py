@@ -12,23 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from qililab.qprogram.operations import ExecuteQProgram, SetParameter
-from qililab.qprogram.qprogram import QProgram
-from qililab.qprogram.structured_program import StructuredProgram
+from dataclasses import dataclass
+
+from qililab.qprogram.operations.operation import Operation
 from qililab.typings.enums import Parameter
 from qililab.yaml import yaml
 
 
 @yaml.register_class
-class Experiment(StructuredProgram):
-    def __init__(self) -> None:
-        super().__init__()
-
-    def set_parameter(self, alias: str, parameter: Parameter, value: int | float | int):
-        """ """
-        operation = SetParameter(alias=alias, parameter=parameter, value=value)
-        self._active_block.append(operation)
-
-    def execute_qprogram(self, qprogram: QProgram):
-        operation = ExecuteQProgram(qprogram=qprogram)
-        self._active_block.append(operation)
+@dataclass(frozen=True)
+class SetParameter(Operation):  # pylint: disable=missing-class-docstring
+    alias: str
+    parameter: Parameter
+    value: int | float | bool
