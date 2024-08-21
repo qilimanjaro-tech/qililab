@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 from qibo import gates
 from qibo.models import Circuit
-from qpysequence import Sequence
+from qpysequence import Sequence, Waveforms
 from ruamel.yaml import YAML
 
 from qililab import Arbitrary, save_platform
@@ -431,6 +431,28 @@ class TestMethods:
 
         # assure only one debug was called
         assert patched_open.call_count == 1
+
+    def test_execute_qprogram_with_qblox_distortions(self, platform: Platform):
+        drive_wf = Square(amplitude=1.0, duration=4)
+        qprogram = QProgram()
+        qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
+        qprogram.play(bus="drive_line_q1_bus", waveform=drive_wf)
+
+        test_waveforms = Waveforms()
+        test_waveforms.add(array=np.array([0.5, 1.0, 0.5, 0.0]), index=0)
+        test_waveforms.add(array=drive_wf.envelope(), index=1)
+
+        qblox_compiler = QbloxCompiler()
+        sequences, _ = qblox_compiler.compile(qprogram=qprogram)
+        buses = {bus_alias: platform._get_bus_by_alias(alias=bus_alias) for bus_alias in sequences}
+        for bus_alias, bus in buses.items():
+            if bus.distortions:
+                for distrortion in bus.distortions:
+                    for waveforms in sequences[bus_alias]._waveforms._waveforms:  # pylint: disable=protected-access
+                        sequences[bus_alias]._waveforms.modify(  # pylint: disable=protected-access
+                            waveforms.name, distrortion.apply(waveforms.data)
+                        )
+        assert test_waveforms == sequences[bus_alias]._waveforms
 
     def test_execute_qprogram_with_quantum_machines(
         self, platform_quantum_machines: Platform
