@@ -19,6 +19,7 @@ import re
 from copy import deepcopy
 from dataclasses import asdict
 from queue import Queue
+from typing import Callable
 
 import numpy as np
 from qibo.gates import M
@@ -27,10 +28,11 @@ from qm import generate_qua_script
 from qpysequence import Sequence as QpySequence
 from ruamel.yaml import YAML
 
+from qililab.analog import AnnealingProgram
 from qililab.chip import Chip
 from qililab.circuit_transpiler import CircuitTranspiler
 from qililab.config import logger
-from qililab.constants import GATE_ALIAS_REGEX, RUNCARD
+from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
 from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
@@ -296,6 +298,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         )
         """All the buses of the platform and their necessary settings (``dataclass``). Each individual bus is contained in a list within the dataclass."""
 
+        self.flux_to_bus_topology = runcard.flux_control_topology
+        """Flux to bus mapping for analog control"""
+
         self._connected_to_instruments: bool = False
         """Boolean indicating the connection status to the instruments. Defaults to False (not connected)."""
 
@@ -374,6 +379,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         Returns:
             tuple[object, list | None]: Element class together with the index of the bus where the element is located.
         """
+        # TODO: fix docstring, bus is not returned in most cases
         if alias is not None:
             if alias == "platform":
                 return self.gates_settings
@@ -384,6 +390,22 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 qubits = ast.literal_eval(qubits_str)
                 if f"{name}({qubits_str})" in self.gates_settings.gate_names:
                     return self.gates_settings.get_gate(name=name, qubits=qubits)
+            regex_match = re.search(FLUX_CONTROL_REGEX, alias)
+            if regex_match is not None:
+                element_type = regex_match.lastgroup
+                element_shorthands = {"qubit": "q", "coupler": "c"}
+                flux = regex_match["flux"]
+                # TODO: support commuting the name of the coupler eg. c1_0 = c0_1
+                return self._get_bus_by_alias(
+                    next(
+                        (
+                            element.bus
+                            for element in self.flux_to_bus_topology  # type: ignore[union-attr]
+                            if element.flux == f"{flux}_{element_shorthands[element_type]}{regex_match[element_type]}"  # type: ignore[index]
+                        ),
+                        None,
+                    )
+                )
 
         element = self.instruments.get_instrument(alias=alias)
         if element is None:
@@ -556,8 +578,19 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 self.instrument_controllers.to_dict() if self.instrument_controllers is not None else None
             ),
         }
+        flux_control_topology_dict = {
+            RUNCARD.FLUX_CONTROL_TOPOLOGY: [flux_control.to_dict() for flux_control in self.flux_to_bus_topology]
+        }
 
-        return name_dict | gates_settings_dict | chip_dict | buses_dict | instrument_dict | instrument_controllers_dict
+        return (
+            name_dict
+            | gates_settings_dict
+            | chip_dict
+            | buses_dict
+            | instrument_dict
+            | instrument_controllers_dict
+            | flux_control_topology_dict
+        )
 
     def __str__(self) -> str:
         """String representation of the platform.
@@ -566,6 +599,46 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             str: Name of the platform.
         """
         return str(YAML().dump(self.to_dict(), io.BytesIO()))
+
+    # TODO: determine default average
+    def execute_anneal_program(
+        self, annealing_program_dict: list[dict[str, dict[str, float]]], transpiler: Callable, averages=1
+    ):
+        """Given an annealing program execute it as a qprogram.
+        The annealing program should contain a time ordered list of circuit elements and their corresponging ising coefficients as a dictionary. Example structure:
+
+        .. code-block:: python
+
+            [
+                {"qubit_0": {"sigma_x" : 0, "sigma_y" : 1, "sigma_z" : 2},
+                "coupler_1_0 : {...},
+                },      # time=0ns
+                {...},  # time=1ns
+            .
+            .
+            .
+            ]
+
+        This dictionary containing ising coefficients is transpiled to fluxes using the given transpiler. Then the correspoinding waveforms are obtained and assigned to a bus
+        from the bus to flux mapping given by the runcard.
+
+        Args:
+            annealing_program_dict (list[dict[str, dict[str, float]]]): annealing program to run
+            transpiler (Callable): ising to flux transpiler. The transpiler should take 2 values as arguments (delta, epsilon) and return 2 values (phix, phiz)
+            averages (int, optional): Amount of times to run and average the program over. Defaults to 1.
+        """
+        annealing_program = AnnealingProgram(self, annealing_program_dict)
+        annealing_program.transpile(transpiler)
+        annealing_waveforms = annealing_program.get_waveforms()
+
+        qp_annealing = QProgram()
+        with qp_annealing.average(averages):
+            for bus, waveform in annealing_waveforms.values():
+                qp_annealing.play(bus=bus.alias, waveform=waveform)
+
+        # TODO: define readout
+
+        self.execute_qprogram(qprogram=qp_annealing)
 
     def execute_qprogram(  # pylint: disable=too-many-locals
         self,

@@ -30,6 +30,41 @@ from qililab.qprogram.variable import FloatVariable, IntVariable
 from qililab.utils.serialization import deserialize, deserialize_from, serialize, serialize_to
 
 
+@pytest.fixture(name="sample_qprogram_string")
+def get_sample_qprogram_string():
+    """Sample qprogram and its corresponding string to tests the __str__ method"""
+    r_amp = 0.5
+    r_duration = 40
+    d_duration = 40
+
+    r_wf_I = Square(amplitude=r_amp, duration=r_duration)
+    r_wf_Q = Square(amplitude=0.0, duration=r_duration)
+    d_wf = IQPair.DRAG(amplitude=1.0, duration=d_duration, num_sigmas=4, drag_coefficient=0.1)
+
+    weights_shape = Square(amplitude=1, duration=r_duration)
+
+    qp = QProgram()
+    amp = qp.variable(domain=Domain.Voltage)
+    freq = qp.variable(domain=Domain.Frequency)
+
+    with qp.average(100):
+        with qp.for_loop(variable=amp, start=0.2, stop=1, step=0.1):
+            qp.set_gain(bus="dummy_bus_0", gain=amp)
+            with qp.for_loop(variable=freq, start=0, stop=20, step=5):
+                qp.set_frequency(bus="dummy_bus_1", frequency=freq)
+                # DRAG PULSE
+                qp.play(bus="dummy_bus_0", waveform=d_wf)
+                qp.sync()
+                # READOUT PULSE
+                qp.measure(
+                    bus="readout", waveform=IQPair(I=r_wf_I, Q=r_wf_Q), weights=IQPair(I=weights_shape, Q=weights_shape)
+                )
+                qp.wait(bus="readout", duration=200)
+
+    qp_string = """Average:\n\tshots: 100\n\tForLoop:\n\t\tstart: 0.2\n\t\tstop: 1\n\t\tstep: 0.1\n\t\tSetGain:\n\t\t\tbus: dummy_bus_0\n\t\t\tgain: None\n\t\tForLoop:\n\t\t\tstart: 0\n\t\t\tstop: 20\n\t\t\tstep: 5\n\t\t\tSetFrequency:\n\t\t\t\tbus: dummy_bus_1\n\t\t\t\tfrequency: None\n\t\t\tPlay:\n\t\t\t\tbus: dummy_bus_0\n\t\t\t\twait_time: None\n\t\t\t\tWaveform I Gaussian:\n\t\t\t\t\t[0.         0.03369997 0.07235569 0.11612685 0.1650374  0.21894866\n\t\t\t\t\t 0.27753626 0.34027302 0.40641993 0.47502707 0.54494577 0.61485281\n\t\t\t\t\t 0.68328653 0.74869396 0.80948709 0.86410559 0.9110827  0.94911031\n\t\t\t\t\t 0.97709942 0.99423184 1.         0.99423184 0.97709942 0.94911031\n\t\t\t\t\t 0.9110827  0.86410559 0.80948709 0.74869396 0.68328653 0.61485281\n\t\t\t\t\t 0.54494577 0.47502707 0.40641993 0.34027302 0.27753626 0.21894866\n\t\t\t\t\t 0.1650374  0.11612685 0.07235569 0.03369997]\n\t\t\t\tWaveform Q DragCorrection):\n\t\t\t\t\t[ 0.          0.0006403   0.0013024   0.00197416  0.0026406   0.00328423\n\t\t\t\t\t  0.00388551  0.00442355  0.00487704  0.0052253   0.00544946  0.00553368\n\t\t\t\t\t  0.00546629  0.00524086  0.00485692  0.00432053  0.00364433  0.00284733\n\t\t\t\t\t  0.0019542   0.00099423 -0.         -0.00099423 -0.0019542  -0.00284733\n\t\t\t\t\t -0.00364433 -0.00432053 -0.00485692 -0.00524086 -0.00546629 -0.00553368\n\t\t\t\t\t -0.00544946 -0.0052253  -0.00487704 -0.00442355 -0.00388551 -0.00328423\n\t\t\t\t\t -0.0026406  -0.00197416 -0.0013024  -0.0006403 ]\n\t\t\tSync:\n\t\t\t\tbuses: None\n\t\t\tMeasure:\n\t\t\t\tbus: readout\n\t\t\t\tsave_adc: False\n\t\t\t\trotation: None\n\t\t\t\tdemodulation: True\n\t\t\t\tWaveform I Square:\n\t\t\t\t\t[0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5\n\t\t\t\t\t 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5\n\t\t\t\t\t 0.5 0.5 0.5 0.5]\n\t\t\t\tWaveform Q Square):\n\t\t\t\t\t[0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.\n\t\t\t\t\t 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]\n\t\t\t\tWeights I Square:\n\t\t\t\t\t[1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1.\n\t\t\t\t\t 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1.]\n\t\t\t\tWeights Q Square:\n\t\t\t\t\t[1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1.\n\t\t\t\t\t 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1.]\n\t\t\tWait:\n\t\t\t\tbus: readout\n\t\t\t\tduration: 200\n"""
+    return (qp, qp_string)
+
+
 # pylint: disable=maybe-no-member, protected-access
 class TestQProgram:
     """Unit tests checking the QProgram attributes and methods"""
@@ -43,6 +78,9 @@ class TestQProgram:
         assert len(qp._block_stack) == 1
         assert isinstance(qp._variables, list)
         assert len(qp._variables) == 0
+
+    def test_str_method(self, sample_qprogram_string):
+        assert str(sample_qprogram_string[0]) == sample_qprogram_string[1]
 
     def test_active_block_property(self):
         """Test _active_block property"""

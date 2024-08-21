@@ -238,6 +238,15 @@ class Galadriel:
         },
     }
 
+    flux_control_topology: list[dict[str, str]] = [
+        {"flux": "phix_q0", "bus": "flux_line_q0_bus"},
+        {"flux": "phiz_q0", "bus": "flux_line_q0_bus"},
+        {"flux": "phix_q1", "bus": "drive_line_q0_bus"},
+        {"flux": "phiz_q1", "bus": "drive_line_q0_bus"},
+        {"flux": "phix_c0_1", "bus": "flux_line_q0_bus"},
+        {"flux": "phiz_c0_1", "bus": "flux_line_q0_bus"},
+    ]
+
     pulsar_controller_qcm_0: dict[str, Any] = {
         "name": InstrumentControllerName.QBLOX_PULSAR,
         "alias": "pulsar_controller_qcm_0",
@@ -762,6 +771,7 @@ class Galadriel:
     runcard: dict[str, Any] = {
         RUNCARD.NAME: name,
         RUNCARD.GATES_SETTINGS: gates_settings,
+        RUNCARD.FLUX_CONTROL_TOPOLOGY: flux_control_topology,
         RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,
         RUNCARD.INSTRUMENTS: instruments,

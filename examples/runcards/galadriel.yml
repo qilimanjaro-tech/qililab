@@ -169,6 +169,20 @@ gates_settings:
             t_phi: 1
             b: 0.5
 
+flux_control_topology: # example for the flux to bus mapping (analog)
+  - flux: "phix_q0"
+    bus: "flux_line_q0_bus"
+  - flux: "phiz_q0"
+    bus: "flux_line_q0_bus"
+  - flux: "phix_q1"
+    bus: "flux_line_q1_bus"
+  - flux: "phiz_q1"
+    bus: "flux_line_q1_bus"
+  - flux: "phix_c1_0"
+    bus: "flux_line_q0_bus"
+  - flux: "phix_c1_0"
+    bus: "flux_line_q0_bus"
+
 chip:
   nodes:
     - name: qubit
