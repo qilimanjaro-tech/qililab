@@ -150,7 +150,13 @@ class QuantumMachinesCluster(Instrument):
                                         "output_mode": output["output_mode"] if "output_mode" in output else "direct",
                                         "sampling_rate": output["sampling_rate"] if "sampling_rate" in output else 1e9,
                                         "upsampling_mode": (
-                                            output["upsampling_mode"] if "upsampling_mode" in output else "mw"
+                                            output["upsampling_mode"]
+                                            if "upsampling_mode" in output
+                                            else (
+                                                "pulsed"
+                                                if "output_mode" in output and output["output_mode"] == "amplified"
+                                                else "mw"
+                                            )
                                         ),
                                         "filter": (
                                             {
