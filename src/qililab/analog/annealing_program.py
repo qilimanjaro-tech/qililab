@@ -17,9 +17,9 @@ from typing import Any, Callable
 
 import numpy as np
 
-from qililab.qprogram import CrosstalkMatrix
-from qililab.settings.runcard import Runcard
 from qililab.platform.components import Bus
+from qililab.qprogram import CrosstalkMatrix, FluxVector
+from qililab.settings.runcard import Runcard
 from qililab.waveforms import Arbitrary as ArbitraryWave
 
 
@@ -114,9 +114,11 @@ class AnnealingProgram:
             xtalk_matrix = CrosstalkMatrix.from_buses(set(bus_to_flux_map)).inverse()
         # unravel each point of the anneal program to get timewise arrays of waveforms
         for annealing_step in self._transpiled_program:
-            bus_flux_dict = {flux_to_bus_map[flux_line]: value for flux_line, value in annealing_step.items()}
+            bus_flux_dict = FluxVector.from_dict(
+                {flux_to_bus_map[flux_line]: value for flux_line, value in annealing_step.items()}
+            )
             corrected_flux = xtalk_matrix @ bus_flux_dict if correct_xtalk else bus_flux_dict
-            for bus, value in corrected_flux.items():
+            for bus, value in corrected_flux.vector.items():
                 annealing_waveforms[bus].append(value)
 
         return {key: ArbitraryWave(np.array(value)) for key, value in annealing_waveforms.items()}

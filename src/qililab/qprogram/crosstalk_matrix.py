@@ -19,6 +19,44 @@ import numpy as np
 from qililab.yaml import yaml
 
 
+class FluxVector:
+    def __init__(self):
+        self.vector: dict[str, float] = {}
+
+    def __getitem__(self, bus: str) -> float:
+        """Given a bus, returns its corresponding flux
+
+        Args:
+            bus (str): The bus for which to get the flux values.
+
+        Returns:
+            float: Flux value for the given bus
+        """
+        return self.vector[bus]
+
+    def to_dict(self):
+        """To dictionary method, returns the vector's dictionary
+
+        Returns:
+            dict[str, float]: Flux vector dictionary
+        """
+        return self.vector
+
+    @classmethod
+    def from_dict(cls, flux_dict: dict[str, float]) -> "FluxVector":
+        """Creates a FluxVector instance from a dictionary of bus[flux]
+
+        Args:
+            flux_dict (dict[str,float]): Dictionary containing buses as keys and fluxes as values
+
+        Returns:
+            FluxVector: FluxVector instance
+        """
+        instance = cls()
+        instance.vector = flux_dict
+        return instance
+
+
 @yaml.register_class
 class CrosstalkMatrix:
     """A class to represent a crosstalk matrix where each index corresponds to a bus."""
@@ -39,21 +77,16 @@ class CrosstalkMatrix:
                 xtalk_matrix[i, j] = self.matrix[bus1][bus2]
         return xtalk_matrix
 
-    def inverse(self) -> dict[str, dict[str, float]]:
+    def inverse(self) -> "CrosstalkMatrix":
         """Returns the inverse version of the crosstalk matrix (as a bus dictionary).
 
         Returns:
-            dict[str, dict[str, float]]: inverse crosstalk matrix
+            CrosstalkMatrix: inverse crosstalk matrix
         """
-
         inverse_xtalk_array = np.linalg.inv(self.to_array())
-        inverse_xtalk_matrix = self.matrix.copy()
-        for i, bus1 in enumerate(self.matrix):
-            for j, bus2 in enumerate(self.matrix[bus1]):
-                inverse_xtalk_matrix[bus1][bus2] = inverse_xtalk_array[i, j]
-        return inverse_xtalk_matrix
+        return self.from_array(set(self.matrix.keys()), inverse_xtalk_array)
 
-    def __matmul__(self, flux: dict[str, float]) -> dict[str, float]:
+    def __matmul__(self, flux: FluxVector) -> FluxVector:
         """Matrix multiplication for flux correction. Corrects a flux vector using the inverse crosstalk matrix
 
         Args:
@@ -62,14 +95,12 @@ class CrosstalkMatrix:
         Returns:
             dict[str,float]: Corrected flux vector
         """
-        # TODO: test that we're not mixing up rows and columns
-        inverse_matrix = self.inverse()
-        return {
-            xtalk_bus1: sum(
-                inverse_matrix[xtalk_bus1][xtalk_bus2] * flux[xtalk_bus2] for xtalk_bus2 in inverse_matrix[xtalk_bus1]
-            )
-            for xtalk_bus1 in flux
-        }
+        return FluxVector.from_dict(
+            {
+                xtalk_bus1: sum(self[xtalk_bus1][xtalk_bus2] * flux[xtalk_bus2] for xtalk_bus2 in self[xtalk_bus1])
+                for xtalk_bus1 in flux.vector
+            }
+        )
 
     def __getitem__(self, bus: str) -> dict[str, float]:
         """Returns the dictionary of crosstalk values for the given bus.
@@ -125,6 +156,30 @@ class CrosstalkMatrix:
                     row.append(f"{self.matrix.get(bus1, {}).get(bus2, 1.0):{col_width}.1f}")
             rows.append(" ".join(row))
         return header + "\n".join(rows)
+
+    @classmethod
+    def from_array(cls, buses: Collection[str], matrix_array: np.ndarray) -> "CrosstalkMatrix":
+        """Creates crosstalk matrix from an array and corresponding set of buses. For a set of buses
+        [bus1,bus2,...,busN] the corresponding matrix should have the same indices for rows and columns
+        i.e. for the set of buses [bus1,bus2,...,busN], matrix[0,0] will be the coefficient for bus1[bus1],
+        matrix[0,1] will be bus1[bus2], etc.
+
+        Args:
+            buses (Sequence[str]): sequence of buses for the crosstalk matrix
+            matrix_array (np.ndarray): crosstalk matrix numpy array
+
+        Returns:
+            CrosstalkMatrix: CrosstalkMatrix: An instance of CrosstalkMatrix
+        """
+
+        instance = cls()
+        instance.matrix = {}
+        for i, bus1 in enumerate(buses):
+            for j, bus2 in enumerate(buses):
+                if bus1 not in instance.matrix:
+                    instance.matrix[bus1] = {}
+                instance.matrix[bus1][bus2] = matrix_array[i, j]
+        return instance
 
     @classmethod
     def from_buses(cls, buses: Collection[str]) -> "CrosstalkMatrix":
