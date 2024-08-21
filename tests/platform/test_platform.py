@@ -32,6 +32,7 @@ from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import IQPair, Square
+from src.qililab.result.qprogram.qprogram_results import QProgramResults
 from tests.data import Galadriel, SauronQuantumMachines
 from tests.test_utils import build_platform
 
@@ -407,7 +408,7 @@ class TestMethods:
         transpiler = MagicMock()
         transpiler.return_value = (1, 2)
 
-        platform.execute_anneal_program(
+        results = platform.execute_anneal_program(
             annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
             transpiler=transpiler,
             averages=2,
@@ -418,8 +419,9 @@ class TestMethods:
         )
         qprogram = mock_execute_qprogram.call_args[1]["qprogram"].with_calibration(calibration)
         assert str(anneal_qprogram) == str(qprogram)
+        assert results is QProgramResults
 
-        platform.execute_anneal_program(
+        results = platform.execute_anneal_program(
             annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
             transpiler=transpiler,
             averages=2,
@@ -429,6 +431,7 @@ class TestMethods:
         )
         qprogram = mock_execute_qprogram.call_args[1]["qprogram"].with_calibration(calibration)
         assert str(anneal_qprogram) == str(qprogram)
+        assert results is QProgramResults
 
     def test_execute_anneal_program_no_calibration_raises_error(self, platform: Platform):
         mock_execute_qprogram = MagicMock()
