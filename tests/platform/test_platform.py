@@ -502,9 +502,13 @@ class TestMethods:
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
         qprogram.play(bus="drive_line_q1_bus", waveform=drive_wf)
 
-        test_waveforms = Waveforms()
-        test_waveforms.add(array=np.array([0.5, 1.0, 0.5, 0.0]), index=0)
-        test_waveforms.add(array=drive_wf.envelope(), index=1)
+        test_waveforms_q0 = Waveforms()
+        test_waveforms_q0.add(array=np.array([0.5, 1.0, 0.5, 0.0]), index=0)
+        test_waveforms_q0.add(array=np.array([0.0, 0.0, 0.0, 0.0]), index=1)
+
+        test_waveforms_q1 = Waveforms()
+        test_waveforms_q1.add(array=drive_wf.envelope(), index=0)
+        test_waveforms_q1.add(array=np.array([0.0, 0.0, 0.0, 0.0]), index=1)
 
         qblox_compiler = QbloxCompiler()
         sequences, _ = qblox_compiler.compile(qprogram=qprogram)
@@ -516,7 +520,8 @@ class TestMethods:
                         sequences[bus_alias]._waveforms.modify(  # pylint: disable=protected-access
                             waveforms.name, distrortion.apply(waveforms.data)
                         )
-        assert test_waveforms == sequences[bus_alias]._waveforms
+        assert test_waveforms_q0 == sequences["drive_line_q0_bus"]._waveforms
+        assert test_waveforms_q1 == sequences["drive_line_q1_bus"]._waveforms
 
     def test_execute_qprogram_with_quantum_machines(
         self, platform_quantum_machines: Platform
