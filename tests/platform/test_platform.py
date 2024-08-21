@@ -125,6 +125,7 @@ def get_calibration():
 
     return calibration
 
+
 @pytest.fixture(name="anneal_qprogram")
 def get_anneal_qprogram(runcard):
     platform = Platform(runcard=runcard)
@@ -399,7 +400,6 @@ class TestMethods:
             assert all(isinstance(sequence, Sequence) for sequence in sequences_list)
             assert sequences_list[0]._program.duration == 200_000 * 1000 + 4 + 4 + 4
 
-
     def test_execute_anneal_program(self, platform: Platform, anneal_qprogram, calibration):
         mock_execute_qprogram = MagicMock()
         platform.execute_qprogram = mock_execute_qprogram  # type: ignore[method-assign]
@@ -445,7 +445,6 @@ class TestMethods:
                 readout_bus="readout_bus",
                 measurement_name="readout",
             )
-
 
     def test_execute_qprogram_with_qblox(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
