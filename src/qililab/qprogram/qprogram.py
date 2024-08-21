@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from copy import deepcopy
-from dataclasses import replace
+from dataclasses import fields, replace
 from typing import overload
 
 from qililab.qprogram.blocks.average import Average
@@ -94,6 +94,55 @@ class QProgram(StructuredProgram):  # pylint: disable=too-many-public-methods
         super().__init__()
         self.qblox = self._QbloxInterface(self)
         self.quantum_machines = self._QuantumMachinesInterface(self)
+
+    def __str__(self) -> str:
+        def traverse(block: Block):
+            string_elements = []
+            for element in block.elements:
+                string_elements.append(f"{type(element).__name__}:\n")
+                for field in fields(element):
+                    if field.name in [
+                        "_uuid",
+                        "variable",
+                        "elements",
+                        "waveform",
+                        "weights",
+                    ]:  # ignore uuid, variables. elements, waveforms and weights are handled separately
+                        continue
+                    string_elements.append(
+                        f"\t{field.name}: {getattr(element, field.name) if 'UUID' not in str(getattr(element, field.name)) else None}\n"
+                    )
+                if isinstance(element, Block):
+                    # handle blocks
+                    for string_element in traverse(element):
+                        string_elements.append(f"\t{string_element}")
+
+                # if not a block, it is asusmed that element is type Operation
+                if hasattr(element, "waveform"):
+                    waveform_string = (
+                        [f"\tWaveform {type(element.waveform).__name__}:\n"]
+                        + [f"\t\t{array_line}\n" for array_line in str(element.waveform.envelope()).split("\n")]
+                        if isinstance(element.waveform, Waveform)
+                        else [f"\tWaveform I {type(element.waveform.I).__name__}:\n"]
+                        + [f"\t\t{array_line}\n" for array_line in str(element.waveform.I.envelope()).split("\n")]
+                        + [f"\tWaveform Q {type(element.waveform.Q).__name__}):\n"]
+                        + [f"\t\t{array_line}\n" for array_line in str(element.waveform.Q.envelope()).split("\n")]
+                    )
+                    string_elements.extend(waveform_string)
+
+                if hasattr(element, "weights"):
+                    string_elements.append(f"\tWeights I {type(element.weights.I).__name__}:\n")
+                    string_elements.extend(
+                        [f"\t\t{array_element}\n" for array_element in str(element.weights.I.envelope()).split("\n")]
+                    )
+                    string_elements.append(f"\tWeights Q {type(element.weights.Q).__name__}:\n")
+                    string_elements.extend(
+                        [f"\t\t{array_element}\n" for array_element in str(element.weights.Q.envelope()).split("\n")]
+                    )
+
+            return string_elements
+
+        return "".join(traverse(self._body))
 
     def has_calibrated_waveforms_or_weights(self) -> bool:
         """Checks if QProgram has named waveforms or weights. These need to be mapped before compiling to hardware-native code.
