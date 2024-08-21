@@ -15,6 +15,7 @@ from qpysequence import Sequence
 from ruamel.yaml import YAML
 
 from qililab import Arbitrary, save_platform
+from qililab import Arbitrary, save_platform
 from qililab.chip import Chip, Qubit
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.instrument_controllers import InstrumentControllers
