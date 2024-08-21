@@ -435,7 +435,7 @@ class TestMethods:
         transpiler = MagicMock()
         transpiler.return_value = (1, 2)
         error_string = (
-            "A calibration instance and calibrated measurement must be provided to run an annealing schedule."
+            "The calibrated measurement is not present in the calibration file."
         )
         with pytest.raises(ValueError, match=error_string):
             platform.execute_anneal_program(

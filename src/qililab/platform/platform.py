@@ -605,11 +605,11 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
     def execute_anneal_program(
         self,
         annealing_program_dict: list[dict[str, dict[str, float]]],
+        calibration: Calibration,
         readout_bus: str,
         measurement_name: str,
         transpiler: Callable,
         averages=1,
-        calibration: Calibration | None = None,
         weights: str | None = None,
     ) -> QProgramResults:
         """Given an annealing program execute it as a qprogram.
@@ -635,7 +635,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             transpiler (Callable): ising to flux transpiler. The transpiler should take 2 values as arguments (delta, epsilon) and return 2 values (phix, phiz)
             averages (int, optional): Amount of times to run and average the program over. Defaults to 1.
         """
-        if calibration and calibration.has_waveform(bus=readout_bus, name=measurement_name):
+        if calibration.has_waveform(bus=readout_bus, name=measurement_name):
             annealing_program = AnnealingProgram(self, annealing_program_dict)
             annealing_program.transpile(transpiler)
             annealing_waveforms = annealing_program.get_waveforms()
@@ -656,7 +656,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
             return self.execute_qprogram(qprogram=qp_annealing, calibration=calibration)
         raise ValueError(
-            "A calibration instance and calibrated measurement must be provided to run an annealing schedule."
+            "The calibrated measurement is not present in the calibration file."
         )
 
     def execute_qprogram(  # pylint: disable=too-many-locals
