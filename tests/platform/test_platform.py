@@ -109,28 +109,36 @@ def fixture_qblox_results():
     ]
 
 
+@pytest.fixture(name="flux_to_bus_topology")
+def get_flux_to_bus_topology():
+    flux_control_topology_dict = [
+        {"flux": "phix_q0", "bus": "flux_line_phix_q0"},
+        {"flux": "phiz_q0", "bus": "flux_line_phiz_q0"},
+        {"flux": "phix_q1", "bus": "flux_line_phix_q1"},
+        {"flux": "phiz_q1", "bus": "flux_line_phiz_q1"},
+        {"flux": "phix_c0_1", "bus": "flux_line_phix_c0_1"},
+        {"flux": "phiz_c0_1", "bus": "flux_line_phiz_c0_1"},
+    ]
+    return [Runcard.FluxControlTopology(**flux_control) for flux_control in flux_control_topology_dict]
+
+
 @pytest.fixture(name="anneal_qprogram")
-def get_anneal_qprogram(runcard):
+def get_anneal_qprogram(runcard, flux_to_bus_topology):
     platform = Platform(runcard=runcard)
+    platform.flux_to_bus_topology = flux_to_bus_topology
     anneal_waveforms = {
-        "phix_q0": (
-            platform._get_bus_by_alias(
-                next(element.bus for element in platform.flux_to_bus_topology if element.flux == "phix_q0")
-            ),
-            Arbitrary(np.array([1])),
+        next(element.bus for element in platform.flux_to_bus_topology if element.flux == "phix_q0"): Arbitrary(
+            np.array([1])
         ),
-        "phiz_q0": (
-            platform._get_bus_by_alias(
-                next(element.bus for element in platform.flux_to_bus_topology if element.flux == "phiz_q0")
-            ),
-            Arbitrary(np.array([2])),
+        next(element.bus for element in platform.flux_to_bus_topology if element.flux == "phiz_q0"): Arbitrary(
+            np.array([2])
         ),
     }
     averages = 2
     qp_anneal = QProgram()
     with qp_anneal.average(averages):
-        for bus, waveform in anneal_waveforms.values():
-            qp_anneal.play(bus=bus.alias, waveform=waveform)
+        for bus, waveform in anneal_waveforms.items():
+            qp_anneal.play(bus=bus, waveform=waveform)
     return qp_anneal
 
 
@@ -375,13 +383,17 @@ class TestMethods:
             assert all(isinstance(sequence, Sequence) for sequence in sequences_list)
             assert sequences_list[0]._program.duration == 200_000 * 1000 + 4 + 4 + 4
 
-    def test_execute_anneal_program(self, platform: Platform, anneal_qprogram):
+    def test_execute_anneal_program(self, platform: Platform, anneal_qprogram, flux_to_bus_topology):
         mock_execute_qprogram = MagicMock()
         platform.execute_qprogram = mock_execute_qprogram  # type: ignore[method-assign]
+        platform.flux_to_bus_topology = flux_to_bus_topology
         transpiler = MagicMock()
         transpiler.return_value = (1, 2)
         platform.execute_anneal_program(
-            annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}], transpiler=transpiler, averages=2
+            annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
+            transpiler=transpiler,
+            averages=2,
+            correct_xtalk=False,
         )
         assert str(anneal_qprogram) == str(mock_execute_qprogram.call_args[1]["qprogram"])
 

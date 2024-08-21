@@ -20,6 +20,8 @@ from qililab.yaml import yaml
 
 
 class FluxVector:
+    """Class to represent a flux vector. This is a dictionary of bus[flux] values"""
+
     def __init__(self):
         self.vector: dict[str, float] = {}
 

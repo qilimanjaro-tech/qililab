@@ -12,12 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Callable
 
 import numpy as np
 
-from qililab.platform.components import Bus
 from qililab.qprogram import CrosstalkMatrix, FluxVector
 from qililab.settings.runcard import Runcard
 from qililab.waveforms import Arbitrary as ArbitraryWave
@@ -111,6 +109,7 @@ class AnnealingProgram:
         annealing_waveforms = {bus: [] for bus in bus_to_flux_map}  # type: ignore[var-annotated]
         # get xtalk matrix
         if correct_xtalk:
+            # TODO: where do we load the CrosstalkMatrix from?
             xtalk_matrix = CrosstalkMatrix.from_buses(set(bus_to_flux_map)).inverse()
         # unravel each point of the anneal program to get timewise arrays of waveforms
         for annealing_step in self._transpiled_program:

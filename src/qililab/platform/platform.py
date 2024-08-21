@@ -42,7 +42,7 @@ from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSchedule
 from qililab.pulse import QbloxCompiler as PulseQbloxCompiler
-from qililab.qprogram import Calibration, CrosstalkMatrix, QbloxCompiler, QProgram, QuantumMachinesCompiler
+from qililab.qprogram import Calibration, QbloxCompiler, QProgram, QuantumMachinesCompiler
 from qililab.result import Result
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
@@ -602,7 +602,11 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
     # TODO: determine default average
     def execute_anneal_program(
-        self, annealing_program_dict: list[dict[str, dict[str, float]]], transpiler: Callable, averages=1
+        self,
+        annealing_program_dict: list[dict[str, dict[str, float]]],
+        transpiler: Callable,
+        averages=1,
+        correct_xtalk=True,
     ):
         """Given an annealing program execute it as a qprogram.
         The annealing program should contain a time ordered list of circuit elements and their corresponging ising coefficients as a dictionary. Example structure:
@@ -629,7 +633,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """
         annealing_program = AnnealingProgram(self.flux_to_bus_topology, annealing_program_dict)
         annealing_program.transpile(transpiler)
-        annealing_waveforms = annealing_program.get_waveforms()
+        annealing_waveforms = annealing_program.get_waveforms(correct_xtalk=correct_xtalk)
 
         qp_annealing = QProgram()
         with qp_annealing.average(averages):
