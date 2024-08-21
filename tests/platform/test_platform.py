@@ -435,9 +435,7 @@ class TestMethods:
         platform.execute_qprogram = mock_execute_qprogram  # type: ignore[method-assign]
         transpiler = MagicMock()
         transpiler.return_value = (1, 2)
-        error_string = (
-            "The calibrated measurement is not present in the calibration file."
-        )
+        error_string = "The calibrated measurement is not present in the calibration file."
         with pytest.raises(ValueError, match=error_string):
             platform.execute_anneal_program(
                 annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
