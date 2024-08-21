@@ -433,7 +433,7 @@ class TestMethods:
         assert str(anneal_qprogram) == str(qprogram)
         assert results is QProgramResults
 
-    def test_execute_anneal_program_no_calibration_raises_error(self, platform: Platform):
+    def test_execute_anneal_program_no_measurement_raises_error(self, platform: Platform):
         mock_execute_qprogram = MagicMock()
         platform.execute_qprogram = mock_execute_qprogram  # type: ignore[method-assign]
         transpiler = MagicMock()
@@ -445,7 +445,7 @@ class TestMethods:
                 transpiler=transpiler,
                 averages=2,
                 readout_bus="readout_bus",
-                measurement_name="readout",
+                measurement_name="whatever",
             )
 
     def test_execute_qprogram_with_qblox(self, platform: Platform):
