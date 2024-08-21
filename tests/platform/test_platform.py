@@ -156,8 +156,8 @@ def get_anneal_qprogram(runcard):
     with qp_anneal.average(averages):
         for bus, waveform in anneal_waveforms.values():
             qp_anneal.play(bus=bus.alias, waveform=waveform)
-            qp_anneal.sync()
-            qp_anneal.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
+        qp_anneal.sync()
+        qp_anneal.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
     return qp_anneal
 
 
