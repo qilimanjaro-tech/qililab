@@ -2,6 +2,10 @@
 
 ### New features since last release
 
+- Add default measurement to `execute_anneal_program()` method. This method takes now a calibration file and parameters
+to add the dispersive measurement at the end of the annealing schedule.
+  [#778](https://github.com/qilimanjaro-tech/qililab/pull/778)
+
 - Add `__str__` method to qprogram. The string is a readable qprogram.
   [#767](https://github.com/qilimanjaro-tech/qililab/pull/767)
 
