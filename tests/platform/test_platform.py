@@ -404,6 +404,7 @@ class TestMethods:
 
     def test_execute_anneal_program(self, platform: Platform, anneal_qprogram, calibration):
         mock_execute_qprogram = MagicMock()
+        mock_execute_qprogram.return_value = QProgramResults()
         platform.execute_qprogram = mock_execute_qprogram  # type: ignore[method-assign]
         transpiler = MagicMock()
         transpiler.return_value = (1, 2)
@@ -419,7 +420,7 @@ class TestMethods:
         )
         qprogram = mock_execute_qprogram.call_args[1]["qprogram"].with_calibration(calibration)
         assert str(anneal_qprogram) == str(qprogram)
-        assert results is QProgramResults
+        assert isinstance(results, QProgramResults)
 
         results = platform.execute_anneal_program(
             annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
@@ -431,7 +432,7 @@ class TestMethods:
         )
         qprogram = mock_execute_qprogram.call_args[1]["qprogram"].with_calibration(calibration)
         assert str(anneal_qprogram) == str(qprogram)
-        assert results is QProgramResults
+        assert isinstance(results, QProgramResults)
 
     def test_execute_anneal_program_no_measurement_raises_error(self, platform: Platform, calibration):
         mock_execute_qprogram = MagicMock()
