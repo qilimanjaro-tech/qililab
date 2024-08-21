@@ -611,7 +611,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         averages=1,
         calibration: Calibration | None = None,
         weights: str | None = None,
-    ):
+    ) -> QProgramResults:
         """Given an annealing program execute it as a qprogram.
         The annealing program should contain a time ordered list of circuit elements and their corresponging ising coefficients as a dictionary. Example structure:
 
