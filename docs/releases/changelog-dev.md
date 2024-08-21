@@ -2,6 +2,9 @@
 
 ### New features since last release
 
+- Add crosstalk compensation to `AnnealingProgram` workflow. Add methods to `CrosstalkMatrix` to ease crosstalk compensation in the annealing workflow
+  [#775](https://github.com/qilimanjaro-tech/qililab/pull/775)
+
 - Add `__str__` method to qprogram. The string is a readable qprogram.
   [#767](https://github.com/qilimanjaro-tech/qililab/pull/767)
 
