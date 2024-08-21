@@ -85,6 +85,17 @@ class Runcard:
 
         nodes: list[dict]
 
+    @dataclass
+    class FluxControlTopology:
+        """Dataclass fluxes (e.g. phix_q0 for phix control of qubit 0) and their corresponding bus (e.g. flux_line_q0_x)"""
+
+        flux: str
+        bus: str
+
+        def to_dict(self):
+            """Method to convert to dictionary"""
+            return asdict(self)
+
     @nested_dataclass
     class GatesSettings(Settings):
         """Dataclass with all the settings and gates definitions needed to decompose gates into pulses."""
@@ -254,10 +265,16 @@ class Runcard:
     instruments: list[dict]
     instrument_controllers: list[dict]
     gates_settings: GatesSettings
+    flux_control_topology: list[FluxControlTopology] | None = None
     device_id: int | None = None
 
     def __post_init__(self):
         self.buses = [self.Bus(**bus) for bus in self.buses] if self.buses is not None else None
+        self.flux_control_topology = (
+            [self.FluxControlTopology(**flux_control) for flux_control in self.flux_control_topology]
+            if self.flux_control_topology is not None
+            else None
+        )
         if self.device_id is not None:
             warn(
                 "`device_id` argument is deprecated and will be removed soon. Please remove it from your runcard file.",
