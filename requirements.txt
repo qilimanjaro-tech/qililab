@@ -6,7 +6,7 @@ qcodes_contrib_drivers==0.18.0
 PyVISA-py==0.7.1
 tqdm==4.64.1
 urllib3==1.26.12
-qpysequence>=0.10.2
+qpysequence==0.10.3
 lmfit==1.1.0
 rustworkx==0.12.1
 h5py==3.9.0
