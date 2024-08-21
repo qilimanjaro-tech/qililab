@@ -19,6 +19,7 @@ import numpy as np
 
 from qililab.qprogram import CrosstalkMatrix
 from qililab.settings.runcard import Runcard
+from qililab.platform.components import Bus
 from qililab.waveforms import Arbitrary as ArbitraryWave
 
 
