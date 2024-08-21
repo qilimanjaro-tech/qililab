@@ -380,7 +380,6 @@ class TestMethods:
         platform.execute_qprogram = mock_execute_qprogram  # type: ignore[method-assign]
         transpiler = MagicMock()
         transpiler.return_value = (1, 2)
-        # with patch(qililab.analog.annealing_program, "AnnealingProgram") as dummy_anneal_program:
         platform.execute_anneal_program(
             annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}], transpiler=transpiler, averages=2
         )

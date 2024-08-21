@@ -17,7 +17,6 @@ from typing import Any, Callable
 
 import numpy as np
 
-from qililab.platform.components import Bus
 from qililab.qprogram import CrosstalkMatrix
 from qililab.settings.runcard import Runcard
 from qililab.waveforms import Arbitrary as ArbitraryWave
@@ -97,22 +96,25 @@ class AnnealingProgram:
         """
 
         # Initialize maps for bus to flux and flux to bus translation
-        bus_to_flux_map = {
-            flux_bus.bus: flux_bus.flux
-            for flux_bus in self._flux_to_bus_topology
-            if flux_bus.flux in self._transpiled_program
-        }
+        bus_to_flux_map = {}
+        for flux_bus in self._flux_to_bus_topology:
+            if flux_bus.flux in self._transpiled_program[0]:
+                if flux_bus.bus in bus_to_flux_map:
+                    raise ValueError(
+                        f"More than one flux pointing at bus {flux_bus.bus} in the runcard flux to bus topology"
+                    )
+                bus_to_flux_map[flux_bus.bus] = flux_bus.flux
         flux_to_bus_map = {v: k for k, v in bus_to_flux_map.items()}
 
         # Initialize annealing waveforms
         annealing_waveforms = {bus: [] for bus in bus_to_flux_map}  # type: ignore[var-annotated]
         # get xtalk matrix
         if correct_xtalk:
-            xtalk_matrix = CrosstalkMatrix.from_buses(set(bus_to_flux_map))
+            xtalk_matrix = CrosstalkMatrix.from_buses(set(bus_to_flux_map)).inverse()
         # unravel each point of the anneal program to get timewise arrays of waveforms
         for annealing_step in self._transpiled_program:
             bus_flux_dict = {flux_to_bus_map[flux_line]: value for flux_line, value in annealing_step.items()}
-            corrected_flux = xtalk_matrix @ bus_flux_dict if xtalk_matrix is not None else bus_flux_dict
+            corrected_flux = xtalk_matrix @ bus_flux_dict if correct_xtalk else bus_flux_dict
             for bus, value in corrected_flux.items():
                 annealing_waveforms[bus].append(value)
 
