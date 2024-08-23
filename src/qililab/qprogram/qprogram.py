@@ -15,7 +15,6 @@ from copy import deepcopy
 from dataclasses import fields, replace
 from typing import overload
 
-from qililab.qprogram.blocks.average import Average
 from qililab.qprogram.blocks.block import Block
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.decorators import requires_domain
