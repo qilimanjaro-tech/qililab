@@ -183,7 +183,7 @@
   [#770](https://github.com/qilimanjaro-tech/qililab/pull/770)
 
 - Added `checkpoints` logic for calibration, to skip parts of the graph that are already good to go.
-  This diagnose of the checkpoints starts from the first ones, until finds the first in each branch, that doesn't pass.
+  This diagnose of the `checkpoints` starts from the first ones, until finds the first in each branch, that doesn't pass.
 
   Example:
 
@@ -193,7 +193,7 @@
 
   - `[0] - [1] - [V] - [3] - [4] - [V] - [5]`, calibration would start from notebook 5
 
-  - `[0] - [1] - [X] - [3] - [4] - [.] - [5]`, calibration would start from notebook 0 (Notice that the second checkpoints is not checked, since the first one already fails)
+  - `[0] - [1] - [X] - [3] - [4] - [.] - [5]`, calibration would start from notebook 0 (Notice that the second `checkpoints` is not checked, since the first one already fails)
 
   [#777](https://github.com/qilimanjaro-tech/qililab/pull/777)
 
