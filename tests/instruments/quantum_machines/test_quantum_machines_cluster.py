@@ -279,6 +279,34 @@ class TestQuantumMachinesCluster:
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    def test_get_controller_type_from_bus_singleInput(
+        self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, compilation_config: dict
+    ):
+        qmm.initial_setup()
+        qmm.turn_on()
+
+        controller = qmm.get_controller_type_from_bus("flux_q0")
+        assert controller == "opx1"
+
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    def test_get_controller_type_from_bus_without_controller_raises_error(
+        self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, compilation_config: dict
+    ):
+        """Test get_controller_type_from_bus method raises an error when no controller is inside bus."""
+        qmm.initial_setup()
+        qmm.turn_on()
+
+        qmm._config["elements"]["bus"] = {"singleInput": {"port": ("con10", 1)}}
+
+        with pytest.raises(
+            AttributeError,
+            match=re.escape("Controller with bus bus does not exist"),
+        ):
+            qmm.get_controller_type_from_bus("bus")
+
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
     def test_compile(self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, qua_program: Program):
         qmm.initial_setup()
         qmm.turn_on()
@@ -318,16 +346,19 @@ class TestQuantumMachinesCluster:
         qmm.turn_on()
 
         qmm._qm.compile.return_value = "123"
+        qmm._controller = "opx1000"
+        qmm._pending_set_intermediate_frequency = {"drive_q0": 20e6}
 
         compile_program_id = qmm.compile(qua_program)
         _ = qmm.run_compiled_program(compile_program_id)
 
-        # CHANGES: qm.queue.add_compiled() -> qm.add_compiled()
+        # TODO: qm.queue.add_compiled() -> qm.add_compiled()
         qmm._qm.queue.add_compiled.assert_called_once_with(compile_program_id)
-        # CHANGES: job.wait_for_execution() is deprecated and will be removed in the future. Please use job.wait_until("Running") instead.
+        # TODO: job.wait_for_execution() is deprecated and will be removed in the future. Please use job.wait_until("Running") instead.
         # The following stopped working in testing, but we have verified that works in hardware, so I remove it temporarily.
         # qmm._qm.queue.add_compiled.return_value.wait_until.assert_called_once()
 
+        qmm._qm.calibrate_element.assert_called_once()
         # Assert that the settings are still in synch:
         assert qmm._config == qmm.settings.to_qua_config()
 
@@ -387,6 +418,12 @@ class TestQuantumMachinesCluster:
         qmm_with_octave.set_parameter_of_bus(bus, parameter, value)
         if parameter == Parameter.LO_FREQUENCY:
             qmm_with_octave._qm.octave.set_lo_frequency.assert_called_once()
+            calls = [
+                call(element)
+                for element in qmm_with_octave._config["elements"]
+                if "RF_inputs" in qmm_with_octave._config["elements"][element]
+            ]
+            qmm_with_octave._qm.calibrate_element.assert_has_calls(calls)
         if parameter == Parameter.GAIN:
             qmm_with_octave._qm.octave.set_rf_output_gain.assert_called_once()
         if parameter == Parameter.IF:
@@ -414,14 +451,14 @@ class TestQuantumMachinesCluster:
         qmm._config = qmm.settings.to_qua_config()
 
         qmm.set_parameter_of_bus(bus, parameter, value)
+
+        element = next((element for element in qmm.settings.elements if element["bus"] == bus), None)
         if parameter == Parameter.IF:
-            qmm._qm.set_intermediate_frequency.assert_called_once()
-        if parameter in [Parameter.THRESHOLD_ROTATION, Parameter.THRESHOLD]:
-            element = next((element for element in qmm.settings.elements if element["bus"] == bus), None)
-            if parameter == Parameter.THRESHOLD_ROTATION:
-                assert value == element["threshold_rotation"]
-            if parameter == Parameter.THRESHOLD:
-                assert value == element["threshold"]
+            assert value == element["intermediate_frequency"]
+        if parameter == Parameter.THRESHOLD_ROTATION:
+            assert value == element["threshold_rotation"]
+        if parameter == Parameter.THRESHOLD:
+            assert value == element["threshold"]
         # Assert that the settings are still in synch:
         assert qmm._config == qmm.settings.to_qua_config()
 
@@ -448,6 +485,37 @@ class TestQuantumMachinesCluster:
         assert qmm._config["elements"][bus][parameter] == value
         ## Test `settings` qililab dictionary:
         assert qmm.settings.to_qua_config()["elements"][bus][parameter] == value
+
+        # Assert that the settings are still in synch:
+        assert qmm._config == qmm.settings.to_qua_config()
+
+    @pytest.mark.parametrize(
+        "bus, parameter, value",
+        [
+            ("readout_q0_rf", Parameter.IF, 17e6),
+        ],
+    )
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    def test_set_parameter_if_with_opx1000(
+        self,
+        mock_qmm,
+        mock_qm,
+        bus: str,
+        parameter: Parameter,
+        value: float | str | bool,
+        qmm_with_opx1000: QuantumMachinesCluster,
+    ):
+        """Test that both the set method fills the bus _pending_set_intermediate_frequency correctly."""
+
+        qmm_with_opx1000.initial_setup()
+        qmm_with_opx1000.turn_on()
+        qmm_with_opx1000._config = qmm_with_opx1000.settings.to_qua_config()
+
+        qmm_with_opx1000.set_parameter_of_bus(bus, parameter, value)
+
+        ## Test `_intermediate_frequency[bus]` is created for later use:
+        assert qmm_with_opx1000._pending_set_intermediate_frequency[bus] == value
 
     @pytest.mark.parametrize(
         "bus, parameter, value",
@@ -568,6 +636,7 @@ class TestQuantumMachinesCluster:
         if parameter == Parameter.SMEARING:
             if "smearing" in config_keys:
                 assert value == settings_config_dict["elements"][bus]["smearing"]
+
         if parameter == Parameter.THRESHOLD_ROTATION:
             element = next((element for element in qmm.settings.elements if element["bus"] == bus), None)
             assert value == element.get("threshold_rotation", None)

@@ -2,6 +2,64 @@
 
 ### New features since last release
 
+- Add default measurement to `execute_anneal_program()` method. This method takes now a calibration file and parameters
+to add the dispersive measurement at the end of the annealing schedule.
+  [#778](https://github.com/qilimanjaro-tech/qililab/pull/778)
+
+- Added a try/except clause when executing a QProgram on Quantum Machines cluster that controls the execution failing to perform a turning off of the instrument so the _qm object gets
+removed. This, plus setting the close_other_machines=True by default allows to open more than one QuantumMachines VM at the same time to allow more than one experimentalist to work at the same time in the cluster.
+
+[#760](https://github.com/qilimanjaro-tech/qililab/pull/760/)
+
+- Add `__str__` method to qprogram. The string is a readable qprogram.
+  [#767](https://github.com/qilimanjaro-tech/qililab/pull/767)
+
+- Add workflow for the execution of annealing programs.
+  Example:
+
+  ```python
+  import qililab as ql
+
+  platform = ql.build_platform("examples/runcards/galadriel.yml")
+  anneal_program_dict = [
+    {qubit_0": {"sigma_x" : 0, "sigma_y": 0, "sigma_z": 1, "phix":1, "phiz":1},
+      "qubit_1": {"sigma_x" : 0.1, "sigma_y": 0.1, "sigma_z": 0.1},
+      "coupler_0_1": {"sigma_x" : 1, "sigma_y": 0.2, "sigma_z": 0.2}
+     },
+    {"qubit_0": {"sigma_x" : 0.1, "sigma_y": 0.1, "sigma_z": 1.1},
+      "qubit_1": {"sigma_x" : 0.2, "sigma_y": 0.2, "sigma_z": 0.2},
+      "coupler_0_1": {"sigma_x" : 0.9, "sigma_y": 0.1, "sigma_z": 0.1}
+     },
+     {"qubit_0": {"sigma_x" : 0.3, "sigma_y": 0.3, "sigma_z": 0.7},
+      "qubit_1": {"sigma_x" : 0.5, "sigma_y": 0.2, "sigma_z": 0.01},
+      "coupler_0_1": {"sigma_x" : 0.5, "sigma_y": 0, "sigma_z": -1}
+      }
+  ]
+
+  results = platform.execute_anneal_program(anneal_program_dict=anneal_program_dict,transpiler=lambda delta, epsilon: (delta, epsilon), averages=100_000)
+  ```
+
+  Alternatively, each step of the workflow can be executed separately i.e. the following is equivalent to the above:
+
+  ```python
+  import qililab as ql
+
+  platform = ql.build_platform("examples/runcards/galadriel.yml")
+  anneal_program_dict = [...]  # same as in the above example
+  # intialize annealing program class
+  anneal_program = ql.AnnealingProgram(
+      platform=platform, anneal_program=anneal_program_dict
+  )
+  # transpile ising to flux, now flux values can be accessed same as ising coeff values
+  # eg. for phix qubit 0 at t=1ns anneal_program.anneal_program[1]["qubit_0"]["phix"]
+  anneal_program.transpile(lambda delta, epsilon: (delta, epsilon))
+  # get a dictionary {control_flux: (bus, waveform) from the transpiled fluxes
+  anneal_waveforms = anneal_program.get_waveforms()
+  # from here on we can create a qprogram to execute the annealing schedule
+  ```
+
+  [#767](https://github.com/qilimanjaro-tech/qililab/pull/767)
+
 - Added `CrosstalkMatrix` class to represent and manipulate a crosstalk matrix, where each index corresponds to a bus. The class includes methods for initializing the matrix, getting and setting crosstalk values, and generating string representations of the matrix.
 
   Example:
@@ -135,6 +193,10 @@
 
   [#747](https://github.com/qilimanjaro-tech/qililab/pull/747)
 
+- Automatic method to implement the correct `upsampling_mode` when the output mode is selected as `amplified` (fluxes), the `upsampling_mode` is automatically defined as `pulsed`. In this mode, the upsampling is optimized to produce cleaner step responses.
+
+  [#783](https://github.com/qilimanjaro-tech/qililab/pull/783)
+
 ### Breaking changes
 
 - Big code refactor for the `calibration` module/directory, where all `comparisons`, `check_parameters`, `check_data()`,
@@ -159,3 +221,6 @@
 
 - get_parameter for QM did not work due to the lack of the variable `bus_alias in self.system_control.get_parameter`. The variable has been added to the function and now get parameter does not return a crash.
   [#751](https://github.com/qilimanjaro-tech/qililab/pull/751)
+
+- set_parameter for intermediate frequency in quantum machines has been adapted for both OPX+ and OPX1000 following the new requirements for OPX1000 with qm-qua job.set_intermediate_frequency.
+  [#764](https://github.com/qilimanjaro-tech/qililab/pull/764)

@@ -14,7 +14,7 @@ from qibo.models import Circuit
 from qpysequence import Sequence
 from ruamel.yaml import YAML
 
-from qililab import save_platform
+from qililab import Arbitrary, save_platform
 from qililab.chip import Chip, Qubit
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.instrument_controllers import InstrumentControllers
@@ -24,8 +24,9 @@ from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
-from qililab.qprogram import QProgram
+from qililab.qprogram import Calibration, QProgram
 from qililab.result.qblox_results import QbloxResult
+from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.settings import Runcard
 from qililab.settings.gate_event_settings import GateEventSettings
@@ -107,6 +108,57 @@ def fixture_qblox_results():
             "measurement": 1,
         },
     ]
+
+
+@pytest.fixture(name="calibration")
+def get_calibration():
+    readout_duration = 2000
+    readout_amplitude = 1.0
+    r_wf_I = Square(amplitude=readout_amplitude, duration=readout_duration)
+    r_wf_Q = Square(amplitude=0.0, duration=readout_duration)
+    readout_waveform = IQPair(I=r_wf_I, Q=r_wf_Q)
+    weights_shape = Square(amplitude=1, duration=readout_duration)
+    weights = IQPair(I=weights_shape, Q=weights_shape)
+
+    calibration = Calibration()
+    calibration.add_waveform(bus="readout_bus", name="readout", waveform=readout_waveform)
+    calibration.add_weights(bus="readout_bus", name="optimal_weights", weights=weights)
+
+    return calibration
+
+
+@pytest.fixture(name="anneal_qprogram")
+def get_anneal_qprogram(runcard):
+    platform = Platform(runcard=runcard)
+    anneal_waveforms = {
+        "phix_q0": (
+            platform._get_bus_by_alias(
+                next(element.bus for element in platform.flux_to_bus_topology if element.flux == "phix_q0")
+            ),
+            Arbitrary(np.array([1])),
+        ),
+        "phiz_q0": (
+            platform._get_bus_by_alias(
+                next(element.bus for element in platform.flux_to_bus_topology if element.flux == "phiz_q0")
+            ),
+            Arbitrary(np.array([2])),
+        ),
+    }
+    averages = 2
+    readout_duration = 2000
+    readout_amplitude = 1.0
+    r_wf_I = Square(amplitude=readout_amplitude, duration=readout_duration)
+    r_wf_Q = Square(amplitude=0.0, duration=readout_duration)
+    readout_waveform = IQPair(I=r_wf_I, Q=r_wf_Q)
+    weights_shape = Square(amplitude=1, duration=readout_duration)
+    weights = IQPair(I=weights_shape, Q=weights_shape)
+    qp_anneal = QProgram()
+    with qp_anneal.average(averages):
+        for bus, waveform in anneal_waveforms.values():
+            qp_anneal.play(bus=bus.alias, waveform=waveform)
+        qp_anneal.sync()
+        qp_anneal.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
+    return qp_anneal
 
 
 class TestPlatformInitialization:
@@ -350,6 +402,54 @@ class TestMethods:
             assert all(isinstance(sequence, Sequence) for sequence in sequences_list)
             assert sequences_list[0]._program.duration == 200_000 * 1000 + 4 + 4 + 4
 
+    def test_execute_anneal_program(self, platform: Platform, anneal_qprogram, calibration):
+        mock_execute_qprogram = MagicMock()
+        mock_execute_qprogram.return_value = QProgramResults()
+        platform.execute_qprogram = mock_execute_qprogram  # type: ignore[method-assign]
+        transpiler = MagicMock()
+        transpiler.return_value = (1, 2)
+
+        results = platform.execute_anneal_program(
+            annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
+            transpiler=transpiler,
+            averages=2,
+            readout_bus="readout_bus",
+            measurement_name="readout",
+            weights="optimal_weights",
+            calibration=calibration,
+        )
+        qprogram = mock_execute_qprogram.call_args[1]["qprogram"].with_calibration(calibration)
+        assert str(anneal_qprogram) == str(qprogram)
+        assert isinstance(results, QProgramResults)
+
+        results = platform.execute_anneal_program(
+            annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
+            transpiler=transpiler,
+            averages=2,
+            readout_bus="readout_bus",
+            measurement_name="readout",
+            calibration=calibration,
+        )
+        qprogram = mock_execute_qprogram.call_args[1]["qprogram"].with_calibration(calibration)
+        assert str(anneal_qprogram) == str(qprogram)
+        assert isinstance(results, QProgramResults)
+
+    def test_execute_anneal_program_no_measurement_raises_error(self, platform: Platform, calibration):
+        mock_execute_qprogram = MagicMock()
+        platform.execute_qprogram = mock_execute_qprogram  # type: ignore[method-assign]
+        transpiler = MagicMock()
+        transpiler.return_value = (1, 2)
+        error_string = "The calibrated measurement is not present in the calibration file."
+        with pytest.raises(ValueError, match=error_string):
+            platform.execute_anneal_program(
+                annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
+                transpiler=transpiler,
+                averages=2,
+                readout_bus="readout_bus",
+                measurement_name="whatever",
+                calibration=calibration,
+            )
+
     def test_execute_qprogram_with_qblox(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
@@ -449,6 +549,31 @@ class TestMethods:
         # assure only one debug was called
         assert patched_open.call_count == 1
         assert generate_qua.call_count == 1
+
+    def test_execute_qprogram_with_quantum_machines_raises_error(
+        self, platform_quantum_machines: Platform
+    ):  # pylint: disable=too-many-locals
+        """Test that the execute_qprogram method raises the exception if the qprogram failes"""
+
+        error_string = "The QM `config` dictionary does not exist. Please run `initial_setup()` first."
+        escaped_error_str = re.escape(error_string)
+        platform_quantum_machines.compile = MagicMock()  # type: ignore # don't care about compilation
+        platform_quantum_machines.compile.return_value = Exception(escaped_error_str)
+
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_q0_rf", waveform=drive_wf)
+        qprogram.sync()
+        qprogram.play(bus="readout_q0_rf", waveform=readout_wf)
+        qprogram.measure(bus="readout_q0_rf", waveform=readout_wf, weights=weights_wf)
+
+        with patch.object(QuantumMachinesCluster, "turn_off") as turn_off:
+            with pytest.raises(ValueError, match=escaped_error_str):
+                _ = platform_quantum_machines.execute_qprogram(qprogram=qprogram, debug=True)
+
+        turn_off.assert_called_once_with()
 
     def test_execute(self, platform: Platform, qblox_results: list[dict]):
         """Test that the execute method calls the buses to run and return the results."""
