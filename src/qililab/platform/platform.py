@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=too-many-lines
 """Platform class."""
 import ast
 import io
@@ -51,6 +52,7 @@ from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName, Line, Parameter
 from qililab.utils import hash_qpy_sequence
+from qililab.waveforms import IQPair, Square
 
 from .components import Bus, Buses
 
@@ -600,10 +602,16 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """
         return str(YAML().dump(self.to_dict(), io.BytesIO()))
 
-    # TODO: determine default average
     def execute_anneal_program(
-        self, annealing_program_dict: list[dict[str, dict[str, float]]], transpiler: Callable, averages=1
-    ):
+        self,
+        annealing_program_dict: list[dict[str, dict[str, float]]],
+        calibration: Calibration,
+        readout_bus: str,
+        measurement_name: str,
+        transpiler: Callable,
+        averages=1,
+        weights: str | None = None,
+    ) -> QProgramResults:
         """Given an annealing program execute it as a qprogram.
         The annealing program should contain a time ordered list of circuit elements and their corresponging ising coefficients as a dictionary. Example structure:
 
@@ -627,18 +635,27 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             transpiler (Callable): ising to flux transpiler. The transpiler should take 2 values as arguments (delta, epsilon) and return 2 values (phix, phiz)
             averages (int, optional): Amount of times to run and average the program over. Defaults to 1.
         """
-        annealing_program = AnnealingProgram(self, annealing_program_dict)
-        annealing_program.transpile(transpiler)
-        annealing_waveforms = annealing_program.get_waveforms()
+        if calibration.has_waveform(bus=readout_bus, name=measurement_name):
+            annealing_program = AnnealingProgram(self, annealing_program_dict)
+            annealing_program.transpile(transpiler)
+            annealing_waveforms = annealing_program.get_waveforms()
 
-        qp_annealing = QProgram()
-        with qp_annealing.average(averages):
-            for bus, waveform in annealing_waveforms.values():
-                qp_annealing.play(bus=bus.alias, waveform=waveform)
+            qp_annealing = QProgram()
+            with qp_annealing.average(averages):
+                for bus, waveform in annealing_waveforms.values():
+                    qp_annealing.play(bus=bus.alias, waveform=waveform)
+                qp_annealing.sync()
+                if weights and calibration.has_weights(bus=readout_bus, name=weights):
+                    qp_annealing.measure(bus=readout_bus, waveform=measurement_name, weights=weights)
+                else:
+                    r_duration = calibration.get_waveform(bus=readout_bus, name=measurement_name).get_duration()
+                    weights_shape = Square(amplitude=1, duration=r_duration)
+                    qp_annealing.measure(
+                        bus=readout_bus, waveform=measurement_name, weights=IQPair(I=weights_shape, Q=weights_shape)
+                    )
 
-        # TODO: define readout
-
-        self.execute_qprogram(qprogram=qp_annealing)
+            return self.execute_qprogram(qprogram=qp_annealing, calibration=calibration)
+        raise ValueError("The calibrated measurement is not present in the calibration file.")
 
     def execute_qprogram(  # pylint: disable=too-many-locals
         self,
@@ -816,27 +833,31 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             qprogram=qprogram, bus_mapping=bus_mapping, threshold_rotations=threshold_rotations, calibration=calibration
         )
 
-        cluster.append_configuration(configuration=configuration)
+        try:
+            cluster.append_configuration(configuration=configuration)
 
-        if debug:
-            with open("debug_qm_execution.py", "w", encoding="utf-8") as sourceFile:
-                print(generate_qua_script(qua_program, cluster.config), file=sourceFile)
+            if debug:
+                with open("debug_qm_execution.py", "w", encoding="utf-8") as sourceFile:
+                    print(generate_qua_script(qua_program, cluster.config), file=sourceFile)
 
-        compiled_program_id = cluster.compile(program=qua_program)
-        job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
+            compiled_program_id = cluster.compile(program=qua_program)
+            job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
 
-        acquisitions = cluster.get_acquisitions(job=job)
+            acquisitions = cluster.get_acquisitions(job=job)
 
-        results = QProgramResults()
-        # Doing manual classification of results as QM does not return thresholded values like Qblox
-        for measurement in measurements:
-            measurement_result = QuantumMachinesMeasurementResult(
-                *[acquisitions[handle] for handle in measurement.result_handles],
-            )
-            measurement_result.set_classification_threshold(thresholds.get(measurement.bus, None))
-            results.append_result(bus=measurement.bus, result=measurement_result)
+            results = QProgramResults()
+            # Doing manual classification of results as QM does not return thresholded values like Qblox
+            for measurement in measurements:
+                measurement_result = QuantumMachinesMeasurementResult(
+                    *[acquisitions[handle] for handle in measurement.result_handles],
+                )
+                measurement_result.set_classification_threshold(thresholds.get(measurement.bus, None))
+                results.append_result(bus=measurement.bus, result=measurement_result)
 
-        return results
+            return results
+        except Exception as e:
+            cluster.turn_off()
+            raise e
 
     def execute(
         self,
