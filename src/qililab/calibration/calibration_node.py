@@ -132,8 +132,9 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                 second = CalibrationNode(
                     nb_path="notebooks/second.ipynb",
                     qubit_index=qubit,
-
                     sweep_interval=np.arange(start=0, stop=19, step=1),
+                    check_point=True,
+                    check_value={"fidelity": 0.85},
                 )
                 nodes[second.node_id] = second
 
