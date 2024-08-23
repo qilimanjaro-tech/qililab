@@ -15,27 +15,45 @@ from collections import deque
 
 import numpy as np
 
-from qililab.qprogram.blocks import Block, ForLoop, InfiniteLoop, Loop, Parallel
+from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.variable import Domain, FloatVariable, IntVariable, ValueSource, Variable
 from qililab.yaml import yaml
 
 
 @yaml.register_class
 class StructuredProgram:
-    def __init__(self):
+    """Represents a structured quantum program with various control flow blocks."""
+
+    def __init__(self) -> None:
+        """Initializes a StructuredProgram instance, setting up the body, block stack, variables, and buses."""
         self._body: Block = Block()
         self._block_stack: deque[Block] = deque([self._body])
         self._variables: list[Variable] = []
         self._buses: set[str] = set()
 
     def _append_to_block_stack(self, block: Block):
+        """Appends a block to the internal block stack.
+
+        Args:
+            block (Block): The block to append.
+        """
         self._block_stack.append(block)
 
     def _pop_from_block_stack(self):
+        """Removes and returns the last block from the block stack.
+
+        Returns:
+            Block: The popped block.
+        """
         return self._block_stack.pop()
 
     @property
     def _active_block(self) -> Block:
+        """Returns the currently active block on top of the block stack.
+
+        Returns:
+            Block: The active block.
+        """
         return self._block_stack[-1]
 
     @property
@@ -49,7 +67,7 @@ class StructuredProgram:
 
     @property
     def buses(self) -> set[str]:
-        """Get the buses of the QProgram
+        """Get the buses.
 
         Returns:
             set[str]: A set of the names of the buses
@@ -58,7 +76,7 @@ class StructuredProgram:
 
     @property
     def variables(self) -> list[Variable]:
-        """Get the variables
+        """Get the variables.
 
         Returns:
             list[Variable]: A list of variables
@@ -160,6 +178,24 @@ class StructuredProgram:
             Parallel: The parallel block.
         """
         return StructuredProgram._ParallelContext(structured_program=self, loops=loops)
+
+    def average(self, shots: int):
+        """Define an acquire loop block with averaging in real time.
+
+        Blocks need to open a scope.
+
+        Args:
+            iterations (int): The number of acquire iterations.
+
+        Returns:
+            Average: The average block.
+
+        Examples:
+
+            >>> with qp.average(shots=1000):
+            >>>    # operations that shall be executed in the average block
+        """
+        return StructuredProgram._AverageContext(structured_program=self, shots=shots)
 
     def variable(self, domain: Domain, type: type[int | float] | None = None):  # pylint: disable=redefined-builtin
         """Declare a variable.
@@ -273,3 +309,10 @@ class StructuredProgram:
             for loop in self.block.loops:
                 loop.variable._source = ValueSource.Free
             super().__exit__(exc_type, exc_value, exc_tb)
+
+    class _AverageContext(_BlockContext):  # pylint: disable=too-few-public-methods
+        def __init__(
+            self, structured_program: "StructuredProgram", shots: int
+        ):  # pylint: disable=super-init-not-called
+            self.structured_program = structured_program
+            self.block: Average = Average(shots=shots)

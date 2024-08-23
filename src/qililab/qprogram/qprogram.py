@@ -282,24 +282,6 @@ class QProgram(StructuredProgram):  # pylint: disable=too-many-public-methods
         traverse(copied_qprogram.body)
         return copied_qprogram
 
-    def average(self, shots: int):
-        """Define an acquire loop block with averaging in real time.
-
-        Blocks need to open a scope.
-
-        Args:
-            iterations (int): The number of acquire iterations.
-
-        Returns:
-            Average: The average block.
-
-        Examples:
-
-            >>> with qp.average(shots=1000):
-            >>>    # operations that shall be executed in the average block
-        """
-        return QProgram._AverageContext(qprogram=self, shots=shots)
-
     @overload
     def play(self, bus: str, waveform: Waveform | IQPair) -> None:
         """Play a single waveform or an I/Q pair of waveforms on the bus.
@@ -487,11 +469,6 @@ class QProgram(StructuredProgram):  # pylint: disable=too-many-public-methods
         operation = SetOffset(bus=bus, offset_path0=offset_path0, offset_path1=offset_path1)
         self._active_block.append(operation)
         self._buses.add(bus)
-
-    class _AverageContext(StructuredProgram._BlockContext):  # pylint: disable=too-few-public-methods
-        def __init__(self, qprogram: "QProgram", shots: int):  # pylint: disable=super-init-not-called
-            self.structured_program = qprogram
-            self.block: Average = Average(shots=shots)
 
     # pylint: disable=protected-access, too-few-public-methods
     @yaml.register_class
