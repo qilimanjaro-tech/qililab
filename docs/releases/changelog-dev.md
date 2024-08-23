@@ -2,14 +2,15 @@
 
 ### New features since last release
 
+- Introduced the `Experiment` class, which inherits from `StructuredProgram`. This new class enables the ability to set parameters and execute quantum programs within a structured experiment. Added the `set_parameter` method to allow setting platfform parameters and `execute_qprogram` method to facilitate the execution of quantum programs within the experiment.
+  [#782](https://github.com/qilimanjaro-tech/qililab/pull/782)
+
 - Add default measurement to `execute_anneal_program()` method. This method takes now a calibration file and parameters
-to add the dispersive measurement at the end of the annealing schedule.
+  to add the dispersive measurement at the end of the annealing schedule.
   [#778](https://github.com/qilimanjaro-tech/qililab/pull/778)
 
-- Added a try/except clause when executing a QProgram on Quantum Machines cluster that controls the execution failing to perform a turning off of the instrument so the _qm object gets
-removed. This, plus setting the close_other_machines=True by default allows to open more than one QuantumMachines VM at the same time to allow more than one experimentalist to work at the same time in the cluster.
-
-[#760](https://github.com/qilimanjaro-tech/qililab/pull/760/)
+- Added a try/except clause when executing a QProgram on Quantum Machines cluster that controls the execution failing to perform a turning off of the instrument so the \_qm object gets removed. This, plus setting the close_other_machines=True by default allows to open more than one QuantumMachines VM at the same time to allow more than one experimentalist to work at the same time in the cluster.
+  [#760](https://github.com/qilimanjaro-tech/qililab/pull/760/)
 
 - Add `__str__` method to qprogram. The string is a readable qprogram.
   [#767](https://github.com/qilimanjaro-tech/qililab/pull/767)
