@@ -334,13 +334,18 @@ class CalibrationController:
         Returns:
             bool: Whether the fidelities of the node are greater or equal to the check values.
         """
-        return (
-            all(
-                fidelity_v >= node.check_value[fidelity_k]
-                for fidelity_k, fidelity_v in node.output_parameters["fidelities"]
-            )
-            if node.output_parameters is not None
-            else False
+        # If no check_value, any fidelity is good.
+        if node.check_value is None:
+            return True
+
+        # If check_value is present, but fidelities are not, the checkpoint doesn't pass.
+        if node.output_parameters is None:
+            return False
+
+        # If check_value and fidelities are present, all fidelities must be greater or equal to the check values.
+        return all(
+            fidelity_v >= node.check_value[fidelity_k]
+            for fidelity_k, fidelity_v in node.output_parameters["fidelities"]
         )
 
     def get_qubit_fidelities_and_parameters_df_tables(self) -> dict[str, pd.DataFrame]:
