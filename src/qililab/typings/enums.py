@@ -241,7 +241,7 @@ class SystemControlName(str, Enum):
 
 
 @yaml.register_class
-class Parameter(Enum):
+class Parameter(str, Enum):
     """Parameter names."""
 
     BUS_FREQUENCY = "bus_frequency"
