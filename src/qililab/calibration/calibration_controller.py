@@ -260,6 +260,8 @@ class CalibrationController:
             bool: Wether the diagnose process has finished or not.
         """
         logger.info("WORKFLOW: Diagnosing  %s.\n", node.node_id)
+        diagnose_finished = False
+
         for n in self._dependencies(node):
             diagnose_finished = self.diagnose(n)
 
