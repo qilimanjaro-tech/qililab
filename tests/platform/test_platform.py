@@ -426,7 +426,6 @@ class TestMethods:
             measurement_name="readout",
             weights="optimal_weights",
             calibration=calibration,
-            correct_xtalk=False,
         )
         qprogram = mock_execute_qprogram.call_args[1]["qprogram"].with_calibration(calibration)
         assert str(anneal_qprogram) == str(qprogram)
@@ -439,7 +438,6 @@ class TestMethods:
             readout_bus="readout_bus",
             measurement_name="readout",
             calibration=calibration,
-            correct_xtalk=False,
         )
         qprogram = mock_execute_qprogram.call_args[1]["qprogram"].with_calibration(calibration)
         assert str(anneal_qprogram) == str(qprogram)
