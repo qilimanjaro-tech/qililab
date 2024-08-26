@@ -152,6 +152,17 @@ class TestAnnealingProgram:
         assert np.allclose(anneal_waveforms[phix_c0_1_waveform[0]].envelope(), phix_c0_1_waveform[1])
         assert np.allclose(anneal_waveforms[phiz_c0_1_waveform[0]].envelope(), phiz_c0_1_waveform[1])
 
+    def test_get_waveforms_same_bus_error(self, annealing_program_transpiled):
+        """Test get waveforms method works as intended"""
+
+        # point two fluxes to the same bus
+        annealing_program_transpiled._flux_to_bus_topology[0].bus = annealing_program_transpiled._flux_to_bus_topology[
+            1
+        ].bus
+        error_string = f"More than one flux pointing at bus {annealing_program_transpiled._flux_to_bus_topology[1].bus} in the runcard flux to bus topology"
+        with pytest.raises(ValueError, match=error_string):
+            _ = annealing_program_transpiled.get_waveforms()
+
     def test_get_waveforms_xtalk(self, annealing_program_transpiled):
         """Test get waveforms method works as intended"""
         # with patch(qililab.qprogram.crosstalk_matrix.CrosstalkMatrix, "from_buses") as dummy_xtalk_matrix:
