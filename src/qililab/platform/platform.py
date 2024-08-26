@@ -639,6 +639,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             transpiler (Callable): ising to flux transpiler. The transpiler should take 2 values as arguments (delta, epsilon) and return 2 values (phix, phiz)
             averages (int, optional): Amount of times to run and average the program over. Defaults to 1.
         """
+        if self.flux_to_bus_topology is None:
+            raise ValueError("Flux to bus topology not given in the runcard")
         if calibration.has_waveform(bus=readout_bus, name=measurement_name):
             annealing_program = AnnealingProgram(
                 flux_to_bus_topology=self.flux_to_bus_topology, annealing_program=annealing_program_dict
