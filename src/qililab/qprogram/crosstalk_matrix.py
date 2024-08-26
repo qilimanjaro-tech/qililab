@@ -184,7 +184,7 @@ class CrosstalkMatrix:
         return instance
 
     @classmethod
-    def from_buses(cls, buses: set[str]) -> "CrosstalkMatrix":
+    def from_buses(cls, buses: dict[str, dict[str, float]]) -> "CrosstalkMatrix":
         """
         Creates a CrosstalkMatrix with all possible associations set to 1.0.
 
