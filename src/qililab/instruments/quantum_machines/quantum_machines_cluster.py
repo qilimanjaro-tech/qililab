@@ -150,7 +150,13 @@ class QuantumMachinesCluster(Instrument):
                                         "output_mode": output["output_mode"] if "output_mode" in output else "direct",
                                         "sampling_rate": output["sampling_rate"] if "sampling_rate" in output else 1e9,
                                         "upsampling_mode": (
-                                            output["upsampling_mode"] if "upsampling_mode" in output else "mw"
+                                            output["upsampling_mode"]
+                                            if "upsampling_mode" in output
+                                            else (
+                                                "pulsed"
+                                                if "output_mode" in output and output["output_mode"] == "amplified"
+                                                else "mw"
+                                            )
                                         ),
                                         "filter": (
                                             {
@@ -433,7 +439,7 @@ class QuantumMachinesCluster(Instrument):
     def turn_on(self):
         """Turns on the instrument."""
         if not self._is_connected_to_qm:
-            self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)
+            self._qm = self._qmm.open_qm(config=self._config, close_other_machines=False)
             self._compiled_program_cache = {}
             self._is_connected_to_qm = True
 
@@ -468,7 +474,7 @@ class QuantumMachinesCluster(Instrument):
             self._config = cast(DictQuaConfig, merged_configuration)
             # If we are already connected, reopen the connection with the new configuration
             if self._is_connected_to_qm:
-                self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)  # type: ignore[assignment]
+                self._qm = self._qmm.open_qm(config=self._config, close_other_machines=False)  # type: ignore[assignment]
                 self._compiled_program_cache = {}
 
     def run_octave_calibration(self):

@@ -2,6 +2,18 @@
 
 ### New features since last release
 
+- Add crosstalk compensation to `AnnealingProgram` workflow. Add methods to `CrosstalkMatrix` to ease crosstalk compensation in the annealing workflow
+  [#775](https://github.com/qilimanjaro-tech/qililab/pull/775)
+
+- Add default measurement to `execute_anneal_program()` method. This method takes now a calibration file and parameters
+  to add the dispersive measurement at the end of the annealing schedule.
+  [#778](https://github.com/qilimanjaro-tech/qililab/pull/778)
+
+- Added a try/except clause when executing a QProgram on Quantum Machines cluster that controls the execution failing to perform a turning off of the instrument so the \_qm object gets
+  removed. This, plus setting the close_other_machines=True by default allows to open more than one QuantumMachines VM at the same time to allow more than one experimentalist to work at the same time in the cluster.
+
+[#760](https://github.com/qilimanjaro-tech/qililab/pull/760/)
+
 - Add `__str__` method to qprogram. The string is a readable qprogram.
   [#767](https://github.com/qilimanjaro-tech/qililab/pull/767)
 
@@ -183,6 +195,10 @@
 - Improved the algorithm determining which markers should be ON during execution of circuits and qprograms. Now, all markers are OFF by default, and only the markers associated with the `outputs` setting of QCM-RF and QRM-RF sequencers are turned on.
 
   [#747](https://github.com/qilimanjaro-tech/qililab/pull/747)
+
+- Automatic method to implement the correct `upsampling_mode` when the output mode is selected as `amplified` (fluxes), the `upsampling_mode` is automatically defined as `pulsed`. In this mode, the upsampling is optimized to produce cleaner step responses.
+
+  [#783](https://github.com/qilimanjaro-tech/qililab/pull/783)
 
 ### Breaking changes
 
