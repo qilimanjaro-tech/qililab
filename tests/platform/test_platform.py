@@ -834,3 +834,17 @@ class TestMethods:
         assert platform.get_parameter(parameter=Parameter.GAIN, alias="drive_line_q0_bus") == bus.get_parameter(
             parameter=Parameter.GAIN
         )
+
+    def test_no_bus_to_flux_raises_error(self, platform: Platform):
+        """Test that if flux to bus topology is not specified an error is raised"""
+        platform.flux_to_bus_topology = None
+        error_string = "Flux to bus topology not given in the runcard"
+        with pytest.raises(ValueError, match=error_string):
+            platform.execute_anneal_program(
+                annealing_program_dict=[{}],
+                calibration=MagicMock(),
+                readout_bus="readout",
+                measurement_name="measurement",
+                transpiler=MagicMock(),
+                averages=1,
+            )
