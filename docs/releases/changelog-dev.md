@@ -187,6 +187,9 @@
 
 ### Improvements
 
+- Improve Crosstalk matrix `from_buses` method so it can be a dictionary of buses and crosstalks coefficients.
+  [#784]https://github.com/qilimanjaro-tech/qililab/pull/784
+
 - Now platform.get_parameter works for QM without the need of connecting to the machine.
 
 - Added the option to get the time of flight and smearing information from the QM cluster
