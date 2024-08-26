@@ -645,9 +645,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 flux_to_bus_topology=self.flux_to_bus_topology, annealing_program=annealing_program_dict
             )
             annealing_program.transpile(transpiler)
-            annealing_waveforms = annealing_program.get_waveforms(
-                crosstalk_matrix=calibration.crosstalk_matrix.inverse()
+            crosstalk_matrix = (
+                calibration.crosstalk_matrix.inverse() if calibration.crosstalk_matrix is not None else None
             )
+            annealing_waveforms = annealing_program.get_waveforms(crosstalk_matrix=crosstalk_matrix)
 
             qp_annealing = QProgram()
             with qp_annealing.average(averages):
