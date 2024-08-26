@@ -134,13 +134,13 @@ class TestCalibration:
     def test_adding_crosstalk_matrix(self):
         """Test adding a crosstalk matrix to the calibration object"""
         buses = {
-            'flux_0': {'flux_0': 1.47046905, 'flux_1': 0.12276261},
-            'flux_1': {'flux_0': -0.55322207, 'flux_1': 1.58247856}
+            "flux_0": {"flux_0": 1.47046905, "flux_1": 0.12276261},
+            "flux_1": {"flux_0": -0.55322207, "flux_1": 1.58247856},
         }
         crosstalk_matrix = CrosstalkMatrix().from_buses(buses)
         calibration = Calibration()
         calibration.crosstalk_matrix = crosstalk_matrix
-        
+
         assert calibration.crosstalk_matrix["flux_0"]["flux_0"] == crosstalk_matrix["flux_0"]["flux_0"]
         assert calibration.crosstalk_matrix["flux_0"]["flux_1"] == crosstalk_matrix["flux_0"]["flux_1"]
         assert calibration.crosstalk_matrix["flux_1"]["flux_0"] == crosstalk_matrix["flux_1"]["flux_0"]
@@ -149,8 +149,8 @@ class TestCalibration:
     def test_dump_load_methods(self):
         """Test dump and load methods"""
         buses = {
-            'flux_0': {'flux_0': 1.47046905, 'flux_1': 0.12276261},
-            'flux_1': {'flux_0': -0.55322207, 'flux_1': 1.58247856}
+            "flux_0": {"flux_0": 1.47046905, "flux_1": 0.12276261},
+            "flux_1": {"flux_0": -0.55322207, "flux_1": 1.58247856},
         }
         crosstalk_matrix = CrosstalkMatrix().from_buses(buses)
         calibration = Calibration()
@@ -196,7 +196,7 @@ class TestCalibration:
         assert calibration.crosstalk_matrix["flux_0"]["flux_1"] == crosstalk_matrix["flux_0"]["flux_1"]
         assert calibration.crosstalk_matrix["flux_1"]["flux_0"] == crosstalk_matrix["flux_1"]["flux_0"]
         assert calibration.crosstalk_matrix["flux_1"]["flux_1"] == crosstalk_matrix["flux_1"]["flux_1"]
-        
+
         os.remove(path="calibration.yml")
 
         # Test that loading a different yaml produces an error
