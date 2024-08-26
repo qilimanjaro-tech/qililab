@@ -581,7 +581,11 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             ),
         }
         flux_control_topology_dict = {
-            RUNCARD.FLUX_CONTROL_TOPOLOGY: [flux_control.to_dict() for flux_control in self.flux_to_bus_topology]
+            RUNCARD.FLUX_CONTROL_TOPOLOGY: (
+                [flux_control.to_dict() for flux_control in self.flux_to_bus_topology]
+                if self.flux_to_bus_topology is not None
+                else None
+            )
         }
 
         return (

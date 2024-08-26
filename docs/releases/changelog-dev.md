@@ -196,6 +196,10 @@
 
   [#747](https://github.com/qilimanjaro-tech/qililab/pull/747)
 
+- Automatic method to implement the correct `upsampling_mode` when the output mode is selected as `amplified` (fluxes), the `upsampling_mode` is automatically defined as `pulsed`. In this mode, the upsampling is optimized to produce cleaner step responses.
+
+  [#783](https://github.com/qilimanjaro-tech/qililab/pull/783)
+
 ### Breaking changes
 
 - Big code refactor for the `calibration` module/directory, where all `comparisons`, `check_parameters`, `check_data()`,
