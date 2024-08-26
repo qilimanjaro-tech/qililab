@@ -848,3 +848,13 @@ class TestMethods:
                 transpiler=MagicMock(),
                 averages=1,
             )
+
+    def test_get_element_flux(self, platform: Platform):
+        """Get the bus from a flux using get_element"""
+        fluxes = ["phiz_q0", "phix_c0_1"]
+        assert sum(
+            platform.get_element(flux).alias
+            == next(flux_bus.bus for flux_bus in platform.flux_to_bus_topology if flux_bus.flux == flux)
+            for flux in fluxes
+        ) == len(fluxes)
+
