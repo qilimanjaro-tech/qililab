@@ -131,7 +131,12 @@ bus2          1.0        \\"""
 
     def test_from_buses_method(self):
         """Test from_buses class method"""
-        crosstalk_matrix = CrosstalkMatrix.from_buses({"bus1", "bus2", "bus3"})
+        buses = {
+            "bus1": {"bus1": 1.0, "bus2": 1.0, "bus3": 1.0},
+            "bus2": {"bus1": 1.0, "bus2": 1.0, "bus3": 1.0},
+            "bus3": {"bus1": 1.0, "bus2": 1.0, "bus3": 1.0},
+        }
+        crosstalk_matrix = CrosstalkMatrix.from_buses(buses)
 
         assert isinstance(crosstalk_matrix, CrosstalkMatrix)
         assert isinstance(crosstalk_matrix.matrix, dict)
