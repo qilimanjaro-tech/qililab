@@ -262,8 +262,8 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         if element.variable.domain is Domain.Scalar:
             to_positive = stop >= start
             if to_positive:
-                return qua.for_(qua_variable, start, qua_variable < stop, qua_variable + step)  # type: ignore[arg-type]
-            return qua.for_(qua_variable, start, qua_variable > stop, qua_variable + step)
+                return qua.for_(qua_variable, start, qua_variable < stop+1, qua_variable + step)  # type: ignore[arg-type]
+            raise ValueError("For loop for scalars with negative step not implemented")
             
         to_positive = stop >= start
         if to_positive:
@@ -393,10 +393,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         )
         for block in reversed(self._qprogram_block_stack):
             if isinstance(block, ForLoop):
-                if block.variable.domain is Domain.Scalar:
-                    iterations = QuantumMachinesCompiler._calculate_for_iterations(block.start, block.stop, block.step)
-                else:
-                    iterations = QuantumMachinesCompiler._calculate_iterations(block.start, block.stop, block.step)
+                iterations = QuantumMachinesCompiler._calculate_iterations(block.start, block.stop, block.step)
                 measurement_info.loops_iterations.append(iterations)
             if isinstance(block, Loop):
                 iterations = len(block.values)
@@ -550,22 +547,6 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
 
         # Calculate the raw number of iterations
         raw_iterations = (stop - start + step) / step
-
-        # If the raw number of iterations is very close to an integer, round it to that integer
-        # This accounts for potential floating-point inaccuracies
-        if abs(raw_iterations - round(raw_iterations)) < 1e-9:
-            return round(raw_iterations)
-
-        # Otherwise, if we're incrementing, take the ceiling, and if we're decrementing, take the floor
-        return math.floor(raw_iterations) if step > 0 else math.ceil(raw_iterations)
-    
-    @staticmethod
-    def _calculate_for_iterations(start: int | float, stop: int | float, step: int | float):
-        if step == 0:
-            raise ValueError("Step value cannot be zero")
-
-        # Calculate the raw number of iterations
-        raw_iterations = (stop - start) / step
 
         # If the raw number of iterations is very close to an integer, round it to that integer
         # This accounts for potential floating-point inaccuracies
