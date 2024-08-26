@@ -857,4 +857,3 @@ class TestMethods:
             == next(flux_bus.bus for flux_bus in platform.flux_to_bus_topology if flux_bus.flux == flux)
             for flux in fluxes
         ) == len(fluxes)
-
