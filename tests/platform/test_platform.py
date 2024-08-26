@@ -110,6 +110,19 @@ def fixture_qblox_results():
     ]
 
 
+@pytest.fixture(name="flux_to_bus_topology")
+def get_flux_to_bus_topology():
+    flux_control_topology_dict = [
+        {"flux": "phix_q0", "bus": "flux_line_phix_q0"},
+        {"flux": "phiz_q0", "bus": "flux_line_phiz_q0"},
+        {"flux": "phix_q1", "bus": "flux_line_phix_q1"},
+        {"flux": "phiz_q1", "bus": "flux_line_phiz_q1"},
+        {"flux": "phix_c0_1", "bus": "flux_line_phix_c0_1"},
+        {"flux": "phiz_c0_1", "bus": "flux_line_phiz_c0_1"},
+    ]
+    return [Runcard.FluxControlTopology(**flux_control) for flux_control in flux_control_topology_dict]
+
+
 @pytest.fixture(name="calibration")
 def get_calibration():
     readout_duration = 2000
@@ -128,20 +141,15 @@ def get_calibration():
 
 
 @pytest.fixture(name="anneal_qprogram")
-def get_anneal_qprogram(runcard):
+def get_anneal_qprogram(runcard, flux_to_bus_topology):
     platform = Platform(runcard=runcard)
+    platform.flux_to_bus_topology = flux_to_bus_topology
     anneal_waveforms = {
-        "phix_q0": (
-            platform._get_bus_by_alias(
-                next(element.bus for element in platform.flux_to_bus_topology if element.flux == "phix_q0")
-            ),
-            Arbitrary(np.array([1])),
+        next(element.bus for element in platform.flux_to_bus_topology if element.flux == "phix_q0"): Arbitrary(
+            np.array([1])
         ),
-        "phiz_q0": (
-            platform._get_bus_by_alias(
-                next(element.bus for element in platform.flux_to_bus_topology if element.flux == "phiz_q0")
-            ),
-            Arbitrary(np.array([2])),
+        next(element.bus for element in platform.flux_to_bus_topology if element.flux == "phiz_q0"): Arbitrary(
+            np.array([2])
         ),
     }
     averages = 2
@@ -154,8 +162,8 @@ def get_anneal_qprogram(runcard):
     weights = IQPair(I=weights_shape, Q=weights_shape)
     qp_anneal = QProgram()
     with qp_anneal.average(averages):
-        for bus, waveform in anneal_waveforms.values():
-            qp_anneal.play(bus=bus.alias, waveform=waveform)
+        for bus, waveform in anneal_waveforms.items():
+            qp_anneal.play(bus=bus, waveform=waveform)
         qp_anneal.sync()
         qp_anneal.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
     return qp_anneal
@@ -402,10 +410,11 @@ class TestMethods:
             assert all(isinstance(sequence, Sequence) for sequence in sequences_list)
             assert sequences_list[0]._program.duration == 200_000 * 1000 + 4 + 4 + 4
 
-    def test_execute_anneal_program(self, platform: Platform, anneal_qprogram, calibration):
+    def test_execute_anneal_program(self, platform: Platform, anneal_qprogram, flux_to_bus_topology, calibration):
         mock_execute_qprogram = MagicMock()
         mock_execute_qprogram.return_value = QProgramResults()
         platform.execute_qprogram = mock_execute_qprogram  # type: ignore[method-assign]
+        platform.flux_to_bus_topology = flux_to_bus_topology
         transpiler = MagicMock()
         transpiler.return_value = (1, 2)
 
@@ -825,3 +834,26 @@ class TestMethods:
         assert platform.get_parameter(parameter=Parameter.GAIN, alias="drive_line_q0_bus") == bus.get_parameter(
             parameter=Parameter.GAIN
         )
+
+    def test_no_bus_to_flux_raises_error(self, platform: Platform):
+        """Test that if flux to bus topology is not specified an error is raised"""
+        platform.flux_to_bus_topology = None
+        error_string = "Flux to bus topology not given in the runcard"
+        with pytest.raises(ValueError, match=error_string):
+            platform.execute_anneal_program(
+                annealing_program_dict=[{}],
+                calibration=MagicMock(),
+                readout_bus="readout",
+                measurement_name="measurement",
+                transpiler=MagicMock(),
+                averages=1,
+            )
+
+    def test_get_element_flux(self, platform: Platform):
+        """Get the bus from a flux using get_element"""
+        fluxes = ["phiz_q0", "phix_c0_1"]
+        assert sum(
+            platform.get_element(flux).alias
+            == next(flux_bus.bus for flux_bus in platform.flux_to_bus_topology if flux_bus.flux == flux)
+            for flux in fluxes
+        ) == len(fluxes)

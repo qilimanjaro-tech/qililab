@@ -2,12 +2,15 @@
 
 ### New features since last release
 
+- Add crosstalk compensation to `AnnealingProgram` workflow. Add methods to `CrosstalkMatrix` to ease crosstalk compensation in the annealing workflow
+  [#775](https://github.com/qilimanjaro-tech/qililab/pull/775)
+
 - Add default measurement to `execute_anneal_program()` method. This method takes now a calibration file and parameters
-to add the dispersive measurement at the end of the annealing schedule.
+  to add the dispersive measurement at the end of the annealing schedule.
   [#778](https://github.com/qilimanjaro-tech/qililab/pull/778)
 
-- Added a try/except clause when executing a QProgram on Quantum Machines cluster that controls the execution failing to perform a turning off of the instrument so the _qm object gets
-removed. This, plus setting the close_other_machines=True by default allows to open more than one QuantumMachines VM at the same time to allow more than one experimentalist to work at the same time in the cluster.
+- Added a try/except clause when executing a QProgram on Quantum Machines cluster that controls the execution failing to perform a turning off of the instrument so the \_qm object gets
+  removed. This, plus setting the close_other_machines=True by default allows to open more than one QuantumMachines VM at the same time to allow more than one experimentalist to work at the same time in the cluster.
 
 [#760](https://github.com/qilimanjaro-tech/qililab/pull/760/)
 
