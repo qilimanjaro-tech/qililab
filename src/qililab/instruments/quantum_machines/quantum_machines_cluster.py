@@ -153,7 +153,7 @@ class QuantumMachinesCluster(Instrument):
                                             output["upsampling_mode"]
                                             if "upsampling_mode" in output
                                             else (
-                                                "pulsed"
+                                                "pulse"
                                                 if "output_mode" in output and output["output_mode"] == "amplified"
                                                 else "mw"
                                             )

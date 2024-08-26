@@ -193,7 +193,7 @@ removed. This, plus setting the close_other_machines=True by default allows to o
 
   [#747](https://github.com/qilimanjaro-tech/qililab/pull/747)
 
-- Automatic method to implement the correct `upsampling_mode` when the output mode is selected as `amplified` (fluxes), the `upsampling_mode` is automatically defined as `pulsed`. In this mode, the upsampling is optimized to produce cleaner step responses.
+- Automatic method to implement the correct `upsampling_mode` when the output mode is selected as `amplified` (fluxes), the `upsampling_mode` is automatically defined as `pulse`. In this mode, the upsampling is optimized to produce cleaner step responses.
 
   [#783](https://github.com/qilimanjaro-tech/qililab/pull/783)
 
