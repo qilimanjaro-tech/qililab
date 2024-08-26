@@ -87,9 +87,12 @@ class AnnealingProgram:
             else f"{chip_element[0]}{split_element[1]}_{split_element[2]}"
         )
 
-    def get_waveforms(self, correct_xtalk: bool = True) -> dict[str, ArbitraryWave]:
+    def get_waveforms(self, crosstalk_matrix: CrosstalkMatrix | None = None) -> dict[str, ArbitraryWave]:
         """Returns a dictionary containing (bus, waveform) for each flux control from the transpiled fluxes. `AnnealingProgram.transpile` should be run first. The waveform is an arbitrary waveform obtained from the transpiled fluxes.
 
+        Args:
+            crosstalk_matrix[CrosstalkMatrix]: crosstalk matrix to correct the flux vectors with. This is usually the inverse of the crosstalk matrix
+            in the Calibration file obtained from experiments.
         Returns:
             dict[str,ArbitraryWave]: Dictionary containing the waveform to be sent to each bus, with xtalk corrected
         """
@@ -108,15 +111,13 @@ class AnnealingProgram:
         # Initialize annealing waveforms
         annealing_waveforms = {bus: [] for bus in bus_to_flux_map}  # type: ignore[var-annotated]
         # get xtalk matrix
-        if correct_xtalk:
-            # TODO: where do we load the CrosstalkMatrix from?
-            xtalk_matrix = CrosstalkMatrix.from_buses(set(bus_to_flux_map)).inverse()
+
         # unravel each point of the anneal program to get timewise arrays of waveforms
         for annealing_step in self._transpiled_program:
             bus_flux_dict = FluxVector.from_dict(
                 {flux_to_bus_map[flux_line]: value for flux_line, value in annealing_step.items()}
             )
-            corrected_flux = xtalk_matrix @ bus_flux_dict if correct_xtalk else bus_flux_dict
+            corrected_flux = crosstalk_matrix @ bus_flux_dict if crosstalk_matrix is not None else bus_flux_dict
             for bus, value in corrected_flux.vector.items():
                 annealing_waveforms[bus].append(value)
 

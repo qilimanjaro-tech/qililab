@@ -1,5 +1,5 @@
 """Test the annealing program class"""
-from unittest.mock import patch
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
@@ -118,7 +118,7 @@ class TestAnnealingProgram:
 
     def test_get_waveforms(self, annealing_program_transpiled):
         """Test get waveforms method works as intended"""
-        anneal_waveforms = annealing_program_transpiled.get_waveforms(correct_xtalk=False)
+        anneal_waveforms = annealing_program_transpiled.get_waveforms()
         transpiled_program = annealing_program_transpiled._transpiled_program
 
         phix_q0_waveform = (
@@ -155,9 +155,9 @@ class TestAnnealingProgram:
     def test_get_waveforms_xtalk(self, annealing_program_transpiled):
         """Test get waveforms method works as intended"""
         # with patch(qililab.qprogram.crosstalk_matrix.CrosstalkMatrix, "from_buses") as dummy_xtalk_matrix:
-        with patch.object(CrosstalkMatrix, "from_buses") as xtalk_from_buses:
-            _ = annealing_program_transpiled.get_waveforms(correct_xtalk=True)
+        crosstalk_matrix = MagicMock()
+        _ = annealing_program_transpiled.get_waveforms(crosstalk_matrix=crosstalk_matrix)
         # check that __matmul__ is called at each anneal step
-        assert [call[0] for call in xtalk_from_buses.mock_calls].count("().inverse().__matmul__().vector.items") == len(
+        assert [call[0] for call in crosstalk_matrix.mock_calls].count("__matmul__().vector.items") == len(
             annealing_program_transpiled._transpiled_program
         )
