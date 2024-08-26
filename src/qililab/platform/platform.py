@@ -606,7 +606,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """
         return str(YAML().dump(self.to_dict(), io.BytesIO()))
 
-    def execute_anneal_program(
+    def execute_anneal_program(  # pylint: disable=too-many-locals
         self,
         annealing_program_dict: list[dict[str, dict[str, float]]],
         calibration: Calibration,
@@ -615,7 +615,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         transpiler: Callable,
         averages=1,
         weights: str | None = None,
-        correct_xtalk=True,
     ) -> QProgramResults:
         """Given an annealing program execute it as a qprogram.
         The annealing program should contain a time ordered list of circuit elements and their corresponging ising coefficients as a dictionary. Example structure:
