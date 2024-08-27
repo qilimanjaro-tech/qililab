@@ -103,6 +103,23 @@
 
   [#747](https://github.com/qilimanjaro-tech/qililab/pull/747)
 
+- Added `from_qprogram` method to the `Counts` class to compute the counts of quantum states obtained from a `QProgram`. The `Counts` object is designed to work for circuits that have only one measurement per bus at the end of the circuit execution. It is the user's responsibility to ensure that this method is used appropriately when it makes sense to compute the state counts for a `QProgram`. Note that probabilities can easily be obtained by calling the `probabilities()` method. See an example below.
+
+  Example:
+
+  ```Python
+  from qililab.result.counts import Counts
+
+  qp = QProgram()
+  # Define instructions for QProgram
+  # ...
+  qp_results = platform.execute_qprogram(qp)  # Platform previously defined
+  counts_object = Counts.from_qprogram(qp_results)
+  probs = counts_object.probabilities()
+  ```
+
+  [#743](https://github.com/qilimanjaro-tech/qililab/pull/743)
+
 - Added `threshold_rotations` argument to `compile()` method in `QProgram`. This argument allows to use rotation angles on measurement instructions if not specified. Currently used to use the angle rotations specified on the runcard (if any) so the user does not have to explicitly pass it as argument to the measure instruction.  Used for classification of results in Quantum Machines's modules. The following example shows how to specify this value on the runcard.
 
   Example:
