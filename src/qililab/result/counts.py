@@ -143,8 +143,7 @@ class Counts:
             ValueError: When a qubit mapping is specified and any of the busses does not match with any on the runcard.
 
         Returns:
-            dict[str, float]: Dictionary containing the quantum states as the keys of the dictionary, and the
-                probabilities obtained for each state as the values of the dictionary.
+            dict[str, float]: A dictionary where the keys are the quantum states, and the values are the probabilities obtained for each state.
         """
         if not qprogram_results.results:
             raise ValueError(f"Can not obtain counts with no measurments, {qprogram_results.__class__} empty")
