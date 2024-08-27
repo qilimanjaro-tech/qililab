@@ -103,7 +103,7 @@
 
   [#747](https://github.com/qilimanjaro-tech/qililab/pull/747)
 
-- Added `from_qprogram` method to compute the counts of the quantum states obtained with `QProgram`. The `Counts` object is expected to work for circuits which has only a measurement per bus at the end of the excution of the circuit so is responsability of the user use this method when it makes sense to compute the counts of the states or not of a `QProgram`. Note we can easily obtain the probabilities by calling the method `probabilities()`. See an example below.
+- Added `from_qprogram` method to the `Counts` class to compute the counts of quantum states obtained from a `QProgram`. The `Counts` object is designed to work for circuits that have only one measurement per bus at the end of the circuit execution. It is the user's responsibility to ensure that this method is used appropriately when it makes sense to compute the state counts for a `QProgram`. Note that probabilities can easily be obtained by calling the `probabilities()` method. See an example below.
 
   Example:
 
