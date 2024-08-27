@@ -133,8 +133,8 @@ class Counts:
 
         Args:
             qprogram_results (QProgramResults): The QProgramResults object we want to get the `Counts` from.
-            qubit_mapping (list[str], optional): A list containing the name of the busses to map.
-                The buses are map to qubits on the same index, a bus at the i-th element in the list is mapped to the i-th qubit.
+            qubit_mapping (list[str], optional): A list containing the names of the buses to map.
+                Each bus is mapped to a qubit at the corresponding index; the bus at the i-th position in the list is mapped to the i-th qubit.
                 Defaults to None.
 
         Raises:
