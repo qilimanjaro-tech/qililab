@@ -167,14 +167,14 @@ class Counts:
 
         # The threshold inside of a qblox bin is the name they use for already classified data as a value between
         # 0 and 1, not the value used in the comparator to perform such classification.
-        th_matrix = np.array(
+        threshold_matrix = np.array(
             [
                 np.concatenate([measurement.threshold.astype(int) for measurement in qprogram_results.results[bus]])
                 for bus in buses
             ]
         )
-        th_matrix_T = th_matrix.transpose()
-        for state in th_matrix_T:
+        threshold_matrix_T = threshold_matrix.transpose()
+        for state in threshold_matrix_T:
             binary_state_str = "".join(state.astype(str))
             counts_object.add_measurement(state=binary_state_str)
 
