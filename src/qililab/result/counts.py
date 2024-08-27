@@ -140,7 +140,7 @@ class Counts:
         Raises:
             ValueError: When the `results` attribute from `qprogram_results` is an empty dictionary.
             ValueError: When a qubit mapping is incomplete and does not map all qubits.
-            ValueError: When a qubit mapping is specified and any of the busses does not match with any on the runcard.
+            ValueError: If a qubit mapping is specified and any of the buses do not match the ones in the runcard.
 
         Returns:
             dict[str, float]: A dictionary where the keys are the quantum states, and the values are the probabilities obtained for each state.
