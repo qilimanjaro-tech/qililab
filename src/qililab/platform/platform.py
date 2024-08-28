@@ -17,6 +17,7 @@
 import ast
 import io
 import re
+import warnings
 from copy import deepcopy
 from dataclasses import asdict
 from queue import Queue
@@ -26,6 +27,7 @@ import numpy as np
 from qibo.gates import M
 from qibo.models import Circuit
 from qm import generate_qua_script
+from qm.exceptions import StreamProcessingDataLossError
 from qpysequence import Sequence as QpySequence
 from ruamel.yaml import YAML
 
@@ -837,6 +839,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         threshold_rotations: dict[str, float | None] = {},
         thresholds: dict[str, float | None] = {},
         calibration: Calibration | None = None,
+        dataloss_tries: int = 3,
         debug: bool = False,
     ) -> QProgramResults:
         compiler = QuantumMachinesCompiler()
@@ -844,31 +847,41 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             qprogram=qprogram, bus_mapping=bus_mapping, threshold_rotations=threshold_rotations, calibration=calibration
         )
 
-        try:
-            cluster.append_configuration(configuration=configuration)
+        for iteration in np.arange(dataloss_tries):  # TODO: This is a temporal fix as QM fixes the dataloss error
+            try:
+                cluster.append_configuration(configuration=configuration)
 
-            if debug:
-                with open("debug_qm_execution.py", "w", encoding="utf-8") as sourceFile:
-                    print(generate_qua_script(qua_program, cluster.config), file=sourceFile)
+                if debug:
+                    with open("debug_qm_execution.py", "w", encoding="utf-8") as sourceFile:
+                        print(generate_qua_script(qua_program, cluster.config), file=sourceFile)
 
-            compiled_program_id = cluster.compile(program=qua_program)
-            job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
+                compiled_program_id = cluster.compile(program=qua_program)
+                job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
 
-            acquisitions = cluster.get_acquisitions(job=job)
+                acquisitions = cluster.get_acquisitions(job=job)
 
-            results = QProgramResults()
-            # Doing manual classification of results as QM does not return thresholded values like Qblox
-            for measurement in measurements:
-                measurement_result = QuantumMachinesMeasurementResult(
-                    *[acquisitions[handle] for handle in measurement.result_handles],
+                results = QProgramResults()
+                # Doing manual classification of results as QM does not return thresholded values like Qblox
+                for measurement in measurements:
+                    measurement_result = QuantumMachinesMeasurementResult(
+                        *[acquisitions[handle] for handle in measurement.result_handles],
+                    )
+                    measurement_result.set_classification_threshold(thresholds.get(measurement.bus, None))
+                    results.append_result(bus=measurement.bus, result=measurement_result)
+
+                return results
+
+            except StreamProcessingDataLossError as dataloss:
+                warnings.warn(
+                    f"Warning: {dataloss} raised, retrying experiment ({iteration+1}/{dataloss_tries} available tries)"
                 )
-                measurement_result.set_classification_threshold(thresholds.get(measurement.bus, None))
-                results.append_result(bus=measurement.bus, result=measurement_result)
-
-            return results
-        except Exception as e:
-            cluster.turn_off()
-            raise e
+                if iteration + 1 != dataloss_tries:
+                    continue
+                else:
+                    raise dataloss
+            except Exception as e:
+                cluster.turn_off()
+                raise e
 
     def execute(
         self,
