@@ -585,14 +585,20 @@ class QuantumMachinesCluster(Instrument):
                 if controller_type == "opx1000":
                     self._pending_set_intermediate_frequency[bus] = intermediate_frequency
             return
+
         if parameter == Parameter.THRESHOLD_ROTATION:
             threshold_rotation = float(value)
             element["threshold_rotation"] = threshold_rotation
             return
+
         if parameter == Parameter.THRESHOLD:
             threshold = float(value)
             element["threshold"] = threshold
             return
+
+        if parameter == Parameter.OFFSET:
+            offset = float(value)
+
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}.")
 
     def get_parameter_of_bus(self, bus: str, parameter: Parameter) -> float | str | bool | tuple:

@@ -303,6 +303,7 @@ class Parameter(str, Enum):
     SMEARING = "smearing"
     GAIN_I = "gain_i"
     GAIN_Q = "gain_q"
+    OFFSET = "offset"
     OFFSET_I = "offset_i"
     OFFSET_Q = "offset_q"
     OFFSET_OUT0 = "offset_out0"
