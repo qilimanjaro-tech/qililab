@@ -15,8 +15,11 @@
 # pylint: disable=too-many-lines
 """Platform class."""
 import ast
+import datetime
 import io
 import re
+import time
+import traceback
 import warnings
 from copy import deepcopy
 from dataclasses import asdict
@@ -847,6 +850,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             qprogram=qprogram, bus_mapping=bus_mapping, threshold_rotations=threshold_rotations, calibration=calibration
         )
 
+        start_time = datetime.datetime.now()
         for iteration in np.arange(dataloss_tries):  # TODO: This is a temporal fix as QM fixes the dataloss error
             try:
                 cluster.append_configuration(configuration=configuration)
@@ -872,12 +876,16 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 return results
 
             except StreamProcessingDataLossError as dataloss:
+                time_interval = datetime.datetime.now() - start_time
                 warnings.warn(
-                    f"Warning: {dataloss} raised, retrying experiment ({iteration+1}/{dataloss_tries} available tries)"
+                    f"Warning: {dataloss} raised, retrying experiment ({iteration+1}/{dataloss_tries} available tries) after {time_interval.seconds} s"
                 )
+                print(traceback.format_exc())
                 if iteration + 1 != dataloss_tries:
+                    time.sleep(1 * dataloss_tries)
                     continue
                 else:
+                    cluster.turn_off()
                     raise dataloss
             except Exception as e:
                 cluster.turn_off()
