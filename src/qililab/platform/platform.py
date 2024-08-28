@@ -678,6 +678,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,
         calibration: Calibration | None = None,
+        dataloss_tries: int = 3,
         debug: bool = False,
     ) -> QProgramResults:
         """Execute a :class:`.QProgram` using the platform instruments.
@@ -772,6 +773,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 threshold_rotations=threshold_rotations,  # type: ignore
                 thresholds=thresholds,  # type: ignore
                 calibration=calibration,
+                dataloss_tries=dataloss_tries,
                 debug=debug,
             )
         raise NotImplementedError("Executing QProgram in a mixture of instruments is not supported.")
