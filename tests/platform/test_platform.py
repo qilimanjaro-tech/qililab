@@ -11,7 +11,6 @@ import numpy as np
 import pytest
 from qibo import gates
 from qibo.models import Circuit
-from qm.exceptions import StreamProcessingDataLossError
 from qpysequence import Sequence
 from ruamel.yaml import YAML
 
