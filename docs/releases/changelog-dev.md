@@ -220,6 +220,10 @@
 
   [#783](https://github.com/qilimanjaro-tech/qililab/pull/783)
 
+- Automatic method for `execute_qprogram` in quantum machines to restart the measurement in case the `StreamProcessingDataLossError` is risen by `qua-qm`, the new feature allows to try again the measurement a number of times equal to the value of `dataloss_tries` (default of three). We can define this value at `execute_qprogram(..., dataloss_tries = N)` and will only do its intended job in case of working with QM.
+
+  [#788](https://github.com/qilimanjaro-tech/qililab/pull/788)
+
 ### Breaking changes
 
 - Big code refactor for the `calibration` module/directory, where all `comparisons`, `check_parameters`, `check_data()`,
