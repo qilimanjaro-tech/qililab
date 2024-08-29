@@ -541,6 +541,32 @@ class QuantumMachinesCluster(Instrument):
                 rf_output for rf_output in settings_octave["rf_outputs"] if rf_output["port"] == out_port
             )
 
+        if parameter in [Parameter.OFFSET_I, Parameter.OFFSET_Q]:
+            if "rf_inputs" in element:
+                octave_name = element["rf_inputs"]["octave"]
+                out_oct_port = element["rf_inputs"]["port"]
+
+                octave = next((octave for octave in self.settings.octaves if octave["name"] == octave_name), None)
+                octave_port = next(
+                    (octave_port for octave_port in octave["rf_outputs"] if octave_port["port"] == out_oct_port), None
+                )
+
+                connection = "i_connection" if parameter in Parameter.OFFSET_I else "q_connection"
+                con_name = octave_port[connection]["controller"]
+                con_port = octave_port[connection]["port"]
+                con_fem = octave_port[connection]["fem"]
+
+            elif "mix_inputs" in element:
+                key = "I" if parameter in Parameter.OFFSET_I else "Q"
+                con_name = (element["mix_inputs"][key]["controller"],)
+                con_port = (element["mix_inputs"][key]["fem"],)
+                con_fem = (element["mix_inputs"][key]["port"],)
+
+            elif "single_input" in element:
+                con_name = element["single_input"]["controller"]
+                con_port = element["single_input"]["port"]
+                con_fem = element["single_input"]["fem"]
+
         # Now we will set the parameter in 3 places:
         # 1) In the settings runtime dataclass (always).
         # 2) If created: In the `_config`` dictionary.
@@ -596,8 +622,11 @@ class QuantumMachinesCluster(Instrument):
             element["threshold"] = threshold
             return
 
-        if parameter == Parameter.OFFSET:
-            offset = float(value)
+        if parameter in [Parameter.OFFSET_I, Parameter.OFFSET_Q]:
+            input_offset = float(value)
+
+        if parameter in [Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2]:
+            output_offset = float(value)
 
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}.")
 
