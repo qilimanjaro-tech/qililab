@@ -879,13 +879,13 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
             except StreamProcessingDataLossError as dataloss:
                 time_interval = datetime.datetime.now() - start_time
-                start_time = datetime.datetime.now()
                 warnings.warn(
                     f"Warning: {dataloss} raised, retrying experiment ({iteration+1}/{dataloss_tries} available tries) after {time_interval.seconds} s"
                 )
-                print(traceback.format_exc())
+                warnings.warn(traceback.format_exc())
                 if iteration + 1 != dataloss_tries:
                     time.sleep(1 * dataloss_tries)
+                    start_time = datetime.datetime.now()
                     continue
                 cluster.turn_off()
                 raise dataloss
