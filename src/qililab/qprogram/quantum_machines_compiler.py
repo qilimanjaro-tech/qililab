@@ -267,8 +267,8 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             
         to_positive = stop >= start
         if to_positive:
-            return qua.for_(qua_variable, start, qua_variable < stop + step / 2, qua_variable + step)  # type: ignore[arg-type]
-        return qua.for_(qua_variable, start, qua_variable > stop + step / 2, qua_variable + step)  # type: ignore[arg-type]
+            return qua.for_(qua_variable, start, qua_variable <= stop, qua_variable + step)  # type: ignore[arg-type]
+        return qua.for_(qua_variable, start, qua_variable >= stop, qua_variable + step)  # type: ignore[arg-type]
 
     def _handle_loop(self, element: Loop):
         qua_variable = self._qprogram_to_qua_variables[element.variable]
