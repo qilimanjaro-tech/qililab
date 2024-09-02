@@ -28,7 +28,7 @@ from qililab.qprogram.blocks.infinite_loop import InfiniteLoop
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import Measure, Play, ResetPhase, SetFrequency, SetGain, SetPhase, Sync, Wait
 from qililab.qprogram.qprogram import QProgram
-from qililab.qprogram.variable import Domain, IntVariable, Variable
+from qililab.qprogram.variable import Domain, FloatVariable, IntVariable, Variable
 from qililab.waveforms import IQPair, Square, Waveform
 
 # mypy: disable-error-code="operator"
@@ -260,7 +260,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             start = max(start, self.MINIMUM_TIME)
 
         if element.variable.domain is Domain.Voltage or (
-            element.variable.domain is Domain.Scalar and isinstance(element.variable, IntVariable)
+            element.variable.domain is Domain.Scalar and isinstance(element.variable, FloatVariable)
         ):
             stop += step / 2
 
