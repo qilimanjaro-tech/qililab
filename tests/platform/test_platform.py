@@ -610,8 +610,7 @@ class TestMethods:
             Mock()  # Success on the third try
         ]
 
-        with patch(QuantumMachinesCompiler, return_value=compiler_mock):
-            _ = platform_quantum_machines._execute_qprogram_with_quantum_machines(qprogram=qprogram, cluster=cluster, dataloss_tries=3)
+        _ = platform_quantum_machines._execute_qprogram_with_quantum_machines(qprogram=qprogram, cluster=cluster, dataloss_tries=3)
 
         assert cluster.run_compiled_program.call_count == 3
 
