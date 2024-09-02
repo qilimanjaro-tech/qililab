@@ -586,7 +586,7 @@ class TestMethods:
         turn_off.assert_called_once_with()
 
     @patch("qililab.instruments.quantum_machines.QuantumMachinesCluster.compile")
-    @patch("qililab.instruments.quantum_machines.QuantumMachinesCluster.run_compiled_program")
+    @patch("qililab.instruments.quantum_machines.QuantumMachinesCluster.run_compiled_program", autospec=True)
     def test_execute_qprogram_with_quantum_machines_raises_dataloss(
         self, platform_quantum_machines: Platform, mocked_cluster:MagicMock,
     ):  # pylint: disable=too-many-locals
