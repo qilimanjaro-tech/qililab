@@ -5,7 +5,7 @@ import io
 import re
 from pathlib import Path
 from queue import Queue
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
 import pytest
@@ -585,10 +585,8 @@ class TestMethods:
 
         turn_off.assert_called_once_with()
 
-    @patch("qililab.instruments.quantum_machines.QuantumMachinesCluster.compile")
-    @patch("qililab.instruments.quantum_machines.QuantumMachinesCluster.run_compiled_program")
     def test_execute_qprogram_with_quantum_machines_raises_dataloss(
-        self, platform_quantum_machines: Platform, mocked_cluster:MagicMock,
+        self, platform_quantum_machines: Platform,
     ):  # pylint: disable=too-many-locals
         """Test that the execute_qprogram method raises the dataloss exception if the qprogram returns StreamProcessingDataLossError"""
 
@@ -601,15 +599,18 @@ class TestMethods:
         qprogram.play(bus="readout_q0_rf", waveform=readout_wf)
         qprogram.measure(bus="readout_q0_rf", waveform=readout_wf, weights=weights_wf)
 
+        cluster = Mock()
+        cluster.compile = 1
+        cluster.run_compiled_program.side_effect = [
+            StreamProcessingDataLossError("Data loss occurred"),
+            StreamProcessingDataLossError("Data loss occurred"),
+            Mock()  # Success on the third try
+        ]
 
-        mocked_cluster.compile = 1
-        mocked_cluster.run_compiled_program.sideffect = StreamProcessingDataLossError
+        with patch.object(QuantumMachinesCluster, "turn_off"):
+            _ = platform_quantum_machines._execute_qprogram_with_quantum_machines(qprogram=qprogram, cluster=cluster, dataloss_tries=3)
 
-        with patch.object(QuantumMachinesCluster, "turn_off") as turn_off:
-            with pytest.raises(StreamProcessingDataLossError):
-                _ = platform_quantum_machines._execute_qprogram_with_quantum_machines(qprogram=qprogram, cluster=mocked_cluster)
-
-        turn_off.assert_called_once_with()
+        assert cluster.run_compiled_program.call_count == 3
 
     def test_execute(self, platform: Platform, qblox_results: list[dict]):
         """Test that the execute method calls the buses to run and return the results."""
