@@ -47,8 +47,8 @@ def get_sample_qprogram_string():
     weights_shape = Square(amplitude=1, duration=r_duration)
 
     qp = QProgram()
-    amp = qp.variable(domain=Domain.Voltage)
-    freq = qp.variable(domain=Domain.Frequency)
+    amp = qp.variable(label="amplitude", domain=Domain.Voltage)
+    freq = qp.variable(label="frequency", domain=Domain.Frequency)
 
     with qp.average(100):
         with qp.for_loop(variable=amp, start=0.2, stop=1, step=0.1):
@@ -360,11 +360,11 @@ class TestQProgram(TestStructuredProgram):
     def test_operation_with_variable_of_wrong_domain_raises_error(self):
         """Test that any operation when used with a variable of wrong domain raises an error."""
         qp = QProgram()
-        frequency = qp.variable(Domain.Frequency)
-        phase = qp.variable(Domain.Phase)
-        voltage = qp.variable(Domain.Voltage)
-        time = qp.variable(Domain.Time)
-        scalar = qp.variable(Domain.Scalar, float)
+        frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+        phase = qp.variable(label="phase", domain=Domain.Phase)
+        voltage = qp.variable(label="gain", domain=Domain.Voltage)
+        time = qp.variable(label="time", domain=Domain.Time)
+        scalar = qp.variable(label="float_scalar", domain=Domain.Scalar, type=float)
 
         all_types = {frequency, phase, voltage, time, scalar}
 
@@ -416,8 +416,9 @@ class TestQProgram(TestStructuredProgram):
 
     def test_serialization_deserialization(self):
         """Test serialization and deserialization works."""
+        file = "test_serialization_deserialization_qprogram.yml"
         qp = QProgram()
-        gain = qp.variable(domain=Domain.Voltage)
+        gain = qp.variable(label="gain", domain=Domain.Voltage)
         with qp.for_loop(variable=gain, start=0.0, stop=1.0, step=0.1):
             qp.set_gain(bus="drive_bus", gain=gain)
             qp.play(bus="drive_bus", waveform=IQPair(I=Square(1.0, 200), Q=Square(1.0, 200)))
@@ -427,9 +428,9 @@ class TestQProgram(TestStructuredProgram):
 
         assert isinstance(deserialized_qprogram, QProgram)
 
-        serialize_to(qp, file="qprogram.yml")
-        deserialized_qprogram = deserialize_from("qprogram.yml", QProgram)
+        serialize_to(qp, file=file)
+        deserialized_qprogram = deserialize_from(file, QProgram)
 
         assert isinstance(deserialized_qprogram, QProgram)
 
-        os.remove("qprogram.yml")
+        os.remove(file)

@@ -43,7 +43,8 @@ from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSchedule
 from qililab.pulse import QbloxCompiler as PulseQbloxCompiler
-from qililab.qprogram import Calibration, QbloxCompiler, QProgram, QuantumMachinesCompiler
+from qililab.qprogram import Calibration, Experiment, QbloxCompiler, QProgram, QuantumMachinesCompiler
+from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.result import Result
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
@@ -660,6 +661,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
             return self.execute_qprogram(qprogram=qp_annealing, calibration=calibration)
         raise ValueError("The calibrated measurement is not present in the calibration file.")
+
+    def execute_experiment(self, experiment: Experiment, results_path: str):
+        executor = ExperimentExecutor(platform=self, experiment=experiment, results_path=results_path)
+        executor.execute()
 
     def execute_qprogram(  # pylint: disable=too-many-locals
         self,
