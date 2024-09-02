@@ -81,7 +81,7 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
         stored_operations = []
 
         # Handle ForLoop or Loop blocks
-        if isinstance(block, ForLoop) or isinstance(block, Loop):
+        if isinstance(block, (Loop, ForLoop)):
             stored_operations.extend(self._handle_loop(block, progress))
         else:
             # Handle generic blocks
