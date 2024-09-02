@@ -9,7 +9,7 @@ urllib3==1.26.12
 qpysequence==0.10.1
 lmfit==1.1.0
 rustworkx==0.12.1
-h5py==3.9.0
+h5py==3.11.0
 papermill==2.4.0
 qm-qua==1.2.0
 qualang-tools==0.17.6
