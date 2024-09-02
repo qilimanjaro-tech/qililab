@@ -651,7 +651,7 @@ class TestQuantumMachinesCompiler:
 
         # Phase
         assert float(statements[2].for_.init.statements[0].assign.expression.literal.value) == 0 / 360.0
-        assert float(statements[2].for_.condition.binary_operation.right.literal.value) == 90 / 360.0
+        assert float(statements[2].for_.condition.binary_operation.right.literal.value) == 95 / 360.0
         assert (
             float(statements[2].for_.update.statements[0].assign.expression.binary_operation.right.literal.value)
             == 10 / 360.0
@@ -688,7 +688,7 @@ class TestQuantumMachinesCompiler:
 
         # Phase
         assert float(statements[2].for_.init.statements[0].assign.expression.literal.value) == 90 / 360.0
-        assert float(statements[2].for_.condition.binary_operation.right.literal.value) == 0 / 360.0
+        assert float(statements[2].for_.condition.binary_operation.right.literal.value) == -5 / 360.0
         assert (
             float(statements[2].for_.update.statements[0].assign.expression.binary_operation.right.literal.value)
             == -10 / 360.0
