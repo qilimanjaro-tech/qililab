@@ -5,17 +5,21 @@
 - Introduced the `Experiment` class, which inherits from `StructuredProgram`. This new class enables the ability to set parameters and execute quantum programs within a structured experiment. Added the `set_parameter` method to allow setting platfform parameters and `execute_qprogram` method to facilitate the execution of quantum programs within the experiment.
   [#782](https://github.com/qilimanjaro-tech/qililab/pull/782)
 
+- Add crosstalk compensation to `AnnealingProgram` workflow. Add methods to `CrosstalkMatrix` to ease crosstalk compensation in the annealing workflow
+  [#775](https://github.com/qilimanjaro-tech/qililab/pull/775)
+
 - Add default measurement to `execute_anneal_program()` method. This method takes now a calibration file and parameters
   to add the dispersive measurement at the end of the annealing schedule.
   [#778](https://github.com/qilimanjaro-tech/qililab/pull/778)
 
-- Added a try/except clause when executing a QProgram on Quantum Machines cluster that controls the execution failing to perform a turning off of the instrument so the \_qm object gets removed. This, plus setting the close_other_machines=True by default allows to open more than one QuantumMachines VM at the same time to allow more than one experimentalist to work at the same time in the cluster.
+- Added a try/except clause when executing a QProgram on Quantum Machines cluster that controls the execution failing to perform a turning off of the instrument so the \_qm object gets
+  removed. This, plus setting the close_other_machines=True by default allows to open more than one QuantumMachines VM at the same time to allow more than one experimentalist to work at the same time in the cluster.
   [#760](https://github.com/qilimanjaro-tech/qililab/pull/760/)
 
-- Add `__str__` method to qprogram. The string is a readable qprogram.
+- Added `__str__` method to qprogram. The string is a readable qprogram.
   [#767](https://github.com/qilimanjaro-tech/qililab/pull/767)
 
-- Add workflow for the execution of annealing programs.
+- Added workflow for the execution of annealing programs.
   Example:
 
   ```python
@@ -101,6 +105,23 @@
 
   [#747](https://github.com/qilimanjaro-tech/qililab/pull/747)
 
+- Added `from_qprogram` method to the `Counts` class to compute the counts of quantum states obtained from a `QProgram`. The `Counts` object is designed to work for circuits that have only one measurement per bus at the end of the circuit execution. It is the user's responsibility to ensure that this method is used appropriately when it makes sense to compute the state counts for a `QProgram`. Note that probabilities can easily be obtained by calling the `probabilities()` method. See an example below.
+
+  Example:
+
+  ```Python
+  from qililab.result.counts import Counts
+
+  qp = QProgram()
+  # Define instructions for QProgram
+  # ...
+  qp_results = platform.execute_qprogram(qp)  # Platform previously defined
+  counts_object = Counts.from_qprogram(qp_results)
+  probs = counts_object.probabilities()
+  ```
+
+  [#743](https://github.com/qilimanjaro-tech/qililab/pull/743)
+
 - Added `threshold_rotations` argument to `compile()` method in `QProgram`. This argument allows to use rotation angles on measurement instructions if not specified. Currently used to use the angle rotations specified on the runcard (if any) so the user does not have to explicitly pass it as argument to the measure instruction.  Used for classification of results in Quantum Machines's modules. The following example shows how to specify this value on the runcard.
 
   Example:
@@ -185,6 +206,9 @@
 
 ### Improvements
 
+- Improve Crosstalk matrix `from_buses` method so it can be a dictionary of buses and crosstalks coefficients.
+  [#784]https://github.com/qilimanjaro-tech/qililab/pull/784
+
 - Now platform.get_parameter works for QM without the need of connecting to the machine.
 
 - Added the option to get the time of flight and smearing information from the QM cluster
@@ -194,7 +218,7 @@
 
   [#747](https://github.com/qilimanjaro-tech/qililab/pull/747)
 
-- Automatic method to implement the correct `upsampling_mode` when the output mode is selected as `amplified` (fluxes), the `upsampling_mode` is automatically defined as `pulsed`. In this mode, the upsampling is optimized to produce cleaner step responses.
+- Automatic method to implement the correct `upsampling_mode` when the output mode is selected as `amplified` (fluxes), the `upsampling_mode` is automatically defined as `pulse`. In this mode, the upsampling is optimized to produce cleaner step responses.
 
   [#783](https://github.com/qilimanjaro-tech/qililab/pull/783)
 
