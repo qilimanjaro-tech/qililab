@@ -248,7 +248,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
     def _handle_for_loop(self, element: ForLoop):
         qua_variable = self._qprogram_to_qua_variables[element.variable]
         start, stop, step = element.start, element.stop, element.step
-        
+
         if isinstance(element.variable, FloatVariable):
             stop += step / 2
         if element.variable.domain is Domain.Phase:
