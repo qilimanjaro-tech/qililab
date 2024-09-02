@@ -5,7 +5,7 @@ import io
 import re
 from pathlib import Path
 from queue import Queue
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, create_autospec, patch
 
 import numpy as np
 import pytest
@@ -24,7 +24,8 @@ from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
-from qililab.qprogram import Calibration, QProgram
+from qililab.qprogram import Calibration, Experiment, QProgram
+from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
@@ -458,6 +459,26 @@ class TestMethods:
                 measurement_name="whatever",
                 calibration=calibration,
             )
+
+    def test_execute_experiment(self, platform: Platform):
+        """Test the execute_experiment method of the Platform class."""
+        mock_experiment = create_autospec(Experiment)
+        results_path = "/tmp/test_results/"
+
+        # Mock the ExperimentExecutor to ensure it's used correctly
+        with patch("qililab.platform.platform.ExperimentExecutor") as MockExecutor:
+            mock_executor_instance = MockExecutor.return_value  # Mock instance of ExperimentExecutor
+
+            # Call the method under test
+            platform.execute_experiment(mock_experiment, results_path)
+
+            # Check that ExperimentExecutor was instantiated with the correct arguments
+            MockExecutor.assert_called_once_with(
+                platform=platform, experiment=mock_experiment, results_path=results_path
+            )
+
+            # Ensure the execute method was called on the ExperimentExecutor instance
+            mock_executor_instance.execute.assert_called_once()
 
     def test_execute_qprogram_with_qblox(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""

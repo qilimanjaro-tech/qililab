@@ -49,7 +49,7 @@ def fixture_experiment(qprogram: QProgram):
     experiment.set_parameter(alias="drive_q2", parameter=Parameter.VOLTAGE, value=0.5)
     with experiment.for_loop(bias_z, 0.0, 1.0, 0.5):
         experiment.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=bias_z)
-        with experiment.for_loop(frequency, 2e9, 3e9, 1e9):
+        with experiment.loop(frequency, values=np.array([2e9, 3e9])):
             experiment.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=frequency)
             experiment.execute_qprogram(qprogram)
 
