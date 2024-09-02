@@ -43,12 +43,12 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
 
     def _traverse_and_prepare(self, block):
         """Traverses the blocks to gather loop information and determine result shape."""
-        if isinstance(block, ForLoop):
-            loop_values = self._inclusive_range(block.start, block.stop, block.step)
-            loop_label = block.variable.label
-            self.loop_values[loop_label] = loop_values
-        elif isinstance(block, Loop):
-            loop_values = block.values
+        if isinstance(block, (Loop, ForLoop)):
+            loop_values = (
+                self._inclusive_range(block.start, block.stop, block.step)
+                if isinstance(block, ForLoop)
+                else block.values
+            )
             loop_label = block.variable.label
             self.loop_values[loop_label] = loop_values
 
