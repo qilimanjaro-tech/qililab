@@ -644,7 +644,7 @@ class TestQuantumMachinesCompiler:
 
         # Frequency
         assert float(statements[1].for_.init.statements[0].assign.expression.literal.value) == 100
-        assert float(statements[1].for_.condition.binary_operation.right.literal.value) == 200
+        assert float(statements[1].for_.condition.binary_operation.right.literal.value) == 205
         assert (
             float(statements[1].for_.update.statements[0].assign.expression.binary_operation.right.literal.value) == 10
         )
@@ -681,7 +681,7 @@ class TestQuantumMachinesCompiler:
 
         # Frequency
         assert float(statements[1].for_.init.statements[0].assign.expression.literal.value) == 200
-        assert float(statements[1].for_.condition.binary_operation.right.literal.value) == 100
+        assert float(statements[1].for_.condition.binary_operation.right.literal.value) == 95
         assert (
             float(statements[1].for_.update.statements[0].assign.expression.binary_operation.right.literal.value) == -10
         )
