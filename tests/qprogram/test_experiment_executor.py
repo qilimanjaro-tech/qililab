@@ -62,15 +62,11 @@ class TestExperimentExecutor:
         executor = ExperimentExecutor(platform=platform, experiment=experiment, results_path="/tmp/")
         executor._prepare()
 
-        np.testing.assert_array_equal(
-            executor.loop_values["bias_z voltage"], np.array([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
-        )
-        np.testing.assert_array_equal(
-            executor.loop_values["LO Frequency"], np.array([2e9, 3e9, 4e9, 5e9, 6e9, 7e9, 8e9])
-        )
+        np.testing.assert_array_equal(executor.loop_values["bias_z voltage"], np.array([0.0, 0.5, 1.0]))
+        np.testing.assert_array_equal(executor.loop_values["LO Frequency"], np.array([2e9, 3e9]))
 
         # First two dimensions are the experiment's loops, third is the qprogram's loop, fourth is the I/Q channels
-        assert executor.shape == (11, 7, 11, 2)
+        assert executor.shape == (3, 2, 11, 2)
 
     def test_execute(self, platform, experiment, qprogram):
         """Test the execute method to ensure the experiment is executed correctly and results are stored."""
@@ -79,6 +75,7 @@ class TestExperimentExecutor:
 
         # Check if the correct file path is returned
         assert path.startswith("/tmp/")
+        assert path.endswith("data.h5")
 
         # Check that platform methods were called in the correct order
         expected_calls = [
