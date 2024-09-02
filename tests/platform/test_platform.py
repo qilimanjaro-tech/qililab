@@ -25,7 +25,7 @@ from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
-from qililab.qprogram import Calibration, QProgram
+from qililab.qprogram import Calibration, QProgram, QuantumMachinesCompiler
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
@@ -600,14 +600,17 @@ class TestMethods:
         qprogram.measure(bus="readout_q0_rf", waveform=readout_wf, weights=weights_wf)
 
         cluster = Mock()
-        cluster.compile = 1
+
+        compiler_mock = Mock()
+        compiler_mock.compile.return_value = (Mock(), Mock(), [])
+
         cluster.run_compiled_program.side_effect = [
             StreamProcessingDataLossError("Data loss occurred"),
             StreamProcessingDataLossError("Data loss occurred"),
             Mock()  # Success on the third try
         ]
 
-        with patch.object(QuantumMachinesCluster, "turn_off"):
+        with patch(QuantumMachinesCompiler, return_value=compiler_mock):
             _ = platform_quantum_machines._execute_qprogram_with_quantum_machines(qprogram=qprogram, cluster=cluster, dataloss_tries=3)
 
         assert cluster.run_compiled_program.call_count == 3
