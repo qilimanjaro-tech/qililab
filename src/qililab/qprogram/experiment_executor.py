@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from qililab.platform.platform import Platform
 
 
-class ExperimentExecutor:
+class ExperimentExecutor:  # pylint: disable=too-few-public-methods
     """Manages the execution of a quantum experiment.
 
     The ExperimentExecutor is responsible for traversing the experiment's structure,
@@ -39,7 +39,7 @@ class ExperimentExecutor:
     def _prepare(self):
         """Prepares the loop values and result shape before execution."""
         self._traverse_and_prepare(self.experiment.body)
-        self.shape = tuple(len(self.loop_values[loop_label]) for loop_label in self.loop_values) + (2,)
+        self.shape = tuple(len(values) for _, values in self.loop_values.items()) + (2,)
 
     def _traverse_and_prepare(self, block):
         """Traverses the blocks to gather loop information and determine result shape."""
@@ -167,7 +167,7 @@ class ExperimentExecutor:
     def _store_result(self, result: QProgramResults):
         """Store the result in the correct location within the StreamArray."""
         # Determine the index in the StreamArray based on current loop indices
-        indices = tuple(self.loop_indices[loop_label] - 1 for loop_label in self.loop_indices)
+        indices = tuple(index - 1 for _, index in self.loop_indices.items())
         self.stream_array[indices] = next(iter(result.results.values()))[0].array.T
 
     def _run_stored_operations(self, progress: Progress):
@@ -186,16 +186,16 @@ class ExperimentExecutor:
         if all(isinstance(x, int) for x in [start, stop, step]):
             # Use numpy.arange for integer ranges
             return np.arange(start, stop + step, step)
-        else:
-            # Define the number of decimal places based on the precision of the step
-            decimal_places = -int(np.floor(np.log10(step))) if step < 1 else 0
 
-            # Calculate the number of steps
-            num_steps = int(round((stop - start) / step)) + 1
+        # Define the number of decimal places based on the precision of the step
+        decimal_places = -int(np.floor(np.log10(step))) if step < 1 else 0
 
-            # Use linspace and then round to avoid floating-point inaccuracies
-            result = np.linspace(start, stop, num_steps)
-            return np.around(result, decimals=decimal_places)
+        # Calculate the number of steps
+        num_steps = int(round((stop - start) / step)) + 1
+
+        # Use linspace and then round to avoid floating-point inaccuracies
+        result = np.linspace(start, stop, num_steps)
+        return np.around(result, decimals=decimal_places)
 
     def _create_directories(self, source):
         t = time.localtime()
