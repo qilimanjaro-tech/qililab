@@ -248,6 +248,9 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
     def _handle_for_loop(self, element: ForLoop):
         qua_variable = self._qprogram_to_qua_variables[element.variable]
         start, stop, step = element.start, element.stop, element.step
+        
+        if isinstance(element.variable, FloatVariable):
+            stop += step / 2
         if element.variable.domain is Domain.Phase:
             start, stop, step = start / self.PHASE_COEFF, stop / self.PHASE_COEFF, step / self.PHASE_COEFF
         if element.variable.domain is Domain.Frequency:
@@ -258,9 +261,6 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             )
         if element.variable.domain is Domain.Time:
             start = max(start, self.MINIMUM_TIME)
-
-        if isinstance(element.variable, FloatVariable):
-            stop += step / 2
 
         to_positive = stop >= start
         if to_positive:
