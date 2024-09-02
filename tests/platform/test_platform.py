@@ -586,7 +586,7 @@ class TestMethods:
         turn_off.assert_called_once_with()
 
     @patch("qililab.instruments.quantum_machines.QuantumMachinesCluster.compile")
-    @patch("qililab.instruments.quantum_machines.QuantumMachinesCluster.run_compiled_program", autospec=True)
+    @patch("qililab.instruments.quantum_machines.QuantumMachinesCluster.run_compiled_program")
     def test_execute_qprogram_with_quantum_machines_raises_dataloss(
         self, platform_quantum_machines: Platform, mocked_cluster:MagicMock,
     ):  # pylint: disable=too-many-locals
@@ -603,7 +603,7 @@ class TestMethods:
 
 
         mocked_cluster.compile = 1
-        mocked_cluster.run_compiled_program.sideffect = StreamProcessingDataLossError('Test')
+        mocked_cluster.run_compiled_program.sideffect = StreamProcessingDataLossError
 
         with patch.object(QuantumMachinesCluster, "turn_off") as turn_off:
             with pytest.raises(StreamProcessingDataLossError):
