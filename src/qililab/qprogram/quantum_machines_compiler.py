@@ -259,6 +259,11 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         if element.variable.domain is Domain.Time:
             start = max(start, self.MINIMUM_TIME)
 
+        if element.variable.domain is Domain.Voltage or (
+            element.variable.domain is Domain.Scalar and isinstance(element.variable, IntVariable)
+        ):
+            stop += step / 2
+
         to_positive = stop >= start
         if to_positive:
             return qua.for_(qua_variable, start, qua_variable <= stop, qua_variable + step)  # type: ignore[arg-type]

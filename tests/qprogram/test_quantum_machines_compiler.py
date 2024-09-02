@@ -637,7 +637,7 @@ class TestQuantumMachinesCompiler:
 
         # Voltage
         assert float(statements[0].for_.init.statements[0].assign.expression.literal.value) == 0
-        assert float(statements[0].for_.condition.binary_operation.right.literal.value) == 1
+        assert float(statements[0].for_.condition.binary_operation.right.literal.value) == 1.05
         assert (
             float(statements[0].for_.update.statements[0].assign.expression.binary_operation.right.literal.value) == 0.1
         )
@@ -673,7 +673,7 @@ class TestQuantumMachinesCompiler:
 
         # Voltage
         assert float(statements[0].for_.init.statements[0].assign.expression.literal.value) == 1.0
-        assert float(statements[0].for_.condition.binary_operation.right.literal.value) == 0
+        assert float(statements[0].for_.condition.binary_operation.right.literal.value) == -0.05
         assert (
             float(statements[0].for_.update.statements[0].assign.expression.binary_operation.right.literal.value)
             == -0.1
