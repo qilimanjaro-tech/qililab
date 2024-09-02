@@ -101,7 +101,7 @@ class Variable:
         self._domain: Domain = domain
 
     def __repr__(self):
-        return repr(self._uuid)
+        return f"Variable(uuid={repr(self._uuid)}, label={self.label}, value={self.value})"
 
     def __hash__(self):
         return hash(self._uuid)

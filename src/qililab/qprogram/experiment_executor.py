@@ -8,6 +8,7 @@ from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 from qililab.qprogram.blocks import ForLoop, Loop
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, SetParameter
+from qililab.qprogram.variable import Variable
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.stream_results import StreamArray, stream_results
 
@@ -64,23 +65,11 @@ class ExperimentExecutor:
         if isinstance(block, ForLoop):
             loop_values = self._inclusive_range(block.start, block.stop, block.step)
             loop_label = block.variable.label
-            if loop_label not in self.loop_values:
-                self.loop_values[loop_label] = loop_values
-            else:
-                # If the loop label already exists, ensure consistency
-                assert np.array_equal(
-                    self.loop_values[loop_label], loop_values
-                ), f"Inconsistent loop values for {loop_label}"
+            self.loop_values[loop_label] = loop_values
         elif isinstance(block, Loop):
             loop_values = block.values
             loop_label = block.variable.label
-            if loop_label not in self.loop_values:
-                self.loop_values[loop_label] = loop_values
-            else:
-                # If the loop label already exists, ensure consistency
-                assert np.array_equal(
-                    self.loop_values[loop_label], loop_values
-                ), f"Inconsistent loop values for {loop_label}"
+            self.loop_values[loop_label] = loop_values
 
         # Recursively handle nested blocks within the QProgram
         for element in getattr(block, "elements", []):
@@ -131,6 +120,7 @@ class ExperimentExecutor:
             progress.update(loop_task_id, description=f"Looping over {loop_label}: {variable_value}")
             progress.advance(loop_task_id)
 
+        def advance_loop_index() -> None:
             # Update the loop index
             self.loop_indices[loop_label] += 1
 
@@ -139,6 +129,8 @@ class ExperimentExecutor:
 
             # Process elements within the loop
             stored_operations.extend(self._process_elements(block.elements, progress))
+
+            stored_operations.append(advance_loop_index)
 
         def remove_progress_bar():
             progress.remove_task(self.task_ids[block.uuid])
@@ -154,7 +146,11 @@ class ExperimentExecutor:
         for element in elements:
             if isinstance(element, SetParameter):
                 stored_operations.append(
-                    lambda op=element: self.platform.set_parameter(op.alias, op.parameter, op.value)
+                    lambda op=element: self.platform.set_parameter(
+                        op.alias, op.parameter, self.loop_values[op.value.label][self.loop_indices[op.value.label]]
+                    )
+                    if isinstance(op.value, Variable)
+                    else self.platform.set_parameter(op.alias, op.parameter, op.value)
                 )
 
             elif isinstance(element, ExecuteQProgram):
