@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, Callable
 import numpy as np
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 
-from qililab.qprogram.blocks import ForLoop, Loop
+from qililab.qprogram.blocks import Block, ForLoop, Loop
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, SetParameter
 from qililab.qprogram.variable import Variable
@@ -73,7 +73,7 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
 
         # Recursively handle nested blocks within the QProgram
         for element in getattr(block, "elements", []):
-            if isinstance(element, (ForLoop, Loop)):
+            if isinstance(element, Block):
                 self._traverse_qprogram(element)
 
     def _traverse_and_store(self, block, progress: Progress):
@@ -147,10 +147,12 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
             if isinstance(element, SetParameter):
                 stored_operations.append(
                     lambda op=element: self.platform.set_parameter(
-                        op.parameter, self.loop_values[op.value.label][self.loop_indices[op.value.label]], op.alias
+                        parameter=op.parameter,
+                        value=self.loop_values[op.value.label][self.loop_indices[op.value.label]],
+                        alias=op.alias,
                     )
                     if isinstance(op.value, Variable)
-                    else self.platform.set_parameter(op.parameter, op.value, op.alias)
+                    else self.platform.set_parameter(parameter=op.parameter, value=op.value, alias=op.alias)
                 )
 
             elif isinstance(element, ExecuteQProgram):
@@ -162,7 +164,7 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
                     )
                 )
 
-            elif isinstance(element, (ForLoop, Loop)):
+            elif isinstance(element, Block):
                 nested_operations = self._traverse_and_store(element, progress)
                 stored_operations.extend(nested_operations)
 
