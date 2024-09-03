@@ -94,7 +94,7 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
         stored_operations = []
 
         # Determine loop parameters based on the type of block
-        loop_values: np.ndarray[int | float]
+        loop_values: np.ndarray
         if isinstance(block, ForLoop):
             loop_values = self._inclusive_range(block.start, block.stop, block.step)
         elif isinstance(block, Loop):
@@ -176,7 +176,7 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
         # Determine the index in the StreamArray based on current loop indices
         indices = tuple(index - 1 for _, index in self.loop_indices.items())
         # Store the results in the StreamArray
-        self.stream_array[indices] = next(iter(result.results.values()))[0].array.T
+        self.stream_array[indices] = next(iter(result.results.values()))[0].array.T  # type: ignore
 
     def _run_stored_operations(self, progress: Progress):
         """Run the stored operations in sequence, updating the progress bar."""
