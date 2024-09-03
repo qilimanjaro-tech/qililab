@@ -1,5 +1,5 @@
 import os
-import time
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Callable
 
 import numpy as np
@@ -7,7 +7,7 @@ from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 
 from qililab.qprogram.blocks import Block, ForLoop, Loop
 from qililab.qprogram.experiment import Experiment
-from qililab.qprogram.operations import ExecuteQProgram, SetParameter
+from qililab.qprogram.operations import ExecuteQProgram, Operation, SetParameter
 from qililab.qprogram.variable import Variable
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.stream_results import StreamArray, stream_results
@@ -41,7 +41,7 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
         self._traverse_and_prepare(self.experiment.body)
         self.shape = tuple(len(values) for _, values in self.loop_values.items()) + (2,)
 
-    def _traverse_and_prepare(self, block):
+    def _traverse_and_prepare(self, block: Block):
         """Traverses the blocks to gather loop information and determine result shape."""
         if isinstance(block, (Loop, ForLoop)):
             loop_values = (
@@ -53,14 +53,14 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
             self.loop_values[loop_label] = loop_values
 
         # Recursively traverse nested blocks or loops
-        for element in getattr(block, "elements", []):
+        for element in block.elements:
             if isinstance(element, (ForLoop, Loop)):
                 self._traverse_and_prepare(element)
             # Handle ExecuteQProgram operations and traverse their loops
             if isinstance(element, ExecuteQProgram):
                 self._traverse_qprogram(element.qprogram.body)
 
-    def _traverse_qprogram(self, block):
+    def _traverse_qprogram(self, block: Block):
         """Traverses a QProgram to gather loop information."""
         if isinstance(block, ForLoop):
             loop_values = self._inclusive_range(block.start, block.stop, block.step)
@@ -72,16 +72,16 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
             self.loop_values[loop_label] = loop_values
 
         # Recursively handle nested blocks within the QProgram
-        for element in getattr(block, "elements", []):
+        for element in block.elements:
             if isinstance(element, Block):
                 self._traverse_qprogram(element)
 
-    def _traverse_and_store(self, block, progress: Progress):
+    def _traverse_and_store(self, block: Block, progress: Progress):
         """Traverse blocks, store generated Python functions, and return the stored operations."""
         stored_operations = []
 
-        # Handle ForLoop or Loop blocks
         if isinstance(block, (Loop, ForLoop)):
+            # Handle loops
             stored_operations.extend(self._handle_loop(block, progress))
         else:
             # Handle generic blocks
@@ -89,7 +89,7 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
 
         return stored_operations
 
-    def _handle_loop(self, block, progress: Progress) -> list[Callable]:
+    def _handle_loop(self, block: ForLoop | Loop, progress: Progress) -> list[Callable]:
         """Common logic for handling ForLoop and Loop blocks."""
         stored_operations = []
 
@@ -139,12 +139,13 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
 
         return stored_operations
 
-    def _process_elements(self, elements, progress: Progress) -> list[Callable]:
+    def _process_elements(self, elements: list[Block | Operation], progress: Progress) -> list[Callable]:
         """Process the elements in a block and store the corresponding operations."""
         stored_operations = []
 
         for element in elements:
             if isinstance(element, SetParameter):
+                # Append a lambda that will call the `platform.set_parameter` method
                 stored_operations.append(
                     lambda op=element: self.platform.set_parameter(
                         parameter=op.parameter,
@@ -154,8 +155,8 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
                     if isinstance(op.value, Variable)
                     else self.platform.set_parameter(parameter=op.parameter, value=op.value, alias=op.alias)
                 )
-
             elif isinstance(element, ExecuteQProgram):
+                # Append a lambda that will call the `platform.execute_qprogram` method
                 stored_operations.append(
                     lambda op=element: self._store_result(
                         self.platform.execute_qprogram(
@@ -163,8 +164,8 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
                         )
                     )
                 )
-
             elif isinstance(element, Block):
+                # Recursively handle elements of the block
                 nested_operations = self._traverse_and_store(element, progress)
                 stored_operations.extend(nested_operations)
 
@@ -174,6 +175,7 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
         """Store the result in the correct location within the StreamArray."""
         # Determine the index in the StreamArray based on current loop indices
         indices = tuple(index - 1 for _, index in self.loop_indices.items())
+        # Store the results in the StreamArray
         self.stream_array[indices] = next(iter(result.results.values()))[0].array.T
 
     def _run_stored_operations(self, progress: Progress):
@@ -181,8 +183,9 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
         main_task_id = progress.add_task("Executing experiment", total=len(self.stored_operations))
 
         for operation in self.stored_operations:
-            operation()  # Execute the stored operation
-            progress.advance(main_task_id)  # Manually update the progress for each operation
+            # Execute the stored operation and update the main progress bar
+            operation()
+            progress.advance(main_task_id)
 
         progress.update(main_task_id, description="Executing experiment (done)")
         progress.refresh()  # Ensure the final state of the progress bar is rendered
@@ -204,13 +207,18 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
         return np.around(result, decimals=decimal_places)
 
     def _create_directories(self, source):
-        t = time.localtime()
-        date = time.strftime("%Y%m%d", t)
-        timestamp = time.strftime("%H%M%S")
+        # Get the current date and time
+        now = datetime.now()
 
-        folder = f"{source}{date}/{timestamp}/"
-        if not os.path.isdir(folder):
-            os.makedirs(folder)
+        # Format date and time for directory names
+        date = now.strftime("%Y%m%d")
+        timestamp = now.strftime("%H%M%S")
+
+        # Construct the directory path
+        folder = os.path.join(source, date, timestamp)
+
+        # Create the directories if they don't exist
+        os.makedirs(folder, exist_ok=True)
 
         return folder
 
