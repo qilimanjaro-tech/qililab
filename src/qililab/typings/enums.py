@@ -15,6 +15,8 @@
 """Enum classes"""
 from enum import Enum
 
+from qililab.yaml import yaml
+
 
 class Instrument(str, Enum):
     """Instrument.
@@ -238,6 +240,7 @@ class SystemControlName(str, Enum):
     READOUT_SYSTEM_CONTROL = "readout_system_control"
 
 
+@yaml.register_class
 class Parameter(str, Enum):
     """Parameter names."""
 
@@ -339,6 +342,17 @@ class Parameter(str, Enum):
     B = "b"
     T_PHI = "t_phi"
     GATE_OPTIONS = "options"
+
+    @classmethod
+    def to_yaml(cls, representer, node):
+        """Method to be called automatically during YAML serialization."""
+        return representer.represent_scalar("!Parameter", f"{node.name}-{node.value}")
+
+    @classmethod
+    def from_yaml(cls, _, node):
+        """Method to be called automatically during YAML deserialization."""
+        _, value = node.value.split("-")
+        return cls(value)
 
 
 class ResultName(str, Enum):

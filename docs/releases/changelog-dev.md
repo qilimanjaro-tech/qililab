@@ -2,6 +2,9 @@
 
 ### New features since last release
 
+- Introduced the `Experiment` class, which inherits from `StructuredProgram`. This new class enables the ability to set parameters and execute quantum programs within a structured experiment. Added the `set_parameter` method to allow setting platfform parameters and `execute_qprogram` method to facilitate the execution of quantum programs within the experiment.
+  [#782](https://github.com/qilimanjaro-tech/qililab/pull/782)
+
 - Add crosstalk compensation to `AnnealingProgram` workflow. Add methods to `CrosstalkMatrix` to ease crosstalk compensation in the annealing workflow
   [#775](https://github.com/qilimanjaro-tech/qililab/pull/775)
 
@@ -11,13 +14,12 @@
 
 - Added a try/except clause when executing a QProgram on Quantum Machines cluster that controls the execution failing to perform a turning off of the instrument so the \_qm object gets
   removed. This, plus setting the close_other_machines=True by default allows to open more than one QuantumMachines VM at the same time to allow more than one experimentalist to work at the same time in the cluster.
+  [#760](https://github.com/qilimanjaro-tech/qililab/pull/760/)
 
-[#760](https://github.com/qilimanjaro-tech/qililab/pull/760/)
-
-- Add `__str__` method to qprogram. The string is a readable qprogram.
+- Added `__str__` method to qprogram. The string is a readable qprogram.
   [#767](https://github.com/qilimanjaro-tech/qililab/pull/767)
 
-- Add workflow for the execution of annealing programs.
+- Added workflow for the execution of annealing programs.
   Example:
 
   ```python
@@ -219,6 +221,10 @@
 - Automatic method to implement the correct `upsampling_mode` when the output mode is selected as `amplified` (fluxes), the `upsampling_mode` is automatically defined as `pulse`. In this mode, the upsampling is optimized to produce cleaner step responses.
 
   [#783](https://github.com/qilimanjaro-tech/qililab/pull/783)
+
+- Automatic method for `execute_qprogram` in quantum machines to restart the measurement in case the `StreamProcessingDataLossError` is risen by `qua-qm`, the new feature allows to try again the measurement a number of times equal to the value of `dataloss_tries` (default of three). We can define this value at `execute_qprogram(..., dataloss_tries = N)` and will only do its intended job in case of working with QM.
+
+  [#788](https://github.com/qilimanjaro-tech/qililab/pull/788)
 
 ### Breaking changes
 
