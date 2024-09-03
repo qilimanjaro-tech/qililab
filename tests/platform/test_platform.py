@@ -607,7 +607,7 @@ class TestMethods:
         cluster.run_compiled_program.side_effect = [
             StreamProcessingDataLossError("Data loss occurred"),
             StreamProcessingDataLossError("Data loss occurred"),
-            Mock()  # Success on the third try
+            StreamProcessingDataLossError("Data loss occurred"),
         ]
 
         _ = platform_quantum_machines._execute_qprogram_with_quantum_machines(qprogram=qprogram, cluster=cluster, dataloss_tries=3)
