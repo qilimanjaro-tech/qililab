@@ -15,6 +15,38 @@
     [#790](https://github.com/qilimanjaro-tech/qililab/pull/790)
 
 - Introduced the `platform.execute_experiment()` method for executing experiments. This method simplifies the interaction with the ExperimentExecutor by allowing users to run experiments with a single call.
+
+  Example:
+
+  ```Python
+  # Define the QProgram
+  qp = QProgram()
+  gain = qp.variable(label='resonator gain', domain=Domain.Voltage)
+  with qp.for_loop(gain, 0, 10, 1):
+      qp.set_gain(bus="readout_bus", gain=gain)
+      qp.measure(bus="readout_bus", waveform=IQPair(I=Square(1.0, 1000), Q=Square(1.0, 1000)), weights=IQPair(I=Square(1.0, 2000), Q=Square(1.0, 2000)))
+
+  # Define the Experiment
+  experiment = Experiment()
+  bias_z = experiment.variable(label='bias_z voltage', domain=Domain.Voltage)
+  frequency = experiment.variable(label='LO Frequency', domain=Domain.Frequency)
+  experiment.set_parameter(alias="drive_q0", parameter=Parameter.VOLTAGE, value=0.5)
+  experiment.set_parameter(alias="drive_q1", parameter=Parameter.VOLTAGE, value=0.5)
+  experiment.set_parameter(alias="drive_q2", parameter=Parameter.VOLTAGE, value=0.5)
+  with experiment.for_loop(bias_z, 0.0, 1.0, 0.1):
+      experiment.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=bias_z)
+      with experiment.for_loop(frequency, 2e9, 8e9, 1e9):
+          experiment.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=frequency)
+          experiment.execute_qprogram(qp)
+
+  # Execute the Experiment and display the progress bar.
+  # Results will be streamed to an h5 file. The path of this file is returned from the method.
+  path = platform.execute_experiment(experiment=experiment, results_path="/tmp/results/")
+
+  # Load results
+  results, loops = load_results(path)
+  ```
+
   [#790](https://github.com/qilimanjaro-tech/qililab/pull/790)
 
 - Add crosstalk compensation to `AnnealingProgram` workflow. Add methods to `CrosstalkMatrix` to ease crosstalk compensation in the annealing workflow
