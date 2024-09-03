@@ -26,11 +26,11 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
     """
 
     def __init__(self, platform: "Platform", experiment: Experiment, results_path: str):
-        self.platform = platform  # Store the platform instance
+        self.platform = platform
         self.experiment = experiment
+        self.results_path = results_path
         self.task_ids: dict = {}
         self.stored_operations: list[Callable[[], Any]] = []
-        self.results_path = results_path
         self.loop_indices: dict[str, int] = {}
         self.loop_values: dict[str, np.ndarray] = {}
         self.shape = ()
@@ -206,7 +206,7 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
         result = np.linspace(start, stop, num_steps)
         return np.around(result, decimals=decimal_places)
 
-    def _create_directories(self, source):
+    def _create_results_path(self, source: str, file: str):
         # Get the current date and time
         now = datetime.now()
 
@@ -220,9 +220,11 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
         # Create the directories if they don't exist
         os.makedirs(folder, exist_ok=True)
 
-        return folder
+        path = os.path.join(folder, file)
 
-    def execute(self) -> list[Any]:
+        return path
+
+    def execute(self) -> str:
         """
         Executes the experiment and streams the results in real-time.
 
@@ -235,7 +237,7 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
             str: The path to the file where the results are stored.
         """
         # Create file path to store results
-        path = self._create_directories(self.results_path) + "data.h5"
+        path = self._create_results_path(self.results_path, "data.h5")
 
         # Prepare the experiment, calculate shape and loop values
         self._prepare()

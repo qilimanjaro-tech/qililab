@@ -669,21 +669,21 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             return self.execute_qprogram(qprogram=qp_annealing, calibration=calibration)
         raise ValueError("The calibrated measurement is not present in the calibration file.")
 
-    def execute_experiment(self, experiment: Experiment, results_path: str):
+    def execute_experiment(self, experiment: Experiment, results_path: str) -> str:
         """Executes the given quantum experiment and saves the results.
 
         This method initializes an `ExperimentExecutor` with the provided `experiment` and `results_path`,
-        and then executes the experiment. The results are stored in the specified path.
+        and then executes the experiment. The results are streamed to the specified path in real-time.
 
         Args:
             experiment (Experiment): The quantum experiment to be executed.
-            results_path (str): The file path where the experiment's results will be saved.
+            results_path (str): The path where the experiment's results will be saved.
 
         Returns:
-            str: The path of the experiment's results.
+            str: The path of the file that the experiment's results are stored.
         """
         executor = ExperimentExecutor(platform=self, experiment=experiment, results_path=results_path)
-        executor.execute()
+        return executor.execute()
 
     def execute_qprogram(  # pylint: disable=too-many-locals
         self,

@@ -469,7 +469,7 @@ class TestMethods:
             mock_executor_instance = MockExecutor.return_value  # Mock instance of ExperimentExecutor
 
             # Call the method under test
-            platform.execute_experiment(mock_experiment, results_path)
+            platform.execute_experiment(experiment=mock_experiment, results_path=results_path)
 
             # Check that ExperimentExecutor was instantiated with the correct arguments
             MockExecutor.assert_called_once_with(
