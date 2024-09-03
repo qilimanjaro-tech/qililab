@@ -82,24 +82,24 @@ class TestExperimentExecutor:
             # First loop: bias_z, second loop: frequency
             # The order of calls follows the nested loop structure
             # Calls in the first iteration of the outer loop (bias_z = 0.0)
-            call.set_parameter("drive_q0", Parameter.VOLTAGE, 0.5),
-            call.set_parameter("drive_q1", Parameter.VOLTAGE, 0.5),
-            call.set_parameter("drive_q2", Parameter.VOLTAGE, 0.5),
-            call.set_parameter("readout_bus", Parameter.VOLTAGE, 0.0),
-            call.set_parameter("readout_bus", Parameter.LO_FREQUENCY, 2e9),
-            call.execute_qprogram(qprogram),  # The qprogram execution
-            call.set_parameter("readout_bus", Parameter.LO_FREQUENCY, 3e9),
-            call.execute_qprogram(qprogram),
-            call.set_parameter("readout_bus", Parameter.VOLTAGE, 0.5),
-            call.set_parameter("readout_bus", Parameter.LO_FREQUENCY, 2e9),
-            call.execute_qprogram(qprogram),  # The qprogram execution
-            call.set_parameter("readout_bus", Parameter.LO_FREQUENCY, 3e9),
-            call.execute_qprogram(qprogram),
-            call.set_parameter("readout_bus", Parameter.VOLTAGE, 1.0),
-            call.set_parameter("readout_bus", Parameter.LO_FREQUENCY, 2e9),
-            call.execute_qprogram(qprogram),  # The qprogram execution
-            call.set_parameter("readout_bus", Parameter.LO_FREQUENCY, 3e9),
-            call.execute_qprogram(qprogram),
+            call.set_parameter(alias="drive_q0", parameter=Parameter.VOLTAGE, value=0.5),
+            call.set_parameter(alias="drive_q1", parameter=Parameter.VOLTAGE, value=0.5),
+            call.set_parameter(alias="drive_q2", parameter=Parameter.VOLTAGE, value=0.5),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.0),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9),
+            call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9),
+            call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.5),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9),
+            call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9),
+            call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=1.0),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9),
+            call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9),
+            call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
         ]
 
         # If you want to ensure the exact sequence across all calls

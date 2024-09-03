@@ -148,12 +148,12 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
                 # Append a lambda that will call the `platform.set_parameter` method
                 stored_operations.append(
                     lambda op=element: self.platform.set_parameter(
+                        alias=op.alias,
                         parameter=op.parameter,
                         value=self.loop_values[op.value.label][self.loop_indices[op.value.label]],
-                        alias=op.alias,
                     )
                     if isinstance(op.value, Variable)
-                    else self.platform.set_parameter(parameter=op.parameter, value=op.value, alias=op.alias)
+                    else self.platform.set_parameter(alias=op.alias, parameter=op.parameter, value=op.value)
                 )
             elif isinstance(element, ExecuteQProgram):
                 # Append a lambda that will call the `platform.execute_qprogram` method
