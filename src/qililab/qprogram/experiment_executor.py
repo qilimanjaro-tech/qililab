@@ -147,10 +147,10 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
             if isinstance(element, SetParameter):
                 stored_operations.append(
                     lambda op=element: self.platform.set_parameter(
-                        op.alias, op.parameter, self.loop_values[op.value.label][self.loop_indices[op.value.label]]
+                        op.parameter, self.loop_values[op.value.label][self.loop_indices[op.value.label]], op.alias
                     )
                     if isinstance(op.value, Variable)
-                    else self.platform.set_parameter(op.alias, op.parameter, op.value)
+                    else self.platform.set_parameter(op.parameter, op.value, op.alias)
                 )
 
             elif isinstance(element, ExecuteQProgram):
