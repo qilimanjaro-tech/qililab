@@ -5,6 +5,18 @@
 - Introduced the `Experiment` class, which inherits from `StructuredProgram`. This new class enables the ability to set parameters and execute quantum programs within a structured experiment. Added the `set_parameter` method to allow setting platfform parameters and `execute_qprogram` method to facilitate the execution of quantum programs within the experiment.
   [#782](https://github.com/qilimanjaro-tech/qililab/pull/782)
 
+- Introduced the `ExperimentExecutor` class to manage and execute quantum experiments within the Qililab framework. This class provides a streamlined way to handle the setup, execution, and results retrieval of experiments.
+
+  Temporary Constraints:
+
+  - The experiment must contain only one `QProgram`.
+  - The `QProgram` must contain a single measure operation.
+  - Parallel loops are not supported.
+    [#790](https://github.com/qilimanjaro-tech/qililab/pull/790)
+
+- Introduced the `platform.execute_experiment()` method for executing experiments. This method simplifies the interaction with the ExperimentExecutor by allowing users to run experiments with a single call.
+  [#790](https://github.com/qilimanjaro-tech/qililab/pull/790)
+
 - Add crosstalk compensation to `AnnealingProgram` workflow. Add methods to `CrosstalkMatrix` to ease crosstalk compensation in the annealing workflow
   [#775](https://github.com/qilimanjaro-tech/qililab/pull/775)
 
@@ -20,9 +32,10 @@
   [#767](https://github.com/qilimanjaro-tech/qililab/pull/767)
 
 - Added workflow for the execution of annealing programs.
+
   Example:
 
-  ```python
+  ```Python
   import qililab as ql
 
   platform = ql.build_platform("examples/runcards/galadriel.yml")
@@ -41,7 +54,7 @@
       }
   ]
 
-  results = platform.execute_anneal_program(anneal_program_dict=anneal_program_dict,transpiler=lambda delta, epsilon: (delta, epsilon), averages=100_000)
+  results = platform.execute_anneal_program(anneal_program_dict=anneal_program_dict, transpiler=lambda delta, epsilon: (delta, epsilon), averages=100_000)
   ```
 
   Alternatively, each step of the workflow can be executed separately i.e. the following is equivalent to the above:
@@ -102,7 +115,6 @@
   [#747](https://github.com/qilimanjaro-tech/qililab/pull/747)
 
 - Added `set_markers_override_enabled_by_port` and `set_markers_override_value_by_port` methods in `QbloxModule` to set markers through QCoDeS, overriding Q1ASM values.
-
   [#747](https://github.com/qilimanjaro-tech/qililab/pull/747)
 
 - Added `from_qprogram` method to the `Counts` class to compute the counts of quantum states obtained from a `QProgram`. The `Counts` object is designed to work for circuits that have only one measurement per bus at the end of the circuit execution. It is the user's responsibility to ensure that this method is used appropriately when it makes sense to compute the state counts for a `QProgram`. Note that probabilities can easily be obtained by calling the `probabilities()` method. See an example below.
@@ -159,7 +171,6 @@
   [#759](https://github.com/qilimanjaro-tech/qililab/pull/759)
 
 - Added `thresholds` argument to `_execute_qprogram_with_quantum_machines` method in `Platform`. This argument allows to threshold results after the execution of the `QProgram`. It is also a new parameter that can be specified on the runcard for each readout bus. An example of the configuration of this parameter on the runcard can be found above.
-
   [#762](https://github.com/qilimanjaro-tech/qililab/pull/762)
 
 - Added `filter` argument inside the qua config file compilation from runcards with qm clusters. This is an optional element for distorsion filters that includes feedforward and feedback, two distorion lists for distorsion compensation and fields in qua config filter. These filters are calibrated and then introduced as compensation for the distorsions of the pulses from external sources such as Bias T. The runcard now might include the new filters (optional):
@@ -207,7 +218,7 @@
 ### Improvements
 
 - Improve Crosstalk matrix `from_buses` method so it can be a dictionary of buses and crosstalks coefficients.
-  [#784]https://github.com/qilimanjaro-tech/qililab/pull/784
+  \[#784\]https://github.com/qilimanjaro-tech/qililab/pull/784
 
 - Now platform.get_parameter works for QM without the need of connecting to the machine.
 
@@ -215,15 +226,12 @@
   [#751](https://github.com/qilimanjaro-tech/qililab/pull/751)
 
 - Improved the algorithm determining which markers should be ON during execution of circuits and qprograms. Now, all markers are OFF by default, and only the markers associated with the `outputs` setting of QCM-RF and QRM-RF sequencers are turned on.
-
   [#747](https://github.com/qilimanjaro-tech/qililab/pull/747)
 
 - Automatic method to implement the correct `upsampling_mode` when the output mode is selected as `amplified` (fluxes), the `upsampling_mode` is automatically defined as `pulse`. In this mode, the upsampling is optimized to produce cleaner step responses.
-
   [#783](https://github.com/qilimanjaro-tech/qililab/pull/783)
 
 - Automatic method for `execute_qprogram` in quantum machines to restart the measurement in case the `StreamProcessingDataLossError` is risen by `qua-qm`, the new feature allows to try again the measurement a number of times equal to the value of `dataloss_tries` (default of three). We can define this value at `execute_qprogram(..., dataloss_tries = N)` and will only do its intended job in case of working with QM.
-
   [#788](https://github.com/qilimanjaro-tech/qililab/pull/788)
 
 ### Breaking changes
@@ -236,8 +244,16 @@
   - `drift_timeout` is now a single one for the full controller, instead of a different one for each node.
   - Notebooks without an export are also accepted now (we will only raise error for multiple exports in a NB).
   - Extended/Improved the accepted type for parameters to input/output in notebooks, thorught json serialization.
+    [#746](https://github.com/qilimanjaro-tech/qililab/pull/746)
 
-  [#746](https://github.com/qilimanjaro-tech/qililab/pull/746)
+- Variables in `QProgram` and `Experiment` now require a label.
+
+  ```Python
+  qp = QProgram()
+  gain = qp.variable(label="gain", domain=Domain.Voltage)
+  ```
+
+  [#790](https://github.com/qilimanjaro-tech/qililab/pull/790)
 
 ### Deprecations / Removals
 
