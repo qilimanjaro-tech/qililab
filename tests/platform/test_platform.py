@@ -610,7 +610,8 @@ class TestMethods:
             StreamProcessingDataLossError("Data loss occurred"),
         ]
 
-        _ = platform_quantum_machines._execute_qprogram_with_quantum_machines(qprogram=qprogram, cluster=cluster, dataloss_tries=3)
+        with pytest.raises(StreamProcessingDataLossError):
+            _ = platform_quantum_machines._execute_qprogram_with_quantum_machines(qprogram=qprogram, cluster=cluster, dataloss_tries=3)
 
         assert cluster.run_compiled_program.call_count == 3
 
