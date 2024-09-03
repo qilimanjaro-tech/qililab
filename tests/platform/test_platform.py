@@ -586,7 +586,8 @@ class TestMethods:
         turn_off.assert_called_once_with()
 
     def test_execute_qprogram_with_quantum_machines_raises_dataloss(
-        self, platform_quantum_machines: Platform,
+        self,
+        platform_quantum_machines: Platform,
     ):  # pylint: disable=too-many-locals
         """Test that the execute_qprogram method raises the dataloss exception if the qprogram returns StreamProcessingDataLossError"""
 
@@ -611,7 +612,9 @@ class TestMethods:
         ]
 
         with pytest.raises(StreamProcessingDataLossError):
-            _ = platform_quantum_machines._execute_qprogram_with_quantum_machines(qprogram=qprogram, cluster=cluster, dataloss_tries=3)
+            _ = platform_quantum_machines._execute_qprogram_with_quantum_machines(
+                qprogram=qprogram, cluster=cluster, dataloss_tries=3
+            )
 
         assert cluster.run_compiled_program.call_count == 3
 
