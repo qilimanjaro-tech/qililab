@@ -5,12 +5,13 @@ import io
 import re
 from pathlib import Path
 from queue import Queue
-from unittest.mock import MagicMock, create_autospec, patch
+from unittest.mock import MagicMock, Mock, create_autospec, patch
 
 import numpy as np
 import pytest
 from qibo import gates
 from qibo.models import Circuit
+from qm.exceptions import StreamProcessingDataLossError
 from qpysequence import Sequence
 from ruamel.yaml import YAML
 
@@ -603,6 +604,39 @@ class TestMethods:
                 _ = platform_quantum_machines.execute_qprogram(qprogram=qprogram, debug=True)
 
         turn_off.assert_called_once_with()
+
+    def test_execute_qprogram_with_quantum_machines_raises_dataloss(
+        self,
+        platform_quantum_machines: Platform,
+    ):  # pylint: disable=too-many-locals
+        """Test that the execute_qprogram method raises the dataloss exception if the qprogram returns StreamProcessingDataLossError"""
+
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_q0_rf", waveform=drive_wf)
+        qprogram.sync()
+        qprogram.play(bus="readout_q0_rf", waveform=readout_wf)
+        qprogram.measure(bus="readout_q0_rf", waveform=readout_wf, weights=weights_wf)
+
+        cluster = Mock()
+
+        compiler_mock = Mock()
+        compiler_mock.compile.return_value = (Mock(), Mock(), [])
+
+        cluster.run_compiled_program.side_effect = [
+            StreamProcessingDataLossError("Data loss occurred"),
+            StreamProcessingDataLossError("Data loss occurred"),
+            StreamProcessingDataLossError("Data loss occurred"),
+        ]
+
+        with pytest.raises(StreamProcessingDataLossError):
+            _ = platform_quantum_machines._execute_qprogram_with_quantum_machines(
+                qprogram=qprogram, cluster=cluster, dataloss_tries=3
+            )
+
+        assert cluster.run_compiled_program.call_count == 3
 
     def test_execute(self, platform: Platform, qblox_results: list[dict]):
         """Test that the execute method calls the buses to run and return the results."""
