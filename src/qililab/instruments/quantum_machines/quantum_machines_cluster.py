@@ -439,7 +439,7 @@ class QuantumMachinesCluster(Instrument):
     def turn_on(self):
         """Turns on the instrument."""
         if not self._is_connected_to_qm:
-            self._qm = self._qmm.open_qm(config=self._config, close_other_machines=False)
+            self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)
             self._compiled_program_cache = {}
             self._is_connected_to_qm = True
 
@@ -474,7 +474,7 @@ class QuantumMachinesCluster(Instrument):
             self._config = cast(DictQuaConfig, merged_configuration)
             # If we are already connected, reopen the connection with the new configuration
             if self._is_connected_to_qm:
-                self._qm = self._qmm.open_qm(config=self._config, close_other_machines=False)  # type: ignore[assignment]
+                self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)  # type: ignore[assignment]
                 self._compiled_program_cache = {}
 
     def run_octave_calibration(self):
@@ -541,31 +541,32 @@ class QuantumMachinesCluster(Instrument):
                 rf_output for rf_output in settings_octave["rf_outputs"] if rf_output["port"] == out_port
             )
 
-        if parameter in [Parameter.OFFSET_I, Parameter.OFFSET_Q]:
-            if "rf_inputs" in element:
-                octave_name = element["rf_inputs"]["octave"]
-                out_oct_port = element["rf_inputs"]["port"]
+        # if parameter in [Parameter.OFFSET_I, Parameter.OFFSET_Q]:
+        #     if "rf_inputs" in element:
+        #         octave_name = element["rf_inputs"]["octave"]
+        #         out_oct_port = element["rf_inputs"]["port"]
 
-                octave = next((octave for octave in self.settings.octaves if octave["name"] == octave_name), None)
-                octave_port = next(
-                    (octave_port for octave_port in octave["rf_outputs"] if octave_port["port"] == out_oct_port), None
-                )
+        #         octave = next((octave for octave in self.settings.octaves if octave["name"] == octave_name), None)
+        #         octave_port = next(
+        #             (octave_port for octave_port in octave["rf_outputs"] if octave_port["port"] == out_oct_port), None
+        #         )
 
-                connection = "i_connection" if parameter in Parameter.OFFSET_I else "q_connection"
-                con_name = octave_port[connection]["controller"]
-                con_port = octave_port[connection]["port"]
-                con_fem = octave_port[connection]["fem"]
+        #         connection = "i_connection" if parameter in Parameter.OFFSET_I else "q_connection"
+        #         #TODO: modify for OPX+
+        #         con_name = octave_port[connection]["controller"]
+        #         con_port = octave_port[connection]["port"]
+        #         con_fem = octave_port[connection]["fem"]
 
-            elif "mix_inputs" in element:
-                key = "I" if parameter in Parameter.OFFSET_I else "Q"
-                con_name = (element["mix_inputs"][key]["controller"],)
-                con_port = (element["mix_inputs"][key]["fem"],)
-                con_fem = (element["mix_inputs"][key]["port"],)
+        #     elif "mix_inputs" in element:
+        #         key = "I" if parameter in Parameter.OFFSET_I else "Q"
+        #         con_name = (element["mix_inputs"][key]["controller"],)
+        #         con_port = (element["mix_inputs"][key]["fem"],)
+        #         con_fem = (element["mix_inputs"][key]["port"],)
 
-            elif "single_input" in element:
-                con_name = element["single_input"]["controller"]
-                con_port = element["single_input"]["port"]
-                con_fem = element["single_input"]["fem"]
+        #     elif "single_input" in element:
+        #         con_name = element["single_input"]["controller"]
+        #         con_port = element["single_input"]["port"]
+        #         con_fem = element["single_input"]["fem"]
 
         # Now we will set the parameter in 3 places:
         # 1) In the settings runtime dataclass (always).
@@ -624,9 +625,21 @@ class QuantumMachinesCluster(Instrument):
 
         if parameter in [Parameter.OFFSET_I, Parameter.OFFSET_Q]:
             input_offset = float(value)
+            # settings_octave_rf_output["gain"] = gain_in_db
+            # if self._config_created:
+            #     self._config["octaves"][octave_name]["RF_outputs"][out_port]["gain"] = gain_in_db
+            if self._is_connected_to_qm:
+                input = "I" if parameter in Parameter.OFFSET_I else "Q"
+                self._qm.set_output_dc_offset_by_element(element=bus, input= input, offset=input_offset)
+                return
+            
 
         if parameter in [Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2]:
             output_offset = float(value)
+            if self._is_connected_to_qm:
+                output = "con1" if parameter in Parameter.OFFSET_OUT1 else "con2"
+                self._qm.set_input_dc_offset_by_element(element=bus, output= output, offset=output_offset)
+                return
 
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}.")
 
