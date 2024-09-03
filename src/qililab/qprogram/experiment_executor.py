@@ -155,7 +155,11 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
 
             elif isinstance(element, ExecuteQProgram):
                 stored_operations.append(
-                    lambda op=element: self._store_result(self.platform.execute_qprogram(op.qprogram))
+                    lambda op=element: self._store_result(
+                        self.platform.execute_qprogram(
+                            qprogram=op.qprogram, bus_mapping=op.bus_mapping, calibration=op.calibration, debug=op.debug
+                        )
+                    )
                 )
 
             elif isinstance(element, (ForLoop, Loop)):

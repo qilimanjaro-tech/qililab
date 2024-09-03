@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -19,6 +20,7 @@ from qililab.qprogram.operations.operation import Operation
 from qililab.yaml import yaml
 
 if TYPE_CHECKING:
+    from qililab.qprogram.calibration import Calibration
     from qililab.qprogram.qprogram import QProgram
 
 
@@ -26,3 +28,6 @@ if TYPE_CHECKING:
 @dataclass(frozen=True)
 class ExecuteQProgram(Operation):  # pylint: disable=missing-class-docstring
     qprogram: "QProgram"
+    bus_mapping: dict[str, str] | None = None
+    calibration: "Calibration" | None = None
+    debug: bool = False
