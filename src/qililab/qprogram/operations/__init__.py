@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from .acquire import Acquire, AcquireWithCalibratedWeights
+from .execute_qprogram import ExecuteQProgram
 from .measure import (
     Measure,
     MeasureWithCalibratedWaveform,
@@ -26,6 +27,7 @@ from .set_frequency import SetFrequency
 from .set_gain import SetGain
 from .set_markers import SetMarkers
 from .set_offset import SetOffset
+from .set_parameter import SetParameter
 from .set_phase import SetPhase
 from .sync import Sync
 from .wait import Wait

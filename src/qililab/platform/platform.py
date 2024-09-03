@@ -581,7 +581,11 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             ),
         }
         flux_control_topology_dict = {
-            RUNCARD.FLUX_CONTROL_TOPOLOGY: [flux_control.to_dict() for flux_control in self.flux_to_bus_topology]
+            RUNCARD.FLUX_CONTROL_TOPOLOGY: (
+                [flux_control.to_dict() for flux_control in self.flux_to_bus_topology]
+                if self.flux_to_bus_topology is not None
+                else None
+            )
         }
 
         return (
@@ -602,7 +606,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """
         return str(YAML().dump(self.to_dict(), io.BytesIO()))
 
-    def execute_anneal_program(
+    def execute_anneal_program(  # pylint: disable=too-many-locals
         self,
         annealing_program_dict: list[dict[str, dict[str, float]]],
         calibration: Calibration,
@@ -635,15 +639,22 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             transpiler (Callable): ising to flux transpiler. The transpiler should take 2 values as arguments (delta, epsilon) and return 2 values (phix, phiz)
             averages (int, optional): Amount of times to run and average the program over. Defaults to 1.
         """
+        if self.flux_to_bus_topology is None:
+            raise ValueError("Flux to bus topology not given in the runcard")
         if calibration.has_waveform(bus=readout_bus, name=measurement_name):
-            annealing_program = AnnealingProgram(self, annealing_program_dict)
+            annealing_program = AnnealingProgram(
+                flux_to_bus_topology=self.flux_to_bus_topology, annealing_program=annealing_program_dict
+            )
             annealing_program.transpile(transpiler)
-            annealing_waveforms = annealing_program.get_waveforms()
+            crosstalk_matrix = (
+                calibration.crosstalk_matrix.inverse() if calibration.crosstalk_matrix is not None else None
+            )
+            annealing_waveforms = annealing_program.get_waveforms(crosstalk_matrix=crosstalk_matrix)
 
             qp_annealing = QProgram()
             with qp_annealing.average(averages):
-                for bus, waveform in annealing_waveforms.values():
-                    qp_annealing.play(bus=bus.alias, waveform=waveform)
+                for bus, waveform in annealing_waveforms.items():
+                    qp_annealing.play(bus=bus, waveform=waveform)
                 qp_annealing.sync()
                 if weights and calibration.has_weights(bus=readout_bus, name=weights):
                     qp_annealing.measure(bus=readout_bus, waveform=measurement_name, weights=weights)
