@@ -637,7 +637,7 @@ class QuantumMachinesCluster(Instrument):
         if parameter in [Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2]:
             output_offset = float(value)
             if self._is_connected_to_qm:
-                output = "con1" if parameter in Parameter.OFFSET_OUT1 else "con2"
+                output = "out1" if parameter in Parameter.OFFSET_OUT1 else "out2"
                 self._qm.set_input_dc_offset_by_element(element=bus, output= output, offset=output_offset)
                 return
 
@@ -697,6 +697,19 @@ class QuantumMachinesCluster(Instrument):
                 return element.get("threshold_rotation", None)  # type: ignore
             if parameter == Parameter.THRESHOLD:
                 return element.get("threshold", None)  # type: ignore
+
+        if parameter in [Parameter.OFFSET_I, Parameter.OFFSET_Q]:
+            if self._is_connected_to_qm:
+                input = "I" if parameter in Parameter.OFFSET_I else "Q"
+                self._qm.get_output_dc_offset_by_element(element=bus, iq_input= input)
+                return
+
+        if parameter in [Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2]:
+            if self._is_connected_to_qm:
+                output = "out1" if parameter in Parameter.OFFSET_OUT1 else "out2"
+                self._qm.get_input_dc_offset_by_element(element=bus, output= output)
+                return
+
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
     def compile(self, program: Program) -> str:
