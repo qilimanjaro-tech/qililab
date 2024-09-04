@@ -639,7 +639,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             for cleanup_method in reversed(cleanup_methods):
                 try:
                     cleanup_method()
-                except Exception as e:
+                except Exception as e:  # pylint: disable=broad-exception-caught
                     print(f"Error during cleanup: {e}")
                     cleanup_errors.append(e)
 
