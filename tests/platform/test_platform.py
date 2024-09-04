@@ -1,4 +1,5 @@
 """Tests for the Platform class."""
+# pylint: disable=too-many-lines
 
 import copy
 import io
@@ -407,9 +408,9 @@ class TestMethods:
         platform.session = Platform.session.__get__(platform, Platform)
 
         # Simulate an exception during the experiment
-        with pytest.raises(Exception, match="Test Error"):
+        with pytest.raises(AttributeError, match="Test Error"):
             with platform.session():
-                raise Exception("Test Error")  # Simulate an error during experiment execution
+                raise AttributeError("Test Error")
 
         # Ensure methods were called in the correct order before the exception
         platform.connect.assert_called_once()
