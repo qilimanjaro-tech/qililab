@@ -99,6 +99,9 @@ class BusCompilationInfo:  # pylint: disable=too-many-instance-attributes, too-f
         # Time of flight. Defaults to minimum_wait_duration and is updated if times_of_flight parameter is provided during compilation.
         self.time_of_flight = QbloxCompiler.minimum_wait_duration
 
+        # Delay. Defaults 0 delay and is updated if delays parameter is provided within the runcard.
+        self.delay = 0
+
 
 class QbloxCompiler:  # pylint: disable=too-few-public-methods
     """A class for compiling QProgram to QBlox hardware."""
@@ -136,6 +139,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         bus_mapping: dict[str, str] | None = None,
         calibration: Calibration | None = None,
         times_of_flight: dict[str, int] | None = None,
+        delays: dict[str, int] | None = None,
         markers: dict[str, str] | None = None,
     ) -> tuple[Sequences, Acquisitions]:
         """Compile QProgram to qpysequence.Sequence
@@ -150,9 +154,15 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         """
 
         def traverse(block: Block):
+            delay_implemented = False
             for bus in self._buses:
                 self._buses[bus].qprogram_block_stack.append(block)
             for element in block.elements:
+                if isinstance(element, Play) and not delay_implemented:
+                    for bus in self._buses:
+                        if self._buses[bus].delay != 0:
+                            self._handle_wait(element=Wait(bus=bus, duration=self._buses[bus].delay))
+                    delay_implemented = True
                 handler = self._handlers.get(type(element))
                 if not handler:
                     raise NotImplementedError(f"{element.__class__} is currently not supported in QBlox.")
@@ -186,6 +196,11 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         if times_of_flight is not None:
             for bus in self._buses.keys() & times_of_flight.keys():
                 self._buses[bus].time_of_flight = times_of_flight[bus]
+
+        # Pre-processing: Update delay
+        if delays is not None:
+            for bus in self._buses.keys() & delays.keys():
+                self._buses[bus].delay = delays[bus]
 
         # Pre-processing: Set markers ON/OFF
         for bus in self._buses:

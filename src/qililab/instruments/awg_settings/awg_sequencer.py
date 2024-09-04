@@ -51,6 +51,7 @@ class AWGSequencer:  # pylint: disable=too-many-instance-attributes
     gain_q: float
     offset_i: float
     offset_q: float
+    delay: int
 
     def to_dict(self):
         """Return a dict representation of an AWG Sequencer."""

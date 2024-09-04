@@ -49,6 +49,7 @@ class AWGADCSequencer(AWGSequencer):  # pylint: disable=too-many-instance-attrib
     threshold: float
     threshold_rotation: float
     time_of_flight: int  # nanoseconds
+    delay: int  # nanoseconds
 
     def __post_init__(self):
         """Cast all enum attributes to its corresponding Enum class."""
