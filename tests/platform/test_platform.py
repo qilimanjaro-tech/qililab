@@ -1,4 +1,5 @@
 """Tests for the Platform class."""
+# pylint: disable=too-many-lines
 
 import copy
 import io
@@ -18,6 +19,7 @@ from ruamel.yaml import YAML
 from qililab import Arbitrary, save_platform
 from qililab.chip import Chip, Qubit
 from qililab.constants import DEFAULT_PLATFORM_NAME
+from qililab.exceptions import ExceptionGroup
 from qililab.instrument_controllers import InstrumentControllers
 from qililab.instruments import AWG, AWGAnalogDigitalConverter, SignalGenerator
 from qililab.instruments.instruments import Instruments
@@ -375,6 +377,127 @@ class TestPlatform:
 
 class TestMethods:
     """Unit tests for the methods of the Platform class."""
+
+    def test_session_success(self):
+        """Test the session method when everything works successfully."""
+        # Create an autospec of the Platform class
+        platform = create_autospec(Platform, instance=True)
+
+        # Manually set the session method to the real one
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        # Run the session successfully
+        with platform.session():
+            pass  # Simulate a successful experiment execution
+
+        # Ensure methods were called in the correct order
+        platform.connect.assert_called_once()
+        platform.initial_setup.assert_called_once()
+        platform.turn_on_instruments.assert_called_once()
+
+        # Ensure cleanup is called in reverse order
+        platform.turn_off_instruments.assert_called_once()
+        platform.disconnect.assert_called_once()
+
+    def test_session_with_exception(self):
+        """Test the session method when an exception occurs during execution."""
+        # Create an autospec of the Platform class
+        platform = create_autospec(Platform, instance=True)
+
+        # Manually set the session method to the real one
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        # Simulate an exception during the experiment
+        with pytest.raises(AttributeError, match="Test Error"):
+            with platform.session():
+                raise AttributeError("Test Error")
+
+        # Ensure methods were called in the correct order before the exception
+        platform.connect.assert_called_once()
+        platform.initial_setup.assert_called_once()
+        platform.turn_on_instruments.assert_called_once()
+
+        # Ensure cleanup is still called in reverse order even after the exception
+        platform.turn_off_instruments.assert_called_once()
+        platform.disconnect.assert_called_once()
+
+    def test_session_with_exception_in_setup(self):
+        """Test the session method when an error occurs before turning on instruments."""
+        # Create an autospec of the Platform class
+        platform = create_autospec(Platform, instance=True)
+
+        # Manually set the session method to the real one
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        # Raise an exception after connect() and initial_setup() but before turn_on_instruments()
+        platform.turn_on_instruments.side_effect = Exception("Instrument failure")
+
+        # Simulate an error after connect() and initial_setup() but before turn_on_instruments()
+        with pytest.raises(Exception, match="Instrument failure"):
+            with platform.session():
+                pass  # The exception will occur inside the context
+
+        # Ensure methods were called until the point of failure
+        platform.connect.assert_called_once()
+        platform.initial_setup.assert_called_once()
+        platform.turn_on_instruments.assert_called_once()
+
+        # Ensure turn_off_instruments is not called, but disconnect is called
+        platform.turn_off_instruments.assert_not_called()
+        platform.disconnect.assert_called_once()
+
+    def test_session_with_exception_in_cleanup(self):
+        """Test the session method when an exception occurs during cleanup."""
+        # Create an autospec of the Platform class
+        platform = create_autospec(Platform, instance=True)
+
+        # Manually set the session method to the real one
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        # Simulate turn_off_instruments failing
+        platform.turn_off_instruments.side_effect = Exception("Turn off instruments error")
+
+        # Simulate no exception during the experiment, but failure during cleanup
+        with pytest.raises(Exception, match="Turn off instruments error"):
+            with platform.session():
+                pass  # No exception during the experiment
+
+        # Ensure methods were called in the correct order
+        platform.connect.assert_called_once()
+        platform.initial_setup.assert_called_once()
+        platform.turn_on_instruments.assert_called_once()
+
+        # Ensure the exception is raised in cleanup
+        platform.turn_off_instruments.assert_called_once()
+        platform.disconnect.assert_called_once()
+
+    def test_session_with_multiple_exceptions_in_cleanup(self):
+        """Test the session method when multiple exceptions occur during cleanup."""
+        # Create an autospec of the Platform class
+        platform = create_autospec(Platform, instance=True)
+
+        # Manually set the session method to the real one
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        # Simulate turn_off_instruments and disconnect failing
+        platform.turn_off_instruments.side_effect = Exception("Turn off instruments error")
+        platform.disconnect.side_effect = Exception("Disconnect error")
+
+        with pytest.raises(ExceptionGroup) as exc_info:
+            with platform.session():
+                pass
+
+        # Ensure ExceptionGroup has captured all exceptions
+        assert len(exc_info.value.exceptions) == 2
+        assert str(exc_info.value.exceptions[0]) == "Turn off instruments error"
+        assert str(exc_info.value.exceptions[1]) == "Disconnect error"
+
+        # Ensure methods were called in the correct order
+        platform.connect.assert_called_once()
+        platform.initial_setup.assert_called_once()
+        platform.turn_on_instruments.assert_called_once()
+        platform.turn_off_instruments.assert_called_once()
+        platform.disconnect.assert_called_once()
 
     def test_compile_circuit(self, platform: Platform):
         """Test the compilation of a qibo Circuit."""

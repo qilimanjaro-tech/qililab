@@ -49,6 +49,17 @@
 
   [#790](https://github.com/qilimanjaro-tech/qililab/pull/790)
 
+- Introduced a robust context manager `platform.session()` for managing platform lifecycle operations. The manager automatically calls `platform.connect()`, `platform.initial_setup()`, and `platform.turn_on_instruments()` to set up the platform environment before experiment execution. It then ensures proper resource cleanup by invoking `platform.turn_off_instruments()` and `platform.disconnect()` after the experiment, even in the event of an error or exception during execution. If multiple exceptions occur during cleanup (e.g., failures in both `turn_off_instruments()` and `disconnect()`), they are aggregated into a single `ExceptionGroup` (Python 3.11+) or a custom exception for earlier Python versions.
+
+  Example:
+
+  ```Python
+  with platform.session():
+    # do stuff...
+  ```
+
+  [#792](https://github.com/qilimanjaro-tech/qililab/pull/792)
+
 - Add crosstalk compensation to `AnnealingProgram` workflow. Add methods to `CrosstalkMatrix` to ease crosstalk compensation in the annealing workflow
   [#775](https://github.com/qilimanjaro-tech/qililab/pull/775)
 

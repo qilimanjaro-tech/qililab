@@ -21,6 +21,7 @@ import re
 import time
 import traceback
 import warnings
+from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
 from queue import Queue
@@ -39,6 +40,7 @@ from qililab.chip import Chip
 from qililab.circuit_transpiler import CircuitTranspiler
 from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
+from qililab.exceptions import ExceptionGroup
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
 from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
@@ -611,6 +613,39 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             str: Name of the platform.
         """
         return str(YAML().dump(self.to_dict(), io.BytesIO()))
+
+    @contextmanager
+    def session(self):
+        """Context manager to manage platform session, ensuring that resources are always released."""
+        cleanup_methods = []
+        cleanup_errors = []
+        try:
+            # Track successfully called setup methods and their cleanup counterparts
+            self.connect()
+            cleanup_methods.append(self.disconnect)  # Store disconnect for cleanup
+
+            self.initial_setup()  # No specific cleanup for initial_setup
+
+            self.turn_on_instruments()
+            cleanup_methods.append(self.turn_off_instruments)  # Store turn_off_instruments for cleanup
+
+            yield  # Experiment logic goes here
+
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            raise  # Re-raise the exception for further handling
+        finally:
+            # Call the cleanup methods in reverse order
+            for cleanup_method in reversed(cleanup_methods):
+                try:
+                    cleanup_method()
+                except Exception as e:  # pylint: disable=broad-exception-caught
+                    print(f"Error during cleanup: {e}")
+                    cleanup_errors.append(e)
+
+            # Raise any exception that might have happened during cleanup
+            if cleanup_errors:
+                raise ExceptionGroup("Exceptions occurred during cleanup", cleanup_errors)
 
     def execute_anneal_program(  # pylint: disable=too-many-locals
         self,
