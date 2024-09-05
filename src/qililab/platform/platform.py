@@ -48,7 +48,8 @@ from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSchedule
 from qililab.pulse import QbloxCompiler as PulseQbloxCompiler
-from qililab.qprogram import Calibration, QbloxCompiler, QProgram, QuantumMachinesCompiler
+from qililab.qprogram import Calibration, Experiment, QbloxCompiler, QProgram, QuantumMachinesCompiler
+from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.result import Result
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
@@ -672,6 +673,22 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
             return self.execute_qprogram(qprogram=qp_annealing, calibration=calibration)
         raise ValueError("The calibrated measurement is not present in the calibration file.")
+
+    def execute_experiment(self, experiment: Experiment, results_path: str) -> str:
+        """Executes the given quantum experiment and saves the results.
+
+        This method initializes an `ExperimentExecutor` with the provided `experiment` and `results_path`,
+        and then executes the experiment. The results are streamed to the specified path in real-time.
+
+        Args:
+            experiment (Experiment): The quantum experiment to be executed.
+            results_path (str): The path where the experiment's results will be saved.
+
+        Returns:
+            str: The path of the file that the experiment's results are stored.
+        """
+        executor = ExperimentExecutor(platform=self, experiment=experiment, results_path=results_path)
+        return executor.execute()
 
     def execute_qprogram(  # pylint: disable=too-many-locals
         self,
