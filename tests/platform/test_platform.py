@@ -673,8 +673,8 @@ class TestMethods:
                         sequences[bus_alias]._waveforms.modify(  # pylint: disable=protected-access
                             waveforms.name, distrortion.apply(waveforms.data)
                         )
-        assert test_waveforms_q0 == sequences["drive_line_q0_bus"]._waveforms
-        assert test_waveforms_q1 == sequences["drive_line_q1_bus"]._waveforms
+        assert test_waveforms_q0 == sequences["drive_line_q0_bus"]._waveforms.to_dict()
+        assert test_waveforms_q1 == sequences["drive_line_q1_bus"]._waveforms.to_dict()
 
     def test_execute_qprogram_with_quantum_machines(
         self, platform_quantum_machines: Platform
