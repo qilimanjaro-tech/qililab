@@ -1209,7 +1209,7 @@ class TestQBloxCompiler:
             loop_0:
                             wait             20
                             play             0, 1, 40
-                            wait             2940
+                            wait             2960
                             add              R2, 1, R2
                             loop             R1, @loop_0
                             loop             R0, @avg_0
@@ -1235,6 +1235,7 @@ class TestQBloxCompiler:
                             play             0, 1, 1000
                             acquire_weighed  0, R3, R2, R1, 2000
                             add              R3, 1, R3
+                            wait             20
                             add              R5, 1, R5
                             loop             R4, @loop_0
                             loop             R0, @avg_0
