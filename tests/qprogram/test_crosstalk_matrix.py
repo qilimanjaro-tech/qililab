@@ -117,7 +117,7 @@ class TestCrosstalkMatrix:
         crosstalk_matrix["bus2"]["bus2"] = -0.5
 
         string = str(crosstalk_matrix)
-        assert(
+        assert (
             string.strip()
             == """ bus1     bus2
             bus1         -0.5      0.5
@@ -133,7 +133,10 @@ class TestCrosstalkMatrix:
         crosstalk_matrix["bus2"]["bus2"] = -0.5
 
         representation = repr(crosstalk_matrix)
-        assert representation == "CrosstalkMatrix({'bus1': {'bus1': -0.5, 'bus2': 0.5}, 'bus2': {'bus1': 0.7, 'bus2': -0.5}})"
+        assert (
+            representation
+            == "CrosstalkMatrix({'bus1': {'bus1': -0.5, 'bus2': 0.5}, 'bus2': {'bus1': 0.7, 'bus2': -0.5}})"
+        )
 
     def test_from_buses_method(self):
         """Test from_buses class method"""
