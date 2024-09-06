@@ -1246,6 +1246,10 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
 
+    @pytest.mark.parametrize(
+        "start,stop,step,expected_result",
+        [(0, 10, 1, 11), (10, 0, -1, 11), (1, 2.05, 0.1, 11)],
+    )
     def test_calculate_iterations(self, start, stop, step, expected_result):
         result = QbloxCompiler._calculate_iterations(start, stop, step)
         assert result == expected_result
