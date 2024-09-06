@@ -1187,10 +1187,6 @@ class TestQBloxCompiler:
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
 
-    @pytest.mark.parametrize(
-        "start,stop,step,expected_result",
-        [(0, 10, 1, 11), (10, 0, -1, 11), (1, 2.05, 0.1, 11)],
-    )
     def test_delay(self, average_with_for_loop_nshots: QProgram):
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=average_with_for_loop_nshots, delays={"drive": 20})
