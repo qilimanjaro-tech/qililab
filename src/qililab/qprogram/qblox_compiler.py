@@ -160,8 +160,14 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             for element in block.elements:
                 if isinstance(element, Play) and not delay_implemented:
                     for bus in self._buses:
-                        if self._buses[bus].delay != 0:
+                        if self._buses[bus].delay > 0:
                             self._handle_wait(element=Wait(bus=bus, duration=self._buses[bus].delay), delay=True)
+                        elif self._buses[bus].delay < 0:
+                            for other_buses in self._buses:
+                                if other_buses != bus:
+                                    self._handle_wait(
+                                        element=Wait(bus=other_buses, duration=-self._buses[bus].delay), delay=True
+                                    )
                     delay_implemented = True
                 handler = self._handlers.get(type(element))
                 if not handler:
