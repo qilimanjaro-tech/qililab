@@ -48,13 +48,14 @@ class TestExperiment(TestStructuredProgram):
 
     def test_serialization_deserialization(self, instance: Experiment):
         """Test serialization and deserialization works."""
+        file = "test_serialization_deserialization_experiment.yml"
         qp = QProgram()
-        gain = qp.variable(domain=Domain.Voltage)
+        gain = qp.variable(label="gain", domain=Domain.Voltage)
         with qp.for_loop(variable=gain, start=0.0, stop=1.0, step=0.1):
             qp.set_gain(bus="drive_bus", gain=gain)
             qp.play(bus="drive_bus", waveform=IQPair(I=Square(1.0, 200), Q=Square(1.0, 200)))
 
-        voltage = instance.variable(domain=Domain.Voltage)
+        voltage = instance.variable(label="voltage", domain=Domain.Voltage)
         with instance.for_loop(variable=voltage, start=0.0, stop=1.0, step=0.1):
             instance.set_parameter(alias="flux_bus", parameter=Parameter.VOLTAGE, value=voltage)
             instance.execute_qprogram(qp)
@@ -64,9 +65,9 @@ class TestExperiment(TestStructuredProgram):
 
         assert isinstance(deserialized_experiment, Experiment)
 
-        serialize_to(instance, file="experiment.yml")
-        deserialized_experiment = deserialize_from("experiment.yml", Experiment)
+        serialize_to(instance, file=file)
+        deserialized_experiment = deserialize_from(file, Experiment)
 
         assert isinstance(deserialized_experiment, Experiment)
 
-        os.remove("experiment.yml")
+        os.remove(file)

@@ -197,7 +197,9 @@ class StructuredProgram:
         """
         return StructuredProgram._AverageContext(structured_program=self, shots=shots)
 
-    def variable(self, domain: Domain, type: type[int | float] | None = None):  # pylint: disable=redefined-builtin
+    def variable(
+        self, label: str, domain: Domain, type: type[int | float] | None = None
+    ):  # pylint: disable=redefined-builtin
         """Declare a variable.
 
         Args:
@@ -210,13 +212,13 @@ class StructuredProgram:
             IntVariable | FloatVariable: The variable.
         """
 
-        def _int_variable(domain: Domain = Domain.Scalar) -> IntVariable:
-            variable = IntVariable(domain)
+        def _int_variable(label: str, domain: Domain = Domain.Scalar) -> IntVariable:
+            variable = IntVariable(label, domain)
             self._variables.append(variable)
             return variable
 
-        def _float_variable(domain: Domain = Domain.Scalar) -> FloatVariable:
-            variable = FloatVariable(domain)
+        def _float_variable(label: str, domain: Domain = Domain.Scalar) -> FloatVariable:
+            variable = FloatVariable(label, domain)
             self._variables.append(variable)
             return variable
 
@@ -227,14 +229,14 @@ class StructuredProgram:
 
         if domain is Domain.Scalar:
             if type == int:
-                return _int_variable(domain)
+                return _int_variable(label, domain)
             if type == float:
-                return _float_variable(domain)
+                return _float_variable(label, domain)
 
         if domain == Domain.Time:
-            return _int_variable(domain)
+            return _int_variable(label, domain)
         if domain in [Domain.Frequency, Domain.Phase, Domain.Voltage]:
-            return _float_variable(domain)
+            return _float_variable(label, domain)
         raise NotImplementedError
 
     class _BlockContext:

@@ -24,3 +24,8 @@ class Element:
     """Class representing an element of QProgram."""
 
     _uuid: UUID = field(default_factory=uuid4, init=False)
+
+    @property
+    def uuid(self) -> UUID:
+        """Get the UUID."""
+        return self._uuid

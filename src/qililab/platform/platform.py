@@ -21,6 +21,7 @@ import re
 import time
 import traceback
 import warnings
+from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
 from queue import Queue
@@ -39,6 +40,7 @@ from qililab.chip import Chip
 from qililab.circuit_transpiler import CircuitTranspiler
 from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
+from qililab.exceptions import ExceptionGroup
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
 from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
@@ -48,7 +50,8 @@ from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSchedule
 from qililab.pulse import QbloxCompiler as PulseQbloxCompiler
-from qililab.qprogram import Calibration, QbloxCompiler, QProgram, QuantumMachinesCompiler
+from qililab.qprogram import Calibration, Experiment, QbloxCompiler, QProgram, QuantumMachinesCompiler
+from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.result import Result
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
@@ -611,6 +614,39 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """
         return str(YAML().dump(self.to_dict(), io.BytesIO()))
 
+    @contextmanager
+    def session(self):
+        """Context manager to manage platform session, ensuring that resources are always released."""
+        cleanup_methods = []
+        cleanup_errors = []
+        try:
+            # Track successfully called setup methods and their cleanup counterparts
+            self.connect()
+            cleanup_methods.append(self.disconnect)  # Store disconnect for cleanup
+
+            self.initial_setup()  # No specific cleanup for initial_setup
+
+            self.turn_on_instruments()
+            cleanup_methods.append(self.turn_off_instruments)  # Store turn_off_instruments for cleanup
+
+            yield  # Experiment logic goes here
+
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            raise  # Re-raise the exception for further handling
+        finally:
+            # Call the cleanup methods in reverse order
+            for cleanup_method in reversed(cleanup_methods):
+                try:
+                    cleanup_method()
+                except Exception as e:  # pylint: disable=broad-exception-caught
+                    print(f"Error during cleanup: {e}")
+                    cleanup_errors.append(e)
+
+            # Raise any exception that might have happened during cleanup
+            if cleanup_errors:
+                raise ExceptionGroup("Exceptions occurred during cleanup", cleanup_errors)
+
     def execute_anneal_program(  # pylint: disable=too-many-locals
         self,
         annealing_program_dict: list[dict[str, dict[str, float]]],
@@ -672,6 +708,22 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
             return self.execute_qprogram(qprogram=qp_annealing, calibration=calibration)
         raise ValueError("The calibrated measurement is not present in the calibration file.")
+
+    def execute_experiment(self, experiment: Experiment, results_path: str) -> str:
+        """Executes the given quantum experiment and saves the results.
+
+        This method initializes an `ExperimentExecutor` with the provided `experiment` and `results_path`,
+        and then executes the experiment. The results are streamed to the specified path in real-time.
+
+        Args:
+            experiment (Experiment): The quantum experiment to be executed.
+            results_path (str): The path where the experiment's results will be saved.
+
+        Returns:
+            str: The path of the file that the experiment's results are stored.
+        """
+        executor = ExperimentExecutor(platform=self, experiment=experiment, results_path=results_path)
+        return executor.execute()
 
     def execute_qprogram(  # pylint: disable=too-many-locals
         self,
