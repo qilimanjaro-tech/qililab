@@ -153,7 +153,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             dict[str, QPy.Sequence]: A dictionary with the buses participating in the QProgram as keys and the corresponding Sequence as values.
         """
 
-        def traverse(block: Block):
+        def traverse(block: Block):  # pylint: disable=too-many-nested-blocks
             delay_implemented = False
             for bus in self._buses:
                 self._buses[bus].qprogram_block_stack.append(block)
