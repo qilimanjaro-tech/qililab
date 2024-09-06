@@ -656,12 +656,12 @@ class TestMethods:
         qprogram.play(bus="drive_line_q1_bus", waveform=drive_wf)
 
         test_waveforms_q0 = Waveforms()
-        test_waveforms_q0.add(array=[0.5, 1.0, 0.5, 0.0], index=0)
-        test_waveforms_q0.add(array=[0.0, 0.0, 0.0, 0.0], index=1)
+        test_waveforms_q0.add(array=np.array([0.5, 1.0, 0.5, 0.0]).tolist(), index=0)
+        test_waveforms_q0.add(array=np.array([0.0, 0.0, 0.0, 0.0]).tolist(), index=1)
 
         test_waveforms_q1 = Waveforms()
         test_waveforms_q1.add(array=drive_wf.envelope(), index=0)
-        test_waveforms_q1.add(array=[0.0, 0.0, 0.0, 0.0], index=1)
+        test_waveforms_q1.add(array=np.array([0.0, 0.0, 0.0, 0.0]).tolist(), index=1)
 
         qblox_compiler = QbloxCompiler()
         sequences, _ = qblox_compiler.compile(qprogram=qprogram)
