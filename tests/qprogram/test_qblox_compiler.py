@@ -64,7 +64,7 @@ def fixture_no_loops_all_operations() -> QProgram:
 def fixture_dynamic_wait() -> QProgram:
     drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
-    duration = qp.variable(Domain.Time)
+    duration = qp.variable(label="time", domain=Domain.Time)
     with qp.for_loop(variable=duration, start=100, stop=200, step=10):
         qp.play(bus="drive", waveform=drag_pair)
         qp.wait(bus="drive", duration=duration)
@@ -75,7 +75,7 @@ def fixture_dynamic_wait() -> QProgram:
 def fixture_dynamic_wait_multiple_buses() -> QProgram:
     drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
-    duration = qp.variable(Domain.Time)
+    duration = qp.variable(label="time", domain=Domain.Time)
     with qp.for_loop(variable=duration, start=100, stop=200, step=10):
         qp.play(bus="drive", waveform=drag_pair)
         qp.wait(bus="readout", duration=duration)
@@ -88,7 +88,7 @@ def fixture_dynamic_wait_multiple_buses_with_disable_autosync() -> QProgram:
     drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
     qp.qblox.disable_autosync = True
-    duration = qp.variable(Domain.Time)
+    duration = qp.variable(label="time", domain=Domain.Time)
     with qp.for_loop(variable=duration, start=100, stop=200, step=10):
         qp.play(bus="drive", waveform=drag_pair)
         qp.wait(bus="readout", duration=duration)
@@ -100,7 +100,7 @@ def fixture_dynamic_wait_multiple_buses_with_disable_autosync() -> QProgram:
 def fixture_sync_with_dynamic_wait() -> QProgram:
     drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
-    duration = qp.variable(Domain.Time)
+    duration = qp.variable(label="time", domain=Domain.Time)
     with qp.for_loop(variable=duration, start=100, stop=200, step=10):
         qp.play(bus="drive", waveform=drag_pair)
         qp.wait(bus="drive", duration=duration)
@@ -178,7 +178,7 @@ def fixture_average_with_for_loop() -> QProgram:
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
-    gain = qp.variable(Domain.Voltage)
+    gain = qp.variable(label="gain", domain=Domain.Voltage)
     with qp.average(shots=1000):
         with qp.for_loop(variable=gain, start=0, stop=1.0, step=0.1):
             qp.play(bus="drive", waveform=drag_pair)
@@ -194,7 +194,7 @@ def fixture_average_with_for_loop_nshots() -> QProgram:
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
-    nshots = qp.variable(Domain.Scalar, type=int)
+    nshots = qp.variable(label="nshots", domain=Domain.Scalar, type=int)
     with qp.average(shots=1000):
         with qp.for_loop(variable=nshots, start=0, stop=2, step=1):
             qp.play(bus="drive", waveform=drag_pair)
@@ -212,7 +212,7 @@ def fixture_acquire_loop_with_for_loop_with_weights_of_same_waveform() -> QProgr
         Q=Gaussian(amplitude=1.0, duration=1000, num_sigmas=2.5),
     )
     qp = QProgram()
-    gain = qp.variable(Domain.Voltage)
+    gain = qp.variable(label="gain", domain=Domain.Voltage)
     with qp.average(shots=1000):
         with qp.for_loop(variable=gain, start=0, stop=1.0, step=0.1):
             qp.play(bus="drive", waveform=drag_pair)
@@ -229,8 +229,8 @@ def fixture_average_with_multiple_for_loops_and_acquires() -> QProgram:
     weights_pair_1 = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair_2 = IQPair(I=Square(amplitude=1.0, duration=500), Q=Square(amplitude=0.0, duration=500))
     qp = QProgram()
-    frequency = qp.variable(Domain.Frequency)
-    gain = qp.variable(Domain.Voltage)
+    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+    gain = qp.variable(label="gain", domain=Domain.Voltage)
     with qp.average(shots=1000):
         with qp.for_loop(variable=frequency, start=0, stop=500, step=10):
             qp.set_frequency(bus="readout", frequency=frequency)
@@ -250,8 +250,8 @@ def fixture_average_with_nested_for_loops() -> QProgram:
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
-    frequency = qp.variable(Domain.Frequency)
-    gain = qp.variable(Domain.Voltage)
+    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+    gain = qp.variable(label="gain", domain=Domain.Voltage)
     with qp.average(shots=1000):
         with qp.for_loop(variable=gain, start=0, stop=1, step=0.1):
             qp.set_gain(bus="drive", gain=gain)
@@ -279,8 +279,8 @@ def fixture_average_with_parallel_for_loops() -> QProgram:
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
-    frequency = qp.variable(Domain.Frequency)
-    gain = qp.variable(Domain.Voltage)
+    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+    gain = qp.variable(label="gain", domain=Domain.Voltage)
     with qp.average(shots=1000):
         with qp.parallel(
             loops=[
@@ -300,7 +300,7 @@ def fixture_average_with_parallel_for_loops() -> QProgram:
 @pytest.fixture(name="for_loop_variable_with_no_target")
 def fixture_for_loop_variable_with_no_target() -> QProgram:
     qp = QProgram()
-    variable = qp.variable(Domain.Scalar, float)
+    variable = qp.variable(label="float_scalar", domain=Domain.Scalar, type=float)
     with qp.average(shots=1000):
         with qp.for_loop(variable=variable, start=0, stop=100, step=4):
             qp.set_frequency(bus="drive", frequency=100)

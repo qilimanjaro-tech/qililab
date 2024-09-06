@@ -67,6 +67,15 @@ class Variable:
     """Variable class used to define variables inside a QProgram."""
 
     @property
+    def label(self):
+        """Get the label of the variable
+
+        Returns:
+            str: The label of the variable
+        """
+        return self._label
+
+    @property
     def value(self):
         """Get the value of the variable
 
@@ -84,14 +93,15 @@ class Variable:
         """
         return self._domain
 
-    def __init__(self, domain: Domain = Domain.Scalar) -> None:
+    def __init__(self, label: str, domain: Domain = Domain.Scalar) -> None:
         self._uuid: UUID = uuid4()
         self._source: ValueSource = ValueSource.Free
         self._value: int | float | None = None
+        self._label: str = label
         self._domain: Domain = domain
 
     def __repr__(self):
-        return repr(self._uuid)
+        return f"Variable(uuid={repr(self._uuid)}, label={self.label}, value={self.value})"
 
     def __hash__(self):
         return hash(self._uuid)
@@ -105,13 +115,13 @@ class IntVariable(Variable, int):  # type: ignore
     """Integer variable. This class is used to define a variable of type int, such that Python recognizes this class
     as an integer."""
 
-    def __new__(cls, _: Domain = Domain.Scalar):
+    def __new__(cls, _: str = "", __: Domain = Domain.Scalar):
         # Create a new float instance
         instance = int.__new__(cls, 0)
         return instance
 
-    def __init__(self, domain: Domain = Domain.Scalar):
-        Variable.__init__(self, domain)
+    def __init__(self, label: str = "", domain: Domain = Domain.Scalar):
+        Variable.__init__(self, label, domain)
 
 
 @yaml.register_class
@@ -119,10 +129,10 @@ class FloatVariable(Variable, float):  # type: ignore
     """Float variable. This class is used to define a variable of type float, such that Python recognizes this class
     as a float."""
 
-    def __new__(cls, _: Domain = Domain.Scalar):
+    def __new__(cls, _: str = "", __: Domain = Domain.Scalar):
         # Create a new int instance
         instance = float.__new__(cls, 0.0)
         return instance
 
-    def __init__(self, domain: Domain = Domain.Scalar):
-        Variable.__init__(self, domain)
+    def __init__(self, label: str = "", domain: Domain = Domain.Scalar):
+        Variable.__init__(self, label, domain)

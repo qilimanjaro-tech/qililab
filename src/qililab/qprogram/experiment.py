@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import ExecuteQProgram, SetParameter
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.structured_program import StructuredProgram
@@ -39,7 +40,13 @@ class Experiment(StructuredProgram):
         operation = SetParameter(alias=alias, parameter=parameter, value=value)
         self._active_block.append(operation)
 
-    def execute_qprogram(self, qprogram: QProgram):
+    def execute_qprogram(
+        self,
+        qprogram: QProgram,
+        bus_mapping: dict[str, str] | None = None,
+        calibration: Calibration | None = None,
+        debug: bool = False,
+    ):
         """Execute a quantum program within the experiment.
 
         Appends an ExecuteQProgram operation to the active block of the experiment.
@@ -47,5 +54,5 @@ class Experiment(StructuredProgram):
         Args:
             qprogram (QProgram): The quantum program to be executed.
         """
-        operation = ExecuteQProgram(qprogram=qprogram)
+        operation = ExecuteQProgram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration, debug=debug)
         self._active_block.append(operation)
