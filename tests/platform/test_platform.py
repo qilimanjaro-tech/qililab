@@ -1,22 +1,25 @@
 """Tests for the Platform class."""
+# pylint: disable=too-many-lines
 
 import copy
 import io
 import re
 from pathlib import Path
 from queue import Queue
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, create_autospec, patch
 
 import numpy as np
 import pytest
 from qibo import gates
 from qibo.models import Circuit
+from qm.exceptions import StreamProcessingDataLossError
 from qpysequence import Sequence, Waveforms
 from ruamel.yaml import YAML
 
 from qililab import Arbitrary, save_platform
 from qililab.chip import Chip, Qubit
 from qililab.constants import DEFAULT_PLATFORM_NAME
+from qililab.exceptions import ExceptionGroup
 from qililab.instrument_controllers import InstrumentControllers
 from qililab.instruments import AWG, AWGAnalogDigitalConverter, SignalGenerator
 from qililab.instruments.instruments import Instruments
@@ -24,7 +27,7 @@ from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
-from qililab.qprogram import Calibration, QbloxCompiler, QProgram
+from qililab.qprogram import Calibration, Experiment, QbloxCompiler, QProgram
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
@@ -375,6 +378,127 @@ class TestPlatform:
 class TestMethods:
     """Unit tests for the methods of the Platform class."""
 
+    def test_session_success(self):
+        """Test the session method when everything works successfully."""
+        # Create an autospec of the Platform class
+        platform = create_autospec(Platform, instance=True)
+
+        # Manually set the session method to the real one
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        # Run the session successfully
+        with platform.session():
+            pass  # Simulate a successful experiment execution
+
+        # Ensure methods were called in the correct order
+        platform.connect.assert_called_once()
+        platform.initial_setup.assert_called_once()
+        platform.turn_on_instruments.assert_called_once()
+
+        # Ensure cleanup is called in reverse order
+        platform.turn_off_instruments.assert_called_once()
+        platform.disconnect.assert_called_once()
+
+    def test_session_with_exception(self):
+        """Test the session method when an exception occurs during execution."""
+        # Create an autospec of the Platform class
+        platform = create_autospec(Platform, instance=True)
+
+        # Manually set the session method to the real one
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        # Simulate an exception during the experiment
+        with pytest.raises(AttributeError, match="Test Error"):
+            with platform.session():
+                raise AttributeError("Test Error")
+
+        # Ensure methods were called in the correct order before the exception
+        platform.connect.assert_called_once()
+        platform.initial_setup.assert_called_once()
+        platform.turn_on_instruments.assert_called_once()
+
+        # Ensure cleanup is still called in reverse order even after the exception
+        platform.turn_off_instruments.assert_called_once()
+        platform.disconnect.assert_called_once()
+
+    def test_session_with_exception_in_setup(self):
+        """Test the session method when an error occurs before turning on instruments."""
+        # Create an autospec of the Platform class
+        platform = create_autospec(Platform, instance=True)
+
+        # Manually set the session method to the real one
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        # Raise an exception after connect() and initial_setup() but before turn_on_instruments()
+        platform.turn_on_instruments.side_effect = Exception("Instrument failure")
+
+        # Simulate an error after connect() and initial_setup() but before turn_on_instruments()
+        with pytest.raises(Exception, match="Instrument failure"):
+            with platform.session():
+                pass  # The exception will occur inside the context
+
+        # Ensure methods were called until the point of failure
+        platform.connect.assert_called_once()
+        platform.initial_setup.assert_called_once()
+        platform.turn_on_instruments.assert_called_once()
+
+        # Ensure turn_off_instruments is not called, but disconnect is called
+        platform.turn_off_instruments.assert_not_called()
+        platform.disconnect.assert_called_once()
+
+    def test_session_with_exception_in_cleanup(self):
+        """Test the session method when an exception occurs during cleanup."""
+        # Create an autospec of the Platform class
+        platform = create_autospec(Platform, instance=True)
+
+        # Manually set the session method to the real one
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        # Simulate turn_off_instruments failing
+        platform.turn_off_instruments.side_effect = Exception("Turn off instruments error")
+
+        # Simulate no exception during the experiment, but failure during cleanup
+        with pytest.raises(Exception, match="Turn off instruments error"):
+            with platform.session():
+                pass  # No exception during the experiment
+
+        # Ensure methods were called in the correct order
+        platform.connect.assert_called_once()
+        platform.initial_setup.assert_called_once()
+        platform.turn_on_instruments.assert_called_once()
+
+        # Ensure the exception is raised in cleanup
+        platform.turn_off_instruments.assert_called_once()
+        platform.disconnect.assert_called_once()
+
+    def test_session_with_multiple_exceptions_in_cleanup(self):
+        """Test the session method when multiple exceptions occur during cleanup."""
+        # Create an autospec of the Platform class
+        platform = create_autospec(Platform, instance=True)
+
+        # Manually set the session method to the real one
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        # Simulate turn_off_instruments and disconnect failing
+        platform.turn_off_instruments.side_effect = Exception("Turn off instruments error")
+        platform.disconnect.side_effect = Exception("Disconnect error")
+
+        with pytest.raises(ExceptionGroup) as exc_info:
+            with platform.session():
+                pass
+
+        # Ensure ExceptionGroup has captured all exceptions
+        assert len(exc_info.value.exceptions) == 2
+        assert str(exc_info.value.exceptions[0]) == "Turn off instruments error"
+        assert str(exc_info.value.exceptions[1]) == "Disconnect error"
+
+        # Ensure methods were called in the correct order
+        platform.connect.assert_called_once()
+        platform.initial_setup.assert_called_once()
+        platform.turn_on_instruments.assert_called_once()
+        platform.turn_off_instruments.assert_called_once()
+        platform.disconnect.assert_called_once()
+
     def test_compile_circuit(self, platform: Platform):
         """Test the compilation of a qibo Circuit."""
         circuit = Circuit(3)
@@ -458,6 +582,26 @@ class TestMethods:
                 measurement_name="whatever",
                 calibration=calibration,
             )
+
+    def test_execute_experiment(self, platform: Platform):
+        """Test the execute_experiment method of the Platform class."""
+        mock_experiment = create_autospec(Experiment)
+        results_path = "/tmp/test_results/"
+
+        # Mock the ExperimentExecutor to ensure it's used correctly
+        with patch("qililab.platform.platform.ExperimentExecutor") as MockExecutor:
+            mock_executor_instance = MockExecutor.return_value  # Mock instance of ExperimentExecutor
+
+            # Call the method under test
+            platform.execute_experiment(experiment=mock_experiment, results_path=results_path)
+
+            # Check that ExperimentExecutor was instantiated with the correct arguments
+            MockExecutor.assert_called_once_with(
+                platform=platform, experiment=mock_experiment, results_path=results_path
+            )
+
+            # Ensure the execute method was called on the ExperimentExecutor instance
+            mock_executor_instance.execute.assert_called_once()
 
     def test_execute_qprogram_with_qblox(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
@@ -610,6 +754,39 @@ class TestMethods:
                 _ = platform_quantum_machines.execute_qprogram(qprogram=qprogram, debug=True)
 
         turn_off.assert_called_once_with()
+
+    def test_execute_qprogram_with_quantum_machines_raises_dataloss(
+        self,
+        platform_quantum_machines: Platform,
+    ):  # pylint: disable=too-many-locals
+        """Test that the execute_qprogram method raises the dataloss exception if the qprogram returns StreamProcessingDataLossError"""
+
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_q0_rf", waveform=drive_wf)
+        qprogram.sync()
+        qprogram.play(bus="readout_q0_rf", waveform=readout_wf)
+        qprogram.measure(bus="readout_q0_rf", waveform=readout_wf, weights=weights_wf)
+
+        cluster = Mock()
+
+        compiler_mock = Mock()
+        compiler_mock.compile.return_value = (Mock(), Mock(), [])
+
+        cluster.run_compiled_program.side_effect = [
+            StreamProcessingDataLossError("Data loss occurred"),
+            StreamProcessingDataLossError("Data loss occurred"),
+            StreamProcessingDataLossError("Data loss occurred"),
+        ]
+
+        with pytest.raises(StreamProcessingDataLossError):
+            _ = platform_quantum_machines._execute_qprogram_with_quantum_machines(
+                qprogram=qprogram, cluster=cluster, dataloss_tries=3
+            )
+
+        assert cluster.run_compiled_program.call_count == 3
 
     def test_execute(self, platform: Platform, qblox_results: list[dict]):
         """Test that the execute method calls the buses to run and return the results."""

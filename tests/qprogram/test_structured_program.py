@@ -59,8 +59,8 @@ class TestStructuredProgram:
 
     def test_parallel_method(self, instance):
         """Test parallel method"""
-        var1 = instance.variable(Domain.Scalar, int)
-        var2 = instance.variable(Domain.Scalar, float)
+        var1 = instance.variable(label="int_scalar", domain=Domain.Scalar, type=int)
+        var2 = instance.variable(label="float_scalar", domain=Domain.Scalar, type=float)
         with instance.parallel(
             loops=[
                 ForLoop(variable=var1, start=0, stop=10, step=1),
@@ -78,7 +78,7 @@ class TestStructuredProgram:
 
     def test_for_loop_method(self, instance):
         """Test loop method"""
-        variable = instance.variable(Domain.Scalar, int)
+        variable = instance.variable(label="int_scalar", domain=Domain.Scalar, type=int)
         start, stop, step = 0, 100, 5
         with instance.for_loop(variable=variable, start=start, stop=stop, step=step) as loop:
             # __enter__
@@ -95,7 +95,7 @@ class TestStructuredProgram:
 
     def test_loop_method(self, instance):
         """Test loop method"""
-        variable = instance.variable(Domain.Scalar, int)
+        variable = instance.variable(label="int_scalar", domain=Domain.Scalar, type=int)
         values = np.ones(10, dtype=int)
         with instance.loop(variable=variable, values=values) as loop:
             # __enter__
@@ -110,12 +110,12 @@ class TestStructuredProgram:
 
     def test_variable_method(self, instance):
         """Test variable method"""
-        frequency_variable = instance.variable(Domain.Frequency)
-        phase_variable = instance.variable(Domain.Phase)
-        voltage_variable = instance.variable(Domain.Voltage)
-        time_variable = instance.variable(Domain.Time)
-        int_scalar_variable = instance.variable(Domain.Scalar, int)
-        float_scalar_variable = instance.variable(Domain.Scalar, float)
+        frequency_variable = instance.variable(label="frequency", domain=Domain.Frequency)
+        phase_variable = instance.variable(label="phase", domain=Domain.Phase)
+        voltage_variable = instance.variable(label="voltage", domain=Domain.Voltage)
+        time_variable = instance.variable(label="time", domain=Domain.Time)
+        int_scalar_variable = instance.variable(label="int_scalar", domain=Domain.Scalar, type=int)
+        float_scalar_variable = instance.variable(label="float_scalar", domain=Domain.Scalar, type=float)
 
         # Test instantiation
         assert isinstance(frequency_variable, float)
@@ -154,11 +154,11 @@ class TestStructuredProgram:
     def test_variable_method_raises_error_if_domain_is_scalar_and_type_is_none(self, instance):
         """Test variable method"""
         with pytest.raises(ValueError, match="You must specify a type in a scalar variable."):
-            instance.variable(Domain.Scalar)
+            instance.variable(label="error", domain=Domain.Scalar)
 
     def test_variable_method_raises_error_if_domain_is_not_scalar_and_type_is_set(self, instance):
         """Test variable method"""
         with pytest.raises(
             ValueError, match="When declaring a variable of a specific domain, its type is inferred by its domain."
         ):
-            instance.variable(Domain.Frequency, int)
+            instance.variable(label="error", domain=Domain.Frequency, type=int)

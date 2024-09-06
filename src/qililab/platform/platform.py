@@ -15,8 +15,13 @@
 # pylint: disable=too-many-lines
 """Platform class."""
 import ast
+import datetime
 import io
 import re
+import time
+import traceback
+import warnings
+from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
 from queue import Queue
@@ -26,6 +31,7 @@ import numpy as np
 from qibo.gates import M
 from qibo.models import Circuit
 from qm import generate_qua_script
+from qm.exceptions import StreamProcessingDataLossError
 from qpysequence import Sequence as QpySequence
 from ruamel.yaml import YAML
 
@@ -34,6 +40,7 @@ from qililab.chip import Chip
 from qililab.circuit_transpiler import CircuitTranspiler
 from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
+from qililab.exceptions import ExceptionGroup
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
 from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
@@ -43,7 +50,8 @@ from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSchedule
 from qililab.pulse import QbloxCompiler as PulseQbloxCompiler
-from qililab.qprogram import Calibration, QbloxCompiler, QProgram, QuantumMachinesCompiler
+from qililab.qprogram import Calibration, Experiment, QbloxCompiler, QProgram, QuantumMachinesCompiler
+from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.result import Result
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
@@ -606,6 +614,39 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """
         return str(YAML().dump(self.to_dict(), io.BytesIO()))
 
+    @contextmanager
+    def session(self):
+        """Context manager to manage platform session, ensuring that resources are always released."""
+        cleanup_methods = []
+        cleanup_errors = []
+        try:
+            # Track successfully called setup methods and their cleanup counterparts
+            self.connect()
+            cleanup_methods.append(self.disconnect)  # Store disconnect for cleanup
+
+            self.initial_setup()  # No specific cleanup for initial_setup
+
+            self.turn_on_instruments()
+            cleanup_methods.append(self.turn_off_instruments)  # Store turn_off_instruments for cleanup
+
+            yield  # Experiment logic goes here
+
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            raise  # Re-raise the exception for further handling
+        finally:
+            # Call the cleanup methods in reverse order
+            for cleanup_method in reversed(cleanup_methods):
+                try:
+                    cleanup_method()
+                except Exception as e:  # pylint: disable=broad-exception-caught
+                    print(f"Error during cleanup: {e}")
+                    cleanup_errors.append(e)
+
+            # Raise any exception that might have happened during cleanup
+            if cleanup_errors:
+                raise ExceptionGroup("Exceptions occurred during cleanup", cleanup_errors)
+
     def execute_anneal_program(  # pylint: disable=too-many-locals
         self,
         annealing_program_dict: list[dict[str, dict[str, float]]],
@@ -668,11 +709,28 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             return self.execute_qprogram(qprogram=qp_annealing, calibration=calibration)
         raise ValueError("The calibrated measurement is not present in the calibration file.")
 
+    def execute_experiment(self, experiment: Experiment, results_path: str) -> str:
+        """Executes the given quantum experiment and saves the results.
+
+        This method initializes an `ExperimentExecutor` with the provided `experiment` and `results_path`,
+        and then executes the experiment. The results are streamed to the specified path in real-time.
+
+        Args:
+            experiment (Experiment): The quantum experiment to be executed.
+            results_path (str): The path where the experiment's results will be saved.
+
+        Returns:
+            str: The path of the file that the experiment's results are stored.
+        """
+        executor = ExperimentExecutor(platform=self, experiment=experiment, results_path=results_path)
+        return executor.execute()
+
     def execute_qprogram(  # pylint: disable=too-many-locals
         self,
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,
         calibration: Calibration | None = None,
+        dataloss_tries: int = 3,
         debug: bool = False,
     ) -> QProgramResults:
         """Execute a :class:`.QProgram` using the platform instruments.
@@ -767,6 +825,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 threshold_rotations=threshold_rotations,  # type: ignore
                 thresholds=thresholds,  # type: ignore
                 calibration=calibration,
+                dataloss_tries=dataloss_tries,
                 debug=debug,
             )
         raise NotImplementedError("Executing QProgram in a mixture of instruments is not supported.")
@@ -843,6 +902,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         threshold_rotations: dict[str, float | None] = {},
         thresholds: dict[str, float | None] = {},
         calibration: Calibration | None = None,
+        dataloss_tries: int = 3,
         debug: bool = False,
     ) -> QProgramResults:
         compiler = QuantumMachinesCompiler()
@@ -850,31 +910,48 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             qprogram=qprogram, bus_mapping=bus_mapping, threshold_rotations=threshold_rotations, calibration=calibration
         )
 
-        try:
-            cluster.append_configuration(configuration=configuration)
+        start_time = datetime.datetime.now()
+        for iteration in np.arange(dataloss_tries):  # TODO: This is a temporal fix as QM fixes the dataloss error
+            try:
+                cluster.append_configuration(configuration=configuration)
 
-            if debug:
-                with open("debug_qm_execution.py", "w", encoding="utf-8") as sourceFile:
-                    print(generate_qua_script(qua_program, cluster.config), file=sourceFile)
+                if debug:
+                    with open("debug_qm_execution.py", "w", encoding="utf-8") as sourceFile:
+                        print(generate_qua_script(qua_program, cluster.config), file=sourceFile)
 
-            compiled_program_id = cluster.compile(program=qua_program)
-            job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
+                compiled_program_id = cluster.compile(program=qua_program)
+                job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
 
-            acquisitions = cluster.get_acquisitions(job=job)
+                acquisitions = cluster.get_acquisitions(job=job)
 
-            results = QProgramResults()
-            # Doing manual classification of results as QM does not return thresholded values like Qblox
-            for measurement in measurements:
-                measurement_result = QuantumMachinesMeasurementResult(
-                    *[acquisitions[handle] for handle in measurement.result_handles],
+                results = QProgramResults()
+                # Doing manual classification of results as QM does not return thresholded values like Qblox
+                for measurement in measurements:
+                    measurement_result = QuantumMachinesMeasurementResult(
+                        *[acquisitions[handle] for handle in measurement.result_handles],
+                    )
+                    measurement_result.set_classification_threshold(thresholds.get(measurement.bus, None))
+                    results.append_result(bus=measurement.bus, result=measurement_result)
+
+                return results
+
+            except StreamProcessingDataLossError as dataloss:
+                time_interval = datetime.datetime.now() - start_time
+                warnings.warn(
+                    f"Warning: {dataloss} raised, retrying experiment ({iteration+1}/{dataloss_tries} available tries) after {time_interval.seconds} s"
                 )
-                measurement_result.set_classification_threshold(thresholds.get(measurement.bus, None))
-                results.append_result(bus=measurement.bus, result=measurement_result)
+                warnings.warn(traceback.format_exc())
+                if iteration + 1 != dataloss_tries:
+                    time.sleep(1 * dataloss_tries)
+                    start_time = datetime.datetime.now()
+                    continue
+                cluster.turn_off()
+                raise dataloss
+            except Exception as e:
+                cluster.turn_off()
+                raise e
 
-            return results
-        except Exception as e:
-            cluster.turn_off()
-            raise e
+        return results
 
     def execute(
         self,
