@@ -116,12 +116,12 @@ class TestCrosstalkMatrix:
         crosstalk_matrix["bus2"]["bus1"] = 0.7
         crosstalk_matrix["bus2"]["bus2"] = -0.5
 
-        string = str(crosstalk_matrix).strip()
+        string = str(crosstalk_matrix)
         assert (
             string
-            == """ bus1     bus2
-            bus1         -0.5      0.5
-            bus2          0.7     -0.5""",
+            == """            bus1     bus2
+bus1         -0.5      0.5
+bus2          0.7     -0.5"""
         )
 
     def test_repr_method(self):
