@@ -161,7 +161,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                 if isinstance(element, Play) and not delay_implemented:
                     for bus in self._buses:
                         if self._buses[bus].delay != 0:
-                            self._handle_wait(element=Wait(bus=bus, duration=self._buses[bus].delay), delay = True)
+                            self._handle_wait(element=Wait(bus=bus, duration=self._buses[bus].delay), delay=True)
                     delay_implemented = True
                 handler = self._handlers.get(type(element))
                 if not handler:
@@ -172,7 +172,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                     if not self._qprogram.qblox.disable_autosync and isinstance(
                         element, (ForLoop, Parallel, Loop, Average)
                     ):
-                        self._handle_sync(element=Sync(buses=None), delay = True)
+                        self._handle_sync(element=Sync(buses=None), delay=True)
                     if appended:
                         for bus in self._buses:
                             self._buses[bus].qpy_block_stack.pop()
@@ -404,7 +404,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             component=QPyInstructions.SetMrk(marker_outputs=marker_outputs)
         )
 
-    def _handle_wait(self, element: Wait, delay:bool = False):
+    def _handle_wait(self, element: Wait, delay: bool = False):
         duration: QPyProgram.Register | int
         if isinstance(element.duration, Variable):
             duration = self._buses[element.bus].variable_to_register[element.duration]
@@ -439,7 +439,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             component=QPyInstructions.Wait(wait_time=duration % INST_MAX_WAIT)
         )
 
-    def _handle_sync(self, element: Sync, delay:bool = False):
+    def _handle_sync(self, element: Sync, delay: bool = False):
         # Get the buses involved in the sync operation.
         buses = set(element.buses or self._buses)
 
@@ -464,7 +464,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         for bus in buses:
             self._buses[bus].marked_for_sync = False
 
-    def __handle_static_sync(self, buses: set[str], delay:bool = False):
+    def __handle_static_sync(self, buses: set[str], delay: bool = False):
         max_duration = max(self._buses[bus].static_duration for bus in buses)
         if delay:
             max_delay = max(self._buses[bus].delay for bus in buses)

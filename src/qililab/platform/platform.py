@@ -725,10 +725,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 for bus in buses
                 if isinstance(bus.system_control, ReadoutSystemControl)
             }
-            delays = {
-                bus.alias: int(bus.get_parameter(Parameter.DELAY))
-                for bus in buses
-            }
+            delays = {bus.alias: int(bus.get_parameter(Parameter.DELAY)) for bus in buses}
             # Determine what should be the initial value of the markers for each bus.
             # This depends on the model of the associated Qblox module and the `output` setting of the associated sequencer.
             markers = {}
