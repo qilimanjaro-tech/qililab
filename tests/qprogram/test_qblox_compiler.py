@@ -1187,6 +1187,123 @@ class TestQBloxCompiler:
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
 
+    def test_delay(self, average_with_for_loop_nshots: QProgram):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=average_with_for_loop_nshots, delays={"drive": 20})
+
+        assert len(sequences) == 2
+        assert "drive" in sequences
+        assert "readout" in sequences
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            move             1000, R0
+            avg_0:
+                            move             3, R1
+                            move             0, R2
+            loop_0:
+                            wait             20
+                            play             0, 1, 40
+                            wait             2960
+                            add              R2, 1, R2
+                            loop             R1, @loop_0
+                            loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        readout_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            move             1000, R0
+            avg_0:
+                            move             1, R1
+                            move             0, R2
+                            move             0, R3
+                            move             3, R4
+                            move             0, R5
+            loop_0:
+                            play             0, 1, 1000
+                            acquire_weighed  0, R3, R2, R1, 2000
+                            add              R3, 1, R3
+                            wait             20
+                            add              R5, 1, R5
+                            loop             R4, @loop_0
+                            loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+        assert is_q1asm_equal(sequences["readout"], readout_str)
+
+    def test_negative_delay(self, average_with_for_loop_nshots: QProgram):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=average_with_for_loop_nshots, delays={"drive": -20})
+
+        assert len(sequences) == 2
+        assert "drive" in sequences
+        assert "readout" in sequences
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            move             1000, R0
+            avg_0:
+                            move             3, R1
+                            move             0, R2
+            loop_0:
+                            play             0, 1, 40
+                            wait             2980
+                            add              R2, 1, R2
+                            loop             R1, @loop_0
+                            loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        readout_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            move             1000, R0
+            avg_0:
+                            move             1, R1
+                            move             0, R2
+                            move             0, R3
+                            move             3, R4
+                            move             0, R5
+            loop_0:
+                            wait             20
+                            play             0, 1, 1000
+                            acquire_weighed  0, R3, R2, R1, 2000
+                            add              R3, 1, R3
+                            add              R5, 1, R5
+                            loop             R4, @loop_0
+                            loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+        assert is_q1asm_equal(sequences["readout"], readout_str)
+
     @pytest.mark.parametrize(
         "start,stop,step,expected_result",
         [(0, 10, 1, 11), (10, 0, -1, 11), (1, 2.05, 0.1, 11)],
