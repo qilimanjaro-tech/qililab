@@ -1,16 +1,20 @@
 import os
+import time
+from copy import deepcopy
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Callable
 
 import numpy as np
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 
-from qililab.qprogram.blocks import Block, ForLoop, Loop
+from qililab.qprogram.blocks import Average, Block, ForLoop, Loop
 from qililab.qprogram.experiment import Experiment
-from qililab.qprogram.operations import ExecuteQProgram, Operation, SetParameter
+from qililab.qprogram.operations import ExecuteQProgram, Measure, Operation, SetParameter
+from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable import Variable
+from qililab.result.experiment_results_writer import ExperimentResultsWriter
 from qililab.result.qprogram.qprogram_results import QProgramResults
-from qililab.result.stream_results import StreamArray, stream_results
+from qililab.utils.serialization import serialize
 
 if TYPE_CHECKING:
     from qililab.platform.platform import Platform
@@ -31,50 +35,101 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
         self.results_path = results_path
         self.task_ids: dict = {}
         self.stored_operations: list[Callable[[], Any]] = []
-        self.loop_indices: dict[str, int] = {}
+
         self.loop_values: dict[str, np.ndarray] = {}
-        self.shape = ()
-        self.stream_array: StreamArray
+        self.loop_values_indices: dict[str, int] = {}
+        self.loop_indices: dict[str, int] = {}
+        self.qprogram_execution_indices: dict[QProgram, int] = {}
+
+        self.experiment_loops_stack: dict[str, np.ndarray] = {}
+        self.qprogram_loops_stack: dict[str, np.ndarray] = {}
+        self.qprogram_index = 0
+        self.measurement_index = 0
+        self.shots = 1
+        self.structure: dict[str, Any] = {"qprograms": {}}
+        # self.data_path = self._create_results_path(self.results_path, "data.h5")
+        self.results_writer: ExperimentResultsWriter
 
     def _prepare(self):
         """Prepares the loop values and result shape before execution."""
-        self._traverse_and_prepare(self.experiment.body)
-        self.shape = tuple(len(values) for _, values in self.loop_values.items()) + (2,)
 
-    def _traverse_and_prepare(self, block: Block):
-        """Traverses the blocks to gather loop information and determine result shape."""
-        if isinstance(block, (Loop, ForLoop)):
-            loop_values = (
-                self._inclusive_range(block.start, block.stop, block.step)
-                if isinstance(block, ForLoop)
-                else block.values
-            )
-            loop_label = block.variable.label
-            self.loop_values[loop_label] = loop_values
+        def traverse_experiment(block: Block):
+            """Traverses the blocks to gather loop information and determine result shape."""
+            if isinstance(block, (Loop, ForLoop)):
+                loop_values = (
+                    self._inclusive_range(block.start, block.stop, block.step)
+                    if isinstance(block, ForLoop)
+                    else block.values
+                )
+                loop_label = block.variable.label
+                self.loop_values[loop_label] = loop_values
+                self.experiment_loops_stack[block.variable.label] = loop_values
 
-        # Recursively traverse nested blocks or loops
-        for element in block.elements:
-            if isinstance(element, (ForLoop, Loop)):
-                self._traverse_and_prepare(element)
-            # Handle ExecuteQProgram operations and traverse their loops
-            if isinstance(element, ExecuteQProgram):
-                self._traverse_qprogram(element.qprogram.body)
+            # Recursively traverse nested blocks or loops
+            for element in block.elements:
+                if isinstance(element, Block):
+                    traverse_experiment(element)
+                # Handle ExecuteQProgram operations and traverse their loops
+                if isinstance(element, ExecuteQProgram):
+                    traverse_qprogram(element.qprogram.body)
+                    self.qprogram_execution_indices[element.qprogram] = self.qprogram_index
+                    self.measurement_index = 0
+                    self.qprogram_index += 1
 
-    def _traverse_qprogram(self, block: Block):
-        """Traverses a QProgram to gather loop information."""
-        if isinstance(block, ForLoop):
-            loop_values = self._inclusive_range(block.start, block.stop, block.step)
-            loop_label = block.variable.label
-            self.loop_values[loop_label] = loop_values
-        elif isinstance(block, Loop):
-            loop_values = block.values
-            loop_label = block.variable.label
-            self.loop_values[loop_label] = loop_values
+            if isinstance(block, (Loop, ForLoop)):
+                del self.experiment_loops_stack[block.variable.label]
 
-        # Recursively handle nested blocks within the QProgram
-        for element in block.elements:
-            if isinstance(element, Block):
-                self._traverse_qprogram(element)
+        def traverse_qprogram(block: Block):
+            """Traverses a QProgram to gather loop information."""
+            if isinstance(block, (Loop, ForLoop)):
+                loop_values = (
+                    self._inclusive_range(block.start, block.stop, block.step)
+                    if isinstance(block, ForLoop)
+                    else block.values
+                )
+                loop_label = block.variable.label
+                self.loop_values[loop_label] = loop_values
+                self.qprogram_loops_stack[block.variable.label] = loop_values
+            if isinstance(block, Average):
+                self.shots = block.shots
+
+            # Recursively handle nested blocks within the QProgram
+            for element in block.elements:
+                if isinstance(element, Block):
+                    traverse_qprogram(element)
+                if isinstance(element, Measure):
+                    finalize_measurement_structure()
+
+            if isinstance(block, (Loop, ForLoop)):
+                del self.qprogram_loops_stack[block.variable.label]
+            if isinstance(block, Average):
+                self.shots = 1
+
+        def finalize_measurement_structure():
+            """Finalize the structure of a measurement when a Measure operation is encountered."""
+            qprogram_name = f"QProgram_{self.qprogram_index}"
+            measurement_name = f"Measurement_{self.measurement_index}"
+
+            # Ensure QProgram exists in the structure
+            if qprogram_name not in self.structure["qprograms"]:
+                self.structure["qprograms"][qprogram_name] = {
+                    "loops": deepcopy(self.experiment_loops_stack),
+                    "measurements": {},
+                }
+
+            # Add QProgram loops and the measurement
+            self.structure["qprograms"][qprogram_name]["measurements"][measurement_name] = {
+                "loops": deepcopy(self.qprogram_loops_stack),
+                "shots": self.shots,
+                "shape": tuple(
+                    len(values) for _, values in (self.experiment_loops_stack | self.qprogram_loops_stack).items()
+                )
+                + (2,),
+            }
+
+            self.measurement_index += 1
+
+        traverse_experiment(self.experiment.body)
 
     def _traverse_and_store(self, block: Block, progress: Progress):
         """Traverse blocks, store generated Python functions, and return the stored operations."""
@@ -134,6 +189,7 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
 
         def remove_progress_bar():
             progress.remove_task(self.task_ids[block.uuid])
+            del self.loop_indices[loop_label]
 
         stored_operations.append(remove_progress_bar)
 
@@ -158,10 +214,11 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
             elif isinstance(element, ExecuteQProgram):
                 # Append a lambda that will call the `platform.execute_qprogram` method
                 stored_operations.append(
-                    lambda op=element: self._store_result(
+                    lambda op=element, index=self.qprogram_execution_indices[element.qprogram]: self._store_result(  # type: ignore[misc]
                         self.platform.execute_qprogram(
                             qprogram=op.qprogram, bus_mapping=op.bus_mapping, calibration=op.calibration, debug=op.debug
-                        )
+                        ),
+                        index,
                     )
                 )
             elif isinstance(element, Block):
@@ -171,12 +228,14 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
 
         return stored_operations
 
-    def _store_result(self, result: QProgramResults):
+    def _store_result(self, result: QProgramResults, qprogram_index: int):
         """Store the result in the correct location within the StreamArray."""
         # Determine the index in the StreamArray based on current loop indices
-        indices = tuple(index - 1 for _, index in self.loop_indices.items())
-        # Store the results in the StreamArray
-        self.stream_array[indices] = next(iter(result.results.values()))[0].array.T  # type: ignore
+        for measurement_index, results in enumerate(next(iter(result.results.values()))):
+            loop_indices = tuple(index - 1 for _, index in self.loop_indices.items())
+            indices = tuple([qprogram_index, measurement_index]) + loop_indices
+            # Store the results in the StreamArray
+            self.results_writer[indices] = results.array.T  # type: ignore
 
     def _run_stored_operations(self, progress: Progress):
         """Run the stored operations in sequence, updating the progress bar."""
@@ -189,6 +248,7 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
 
         progress.update(main_task_id, description="Executing experiment (done)")
         progress.refresh()  # Ensure the final state of the progress bar is rendered
+        return progress.tasks[main_task_id].elapsed
 
     def _inclusive_range(self, start: int | float, stop: int | float, step: int | float) -> np.ndarray:
         # Check if all inputs are integers
@@ -242,10 +302,13 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
         # Prepare the experiment, calculate shape and loop values
         self._prepare()
 
-        # Create the StreamArray for storing results
-        self.stream_array = stream_results(shape=self.shape, loops=self.loop_values, path=path)
+        # Update metadata
+        self.structure["yaml"] = serialize(self.experiment)
+        self.structure["executed_at"] = str(datetime.now())
 
-        with self.stream_array:
+        # Create the ExperimentResultsWriter for storing results
+        self.results_writer = ExperimentResultsWriter(structure=self.structure, path=path)
+        with self.results_writer:
             with Progress(
                 TextColumn("[progress.description]{task.description}"),
                 BarColumn(bar_width=None),
@@ -253,6 +316,7 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
                 TimeElapsedColumn(),
             ) as progress:
                 self.stored_operations = self._traverse_and_store(self.experiment.body, progress)
-                self._run_stored_operations(progress)
+                execution_time = self._run_stored_operations(progress)
+                self.results_writer.set_execution_time(execution_time)
 
         return path
