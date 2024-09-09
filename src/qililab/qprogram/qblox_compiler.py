@@ -133,7 +133,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         self._buses: dict[str, BusCompilationInfo]
         self._sync_counter: int
 
-    def compile(  # noqa: C901
+    def compile(  # noqa: max-complexity=5
         self,
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,
