@@ -694,7 +694,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             annealing_waveforms = annealing_program.get_waveforms(crosstalk_matrix=crosstalk_matrix)
 
             qp_annealing = QProgram()
-            shots_variable = qp_annealing.variable(Domain.Scalar, int)
+            shots_variable = qp_annealing.variable("num_shots", Domain.Scalar, int)
 
             with qp_annealing.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
                 with qp_annealing.average(num_avg):
