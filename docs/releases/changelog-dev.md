@@ -217,6 +217,7 @@
   [#759](https://github.com/qilimanjaro-tech/qililab/pull/759)
 
 - Added `thresholds` argument to `_execute_qprogram_with_quantum_machines` method in `Platform`. This argument allows to threshold results after the execution of the `QProgram`. It is also a new parameter that can be specified on the runcard for each readout bus. An example of the configuration of this parameter on the runcard can be found above.
+
   [#762](https://github.com/qilimanjaro-tech/qililab/pull/762)
 
 - Added `filter` argument inside the qua config file compilation from runcards with qm clusters. This is an optional element for distorsion filters that includes feedforward and feedback, two distorion lists for distorsion compensation and fields in qua config filter. These filters are calibrated and then introduced as compensation for the distorsions of the pulses from external sources such as Bias T. The runcard now might include the new filters (optional):
@@ -260,6 +261,19 @@
   ```
 
   [#770](https://github.com/qilimanjaro-tech/qililab/pull/770)
+
+- Added delay variables to Qblox qprogram implementation. The delays are added in the runcard in nanoseconds and they can be positive or negative scalars (negative delays will make the rest of buses wait). The delay is a wait applied to each iteration of a loop where the bus is present.
+
+  Example:
+
+  ```
+  buses:
+  - alias: readout
+    ...
+    delay: 100
+  ```
+
+  [#793](https://github.com/qilimanjaro-tech/qililab/pull/793)
 
 ### Improvements
 
