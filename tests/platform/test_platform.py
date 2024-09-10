@@ -156,7 +156,6 @@ def get_anneal_qprogram(runcard, flux_to_bus_topology):
         ),
     }
     num_averages = 2
-    num_shots = 1
     readout_duration = 2000
     readout_amplitude = 1.0
     r_wf_I = Square(amplitude=readout_amplitude, duration=readout_duration)
@@ -166,7 +165,7 @@ def get_anneal_qprogram(runcard, flux_to_bus_topology):
     weights = IQPair(I=weights_shape, Q=weights_shape)
     qp_anneal = QProgram()
     shots_variable = qp_anneal.variable("num_shots", Domain.Scalar, int)
-    with qp_anneal.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
+    with qp_anneal.for_loop(variable=shots_variable, start=0, stop=1, step=1):
         with qp_anneal.average(num_averages):
             for bus, waveform in anneal_waveforms.items():
                 qp_anneal.play(bus=bus, waveform=waveform)
