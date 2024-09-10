@@ -705,8 +705,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             shots_variable = qp_annealing.variable("num_shots", Domain.Scalar, int)
 
             if offsets_dict:
-                for bus, [parameter, offset] in offsets_dict.items():
-                    set_parameter(alias=bus, parameter=parameter, value=offset)
+                for alias, [parameter, offset] in offsets_dict.items():
+                    set_parameter(alias=alias, parameter=parameter, value=offset)
 
             with qp_annealing.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
                 with qp_annealing.average(num_averages):
