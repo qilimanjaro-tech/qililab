@@ -144,7 +144,7 @@ def get_calibration():
 
 
 @pytest.fixture(name="anneal_qprogram")
-def get_anneal_qprogram(runcard, flux_to_bus_topology): # pylint: disable=Too many local variables
+def get_anneal_qprogram(runcard, flux_to_bus_topology):  # pylint: disable=Too many local variables
     platform = Platform(runcard=runcard)
     platform.flux_to_bus_topology = flux_to_bus_topology
     anneal_waveforms = {
