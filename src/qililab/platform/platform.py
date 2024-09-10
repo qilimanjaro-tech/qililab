@@ -777,6 +777,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 for bus in buses
                 if isinstance(bus.system_control, ReadoutSystemControl)
             }
+            delays = {bus.alias: int(bus.get_parameter(Parameter.DELAY)) for bus in buses}
             # Determine what should be the initial value of the markers for each bus.
             # This depends on the model of the associated Qblox module and the `output` setting of the associated sequencer.
             markers = {}
@@ -797,6 +798,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             return self._execute_qprogram_with_qblox(
                 qprogram=qprogram,
                 times_of_flight=times_of_flight,
+                delays=delays,
                 markers=markers,
                 bus_mapping=bus_mapping,
                 calibration=calibration,
@@ -834,6 +836,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         self,
         qprogram: QProgram,
         times_of_flight: dict[str, int],
+        delays: dict[str, int],
         markers: dict[str, str],
         bus_mapping: dict[str, str] | None = None,
         calibration: Calibration | None = None,
@@ -846,6 +849,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             bus_mapping=bus_mapping,
             calibration=calibration,
             times_of_flight=times_of_flight,
+            delays=delays,
             markers=markers,
         )
         buses = {bus_alias: self._get_bus_by_alias(alias=bus_alias) for bus_alias in sequences}
