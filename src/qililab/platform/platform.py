@@ -654,7 +654,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         readout_bus: str,
         measurement_name: str,
         transpiler: Callable,
-        num_avg: int,
+        num_averages: int,
         num_shots: int = 1,
         weights: str | None = None,
     ) -> QProgramResults:
@@ -697,7 +697,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             shots_variable = qp_annealing.variable("num_shots", Domain.Scalar, int)
 
             with qp_annealing.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
-                with qp_annealing.average(num_avg):
+                with qp_annealing.average(num_averages):
                     for bus, waveform in annealing_waveforms.items():
                         qp_annealing.play(bus=bus, waveform=waveform)
                     qp_annealing.sync()
