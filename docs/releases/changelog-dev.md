@@ -2,6 +2,9 @@
 
 ### New features since last release
 
+- Introduced the possibility to run multiple shots and averages at the same time for `execute_anneal_program` method.
+  [#797](https://github.com/qilimanjaro-tech/qililab/pull/797)
+
 - Introduced the `Experiment` class, which inherits from `StructuredProgram`. This new class enables the ability to set parameters and execute quantum programs within a structured experiment. Added the `set_parameter` method to allow setting platfform parameters and `execute_qprogram` method to facilitate the execution of quantum programs within the experiment.
   [#782](https://github.com/qilimanjaro-tech/qililab/pull/782)
 
