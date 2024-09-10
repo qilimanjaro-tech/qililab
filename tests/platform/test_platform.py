@@ -1026,7 +1026,8 @@ class TestMethods:
                 readout_bus="readout",
                 measurement_name="measurement",
                 transpiler=MagicMock(),
-                averages=1,
+                num_averages=2,
+                num_shots=1,
             )
 
     def test_get_element_flux(self, platform: Platform):
