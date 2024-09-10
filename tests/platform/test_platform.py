@@ -572,6 +572,30 @@ class TestMethods:
         assert str(anneal_qprogram) == str(qprogram)
         assert isinstance(results, QProgramResults)
 
+    def test_execute_anneal_with_offsets(self, platform: Platform, anneal_qprogram, flux_to_bus_topology, calibration):
+        mock_execute_qprogram = MagicMock()
+        mock_execute_qprogram.return_value = QProgramResults()
+        platform.set_parameter = MagicMock()
+        platform.execute_qprogram = mock_execute_qprogram  # type: ignore[method-assign]
+        platform.flux_to_bus_topology = flux_to_bus_topology
+        transpiler = MagicMock()
+        transpiler.return_value = (1, 2)
+
+        offsets_dict = {"flux_bus_0": [Parameter.AMPLITUDE, 0.1], "flux_bus_1": [Parameter.AMPLITUDE, 0.2]}
+        _ = platform.execute_anneal_program(
+            annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
+            transpiler=transpiler,
+            num_averages=2,
+            num_shots=1,
+            readout_bus="readout_bus",
+            measurement_name="readout",
+            weights="optimal_weights",
+            calibration=calibration,
+            offsets_dict=offsets_dict,
+        )
+
+        platform.set_parameter.execute.assert_called()
+
     def test_execute_anneal_program_no_measurement_raises_error(self, platform: Platform, calibration):
         mock_execute_qprogram = MagicMock()
         platform.execute_qprogram = mock_execute_qprogram  # type: ignore[method-assign]

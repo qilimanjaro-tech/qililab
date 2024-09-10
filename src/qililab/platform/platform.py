@@ -61,6 +61,7 @@ from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName, Line, Parameter
 from qililab.utils import hash_qpy_sequence
 from qililab.waveforms import IQPair, Square
+from src.qililab.qprogram.operations import set_parameter
 
 from .components import Bus, Buses
 
@@ -654,8 +655,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         readout_bus: str,
         measurement_name: str,
         transpiler: Callable,
-        num_averages: int,
+        num_averages: int = 1,
         num_shots: int = 1,
+        offsets_dict: dict | None = None,
         weights: str | None = None,
     ) -> QProgramResults:
         """Given an annealing program execute it as a qprogram.
@@ -678,8 +680,14 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         Args:
             annealing_program_dict (list[dict[str, dict[str, float]]]): annealing program to run
+            calibration (Calibration): instance of a calibration object containing calibrated pulses
+            readout_bus (str): name of the bus that performs the measurements
+            measurement_name (str): name of the calibrated measurement pulse in the calibration object
             transpiler (Callable): ising to flux transpiler. The transpiler should take 2 values as arguments (delta, epsilon) and return 2 values (phix, phiz)
-            averages (int, optional): Amount of times to run and average the program over. Defaults to 1.
+            num_averages (int, optional): Amount of times to run and average the program over. Defaults to 1.
+            num_shots (int, optional): Amount of shots running the program. Defaults to 1.
+            offsets_dict (dict, optional): dictionary containing offsets to ramp up at the beginning of the schedule. Defaults to None. Each entry is of type [ql.Parameter, float], indicating the parameter to set and the value.
+            weights (str, optional): name of the calibrated weights in the calibration object
         """
         if self.flux_to_bus_topology is None:
             raise ValueError("Flux to bus topology not given in the runcard")
@@ -695,6 +703,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
             qp_annealing = QProgram()
             shots_variable = qp_annealing.variable("num_shots", Domain.Scalar, int)
+
+            if offsets_dict:
+                for bus, [parameter, offset] in offsets_dict.items():
+                    set_parameter(alias=bus, parameter=parameter, value=offset)
 
             with qp_annealing.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
                 with qp_annealing.average(num_averages):
