@@ -545,7 +545,8 @@ class TestMethods:
         results = platform.execute_anneal_program(
             annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
             transpiler=transpiler,
-            averages=2,
+            num_averages=2,
+            num_shots=1,
             readout_bus="readout_bus",
             measurement_name="readout",
             weights="optimal_weights",
@@ -558,7 +559,8 @@ class TestMethods:
         results = platform.execute_anneal_program(
             annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
             transpiler=transpiler,
-            averages=2,
+            num_averages=2,
+            num_shots=1,
             readout_bus="readout_bus",
             measurement_name="readout",
             calibration=calibration,
@@ -577,7 +579,8 @@ class TestMethods:
             platform.execute_anneal_program(
                 annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
                 transpiler=transpiler,
-                averages=2,
+                num_averages=2,
+                num_shots=1,
                 readout_bus="readout_bus",
                 measurement_name="whatever",
                 calibration=calibration,
