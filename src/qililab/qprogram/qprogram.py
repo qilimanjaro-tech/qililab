@@ -71,7 +71,7 @@ class QProgram(StructuredProgram):  # pylint: disable=too-many-public-methods
             weights = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=1.0, duration=2000))
 
             # Declare a variable
-            gain = qp.variable(Domain.Voltage)
+            gain = qp.variable(label="gain", domain=Domain.Voltage)
 
             # Loop the variable's value over the range [0.0, 1.0]
             with qp.for_loop(variable=gain, start=0.0, stop=1.0, step=0.01):

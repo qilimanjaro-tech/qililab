@@ -21,6 +21,7 @@ import re
 import time
 import traceback
 import warnings
+from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
 from queue import Queue
@@ -39,6 +40,7 @@ from qililab.chip import Chip
 from qililab.circuit_transpiler import CircuitTranspiler
 from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
+from qililab.exceptions import ExceptionGroup
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
 from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
@@ -48,7 +50,8 @@ from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSchedule
 from qililab.pulse import QbloxCompiler as PulseQbloxCompiler
-from qililab.qprogram import Calibration, QbloxCompiler, QProgram, QuantumMachinesCompiler
+from qililab.qprogram import Calibration, Domain, Experiment, QbloxCompiler, QProgram, QuantumMachinesCompiler
+from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.result import Result
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
@@ -611,6 +614,39 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         """
         return str(YAML().dump(self.to_dict(), io.BytesIO()))
 
+    @contextmanager
+    def session(self):
+        """Context manager to manage platform session, ensuring that resources are always released."""
+        cleanup_methods = []
+        cleanup_errors = []
+        try:
+            # Track successfully called setup methods and their cleanup counterparts
+            self.connect()
+            cleanup_methods.append(self.disconnect)  # Store disconnect for cleanup
+
+            self.initial_setup()  # No specific cleanup for initial_setup
+
+            self.turn_on_instruments()
+            cleanup_methods.append(self.turn_off_instruments)  # Store turn_off_instruments for cleanup
+
+            yield  # Experiment logic goes here
+
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            raise  # Re-raise the exception for further handling
+        finally:
+            # Call the cleanup methods in reverse order
+            for cleanup_method in reversed(cleanup_methods):
+                try:
+                    cleanup_method()
+                except Exception as e:  # pylint: disable=broad-exception-caught
+                    print(f"Error during cleanup: {e}")
+                    cleanup_errors.append(e)
+
+            # Raise any exception that might have happened during cleanup
+            if cleanup_errors:
+                raise ExceptionGroup("Exceptions occurred during cleanup", cleanup_errors)
+
     def execute_anneal_program(  # pylint: disable=too-many-locals
         self,
         annealing_program_dict: list[dict[str, dict[str, float]]],
@@ -618,7 +654,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         readout_bus: str,
         measurement_name: str,
         transpiler: Callable,
-        averages=1,
+        num_averages: int,
+        num_shots: int = 1,
         weights: str | None = None,
     ) -> QProgramResults:
         """Given an annealing program execute it as a qprogram.
@@ -657,21 +694,40 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             annealing_waveforms = annealing_program.get_waveforms(crosstalk_matrix=crosstalk_matrix)
 
             qp_annealing = QProgram()
-            with qp_annealing.average(averages):
-                for bus, waveform in annealing_waveforms.items():
-                    qp_annealing.play(bus=bus, waveform=waveform)
-                qp_annealing.sync()
-                if weights and calibration.has_weights(bus=readout_bus, name=weights):
-                    qp_annealing.measure(bus=readout_bus, waveform=measurement_name, weights=weights)
-                else:
-                    r_duration = calibration.get_waveform(bus=readout_bus, name=measurement_name).get_duration()
-                    weights_shape = Square(amplitude=1, duration=r_duration)
-                    qp_annealing.measure(
-                        bus=readout_bus, waveform=measurement_name, weights=IQPair(I=weights_shape, Q=weights_shape)
-                    )
+            shots_variable = qp_annealing.variable("num_shots", Domain.Scalar, int)
+
+            with qp_annealing.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
+                with qp_annealing.average(num_averages):
+                    for bus, waveform in annealing_waveforms.items():
+                        qp_annealing.play(bus=bus, waveform=waveform)
+                    qp_annealing.sync()
+                    if weights and calibration.has_weights(bus=readout_bus, name=weights):
+                        qp_annealing.measure(bus=readout_bus, waveform=measurement_name, weights=weights)
+                    else:
+                        r_duration = calibration.get_waveform(bus=readout_bus, name=measurement_name).get_duration()
+                        weights_shape = Square(amplitude=1, duration=r_duration)
+                        qp_annealing.measure(
+                            bus=readout_bus, waveform=measurement_name, weights=IQPair(I=weights_shape, Q=weights_shape)
+                        )
 
             return self.execute_qprogram(qprogram=qp_annealing, calibration=calibration)
         raise ValueError("The calibrated measurement is not present in the calibration file.")
+
+    def execute_experiment(self, experiment: Experiment, results_path: str) -> str:
+        """Executes the given quantum experiment and saves the results.
+
+        This method initializes an `ExperimentExecutor` with the provided `experiment` and `results_path`,
+        and then executes the experiment. The results are streamed to the specified path in real-time.
+
+        Args:
+            experiment (Experiment): The quantum experiment to be executed.
+            results_path (str): The path where the experiment's results will be saved.
+
+        Returns:
+            str: The path of the file that the experiment's results are stored.
+        """
+        executor = ExperimentExecutor(platform=self, experiment=experiment, results_path=results_path)
+        return executor.execute()
 
     def execute_qprogram(  # pylint: disable=too-many-locals
         self,
@@ -725,6 +781,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 for bus in buses
                 if isinstance(bus.system_control, ReadoutSystemControl)
             }
+            delays = {bus.alias: int(bus.get_parameter(Parameter.DELAY)) for bus in buses}
             # Determine what should be the initial value of the markers for each bus.
             # This depends on the model of the associated Qblox module and the `output` setting of the associated sequencer.
             markers = {}
@@ -745,6 +802,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             return self._execute_qprogram_with_qblox(
                 qprogram=qprogram,
                 times_of_flight=times_of_flight,
+                delays=delays,
                 markers=markers,
                 bus_mapping=bus_mapping,
                 calibration=calibration,
@@ -782,6 +840,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         self,
         qprogram: QProgram,
         times_of_flight: dict[str, int],
+        delays: dict[str, int],
         markers: dict[str, str],
         bus_mapping: dict[str, str] | None = None,
         calibration: Calibration | None = None,
@@ -794,6 +853,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             bus_mapping=bus_mapping,
             calibration=calibration,
             times_of_flight=times_of_flight,
+            delays=delays,
             markers=markers,
         )
         buses = {bus_alias: self._get_bus_by_alias(alias=bus_alias) for bus_alias in sequences}
