@@ -294,10 +294,14 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         qua.update_frequency(element=element.bus, new_frequency=frequency)
         
     def _handle_set_offset(self, element: SetOffset):
-        offset_i = element.offset_path0
-        offset_q = element.offset_path1
-        qua.set_dc_offset(element=element.bus, element_input = "I", offset=offset_i)
-        qua.set_dc_offset(element=element.bus, element_input = "Q", offset=offset_q)
+        if element.offset_path1:
+            offset_i = element.offset_path0
+            offset_q = element.offset_path1
+            qua.set_dc_offset(element=element.bus, element_input = "I", offset=offset_i)
+            qua.set_dc_offset(element=element.bus, element_input = "Q", offset=offset_q)
+        else:
+            offset = element.offset_path0
+            qua.set_dc_offset(element=element.bus, element_input = "single", offset=offset)
 
     def _handle_set_phase(self, element: SetPhase):
         phase = (
