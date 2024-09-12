@@ -1,23 +1,32 @@
+# mypy: disable-error-code="union-attr, arg-type"
 import os
-import time
+from collections import defaultdict, namedtuple
 from copy import deepcopy
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Callable
+from uuid import UUID
 
 import numpy as np
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 
-from qililab.qprogram.blocks import Average, Block, ForLoop, Loop
+from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, Measure, Operation, SetParameter
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable import Variable
-from qililab.result.experiment_results_writer import ExperimentResultsWriter
+from qililab.result.experiment_results_writer import (
+    ExperimentMetadata,
+    ExperimentResultsWriter,
+    MeasurementMetadata,
+    QProgramMetadata,
+)
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.utils.serialization import serialize
 
 if TYPE_CHECKING:
     from qililab.platform.platform import Platform
+
+VariableInfo = namedtuple("VariableInfo", ["uuid", "label", "values"])
 
 
 class ExperimentExecutor:  # pylint: disable=too-few-public-methods
@@ -36,18 +45,23 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
         self.task_ids: dict = {}
         self.stored_operations: list[Callable[[], Any]] = []
 
-        self.loop_values: dict[str, np.ndarray] = {}
-        self.loop_values_indices: dict[str, int] = {}
-        self.loop_indices: dict[str, int] = {}
-        self.qprogram_execution_indices: dict[QProgram, int] = {}
+        self.all_variables: dict = defaultdict(lambda: {"label": None, "values": {}})
+        self.variables_per_block: dict[UUID, list] = {}
+        self.current_block_of_variable: dict[UUID, UUID] = {}
+        self.current_value_of_variable: dict[UUID, int | float] = {}
 
-        self.experiment_loops_stack: dict[str, np.ndarray] = {}
-        self.qprogram_loops_stack: dict[str, np.ndarray] = {}
+        self.variable_in_loop_values: dict[str, dict[UUID, np.ndarray]] = defaultdict(dict)
+        self.loop_indices: dict[UUID, int] = {}
+        self.qprogram_execution_indices: dict[UUID, int] = {}
+
+        self.experiment_variables_stack: list = []
+        self.qprogram_variables_stack: list = []
         self.qprogram_index = 0
         self.measurement_index = 0
         self.shots = 1
-        self.structure: dict[str, Any] = {"qprograms": {}}
-        # self.data_path = self._create_results_path(self.results_path, "data.h5")
+        self.metadata: ExperimentMetadata = ExperimentMetadata(
+            yaml=None, executed_at=None, execution_time=None, qprograms={}
+        )
         self.results_writer: ExperimentResultsWriter
 
     def _prepare(self):
@@ -55,15 +69,10 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
 
         def traverse_experiment(block: Block):
             """Traverses the blocks to gather loop information and determine result shape."""
-            if isinstance(block, (Loop, ForLoop)):
-                loop_values = (
-                    self._inclusive_range(block.start, block.stop, block.step)
-                    if isinstance(block, ForLoop)
-                    else block.values
-                )
-                loop_label = block.variable.label
-                self.loop_values[loop_label] = loop_values
-                self.experiment_loops_stack[block.variable.label] = loop_values
+            if isinstance(block, (Loop, ForLoop, Parallel)):
+                variables = self.get_variables_of_loop(block)
+
+                self.experiment_variables_stack.append(variables)
 
             # Recursively traverse nested blocks or loops
             for element in block.elements:
@@ -72,24 +81,19 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
                 # Handle ExecuteQProgram operations and traverse their loops
                 if isinstance(element, ExecuteQProgram):
                     traverse_qprogram(element.qprogram.body)
-                    self.qprogram_execution_indices[element.qprogram] = self.qprogram_index
+                    self.qprogram_execution_indices[element.uuid] = self.qprogram_index
                     self.measurement_index = 0
                     self.qprogram_index += 1
 
-            if isinstance(block, (Loop, ForLoop)):
-                del self.experiment_loops_stack[block.variable.label]
+            if isinstance(block, (Loop, ForLoop, Parallel)):
+                del self.experiment_variables_stack[-1]
 
         def traverse_qprogram(block: Block):
             """Traverses a QProgram to gather loop information."""
-            if isinstance(block, (Loop, ForLoop)):
-                loop_values = (
-                    self._inclusive_range(block.start, block.stop, block.step)
-                    if isinstance(block, ForLoop)
-                    else block.values
-                )
-                loop_label = block.variable.label
-                self.loop_values[loop_label] = loop_values
-                self.qprogram_loops_stack[block.variable.label] = loop_values
+            if isinstance(block, (Loop, ForLoop, Parallel)):
+                variables = self.get_variables_of_loop(block)
+
+                self.qprogram_variables_stack.append(variables)
             if isinstance(block, Average):
                 self.shots = block.shots
 
@@ -100,8 +104,8 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
                 if isinstance(element, Measure):
                     finalize_measurement_structure()
 
-            if isinstance(block, (Loop, ForLoop)):
-                del self.qprogram_loops_stack[block.variable.label]
+            if isinstance(block, (Loop, ForLoop, Parallel)):
+                del self.qprogram_variables_stack[-1]
             if isinstance(block, Average):
                 self.shots = 1
 
@@ -111,31 +115,36 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
             measurement_name = f"Measurement_{self.measurement_index}"
 
             # Ensure QProgram exists in the structure
-            if qprogram_name not in self.structure["qprograms"]:
-                self.structure["qprograms"][qprogram_name] = {
-                    "loops": deepcopy(self.experiment_loops_stack),
-                    "measurements": {},
-                }
+            if qprogram_name not in self.metadata["qprograms"]:
+                self.metadata["qprograms"][qprogram_name] = QProgramMetadata(
+                    variables=[variable for sublist in self.experiment_variables_stack for variable in sublist],
+                    dims=[[variable["label"] for variable in sublist] for sublist in self.experiment_variables_stack],
+                    measurements={},
+                )
 
             # Add QProgram loops and the measurement
-            self.structure["qprograms"][qprogram_name]["measurements"][measurement_name] = {
-                "loops": deepcopy(self.qprogram_loops_stack),
-                "shots": self.shots,
-                "shape": tuple(
-                    len(values) for _, values in (self.experiment_loops_stack | self.qprogram_loops_stack).items()
+            self.metadata["qprograms"][qprogram_name]["measurements"][measurement_name] = MeasurementMetadata(
+                variables=[variable for sublist in self.qprogram_variables_stack for variable in sublist],
+                dims=[[variable["label"] for variable in sublist] for sublist in self.qprogram_variables_stack],
+                shape=tuple(
+                    len(sublist[0]["values"])
+                    for sublist in (self.experiment_variables_stack + self.qprogram_variables_stack)
                 )
                 + (2,),
-            }
+                shots=self.shots,
+            )
 
+            # Increase index of measurements
             self.measurement_index += 1
 
         traverse_experiment(self.experiment.body)
+        self.all_variables = dict(self.all_variables)
 
     def _traverse_and_store(self, block: Block, progress: Progress):
         """Traverse blocks, store generated Python functions, and return the stored operations."""
         stored_operations = []
 
-        if isinstance(block, (Loop, ForLoop)):
+        if isinstance(block, (Loop, ForLoop, Parallel)):
             # Handle loops
             stored_operations.extend(self._handle_loop(block, progress))
         else:
@@ -144,43 +153,50 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
 
         return stored_operations
 
-    def _handle_loop(self, block: ForLoop | Loop, progress: Progress) -> list[Callable]:
+    def _handle_loop(self, block: ForLoop | Loop | Parallel, progress: Progress) -> list[Callable]:
         """Common logic for handling ForLoop and Loop blocks."""
         stored_operations = []
 
         # Determine loop parameters based on the type of block
-        loop_values: np.ndarray
-        if isinstance(block, ForLoop):
-            loop_values = self._inclusive_range(block.start, block.stop, block.step)
-        elif isinstance(block, Loop):
-            loop_values = block.values  # Assuming `block.values` is a numpy array or similar iterable
+        label = ",".join([variable["label"] for variable in self.variables_per_block[block.uuid]])
+        shape = self.variables_per_block[block.uuid][0]["values"].shape[-1]
 
-        loop_label = block.variable.label
+        for variable in self.variables_per_block[block.uuid]:
+            self.current_block_of_variable[variable["uuid"]] = block.uuid
 
         # Create the progress bar for the loop
         def create_progress_bar():
-            total_iterations = len(loop_values)
-            loop_task_id = progress.add_task(f"Looping over {loop_label}", total=total_iterations)
+            total_iterations = shape
+            loop_task_id = progress.add_task(f"Looping over {label}", total=total_iterations)
             self.task_ids[block.uuid] = loop_task_id  # Store the task ID associated with this loop block
 
             # Track the index for this loop
-            self.loop_indices[loop_label] = 0
+            self.loop_indices[block.uuid] = 0
 
             return loop_task_id
 
         stored_operations.append(create_progress_bar)
 
-        def advance_progress_bar(variable_value: int | float) -> None:
+        def advance_progress_bar(variable_value: tuple[int | float, ...]) -> None:
             loop_task_id = self.task_ids[block.uuid]
-            progress.update(loop_task_id, description=f"Looping over {loop_label}: {variable_value}")
+            progress.update(
+                loop_task_id,
+                description=f"Looping over {label}: {variable_value[0] if len(variable_value) == 1 else variable_value}",
+            )
             progress.advance(loop_task_id)
 
         def advance_loop_index() -> None:
             # Update the loop index
-            self.loop_indices[loop_label] += 1
+            self.loop_indices[block.uuid] += 1
 
-        for value in loop_values:
-            stored_operations.append(lambda value=value: advance_progress_bar(value))  # type: ignore
+        uuids = [variable["uuid"] for variable in self.variables_per_block[block.uuid]]
+        values = [variable["values"] for variable in self.variables_per_block[block.uuid]]
+
+        for current_values in zip(*values):
+            for uuid, value in zip(uuids, current_values):
+                self.current_value_of_variable[uuid] = value
+
+            stored_operations.append(lambda value=current_values: advance_progress_bar(value))  # type: ignore
 
             # Process elements within the loop
             stored_operations.extend(self._process_elements(block.elements, progress))
@@ -189,7 +205,7 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
 
         def remove_progress_bar():
             progress.remove_task(self.task_ids[block.uuid])
-            del self.loop_indices[loop_label]
+            del self.loop_indices[block.uuid]
 
         stored_operations.append(remove_progress_bar)
 
@@ -203,22 +219,21 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
             if isinstance(element, SetParameter):
                 # Append a lambda that will call the `platform.set_parameter` method
                 stored_operations.append(
-                    lambda op=element: self.platform.set_parameter(
-                        alias=op.alias,
-                        parameter=op.parameter,
-                        value=self.loop_values[op.value.label][self.loop_indices[op.value.label]],
-                    )
-                    if isinstance(op.value, Variable)
-                    else self.platform.set_parameter(alias=op.alias, parameter=op.parameter, value=op.value)
+                    lambda alias=element.alias, parameter=element.parameter, value=(
+                        self.current_value_of_variable[element.value.uuid]
+                        if isinstance(element.value, Variable)
+                        else element.value
+                    ): self.platform.set_parameter(alias=alias, parameter=parameter, value=value)
                 )
-            elif isinstance(element, ExecuteQProgram):
+
+            if isinstance(element, ExecuteQProgram):
                 # Append a lambda that will call the `platform.execute_qprogram` method
                 stored_operations.append(
-                    lambda op=element, index=self.qprogram_execution_indices[element.qprogram]: self._store_result(  # type: ignore[misc]
+                    lambda op=element, qprogram_index=self.qprogram_execution_indices[element.uuid]: self._store_result(  # type: ignore[misc]
                         self.platform.execute_qprogram(
                             qprogram=op.qprogram, bus_mapping=op.bus_mapping, calibration=op.calibration, debug=op.debug
                         ),
-                        index,
+                        qprogram_index,
                     )
                 )
             elif isinstance(element, Block):
@@ -266,6 +281,52 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
         result = np.linspace(start, stop, num_steps)
         return np.around(result, decimals=decimal_places)
 
+    def get_variables_of_loop(self, block: Loop | ForLoop | Parallel):
+        # Get variable information of the loop
+        if isinstance(block, (ForLoop, Loop)):
+            variables = {
+                block.variable.uuid: {
+                    "label": block.variable.label,
+                    "values": {
+                        block.uuid: self._inclusive_range(block.start, block.stop, block.step)
+                        if isinstance(block, ForLoop)
+                        else block.values
+                    },
+                }
+            }
+        else:
+            variables = {
+                loop.variable.uuid: {
+                    "label": loop.variable.label,
+                    "values": {
+                        block.uuid: self._inclusive_range(loop.start, loop.stop, loop.step)
+                        if isinstance(loop, ForLoop)
+                        else loop.values
+                    },
+                }
+                for loop in block.loops
+            }
+
+        self.variables_per_block[block.uuid] = []
+
+        # Update all_variables registry
+        for outer_key, outer_value in variables.items():
+            self.variables_per_block[block.uuid].append(
+                {"uuid": outer_key, "label": outer_value["label"], "values": next(iter(outer_value["values"].values()))}
+            )
+
+            # Set label (assumes label is consistent for the same outer_key)
+            if self.all_variables[outer_key]["label"] is None:
+                self.all_variables[outer_key]["label"] = outer_value["label"]
+
+            # Merge the "values" dictionaries
+            self.all_variables[outer_key]["values"].update(outer_value["values"])
+
+        return [
+            {"label": variable["label"], "values": next(iter(variable["values"].values()))}
+            for variable in variables.values()
+        ]
+
     def _create_results_path(self, source: str, file: str):
         # Get the current date and time
         now = datetime.now()
@@ -303,11 +364,11 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
         self._prepare()
 
         # Update metadata
-        self.structure["yaml"] = serialize(self.experiment)
-        self.structure["executed_at"] = str(datetime.now())
+        self.metadata["yaml"] = serialize(self.experiment)
+        self.metadata["executed_at"] = str(datetime.now())
 
         # Create the ExperimentResultsWriter for storing results
-        self.results_writer = ExperimentResultsWriter(structure=self.structure, path=path)
+        self.results_writer = ExperimentResultsWriter(metadata=self.metadata, path=path)
         with self.results_writer:
             with Progress(
                 TextColumn("[progress.description]{task.description}"),
@@ -316,7 +377,6 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
                 TimeElapsedColumn(),
             ) as progress:
                 self.stored_operations = self._traverse_and_store(self.experiment.body, progress)
-                execution_time = self._run_stored_operations(progress)
-                self.results_writer.set_execution_time(execution_time)
+                self.results_writer.execution_time = self._run_stored_operations(progress)
 
         return path
