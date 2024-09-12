@@ -163,7 +163,7 @@ def fixture_measure_operation_in_for_loop() -> QProgram:
     drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
     weights = IQPair(I=Square(1.0, duration=200), Q=Square(1.0, duration=200))
     qp = QProgram()
-    gain = qp.variable(Domain.Voltage)
+    gain = qp.variable(label="gain", domain=Domain.Voltage)
     with qp.for_loop(variable=gain, start=0, stop=1.0, step=0.1):
         qp.set_gain(bus="readout", gain=gain)
         qp.measure(bus="readout", waveform=drag_wf, weights=weights)
@@ -176,7 +176,7 @@ def fixture_measure_operation_in_loop() -> QProgram:
     drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
     weights = IQPair(I=Square(1.0, duration=200), Q=Square(1.0, duration=200))
     qp = QProgram()
-    gain = qp.variable(Domain.Voltage)
+    gain = qp.variable(label="gain", domain=Domain.Voltage)
     with qp.loop(variable=gain, values=np.arange(start=0, stop=1.05, step=0.1)):
         qp.set_gain(bus="readout", gain=gain)
         qp.measure(bus="readout", waveform=drag_wf, weights=weights)
@@ -189,8 +189,8 @@ def fixture_measure_operation_in_parallel() -> QProgram:
     drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
     weights = IQPair(I=Square(1.0, duration=200), Q=Square(1.0, duration=200))
     qp = QProgram()
-    gain = qp.variable(Domain.Voltage)
-    frequency = qp.variable(Domain.Frequency)
+    gain = qp.variable(label="gain", domain=Domain.Voltage)
+    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
     with qp.parallel(
         loops=[
             Loop(variable=gain, values=np.arange(start=0, stop=1.05, step=0.1)),
@@ -207,11 +207,11 @@ def fixture_measure_operation_in_parallel() -> QProgram:
 @pytest.fixture(name="for_loop")
 def fixture_for_loop() -> QProgram:
     qp = QProgram()
-    gain = qp.variable(Domain.Voltage)
-    frequency = qp.variable(Domain.Frequency)
-    phase = qp.variable(Domain.Phase)
-    time = qp.variable(Domain.Time)
-    scalar = qp.variable(Domain.Scalar, int)
+    gain = qp.variable(label="gain", domain=Domain.Voltage)
+    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+    phase = qp.variable(label="phase", domain=Domain.Phase)
+    time = qp.variable(label="time", domain=Domain.Time)
+    scalar = qp.variable(label="int_scalar", domain=Domain.Scalar, type=int)
 
     with qp.for_loop(variable=gain, start=0, stop=1.0, step=0.1):
         qp.set_gain(bus="drive", gain=gain)
@@ -234,11 +234,11 @@ def fixture_for_loop() -> QProgram:
 @pytest.fixture(name="for_loop_with_negative_step")
 def fixture_for_loop_with_negative_step() -> QProgram:
     qp = QProgram()
-    gain = qp.variable(Domain.Voltage)
-    frequency = qp.variable(Domain.Frequency)
-    phase = qp.variable(Domain.Phase)
-    time = qp.variable(Domain.Time)
-    scalar = qp.variable(Domain.Scalar, int)
+    gain = qp.variable(label="gain", domain=Domain.Voltage)
+    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+    phase = qp.variable(label="phase", domain=Domain.Phase)
+    time = qp.variable(label="time", domain=Domain.Time)
+    scalar = qp.variable(label="int_scalar", domain=Domain.Scalar, type=int)
 
     with qp.for_loop(variable=gain, start=1.0, stop=0.0, step=-0.1):
         qp.set_gain(bus="drive", gain=gain)
@@ -261,11 +261,11 @@ def fixture_for_loop_with_negative_step() -> QProgram:
 @pytest.fixture(name="loop")
 def fixture_loop() -> QProgram:
     qp = QProgram()
-    gain = qp.variable(Domain.Voltage)
-    frequency = qp.variable(Domain.Frequency)
-    phase = qp.variable(Domain.Phase)
-    time = qp.variable(Domain.Time)
-    scalar = qp.variable(Domain.Scalar, int)
+    gain = qp.variable(label="gain", domain=Domain.Voltage)
+    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+    phase = qp.variable(label="phase", domain=Domain.Phase)
+    time = qp.variable(label="time", domain=Domain.Time)
+    scalar = qp.variable(label="int_scalar", domain=Domain.Scalar, type=int)
 
     with qp.loop(variable=gain, values=np.arange(start=0, stop=1.05, step=0.1)):
         qp.set_gain(bus="drive", gain=gain)
@@ -288,11 +288,11 @@ def fixture_loop() -> QProgram:
 @pytest.fixture(name="parallel")
 def fixture_parallel() -> QProgram:
     qp = QProgram()
-    gain = qp.variable(Domain.Voltage)
-    frequency = qp.variable(Domain.Frequency)
-    phase = qp.variable(Domain.Phase)
-    time = qp.variable(Domain.Time)
-    scalar = qp.variable(Domain.Scalar, int)
+    gain = qp.variable(label="gain", domain=Domain.Voltage)
+    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+    phase = qp.variable(label="phase", domain=Domain.Phase)
+    time = qp.variable(label="time", domain=Domain.Time)
+    scalar = qp.variable(label="int_scalar", domain=Domain.Scalar, type=int)
 
     with qp.parallel(
         loops=[
@@ -659,7 +659,7 @@ class TestQuantumMachinesCompiler:
 
         # Time
         assert float(statements[3].for_.init.statements[0].assign.expression.literal.value) == 100
-        assert float(statements[3].for_.condition.binary_operation.right.literal.value) == 205
+        assert float(statements[3].for_.condition.binary_operation.right.literal.value) == 200
         assert (
             float(statements[3].for_.update.statements[0].assign.expression.binary_operation.right.literal.value) == 10
         )
@@ -696,7 +696,7 @@ class TestQuantumMachinesCompiler:
 
         # Time
         assert float(statements[3].for_.init.statements[0].assign.expression.literal.value) == 200
-        assert float(statements[3].for_.condition.binary_operation.right.literal.value) == 95
+        assert float(statements[3].for_.condition.binary_operation.right.literal.value) == 100
         assert (
             float(statements[3].for_.update.statements[0].assign.expression.binary_operation.right.literal.value) == -10
         )

@@ -11,21 +11,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
-from dataclasses import dataclass, field
-from uuid import UUID, uuid4
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
+from qililab.qprogram.operations.operation import Operation
 from qililab.yaml import yaml
+
+if TYPE_CHECKING:
+    from qililab.qprogram.calibration import Calibration
+    from qililab.qprogram.qprogram import QProgram
 
 
 @yaml.register_class
 @dataclass(frozen=True)
-class Element:
-    """Class representing an element of QProgram."""
-
-    _uuid: UUID = field(default_factory=uuid4, init=False)
-
-    @property
-    def uuid(self) -> UUID:
-        """Get the UUID."""
-        return self._uuid
+class ExecuteQProgram(Operation):  # pylint: disable=missing-class-docstring
+    qprogram: "QProgram"
+    bus_mapping: dict[str, str] | None = None
+    calibration: "Calibration" | None = None
+    debug: bool = False
