@@ -152,10 +152,7 @@ class CrosstalkMatrix:
         for bus1 in sorted_buses:
             row = [f"{bus1:{col_width}}"]
             for bus2 in sorted_buses:
-                if bus1 == bus2:
-                    row.append("\\".rjust(col_width))
-                else:
-                    row.append(f"{self.matrix.get(bus1, {}).get(bus2, 1.0):{col_width}.1f}")
+                row.append(f"{self.matrix.get(bus1, {}).get(bus2, 1.0):{col_width}}")
             rows.append(" ".join(row))
         return header + "\n".join(rows)
 
