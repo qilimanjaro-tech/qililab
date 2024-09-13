@@ -62,7 +62,7 @@ class CalibrationController:
         node_sequence (dict[str, CalibrationNode]): Mapping for the nodes of the graph, from strings into the actual initialized nodes.
         runcard (str): The runcard path, containing the serialized platform where the experiments will be run.
         drift_timeout (float, optional): Duration in seconds, representing an estimate of how long it takes for the calibration parameters to drift.
-            During that time the parameters of this node should be considered calibrated. Thus a big value will tend to skip recently calibrated nodes,
+            During that time the parameters of this node should be considered calibrated. Thus a big value will tend to skip recently calibrated nodes or checkpoints,
             making the calibration process faster, but less accurate,and a small value will make the calibration process slower, but more accurate and robust.
             A node will be skipped if the ``drift timeout`` is bigger than the time since its last calibration. Defaults to 7200 (3h).
 
@@ -222,8 +222,20 @@ class CalibrationController:
             self.node_sequence[node] for node, out_degree in self.calibration_graph.out_degree() if out_degree == 0
         ]
 
+        logger.info(
+            "\n################################\n"
+            "Starting to diagnose checkpoints\n"
+            "################################\n"
+        )
+
         for node in highest_level_nodes:
             self.diagnose(node)
+
+        logger.info(
+            "\n#######################################\n"
+            "Diagnose finished, starting calibration\n"
+            "#######################################\n"
+        )
 
         for node in highest_level_nodes:
             self.calibrate_all(node)
@@ -269,6 +281,8 @@ class CalibrationController:
 
         This diagnose of the `checkpoints` starts from the first ones, until finds the first in each branch, that doesn't pass.
 
+        Take into account that `drift_timeout` also makes you skip `checkpoints`, so it rules over checkpoints that would pass.
+
         Example:
 
         If \[i\] are notebooks and \[V\] or \[X\] are checkpoints that pass or not respectively, in a graph like:
@@ -300,45 +314,39 @@ class CalibrationController:
         if diagnose_finished:
             return True
 
-        # You can skip it from the `drift_timeout`, but also skip it due to `been_calibrated_succesfully()`
+        ### If no checkpoint is found, we can continue diagnosing the next nodes.
+        # You can skip it from the `drift_timeout`. Notice, that `drift_timeout` has more priority than checkpoints then.
         # If you want to start the calibration from the start again, just decrease the `drift_timeout` or remove the executed files!
-        if (
-            node.check_point
-            and not node.been_calibrated_succesfully
-            # and ( TODO: Think about removing timestamps
-            #     node.previous_timestamp
-            #     is None  # or self._is_timeout_expired(node.previous_timestamp, self.drift_timeout)
-            # )
+        # Also notice, that if a checkpoint is skipped we don't set it to [V], but to [ ] instead, as if it was never checked or wasn't a checkpoint.
+        if not node.check_point or (
+            node.previous_timestamp is not None
+            and not self._is_timeout_expired(node.previous_timestamp, self.drift_timeout)
         ):
-            # TODO: Think about not repeating X's, and if you can join this condition with the one below...
-            # if node.check_point_checked and not node.check_point_passed:
-            #     logger.info(
-            #         "WORKFLOW: %s checkpoint failed, calibration will start just after the previously passed checkpoint.\n",
-            #         node.node_id,
-            #     )
-            #     return True
+            return False
 
-            self.calibrate(node)
-            if node.output_parameters is not None and self._check_point_passed_comparison(node):
-                node.check_point_passed = True
-                self._update_parameters(node)
-                node.been_calibrated_succesfully = True
-                # TODO: Think about this, where together with its conditional above...
-
-            else:
-                logger.info(
-                    "WORKFLOW: %s checkpoint failed, calibration will start just after the previously passed checkpoint.\n",
-                    node.node_id,
-                )
-                node.check_point_passed = False
-
-            node.check_point_checked = True
-
-            # If the node was a checkpoint, depending on the results, we can stop or not diagnosing the next nodes.
+        # For not repeating [X] and [V]'s checkpoints, when more than one branch have it as a dependency.
+        if node.check_point_passed is not None:
+            logger.info(
+                "WORKFLOW: %s checkpoint already checked, skipping it.\n",
+                node.node_id,
+            )
             return not node.check_point_passed
 
-        # If no checkpoint is found, we can continue diagnosing the next nodes.
-        return False
+        self.calibrate(node)
+        if node.output_parameters is not None and self._check_point_passed_comparison(node):
+            node.check_point_passed = True
+            self._update_parameters(node)
+            node.been_calibrated_succesfully = True
+
+        else:
+            logger.info(
+                "WORKFLOW: %s checkpoint failed, calibration will start just after the previously passed checkpoint.\n",
+                node.node_id,
+            )
+            node.check_point_passed = False
+
+        # If the node was a checkpoint, depending on the results, we can stop or not diagnosing the next nodes.
+        return not node.check_point_passed
 
     def _check_point_passed_comparison(self, node: CalibrationNode) -> bool:
         """Computes whetter a checkpoint passed, based on whether the fidelities of the node are greater or equal to the check values.
