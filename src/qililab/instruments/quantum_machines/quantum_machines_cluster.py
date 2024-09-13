@@ -504,7 +504,7 @@ class QuantumMachinesCluster(Instrument):
             controller_name = self._config["elements"][bus]["singleInput"]["port"][0]
 
         for controller in self.settings.controllers:
-            if controller["name"] is controller_name:
+            if controller["name"] == controller_name:
                 return controller["type"] if "type" in controller else "opx1"
         raise AttributeError(f"Controller with bus {bus} does not exist")
 
@@ -623,6 +623,15 @@ class QuantumMachinesCluster(Instrument):
             element["threshold"] = threshold
             return
 
+        if parameter == Parameter.DC_OFFSET:
+            dc_offset = float(value)
+            # settings_octave_rf_output["gain"] = gain_in_db
+            # if self._config_created:
+            #     self._config["octaves"][octave_name]["RF_outputs"][out_port]["gain"] = gain_in_db
+            if self._is_connected_to_qm:
+                self._qm.set_output_dc_offset_by_element(element=bus, input= "single", offset=dc_offset)
+            return
+
         if parameter in [Parameter.OFFSET_I, Parameter.OFFSET_Q]:
             input_offset = float(value)
             # settings_octave_rf_output["gain"] = gain_in_db
@@ -631,15 +640,14 @@ class QuantumMachinesCluster(Instrument):
             if self._is_connected_to_qm:
                 input = "I" if parameter in Parameter.OFFSET_I else "Q"
                 self._qm.set_output_dc_offset_by_element(element=bus, input= input, offset=input_offset)
-                return
-            
+            return
 
         if parameter in [Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2]:
             output_offset = float(value)
             if self._is_connected_to_qm:
                 output = "out1" if parameter in Parameter.OFFSET_OUT1 else "out2"
                 self._qm.set_input_dc_offset_by_element(element=bus, output= output, offset=output_offset)
-                return
+            return
 
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}.")
 
