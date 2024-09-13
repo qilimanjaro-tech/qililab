@@ -72,10 +72,10 @@ class CalibrationController:
 
         The calibration process is structured into three levels of methods:
 
-        1. **Highest Level Method**: The ``run_automatic_calibration()`` method finds all the end nodes of the graph (`leaves`, those without further `dependents`) and runs ``diagnose()`` and then ``calibrate_all()`` on the ones needed.
+        1. **Highest Level Method**: The ``run_automatic_calibration()`` method finds all the end nodes of the graph (`leaves`, those without further `dependents`) and runs ``diagnose_checkpoints()`` and then ``calibrate_all()`` on the ones needed.
 
-        2. **Mid-Level Methods**: ``diagnose()`` and ``calibrate_all()``.
-            - ``diagnose()`` searches for the first bad ``checkpoint``, and marks it. Such that the next call of ``calibrate_all()`` starts just after the last passed ``checkpoint``.
+        2. **Mid-Level Methods**: ``diagnose_checkpoints()`` and ``calibrate_all()``.
+            - ``diagnose_checkpoints()`` searches for the first bad ``checkpoint``, and marks it. Such that the next call of ``calibrate_all()`` starts just after the last passed ``checkpoint``.
             - ``calibrate_all(node)`` starts from the `roots` that ``node`` depends on, and moves forwards (`dependency -> dependant`) until ``node``, checking the last time executions at each step.
 
         3. **Low-Level Method**: ``calibrate()`` is the method you would be calling during this process to interact with the ``nodes``.
@@ -191,11 +191,11 @@ class CalibrationController:
         """Runs the full automatic calibration procedure and retrieves the final set parameters and achieved fidelities dictionaries.
 
         This is the primary interface for our calibration procedure and the highest level algorithm, which finds all the end nodes of the graph
-        (`leaves`, those without further `dependents`) and runs ``diagnose()`` and then ``calibrate_all()`` on the ones needed.
+        (`leaves`, those without further `dependents`) and runs ``diagnose_checkpoints()`` and then ``calibrate_all()`` on the ones needed.
 
-        If ``checkpoints`` are present, ``diagnose()`` will skip the parts of the graph that are already good to go.
+        If ``checkpoints`` are present, ``diagnose_checkpoints()`` will skip the parts of the graph that are already good to go.
 
-        ``diagnose()`` starts from the first nodes, until finds the first in each branch, that doesn't pass.
+        ``diagnose_checkpoints()`` starts from the first nodes, until finds the first in each branch, that doesn't pass.
 
         Example:
 
@@ -229,7 +229,7 @@ class CalibrationController:
         )
 
         for node in highest_level_nodes:
-            self.diagnose(node)
+            self.diagnose_checkpoints(node)
 
         logger.info(
             "\n#######################################\n"
@@ -256,7 +256,7 @@ class CalibrationController:
         """
         logger.info("WORKFLOW: Calibrating all %s.\n", node.node_id)
 
-        # If diagnose has found a checkpoint bad, start the calibration just after the last passed checkpoint before that bad one.
+        # If `diagnose_checkpoints` has found a checkpoint bad, start the calibration just after the last passed checkpoint before that bad one.
         # O - [V] - [O] - [V] - [0] - [X] - [ ] - [ ] - [ ] - ... we leave the next ones empty (.), after finding the first bad
         # checkpoint, so that we can just find the first [V], going from right to left in ``calibrate_all()`` calls and start there.
         if node.check_point_passed:
@@ -275,7 +275,7 @@ class CalibrationController:
             node.been_calibrated_succesfully = True
         # After passing this block `node.been_calibrated_succesfully` will always be True, so it will not be recalibrated again.
 
-    def diagnose(self, node: CalibrationNode) -> bool:
+    def diagnose_checkpoints(self, node: CalibrationNode) -> bool:
         """Searches for the first bad ``checkpoint``, and if found, we start the calibration process with the recursive
         ``calibrate_all()`` calls, just after the last passed ``checkpoint``.
 
@@ -297,7 +297,7 @@ class CalibrationController:
             node (CalibrationNode): The node to diagnose.
 
         Returns:
-            bool: Wether the diagnose process has finished or not.
+            bool: Wether the `diagnose_checkpoints` process has finished or not.
         """
         logger.info("WORKFLOW: Diagnosing  %s.\n", node.node_id)
 
@@ -305,7 +305,7 @@ class CalibrationController:
         # [X] - - - [V]      ( --->  Should be --->      [X] - - - [ ] )
         # [V] - /            ( --->            --->      [V] - /       )
         # Since then `calibrate_all()` would start from the most right [V], skipping the branch of the [X]...
-        diagnose_finished = any(self.diagnose(n) for n in self._dependencies(node))
+        diagnose_finished = any(self.diagnose_checkpoints(n) for n in self._dependencies(node))
         # Since any([] = False), this will only check if there are dependencies, if not, diagnose starts (no finishes).
 
         # When we have encountered a dependency checkpoint bad, we should not diagnose further:

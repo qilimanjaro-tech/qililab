@@ -312,7 +312,7 @@
 ### Breaking changes
 
 - Big code refactor for the `calibration` module/directory, where all `comparisons`, `check_parameters`, `check_data()`,
-  `check_state()`, `maintain()`, `diagnose()` and other complex unused methods have been deleted, leaving only linear calibration.
+  `check_state()`, `maintain()`, `diagnose_checkpoints()` and other complex unused methods have been deleted, leaving only linear calibration.
 
   Also some other minor improvements like:
 
