@@ -247,7 +247,7 @@ class CalibrationController:
         # If diagnose has found a checkpoint bad, start the calibration just after the last passed checkpoint before that bad one.
         # O - [V] - [O] - [V] - [0] - [X] - [ ] - [ ] - [ ] - ... we leave the next ones empty (.), after finding the first bad
         # checkpoint, so that we can just find the first [V], going from right to left in ``calibrate_all()`` calls and start there.
-        if node.check_point_passed is True:
+        if node.check_point_passed:
             return
 
         for n in self._dependencies(node):
@@ -294,7 +294,7 @@ class CalibrationController:
         # When we have encountered a dependency checkpoint bad, we should not diagnose further:
         # [O] - [V] - [O] - [V] - [0] - [X] - [ ] - [ ] - [ ] - ... we leave the next ones empty (.), after finding the first bad
         # checkpoint, so that we can just find the first [V], going from right to left in ``calibrate_all()`` calls and start there.
-        if diagnose_finished is True:
+        if diagnose_finished:
             return True
 
         # You can skip it from the `drift_timeout`, but also skip it due to `been_calibrated()`
