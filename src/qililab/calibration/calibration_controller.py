@@ -286,10 +286,9 @@ class CalibrationController:
             bool: Wether the diagnose process has finished or not.
         """
         logger.info("WORKFLOW: Diagnosing  %s.\n", node.node_id)
-        diagnose_finished = False
 
-        for n in self._dependencies(node):
-            diagnose_finished = self.diagnose(n)
+        # Since any([] = False), this will only check if there are dependencies, if not, diagnose starts (no finishes).
+        diagnose_finished = any(self.diagnose(n) for n in self._dependencies(node))
 
         # When we have encountered a dependency checkpoint bad, we should not diagnose further:
         # [O] - [V] - [O] - [V] - [0] - [X] - [ ] - [ ] - [ ] - ... we leave the next ones empty (.), after finding the first bad
