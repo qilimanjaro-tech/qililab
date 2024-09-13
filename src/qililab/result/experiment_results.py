@@ -19,8 +19,13 @@ import h5py
 import numpy as np
 
 
+class VariableMetadata(TypedDict):
+    label: str
+    values: np.ndarray
+
+
 class MeasurementMetadata(TypedDict):
-    variables: dict[str, np.ndarray]
+    variables: list[VariableMetadata]
     dims: list[list[str]]
     shape: tuple[int, ...]
     shots: int
@@ -32,9 +37,9 @@ class QProgramMetadata(TypedDict):
     measurements: dict[str, MeasurementMetadata]
 
 
-class ExperimentMetadata(TypedDict):
+class ExperimentMetadata(TypedDict, total=False):
     yaml: str
-    executed_at: str
+    executed_at: datetime
     execution_time: float
     qprograms: dict[str, QProgramMetadata]
 
@@ -52,20 +57,27 @@ class ExperimentResults:
 
     def __init__(self, path: str):
         self.path = path
-        self.results: dict[tuple[str, str], Any] = {}  # To hold the results for in-memory access
+        self.data: dict[tuple[str, str], Any] = {}  # To hold links to the data of the results for in-memory access
+        self.dimensions: dict[
+            tuple[str, str], Any
+        ] = {}  # To hold links to dimensions of the results for in-memory access
         self._file: h5py.File | None = None
 
     def __enter__(self):
         """Open the HDF5 file for reading."""
         self._file = h5py.File(self.path, mode="r")
 
-        # Prepare access to each results dataset
+        # Prepare access to each results dataset and its dimensions
         for qprogram_name in self._file[ExperimentResults.QPROGRAMS_PATH]:
             qprogram_data = self._file[f"{ExperimentResults.QPROGRAMS_PATH}/{qprogram_name}"]
             for measurement_name in qprogram_data[ExperimentResults.MEASUREMENTS_PATH]:
-                self.results[(qprogram_name, measurement_name)] = qprogram_data[
+                self.data[(qprogram_name, measurement_name)] = qprogram_data[
                     f"{ExperimentResults.MEASUREMENTS_PATH}/{measurement_name}/results"
                 ]
+                # Store the dimensions
+                self.dimensions[(qprogram_name, measurement_name)] = qprogram_data[
+                    f"{ExperimentResults.MEASUREMENTS_PATH}/{measurement_name}/results"
+                ].dims
 
         return self
 
@@ -73,6 +85,19 @@ class ExperimentResults:
         """Exit the context manager and close the HDF5 file."""
         if self._file is not None:
             self._file.close()
+
+    def get(self, qprogram: int | str, measurement: int | str):
+        if isinstance(qprogram, int):
+            qprogram = f"QProgram_{qprogram}"
+        if isinstance(measurement, int):
+            measurement = f"Measurement_{measurement}"
+
+        data = self.data[(qprogram, measurement)][()]
+        dims = [
+            (dim.label, [values[()] for values in dim.values()]) for dim in self.dimensions[(qprogram, measurement)]
+        ]
+
+        return data, dims
 
     def __getitem__(self, key: tuple):
         """Get an item from the results dataset.
@@ -88,30 +113,32 @@ class ExperimentResults:
             qprogram_name = f"QProgram_{qprogram_name}"
         if isinstance(measurement_name, int):
             measurement_name = f"Measurement_{measurement_name}"
-        return self.results[(qprogram_name, measurement_name)][tuple(indices)]
+        return self.data[(qprogram_name, measurement_name)][tuple(indices)]
 
     def __len__(self):
         """Get the total number of results datasets."""
-        return len(self.results)
+        return len(self.data)
 
     def __iter__(self):
         """Get an iterator over the results datasets."""
-        return iter(self.results.items())
+        return iter(self.data.items())
 
     @property
     def yaml(self) -> str:
         """Get the YAML representation of the executed experiment."""
-        return self._file[ExperimentResults.YAML_PATH][()]
+        return self._file[ExperimentResults.YAML_PATH][()].decode("utf-8")
 
     @property
-    def executed_at(self) -> str:
+    def executed_at(self) -> datetime:
         """Get the timestamp when execution of the experiment started."""
-        return self._file[ExperimentResults.EXECUTED_AT_PATH][()]
+        return datetime.strptime(
+            self._file[ExperimentResults.EXECUTED_AT_PATH][()].decode("utf-8"), "%Y-%m-%dT%H:%M:%S"
+        )
 
     @property
     def execution_time(self) -> float:
         """Get the execution time in seconds."""
-        return self._file[ExperimentResults.EXECUTION_TIME_PATH][()]
+        return float(self._file[ExperimentResults.EXECUTION_TIME_PATH][()].decode("utf-8"))
 
 
 class ExperimentResultsWriter(ExperimentResults):
@@ -120,7 +147,7 @@ class ExperimentResultsWriter(ExperimentResults):
     Inherits from `ExperimentResults` to support both read and write operations.
     """
 
-    def __init__(self, metadata: ExperimentMetadata, path: str):
+    def __init__(self, path: str, metadata: ExperimentMetadata):
         super().__init__(path)
         self._metadata = metadata
 
@@ -128,15 +155,18 @@ class ExperimentResultsWriter(ExperimentResults):
         """Write the prepared structure to an HDF5 file and register loops as dimension scales."""
         h5py.get_config().track_order = True
 
-        with h5py.File(self.path, mode="w") as data_file:
-            if ExperimentResults.YAML_PATH in self._metadata:
-                data_file[ExperimentResults.YAML_PATH] = self._metadata[ExperimentResults.YAML_PATH]
+        if "yaml" in self._metadata:
+            self.yaml = self._metadata["yaml"]
 
-            if ExperimentResults.EXECUTED_AT_PATH in self._metadata:
-                data_file[ExperimentResults.EXECUTED_AT_PATH] = self._metadata[ExperimentResults.EXECUTED_AT_PATH]
+        if "executed_at" in self._metadata:
+            self.executed_at = self._metadata["executed_at"]
 
+        if "execution_time" in self._metadata:
+            self.execution_time = self._metadata["execution_time"]
+
+        if "qprograms" in self._metadata:
             # Create the group for QPrograms
-            qprograms_group = data_file.create_group(ExperimentResultsWriter.QPROGRAMS_PATH)
+            qprograms_group = self._file.create_group(ExperimentResultsWriter.QPROGRAMS_PATH)
 
             # Iterate through QPrograms and measurements in the structure
             for qprogram_name, qprogram_data in self._metadata["qprograms"].items():
@@ -180,17 +210,20 @@ class ExperimentResultsWriter(ExperimentResults):
                     # Attach the extra dimension (usually for I/Q) to the results dataset
                     results_ds.dims[len(qprogram_data["dims"]) + len(measurement_data["dims"])].label = "I/Q"
 
+    def _create_resuts_access(self):
+        # Prepare access to each results dataset for easy streaming
+        if "qprograms" in self._metadata:
+            for qprogram_name, qprogram_data in self._metadata["qprograms"].items():
+                for measurement_name, _ in qprogram_data["measurements"].items():
+                    self.data[(qprogram_name, measurement_name)] = self._file[
+                        f"qprograms/{qprogram_name}/measurements/{measurement_name}/results"
+                    ]
+
     def __enter__(self):
         """Open the HDF5 file and create the structure for streaming."""
+        self._file = h5py.File(self.path, mode="w")
         self._create_results_file()
-        self._file = h5py.File(self.path, mode="a")
-
-        # Prepare access to each results dataset for easy streaming
-        for qprogram_name, qprogram_data in self._metadata["qprograms"].items():
-            for measurement_name, _ in qprogram_data["measurements"].items():
-                self.results[(qprogram_name, measurement_name)] = self._file[
-                    f"qprograms/{qprogram_name}/measurements/{measurement_name}/results"
-                ]
+        self._create_resuts_access()
 
         return self
 
@@ -201,19 +234,28 @@ class ExperimentResultsWriter(ExperimentResults):
             qprogram_name = f"QProgram_{qprogram_name}"
         if isinstance(measurement_name, int):
             measurement_name = f"Measurement_{measurement_name}"
-        self.results[(qprogram_name, measurement_name)][tuple(indices)] = value
+        self.data[(qprogram_name, measurement_name)][tuple(indices)] = value
 
     @ExperimentResults.yaml.setter
     def yaml(self, yaml: str):
         """Set the YAML representation of executed experiment."""
-        self._file["yaml"] = yaml
+        path = ExperimentResults.YAML_PATH
+        if path in self._file:
+            del self._file[path]
+        self._file[path] = yaml
 
     @ExperimentResults.executed_at.setter
     def executed_at(self, dt: datetime):
         """Set the timestamp when execution of the experiment started."""
-        self._file["executed_at"] = str(dt)
+        path = ExperimentResults.EXECUTED_AT_PATH
+        if path in self._file:
+            del self._file[path]
+        self._file[path] = str(dt)
 
     @ExperimentResults.execution_time.setter
     def execution_time(self, time: float):
         """Set the execution time in seconds."""
-        self._file["execution_time"] = time
+        path = ExperimentResults.EXECUTION_TIME_PATH
+        if path in self._file:
+            del self._file[path]
+        self._file[path] = str(time)

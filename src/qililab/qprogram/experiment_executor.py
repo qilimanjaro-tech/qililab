@@ -1,8 +1,8 @@
 # mypy: disable-error-code="union-attr, arg-type"
 import os
 from collections import defaultdict, namedtuple
-from copy import deepcopy
 from datetime import datetime
+from time import perf_counter
 from typing import TYPE_CHECKING, Any, Callable
 from uuid import UUID
 
@@ -12,9 +12,8 @@ from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, Measure, Operation, SetParameter
-from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable import Variable
-from qililab.result.experiment_results_writer import (
+from qililab.result.experiment_results import (
     ExperimentMetadata,
     ExperimentResultsWriter,
     MeasurementMetadata,
@@ -64,13 +63,13 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
         )
         self.results_writer: ExperimentResultsWriter
 
-    def _prepare(self):
+    def _prepare_metadata(self):
         """Prepares the loop values and result shape before execution."""
 
         def traverse_experiment(block: Block):
             """Traverses the blocks to gather loop information and determine result shape."""
             if isinstance(block, (Loop, ForLoop, Parallel)):
-                variables = self.get_variables_of_loop(block)
+                variables = self._get_variables_of_loop(block)
 
                 self.experiment_variables_stack.append(variables)
 
@@ -91,7 +90,7 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
         def traverse_qprogram(block: Block):
             """Traverses a QProgram to gather loop information."""
             if isinstance(block, (Loop, ForLoop, Parallel)):
-                variables = self.get_variables_of_loop(block)
+                variables = self._get_variables_of_loop(block)
 
                 self.qprogram_variables_stack.append(variables)
             if isinstance(block, Average):
@@ -140,119 +139,123 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
         traverse_experiment(self.experiment.body)
         self.all_variables = dict(self.all_variables)
 
-    def _traverse_and_store(self, block: Block, progress: Progress):
+    def _prepare_operations(self, block: Block, progress: Progress):
         """Traverse blocks, store generated Python functions, and return the stored operations."""
+
+        def handle_loop(block: ForLoop | Loop | Parallel) -> list[Callable]:
+            """Common logic for handling ForLoop and Loop blocks."""
+            stored_operations = []
+
+            # Determine loop parameters based on the type of block
+            label = ",".join([variable["label"] for variable in self.variables_per_block[block.uuid]])
+            shape = self.variables_per_block[block.uuid][0]["values"].shape[-1]
+
+            for variable in self.variables_per_block[block.uuid]:
+                self.current_block_of_variable[variable["uuid"]] = block.uuid
+
+            # Create the progress bar for the loop
+            def create_progress_bar():
+                total_iterations = shape
+                loop_task_id = progress.add_task(f"Looping over {label}", total=total_iterations)
+                self.task_ids[block.uuid] = loop_task_id  # Store the task ID associated with this loop block
+
+                # Track the index for this loop
+                self.loop_indices[block.uuid] = 0
+
+                return loop_task_id
+
+            stored_operations.append(create_progress_bar)
+
+            def advance_progress_bar(variable_value: tuple[int | float, ...]) -> None:
+                loop_task_id = self.task_ids[block.uuid]
+                progress.update(
+                    loop_task_id,
+                    description=f"Looping over {label}: {variable_value[0] if len(variable_value) == 1 else variable_value}",
+                )
+                progress.advance(loop_task_id)
+
+            def advance_loop_index() -> None:
+                # Update the loop index
+                self.loop_indices[block.uuid] += 1
+
+            uuids = [variable["uuid"] for variable in self.variables_per_block[block.uuid]]
+            values = [variable["values"] for variable in self.variables_per_block[block.uuid]]
+
+            for current_values in zip(*values):
+                for uuid, value in zip(uuids, current_values):
+                    self.current_value_of_variable[uuid] = value
+
+                stored_operations.append(lambda value=current_values: advance_progress_bar(value))  # type: ignore
+
+                # Process elements within the loop
+                stored_operations.extend(process_elements(block.elements))
+
+                stored_operations.append(advance_loop_index)
+
+            def remove_progress_bar():
+                progress.remove_task(self.task_ids[block.uuid])
+                del self.loop_indices[block.uuid]
+
+            stored_operations.append(remove_progress_bar)
+
+            return stored_operations
+
+        def process_elements(elements: list[Block | Operation]) -> list[Callable]:
+            """Process the elements in a block and store the corresponding operations."""
+            stored_operations = []
+
+            for element in elements:
+                if isinstance(element, SetParameter):
+                    # Append a lambda that will call the `platform.set_parameter` method
+                    stored_operations.append(
+                        lambda alias=element.alias, parameter=element.parameter, value=(
+                            self.current_value_of_variable[element.value.uuid]
+                            if isinstance(element.value, Variable)
+                            else element.value
+                        ): self.platform.set_parameter(alias=alias, parameter=parameter, value=value)
+                    )
+
+                if isinstance(element, ExecuteQProgram):
+                    # Append a lambda that will call the `platform.execute_qprogram` method
+                    stored_operations.append(
+                        lambda op=element, qprogram_index=self.qprogram_execution_indices[element.uuid]: store_results(  # type: ignore[misc]
+                            self.platform.execute_qprogram(
+                                qprogram=op.qprogram,
+                                bus_mapping=op.bus_mapping,
+                                calibration=op.calibration,
+                                debug=op.debug,
+                            ),
+                            qprogram_index,
+                        )
+                    )
+                elif isinstance(element, Block):
+                    # Recursively handle elements of the block
+                    nested_operations = self._prepare_operations(element, progress)
+                    stored_operations.extend(nested_operations)
+
+            return stored_operations
+
+        def store_results(qprogram_results: QProgramResults, qprogram_index: int):
+            """Store the result in the correct location within the StreamArray."""
+            # Determine the index in the StreamArray based on current loop indices
+            for measurement_index, measurement_result in enumerate(qprogram_results.timeline):
+                loop_indices = tuple(index for _, index in self.loop_indices.items())
+                indices = tuple([qprogram_index, measurement_index]) + loop_indices
+                # Store the results in the StreamArray
+                self.results_writer[indices] = measurement_result.array.T  # type: ignore
+
         stored_operations = []
 
         if isinstance(block, (Loop, ForLoop, Parallel)):
             # Handle loops
-            stored_operations.extend(self._handle_loop(block, progress))
+            stored_operations.extend(handle_loop(block))
         else:
             # Handle generic blocks
-            stored_operations.extend(self._process_elements(block.elements, progress))
+            stored_operations.extend(process_elements(block.elements))
 
         return stored_operations
 
-    def _handle_loop(self, block: ForLoop | Loop | Parallel, progress: Progress) -> list[Callable]:
-        """Common logic for handling ForLoop and Loop blocks."""
-        stored_operations = []
-
-        # Determine loop parameters based on the type of block
-        label = ",".join([variable["label"] for variable in self.variables_per_block[block.uuid]])
-        shape = self.variables_per_block[block.uuid][0]["values"].shape[-1]
-
-        for variable in self.variables_per_block[block.uuid]:
-            self.current_block_of_variable[variable["uuid"]] = block.uuid
-
-        # Create the progress bar for the loop
-        def create_progress_bar():
-            total_iterations = shape
-            loop_task_id = progress.add_task(f"Looping over {label}", total=total_iterations)
-            self.task_ids[block.uuid] = loop_task_id  # Store the task ID associated with this loop block
-
-            # Track the index for this loop
-            self.loop_indices[block.uuid] = 0
-
-            return loop_task_id
-
-        stored_operations.append(create_progress_bar)
-
-        def advance_progress_bar(variable_value: tuple[int | float, ...]) -> None:
-            loop_task_id = self.task_ids[block.uuid]
-            progress.update(
-                loop_task_id,
-                description=f"Looping over {label}: {variable_value[0] if len(variable_value) == 1 else variable_value}",
-            )
-            progress.advance(loop_task_id)
-
-        def advance_loop_index() -> None:
-            # Update the loop index
-            self.loop_indices[block.uuid] += 1
-
-        uuids = [variable["uuid"] for variable in self.variables_per_block[block.uuid]]
-        values = [variable["values"] for variable in self.variables_per_block[block.uuid]]
-
-        for current_values in zip(*values):
-            for uuid, value in zip(uuids, current_values):
-                self.current_value_of_variable[uuid] = value
-
-            stored_operations.append(lambda value=current_values: advance_progress_bar(value))  # type: ignore
-
-            # Process elements within the loop
-            stored_operations.extend(self._process_elements(block.elements, progress))
-
-            stored_operations.append(advance_loop_index)
-
-        def remove_progress_bar():
-            progress.remove_task(self.task_ids[block.uuid])
-            del self.loop_indices[block.uuid]
-
-        stored_operations.append(remove_progress_bar)
-
-        return stored_operations
-
-    def _process_elements(self, elements: list[Block | Operation], progress: Progress) -> list[Callable]:
-        """Process the elements in a block and store the corresponding operations."""
-        stored_operations = []
-
-        for element in elements:
-            if isinstance(element, SetParameter):
-                # Append a lambda that will call the `platform.set_parameter` method
-                stored_operations.append(
-                    lambda alias=element.alias, parameter=element.parameter, value=(
-                        self.current_value_of_variable[element.value.uuid]
-                        if isinstance(element.value, Variable)
-                        else element.value
-                    ): self.platform.set_parameter(alias=alias, parameter=parameter, value=value)
-                )
-
-            if isinstance(element, ExecuteQProgram):
-                # Append a lambda that will call the `platform.execute_qprogram` method
-                stored_operations.append(
-                    lambda op=element, qprogram_index=self.qprogram_execution_indices[element.uuid]: self._store_result(  # type: ignore[misc]
-                        self.platform.execute_qprogram(
-                            qprogram=op.qprogram, bus_mapping=op.bus_mapping, calibration=op.calibration, debug=op.debug
-                        ),
-                        qprogram_index,
-                    )
-                )
-            elif isinstance(element, Block):
-                # Recursively handle elements of the block
-                nested_operations = self._traverse_and_store(element, progress)
-                stored_operations.extend(nested_operations)
-
-        return stored_operations
-
-    def _store_result(self, result: QProgramResults, qprogram_index: int):
-        """Store the result in the correct location within the StreamArray."""
-        # Determine the index in the StreamArray based on current loop indices
-        for measurement_index, results in enumerate(next(iter(result.results.values()))):
-            loop_indices = tuple(index - 1 for _, index in self.loop_indices.items())
-            indices = tuple([qprogram_index, measurement_index]) + loop_indices
-            # Store the results in the StreamArray
-            self.results_writer[indices] = results.array.T  # type: ignore
-
-    def _run_stored_operations(self, progress: Progress):
+    def _execute_operations(self, progress: Progress):
         """Run the stored operations in sequence, updating the progress bar."""
         main_task_id = progress.add_task("Executing experiment", total=len(self.stored_operations))
 
@@ -263,7 +266,6 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
 
         progress.update(main_task_id, description="Executing experiment (done)")
         progress.refresh()  # Ensure the final state of the progress bar is rendered
-        return progress.tasks[main_task_id].elapsed
 
     def _inclusive_range(self, start: int | float, stop: int | float, step: int | float) -> np.ndarray:
         # Check if all inputs are integers
@@ -281,7 +283,7 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
         result = np.linspace(start, stop, num_steps)
         return np.around(result, decimals=decimal_places)
 
-    def get_variables_of_loop(self, block: Loop | ForLoop | Parallel):
+    def _get_variables_of_loop(self, block: Loop | ForLoop | Parallel):
         # Get variable information of the loop
         if isinstance(block, (ForLoop, Loop)):
             variables = {
@@ -360,23 +362,27 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
         # Create file path to store results
         path = self._create_results_path(self.results_path, "data.h5")
 
-        # Prepare the experiment, calculate shape and loop values
-        self._prepare()
+        # Prepare the results metadata
+        self._prepare_metadata()
 
         # Update metadata
         self.metadata["yaml"] = serialize(self.experiment)
-        self.metadata["executed_at"] = str(datetime.now())
+        self.metadata["executed_at"] = datetime.now()
 
         # Create the ExperimentResultsWriter for storing results
-        self.results_writer = ExperimentResultsWriter(metadata=self.metadata, path=path)
+        self.results_writer = ExperimentResultsWriter(path=path, metadata=self.metadata)
         with self.results_writer:
+            start_time = perf_counter()
+
             with Progress(
                 TextColumn("[progress.description]{task.description}"),
                 BarColumn(bar_width=None),
                 "[progress.percentage]{task.percentage:>3.1f}%",
                 TimeElapsedColumn(),
             ) as progress:
-                self.stored_operations = self._traverse_and_store(self.experiment.body, progress)
-                self.results_writer.execution_time = self._run_stored_operations(progress)
+                self.stored_operations = self._prepare_operations(self.experiment.body, progress)
+                self._execute_operations(progress)
+
+            self.results_writer.execution_time = perf_counter() - start_time
 
         return path

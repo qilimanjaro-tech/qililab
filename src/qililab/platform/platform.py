@@ -922,6 +922,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 # Doing manual classification of results as QM does not return thresholded values like Qblox
                 for measurement in measurements:
                     measurement_result = QuantumMachinesMeasurementResult(
+                        measurement.bus,
                         *[acquisitions[handle] for handle in measurement.result_handles],
                     )
                     measurement_result.set_classification_threshold(thresholds.get(measurement.bus, None))
