@@ -253,15 +253,15 @@ class CalibrationController:
         for n in self._dependencies(node):
             self.calibrate_all(n)
 
-        # You can skip it from the `drift_timeout`, but also skip it due to `been_calibrated()`
+        # You can skip it from the `drift_timeout`, but also skip it due to `been_calibrated_succesfully()`
         # If you want to start the calibration from the start again, just decrease the `drift_timeout` or remove the executed files!
-        if not node.been_calibrated:
+        if not node.been_calibrated_succesfully:
             if node.previous_timestamp is None or self._is_timeout_expired(node.previous_timestamp, self.drift_timeout):
                 self.calibrate(node)
                 self._update_parameters(node)
 
-            node.been_calibrated = True
-        # After passing this block `node.been_calibrated` will always be True, so it will not be recalibrated again.
+            node.been_calibrated_succesfully = True
+        # After passing this block `node.been_calibrated_succesfully` will always be True, so it will not be recalibrated again.
 
     def diagnose(self, node: CalibrationNode) -> bool:
         """Searches for the first bad ``checkpoint``, and if found, we start the calibration process with the recursive
@@ -287,8 +287,12 @@ class CalibrationController:
         """
         logger.info("WORKFLOW: Diagnosing  %s.\n", node.node_id)
 
-        # Since any([] = False), this will only check if there are dependencies, if not, diagnose starts (no finishes).
+        # We use `any()` here, to not get the following case:
+        # [X] - - - [V]      ( --->  Should be --->      [X] - - - [ ] )
+        # [V] - /            ( --->            --->      [V] - /       )
+        # Since then `calibrate_all()` would start from the most right [V], skipping the branch of the [X]...
         diagnose_finished = any(self.diagnose(n) for n in self._dependencies(node))
+        # Since any([] = False), this will only check if there are dependencies, if not, diagnose starts (no finishes).
 
         # When we have encountered a dependency checkpoint bad, we should not diagnose further:
         # [O] - [V] - [O] - [V] - [0] - [X] - [ ] - [ ] - [ ] - ... we leave the next ones empty (.), after finding the first bad
@@ -296,20 +300,30 @@ class CalibrationController:
         if diagnose_finished:
             return True
 
-        # You can skip it from the `drift_timeout`, but also skip it due to `been_calibrated()`
+        # You can skip it from the `drift_timeout`, but also skip it due to `been_calibrated_succesfully()`
         # If you want to start the calibration from the start again, just decrease the `drift_timeout` or remove the executed files!
         if (
             node.check_point
-            and not node.been_calibrated
-            and (
-                node.previous_timestamp is None or self._is_timeout_expired(node.previous_timestamp, self.drift_timeout)
-            )
+            and not node.been_calibrated_succesfully
+            # and ( TODO: Think about removing timestamps
+            #     node.previous_timestamp
+            #     is None  # or self._is_timeout_expired(node.previous_timestamp, self.drift_timeout)
+            # )
         ):
+            # TODO: Think about not repeating X's, and if you can join this condition with the one below...
+            # if node.check_point_checked and not node.check_point_passed:
+            #     logger.info(
+            #         "WORKFLOW: %s checkpoint failed, calibration will start just after the previously passed checkpoint.\n",
+            #         node.node_id,
+            #     )
+            #     return True
+
             self.calibrate(node)
             if node.output_parameters is not None and self._check_point_passed_comparison(node):
                 node.check_point_passed = True
                 self._update_parameters(node)
-                node.been_calibrated = True  # TODO: Think about this, where together with its conditional above...
+                node.been_calibrated_succesfully = True
+                # TODO: Think about this, where together with its conditional above...
 
             else:
                 logger.info(
@@ -317,6 +331,8 @@ class CalibrationController:
                     node.node_id,
                 )
                 node.check_point_passed = False
+
+            node.check_point_checked = True
 
             # If the node was a checkpoint, depending on the results, we can stop or not diagnosing the next nodes.
             return not node.check_point_passed

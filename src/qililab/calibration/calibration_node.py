@@ -285,7 +285,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         self._stream: StringIO = self._build_notebooks_logger_stream()
         """Stream object to which the notebooks logger output will be written, to posterior retrieval."""
 
-        self.been_calibrated: bool = False
+        self.been_calibrated_succesfully: bool = False
         """Flag whether this notebook has been already calibrated in a concrete run. Defaults to False."""
 
         self.check_point: bool = check_point
@@ -295,6 +295,9 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         self.check_value: dict | None = check_value if self.check_point else None
         """Values to decide whether the checkpoint was passed successfully. They have to have the same structure as the ``output_parameters["fidelities"]``
         dictionary, in the corresponding notebook itself. If node is not a check_point (default), then its None."""
+
+        self.check_point_checked: bool | None = None
+        """Flag whether this notebook has been checked. If the notebook is not a check_point (default), then is None."""
 
         self.check_point_passed: bool | None = None
         """Flag whether this notebook has passed the check value when checked. If the notebook is not a check_point (default), then is None."""

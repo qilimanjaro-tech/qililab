@@ -321,7 +321,7 @@ class TestCalibrateAllFromCalibrationController:
         controller[2].calibrate.reset_mock()
         controller[2]._update_parameters.reset_mock()
         for node in controller[2].node_sequence.values():
-            node.been_calibrated = False
+            node.been_calibrated_succesfully = False
 
         # Act:
         controller[2].calibrate_all(fourth)
@@ -329,7 +329,7 @@ class TestCalibrateAllFromCalibrationController:
         # Assert that 0, 3 & 4 notebooks have been calibrated:
         # (1 and 2 are calibrated in some graphs and not in others)
         for node in [zeroth, third, fourth]:
-            assert node.been_calibrated is True
+            assert node.been_calibrated_succesfully is True
 
         # Asserts recursive calls
         controller[2].calibrate.assert_has_calls(controller[1])
