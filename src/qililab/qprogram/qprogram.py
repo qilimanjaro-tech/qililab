@@ -456,6 +456,7 @@ class QProgram(StructuredProgram):  # pylint: disable=too-many-public-methods
         self._buses.add(bus)
 
     @requires_domain("offset_path0", Domain.Voltage)
+    @requires_domain("offset_path1", Domain.Voltage)
     def set_offset(self, bus: str, offset_path0: float, offset_path1: float | None = None):
         """Set the gain of the AWG associated with bus.
 

@@ -701,14 +701,12 @@ class QuantumMachinesCluster(Instrument):
         if parameter in [Parameter.OFFSET_I, Parameter.OFFSET_Q]:
             if self._is_connected_to_qm:
                 input = "I" if parameter in Parameter.OFFSET_I else "Q"
-                self._qm.get_output_dc_offset_by_element(element=bus, iq_input= input)
-                return
+                return self._qm.get_output_dc_offset_by_element(element=bus, iq_input= input)
 
         if parameter in [Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2]:
             if self._is_connected_to_qm:
                 output = "out1" if parameter in Parameter.OFFSET_OUT1 else "out2"
-                self._qm.get_input_dc_offset_by_element(element=bus, output= output)
-                return
+                return self._qm.get_input_dc_offset_by_element(element=bus, output= output)
 
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
