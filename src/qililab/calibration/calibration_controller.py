@@ -324,7 +324,7 @@ class CalibrationController:
         ):
             return False
 
-        # For not repeating [X] and [V]'s checkpoints, when more than one branch have it as a dependency.
+        ### For not repeating [X] and [V]'s checkpoints, when more than one branch have it as a dependency.
         if node.check_point_passed is not None:
             logger.info(
                 "WORKFLOW: %s checkpoint already checked, skipping it.\n",
@@ -332,12 +332,12 @@ class CalibrationController:
             )
             return not node.check_point_passed
 
+        ### Main diagnose logic if the node is a checkpoint, and hasn't been checked, start checking.
         self.calibrate(node)
         if node.output_parameters is not None and self._check_point_passed_comparison(node):
             node.check_point_passed = True
             self._update_parameters(node)
             node.been_calibrated_succesfully = True
-
         else:
             logger.info(
                 "WORKFLOW: %s checkpoint failed, calibration will start just after the previously passed checkpoint.\n",
