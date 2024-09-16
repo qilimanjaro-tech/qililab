@@ -12,9 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Init file."""
-from .bus_execution import BusExecution
-from .execution_builder import ExecutionBuilder
-from .execution_manager import ExecutionManager
+from dataclasses import dataclass
 
-EXECUTION_BUILDER = ExecutionBuilder()
+from qililab.qprogram.operations.operation import Operation
+from qililab.typings.enums import Parameter
+from qililab.yaml import yaml
+
+
+@yaml.register_class
+@dataclass(frozen=True)
+class SetParameter(Operation):  # pylint: disable=missing-class-docstring
+    alias: str
+    parameter: Parameter
+    value: int | float | bool

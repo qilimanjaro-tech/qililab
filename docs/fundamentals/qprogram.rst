@@ -30,15 +30,15 @@ For instance, you can define a variable with `Domain.Frequency` and use it to ch
 .. code-block:: python3
 
     qp = QProgram()
-    frequency = qp.variable(Domain.Frequency)
+    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
 
 If the variable is not accossiated with any physical property, it should be declared as `Domain.Scalar`. In that case, the data type of the variable must also be specificied. Available data types are `int` and `float`.
 
 .. code-block:: python3
 
     qp = QProgram()
-    int_scalar = qp.variable(Domain.Scalar, type=int)
-    float_scalar = qp.variable(Domain.Scalar, type=float)
+    int_scalar = qp.variable(label="int_scalar", domain=Domain.Scalar, type=int)
+    float_scalar = qp.variable(label="float_scalar", domain=Domain.Scalar, type=float)
 
 In the future, these variables will be treated as mathematical objects, allowing the user to evaluate complex expressions.
 
@@ -52,18 +52,18 @@ QProgram offers a rich set of control structures, including various types of loo
 These loops enable the user to iterate over a sequence of values for a given variable. Additionally, loops can be nested, which is invaluable for experiments that require multi-dimensional sweeps. There are currently three flavours of loops.
 
 For-Loop
-^^^^^
+^^^^^^^^^
 The `for_loop` method provides the traditional loop structure, allowing the user to specify the `start`, `stop`, and `step` values for a variable, thereby creating a range over which the loop will iterate. Both `start` and `stop` are inclusive.
 
 .. code-block:: python3
 
     qp = QProgram()
-    frequency = qp.variable(Domain.Frequency)
+    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
     with qp.for_loop(variable=frequency, start=100e6, stop=200e6, step=10e6):
         qp.set_frequency(bus="drive_bus", frequency=frequency)
 
 Loops with numpy
-^^^^^
+^^^^^^^^^^^^^^^^^
 
 The `loop` method allows the user to iterate over a numpy array of arbitrary values.
 
@@ -72,27 +72,27 @@ The `loop` method allows the user to iterate over a numpy array of arbitrary val
     frequency_values = np.random.uniform(low=100e6, high=200e6, size=201)
 
     qp = QProgram()
-    frequency = qp.variable(Domain.Frequency)
+    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
     with qp.loop(variable=frequency, values=frequency_values):
         qp.set_frequency(bus="drive_bus", frequency=frequency)
 
 Inner Loops
-^^^^^
+^^^^^^^^^^^^
 
 Loops can be nested, which is invaluable for experiments that require multi-dimensional sweeps. In the following example, we loop over frequencies and for each frequency value we loop over gains.
 
 .. code-block:: python3
 
     qp = QProgram()
-    frequency = qp.variable(Domain.Frequency)
-    gain = qp.variable(Domain.Voltage)
+    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+    gain = qp.variable(label="gain", domain=Domain.Voltage)
     with qp.for_loop(variable=frequency, start=100e6, stop=200e6, step=10e6):
         qp.set_frequency(bus="drive_bus", frequency=frequency)
         with qp.for_loop(variable=gain, start=0.0, stop=1.0, step=0.1):
             qp.set_gain(bus="drive_bus", gain=gain)
 
 Parallel Loops
-^^^^^
+^^^^^^^^^^^^^^^
 
 Finally, the `parallel` method is provided, which allows multiple loops to be run in parallel.
 
@@ -101,8 +101,8 @@ Finally, the `parallel` method is provided, which allows multiple loops to be ru
     from qililab.qprogram.blocks import ForLoop
 
     qp = QProgram()
-    frequency = qp.variable(Domain.Frequency)
-    gain = qp.variable(Domain.Voltage)
+    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+    gain = qp.variable(label="gain", domain=Domain.Voltage)
     with qp.parallel(loops=[ForLoop(variable=frequency, start=100e6, stop=200e6, step=10e6),
                             ForLoop(variable=gain, start=0.0, stop=1.0, step=0.1)]):
         qp.set_frequency(bus="drive_bus", frequency=frequency)

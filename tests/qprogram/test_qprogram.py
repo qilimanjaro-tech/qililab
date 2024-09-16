@@ -20,6 +20,7 @@ from qililab.qprogram.operations import (
     ResetPhase,
     SetFrequency,
     SetGain,
+    SetMarkers,
     SetOffset,
     SetPhase,
     Sync,
@@ -27,38 +28,53 @@ from qililab.qprogram.operations import (
 )
 from qililab.qprogram.variable import FloatVariable, IntVariable
 from qililab.utils.serialization import deserialize, deserialize_from, serialize, serialize_to
+from tests.qprogram.test_structured_program import (  # pylint: disable=no-name-in-module, import-error
+    TestStructuredProgram,
+)
+
+
+@pytest.fixture(name="sample_qprogram_string")
+def get_sample_qprogram_string():
+    """Sample qprogram and its corresponding string to tests the __str__ method"""
+    r_amp = 0.5
+    r_duration = 40
+    d_duration = 40
+
+    r_wf_I = Square(amplitude=r_amp, duration=r_duration)
+    r_wf_Q = Square(amplitude=0.0, duration=r_duration)
+    d_wf = IQPair.DRAG(amplitude=1.0, duration=d_duration, num_sigmas=4, drag_coefficient=0.1)
+
+    weights_shape = Square(amplitude=1, duration=r_duration)
+
+    qp = QProgram()
+    amp = qp.variable(label="amplitude", domain=Domain.Voltage)
+    freq = qp.variable(label="frequency", domain=Domain.Frequency)
+
+    with qp.average(100):
+        with qp.for_loop(variable=amp, start=0.2, stop=1, step=0.1):
+            qp.set_gain(bus="dummy_bus_0", gain=amp)
+            with qp.for_loop(variable=freq, start=0, stop=20, step=5):
+                qp.set_frequency(bus="dummy_bus_1", frequency=freq)
+                # DRAG PULSE
+                qp.play(bus="dummy_bus_0", waveform=d_wf)
+                qp.sync()
+                # READOUT PULSE
+                qp.measure(
+                    bus="readout", waveform=IQPair(I=r_wf_I, Q=r_wf_Q), weights=IQPair(I=weights_shape, Q=weights_shape)
+                )
+                qp.wait(bus="readout", duration=200)
+
+    qp_string = """Average:\n\tshots: 100\n\tForLoop:\n\t\tstart: 0.2\n\t\tstop: 1\n\t\tstep: 0.1\n\t\tSetGain:\n\t\t\tbus: dummy_bus_0\n\t\t\tgain: None\n\t\tForLoop:\n\t\t\tstart: 0\n\t\t\tstop: 20\n\t\t\tstep: 5\n\t\t\tSetFrequency:\n\t\t\t\tbus: dummy_bus_1\n\t\t\t\tfrequency: None\n\t\t\tPlay:\n\t\t\t\tbus: dummy_bus_0\n\t\t\t\twait_time: None\n\t\t\t\tWaveform I Gaussian:\n\t\t\t\t\t[0.         0.03369997 0.07235569 0.11612685 0.1650374  0.21894866\n\t\t\t\t\t 0.27753626 0.34027302 0.40641993 0.47502707 0.54494577 0.61485281\n\t\t\t\t\t 0.68328653 0.74869396 0.80948709 0.86410559 0.9110827  0.94911031\n\t\t\t\t\t 0.97709942 0.99423184 1.         0.99423184 0.97709942 0.94911031\n\t\t\t\t\t 0.9110827  0.86410559 0.80948709 0.74869396 0.68328653 0.61485281\n\t\t\t\t\t 0.54494577 0.47502707 0.40641993 0.34027302 0.27753626 0.21894866\n\t\t\t\t\t 0.1650374  0.11612685 0.07235569 0.03369997]\n\t\t\t\tWaveform Q DragCorrection):\n\t\t\t\t\t[ 0.          0.0006403   0.0013024   0.00197416  0.0026406   0.00328423\n\t\t\t\t\t  0.00388551  0.00442355  0.00487704  0.0052253   0.00544946  0.00553368\n\t\t\t\t\t  0.00546629  0.00524086  0.00485692  0.00432053  0.00364433  0.00284733\n\t\t\t\t\t  0.0019542   0.00099423 -0.         -0.00099423 -0.0019542  -0.00284733\n\t\t\t\t\t -0.00364433 -0.00432053 -0.00485692 -0.00524086 -0.00546629 -0.00553368\n\t\t\t\t\t -0.00544946 -0.0052253  -0.00487704 -0.00442355 -0.00388551 -0.00328423\n\t\t\t\t\t -0.0026406  -0.00197416 -0.0013024  -0.0006403 ]\n\t\t\tSync:\n\t\t\t\tbuses: None\n\t\t\tMeasure:\n\t\t\t\tbus: readout\n\t\t\t\tsave_adc: False\n\t\t\t\trotation: None\n\t\t\t\tdemodulation: True\n\t\t\t\tWaveform I Square:\n\t\t\t\t\t[0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5\n\t\t\t\t\t 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5\n\t\t\t\t\t 0.5 0.5 0.5 0.5]\n\t\t\t\tWaveform Q Square):\n\t\t\t\t\t[0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.\n\t\t\t\t\t 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]\n\t\t\t\tWeights I Square:\n\t\t\t\t\t[1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1.\n\t\t\t\t\t 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1.]\n\t\t\t\tWeights Q Square:\n\t\t\t\t\t[1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1.\n\t\t\t\t\t 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1.]\n\t\t\tWait:\n\t\t\t\tbus: readout\n\t\t\t\tduration: 200\n"""
+    return (qp, qp_string)
 
 
 # pylint: disable=maybe-no-member, protected-access
-class TestQProgram:
+class TestQProgram(TestStructuredProgram):
     """Unit tests checking the QProgram attributes and methods"""
 
-    def test_init(self):
-        """Test init method"""
-        qp = QProgram()
-        assert isinstance(qp._body, Block)
-        assert len(qp._body.elements) == 0
-        assert isinstance(qp._block_stack, deque)
-        assert len(qp._block_stack) == 1
-        assert isinstance(qp._variables, list)
-        assert len(qp._variables) == 0
-
-    def test_active_block_property(self):
-        """Test _active_block property"""
-        qp = QProgram()
-        assert isinstance(qp._active_block, Block)
-        assert qp._active_block is qp._body
-
-    def test_block_method(self):
-        """Test block method"""
-        qp = QProgram()
-        with qp.block() as block:
-            # __enter__
-            assert isinstance(block, Block)
-            assert qp._active_block is block
-        # __exit__
-        assert len(qp._body.elements) == 1
-        assert qp._body.elements[0] is block
+    @pytest.fixture
+    def instance(self):
+        return QProgram()
 
     def test_with_bus_mapping_method(self):
         """Test with_bus_mapping method"""
@@ -188,74 +204,7 @@ class TestQProgram:
         assert isinstance(new_qp.body.elements[0].elements[7], Measure)
         assert isinstance(new_qp.body.elements[0].elements[8], Measure)
 
-    def test_infinite_loop_method(self):
-        """Test infinite_loop method"""
-
-        qp = QProgram()
-        with qp.infinite_loop() as loop:
-            # __enter__
-            assert isinstance(loop, InfiniteLoop)
-            assert qp._active_block is loop
-        # __exit__
-        assert len(qp._body.elements) == 1
-        assert qp._body.elements[0] is loop
-        assert qp._active_block is qp._body
-
-    def test_parallel_method(self):
-        """Test parallel method"""
-        qp = QProgram()
-        var1 = qp.variable(Domain.Scalar, int)
-        var2 = qp.variable(Domain.Scalar, float)
-        with qp.parallel(
-            loops=[
-                ForLoop(variable=var1, start=0, stop=10, step=1),
-                ForLoop(variable=var2, start=0.0, stop=1.0, step=0.1),
-            ]
-        ) as loop:
-            # __enter__
-            assert isinstance(loop, Parallel)
-            assert len(loop.loops) == 2
-            assert qp._active_block is loop
-        # __exit__
-        assert len(qp._body.elements) == 1
-        assert qp._body.elements[0] is loop
-        assert qp._active_block is qp._body
-
-    def test_for_loop_method(self):
-        """Test loop method"""
-        qp = QProgram()
-        variable = qp.variable(Domain.Scalar, int)
-        start, stop, step = 0, 100, 5
-        with qp.for_loop(variable=variable, start=start, stop=stop, step=step) as loop:
-            # __enter__
-            assert isinstance(loop, ForLoop)
-            assert loop.variable == variable
-            assert loop.start == start
-            assert loop.stop == stop
-            assert loop.step == step
-            assert qp._active_block is loop
-        # __exit__
-        assert len(qp._body.elements) == 1
-        assert qp._body.elements[0] is loop
-        assert qp._active_block is qp._body
-
-    def test_loop_method(self):
-        """Test loop method"""
-        qp = QProgram()
-        variable = qp.variable(Domain.Scalar, int)
-        values = np.ones(10, dtype=int)
-        with qp.loop(variable=variable, values=values) as loop:
-            # __enter__
-            assert isinstance(loop, Loop)
-            assert loop.variable == variable
-            assert np.array_equal(loop.values, values)
-            assert qp._active_block is loop
-        # __exit__
-        assert len(qp._body.elements) == 1
-        assert qp._body.elements[0] is loop
-        assert qp._active_block is qp._body
-
-    def test_acquire_loop_method(self):
+    def test_average_method(self):
         """Test acquire_loop method"""
         qp = QProgram()
         with qp.average(shots=1000) as loop:
@@ -392,72 +341,30 @@ class TestQProgram:
         assert qp._body.elements[0].offset_path0 == 1.0
         assert qp._body.elements[0].offset_path1 == 0.0
 
-    def test_variable_method(self):
-        """Test variable method"""
+    def test_set_markers(self):
         qp = QProgram()
-        frequency_variable = qp.variable(Domain.Frequency)
-        phase_variable = qp.variable(Domain.Phase)
-        voltage_variable = qp.variable(Domain.Voltage)
-        time_variable = qp.variable(Domain.Time)
-        int_scalar_variable = qp.variable(Domain.Scalar, int)
-        float_scalar_variable = qp.variable(Domain.Scalar, float)
+        qp.qblox.set_markers(bus="drive", mask="0111")
 
-        # Test instantiation
-        assert isinstance(frequency_variable, float)
-        assert isinstance(frequency_variable, FloatVariable)
-        assert frequency_variable.domain is Domain.Frequency
-        assert frequency_variable.value is None
+        assert len(qp._active_block.elements) == 1
+        assert len(qp._body.elements) == 1
+        assert isinstance(qp._body.elements[0], SetMarkers)
+        assert qp._body.elements[0].bus == "drive"
+        assert qp._body.elements[0].mask == "0111"
 
-        assert isinstance(phase_variable, float)
-        assert isinstance(phase_variable, FloatVariable)
-        assert phase_variable.domain is Domain.Phase
-        assert phase_variable.value is None
+        with pytest.raises(AttributeError):
+            qp.qblox.set_markers(bus="drive", mask="1234")
 
-        assert isinstance(voltage_variable, float)
-        assert isinstance(voltage_variable, FloatVariable)
-        assert voltage_variable.domain is Domain.Voltage
-        assert voltage_variable.value is None
-
-        assert isinstance(time_variable, int)
-        assert isinstance(time_variable, IntVariable)
-        assert time_variable.domain is Domain.Time
-        assert time_variable.value is None
-
-        assert isinstance(int_scalar_variable, int)
-        assert isinstance(int_scalar_variable, IntVariable)
-        assert int_scalar_variable.domain is Domain.Scalar
-        assert int_scalar_variable.value is None
-
-        assert isinstance(float_scalar_variable, float)
-        assert isinstance(float_scalar_variable, FloatVariable)
-        assert float_scalar_variable.domain is Domain.Scalar
-        assert float_scalar_variable.value is None
-
-        # Test storing in QProgram's _variables
-        assert len(qp._variables) == 6
-
-    def test_variable_method_raises_error_if_domain_is_scalar_and_type_is_none(self):
-        """Test variable method"""
-        qp = QProgram()
-        with pytest.raises(ValueError, match="You must specify a type in a scalar variable."):
-            qp.variable(Domain.Scalar)
-
-    def test_variable_method_raises_error_if_domain_is_not_scalar_and_type_is_set(self):
-        """Test variable method"""
-        qp = QProgram()
-        with pytest.raises(
-            ValueError, match="When declaring a variable of a specific domain, its type is inferred by its domain."
-        ):
-            qp.variable(Domain.Frequency, int)
+        with pytest.raises(AttributeError):
+            qp.qblox.set_markers(bus="drive", mask="0111011")
 
     def test_operation_with_variable_of_wrong_domain_raises_error(self):
         """Test that any operation when used with a variable of wrong domain raises an error."""
         qp = QProgram()
-        frequency = qp.variable(Domain.Frequency)
-        phase = qp.variable(Domain.Phase)
-        voltage = qp.variable(Domain.Voltage)
-        time = qp.variable(Domain.Time)
-        scalar = qp.variable(Domain.Scalar, float)
+        frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+        phase = qp.variable(label="phase", domain=Domain.Phase)
+        voltage = qp.variable(label="gain", domain=Domain.Voltage)
+        time = qp.variable(label="time", domain=Domain.Time)
+        scalar = qp.variable(label="float_scalar", domain=Domain.Scalar, type=float)
 
         all_types = {frequency, phase, voltage, time, scalar}
 
@@ -509,8 +416,9 @@ class TestQProgram:
 
     def test_serialization_deserialization(self):
         """Test serialization and deserialization works."""
+        file = "test_serialization_deserialization_qprogram.yml"
         qp = QProgram()
-        gain = qp.variable(domain=Domain.Voltage)
+        gain = qp.variable(label="gain", domain=Domain.Voltage)
         with qp.for_loop(variable=gain, start=0.0, stop=1.0, step=0.1):
             qp.set_gain(bus="drive_bus", gain=gain)
             qp.play(bus="drive_bus", waveform=IQPair(I=Square(1.0, 200), Q=Square(1.0, 200)))
@@ -520,9 +428,9 @@ class TestQProgram:
 
         assert isinstance(deserialized_qprogram, QProgram)
 
-        serialize_to(qp, file="qprogram.yml")
-        deserialized_qprogram = deserialize_from("qprogram.yml", QProgram)
+        serialize_to(qp, file=file)
+        deserialized_qprogram = deserialize_from(file, QProgram)
 
         assert isinstance(deserialized_qprogram, QProgram)
 
-        os.remove("qprogram.yml")
+        os.remove(file)

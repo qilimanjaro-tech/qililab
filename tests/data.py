@@ -1,4 +1,5 @@
 """ Data to use alongside the test suite. """
+
 # pylint: disable=too-many-lines
 import copy
 from typing import Any
@@ -125,6 +126,18 @@ class Galadriel:
                     },
                 }
             ],
+            "Drag(1)": [
+                {
+                    "bus": "drive_line_q1_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 50,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
             "X(0)": [
                 {
                     "bus": "drive_line_q0_bus",
@@ -137,9 +150,33 @@ class Galadriel:
                     },
                 }
             ],
+            "X(1)": [
+                {
+                    "bus": "drive_line_q1_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 50,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
             "Y(0)": [
                 {
                     "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "Y(1)": [
+                {
+                    "bus": "drive_line_q1_bus",
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -201,6 +238,15 @@ class Galadriel:
         },
     }
 
+    flux_control_topology: list[dict[str, str]] = [
+        {"flux": "phix_q0", "bus": "flux_line_q0_bus"},
+        {"flux": "phiz_q0", "bus": "flux_line_q0_bus"},
+        {"flux": "phix_q1", "bus": "drive_line_q0_bus"},
+        {"flux": "phiz_q1", "bus": "drive_line_q0_bus"},
+        {"flux": "phix_c0_1", "bus": "flux_line_q0_bus"},
+        {"flux": "phiz_c0_1", "bus": "flux_line_q0_bus"},
+    ]
+
     pulsar_controller_qcm_0: dict[str, Any] = {
         "name": InstrumentControllerName.QBLOX_PULSAR,
         "alias": "pulsar_controller_qcm_0",
@@ -253,6 +299,85 @@ class Galadriel:
                 Parameter.OFFSET_Q.value: 0,
                 Parameter.HARDWARE_MODULATION.value: False,
             },
+        ],
+    }
+
+    qblox_qcm_rf_0: dict[str, Any] = {
+        "name": InstrumentName.QCMRF,
+        "alias": InstrumentName.QCMRF.value,
+        "firmware": "0.7.0",
+        "num_sequencers": 1,
+        "out0_lo_freq": 3.7e9,
+        "out0_lo_en": True,
+        "out0_att": 10,
+        "out0_offset_path0": 0.2,
+        "out0_offset_path1": 0.07,
+        "out1_lo_freq": 3.9e9,
+        "out1_lo_en": True,
+        "out1_att": 6,
+        "out1_offset_path0": 0.1,
+        "out1_offset_path1": 0.6,
+        "awg_sequencers": [
+            {
+                "identifier": 0,
+                "chip_port_id": "drive_q1",
+                "outputs": [0],
+                "num_bins": 1,
+                "intermediate_frequency": 20000000,
+                "gain_i": 0.001,
+                "gain_q": 0.02,
+                "gain_imbalance": 1,
+                "phase_imbalance": 0,
+                "offset_i": 0,
+                "offset_q": 0,
+                "hardware_modulation": True,
+            },
+        ],
+    }
+
+    qblox_qrm_rf_0: dict[str, Any] = {
+        "name": InstrumentName.QRMRF,
+        "alias": InstrumentName.QRMRF.value,
+        "firmware": "0.7.0",
+        "num_sequencers": 1,
+        "out0_in0_lo_freq": 3e9,
+        "out0_in0_lo_en": True,
+        "out0_att": 34,
+        "in0_att": 28,
+        "out0_offset_path0": 0.123,
+        "out0_offset_path1": 1.234,
+        "acquisition_delay_time": 100,
+        "awg_sequencers": [
+            {
+                "identifier": 0,
+                "chip_port_id": "feedline_output_1",
+                "qubit": 1,
+                "outputs": [0],
+                "weights_i": [1, 1, 1, 1],
+                "weights_q": [1, 1, 1, 1],
+                "weighed_acq_enabled": False,
+                "threshold": 0.5,
+                "threshold_rotation": 45.0,
+                "num_bins": 1,
+                "intermediate_frequency": 20000000,
+                "gain_i": 0.001,
+                "gain_q": 0.02,
+                "gain_imbalance": 1,
+                "phase_imbalance": 0,
+                "offset_i": 0,
+                "offset_q": 0,
+                "hardware_modulation": True,
+                "scope_acquire_trigger_mode": "sequencer",
+                "scope_hardware_averaging": True,
+                "sampling_rate": 1000000000,
+                "integration_length": 8000,
+                "integration_mode": "ssb",
+                "sequence_timeout": 1,
+                "acquisition_timeout": 1,
+                "hardware_demodulation": True,
+                "scope_store_enabled": True,
+                "time_of_flight": 40,
+            }
         ],
     }
 
@@ -371,7 +496,7 @@ class Galadriel:
         AWGTypes.AWG_SEQUENCERS.value: [
             {
                 "identifier": 0,
-                "chip_port_id": "feedline_input_1",
+                "chip_port_id": "feedline_output_2",
                 "qubit": 2,
                 "outputs": [0],
                 Parameter.NUM_BINS.value: 1,
@@ -505,6 +630,8 @@ class Galadriel:
         qblox_qcm_0,
         qblox_qrm_0,
         qblox_qrm_1,
+        qblox_qcm_rf_0,
+        qblox_qrm_rf_0,
         rohde_schwarz_0,
         rohde_schwarz_1,
         attenuator,
@@ -523,7 +650,10 @@ class Galadriel:
     chip: dict[str, Any] = {
         "nodes": [
             {"name": "port", "alias": "flux_q0", "line": "flux", "nodes": ["q0"]},
+            {"name": "port", "alias": "flux_q1", "line": "flux", "nodes": ["q1"]},
+            {"name": "port", "alias": "flux_q2", "line": "flux", "nodes": ["q2"]},
             {"name": "port", "alias": "drive_q0", "line": "drive", "nodes": ["q0"]},
+            {"name": "port", "alias": "drive_q1", "line": "drive", "nodes": ["q1"]},
             {
                 "name": "port",
                 "alias": "feedline_input",
@@ -531,7 +661,8 @@ class Galadriel:
                 "nodes": ["resonator_q0", "resonator_q1"],
             },
             {"name": "port", "alias": "feedline_output", "line": "feedline_output", "nodes": ["resonator_q0"]},
-            {"name": "port", "alias": "feedline_input_1", "line": "feedline_input", "nodes": ["resonator_q2"]},
+            {"name": "port", "alias": "feedline_output_1", "line": "feedline_output", "nodes": ["resonator_q1"]},
+            {"name": "port", "alias": "feedline_output_2", "line": "feedline_input", "nodes": ["resonator_q2"]},
             {
                 "name": "resonator",
                 "alias": "resonator_q0",
@@ -542,13 +673,13 @@ class Galadriel:
                 "name": "resonator",
                 "alias": "resonator_q1",
                 "frequency": 7.34730e09,
-                "nodes": ["feedline_input", "feedline_output", "q1"],
+                "nodes": ["feedline_input", "feedline_output_1", "q1"],
             },
             {
                 "name": "resonator",
                 "alias": "resonator_q2",
                 "frequency": 7.34730e09,
-                "nodes": ["feedline_input_1", "q2"],
+                "nodes": ["feedline_input", "feedline_output_2", "q2"],
             },
             {
                 "name": "qubit",
@@ -562,14 +693,14 @@ class Galadriel:
                 "alias": "q1",
                 "qubit_index": 1,
                 "frequency": 3.351e09,
-                "nodes": ["resonator_q1"],
+                "nodes": ["drive_q1", "resonator_q1"],
             },
             {
                 "name": "qubit",
                 "alias": "q2",
                 "qubit_index": 2,
                 "frequency": 4.451e09,
-                "nodes": ["resonator_q2"],
+                "nodes": ["drive_q2", "resonator_q2"],
             },
         ],
     }
@@ -586,6 +717,16 @@ class Galadriel:
             RUNCARD.DELAY: 0,
         },
         {
+            RUNCARD.ALIAS: "drive_line_q1_bus",
+            "system_control": {
+                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
+                RUNCARD.INSTRUMENTS: [InstrumentName.QCMRF.value],
+            },
+            "port": "drive_q1",
+            RUNCARD.DISTORTIONS: [],
+            RUNCARD.DELAY: 0,
+        },
+        {
             "alias": "feedline_input_output_bus",
             "system_control": {
                 "name": SystemControlName.READOUT_SYSTEM_CONTROL,
@@ -596,12 +737,22 @@ class Galadriel:
             RUNCARD.DELAY: 0,
         },
         {
-            "alias": "feedline_input_output_bus_1",
+            "alias": "feedline_input_output_bus_2",
             "system_control": {
                 "name": SystemControlName.READOUT_SYSTEM_CONTROL,
                 RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_1"],
             },
-            "port": "feedline_input_1",
+            "port": "feedline_output_2",
+            RUNCARD.DISTORTIONS: [],
+            RUNCARD.DELAY: 0,
+        },
+        {
+            "alias": "feedline_input_output_bus_1",
+            "system_control": {
+                "name": SystemControlName.READOUT_SYSTEM_CONTROL,
+                RUNCARD.INSTRUMENTS: [f"{InstrumentName.QRMRF.value}"],
+            },
+            "port": "feedline_output_1",
             RUNCARD.DISTORTIONS: [],
             RUNCARD.DELAY: 0,
         },
@@ -620,6 +771,7 @@ class Galadriel:
     runcard: dict[str, Any] = {
         RUNCARD.NAME: name,
         RUNCARD.GATES_SETTINGS: gates_settings,
+        RUNCARD.FLUX_CONTROL_TOPOLOGY: flux_control_topology,
         RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,
         RUNCARD.INSTRUMENTS: instruments,
@@ -1329,7 +1481,7 @@ class SauronQuantumMachines:
             {
                 "name": "con1",
                 "analog_outputs": [
-                    {"port": 1},
+                    {"port": 1, "filter": {"feedforward": [0, 0, 0], "feedback": [0, 0, 0]}},
                     {"port": 2},
                     {"port": 3},
                     {"port": 4},
@@ -1367,6 +1519,8 @@ class SauronQuantumMachines:
                 "outputs": {"out1": {"controller": "con1", "port": 1}, "out2": {"controller": "con1", "port": 2}},
                 "time_of_flight": 40,
                 "smearing": 10,
+                "threshold_rotation": 0.5,
+                "threshold": 0.09,
                 "intermediate_frequency": 6e9,
             },
             {"bus": "flux_q0", "single_input": {"controller": "con1", "port": 5}},
@@ -1384,7 +1538,7 @@ class SauronQuantumMachines:
             {
                 "name": "con1",
                 "analog_outputs": [
-                    {"port": 1},
+                    {"port": 1, "filter": {"feedforward": [0, 0, 0], "feedback": [0, 0, 0]}},
                     {"port": 2},
                     {"port": 3},
                     {"port": 4},
@@ -1403,7 +1557,8 @@ class SauronQuantumMachines:
             {
                 "name": "octave1",
                 "port": 11555,
-                "controller": "con1",
+                "connectivity": {"controller": "con1"},
+                "loopbacks": {"Synth": "Synth2", "Dmd": "Dmd2LO"},
                 "rf_outputs": [
                     {"port": 1, "lo_frequency": 6e9},
                     {"port": 2, "lo_frequency": 6e9},
@@ -1420,6 +1575,159 @@ class SauronQuantumMachines:
                 "rf_inputs": {"octave": "octave1", "port": 1},
                 "digital_inputs": {"controller": "con1", "port": 1, "delay": 87, "buffer": 15},
                 "digital_outputs": {"controller": "con1", "port": 1},
+                "intermediate_frequency": 6e9,
+            },
+            {
+                "bus": "readout_q0_rf",
+                "rf_inputs": {"octave": "octave1", "port": 2},
+                "digital_inputs": {"controller": "con1", "port": 2, "delay": 87, "buffer": 15},
+                "rf_outputs": {"octave": "octave1", "port": 1},
+                "intermediate_frequency": 6e9,
+                "time_of_flight": 40,
+                "smearing": 10,
+            },
+        ],
+        "run_octave_calibration": True,
+    }
+
+    qmm_with_octave_custom_connectivity = {
+        "name": InstrumentName.QUANTUM_MACHINES_CLUSTER,
+        "alias": "qmm_with_octave_custom_connectivity",
+        RUNCARD.FIRMWARE: "4.30.046.295",
+        "address": "192.168.0.1",
+        "cluster": "cluster_0",
+        "controllers": [
+            {
+                "name": "con1",
+                "analog_outputs": [
+                    {"port": 1, "filter": {"feedforward": [0, 0, 0], "feedback": [0, 0, 0]}},
+                    {"port": 2},
+                    {"port": 3},
+                    {"port": 4},
+                    {"port": 5},
+                    {"port": 6},
+                    {"port": 7},
+                    {"port": 8},
+                    {"port": 9},
+                    {"port": 10},
+                ],
+                "analog_inputs": [{"port": 1}, {"port": 2}],
+                "digital_outputs": [{"port": 1}, {"port": 2}, {"port": 3}, {"port": 4}, {"port": 5}],
+            }
+        ],
+        "octaves": [
+            {
+                "name": "octave1",
+                "port": 11555,
+                "rf_outputs": [
+                    {
+                        "port": 1,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "port": 1},
+                        "q_connection": {"controller": "con1", "port": 2},
+                    },
+                    {
+                        "port": 2,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "port": 3},
+                        "q_connection": {"controller": "con1", "port": 4},
+                    },
+                    {
+                        "port": 3,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "port": 5},
+                        "q_connection": {"controller": "con1", "port": 6},
+                    },
+                    {
+                        "port": 4,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "port": 7},
+                        "q_connection": {"controller": "con1", "port": 8},
+                    },
+                    {
+                        "port": 5,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "port": 9},
+                        "q_connection": {"controller": "con1", "port": 10},
+                    },
+                ],
+                "rf_inputs": [{"port": 1, "lo_frequency": 6e9}, {"port": 2, "lo_frequency": 6e9}],
+                "if_outputs": [{"controller": "con1", "port": 1}, {"controller": "con1", "port": 2}],
+                "loopbacks": {"Synth": "Synth2", "Dmd": "Dmd2LO"},
+            }
+        ],
+        "elements": [
+            {
+                "bus": "drive_q0_rf",
+                "rf_inputs": {"octave": "octave1", "port": 1},
+                "digital_inputs": {"controller": "con1", "port": 1, "delay": 87, "buffer": 15},
+                "digital_outputs": {"controller": "con1", "port": 1},
+                "intermediate_frequency": 6e9,
+            },
+            {
+                "bus": "readout_q0_rf",
+                "rf_inputs": {"octave": "octave1", "port": 2},
+                "digital_inputs": {"controller": "con1", "port": 2, "delay": 87, "buffer": 15},
+                "rf_outputs": {"octave": "octave1", "port": 1},
+                "intermediate_frequency": 6e9,
+                "time_of_flight": 40,
+                "smearing": 10,
+            },
+        ],
+        "run_octave_calibration": True,
+    }
+
+    qmm_with_opx1000 = {
+        "name": InstrumentName.QUANTUM_MACHINES_CLUSTER,
+        "alias": "qmm_with_opx1000",
+        RUNCARD.FIRMWARE: "4.30.046.295",
+        "address": "192.168.0.1",
+        "cluster": "cluster_0",
+        "controllers": [
+            {
+                "name": "con1",
+                "type": "opx1000",
+                "fems": [
+                    {
+                        "fem": 1,
+                        "analog_outputs": [
+                            {"port": 1, "filter": {"feedforward": [0, 0, 0], "feedback": [0, 0, 0]}},
+                            {"port": 2},
+                            {"port": 3},
+                            {"port": 4},
+                            {"port": 5},
+                            {"port": 6},
+                            {"port": 7},
+                            {"port": 8},
+                        ],
+                        "analog_inputs": [{"port": 1}, {"port": 2}],
+                        "digital_outputs": [{"port": 1}, {"port": 2}, {"port": 3}, {"port": 4}, {"port": 5}],
+                    }
+                ],
+            }
+        ],
+        "octaves": [
+            {
+                "name": "octave1",
+                "port": 11555,
+                "connectivity": {"controller": "con1", "fem": 1},
+                "loopbacks": {"Synth": "Synth2", "Dmd": "Dmd2LO"},
+                "rf_outputs": [
+                    {"port": 1, "lo_frequency": 6e9},
+                    {"port": 2, "lo_frequency": 6e9},
+                    {"port": 3, "lo_frequency": 6e9},
+                    {"port": 4, "lo_frequency": 6e9},
+                    {"port": 5, "lo_frequency": 6e9},
+                ],
+                "rf_inputs": [{"port": 1, "lo_frequency": 6e9}, {"port": 2, "lo_frequency": 6e9}],
+            }
+        ],
+        "elements": [
+            {
+                "bus": "drive_q0_rf",
+                "rf_inputs": {"octave": "octave1", "port": 1},
+                "digital_inputs": {"controller": "con1", "port": 1, "delay": 87, "buffer": 15},
+                "digital_outputs": {"controller": "con1", "fem": 1, "port": 1},
                 "intermediate_frequency": 6e9,
             },
             {
@@ -1465,6 +1773,36 @@ class SauronQuantumMachines:
         ],
     }
 
+    qmm_with_octave_custom_connectivity_controller = {
+        "name": InstrumentControllerName.QUANTUM_MACHINES_CLUSTER,
+        "alias": "qmm_with_octave_custom_connectivity_controller",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            "name": ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.0.111",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "qmm_with_octave_custom_connectivity",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    qmm_with_opx1000_controller = {
+        "name": InstrumentControllerName.QUANTUM_MACHINES_CLUSTER,
+        "alias": "qmm_with_opx1000_controller",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            "name": ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.0.111",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "qmm_with_opx1000",
+                "slot_id": 0,
+            }
+        ],
+    }
+
     rohde_schwarz: dict[str, Any] = {
         "name": InstrumentName.ROHDE_SCHWARZ,
         "alias": "rohde_schwarz",
@@ -1489,8 +1827,14 @@ class SauronQuantumMachines:
         ],
     }
 
-    instruments = [qmm, qmm_with_octave, rohde_schwarz]
-    instrument_controllers = [qmm_controller, qmm_with_octave_controller, qmm_controller_wrong_module]
+    instruments = [qmm, qmm_with_octave, qmm_with_octave_custom_connectivity, qmm_with_opx1000, rohde_schwarz]
+    instrument_controllers = [
+        qmm_controller,
+        qmm_with_octave_controller,
+        qmm_with_octave_custom_connectivity_controller,
+        qmm_with_opx1000_controller,
+        qmm_controller_wrong_module,
+    ]
 
     chip: dict[str, Any] = {
         "nodes": [
@@ -1547,6 +1891,42 @@ class SauronQuantumMachines:
             RUNCARD.SYSTEM_CONTROL: {
                 RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
                 RUNCARD.INSTRUMENTS: ["qmm_with_octave"],
+            },
+            "port": "port_q0",
+            RUNCARD.DISTORTIONS: [],
+        },
+        {
+            RUNCARD.ALIAS: "drive_q0_rf_custom",
+            RUNCARD.SYSTEM_CONTROL: {
+                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
+                RUNCARD.INSTRUMENTS: ["qmm_with_octave_custom_connectivity"],
+            },
+            "port": "port_q0",
+            RUNCARD.DISTORTIONS: [],
+        },
+        {
+            RUNCARD.ALIAS: "readout_q0_rf_custom",
+            RUNCARD.SYSTEM_CONTROL: {
+                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
+                RUNCARD.INSTRUMENTS: ["qmm_with_octave_custom_connectivity"],
+            },
+            "port": "port_q0",
+            RUNCARD.DISTORTIONS: [],
+        },
+        {
+            RUNCARD.ALIAS: "drive_q0_opx1000",
+            RUNCARD.SYSTEM_CONTROL: {
+                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
+                RUNCARD.INSTRUMENTS: ["qmm_with_opx1000"],
+            },
+            "port": "port_q0",
+            RUNCARD.DISTORTIONS: [],
+        },
+        {
+            RUNCARD.ALIAS: "readout_q0_opx1000",
+            RUNCARD.SYSTEM_CONTROL: {
+                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
+                RUNCARD.INSTRUMENTS: ["qmm_with_opx1000"],
             },
             "port": "port_q0",
             RUNCARD.DISTORTIONS: [],

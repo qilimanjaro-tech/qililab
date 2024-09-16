@@ -34,6 +34,7 @@ from qililab.qprogram.operations import (
     ResetPhase,
     SetFrequency,
     SetGain,
+    SetMarkers,
     SetOffset,
     SetPhase,
     Sync,
@@ -98,6 +99,9 @@ class BusCompilationInfo:  # pylint: disable=too-many-instance-attributes, too-f
         # Time of flight. Defaults to minimum_wait_duration and is updated if times_of_flight parameter is provided during compilation.
         self.time_of_flight = QbloxCompiler.minimum_wait_duration
 
+        # Delay. Defaults 0 delay and is updated if delays parameter is provided within the runcard.
+        self.delay = 0
+
 
 class QbloxCompiler:  # pylint: disable=too-few-public-methods
     """A class for compiling QProgram to QBlox hardware."""
@@ -117,6 +121,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             ResetPhase: self._handle_reset_phase,
             SetGain: self._handle_set_gain,
             SetOffset: self._handle_set_offset,
+            SetMarkers: self._handle_set_markers,
             Wait: self._handle_wait,
             Sync: self._handle_sync,
             Measure: self._handle_measure,
@@ -128,12 +133,14 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         self._buses: dict[str, BusCompilationInfo]
         self._sync_counter: int
 
-    def compile(
+    def compile(  # noqa: max-complexity=25
         self,
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,
         calibration: Calibration | None = None,
         times_of_flight: dict[str, int] | None = None,
+        delays: dict[str, int] | None = None,
+        markers: dict[str, str] | None = None,
     ) -> tuple[Sequences, Acquisitions]:
         """Compile QProgram to qpysequence.Sequence
 
@@ -147,9 +154,21 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         """
 
         def traverse(block: Block):
+            delay_implemented = False
             for bus in self._buses:
                 self._buses[bus].qprogram_block_stack.append(block)
-            for element in block.elements:
+            for element in block.elements:  # pylint: disable=too-many-nested-blocks
+                if isinstance(element, Play) and not delay_implemented:
+                    for bus in self._buses:
+                        if self._buses[bus].delay > 0:
+                            self._handle_wait(element=Wait(bus=bus, duration=self._buses[bus].delay), delay=True)
+                        elif self._buses[bus].delay < 0:
+                            for other_buses in self._buses:
+                                if other_buses != bus:
+                                    self._handle_wait(
+                                        element=Wait(bus=other_buses, duration=-self._buses[bus].delay), delay=True
+                                    )
+                    delay_implemented = True
                 handler = self._handlers.get(type(element))
                 if not handler:
                     raise NotImplementedError(f"{element.__class__} is currently not supported in QBlox.")
@@ -159,7 +178,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                     if not self._qprogram.qblox.disable_autosync and isinstance(
                         element, (ForLoop, Parallel, Loop, Average)
                     ):
-                        self._handle_sync(element=Sync(buses=None))
+                        self._handle_sync(element=Sync(buses=None), delay=True)
                     if appended:
                         for bus in self._buses:
                             self._buses[bus].qpy_block_stack.pop()
@@ -184,12 +203,27 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             for bus in self._buses.keys() & times_of_flight.keys():
                 self._buses[bus].time_of_flight = times_of_flight[bus]
 
+        # Pre-processing: Update delay
+        if delays is not None:
+            for bus in self._buses.keys() & delays.keys():
+                self._buses[bus].delay = delays[bus]
+
+        # Pre-processing: Set markers ON/OFF
+        for bus in self._buses:
+            mask = markers[bus] if markers is not None and bus in markers else "0000"
+            self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetMrk(int(mask, 2)))
+            self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.UpdParam(4))
+            self._buses[bus].static_duration += 4
+
         # Recursive traversal to convert QProgram blocks to Sequence
         traverse(self._qprogram._body)
 
-        # Post-processing: Add stop instructions and compile
+        # Post-processing: Set all markers OFF, add stop instructions and compile
         for bus in self._buses:
+            self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.SetMrk(0))
+            self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.UpdParam(4))
             self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Stop())
+            self._buses[bus].static_duration += 4
             self._buses[bus].qpy_sequence._program.compile()
 
         # Return a dictionary with bus names as keys and the compiled Sequence as values.
@@ -370,7 +404,13 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             component=QPyInstructions.SetAwgOffs(offset_0=offset_0, offset_1=offset_1)
         )
 
-    def _handle_wait(self, element: Wait):
+    def _handle_set_markers(self, element: SetMarkers):
+        marker_outputs = int(element.mask, 2)
+        self._buses[element.bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.SetMrk(marker_outputs=marker_outputs)
+        )
+
+    def _handle_wait(self, element: Wait, delay: bool = False):
         duration: QPyProgram.Register | int
         if isinstance(element.duration, Variable):
             duration = self._buses[element.bus].variable_to_register[element.duration]
@@ -381,7 +421,8 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         else:
             convert = QbloxCompiler._convert_value(element)
             duration = convert(element.duration)
-            self._buses[element.bus].static_duration += duration
+            if not delay:
+                self._buses[element.bus].static_duration += duration
             # loop over wait instructions if static duration is longer than allowed qblox max wait time of 2**16 -4
             self._handle_add_waits(bus=element.bus, duration=duration)
 
@@ -404,7 +445,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             component=QPyInstructions.Wait(wait_time=duration % INST_MAX_WAIT)
         )
 
-    def _handle_sync(self, element: Sync):
+    def _handle_sync(self, element: Sync, delay: bool = False):
         # Get the buses involved in the sync operation.
         buses = set(element.buses or self._buses)
 
@@ -423,16 +464,22 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             self.__handle_dynamic_sync(buses=buses)
         else:
             # If no, calculating the difference is trivial.
-            self.__handle_static_sync(buses=buses)
+            self.__handle_static_sync(buses=buses, delay=delay)
 
         # In any case, mark al buses as synced.
         for bus in buses:
             self._buses[bus].marked_for_sync = False
 
-    def __handle_static_sync(self, buses: set[str]):
+    def __handle_static_sync(self, buses: set[str], delay: bool = False):
         max_duration = max(self._buses[bus].static_duration for bus in buses)
+        if delay:
+            max_delay = max(self._buses[bus].delay for bus in buses)
         for bus in buses:
-            duration_diff = max_duration - self._buses[bus].static_duration
+            if delay:
+                delay_diff = max_delay - self._buses[bus].delay
+                duration_diff = max_duration - self._buses[bus].static_duration + delay_diff
+            else:
+                duration_diff = max_duration - self._buses[bus].static_duration
             if duration_diff > 0:
                 # loop over wait instructions if static duration is longer than allowed qblox max wait time of 2**16 -4
                 self._handle_add_waits(bus=bus, duration=duration_diff)
