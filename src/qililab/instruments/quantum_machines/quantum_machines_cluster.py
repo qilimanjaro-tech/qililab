@@ -504,7 +504,7 @@ class QuantumMachinesCluster(Instrument):
             controller_name = self._config["elements"][bus]["singleInput"]["port"][0]
 
         for controller in self.settings.controllers:
-            if controller["name"] is controller_name:
+            if controller["name"] == controller_name:
                 return controller["type"] if "type" in controller else "opx1"
         raise AttributeError(f"Controller with bus {bus} does not exist")
 

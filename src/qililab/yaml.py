@@ -30,7 +30,7 @@ def deque_constructor(constructor, node):
     return deque(constructor.construct_sequence(node))
 
 
-yaml = YAML(typ="safe")
+yaml = YAML(typ="unsafe")
 yaml.register_class(UUID)
 yaml.representer.add_representer(np.ndarray, ndarray_representer)
 yaml.constructor.add_constructor("!ndarray", ndarray_constructor)

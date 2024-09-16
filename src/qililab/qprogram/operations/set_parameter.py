@@ -12,5 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Version number (major.minor.patch[-label])"""
-__version__ = "0.27.1"
+from dataclasses import dataclass
+
+from qililab.qprogram.operations.operation import Operation
+from qililab.typings.enums import Parameter
+from qililab.yaml import yaml
+
+
+@yaml.register_class
+@dataclass(frozen=True)
+class SetParameter(Operation):  # pylint: disable=missing-class-docstring
+    alias: str
+    parameter: Parameter
+    value: int | float | bool

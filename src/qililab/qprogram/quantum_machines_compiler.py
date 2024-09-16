@@ -28,7 +28,7 @@ from qililab.qprogram.blocks.infinite_loop import InfiniteLoop
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import Measure, Play, ResetPhase, SetFrequency, SetGain, SetPhase, Sync, Wait
 from qililab.qprogram.qprogram import QProgram
-from qililab.qprogram.variable import Domain, IntVariable, Variable
+from qililab.qprogram.variable import Domain, FloatVariable, IntVariable, Variable
 from qililab.waveforms import IQPair, Square, Waveform
 
 # mypy: disable-error-code="operator"
@@ -248,6 +248,9 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
     def _handle_for_loop(self, element: ForLoop):
         qua_variable = self._qprogram_to_qua_variables[element.variable]
         start, stop, step = element.start, element.stop, element.step
+
+        if isinstance(element.variable, FloatVariable):
+            stop += step / 2
         if element.variable.domain is Domain.Phase:
             start, stop, step = start / self.PHASE_COEFF, stop / self.PHASE_COEFF, step / self.PHASE_COEFF
         if element.variable.domain is Domain.Frequency:
