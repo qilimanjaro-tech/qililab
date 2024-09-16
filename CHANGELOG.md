@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 0.27.1 (2024-09-16)
+
+### Bug fixes
+
+- Hotfix to allow to serialise zeros in yaml.
+  [#799](https://github.com/qilimanjaro-tech/qililab/pull/799)
+
 ## 0.27.0 (2024-06-28)
 
 ### New features since last release
