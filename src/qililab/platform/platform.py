@@ -713,7 +713,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                             bus=readout_bus, waveform=measurement_name, weights=IQPair(I=weights_shape, Q=weights_shape)
                         )
 
-            return self.execute_qprogram(qprogram=qp_annealing, calibration=calibration)
+            return self.execute_qprogram(qprogram=qp_annealing, calibration=calibration, debug=debug)
         raise ValueError("The calibrated measurement is not present in the calibration file.")
 
     def execute_experiment(self, experiment: Experiment, results_path: str) -> str:
