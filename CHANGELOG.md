@@ -186,34 +186,32 @@
 
   Example:
 
-  ```JSON
-  buses:
-  - alias: readout_q0_bus
-    system_control:
-      name: readout_system_control
-      instruments: [QMM]
-    port: readout_line_q0
-    distortions: []
-  ...
-  instruments:
-    - name: quantum_machines_cluster
-      alias: QMM
-      firmware: ...
-      ...
-      elements:
-      - bus: readout_q0_bus
-        rf_inputs:
-          octave: octave1
-          port: 1
-        rf_outputs:
-          octave: octave1
-          port: 1
-        time_of_flight: 160
-        smearing: 0
-        intermediate_frequency: 10.0e+6
-        threshold_rotation: 0.5
-        threshold: 0.03
-      ...
+  ```yaml
+    buses:
+      - alias: readout_q0_bus
+        system_control:
+          name: readout_system_control
+          instruments: [QMM]
+        port: readout_line_q0
+        distortions: []
+    instruments:
+      - name: quantum_machines_cluster
+        alias: QMM
+        firmware: ...
+        elements:
+          - bus: readout_q0_bus
+            rf_inputs:
+              octave: octave1
+              port: 1
+            rf_outputs:
+              octave: octave1
+              port: 1
+            time_of_flight: 160
+            smearing: 0
+            intermediate_frequency: 10.0e+6
+            threshold_rotation: 0.5
+            threshold: 0.03
+    ...
   ```
 
   [#759](https://github.com/qilimanjaro-tech/qililab/pull/759)
