@@ -508,6 +508,46 @@ class QuantumMachinesCluster(Instrument):
                 return controller["type"] if "type" in controller else "opx1"
         raise AttributeError(f"Controller with bus {bus} does not exist")
 
+    def get_controller_from_bus(self, element: dict, key: str | None) -> tuple[str, int, int | None]:
+        """Get controller name, port and FEM (if applicable) from element
+
+        Args:
+            element (dict): element of a bus
+            key (str | None): Key for mix inputs, it can be I or Q.
+
+        Returns:
+            list: controller coordinates
+        """
+        if ("rf_inputs" in element or "mix_inputs" in element) and key not in ["I", "Q"]:
+            raise ValueError(f"key value must be I or Q, {key} given")
+        if key is None and ("rf_inputs" in element or "mix_inputs" in element):
+            raise ValueError("DC_OFFSET requires single input for flux lines")
+        if "rf_inputs" in element:
+            octave_name = element["rf_inputs"]["octave"]
+            out_oct_port = element["rf_inputs"]["port"]
+
+            octave = next((octave for octave in self.settings.octaves if octave["name"] == octave_name), None)
+            octave_port = next(
+                (octave_port for octave_port in octave["rf_outputs"] if octave_port["port"] == out_oct_port), None
+            )
+
+            connection = "i_connection" if key == "I" else "q_connection"
+            con_name = octave_port[connection]["controller"]
+            con_port = octave_port[connection]["port"]
+            con_fem = octave_port[connection]["fem"] if "fem" in octave_port[connection] else None
+
+        elif "mix_inputs" in element:
+            con_name = element["mix_inputs"][key]["controller"]
+            con_port = element["mix_inputs"][key]["fem"]
+            con_fem = element["mix_inputs"][key]["port"] if "fem" in element["mix_inputs"][key] else None
+
+        elif "single_input" in element:
+            con_name = element["single_input"]["controller"]
+            con_port = element["single_input"]["port"]
+            con_fem = element["single_input"]["fem"] if "fem" in element["single_input"] else None
+
+        return (con_name, con_port, con_fem)
+
     def set_parameter_of_bus(  # pylint: disable=too-many-locals, too-many-statements  # noqa: C901
         self, bus: str, parameter: Parameter, value: float | str | bool
     ) -> None:
@@ -540,33 +580,6 @@ class QuantumMachinesCluster(Instrument):
             settings_octave_rf_output = next(
                 rf_output for rf_output in settings_octave["rf_outputs"] if rf_output["port"] == out_port
             )
-
-        # if parameter in [Parameter.OFFSET_I, Parameter.OFFSET_Q]:
-        #     if "rf_inputs" in element:
-        #         octave_name = element["rf_inputs"]["octave"]
-        #         out_oct_port = element["rf_inputs"]["port"]
-
-        #         octave = next((octave for octave in self.settings.octaves if octave["name"] == octave_name), None)
-        #         octave_port = next(
-        #             (octave_port for octave_port in octave["rf_outputs"] if octave_port["port"] == out_oct_port), None
-        #         )
-
-        #         connection = "i_connection" if parameter in Parameter.OFFSET_I else "q_connection"
-        #         #TODO: modify for OPX+
-        #         con_name = octave_port[connection]["controller"]
-        #         con_port = octave_port[connection]["port"]
-        #         con_fem = octave_port[connection]["fem"]
-
-        #     elif "mix_inputs" in element:
-        #         key = "I" if parameter in Parameter.OFFSET_I else "Q"
-        #         con_name = (element["mix_inputs"][key]["controller"],)
-        #         con_port = (element["mix_inputs"][key]["fem"],)
-        #         con_fem = (element["mix_inputs"][key]["port"],)
-
-        #     elif "single_input" in element:
-        #         con_name = element["single_input"]["controller"]
-        #         con_port = element["single_input"]["port"]
-        #         con_fem = element["single_input"]["fem"]
 
         # Now we will set the parameter in 3 places:
         # 1) In the settings runtime dataclass (always).
@@ -624,22 +637,29 @@ class QuantumMachinesCluster(Instrument):
             return
 
         if parameter == Parameter.DC_OFFSET:
+            con_name, con_port, con_fem = self.get_controller_from_bus(element = element, key = None)
             dc_offset = float(value)
             # settings_octave_rf_output["gain"] = gain_in_db
-            # if self._config_created:
-            #     self._config["octaves"][octave_name]["RF_outputs"][out_port]["gain"] = gain_in_db
+            if self._config_created:
+                if con_fem is not None:
+                    self._config["controllers"][con_name]["analog_outputs"][con_port]["offset"] = dc_offset
+                else:
+                    self._config["controllers"][con_name]["fems"][con_fem]["analog_outputs"][con_port]["offset"] = dc_offset
             if self._is_connected_to_qm:
                 self._qm.set_output_dc_offset_by_element(element=bus, input= "single", offset=dc_offset)
             return
 
         if parameter in [Parameter.OFFSET_I, Parameter.OFFSET_Q]:
+            key = "I" if parameter in Parameter.OFFSET_I else "Q"
+            con_name, con_port, con_fem = self.get_controller_from_bus(element = element, key = key)
             input_offset = float(value)
-            # settings_octave_rf_output["gain"] = gain_in_db
-            # if self._config_created:
-            #     self._config["octaves"][octave_name]["RF_outputs"][out_port]["gain"] = gain_in_db
+            if self._config_created:
+                if con_fem is not None:
+                    self._config["controllers"][con_name]["analog_outputs"][con_port]["offset"] = dc_offset
+                else:
+                    self._config["controllers"][con_name]["fems"][con_fem]["analog_outputs"][con_port]["offset"] = dc_offset
             if self._is_connected_to_qm:
-                input = "I" if parameter in Parameter.OFFSET_I else "Q"
-                self._qm.set_output_dc_offset_by_element(element=bus, input= input, offset=input_offset)
+                self._qm.set_output_dc_offset_by_element(element=bus, input= key, offset=input_offset)
             return
 
         if parameter in [Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2]:
