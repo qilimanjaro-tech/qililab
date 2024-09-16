@@ -14,8 +14,11 @@ from qililab.utils.serialization import deserialize, deserialize_from, serialize
 def fixture_qblox_qprogram_results():
     """fixture_qblox_result_noscope
 
+    Args:
+        dummy_qrm (Pulsar): _description_
+
     Returns:
-        QProgramResults: `QProgramResults` from Qblox instrument fixture.
+        _type_: _description_
     """
     results = QProgramResults()
     results.append_result(bus="readout", result=QbloxMeasurementResult(raw_measurement_data={"abc": 123}))
@@ -24,10 +27,13 @@ def fixture_qblox_qprogram_results():
 
 @pytest.fixture(name="quantum_machines_qprogram_results")
 def fixture_quantum_machines_qprogram_results():
-    """fixture_quantum_machines_result_noscope
+    """fixture_qblox_result_noscope
+
+    Args:
+        dummy_qrm (Pulsar): _description_
 
     Returns:
-        QProgramResults: `QProgramResults` from Quantum Machines instrument fixture.
+        _type_: _description_
     """
     results = QProgramResults()
     results.append_result(

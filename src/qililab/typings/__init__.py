@@ -29,6 +29,7 @@ from .enums import (
     ReferenceClock,
     ResultName,
 )
+from .experiment import ExperimentOptions, ExperimentSettings
 from .factory_element import FactoryElement
 from .instruments import (
     Cluster,

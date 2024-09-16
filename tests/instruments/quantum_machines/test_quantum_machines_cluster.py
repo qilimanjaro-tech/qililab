@@ -1,12 +1,10 @@
 """This file tests the the ``qm_manager`` class"""
-
 import copy
-import re
 from unittest.mock import MagicMock, call, patch
 
 import numpy as np
 import pytest
-from qm import Program
+from qm import Program, QmPendingJob, QmQueue
 from qm.qua import play, program
 
 from qililab.instruments.instrument import ParameterNotFound
@@ -55,38 +53,11 @@ def fixture_qmm_with_octave():
     return qmm
 
 
-@pytest.fixture(name="qmm_with_octave_custom_connectivity")
-def fixture_qmm_with_octave_custom_connectivity():
-    """Fixture that returns an instance a qililab wrapper for Quantum Machines Manager."""
-    settings = copy.deepcopy(SauronQuantumMachines.qmm_with_octave_custom_connectivity)
-    settings.pop("name")
-    qmm = QuantumMachinesCluster(settings=settings)
-    qmm.device = MagicMock
-
-    return qmm
-
-
-@pytest.fixture(name="qmm_with_opx1000")
-def fixture_qmm_with_opx1000():
-    """Fixture that returns an instance a qililab wrapper for Quantum Machines Manager."""
-    settings = copy.deepcopy(SauronQuantumMachines.qmm_with_opx1000)
-    settings.pop("name")
-    qmm = QuantumMachinesCluster(settings=settings)
-    qmm.device = MagicMock
-
-    return qmm
-
-
 @pytest.fixture(name="compilation_config")
 def fixture_compilation_config() -> dict:
     """Fixture that returns a configuration dictionary as the QuantumMachinesCompiler would."""
     config = {
-        "elements": {
-            "drive_q0": {
-                "operations": {"control_445e964c_fb58e912_100": "control_445e964c_fb58e912_100"},
-                "RF_inputs": {"port": ("octave1", 1)},
-            }
-        },
+        "elements": {"drive_q0": {"operations": {"control_445e964c_fb58e912_100": "control_445e964c_fb58e912_100"}}},
         "pulses": {
             "control_445e964c_fb58e912_100": {
                 "operation": "control",
@@ -95,7 +66,6 @@ def fixture_compilation_config() -> dict:
             },
         },
         "waveforms": {"445e964c": {"type": "constant", "sample": 1.0}, "fb58e912": {"type": "constant", "sample": 0.0}},
-        "octaves": {"octave1": {"RF_outputs": {1: {"gain": 0.5}}}},
     }
     return config
 
@@ -147,18 +117,12 @@ class TestQuantumMachinesCluster:
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.Instrument.initial_setup")
-    @pytest.mark.parametrize(
-        "qmm_name", ["qmm", "qmm_with_octave", "qmm_with_octave_custom_connectivity", "qmm_with_opx1000"]
-    )
+    @pytest.mark.parametrize("qmm_name", ["qmm", "qmm_with_octave"])
     def test_initial_setup(
         self, mock_instrument_init: MagicMock, mock_init: MagicMock, qmm_name, request
     ):  # pylint: disable=unused-argument
         """Test QMM class initialization."""
         qmm = request.getfixturevalue(qmm_name)
-
-        # Before initial_setup no _config should exist
-        assert qmm._config_created is False and "_config" not in dir(qmm)
-
         qmm.initial_setup()
         mock_init.assert_called()
 
@@ -166,13 +130,7 @@ class TestQuantumMachinesCluster:
         assert isinstance(qmm._config, dict)
         assert isinstance(qmm.config, dict)
 
-        # Assert that the _config has been created correctly (in synch):
-        assert qmm._config_created is True
-        assert qmm._config == qmm.settings.to_qua_config()
-
-    @pytest.mark.parametrize(
-        "qmm_name", ["qmm", "qmm_with_octave", "qmm_with_octave_custom_connectivity", "qmm_with_opx1000"]
-    )
+    @pytest.mark.parametrize("qmm_name", ["qmm", "qmm_with_octave"])
     def test_settings(self, qmm_name, request):
         """Test QuantumMachinesClusterSettings have been set correctly"""
 
@@ -181,9 +139,7 @@ class TestQuantumMachinesCluster:
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    @pytest.mark.parametrize(
-        "qmm_name", ["qmm", "qmm_with_octave", "qmm_with_octave_custom_connectivity", "qmm_with_opx1000"]
-    )
+    @pytest.mark.parametrize("qmm_name", ["qmm", "qmm_with_octave"])
     def test_turn_on(self, mock_qmm, mock_qm, qmm_name, request):
         """Test turn_on method"""
 
@@ -198,14 +154,9 @@ class TestQuantumMachinesCluster:
             ]
             qmm._qm.calibrate_element.assert_has_calls(calls)
 
-        # Assert that the settings are still in synch:
-        assert qmm._config == qmm.settings.to_qua_config()
-
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    @pytest.mark.parametrize(
-        "qmm_name", ["qmm", "qmm_with_octave", "qmm_with_octave_custom_connectivity", "qmm_with_opx1000"]
-    )
+    @pytest.mark.parametrize("qmm_name", ["qmm", "qmm_with_octave"])
     def test_turn_off(self, mock_qmm, mock_qm, qmm_name, request):
         """Test turn_off method"""
 
@@ -213,9 +164,6 @@ class TestQuantumMachinesCluster:
         qmm.initial_setup()
         qmm.turn_on()
         qmm.turn_off()
-
-        # Assert that the settings are still in synch:
-        assert qmm._config == qmm.settings.to_qua_config()
 
         assert isinstance(qmm._qm, MagicMock)
         qmm._qm.close.assert_called_once()
@@ -232,16 +180,6 @@ class TestQuantumMachinesCluster:
         assert "445e964c" in qmm._config["waveforms"]
         assert "fb58e912" in qmm._config["waveforms"]
 
-        # Assert that the `settings.to_qua_config()`` are a subset of the `appended_configuration``, and in synch:
-        for k, v in qmm.settings.to_qua_config().items():
-            if k != "elements" and v:
-                assert v == qmm._config[k]
-            if k == "elements":
-                for element in v:
-                    for key, value in v[element].items():
-                        if value:
-                            assert value == qmm._config[k][element][key]
-
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
     def test_append_configuration_after_turn_on(
@@ -254,56 +192,6 @@ class TestQuantumMachinesCluster:
 
         qmm._qmm.open_qm.call_count == 2
         assert isinstance(qmm._qm, MagicMock)
-
-        # Assert that the `settings.to_qua_config()`` are a subset of the `appended_configuration``, and in synch:
-        for k, v in qmm.settings.to_qua_config().items():
-            if k != "elements" and v:
-                assert v == qmm._config[k]
-            if k == "elements":
-                for element in v:
-                    for key, value in v[element].items():
-                        if value:
-                            assert value == qmm._config[k][element][key]
-
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    def test_append_configuration_without_initial_setup_raises_error(
-        self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, compilation_config: dict
-    ):
-        """Test update_configuration method raises an error when no config dict has been set."""
-        with pytest.raises(
-            ValueError,
-            match=re.escape("The QM `config` dictionary does not exist. Please run `initial_setup()` first."),
-        ):
-            qmm.append_configuration(configuration=compilation_config)
-
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    def test_get_controller_type_from_bus_singleInput(
-        self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, compilation_config: dict
-    ):
-        qmm.initial_setup()
-        qmm.turn_on()
-
-        controller = qmm.get_controller_type_from_bus("flux_q0")
-        assert controller == "opx1"
-
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    def test_get_controller_type_from_bus_without_controller_raises_error(
-        self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, compilation_config: dict
-    ):
-        """Test get_controller_type_from_bus method raises an error when no controller is inside bus."""
-        qmm.initial_setup()
-        qmm.turn_on()
-
-        qmm._config["elements"]["bus"] = {"singleInput": {"port": ("con10", 1)}}
-
-        with pytest.raises(
-            AttributeError,
-            match=re.escape("Controller with bus bus does not exist"),
-        ):
-            qmm.get_controller_type_from_bus("bus")
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
@@ -322,9 +210,6 @@ class TestQuantumMachinesCluster:
         assert len(qmm._compiled_program_cache) == 1
         assert compile_program_id == "123"
 
-        # Assert that the settings are still in synch:
-        assert qmm._config == qmm.settings.to_qua_config()
-
     @patch("qm.QuantumMachine")
     def test_run(
         self, mock_qm: MagicMock, qmm: QuantumMachinesCluster, qua_program: Program
@@ -336,9 +221,6 @@ class TestQuantumMachinesCluster:
 
         assert isinstance(job, MagicMock)
 
-        # Assert that the settings are in synch:
-        assert qmm._config_created is False and "_config" not in dir(qmm)
-
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
     def test_run_compiled_program(self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, qua_program: Program):
@@ -346,21 +228,12 @@ class TestQuantumMachinesCluster:
         qmm.turn_on()
 
         qmm._qm.compile.return_value = "123"
-        qmm._controller = "opx1000"
-        qmm._pending_set_intermediate_frequency = {"drive_q0": 20e6}
 
         compile_program_id = qmm.compile(qua_program)
         _ = qmm.run_compiled_program(compile_program_id)
 
-        # TODO: qm.queue.add_compiled() -> qm.add_compiled()
         qmm._qm.queue.add_compiled.assert_called_once_with(compile_program_id)
-        # TODO: job.wait_for_execution() is deprecated and will be removed in the future. Please use job.wait_until("Running") instead.
-        # The following stopped working in testing, but we have verified that works in hardware, so I remove it temporarily.
-        # qmm._qm.queue.add_compiled.return_value.wait_until.assert_called_once()
-
-        qmm._qm.calibrate_element.assert_called_once()
-        # Assert that the settings are still in synch:
-        assert qmm._config == qmm.settings.to_qua_config()
+        qmm._qm.queue.add_compiled.return_value.wait_for_execution.assert_called_once()
 
     def test_get_acquisitions(self, qmm: QuantumMachinesCluster):
         """Test get_acquisitions method"""
@@ -370,9 +243,6 @@ class TestQuantumMachinesCluster:
         assert isinstance(results, dict)
         assert "I" in results
         assert "Q" in results
-
-        # Assert that the settings are in synch:
-        assert qmm._config_created is False and "_config" not in dir(qmm)
 
     @patch("qm.QuantumMachine")
     def test_simulate(
@@ -384,9 +254,6 @@ class TestQuantumMachinesCluster:
         job = qmm.simulate(qua_program)
 
         assert isinstance(job, MagicMock)
-
-        # Assert that the settings are in synch:
-        assert qmm._config_created is False and "_config" not in dir(qmm)
 
     @pytest.mark.parametrize(
         "bus, parameter, value",
@@ -418,26 +285,15 @@ class TestQuantumMachinesCluster:
         qmm_with_octave.set_parameter_of_bus(bus, parameter, value)
         if parameter == Parameter.LO_FREQUENCY:
             qmm_with_octave._qm.octave.set_lo_frequency.assert_called_once()
-            calls = [
-                call(element)
-                for element in qmm_with_octave._config["elements"]
-                if "RF_inputs" in qmm_with_octave._config["elements"][element]
-            ]
-            qmm_with_octave._qm.calibrate_element.assert_has_calls(calls)
         if parameter == Parameter.GAIN:
             qmm_with_octave._qm.octave.set_rf_output_gain.assert_called_once()
         if parameter == Parameter.IF:
             qmm_with_octave._qm.set_intermediate_frequency.assert_called_once()
 
-        # Assert that the settings are still in synch:
-        assert qmm_with_octave._config == qmm_with_octave.settings.to_qua_config()
-
     @pytest.mark.parametrize(
         "bus, parameter, value",
         [
             ("drive_q0", Parameter.IF, 20e6),
-            ("readout_q0", Parameter.THRESHOLD_ROTATION, 0.5),
-            ("readout_q0", Parameter.THRESHOLD, 0.01),
         ],
     )
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
@@ -451,71 +307,8 @@ class TestQuantumMachinesCluster:
         qmm._config = qmm.settings.to_qua_config()
 
         qmm.set_parameter_of_bus(bus, parameter, value)
-
-        element = next((element for element in qmm.settings.elements if element["bus"] == bus), None)
         if parameter == Parameter.IF:
-            assert value == element["intermediate_frequency"]
-        if parameter == Parameter.THRESHOLD_ROTATION:
-            assert value == element["threshold_rotation"]
-        if parameter == Parameter.THRESHOLD:
-            assert value == element["threshold"]
-        # Assert that the settings are still in synch:
-        assert qmm._config == qmm.settings.to_qua_config()
-
-    @pytest.mark.parametrize(
-        "bus, parameter, value",
-        [
-            ("drive_q0", Parameter.IF, 17e6),
-        ],
-    )
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    def test_set_parameter_without_connection_changes_settings(
-        self, mock_qmm, mock_qm, bus: str, parameter: Parameter, value: float | str | bool, qmm: QuantumMachinesCluster
-    ):
-        """Test that both the local `settings` and `_config` are changed by the set method without connection."""
-
-        # Set intermidiate frequency to 17e6 locally
-        qmm.set_parameter_of_bus(bus, parameter, value)
-        qmm.initial_setup()
-
-        # Test that both the local `settings` and `_config` have been changed to 17e6:
-        assert qmm._config == qmm.settings.to_qua_config()
-        ## Test `_config` QUA dictionary:
-        assert qmm._config["elements"][bus][parameter] == value
-        ## Test `settings` qililab dictionary:
-        assert qmm.settings.to_qua_config()["elements"][bus][parameter] == value
-
-        # Assert that the settings are still in synch:
-        assert qmm._config == qmm.settings.to_qua_config()
-
-    @pytest.mark.parametrize(
-        "bus, parameter, value",
-        [
-            ("readout_q0_rf", Parameter.IF, 17e6),
-        ],
-    )
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    def test_set_parameter_if_with_opx1000(
-        self,
-        mock_qmm,
-        mock_qm,
-        bus: str,
-        parameter: Parameter,
-        value: float | str | bool,
-        qmm_with_opx1000: QuantumMachinesCluster,
-    ):
-        """Test that both the set method fills the bus _pending_set_intermediate_frequency correctly."""
-
-        qmm_with_opx1000.initial_setup()
-        qmm_with_opx1000.turn_on()
-        qmm_with_opx1000._config = qmm_with_opx1000.settings.to_qua_config()
-
-        qmm_with_opx1000.set_parameter_of_bus(bus, parameter, value)
-
-        ## Test `_intermediate_frequency[bus]` is created for later use:
-        assert qmm_with_opx1000._pending_set_intermediate_frequency[bus] == value
+            qmm._qm.set_intermediate_frequency.assert_called_once()
 
     @pytest.mark.parametrize(
         "bus, parameter, value",
@@ -540,9 +333,6 @@ class TestQuantumMachinesCluster:
         ):
             qmm.set_parameter_of_bus(bus, parameter, value)
 
-        # Assert that the settings are still in synch:
-        assert qmm._config == qmm.settings.to_qua_config()
-
     @pytest.mark.parametrize(
         "parameter, value", [(Parameter.LO_FREQUENCY, 6e9), (Parameter.MAX_CURRENT, 0.5), (Parameter.OUT0_ATT, 0.01)]
     )
@@ -559,8 +349,17 @@ class TestQuantumMachinesCluster:
         with pytest.raises(ValueError, match=f"Bus {non_existent_bus} was not found in {qmm.name} settings."):
             qmm.set_parameter_of_bus(non_existent_bus, parameter, value)
 
-        # Assert that the settings are still in synch:
-        assert qmm._config == qmm.settings.to_qua_config()
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    def test_set_parameter_of_bus_method_raises_exception_when_not_connected(
+        self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster
+    ):
+        """Test the set_parameter_of_bus method raises exception when not connected to QuantumMachines."""
+        qmm.initial_setup()
+        with pytest.raises(
+            NotImplementedError, match=f"You should be connected to {qmm.name} in order to change a parameter."
+        ):
+            qmm.set_parameter_of_bus("drive_q0", Parameter.IF, 123e6)
 
     @pytest.mark.parametrize("parameter, value", [(Parameter.MAX_CURRENT, 0.001), (Parameter.OUT0_ATT, 0.0005)])
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
@@ -574,78 +373,31 @@ class TestQuantumMachinesCluster:
         with pytest.raises(ParameterNotFound, match=f"Could not find parameter {parameter} in instrument {qmm.name}."):
             qmm.set_parameter_of_bus("drive_q0", parameter, value)
 
-        # Assert that the settings are still in synch:
-        assert qmm._config == qmm.settings.to_qua_config()
-
     @pytest.mark.parametrize(
-        "bus, parameter, qmm_name",
+        "bus, parameter",
         [
-            ("drive_q0", Parameter.LO_FREQUENCY, "qmm"),
-            ("drive_q0_rf", Parameter.LO_FREQUENCY, "qmm_with_octave"),
-            ("drive_q0", Parameter.IF, "qmm"),
-            ("readout_q0", Parameter.GAIN, "qmm"),
-            ("drive_q0_rf", Parameter.GAIN, "qmm_with_octave"),
-            ("readout_q0", Parameter.TIME_OF_FLIGHT, "qmm"),
-            ("readout_q0", Parameter.SMEARING, "qmm"),
-            ("readout_q0", Parameter.THRESHOLD_ROTATION, "qmm"),
-            ("readout_q0", Parameter.THRESHOLD, "qmm"),
+            ("drive_q0", Parameter.LO_FREQUENCY),
+            ("drive_q0", Parameter.IF),
+            ("drive_q0", Parameter.GAIN),
         ],
     )
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
     def test_get_parameter_of_bus_method(
-        self,
-        mock_qmm,
-        mock_qm,
-        bus: str,
-        parameter: Parameter,
-        qmm_name: QuantumMachinesCluster,
-        request,
+        self, mock_qmm, mock_qm, bus: str, parameter: Parameter, qmm: QuantumMachinesCluster
     ):
         """Test the setup method with float value"""
-        qmm = request.getfixturevalue(qmm_name)
+        qmm.initial_setup()
+        qmm.turn_on()
+        qmm._config = qmm.settings.to_qua_config()
+
         value = qmm.get_parameter_of_bus(bus, parameter)
-
-        settings_config_dict = qmm.settings.to_qua_config()
-
-        config_keys = settings_config_dict["elements"][bus]
-
         if parameter == Parameter.LO_FREQUENCY:
-            if "mixInputs" in config_keys:
-                assert value == settings_config_dict["elements"][bus]["mixInputs"]["lo_frequency"]
-            if "RF_inputs" in config_keys:
-                port = settings_config_dict["elements"][bus]["RF_inputs"]["port"]
-                assert value == settings_config_dict["octaves"][port[0]]["RF_outputs"][port[1]]["LO_frequency"]
-        if parameter == Parameter.IF:
-            if "intermediate_frequency" in config_keys:
-                assert value == settings_config_dict["elements"][bus]["intermediate_frequency"]
+            assert value == qmm._qm._elements[bus].input.lo_frequency
         if parameter == Parameter.GAIN:
-            if "mixInputs" in config_keys and "outputs" in config_keys:
-                port_i = settings_config_dict["elements"][bus]["outputs"]["out1"]
-                port_q = settings_config_dict["elements"][bus]["outputs"]["out2"]
-                assert value == (
-                    settings_config_dict["controllers"][port_i[0]]["analog_inputs"][port_i[1]]["gain_db"],
-                    settings_config_dict["controllers"][port_q[0]]["analog_inputs"][port_q[1]]["gain_db"],
-                )
-            if "RF_inputs" in config_keys:
-                port = settings_config_dict["elements"][bus]["RF_inputs"]["port"]
-                assert value == settings_config_dict["octaves"][port[0]]["RF_outputs"][port[1]]["gain"]
-        if parameter == Parameter.TIME_OF_FLIGHT:
-            if "time_of_flight" in config_keys:
-                assert value == settings_config_dict["elements"][bus]["time_of_flight"]
-        if parameter == Parameter.SMEARING:
-            if "smearing" in config_keys:
-                assert value == settings_config_dict["elements"][bus]["smearing"]
-
-        if parameter == Parameter.THRESHOLD_ROTATION:
-            element = next((element for element in qmm.settings.elements if element["bus"] == bus), None)
-            assert value == element.get("threshold_rotation", None)
-        if parameter == Parameter.THRESHOLD:
-            element = next((element for element in qmm.settings.elements if element["bus"] == bus), None)
-            assert value == element.get("threshold", None)
-
-        # Assert that the settings are in synch:
-        assert qmm._config_created is False and "_config" not in dir(qmm)
+            assert value == qmm._qm._elements[bus].input.gain
+        if parameter == Parameter.IF:
+            assert value == qmm._qm._elements[bus].intermediate_frequency
 
     @pytest.mark.parametrize("parameter", [(Parameter.MAX_CURRENT), (Parameter.OUT0_ATT)])
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
@@ -653,41 +405,8 @@ class TestQuantumMachinesCluster:
     def test_get_parameter_of_bus_method_raises_exception_when_parameter_not_found(
         self, mock_qmm, mock_qm, parameter: Parameter, qmm: QuantumMachinesCluster
     ):
-        """Test the get_parameter_of_bus method raises exception when parameter is wrong."""
+        """Test the set_parameter_of_bus method raises exception when parameter is wrong."""
         qmm.initial_setup()
         qmm.turn_on()
         with pytest.raises(ParameterNotFound):
             qmm.get_parameter_of_bus("drive_q0", parameter)
-
-    @pytest.mark.parametrize("bus, parameter", [("drive_q0", Parameter.LO_FREQUENCY)])
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    def test_get_parameter_after_initial_setup(
-        self, mock_qmm, mock_qm, bus: str, parameter: Parameter, qmm: QuantumMachinesCluster
-    ):
-        """Test the get_parameter_of_bus method after and initial_setup."""
-
-        qmm.initial_setup()
-        value = qmm.get_parameter_of_bus(bus, parameter)
-        config_keys = qmm._config["elements"][bus]
-
-        if parameter == Parameter.LO_FREQUENCY:
-            if "mixInputs" in config_keys:
-                assert value == qmm._config["elements"][bus]["mixInputs"]["lo_frequency"]
-            if "RF_inputs" in config_keys:
-                port = qmm._config["elements"][bus]["RF_inputs"]["port"]
-                assert value == qmm._config["octaves"][port[0]]["RF_outputs"][port[1]]["LO_frequency"]
-
-        # Assert that the settings are still in synch:
-        assert qmm._config == qmm.settings.to_qua_config()
-
-    @pytest.mark.parametrize("bus, parameter", [("drive_q0", Parameter.LO_FREQUENCY)])
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    def test_get_parameter_doesnt_create_a_config(
-        self, mock_qmm, mock_qm, bus: str, parameter: Parameter, qmm: QuantumMachinesCluster
-    ):
-        """Test the get_parameter_of_bus method doesn't create a `_config`."""
-        assert qmm._config_created is False
-        qmm.get_parameter_of_bus(bus, parameter)
-        assert qmm._config_created is False

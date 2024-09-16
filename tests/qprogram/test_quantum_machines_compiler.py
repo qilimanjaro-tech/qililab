@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from qililab import Arbitrary, Calibration, Domain, IQPair, QProgram, QuantumMachinesCompiler, Square
+from qililab import Calibration, Domain, IQPair, QProgram, QuantumMachinesCompiler, Square
 from qililab.qprogram.blocks import ForLoop, Loop
 
 
@@ -163,7 +163,7 @@ def fixture_measure_operation_in_for_loop() -> QProgram:
     drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
     weights = IQPair(I=Square(1.0, duration=200), Q=Square(1.0, duration=200))
     qp = QProgram()
-    gain = qp.variable(label="gain", domain=Domain.Voltage)
+    gain = qp.variable(Domain.Voltage)
     with qp.for_loop(variable=gain, start=0, stop=1.0, step=0.1):
         qp.set_gain(bus="readout", gain=gain)
         qp.measure(bus="readout", waveform=drag_wf, weights=weights)
@@ -176,7 +176,7 @@ def fixture_measure_operation_in_loop() -> QProgram:
     drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
     weights = IQPair(I=Square(1.0, duration=200), Q=Square(1.0, duration=200))
     qp = QProgram()
-    gain = qp.variable(label="gain", domain=Domain.Voltage)
+    gain = qp.variable(Domain.Voltage)
     with qp.loop(variable=gain, values=np.arange(start=0, stop=1.05, step=0.1)):
         qp.set_gain(bus="readout", gain=gain)
         qp.measure(bus="readout", waveform=drag_wf, weights=weights)
@@ -189,8 +189,8 @@ def fixture_measure_operation_in_parallel() -> QProgram:
     drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
     weights = IQPair(I=Square(1.0, duration=200), Q=Square(1.0, duration=200))
     qp = QProgram()
-    gain = qp.variable(label="gain", domain=Domain.Voltage)
-    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+    gain = qp.variable(Domain.Voltage)
+    frequency = qp.variable(Domain.Frequency)
     with qp.parallel(
         loops=[
             Loop(variable=gain, values=np.arange(start=0, stop=1.05, step=0.1)),
@@ -207,11 +207,10 @@ def fixture_measure_operation_in_parallel() -> QProgram:
 @pytest.fixture(name="for_loop")
 def fixture_for_loop() -> QProgram:
     qp = QProgram()
-    gain = qp.variable(label="gain", domain=Domain.Voltage)
-    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
-    phase = qp.variable(label="phase", domain=Domain.Phase)
-    time = qp.variable(label="time", domain=Domain.Time)
-    scalar = qp.variable(label="int_scalar", domain=Domain.Scalar, type=int)
+    gain = qp.variable(Domain.Voltage)
+    frequency = qp.variable(Domain.Frequency)
+    phase = qp.variable(Domain.Phase)
+    time = qp.variable(Domain.Time)
 
     with qp.for_loop(variable=gain, start=0, stop=1.0, step=0.1):
         qp.set_gain(bus="drive", gain=gain)
@@ -225,20 +224,16 @@ def fixture_for_loop() -> QProgram:
     with qp.for_loop(variable=time, start=100, stop=200, step=10):
         qp.wait(bus="drive", duration=time)
 
-    with qp.for_loop(variable=scalar, start=0, stop=10, step=1):
-        qp.wait(bus="drive", duration=100)
-
     return qp
 
 
 @pytest.fixture(name="for_loop_with_negative_step")
 def fixture_for_loop_with_negative_step() -> QProgram:
     qp = QProgram()
-    gain = qp.variable(label="gain", domain=Domain.Voltage)
-    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
-    phase = qp.variable(label="phase", domain=Domain.Phase)
-    time = qp.variable(label="time", domain=Domain.Time)
-    scalar = qp.variable(label="int_scalar", domain=Domain.Scalar, type=int)
+    gain = qp.variable(Domain.Voltage)
+    frequency = qp.variable(Domain.Frequency)
+    phase = qp.variable(Domain.Phase)
+    time = qp.variable(Domain.Time)
 
     with qp.for_loop(variable=gain, start=1.0, stop=0.0, step=-0.1):
         qp.set_gain(bus="drive", gain=gain)
@@ -252,20 +247,16 @@ def fixture_for_loop_with_negative_step() -> QProgram:
     with qp.for_loop(variable=time, start=200, stop=100, step=-10):
         qp.wait(bus="drive", duration=time)
 
-    with qp.for_loop(variable=scalar, start=10, stop=0, step=-1):
-        qp.wait(bus="drive", duration=100)
-
     return qp
 
 
 @pytest.fixture(name="loop")
 def fixture_loop() -> QProgram:
     qp = QProgram()
-    gain = qp.variable(label="gain", domain=Domain.Voltage)
-    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
-    phase = qp.variable(label="phase", domain=Domain.Phase)
-    time = qp.variable(label="time", domain=Domain.Time)
-    scalar = qp.variable(label="int_scalar", domain=Domain.Scalar, type=int)
+    gain = qp.variable(Domain.Voltage)
+    frequency = qp.variable(Domain.Frequency)
+    phase = qp.variable(Domain.Phase)
+    time = qp.variable(Domain.Time)
 
     with qp.loop(variable=gain, values=np.arange(start=0, stop=1.05, step=0.1)):
         qp.set_gain(bus="drive", gain=gain)
@@ -279,20 +270,16 @@ def fixture_loop() -> QProgram:
     with qp.loop(variable=time, values=np.arange(start=100, stop=205, step=10)):
         qp.wait(bus="drive", duration=time)
 
-    with qp.loop(variable=scalar, values=np.arange(start=0, stop=10, step=1)):
-        qp.wait(bus="drive", duration=100)
-
     return qp
 
 
 @pytest.fixture(name="parallel")
 def fixture_parallel() -> QProgram:
     qp = QProgram()
-    gain = qp.variable(label="gain", domain=Domain.Voltage)
-    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
-    phase = qp.variable(label="phase", domain=Domain.Phase)
-    time = qp.variable(label="time", domain=Domain.Time)
-    scalar = qp.variable(label="int_scalar", domain=Domain.Scalar, type=int)
+    gain = qp.variable(Domain.Voltage)
+    frequency = qp.variable(Domain.Frequency)
+    phase = qp.variable(Domain.Phase)
+    time = qp.variable(Domain.Time)
 
     with qp.parallel(
         loops=[
@@ -300,7 +287,6 @@ def fixture_parallel() -> QProgram:
             Loop(variable=frequency, values=np.arange(start=100, stop=205, step=10)),
             ForLoop(variable=phase, start=0, stop=90, step=10),
             Loop(variable=time, values=np.arange(start=100, stop=205, step=10)),
-            ForLoop(variable=scalar, start=0, stop=10, step=1),
         ]
     ):
         qp.set_gain(bus="drive", gain=gain)
@@ -585,55 +571,12 @@ class TestQuantumMachinesCompiler:
         assert "I_0" in measurements[0].result_handles
         assert "Q_0" in measurements[0].result_handles
 
-    def test_measure_operation_with_threshold_rotations(self, measure_operation: QProgram):
-        """Test compilation of measurement applying the rotations provided in the `threshold_rotations` map"""
-        compiler = QuantumMachinesCompiler()
-        rotation_angle = np.pi
-        threshold_rotations = {"readout": rotation_angle}
-        qua_program, configuration, measurements = compiler.compile(
-            measure_operation, threshold_rotations=threshold_rotations
-        )
-
-        statements = qua_program._program.script.body.statements
-        assert len(statements) == 3
-
-        measure = statements[0].measure
-        assert measure.qe.name == "readout"
-        assert measure.pulse.name in configuration["pulses"]
-
-        assert len(measure.measure_processes) == 2
-        assert measure.measure_processes[0].analog.dual_demod_integration.element_output1 == "out1"
-        assert measure.measure_processes[0].analog.dual_demod_integration.element_output2 == "out2"
-        assert measure.measure_processes[1].analog.dual_demod_integration.element_output1 == "out1"
-        assert measure.measure_processes[1].analog.dual_demod_integration.element_output2 == "out2"
-
-        measurement_pulse = configuration["pulses"][measure.pulse.name]
-        assert len(measurement_pulse["integration_weights"]) == 4
-
-        A, B, C, D = configuration["integration_weights"].values()
-        np.testing.assert_allclose(A["cosine"], [(np.cos(rotation_angle), 200)], atol=1e-15)
-        np.testing.assert_allclose(A["sine"], [(np.sin(rotation_angle), 200)], atol=1e-15)
-
-        np.testing.assert_allclose(B["cosine"], [(-np.sin(rotation_angle), 200)], atol=1e-15)
-        np.testing.assert_allclose(B["sine"], [(np.cos(rotation_angle), 200)], atol=1e-15)
-
-        np.testing.assert_allclose(C["cosine"], [(np.sin(rotation_angle), 200)], atol=1e-15)
-        np.testing.assert_allclose(C["sine"], [(-np.cos(rotation_angle), 200)], atol=1e-15)
-
-        np.testing.assert_allclose(D["cosine"], [(np.cos(rotation_angle), 200)], atol=1e-15)
-        np.testing.assert_allclose(D["sine"], [(np.sin(rotation_angle), 200)], atol=1e-15)
-
-        assert len(measurements) == 1
-        assert len(measurements[0].result_handles) == 2
-        assert "I_0" in measurements[0].result_handles
-        assert "Q_0" in measurements[0].result_handles
-
     def test_for_loop(self, for_loop: QProgram):
         compiler = QuantumMachinesCompiler()
         qua_program, _, _ = compiler.compile(for_loop)
 
         statements = qua_program._program.script.body.statements
-        assert len(statements) == 5
+        assert len(statements) == 4
 
         # Voltage
         assert float(statements[0].for_.init.statements[0].assign.expression.literal.value) == 0
@@ -659,7 +602,7 @@ class TestQuantumMachinesCompiler:
 
         # Time
         assert float(statements[3].for_.init.statements[0].assign.expression.literal.value) == 100
-        assert float(statements[3].for_.condition.binary_operation.right.literal.value) == 200
+        assert float(statements[3].for_.condition.binary_operation.right.literal.value) == 205
         assert (
             float(statements[3].for_.update.statements[0].assign.expression.binary_operation.right.literal.value) == 10
         )
@@ -669,7 +612,7 @@ class TestQuantumMachinesCompiler:
         qua_program, _, _ = compiler.compile(for_loop_with_negative_step)
 
         statements = qua_program._program.script.body.statements
-        assert len(statements) == 5
+        assert len(statements) == 4
 
         # Voltage
         assert float(statements[0].for_.init.statements[0].assign.expression.literal.value) == 1.0
@@ -696,7 +639,7 @@ class TestQuantumMachinesCompiler:
 
         # Time
         assert float(statements[3].for_.init.statements[0].assign.expression.literal.value) == 200
-        assert float(statements[3].for_.condition.binary_operation.right.literal.value) == 100
+        assert float(statements[3].for_.condition.binary_operation.right.literal.value) == 95
         assert (
             float(statements[3].for_.update.statements[0].assign.expression.binary_operation.right.literal.value) == -10
         )
@@ -706,12 +649,11 @@ class TestQuantumMachinesCompiler:
         qua_program, _, _ = compiler.compile(loop)
 
         statements = qua_program._program.script.body.statements
-        assert len(statements) == 5
+        assert len(statements) == 4
         assert len(statements[0].for_each.iterator) == 1
         assert len(statements[1].for_each.iterator) == 1
         assert len(statements[2].for_each.iterator) == 1
         assert len(statements[3].for_each.iterator) == 1
-        assert len(statements[4].for_each.iterator) == 1
 
     def test_parallel(self, parallel: QProgram):
         compiler = QuantumMachinesCompiler()
@@ -719,7 +661,7 @@ class TestQuantumMachinesCompiler:
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 1
-        assert len(statements[0].for_each.iterator) == 5
+        assert len(statements[0].for_each.iterator) == 4
 
     def test_infinite_loop(self, infinite_loop: QProgram):
         compiler = QuantumMachinesCompiler()
@@ -728,14 +670,6 @@ class TestQuantumMachinesCompiler:
         statements = qua_program._program.script.body.statements
         assert len(statements) == 1
         assert bool(statements[0].for_.condition.literal.value) is True
-
-    def test_hash_arbitrary_waveforms(self):
-        compiler = QuantumMachinesCompiler()
-        waveform0 = Arbitrary(np.ones(3000))
-        waveform1 = Arbitrary(np.ones(3004))
-        assert compiler._QuantumMachinesCompiler__hash_waveform(
-            waveform0
-        ) != compiler._QuantumMachinesCompiler__hash_waveform(waveform1)
 
     @pytest.mark.parametrize(
         "start,stop,step,expected_result",

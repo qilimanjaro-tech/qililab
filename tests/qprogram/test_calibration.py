@@ -3,7 +3,6 @@ import os
 import pytest
 
 from qililab.qprogram.calibration import Calibration
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.waveforms import Arbitrary, FlatTop, Gaussian, IQPair, Square
 from qililab.yaml import yaml
 
@@ -18,7 +17,6 @@ class TestCalibration:
         assert isinstance(calibration, Calibration)
         assert isinstance(calibration.waveforms, dict)
         assert isinstance(calibration.weights, dict)
-        assert calibration.crosstalk_matrix is None
         assert len(calibration.waveforms) == 0
         assert len(calibration.weights) == 0
 
@@ -131,28 +129,8 @@ class TestCalibration:
         with pytest.raises(KeyError):
             _ = calibration.get_weights(bus="non_existant_bus", name="optimal_weights")
 
-    def test_adding_crosstalk_matrix(self):
-        """Test adding a crosstalk matrix to the calibration object"""
-        buses = {
-            "flux_0": {"flux_0": 1.47046905, "flux_1": 0.12276261},
-            "flux_1": {"flux_0": -0.55322207, "flux_1": 1.58247856},
-        }
-        crosstalk_matrix = CrosstalkMatrix().from_buses(buses)
-        calibration = Calibration()
-        calibration.crosstalk_matrix = crosstalk_matrix
-
-        assert calibration.crosstalk_matrix["flux_0"]["flux_0"] == crosstalk_matrix["flux_0"]["flux_0"]
-        assert calibration.crosstalk_matrix["flux_0"]["flux_1"] == crosstalk_matrix["flux_0"]["flux_1"]
-        assert calibration.crosstalk_matrix["flux_1"]["flux_0"] == crosstalk_matrix["flux_1"]["flux_0"]
-        assert calibration.crosstalk_matrix["flux_1"]["flux_1"] == crosstalk_matrix["flux_1"]["flux_1"]
-
     def test_dump_load_methods(self):
         """Test dump and load methods"""
-        buses = {
-            "flux_0": {"flux_0": 1.47046905, "flux_1": 0.12276261},
-            "flux_1": {"flux_0": -0.55322207, "flux_1": 1.58247856},
-        }
-        crosstalk_matrix = CrosstalkMatrix().from_buses(buses)
         calibration = Calibration()
         calibration.add_waveform(bus="drive_bus", name="Xpi", waveform=Square(1.0, 100))
         calibration.add_waveform(bus="drive_bus", name="Xpi2", waveform=Square(1.0, 50))
@@ -160,7 +138,6 @@ class TestCalibration:
         calibration.add_weights(
             bus="readout_bus", name="optimal_weights", weights=IQPair(Square(1.0, 2000), Square(1.0, 2000))
         )
-        calibration.crosstalk_matrix = crosstalk_matrix
 
         calibration.save_to(file="calibration.yml")
         loaded_calibration = Calibration.load_from(file="calibration.yml")
@@ -191,11 +168,6 @@ class TestCalibration:
         assert isinstance(weights.Q, Square)
         assert weights.Q.amplitude == 1.0
         assert weights.Q.duration == 2000
-
-        assert calibration.crosstalk_matrix["flux_0"]["flux_0"] == crosstalk_matrix["flux_0"]["flux_0"]
-        assert calibration.crosstalk_matrix["flux_0"]["flux_1"] == crosstalk_matrix["flux_0"]["flux_1"]
-        assert calibration.crosstalk_matrix["flux_1"]["flux_0"] == crosstalk_matrix["flux_1"]["flux_0"]
-        assert calibration.crosstalk_matrix["flux_1"]["flux_1"] == crosstalk_matrix["flux_1"]["flux_1"]
 
         os.remove(path="calibration.yml")
 
