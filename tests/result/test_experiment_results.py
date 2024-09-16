@@ -56,7 +56,7 @@ def sample_metadata():
 @pytest.fixture(name="experiment_results")
 def mock_experiment_results(metadata):
     # Create a mock HDF5 file structure for testing
-    with ExperimentResultsWriter(metadata, EXPERIMENT_RESULTS_PATH) as experiment_results:
+    with ExperimentResultsWriter(path=EXPERIMENT_RESULTS_PATH, metadata=metadata) as experiment_results:
         experiment_results.execution_time = 12.34
     yield EXPERIMENT_RESULTS_PATH
     Path(EXPERIMENT_RESULTS_PATH).unlink()
@@ -88,7 +88,7 @@ class TestExperimentResults:
 
     def test_properties(self, experiment_results):
         with ExperimentResults(experiment_results) as exp_results:
-            assert exp_results.yaml == "experiment_yaml"
+            assert exp_results.experiment == "experiment_yaml"
             assert exp_results.executed_at == datetime(2023, 1, 1, 0, 0)
 
 
@@ -96,32 +96,33 @@ class TestExperimentResultsWriter:
     @mock.patch("h5py.File")
     def test_create_results_file(self, mock_h5file, metadata):
         # Test that the results file is created with the correct structure
-        with ExperimentResultsWriter(metadata, "mock_path"):
+        with ExperimentResultsWriter(path="mock_path", metadata=metadata):
             pass  # Just initializing should create the file structure
 
         assert mock_h5file.called
-        mock_h5file.assert_called_with("mock_path", mode="a")
+        mock_h5file.assert_called_with("mock_path", mode="w")
 
     def test_set_item(self, experiment_results):
         # Open a writable HDF5 and test the __setitem__ method
-        with ExperimentResultsWriter({}, experiment_results) as exp_writer:
+        with ExperimentResultsWriter(path=experiment_results, metadata={}) as exp_writer:
             exp_writer[("QProgram_0", "Measurement_0", 0, 0, 0)] = 99.0
             assert exp_writer[("QProgram_0", "Measurement_0", 0, 0, 0)] == 99.0
 
     def test_yaml_setter(self, experiment_results):
         # Test setting yaml content
-        with ExperimentResultsWriter({}, experiment_results) as exp_writer:
-            exp_writer.yaml = "new_yaml"
-            assert exp_writer.yaml == "new_yaml"
+        with ExperimentResultsWriter(path=experiment_results, metadata={}) as exp_writer:
+            exp_writer.experiment = "new_yaml"
+            assert exp_writer.experiment == "new_yaml"
 
     def test_executed_at_setter(self, experiment_results):
         # Test setting the execution timestamp
-        with ExperimentResultsWriter({}, experiment_results) as exp_writer:
-            exp_writer.executed_at = datetime(2024, 1, 1)
-            assert exp_writer.executed_at == "2024-01-01 00:00:00"
+        with ExperimentResultsWriter(path=experiment_results, metadata={}) as exp_writer:
+            now = datetime.now()
+            exp_writer.executed_at = now
+            assert exp_writer.executed_at == now
 
     def test_execution_time_setter(self, experiment_results):
         # Test setting the execution time
-        with ExperimentResultsWriter({}, experiment_results) as exp_writer:
+        with ExperimentResultsWriter(path=experiment_results, metadata={}) as exp_writer:
             exp_writer.execution_time = 42.0
             assert exp_writer.execution_time == 42.0

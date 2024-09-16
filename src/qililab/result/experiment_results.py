@@ -16,6 +16,8 @@ from datetime import datetime
 from typing import Any, TypedDict
 
 import h5py
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import numpy as np
 
 
@@ -38,7 +40,8 @@ class QProgramMetadata(TypedDict):
 
 
 class ExperimentMetadata(TypedDict, total=False):
-    yaml: str
+    platform: str
+    experiment: str
     executed_at: datetime
     execution_time: float
     qprograms: dict[str, QProgramMetadata]
@@ -51,7 +54,8 @@ class ExperimentResults:
     MEASUREMENTS_PATH = "measurements"
     RESULTS_PATH = "results"
     VARIABLES_PATH = "variables"
-    YAML_PATH = "yaml"
+    EXPERIMENT_PATH = "experiment"
+    PLATFORM_PATH = "platform"
     EXECUTED_AT_PATH = "executed_at"
     EXECUTION_TIME_PATH = "execution_time"
 
@@ -86,7 +90,7 @@ class ExperimentResults:
         if self._file is not None:
             self._file.close()
 
-    def get(self, qprogram: int | str, measurement: int | str):
+    def get(self, qprogram: int | str = 0, measurement: int | str = 0):
         if isinstance(qprogram, int):
             qprogram = f"QProgram_{qprogram}"
         if isinstance(measurement, int):
@@ -94,7 +98,8 @@ class ExperimentResults:
 
         data = self.data[(qprogram, measurement)][()]
         dims = [
-            (dim.label, [values[()] for values in dim.values()]) for dim in self.dimensions[(qprogram, measurement)]
+            {"labels": dim.label.split(","), "values": [values[()] for values in dim.values()]}
+            for dim in self.dimensions[(qprogram, measurement)]
         ]
 
         return data, dims
@@ -124,21 +129,92 @@ class ExperimentResults:
         return iter(self.data.items())
 
     @property
-    def yaml(self) -> str:
+    def experiment(self) -> str:
         """Get the YAML representation of the executed experiment."""
-        return self._file[ExperimentResults.YAML_PATH][()].decode("utf-8")
+        return self._file[ExperimentResults.EXPERIMENT_PATH][()].decode("utf-8")
+
+    @property
+    def platform(self) -> str:
+        """Get the YAML representation of the platform."""
+        return self._file[ExperimentResults.PLATFORM_PATH][()].decode("utf-8")
 
     @property
     def executed_at(self) -> datetime:
         """Get the timestamp when execution of the experiment started."""
         return datetime.strptime(
-            self._file[ExperimentResults.EXECUTED_AT_PATH][()].decode("utf-8"), "%Y-%m-%dT%H:%M:%S"
+            self._file[ExperimentResults.EXECUTED_AT_PATH][()].decode("utf-8"), "%Y-%m-%d %H:%M:%S.%f"
         )
 
     @property
     def execution_time(self) -> float:
         """Get the execution time in seconds."""
         return float(self._file[ExperimentResults.EXECUTION_TIME_PATH][()].decode("utf-8"))
+
+    def plot_S21(self, qprogram: int | str = 0, measurement: int | str = 0):
+        def decibels(s21: np.ndarray):
+            """Convert result values from s21 into dB"""
+            return 20 * np.log10(np.abs(s21))
+
+        data, dims = self.get(qprogram=qprogram, measurement=measurement)
+        n_dimensions = len(dims) - 1
+        if n_dimensions == 1:
+            s21 = data[:, 0] + 1j * data[:, 1]
+            s21 = decibels(s21)
+            x_labels, x_values = dims[0]["labels"], dims[0]["values"]
+
+            _, ax1 = plt.subplots()
+            ax1.set_title(self.path)
+            ax1.set_xlabel(x_labels[0])
+            ax1.set_ylabel(r"$|S_{21}|$")
+            ax1.plot(x_values[0], s21, ".")
+
+            if len(x_labels) > 1:
+                ax2 = ax1.twiny()
+                ax2.set_xlabel(x_labels[1])
+                ax2.plot(x_values[1], s21, ".")
+
+            plt.show()
+        elif n_dimensions == 2:
+            s21 = data[:, :, 0] + 1j * data[:, :, 1]
+            s21 = decibels(s21)
+            x_labels, x_values = dims[0]["labels"], dims[0]["values"]
+            y_labels, y_values = dims[1]["labels"], dims[1]["values"]
+
+            # Create x and y edge arrays by extrapolating the edges
+            x_edges = np.linspace(x_values[0].min(), x_values[0].max(), len(x_values[0]) + 1)
+            y_edges = np.linspace(y_values[0].min(), y_values[0].max(), len(y_values[0]) + 1)
+
+            fig, ax1 = plt.subplots()
+            ax1.set_title(self.path)
+            ax1.set_xlabel(x_labels[0])
+            ax1.set_ylabel(y_labels[0])
+
+            # mesh = ax1.pcolor([x_values[0], y_values[0]], s21)
+            mesh = ax1.pcolormesh(x_edges, y_edges, s21.T, cmap="viridis", shading="auto")
+            fig.colorbar(mesh, ax=ax1)
+
+            if len(x_labels) > 1:
+                ax2 = ax1.twiny()
+                ax2.set_xlabel(x_labels[1])
+                ax2.set_xlim(min(x_values[1]), max(x_values[1]))
+
+                # Set tick locations and labels for the secondary x-axis
+                ax2_ticks = np.linspace(min(x_values[1]), max(x_values[1]), num=6)  # Adjust number of ticks as needed
+                ax2.set_xticks(ax2_ticks)
+                # ax2.set_xticklabels([f"{tick:.2f}" for tick in ax2_ticks])  # Format tick labels
+
+                # Force scientific notation
+                # ax2.xaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
+                ax2.ticklabel_format(axis="x", style="sci", scilimits=(-3, 3))  # Force scientific notation
+            if len(y_labels) > 1:
+                ax3 = ax1.twinx()
+                ax3.set_ylabel(y_labels[1])
+                ax3.set_ylim(min(y_values[1]), max(y_values[1]))
+
+            plt.tight_layout()
+            plt.show()
+        else:
+            raise NotImplementedError("3D and higher dimension plots are not supported yet.")
 
 
 class ExperimentResultsWriter(ExperimentResults):
@@ -155,8 +231,11 @@ class ExperimentResultsWriter(ExperimentResults):
         """Write the prepared structure to an HDF5 file and register loops as dimension scales."""
         h5py.get_config().track_order = True
 
-        if "yaml" in self._metadata:
-            self.yaml = self._metadata["yaml"]
+        if "platform" in self._metadata:
+            self.platform = self._metadata["platform"]
+
+        if "experiment" in self._metadata:
+            self.experiment = self._metadata["experiment"]
 
         if "executed_at" in self._metadata:
             self.executed_at = self._metadata["executed_at"]
@@ -172,7 +251,7 @@ class ExperimentResultsWriter(ExperimentResults):
             for qprogram_name, qprogram_data in self._metadata["qprograms"].items():
                 qgroup = qprograms_group.create_group(qprogram_name)
 
-                # Write QProgram loops
+                # Write variables that QProgram depends upon (software loops)
                 qloop_group = qgroup.create_group(ExperimentResults.VARIABLES_PATH)
                 for variable in qprogram_data["variables"]:
                     label, values = variable["label"], variable["values"]
@@ -186,6 +265,10 @@ class ExperimentResultsWriter(ExperimentResults):
                     mgroup = measurement_group.create_group(measurement_name)
                     mloop_group = mgroup.create_group(ExperimentResults.VARIABLES_PATH)
 
+                    # Write shots of measurement
+                    mloop_group["shots"] = measurement_data["shots"]
+
+                    # Write variables that measurement depends upon (hardware loops)
                     for variable in measurement_data["variables"]:
                         label, values = variable["label"], variable["values"]
                         loop = mloop_group.create_dataset(label, data=values)
@@ -236,13 +319,21 @@ class ExperimentResultsWriter(ExperimentResults):
             measurement_name = f"Measurement_{measurement_name}"
         self.data[(qprogram_name, measurement_name)][tuple(indices)] = value
 
-    @ExperimentResults.yaml.setter
-    def yaml(self, yaml: str):
+    @ExperimentResults.platform.setter
+    def platform(self, platform: str):
         """Set the YAML representation of executed experiment."""
-        path = ExperimentResults.YAML_PATH
+        path = ExperimentResults.PLATFORM_PATH
         if path in self._file:
             del self._file[path]
-        self._file[path] = yaml
+        self._file[path] = platform
+
+    @ExperimentResults.experiment.setter
+    def experiment(self, experiment: str):
+        """Set the YAML representation of executed experiment."""
+        path = ExperimentResults.EXPERIMENT_PATH
+        if path in self._file:
+            del self._file[path]
+        self._file[path] = experiment
 
     @ExperimentResults.executed_at.setter
     def executed_at(self, dt: datetime):

@@ -1,8 +1,10 @@
 # mypy: disable-error-code="union-attr, arg-type"
+import inspect
 import os
 from collections import defaultdict, namedtuple
 from datetime import datetime
 from time import perf_counter
+from types import LambdaType
 from typing import TYPE_CHECKING, Any, Callable
 from uuid import UUID
 
@@ -58,9 +60,7 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
         self.qprogram_index = 0
         self.measurement_index = 0
         self.shots = 1
-        self.metadata: ExperimentMetadata = ExperimentMetadata(
-            yaml=None, executed_at=None, execution_time=None, qprograms={}
-        )
+        self.metadata: ExperimentMetadata = ExperimentMetadata(qprograms={})
         self.results_writer: ExperimentResultsWriter
 
     def _prepare_metadata(self):
@@ -79,7 +79,13 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
                     traverse_experiment(element)
                 # Handle ExecuteQProgram operations and traverse their loops
                 if isinstance(element, ExecuteQProgram):
-                    traverse_qprogram(element.qprogram.body)
+                    if isinstance(element.qprogram, LambdaType):
+                        signature = inspect.signature(element.qprogram)
+                        call_parameters = {param.name: 0 for param in signature.parameters.values()}
+                        qprogram = element.qprogram(**call_parameters)
+                        traverse_qprogram(qprogram.body)
+                    else:
+                        traverse_qprogram(element.qprogram.body)
                     self.qprogram_execution_indices[element.uuid] = self.qprogram_index
                     self.measurement_index = 0
                     self.qprogram_index += 1
@@ -216,18 +222,38 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
                     )
 
                 if isinstance(element, ExecuteQProgram):
-                    # Append a lambda that will call the `platform.execute_qprogram` method
-                    stored_operations.append(
-                        lambda op=element, qprogram_index=self.qprogram_execution_indices[element.uuid]: store_results(  # type: ignore[misc]
-                            self.platform.execute_qprogram(
-                                qprogram=op.qprogram,
-                                bus_mapping=op.bus_mapping,
-                                calibration=op.calibration,
-                                debug=op.debug,
-                            ),
-                            qprogram_index,
+                    if isinstance(element.qprogram, LambdaType):
+                        signature = inspect.signature(element.qprogram)
+                        call_parameters = {
+                            param.name: self.current_value_of_variable[param.default.uuid]
+                            for param in signature.parameters.values()
+                            if isinstance(param.default, Variable)
+                        }
+                        qprogram = element.qprogram(**call_parameters)
+                        stored_operations.append(
+                            lambda operation=element, qprogram=qprogram, qprogram_index=self.qprogram_execution_indices[element.uuid]: store_results(  # type: ignore[misc]
+                                self.platform.execute_qprogram(
+                                    qprogram=qprogram,
+                                    bus_mapping=operation.bus_mapping,
+                                    calibration=operation.calibration,
+                                    debug=operation.debug,
+                                ),
+                                qprogram_index,
+                            )
                         )
-                    )
+                    else:
+                        # Append a lambda that will call the `platform.execute_qprogram` method
+                        stored_operations.append(
+                            lambda operation=element, qprogram_index=self.qprogram_execution_indices[element.uuid]: store_results(  # type: ignore[misc]
+                                self.platform.execute_qprogram(
+                                    qprogram=operation.qprogram,
+                                    bus_mapping=operation.bus_mapping,
+                                    calibration=operation.calibration,
+                                    debug=operation.debug,
+                                ),
+                                qprogram_index,
+                            )
+                        )
                 elif isinstance(element, Block):
                     # Recursively handle elements of the block
                     nested_operations = self._prepare_operations(element, progress)
@@ -366,7 +392,8 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
         self._prepare_metadata()
 
         # Update metadata
-        self.metadata["yaml"] = serialize(self.experiment)
+        self.metadata["platform"] = serialize(self.platform.to_dict())
+        self.metadata["experiment"] = serialize(self.experiment)
         self.metadata["executed_at"] = datetime.now()
 
         # Create the ExperimentResultsWriter for storing results

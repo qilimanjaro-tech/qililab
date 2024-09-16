@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 from qililab.qprogram.operations.operation import Operation
 from qililab.yaml import yaml
@@ -22,12 +22,13 @@ from qililab.yaml import yaml
 if TYPE_CHECKING:
     from qililab.qprogram.calibration import Calibration
     from qililab.qprogram.qprogram import QProgram
+    from qililab.qprogram.variable import Variable
 
 
 @yaml.register_class
 @dataclass(frozen=True)
 class ExecuteQProgram(Operation):  # pylint: disable=missing-class-docstring
-    qprogram: "QProgram"
+    qprogram: "QProgram" | Callable[["Variable", ...], "QProgram"]  # type: ignore
     bus_mapping: dict[str, str] | None = None
     calibration: "Calibration" | None = None
     debug: bool = False
