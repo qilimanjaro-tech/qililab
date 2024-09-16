@@ -27,7 +27,7 @@ from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
-from qililab.qprogram import Calibration, Experiment, QbloxCompiler, QProgram
+from qililab.qprogram import Calibration, Domain, Experiment, QbloxCompiler, QProgram
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
@@ -144,7 +144,7 @@ def get_calibration():
 
 
 @pytest.fixture(name="anneal_qprogram")
-def get_anneal_qprogram(runcard, flux_to_bus_topology):
+def get_anneal_qprogram(runcard, flux_to_bus_topology):  # pylint: disable=too-many-locals
     platform = Platform(runcard=runcard)
     platform.flux_to_bus_topology = flux_to_bus_topology
     anneal_waveforms = {
@@ -155,7 +155,8 @@ def get_anneal_qprogram(runcard, flux_to_bus_topology):
             np.array([2])
         ),
     }
-    averages = 2
+    num_averages = 2
+    num_shots = 1
     readout_duration = 2000
     readout_amplitude = 1.0
     r_wf_I = Square(amplitude=readout_amplitude, duration=readout_duration)
@@ -164,11 +165,13 @@ def get_anneal_qprogram(runcard, flux_to_bus_topology):
     weights_shape = Square(amplitude=1, duration=readout_duration)
     weights = IQPair(I=weights_shape, Q=weights_shape)
     qp_anneal = QProgram()
-    with qp_anneal.average(averages):
-        for bus, waveform in anneal_waveforms.items():
-            qp_anneal.play(bus=bus, waveform=waveform)
-        qp_anneal.sync()
-        qp_anneal.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
+    shots_variable = qp_anneal.variable("num_shots", Domain.Scalar, int)
+    with qp_anneal.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
+        with qp_anneal.average(num_averages):
+            for bus, waveform in anneal_waveforms.items():
+                qp_anneal.play(bus=bus, waveform=waveform)
+            qp_anneal.sync()
+            qp_anneal.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
     return qp_anneal
 
 
@@ -545,7 +548,8 @@ class TestMethods:
         results = platform.execute_anneal_program(
             annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
             transpiler=transpiler,
-            averages=2,
+            num_averages=2,
+            num_shots=1,
             readout_bus="readout_bus",
             measurement_name="readout",
             weights="optimal_weights",
@@ -558,7 +562,8 @@ class TestMethods:
         results = platform.execute_anneal_program(
             annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
             transpiler=transpiler,
-            averages=2,
+            num_averages=2,
+            num_shots=1,
             readout_bus="readout_bus",
             measurement_name="readout",
             calibration=calibration,
@@ -577,7 +582,8 @@ class TestMethods:
             platform.execute_anneal_program(
                 annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
                 transpiler=transpiler,
-                averages=2,
+                num_averages=2,
+                num_shots=1,
                 readout_bus="readout_bus",
                 measurement_name="whatever",
                 calibration=calibration,
@@ -1050,7 +1056,8 @@ class TestMethods:
                 readout_bus="readout",
                 measurement_name="measurement",
                 transpiler=MagicMock(),
-                averages=1,
+                num_averages=2,
+                num_shots=1,
             )
 
     def test_get_element_flux(self, platform: Platform):

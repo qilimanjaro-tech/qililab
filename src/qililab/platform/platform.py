@@ -50,7 +50,7 @@ from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSchedule
 from qililab.pulse import QbloxCompiler as PulseQbloxCompiler
-from qililab.qprogram import Calibration, Experiment, QbloxCompiler, QProgram, QuantumMachinesCompiler
+from qililab.qprogram import Calibration, Domain, Experiment, QbloxCompiler, QProgram, QuantumMachinesCompiler
 from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.result import Result
 from qililab.result.qblox_results.qblox_result import QbloxResult
@@ -654,7 +654,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         readout_bus: str,
         measurement_name: str,
         transpiler: Callable,
-        averages=1,
+        num_averages: int,
+        num_shots: int = 1,
         weights: str | None = None,
     ) -> QProgramResults:
         """Given an annealing program execute it as a qprogram.
@@ -693,18 +694,21 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             annealing_waveforms = annealing_program.get_waveforms(crosstalk_matrix=crosstalk_matrix)
 
             qp_annealing = QProgram()
-            with qp_annealing.average(averages):
-                for bus, waveform in annealing_waveforms.items():
-                    qp_annealing.play(bus=bus, waveform=waveform)
-                qp_annealing.sync()
-                if weights and calibration.has_weights(bus=readout_bus, name=weights):
-                    qp_annealing.measure(bus=readout_bus, waveform=measurement_name, weights=weights)
-                else:
-                    r_duration = calibration.get_waveform(bus=readout_bus, name=measurement_name).get_duration()
-                    weights_shape = Square(amplitude=1, duration=r_duration)
-                    qp_annealing.measure(
-                        bus=readout_bus, waveform=measurement_name, weights=IQPair(I=weights_shape, Q=weights_shape)
-                    )
+            shots_variable = qp_annealing.variable("num_shots", Domain.Scalar, int)
+
+            with qp_annealing.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
+                with qp_annealing.average(num_averages):
+                    for bus, waveform in annealing_waveforms.items():
+                        qp_annealing.play(bus=bus, waveform=waveform)
+                    qp_annealing.sync()
+                    if weights and calibration.has_weights(bus=readout_bus, name=weights):
+                        qp_annealing.measure(bus=readout_bus, waveform=measurement_name, weights=weights)
+                    else:
+                        r_duration = calibration.get_waveform(bus=readout_bus, name=measurement_name).get_duration()
+                        weights_shape = Square(amplitude=1, duration=r_duration)
+                        qp_annealing.measure(
+                            bus=readout_bus, waveform=measurement_name, weights=IQPair(I=weights_shape, Q=weights_shape)
+                        )
 
             return self.execute_qprogram(qprogram=qp_annealing, calibration=calibration)
         raise ValueError("The calibrated measurement is not present in the calibration file.")
