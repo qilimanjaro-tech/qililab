@@ -111,23 +111,32 @@ class TestCrosstalkMatrix:
     def test_str_method(self):
         """Test __str__ method"""
         crosstalk_matrix = CrosstalkMatrix()
+        crosstalk_matrix["bus1"]["bus1"] = -0.5
         crosstalk_matrix["bus1"]["bus2"] = 0.5
+        crosstalk_matrix["bus2"]["bus1"] = 0.7
+        crosstalk_matrix["bus2"]["bus2"] = -0.5
 
         string = str(crosstalk_matrix)
         assert (
             string
             == """            bus1     bus2
-bus1            \\      0.5
-bus2          1.0        \\"""
+bus1         -0.5      0.5
+bus2          0.7     -0.5"""
         )
 
     def test_repr_method(self):
         """Test __repr__ method"""
         crosstalk_matrix = CrosstalkMatrix()
+        crosstalk_matrix["bus1"]["bus1"] = -0.5
         crosstalk_matrix["bus1"]["bus2"] = 0.5
+        crosstalk_matrix["bus2"]["bus1"] = 0.7
+        crosstalk_matrix["bus2"]["bus2"] = -0.5
 
         representation = repr(crosstalk_matrix)
-        assert representation == "CrosstalkMatrix({'bus1': {'bus2': 0.5}})"
+        assert (
+            representation
+            == "CrosstalkMatrix({'bus1': {'bus1': -0.5, 'bus2': 0.5}, 'bus2': {'bus1': 0.7, 'bus2': -0.5}})"
+        )
 
     def test_from_buses_method(self):
         """Test from_buses class method"""
