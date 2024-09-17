@@ -642,7 +642,7 @@ class TestQuantumMachinesCluster:
     )
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    def test_get_parameter_of_bus_method(
+    def test_get_parameter_of_bus_method(  # noqa: C901
         self,
         mock_qmm,
         mock_qm,

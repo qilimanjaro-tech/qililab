@@ -416,7 +416,7 @@ class TestQuantumMachinesCompiler:
         qua_program, _, _ = compiler.compile(set_offset_operation)
 
         statements = qua_program._program.script.body.statements
-        assert len(statements) == 1
+        assert len(statements) == 2
 
         set_dc_offset = statements[0].set_dc_offset
         assert set_dc_offset.qe.name == "drive"
