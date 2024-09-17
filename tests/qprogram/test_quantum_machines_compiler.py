@@ -62,6 +62,22 @@ def fixture_set_frequency_operation() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="set_offset_operation")
+def fixture_set_offset_operation() -> QProgram:
+    qp = QProgram()
+    qp.set_offset(bus="drive", offset_path0=0.1, offset_path1=0.2)
+
+    return qp
+
+
+@pytest.fixture(name="set_dc_offset_operation")
+def fixture_set_dc_offset_operation() -> QProgram:
+    qp = QProgram()
+    qp.set_offset(bus="drive", offset_path0=0.1)
+
+    return qp
+
+
 @pytest.fixture(name="set_phase_operation")
 def fixture_set_phase_operation() -> QProgram:
     qp = QProgram()
@@ -394,6 +410,26 @@ class TestQuantumMachinesCompiler:
         assert update_frequency.qe.name == "drive"
         assert update_frequency.keep_phase is False
         assert float(update_frequency.value.literal.value) == 100e6
+
+    def test_set_offset_operation(self, set_offset_operation: QProgram):
+        compiler = QuantumMachinesCompiler()
+        qua_program, _, _ = compiler.compile(set_offset_operation)
+
+        statements = qua_program._program.script.body.statements
+        assert len(statements) == 1
+
+        set_dc_offset = statements[0].set_dc_offset
+        assert set_dc_offset.qe.name == "drive"
+
+    def test_set_dc_offset_operation(self, set_dc_offset_operation: QProgram):
+        compiler = QuantumMachinesCompiler()
+        qua_program, _, _ = compiler.compile(set_dc_offset_operation)
+
+        statements = qua_program._program.script.body.statements
+        assert len(statements) == 1
+
+        set_dc_offset = statements[0].set_dc_offset
+        assert set_dc_offset.qe.name == "drive"
 
     def test_set_phase_operation(self, set_phase_operation: QProgram):
         compiler = QuantumMachinesCompiler()

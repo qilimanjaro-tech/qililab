@@ -1739,6 +1739,7 @@ class SauronQuantumMachines:
                 "time_of_flight": 40,
                 "smearing": 10,
             },
+            {"bus": "flux_q0", "single_input": {"controller": "con1", "fem": 1, "port": 5}},
         ],
         "run_octave_calibration": True,
     }

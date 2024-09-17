@@ -397,6 +397,10 @@ class TestQuantumMachinesCluster:
             ("readout_q0_rf", Parameter.LO_FREQUENCY, 6e9),
             ("readout_q0_rf", Parameter.IF, 20e6),
             ("readout_q0_rf", Parameter.GAIN, 0.001),
+            ("readout_q0_rf", Parameter.OFFSET_I, 0.001),
+            ("drive_q0_rf", Parameter.OFFSET_Q, 0.001),
+            ("readout_q0_rf", Parameter.OFFSET_OUT1, 0.001),
+            ("readout_q0_rf", Parameter.OFFSET_OUT2, 0.001),
         ],
     )
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
@@ -428,6 +432,14 @@ class TestQuantumMachinesCluster:
             qmm_with_octave._qm.octave.set_rf_output_gain.assert_called_once()
         if parameter == Parameter.IF:
             qmm_with_octave._qm.set_intermediate_frequency.assert_called_once()
+        if parameter == Parameter.OFFSET_I:
+            qmm_with_octave._qm.set_output_dc_offset_by_element.assert_called_once()
+        if parameter == Parameter.OFFSET_Q:
+            qmm_with_octave._qm.set_output_dc_offset_by_element.assert_called_once()
+        if parameter == Parameter.OFFSET_OUT1:
+            qmm_with_octave._qm.set_input_dc_offset_by_element.assert_called_once()
+        if parameter == Parameter.OFFSET_OUT2:
+            qmm_with_octave._qm.set_input_dc_offset_by_element.assert_called_once()
 
         # Assert that the settings are still in synch:
         assert qmm_with_octave._config == qmm_with_octave.settings.to_qua_config()
@@ -438,6 +450,11 @@ class TestQuantumMachinesCluster:
             ("drive_q0", Parameter.IF, 20e6),
             ("readout_q0", Parameter.THRESHOLD_ROTATION, 0.5),
             ("readout_q0", Parameter.THRESHOLD, 0.01),
+            ("flux_q0", Parameter.DC_OFFSET, 0.001),
+            ("readout_q0", Parameter.OFFSET_I, 0.001),
+            ("drive_q0", Parameter.OFFSET_Q, 0.001),
+            ("readout_q0", Parameter.OFFSET_OUT1, 0.001),
+            ("readout_q0", Parameter.OFFSET_OUT2, 0.001),
         ],
     )
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
@@ -459,6 +476,17 @@ class TestQuantumMachinesCluster:
             assert value == element["threshold_rotation"]
         if parameter == Parameter.THRESHOLD:
             assert value == element["threshold"]
+        if parameter == Parameter.DC_OFFSET:
+            qmm._qm.set_output_dc_offset_by_element.assert_called_once()
+        if parameter == Parameter.OFFSET_I:
+            qmm._qm.set_output_dc_offset_by_element.assert_called_once()
+        if parameter == Parameter.OFFSET_Q:
+            qmm._qm.set_output_dc_offset_by_element.assert_called_once()
+        if parameter == Parameter.OFFSET_OUT1:
+            qmm._qm.set_input_dc_offset_by_element.assert_called_once()
+        if parameter == Parameter.OFFSET_OUT2:
+            qmm._qm.set_input_dc_offset_by_element.assert_called_once()
+
         # Assert that the settings are still in synch:
         assert qmm._config == qmm.settings.to_qua_config()
 
@@ -493,11 +521,16 @@ class TestQuantumMachinesCluster:
         "bus, parameter, value",
         [
             ("readout_q0_rf", Parameter.IF, 17e6),
+            ("flux_q0", Parameter.DC_OFFSET, 0.001),
+            ("readout_q0_rf", Parameter.OFFSET_I, 0.001),
+            ("drive_q0_rf", Parameter.OFFSET_Q, 0.001),
+            ("readout_q0_rf", Parameter.OFFSET_OUT1, 0.001),
+            ("readout_q0_rf", Parameter.OFFSET_OUT2, 0.001),
         ],
     )
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    def test_set_parameter_if_with_opx1000(
+    def test_set_parameter_with_opx1000(
         self,
         mock_qmm,
         mock_qm,
@@ -514,8 +547,19 @@ class TestQuantumMachinesCluster:
 
         qmm_with_opx1000.set_parameter_of_bus(bus, parameter, value)
 
-        ## Test `_intermediate_frequency[bus]` is created for later use:
-        assert qmm_with_opx1000._pending_set_intermediate_frequency[bus] == value
+        if parameter == Parameter.IF:
+            ## Test `_intermediate_frequency[bus]` is created for later use:
+            assert qmm_with_opx1000._pending_set_intermediate_frequency[bus] == value
+        if parameter == Parameter.DC_OFFSET:
+            qmm_with_opx1000._qm.set_output_dc_offset_by_element.assert_called_once()
+        if parameter == Parameter.OFFSET_I:
+            qmm_with_opx1000._qm.set_output_dc_offset_by_element.assert_called_once()
+        if parameter == Parameter.OFFSET_Q:
+            qmm_with_opx1000._qm.set_output_dc_offset_by_element.assert_called_once()
+        if parameter == Parameter.OFFSET_OUT1:
+            qmm_with_opx1000._qm.set_input_dc_offset_by_element.assert_called_once()
+        if parameter == Parameter.OFFSET_OUT2:
+            qmm_with_opx1000._qm.set_input_dc_offset_by_element.assert_called_once()
 
     @pytest.mark.parametrize(
         "bus, parameter, value",
@@ -589,6 +633,11 @@ class TestQuantumMachinesCluster:
             ("readout_q0", Parameter.SMEARING, "qmm"),
             ("readout_q0", Parameter.THRESHOLD_ROTATION, "qmm"),
             ("readout_q0", Parameter.THRESHOLD, "qmm"),
+            ("flux_q0", Parameter.DC_OFFSET, "qmm"),
+            ("readout_q0", Parameter.OFFSET_I, "qmm"),
+            ("drive_q0_rf", Parameter.OFFSET_Q, "qmm_with_octave"),
+            ("readout_q0", Parameter.OFFSET_OUT1, "qmm"),
+            ("readout_q0", Parameter.OFFSET_OUT2, "qmm"),
         ],
     )
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
@@ -643,6 +692,17 @@ class TestQuantumMachinesCluster:
         if parameter == Parameter.THRESHOLD:
             element = next((element for element in qmm.settings.elements if element["bus"] == bus), None)
             assert value == element.get("threshold", None)
+
+        if parameter == Parameter.DC_OFFSET:
+            assert value == settings_config_dict["controllers"]["con1"]["analog_outputs"][5]["offset"]
+        if parameter == Parameter.OFFSET_I:
+            assert value == settings_config_dict["controllers"]["con1"]["analog_outputs"][3]["offset"]
+        if parameter == Parameter.OFFSET_Q:
+            assert value == settings_config_dict["controllers"]["con1"]["analog_outputs"][2]["offset"]
+        if parameter == Parameter.OFFSET_OUT1:
+            assert value == settings_config_dict["controllers"]["con1"]["analog_inputs"][1]["offset"]
+        if parameter == Parameter.OFFSET_OUT2:
+            assert value == settings_config_dict["controllers"]["con1"]["analog_inputs"][2]["offset"]
 
         # Assert that the settings are in synch:
         assert qmm._config_created is False and "_config" not in dir(qmm)
