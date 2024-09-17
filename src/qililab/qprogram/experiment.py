@@ -27,7 +27,7 @@ class Experiment(StructuredProgram):
     This class allows setting platform parameters and executing quantum programs.
     """
 
-    def set_parameter(self, alias: str, parameter: Parameter, value: int | float | int):
+    def set_parameter(self, alias: str, parameter: Parameter, value: int | float | int, channel_id: int | None = None):
         """Set a platform parameter.
 
         Appends a SetParameter operation to the active block of the experiment.
@@ -37,7 +37,7 @@ class Experiment(StructuredProgram):
             parameter (Parameter): The parameter to set.
             value (int | float): The value to set for the parameter.
         """
-        operation = SetParameter(alias=alias, parameter=parameter, value=value)
+        operation = SetParameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
         self._active_block.append(operation)
 
     def execute_qprogram(
