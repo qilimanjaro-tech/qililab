@@ -738,7 +738,7 @@ class QuantumMachinesCluster(Instrument):
 
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}.")
 
-    def get_parameter_of_bus(self, bus: str, parameter: Parameter) -> float | str | bool | tuple:
+    def get_parameter_of_bus(self, bus: str, parameter: Parameter) -> float | str | bool | tuple:  # noqa: C901
         """Gets the value of a parameter.
 
         Args:
