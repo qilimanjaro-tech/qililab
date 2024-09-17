@@ -545,8 +545,8 @@ class QuantumMachinesCluster(Instrument):
 
         elif "mix_inputs" in element:
             con_name = element["mix_inputs"][key]["controller"]
-            con_port = element["mix_inputs"][key]["fem"]
-            con_fem = element["mix_inputs"][key]["port"] if "fem" in element["mix_inputs"][key] else None
+            con_port = element["mix_inputs"][key]["port"]
+            con_fem = element["mix_inputs"][key]["fem"] if "fem" in element["mix_inputs"][key] else None
 
         elif "single_input" in element:
             con_name = element["single_input"]["controller"]
