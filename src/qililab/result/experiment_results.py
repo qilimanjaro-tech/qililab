@@ -266,7 +266,7 @@ class ExperimentResultsWriter(ExperimentResults):
                     mloop_group = mgroup.create_group(ExperimentResults.VARIABLES_PATH)
 
                     # Write shots of measurement
-                    mloop_group["shots"] = measurement_data["shots"]
+                    mgroup["shots"] = measurement_data["shots"]
 
                     # Write variables that measurement depends upon (hardware loops)
                     for variable in measurement_data["variables"]:
