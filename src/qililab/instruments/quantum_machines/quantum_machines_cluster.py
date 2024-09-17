@@ -730,6 +730,7 @@ class QuantumMachinesCluster(Instrument):
         # Just in case, read from the `settings`, even though in theory the config should always be synch:
         settings_config_dict = self.settings.to_qua_config()
         config_keys = settings_config_dict["elements"][bus]
+        element = next((element for element in self.settings.elements if element["bus"] == bus), None)
 
         if parameter == Parameter.LO_FREQUENCY:
             if "mixInputs" in config_keys:
@@ -769,15 +770,35 @@ class QuantumMachinesCluster(Instrument):
             if parameter == Parameter.THRESHOLD:
                 return element.get("threshold", None)  # type: ignore
 
+        if parameter == Parameter.DC_OFFSET:
+            con_name, con_port, con_fem = self.get_controller_from_element(element = element, key = None)
+            if con_fem is None:
+                return settings_config_dict["controllers"][con_name]["analog_outputs"][con_port]["offset"]
+            else:
+                return settings_config_dict["controllers"][con_name]["fems"][con_fem]["analog_outputs"][con_port]["offset"]
+
         if parameter in [Parameter.OFFSET_I, Parameter.OFFSET_Q]:
+            key = "I" if parameter in Parameter.OFFSET_I else "Q"
+            con_name, con_port, con_fem = self.get_controller_from_element(element = element, key = key)
             if self._is_connected_to_qm:
-                input = "I" if parameter in Parameter.OFFSET_I else "Q"
-                return self._qm.get_output_dc_offset_by_element(element=bus, iq_input= input)
+                return self._qm.get_output_dc_offset_by_element(element=bus, iq_input= key)
+            else:
+                if con_fem is None:
+                    return settings_config_dict["controllers"][con_name]["analog_outputs"][con_port]["offset"]
+                else:
+                    return settings_config_dict["controllers"][con_name]["fems"][con_fem]["analog_outputs"][con_port]["offset"]
 
         if parameter in [Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2]:
+            output = "out1" if parameter in Parameter.OFFSET_OUT1 else "out2"
+            out_value = 1 if output=="out1" else 2
+            con_name, _, con_fem = self.get_controller_from_element(element = element, key = "I")
             if self._is_connected_to_qm:
-                output = "out1" if parameter in Parameter.OFFSET_OUT1 else "out2"
                 return self._qm.get_input_dc_offset_by_element(element=bus, output= output)
+            else:
+                if con_fem is None:
+                    return settings_config_dict["controllers"][con_name]["analog_inputs"][out_value]["offset"]
+                else:
+                    return settings_config_dict["controllers"][con_name]["fems"][con_fem]["analog_inputs"][out_value]["offset"]
 
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
