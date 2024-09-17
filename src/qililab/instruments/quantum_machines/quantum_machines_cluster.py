@@ -508,7 +508,7 @@ class QuantumMachinesCluster(Instrument):
                 return controller["type"] if "type" in controller else "opx1"
         raise AttributeError(f"Controller with bus {bus} does not exist")
 
-    def get_controller_from_bus(self, element: dict, key: str | None) -> tuple[str, int, int | None]:
+    def get_controller_from_element(self, element: dict, key: str | None) -> tuple[str, int, int | None]:
         """Get controller name, port and FEM (if applicable) from element
 
         Args:
@@ -531,10 +531,17 @@ class QuantumMachinesCluster(Instrument):
                 (octave_port for octave_port in octave["rf_outputs"] if octave_port["port"] == out_oct_port), None
             )
 
-            connection = "i_connection" if key == "I" else "q_connection"
-            con_name = octave_port[connection]["controller"]
-            con_port = octave_port[connection]["port"]
-            con_fem = octave_port[connection]["fem"] if "fem" in octave_port[connection] else None
+            controller_type = self.get_controller_type_from_bus(element["bus"])
+
+            if controller_type == "opx1000":
+                connection = "i_connection" if key == "I" else "q_connection"
+                con_name = octave_port[connection]["controller"]
+                con_port = octave_port[connection]["port"]
+                con_fem = octave_port[connection]["fem"] if "fem" in octave_port[connection] else None
+            elif controller_type == "opx1":
+                con_name = octave["controller"]
+                con_port = octave_port["port"]*2 - 1 if key == "I" else octave_port["port"]*2
+                con_fem = None
 
         elif "mix_inputs" in element:
             con_name = element["mix_inputs"][key]["controller"]
@@ -637,11 +644,20 @@ class QuantumMachinesCluster(Instrument):
             return
 
         if parameter == Parameter.DC_OFFSET:
-            con_name, con_port, con_fem = self.get_controller_from_bus(element = element, key = None)
+            con_name, con_port, con_fem = self.get_controller_from_element(element = element, key = None)
             dc_offset = float(value)
-            # settings_octave_rf_output["gain"] = gain_in_db
+            settings_controllers = next(controller for controller in self.settings.controllers if controller["name"] == con_name)
+            if con_fem is None:
+                settings_offset = next(
+                    analog_output for analog_output in settings_controllers["analog_outputs"] if analog_output["port"] == con_port
+                )
+            else:
+                settings_offset = next(
+                    analog_output for analog_output in settings_controllers["fems"][con_fem]["analog_outputs"] if analog_output["port"] == con_port
+                )
+            settings_offset["offset"] = dc_offset
             if self._config_created:
-                if con_fem is not None:
+                if con_fem is None:
                     self._config["controllers"][con_name]["analog_outputs"][con_port]["offset"] = dc_offset
                 else:
                     self._config["controllers"][con_name]["fems"][con_fem]["analog_outputs"][con_port]["offset"] = dc_offset
@@ -651,21 +667,48 @@ class QuantumMachinesCluster(Instrument):
 
         if parameter in [Parameter.OFFSET_I, Parameter.OFFSET_Q]:
             key = "I" if parameter in Parameter.OFFSET_I else "Q"
-            con_name, con_port, con_fem = self.get_controller_from_bus(element = element, key = key)
+            con_name, con_port, con_fem = self.get_controller_from_element(element = element, key = key)
             input_offset = float(value)
+            settings_controllers = next(controller for controller in self.settings.controllers if controller["name"] == con_name)
+            if con_fem is None:
+                settings_offset = next(
+                    analog_output for analog_output in settings_controllers["analog_outputs"] if analog_output["port"] == con_port
+                )
+            else:
+                settings_offset = next(
+                    analog_output for analog_output in settings_controllers["fems"][con_fem]["analog_outputs"] if analog_output["port"] == con_port
+                )
+            settings_offset["offset"] = input_offset
             if self._config_created:
-                if con_fem is not None:
-                    self._config["controllers"][con_name]["analog_outputs"][con_port]["offset"] = dc_offset
+                if con_fem is None:
+                    self._config["controllers"][con_name]["analog_outputs"][con_port]["offset"] = input_offset
                 else:
-                    self._config["controllers"][con_name]["fems"][con_fem]["analog_outputs"][con_port]["offset"] = dc_offset
+                    self._config["controllers"][con_name]["fems"][con_fem]["analog_outputs"][con_port]["offset"] = input_offset
             if self._is_connected_to_qm:
                 self._qm.set_output_dc_offset_by_element(element=bus, input= key, offset=input_offset)
             return
 
         if parameter in [Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2]:
+            output = "out1" if parameter in Parameter.OFFSET_OUT1 else "out2"
+            out_value = 1 if output=="out1" else 2
+            con_name, _, con_fem = self.get_controller_from_element(element = element, key = "I")
             output_offset = float(value)
+            settings_controllers = next(controller for controller in self.settings.controllers if controller["name"] == con_name)
+            if con_fem is None:
+                settings_offset = next(
+                    analog_output for analog_output in settings_controllers["analog_inputs"] if analog_output["port"] == out_value
+                )
+            else:
+                settings_offset = next(
+                    analog_output for analog_output in settings_controllers["fems"][con_fem]["analog_inputs"] if analog_output["port"] == out_value
+                )
+            settings_offset["offset"] = output_offset
+            if self._config_created:
+                if con_fem is None:
+                    self._config["controllers"][con_name]["analog_inputs"][out_value]["offset"] = output_offset
+                else:
+                    self._config["controllers"][con_name]["fems"][con_fem]["analog_inputs"][out_value]["offset"] = output_offset
             if self._is_connected_to_qm:
-                output = "out1" if parameter in Parameter.OFFSET_OUT1 else "out2"
                 self._qm.set_input_dc_offset_by_element(element=bus, output= output, offset=output_offset)
             return
 
