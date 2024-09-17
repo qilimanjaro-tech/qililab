@@ -118,7 +118,7 @@ class TestAnnealingProgram:
 
     def test_get_waveforms(self, annealing_program_transpiled):
         """Test get waveforms method works as intended"""
-        anneal_waveforms = annealing_program_transpiled.get_waveforms()
+        anneal_waveforms = annealing_program_transpiled.get_waveforms(minimum_clock_time=1)
         transpiled_program = annealing_program_transpiled._transpiled_program
 
         phix_q0_waveform = (

@@ -694,7 +694,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             crosstalk_matrix = (
                 calibration.crosstalk_matrix.inverse() if calibration.crosstalk_matrix is not None else None
             )
-            annealing_waveforms = annealing_program.get_waveforms(crosstalk_matrix=crosstalk_matrix)
+            annealing_waveforms = annealing_program.get_waveforms(
+                crosstalk_matrix=crosstalk_matrix, minimum_clock_time=self.gates_settings.minimum_clock_time
+            )
 
             qp_annealing = QProgram()
             shots_variable = qp_annealing.variable("num_shots", Domain.Scalar, int)
