@@ -116,7 +116,7 @@ class AnnealingProgram:
             padded_ns = 4 - len(self._transpiled_program) % 4 if len(self._transpiled_program) % 4 != 0 else 0
 
         # Initialize annealing waveforms
-        annealing_waveforms = {bus: padded_ns * [0.] for bus in bus_to_flux_map}  # type: ignore[var-annotated]
+        annealing_waveforms = {bus: padded_ns * [0.0] for bus in bus_to_flux_map}  # type: ignore[var-annotated]
 
         # unravel each point of the anneal program to get timewise arrays of waveforms
         for annealing_step in self._transpiled_program:
