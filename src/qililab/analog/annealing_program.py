@@ -88,7 +88,7 @@ class AnnealingProgram:
         )
 
     def get_waveforms(
-        self, crosstalk_matrix: CrosstalkMatrix | None = None, minimum_clock_time: int | None = None
+        self, crosstalk_matrix: CrosstalkMatrix | None = None, minimum_clock_time: int =1
     ) -> dict[str, ArbitraryWave]:
         """Returns a dictionary containing (bus, waveform) for each flux control from the transpiled fluxes. `AnnealingProgram.transpile` should be run first. The waveform is an arbitrary waveform obtained from the transpiled fluxes.
 
