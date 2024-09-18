@@ -317,7 +317,7 @@ class TestQuantumMachinesCluster:
         element = next((element for element in qmm.settings.elements if element["bus"] == "readout_q0"), None)
 
         with pytest.raises(
-            AttributeError,
+            ValueError,
             match=re.escape("key value must be I or Q, O given"),
         ):
             qmm.get_controller_from_element(element=element, key="O")
