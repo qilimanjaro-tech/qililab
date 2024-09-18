@@ -724,7 +724,7 @@ class QuantumMachinesCluster(Instrument):
                 settings_offset = next(
                     analog_output
                     for analog_output in settings_fem["analog_inputs"]
-                    if analog_output["port"] == con_port
+                    if analog_output["port"] == out_value
                 )
             settings_offset["offset"] = output_offset
             if self._config_created:
