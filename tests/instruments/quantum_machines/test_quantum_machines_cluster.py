@@ -724,6 +724,47 @@ class TestQuantumMachinesCluster:
         # Assert that the settings are in synch:
         assert qmm._config_created is False and "_config" not in dir(qmm)
 
+    @pytest.mark.parametrize(
+        "bus, parameter, qmm_name",
+        [
+            ("flux_q0", Parameter.DC_OFFSET, "qmm_with_opx1000"),
+            ("readout_q0_rf", Parameter.OFFSET_I, "qmm_with_opx1000"),
+            ("drive_q0_rf", Parameter.OFFSET_Q, "qmm_with_opx1000"),
+            ("readout_q0_rf", Parameter.OFFSET_OUT1, "qmm_with_opx1000"),
+            ("readout_q0_rf", Parameter.OFFSET_OUT2, "qmm_with_opx1000"),
+        ],
+    )
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    def test_get_parameter_of_bus_method_opx1000(  # noqa: C901
+        self,
+        mock_qmm,
+        mock_qm,
+        bus: str,
+        parameter: Parameter,
+        qmm_name: QuantumMachinesCluster,
+        request,
+    ):
+        """Test the setup method with float value"""
+        qmm = request.getfixturevalue(qmm_name)
+        value = qmm.get_parameter_of_bus(bus, parameter)
+
+        settings_config_dict = qmm.settings.to_qua_config()
+
+        if parameter == Parameter.DC_OFFSET:
+            assert value == settings_config_dict["controllers"]["con1"]["fems"][1]["analog_outputs"][5]["offset"]
+        if parameter == Parameter.OFFSET_I:
+            assert value == settings_config_dict["controllers"]["con1"]["fems"][1]["analog_outputs"][3]["offset"]
+        if parameter == Parameter.OFFSET_Q:
+            assert value == settings_config_dict["controllers"]["con1"]["fems"][1]["analog_outputs"][2]["offset"]
+        if parameter == Parameter.OFFSET_OUT1:
+            assert value == settings_config_dict["controllers"]["con1"]["fems"][1]["analog_inputs"][1]["offset"]
+        if parameter == Parameter.OFFSET_OUT2:
+            assert value == settings_config_dict["controllers"]["con1"]["fems"][1]["analog_inputs"][2]["offset"]
+
+        # Assert that the settings are in synch:
+        assert qmm._config_created is False and "_config" not in dir(qmm)
+
     @pytest.mark.parametrize("parameter", [(Parameter.MAX_CURRENT), (Parameter.OUT0_ATT)])
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
