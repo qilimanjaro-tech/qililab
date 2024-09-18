@@ -456,8 +456,8 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             (
                 duration / int(self.WAIT_COEFF)  # type: ignore[arg-type]
                 if isinstance(element.duration, Variable)
-                else int(duration / self.WAIT_COEFF)
-            ),  # type: ignore[arg-type]
+                else int(duration / self.WAIT_COEFF)  # type: ignore[arg-type]
+            ),
             element.bus,
         )
 
