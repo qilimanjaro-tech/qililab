@@ -535,13 +535,13 @@ class QuantumMachinesCluster(Instrument):
 
             controller_type = self.get_controller_type_from_bus(element["bus"])
 
-            if controller_type == "opx1000":
-                connection = "i_connection" if key == "I" else "q_connection"
+            connection = "i_connection" if key == "I" else "q_connection"
+            if connection in octave_port:
                 con_name = octave_port[connection]["controller"]
                 con_port = octave_port[connection]["port"]
                 con_fem = octave_port[connection]["fem"] if "fem" in octave_port[connection] else None
-            elif controller_type == "opx1":
-                con_name = octave["controller"]
+            else:
+                con_name = octave["connectivity"]["controller"]
                 con_port = octave_port["port"] * 2 - 1 if key == "I" else octave_port["port"] * 2
                 con_fem = None
 
