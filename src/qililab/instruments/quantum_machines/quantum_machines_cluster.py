@@ -521,8 +521,6 @@ class QuantumMachinesCluster(Instrument):
         """
         if ("rf_inputs" in element or "mix_inputs" in element) and key not in ["I", "Q"]:
             raise ValueError(f"key value must be I or Q, {key} given")
-        if key is None and ("rf_inputs" in element or "mix_inputs" in element):
-            raise ValueError("DC_OFFSET requires single input for flux lines")
         if "rf_inputs" in element:
             octave_name = element["rf_inputs"]["octave"]
             out_oct_port = element["rf_inputs"]["port"]

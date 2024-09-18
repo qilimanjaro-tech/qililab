@@ -307,6 +307,23 @@ class TestQuantumMachinesCluster:
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    def test_get_controller_from_element_wrong_key_raises_error(
+        self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, compilation_config: dict
+    ):
+        """Test get_controller_type_from_bus method raises an error when no controller is inside bus."""
+        qmm.initial_setup()
+        qmm.turn_on()
+
+        element = next((element for element in qmm.settings.elements if element["bus"] == "readout_q0"), None)
+
+        with pytest.raises(
+            AttributeError,
+            match=re.escape("key value must be I or Q, O given"),
+        ):
+            qmm.get_controller_from_element(element=element, key="O")
+
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
     def test_compile(self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, qua_program: Program):
         qmm.initial_setup()
         qmm.turn_on()
