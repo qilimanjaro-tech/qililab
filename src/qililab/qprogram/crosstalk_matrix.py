@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Collection
-
 import numpy as np
 
 from qililab.yaml import yaml
@@ -86,7 +84,7 @@ class CrosstalkMatrix:
             CrosstalkMatrix: inverse crosstalk matrix
         """
         inverse_xtalk_array = np.linalg.inv(self.to_array())
-        return self.from_array(set(self.matrix.keys()), inverse_xtalk_array)
+        return self.from_array(list(self.matrix.keys()), inverse_xtalk_array)
 
     def __matmul__(self, flux: FluxVector) -> FluxVector:
         """Matrix multiplication for flux correction. Corrects a flux vector using the inverse crosstalk matrix
@@ -157,14 +155,14 @@ class CrosstalkMatrix:
         return header + "\n".join(rows)
 
     @classmethod
-    def from_array(cls, buses: Collection[str], matrix_array: np.ndarray) -> "CrosstalkMatrix":
+    def from_array(cls, buses: list[str], matrix_array: np.ndarray) -> "CrosstalkMatrix":
         """Creates crosstalk matrix from an array and corresponding set of buses. For a set of buses
         [bus1,bus2,...,busN] the corresponding matrix should have the same indices for rows and columns
         i.e. for the set of buses [bus1,bus2,...,busN], matrix[0,0] will be the coefficient for bus1[bus1],
         matrix[0,1] will be bus1[bus2], etc.
 
         Args:
-            buses (Sequence[str]): sequence of buses for the crosstalk matrix
+            buses (list[str]): ordered list of buses for the crosstalk matrix
             matrix_array (np.ndarray): crosstalk matrix numpy array
 
         Returns:
