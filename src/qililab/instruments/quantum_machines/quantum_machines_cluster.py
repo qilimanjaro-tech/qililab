@@ -495,15 +495,14 @@ class QuantumMachinesCluster(Instrument):
         Returns:
             str | None: Alias of the controller, either opx1 or opx1000.
         """
-        settings_config_dict = self.settings.to_qua_config()
 
-        if "RF_inputs" in settings_config_dict["elements"][bus]:
-            octave = settings_config_dict["elements"][bus]["RF_inputs"]["port"][0]
-            controller_name = settings_config_dict["octaves"][octave]["connectivity"]
-        elif "mixInputs" in settings_config_dict["elements"][bus]:
-            controller_name = settings_config_dict["elements"][bus]["mixInputs"]["I"][0]
-        elif "singleInput" in settings_config_dict["elements"][bus]:
-            controller_name = settings_config_dict["elements"][bus]["singleInput"]["port"][0]
+        if "RF_inputs" in self._config["elements"][bus]:
+            octave = self._config["elements"][bus]["RF_inputs"]["port"][0]
+            controller_name = self._config["octaves"][octave]["connectivity"]
+        elif "mixInputs" in self._config["elements"][bus]:
+            controller_name = self._config["elements"][bus]["mixInputs"]["I"][0]
+        elif "singleInput" in self._config["elements"][bus]:
+            controller_name = self._config["elements"][bus]["singleInput"]["port"][0]
 
         for controller in self.settings.controllers:
             if controller["name"] == controller_name:
@@ -532,8 +531,6 @@ class QuantumMachinesCluster(Instrument):
             octave_port = next(
                 (octave_port for octave_port in octave["rf_outputs"] if octave_port["port"] == out_oct_port), None
             )
-
-            controller_type = self.get_controller_type_from_bus(element["bus"])
 
             connection = "i_connection" if key == "I" else "q_connection"
             if connection in octave_port:
@@ -658,9 +655,10 @@ class QuantumMachinesCluster(Instrument):
                     if analog_output["port"] == con_port
                 )
             else:
+                settings_fem = next(fem for fem in settings_controllers["fems"] if fem["fem"] == con_fem)
                 settings_offset = next(
                     analog_output
-                    for analog_output in settings_controllers["fems"][con_fem]["analog_outputs"]
+                    for analog_output in settings_fem["analog_outputs"]
                     if analog_output["port"] == con_port
                 )
             settings_offset["offset"] = dc_offset
@@ -689,9 +687,10 @@ class QuantumMachinesCluster(Instrument):
                     if analog_output["port"] == con_port
                 )
             else:
+                settings_fem = next(fem for fem in settings_controllers["fems"] if fem["fem"] == con_fem)
                 settings_offset = next(
                     analog_output
-                    for analog_output in settings_controllers["fems"][con_fem]["analog_outputs"]
+                    for analog_output in settings_fem["analog_outputs"]
                     if analog_output["port"] == con_port
                 )
             settings_offset["offset"] = input_offset
@@ -721,10 +720,11 @@ class QuantumMachinesCluster(Instrument):
                     if analog_output["port"] == out_value
                 )
             else:
+                settings_fem = next(fem for fem in settings_controllers["fems"] if fem["fem"] == con_fem)
                 settings_offset = next(
                     analog_output
-                    for analog_output in settings_controllers["fems"][con_fem]["analog_inputs"]
-                    if analog_output["port"] == out_value
+                    for analog_output in settings_fem["analog_inputs"]
+                    if analog_output["port"] == con_port
                 )
             settings_offset["offset"] = output_offset
             if self._config_created:
