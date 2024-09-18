@@ -19,11 +19,10 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 import numpy as np
+
 import qpysequence as QPy
 import qpysequence.program as QPyProgram
 import qpysequence.program.instructions as QPyInstructions
-from qpysequence.utils.constants import INST_MAX_WAIT
-
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
@@ -43,6 +42,7 @@ from qililab.qprogram.operations import (
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable import Variable
 from qililab.waveforms import IQPair, Waveform
+from qpysequence.utils.constants import INST_MAX_WAIT
 
 
 @dataclass
@@ -396,7 +396,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             else convert(element.offset_path0)
         )
         offset_1 = (
-            self._buses[element.bus].variable_to_register[element.offset_path1]
+            self._buses[element.bus].variable_to_register[element.offset_path1]  # type: ignore[index]
             if isinstance(element.offset_path1, Variable)
             else convert(element.offset_path1)
         )

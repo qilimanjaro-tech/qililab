@@ -529,17 +529,17 @@ class QuantumMachinesCluster(Instrument):
 
             octave = next((octave for octave in self.settings.octaves if octave["name"] == octave_name), None)
             octave_port = next(
-                (octave_port for octave_port in octave["rf_outputs"] if octave_port["port"] == out_oct_port), None
+                (octave_port for octave_port in octave["rf_outputs"] if octave_port["port"] == out_oct_port), None  # type: ignore[index]
             )
 
             connection = "i_connection" if key == "I" else "q_connection"
-            if connection in octave_port:
-                con_name = octave_port[connection]["controller"]
-                con_port = octave_port[connection]["port"]
-                con_fem = octave_port[connection]["fem"] if "fem" in octave_port[connection] else None
+            if connection in octave_port:  # type: ignore[operator]
+                con_name = octave_port[connection]["controller"]  # type: ignore[index]
+                con_port = octave_port[connection]["port"]  # type: ignore[index]
+                con_fem = octave_port[connection]["fem"] if "fem" in octave_port[connection] else None  # type: ignore[index]
             else:
-                con_name = octave["connectivity"]["controller"]
-                con_port = octave_port["port"] * 2 - 1 if key == "I" else octave_port["port"] * 2
+                con_name = octave["connectivity"]["controller"]  # type: ignore[index]
+                con_port = octave_port["port"] * 2 - 1 if key == "I" else octave_port["port"] * 2  # type: ignore[index]
                 con_fem = None
 
         elif "mix_inputs" in element:
@@ -664,10 +664,10 @@ class QuantumMachinesCluster(Instrument):
             settings_offset["offset"] = dc_offset
             if self._config_created:
                 if con_fem is None:
-                    self._config["controllers"][con_name]["analog_outputs"][con_port]["offset"] = dc_offset
+                    self._config["controllers"][con_name]["analog_outputs"][con_port]["offset"] = dc_offset  # type: ignore[typeddict-item]
                 else:
-                    self._config["controllers"][con_name]["fems"][con_fem]["analog_outputs"][con_port][
-                        "offset"
+                    self._config["controllers"][con_name]["fems"][con_fem]["analog_outputs"][con_port][  # type: ignore[typeddict-item]
+                        "offset"  # type: ignore[typeddict-unknown-key]
                     ] = dc_offset
             if self._is_connected_to_qm:
                 self._qm.set_output_dc_offset_by_element(element=bus, input="single", offset=dc_offset)
@@ -696,10 +696,10 @@ class QuantumMachinesCluster(Instrument):
             settings_offset["offset"] = input_offset
             if self._config_created:
                 if con_fem is None:
-                    self._config["controllers"][con_name]["analog_outputs"][con_port]["offset"] = input_offset
+                    self._config["controllers"][con_name]["analog_outputs"][con_port]["offset"] = input_offset  # type: ignore[typeddict-item]
                 else:
-                    self._config["controllers"][con_name]["fems"][con_fem]["analog_outputs"][con_port][
-                        "offset"
+                    self._config["controllers"][con_name]["fems"][con_fem]["analog_outputs"][con_port][  # type: ignore[typeddict-item]
+                        "offset"  # type: ignore[typeddict-unknown-key]
                     ] = input_offset
             if self._is_connected_to_qm:
                 self._qm.set_output_dc_offset_by_element(element=bus, input=key, offset=input_offset)
@@ -729,10 +729,10 @@ class QuantumMachinesCluster(Instrument):
             settings_offset["offset"] = output_offset
             if self._config_created:
                 if con_fem is None:
-                    self._config["controllers"][con_name]["analog_inputs"][out_value]["offset"] = output_offset
+                    self._config["controllers"][con_name]["analog_inputs"][out_value]["offset"] = output_offset  # type: ignore[typeddict-item]
                 else:
-                    self._config["controllers"][con_name]["fems"][con_fem]["analog_inputs"][out_value][
-                        "offset"
+                    self._config["controllers"][con_name]["fems"][con_fem]["analog_inputs"][out_value][  # type: ignore[typeddict-item]
+                        "offset"  # type: ignore[typeddict-unknown-key]
                     ] = output_offset
             if self._is_connected_to_qm:
                 self._qm.set_input_dc_offset_by_element(element=bus, output=output, offset=output_offset)
@@ -799,8 +799,8 @@ class QuantumMachinesCluster(Instrument):
         if parameter == Parameter.DC_OFFSET:
             con_name, con_port, con_fem = self.get_controller_from_element(element=element, key=None)  # type: ignore[arg-type]
             if con_fem is None:
-                return settings_config_dict["controllers"][con_name]["analog_outputs"][con_port]["offset"]
-            return settings_config_dict["controllers"][con_name]["fems"][con_fem]["analog_outputs"][con_port]["offset"]
+                return settings_config_dict["controllers"][con_name]["analog_outputs"][con_port]["offset"]  # type: ignore[typeddict-item]
+            return settings_config_dict["controllers"][con_name]["fems"][con_fem]["analog_outputs"][con_port]["offset"]  # type: ignore[typeddict-item]
 
         if parameter in [Parameter.OFFSET_I, Parameter.OFFSET_Q]:
             key = "I" if parameter in Parameter.OFFSET_I else "Q"
@@ -808,8 +808,8 @@ class QuantumMachinesCluster(Instrument):
             if self._is_connected_to_qm:
                 return self._qm.get_output_dc_offset_by_element(element=bus, iq_input=key)
             if con_fem is None:
-                return settings_config_dict["controllers"][con_name]["analog_outputs"][con_port]["offset"]
-            return settings_config_dict["controllers"][con_name]["fems"][con_fem]["analog_outputs"][con_port]["offset"]
+                return settings_config_dict["controllers"][con_name]["analog_outputs"][con_port]["offset"]  # type: ignore[typeddict-item]
+            return settings_config_dict["controllers"][con_name]["fems"][con_fem]["analog_outputs"][con_port]["offset"]  # type: ignore[typeddict-item]
 
         if parameter in [Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2]:
             output = "out1" if parameter in Parameter.OFFSET_OUT1 else "out2"
@@ -818,8 +818,8 @@ class QuantumMachinesCluster(Instrument):
             if self._is_connected_to_qm:
                 return self._qm.get_input_dc_offset_by_element(element=bus, output=output)
             if con_fem is None:
-                return settings_config_dict["controllers"][con_name]["analog_inputs"][out_value]["offset"]
-            return settings_config_dict["controllers"][con_name]["fems"][con_fem]["analog_inputs"][out_value]["offset"]
+                return settings_config_dict["controllers"][con_name]["analog_inputs"][out_value]["offset"]  # type: ignore[typeddict-item]
+            return settings_config_dict["controllers"][con_name]["fems"][con_fem]["analog_inputs"][out_value]["offset"]  # type: ignore[typeddict-item]
 
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
