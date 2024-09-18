@@ -1557,6 +1557,7 @@ class SauronQuantumMachines:
             {
                 "name": "octave1",
                 "port": 11555,
+                "controller": "con1",
                 "connectivity": {"controller": "con1"},
                 "loopbacks": {"Synth": "Synth2", "Dmd": "Dmd2LO"},
                 "rf_outputs": [
@@ -1710,6 +1711,7 @@ class SauronQuantumMachines:
             {
                 "name": "octave1",
                 "port": 11555,
+                "controller": "con1",
                 "connectivity": {"controller": "con1", "fem": 1},
                 "loopbacks": {"Synth": "Synth2", "Dmd": "Dmd2LO"},
                 "rf_outputs": [
