@@ -78,7 +78,7 @@ def fixture_experiment(qprogram: QProgram):
 class TestExperimentExecutor:
     def test_execute(self, platform, experiment, qprogram):
         """Test the execute method to ensure the experiment is executed correctly and results are stored."""
-        executor = ExperimentExecutor(platform=platform, experiment=experiment, results_path="/tmp/")
+        executor = ExperimentExecutor(platform=platform, experiment=experiment, base_data_path="/tmp/")
         path = executor.execute()
 
         # Check if the correct file path is returned

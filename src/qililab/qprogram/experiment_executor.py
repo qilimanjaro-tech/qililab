@@ -39,10 +39,10 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
     in case of interruptions during the experiment.
     """
 
-    def __init__(self, platform: "Platform", experiment: Experiment, results_path: str):
+    def __init__(self, platform: "Platform", experiment: Experiment, base_data_path: str):
         self.platform = platform
         self.experiment = experiment
-        self.results_path = results_path
+        self.base_data_path = base_data_path
         self.task_ids: dict = {}
         self.stored_operations: list[Callable[[], Any]] = []
 
@@ -385,7 +385,7 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
             str: The path to the file where the results are stored.
         """
         # Create file path to store results
-        path = self._create_results_path(self.results_path, "data.h5")
+        path = self._create_results_path(self.base_data_path, "data.h5")
 
         # Prepare the results metadata
         self._prepare_metadata()
