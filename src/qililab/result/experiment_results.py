@@ -17,16 +17,31 @@ from typing import Any, TypedDict
 
 import h5py
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 import numpy as np
 
 
 class VariableMetadata(TypedDict):
+    """Metadata for a variable used in the experiment.
+
+    Attributes:
+        label (str): The label of the variable.
+        values (np.ndarray): The array of values for the variable.
+    """
+
     label: str
     values: np.ndarray
 
 
 class MeasurementMetadata(TypedDict):
+    """Metadata for a measurement in the experiment.
+
+    Attributes:
+        variables (list[VariableMetadata]): List of variables for the measurement.
+        dims (list[list[str]]): Dimensions of the measurement data.
+        shape (tuple[int, ...]): Shape of the measurement data.
+        shots (int): Number of shots taken for the measurement.
+    """
+
     variables: list[VariableMetadata]
     dims: list[list[str]]
     shape: tuple[int, ...]
@@ -34,12 +49,30 @@ class MeasurementMetadata(TypedDict):
 
 
 class QProgramMetadata(TypedDict):
+    """Metadata for a quantum program.
+
+    Attributes:
+        variables (dict[str, np.ndarray]): Variables that the QProgram depends upon.
+        dims (list[list[str]]): Dimensions of the QProgram data.
+        measurements (dict[str, MeasurementMetadata]): Measurements associated with the QProgram.
+    """
+
     variables: dict[str, np.ndarray]
     dims: list[list[str]]
     measurements: dict[str, MeasurementMetadata]
 
 
 class ExperimentMetadata(TypedDict, total=False):
+    """Metadata for an experiment.
+
+    Attributes:
+        platform (str): Platform information.
+        experiment (str): Experiment description.
+        executed_at (datetime): Timestamp when the experiment started execution.
+        execution_time (float): Time taken for the execution in seconds.
+        qprograms (dict[str, QProgramMetadata]): Quantum programs included in the experiment.
+    """
+
     platform: str
     experiment: str
     executed_at: datetime
@@ -48,7 +81,7 @@ class ExperimentMetadata(TypedDict, total=False):
 
 
 class ExperimentResults:
-    """Manages reading of experiment results from an HDF5 file."""
+    """Provides methods to access the experiment results stored in an HDF5 file."""
 
     QPROGRAMS_PATH = "qprograms"
     MEASUREMENTS_PATH = "measurements"
@@ -60,6 +93,11 @@ class ExperimentResults:
     EXECUTION_TIME_PATH = "execution_time"
 
     def __init__(self, path: str):
+        """Initializes the ExperimentResults instance.
+
+        Args:
+            path (str): The file path to the HDF5 results file.
+        """
         self.path = path
         self.data: dict[tuple[str, str], Any] = {}  # To hold links to the data of the results for in-memory access
         self.dimensions: dict[
@@ -68,7 +106,11 @@ class ExperimentResults:
         self._file: h5py.File | None = None
 
     def __enter__(self):
-        """Open the HDF5 file for reading."""
+        """Opens the HDF5 file for reading.
+
+        Returns:
+            ExperimentResults: The ExperimentResults instance.
+        """
         self._file = h5py.File(self.path, mode="r")
 
         # Prepare access to each results dataset and its dimensions
@@ -91,6 +133,15 @@ class ExperimentResults:
             self._file.close()
 
     def get(self, qprogram: int | str = 0, measurement: int | str = 0):
+        """Retrieves data and dimensions for a specified quantum program and measurement.
+
+        Args:
+            qprogram (int | str, optional): The index or name of the quantum program. Defaults to 0.
+            measurement (int | str, optional): The index or name of the measurement. Defaults to 0.
+
+        Returns:
+            tuple[np.ndarray, list[dict]]: A tuple containing the data array and a list of dimension dictionaries.
+        """
         if isinstance(qprogram, int):
             qprogram = f"QProgram_{qprogram}"
         if isinstance(measurement, int):
@@ -121,36 +172,71 @@ class ExperimentResults:
         return self.data[(qprogram_name, measurement_name)][tuple(indices)]
 
     def __len__(self):
-        """Get the total number of results datasets."""
+        """Gets the total number of results datasets.
+
+        Returns:
+            int: The number of results datasets.
+        """
         return len(self.data)
 
     def __iter__(self):
-        """Get an iterator over the results datasets."""
+        """Gets an iterator over the results datasets.
+
+        Returns:
+            Iterator: An iterator over the results datasets.
+        """
         return iter(self.data.items())
 
     @property
     def experiment(self) -> str:
-        """Get the YAML representation of the executed experiment."""
+        """Gets the YAML representation of the executed experiment.
+
+        Returns:
+            str: The YAML string of the executed experiment.
+        """
         return self._file[ExperimentResults.EXPERIMENT_PATH][()].decode("utf-8")
 
     @property
     def platform(self) -> str:
-        """Get the YAML representation of the platform."""
+        """Gets the YAML representation of the platform.
+
+        Returns:
+            str: The YAML string of the platform.
+        """
         return self._file[ExperimentResults.PLATFORM_PATH][()].decode("utf-8")
 
     @property
     def executed_at(self) -> datetime:
-        """Get the timestamp when execution of the experiment started."""
+        """Gets the timestamp when execution of the experiment started.
+
+        Returns:
+            datetime: The timestamp of when the experiment started.
+        """
         return datetime.strptime(
-            self._file[ExperimentResults.EXECUTED_AT_PATH][()].decode("utf-8"), "%Y-%m-%d %H:%M:%S.%f"
+            self._file[ExperimentResults.EXECUTED_AT_PATH][()].decode("utf-8"), "%Y-%m-%d %H:%M:%S"
         )
 
     @property
     def execution_time(self) -> float:
-        """Get the execution time in seconds."""
+        """Gets the execution time in seconds.
+
+        Returns:
+            float: The execution time in seconds.
+        """
         return float(self._file[ExperimentResults.EXECUTION_TIME_PATH][()].decode("utf-8"))
 
+    # pylint: disable=too-many-locals
     def plot_S21(self, qprogram: int | str = 0, measurement: int | str = 0):
+        """Plots the S21 parameter from the experiment results.
+
+        Args:
+            qprogram (int | str, optional): The index or name of the quantum program. Defaults to 0.
+            measurement (int | str, optional): The index or name of the measurement. Defaults to 0.
+
+        Raises:
+            NotImplementedError: If the data has more than 2 dimensions.
+        """
+
         def decibels(s21: np.ndarray):
             """Convert result values from s21 into dB"""
             return 20 * np.log10(np.abs(s21))
@@ -220,15 +306,25 @@ class ExperimentResults:
 class ExperimentResultsWriter(ExperimentResults):
     """
     Allows for real-time saving of results from an experiment using the provided metadata information.
+
     Inherits from `ExperimentResults` to support both read and write operations.
     """
 
     def __init__(self, path: str, metadata: ExperimentMetadata):
+        """Initializes the ExperimentResultsWriter instance.
+
+        Args:
+            path (str): The file path to save the HDF5 results file.
+            metadata (ExperimentMetadata): The metadata describing the experiment structure.
+        """
         super().__init__(path)
         self._metadata = metadata
 
     def _create_results_file(self):
-        """Write the prepared structure to an HDF5 file and register loops as dimension scales."""
+        """Creates the HDF5 file structure and registers loops as dimension scales.
+
+        Writes the metadata to the HDF5 file and sets up the datasets and groups for streaming data.
+        """
         h5py.get_config().track_order = True
 
         if "platform" in self._metadata:
@@ -294,7 +390,7 @@ class ExperimentResultsWriter(ExperimentResults):
                     results_ds.dims[len(qprogram_data["dims"]) + len(measurement_data["dims"])].label = "I/Q"
 
     def _create_resuts_access(self):
-        # Prepare access to each results dataset for easy streaming
+        """Sets up internal data structures to allow for real-time data writing to the HDF5 file."""
         if "qprograms" in self._metadata:
             for qprogram_name, qprogram_data in self._metadata["qprograms"].items():
                 for measurement_name, _ in qprogram_data["measurements"].items():
@@ -303,7 +399,11 @@ class ExperimentResultsWriter(ExperimentResults):
                     ]
 
     def __enter__(self):
-        """Open the HDF5 file and create the structure for streaming."""
+        """Opens the HDF5 file and creates the structure for streaming.
+
+        Returns:
+            ExperimentResultsWriter: The ExperimentResultsWriter instance.
+        """
         self._file = h5py.File(self.path, mode="w")
         self._create_results_file()
         self._create_resuts_access()
@@ -311,7 +411,12 @@ class ExperimentResultsWriter(ExperimentResults):
         return self
 
     def __setitem__(self, key: tuple, value: float):
-        """Set an item in the results dataset."""
+        """Sets an item in the results dataset.
+
+        Args:
+            key (tuple): A tuple of (qprogram_name or index, measurement_name or index, *indices).
+            value (float): The value to set at the specified indices.
+        """
         qprogram_name, measurement_name, *indices = key
         if isinstance(qprogram_name, int):
             qprogram_name = f"QProgram_{qprogram_name}"
@@ -321,7 +426,11 @@ class ExperimentResultsWriter(ExperimentResults):
 
     @ExperimentResults.platform.setter
     def platform(self, platform: str):
-        """Set the YAML representation of executed experiment."""
+        """Sets the YAML representation of the platform.
+
+        Args:
+            platform (str): The YAML string representing the platform.
+        """
         path = ExperimentResults.PLATFORM_PATH
         if path in self._file:
             del self._file[path]
@@ -329,7 +438,11 @@ class ExperimentResultsWriter(ExperimentResults):
 
     @ExperimentResults.experiment.setter
     def experiment(self, experiment: str):
-        """Set the YAML representation of executed experiment."""
+        """Sets the YAML representation of the executed experiment.
+
+        Args:
+            experiment (str): The YAML string representing the experiment.
+        """
         path = ExperimentResults.EXPERIMENT_PATH
         if path in self._file:
             del self._file[path]
@@ -337,15 +450,23 @@ class ExperimentResultsWriter(ExperimentResults):
 
     @ExperimentResults.executed_at.setter
     def executed_at(self, dt: datetime):
-        """Set the timestamp when execution of the experiment started."""
+        """Sets the timestamp when execution of the experiment started.
+
+        Args:
+            dt (datetime): The datetime when execution started.
+        """
         path = ExperimentResults.EXECUTED_AT_PATH
         if path in self._file:
             del self._file[path]
-        self._file[path] = str(dt)
+        self._file[path] = dt.strftime("%Y-%m-%d %H:%M:%S")
 
     @ExperimentResults.execution_time.setter
     def execution_time(self, time: float):
-        """Set the execution time in seconds."""
+        """Sets the execution time in seconds.
+
+        Args:
+            time (float): The execution time in seconds.
+        """
         path = ExperimentResults.EXECUTION_TIME_PATH
         if path in self._file:
             del self._file[path]

@@ -15,6 +15,9 @@ EXPERIMENT_RESULTS_PATH = "dummy.hdf5"
 @pytest.fixture(name="metadata")
 def sample_metadata():
     return ExperimentMetadata(
+        experiment="experiment",
+        platform="platform",
+        executed_at=datetime(2024, 1, 1, 0, 0, 0, 0),
         qprograms={
             "QProgram_0": {
                 "variables": [{"label": "x", "values": np.array([1, 2, 3])}],
@@ -49,7 +52,7 @@ def sample_metadata():
                     },
                 },
             }
-        }
+        },
     )
 
 
@@ -64,6 +67,7 @@ def mock_experiment_results(metadata):
 
 class TestExperimentResults:
     def test_enter_exit(self, experiment_results):
+        """Test __enter__ and __exit__"""
         # Test that opening and closing the file works as expected
         with ExperimentResults(experiment_results) as exp_results:
             assert exp_results._file is not None
@@ -72,29 +76,35 @@ class TestExperimentResults:
         assert not exp_results._file.id.valid
 
     def test_get_item(self, experiment_results):
+        """Test __get_item__"""
         with ExperimentResults(experiment_results) as exp_results:
             value = exp_results[("QProgram_0", "Measurement_0", 0, 0, 0)]
             assert value == 0.0
 
     def test_len(self, experiment_results):
+        """Test __len__"""
         with ExperimentResults(experiment_results) as exp_results:
             assert len(exp_results) == 3
 
     def test_iter(self, experiment_results):
+        """Test __iter__"""
         with ExperimentResults(experiment_results) as exp_results:
             results = list(iter(exp_results))
             assert len(results) == 3
             assert results[0][0] == ("QProgram_0", "Measurement_0")
 
     def test_properties(self, experiment_results):
+        """Test properties"""
         with ExperimentResults(experiment_results) as exp_results:
-            assert exp_results.experiment == "experiment_yaml"
-            assert exp_results.executed_at == datetime(2023, 1, 1, 0, 0)
+            assert exp_results.experiment == "experiment"
+            assert exp_results.platform == "platform"
+            assert exp_results.executed_at == datetime(2024, 1, 1, 0, 0, 0, 0)
 
 
 class TestExperimentResultsWriter:
     @mock.patch("h5py.File")
     def test_create_results_file(self, mock_h5file, metadata):
+        """Test file creation"""
         # Test that the results file is created with the correct structure
         with ExperimentResultsWriter(path="mock_path", metadata=metadata):
             pass  # Just initializing should create the file structure
@@ -102,27 +112,17 @@ class TestExperimentResultsWriter:
         assert mock_h5file.called
         mock_h5file.assert_called_with("mock_path", mode="w")
 
-    def test_set_item(self, experiment_results):
-        # Open a writable HDF5 and test the __setitem__ method
+    def test_setters(self, experiment_results):
+        """Test setters"""
         with ExperimentResultsWriter(path=experiment_results, metadata={}) as exp_writer:
-            exp_writer[("QProgram_0", "Measurement_0", 0, 0, 0)] = 99.0
-            assert exp_writer[("QProgram_0", "Measurement_0", 0, 0, 0)] == 99.0
+            exp_writer.experiment = "new_experiment"
+            assert exp_writer.experiment == "new_experiment"
 
-    def test_yaml_setter(self, experiment_results):
-        # Test setting yaml content
-        with ExperimentResultsWriter(path=experiment_results, metadata={}) as exp_writer:
-            exp_writer.experiment = "new_yaml"
-            assert exp_writer.experiment == "new_yaml"
+            exp_writer.platform = "new_platform"
+            assert exp_writer.platform == "new_platform"
 
-    def test_executed_at_setter(self, experiment_results):
-        # Test setting the execution timestamp
-        with ExperimentResultsWriter(path=experiment_results, metadata={}) as exp_writer:
-            now = datetime.now()
-            exp_writer.executed_at = now
-            assert exp_writer.executed_at == now
+            exp_writer.executed_at = datetime(2025, 1, 1, 0, 0, 0)
+            assert exp_writer.executed_at == datetime(2025, 1, 1, 0, 0, 0)
 
-    def test_execution_time_setter(self, experiment_results):
-        # Test setting the execution time
-        with ExperimentResultsWriter(path=experiment_results, metadata={}) as exp_writer:
-            exp_writer.execution_time = 42.0
-            assert exp_writer.execution_time == 42.0
+            exp_writer.execution_time = 1.23
+            assert exp_writer.execution_time == 1.23

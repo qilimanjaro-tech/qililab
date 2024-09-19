@@ -1,14 +1,19 @@
-from unittest.mock import Mock, call, create_autospec
+import os
+import unittest
+from datetime import datetime
+from unittest.mock import MagicMock, Mock, call, create_autospec, patch
 
 import numpy as np
 import pytest
 
 from qililab.platform.platform import Platform
+from qililab.qprogram.blocks import ForLoop, Loop
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.qprogram.qprogram import Domain, QProgram
 from qililab.result.qprogram import QProgramResults, QuantumMachinesMeasurementResult
 from qililab.typings.enums import Parameter
+from qililab.waveforms import IQPair, Square
 
 
 @pytest.fixture(name="platform")
@@ -22,6 +27,7 @@ def mock_platform():
     platform = create_autospec(Platform)
     platform.set_parameter = Mock()
     platform.execute_qprogram = Mock(return_value=qprogram_results)
+    platform.to_dict = Mock(return_value={"name": "platform"})
 
     return platform
 
@@ -30,9 +36,14 @@ def mock_platform():
 def fixture_qprogram():
     """Fixture to create a mock QProgram."""
     qp = QProgram()
-    bias_x = qp.variable(label="bias_x voltage", domain=Domain.Voltage)
-    with qp.for_loop(bias_x, 0, 10, 1):
-        qp.set_gain(bus="readout_bus", gain=bias_x)
+    gain = qp.variable(label="gain", domain=Domain.Voltage)
+    with qp.for_loop(gain, 0, 1.0, 0.1):
+        qp.set_gain(bus="readout_bus", gain=gain)
+        qp.measure(
+            "readout_bus",
+            waveform=IQPair(Square(1.0, 40), Square(1.0, 40)),
+            weights=IQPair(Square(1.0, 100), Square(1.0, 100)),
+        )
 
     return qp
 
@@ -42,32 +53,29 @@ def fixture_experiment(qprogram: QProgram):
     """Fixture to create a mock Experiment."""
     experiment = Experiment()
     experiment = Experiment()
-    bias_z = experiment.variable(label="bias_z voltage", domain=Domain.Voltage)
-    frequency = experiment.variable(label="LO Frequency", domain=Domain.Frequency)
+    bias = experiment.variable(label="Bias (mV)", domain=Domain.Voltage)
+    frequency = experiment.variable(label="Frequency (Hz)", domain=Domain.Frequency)
+    nshots = experiment.variable(label="nshots", domain=Domain.Scalar, type=int)
     experiment.set_parameter(alias="drive_q0", parameter=Parameter.VOLTAGE, value=0.5)
     experiment.set_parameter(alias="drive_q1", parameter=Parameter.VOLTAGE, value=0.5)
     experiment.set_parameter(alias="drive_q2", parameter=Parameter.VOLTAGE, value=0.5)
-    with experiment.for_loop(bias_z, 0.0, 1.0, 0.5):
-        experiment.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=bias_z)
+    with experiment.for_loop(bias, 0.0, 1.0, 0.5):
+        experiment.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=bias)
         with experiment.loop(frequency, values=np.array([2e9, 3e9])):
             experiment.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=frequency)
             experiment.execute_qprogram(qprogram)
+    with experiment.parallel(loops=[ForLoop(bias, 0.0, 1.0, 0.5), Loop(frequency, values=np.array([2e9, 3e9, 4e9]))]):
+        experiment.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=bias)
+        experiment.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=frequency)
+        experiment.execute_qprogram(qprogram)
+    with experiment.for_loop(nshots, 0, 3):
+        experiment.execute_qprogram(lambda nshots=nshots: qprogram)  # type: ignore
 
     return experiment
+    # return {"experiment": experiment, "loop_bias": loop_bias.uuid, "loop_frequency": loop_frequency.uuid, "parallel_loop": parallel_loop.uuid}
 
 
 class TestExperimentExecutor:
-    def test_prepare(self, platform, experiment):
-        """Test the prepare method to ensure it calculates the correct loop values and shape."""
-        executor = ExperimentExecutor(platform=platform, experiment=experiment, results_path="/tmp/")
-        executor._prepare_metadata()
-
-        np.testing.assert_array_equal(executor.variable_in_loop_values["bias_z voltage"], np.array([0.0, 0.5, 1.0]))
-        np.testing.assert_array_equal(executor.variable_in_loop_values["LO Frequency"], np.array([2e9, 3e9]))
-
-        # First two dimensions are the experiment's loops, third is the qprogram's loop, fourth is the I/Q channels
-        # assert executor.shape == (3, 2, 11, 2)
-
     def test_execute(self, platform, experiment, qprogram):
         """Test the execute method to ensure the experiment is executed correctly and results are stored."""
         executor = ExperimentExecutor(platform=platform, experiment=experiment, results_path="/tmp/")
@@ -79,12 +87,10 @@ class TestExperimentExecutor:
 
         # Check that platform methods were called in the correct order
         expected_calls = [
-            # First loop: bias_z, second loop: frequency
-            # The order of calls follows the nested loop structure
-            # Calls in the first iteration of the outer loop (bias_z = 0.0)
             call.set_parameter(alias="drive_q0", parameter=Parameter.VOLTAGE, value=0.5),
             call.set_parameter(alias="drive_q1", parameter=Parameter.VOLTAGE, value=0.5),
             call.set_parameter(alias="drive_q2", parameter=Parameter.VOLTAGE, value=0.5),
+            # Start of nested loops
             call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.0),
             call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
@@ -100,6 +106,23 @@ class TestExperimentExecutor:
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
             call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
+            # End of nested loops
+            # Start of parallel loop
+            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.0),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9),
+            call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.5),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9),
+            call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=1.0),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=4e9),
+            call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
+            # End of parallel loop
+            # Start of nshots loop
+            call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
+            call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
+            call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
+            # End of nshots loop
         ]
 
         # If you want to ensure the exact sequence across all calls

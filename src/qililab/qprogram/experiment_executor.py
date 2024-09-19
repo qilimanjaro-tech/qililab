@@ -51,7 +51,6 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
         self.current_block_of_variable: dict[UUID, UUID] = {}
         self.current_value_of_variable: dict[UUID, int | float] = {}
 
-        self.variable_in_loop_values: dict[str, dict[UUID, np.ndarray]] = defaultdict(dict)
         self.loop_indices: dict[UUID, int] = {}
         self.qprogram_execution_indices: dict[UUID, int] = {}
 
