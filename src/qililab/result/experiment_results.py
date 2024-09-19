@@ -320,6 +320,7 @@ class ExperimentResultsWriter(ExperimentResults):
         super().__init__(path)
         self._metadata = metadata
 
+    # pylint: disable=too-many-locals
     def _create_results_file(self):
         """Creates the HDF5 file structure and registers loops as dimension scales.
 
@@ -378,13 +379,11 @@ class ExperimentResultsWriter(ExperimentResults):
                     for idx, dim_variables in enumerate(qprogram_data["dims"]):
                         for dim_variable in dim_variables:
                             results_ds.dims[idx].attach_scale(qloop_group[dim_variable])
-                        results_ds.dims[idx].label = ",".join([dim_variable for dim_variable in dim_variables])
+                        results_ds.dims[idx].label = ",".join(list(dim_variables))
                     for idx, dim_variables in enumerate(measurement_data["dims"]):
                         for dim_variable in dim_variables:
                             results_ds.dims[len(qprogram_data["dims"]) + idx].attach_scale(mloop_group[dim_variable])
-                        results_ds.dims[len(qprogram_data["dims"]) + idx].label = ",".join(
-                            [dim_variable for dim_variable in dim_variables]
-                        )
+                        results_ds.dims[len(qprogram_data["dims"]) + idx].label = ",".join(list(dim_variables))
 
                     # Attach the extra dimension (usually for I/Q) to the results dataset
                     results_ds.dims[len(qprogram_data["dims"]) + len(measurement_data["dims"])].label = "I/Q"
