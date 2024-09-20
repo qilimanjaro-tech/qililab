@@ -665,7 +665,12 @@ class TestMethods:
         test_waveforms_q0.add(array=[0.0, 0.0, 0.0, 0.0], index=1)
 
         with (
+            patch("builtins.open") as patched_open,
             patch.object(Bus, "upload_qpysequence") as upload,
+            patch.object(Bus, "run") as run,
+            patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
+            patch.object(QbloxModule, "sync_by_port") as sync_port,
+            patch.object(QbloxModule, "desync_by_port") as desync_port,
         ):
             _ = platform.execute_qprogram(qprogram=qprogram)
             assert test_waveforms_q0.to_dict() == upload.call_args_list[0]
