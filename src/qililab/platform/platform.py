@@ -865,7 +865,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 for distortion in bus.distortions:
                     for waveform in sequences[bus_alias]._waveforms._waveforms:  # pylint: disable=protected-access
                         sequences[bus_alias]._waveforms.modify(  # pylint: disable=protected-access
-                            waveform.name, distrortion.apply(waveform.data)
+                            waveform.name, distortion.apply(waveform.data)
                         )
         if debug:
             with open("debug_qblox_execution.txt", "w", encoding="utf-8") as sourceFile:
