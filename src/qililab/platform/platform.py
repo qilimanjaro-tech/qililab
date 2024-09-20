@@ -862,7 +862,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         buses = {bus_alias: self._get_bus_by_alias(alias=bus_alias) for bus_alias in sequences}
         for bus_alias, bus in buses.items():
             if bus.distortions:
-                for distrortion in bus.distortions:
+                for distortion in bus.distortions:
                     for waveforms in sequences[bus_alias]._waveforms._waveforms:  # pylint: disable=protected-access
                         sequences[bus_alias]._waveforms.modify(  # pylint: disable=protected-access
                             waveforms.name, distrortion.apply(waveforms.data)
