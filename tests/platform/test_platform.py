@@ -667,13 +667,10 @@ class TestMethods:
         with (
             patch("builtins.open") as patched_open,
             patch.object(Bus, "upload_qpysequence") as upload,
-            patch.object(Bus, "run") as run,
-            patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
-            patch.object(QbloxModule, "sync_by_port") as sync_port,
-            patch.object(QbloxModule, "desync_by_port") as desync_port,
         ):
             _ = platform.execute_qprogram(qprogram=qprogram)
-            assert test_waveforms_q0.to_dict() == upload.call_args_list[0]
+            assert test_waveforms_q0.to_dict() == upload.call_args_list[0].args._waveforms.to_dict()
+        assert patched_open.call_count == 1
 
     def test_execute_qprogram_with_quantum_machines(
         self, platform_quantum_machines: Platform
