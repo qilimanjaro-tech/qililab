@@ -3,7 +3,7 @@ import sys
 # For Python 3.11+, we use ExceptionGroup; otherwise, we define a custom exception class
 if sys.version_info >= (3, 11):
     # Available natively in Python 3.11+
-    from exceptiongroup import ExceptionGroup  # pylint: disable=unused-import
+    from builtins import ExceptionGroup  # pylint: disable=unused-import
 else:
     # Define a custom exception class for earlier versions
     class ExceptionGroup(Exception):
