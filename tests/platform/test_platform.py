@@ -673,7 +673,7 @@ class TestMethods:
             patch.object(QbloxModule, "desync_by_port"),
         ):
             _ = platform.execute_qprogram(qprogram=qprogram)
-            assert test_waveforms_q0.to_dict() == upload.call_args_list[0].kwargs['qpysequence']._waveforms.to_dict()
+            assert test_waveforms_q0.to_dict() == upload.call_args_list[0].kwargs['qpysequence']#._waveforms.to_dict()
         assert patched_open.call_count == 1
 
     def test_execute_qprogram_with_quantum_machines(
