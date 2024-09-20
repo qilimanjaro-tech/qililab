@@ -672,7 +672,7 @@ class QuantumMachinesCluster(Instrument):
             return
 
         if parameter in [Parameter.OFFSET_I, Parameter.OFFSET_Q]:
-            key = "I" if parameter in Parameter.OFFSET_I else "Q"
+            key = "I" if parameter == Parameter.OFFSET_I else "Q"
             con_name, con_port, con_fem = self.get_controller_from_element(element=element, key=key)
             input_offset = float(value)
             settings_controllers = next(
@@ -704,7 +704,7 @@ class QuantumMachinesCluster(Instrument):
             return
 
         if parameter in [Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2]:
-            output = "out1" if parameter in Parameter.OFFSET_OUT1 else "out2"
+            output = "out1" if parameter == Parameter.OFFSET_OUT1 else "out2"
             out_value = 1 if output == "out1" else 2
             con_name, _, con_fem = self.get_controller_from_element(element=element, key="I")
             output_offset = float(value)
