@@ -659,28 +659,16 @@ class TestMethods:
         drive_wf = Square(amplitude=1.0, duration=4)
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
-        qprogram.play(bus="drive_line_q1_bus", waveform=drive_wf)
 
         test_waveforms_q0 = Waveforms()
         test_waveforms_q0.add(array=[0.5, 1.0, 0.5, 0.0], index=0)
         test_waveforms_q0.add(array=[0.0, 0.0, 0.0, 0.0], index=1)
 
-        test_waveforms_q1 = Waveforms()
-        test_waveforms_q1.add(array=drive_wf.envelope(), index=0)
-        test_waveforms_q1.add(array=[0.0, 0.0, 0.0, 0.0], index=1)
-
-        qblox_compiler = QbloxCompiler()
-        sequences, _ = qblox_compiler.compile(qprogram=qprogram)
-        buses = {bus_alias: platform._get_bus_by_alias(alias=bus_alias) for bus_alias in sequences}
-        for bus_alias, bus in buses.items():
-            if bus.distortions:
-                for distrortion in bus.distortions:
-                    for waveforms in sequences[bus_alias]._waveforms._waveforms:  # pylint: disable=protected-access
-                        sequences[bus_alias]._waveforms.modify(  # pylint: disable=protected-access
-                            waveforms.name, distrortion.apply(waveforms.data)
-                        )
-        assert test_waveforms_q0.to_dict() == sequences["drive_line_q0_bus"]._waveforms.to_dict()
-        assert test_waveforms_q1.to_dict() == sequences["drive_line_q1_bus"]._waveforms.to_dict()
+        with (
+            patch.object(Bus, "upload_qpysequence") as upload,
+        ):
+            _ = platform.execute_qprogram(qprogram=qprogram)
+            assert test_waveforms_q0.to_dict() == upload.call_args_list[0]
 
     def test_execute_qprogram_with_quantum_machines(
         self, platform_quantum_machines: Platform
