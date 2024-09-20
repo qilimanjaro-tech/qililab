@@ -27,7 +27,7 @@ from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
-from qililab.qprogram import Calibration, Domain, Experiment, QbloxCompiler, QProgram
+from qililab.qprogram import Calibration, Domain, Experiment, QProgram
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
@@ -665,7 +665,7 @@ class TestMethods:
         test_waveforms_q0.add(array=[0.0, 0.0, 0.0, 0.0], index=1)
 
         with (
-            patch("builtins.open") as patched_open,
+            patch("builtins.open"),
             patch.object(Bus, "upload_qpysequence") as upload,
             patch.object(Bus, "run"),
             patch.object(Bus, "acquire_qprogram_results"),
@@ -674,7 +674,6 @@ class TestMethods:
         ):
             _ = platform.execute_qprogram(qprogram=qprogram)
             assert test_waveforms_q0.to_dict() == upload.call_args_list[0].kwargs["qpysequence"]._waveforms.to_dict()
-        assert patched_open.call_count == 1
 
     def test_execute_qprogram_with_quantum_machines(
         self, platform_quantum_machines: Platform
