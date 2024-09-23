@@ -14,7 +14,7 @@ import pytest
 from qibo import gates
 from qibo.models import Circuit
 from qm.exceptions import StreamProcessingDataLossError
-from qpysequence import Sequence
+from qpysequence import Sequence, Waveforms
 from ruamel.yaml import YAML
 
 from qililab import Arbitrary, save_platform
@@ -668,6 +668,26 @@ class TestMethods:
 
         # assure only one debug was called
         assert patched_open.call_count == 1
+
+    def test_execute_qprogram_with_qblox_distortions(self, platform: Platform):
+        drive_wf = Square(amplitude=1.0, duration=4)
+        qprogram = QProgram()
+        qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
+
+        test_waveforms_q0 = Waveforms()
+        test_waveforms_q0.add(array=[0.5, 1.0, 0.5, 0.0], index=0)
+        test_waveforms_q0.add(array=[0.0, 0.0, 0.0, 0.0], index=1)
+
+        with (
+            patch("builtins.open"),
+            patch.object(Bus, "upload_qpysequence") as upload,
+            patch.object(Bus, "run"),
+            patch.object(Bus, "acquire_qprogram_results"),
+            patch.object(QbloxModule, "sync_by_port"),
+            patch.object(QbloxModule, "desync_by_port"),
+        ):
+            _ = platform.execute_qprogram(qprogram=qprogram)
+            assert test_waveforms_q0.to_dict() == upload.call_args_list[0].kwargs["qpysequence"]._waveforms.to_dict()
 
     def test_execute_qprogram_with_quantum_machines(
         self, platform_quantum_machines: Platform
