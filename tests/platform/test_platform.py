@@ -149,10 +149,10 @@ def get_anneal_qprogram(runcard, flux_to_bus_topology):  # pylint: disable=too-m
     platform.flux_to_bus_topology = flux_to_bus_topology
     anneal_waveforms = {
         next(element.bus for element in platform.flux_to_bus_topology if element.flux == "phix_q0"): Arbitrary(
-            np.array([1])
+            np.array([0.0, 0.0, 0.0, 1.0])
         ),
         next(element.bus for element in platform.flux_to_bus_topology if element.flux == "phiz_q0"): Arbitrary(
-            np.array([2])
+            np.array([0.0, 0.0, 0.0, 2.0])
         ),
     }
     num_averages = 2
