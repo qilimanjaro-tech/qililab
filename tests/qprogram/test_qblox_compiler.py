@@ -60,6 +60,15 @@ def fixture_no_loops_all_operations() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="offset_no_path1")
+def fixture_offset_no_path1() -> QProgram:
+    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    qp = QProgram()
+    qp.set_offset(bus="drive", offset_path0=0.5)
+    qp.play(bus="drive", waveform=drag_pair)
+    return qp
+
+
 @pytest.fixture(name="dynamic_wait")
 def fixture_dynamic_wait() -> QProgram:
     drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
@@ -412,6 +421,11 @@ class TestQBloxCompiler:
                             stop
         """
         assert is_q1asm_equal(sequences["readout"], readout_str)
+
+    def test_set_offset_without_path_1_throws_exception(self, offset_no_path1: QProgram):
+        with pytest.raises(ValueError, match="No offset has been given for path 1 inside set_offset."):
+            compiler = QbloxCompiler()
+            _ = compiler.compile(qprogram=offset_no_path1)
 
     def test_dynamic_wait(self, dynamic_wait: QProgram):
         compiler = QbloxCompiler()
