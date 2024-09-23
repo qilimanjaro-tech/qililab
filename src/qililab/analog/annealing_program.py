@@ -95,6 +95,7 @@ class AnnealingProgram:
         Args:
             crosstalk_matrix[CrosstalkMatrix]: crosstalk matrix to correct the flux vectors with. This is usually the inverse of the crosstalk matrix
             in the Calibration file obtained from experiments.
+            minimum_clock_time [int]: minimum unit of clock time for the awg (in ns). Waveforms should be multiples of this. Defaults to 1, equivalent to 1ns resolution.
         Returns:
             dict[str,ArbitraryWave]: Dictionary containing the waveform to be sent to each bus, with xtalk corrected
         """
@@ -113,7 +114,7 @@ class AnnealingProgram:
         # add padding to waveforms if duration is not multiple of minimum clock time
         padded_ns = 0
         if len(self._transpiled_program) % minimum_clock_time != 0:
-            padded_ns = 4 - len(self._transpiled_program) % 4 if len(self._transpiled_program) % 4 != 0 else 0
+            padded_ns = minimum_clock_time - len(self._transpiled_program) % minimum_clock_time if len(self._transpiled_program) % minimum_clock_time != 0 else 0
 
         # Initialize annealing waveforms
         annealing_waveforms = {bus: padded_ns * [0.0] for bus in bus_to_flux_map}  # type: ignore[var-annotated]
