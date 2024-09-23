@@ -11,4 +11,4 @@ bandit==1.7.4
 pre-commit==2.20.0
 
 # Requirements for testing the Circuit class
-Pillow==9.5.0
+Pillow==10.3.0
