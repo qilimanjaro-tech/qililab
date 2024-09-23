@@ -114,7 +114,11 @@ class AnnealingProgram:
         # add padding to waveforms if duration is not multiple of minimum clock time
         padded_ns = 0
         if len(self._transpiled_program) % minimum_clock_time != 0:
-            padded_ns = minimum_clock_time - len(self._transpiled_program) % minimum_clock_time if len(self._transpiled_program) % minimum_clock_time != 0 else 0
+            padded_ns = (
+                minimum_clock_time - len(self._transpiled_program) % minimum_clock_time
+                if len(self._transpiled_program) % minimum_clock_time != 0
+                else 0
+            )
 
         # Initialize annealing waveforms
         annealing_waveforms = {bus: padded_ns * [0.0] for bus in bus_to_flux_map}  # type: ignore[var-annotated]
