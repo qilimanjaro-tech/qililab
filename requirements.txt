@@ -4,7 +4,7 @@ qblox-instruments==0.11.2
 qcodes==0.42.0
 qcodes_contrib_drivers==0.18.0
 PyVISA-py==0.7.1
-tqdm==4.64.1
+tqdm==4.66.3
 urllib3==1.26.12
 qpysequence==0.10.4
 h5py==3.11.0
