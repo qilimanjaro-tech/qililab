@@ -109,6 +109,30 @@ class TestExperimentResults:
             assert exp_results.platform == "platform"
             assert exp_results.executed_at == datetime(2024, 1, 1, 0, 0, 0, 0)
 
+    def test_get_method(self, experiment_results):
+        """Test get method"""
+        with ExperimentResults(experiment_results) as exp_results:
+            data, dims = exp_results.get()
+            assert data.shape == (3, 4, 2)
+            assert len(dims) == 3
+            assert dims[0]["labels"][0] == "x"
+            assert dims[1]["labels"][0] == "y"
+            assert dims[2]["labels"][0] == "I/Q"
+
+            data, dims = exp_results.get(qprogram=0, measurement=0)
+            assert data.shape == (3, 4, 2)
+            assert len(dims) == 3
+            assert dims[0]["labels"][0] == "x"
+            assert dims[1]["labels"][0] == "y"
+            assert dims[2]["labels"][0] == "I/Q"
+
+            data, dims = exp_results.get(qprogram="QProgram_0", measurement="Measurement_0")
+            assert data.shape == (3, 4, 2)
+            assert len(dims) == 3
+            assert dims[0]["labels"][0] == "x"
+            assert dims[1]["labels"][0] == "y"
+            assert dims[2]["labels"][0] == "I/Q"
+
     def test_plot_S21_one_dimension(self):
         """Test plot_S21 with 1D data and verify the plot correctness."""
         experiment_results = create_autospec(ExperimentResults, instance=True, path="test.h5")

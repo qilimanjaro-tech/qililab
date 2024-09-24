@@ -225,7 +225,7 @@ class ExperimentResults:
         """
         return float(self._file[ExperimentResults.EXECUTION_TIME_PATH][()].decode("utf-8"))
 
-    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-statements
     def plot_S21(self, qprogram: int | str = 0, measurement: int | str = 0):
         """Plots the S21 parameter from the experiment results.
 
@@ -241,9 +241,8 @@ class ExperimentResults:
             """Convert result values from s21 into dB"""
             return 20 * np.log10(np.abs(s21))
 
-        data, dims = self.get(qprogram=qprogram, measurement=measurement)
-        n_dimensions = len(dims) - 1
-        if n_dimensions == 1:
+        def plot_1d(data, dims):
+            """Plot 1d"""
             s21 = data[:, 0] + 1j * data[:, 1]
             s21 = decibels(s21)
             x_labels, x_values = dims[0]["labels"], dims[0]["values"]
@@ -270,7 +269,10 @@ class ExperimentResults:
                 ax2.ticklabel_format(axis="x", style="sci", scilimits=(-3, 3))  # Force scientific notation
 
             plt.show()
-        elif n_dimensions == 2:
+
+        # pylint: disable=too-many-locals
+        def plot_2d(data, dims):
+            """Plot 2d"""
             s21 = data[:, :, 0] + 1j * data[:, :, 1]
             s21 = decibels(s21)
             x_labels, x_values = dims[0]["labels"], dims[0]["values"]
@@ -319,6 +321,13 @@ class ExperimentResults:
 
             plt.tight_layout()
             plt.show()
+
+        data, dims = self.get(qprogram=qprogram, measurement=measurement)
+        n_dimensions = len(dims) - 1
+        if n_dimensions == 1:
+            plot_1d(data, dims)
+        elif n_dimensions == 2:
+            plot_2d(data, dims)
         else:
             raise NotImplementedError("3D and higher dimension plots are not supported yet.")
 
