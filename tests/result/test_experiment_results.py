@@ -450,14 +450,34 @@ class TestExperimentResultsWriter:
     def test_setters(self, experiment_results):
         """Test setters"""
         with ExperimentResultsWriter(path=experiment_results, metadata={}) as exp_writer:
+            # test experiment property
             exp_writer.experiment = "new_experiment"
             assert exp_writer.experiment == "new_experiment"
 
+            # write again to assert that HDF5 old partition is deleted correctly
+            exp_writer.experiment = "newer_experiment"
+            assert exp_writer.experiment == "newer_experiment"
+
+            # test platform property
             exp_writer.platform = "new_platform"
             assert exp_writer.platform == "new_platform"
 
+            # write again to assert that HDF5 old partition is deleted correctly
+            exp_writer.platform = "newer_platform"
+            assert exp_writer.platform == "newer_platform"
+
+            # test executed_at property
             exp_writer.executed_at = datetime(2025, 1, 1, 0, 0, 0)
             assert exp_writer.executed_at == datetime(2025, 1, 1, 0, 0, 0)
 
+            # write again to assert that HDF5 old partition is deleted correctly
+            exp_writer.executed_at = datetime(2026, 1, 1, 0, 0, 0)
+            assert exp_writer.executed_at == datetime(2026, 1, 1, 0, 0, 0)
+
+            # test execution_time property
             exp_writer.execution_time = 1.23
             assert exp_writer.execution_time == 1.23
+
+            # write again to assert that HDF5 old partition is deleted correctly
+            exp_writer.execution_time = 4.56
+            assert exp_writer.execution_time == 4.56
