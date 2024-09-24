@@ -103,7 +103,7 @@ class ExperimentResults:
         self.dimensions: dict[
             tuple[str, str], Any
         ] = {}  # To hold links to dimensions of the results for in-memory access
-        self._file: h5py.File | None = None
+        self._file: h5py.File
 
     def __enter__(self):
         """Opens the HDF5 file for reading.
@@ -194,7 +194,7 @@ class ExperimentResults:
         Returns:
             str: The YAML string of the executed experiment.
         """
-        return self._file[ExperimentResults.EXPERIMENT_PATH][()].decode("utf-8")
+        return self._file[ExperimentResults.EXPERIMENT_PATH][()].decode("utf-8")  # type: ignore[index]
 
     @property
     def platform(self) -> str:
@@ -241,10 +241,8 @@ class ExperimentResults:
             """Convert result values from s21 into dB"""
             return 20 * np.log10(np.abs(s21))
 
-        def plot_1d(data, dims):
+        def plot_1d(s21: np.ndarray, dims):
             """Plot 1d"""
-            s21 = data[:, 0] + 1j * data[:, 1]
-            s21 = decibels(s21)
             x_labels, x_values = dims[0]["labels"], dims[0]["values"]
 
             _, ax1 = plt.subplots()
@@ -262,19 +260,17 @@ class ExperimentResults:
                 ax2.set_xlim(min(x_values[1]), max(x_values[1]))
 
                 # Set tick locations
-                ax2_ticks = np.linspace(min(x_values[1]), max(x_values[1]), num=6)  # Adjust number of ticks as needed
+                ax2_ticks = np.linspace(min(x_values[1]), max(x_values[1]), num=6)
                 ax2.set_xticks(ax2_ticks)
 
                 # Force scientific notation
-                ax2.ticklabel_format(axis="x", style="sci", scilimits=(-3, 3))  # Force scientific notation
+                ax2.ticklabel_format(axis="x", style="sci", scilimits=(-3, 3))
 
             plt.show()
 
         # pylint: disable=too-many-locals
-        def plot_2d(data, dims):
+        def plot_2d(s21: np.ndarray, dims):
             """Plot 2d"""
-            s21 = data[:, :, 0] + 1j * data[:, :, 1]
-            s21 = decibels(s21)
             x_labels, x_values = dims[0]["labels"], dims[0]["values"]
             y_labels, y_values = dims[1]["labels"], dims[1]["values"]
 
@@ -288,7 +284,7 @@ class ExperimentResults:
             ax1.set_ylabel(y_labels[0])
 
             # Force scientific notation
-            ax1.ticklabel_format(axis="both", style="sci", scilimits=(-3, 3))  # Force scientific notation
+            ax1.ticklabel_format(axis="both", style="sci", scilimits=(-3, 3))
 
             mesh = ax1.pcolormesh(x_edges, y_edges, s21.T, cmap="viridis", shading="auto")
             fig.colorbar(mesh, ax=ax1)
@@ -302,28 +298,33 @@ class ExperimentResults:
                 ax2.set_xlim(min(x_values[1]), max(x_values[1]))
 
                 # Set tick locations
-                ax2_ticks = np.linspace(min(x_values[1]), max(x_values[1]), num=6)  # Adjust number of ticks as needed
+                ax2_ticks = np.linspace(min(x_values[1]), max(x_values[1]), num=6)
                 ax2.set_xticks(ax2_ticks)
 
                 # Force scientific notation
-                ax2.ticklabel_format(axis="x", style="sci", scilimits=(-3, 3))  # Force scientific notation
+                ax2.ticklabel_format(axis="x", style="sci", scilimits=(-3, 3))
             if len(y_labels) > 1:
                 ax3 = ax1.twinx()
                 ax3.set_ylabel(y_labels[1])
                 ax3.set_ylim(min(y_values[1]), max(y_values[1]))
 
                 # Set tick locations
-                ax3_ticks = np.linspace(min(y_values[1]), max(y_values[1]), num=6)  # Adjust number of ticks as needed
+                ax3_ticks = np.linspace(min(y_values[1]), max(y_values[1]), num=6)
                 ax3.set_xticks(ax3_ticks)
 
                 # Force scientific notation
-                ax3.ticklabel_format(axis="y", style="sci", scilimits=(-3, 3))  # Force scientific notation
+                ax3.ticklabel_format(axis="y", style="sci", scilimits=(-3, 3))
 
             plt.tight_layout()
             plt.show()
 
         data, dims = self.get(qprogram=qprogram, measurement=measurement)
-        n_dimensions = len(dims) - 1
+
+        # Calculate S21
+        s21 = data[:, 0] + 1j * data[:, 1]
+        s21 = decibels(s21)
+
+        n_dimensions = len(s21.shape)
         if n_dimensions == 1:
             plot_1d(data, dims)
         elif n_dimensions == 2:
