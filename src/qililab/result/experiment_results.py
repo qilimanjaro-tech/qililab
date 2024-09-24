@@ -255,9 +255,19 @@ class ExperimentResults:
             ax1.plot(x_values[0], s21, ".")
 
             if len(x_labels) > 1:
+                # Create secondary x-axis
                 ax2 = ax1.twiny()
+
+                # Set labels
                 ax2.set_xlabel(x_labels[1])
-                ax2.plot(x_values[1], s21, ".")
+                ax2.set_xlim(min(x_values[1]), max(x_values[1]))
+
+                # Set tick locations
+                ax2_ticks = np.linspace(min(x_values[1]), max(x_values[1]), num=6)  # Adjust number of ticks as needed
+                ax2.set_xticks(ax2_ticks)
+
+                # Force scientific notation
+                ax2.ticklabel_format(axis="x", style="sci", scilimits=(-3, 3))  # Force scientific notation
 
             plt.show()
         elif n_dimensions == 2:
@@ -275,27 +285,37 @@ class ExperimentResults:
             ax1.set_xlabel(x_labels[0])
             ax1.set_ylabel(y_labels[0])
 
-            # mesh = ax1.pcolor([x_values[0], y_values[0]], s21)
+            # Force scientific notation
+            ax1.ticklabel_format(axis="both", style="sci", scilimits=(-3, 3))  # Force scientific notation
+
             mesh = ax1.pcolormesh(x_edges, y_edges, s21.T, cmap="viridis", shading="auto")
             fig.colorbar(mesh, ax=ax1)
 
             if len(x_labels) > 1:
+                # Create secondary x-axis
                 ax2 = ax1.twiny()
+
+                # Set labels
                 ax2.set_xlabel(x_labels[1])
                 ax2.set_xlim(min(x_values[1]), max(x_values[1]))
 
-                # Set tick locations and labels for the secondary x-axis
+                # Set tick locations
                 ax2_ticks = np.linspace(min(x_values[1]), max(x_values[1]), num=6)  # Adjust number of ticks as needed
                 ax2.set_xticks(ax2_ticks)
-                # ax2.set_xticklabels([f"{tick:.2f}" for tick in ax2_ticks])  # Format tick labels
 
                 # Force scientific notation
-                # ax2.xaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
                 ax2.ticklabel_format(axis="x", style="sci", scilimits=(-3, 3))  # Force scientific notation
             if len(y_labels) > 1:
                 ax3 = ax1.twinx()
                 ax3.set_ylabel(y_labels[1])
                 ax3.set_ylim(min(y_values[1]), max(y_values[1]))
+
+                # Set tick locations
+                ax3_ticks = np.linspace(min(y_values[1]), max(y_values[1]), num=6)  # Adjust number of ticks as needed
+                ax3.set_xticks(ax3_ticks)
+
+                # Force scientific notation
+                ax3.ticklabel_format(axis="y", style="sci", scilimits=(-3, 3))  # Force scientific notation
 
             plt.tight_layout()
             plt.show()

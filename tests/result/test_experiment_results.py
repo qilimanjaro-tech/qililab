@@ -1,12 +1,18 @@
+# pylint: disable=protected-access
 from datetime import datetime
 from pathlib import Path
-from unittest import mock
+from types import MethodType
+from unittest.mock import MagicMock, create_autospec, patch
 
-import h5py
+import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
 from qililab.result.experiment_results import ExperimentMetadata, ExperimentResults, ExperimentResultsWriter
+
+matplotlib.use("Agg")  # Use non-interactive backend for testing
+
 
 # Dummy path for testing
 EXPERIMENT_RESULTS_PATH = "dummy.hdf5"
@@ -14,6 +20,7 @@ EXPERIMENT_RESULTS_PATH = "dummy.hdf5"
 
 @pytest.fixture(name="metadata")
 def sample_metadata():
+    """Create a mock metadata dictionary for testing"""
     return ExperimentMetadata(
         experiment="experiment",
         platform="platform",
@@ -58,7 +65,7 @@ def sample_metadata():
 
 @pytest.fixture(name="experiment_results")
 def mock_experiment_results(metadata):
-    # Create a mock HDF5 file structure for testing
+    """Create a mock HDF5 file structure for testing"""
     with ExperimentResultsWriter(path=EXPERIMENT_RESULTS_PATH, metadata=metadata) as experiment_results:
         experiment_results.execution_time = 12.34
     yield EXPERIMENT_RESULTS_PATH
@@ -66,6 +73,8 @@ def mock_experiment_results(metadata):
 
 
 class TestExperimentResults:
+    """Test ExperimentResults class"""
+
     def test_enter_exit(self, experiment_results):
         """Test __enter__ and __exit__"""
         # Test that opening and closing the file works as expected
@@ -100,9 +109,311 @@ class TestExperimentResults:
             assert exp_results.platform == "platform"
             assert exp_results.executed_at == datetime(2024, 1, 1, 0, 0, 0, 0)
 
+    def test_plot_S21_one_dimension(self):
+        """Test plot_S21 with 1D data and verify the plot correctness."""
+        experiment_results = create_autospec(ExperimentResults, instance=True, path="test.h5")
+
+        # Manually set the plot_S21 method to the real one
+        experiment_results.plot_S21 = MethodType(ExperimentResults.plot_S21, experiment_results)
+
+        # Mock the get method to return 1D data
+        data = np.random.rand(100, 2)  # 100 data points, real and imaginary parts
+        dims = [
+            {"labels": ["Frequency (Hz)"], "values": [np.linspace(1e6, 1e7, 100)]},
+            {"labels": ["I/Q"], "values": []},
+        ]
+
+        experiment_results.get.return_value = (data, dims)
+
+        # Call the plot_S21 method
+        experiment_results.plot_S21()
+
+        # Ensure get was called correctly
+        experiment_results.get.assert_called_with(qprogram=0, measurement=0)
+
+        # Retrieve the current figure and axes
+        fig = plt.gcf()
+        ax1 = fig.axes[0]
+
+        # Check the title, labels, and line data
+        assert ax1.get_title() == experiment_results.path
+        assert ax1.get_xlabel() == "Frequency (Hz)"
+        assert ax1.get_ylabel() == r"$|S_{21}|$"
+
+        lines = ax1.get_lines()
+        assert len(lines) == 1  # Should have one line plotted
+
+        # Verify the data plotted
+        x_plotted = lines[0].get_xdata()
+        y_plotted = lines[0].get_ydata()
+
+        # Recompute s21 to compare
+        s21 = data[:, 0] + 1j * data[:, 1]
+        s21_db = 20 * np.log10(np.abs(s21))
+        x_expected = dims[0]["values"][0]
+
+        np.testing.assert_array_almost_equal(x_plotted, x_expected)
+        np.testing.assert_array_almost_equal(y_plotted, s21_db)
+
+        # Close the plot
+        plt.close("all")
+
+    def test_plot_S21_one_dimension_secondary_axis(self):
+        """Test plot_S21 with 1D data and secondary x-axis."""
+        experiment_results = create_autospec(ExperimentResults, instance=True, path="test.h5")
+
+        # Manually set the plot_S21 method to the real one
+        experiment_results.plot_S21 = MethodType(ExperimentResults.plot_S21, experiment_results)
+
+        # Mock the get method to return 1D data with secondary axis data
+        data = np.random.rand(100, 2)  # 100 data points, real and imaginary parts
+        dims = [
+            {
+                "labels": ["Frequency (Hz)", "Time (s)"],  # Two labels for secondary axis
+                "values": [
+                    np.linspace(1e6, 1e7, 100),  # Primary x-axis values
+                    np.linspace(0, 1, 100),  # Secondary x-axis values
+                ],
+            },
+            {"labels": ["I/Q"], "values": []},
+        ]
+
+        experiment_results.get.return_value = (data, dims)
+
+        # Call the plot_S21 method
+        experiment_results.plot_S21()
+
+        # Retrieve the current figure and axes
+        fig = plt.gcf()
+        ax1 = fig.axes[0]
+        ax2 = fig.axes[1]
+
+        # Verify that the secondary axis is created
+        assert ax2 is not None, "Secondary x-axis was not created."
+
+        # Check labels
+        assert ax1.get_xlabel() == "Frequency (Hz)"
+        assert ax2.get_xlabel() == "Time (s)"
+
+        # Check limits
+        np.testing.assert_almost_equal(ax2.get_xlim(), [0, 1])
+
+        # Check ticks
+        expected_ticks = np.linspace(0, 1, num=6)
+        np.testing.assert_array_almost_equal(ax2.get_xticks(), expected_ticks)
+
+        # Close the plot
+        plt.close("all")
+
+    def test_plot_S21_two_dimensions(self):
+        """Test plot_S21 with 2D data and verify the plot correctness."""
+        experiment_results = create_autospec(ExperimentResults, instance=True, path="test.h5")
+
+        # Manually set the plot_S21 method to the real one
+        experiment_results.plot_S21 = MethodType(ExperimentResults.plot_S21, experiment_results)
+
+        # Mock the get method to return 2D data
+        data = np.random.rand(50, 50, 2)  # 50x50 data points, real and imaginary parts
+        dims = [
+            {"labels": ["Frequency (Hz)"], "values": [np.linspace(1e6, 1e7, 50)]},
+            {"labels": ["Voltage (V)"], "values": [np.linspace(0, 1, 50)]},
+            {"labels": ["I/Q"], "values": []},
+        ]
+
+        experiment_results.get.return_value = (data, dims)
+
+        # Call the plot_S21 method
+        experiment_results.plot_S21()
+
+        # Ensure get was called correctly
+        experiment_results.get.assert_called_with(qprogram=0, measurement=0)
+
+        # Retrieve the current figure and axes
+        fig = plt.gcf()
+        ax1 = fig.axes[0]
+        colorbar = fig.axes[1]
+
+        # Check the title and labels
+        assert ax1.get_title() == experiment_results.path
+        assert ax1.get_xlabel() == "Frequency (Hz)"
+        assert ax1.get_ylabel() == "Voltage (V)"
+
+        # Retrieve the QuadMesh object from pcolormesh
+        quadmesh = ax1.collections[0]
+        assert isinstance(quadmesh, matplotlib.collections.QuadMesh)
+
+        # Verify the data plotted
+        s21 = data[:, :, 0] + 1j * data[:, :, 1]
+        s21_db = 20 * np.log10(np.abs(s21))
+
+        # Get the mesh data
+        mesh_array = quadmesh.get_array().reshape(s21_db.T.shape)
+
+        # Compare the mesh data to s21_db
+        np.testing.assert_array_almost_equal(mesh_array, s21_db.T)
+
+        # Verify that the colorbar axes exist and have correct properties
+        assert colorbar is not None, "Colorbar axes was not created."
+
+        # Colorbar axes usually have no labels
+        assert not colorbar.get_xlabel(), "Colorbar axes should not have an x-label."
+        assert not colorbar.get_ylabel(), "Colorbar axes should not have a y-label."
+
+        # Close the plot
+        plt.close("all")
+
+    def test_plot_S21_two_dimensions_secondary_axes(self):
+        """Test plot_S21 with 2D data and secondary axes."""
+        experiment_results = create_autospec(ExperimentResults, instance=True, path="test.h5")
+
+        # Manually set the plot_S21 method to the real one
+        experiment_results.plot_S21 = MethodType(ExperimentResults.plot_S21, experiment_results)
+
+        # Mock the get method to return 2D data with secondary axis data
+        data = np.random.rand(50, 50, 2)  # 50x50 data points, real and imaginary parts
+        dims = [
+            {
+                "labels": ["Frequency (Hz)", "Wavelength (m)"],  # Two labels for x-axis
+                "values": [
+                    np.linspace(1e6, 1e7, 50),  # Primary x-axis values
+                    np.linspace(300e-9, 800e-9, 50),  # Secondary x-axis values (e.g., wavelength)
+                ],
+            },
+            {
+                "labels": ["Voltage (V)", "Current (A)"],  # Two labels for y-axis
+                "values": [
+                    np.linspace(0, 1, 50),  # Primary y-axis values
+                    np.linspace(0, 10, 50),  # Secondary y-axis values (e.g., current)
+                ],
+            },
+            {"labels": ["I/Q"], "values": []},
+        ]
+
+        experiment_results.get.return_value = (data, dims)
+
+        # Call the plot_S21 method
+        experiment_results.plot_S21()
+
+        # Retrieve the current figure and axes
+        fig = plt.gcf()
+        ax1 = fig.axes[0]
+        colorbar = fig.axes[1]
+        ax2 = fig.axes[2]
+        ax3 = fig.axes[3]
+
+        # Verify that the secondary axes are created
+        assert ax2 is not None, "Secondary x-axis was not created."
+        assert ax3 is not None, "Secondary y-axis was not created."
+
+        # Check labels
+        assert ax1.get_xlabel() == "Frequency (Hz)"
+        assert ax1.get_ylabel() == "Voltage (V)"
+        assert ax2.get_xlabel() == "Wavelength (m)"
+        assert ax3.get_ylabel() == "Current (A)"
+
+        # Check limits
+        np.testing.assert_almost_equal(ax2.get_xlim(), [300e-9, 800e-9])
+        np.testing.assert_almost_equal(ax3.get_ylim(), [0, 10])
+
+        # Check ticks for ax2 (secondary x-axis)
+        expected_xticks = np.linspace(300e-9, 800e-9, num=6)
+        np.testing.assert_array_almost_equal(ax2.get_xticks(), expected_xticks)
+
+        # Check ticks for ax3 (secondary y-axis)
+        expected_yticks = np.linspace(0, 10, num=6)
+        np.testing.assert_array_almost_equal(ax3.get_yticks(), expected_yticks)
+
+        # Verify that the colorbar axes exist and have correct properties
+        assert colorbar is not None, "Colorbar axes was not created."
+
+        # Colorbar axes usually have no labels
+        assert not colorbar.get_xlabel(), "Colorbar axes should not have an x-label."
+        assert not colorbar.get_ylabel(), "Colorbar axes should not have a y-label."
+
+        # Close the plot
+        plt.close("all")
+
+    def test_plot_S21_three_dimensions(self):
+        """Test plot_S21 with 3D data, should raise NotImplementedError."""
+        experiment_results = create_autospec(ExperimentResults, instance=True, path="test.h5")
+
+        # Manually set the plot_S21 method to the real one
+        experiment_results.plot_S21 = MethodType(ExperimentResults.plot_S21, experiment_results)
+
+        # Mock the get method to return 3D data
+        data = np.random.rand(10, 10, 10, 2)
+        dims = [
+            {"labels": ["Frequency (Hz)"], "values": [np.linspace(1e6, 1e7, 10)]},
+            {"labels": ["Voltage (V)"], "values": [np.linspace(0, 1, 10)]},
+            {"labels": ["Temperature (K)"], "values": [np.linspace(0, 300, 10)]},
+            {"labels": ["I/Q"], "values": []},
+        ]
+
+        experiment_results.get.return_value = (data, dims)
+
+        # Check that NotImplementedError is raised
+        with pytest.raises(NotImplementedError):
+            experiment_results.plot_S21()
+
+        # Ensure get was called correctly
+        experiment_results.get.assert_called_with(qprogram=0, measurement=0)
+
+    def test_plot_S21_with_qprogram_and_measurement_strings(self):
+        """Test plot_S21 with string qprogram and measurement and verify the plot correctness."""
+        experiment_results = create_autospec(ExperimentResults, instance=True, path="test.h5")
+
+        # Manually set the plot_S21 method to the real one
+        experiment_results.plot_S21 = MethodType(ExperimentResults.plot_S21, experiment_results)
+
+        # Mock the get method to return 1D data
+        data = np.random.rand(100, 2)
+        dims = [
+            {"labels": ["Frequency (Hz)"], "values": [np.linspace(1e6, 1e7, 100)]},
+            {"labels": ["I/Q"], "values": []},
+        ]
+
+        experiment_results.get = MagicMock(return_value=(data, dims))
+
+        # Call the plot_S21 method with string parameters
+        qprogram = "program1"
+        measurement = "measurement1"
+        experiment_results.plot_S21(qprogram=qprogram, measurement=measurement)
+
+        # Ensure get was called correctly
+        experiment_results.get.assert_called_with(qprogram=qprogram, measurement=measurement)
+
+        # Retrieve the current figure and axes
+        fig = plt.gcf()
+        ax1 = fig.axes[0]
+
+        # Check the title, labels, and line data
+        assert ax1.get_title() == experiment_results.path
+        assert ax1.get_xlabel() == "Frequency (Hz)"
+        assert ax1.get_ylabel() == r"$|S_{21}|$"
+
+        lines = ax1.get_lines()
+        assert len(lines) == 1  # Should have one line plotted
+
+        # Verify the data plotted
+        x_plotted = lines[0].get_xdata()
+        y_plotted = lines[0].get_ydata()
+
+        # Recompute s21 to compare
+        s21 = data[:, 0] + 1j * data[:, 1]
+        s21_db = 20 * np.log10(np.abs(s21))
+        x_expected = dims[0]["values"][0]
+
+        np.testing.assert_array_almost_equal(x_plotted, x_expected)
+        np.testing.assert_array_almost_equal(y_plotted, s21_db)
+
+        # Close the plot
+        plt.close("all")
+
 
 class TestExperimentResultsWriter:
-    @mock.patch("h5py.File")
+    """Test ExperimentResultsWriter class"""
+
+    @patch("h5py.File")
     def test_create_results_file(self, mock_h5file, metadata):
         """Test file creation"""
         # Test that the results file is created with the correct structure
