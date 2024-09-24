@@ -25,6 +25,7 @@ def sample_metadata():
         experiment="experiment",
         platform="platform",
         executed_at=datetime(2024, 1, 1, 0, 0, 0, 0),
+        execution_time=1.23,
         qprograms={
             "QProgram_0": {
                 "variables": [{"label": "x", "values": np.array([1, 2, 3])}],
@@ -66,8 +67,8 @@ def sample_metadata():
 @pytest.fixture(name="experiment_results")
 def mock_experiment_results(metadata):
     """Create a mock HDF5 file structure for testing"""
-    with ExperimentResultsWriter(path=EXPERIMENT_RESULTS_PATH, metadata=metadata) as experiment_results:
-        experiment_results.execution_time = 12.34
+    with ExperimentResultsWriter(path=EXPERIMENT_RESULTS_PATH, metadata=metadata):
+        ...
     yield EXPERIMENT_RESULTS_PATH
     Path(EXPERIMENT_RESULTS_PATH).unlink()
 
