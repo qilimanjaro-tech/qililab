@@ -34,19 +34,17 @@ def deque_constructor(constructor, node):
 # Lambda representer: convert lambda to a string
 def lambda_representer(representer, data):
     """Represent a lambda function by serializing its code."""
-    if isinstance(data, types.LambdaType):
-        code = data.__code__
-        return representer.represent_mapping(
-            "!lambda",
-            {
-                "args": code.co_varnames[: code.co_argcount],
-                "code": code.co_code.hex(),  # Convert bytecode to hex string
-                "consts": code.co_consts,  # Serialize constants
-                "names": code.co_names,  # Serialize names
-                "flags": code.co_flags,  # Serialize flags
-            },
-        )
-    raise ValueError("Cannot serialize non-lambda function")
+    code = data.__code__
+    return representer.represent_mapping(
+        "!lambda",
+        {
+            "args": code.co_varnames[: code.co_argcount],
+            "code": code.co_code.hex(),  # Convert bytecode to hex string
+            "consts": code.co_consts,  # Serialize constants
+            "names": code.co_names,  # Serialize names
+            "flags": code.co_flags,  # Serialize flags
+        },
+    )
 
 
 # Lambda constructor: convert string back to lambda
