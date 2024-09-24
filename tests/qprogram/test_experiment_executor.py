@@ -1,7 +1,4 @@
-import os
-import unittest
-from datetime import datetime
-from unittest.mock import MagicMock, Mock, call, create_autospec, patch
+from unittest.mock import Mock, call, create_autospec
 
 import numpy as np
 import pytest
@@ -20,6 +17,9 @@ from qililab.waveforms import IQPair, Square
 def mock_platform():
     """Fixture to create a mock Platform."""
     qprogram_results = QProgramResults()
+    qprogram_results.append_result(
+        "readout_bus", QuantumMachinesMeasurementResult(bus="readout", I=np.arange(0, 11), Q=np.arange(100, 111))
+    )
     qprogram_results.append_result(
         "readout_bus", QuantumMachinesMeasurementResult(bus="readout", I=np.arange(0, 11), Q=np.arange(100, 111))
     )
@@ -44,6 +44,14 @@ def fixture_qprogram():
             waveform=IQPair(Square(1.0, 40), Square(1.0, 40)),
             weights=IQPair(Square(1.0, 100), Square(1.0, 100)),
         )
+    with qp.average(shots=1000):
+        with qp.loop(gain, values=np.linspace(0.0, 1.0, 11)):
+            qp.set_gain(bus="readout_bus", gain=gain)
+            qp.measure(
+                "readout_bus",
+                waveform=IQPair(Square(1.0, 40), Square(1.0, 40)),
+                weights=IQPair(Square(1.0, 100), Square(1.0, 100)),
+            )
 
     return qp
 
@@ -72,10 +80,11 @@ def fixture_experiment(qprogram: QProgram):
         experiment.execute_qprogram(lambda nshots=nshots: qprogram)  # type: ignore
 
     return experiment
-    # return {"experiment": experiment, "loop_bias": loop_bias.uuid, "loop_frequency": loop_frequency.uuid, "parallel_loop": parallel_loop.uuid}
 
 
 class TestExperimentExecutor:
+    """Test ExperimentExecutor class"""
+
     def test_execute(self, platform, experiment, qprogram):
         """Test the execute method to ensure the experiment is executed correctly and results are stored."""
         executor = ExperimentExecutor(platform=platform, experiment=experiment, base_data_path="/tmp/")
