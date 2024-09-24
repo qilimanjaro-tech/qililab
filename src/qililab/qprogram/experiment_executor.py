@@ -32,18 +32,61 @@ if TYPE_CHECKING:
 
 @dataclass
 class VariableInfo:
+    """Dataclass to store information of a Variable"""
+
     uuid: UUID
     label: str
     values: np.ndarray
 
 
-class ExperimentExecutor:  # pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods
+class ExperimentExecutor:
     """Manages the execution of a quantum experiment.
 
-    The ExperimentExecutor is responsible for traversing the experiment's structure,
-    managing loops and operations, and storing the results in a specified file.
-    The results are saved in real-time using a StreamArray to ensure that data is not lost
-    in case of interruptions during the experiment.
+    The `ExperimentExecutor` class is responsible for orchestrating the execution of a quantum experiment on a given platform. It traverses the experiment's structure, handles loops and operations, and stores the results in real-time to ensure data integrity even in case of interruptions.
+
+    Key responsibilities include:
+
+    - Preparing metadata and loop structures before execution.
+    - Managing variables and their scopes within loops and blocks.
+    - Executing operations in the correct sequence with proper parameter settings.
+    - Streaming results to an HDF5 file using `ExperimentResultsWriter`.
+
+    This class provides a high-level interface to execute complex experiments involving nested loops, parameter sweeps, and qprogram executions, while efficiently managing resources and progress tracking.
+
+    Args:
+        platform (Platform): The platform on which the experiment is to be executed.
+        experiment (Experiment): The experiment object defining the sequence of operations and loops.
+        base_data_path (str): The base directory path where the experiment results will be stored.
+
+    Example:
+        ```python
+        from qililab.data_management import build_platform
+        from qililab.qprogram import Experiment
+        from qililab.executor import ExperimentExecutor
+
+        # Initialize the platform
+        platform = build_platform(runcard="path/to/runcard.yml")
+
+        # Define your experiment
+        experiment = Experiment()
+        # Add blocks, loops, operations to the experiment
+        # ...
+
+        # Set the base data path for storing results
+        base_data_path = "/data/experiments"
+
+        # Create the ExperimentExecutor
+        executor = ExperimentExecutor(platform=platform, experiment=experiment, base_data_path=base_data_path)
+
+        # Execute the experiment
+        results_path = executor.execute()
+        print(f"Results saved to {results_path}")
+        ```
+
+    Note:
+        - Ensure that the platform and experiment are properly configured before execution.
+        - The results will be saved in a timestamped directory within the `base_data_path`.
     """
 
     def __init__(self, platform: "Platform", experiment: Experiment, base_data_path: str):
