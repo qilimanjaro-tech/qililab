@@ -14,6 +14,9 @@ def requires_domain(parameter: str, domain: Domain):
     def decorator_function(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
+            # Check if the parameter is not inside kwargs, for optional parameters
+            if parameter not in kwargs and len(args) == 1:
+                kwargs[parameter] = None
             # Get the argument by name
             param_value = kwargs.get(parameter) if parameter in kwargs else None
 
