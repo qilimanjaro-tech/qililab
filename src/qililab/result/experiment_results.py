@@ -321,14 +321,14 @@ class ExperimentResults:
         data, dims = self.get(qprogram=qprogram, measurement=measurement)
 
         # Calculate S21
-        s21 = data[:, 0] + 1j * data[:, 1]
+        s21 = data[..., 0] + 1j * data[..., 1]
         s21 = decibels(s21)
 
         n_dimensions = len(s21.shape)
         if n_dimensions == 1:
-            plot_1d(data, dims)
+            plot_1d(s21, dims)
         elif n_dimensions == 2:
-            plot_2d(data, dims)
+            plot_2d(s21, dims)
         else:
             raise NotImplementedError("3D and higher dimension plots are not supported yet.")
 
