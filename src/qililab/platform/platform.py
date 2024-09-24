@@ -731,21 +731,21 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             str: The path to the file where the results are stored.
 
         Example:
-            ```python
-            from qililab import Experiment
+            .. code-block:: python
 
-            # Initialize your experiment
-            experiment = Experiment()
-            # Add variables, loops, and operations to the experiment
-            # ...
+                from qililab import Experiment
 
-            # Define the base data path for storing results
-            base_data_path = "/data/experiments"
+                # Initialize your experiment
+                experiment = Experiment()
+                # Add variables, loops, and operations to the experiment
+                # ...
 
-            # Execute the experiment on the platform
-            results_path = platform.execute_experiment(experiment=experiment, base_data_path=base_data_path)
-            print(f"Results saved to {results_path}")
-            ```
+                # Define the base data path for storing results
+                base_data_path = "/data/experiments"
+
+                # Execute the experiment on the platform
+                results_path = platform.execute_experiment(experiment=experiment, base_data_path=base_data_path)
+                print(f"Results saved to {results_path}")
 
         Note:
             - Ensure that the experiment is properly configured before execution.

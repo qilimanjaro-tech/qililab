@@ -60,29 +60,29 @@ class ExperimentExecutor:
         base_data_path (str): The base directory path where the experiment results will be stored.
 
     Example:
-        ```python
-        from qililab.data_management import build_platform
-        from qililab.qprogram import Experiment
-        from qililab.executor import ExperimentExecutor
+        .. code-block::
 
-        # Initialize the platform
-        platform = build_platform(runcard="path/to/runcard.yml")
+            from qililab.data_management import build_platform
+            from qililab.qprogram import Experiment
+            from qililab.executor import ExperimentExecutor
 
-        # Define your experiment
-        experiment = Experiment()
-        # Add blocks, loops, operations to the experiment
-        # ...
+            # Initialize the platform
+            platform = build_platform(runcard="path/to/runcard.yml")
 
-        # Set the base data path for storing results
-        base_data_path = "/data/experiments"
+            # Define your experiment
+            experiment = Experiment()
+            # Add blocks, loops, operations to the experiment
+            # ...
 
-        # Create the ExperimentExecutor
-        executor = ExperimentExecutor(platform=platform, experiment=experiment, base_data_path=base_data_path)
+            # Set the base data path for storing results
+            base_data_path = "/data/experiments"
 
-        # Execute the experiment
-        results_path = executor.execute()
-        print(f"Results saved to {results_path}")
-        ```
+            # Create the ExperimentExecutor
+            executor = ExperimentExecutor(platform=platform, experiment=experiment, base_data_path=base_data_path)
+
+            # Execute the experiment
+            results_path = executor.execute()
+            print(f"Results saved to {results_path}")
 
     Note:
         - Ensure that the platform and experiment are properly configured before execution.
