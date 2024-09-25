@@ -322,8 +322,8 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         )
 
         if not waveform_variables:
-            waveform_I_name = self.__add_waveform_to_configuration(waveform_I)
-            waveform_Q_name = self.__add_waveform_to_configuration(waveform_Q) if waveform_Q else None
+            waveform_I_name = self.__add_waveform_to_configuration(waveform_I, element.amplify_flux)
+            waveform_Q_name = self.__add_waveform_to_configuration(waveform_Q, element.amplify_flux) if waveform_Q else None
             pulse_name = self.__add_or_update_control_pulse_to_configuration(waveform_I_name, waveform_Q_name, duration)
             operation_name = self.__add_pulse_to_element_operations(element.bus, pulse_name)
             pulse = operation_name * gain if gain is not None else operation_name
@@ -511,10 +511,10 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         # Return weights names
         return A, B, C, D
 
-    def __add_waveform_to_configuration(self, waveform: Waveform):
+    def __add_waveform_to_configuration(self, waveform: Waveform, amplify_flux: bool = False):
         waveform_name = QuantumMachinesCompiler.__hash_waveform(waveform)
         if waveform_name not in self._configuration["waveforms"]:
-            self._configuration["waveforms"][waveform_name] = QuantumMachinesCompiler.__waveform_to_config(waveform)
+            self._configuration["waveforms"][waveform_name] = QuantumMachinesCompiler.__waveform_to_config(waveform, amplify_flux)
         return waveform_name
 
     @staticmethod
@@ -529,12 +529,20 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         return hash_result.hexdigest()[:8]
 
     @staticmethod
-    def __waveform_to_config(waveform: Waveform):
+    def __waveform_to_config(waveform: Waveform, amplify_flux: bool):
         if isinstance(waveform, Square):
             amplitude = waveform.amplitude / QuantumMachinesCompiler.VOLTAGE_COEFF
+            if amplify_flux:
+                amplitude *= 5
+                if np.abs(amplitude) == 2.5:
+                    amplitude = np.sign(amplitude)*2.499
             return {"type": "constant", "sample": amplitude}
 
         envelope = waveform.envelope() / QuantumMachinesCompiler.VOLTAGE_COEFF
+        if amplify_flux:
+            envelope *= 5
+            envelope = [2.499 if amp==1 else amp for amp in envelope.tolist()]
+            return {"type": "arbitrary", "samples": envelope}
         return {"type": "arbitrary", "samples": envelope.tolist()}
 
     @staticmethod

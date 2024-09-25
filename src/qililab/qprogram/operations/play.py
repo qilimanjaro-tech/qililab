@@ -26,6 +26,7 @@ class Play(Operation):  # pylint: disable=missing-class-docstring
     bus: str
     waveform: Waveform | IQPair
     wait_time: int | None = None  # TODO: remove this in clean fix
+    amplify_flux: bool = False
 
     def get_waveforms(self) -> tuple[Waveform, Waveform | None]:
         """Get the waveforms.
