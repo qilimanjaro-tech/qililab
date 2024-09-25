@@ -184,6 +184,7 @@ class RunAutomaticCalibrationMockedController(CalibrationController):
     def __init__(self, node_sequence, calibration_graph, runcard):
         super().__init__(node_sequence=node_sequence, calibration_graph=calibration_graph, runcard=runcard)
         self.calibrate_all = MagicMock(return_value=None)
+        self.diagnose_checkpoints = MagicMock(return_value=None)
         self.get_qubits_tables = MagicMock(return_value=(10, 10))
         self.get_last_set_parameters = MagicMock(
             return_value={("test", "test"): (0.0, "test", datetime.fromtimestamp(1999))}
@@ -275,19 +276,22 @@ class TestRunAutomaticCalibrationFromCalibrationController:
 
         # sourcery skip: extract-duplicate-method
         if controller.calibration_graph in [G0, G3]:
-            controller.calibrate_all.assert_any_call(fourth)
-            controller.calibrate_all.assert_any_call(first)
+            controller.calibrate_all.assert_has_calls([fourth, first])
+            controller.diagnose_checkpoints.assert_has_calls([fourth, first])
             assert controller.calibrate_all.call_count == 2
+            assert controller.diagnose_checkpoints.call_count == 2
 
         elif controller.calibration_graph == G2:
-            controller.calibrate_all.assert_any_call(fourth)
-            controller.calibrate_all.assert_any_call(second)
-            controller.calibrate_all.assert_any_call(first)
+            controller.calibrate_all.assert_has_calls([fourth, second, first])
+            controller.diagnose_checkpoints.assert_has_calls([fourth, second, first])
             assert controller.calibrate_all.call_count == 3
+            assert controller.diagnose_checkpoints.call_count == 3
 
         elif controller.calibration_graph in [G1, G4, G5, G6, G7, G8, G9]:
-            controller.calibrate_all.assert_any_call(fourth)
+            controller.calibrate_all.assert_has_calls([fourth])
+            controller.diagnose_checkpoints.assert_has_calls([fourth])
             assert controller.calibrate_all.call_count == 1
+            assert controller.diagnose_checkpoints.call_count == 1
 
 
 ##########################
