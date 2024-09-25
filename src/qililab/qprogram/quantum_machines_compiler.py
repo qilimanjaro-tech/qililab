@@ -26,7 +26,17 @@ from qualang_tools.config.integration_weights_tools import convert_integration_w
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.blocks.infinite_loop import InfiniteLoop
 from qililab.qprogram.calibration import Calibration
-from qililab.qprogram.operations import Measure, Play, ResetPhase, SetFrequency, SetGain, SetPhase, Sync, Wait
+from qililab.qprogram.operations import (
+    Measure,
+    Play,
+    ResetPhase,
+    SetFrequency,
+    SetGain,
+    SetOffset,
+    SetPhase,
+    Sync,
+    Wait,
+)
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable import Domain, FloatVariable, IntVariable, Variable
 from qililab.waveforms import IQPair, Square, Waveform
@@ -88,6 +98,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             Measure: self._handle_measure,
             Play: self._handle_play,
             SetFrequency: self._handle_set_frequency,
+            SetOffset: self._handle_set_offset,
             SetPhase: self._handle_set_phase,
             SetGain: self._handle_set_gain,
             ResetPhase: self._handle_reset_phase,
@@ -292,6 +303,28 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         )
         qua.update_frequency(element=element.bus, new_frequency=frequency)
 
+    def _handle_set_offset(self, element: SetOffset):
+        if element.offset_path1 or isinstance(element.offset_path1, Variable):
+            offset_i = (
+                self._qprogram_to_qua_variables[element.offset_path0]
+                if isinstance(element.offset_path0, Variable)
+                else element.offset_path0
+            )
+            offset_q = (
+                self._qprogram_to_qua_variables[element.offset_path1]
+                if isinstance(element.offset_path1, Variable)
+                else element.offset_path1
+            )
+            qua.set_dc_offset(element=element.bus, element_input="I", offset=offset_i)
+            qua.set_dc_offset(element=element.bus, element_input="Q", offset=offset_q)
+        else:
+            offset = (
+                self._qprogram_to_qua_variables[element.offset_path0]
+                if isinstance(element.offset_path0, Variable)
+                else element.offset_path0
+            )
+            qua.set_dc_offset(element=element.bus, element_input="single", offset=offset)
+
     def _handle_set_phase(self, element: SetPhase):
         phase = (
             self._qprogram_to_qua_variables[element.phase]
@@ -345,9 +378,11 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         rotation = (
             element.rotation  # type: ignore
             if element.rotation is not None
-            else self._buses[element.bus].threshold_rotation
-            if self._buses[element.bus] and self._buses[element.bus].threshold_rotation is not None
-            else 0.0
+            else (
+                self._buses[element.bus].threshold_rotation
+                if self._buses[element.bus] and self._buses[element.bus].threshold_rotation is not None
+                else 0.0
+            )
         )
 
         variable_I = qua.declare(qua.fixed)
@@ -397,9 +432,11 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
                 measurement_info.loops_iterations.append(iterations)
             if isinstance(block, Parallel):
                 iterations = min(
-                    len(loop.values)
-                    if isinstance(loop, Loop)
-                    else QuantumMachinesCompiler._calculate_iterations(loop.start, loop.stop, loop.step)
+                    (
+                        len(loop.values)
+                        if isinstance(loop, Loop)
+                        else QuantumMachinesCompiler._calculate_iterations(loop.start, loop.stop, loop.step)
+                    )
                     for loop in block.loops
                 )
                 measurement_info.loops_iterations.append(iterations)
@@ -416,9 +453,11 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         )
 
         qua.wait(
-            duration / int(self.WAIT_COEFF)  # type: ignore[arg-type]
-            if isinstance(element.duration, Variable)
-            else int(duration / self.WAIT_COEFF),  # type: ignore[arg-type]
+            (
+                duration / int(self.WAIT_COEFF)  # type: ignore[arg-type]
+                if isinstance(element.duration, Variable)
+                else int(duration / self.WAIT_COEFF)  # type: ignore[arg-type]
+            ),
             element.bus,
         )
 
@@ -445,9 +484,9 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             configuration = {
                 "operation": "control",
                 "length": duration,
-                "waveforms": {"I": waveform_I_name, "Q": waveform_Q_name}
-                if waveform_Q_name
-                else {"single": waveform_I_name},
+                "waveforms": (
+                    {"I": waveform_I_name, "Q": waveform_Q_name} if waveform_Q_name else {"single": waveform_I_name}
+                ),
             }
             self._configuration["pulses"][pulse_name] = configuration
         return pulse_name

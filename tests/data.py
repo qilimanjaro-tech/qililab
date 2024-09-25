@@ -713,7 +713,9 @@ class Galadriel:
                 RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
             },
             "port": "drive_q0",
-            RUNCARD.DISTORTIONS: [],
+            RUNCARD.DISTORTIONS: [
+                {"name": "lfilter", "a": [1.0, 0.0, 1.0], "auto_norm": True, "b": [0.5, 0.5], "norm_factor": 1.0}
+            ],
             RUNCARD.DELAY: 0,
         },
         {
@@ -1713,11 +1715,36 @@ class SauronQuantumMachines:
                 "connectivity": {"controller": "con1", "fem": 1},
                 "loopbacks": {"Synth": "Synth2", "Dmd": "Dmd2LO"},
                 "rf_outputs": [
-                    {"port": 1, "lo_frequency": 6e9},
-                    {"port": 2, "lo_frequency": 6e9},
-                    {"port": 3, "lo_frequency": 6e9},
-                    {"port": 4, "lo_frequency": 6e9},
-                    {"port": 5, "lo_frequency": 6e9},
+                    {
+                        "port": 1,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "fem": 1, "port": 1},
+                        "q_connection": {"controller": "con1", "fem": 1, "port": 2},
+                    },
+                    {
+                        "port": 2,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "fem": 1, "port": 3},
+                        "q_connection": {"controller": "con1", "fem": 1, "port": 4},
+                    },
+                    {
+                        "port": 3,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "fem": 1, "port": 5},
+                        "q_connection": {"controller": "con1", "fem": 1, "port": 6},
+                    },
+                    {
+                        "port": 4,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "fem": 1, "port": 7},
+                        "q_connection": {"controller": "con1", "fem": 1, "port": 8},
+                    },
+                    {
+                        "port": 5,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "fem": 1, "port": 9},
+                        "q_connection": {"controller": "con1", "fem": 1, "port": 10},
+                    },
                 ],
                 "rf_inputs": [{"port": 1, "lo_frequency": 6e9}, {"port": 2, "lo_frequency": 6e9}],
             }
@@ -1739,6 +1766,7 @@ class SauronQuantumMachines:
                 "time_of_flight": 40,
                 "smearing": 10,
             },
+            {"bus": "flux_q0", "single_input": {"controller": "con1", "fem": 1, "port": 5}},
         ],
         "run_octave_calibration": True,
     }
