@@ -63,7 +63,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             the :class:`.CalibrationController` won't do the graph mapping properly, and the calibration will fail. Defaults to None.
         input_parameters (dict | None, optional): Kwargs for input parameters to pass and be interpreted by the notebook. Defaults to None.
         sweep_interval (np.ndarray | None, optional): Array describing the sweep values of the experiment. Defaults to None, which means the one specified in the notebook will be used.
-        check_point (bool, optional): Flag whether this notebook will be used to check if execute or not the ones before them. Checkpoints should ideally be fast and
+        checkpoint (bool, optional): Flag whether this notebook will be used to check if execute or not the ones before them. Checkpoints should ideally be fast and
             reliable, and its dependency with previous notebooks strictly and phisically dependant.
         check_value (float | None, optional): Value to decide whether the checkpoint was passed successfully.
 
@@ -133,7 +133,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                     nb_path="notebooks/second.ipynb",
                     qubit_index=qubit,
                     sweep_interval=np.arange(start=0, stop=19, step=1),
-                    check_point=True,
+                    checkpoint=True,
                     check_value={"fidelity": 0.85},
                 )
                 nodes[second.node_id] = second
@@ -229,7 +229,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                 )
 
         where the ``platform_parameters`` are a list of parameters to set on the platform. And the ``fidelities`` are for showing results in the calibration report,
-        or for using the checkpoints in the calibration with the ``check_point`` and ``check_value`` arguments.
+        or for using the checkpoints in the calibration with the ``checkpoint`` and ``check_value`` arguments.
 
         .. note::
 
@@ -244,7 +244,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         node_distinguisher: int | str | None = None,
         input_parameters: dict | None = None,
         sweep_interval: np.ndarray | None = None,
-        check_point: bool = False,
+        checkpoint: bool = False,
         check_value: dict | None = None,
     ):
         if len(nb_path.split("\\")) > 1:
@@ -288,16 +288,16 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
         self.been_calibrated_succesfully: bool = False
         """Flag whether this notebook has been already calibrated in a concrete run. Defaults to False."""
 
-        self.check_point: bool = check_point
+        self.checkpoint: bool = checkpoint
         """Flag whether this notebook will be used to check if execute or not the ones before them. Checkpoints should ideally be fast and
-        reliable, and its dependency with previous notebooks strictly and phisically dependant. If not a check_point (default), then is False."""
+        reliable, and its dependency with previous notebooks strictly and phisically dependant. If not a checkpoint (default), then is False."""
 
-        self.check_value: dict | None = check_value if self.check_point else None
+        self.check_value: dict | None = check_value if self.checkpoint else None
         """Values to decide whether the checkpoint was passed successfully. They have to have the same structure as the ``output_parameters["fidelities"]``
-        dictionary, in the corresponding notebook itself. If node is not a check_point (default), then its None."""
+        dictionary, in the corresponding notebook itself. If node is not a checkpoint (default), then its None."""
 
-        self.check_point_passed: bool | None = None
-        """Flag whether this notebook has passed the check value when checked. If the notebook is not a check_point (default), then is None."""
+        self.checkpoint_passed: bool | None = None
+        """Flag whether this notebook has passed the check value when checked. If the notebook is not a checkpoint (default), then is None."""
 
     def run_node(self) -> float:
         """Executes the notebook, passing the needed parameters and flags.

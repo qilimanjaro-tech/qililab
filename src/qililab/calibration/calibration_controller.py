@@ -118,7 +118,7 @@ class CalibrationController:
                     nb_path="notebooks/second.ipynb",
                     qubit_index=qubit,
                     sweep_interval=np.arange(start=0, stop=19, step=1),
-                    check_point=True,
+                    checkpoint=True,
                     check_value={"fidelity": 0.85},
                 )
                 nodes[second[qubit].node_id] = second[qubit]
@@ -259,7 +259,7 @@ class CalibrationController:
         # If `diagnose_checkpoints` has found a checkpoint bad, start the calibration just after the last passed checkpoint before that bad one.
         # O - [V] - [O] - [V] - [0] - [X] - [ ] - [ ] - [ ] - ... we leave the next ones empty (.), after finding the first bad
         # checkpoint, so that we can just find the first [V], going from right to left in ``calibrate_all()`` calls and start there.
-        if node.check_point_passed:
+        if node.checkpoint_passed:
             return
 
         for n in self._dependencies(node):
@@ -318,24 +318,24 @@ class CalibrationController:
         # You can skip it from the `drift_timeout`. Notice, that `drift_timeout` has more priority than checkpoints then.
         # If you want to start the calibration from the start again, just decrease the `drift_timeout` or remove the executed files!
         # Also notice, that if a checkpoint is skipped we don't set it to [V], but to [ ] instead, as if it was never checked or wasn't a checkpoint.
-        if not node.check_point or (
+        if not node.checkpoint or (
             node.previous_timestamp is not None
             and not self._is_timeout_expired(node.previous_timestamp, self.drift_timeout)
         ):
             return False
 
         ### For not repeating [X] and [V]'s checkpoints, when more than one branch have it as a dependency.
-        if node.check_point_passed is not None:
+        if node.checkpoint_passed is not None:
             logger.info(
                 "WORKFLOW: %s checkpoint already checked, skipping it.\n",
                 node.node_id,
             )
-            return not node.check_point_passed
+            return not node.checkpoint_passed
 
         ### Main diagnose logic if the node is a checkpoint, and hasn't been checked, start checking.
         self.calibrate(node)
-        if node.output_parameters is not None and self._check_point_passed_comparison(node):
-            node.check_point_passed = True
+        if node.output_parameters is not None and self._checkpoint_passed_comparison(node):
+            node.checkpoint_passed = True
             self._update_parameters(node)
             node.been_calibrated_succesfully = True
         else:
@@ -343,12 +343,12 @@ class CalibrationController:
                 "WORKFLOW: %s checkpoint failed, calibration will start just after the previously passed checkpoint.\n",
                 node.node_id,
             )
-            node.check_point_passed = False
+            node.checkpoint_passed = False
 
         # If the node was a checkpoint, depending on the results, we can stop or not diagnosing the next nodes.
-        return not node.check_point_passed
+        return not node.checkpoint_passed
 
-    def _check_point_passed_comparison(self, node: CalibrationNode) -> bool:
+    def _checkpoint_passed_comparison(self, node: CalibrationNode) -> bool:
         """Computes whetter a checkpoint passed, based on whether the fidelities of the node are greater or equal to the check values.
 
         Args:

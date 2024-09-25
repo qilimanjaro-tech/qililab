@@ -3,7 +3,6 @@
 import os
 from datetime import datetime
 from io import StringIO
-from typing import Any
 from unittest.mock import MagicMock, call, patch
 
 import numpy as np
@@ -46,6 +45,8 @@ def fixture_initialize_node_optional(_) -> CalibrationNode:
         node_distinguisher=1,
         input_parameters={"a": 0, "b": 1},
         sweep_interval=np.array([0, 1, 2]),
+        checkpoint=True,
+        check_value=0.1,
     )
 
 
@@ -103,6 +104,9 @@ class TestInitializationCalibrationNode:
         assert initialize_node_no_optional.previous_timestamp is None
         assert isinstance(initialize_node_no_optional._stream, StringIO)
         assert initialize_node_no_optional.been_calibrated_succesfully is False
+        assert initialize_node_no_optional.checkpoint is False
+        assert initialize_node_no_optional.check_value is None
+        assert initialize_node_no_optional.checkpoint_passed is None
 
     def test_good_init_method_with_optional(self, initialize_node_optional):
         """Test a valid initialization of the class, passing all optional arguments."""
@@ -118,6 +122,9 @@ class TestInitializationCalibrationNode:
         assert initialize_node_optional.previous_timestamp == 0.0
         assert isinstance(initialize_node_optional._stream, StringIO)
         assert initialize_node_optional.been_calibrated_succesfully is False
+        assert initialize_node_optional.checkpoint is True
+        assert initialize_node_optional.check_value == 0.1
+        assert initialize_node_optional.checkpoint_passed is None
 
     def test_bad_nb_path_initialization(self):
         """Test an invalid initialization of the class due to the nb_path.
