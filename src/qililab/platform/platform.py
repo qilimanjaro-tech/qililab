@@ -657,6 +657,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         num_averages: int,
         num_shots: int = 1,
         weights: str | None = None,
+        debug: bool = False,
     ) -> QProgramResults:
         """Given an annealing program execute it as a qprogram.
         The annealing program should contain a time ordered list of circuit elements and their corresponging ising coefficients as a dictionary. Example structure:
@@ -680,6 +681,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             annealing_program_dict (list[dict[str, dict[str, float]]]): annealing program to run
             transpiler (Callable): ising to flux transpiler. The transpiler should take 2 values as arguments (delta, epsilon) and return 2 values (phix, phiz)
             averages (int, optional): Amount of times to run and average the program over. Defaults to 1.
+            debug (bool, optional): Whether to create debug information. For ``Qblox`` clusters all the program information is printed on screen.
+                For ``Quantum Machines`` clusters a ``.py`` file is created containing the ``QUA`` and config compilation. Defaults to False.
         """
         if self.flux_to_bus_topology is None:
             raise ValueError("Flux to bus topology not given in the runcard")
@@ -691,7 +694,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             crosstalk_matrix = (
                 calibration.crosstalk_matrix.inverse() if calibration.crosstalk_matrix is not None else None
             )
-            annealing_waveforms = annealing_program.get_waveforms(crosstalk_matrix=crosstalk_matrix)
+            annealing_waveforms = annealing_program.get_waveforms(
+                crosstalk_matrix=crosstalk_matrix, minimum_clock_time=self.gates_settings.minimum_clock_time
+            )
 
             qp_annealing = QProgram()
             shots_variable = qp_annealing.variable("num_shots", Domain.Scalar, int)
@@ -710,7 +715,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                             bus=readout_bus, waveform=measurement_name, weights=IQPair(I=weights_shape, Q=weights_shape)
                         )
 
-            return self.execute_qprogram(qprogram=qp_annealing, calibration=calibration)
+            return self.execute_qprogram(qprogram=qp_annealing, calibration=calibration, debug=debug)
         raise ValueError("The calibrated measurement is not present in the calibration file.")
 
     def execute_experiment(self, experiment: Experiment, results_path: str) -> str:
@@ -857,7 +862,13 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             markers=markers,
         )
         buses = {bus_alias: self._get_bus_by_alias(alias=bus_alias) for bus_alias in sequences}
-
+        for bus_alias, bus in buses.items():
+            if bus.distortions:
+                for distortion in bus.distortions:
+                    for waveform in sequences[bus_alias]._waveforms._waveforms:  # pylint: disable=protected-access
+                        sequences[bus_alias]._waveforms.modify(  # pylint: disable=protected-access
+                            waveform.name, distortion.apply(waveform.data)
+                        )
         if debug:
             with open("debug_qblox_execution.txt", "w", encoding="utf-8") as sourceFile:
                 for bus_alias in sequences:
