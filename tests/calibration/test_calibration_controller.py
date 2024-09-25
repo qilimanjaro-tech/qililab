@@ -383,8 +383,8 @@ class TestDiagnoseCheckpointsFromCalibrationController:
             assert node.checkpoint_passed is False
 
         # Asserts recursive calls
-        controller[2].calibrate.assert_has_no_calls()
-        controller[2]._update_parameters.assert_has_no_calls()
+        controller[2].calibrate.assert_not_called()
+        controller[2]._update_parameters.assert_not_called()
 
 
 @pytest.mark.parametrize(
