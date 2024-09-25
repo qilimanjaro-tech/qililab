@@ -16,7 +16,7 @@ from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, Measure, Operation, SetParameter
 from qililab.qprogram.variable import Variable
-from qililab.result.experiment_results import (
+from qililab.result.experiment_results_writer import (
     ExperimentMetadata,
     ExperimentResultsWriter,
     MeasurementMetadata,

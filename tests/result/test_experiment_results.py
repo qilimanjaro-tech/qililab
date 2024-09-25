@@ -9,7 +9,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-from qililab.result.experiment_results import ExperimentMetadata, ExperimentResults, ExperimentResultsWriter
+from qililab.result.experiment_results import ExperimentResults
+from qililab.result.experiment_results_writer import ExperimentMetadata, ExperimentResultsWriter
 
 matplotlib.use("Agg")  # Use non-interactive backend for testing
 
