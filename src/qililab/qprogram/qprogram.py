@@ -282,7 +282,7 @@ class QProgram(StructuredProgram):  # pylint: disable=too-many-public-methods
         return copied_qprogram
 
     @overload
-    def play(self, bus: str, waveform: Waveform | IQPair, amplify_flux: bool) -> None:
+    def play(self, bus: str, waveform: Waveform | IQPair, amplify_flux: bool = False) -> None:
         """Play a single waveform or an I/Q pair of waveforms on the bus.
 
         Args:
@@ -292,7 +292,7 @@ class QProgram(StructuredProgram):  # pylint: disable=too-many-public-methods
         """
 
     @overload
-    def play(self, bus: str, waveform: str, amplify_flux: bool) -> None:
+    def play(self, bus: str, waveform: str, amplify_flux: bool = False) -> None:
         """Play a named waveform on the bus.
 
         Args:
@@ -301,7 +301,7 @@ class QProgram(StructuredProgram):  # pylint: disable=too-many-public-methods
             amplify_flux (bool): Define if flux amplification is used for QUA.
         """
 
-    def play(self, bus: str, waveform: Waveform | IQPair | str, amplify_flux: bool) -> None:
+    def play(self, bus: str, waveform: Waveform | IQPair | str, amplify_flux: bool = False) -> None:
         """Play a waveform, IQPair, or calibrated operation on the specified bus.
 
         This method handles both playing a waveform or IQPair, and playing a
