@@ -14,7 +14,6 @@
 
 """Circuit Transpiler class"""
 
-
 import contextlib
 from dataclasses import asdict
 
@@ -103,7 +102,7 @@ class CircuitTranspiler:
         """
         supported_gates = ["rz", "drag", "cz", "wait", "measure"]
         new_gates = []
-        shift = {qubit: 0 for qubit in range(nqubits)}
+        shift = dict.fromkeys(range(nqubits), 0)
         for gate in ngates:
             if gate.name not in supported_gates:
                 raise NotImplementedError(f"{gate.name} not part of native supported gates {supported_gates}")
@@ -315,7 +314,11 @@ class CircuitTranspiler:
         return list(set(schedule_qubits + gate_qubits))  # converto to set and back to list to remove repeated items
 
     def _gate_element_to_pulse_event(
-        self, time: int, gate: Gate, gate_event: GateEventSettings, bus  # type: ignore
+        self,
+        time: int,
+        gate: Gate,
+        gate_event: GateEventSettings,
+        bus,  # type: ignore
     ) -> PulseEvent:
         """Translates a gate element into a pulse.
 

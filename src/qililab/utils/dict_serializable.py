@@ -160,11 +160,11 @@ class DictSerializable(Protocol, metaclass=DictSerializableMeta):
             if isinstance(attribute, dict) and "type" in attribute and attribute["type"] == deque.__name__:
                 return deque(process_attribute(item) for item in attribute["elements"])
             if isinstance(attribute, dict) and "type" in attribute and attribute["type"] == list.__name__:
-                return list(process_attribute(item) for item in attribute["elements"])
+                return [process_attribute(item) for item in attribute["elements"]]
             if isinstance(attribute, dict) and "type" in attribute and attribute["type"] == tuple.__name__:
                 return tuple(process_attribute(item) for item in attribute["elements"])
             if isinstance(attribute, dict) and "type" in attribute and attribute["type"] == set.__name__:
-                return set(process_attribute(item) for item in attribute["elements"])
+                return {process_attribute(item) for item in attribute["elements"]}
             if isinstance(attribute, dict) and "type" in attribute and attribute["type"] == np.ndarray.__name__:
                 return np.array([process_attribute(item) for item in attribute["elements"]])
             if isinstance(attribute, dict) and "type" in attribute and attribute["type"] == dict.__name__:
