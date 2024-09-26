@@ -14,8 +14,9 @@
 
 """MiniCircuits driver."""
 
-import urllib
 from dataclasses import dataclass
+from urllib.error import URLError
+from urllib.request import Request, urlopen
 
 from qililab.typings.instruments.device import Device
 
@@ -47,10 +48,10 @@ class MiniCircuitsDriver(Device):
             command (str): Command to send via HTTP.
         """
         try:
-            request = urllib.request.Request(f"http://{self.address}/:{command}")  # type: ignore
-            with urllib.request.urlopen(request, timeout=2) as response:  # type: ignore # nosec
+            request = Request(f"http://{self.address}/:{command}")  # type: ignore
+            with urlopen(request, timeout=2) as response:  # noqa: S310
                 pte_return = response.read()
-        except urllib.error.URLError as error:  # type: ignore
+        except URLError as error:  # type: ignore
             raise ValueError("No response from device. Check IP address and connections.") from error
 
         return pte_return

@@ -286,7 +286,7 @@ class Parameter(str, Enum):
     RAMPING_ENABLED = "ramping_enabled"
     RAMPING_RATE = "ramp_rate"
     SPAN = "span"
-    LOW_PASS_FILTER = "low_pass_filter"  # nosec
+    LOW_PASS_FILTER = "low_pass_filter"  # noqa: S105
     SCATTERING_PARAMETER = "scattering_parameter"
     FREQUENCY_SPAN = "frequency_span"
     FREQUENCY_CENTER = "frequency_center"
