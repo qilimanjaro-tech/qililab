@@ -22,12 +22,12 @@ from .rohde_schwarz import RhodeSchwarzSGS100A
 from .yokogawa import GS200
 
 __all__ = [
+    "GS200",
+    "Cluster",
     "ERASynthPlus",
     "InstrumentDriverFactory",
     "Keithley2600",
-    "Cluster",
     "Pulsar",
-    "SpiRack",
     "RhodeSchwarzSGS100A",
-    "GS200",
+    "SpiRack",
 ]

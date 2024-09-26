@@ -13,13 +13,15 @@
 # limitations under the License.
 
 """Singleton classes."""
+
 from abc import ABCMeta
+from typing import ClassVar
 
 
 class Singleton(type):
     """Singleton metaclass used to limit to 1 the number of instances of a subclass."""
 
-    _instances: dict = {}
+    _instances: ClassVar[dict] = {}
 
     def __call__(cls, *args, **kwargs):
         """Create a new instance of cls if it doesn't already exist."""
@@ -31,7 +33,7 @@ class Singleton(type):
 class SingletonABC(ABCMeta):
     """ABC singleton metaclass used to limit to 1 the number of instances of a subclass."""
 
-    _instances: dict = {}
+    _instances: ClassVar[dict] = {}
 
     def __call__(cls, *args, **kwargs):
         """Create a new instance of cls if it doesn't already exist."""

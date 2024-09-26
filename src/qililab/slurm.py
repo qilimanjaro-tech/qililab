@@ -89,7 +89,7 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
     # are imported inside the SLURM job)
     notebook_code = "\n".join(local_ns["In"]).split("\n")
     import_lines = [line for line in notebook_code if line.startswith(("import ", "from ")) and "slurm" not in line]
-    executable_code = "\n".join(import_lines + [cell])
+    executable_code = "\n".join([*import_lines, cell])
 
     # Create the executor that will be used to queue the SLURM job
     executor = AutoExecutor(folder=folder_path, cluster=execution_env)

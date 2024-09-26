@@ -23,4 +23,4 @@ from .rectangular import Rectangular
 from .snz import SNZ
 from .two_step import TwoStep
 
-__all__ = ["Cosine", "Drag", "FlatTop", "Gaussian", "PulseShape", "Rectangular", "SNZ", "TwoStep"]
+__all__ = ["SNZ", "Cosine", "Drag", "FlatTop", "Gaussian", "PulseShape", "Rectangular", "TwoStep"]

@@ -13,7 +13,9 @@
 # limitations under the License.
 
 """This file contains the QbloxQCMRF class."""
+
 from dataclasses import dataclass, field
+from typing import ClassVar
 
 from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm
 
@@ -47,13 +49,14 @@ class QbloxQCMRF(QbloxQCM):
         out1_offset_path0: float
         out1_offset_path1: float
         out_offsets: list[float] = field(
-            init=False, default_factory=list  # QCM-RF module doesn't have an `out_offsets` parameter
+            init=False,
+            default_factory=list,  # QCM-RF module doesn't have an `out_offsets` parameter
         )
 
     settings: QbloxQCMRFSettings
     # TODO: We should separate instrument settings and instrument parameters, such that the user can quickly get
     # al the settable parameters of an instrument.
-    parameters = {
+    parameters: ClassVar[set[Parameter]] = {
         Parameter.OUT0_LO_FREQ,
         Parameter.OUT0_LO_EN,
         Parameter.OUT0_ATT,

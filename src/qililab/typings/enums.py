@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Enum classes"""
+
 from enum import Enum
 
 from qililab.yaml import yaml
@@ -93,7 +94,7 @@ class GateName(str, Enum):
         * Park
     """
 
-    I = "I"  # noqa: E741
+    I = "I"
     X = "X"
     RX = "RX"
     Y = "Y"
@@ -487,7 +488,7 @@ class OperationName(str, Enum):
         * BARRIER
     """
 
-    RXY = "Rxy"  # noqa: E741
+    RXY = "Rxy"
     R180 = "R180"
     X = "X"
     CPHASE = "CPhase"

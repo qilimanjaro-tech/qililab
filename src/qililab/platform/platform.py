@@ -14,6 +14,7 @@
 
 # pylint: disable=too-many-lines
 """Platform class."""
+
 import ast
 import datetime
 import io
@@ -893,9 +894,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         # Acquire results
         results = QProgramResults()
-        for bus_alias in buses:
-            if isinstance(buses[bus_alias].system_control, ReadoutSystemControl):
-                bus_results = buses[bus_alias].acquire_qprogram_results(acquisitions=acquisitions[bus_alias])
+        for bus_alias, bus in buses.items():
+            if isinstance(bus.system_control, ReadoutSystemControl):
+                bus_results = bus.acquire_qprogram_results(acquisitions=acquisitions[bus_alias])
                 for bus_result in bus_results:
                     results.append_result(bus=bus_alias, result=bus_result)
 
@@ -1068,7 +1069,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         for i, qubit in enumerate(qubit for gate in circuit.queue for qubit in gate.qubits if isinstance(gate, M)):
             if qubit not in qubits_m:
                 qubits_m[qubit] = 0
-            order[(qubit, qubits_m[qubit])] = i
+            order[qubit, qubits_m[qubit]] = i
             qubits_m[qubit] += 1
         if len(order) != len(result.qblox_raw_results):
             raise ValueError(
@@ -1080,7 +1081,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         for qblox_result in result.qblox_raw_results:
             measurement = qblox_result["measurement"]
             qubit = qblox_result["qubit"]
-            results[order[(qubit, measurement)]] = qblox_result
+            results[order[qubit, measurement]] = qblox_result
 
         return QbloxResult(integration_lengths=result.integration_lengths, qblox_raw_results=results)
 

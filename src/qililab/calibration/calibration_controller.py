@@ -14,6 +14,7 @@
 
 # pylint: disable=anomalous-backslash-in-string, inconsistent-return-statements
 """Automatic-calibration Controller module, which works with notebooks as nodes."""
+
 from datetime import datetime, timedelta
 
 import networkx as nx
@@ -309,7 +310,7 @@ class CalibrationController:
                 and "platform_parameters" in node.output_parameters
             ):
                 for param_name, param_value, bus_alias, channel_id in node.output_parameters["platform_parameters"]:
-                    parameters[(param_name, bus_alias, channel_id)] = (
+                    parameters[param_name, bus_alias, channel_id] = (
                         param_value,
                         node.node_id,
                         datetime.fromtimestamp(node.previous_timestamp),
@@ -338,7 +339,7 @@ class CalibrationController:
                 and "fidelities" in node.output_parameters
             ):
                 for qubit, fidelity, value in node.output_parameters["fidelities"]:
-                    fidelities[(fidelity, qubit)] = (
+                    fidelities[fidelity, qubit] = (
                         value,
                         node.node_id,
                         datetime.fromtimestamp(node.previous_timestamp),
@@ -432,8 +433,8 @@ class CalibrationController:
                     bus_list = str(bus_alias).split("_")
                     bus = "_".join([x for x in bus_list if not any(char.isdigit() for char in x)])
 
-                    if f"{str(param_name)}_{bus}" not in col:
-                        col.append(f"{str(param_name)}_{bus}")
+                    if f"{param_name!s}_{bus}" not in col:
+                        col.append(f"{param_name!s}_{bus}")
 
         return idx, col
 
@@ -458,7 +459,7 @@ class CalibrationController:
                 for param_name, param_value, bus_alias, _ in node.output_parameters["platform_parameters"]:
                     bus_list = str(bus_alias).split("_")
                     bus = "_".join([x for x in bus_list if not any(char.isdigit() for char in x)])
-                    df[f"{str(param_name)}_{bus}"][qubit] = param_value
+                    df[f"{param_name!s}_{bus}"][qubit] = param_value
 
         return df
 

@@ -55,10 +55,10 @@ from .variable import Domain
 __all__ = [
     "Calibration",
     "CrosstalkMatrix",
-    "FluxVector",
-    "Experiment",
-    "QbloxCompiler",
-    "QProgram",
-    "QuantumMachinesCompiler",
     "Domain",
+    "Experiment",
+    "FluxVector",
+    "QProgram",
+    "QbloxCompiler",
+    "QuantumMachinesCompiler",
 ]

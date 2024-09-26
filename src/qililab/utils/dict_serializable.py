@@ -1,7 +1,7 @@
 from collections import deque
 from dataclasses import fields, is_dataclass
 from enum import Enum, EnumMeta
-from typing import Any, Protocol, Type, TypedDict, TypeVar, _ProtocolMeta, cast, runtime_checkable
+from typing import Any, ClassVar, Protocol, Type, TypedDict, TypeVar, _ProtocolMeta, cast, runtime_checkable
 from uuid import UUID
 
 import numpy as np
@@ -68,7 +68,7 @@ class DictSerializableEnum(Enum, metaclass=DictSerializableEnumMeta):
 class DictSerializableFactory:
     """Factory to store information of `DictSerializable` classes."""
 
-    _registry: dict[str, Type["DictSerializable"]] = {}
+    _registry: ClassVar[dict[str, Type["DictSerializable"]]] = {}
 
     @classmethod
     def register(cls, name: str, dict_serializable_class: Type["DictSerializable"]) -> None:
@@ -186,7 +186,7 @@ class DictSerializable(Protocol, metaclass=DictSerializableMeta):
                 if not f.init and f.name in data:
                     processed_value = process_attribute(data[f.name])
                     if is_frozen:
-                        object.__setattr__(dataclass_instance, f.name, processed_value)
+                        object.__setattr__(dataclass_instance, f.name, processed_value)  # noqa: PLC2801
                     else:
                         setattr(dataclass_instance, f.name, processed_value)
 

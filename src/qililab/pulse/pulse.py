@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Pulse class."""
+
 from dataclasses import dataclass
 
 from qililab.constants import PULSE, RUNCARD
@@ -92,4 +93,4 @@ class Pulse:
         Returns:
             str: String representation of the Pulse object.
         """
-        return f"{str(self.pulse_shape)} - {self.duration}ns"
+        return f"{self.pulse_shape!s} - {self.duration}ns"

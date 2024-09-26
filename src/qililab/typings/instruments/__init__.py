@@ -33,11 +33,11 @@ __all__ = [
     "Keithley2600Driver",
     "MiniCircuitsDriver",
     "Pulsar",
+    "QDevilQDac2",
+    "QMMDriver",
     "QbloxD5a",
     "QbloxS4g",
     "QcmQrm",
-    "QDevilQDac2",
-    "QMMDriver",
     "RohdeSchwarzSGS100A",
     "YokogawaGS200",
 ]

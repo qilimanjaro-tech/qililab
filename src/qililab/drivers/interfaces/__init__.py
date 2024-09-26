@@ -22,8 +22,8 @@ from .local_oscillator import LocalOscillator
 from .voltage_source import VoltageSource
 
 __all__ = [
-    "Attenuator",
     "AWG",
+    "Attenuator",
     "BaseInstrument",
     "CurrentSource",
     "Digitiser",

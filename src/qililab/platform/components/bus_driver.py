@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Bus Class Interface."""
+
 from abc import ABC
 from copy import deepcopy
 from typing import Any
@@ -172,7 +173,7 @@ class BusDriver(ABC):
         Returns:
             BusDriver: The initialized BusDriver class.
         """
-        from .bus_factory import BusFactory  # pylint: disable=import-outside-toplevel, cyclic-import
+        from .bus_factory import BusFactory  # noqa: PLC0415
 
         local_dictionary = deepcopy(dictionary)
         local_dictionary.pop("type", None)

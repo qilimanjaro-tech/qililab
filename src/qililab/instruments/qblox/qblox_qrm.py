@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Qblox pulsar QRM class"""
+
 from dataclasses import dataclass
 from typing import Sequence, cast
 
@@ -50,8 +51,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         def __post_init__(self):
             """build AWGQbloxADCSequencer"""
             if (
-                self.num_sequencers <= 0
-                or self.num_sequencers > QbloxModule._NUM_MAX_SEQUENCERS  # pylint: disable=protected-access
+                self.num_sequencers <= 0 or self.num_sequencers > QbloxModule._NUM_MAX_SEQUENCERS  # pylint: disable=protected-access
             ):
                 raise ValueError(
                     "The number of sequencers must be greater than 0 and less or equal than "
@@ -64,9 +64,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 )
 
             self.awg_sequencers = [
-                AWGQbloxADCSequencer(**sequencer)
-                if isinstance(sequencer, dict)
-                else sequencer  # pylint: disable=not-a-mapping
+                AWGQbloxADCSequencer(**sequencer) if isinstance(sequencer, dict) else sequencer  # pylint: disable=not-a-mapping
                 for sequencer in self.awg_sequencers
             ]
             super().__post_init__()
@@ -134,7 +132,9 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """
         return self.get_acquisitions()
 
-    def acquire_qprogram_results(self, acquisitions: dict[str, AcquisitionData], port: str) -> list[QbloxMeasurementResult]:  # type: ignore
+    def acquire_qprogram_results(  # type: ignore[override]
+        self, acquisitions: dict[str, AcquisitionData], port: str
+    ) -> list[QbloxMeasurementResult]:
         """Read the result from the AWG instrument
 
         Args:
@@ -150,7 +150,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         self, acquisitions: dict[str, AcquisitionData], port: str
     ) -> list[QbloxMeasurementResult]:
         results = []
-        for acquisition in acquisitions:
+        for acquisition, acquistion_data in acquisitions.items():
             sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
             for sequencer in sequencers:
                 if sequencer.identifier in self.sequences:
@@ -158,7 +158,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                         sequencer=sequencer.identifier,
                         timeout=cast(AWGQbloxADCSequencer, sequencer).acquisition_timeout,
                     )
-                    if acquisitions[acquisition].save_adc:
+                    if acquistion_data.save_adc:
                         self.device.store_scope_acquisition(sequencer=sequencer.identifier, name=acquisition)
                     raw_measurement_data = self.device.get_acquisitions(sequencer=sequencer.identifier)[acquisition][
                         "acquisition"

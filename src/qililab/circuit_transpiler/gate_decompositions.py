@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """This file contains the needed classes/methods to decompose gates into native gates."""
+
 from collections.abc import Callable
 
 import numpy as np
@@ -77,7 +78,7 @@ def translate_gates(ngates: list[gates.Gate]) -> list[gates.Gate]:
     """
 
     # define supported gates (native qpu gates + virtual z + measurement)
-    supported_gates = native_gates() + (gates.RZ, gates.M)
+    supported_gates = (*native_gates(), gates.RZ, gates.M)
 
     # check which gates are native gates and if not all of them are so, translate
     to_translate = [not isinstance(gate, supported_gates) for gate in ngates]

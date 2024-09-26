@@ -26,13 +26,13 @@ from .utils import InstrumentFactory
 
 __all__ = [
     "AWG",
-    "AWGAnalogDigitalConverter",
-    "Instrument",
-    "ParameterNotFound",
-    "Instruments",
-    "Attenuator",
-    "QuantumMachinesCluster",
     "SGS100A",
-    "SignalGenerator",
+    "AWGAnalogDigitalConverter",
+    "Attenuator",
+    "Instrument",
     "InstrumentFactory",
+    "Instruments",
+    "ParameterNotFound",
+    "QuantumMachinesCluster",
+    "SignalGenerator",
 ]

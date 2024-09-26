@@ -39,7 +39,7 @@ class ExperimentExecutor:  # pylint: disable=too-few-public-methods
     def _prepare(self):
         """Prepares the loop values and result shape before execution."""
         self._traverse_and_prepare(self.experiment.body)
-        self.shape = tuple(len(values) for _, values in self.loop_values.items()) + (2,)
+        self.shape = (*tuple(len(values) for _, values in self.loop_values.items()), 2)
 
     def _traverse_and_prepare(self, block: Block):
         """Traverses the blocks to gather loop information and determine result shape."""

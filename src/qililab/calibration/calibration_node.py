@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Automatic-calibration Node module, which works with notebooks as nodes."""
+
 import json
 import logging
 import os
@@ -371,7 +372,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                 )
                 # pylint: disable = broad-exception-raised
                 raise Exception(
-                    f"Aborting execution. Exception {str(exc)} during automatic calibration notebook execution, trace of the error can be found in {error_path}"
+                    f"Aborting execution. Exception {exc!s} during automatic calibration notebook execution, trace of the error can be found in {error_path}"
                 ) from exc
 
             logger.error(
@@ -380,7 +381,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             )
             # pylint: disable = broad-exception-raised
             raise Exception(
-                f"Aborting execution. Exception {str(exc)} during automatic calibration, expected error execution file to be created but it did not"
+                f"Aborting execution. Exception {exc!s} during automatic calibration, expected error execution file to be created but it did not"
             ) from exc
 
     @staticmethod
@@ -472,17 +473,16 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             tuple[str, str]: A tuple containing the notebook name and its folder.
         """
         # Create qubit_string to add:
-        # fmt: off
         qubit_str = (
-            f"_q{str(self.qubit_index)}"
+            f"_q{self.qubit_index!s}"
             if isinstance(self.qubit_index, int)
             else "_" + "".join(f"q{q}" for q in self.qubit_index)
             if isinstance(self.qubit_index, list)
             else ""
-        )  # fmt: on
+        )
 
         # Create distinguish_string to differentiate multiple calls of the same node:
-        distinguish_str = f"_{str(self.node_distinguisher)}" if self.node_distinguisher is not None else ""
+        distinguish_str = f"_{self.node_distinguisher!s}" if self.node_distinguisher is not None else ""
 
         # Remove .ipynb from end if it has one, and separate the folder and name with the last "/":
         path_list = original_path.split(".ipynb")[0].split("/")

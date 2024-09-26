@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """FactoryElement class"""
+
 from qililab.typings.enums import (
     ConnectionName,
     InstrumentControllerName,
@@ -37,7 +38,7 @@ class FactoryElement:  # pylint: disable=too-few-public-methods
         | NodeName
         | ConnectionName
         | InstrumentControllerName
-    )  #: Enumerate for name
+    )
 
     def __hash__(self) -> int:
         return hash(repr(self))
