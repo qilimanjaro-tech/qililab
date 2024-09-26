@@ -380,7 +380,7 @@ class TestQuantumMachinesCompiler:
 
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
         compiler = QuantumMachinesCompiler()
-        qua_program, configuration, _ = compiler.compile(
+        qua_program, _, _ = compiler.compile(
             play_named_operation, bus_mapping={"drive": "drive_q0"}, calibration=calibration
         )
 
@@ -565,7 +565,7 @@ class TestQuantumMachinesCompiler:
 
     def test_measure_operation_with_same_pulse_updates_it_correctly(self, measure_operation_with_same_pulse: QProgram):
         compiler = QuantumMachinesCompiler()
-        qua_program, configuration, measurements = compiler.compile(measure_operation_with_same_pulse)
+        qua_program, configuration, _ = compiler.compile(measure_operation_with_same_pulse)
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 6

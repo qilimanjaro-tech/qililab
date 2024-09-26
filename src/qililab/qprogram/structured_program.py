@@ -197,9 +197,7 @@ class StructuredProgram:
         """
         return StructuredProgram._AverageContext(structured_program=self, shots=shots)
 
-    def variable(
-        self, label: str, domain: Domain, type: type[int | float] | None = None
-    ):  # pylint: disable=redefined-builtin
+    def variable(self, label: str, domain: Domain, type: type[int | float] | None = None):  # pylint: disable=redefined-builtin
         """Declare a variable.
 
         Args:
@@ -228,9 +226,9 @@ class StructuredProgram:
             raise ValueError("When declaring a variable of a specific domain, its type is inferred by its domain.")
 
         if domain is Domain.Scalar:
-            if type == int:
+            if type is int:
                 return _int_variable(label, domain)
-            if type == float:
+            if type is float:
                 return _float_variable(label, domain)
 
         if domain == Domain.Time:
@@ -295,9 +293,7 @@ class StructuredProgram:
             self.block: InfiniteLoop = InfiniteLoop()
 
     class _ParallelContext(_BlockContext):  # pylint: disable=too-few-public-methods
-        def __init__(
-            self, structured_program: "StructuredProgram", loops: list[Loop | ForLoop]
-        ):  # pylint: disable=super-init-not-called
+        def __init__(self, structured_program: "StructuredProgram", loops: list[Loop | ForLoop]):  # pylint: disable=super-init-not-called
             self.structured_program = structured_program
             self.block: Parallel = Parallel(loops=loops)
 
@@ -313,8 +309,6 @@ class StructuredProgram:
             super().__exit__(exc_type, exc_value, exc_tb)
 
     class _AverageContext(_BlockContext):  # pylint: disable=too-few-public-methods
-        def __init__(
-            self, structured_program: "StructuredProgram", shots: int
-        ):  # pylint: disable=super-init-not-called
+        def __init__(self, structured_program: "StructuredProgram", shots: int):  # pylint: disable=super-init-not-called
             self.structured_program = structured_program
             self.block: Average = Average(shots=shots)
