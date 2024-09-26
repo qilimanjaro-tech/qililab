@@ -13,3 +13,6 @@
 # limitations under the License.
 
 from .yokogawa_gs200 import GS200
+
+
+__all__ = ["GS200"]

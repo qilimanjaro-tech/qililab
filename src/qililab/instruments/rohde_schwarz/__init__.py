@@ -13,4 +13,8 @@
 # limitations under the License.
 
 """__init__.py"""
+
 from .sgs100a import SGS100A
+
+
+__all__ = ["SGS100A"]

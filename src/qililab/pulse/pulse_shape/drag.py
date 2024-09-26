@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Drag pulse shape."""
+
 from copy import deepcopy
 from dataclasses import dataclass
 
@@ -121,7 +122,7 @@ class Drag(PulseShape):
             the drag coefficient.
         """
         return {
-            "name": self.name.value,
+            "name": self.name.value,  # type: ignore[operator]
             "num_sigmas": self.num_sigmas,
             "drag_coefficient": self.drag_coefficient,
         }

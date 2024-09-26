@@ -70,4 +70,8 @@ Interfaces
     ~VoltageSource
     ~Attenuator
 """
+
 from .instruments import GS200, Cluster, ERASynthPlus, Keithley2600, Pulsar, RhodeSchwarzSGS100A, SpiRack
+
+
+__all__ = ["Cluster", "ERASynthPlus", "GS200", "Keithley2600", "Pulsar", "RhodeSchwarzSGS100A", "SpiRack"]

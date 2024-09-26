@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Gaussian pulse shape."""
+
 from copy import deepcopy
 from dataclasses import dataclass
 
@@ -121,6 +122,6 @@ class Gaussian(PulseShape):
             dict: Dictionary representation including the name of the pulse shape and the number of sigmas.
         """
         return {
-            "name": self.name.value,
+            "name": self.name.value,  # type: ignore[operator]
             "num_sigmas": self.num_sigmas,
         }

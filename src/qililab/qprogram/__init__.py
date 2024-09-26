@@ -43,6 +43,7 @@ Other QProgram related Classes
     ~Domain
 
 """
+
 from .calibration import Calibration
 from .crosstalk_matrix import CrosstalkMatrix, FluxVector
 from .experiment import Experiment
@@ -50,3 +51,15 @@ from .qblox_compiler import QbloxCompiler
 from .qprogram import QProgram
 from .quantum_machines_compiler import QuantumMachinesCompiler
 from .variable import Domain
+
+
+__all__ = [
+    "Calibration",
+    "CrosstalkMatrix",
+    "FluxVector",
+    "Experiment",
+    "QbloxCompiler",
+    "QProgram",
+    "QuantumMachinesCompiler",
+    "Domain",
+]

@@ -14,6 +14,7 @@
 
 # pylint: disable=anomalous-backslash-in-string
 """Rectangular pulse shape."""
+
 from copy import deepcopy
 from dataclasses import dataclass
 
@@ -106,6 +107,6 @@ class Cosine(PulseShape):
             dict: Dictionary representing the Cosine pulse shape. It contains the name of the pulse shape plus the lambda_2 factor.
         """
         return {
-            "name": self.name.value,
+            "name": self.name.value,  # type: ignore[operator]
             "lambda_2": self.lambda_2,
         }

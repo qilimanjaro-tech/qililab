@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Two-Step pulse shape."""
+
 from copy import deepcopy
 from dataclasses import dataclass
 
@@ -77,4 +78,4 @@ class TwoStep(PulseShape):
         Returns:
             dict: Dictionary representation of the pulse shape including its name.
         """
-        return {"name": self.name.value, "step_amplitude": self.step_amplitude, "step_duration": self.step_duration}
+        return {"name": self.name.value, "step_amplitude": self.step_amplitude, "step_duration": self.step_duration}  # type: ignore[operator]

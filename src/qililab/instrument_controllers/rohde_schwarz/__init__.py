@@ -12,5 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Rohde & Schwarz Instrument Controllers."""
+"""Rohde & Schwarz Instrument Controllers."""
+
 from .sgs100a_controller import SGS100AController
+
+
+__all__ = ["SGS100AController"]

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Rectangular pulse shape."""
+
 from copy import deepcopy
 from dataclasses import dataclass
 
@@ -79,5 +80,5 @@ class Rectangular(PulseShape):
             dict: Dictionary representation of the pulse shape including its name.
         """
         return {
-            "name": self.name.value,
+            "name": self.name.value,  # type: ignore[operator]
         }

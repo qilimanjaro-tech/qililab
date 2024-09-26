@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Instrument Connections module"""
+"""Instrument Connections module"""
+
 from .tcpip_connection import TCPIPConnection
 from .usb_connection import USBConnection
+
+
+__all__ = ["TCPIPConnection", "USBConnection"]

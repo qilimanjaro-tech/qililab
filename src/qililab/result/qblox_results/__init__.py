@@ -12,5 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Qblox Results format """
+"""Qblox Results format"""
+
 from .qblox_result import QbloxResult
+
+
+__all__ = ["QbloxResult"]

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """SNZ pulse shape."""
+
 from copy import deepcopy
 from dataclasses import dataclass
 
@@ -124,7 +125,7 @@ class SNZ(PulseShape):
             dict: Dictionary representation including the name of the pulse shape, the b parameter and the t_phi parameter..
         """
         return {
-            "name": self.name.value,
+            "name": self.name.value,  # type: ignore[operator]
             "b": self.b,
             "t_phi": self.t_phi,
         }

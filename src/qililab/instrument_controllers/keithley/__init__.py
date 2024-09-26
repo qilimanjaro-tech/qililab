@@ -12,5 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" keithley Instrument Controllers."""
+"""keithley Instrument Controllers."""
+
 from .keithley_2600_controller import Keithley2600Controller
+
+
+__all__ = ["Keithley2600Controller"]

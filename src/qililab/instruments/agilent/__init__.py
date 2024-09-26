@@ -12,5 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Agilent instruments """
+"""Agilent instruments"""
+
 from .e5071b_vna import E5071B
+
+
+__all__ = ["E5071B"]
