@@ -16,5 +16,4 @@
 
 from .e5080b_vna import E5080B
 
-
 __all__ = ["E5080B"]

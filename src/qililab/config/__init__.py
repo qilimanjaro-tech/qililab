@@ -17,5 +17,4 @@
 from .config import logger
 from .version import __version__
 
-
 __all__ = ["logger", "__version__"]

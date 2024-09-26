@@ -46,7 +46,6 @@ from .instruments import (
     YokogawaGS200,
 )
 
-
 __all__ = [
     "AcquireTriggerMode",
     "AcquisitionName",

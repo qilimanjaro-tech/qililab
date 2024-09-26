@@ -17,5 +17,4 @@
 from .tcpip_connection import TCPIPConnection
 from .usb_connection import USBConnection
 
-
 __all__ = ["TCPIPConnection", "USBConnection"]

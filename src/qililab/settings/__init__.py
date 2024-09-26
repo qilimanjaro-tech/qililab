@@ -17,5 +17,4 @@
 from .runcard import Runcard
 from .settings import Settings
 
-
 __all__ = ["Runcard", "Settings"]

@@ -15,9 +15,8 @@ from qililab.circuit_transpiler import CircuitTranspiler
 from qililab.circuit_transpiler.native_gates import Drag, Wait
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Pulse, PulseEvent, PulseSchedule
-from qililab.pulse.pulse_shape import SNZ
+from qililab.pulse.pulse_shape import SNZ, Gaussian, Rectangular
 from qililab.pulse.pulse_shape import Drag as Drag_pulse
-from qililab.pulse.pulse_shape import Gaussian, Rectangular
 from qililab.settings import Runcard
 from qililab.settings.gate_event_settings import GateEventSettings
 from tests.data import Galadriel
@@ -608,7 +607,8 @@ def fixture_platform(chip: Chip) -> Platform:
     )
     platform.buses = buses
     platform.gates_settings.gates = {  # type: ignore
-        gate: [GateEventSettings(**event) for event in schedule] for gate, schedule in platform_gates.items()  # type: ignore
+        gate: [GateEventSettings(**event) for event in schedule]  # type: ignore
+        for gate, schedule in platform_gates.items()  # type: ignore
     }
     return platform
 

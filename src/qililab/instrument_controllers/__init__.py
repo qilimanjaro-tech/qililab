@@ -27,7 +27,6 @@ from .utils import InstrumentControllerFactory
 from .vector_network_analyzer import E5071BController, E5080BController
 from .yokogawa import GS200Controller
 
-
 __all__ = [
     "InstrumentController",
     "InstrumentControllers",

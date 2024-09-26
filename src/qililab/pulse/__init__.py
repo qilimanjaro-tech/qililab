@@ -68,7 +68,6 @@ from .pulse_schedule import PulseSchedule
 from .pulse_shape import SNZ, Cosine, Drag, FlatTop, Gaussian, PulseShape, Rectangular
 from .qblox_compiler import QbloxCompiler
 
-
 __all__ = [
     "Pulse",
     "PulseBusSchedule",

@@ -14,5 +14,4 @@
 
 from .sgs100a import RhodeSchwarzSGS100A
 
-
 __all__ = ["RhodeSchwarzSGS100A"]

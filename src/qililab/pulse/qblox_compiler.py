@@ -13,9 +13,8 @@
 # limitations under the License.
 
 import numpy as np
-from qpysequence import Acquisitions, Program
+from qpysequence import Acquisitions, Program, Waveforms, Weights
 from qpysequence import Sequence as QpySequence
-from qpysequence import Waveforms, Weights
 from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Register
 from qpysequence.program.instructions import (

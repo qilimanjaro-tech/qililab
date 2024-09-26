@@ -16,5 +16,4 @@
 
 from .keithley_2600_controller import Keithley2600Controller
 
-
 __all__ = ["Keithley2600Controller"]

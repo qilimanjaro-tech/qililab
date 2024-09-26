@@ -16,5 +16,4 @@
 
 from .quantum_machines_cluster_controller import QuantumMachinesClusterController
 
-
 __all__ = ["QuantumMachinesClusterController"]

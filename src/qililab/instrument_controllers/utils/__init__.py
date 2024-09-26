@@ -16,5 +16,4 @@
 
 from .instrument_controller_factory import InstrumentControllerFactory
 
-
 __all__ = ["InstrumentControllerFactory"]

@@ -16,5 +16,4 @@
 
 from .sgs100a_controller import SGS100AController
 
-
 __all__ = ["SGS100AController"]

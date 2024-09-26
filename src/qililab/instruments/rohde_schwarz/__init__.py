@@ -16,5 +16,4 @@
 
 from .sgs100a import SGS100A
 
-
 __all__ = ["SGS100A"]

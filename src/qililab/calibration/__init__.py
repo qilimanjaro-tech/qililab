@@ -36,5 +36,4 @@ Calibration-related methods
 from .calibration_controller import CalibrationController
 from .calibration_node import CalibrationNode, export_nb_outputs
 
-
 __all__ = ["CalibrationController", "CalibrationNode", "export_nb_outputs"]

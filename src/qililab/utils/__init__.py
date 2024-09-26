@@ -27,7 +27,6 @@ from .signal_processing import demodulate
 from .singleton import Singleton, SingletonABC
 from .waveforms import Waveforms
 
-
 __all__ = [
     "dict_factory",
     "coordinate_decompose",

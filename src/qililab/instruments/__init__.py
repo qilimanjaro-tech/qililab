@@ -24,7 +24,6 @@ from .rohde_schwarz import SGS100A
 from .signal_generator import SignalGenerator
 from .utils import InstrumentFactory
 
-
 __all__ = [
     "AWG",
     "AWGAnalogDigitalConverter",

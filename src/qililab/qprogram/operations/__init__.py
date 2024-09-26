@@ -32,7 +32,6 @@ from .set_phase import SetPhase
 from .sync import Sync
 from .wait import Wait
 
-
 __all__ = [
     "Acquire",
     "AcquireWithCalibratedWeights",

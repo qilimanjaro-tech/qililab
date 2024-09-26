@@ -22,5 +22,4 @@ from .qblox_qrm import QbloxQRM
 from .qblox_qrm_rf import QbloxQRMRF
 from .qblox_s4g import QbloxS4g
 
-
 __all__ = ["QbloxD5a", "QbloxModule", "QbloxQCM", "QbloxQCMRF", "QbloxQRM", "QbloxQRMRF", "QbloxS4g"]

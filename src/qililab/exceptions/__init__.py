@@ -17,5 +17,4 @@
 from .data_unavailable import DataUnavailable
 from .exception_group import ExceptionGroup
 
-
 __all__ = ["DataUnavailable", "ExceptionGroup"]

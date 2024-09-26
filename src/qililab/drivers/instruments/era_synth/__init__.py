@@ -14,5 +14,4 @@
 
 from .era_synth_plus import ERASynthPlus
 
-
 __all__ = ["ERASynthPlus"]

@@ -52,7 +52,6 @@ from .qprogram import QProgram
 from .quantum_machines_compiler import QuantumMachinesCompiler
 from .variable import Domain
 
-
 __all__ = [
     "Calibration",
     "CrosstalkMatrix",

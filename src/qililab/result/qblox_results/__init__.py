@@ -16,5 +16,4 @@
 
 from .qblox_result import QbloxResult
 
-
 __all__ = ["QbloxResult"]

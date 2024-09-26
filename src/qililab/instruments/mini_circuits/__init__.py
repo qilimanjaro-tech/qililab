@@ -16,5 +16,4 @@
 
 from .attenuator import Attenuator
 
-
 __all__ = ["Attenuator"]

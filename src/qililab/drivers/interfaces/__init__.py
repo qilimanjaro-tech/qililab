@@ -21,7 +21,6 @@ from .instrument_interface_factory import InstrumentInterfaceFactory
 from .local_oscillator import LocalOscillator
 from .voltage_source import VoltageSource
 
-
 __all__ = [
     "Attenuator",
     "AWG",

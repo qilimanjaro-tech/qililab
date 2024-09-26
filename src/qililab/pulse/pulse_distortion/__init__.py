@@ -19,5 +19,4 @@ from .exponential_decay_correction import ExponentialCorrection
 from .lfilter_correction import LFilterCorrection
 from .pulse_distortion import PulseDistortion
 
-
 __all__ = ["BiasTeeCorrection", "ExponentialCorrection", "LFilterCorrection", "PulseDistortion"]

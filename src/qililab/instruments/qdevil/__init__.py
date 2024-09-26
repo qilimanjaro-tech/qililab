@@ -16,5 +16,4 @@
 
 from .qdevil_qdac2 import QDevilQDac2
 
-
 __all__ = ["QDevilQDac2"]
