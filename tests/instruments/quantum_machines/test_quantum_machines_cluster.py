@@ -150,9 +150,7 @@ class TestQuantumMachinesCluster:
     @pytest.mark.parametrize(
         "qmm_name", ["qmm", "qmm_with_octave", "qmm_with_octave_custom_connectivity", "qmm_with_opx1000"]
     )
-    def test_initial_setup(
-        self, mock_instrument_init: MagicMock, mock_init: MagicMock, qmm_name, request
-    ):  # pylint: disable=unused-argument
+    def test_initial_setup(self, mock_instrument_init: MagicMock, mock_init: MagicMock, qmm_name, request):  # pylint: disable=unused-argument
         """Test QMM class initialization."""
         qmm = request.getfixturevalue(qmm_name)
 
@@ -343,9 +341,7 @@ class TestQuantumMachinesCluster:
         assert qmm._config == qmm.settings.to_qua_config()
 
     @patch("qm.QuantumMachine")
-    def test_run(
-        self, mock_qm: MagicMock, qmm: QuantumMachinesCluster, qua_program: Program
-    ):  # pylint: disable=unused-argument
+    def test_run(self, mock_qm: MagicMock, qmm: QuantumMachinesCluster, qua_program: Program):  # pylint: disable=unused-argument
         """Test execute method"""
         mock_qm.return_value.execute.return_value = MagicMock
         qmm._qm = mock_qm
@@ -363,7 +359,7 @@ class TestQuantumMachinesCluster:
         qmm.turn_on()
 
         qmm._qm.compile.return_value = "123"
-        qmm._controller = "opx1000"
+        qmm._controller = "opx1000"  # type: ignore[attr-defined]
         qmm._pending_set_intermediate_frequency = {"drive_q0": 20e6}
 
         compile_program_id = qmm.compile(qua_program)
@@ -392,9 +388,7 @@ class TestQuantumMachinesCluster:
         assert qmm._config_created is False and "_config" not in dir(qmm)
 
     @patch("qm.QuantumMachine")
-    def test_simulate(
-        self, mock_qm: MagicMock, qmm: QuantumMachinesCluster, qua_program: Program
-    ):  # pylint: disable=unused-argument
+    def test_simulate(self, mock_qm: MagicMock, qmm: QuantumMachinesCluster, qua_program: Program):  # pylint: disable=unused-argument
         """Test simulate method"""
         mock_qm.return_value.simulate.return_value = MagicMock
         qmm._qm = mock_qm
@@ -659,7 +653,7 @@ class TestQuantumMachinesCluster:
     )
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    def test_get_parameter_of_bus_method(  # noqa: C901
+    def test_get_parameter_of_bus_method(
         self,
         mock_qmm,
         mock_qm,
@@ -736,7 +730,7 @@ class TestQuantumMachinesCluster:
     )
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    def test_get_parameter_of_bus_method_opx1000(  # noqa: C901
+    def test_get_parameter_of_bus_method_opx1000(
         self,
         mock_qmm,
         mock_qm,

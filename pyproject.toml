@@ -49,7 +49,7 @@ unfixable = []
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*.py" = ["S101"]
+"tests/*.py" = ["S", "RUF012"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -83,6 +83,15 @@ docstring-code-format = false
 # This only has an effect when the `docstring-code-format` setting is
 # enabled.
 docstring-code-line-length = "dynamic"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = false
+ignore_missing_imports = true
+exclude = [
+    '.*\.ipynb$',
+    'tests/.*'
+]
 
 [tool.commitizen]
 version = "0.16.1"

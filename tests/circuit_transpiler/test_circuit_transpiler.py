@@ -60,7 +60,11 @@ default_gates = [
 
 
 def random_circuit(
-    nqubits: int, ngates: int, rng: np.random.Generator, gates_list: list[qibo.gates.Gate] = None, exhaustive=False
+    nqubits: int,
+    ngates: int,
+    rng: np.random.Generator,
+    gates_list: list[qibo.gates.Gate] | None = None,
+    exhaustive=False,
 ) -> Circuit:
     """Generates random qibo circuit with ngates
 
@@ -163,7 +167,7 @@ def compare_circuits(circuit_q: Circuit, circuit_t: Circuit, nqubits: int) -> fl
 
     # if state_t = k*state_q, where k is a global phase
     # then |state_q * state_t| = |state_q * state_q| * |k| = 1
-    return np.abs(np.dot(np.conjugate(state_t), state_q))
+    return np.abs(np.dot(np.conjugate(state_t), state_q))  # type: ignore[no-any-return]
 
 
 def compare_exp_z(  # pylint: disable=unused-argument

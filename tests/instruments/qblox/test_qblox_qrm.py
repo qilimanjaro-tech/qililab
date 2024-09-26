@@ -1,4 +1,5 @@
 """Test for the QbloxQRM class."""
+
 import copy
 import re
 from unittest.mock import MagicMock, Mock, patch
@@ -295,7 +296,7 @@ class TestQbloxQRM:
             (Parameter.TIME_OF_FLIGHT, 80, 0),
         ],
     )
-    def test_setup_method(  # pylint: disable=too-many-branches # noqa: C901
+    def test_setup_method(  # pylint: disable=too-many-branches
         self,
         parameter: Parameter,
         value: float | bool | int | str,

@@ -13,17 +13,6 @@ repos:
         args: [--no-strict-optional, --ignore-missing-imports]
         additional_dependencies: []
 
-  # - repo: https://github.com/pre-commit/pre-commit-hooks
-  #   rev: v4.4.0
-  #   hooks:
-  #     - id: check-ast
-  #     - id: check-builtin-literals
-  #     - id: check-merge-conflict
-  #     - id: debug-statements
-  #     - id: end-of-file-fixer
-  #     - id: mixed-line-ending
-  #     - id: trailing-whitespace
-
   - repo: https://github.com/executablebooks/mdformat
     rev: 0.7.17
     hooks:
@@ -34,8 +23,8 @@ repos:
   - repo: https://github.com/nbQA-dev/nbQA
     rev: 1.9.0
     hooks:
-      - id: nbqa-ruff
-        args: [ --fix ]
+      # - id: nbqa-ruff
+      #   args: [ --fix ]
       - id: nbqa-mypy
 
   - repo: https://github.com/commitizen-tools/commitizen
@@ -43,3 +32,14 @@ repos:
     hooks:
       - id: commitizen
         stages: [commit-msg]
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: check-ast
+      - id: check-builtin-literals
+      - id: check-merge-conflict
+      - id: debug-statements
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: trailing-whitespace

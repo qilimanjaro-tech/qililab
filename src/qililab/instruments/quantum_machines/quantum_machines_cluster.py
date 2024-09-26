@@ -527,9 +527,13 @@ class QuantumMachinesCluster(Instrument):
             out_oct_port = element["rf_inputs"]["port"]
 
             octave = next((octave for octave in self.settings.octaves if octave["name"] == octave_name), None)
-            octave_port = next(
-                (octave_port for octave_port in octave["rf_outputs"] if octave_port["port"] == out_oct_port),
-                None,  # type: ignore[index]
+            octave_port = (
+                next(
+                    (octave_port for octave_port in octave["rf_outputs"] if octave_port["port"] == out_oct_port),
+                    None,
+                )
+                if octave
+                else None
             )
 
             connection = "i_connection" if key == "I" else "q_connection"
