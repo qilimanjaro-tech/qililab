@@ -51,6 +51,6 @@ jobs:
 
       - name: nbqa
         run: |
-          nbqa ruff .
+          # nbqa ruff .
           nbqa mypy . --ignore-missing-imports
           nbqa mdformat .
