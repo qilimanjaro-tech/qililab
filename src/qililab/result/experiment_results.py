@@ -12,12 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # mypy: disable-error-code="attr-defined"
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
+
+
+@dataclass
+class DimensionInfo:
+    """Dataclass to store information of a Variable"""
+
+    labels: list[str]
+    values: list[np.ndarray]
 
 
 class ExperimentResults:
@@ -67,12 +76,12 @@ class ExperimentResults:
 
         return self
 
-    def __exit__(self, *args):
+    def __exit__(self, *_):
         """Exit the context manager and close the HDF5 file."""
         if self._file is not None:
             self._file.close()
 
-    def get(self, qprogram: int | str = 0, measurement: int | str = 0):
+    def get(self, qprogram: int | str = 0, measurement: int | str = 0) -> tuple[np.ndarray, list[DimensionInfo]]:
         """Retrieves data and dimensions for a specified quantum program and measurement.
 
         Args:
@@ -89,7 +98,7 @@ class ExperimentResults:
 
         data = self.data[(qprogram, measurement)][()]
         dims = [
-            {"labels": dim.label.split(","), "values": [values[()] for values in dim.values()]}
+            DimensionInfo(labels=dim.label.split(","), values=[values[()] for values in dim.values()])
             for dim in self.dimensions[(qprogram, measurement)]
         ]
 
@@ -181,9 +190,9 @@ class ExperimentResults:
             """Convert result values from s21 into dB"""
             return 20 * np.log10(np.abs(s21))
 
-        def plot_1d(s21: np.ndarray, dims):
+        def plot_1d(s21: np.ndarray, dims: list[DimensionInfo]):
             """Plot 1d"""
-            x_labels, x_values = dims[0]["labels"], dims[0]["values"]
+            x_labels, x_values = dims[0].labels, dims[0].values
 
             _, ax1 = plt.subplots()
             ax1.set_title(self.path)
@@ -211,8 +220,8 @@ class ExperimentResults:
         # pylint: disable=too-many-locals
         def plot_2d(s21: np.ndarray, dims):
             """Plot 2d"""
-            x_labels, x_values = dims[0]["labels"], dims[0]["values"]
-            y_labels, y_values = dims[1]["labels"], dims[1]["values"]
+            x_labels, x_values = dims[0].labels, dims[0].values
+            y_labels, y_values = dims[1].labels, dims[1].values
 
             # Create x and y edge arrays by extrapolating the edges
             x_edges = np.linspace(x_values[0].min(), x_values[0].max(), len(x_values[0]) + 1)

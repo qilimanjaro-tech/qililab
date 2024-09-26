@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-from qililab.result.experiment_results import ExperimentResults
+from qililab.result.experiment_results import DimensionInfo, ExperimentResults
 from qililab.result.experiment_results_writer import ExperimentMetadata, ExperimentResultsWriter
 
 matplotlib.use("Agg")  # Use non-interactive backend for testing
@@ -117,23 +117,23 @@ class TestExperimentResults:
             data, dims = exp_results.get()
             assert data.shape == (3, 4, 2)
             assert len(dims) == 3
-            assert dims[0]["labels"][0] == "x"
-            assert dims[1]["labels"][0] == "y"
-            assert dims[2]["labels"][0] == "I/Q"
+            assert dims[0].labels[0] == "x"
+            assert dims[1].labels[0] == "y"
+            assert dims[2].labels[0] == "I/Q"
 
             data, dims = exp_results.get(qprogram=0, measurement=0)
             assert data.shape == (3, 4, 2)
             assert len(dims) == 3
-            assert dims[0]["labels"][0] == "x"
-            assert dims[1]["labels"][0] == "y"
-            assert dims[2]["labels"][0] == "I/Q"
+            assert dims[0].labels[0] == "x"
+            assert dims[1].labels[0] == "y"
+            assert dims[2].labels[0] == "I/Q"
 
             data, dims = exp_results.get(qprogram="QProgram_0", measurement="Measurement_0")
             assert data.shape == (3, 4, 2)
             assert len(dims) == 3
-            assert dims[0]["labels"][0] == "x"
-            assert dims[1]["labels"][0] == "y"
-            assert dims[2]["labels"][0] == "I/Q"
+            assert dims[0].labels[0] == "x"
+            assert dims[1].labels[0] == "y"
+            assert dims[2].labels[0] == "I/Q"
 
     def test_plot_S21_one_dimension(self):
         """Test plot_S21 with 1D data and verify the plot correctness."""
@@ -145,8 +145,8 @@ class TestExperimentResults:
         # Mock the get method to return 1D data
         data = np.random.rand(100, 2)  # 100 data points, real and imaginary parts
         dims = [
-            {"labels": ["Frequency (Hz)"], "values": [np.linspace(1e6, 1e7, 100)]},
-            {"labels": ["I/Q"], "values": []},
+            DimensionInfo(labels=["Frequency (Hz)"], values=[np.linspace(1e6, 1e7, 100)]),
+            DimensionInfo(labels=["I/Q"], values=[]),
         ]
 
         experiment_results.get.return_value = (data, dims)
@@ -176,7 +176,7 @@ class TestExperimentResults:
         # Recompute s21 to compare
         s21 = data[:, 0] + 1j * data[:, 1]
         s21_db = 20 * np.log10(np.abs(s21))
-        x_expected = dims[0]["values"][0]
+        x_expected = dims[0].values[0]
 
         np.testing.assert_array_almost_equal(x_plotted, x_expected)
         np.testing.assert_array_almost_equal(y_plotted, s21_db)
@@ -194,14 +194,10 @@ class TestExperimentResults:
         # Mock the get method to return 1D data with secondary axis data
         data = np.random.rand(100, 2)  # 100 data points, real and imaginary parts
         dims = [
-            {
-                "labels": ["Frequency (Hz)", "Time (s)"],  # Two labels for secondary axis
-                "values": [
-                    np.linspace(1e6, 1e7, 100),  # Primary x-axis values
-                    np.linspace(0, 1, 100),  # Secondary x-axis values
-                ],
-            },
-            {"labels": ["I/Q"], "values": []},
+            DimensionInfo(
+                labels=["Frequency (Hz)", "Time (s)"], values=[np.linspace(1e6, 1e7, 100), np.linspace(0, 1, 100)]
+            ),
+            DimensionInfo(labels=["I/Q"], values=[]),
         ]
 
         experiment_results.get.return_value = (data, dims)
@@ -241,9 +237,9 @@ class TestExperimentResults:
         # Mock the get method to return 2D data
         data = np.random.rand(50, 50, 2)  # 50x50 data points, real and imaginary parts
         dims = [
-            {"labels": ["Frequency (Hz)"], "values": [np.linspace(1e6, 1e7, 50)]},
-            {"labels": ["Voltage (V)"], "values": [np.linspace(0, 1, 50)]},
-            {"labels": ["I/Q"], "values": []},
+            DimensionInfo(labels=["Frequency (Hz)"], values=[np.linspace(1e6, 1e7, 50)]),
+            DimensionInfo(labels=["Voltage (V)"], values=[np.linspace(0, 1, 50)]),
+            DimensionInfo(labels=["I/Q"], values=[]),
         ]
 
         experiment_results.get.return_value = (data, dims)
@@ -298,21 +294,14 @@ class TestExperimentResults:
         # Mock the get method to return 2D data with secondary axis data
         data = np.random.rand(50, 50, 2)  # 50x50 data points, real and imaginary parts
         dims = [
-            {
-                "labels": ["Frequency (Hz)", "Wavelength (m)"],  # Two labels for x-axis
-                "values": [
-                    np.linspace(1e6, 1e7, 50),  # Primary x-axis values
-                    np.linspace(300e-9, 800e-9, 50),  # Secondary x-axis values (e.g., wavelength)
-                ],
-            },
-            {
-                "labels": ["Voltage (V)", "Current (A)"],  # Two labels for y-axis
-                "values": [
-                    np.linspace(0, 1, 50),  # Primary y-axis values
-                    np.linspace(0, 10, 50),  # Secondary y-axis values (e.g., current)
-                ],
-            },
-            {"labels": ["I/Q"], "values": []},
+            DimensionInfo(
+                labels=["Frequency (Hz)", "Wavelength (m)"],
+                values=[np.linspace(1e6, 1e7, 50), np.linspace(300e-9, 800e-9, 50)],
+            ),
+            DimensionInfo(
+                labels=["Voltage (V)", "Current (A)"], values=[np.linspace(0, 1, 50), np.linspace(0, 10, 50)]
+            ),
+            DimensionInfo(labels=["I/Q"], values=[]),
         ]
 
         experiment_results.get.return_value = (data, dims)
@@ -394,8 +383,8 @@ class TestExperimentResults:
         # Mock the get method to return 1D data
         data = np.random.rand(100, 2)
         dims = [
-            {"labels": ["Frequency (Hz)"], "values": [np.linspace(1e6, 1e7, 100)]},
-            {"labels": ["I/Q"], "values": []},
+            DimensionInfo(labels=["Frequency (Hz)"], values=[np.linspace(1e6, 1e7, 100)]),
+            DimensionInfo(labels=["I/Q"], values=[]),
         ]
 
         experiment_results.get = MagicMock(return_value=(data, dims))
@@ -427,7 +416,7 @@ class TestExperimentResults:
         # Recompute s21 to compare
         s21 = data[:, 0] + 1j * data[:, 1]
         s21_db = 20 * np.log10(np.abs(s21))
-        x_expected = dims[0]["values"][0]
+        x_expected = dims[0].values[0]
 
         np.testing.assert_array_almost_equal(x_plotted, x_expected)
         np.testing.assert_array_almost_equal(y_plotted, s21_db)
