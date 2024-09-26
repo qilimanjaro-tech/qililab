@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from typing import Any, cast
 
 import numpy as np
-from qm import DictQuaConfig, QmJob, QuantumMachine, QuantumMachinesManager, Program, SimulationConfig
+from qm import DictQuaConfig, Program, QmJob, QuantumMachine, QuantumMachinesManager, SimulationConfig
 from qm.api.v2.job_api import JobApi
 from qm.jobs.running_qm_job import RunningQmJob
 from qm.octave import QmOctaveConfig
