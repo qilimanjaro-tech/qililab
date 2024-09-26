@@ -343,7 +343,7 @@ class ExperimentExecutor:
             """Store the result in the correct location within the ExperimentResultsWriter."""
             # Determine the index in the ExperimentResultsWriter based on current loop indices
             for measurement_index, measurement_result in enumerate(qprogram_results.timeline):
-                indices = tuple([qprogram_index, measurement_index]) + tuple(index for _, index in loop_indices.items())
+                indices = (qprogram_index, measurement_index) + tuple(index for _, index in loop_indices.items())
                 # Store the results in the ExperimentResultsWriter
                 self._results_writer[indices] = measurement_result.array.T  # type: ignore
 
