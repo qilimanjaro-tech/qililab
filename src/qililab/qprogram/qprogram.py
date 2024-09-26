@@ -282,24 +282,26 @@ class QProgram(StructuredProgram):  # pylint: disable=too-many-public-methods
         return copied_qprogram
 
     @overload
-    def play(self, bus: str, waveform: Waveform | IQPair) -> None:
+    def play(self, bus: str, waveform: Waveform | IQPair, amplify_flux:bool) -> None:
         """Play a single waveform or an I/Q pair of waveforms on the bus.
 
         Args:
             bus (str): Unique identifier of the bus.
-            waveform (Waveform | IQPair): A single waveform or an I/Q pair of waveforms
+            waveform (Waveform | IQPair): A single waveform or an I/Q pair of waveforms.
+            amplify_flux (bool): Define if flux amplification is used for QUA.
         """
 
     @overload
-    def play(self, bus: str, waveform: str) -> None:
+    def play(self, bus: str, waveform: str, amplify_flux:bool) -> None:
         """Play a named waveform on the bus.
 
         Args:
             bus (str): Unique identifier of the bus.
             waveform (str): An identifier of a named waveform.
+            amplify_flux (bool): Define if flux amplification is used for QUA.
         """
 
-    def play(self, bus: str, waveform: Waveform | IQPair | str) -> None:
+    def play(self, bus: str, waveform: Waveform | IQPair | str, amplify_flux:bool) -> None:
         """Play a waveform, IQPair, or calibrated operation on the specified bus.
 
         This method handles both playing a waveform or IQPair, and playing a
@@ -308,11 +310,12 @@ class QProgram(StructuredProgram):  # pylint: disable=too-many-public-methods
         Args:
             bus (str): Unique identifier of the bus.
             waveform (Waveform | IQPair | str): The waveform, IQPair, or alias of named waveform to play.
+            amplify_flux (bool): Define if flux amplification is used for QUA.
         """
         operation = (
-            PlayWithCalibratedWaveform(bus=bus, waveform=waveform)
+            PlayWithCalibratedWaveform(bus=bus, waveform=waveform, amplify_flux=amplify_flux)
             if isinstance(waveform, str)
-            else Play(bus=bus, waveform=waveform)
+            else Play(bus=bus, waveform=waveform, amplify_flux=amplify_flux)
         )
         self._active_block.append(operation)
         self._buses.add(bus)
@@ -526,7 +529,8 @@ class QProgram(StructuredProgram):  # pylint: disable=too-many-public-methods
 
             Args:
                 bus (str): Unique identifier of the bus.
-                waveform (Waveform | IQPair): A single waveform or an I/Q pair of waveforms
+                waveform (Waveform | IQPair): A single waveform or an I/Q pair of waveforms.
+                wait_time (int): Overwrite the value of Q1ASM play instruction's wait_time parameter.
             """
 
         @overload
@@ -536,6 +540,7 @@ class QProgram(StructuredProgram):  # pylint: disable=too-many-public-methods
             Args:
                 bus (str): Unique identifier of the bus.
                 waveform (str): An identifier of a named waveform.
+                wait_time (int): Overwrite the value of Q1ASM play instruction's wait_time parameter.
             """
 
         def play(self, bus: str, waveform: Waveform | IQPair | str, wait_time: int) -> None:
