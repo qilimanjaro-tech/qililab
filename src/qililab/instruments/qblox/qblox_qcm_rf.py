@@ -19,9 +19,9 @@ from typing import ClassVar
 
 from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm
 
-from qililab.instruments.awg_settings import AWGQbloxSequencer  # pylint: disable=cyclic-import
-from qililab.instruments.instrument import Instrument, ParameterNotFound  # pylint: disable=cyclic-import
-from qililab.instruments.utils.instrument_factory import InstrumentFactory  # pylint: disable=cyclic-import
+from qililab.instruments.awg_settings import AWGQbloxSequencer
+from qililab.instruments.instrument import Instrument, ParameterNotFound
+from qililab.instruments.utils.instrument_factory import InstrumentFactory
 from qililab.typings import InstrumentName, Parameter
 
 from .qblox_qcm import QbloxQCM
@@ -35,7 +35,7 @@ class QbloxQCMRF(QbloxQCM):
     device: QcmQrm
 
     @dataclass
-    class QbloxQCMRFSettings(QbloxQCM.QbloxQCMSettings):  # pylint: disable=too-many-instance-attributes
+    class QbloxQCMRFSettings(QbloxQCM.QbloxQCMSettings):
         """Contains the settings of a specific Qblox QCM-RF module."""
 
         out0_lo_freq: float

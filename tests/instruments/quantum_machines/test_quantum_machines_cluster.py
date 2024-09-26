@@ -14,8 +14,8 @@ from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Platform
 from qililab.settings import Settings
 from qililab.typings import Parameter
-from tests.data import SauronQuantumMachines  # pylint: disable=import-error, no-name-in-module
-from tests.test_utils import build_platform  # pylint: disable=import-error, no-name-in-module
+from tests.data import SauronQuantumMachines
+from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="qua_program")
@@ -150,7 +150,7 @@ class TestQuantumMachinesCluster:
     @pytest.mark.parametrize(
         "qmm_name", ["qmm", "qmm_with_octave", "qmm_with_octave_custom_connectivity", "qmm_with_opx1000"]
     )
-    def test_initial_setup(self, mock_instrument_init: MagicMock, mock_init: MagicMock, qmm_name, request):  # pylint: disable=unused-argument
+    def test_initial_setup(self, mock_instrument_init: MagicMock, mock_init: MagicMock, qmm_name, request):
         """Test QMM class initialization."""
         qmm = request.getfixturevalue(qmm_name)
 
@@ -341,7 +341,7 @@ class TestQuantumMachinesCluster:
         assert qmm._config == qmm.settings.to_qua_config()
 
     @patch("qm.QuantumMachine")
-    def test_run(self, mock_qm: MagicMock, qmm: QuantumMachinesCluster, qua_program: Program):  # pylint: disable=unused-argument
+    def test_run(self, mock_qm: MagicMock, qmm: QuantumMachinesCluster, qua_program: Program):
         """Test execute method"""
         mock_qm.return_value.execute.return_value = MagicMock
         qmm._qm = mock_qm
@@ -388,7 +388,7 @@ class TestQuantumMachinesCluster:
         assert qmm._config_created is False and "_config" not in dir(qmm)
 
     @patch("qm.QuantumMachine")
-    def test_simulate(self, mock_qm: MagicMock, qmm: QuantumMachinesCluster, qua_program: Program):  # pylint: disable=unused-argument
+    def test_simulate(self, mock_qm: MagicMock, qmm: QuantumMachinesCluster, qua_program: Program):
         """Test simulate method"""
         mock_qm.return_value.simulate.return_value = MagicMock
         qmm._qm = mock_qm

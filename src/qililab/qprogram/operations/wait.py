@@ -20,6 +20,6 @@ from qililab.yaml import yaml
 
 @yaml.register_class
 @dataclass(frozen=True)
-class Wait(Operation):  # pylint: disable=missing-class-docstring
+class Wait(Operation):
     bus: str
     duration: int

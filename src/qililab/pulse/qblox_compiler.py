@@ -42,7 +42,7 @@ from qililab.pulse.pulse_shape.pulse_shape import PulseShape
 from qililab.typings import InstrumentName
 
 
-class QbloxCompiler:  # pylint: disable=too-many-locals
+class QbloxCompiler:
     """Qblox compiler for pulse schedules. Its only public method is `compile`, which compiles a pulse schedule to qpysequences (see docs for `QBloxCompiler.compile`).
     The class object is meant to be initialized once, with `compile` running as many times as necessary. This way the class attributes do not have to be initialized
     at each single compilation.
@@ -217,7 +217,7 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
             acquisitions.add(name=f"acq_q{pulse.qubit}_{i}", num_bins=self.num_bins, index=i)
         return acquisitions
 
-    def _generate_program(  # pylint: disable=too-many-locals
+    def _generate_program(
         self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, sequencer: AWGQbloxSequencer
     ) -> Program:
         """Generate Q1ASM program
@@ -232,7 +232,7 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
         """
         # get qblox module from sequencer
         qblox_module = self._get_instrument_from_sequencer(sequencer)
-        MIN_WAIT = qblox_module._MIN_WAIT_TIME  # pylint: disable=protected-access
+        MIN_WAIT = qblox_module._MIN_WAIT_TIME
 
         # Define program's blocks
         program = Program()
@@ -306,10 +306,10 @@ class QbloxCompiler:  # pylint: disable=too-many-locals
 
         if self.repetition_duration is not None:
             wait_time = self.repetition_duration - bin_loop.duration_iter
-            if wait_time > qblox_module._MIN_WAIT_TIME:  # pylint: disable=protected-access
+            if wait_time > qblox_module._MIN_WAIT_TIME:
                 bin_loop.append_component(long_wait(wait_time=wait_time))
 
-        logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
+        logger.info("Q1ASM program: \n %s", repr(program))
         return program
 
     def _generate_weights(self, sequencer: AWGQbloxADCSequencer) -> Weights:  # type: ignore

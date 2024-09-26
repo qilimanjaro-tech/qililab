@@ -20,7 +20,7 @@ from qililab.yaml import yaml
 
 @yaml.register_class
 @dataclass(frozen=True)
-class SetMarkers(Operation):  # pylint: disable=missing-class-docstring
+class SetMarkers(Operation):
     bus: str
     mask: str
 

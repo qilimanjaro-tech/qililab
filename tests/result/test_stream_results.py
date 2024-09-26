@@ -29,7 +29,7 @@ def fixture_stream_array():
 class MockGroup:
     """Mock a h5py group."""
 
-    def create_dataset(self, name: str, data: np.ndarray):  # pylint: disable=unused-argument
+    def create_dataset(self, name: str, data: np.ndarray):
         """Creates a dataset"""
         return {}
 
@@ -63,7 +63,7 @@ class TestStreamArray:
         assert stream_array.loops == {"test_amp_loop": np.arange(0, 1, 2)}
 
     @patch("h5py.File", return_value=MockFile())
-    def test_context_manager(self, mock_h5py: MockFile, stream_array: StreamArray):  # pylint: disable=unused-argument
+    def test_context_manager(self, mock_h5py: MockFile, stream_array: StreamArray):
         """Tests context manager real time saving."""
         # test adding outside the context manager
         stream_array[0, 0] = -2

@@ -144,7 +144,7 @@ def get_calibration():
 
 
 @pytest.fixture(name="anneal_qprogram")
-def get_anneal_qprogram(runcard, flux_to_bus_topology):  # pylint: disable=too-many-locals
+def get_anneal_qprogram(runcard, flux_to_bus_topology):
     platform = Platform(runcard=runcard)
     platform.flux_to_bus_topology = flux_to_bus_topology
     anneal_waveforms = {
@@ -675,9 +675,7 @@ class TestMethods:
             _ = platform.execute_qprogram(qprogram=qprogram)
             assert test_waveforms_q0.to_dict() == upload.call_args_list[0].kwargs["qpysequence"]._waveforms.to_dict()
 
-    def test_execute_qprogram_with_quantum_machines(
-        self, platform_quantum_machines: Platform
-    ):  # pylint: disable=too-many-locals
+    def test_execute_qprogram_with_quantum_machines(self, platform_quantum_machines: Platform):
         """Test that the execute_qprogram method executes the qprogram for Quantum Machines correctly"""
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
@@ -729,9 +727,7 @@ class TestMethods:
         assert patched_open.call_count == 1
         assert generate_qua.call_count == 1
 
-    def test_execute_qprogram_with_quantum_machines_raises_error(
-        self, platform_quantum_machines: Platform
-    ):  # pylint: disable=too-many-locals
+    def test_execute_qprogram_with_quantum_machines_raises_error(self, platform_quantum_machines: Platform):
         """Test that the execute_qprogram method raises the exception if the qprogram failes"""
 
         error_string = "The QM `config` dictionary does not exist. Please run `initial_setup()` first."
@@ -757,7 +753,7 @@ class TestMethods:
     def test_execute_qprogram_with_quantum_machines_raises_dataloss(
         self,
         platform_quantum_machines: Platform,
-    ):  # pylint: disable=too-many-locals
+    ):
         """Test that the execute_qprogram method raises the dataloss exception if the qprogram returns StreamProcessingDataLossError"""
 
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))

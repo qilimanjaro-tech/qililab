@@ -27,7 +27,7 @@ from .sequencer_qrm import SequencerQRM
 
 
 @InstrumentDriverFactory.register
-class Cluster(QcodesCluster, BaseInstrument):  # pylint: disable=abstract-method
+class Cluster(QcodesCluster, BaseInstrument):
     """Qililab's driver for QBlox-instruments Cluster.
 
     Args:

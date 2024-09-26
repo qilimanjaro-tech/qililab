@@ -21,14 +21,14 @@ from qililab.yaml import yaml
 
 @yaml.register_class
 @dataclass(frozen=True)
-class Acquire(Operation):  # pylint: disable=missing-class-docstring
+class Acquire(Operation):
     bus: str
     weights: IQPair
     save_adc: bool = False
 
 
 @dataclass(frozen=True)
-class AcquireWithCalibratedWeights(Operation):  # pylint: disable=missing-class-docstring
+class AcquireWithCalibratedWeights(Operation):
     bus: str
     weights: str
     save_adc: bool = False

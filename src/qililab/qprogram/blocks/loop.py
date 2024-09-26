@@ -23,6 +23,6 @@ from qililab.yaml import yaml
 
 @yaml.register_class
 @dataclass(frozen=True)
-class Loop(Block):  # pylint: disable=missing-class-docstring
+class Loop(Block):
     variable: Variable
     values: np.ndarray

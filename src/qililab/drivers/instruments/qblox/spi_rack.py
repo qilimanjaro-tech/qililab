@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Drivers for SpiRack and its corresponging channels: D5aDacChannel & S4gDacChannel."""
+
 from typing import Union
 
 from qblox_instruments import SpiRack as QcodesSpiRack
@@ -29,7 +30,7 @@ from qililab.drivers.interfaces import BaseInstrument, CurrentSource, VoltageSou
 
 # MAIN SpiRack CLASS
 @InstrumentDriverFactory.register
-class SpiRack(QcodesSpiRack, BaseInstrument):  # pylint: disable=abstract-method
+class SpiRack(QcodesSpiRack, BaseInstrument):
     """
     Qililab's driver for the Qblox SpiRack.
 

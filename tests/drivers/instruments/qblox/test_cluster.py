@@ -1,4 +1,5 @@
 """Module to test cluster and QCM,QRM classes."""
+
 from unittest.mock import MagicMock
 
 import pytest
@@ -66,7 +67,7 @@ class MockQcmQrm(DummyChannel):
         return None
 
 
-class MockCluster(DummyInstrument):  # pylint: disable=abstract-method
+class MockCluster(DummyInstrument):
     """Mock class for Cluster"""
 
     is_rf_type = True
@@ -87,10 +88,10 @@ class MockCluster(DummyInstrument):  # pylint: disable=abstract-method
         return slot_idx in PRESENT_SUBMODULES
 
 
-class MockQcmQrmRF(DummyInstrument):  # pylint: disable=abstract-method
+class MockQcmQrmRF(DummyInstrument):
     is_rf_type = True
 
-    def __init__(self, name, qcm_qrm, parent=None, slot_idx=0):  # pylint: disable=unused-argument
+    def __init__(self, name, qcm_qrm, parent=None, slot_idx=0):
         super().__init__(name=name, gates=["dac1"])
 
         # local oscillator parameters

@@ -20,5 +20,5 @@ from qililab.yaml import yaml
 
 @yaml.register_class
 @dataclass(frozen=True)
-class Average(Block):  # pylint: disable=missing-class-docstring
+class Average(Block):
     shots: int

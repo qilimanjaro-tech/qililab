@@ -8,7 +8,7 @@
 import os
 import sys
 
-from sphinxawesome_theme.postprocess import Icons  # pylint: disable=import-error
+from sphinxawesome_theme.postprocess import Icons
 
 sys.path.insert(0, os.path.abspath(".."))
 
@@ -16,7 +16,7 @@ project = "Qililab"
 copyright = "2023, Qilimanjaro"
 author = "Qilimanjaro"
 
-import qililab  # pylint: disable=wrong-import-position  # noqa: E402
+import qililab  # noqa: E402
 
 release = qililab.__version__
 

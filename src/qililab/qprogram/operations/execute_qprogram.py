@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 @yaml.register_class
 @dataclass(frozen=True)
-class ExecuteQProgram(Operation):  # pylint: disable=missing-class-docstring
+class ExecuteQProgram(Operation):
     qprogram: "QProgram"
     bus_mapping: dict[str, str] | None = None
     calibration: "Calibration" | None = None

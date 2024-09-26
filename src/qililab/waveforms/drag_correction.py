@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """DragCorrection waveform."""
+
 import numpy as np
 
 from qililab.qprogram.decorators import requires_domain
@@ -24,7 +25,7 @@ from .waveform import Waveform
 
 
 @yaml.register_class
-class DragCorrection(Waveform):  # pylint: disable=too-few-public-methods
+class DragCorrection(Waveform):
     """Calculates the first order drag correction of the imaginary (Ey) channel of a drive pulse. See https://arxiv.org/abs/0901.0534 (10).
 
     So far only implemented for Gaussian pulses.

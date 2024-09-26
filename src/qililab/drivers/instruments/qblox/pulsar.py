@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Driver for the Qblox Pulsar class."""
+
 from qblox_instruments.qcodes_drivers import Pulsar as QcodesPulsar
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 
@@ -24,7 +25,7 @@ from .sequencer_qrm import SequencerQRM
 
 
 @InstrumentDriverFactory.register
-class Pulsar(QcodesPulsar, BaseInstrument):  # pylint: disable=abstract-method
+class Pulsar(QcodesPulsar, BaseInstrument):
     """Qililab's driver for QBlox-instruments Pulsar
 
     Args:

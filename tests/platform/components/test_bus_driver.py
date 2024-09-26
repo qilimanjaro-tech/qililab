@@ -1,4 +1,5 @@
 """Unittest for BusDriver class"""
+
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -244,7 +245,7 @@ class TestBusDriver:
         for bus in buses:
             assert "random str" != bus
 
-    def test_to_dict(self, buses: list[BusDriver]):  # pylint: disable=too-many-branches
+    def test_to_dict(self, buses: list[BusDriver]):
         # sourcery skip: merge-duplicate-blocks, remove-redundant-if, switch
         """Test that the to_dict method of the BusDriver base class works correctly."""
         for bus in buses:

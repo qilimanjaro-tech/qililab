@@ -20,5 +20,5 @@ from qililab.yaml import yaml
 
 @yaml.register_class
 @dataclass(frozen=True)
-class Sync(Operation):  # pylint: disable=missing-class-docstring
+class Sync(Operation):
     buses: list[str] | None

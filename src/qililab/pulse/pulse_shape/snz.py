@@ -92,7 +92,7 @@ class SNZ(PulseShape):
         envelope = np.zeros(round(duration / resolution))
         # raise warning if we are rounding
         if (duration / resolution) % 1 != 0 or (halfpulse_t / resolution) % 1 != 0:
-            logger.warning(  # pylint: disable=logging-fstring-interpolation
+            logger.warning(
                 f"Envelope length rounded to nearest value {len(envelope)} from division full_snz_duration ({duration}) / resolution ({resolution}) = {duration/resolution}"
             )
         envelope[:halfpulse_t] = amplitude * np.ones(halfpulse_t)  # positive square halfpulse

@@ -23,8 +23,8 @@ from qililab.yaml import yaml
 
 @yaml.register_class
 @dataclass(frozen=True)
-class Block(Element):  # pylint: disable=missing-class-docstring
+class Block(Element):
     elements: list[Block | Operation] = field(default_factory=list, init=False)
 
-    def append(self, element: Block | Operation):  # pylint: disable=missing-function-docstring
+    def append(self, element: Block | Operation):
         self.elements.append(element)

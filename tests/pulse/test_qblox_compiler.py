@@ -1,4 +1,5 @@
 """Tests for the Qblox Compiler class."""
+
 # pylint: disable=protected-access
 import copy
 import re
@@ -236,7 +237,7 @@ class TestQbloxCompiler:
         pulse_schedule = PulseSchedule([pulse_bus_schedule_qcm, pulse_bus_schedule])
 
         sequences = qblox_compiler.compile(pulse_schedule, num_avg=1, repetition_duration=2000, num_bins=1)
-        program = list(sequences.items())[1][1][0]._program  # pylint: disable=protected-access
+        program = list(sequences.items())[1][1][0]._program
 
         expected_gain = int(amplitude * AWG_MAX_GAIN)
         expected_phase = int((phase % (2 * np.pi)) * 1e9 / (2 * np.pi))

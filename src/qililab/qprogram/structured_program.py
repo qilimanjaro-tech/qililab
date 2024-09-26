@@ -197,7 +197,7 @@ class StructuredProgram:
         """
         return StructuredProgram._AverageContext(structured_program=self, shots=shots)
 
-    def variable(self, label: str, domain: Domain, type: type[int | float] | None = None):  # pylint: disable=redefined-builtin
+    def variable(self, label: str, domain: Domain, type: type[int | float] | None = None):
         """Declare a variable.
 
         Args:
@@ -250,8 +250,8 @@ class StructuredProgram:
             block = self.structured_program._pop_from_block_stack()
             self.structured_program._active_block.append(block)
 
-    class _ForLoopContext(_BlockContext):  # pylint: disable=too-few-public-methods
-        def __init__(  # pylint: disable=super-init-not-called
+    class _ForLoopContext(_BlockContext):
+        def __init__(
             self,
             structured_program: "StructuredProgram",
             variable: Variable,
@@ -271,10 +271,8 @@ class StructuredProgram:
             self.block.variable._source = ValueSource.Free
             super().__exit__(exc_type, exc_value, exc_tb)
 
-    class _LoopContext(_BlockContext):  # pylint: disable=too-few-public-methods
-        def __init__(  # pylint: disable=super-init-not-called
-            self, structured_program: "StructuredProgram", variable: Variable, values: np.ndarray
-        ):
+    class _LoopContext(_BlockContext):
+        def __init__(self, structured_program: "StructuredProgram", variable: Variable, values: np.ndarray):
             self.structured_program = structured_program
             self.block: Loop = Loop(variable=variable, values=values)
 
@@ -287,13 +285,13 @@ class StructuredProgram:
             self.block.variable._source = ValueSource.Free
             super().__exit__(exc_type, exc_value, exc_tb)
 
-    class _InfiniteLoopContext(_BlockContext):  # pylint: disable=too-few-public-methods
-        def __init__(self, structured_program: "StructuredProgram"):  # pylint: disable=super-init-not-called
+    class _InfiniteLoopContext(_BlockContext):
+        def __init__(self, structured_program: "StructuredProgram"):
             self.structured_program = structured_program
             self.block: InfiniteLoop = InfiniteLoop()
 
-    class _ParallelContext(_BlockContext):  # pylint: disable=too-few-public-methods
-        def __init__(self, structured_program: "StructuredProgram", loops: list[Loop | ForLoop]):  # pylint: disable=super-init-not-called
+    class _ParallelContext(_BlockContext):
+        def __init__(self, structured_program: "StructuredProgram", loops: list[Loop | ForLoop]):
             self.structured_program = structured_program
             self.block: Parallel = Parallel(loops=loops)
 
@@ -308,7 +306,7 @@ class StructuredProgram:
                 loop.variable._source = ValueSource.Free
             super().__exit__(exc_type, exc_value, exc_tb)
 
-    class _AverageContext(_BlockContext):  # pylint: disable=too-few-public-methods
-        def __init__(self, structured_program: "StructuredProgram", shots: int):  # pylint: disable=super-init-not-called
+    class _AverageContext(_BlockContext):
+        def __init__(self, structured_program: "StructuredProgram", shots: int):
             self.structured_program = structured_program
             self.block: Average = Average(shots=shots)

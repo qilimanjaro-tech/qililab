@@ -66,7 +66,7 @@ from qililab.waveforms import IQPair, Square
 from .components import Bus, Buses
 
 
-class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-attributes
+class Platform:
     """Platform object representing the laboratory setup used to control quantum devices.
 
     The platform is responsible for managing the initializations, connections, setups, and executions of the laboratory, which mainly consists of:
@@ -640,7 +640,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             for cleanup_method in reversed(cleanup_methods):
                 try:
                     cleanup_method()
-                except Exception as e:  # pylint: disable=broad-exception-caught
+                except Exception as e:
                     print(f"Error during cleanup: {e}")
                     cleanup_errors.append(e)
 
@@ -648,7 +648,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             if cleanup_errors:
                 raise ExceptionGroup("Exceptions occurred during cleanup", cleanup_errors)
 
-    def execute_anneal_program(  # pylint: disable=too-many-locals
+    def execute_anneal_program(
         self,
         annealing_program_dict: list[dict[str, dict[str, float]]],
         calibration: Calibration,
@@ -735,7 +735,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         executor = ExperimentExecutor(platform=self, experiment=experiment, results_path=results_path)
         return executor.execute()
 
-    def execute_qprogram(  # pylint: disable=too-many-locals
+    def execute_qprogram(
         self,
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,
@@ -842,7 +842,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             )
         raise NotImplementedError("Executing QProgram in a mixture of instruments is not supported.")
 
-    def _execute_qprogram_with_qblox(  # pylint: disable=too-many-locals
+    def _execute_qprogram_with_qblox(
         self,
         qprogram: QProgram,
         times_of_flight: dict[str, int],
@@ -866,15 +866,13 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         for bus_alias, bus in buses.items():
             if bus.distortions:
                 for distortion in bus.distortions:
-                    for waveform in sequences[bus_alias]._waveforms._waveforms:  # pylint: disable=protected-access
-                        sequences[bus_alias]._waveforms.modify(  # pylint: disable=protected-access
-                            waveform.name, distortion.apply(waveform.data)
-                        )
+                    for waveform in sequences[bus_alias]._waveforms._waveforms:
+                        sequences[bus_alias]._waveforms.modify(waveform.name, distortion.apply(waveform.data))
         if debug:
             with open("debug_qblox_execution.txt", "w", encoding="utf-8") as sourceFile:
                 for bus_alias in sequences:
                     print(f"Bus {bus_alias}:", file=sourceFile)
-                    print(str(sequences[bus_alias]._program), file=sourceFile)  # pylint: disable=protected-access
+                    print(str(sequences[bus_alias]._program), file=sourceFile)
                     print(file=sourceFile)
 
         # Upload sequences
@@ -908,7 +906,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         return results
 
-    def _execute_qprogram_with_quantum_machines(  # pylint: disable=too-many-locals,dangerous-default-value
+    def _execute_qprogram_with_quantum_machines(
         self,
         cluster: QuantumMachinesCluster,
         qprogram: QProgram,

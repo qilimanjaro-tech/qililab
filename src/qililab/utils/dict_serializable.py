@@ -40,7 +40,7 @@ def is_dict_serializable_object(obj: Any) -> bool:
 class DictSerializableEnumMeta(EnumMeta):
     """Metaclass to be used in `DictSerializableEnum`. Automatically registers the enums to `DictSerializableFactory`."""
 
-    def __new__(mcs, name, bases, namespace):  # pylint: disable=arguments-differ
+    def __new__(mcs, name, bases, namespace):
         new_class = super().__new__(mcs, name, bases, namespace)
         if bases != (Enum,):  # Avoid registering the base Enum class
             DictSerializableFactory.register(name, new_class)
@@ -86,7 +86,7 @@ class DictSerializableFactory:
 class DictSerializableMeta(_ProtocolMeta):
     """Metaclass to be used in `DictSerializable` protocol. Automatically registers any class inheriting from `DictSerializable` to `DictSerializableFactory`."""
 
-    def __new__(  # pylint: disable=arguments-differ
+    def __new__(
         mcs: Type["DictSerializableMeta"], name: str, bases: tuple, namespace: dict[str, Any]
     ) -> Type["DictSerializable"]:
         new_class = super().__new__(mcs, name, bases, namespace)
@@ -116,7 +116,7 @@ class DictSerializable(Protocol, metaclass=DictSerializableMeta):
             DictSerializableObject: A typed dictionary representing the serialized state of the object.
         """
 
-        def process_element(element):  # pylint: disable=too-many-return-statements
+        def process_element(element):
             if isinstance(element, UUID):
                 return {"type": UUID.__name__, "uuid": str(element)}
             if isinstance(element, deque):
@@ -154,7 +154,7 @@ class DictSerializable(Protocol, metaclass=DictSerializableMeta):
             T: An instance of the object populated with data from the dictionary.
         """
 
-        def process_attribute(attribute):  # pylint: disable=too-many-return-statements
+        def process_attribute(attribute):
             if isinstance(attribute, dict) and "type" in attribute and attribute["type"] == UUID.__name__:
                 return UUID(attribute["uuid"])
             if isinstance(attribute, dict) and "type" in attribute and attribute["type"] == deque.__name__:

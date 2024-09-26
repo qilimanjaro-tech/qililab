@@ -138,7 +138,7 @@ class CircuitTranspiler:
 
         return new_gates
 
-    def circuit_to_pulses(self, circuits: list[Circuit]) -> list[PulseSchedule]:  # pylint: disable=too-many-locals
+    def circuit_to_pulses(self, circuits: list[Circuit]) -> list[PulseSchedule]:
         """Translates a list of circuits into a list of pulse sequences (each circuit to an independent pulse sequence)
         For each circuit gate we look up for its corresponding gates settings in the runcard (the name of the class of the circuit
         gate and the name of the gate in the runcard should match) and load its schedule of GateEvents.
@@ -196,7 +196,7 @@ class CircuitTranspiler:
                 # apply gate schedule
                 for gate_event in gate_schedule:
                     # find bus
-                    bus = self.platform._get_bus_by_alias(gate_event.bus)  # pylint: disable=protected-access
+                    bus = self.platform._get_bus_by_alias(gate_event.bus)
                     # add control gate schedule
                     pulse_event = self._gate_element_to_pulse_event(
                         time=start_time, gate=gate, gate_event=gate_event, bus=bus
@@ -300,9 +300,7 @@ class CircuitTranspiler:
             [
                 target.qubit_index
                 for schedule_element in schedule
-                for target in self.platform._get_bus_by_alias(  # pylint: disable=protected-access
-                    schedule_element.bus
-                ).targets
+                for target in self.platform._get_bus_by_alias(schedule_element.bus).targets
                 if isinstance(target, Qubit)
             ]
             if schedule is not None

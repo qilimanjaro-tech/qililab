@@ -558,9 +558,7 @@ class QuantumMachinesCluster(Instrument):
 
         return (con_name, con_port, con_fem)
 
-    def set_parameter_of_bus(  # pylint: disable=too-many-locals, too-many-statements
-        self, bus: str, parameter: Parameter, value: float | str | bool
-    ) -> None:
+    def set_parameter_of_bus(self, bus: str, parameter: Parameter, value: float | str | bool) -> None:
         """Sets the parameter of the instrument into the cache (runtime dataclasses).
 
         And if connection to instruments is established, then to the instruments as well.

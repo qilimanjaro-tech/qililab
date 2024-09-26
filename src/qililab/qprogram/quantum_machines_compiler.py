@@ -44,13 +44,13 @@ from qililab.waveforms import IQPair, Square, Waveform
 # mypy: disable-error-code="operator"
 
 
-class _BusCompilationInfo:  # pylint: disable=too-few-public-methods
+class _BusCompilationInfo:
     def __init__(self) -> None:
         self.current_gain: float | qua.QuaVariableType | None = None
         self.threshold_rotation: float | None = None
 
 
-class _MeasurementCompilationInfo:  # pylint: disable=too-few-public-methods, too-many-instance-attributes
+class _MeasurementCompilationInfo:
     def __init__(
         self,
         bus: str,
@@ -70,7 +70,7 @@ class _MeasurementCompilationInfo:  # pylint: disable=too-few-public-methods, to
         self.average: bool = False
 
 
-class MeasurementInfo:  # pylint: disable=too-few-public-methods
+class MeasurementInfo:
     """Class representing information about the measurements taking place."""
 
     def __init__(self, bus: str, result_handles: list[str]):
@@ -78,7 +78,7 @@ class MeasurementInfo:  # pylint: disable=too-few-public-methods
         self.result_handles: list[str] = result_handles
 
 
-class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, too-few-public-methods
+class QuantumMachinesCompiler:
     """A class for compiling QProgram to Quantum Machines hardware."""
 
     FREQUENCY_COEFF = 1
@@ -362,9 +362,7 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             pulse = operation_name * gain if gain is not None else operation_name
             qua.play(pulse, element.bus)
 
-    def _handle_measure(
-        self, element: Measure
-    ):  # pylint: disable=too-many-locals, too-many-branches, too-many-statements
+    def _handle_measure(self, element: Measure):
         waveform_I, waveform_Q = element.get_waveforms()
 
         waveform_I_name = self.__add_waveform_to_configuration(waveform_I)
@@ -512,7 +510,6 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             )
         return pulse_name
 
-    # pylint: disable=too-many-locals
     def __add_weights_to_configuration(self, weights: IQPair, rotation: float):
         prefix = f"{QuantumMachinesCompiler.__hash_waveform(weights.I)}_{QuantumMachinesCompiler.__hash_waveform(weights.Q)}_{rotation}"
 

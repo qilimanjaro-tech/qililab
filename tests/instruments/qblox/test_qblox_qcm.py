@@ -1,4 +1,5 @@
 """Tests for the QbloxQCM class."""
+
 # pylint: disable=too-many-branches
 import copy
 from unittest.mock import MagicMock, patch
@@ -230,7 +231,7 @@ class TestQbloxQCM:
     def test_setup_out_offset_raises_error(self, qcm: QbloxQCM):
         """Test that calling ``_set_out_offset`` with a wrong output value raises an error."""
         with pytest.raises(IndexError, match="Output 5 is out of range"):
-            qcm._set_out_offset(output=5, value=1)  # pylint: disable=protected-access
+            qcm._set_out_offset(output=5, value=1)
 
     def test_turn_off_method(self, qcm: QbloxQCM):
         """Test turn_off method"""

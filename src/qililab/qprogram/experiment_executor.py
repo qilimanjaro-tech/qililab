@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from qililab.platform.platform import Platform
 
 
-class ExperimentExecutor:  # pylint: disable=too-few-public-methods
+class ExperimentExecutor:
     """Manages the execution of a quantum experiment.
 
     The ExperimentExecutor is responsible for traversing the experiment's structure,

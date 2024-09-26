@@ -29,7 +29,7 @@ from qililab.config import logger
 logger_output_start = "RAND_INT:47102512880765720413 - OUTPUTS: "
 
 
-class CalibrationNode:  # pylint: disable=too-many-instance-attributes
+class CalibrationNode:
     """Automatic calibration Node class representing a node in the calibration graph.
 
     The calibration graph represents a calibration procedure, where each node represents a step of this calibration procedure. **Each of these steps consists of:**
@@ -358,7 +358,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             raise KeyboardInterrupt(f"Interrupted automatic calibration notebook execution of {self.nb_path}") from exc
 
         # When notebook execution fails, generate error folder and move there the notebook:
-        except Exception as exc:  # pylint: disable = broad-exception-caught
+        except Exception as exc:
             if output_path in [entry.path for entry in os.scandir(os.getcwd())]:
                 timestamp = datetime.timestamp(datetime.now())
                 error_path = self._create_notebook_datetime_path(
@@ -370,7 +370,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                     str(exc),
                     error_path,
                 )
-                # pylint: disable = broad-exception-raised
+
                 raise Exception(
                     f"Aborting execution. Exception {exc!s} during automatic calibration notebook execution, trace of the error can be found in {error_path}"
                 ) from exc
@@ -379,7 +379,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                 "Aborting execution. Exception %s during automatic calibration, expected error execution file to be created but it did not",
                 str(exc),
             )
-            # pylint: disable = broad-exception-raised
+
             raise Exception(
                 f"Aborting execution. Exception {exc!s} during automatic calibration, expected error execution file to be created but it did not"
             ) from exc

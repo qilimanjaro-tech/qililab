@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """QubitControl class."""
+
 from abc import abstractmethod
 from dataclasses import asdict, dataclass
 from typing import Sequence
@@ -52,7 +53,7 @@ class AWG(Instrument):
                     + f" the number of AWG Sequencers settings specified: {len(self.awg_sequencers)}"
                 )
             self.awg_sequencers = [
-                AWGSequencer(**sequencer) if isinstance(sequencer, dict) else sequencer  # pylint: disable=not-a-mapping
+                AWGSequencer(**sequencer) if isinstance(sequencer, dict) else sequencer
                 for sequencer in self.awg_sequencers
             ]
 

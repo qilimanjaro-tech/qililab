@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Instrument class"""
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import partial
@@ -182,7 +183,7 @@ class Instrument(BusElement, ABC):
         """
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
-    def get(self, parameter: Parameter, channel_id: int | None = None):  # pylint: disable=unused-argument
+    def get(self, parameter: Parameter, channel_id: int | None = None):
         """Get instrument parameter.
 
         Args:

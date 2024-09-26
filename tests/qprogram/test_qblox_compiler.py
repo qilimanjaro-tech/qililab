@@ -7,7 +7,7 @@ import qpysequence as QPy
 
 from qililab import Calibration, Domain, Gaussian, IQPair, QbloxCompiler, QProgram, Square
 from qililab.qprogram.blocks import ForLoop
-from tests.test_utils import is_q1asm_equal  # pylint: disable=import-error, no-name-in-module
+from tests.test_utils import is_q1asm_equal
 
 
 def setup_q1asm(marker: str):

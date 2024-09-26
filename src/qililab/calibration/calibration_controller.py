@@ -264,7 +264,7 @@ class CalibrationController:
         """
         logger.info('WORKFLOW: Calibrating node "%s".\n', node.node_id)
         node.previous_timestamp = node.run_node()
-        node._add_string_to_checked_nb_name("calibrated", node.previous_timestamp)  # pylint: disable=protected-access
+        node._add_string_to_checked_nb_name("calibrated", node.previous_timestamp)
         # add _calibrated tag to the file name, which doesn't have a tag.
 
     def _update_parameters(self, node: CalibrationNode) -> None:

@@ -15,7 +15,7 @@
 """Device class"""
 
 
-class Device:  # pylint: disable=too-few-public-methods
+class Device:
     """Class Device. All device classes must inherit from this class."""
 
     def close(self):

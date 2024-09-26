@@ -269,7 +269,7 @@ class BusDriver(ABC):
         instruments_dictionary: dict[str, BaseInstrument] = {}
         used_keys: list[str] = []
 
-        for key, instrument_dict in dictionary.items():  # pylint: disable=too-many-nested-blocks
+        for key, instrument_dict in dictionary.items():
             if key in cls.__instrument_interfaces_caps_translate():
                 for instrument in instruments:
                     # If the alias and the interface of the dictionary coincide with one of the given instruments:

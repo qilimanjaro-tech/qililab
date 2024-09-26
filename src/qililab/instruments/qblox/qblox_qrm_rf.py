@@ -19,8 +19,8 @@ from typing import ClassVar
 
 from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm
 
-from qililab.instruments import Instrument  # pylint: disable=cyclic-import
-from qililab.instruments.utils.instrument_factory import InstrumentFactory  # pylint: disable=cyclic-import
+from qililab.instruments import Instrument
+from qililab.instruments.utils.instrument_factory import InstrumentFactory
 from qililab.typings import InstrumentName, Parameter
 
 from .qblox_qrm import QbloxQRM

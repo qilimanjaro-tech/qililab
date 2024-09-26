@@ -21,7 +21,7 @@ from qililab.yaml import yaml
 
 @yaml.register_class
 @dataclass(frozen=True)
-class SetParameter(Operation):  # pylint: disable=missing-class-docstring
+class SetParameter(Operation):
     alias: str
     parameter: Parameter
     value: int | float | bool

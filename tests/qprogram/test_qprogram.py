@@ -26,7 +26,7 @@ from qililab.qprogram.operations import (
     Wait,
 )
 from qililab.utils.serialization import deserialize, deserialize_from, serialize, serialize_to
-from tests.qprogram.test_structured_program import (  # pylint: disable=no-name-in-module, import-error
+from tests.qprogram.test_structured_program import (
     TestStructuredProgram,
 )
 
