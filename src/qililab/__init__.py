@@ -26,17 +26,11 @@ from .result import Results, stream_results
 from .typings import Parameter
 from .utils import Loop
 from .utils.serialization import serialize, serialize_to, deserialize, deserialize_from
-from .waveforms import IQPair, Square, Gaussian, FlatTop, Arbitrary, DragCorrection
+from .waveforms import IQPair, Square, Gaussian, FlatTop, Arbitrary, DragCorrection, Waveform
 
 # moving circuit_transpiler module imports here because it has instruments module dependencies so circular imports can be avoided
 from .circuit_transpiler import Drag, Wait
 from .analog import AnnealingProgram  # same as circuit transpiler, top modules should be imported at top
-
-with contextlib.suppress(NameError, ImportError):
-    # Since Ipython magic methods can only be imported from inside a Jupyter Notebook,
-    # here we first check that `get_ipython` exists (which means we are inside a Jupyter Notebook)
-    get_ipython()  # type: ignore  # noqa: F821
-    from .slurm import submit_job  # pragma: no cover
 
 
 __all__ = [
@@ -63,6 +57,7 @@ __all__ = [
     "deserialize_from",
     "serialize",
     "serialize_to",
+    "Waveform",
     "Arbitrary",
     "DragCorrection",
     "FlatTop",
@@ -72,5 +67,11 @@ __all__ = [
     "Drag",
     "Wait",
     "AnnealingProgram",
-    "submit_job",
 ]
+
+
+with contextlib.suppress(NameError, ImportError):
+    # Since Ipython magic methods can only be imported from inside a Jupyter Notebook,
+    # here we first check that `get_ipython` exists (which means we are inside a Jupyter Notebook)
+    get_ipython()  # type: ignore  # noqa: F821
+    from .slurm import submit_job as submit_job  # pragma: no cover

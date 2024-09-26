@@ -30,7 +30,6 @@ extensions = [
     "sphinx.ext.napoleon",  # converts Google docstrings into rst
     "sphinx_automodapi.automodapi",
     # "sphinxawesome_theme.docsearch",  # TODO: Uncomment this when access to DocSearch!
-    "sphinxawesome_theme.highlighting",
 ]
 
 templates_path = ["_templates"]
