@@ -66,3 +66,4 @@ class PlayWithCalibratedWaveform(Operation):  # pylint: disable=missing-class-do
     bus: str
     waveform: str
     wait_time: int | None = None
+    amplify_flux: bool = False
