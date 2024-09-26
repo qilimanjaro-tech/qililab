@@ -323,7 +323,9 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
 
         if not waveform_variables:
             waveform_I_name = self.__add_waveform_to_configuration(waveform_I, element.amplify_flux)
-            waveform_Q_name = self.__add_waveform_to_configuration(waveform_Q, element.amplify_flux) if waveform_Q else None
+            waveform_Q_name = (
+                self.__add_waveform_to_configuration(waveform_Q, element.amplify_flux) if waveform_Q else None
+            )
             pulse_name = self.__add_or_update_control_pulse_to_configuration(waveform_I_name, waveform_Q_name, duration)
             operation_name = self.__add_pulse_to_element_operations(element.bus, pulse_name)
             pulse = operation_name * gain if gain is not None else operation_name
@@ -345,9 +347,11 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         rotation = (
             element.rotation  # type: ignore
             if element.rotation is not None
-            else self._buses[element.bus].threshold_rotation
-            if self._buses[element.bus] and self._buses[element.bus].threshold_rotation is not None
-            else 0.0
+            else (
+                self._buses[element.bus].threshold_rotation
+                if self._buses[element.bus] and self._buses[element.bus].threshold_rotation is not None
+                else 0.0
+            )
         )
 
         variable_I = qua.declare(qua.fixed)
@@ -397,9 +401,11 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
                 measurement_info.loops_iterations.append(iterations)
             if isinstance(block, Parallel):
                 iterations = min(
-                    len(loop.values)
-                    if isinstance(loop, Loop)
-                    else QuantumMachinesCompiler._calculate_iterations(loop.start, loop.stop, loop.step)
+                    (
+                        len(loop.values)
+                        if isinstance(loop, Loop)
+                        else QuantumMachinesCompiler._calculate_iterations(loop.start, loop.stop, loop.step)
+                    )
                     for loop in block.loops
                 )
                 measurement_info.loops_iterations.append(iterations)
@@ -416,9 +422,11 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
         )
 
         qua.wait(
-            duration / int(self.WAIT_COEFF)  # type: ignore[arg-type]
-            if isinstance(element.duration, Variable)
-            else int(duration / self.WAIT_COEFF),  # type: ignore[arg-type]
+            (
+                duration / int(self.WAIT_COEFF)  # type: ignore[arg-type]
+                if isinstance(element.duration, Variable)
+                else int(duration / self.WAIT_COEFF)
+            ),  # type: ignore[arg-type]
             element.bus,
         )
 
@@ -445,9 +453,9 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             configuration = {
                 "operation": "control",
                 "length": duration,
-                "waveforms": {"I": waveform_I_name, "Q": waveform_Q_name}
-                if waveform_Q_name
-                else {"single": waveform_I_name},
+                "waveforms": (
+                    {"I": waveform_I_name, "Q": waveform_Q_name} if waveform_Q_name else {"single": waveform_I_name}
+                ),
             }
             self._configuration["pulses"][pulse_name] = configuration
         return pulse_name
@@ -514,7 +522,9 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
     def __add_waveform_to_configuration(self, waveform: Waveform, amplify_flux: bool = False):
         waveform_name = QuantumMachinesCompiler.__hash_waveform(waveform)
         if waveform_name not in self._configuration["waveforms"]:
-            self._configuration["waveforms"][waveform_name] = QuantumMachinesCompiler.__waveform_to_config(waveform, amplify_flux)
+            self._configuration["waveforms"][waveform_name] = QuantumMachinesCompiler.__waveform_to_config(
+                waveform, amplify_flux
+            )
         return waveform_name
 
     @staticmethod
@@ -535,13 +545,13 @@ class QuantumMachinesCompiler:  # pylint: disable=too-many-instance-attributes, 
             if amplify_flux:
                 amplitude *= 5
                 if np.abs(amplitude) == 2.5:
-                    amplitude = np.sign(amplitude)*2.499
+                    amplitude = np.sign(amplitude) * 2.499
             return {"type": "constant", "sample": amplitude}
 
         envelope = waveform.envelope() / QuantumMachinesCompiler.VOLTAGE_COEFF
         if amplify_flux:
             envelope *= 5
-            envelope = [2.499 if amp==1 else amp for amp in envelope.tolist()]
+            envelope = [2.499 if amp == 1 else amp for amp in envelope.tolist()]
             return {"type": "arbitrary", "samples": envelope}
         return {"type": "arbitrary", "samples": envelope.tolist()}
 

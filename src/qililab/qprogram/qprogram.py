@@ -282,7 +282,7 @@ class QProgram(StructuredProgram):  # pylint: disable=too-many-public-methods
         return copied_qprogram
 
     @overload
-    def play(self, bus: str, waveform: Waveform | IQPair, amplify_flux:bool) -> None:
+    def play(self, bus: str, waveform: Waveform | IQPair, amplify_flux: bool) -> None:
         """Play a single waveform or an I/Q pair of waveforms on the bus.
 
         Args:
@@ -292,7 +292,7 @@ class QProgram(StructuredProgram):  # pylint: disable=too-many-public-methods
         """
 
     @overload
-    def play(self, bus: str, waveform: str, amplify_flux:bool) -> None:
+    def play(self, bus: str, waveform: str, amplify_flux: bool) -> None:
         """Play a named waveform on the bus.
 
         Args:
@@ -301,7 +301,7 @@ class QProgram(StructuredProgram):  # pylint: disable=too-many-public-methods
             amplify_flux (bool): Define if flux amplification is used for QUA.
         """
 
-    def play(self, bus: str, waveform: Waveform | IQPair | str, amplify_flux:bool) -> None:
+    def play(self, bus: str, waveform: Waveform | IQPair | str, amplify_flux: bool) -> None:
         """Play a waveform, IQPair, or calibrated operation on the specified bus.
 
         This method handles both playing a waveform or IQPair, and playing a
@@ -385,7 +385,12 @@ class QProgram(StructuredProgram):  # pylint: disable=too-many-public-methods
             weights (IQPair): Weights used during demodulation/integration.
             save_adc (bool, optional): If ADC data should be saved. Defaults to False.
         """
-        operation: Measure | MeasureWithCalibratedWaveform | MeasureWithCalibratedWeights | MeasureWithCalibratedWaveformWeights
+        operation: (
+            Measure
+            | MeasureWithCalibratedWaveform
+            | MeasureWithCalibratedWeights
+            | MeasureWithCalibratedWaveformWeights
+        )
         if isinstance(waveform, IQPair) and isinstance(weights, IQPair):
             operation = Measure(bus=bus, waveform=waveform, weights=weights, save_adc=save_adc)
         elif isinstance(waveform, str) and isinstance(weights, IQPair):
@@ -671,7 +676,12 @@ class QProgram(StructuredProgram):  # pylint: disable=too-many-public-methods
                 rotation (float, optional): Angle in radians to rotate the IQ plane during demodulation/integration. Defaults to 0.0
                 demodulation (bool, optional): If demodulation is enabled. Defaults to True.
             """
-            operation: Measure | MeasureWithCalibratedWaveform | MeasureWithCalibratedWeights | MeasureWithCalibratedWaveformWeights
+            operation: (
+                Measure
+                | MeasureWithCalibratedWaveform
+                | MeasureWithCalibratedWeights
+                | MeasureWithCalibratedWaveformWeights
+            )
             if isinstance(waveform, IQPair) and isinstance(weights, IQPair):
                 operation = Measure(
                     bus=bus,
