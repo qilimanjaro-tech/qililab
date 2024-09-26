@@ -116,34 +116,41 @@ class TestAnnealingProgram:
         annealing_program.transpile(transpiler=dummy_transpiler)
         assert annealing_program._transpiled_program == transpiled_program_dictionary
 
-    def test_get_waveforms(self, annealing_program_transpiled):
+    @pytest.mark.parametrize("minimum_clock_time", [1, 3, 4, 10])
+    def test_get_waveforms(self, annealing_program_transpiled, minimum_clock_time):
         """Test get waveforms method works as intended"""
-        anneal_waveforms = annealing_program_transpiled.get_waveforms()
+        anneal_waveforms = annealing_program_transpiled.get_waveforms(minimum_clock_time=minimum_clock_time)
         transpiled_program = annealing_program_transpiled._transpiled_program
+
+        pad_length = (
+            minimum_clock_time - len(transpiled_program) % minimum_clock_time
+            if len(transpiled_program) % minimum_clock_time != 0
+            else 0
+        )
 
         phix_q0_waveform = (
             "flux_line_phix_q0",
-            np.array([anneal_step["phix_q0"] for anneal_step in transpiled_program]),
+            np.array(pad_length * [0] + [anneal_step["phix_q0"] for anneal_step in transpiled_program]),
         )
         phiz_q0_waveform = (
             "flux_line_phiz_q0",
-            np.array([anneal_step["phiz_q0"] for anneal_step in transpiled_program]),
+            np.array(pad_length * [0] + [anneal_step["phiz_q0"] for anneal_step in transpiled_program]),
         )
         phix_q1_waveform = (
             "flux_line_phix_q1",
-            np.array([anneal_step["phix_q1"] for anneal_step in transpiled_program]),
+            np.array(pad_length * [0] + [anneal_step["phix_q1"] for anneal_step in transpiled_program]),
         )
         phiz_q1_waveform = (
             "flux_line_phiz_q1",
-            np.array([anneal_step["phiz_q1"] for anneal_step in transpiled_program]),
+            np.array(pad_length * [0] + [anneal_step["phiz_q1"] for anneal_step in transpiled_program]),
         )
         phix_c0_1_waveform = (
             "flux_line_phix_c0_1",
-            np.array([anneal_step["phix_c0_1"] for anneal_step in transpiled_program]),
+            np.array(pad_length * [0] + [anneal_step["phix_c0_1"] for anneal_step in transpiled_program]),
         )
         phiz_c0_1_waveform = (
             "flux_line_phiz_c0_1",
-            np.array([anneal_step["phiz_c0_1"] for anneal_step in transpiled_program]),
+            np.array(pad_length * [0] + [anneal_step["phiz_c0_1"] for anneal_step in transpiled_program]),
         )
         assert np.allclose(anneal_waveforms[phix_q0_waveform[0]].envelope(), phix_q0_waveform[1])
         assert np.allclose(anneal_waveforms[phiz_q0_waveform[0]].envelope(), phiz_q0_waveform[1])

@@ -23,4 +23,4 @@ from qililab.yaml import yaml
 class SetOffset(Operation):  # pylint: disable=missing-class-docstring
     bus: str
     offset_path0: float
-    offset_path1: float
+    offset_path1: float | None

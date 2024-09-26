@@ -694,7 +694,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             crosstalk_matrix = (
                 calibration.crosstalk_matrix.inverse() if calibration.crosstalk_matrix is not None else None
             )
-            annealing_waveforms = annealing_program.get_waveforms(crosstalk_matrix=crosstalk_matrix)
+            annealing_waveforms = annealing_program.get_waveforms(
+                crosstalk_matrix=crosstalk_matrix, minimum_clock_time=self.gates_settings.minimum_clock_time
+            )
 
             qp_annealing = QProgram()
             shots_variable = qp_annealing.variable("num_shots", Domain.Scalar, int)
@@ -860,7 +862,13 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             markers=markers,
         )
         buses = {bus_alias: self._get_bus_by_alias(alias=bus_alias) for bus_alias in sequences}
-
+        for bus_alias, bus in buses.items():
+            if bus.distortions:
+                for distortion in bus.distortions:
+                    for waveform in sequences[bus_alias]._waveforms._waveforms:  # pylint: disable=protected-access
+                        sequences[bus_alias]._waveforms.modify(  # pylint: disable=protected-access
+                            waveform.name, distortion.apply(waveform.data)
+                        )
         if debug:
             with open("debug_qblox_execution.txt", "w", encoding="utf-8") as sourceFile:
                 for bus_alias in sequences:
