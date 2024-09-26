@@ -1,8 +1,5 @@
 import os
-from collections import deque
-from itertools import product
 
-import numpy as np
 import pytest
 
 from qililab.qprogram.experiment import Experiment

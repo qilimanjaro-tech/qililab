@@ -3,7 +3,6 @@
 import os
 from datetime import datetime
 from io import StringIO
-from typing import Any
 from unittest.mock import MagicMock, call, patch
 
 import numpy as np

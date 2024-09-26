@@ -1,14 +1,13 @@
 """Test the annealing program class"""
+
 from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
 
 from qililab import AnnealingProgram
-from qililab.qprogram import CrosstalkMatrix
 from qililab.settings import Runcard
 from tests.data import Galadriel
-from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="anneal_program_dictionary")
