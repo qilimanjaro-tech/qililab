@@ -100,8 +100,8 @@ python_version = "3.10"
 warn_return_any = false
 ignore_missing_imports = true
 exclude = [
-    '.*\.ipynb$',
-    'tests/.*'
+    ".*\.ipynb$",
+    "tests/.*"
 ]
 
 [tool.commitizen]
@@ -117,30 +117,30 @@ tag_format = "$version"
     show_missing = true
     exclude_lines = [
         # Have to re-enable the standard pragma
-        'pragma: no cover',
+        "pragma: no cover",
 
-        # Don't complain about missing debug-only code:
-        'def __repr__',
-        'if self\.debug',
+        # Don"t complain about missing debug-only code:
+        "def __repr__",
+        "if self\.debug",
 
-        # Don't complain if tests don't hit defensive assertion code:
-        'raise AssertionError',
-        'raise NotImplementedError',
+        # Don"t complain if tests don"t hit defensive assertion code:
+        "raise AssertionError",
+        "raise NotImplementedError",
 
-        # Don't complain if non-runnable code isn't run:
-        'if 0:',
-        'if __name__ == .__main__.:',
+        # Don"t complain if non-runnable code isn"t run:
+        "if 0:",
+        "if __name__ == .__main__.:",
 
-        # Don't complain if TYPE_CHECKING is used:
-        'if TYPE_CHECKING:'
+        # Don"t complain if TYPE_CHECKING is used:
+        "if TYPE_CHECKING:"
     ]
     omit = [
-        'env/*',
-        'venv/*',
-        '*/virtualenv/*',
-        '*/virtualenvs/*',
-        '*/tests/*',
-        'examples/*'
+        "env/*",
+        "venv/*",
+        "*/virtualenv/*",
+        "*/virtualenvs/*",
+        "*/tests/*",
+        "examples/*"
     ]
 
 [tool.nbqa.md]
@@ -148,6 +148,6 @@ mdformat = true
 
 [tool.pytest.ini_options]
 filterwarnings = [
-    'ignore::DeprecationWarning',
-    'ignore::PendingDeprecationWarning'
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning"
 ]
