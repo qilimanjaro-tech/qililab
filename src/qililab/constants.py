@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """Constants"""
-# pylint: disable=too-few-public-methods
 
 # Environment variables
 DATA = "DATA"  # variable containing the path where data is saved

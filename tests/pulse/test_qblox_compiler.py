@@ -1,6 +1,5 @@
 """Tests for the Qblox Compiler class."""
 
-# pylint: disable=protected-access
 import copy
 import re
 from unittest.mock import MagicMock

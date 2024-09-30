@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=anomalous-backslash-in-string, inconsistent-return-statements
+
 """Automatic-calibration Controller module, which works with notebooks as nodes."""
 
 from datetime import datetime, timedelta

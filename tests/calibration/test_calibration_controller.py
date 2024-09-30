@@ -11,7 +11,7 @@ from qililab.data_management import build_platform
 from qililab.platform.platform import Platform
 
 # flake8: noqa
-# pylint: disable=protected-access
+
 
 #################################################################################
 #################################### SET UPS ####################################

@@ -1,4 +1,3 @@
-# pylint: disable=protected-access
 from unittest.mock import patch
 
 import numpy as np

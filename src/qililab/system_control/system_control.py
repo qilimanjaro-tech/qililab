@@ -44,7 +44,7 @@ class SystemControl(FactoryElement, ABC):
         instruments: list[Instrument]
         platform_instruments: InitVar[Instruments]
 
-        def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
+        def __post_init__(self, platform_instruments: Instruments):  # type: ignore
             # ``self.instruments`` contains a list of instrument aliases
             instruments = []
             for inst_alias in self.instruments:

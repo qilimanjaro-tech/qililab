@@ -24,7 +24,6 @@ from .waveform import Waveform
 
 
 @yaml.register_class
-# pylint: disable=anomalous-backslash-in-string
 class Gaussian(Waveform):
     r"""Gaussian waveform with peak at duration/2 and spanning for num_sigmas over the pulse duration.
 

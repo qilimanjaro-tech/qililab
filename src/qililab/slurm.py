@@ -25,9 +25,6 @@ from qililab.config import logger
 num_files_to_keep = 500  # needs to be a multiple of 4 and 5
 
 
-# pylint: disable=too-many-locals
-
-
 def is_variable_used(code, variable):
     """Check whether any values are assigned to the output variable inside the magic cell."""
     tree = ast.parse(code)

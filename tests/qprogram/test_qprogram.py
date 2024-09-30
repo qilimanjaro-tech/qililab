@@ -66,7 +66,6 @@ def get_sample_qprogram_string():
     return (qp, qp_string)
 
 
-# pylint: disable=maybe-no-member, protected-access
 class TestQProgram(TestStructuredProgram):
     """Unit tests checking the QProgram attributes and methods"""
 

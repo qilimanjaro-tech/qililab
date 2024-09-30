@@ -1,6 +1,5 @@
 """Tests for the QbloxQCM class."""
 
-# pylint: disable=too-many-branches
 import copy
 from unittest.mock import MagicMock, patch
 

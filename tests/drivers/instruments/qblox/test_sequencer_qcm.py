@@ -1,6 +1,5 @@
 """Tests for the SequencerQCM class."""
 
-# pylint: disable=protected-access
 from unittest.mock import MagicMock, patch
 
 import numpy as np

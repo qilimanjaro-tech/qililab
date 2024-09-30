@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Contains parameters for the drivers
-"""
-# pylint: disable=too-few-public-methods
+"""Contains parameters for the drivers"""
 
 
 class lo:

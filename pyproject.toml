@@ -100,7 +100,7 @@ python_version = "3.10"
 warn_return_any = false
 ignore_missing_imports = true
 exclude = [
-    ".*\.ipynb$",
+    "*.ipynb$",
     "tests/.*"
 ]
 
@@ -121,7 +121,7 @@ tag_format = "$version"
 
         # Don"t complain about missing debug-only code:
         "def __repr__",
-        "if self\.debug",
+        "if self.debug",
 
         # Don"t complain if tests don"t hit defensive assertion code:
         "raise AssertionError",

@@ -1,5 +1,4 @@
 """Tests for the Platform class."""
-# pylint: disable=too-many-lines
 
 import copy
 import io

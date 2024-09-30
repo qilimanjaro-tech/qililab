@@ -10,8 +10,6 @@ import pytest
 
 from qililab.calibration.calibration_node import CalibrationNode, _json_serialize, export_nb_outputs
 
-# pylint: disable=protected-access, unspecified-encoding
-
 #################################################################################
 # SET UPS ####################################
 #################################################################################

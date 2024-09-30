@@ -14,7 +14,6 @@ from tests.qprogram.test_structured_program import (
 )
 
 
-# pylint: disable=maybe-no-member, protected-access
 class TestExperiment(TestStructuredProgram):
     """Unit tests checking the QProgram attributes and methods"""
 
