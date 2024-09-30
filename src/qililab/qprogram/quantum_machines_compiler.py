@@ -215,9 +215,9 @@ class QuantumMachinesCompiler:
 
     def _declare_variables(self):
         for variable in self._qprogram.variables:
-            if variable.domain in [Domain.Time, Domain.Frequency]:
-                qua_variable = qua.declare(int)
-            elif variable.domain is Domain.Scalar and isinstance(variable, IntVariable):
+            if variable.domain in [Domain.Time, Domain.Frequency] or (
+                variable.domain is Domain.Scalar and isinstance(variable, IntVariable)
+            ):
                 qua_variable = qua.declare(int)
             else:
                 qua_variable = qua.declare(qua.fixed)

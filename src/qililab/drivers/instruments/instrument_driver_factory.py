@@ -16,7 +16,7 @@
 
 from typing import ClassVar
 
-from ..interfaces.base_instrument import BaseInstrument
+from qililab.drivers.interfaces.base_instrument import BaseInstrument
 
 
 class InstrumentDriverFactory:

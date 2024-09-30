@@ -243,7 +243,7 @@ class TestBusDriver:
     def test_eq(self, buses: list[BusDriver]):
         """Unittest for __eq__ method."""
         for bus in buses:
-            assert "random str" != bus
+            assert bus != "random str"
 
     def test_to_dict(self, buses: list[BusDriver]):
         # sourcery skip: merge-duplicate-blocks, remove-redundant-if, switch

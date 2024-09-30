@@ -16,6 +16,7 @@
 """Automatic-calibration Controller module, which works with notebooks as nodes."""
 
 from datetime import datetime, timedelta
+from typing import TYPE_CHECKING
 
 import networkx as nx
 import pandas as pd
@@ -24,7 +25,9 @@ from qililab import Parameter
 from qililab.calibration.calibration_node import CalibrationNode
 from qililab.config import logger
 from qililab.data_management import build_platform, save_platform
-from qililab.platform.platform import Platform
+
+if TYPE_CHECKING:
+    from qililab.platform.platform import Platform
 
 
 class CalibrationController:
@@ -49,8 +52,8 @@ class CalibrationController:
         #                     /--> 2 -->\\
         #                    /     |     \\
         #    (start, root)  0      |      3 --> 4 (end, leave)
-        #                    \     v     /
-        #                     \--> 1 -->/
+        #                    \\     v     /
+        #                     \\--> 1 -->/
 
     .. note::
 
@@ -162,8 +165,8 @@ class CalibrationController:
             #                     /--> 2 -->\\
             #                    /     |     \\
             #    (start, root)  0      |      3 --> 4 (end, leave)
-            #                    \     v     /
-            #                     \--> 1 -->/
+            #                    \\     v     /
+            #                     \\--> 1 -->/
         """
 
         self.node_sequence: dict[str, CalibrationNode] = node_sequence

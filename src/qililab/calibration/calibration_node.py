@@ -129,7 +129,6 @@ class CalibrationNode:
                 second = CalibrationNode(
                     nb_path="notebooks/second.ipynb",
                     qubit_index=qubit,
-
                     sweep_interval=np.arange(start=0, stop=19, step=1),
                 )
                 nodes[second.node_id] = second
@@ -141,7 +140,7 @@ class CalibrationNode:
             controller = CalibrationController(node_sequence=nodes, calibration_graph=G, runcard=path_runcard)
 
             ### WORKFLOW TO DO:
-            controller.maintain(nodes["second_q1"]) # maintain second node for qubit 1
+            controller.maintain(nodes["second_q1"])  # maintain second node for qubit 1
 
         .. note::
 
@@ -160,14 +159,14 @@ class CalibrationNode:
 
                 import numpy as np
 
-                qubit=0
+                qubit = 0
 
                 # Sweep interval:
                 sweep_interval = np.arange(start=0, stop=19, step=1)
 
                 # Extra parameters for this concrete notebook:
-                param1=0
-                param2=0
+                param1 = 0
+                param2 = 0
                 ...
 
         |
@@ -203,8 +202,8 @@ class CalibrationNode:
 
             .. code-block:: python
 
-                def fit(xdata, results):
-                    ...
+                def fit(xdata, results): ...
+
 
                 fitted_values, x_data, y_data, figure = fit(xdata=sweep_interval, results=results)
                 plt.show()
@@ -219,8 +218,14 @@ class CalibrationNode:
 
                 export_nb_outputs(
                     {
-                        "platform_parameters": [(param_name0, fitted_values[0], bus_alias0, qubit), (param_name1, fitted_values[1], bus_alias1, qubit)],
-                        "fidelities": [(qubit, "fidelity1", 0.9), (qubit, "fidelity2", 0.95)]  # Fidelities in the output dictionary are optional.
+                        "platform_parameters": [
+                            (param_name0, fitted_values[0], bus_alias0, qubit),
+                            (param_name1, fitted_values[1], bus_alias1, qubit),
+                        ],
+                        "fidelities": [
+                            (qubit, "fidelity1", 0.9),
+                            (qubit, "fidelity2", 0.95),
+                        ],  # Fidelities in the output dictionary are optional.
                     }
                 )
 
@@ -575,7 +580,7 @@ def export_nb_outputs(outputs: dict) -> None:
         outputs (dict): Outputs from the notebook to export into the automatic calibration workflow.
     """
     outputs = _json_serialize(outputs)
-    print(f"{logger_output_start}{json.dumps(outputs)}")
+    print(f"{logger_output_start}{json.dumps(outputs)}")  # noqa: T201
 
 
 def _json_serialize(obj: Any):
@@ -599,7 +604,7 @@ def _json_serialize(obj: Any):
     if isinstance(obj, np.floating):
         return float(obj)
 
-    if isinstance(obj, (complex, np.complex_, np.complex64, np.complex128)):
+    if isinstance(obj, (complex, np.complex128, np.complex64, np.complex128)):
         return {"real": float(obj.real), "imag": float(obj.imag)}
 
     if isinstance(obj, np.bool_):

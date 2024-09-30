@@ -1,4 +1,5 @@
 """Tests for the PulseShape class."""
+
 import itertools
 
 import numpy as np
@@ -64,12 +65,7 @@ class TestPulseShape:
         env = return_envelope(pulse_shape, env_params)
 
         # positive amplitude cases
-        if env_params["amplitude"] > 0:
-            assert np.max(env) == -np.min(env)
-            assert env[len(env) // 2] == 0
-
-        # negative ampltiude cases
-        elif env_params["amplitude"] < 0:
+        if env_params["amplitude"] > 0 or env_params["amplitude"] < 0:
             assert np.max(env) == -np.min(env)
             assert env[len(env) // 2] == 0
 
@@ -106,7 +102,7 @@ class TestPulseShape:
             dictionary
             == dictionary2
             == {
-                "name": pulse_shape.name.value,
+                "name": pulse_shape.name.value,  # type: ignore[operator]
                 "b": pulse_shape.b,
                 "t_phi": pulse_shape.t_phi,
             }

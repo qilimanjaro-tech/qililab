@@ -26,7 +26,7 @@ from .waveform import Waveform
 @yaml.register_class
 # pylint: disable=anomalous-backslash-in-string
 class Gaussian(Waveform):
-    """Gaussian waveform with peak at duration/2 and spanning for num_sigmas over the pulse duration.
+    r"""Gaussian waveform with peak at duration/2 and spanning for num_sigmas over the pulse duration.
 
     Standard centered Gaussian pulse shape, symmetrically spanning for ``num_sigmas`` over the pulse duration.
 
@@ -47,6 +47,7 @@ class Gaussian(Waveform):
         .. code-block:: python
 
             import qililab as ql
+
             gaussian_envelope = ql.Gaussian(num_sigmas=X, duration=50, amplitude=1).envelope()
 
         which for ``X`` being ``1``, ``4``, ``6`` or ``8``, look respectively like:

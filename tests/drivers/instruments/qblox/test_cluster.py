@@ -59,12 +59,12 @@ class MockQcmQrm(DummyChannel):
     def arm_sequencer(self):
         """Mock arm_sequencer method"""
 
-        return None
+        return
 
     def start_sequencer(self):
         """Mock start_sequencer method"""
 
-        return None
+        return
 
 
 class MockCluster(DummyInstrument):

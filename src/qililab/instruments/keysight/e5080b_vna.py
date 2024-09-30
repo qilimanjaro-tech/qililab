@@ -203,7 +203,7 @@ class E5080B(VectorNetworkAnalyzer):
         """
         try:  # the VNA sometimes throws an error here, we just ignore it
             return self._get_sweep_mode() == "HOLD"
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
 
     def release(self, channel=1):

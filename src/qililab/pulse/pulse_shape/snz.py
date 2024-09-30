@@ -44,6 +44,7 @@ class SNZ(PulseShape):
         .. code-block:: python
 
             from qililab.pulse.pulse_shape import SNZ
+
             snz_envelope = SNZ(b=B, t_phi=T).envelope(amplitude=1, duration=50)
 
         which for ``b=0.2``, ``t_phi=2`` and ``b=0.5``, ``t_phi=10``, look respectively like:
@@ -93,7 +94,7 @@ class SNZ(PulseShape):
         # raise warning if we are rounding
         if (duration / resolution) % 1 != 0 or (halfpulse_t / resolution) % 1 != 0:
             logger.warning(
-                f"Envelope length rounded to nearest value {len(envelope)} from division full_snz_duration ({duration}) / resolution ({resolution}) = {duration/resolution}"
+                f"Envelope length rounded to nearest value {len(envelope)} from division full_snz_duration ({duration}) / resolution ({resolution}) = {duration / resolution}"
             )
         envelope[:halfpulse_t] = amplitude * np.ones(halfpulse_t)  # positive square halfpulse
         envelope[halfpulse_t] = self.b * amplitude  # impulse b

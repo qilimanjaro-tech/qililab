@@ -35,6 +35,7 @@ class TwoStep(PulseShape):
         .. code-block:: python
 
             from qililab.pulse.pulse_shape import TwoStep
+
             two_step_envelope = TwoStep().envelope(amplitude=X, duration=50)
     """
 
@@ -55,8 +56,7 @@ class TwoStep(PulseShape):
         """
         step_duration = self.step_duration
         step_amp = self.step_amplitude
-        waveform = np.concatenate((amplitude * np.ones(step_duration), step_amp * np.ones(duration - step_duration)))
-        return waveform
+        return np.concatenate((amplitude * np.ones(step_duration), step_amp * np.ones(duration - step_duration)))
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "TwoStep":

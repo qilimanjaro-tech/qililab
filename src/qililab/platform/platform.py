@@ -86,14 +86,14 @@ class Platform:
 
     After initializing a :class:`Platform`, the typical first three steps (which are usually only required at the start) are:
 
-    >>> platform.connect() # Connects to all the instruments.
+    >>> platform.connect()  # Connects to all the instruments.
     >>> platform.initial_setup()  # Sets the parameters defined in the runcard.
     >>> platform.turn_on_instruments()  # Turns on the signal outputs.
 
     And then, for each experiment you want to run, you would typically repeat:
 
-    >>> platform.set_parameter(...) # Sets any parameter of the Platform.
-    >>> result = platform.execute(...) # Executes the platform.
+    >>> platform.set_parameter(...)  # Sets any parameter of the Platform.
+    >>> result = platform.execute(...)  # Executes the platform.
 
     Args:
         runcard (Runcard): Dataclass containing the serialized platform (chip, instruments, buses...), created during :meth:`ql.build_platform()` with the given runcard dictionary.
@@ -130,7 +130,7 @@ class Platform:
             from qibo import gates
 
             # Defining the Rabi circuit:
-            circuit = Circuit(q+1)
+            circuit = Circuit(q + 1)
             circuit.add(gates.X(q))
             circuit.add(gates.M(q))
 
@@ -257,9 +257,9 @@ class Platform:
 
             # Defining the Ramsey circuit:
             circuit = Circuit(q + 1)
-            circuit.add(gates.RX(q, theta=np.pi/2))
+            circuit.add(gates.RX(q, theta=np.pi / 2))
             circuit.add(ql.Wait(q, t=0))
-            circuit.add(gates.RX(q, theta=np.pi/2))
+            circuit.add(gates.RX(q, theta=np.pi / 2))
             circuit.add(gates.M(q))
 
             # Looping over the wait time t to execute the Ramsey:
@@ -267,7 +267,7 @@ class Platform:
             wait_times = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
             for wait in wait_times:
-                circuit.set_parameters([np.pi/2, wait, np.pi/2])
+                circuit.set_parameters([np.pi / 2, wait, np.pi / 2])
                 result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
                 results.append(result.array)
 
@@ -633,15 +633,15 @@ class Platform:
             yield  # Experiment logic goes here
 
         except Exception as e:
-            print(f"An error occurred: {e}")
+            logger.error(f"An error occurred: {e}")
             raise  # Re-raise the exception for further handling
         finally:
             # Call the cleanup methods in reverse order
             for cleanup_method in reversed(cleanup_methods):
                 try:
                     cleanup_method()
-                except Exception as e:
-                    print(f"Error during cleanup: {e}")
+                except Exception as e:  # noqa: BLE001
+                    logger.error(f"Error during cleanup: {e}")
                     cleanup_errors.append(e)
 
             # Raise any exception that might have happened during cleanup
@@ -950,7 +950,7 @@ class Platform:
             except StreamProcessingDataLossError as dataloss:
                 time_interval = datetime.datetime.now() - start_time
                 warnings.warn(
-                    f"Warning: {dataloss} raised, retrying experiment ({iteration+1}/{dataloss_tries} available tries) after {time_interval.seconds} s"
+                    f"Warning: {dataloss} raised, retrying experiment ({iteration + 1}/{dataloss_tries} available tries) after {time_interval.seconds} s"
                 )
                 warnings.warn(traceback.format_exc())
                 if iteration + 1 != dataloss_tries:

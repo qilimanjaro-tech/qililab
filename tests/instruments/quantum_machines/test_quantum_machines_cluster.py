@@ -520,9 +520,9 @@ class TestQuantumMachinesCluster:
 
         # Test that both the local `settings` and `_config` have been changed to 17e6:
         assert qmm._config == qmm.settings.to_qua_config()
-        ## Test `_config` QUA dictionary:
+        # Test `_config` QUA dictionary:
         assert qmm._config["elements"][bus][parameter] == value
-        ## Test `settings` qililab dictionary:
+        # Test `settings` qililab dictionary:
         assert qmm.settings.to_qua_config()["elements"][bus][parameter] == value
 
         # Assert that the settings are still in synch:
@@ -559,7 +559,7 @@ class TestQuantumMachinesCluster:
         qmm_with_opx1000.set_parameter_of_bus(bus, parameter, value)
 
         if parameter == Parameter.IF:
-            ## Test `_intermediate_frequency[bus]` is created for later use:
+            # Test `_intermediate_frequency[bus]` is created for later use:
             assert qmm_with_opx1000._pending_set_intermediate_frequency[bus] == value
         if parameter == Parameter.DC_OFFSET:
             qmm_with_opx1000._qm.set_output_dc_offset_by_element.assert_called_once()

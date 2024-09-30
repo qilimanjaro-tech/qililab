@@ -14,7 +14,7 @@
 
 """Drivers for SpiRack and its corresponging channels: D5aDacChannel & S4gDacChannel."""
 
-from typing import Union
+from typing import TYPE_CHECKING, Union
 
 from qblox_instruments import SpiRack as QcodesSpiRack
 from qblox_instruments.qcodes_drivers.spi_rack_modules.d5a_module import D5aDacChannel as QcodesD5aDacChannel
@@ -22,10 +22,12 @@ from qblox_instruments.qcodes_drivers.spi_rack_modules.d5a_module import D5aModu
 from qblox_instruments.qcodes_drivers.spi_rack_modules.s4g_module import S4gDacChannel as QcodesS4gDacChannel
 from qblox_instruments.qcodes_drivers.spi_rack_modules.s4g_module import S4gModule as QcodesS4gModule
 from qcodes import Instrument
-from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 
 from qililab.drivers.instruments.instrument_driver_factory import InstrumentDriverFactory
 from qililab.drivers.interfaces import BaseInstrument, CurrentSource, VoltageSource
+
+if TYPE_CHECKING:
+    from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 
 
 # MAIN SpiRack CLASS

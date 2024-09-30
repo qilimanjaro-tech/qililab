@@ -15,10 +15,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 from qililab.qprogram.element import Element
-from qililab.qprogram.operations.operation import Operation
 from qililab.yaml import yaml
+
+if TYPE_CHECKING:
+    from qililab.qprogram.operations.operation import Operation
 
 
 @yaml.register_class

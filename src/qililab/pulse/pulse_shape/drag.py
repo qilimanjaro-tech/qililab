@@ -35,13 +35,13 @@ class Drag(PulseShape):
     .. math::
 
         f(x) & = (1 + 1j * alpha * d/dx) * Gaussian(x) = \\\\
-             & = (1 + 1j * alpha * (x - \mu) / \sigma^2) * Gaussian(x)
+             & = (1 + 1j * alpha * (x - \\mu) / \\sigma^2) * Gaussian(x)
 
     where the 'Gaussian' is symmetrically cut in the given `num_sigmas`, and then is shifted down so that the extremes are at 0, following:
 
     .. math::
 
-        Gaussian(x) = A * exp(-0.5 * (x - \mu)^2 / \sigma^2)
+        Gaussian(x) = A * exp(-0.5 * (x - \\mu)^2 / \\sigma^2)
 
     more information about the gaussian can be found in the :class:`Gaussian` documentation.
 

@@ -183,7 +183,6 @@ class SequencerQCM(Sequencer, AWG):
             bin_loop.append_component(long_wait(wait_time=int(timeline[0].start_time)))
 
         for i, pulse_event in enumerate(timeline):
-            print("Pulse label: ", pulse_event.pulse.label())
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
             wait_time = timeline[i + 1].start_time - pulse_event.start_time if (i < (len(timeline) - 1)) else 4
             bin_loop.append_component(ResetPh())

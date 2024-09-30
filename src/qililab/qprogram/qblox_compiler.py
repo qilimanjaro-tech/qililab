@@ -588,9 +588,8 @@ class QbloxCompiler:
             for element in block.elements:
                 if isinstance(element, Block):
                     yield from collect_operations(element)
-                else:
-                    if any(variable == loop.variable for variable in element.get_variables()):
-                        yield element
+                elif any(variable == loop.variable for variable in element.get_variables()):
+                    yield element
 
         starting_block = starting_block or loop
         operations = list(collect_operations(starting_block))

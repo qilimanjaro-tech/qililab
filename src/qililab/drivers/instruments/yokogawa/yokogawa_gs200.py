@@ -13,13 +13,18 @@
 # limitations under the License.
 
 """Yokogawa GS200 driver."""
-from qcodes.instrument.channel import ChannelTuple, InstrumentModule
+
+from typing import TYPE_CHECKING
+
 from qcodes.instrument_drivers.yokogawa.GS200 import GS200 as QCodesGS200
 from qcodes.instrument_drivers.yokogawa.GS200 import GS200_Monitor as QCodesGS200Monitor
 from qcodes.instrument_drivers.yokogawa.GS200 import GS200Program as QCodesGS200Program
 
 from qililab.drivers.instruments.instrument_driver_factory import InstrumentDriverFactory
 from qililab.drivers.interfaces import BaseInstrument
+
+if TYPE_CHECKING:
+    from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 
 
 @InstrumentDriverFactory.register

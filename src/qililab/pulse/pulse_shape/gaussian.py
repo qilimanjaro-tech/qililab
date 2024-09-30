@@ -28,7 +28,7 @@ from qililab.utils import Factory
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class Gaussian(PulseShape):
-    """Standard centered Gaussian pulse shape, symmetrically spanning for ``num_sigmas`` over the pulse duration.
+    r"""Standard centered Gaussian pulse shape, symmetrically spanning for ``num_sigmas`` over the pulse duration.
 
     The normal distribution's parameters :math:`\mu` (mean) and :math:`\sigma` (standard deviation) will be therefore
     defined by :math:`\mu =` ``duration`` :math:`/ 2` and :math:`\sigma =` ``duration`` :math:`/` ``num_sigmas``:
@@ -47,6 +47,7 @@ class Gaussian(PulseShape):
         .. code-block:: python
 
             from qililab.pulse.pulse_shape import Gaussian
+
             gaussian_envelope = Gaussian(num_sigmas=X).envelope(duration=50, amplitude=1)
 
         which for ``X`` being ``1``, ``4``, ``6`` or ``8``, look respectively like:

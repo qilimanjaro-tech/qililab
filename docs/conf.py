@@ -16,7 +16,7 @@ project = "Qililab"
 copyright = "2023, Qilimanjaro"
 author = "Qilimanjaro"
 
-import qililab  # noqa: E402
+import qililab  # noqa: E402, ICN001
 
 release = qililab.__version__
 

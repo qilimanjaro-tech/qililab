@@ -88,9 +88,9 @@ class BusDriver(ABC):
             candidates: list[BaseInstrument | None] = [
                 instrument for instrument in self.instruments.values() if instrument and param_name in instrument.params
             ]
-            if len(candidates) == 1 and isinstance(candidates[0], BaseInstrument):
-                candidates[0].set(param_name, value)
-            elif len(candidates) == 2 and candidates[0] == candidates[1] and isinstance(candidates[0], BaseInstrument):
+            if (len(candidates) == 1 and isinstance(candidates[0], BaseInstrument)) or (
+                len(candidates) == 2 and candidates[0] == candidates[1] and isinstance(candidates[0], BaseInstrument)
+            ):
                 candidates[0].set(param_name, value)
             elif len(candidates) > 1:
                 raise AttributeError(f"Bus {self.alias} contains multiple instruments with the parameter {param_name}.")
@@ -173,7 +173,7 @@ class BusDriver(ABC):
         Returns:
             BusDriver: The initialized BusDriver class.
         """
-        from .bus_factory import BusFactory  # noqa: PLC0415
+        from .bus_factory import BusFactory
 
         local_dictionary = deepcopy(dictionary)
         local_dictionary.pop("type", None)

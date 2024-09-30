@@ -13,7 +13,7 @@ from qililab.calibration.calibration_node import CalibrationNode, _json_serializ
 # pylint: disable=protected-access, unspecified-encoding
 
 #################################################################################
-#################################### SET UPS ####################################
+# SET UPS ####################################
 #################################################################################
 
 logger_output_start = "RAND_INT:47102512880765720413 - OUTPUTS: "
@@ -21,7 +21,7 @@ dummy_comparison_model = MagicMock()  # Dummy comparison model, to provide to th
 
 
 ####################
-### MOCKED NODES ###
+# MOCKED NODES ###
 ####################
 @pytest.fixture(name="initialize_node_no_optional")
 def fixture_initialize_node_no_optional() -> CalibrationNode:
@@ -77,12 +77,12 @@ def side_efect_execute_create_file_and_raise(*args, **kwargs):
 
 
 #################################################################################
-############################## TESTS FOR THE CLASS ##############################
+# TESTS FOR THE CLASS ##############################
 #################################################################################
 
 
 ###########################
-### TEST INITIALIZATION ###
+# TEST INITIALIZATION ###
 ###########################
 class TestInitializationCalibrationNode:
     """Unit tests for the CalibrationNode class initialization."""
@@ -149,7 +149,7 @@ class TestPublicMethodsFromCalibrationNode:
     """Unit tests for the CalibrationNode class public methods."""
 
     #########################
-    ### TEST RUN NOTEBOOK ###
+    # TEST RUN NOTEBOOK ###
     #########################
 
     @pytest.mark.parametrize(
@@ -391,7 +391,7 @@ class TestPublicMethodsFromCalibrationNode:
         )
 
     ##########################################
-    ### TEST GET LAST CALIBRATED TIMESTAMP ###
+    # TEST GET LAST CALIBRATED TIMESTAMP ###
     ##########################################
     @pytest.mark.parametrize("last_exec_output", [None, "tmp_test_foobar.ipynb"])
     @patch("qililab.calibration.calibration_node.CalibrationNode._find_last_executed_calibration")
@@ -413,7 +413,7 @@ class TestPrivateMethodsFromCalibrationNode:
     """Unit tests for the CalibrationNode class private methods."""
 
     #############################
-    ### TEST EXECUTE NOTEBOOK ###
+    # TEST EXECUTE NOTEBOOK ###
     #############################
     @pytest.mark.parametrize(
         "output",
@@ -491,7 +491,7 @@ class TestPrivateMethodsFromCalibrationNode:
         )
 
     ##########################################
-    ### TEST CREATE NOTEBOOK DATETIME PATH ###
+    # TEST CREATE NOTEBOOK DATETIME PATH ###
     ##########################################
     @pytest.mark.parametrize(
         "timestamp, dirty, error",
@@ -528,7 +528,7 @@ class TestPrivateMethodsFromCalibrationNode:
                 assert "_error.ipynb" in test_value
 
     ####################################
-    ### TEST PATH TO NAME AND FOLDER ###
+    # TEST PATH TO NAME AND FOLDER ###
     ####################################
     @pytest.mark.parametrize(
         "qubit, node_distinguisher, original_path, expected",
@@ -549,7 +549,7 @@ class TestPrivateMethodsFromCalibrationNode:
         assert test_values[1] == expected[1]
 
     ###########################################
-    ### TEST FIND LAST EXECUTED CALIBRATION ###
+    # TEST FIND LAST EXECUTED CALIBRATION ###
     ###########################################
     def test_find_last_executed_calibration(self, methods_node: CalibrationNode):
         """Test that ``find_last_executed_calibration()`` works correctly."""
@@ -598,7 +598,7 @@ class TestPrivateMethodsFromCalibrationNode:
             os.remove(os.path.join(methods_node.nb_folder, test_filename))
 
     ##########################################
-    ### TEST ADD STRING TO CHECKED NB NAME ###
+    # TEST ADD STRING TO CHECKED NB NAME ###
     ##########################################
     def test_add_string_to_checked_nb_name(self, methods_node: CalibrationNode):
         """Test that ``add_string_to_checked_nb_name()`` works properly."""
@@ -613,7 +613,7 @@ class TestStaticMethodsFromCalibrationNode:
     """Test static methods of the `CalibrationNode` class."""
 
     ##########################################
-    ### TEST BUILD NOTEBOOKS LOGGER STREAM ###
+    # TEST BUILD NOTEBOOKS LOGGER STREAM ###
     ##########################################
     @patch("qililab.calibration.calibration_node.logging", autospec=True)
     def test_build_notebooks_logger_stream(self, mocked_logging):
@@ -624,12 +624,12 @@ class TestStaticMethodsFromCalibrationNode:
 
 
 #################################################################################
-######################## TESTS FOR THE EXTERNAL FUNCTIONS #######################
+# TESTS FOR THE EXTERNAL FUNCTIONS #######################
 #################################################################################
 
 
 #######################################
-### TEST EXPORT CALIBRATION OUTPUTS ###
+# TEST EXPORT CALIBRATION OUTPUTS ###
 #######################################
 @pytest.mark.parametrize(
     "test_outputs, test_serializable_outputs",
@@ -652,7 +652,7 @@ def test_export_nb_outputs(mocked_dumps, test_outputs, test_serializable_outputs
 
 
 #######################################
-######### TEST JSON SERIALIZE #########
+# TEST JSON SERIALIZE #########
 #######################################
 @pytest.mark.parametrize(
     "test_objects, expected_test_objects",

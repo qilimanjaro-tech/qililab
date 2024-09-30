@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 from qpysequence import Acquisitions, Program, Waveforms, Weights
 from qpysequence import Sequence as QpySequence
@@ -38,8 +40,10 @@ from qililab.instruments.qblox import QbloxModule
 from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
-from qililab.pulse.pulse_shape.pulse_shape import PulseShape
 from qililab.typings import InstrumentName
+
+if TYPE_CHECKING:
+    from qililab.pulse.pulse_shape.pulse_shape import PulseShape
 
 
 class QbloxCompiler:
