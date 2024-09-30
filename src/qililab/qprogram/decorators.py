@@ -32,9 +32,7 @@ def requires_domain(parameter: str, domain: Domain):
             if parameter not in kwargs and len(args) == 1:
                 kwargs[parameter] = None
             # Get the argument by name
-            param_value = (
-                kwargs.get(parameter) if parameter in kwargs else args[1]
-            )  # assuming 1 is the default position
+            param_value = kwargs.get(parameter) if parameter in kwargs else None
 
             if isinstance(param_value, Variable) and param_value.domain != domain:
                 raise ValueError(f"Expected domain {domain} for {parameter}, but got {param_value.domain}")

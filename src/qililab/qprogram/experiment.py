@@ -11,11 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import Callable
 
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import ExecuteQProgram, SetParameter
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.structured_program import StructuredProgram
+from qililab.qprogram.variable import Variable
 from qililab.typings.enums import Parameter
 from qililab.yaml import yaml
 
@@ -27,7 +29,7 @@ class Experiment(StructuredProgram):
     This class allows setting platform parameters and executing quantum programs.
     """
 
-    def set_parameter(self, alias: str, parameter: Parameter, value: int | float):
+    def set_parameter(self, alias: str, parameter: Parameter, value: int | float | int, channel_id: int | None = None):
         """Set a platform parameter.
 
         Appends a SetParameter operation to the active block of the experiment.
@@ -37,12 +39,12 @@ class Experiment(StructuredProgram):
             parameter (Parameter): The parameter to set.
             value (int | float): The value to set for the parameter.
         """
-        operation = SetParameter(alias=alias, parameter=parameter, value=value)
+        operation = SetParameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
         self._active_block.append(operation)
 
     def execute_qprogram(
         self,
-        qprogram: QProgram,
+        qprogram: QProgram | Callable[[Variable, ...], QProgram],  # type: ignore
         bus_mapping: dict[str, str] | None = None,
         calibration: Calibration | None = None,
         debug: bool = False,

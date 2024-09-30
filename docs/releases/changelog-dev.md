@@ -8,15 +8,18 @@
 
 ### Improvements
 
+- `platform.execute_experiment()` and the underlying `ExperimentExecutor` can now handle experiments with multiple qprograms and multiple measurements. Parallel loops are also supported in both experiment and qprogram. The structure of the HDF5 results file as well as the functionality of `ExperimentResults` class have been changed accordingly.
+  [#796](https://github.com/qilimanjaro-tech/qililab/pull/796)
+
 - Added pulse distorsions in `execute_qprogram` for QBlox in a similar methodology to the distorsions implemented in pulse circuits. The runcard needs to contain the same structure for distorsions as the runcards for circuits and the code will modify the waveforms after compilation (inside `platform.execute_qprogram`).
 
   Example (for Qblox)
-  
+
   ```
   buses:
   - alias: readout
     ...
-    distortions: 
+    distortions:
       - name: exponential
         tau_exponential: 1.
         amp: 1.
