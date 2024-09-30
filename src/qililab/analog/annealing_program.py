@@ -87,12 +87,15 @@ class AnnealingProgram:
             else f"{chip_element[0]}{split_element[1]}_{split_element[2]}"
         )
 
-    def get_waveforms(self, crosstalk_matrix: CrosstalkMatrix | None = None) -> dict[str, ArbitraryWave]:
+    def get_waveforms(
+        self, crosstalk_matrix: CrosstalkMatrix | None = None, minimum_clock_time: int = 1
+    ) -> dict[str, ArbitraryWave]:
         """Returns a dictionary containing (bus, waveform) for each flux control from the transpiled fluxes. `AnnealingProgram.transpile` should be run first. The waveform is an arbitrary waveform obtained from the transpiled fluxes.
 
         Args:
             crosstalk_matrix[CrosstalkMatrix]: crosstalk matrix to correct the flux vectors with. This is usually the inverse of the crosstalk matrix
             in the Calibration file obtained from experiments.
+            minimum_clock_time [int]: minimum unit of clock time for the awg (in ns). Waveforms should be multiples of this. Defaults to 1, equivalent to 1ns resolution.
         Returns:
             dict[str,ArbitraryWave]: Dictionary containing the waveform to be sent to each bus, with xtalk corrected
         """
@@ -108,9 +111,17 @@ class AnnealingProgram:
                 bus_to_flux_map[flux_bus.bus] = flux_bus.flux
         flux_to_bus_map = {v: k for k, v in bus_to_flux_map.items()}
 
+        # add padding to waveforms if duration is not multiple of minimum clock time
+        padded_ns = 0
+        if len(self._transpiled_program) % minimum_clock_time != 0:
+            padded_ns = (
+                minimum_clock_time - len(self._transpiled_program) % minimum_clock_time
+                if len(self._transpiled_program) % minimum_clock_time != 0
+                else 0
+            )
+
         # Initialize annealing waveforms
-        annealing_waveforms = {bus: [] for bus in bus_to_flux_map}  # type: ignore[var-annotated]
-        # get xtalk matrix
+        annealing_waveforms = {bus: padded_ns * [0.0] for bus in bus_to_flux_map}  # type: ignore[var-annotated]
 
         # unravel each point of the anneal program to get timewise arrays of waveforms
         for annealing_step in self._transpiled_program:

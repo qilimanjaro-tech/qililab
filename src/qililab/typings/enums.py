@@ -308,6 +308,7 @@ class Parameter(str, Enum):
     GAIN_Q = "gain_q"
     OFFSET_I = "offset_i"
     OFFSET_Q = "offset_q"
+    DC_OFFSET = "dc_offset"
     OFFSET_OUT0 = "offset_out0"
     OFFSET_OUT1 = "offset_out1"
     OFFSET_OUT2 = "offset_out2"

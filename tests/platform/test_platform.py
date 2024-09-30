@@ -6,6 +6,7 @@ import io
 import re
 from pathlib import Path
 from queue import Queue
+from types import MethodType
 from unittest.mock import MagicMock, Mock, create_autospec, patch
 
 import numpy as np
@@ -149,10 +150,10 @@ def get_anneal_qprogram(runcard, flux_to_bus_topology):  # pylint: disable=too-m
     platform.flux_to_bus_topology = flux_to_bus_topology
     anneal_waveforms = {
         next(element.bus for element in platform.flux_to_bus_topology if element.flux == "phix_q0"): Arbitrary(
-            np.array([1])
+            np.array([0.0, 0.0, 0.0, 1.0])
         ),
         next(element.bus for element in platform.flux_to_bus_topology if element.flux == "phiz_q0"): Arbitrary(
-            np.array([2])
+            np.array([0.0, 0.0, 0.0, 2.0])
         ),
     }
     num_averages = 2
@@ -589,25 +590,38 @@ class TestMethods:
                 calibration=calibration,
             )
 
-    def test_execute_experiment(self, platform: Platform):
+    def test_execute_experiment(self):
         """Test the execute_experiment method of the Platform class."""
+        # Create an autospec of the Platform class
+        platform = create_autospec(Platform, instance=True)
+
+        # Manually set the execute_experiment method to the real one
+        platform.execute_experiment = MethodType(Platform.execute_experiment, platform)
+
+        # Create an autospec of the Experiment class
         mock_experiment = create_autospec(Experiment)
-        results_path = "/tmp/test_results/"
+
+        base_data_path = "mock/results/path/"
+        expected_results_path = "mock/results/path/data.h5"
 
         # Mock the ExperimentExecutor to ensure it's used correctly
         with patch("qililab.platform.platform.ExperimentExecutor") as MockExecutor:
             mock_executor_instance = MockExecutor.return_value  # Mock instance of ExperimentExecutor
+            mock_executor_instance.execute.return_value = expected_results_path
 
             # Call the method under test
-            platform.execute_experiment(experiment=mock_experiment, results_path=results_path)
+            results_path = platform.execute_experiment(experiment=mock_experiment, base_data_path=base_data_path)
 
             # Check that ExperimentExecutor was instantiated with the correct arguments
             MockExecutor.assert_called_once_with(
-                platform=platform, experiment=mock_experiment, results_path=results_path
+                platform=platform, experiment=mock_experiment, base_data_path=base_data_path
             )
 
             # Ensure the execute method was called on the ExperimentExecutor instance
             mock_executor_instance.execute.assert_called_once()
+
+            # Ensure that execute_experiment returns the correct value
+            assert results_path == expected_results_path
 
     def test_execute_qprogram_with_qblox(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
