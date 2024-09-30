@@ -26,6 +26,9 @@ class MeasurementResult(ABC):
 
     name: ResultName
 
+    def __init__(self, bus: str):
+        self.bus: str = bus
+
     @property
     @abstractmethod
     def array(self) -> np.ndarray:
