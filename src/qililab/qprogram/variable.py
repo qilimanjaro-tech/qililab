@@ -67,6 +67,15 @@ class Variable:
     """Variable class used to define variables inside a QProgram."""
 
     @property
+    def uuid(self):
+        """Get the label of the variable
+
+        Returns:
+            str: The label of the variable
+        """
+        return self._uuid
+
+    @property
     def label(self):
         """Get the label of the variable
 

@@ -25,3 +25,4 @@ class SetParameter(Operation):  # pylint: disable=missing-class-docstring
     alias: str
     parameter: Parameter
     value: int | float | bool
+    channel_id: int | None = None
