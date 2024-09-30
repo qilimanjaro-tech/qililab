@@ -718,20 +718,41 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             return self.execute_qprogram(qprogram=qp_annealing, calibration=calibration, debug=debug)
         raise ValueError("The calibrated measurement is not present in the calibration file.")
 
-    def execute_experiment(self, experiment: Experiment, results_path: str) -> str:
-        """Executes the given quantum experiment and saves the results.
+    def execute_experiment(self, experiment: Experiment, base_data_path: str) -> str:
+        """Executes a quantum experiment on the platform.
 
-        This method initializes an `ExperimentExecutor` with the provided `experiment` and `results_path`,
-        and then executes the experiment. The results are streamed to the specified path in real-time.
+        This method manages the execution of a given `Experiment` on the platform by utilizing an `ExperimentExecutor`. It orchestrates the entire process, including traversing the experiment's structure, handling loops and operations, and streaming results in real-time to ensure data integrity. The results are saved in a timestamped directory within the specified `base_data_path`.
 
         Args:
-            experiment (Experiment): The quantum experiment to be executed.
-            results_path (str): The path where the experiment's results will be saved.
+            experiment (Experiment): The experiment object defining the sequence of operations and loops.
+            base_data_path (str): The base directory path where the experiment results will be stored.
 
         Returns:
-            str: The path of the file that the experiment's results are stored.
+            str: The path to the file where the results are stored.
+
+        Example:
+            .. code-block:: python
+
+                from qililab import Experiment
+
+                # Initialize your experiment
+                experiment = Experiment()
+                # Add variables, loops, and operations to the experiment
+                # ...
+
+                # Define the base data path for storing results
+                base_data_path = "/data/experiments"
+
+                # Execute the experiment on the platform
+                results_path = platform.execute_experiment(experiment=experiment, base_data_path=base_data_path)
+                print(f"Results saved to {results_path}")
+
+        Note:
+            - Ensure that the experiment is properly configured before execution.
+            - The results will be saved in a timestamped directory within the `base_data_path`.
+            - This method handles the setup and execution internally, providing a simplified interface for experiment execution.
         """
-        executor = ExperimentExecutor(platform=self, experiment=experiment, results_path=results_path)
+        executor = ExperimentExecutor(platform=self, experiment=experiment, base_data_path=base_data_path)
         return executor.execute()
 
     def execute_qprogram(  # pylint: disable=too-many-locals
@@ -941,6 +962,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
                 # Doing manual classification of results as QM does not return thresholded values like Qblox
                 for measurement in measurements:
                     measurement_result = QuantumMachinesMeasurementResult(
+                        measurement.bus,
                         *[acquisitions[handle] for handle in measurement.result_handles],
                     )
                     measurement_result.set_classification_threshold(thresholds.get(measurement.bus, None))

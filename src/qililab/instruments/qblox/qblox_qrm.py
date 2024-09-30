@@ -163,7 +163,9 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                     raw_measurement_data = self.device.get_acquisitions(sequencer=sequencer.identifier)[acquisition][
                         "acquisition"
                     ]
-                    measurement_result = QbloxMeasurementResult(raw_measurement_data=raw_measurement_data)
+                    measurement_result = QbloxMeasurementResult(
+                        bus=acquisitions[acquisition].bus, raw_measurement_data=raw_measurement_data
+                    )
                     results.append(measurement_result)
 
                     # always deleting acquisitions without checkind save_adc flag

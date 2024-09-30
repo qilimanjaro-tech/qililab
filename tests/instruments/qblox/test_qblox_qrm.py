@@ -421,14 +421,14 @@ class TestQbloxQRM:
         }
         qrm.sequences = {0: None}
         acquisitions_no_adc = qrm.acquire_qprogram_results(
-            acquisitions={"default": AcquisitionData(save_adc=False)}, port="feedline_input"
+            acquisitions={"default": AcquisitionData(bus="readout", save_adc=False)}, port="feedline_input"
         )
         qrm.device.store_scope_acquisition.assert_not_called()
         assert isinstance(acquisitions_no_adc, list)
         assert len(acquisitions_no_adc) == 1
 
         acquisitions_with_adc = qrm.acquire_qprogram_results(
-            acquisitions={"default": AcquisitionData(save_adc=True)}, port="feedline_input"
+            acquisitions={"default": AcquisitionData(bus="readout", save_adc=True)}, port="feedline_input"
         )
         qrm.device.store_scope_acquisition.assert_called()
         qrm.device.delete_acquisition_data.assert_called()

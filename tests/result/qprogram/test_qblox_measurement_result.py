@@ -17,7 +17,7 @@ def fixture_raw_measurement_data() -> dict:
 @pytest.fixture(name="qblox_measurement_result")
 def fixture_qblox_result_noscope(raw_measurement_data: dict):
     """Instance of QbloxMeasurementResult."""
-    return QbloxMeasurementResult(raw_measurement_data=raw_measurement_data)
+    return QbloxMeasurementResult(bus="readout", raw_measurement_data=raw_measurement_data)
 
 
 class TestsQbloxQProgramMeasurementResult:

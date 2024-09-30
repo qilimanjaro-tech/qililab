@@ -24,6 +24,16 @@ class QProgramResults:
 
     def __init__(self) -> None:
         self.results: dict[str, list[MeasurementResult]] = {}
+        self._timeline: list[MeasurementResult] = []
+
+    @property
+    def timeline(self):
+        """Retrieve all measurement results in the order they were inserted.
+
+        Returns:
+            list[MeasurementResult]: List of MeasurementResults in insertion order.
+        """
+        return self._timeline
 
     def append_result(self, bus: str, result: MeasurementResult):
         """Append a measurement result to bus's results list.
@@ -35,3 +45,6 @@ class QProgramResults:
         if bus not in self.results:
             self.results[bus] = []
         self.results[bus].append(result)
+
+        # Append to global insertion order
+        self._timeline.append(result)

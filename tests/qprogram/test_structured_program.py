@@ -1,17 +1,12 @@
-import os
 from collections import deque
-from itertools import product
 
 import numpy as np
 import pytest
 
-from qililab import Arbitrary, Domain, DragCorrection, Gaussian, IQPair, QProgram, Square
-from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
-from qililab.qprogram.calibration import Calibration
-from qililab.qprogram.operations import ExecuteQProgram, SetParameter
+from qililab import Domain
+from qililab.qprogram.blocks import Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.structured_program import StructuredProgram
 from qililab.qprogram.variable import FloatVariable, IntVariable
-from qililab.utils.serialization import deserialize, deserialize_from, serialize, serialize_to
 
 
 # pylint: disable=maybe-no-member, protected-access

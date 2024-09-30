@@ -40,13 +40,15 @@ def fixture_raw_measurement_data() -> QProgramResults:
         results.append_result(
             bus="readout_q0",
             result=QbloxMeasurementResult(
-                raw_measurement_data={"bins": {"integration": {"path0": [0], "path1": [0]}, "threshold": [th_q0]}}
+                bus="readout_q0",
+                raw_measurement_data={"bins": {"integration": {"path0": [0], "path1": [0]}, "threshold": [th_q0]}},
             ),
         )
         results.append_result(
             bus="readout_q1",
             result=QbloxMeasurementResult(
-                raw_measurement_data={"bins": {"integration": {"path0": [0], "path1": [0]}, "threshold": [th_q1]}}
+                bus="readout_q1",
+                raw_measurement_data={"bins": {"integration": {"path0": [0], "path1": [0]}, "threshold": [th_q1]}},
             ),
         )
     return results
@@ -57,9 +59,11 @@ def fixture_raw_measurement_data_qm() -> QProgramResults:
     """Fixture to obtain proabilities from a QProgramResult"""
     results = QProgramResults()
 
-    res_0 = QuantumMachinesMeasurementResult(np.array([0.2, 1.3, 0.07, 1.0, 0.7]), np.array([0.5, 1.4, 0.6, 1.02, 0.1]))
+    res_0 = QuantumMachinesMeasurementResult(
+        bus="readout", I=np.array([0.2, 1.3, 0.07, 1.0, 0.7]), Q=np.array([0.5, 1.4, 0.6, 1.02, 0.1])
+    )
     res_1 = QuantumMachinesMeasurementResult(
-        np.array([0.76, 1.2, 1.8, 0.4, 0.9]), np.array([0.9, 1.0, 0.46, 2.6, 0.97])
+        bus="readout", I=np.array([0.76, 1.2, 1.8, 0.4, 0.9]), Q=np.array([0.9, 1.0, 0.46, 2.6, 0.97])
     )
     res_0.set_classification_threshold(0.4)
     res_1.set_classification_threshold(0.5)
