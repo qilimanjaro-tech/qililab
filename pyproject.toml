@@ -112,37 +112,6 @@ version_files = [
 ]
 tag_format = "$version"
 
-[tool.coverage]
-    [tool.coverage.report]
-    show_missing = true
-    exclude_lines = [
-        # Have to re-enable the standard pragma
-        "pragma: no cover",
-
-        # Don"t complain about missing debug-only code:
-        "def __repr__",
-        "if self.debug",
-
-        # Don"t complain if tests don"t hit defensive assertion code:
-        "raise AssertionError",
-        "raise NotImplementedError",
-
-        # Don"t complain if non-runnable code isn"t run:
-        "if 0:",
-        "if __name__ == .__main__.:",
-
-        # Don"t complain if TYPE_CHECKING is used:
-        "if TYPE_CHECKING:"
-    ]
-    omit = [
-        "env/*",
-        "venv/*",
-        "*/virtualenv/*",
-        "*/virtualenvs/*",
-        "*/tests/*",
-        "examples/*"
-    ]
-
 [tool.nbqa.md]
 mdformat = true
 
