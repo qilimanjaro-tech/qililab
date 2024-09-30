@@ -14,6 +14,7 @@
 
 from .acquire import Acquire, AcquireWithCalibratedWeights
 from .execute_qprogram import ExecuteQProgram
+from .get_parameter import GetParameter
 from .measure import (
     Measure,
     MeasureWithCalibratedWaveform,

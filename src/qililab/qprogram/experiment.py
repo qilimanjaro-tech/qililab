@@ -14,10 +14,10 @@
 from typing import Callable
 
 from qililab.qprogram.calibration import Calibration
-from qililab.qprogram.operations import ExecuteQProgram, SetParameter
+from qililab.qprogram.operations import ExecuteQProgram, GetParameter, SetParameter
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.structured_program import StructuredProgram
-from qililab.qprogram.variable import Variable
+from qililab.qprogram.variable import Domain, Variable
 from qililab.typings.enums import Parameter
 from qililab.yaml import yaml
 
@@ -28,6 +28,40 @@ class Experiment(StructuredProgram):
 
     This class allows setting platform parameters and executing quantum programs.
     """
+
+    _domain_of_parameter: dict[Parameter, Domain] = {
+        Parameter.AMPLITUDE: Domain.Voltage,
+        Parameter.DC_OFFSET: Domain.Voltage,
+        Parameter.DURATION: Domain.Time,
+        Parameter.GAIN: Domain.Voltage,
+        Parameter.GAIN_I: Domain.Voltage,
+        Parameter.GAIN_Q: Domain.Voltage,
+        Parameter.LO_FREQUENCY: Domain.Frequency,
+        Parameter.IF: Domain.Frequency,
+        Parameter.PHASE: Domain.Phase,
+        Parameter.DRAG_COEFFICIENT: Domain.Scalar,
+    }
+
+    _type_of_parameter: dict[Parameter, type] = {Parameter.DRAG_COEFFICIENT: float}
+
+    def get_parameter(self, alias: str, parameter: Parameter, channel_id: int | None = None):
+        """Set a platform parameter.
+
+        Appends a SetParameter operation to the active block of the experiment.
+
+        Args:
+            alias (str): The alias for the platform component.
+            parameter (Parameter): The parameter to set.
+            value (int | float): The value to set for the parameter.
+        """
+        variable = self.variable(
+            label=f"{parameter.value} of {alias}",
+            domain=self._domain_of_parameter.get(parameter, Domain.Scalar),
+            type=self._type_of_parameter.get(parameter, None),
+        )
+        operation = GetParameter(variable=variable, alias=alias, parameter=parameter, channel_id=channel_id)
+        self._active_block.append(operation)
+        return variable
 
     def set_parameter(self, alias: str, parameter: Parameter, value: int | float | int, channel_id: int | None = None):
         """Set a platform parameter.

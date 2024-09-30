@@ -14,7 +14,7 @@ from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeElapsedCo
 
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.experiment import Experiment
-from qililab.qprogram.operations import ExecuteQProgram, Measure, Operation, SetParameter
+from qililab.qprogram.operations import ExecuteQProgram, GetParameter, Measure, Operation, SetParameter
 from qililab.qprogram.variable import Variable
 from qililab.result.experiment_results_writer import (
     ExperimentMetadata,
@@ -289,6 +289,19 @@ class ExperimentExecutor:
             elements_operations: list[Callable] = []
 
             for element in elements:
+                if isinstance(element, GetParameter):
+                    # Append a lambda that will call the `platform.get_parameter` method and assign the returned value to the variable
+                    elements_operations.append(
+                        lambda operation=element: current_value_of_variable.update(
+                            {
+                                operation.variable.uuid: self.platform.get_parameter(
+                                    parameter=operation.parameter,
+                                    alias=operation.alias,
+                                    channel_id=operation.channel_id,
+                                )
+                            }
+                        )
+                    )
                 if isinstance(element, SetParameter):
                     # Append a lambda that will call the `platform.set_parameter` method
                     elements_operations.append(
