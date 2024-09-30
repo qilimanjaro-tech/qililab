@@ -140,8 +140,6 @@ class ExperimentExecutor:
 
     def _prepare_metadata(self):
         """Prepares the loop values and result shape before execution."""
-        self._traverse_and_prepare(self.experiment.body)
-        self.shape = (*tuple(len(values) for _, values in self.loop_values.items()), 2)
 
         def traverse_experiment(block: Block):
             """Traverses the blocks to gather loop information and determine result shape."""
