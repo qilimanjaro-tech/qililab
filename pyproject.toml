@@ -100,8 +100,8 @@ python_version = "3.10"
 warn_return_any = false
 ignore_missing_imports = true
 exclude = [
-    "*.ipynb$",
-    "tests/.*"
+    "\\.ipynb$",
+    "tests/*"
 ]
 
 [tool.commitizen]

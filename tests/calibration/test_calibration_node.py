@@ -432,7 +432,7 @@ class TestPrivateMethodsFromCalibrationNode:
         expected = {"platform_parameters": [["bus_alias", "param_name", 1]]}
 
         # Mocking return value of stream and calling execute_notebook
-        methods_node._stream.getvalue.return_value = output  # type: ignore [attr-defined]
+        methods_node._stream.getvalue.return_value = output  # type: ignore[attr-defined]
         test_value = methods_node._execute_notebook(methods_node.nb_path, "", {})
 
         # Asserts
@@ -453,7 +453,7 @@ class TestPrivateMethodsFromCalibrationNode:
         # Creating expected values for assert
 
         # Mocking return value of stream and calling execute_notebook
-        methods_node._stream.getvalue.return_value = ""  # type: ignore [attr-defined]
+        methods_node._stream.getvalue.return_value = ""  # type: ignore[attr-defined]
         test_value = methods_node._execute_notebook(methods_node.nb_path, "", {})
 
         # Asserts
@@ -475,7 +475,7 @@ class TestPrivateMethodsFromCalibrationNode:
     @patch("qililab.calibration.calibration_node.logger", autospec=True)
     def test_execute_notebook_warnings_more_than_one_output(self, mocked_logger, mocked_pm_exec, output, methods_node):
         """Testing when no outputs or more than one outputs are received from ``execute_notebook()``."""
-        methods_node._stream.getvalue.return_value = output  # type: ignore [attr-defined]
+        methods_node._stream.getvalue.return_value = output  # type: ignore[attr-defined]
 
         methods_node._execute_notebook(methods_node.nb_path, "", {})
 

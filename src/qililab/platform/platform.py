@@ -1029,8 +1029,8 @@ class Platform:
         if len(results) > 1:
             results = [
                 QbloxResult(
-                    integration_lengths=[length for result in results for length in result.integration_lengths],  # type: ignore [attr-defined]
-                    qblox_raw_results=[raw_result for result in results for raw_result in result.qblox_raw_results],  # type: ignore [attr-defined]
+                    integration_lengths=[length for result in results for length in result.integration_lengths],  # type: ignore[attr-defined]
+                    qblox_raw_results=[raw_result for result in results for raw_result in result.qblox_raw_results],  # type: ignore[attr-defined]
                 )
             ]
         if not results:
