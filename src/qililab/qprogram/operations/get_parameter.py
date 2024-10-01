@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
-
 from qililab.qprogram.operations.operation import Operation
 from qililab.qprogram.variable import Variable
 from qililab.typings.enums import Parameter
@@ -21,9 +19,10 @@ from qililab.yaml import yaml
 
 
 @yaml.register_class
-@dataclass(frozen=True)
-class GetParameter(Operation):  # pylint: disable=missing-class-docstring
-    variable: Variable
-    alias: str
-    parameter: Parameter
-    channel_id: int | None = None
+class GetParameter(Operation):
+    def __init__(self, variable: Variable, alias: str, parameter: Parameter, channel_id: int | None = None) -> None:
+        super().__init__()
+        self.variable: Variable = variable
+        self.alias: str = alias
+        self.parameter: Parameter = parameter
+        self.channel_id: int | None = channel_id
