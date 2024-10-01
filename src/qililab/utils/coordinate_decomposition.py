@@ -35,14 +35,16 @@ def summation(array: npt.NDArray | list | tuple, start: int = 0, stop: int = -1)
 def _do_target_dimensions_check(new_dimension_shape: npt.NDArray | list | tuple):
     """Checks that all target dimensions should have at least one element."""
     if any(size < 1 for size in new_dimension_shape):
-        raise ValueError(f"Sizes of of target array should not be 0 nor negative: {new_dimension_shape!s}")
+        raise ValueError(
+            f"Sizes of of target array should not be 0 nor negative: {new_dimension_shape!s}"
+        )  # pragma: no cover
 
 
 def _do_size_match_check(original_size: int, new_dimension_shape: npt.NDArray | list | tuple):
     """Checks that sizes of original and target spaces are compatible."""
     new_space_size = np.prod(new_dimension_shape)
     if new_space_size != original_size:
-        raise ValueError(
+        raise ValueError(  # pragma: no cover
             f"Sizes of original and target arrays do not match:"
             f" original size {original_size} does not match"
             f" size of {new_dimension_shape!s}: {new_space_size}"
