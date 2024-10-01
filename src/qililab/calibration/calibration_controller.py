@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=anomalous-backslash-in-string, inconsistent-return-statements
+
 """Automatic-calibration Controller module, which works with notebooks as nodes."""
+
 from datetime import datetime, timedelta
+from typing import TYPE_CHECKING
 
 import networkx as nx
 import pandas as pd
@@ -23,7 +25,9 @@ from qililab import Parameter
 from qililab.calibration.calibration_node import CalibrationNode
 from qililab.config import logger
 from qililab.data_management import build_platform, save_platform
-from qililab.platform.platform import Platform
+
+if TYPE_CHECKING:
+    from qililab.platform.platform import Platform
 
 
 class CalibrationController:
@@ -48,8 +52,8 @@ class CalibrationController:
         #                     /--> 2 -->\\
         #                    /     |     \\
         #    (start, root)  0      |      3 --> 4 (end, leave)
-        #                    \     v     /
-        #                     \--> 1 -->/
+        #                    \\     v     /
+        #                     \\--> 1 -->/
 
     .. note::
 
@@ -161,8 +165,8 @@ class CalibrationController:
             #                     /--> 2 -->\\
             #                    /     |     \\
             #    (start, root)  0      |      3 --> 4 (end, leave)
-            #                    \     v     /
-            #                     \--> 1 -->/
+            #                    \\     v     /
+            #                     \\--> 1 -->/
         """
 
         self.node_sequence: dict[str, CalibrationNode] = node_sequence
@@ -263,7 +267,7 @@ class CalibrationController:
         """
         logger.info('WORKFLOW: Calibrating node "%s".\n', node.node_id)
         node.previous_timestamp = node.run_node()
-        node._add_string_to_checked_nb_name("calibrated", node.previous_timestamp)  # pylint: disable=protected-access
+        node._add_string_to_checked_nb_name("calibrated", node.previous_timestamp)
         # add _calibrated tag to the file name, which doesn't have a tag.
 
     def _update_parameters(self, node: CalibrationNode) -> None:
@@ -309,7 +313,7 @@ class CalibrationController:
                 and "platform_parameters" in node.output_parameters
             ):
                 for param_name, param_value, bus_alias, channel_id in node.output_parameters["platform_parameters"]:
-                    parameters[(param_name, bus_alias, channel_id)] = (
+                    parameters[param_name, bus_alias, channel_id] = (
                         param_value,
                         node.node_id,
                         datetime.fromtimestamp(node.previous_timestamp),
@@ -338,7 +342,7 @@ class CalibrationController:
                 and "fidelities" in node.output_parameters
             ):
                 for qubit, fidelity, value in node.output_parameters["fidelities"]:
-                    fidelities[(fidelity, qubit)] = (
+                    fidelities[fidelity, qubit] = (
                         value,
                         node.node_id,
                         datetime.fromtimestamp(node.previous_timestamp),
@@ -432,8 +436,8 @@ class CalibrationController:
                     bus_list = str(bus_alias).split("_")
                     bus = "_".join([x for x in bus_list if not any(char.isdigit() for char in x)])
 
-                    if f"{str(param_name)}_{bus}" not in col:
-                        col.append(f"{str(param_name)}_{bus}")
+                    if f"{param_name!s}_{bus}" not in col:
+                        col.append(f"{param_name!s}_{bus}")
 
         return idx, col
 
@@ -458,7 +462,7 @@ class CalibrationController:
                 for param_name, param_value, bus_alias, _ in node.output_parameters["platform_parameters"]:
                     bus_list = str(bus_alias).split("_")
                     bus = "_".join([x for x in bus_list if not any(char.isdigit() for char in x)])
-                    df[f"{str(param_name)}_{bus}"][qubit] = param_value
+                    df[f"{param_name!s}_{bus}"][qubit] = param_value
 
         return df
 

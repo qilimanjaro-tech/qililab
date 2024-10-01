@@ -66,11 +66,11 @@ class ExperimentResults:
         for qprogram_name in self._file[ExperimentResults.QPROGRAMS_PATH]:
             qprogram_data = self._file[f"{ExperimentResults.QPROGRAMS_PATH}/{qprogram_name}"]
             for measurement_name in qprogram_data[ExperimentResults.MEASUREMENTS_PATH]:
-                self.data[(qprogram_name, measurement_name)] = qprogram_data[
+                self.data[qprogram_name, measurement_name] = qprogram_data[
                     f"{ExperimentResults.MEASUREMENTS_PATH}/{measurement_name}/results"
                 ]
                 # Store the dimensions
-                self.dimensions[(qprogram_name, measurement_name)] = qprogram_data[
+                self.dimensions[qprogram_name, measurement_name] = qprogram_data[
                     f"{ExperimentResults.MEASUREMENTS_PATH}/{measurement_name}/results"
                 ].dims
 
@@ -96,10 +96,10 @@ class ExperimentResults:
         if isinstance(measurement, int):
             measurement = f"Measurement_{measurement}"
 
-        data = self.data[(qprogram, measurement)][()]
+        data = self.data[qprogram, measurement][()]
         dims = [
             DimensionInfo(labels=dim.label.split(","), values=[values[()] for values in dim.values()])
-            for dim in self.dimensions[(qprogram, measurement)]
+            for dim in self.dimensions[qprogram, measurement]
         ]
 
         return data, dims
@@ -118,7 +118,7 @@ class ExperimentResults:
             qprogram_name = f"QProgram_{qprogram_name}"
         if isinstance(measurement_name, int):
             measurement_name = f"Measurement_{measurement_name}"
-        return self.data[(qprogram_name, measurement_name)][tuple(indices)]
+        return self.data[qprogram_name, measurement_name][tuple(indices)]
 
     def __len__(self):
         """Gets the total number of results datasets.

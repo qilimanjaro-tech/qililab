@@ -1,4 +1,5 @@
 """This file tests the the ``AWGAnalogDigitalConverter`` class"""
+
 from typing import cast
 from unittest.mock import MagicMock, patch
 
@@ -16,12 +17,12 @@ from qililab.typings.enums import AcquireTriggerMode, InstrumentName, Parameter
 class DummyAWG(AWGAnalogDigitalConverter):
     """Dummy AWG class."""
 
-    def compile(  # pylint: disable=unused-argument
+    def compile(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
     ) -> list:
         return []
 
-    def run(self):  # pylint: disable=arguments-differ
+    def run(self):
         pass
 
     def upload(self, port: str):
@@ -76,7 +77,7 @@ def fixture_awg():
             }
         ],
     }
-    return DummyAWG(settings=settings)  # pylint: disable=abstract-class-instantiated
+    return DummyAWG(settings=settings)
 
 
 class TestAWGAnalogDigitalConverter:

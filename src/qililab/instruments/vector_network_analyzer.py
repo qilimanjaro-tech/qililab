@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """VectorNetworkAnalyzer class."""
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
@@ -23,11 +24,11 @@ from qililab.typings.instruments.vector_network_analyzer import VectorNetworkAna
 DEFAULT_NUMBER_POINTS = 1000
 
 
-class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instance-attributes, too-many-public-methods
+class VectorNetworkAnalyzer(Instrument, ABC):
     """Abstract base class defining all vector network analyzers"""
 
     @dataclass
-    class VectorNetworkAnalyzerSettings(Instrument.InstrumentSettings):  # pylint: disable=too-many-instance-attributes
+    class VectorNetworkAnalyzerSettings(Instrument.InstrumentSettings):
         """Contains the settings of a specific signal generator.
 
         Args:

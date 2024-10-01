@@ -26,14 +26,53 @@ from .result import ExperimentResults, Results, stream_results
 from .typings import Parameter
 from .utils import Loop
 from .utils.serialization import serialize, serialize_to, deserialize, deserialize_from
-from .waveforms import *
+from .waveforms import IQPair, Square, Gaussian, FlatTop, Arbitrary, DragCorrection, Waveform
 
 # moving circuit_transpiler module imports here because it has instruments module dependencies so circular imports can be avoided
 from .circuit_transpiler import Drag, Wait
 from .analog import AnnealingProgram  # same as circuit transpiler, top modules should be imported at top
 
+
+__all__ = [
+    "AnnealingProgram",
+    "Arbitrary",
+    "Calibration",
+    "CrosstalkMatrix",
+    "Domain",
+    "Drag",
+    "DragCorrection",
+    "Experiment",
+    "ExperimentResults",
+    "FlatTop",
+    "Gaussian",
+    "IQPair",
+    "Loop",
+    "Parameter",
+    "QProgram",
+    "QbloxCompiler",
+    "QuantumMachinesCompiler",
+    "Results",
+    "Square",
+    "Wait",
+    "Waveform",
+    "__version__",
+    "about",
+    "build_platform",
+    "deserialize",
+    "deserialize_from",
+    "execute",
+    "load_results",
+    "logger",
+    "save_platform",
+    "save_results",
+    "serialize",
+    "serialize_to",
+    "stream_results",
+]
+
+
 with contextlib.suppress(NameError, ImportError):
     # Since Ipython magic methods can only be imported from inside a Jupyter Notebook,
     # here we first check that `get_ipython` exists (which means we are inside a Jupyter Notebook)
-    get_ipython()  # type: ignore  # noqa: F405 # pylint: disable=undefined-variable
-    from .slurm import submit_job  # pragma: no cover
+    get_ipython()  # type: ignore  # noqa: F821
+    from .slurm import submit_job as submit_job  # pragma: no cover

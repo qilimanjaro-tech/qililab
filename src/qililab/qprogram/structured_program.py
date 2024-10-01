@@ -109,7 +109,7 @@ class StructuredProgram:
         Examples:
 
             >>> with qp.block() as block:
-            >>>    # operations that shall be executed in the block
+            >>> # operations that shall be executed in the block
         """
         return StructuredProgram._BlockContext(program=self)
 
@@ -131,7 +131,7 @@ class StructuredProgram:
 
             >>> variable = qp.variable(int)
             >>> with qp.for_loop(variable=variable, start=0, stop=100, step=5)):
-            >>>    # operations that shall be executed in the for_loop block
+            >>> # operations that shall be executed in the for_loop block
         """
 
         return StructuredProgram._ForLoopContext(program=self, variable=variable, start=start, stop=stop, step=step)
@@ -152,7 +152,7 @@ class StructuredProgram:
 
             >>> variable = qp.variable(int)
             >>> with qp.loop(variable=variable, values=np.array(range(100))):
-            >>>    # operations that shall be executed in the loop block
+            >>> # operations that shall be executed in the loop block
         """
 
         return StructuredProgram._LoopContext(program=self, variable=variable, values=values)
@@ -165,7 +165,7 @@ class StructuredProgram:
         Examples:
 
             >>> with qp.infinite_loop():
-            >>>    # operations that shall be executed in the infinite loop block
+            >>> # operations that shall be executed in the infinite loop block
 
         Returns:
             InfiniteLoop: The infinite loop block.
@@ -182,7 +182,7 @@ class StructuredProgram:
             >>> frequency = qp.variable(float)
             >>> with qp.parallel(loops=[ForLoop(variable=frequency, start=0, stop=100, step=10),
                                         ForLoop(variable=gain, start=0.0, stop=1.0, step=0.1)]):
-            >>>    # operations that shall be executed in the block
+            >>> # operations that shall be executed in the block
 
         Args:
             loops (list[Loop  |  ForLoop]): The loops to run in parallel
@@ -206,13 +206,11 @@ class StructuredProgram:
         Examples:
 
             >>> with qp.average(shots=1000):
-            >>>    # operations that shall be executed in the average block
+            >>> # operations that shall be executed in the average block
         """
         return StructuredProgram._AverageContext(program=self, shots=shots)
 
-    def variable(
-        self, label: str, domain: Domain, type: type[int | float] | None = None
-    ):  # pylint: disable=redefined-builtin
+    def variable(self, label: str, domain: Domain, type: type[int | float] | None = None):
         """Declare a variable.
 
         Args:
@@ -265,8 +263,8 @@ class StructuredProgram:
             block = self.program._pop_from_block_stack()
             self.program._active_block.append(block)
 
-    class _ForLoopContext(_BlockContext):  # pylint: disable=too-few-public-methods
-        def __init__(  # pylint: disable=super-init-not-called
+    class _ForLoopContext(_BlockContext):
+        def __init__(
             self,
             program: "StructuredProgram",
             variable: Variable,

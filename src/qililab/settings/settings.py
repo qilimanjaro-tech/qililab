@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Settings class."""
+
 from dataclasses import dataclass
 from types import NoneType
 from typing import Any
@@ -57,7 +58,7 @@ class Settings:
             attribute (Any): _description_
         """
         attr_type = type(attribute)
-        if attr_type == int:  # FIXME: Depending on how we define de value, python thinks it is an int
+        if attr_type is int:  # FIXME: Depending on how we define de value, python thinks it is an int
             attr_type = float
         if attr_type != NoneType:
             value = attr_type(value)

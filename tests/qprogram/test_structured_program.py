@@ -9,7 +9,6 @@ from qililab.qprogram.structured_program import StructuredProgram
 from qililab.qprogram.variable import FloatVariable, IntVariable
 
 
-# pylint: disable=maybe-no-member, protected-access
 class TestStructuredProgram:
     """Unit tests checking the QProgram attributes and methods"""
 

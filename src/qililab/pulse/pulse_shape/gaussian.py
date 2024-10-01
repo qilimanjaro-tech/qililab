@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Gaussian pulse shape."""
+
 from copy import deepcopy
 from dataclasses import dataclass
 
@@ -23,11 +24,10 @@ from qililab.typings import PulseShapeName
 from qililab.utils import Factory
 
 
-# pylint: disable=anomalous-backslash-in-string
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class Gaussian(PulseShape):
-    """Standard centered Gaussian pulse shape, symmetrically spanning for ``num_sigmas`` over the pulse duration.
+    r"""Standard centered Gaussian pulse shape, symmetrically spanning for ``num_sigmas`` over the pulse duration.
 
     The normal distribution's parameters :math:`\mu` (mean) and :math:`\sigma` (standard deviation) will be therefore
     defined by :math:`\mu =` ``duration`` :math:`/ 2` and :math:`\sigma =` ``duration`` :math:`/` ``num_sigmas``:
@@ -46,6 +46,7 @@ class Gaussian(PulseShape):
         .. code-block:: python
 
             from qililab.pulse.pulse_shape import Gaussian
+
             gaussian_envelope = Gaussian(num_sigmas=X).envelope(duration=50, amplitude=1)
 
         which for ``X`` being ``1``, ``4``, ``6`` or ``8``, look respectively like:
@@ -121,6 +122,6 @@ class Gaussian(PulseShape):
             dict: Dictionary representation including the name of the pulse shape and the number of sigmas.
         """
         return {
-            "name": self.name.value,
+            "name": self.name.value,  # type: ignore[operator]
             "num_sigmas": self.num_sigmas,
         }

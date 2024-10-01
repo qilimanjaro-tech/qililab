@@ -12,5 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Instrument Controller Utils module."""
+"""Instrument Controller Utils module."""
+
 from .instrument_controller_factory import InstrumentControllerFactory
+
+__all__ = ["InstrumentControllerFactory"]

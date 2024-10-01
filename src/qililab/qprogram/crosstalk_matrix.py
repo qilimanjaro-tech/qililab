@@ -20,7 +20,7 @@ from qililab.yaml import yaml
 class FluxVector:
     """Class to represent a flux vector. This is a dictionary of bus[flux] values"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.vector: dict[str, float] = {}
 
     def __getitem__(self, bus: str) -> float:
@@ -61,7 +61,7 @@ class FluxVector:
 class CrosstalkMatrix:
     """A class to represent a crosstalk matrix where each index corresponds to a bus."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initializes an empty crosstalk matrix."""
         self.matrix: dict[str, dict[str, float]] = {}
 

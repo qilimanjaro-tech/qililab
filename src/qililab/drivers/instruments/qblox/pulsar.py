@@ -13,8 +13,10 @@
 # limitations under the License.
 
 """Driver for the Qblox Pulsar class."""
+
+from typing import TYPE_CHECKING
+
 from qblox_instruments.qcodes_drivers import Pulsar as QcodesPulsar
-from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 
 from qililab.drivers.instruments.instrument_driver_factory import InstrumentDriverFactory
 from qililab.drivers.interfaces.base_instrument import BaseInstrument
@@ -22,9 +24,12 @@ from qililab.drivers.interfaces.base_instrument import BaseInstrument
 from .sequencer_qcm import SequencerQCM
 from .sequencer_qrm import SequencerQRM
 
+if TYPE_CHECKING:
+    from qcodes.instrument.channel import ChannelTuple, InstrumentModule
+
 
 @InstrumentDriverFactory.register
-class Pulsar(QcodesPulsar, BaseInstrument):  # pylint: disable=abstract-method
+class Pulsar(QcodesPulsar, BaseInstrument):
     """Qililab's driver for QBlox-instruments Pulsar
 
     Args:

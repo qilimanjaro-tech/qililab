@@ -17,7 +17,7 @@ from typing import Any, Callable
 from qililab.analog.fluqe_parameter import FluqeParameter
 
 
-class Qubit2LevelTranspiler:  # pylint: disable=too-few-public-methods
+class Qubit2LevelTranspiler:
     """Implementation of the transpiler for the 2 level qubit. This is done mainly by inverting the same functions
     used in the single_qubit_2level emulator model.
 

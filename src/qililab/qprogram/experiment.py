@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from types import MappingProxyType
 from typing import Callable
 
 from qililab.qprogram.calibration import Calibration
@@ -29,20 +30,32 @@ class Experiment(StructuredProgram):
     This class allows setting platform parameters and executing quantum programs.
     """
 
-    _domain_of_parameter: dict[Parameter, Domain] = {
-        Parameter.AMPLITUDE: Domain.Voltage,
-        Parameter.DC_OFFSET: Domain.Voltage,
-        Parameter.DURATION: Domain.Time,
-        Parameter.GAIN: Domain.Voltage,
-        Parameter.GAIN_I: Domain.Voltage,
-        Parameter.GAIN_Q: Domain.Voltage,
-        Parameter.LO_FREQUENCY: Domain.Frequency,
-        Parameter.IF: Domain.Frequency,
-        Parameter.PHASE: Domain.Phase,
-        Parameter.DRAG_COEFFICIENT: Domain.Scalar,
-    }
+    _domain_of_parameter: MappingProxyType[Parameter, Domain] = MappingProxyType(
+        {
+            Parameter.AMPLITUDE: Domain.Voltage,
+            Parameter.GAIN: Domain.Voltage,
+            Parameter.GAIN_I: Domain.Voltage,
+            Parameter.GAIN_Q: Domain.Voltage,
+            Parameter.DC_OFFSET: Domain.Voltage,
+            Parameter.OFFSET_I: Domain.Voltage,
+            Parameter.OFFSET_Q: Domain.Voltage,
+            Parameter.OFFSET_OUT0: Domain.Voltage,
+            Parameter.OFFSET_OUT1: Domain.Voltage,
+            Parameter.OFFSET_OUT2: Domain.Voltage,
+            Parameter.OFFSET_OUT3: Domain.Voltage,
+            Parameter.DURATION: Domain.Time,
+            Parameter.LO_FREQUENCY: Domain.Frequency,
+            Parameter.IF: Domain.Frequency,
+            Parameter.PHASE: Domain.Phase,
+            Parameter.DRAG_COEFFICIENT: Domain.Scalar,
+            Parameter.THRESHOLD: Domain.Scalar,
+            Parameter.THRESHOLD_ROTATION: Domain.Scalar,
+        }
+    )
 
-    _type_of_parameter: dict[Parameter, type] = {Parameter.DRAG_COEFFICIENT: float}
+    _type_of_parameter: MappingProxyType[Parameter, type] = MappingProxyType(
+        {Parameter.DRAG_COEFFICIENT: float, Parameter.THRESHOLD: float, Parameter.THRESHOLD_ROTATION: float}
+    )
 
     def get_parameter(self, alias: str, parameter: Parameter, channel_id: int | None = None):
         """Set a platform parameter.

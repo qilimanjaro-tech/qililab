@@ -34,7 +34,7 @@ class FluqeParameter:
         self._value = value
         self.set = set_method
 
-    def __call__(self, *args: Any, **kwargs: Any) -> Any | None:  # pylint: disable=inconsistent-return-statements
+    def __call__(self, *args: Any, **kwargs: Any) -> Any | None:
         """Call method for the parameter class"""
         # TODO: implement get_raw like in qcodes
         if not args and not kwargs:

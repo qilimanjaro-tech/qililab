@@ -1,4 +1,4 @@
-import re  # pylint: disable=too-many-lines
+import re
 from dataclasses import asdict
 from unittest.mock import MagicMock
 
@@ -15,9 +15,8 @@ from qililab.circuit_transpiler import CircuitTranspiler
 from qililab.circuit_transpiler.native_gates import Drag, Wait
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Pulse, PulseEvent, PulseSchedule
-from qililab.pulse.pulse_shape import SNZ
+from qililab.pulse.pulse_shape import SNZ, Gaussian, Rectangular
 from qililab.pulse.pulse_shape import Drag as Drag_pulse
-from qililab.pulse.pulse_shape import Gaussian, Rectangular
 from qililab.settings import Runcard
 from qililab.settings.gate_event_settings import GateEventSettings
 from tests.data import Galadriel
@@ -61,7 +60,11 @@ default_gates = [
 
 
 def random_circuit(
-    nqubits: int, ngates: int, rng: np.random.Generator, gates_list: list[qibo.gates.Gate] = None, exhaustive=False
+    nqubits: int,
+    ngates: int,
+    rng: np.random.Generator,
+    gates_list: list[qibo.gates.Gate] | None = None,
+    exhaustive=False,
 ) -> Circuit:
     """Generates random qibo circuit with ngates
 
@@ -145,7 +148,7 @@ def apply_circuit(circuit: Circuit) -> np.ndarray:
     return state
 
 
-def compare_circuits(circuit_q: Circuit, circuit_t: Circuit, nqubits: int) -> float:  # pylint: disable=unused-argument
+def compare_circuits(circuit_q: Circuit, circuit_t: Circuit, nqubits: int) -> float:
     """Runs same circuit using transpiled gates and qibo gates,
     and calculates the scalar product of the 2 resulting states
 
@@ -164,12 +167,10 @@ def compare_circuits(circuit_q: Circuit, circuit_t: Circuit, nqubits: int) -> fl
 
     # if state_t = k*state_q, where k is a global phase
     # then |state_q * state_t| = |state_q * state_q| * |k| = 1
-    return np.abs(np.dot(np.conjugate(state_t), state_q))
+    return np.abs(np.dot(np.conjugate(state_t), state_q))  # type: ignore[no-any-return]
 
 
-def compare_exp_z(  # pylint: disable=unused-argument
-    circuit_q: Circuit, circuit_t: Circuit, nqubits: int
-) -> list[np.ndarray]:
+def compare_exp_z(circuit_q: Circuit, circuit_t: Circuit, nqubits: int) -> list[np.ndarray]:
     r"""Runs same circuit using transpiled gates and qibo gates, applies Z operator to all qubits
     and then calculates the modulo of each coefficient of the state vector. This last operation
     removes the phase difference in Z so that if the state vectors have the same Z observables
@@ -599,7 +600,7 @@ def fixture_platform(chip: Chip) -> Platform:
         },
     ]
 
-    gates_settings = Runcard.GatesSettings(**gates_settings)  # type: ignore  # pylint: disable=unexpected-keyword-arg
+    gates_settings = Runcard.GatesSettings(**gates_settings)  # type: ignore
     platform = build_platform(runcard=Galadriel.runcard)
     platform.gates_settings = gates_settings  # type: ignore
     platform.chip = chip
@@ -608,7 +609,8 @@ def fixture_platform(chip: Chip) -> Platform:
     )
     platform.buses = buses
     platform.gates_settings.gates = {  # type: ignore
-        gate: [GateEventSettings(**event) for event in schedule] for gate, schedule in platform_gates.items()  # type: ignore
+        gate: [GateEventSettings(**event) for event in schedule]  # type: ignore
+        for gate, schedule in platform_gates.items()  # type: ignore
     }
     return platform
 
@@ -789,7 +791,7 @@ class TestCircuitTranspiler:
         # there should not be any extra pulse schedule added
         assert len(pulse_schedule) == 8
 
-    def test_circuit_to_pulses(self, platform):  # pylint: disable=R0914 # disable pyling too many variables
+    def test_circuit_to_pulses(self, platform):
         """Test translate method"""
         transpiler = CircuitTranspiler(platform=platform)
         # test circuit

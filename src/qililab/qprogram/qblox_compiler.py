@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=protected-access
+
 import math
 from collections import deque
 from dataclasses import dataclass
@@ -57,7 +57,7 @@ Sequences = dict[str, QPy.Sequence]
 Acquisitions = dict[str, dict[str, AcquisitionData]]
 
 
-class BusCompilationInfo:  # pylint: disable=too-many-instance-attributes, too-few-public-methods
+class BusCompilationInfo:
     """Class representing the information stored by QbloxCompiler for a bus."""
 
     def __init__(self) -> None:
@@ -104,7 +104,7 @@ class BusCompilationInfo:  # pylint: disable=too-many-instance-attributes, too-f
         self.delay = 0
 
 
-class QbloxCompiler:  # pylint: disable=too-few-public-methods
+class QbloxCompiler:
     """A class for compiling QProgram to QBlox hardware."""
 
     minimum_wait_duration: int = 4
@@ -134,7 +134,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
         self._buses: dict[str, BusCompilationInfo]
         self._sync_counter: int
 
-    def compile(  # noqa: max-complexity=25
+    def compile(
         self,
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,
@@ -158,7 +158,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             delay_implemented = False
             for bus in self._buses:
                 self._buses[bus].qprogram_block_stack.append(block)
-            for element in block.elements:  # pylint: disable=too-many-nested-blocks
+            for element in block.elements:
                 if isinstance(element, Play) and not delay_implemented:
                     for bus in self._buses:
                         if self._buses[bus].delay > 0:
@@ -279,14 +279,14 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
                 index = self._buses[bus].weight_to_index[_hash]
                 length = next(
                     len(weight.data)
-                    for weight in self._buses[bus].qpy_sequence._weights._weights  # pylint: disable=protected-access
+                    for weight in self._buses[bus].qpy_sequence._weights._weights
                     if weight.index == index
                 )
                 return index, length
 
             envelope = waveform.envelope()
             length = len(envelope)
-            index = self._buses[bus].qpy_sequence._weights.add(envelope)  # pylint: disable=protected-access
+            index = self._buses[bus].qpy_sequence._weights.add(envelope)
             self._buses[bus].weight_to_index[_hash] = index
             return index, length
 
@@ -591,9 +591,8 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             for element in block.elements:
                 if isinstance(element, Block):
                     yield from collect_operations(element)
-                else:
-                    if any(variable == loop.variable for variable in element.get_variables()):
-                        yield element
+                elif any(variable == loop.variable for variable in element.get_variables()):
+                    yield element
 
         starting_block = starting_block or loop
         operations = list(collect_operations(starting_block))
@@ -639,7 +638,7 @@ class QbloxCompiler:  # pylint: disable=too-few-public-methods
             Wait: lambda x: int(max(x, QbloxCompiler.minimum_wait_duration)),
             Play: lambda x: int(max(x, QbloxCompiler.minimum_wait_duration)),
         }
-        return conversion_map.get(type(operation), lambda x: int(x))  # pylint: disable=unnecessary-lambda
+        return conversion_map.get(type(operation), lambda x: int(x))
 
     @staticmethod
     def _hash_waveform(waveform: Waveform):

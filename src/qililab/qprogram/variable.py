@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """This file contains all the variables used inside a QProgram."""
+
 from enum import Enum
 from uuid import UUID, uuid4
 
@@ -62,10 +63,10 @@ class Variable:
 
     @property
     def uuid(self):
-        """Get the label of the variable
+        """Get the uuid of the variable
 
         Returns:
-            str: The label of the variable
+            UUID: The uuid of the variable
         """
         return self._uuid
 

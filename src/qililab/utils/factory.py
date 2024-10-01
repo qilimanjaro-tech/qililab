@@ -13,8 +13,9 @@
 # limitations under the License.
 
 """Class used as hashtable to load the class corresponding to a given category"""
+
 from enum import Enum
-from typing import TypeVar
+from typing import ClassVar, TypeVar
 
 from qililab.typings.factory_element import FactoryElement
 
@@ -24,7 +25,7 @@ Element = TypeVar("Element", bound=FactoryElement)
 class Factory:
     """Hash table that loads a specific class given an object's name."""
 
-    handlers: dict[str, type[FactoryElement]] = {}
+    handlers: ClassVar[dict[str, type[FactoryElement]]] = {}
 
     @classmethod
     def register(cls, handler_cls: type[Element]):

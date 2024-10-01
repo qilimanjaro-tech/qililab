@@ -42,7 +42,7 @@ from qililab.yaml import yaml
 
 
 @yaml.register_class
-class QProgram(StructuredProgram):  # pylint: disable=too-many-public-methods
+class QProgram(StructuredProgram):
     """QProgram is a hardware-agnostic pulse-level programming interface for describing quantum programs.
 
     This class provides an interface for building quantum programs,
@@ -477,7 +477,6 @@ class QProgram(StructuredProgram):  # pylint: disable=too-many-public-methods
         self._active_block.append(operation)
         self._buses.add(bus)
 
-    # pylint: disable=protected-access, too-few-public-methods
     @yaml.register_class
     class _QbloxInterface:
         def __init__(self, qprogram: "QProgram"):
@@ -565,7 +564,6 @@ class QProgram(StructuredProgram):  # pylint: disable=too-many-public-methods
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
-    # pylint: disable=protected-access, too-few-public-methods
     @yaml.register_class
     class _QuantumMachinesInterface:
         def __init__(self, qprogram: "QProgram"):

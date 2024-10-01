@@ -1,4 +1,5 @@
-""" Test empty abstract class, Yokogawa GS200"""
+"""Test empty abstract class, Yokogawa GS200"""
+
 from unittest.mock import MagicMock
 
 from qcodes import Instrument
@@ -12,10 +13,10 @@ MONITOR_NAME = "measure"
 PROGRAM_NAME = "program"
 
 
-class MockGS200Monitor(DummyChannelInstrument):  # pylint: disable=abstract-method
+class MockGS200Monitor(DummyChannelInstrument):
     """Mocking classes for Yokowaga GS200Monitor"""
 
-    def __init__(self, parent: Instrument, name: str, present: bool = False):  # pylint: disable=unused-argument
+    def __init__(self, parent: Instrument, name: str, present: bool = False):
         """Init method for the mock Yokowaga GS200Monitor"""
         super().__init__(name)
         self.present = present

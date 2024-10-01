@@ -13,8 +13,9 @@
 # limitations under the License.
 
 """Square waveform."""
+
 import numpy as np
-from scipy.special import erf  # pylint: disable=no-name-in-module
+from scipy.special import erf
 
 from qililab.qprogram.decorators import requires_domain
 from qililab.qprogram.variable import Domain
@@ -24,7 +25,7 @@ from .waveform import Waveform
 
 
 @yaml.register_class
-class FlatTop(Waveform):  # pylint: disable=too-few-public-methods
+class FlatTop(Waveform):
     """Flat top Gaussian rise waveform.
 
     Args:

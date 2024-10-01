@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """Constants"""
-# pylint: disable=too-few-public-methods
 
 # Environment variables
 DATA = "DATA"  # variable containing the path where data is saved
@@ -239,7 +238,7 @@ class RESULTSDATAFRAME:
     ACQUISITION_INDEX = "acquisition_index"
     P0 = "p0"
     P1 = "p1"
-    I = "i"  # noqa: E741
+    I = "i"
     Q = "q"
     AMPLITUDE = "amplitude"
     PHASE = "phase"

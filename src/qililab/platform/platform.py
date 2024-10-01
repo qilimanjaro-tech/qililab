@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-many-lines
+
 """Platform class."""
+
 import ast
 import datetime
 import io
@@ -65,7 +66,7 @@ from qililab.waveforms import IQPair, Square
 from .components import Bus, Buses
 
 
-class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-attributes
+class Platform:
     """Platform object representing the laboratory setup used to control quantum devices.
 
     The platform is responsible for managing the initializations, connections, setups, and executions of the laboratory, which mainly consists of:
@@ -85,14 +86,14 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
     After initializing a :class:`Platform`, the typical first three steps (which are usually only required at the start) are:
 
-    >>> platform.connect() # Connects to all the instruments.
+    >>> platform.connect()  # Connects to all the instruments.
     >>> platform.initial_setup()  # Sets the parameters defined in the runcard.
     >>> platform.turn_on_instruments()  # Turns on the signal outputs.
 
     And then, for each experiment you want to run, you would typically repeat:
 
-    >>> platform.set_parameter(...) # Sets any parameter of the Platform.
-    >>> result = platform.execute(...) # Executes the platform.
+    >>> platform.set_parameter(...)  # Sets any parameter of the Platform.
+    >>> result = platform.execute(...)  # Executes the platform.
 
     Args:
         runcard (Runcard): Dataclass containing the serialized platform (chip, instruments, buses...), created during :meth:`ql.build_platform()` with the given runcard dictionary.
@@ -129,7 +130,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             from qibo import gates
 
             # Defining the Rabi circuit:
-            circuit = Circuit(q+1)
+            circuit = Circuit(q + 1)
             circuit.add(gates.X(q))
             circuit.add(gates.M(q))
 
@@ -256,9 +257,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
             # Defining the Ramsey circuit:
             circuit = Circuit(q + 1)
-            circuit.add(gates.RX(q, theta=np.pi/2))
+            circuit.add(gates.RX(q, theta=np.pi / 2))
             circuit.add(ql.Wait(q, t=0))
-            circuit.add(gates.RX(q, theta=np.pi/2))
+            circuit.add(gates.RX(q, theta=np.pi / 2))
             circuit.add(gates.M(q))
 
             # Looping over the wait time t to execute the Ramsey:
@@ -266,7 +267,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             wait_times = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
             for wait in wait_times:
-                circuit.set_parameters([np.pi/2, wait, np.pi/2])
+                circuit.set_parameters([np.pi / 2, wait, np.pi / 2])
                 result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
                 results.append(result.array)
 
@@ -632,22 +633,22 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             yield  # Experiment logic goes here
 
         except Exception as e:
-            print(f"An error occurred: {e}")
+            logger.error(f"An error occurred: {e}")
             raise  # Re-raise the exception for further handling
         finally:
             # Call the cleanup methods in reverse order
             for cleanup_method in reversed(cleanup_methods):
                 try:
                     cleanup_method()
-                except Exception as e:  # pylint: disable=broad-exception-caught
-                    print(f"Error during cleanup: {e}")
+                except Exception as e:  # noqa: BLE001
+                    logger.error(f"Error during cleanup: {e}")
                     cleanup_errors.append(e)
 
             # Raise any exception that might have happened during cleanup
             if cleanup_errors:
                 raise ExceptionGroup("Exceptions occurred during cleanup", cleanup_errors)
 
-    def execute_anneal_program(  # pylint: disable=too-many-locals
+    def execute_anneal_program(
         self,
         annealing_program_dict: list[dict[str, dict[str, float]]],
         calibration: Calibration,
@@ -755,7 +756,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         executor = ExperimentExecutor(platform=self, experiment=experiment, base_data_path=base_data_path)
         return executor.execute()
 
-    def execute_qprogram(  # pylint: disable=too-many-locals
+    def execute_qprogram(
         self,
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,
@@ -862,7 +863,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             )
         raise NotImplementedError("Executing QProgram in a mixture of instruments is not supported.")
 
-    def _execute_qprogram_with_qblox(  # pylint: disable=too-many-locals
+    def _execute_qprogram_with_qblox(
         self,
         qprogram: QProgram,
         times_of_flight: dict[str, int],
@@ -886,15 +887,13 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         for bus_alias, bus in buses.items():
             if bus.distortions:
                 for distortion in bus.distortions:
-                    for waveform in sequences[bus_alias]._waveforms._waveforms:  # pylint: disable=protected-access
-                        sequences[bus_alias]._waveforms.modify(  # pylint: disable=protected-access
-                            waveform.name, distortion.apply(waveform.data)
-                        )
+                    for waveform in sequences[bus_alias]._waveforms._waveforms:
+                        sequences[bus_alias]._waveforms.modify(waveform.name, distortion.apply(waveform.data))
         if debug:
             with open("debug_qblox_execution.txt", "w", encoding="utf-8") as sourceFile:
                 for bus_alias in sequences:
                     print(f"Bus {bus_alias}:", file=sourceFile)
-                    print(str(sequences[bus_alias]._program), file=sourceFile)  # pylint: disable=protected-access
+                    print(str(sequences[bus_alias]._program), file=sourceFile)
                     print(file=sourceFile)
 
         # Upload sequences
@@ -914,9 +913,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         # Acquire results
         results = QProgramResults()
-        for bus_alias in buses:
-            if isinstance(buses[bus_alias].system_control, ReadoutSystemControl):
-                bus_results = buses[bus_alias].acquire_qprogram_results(acquisitions=acquisitions[bus_alias])
+        for bus_alias, bus in buses.items():
+            if isinstance(bus.system_control, ReadoutSystemControl):
+                bus_results = bus.acquire_qprogram_results(acquisitions=acquisitions[bus_alias])
                 for bus_result in bus_results:
                     results.append_result(bus=bus_alias, result=bus_result)
 
@@ -928,7 +927,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         return results
 
-    def _execute_qprogram_with_quantum_machines(  # pylint: disable=too-many-locals,dangerous-default-value
+    def _execute_qprogram_with_quantum_machines(
         self,
         cluster: QuantumMachinesCluster,
         qprogram: QProgram,
@@ -973,7 +972,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             except StreamProcessingDataLossError as dataloss:
                 time_interval = datetime.datetime.now() - start_time
                 warnings.warn(
-                    f"Warning: {dataloss} raised, retrying experiment ({iteration+1}/{dataloss_tries} available tries) after {time_interval.seconds} s"
+                    f"Warning: {dataloss} raised, retrying experiment ({iteration + 1}/{dataloss_tries} available tries) after {time_interval.seconds} s"
                 )
                 warnings.warn(traceback.format_exc())
                 if iteration + 1 != dataloss_tries:
@@ -1052,8 +1051,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         if len(results) > 1:
             results = [
                 QbloxResult(
-                    integration_lengths=[length for result in results for length in result.integration_lengths],  # type: ignore [attr-defined]
-                    qblox_raw_results=[raw_result for result in results for raw_result in result.qblox_raw_results],  # type: ignore [attr-defined]
+                    integration_lengths=[length for result in results for length in result.integration_lengths],  # type: ignore[attr-defined]
+                    qblox_raw_results=[raw_result for result in results for raw_result in result.qblox_raw_results],  # type: ignore[attr-defined]
                 )
             ]
         if not results:
@@ -1090,7 +1089,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         for i, qubit in enumerate(qubit for gate in circuit.queue for qubit in gate.qubits if isinstance(gate, M)):
             if qubit not in qubits_m:
                 qubits_m[qubit] = 0
-            order[(qubit, qubits_m[qubit])] = i
+            order[qubit, qubits_m[qubit]] = i
             qubits_m[qubit] += 1
         if len(order) != len(result.qblox_raw_results):
             raise ValueError(
@@ -1102,7 +1101,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         for qblox_result in result.qblox_raw_results:
             measurement = qblox_result["measurement"]
             qubit = qblox_result["qubit"]
-            results[order[(qubit, measurement)]] = qblox_result
+            results[order[qubit, measurement]] = qblox_result
 
         return QbloxResult(integration_lengths=result.integration_lengths, qblox_raw_results=results)
 

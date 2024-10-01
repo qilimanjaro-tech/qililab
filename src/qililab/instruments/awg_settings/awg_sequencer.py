@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" AWG Sequencer """
+"""AWG Sequencer"""
+
 from dataclasses import asdict, dataclass
 
 from qililab.utils.asdict_factory import dict_factory
 
 
 @dataclass
-class AWGSequencer:  # pylint: disable=too-many-instance-attributes
+class AWGSequencer:
     """AWG Sequencer
 
     Args:

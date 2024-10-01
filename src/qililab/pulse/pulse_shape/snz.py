@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """SNZ pulse shape."""
+
 from copy import deepcopy
 from dataclasses import dataclass
 
@@ -43,6 +44,7 @@ class SNZ(PulseShape):
         .. code-block:: python
 
             from qililab.pulse.pulse_shape import SNZ
+
             snz_envelope = SNZ(b=B, t_phi=T).envelope(amplitude=1, duration=50)
 
         which for ``b=0.2``, ``t_phi=2`` and ``b=0.5``, ``t_phi=10``, look respectively like:
@@ -91,8 +93,8 @@ class SNZ(PulseShape):
         envelope = np.zeros(round(duration / resolution))
         # raise warning if we are rounding
         if (duration / resolution) % 1 != 0 or (halfpulse_t / resolution) % 1 != 0:
-            logger.warning(  # pylint: disable=logging-fstring-interpolation
-                f"Envelope length rounded to nearest value {len(envelope)} from division full_snz_duration ({duration}) / resolution ({resolution}) = {duration/resolution}"
+            logger.warning(
+                f"Envelope length rounded to nearest value {len(envelope)} from division full_snz_duration ({duration}) / resolution ({resolution}) = {duration / resolution}"
             )
         envelope[:halfpulse_t] = amplitude * np.ones(halfpulse_t)  # positive square halfpulse
         envelope[halfpulse_t] = self.b * amplitude  # impulse b
@@ -124,7 +126,7 @@ class SNZ(PulseShape):
             dict: Dictionary representation including the name of the pulse shape, the b parameter and the t_phi parameter..
         """
         return {
-            "name": self.name.value,
+            "name": self.name.value,  # type: ignore[operator]
             "b": self.b,
             "t_phi": self.t_phi,
         }

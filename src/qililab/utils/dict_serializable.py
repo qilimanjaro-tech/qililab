@@ -1,7 +1,21 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from collections import deque
 from dataclasses import fields, is_dataclass
 from enum import Enum, EnumMeta
-from typing import Any, Protocol, Type, TypedDict, TypeVar, _ProtocolMeta, cast, runtime_checkable
+from typing import Any, ClassVar, Protocol, Type, TypedDict, TypeVar, _ProtocolMeta, cast, runtime_checkable
 from uuid import UUID
 
 import numpy as np
@@ -40,7 +54,7 @@ def is_dict_serializable_object(obj: Any) -> bool:
 class DictSerializableEnumMeta(EnumMeta):
     """Metaclass to be used in `DictSerializableEnum`. Automatically registers the enums to `DictSerializableFactory`."""
 
-    def __new__(mcs, name, bases, namespace):  # pylint: disable=arguments-differ
+    def __new__(mcs, name, bases, namespace):
         new_class = super().__new__(mcs, name, bases, namespace)
         if bases != (Enum,):  # Avoid registering the base Enum class
             DictSerializableFactory.register(name, new_class)
@@ -68,7 +82,7 @@ class DictSerializableEnum(Enum, metaclass=DictSerializableEnumMeta):
 class DictSerializableFactory:
     """Factory to store information of `DictSerializable` classes."""
 
-    _registry: dict[str, Type["DictSerializable"]] = {}
+    _registry: ClassVar[dict[str, Type["DictSerializable"]]] = {}
 
     @classmethod
     def register(cls, name: str, dict_serializable_class: Type["DictSerializable"]) -> None:
@@ -86,7 +100,7 @@ class DictSerializableFactory:
 class DictSerializableMeta(_ProtocolMeta):
     """Metaclass to be used in `DictSerializable` protocol. Automatically registers any class inheriting from `DictSerializable` to `DictSerializableFactory`."""
 
-    def __new__(  # pylint: disable=arguments-differ
+    def __new__(
         mcs: Type["DictSerializableMeta"], name: str, bases: tuple, namespace: dict[str, Any]
     ) -> Type["DictSerializable"]:
         new_class = super().__new__(mcs, name, bases, namespace)
@@ -116,7 +130,7 @@ class DictSerializable(Protocol, metaclass=DictSerializableMeta):
             DictSerializableObject: A typed dictionary representing the serialized state of the object.
         """
 
-        def process_element(element):  # pylint: disable=too-many-return-statements
+        def process_element(element):
             if isinstance(element, UUID):
                 return {"type": UUID.__name__, "uuid": str(element)}
             if isinstance(element, deque):
@@ -154,17 +168,17 @@ class DictSerializable(Protocol, metaclass=DictSerializableMeta):
             T: An instance of the object populated with data from the dictionary.
         """
 
-        def process_attribute(attribute):  # pylint: disable=too-many-return-statements
+        def process_attribute(attribute):
             if isinstance(attribute, dict) and "type" in attribute and attribute["type"] == UUID.__name__:
                 return UUID(attribute["uuid"])
             if isinstance(attribute, dict) and "type" in attribute and attribute["type"] == deque.__name__:
                 return deque(process_attribute(item) for item in attribute["elements"])
             if isinstance(attribute, dict) and "type" in attribute and attribute["type"] == list.__name__:
-                return list(process_attribute(item) for item in attribute["elements"])
+                return [process_attribute(item) for item in attribute["elements"]]
             if isinstance(attribute, dict) and "type" in attribute and attribute["type"] == tuple.__name__:
                 return tuple(process_attribute(item) for item in attribute["elements"])
             if isinstance(attribute, dict) and "type" in attribute and attribute["type"] == set.__name__:
-                return set(process_attribute(item) for item in attribute["elements"])
+                return {process_attribute(item) for item in attribute["elements"]}
             if isinstance(attribute, dict) and "type" in attribute and attribute["type"] == np.ndarray.__name__:
                 return np.array([process_attribute(item) for item in attribute["elements"]])
             if isinstance(attribute, dict) and "type" in attribute and attribute["type"] == dict.__name__:

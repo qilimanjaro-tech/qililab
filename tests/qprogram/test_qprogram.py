@@ -1,12 +1,11 @@
 import os
-from collections import deque
 from itertools import product
 
 import numpy as np
 import pytest
 
-from qililab import Arbitrary, Domain, DragCorrection, Gaussian, IQPair, QProgram, Square
-from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
+from qililab import Domain, DragCorrection, Gaussian, IQPair, QProgram, Square
+from qililab.qprogram.blocks import Average
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
     Acquire,
@@ -26,9 +25,8 @@ from qililab.qprogram.operations import (
     Sync,
     Wait,
 )
-from qililab.qprogram.variable import FloatVariable, IntVariable
 from qililab.utils.serialization import deserialize, deserialize_from, serialize, serialize_to
-from tests.qprogram.test_structured_program import (  # pylint: disable=no-name-in-module, import-error
+from tests.qprogram.test_structured_program import (
     TestStructuredProgram,
 )
 
@@ -68,7 +66,6 @@ def get_sample_qprogram_string():
     return (qp, qp_string)
 
 
-# pylint: disable=maybe-no-member, protected-access
 class TestQProgram(TestStructuredProgram):
     """Unit tests checking the QProgram attributes and methods"""
 

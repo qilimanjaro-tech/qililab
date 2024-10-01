@@ -1,6 +1,5 @@
-""" Data to use alongside the test suite. """
+"""Data to use alongside the test suite."""
 
-# pylint: disable=too-many-lines
 import copy
 from typing import Any
 
