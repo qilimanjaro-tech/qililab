@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
-
 from qililab.qprogram.blocks.block import Block
 from qililab.qprogram.blocks.for_loop import ForLoop
 from qililab.qprogram.blocks.loop import Loop
@@ -21,6 +19,7 @@ from qililab.yaml import yaml
 
 
 @yaml.register_class
-@dataclass(frozen=True)
-class Parallel(Block):  # pylint: disable=missing-class-docstring
-    loops: list[ForLoop | Loop]
+class Parallel(Block):
+    def __init__(self, loops: list[ForLoop | Loop]) -> None:
+        super().__init__()
+        self.loops: list[ForLoop | Loop] = loops

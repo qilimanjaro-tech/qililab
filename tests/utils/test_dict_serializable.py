@@ -8,7 +8,7 @@ from uuid import UUID, uuid4
 import numpy as np
 import pytest
 
-from qililab.utils import DictSerializable, DictSerializableEnum, from_dict
+from qililab.utils import DictSerializable, from_dict
 from qililab.utils.dict_serializable import DictSerializableFactory, is_dict_serializable_object
 
 
@@ -24,7 +24,6 @@ class A(DictSerializable):
         self.attr6: D = D()
         self.attr7: dict = {"key": 123}
         self.attr8: dict = {"type": "A", "key": 123}
-        self.attr9: ValueSource = ValueSource.Dependent  # type: ignore
         self.attr10: deque[int] = deque([0, 1, 2])
         self.attr11: np.ndarray = np.linspace(0, 10, 11)
 
@@ -44,13 +43,6 @@ class C(DictSerializable):
 @dataclass(frozen=True)
 class D(DictSerializable):
     uuid: UUID = field(default_factory=uuid4, init=False)
-
-
-class ValueSource(DictSerializableEnum):
-    """ValueSource class"""
-
-    Free = (0,)
-    Dependent = 1
 
 
 class TestDictSerializable:
@@ -85,9 +77,6 @@ class TestDictSerializable:
         assert isinstance(deserialized_object.attr8, dict)
         assert origin_object.attr8["type"] == deserialized_object.attr8["type"]
         assert origin_object.attr8["key"] == deserialized_object.attr8["key"]
-
-        assert isinstance(deserialized_object.attr9, ValueSource)
-        assert origin_object.attr9 == deserialized_object.attr9
 
         assert isinstance(deserialized_object.attr10, deque)
         assert all(a == b for a, b in zip(origin_object.attr10, deserialized_object.attr10))

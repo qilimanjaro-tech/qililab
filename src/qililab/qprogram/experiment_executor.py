@@ -39,7 +39,6 @@ class VariableInfo:
     values: np.ndarray
 
 
-# pylint: disable=too-few-public-methods
 class ExperimentExecutor:
     """Manages the execution of a quantum experiment.
 
@@ -97,11 +96,11 @@ class ExperimentExecutor:
         # Registry of all variables used in the experiment with their labels and values
         self._all_variables: dict = defaultdict(lambda: {"label": None, "values": {}})
 
-        # Mapping from each block's UUID to the list of variables associated with that block
-        self._variables_per_block: dict[UUID, list[VariableInfo]] = {}
+        # Mapping from each Block to the list of variables associated with that block
+        self._variables_per_block: dict[Block, list[VariableInfo]] = {}
 
-        # Mapping from each ExecuteQProgram operation's UUID to its execution index (order of execution)
-        self._qprogram_execution_indices: dict[UUID, int] = {}
+        # Mapping from each ExecuteQProgram operation to its execution index (order of execution)
+        self._qprogram_execution_indices: dict[ExecuteQProgram, int] = {}
 
         # Stack to keep track of variables in the experiment context (outside QPrograms)
         self._experiment_variables_stack: list[list[VariableInfo]] = []
@@ -147,7 +146,7 @@ class ExperimentExecutor:
                         traverse_qprogram(qprogram.body)
                     else:
                         traverse_qprogram(element.qprogram.body)
-                    self._qprogram_execution_indices[element.uuid] = self._qprogram_index
+                    self._qprogram_execution_indices[element] = self._qprogram_index
                     self._measurement_index = 0
                     self._qprogram_index += 1
 
@@ -224,7 +223,7 @@ class ExperimentExecutor:
         operations: list[Callable] = []
 
         # A mapping from block UUID to the index of the current value of its variable
-        loop_indices: dict[UUID, int] = {}
+        loop_indices: dict[Block, int] = {}
 
         # A mapping from variable UUID to current value of the variable
         current_value_of_variable: dict[UUID, int | float] = {}
@@ -234,8 +233,8 @@ class ExperimentExecutor:
             loop_operations: list[Callable] = []
 
             # Determine loop parameters based on the type of block
-            label = ",".join([variable.label for variable in self._variables_per_block[block.uuid]])
-            shape = self._variables_per_block[block.uuid][0].values.shape[-1]
+            label = ",".join([variable.label for variable in self._variables_per_block[block]])
+            shape = self._variables_per_block[block][0].values.shape[-1]
 
             # Create the progress bar for the loop
             def create_progress_bar():
@@ -244,7 +243,7 @@ class ExperimentExecutor:
                 task_ids[block.uuid] = loop_task_id  # Store the task ID associated with this loop block
 
                 # Track the index for this loop
-                loop_indices[block.uuid] = 0
+                loop_indices[block] = 0
 
                 return loop_task_id
 
@@ -260,10 +259,10 @@ class ExperimentExecutor:
 
             def advance_loop_index() -> None:
                 # Update the loop index
-                loop_indices[block.uuid] += 1
+                loop_indices[block] += 1
 
-            uuids = [variable.uuid for variable in self._variables_per_block[block.uuid]]
-            values = [variable.values for variable in self._variables_per_block[block.uuid]]
+            uuids = [variable.uuid for variable in self._variables_per_block[block]]
+            values = [variable.values for variable in self._variables_per_block[block]]
 
             for current_values in zip(*values):
                 for uuid, value in zip(uuids, current_values):
@@ -278,7 +277,7 @@ class ExperimentExecutor:
 
             def remove_progress_bar():
                 progress.remove_task(task_ids[block.uuid])
-                del loop_indices[block.uuid]
+                del loop_indices[block]
 
             loop_operations.append(remove_progress_bar)
 
@@ -304,15 +303,19 @@ class ExperimentExecutor:
                     )
                 if isinstance(element, SetParameter):
                     # Append a lambda that will call the `platform.set_parameter` method
+                    value = (
+                        current_value_of_variable[element.value.uuid]
+                        if isinstance(element.value, Variable)
+                        else element.value
+                    )
                     elements_operations.append(
-                        lambda alias=element.alias, parameter=element.parameter, value=(
-                            current_value_of_variable[element.value.uuid]
-                            if isinstance(element.value, Variable)
-                            else element.value
-                        ): self.platform.set_parameter(alias=alias, parameter=parameter, value=value)
+                        lambda alias=element.alias, parameter=element.parameter, value=value: self.platform.set_parameter(
+                            alias=alias, parameter=parameter, value=value
+                        )
                     )
 
                 if isinstance(element, ExecuteQProgram):
+                    qprogram_index = self._qprogram_execution_indices[element]
                     if isinstance(element.qprogram, LambdaType):
                         signature = inspect.signature(element.qprogram)
                         call_parameters = {
@@ -322,7 +325,7 @@ class ExperimentExecutor:
                         }
                         qprogram = element.qprogram(**call_parameters)
                         elements_operations.append(
-                            lambda operation=element, qprogram=qprogram, qprogram_index=self._qprogram_execution_indices[element.uuid]: store_results(  # type: ignore[misc]
+                            lambda operation=element, qprogram=qprogram, qprogram_index=qprogram_index: store_results(
                                 self.platform.execute_qprogram(
                                     qprogram=qprogram,
                                     bus_mapping=operation.bus_mapping,
@@ -335,7 +338,7 @@ class ExperimentExecutor:
                     else:
                         # Append a lambda that will call the `platform.execute_qprogram` method
                         elements_operations.append(
-                            lambda operation=element, qprogram_index=self._qprogram_execution_indices[element.uuid]: store_results(  # type: ignore[misc]
+                            lambda operation=element, qprogram_index=qprogram_index: store_results(
                                 self.platform.execute_qprogram(
                                     qprogram=operation.qprogram,
                                     bus_mapping=operation.bus_mapping,
@@ -418,7 +421,7 @@ class ExperimentExecutor:
                 variable = VariableInfo(uuid=loop.variable.uuid, label=loop.variable.label, values=values)
                 variables[loop.variable.uuid] = variable
 
-        self._variables_per_block[block.uuid] = list(variables.values())
+        self._variables_per_block[block] = list(variables.values())
 
         # Update all_variables registry
         for variable in variables.values():

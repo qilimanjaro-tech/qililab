@@ -13,7 +13,6 @@
 # limitations under the License.
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable
 
 from qililab.qprogram.operations.operation import Operation
@@ -26,9 +25,16 @@ if TYPE_CHECKING:
 
 
 @yaml.register_class
-@dataclass(frozen=True)
-class ExecuteQProgram(Operation):  # pylint: disable=missing-class-docstring
-    qprogram: "QProgram" | Callable[["Variable", ...], "QProgram"]  # type: ignore
-    bus_mapping: dict[str, str] | None = None
-    calibration: "Calibration" | None = None
-    debug: bool = False
+class ExecuteQProgram(Operation):
+    def __init__(
+        self,
+        qprogram: QProgram | Callable[[Variable, ...], QProgram],  # type: ignore[misc]
+        bus_mapping: dict[str, str] | None = None,
+        calibration: Calibration | None = None,
+        debug: bool = False,
+    ) -> None:
+        super().__init__()
+        self.qprogram: QProgram | Callable[[Variable, ...], QProgram] = qprogram  # type: ignore[misc]
+        self.bus_mapping: dict[str, str] | None = bus_mapping
+        self.calibration: Calibration | None = calibration
+        self.debug: bool = debug

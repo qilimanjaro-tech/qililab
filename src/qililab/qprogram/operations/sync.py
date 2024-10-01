@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
 
 from qililab.qprogram.operations.operation import Operation
 from qililab.yaml import yaml
 
 
 @yaml.register_class
-@dataclass(frozen=True)
-class Sync(Operation):  # pylint: disable=missing-class-docstring
-    buses: list[str] | None
+class Sync(Operation):
+    def __init__(self, buses: list[str] | None = None) -> None:
+        super().__init__()
+        self.buses: list[str] | None = buses
