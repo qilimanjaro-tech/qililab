@@ -305,13 +305,15 @@ class ExperimentExecutor:
 
             for element in elements:
                 if isinstance(element, GetParameter):
+                    # Set current value of the variable to None
+                    current_value_of_variable[element.variable.uuid] = None  # type: ignore[assignment]
                     # Append a lambda that will call the `platform.get_parameter` method and assign the returned value to the variable
                     elements_operations.append(
                         lambda operation=element: current_value_of_variable.update(
                             {
                                 operation.variable.uuid: self.platform.get_parameter(
-                                    parameter=operation.parameter,
                                     alias=operation.alias,
+                                    parameter=operation.parameter,
                                     channel_id=operation.channel_id,
                                 )
                             }
@@ -319,16 +321,38 @@ class ExperimentExecutor:
                     )
                 if isinstance(element, SetParameter):
                     # Append a lambda that will call the `platform.set_parameter` method
-                    value = (
-                        current_value_of_variable[element.value.uuid]
-                        if isinstance(element.value, Variable)
-                        else element.value
-                    )
-                    elements_operations.append(
-                        lambda alias=element.alias,
-                        parameter=element.parameter,
-                        value=value: self.platform.set_parameter(alias=alias, parameter=parameter, value=value)
-                    )
+                    if isinstance(element.value, Variable):
+                        if current_value_of_variable[element.value.uuid] is None:
+                            # Variable has no value and it will get it from a `GetOperation` in the future. Thus, don't bind `value` in lambda.
+                            elements_operations.append(
+                                lambda operation=element: self.platform.set_parameter(
+                                    alias=operation.alias,
+                                    parameter=operation.parameter,
+                                    value=current_value_of_variable[operation.value.uuid],
+                                    channel_id=operation.channel_id,
+                                )
+                            )
+                        else:
+                            # Variable has a value that was set from a loop. Thus, bind `value` in lambda with the current value of the variable.
+                            elements_operations.append(
+                                lambda operation=element,
+                                value=current_value_of_variable[element.value.uuid]: self.platform.set_parameter(
+                                    alias=operation.alias,
+                                    parameter=operation.parameter,
+                                    value=value,
+                                    channel_id=operation.channel_id,
+                                )
+                            )
+                    else:
+                        # Value is not a variable. Treat it as a normal Python type.
+                        elements_operations.append(
+                            lambda operation=element: self.platform.set_parameter(
+                                alias=operation.alias,
+                                parameter=operation.parameter,
+                                value=operation.value,
+                                channel_id=operation.channel_id,
+                            )
+                        )
 
                 if isinstance(element, ExecuteQProgram):
                     qprogram_index = self._qprogram_execution_indices[element]

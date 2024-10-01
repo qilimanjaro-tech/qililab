@@ -26,6 +26,7 @@ def mock_platform():
 
     platform = create_autospec(Platform)
     platform.set_parameter = Mock()
+    platform.get_parameter = Mock(return_value=1.23)
     platform.execute_qprogram = Mock(return_value=qprogram_results)
     platform.to_dict = Mock(return_value={"name": "platform"})
 
@@ -67,6 +68,9 @@ def fixture_experiment(qprogram: QProgram):
     experiment.set_parameter(alias="drive_q0", parameter=Parameter.VOLTAGE, value=0.5)
     experiment.set_parameter(alias="drive_q1", parameter=Parameter.VOLTAGE, value=0.5)
     experiment.set_parameter(alias="drive_q2", parameter=Parameter.VOLTAGE, value=0.5)
+
+    gain = experiment.get_parameter(alias="flux_q0", parameter=Parameter.GAIN)
+    experiment.set_parameter(alias="flux_q1", parameter=Parameter.GAIN, value=gain)
     with experiment.for_loop(bias, 0.0, 1.0, 0.5):
         experiment.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=bias)
         with experiment.loop(frequency, values=np.array([2e9, 3e9])):
@@ -96,35 +100,38 @@ class TestExperimentExecutor:
 
         # Check that platform methods were called in the correct order
         expected_calls = [
-            call.set_parameter(alias="drive_q0", parameter=Parameter.VOLTAGE, value=0.5),
-            call.set_parameter(alias="drive_q1", parameter=Parameter.VOLTAGE, value=0.5),
-            call.set_parameter(alias="drive_q2", parameter=Parameter.VOLTAGE, value=0.5),
+            call.set_parameter(alias="drive_q0", parameter=Parameter.VOLTAGE, value=0.5, channel_id=None),
+            call.set_parameter(alias="drive_q1", parameter=Parameter.VOLTAGE, value=0.5, channel_id=None),
+            call.set_parameter(alias="drive_q2", parameter=Parameter.VOLTAGE, value=0.5, channel_id=None),
+            # Check that get_parameter returns a variable with correct value
+            call.get_parameter(alias="flux_q0", parameter=Parameter.GAIN, channel_id=None),
+            call.set_parameter(alias="flux_q1", parameter=Parameter.GAIN, value=1.23, channel_id=None),
             # Start of nested loops
-            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.0),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.0, channel_id=None),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=None),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9, channel_id=None),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.5),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.5, channel_id=None),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=None),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9, channel_id=None),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=1.0),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=1.0, channel_id=None),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=None),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9, channel_id=None),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
             # End of nested loops
             # Start of parallel loop
-            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.0),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.0, channel_id=None),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=None),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.5),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.5, channel_id=None),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9, channel_id=None),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=1.0),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=4e9),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=1.0, channel_id=None),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=4e9, channel_id=None),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
             # End of parallel loop
             # Start of nshots loop
