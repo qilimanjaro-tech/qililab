@@ -46,9 +46,12 @@ def test_deque_serialization():
 def test_lambda_serialization():
     """Test serialization and deserialization of a lambda function."""
 
+    def another_function(y):
+        return y + 1
+
     # Define a sample lambda function
     def original_lambda(x, y):
-        return x + y
+        return x + another_function(y)
 
     # Dump the lambda function to YAML
     stream = io.StringIO()
