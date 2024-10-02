@@ -22,7 +22,7 @@ from qililab.yaml import yaml
 
 @yaml.register_class
 @dataclass(frozen=True)
-class Play(Operation):  # pylint: disable=missing-class-docstring
+class Play(Operation):
     bus: str
     waveform: Waveform | IQPair
     wait_time: int | None = None  # TODO: remove this in clean fix
@@ -61,7 +61,7 @@ class Play(Operation):  # pylint: disable=missing-class-docstring
 
 @yaml.register_class
 @dataclass(frozen=True)
-class PlayWithCalibratedWaveform(Operation):  # pylint: disable=missing-class-docstring
+class PlayWithCalibratedWaveform(Operation):
     bus: str
     waveform: str
     wait_time: int | None = None

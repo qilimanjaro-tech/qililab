@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """This file contains all the variables used inside a QProgram."""
+
 from enum import Enum
 from uuid import UUID, uuid4
 
@@ -110,7 +111,7 @@ class Variable:
         self._domain: Domain = domain
 
     def __repr__(self):
-        return f"Variable(uuid={repr(self._uuid)}, label={self.label}, value={self.value})"
+        return f"Variable(uuid={self._uuid!r}, label={self.label}, value={self.value})"
 
     def __hash__(self):
         return hash(self._uuid)

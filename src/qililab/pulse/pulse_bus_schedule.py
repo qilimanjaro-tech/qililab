@@ -13,17 +13,21 @@
 # limitations under the License.
 
 """PulseBusSchedule class."""
+
 from __future__ import annotations
 
 from bisect import insort
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 from qililab.constants import PULSEBUSSCHEDULE
-from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.utils import Waveforms
+
+if TYPE_CHECKING:
+    from qililab.pulse.pulse import Pulse
 
 
 @dataclass
@@ -40,53 +44,26 @@ class PulseBusSchedule:
         .. code-block:: python3
 
             drag_pulse = Pulse(
-                amplitude=1,
-                phase=0.5,
-                duration=200,
-                frequency=1e9,
-                pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
+                amplitude=1, phase=0.5, duration=200, frequency=1e9, pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
             )
-            drag_pulse_event = PulseEvent(
-                pulse=drag_pulse,
-                start_time=0
-            )
+            drag_pulse_event = PulseEvent(pulse=drag_pulse, start_time=0)
 
-            drive_schedule = PulseBusSchedule(
-                timeline=[drag_pulse_event],
-                port="drive_q0"
-            )
+            drive_schedule = PulseBusSchedule(timeline=[drag_pulse_event], port="drive_q0")
 
         You can add further pulse events to an already created PulseBusSchedule. To do so:
 
         .. code-block:: python3
 
             drag_pulse_0 = Pulse(
-                amplitude=1,
-                phase=0.5,
-                duration=200,
-                frequency=1e9,
-                pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
+                amplitude=1, phase=0.5, duration=200, frequency=1e9, pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
             )
-            drag_pulse_event = PulseEvent(
-                pulse=drag_pulse_0,
-                start_time=0
-            )
+            drag_pulse_event = PulseEvent(pulse=drag_pulse_0, start_time=0)
 
-            drive_schedule = PulseBusSchedule(
-                timeline=[drag_pulse_event],
-                port="drive_q0"
-            )
+            drive_schedule = PulseBusSchedule(timeline=[drag_pulse_event], port="drive_q0")
             drag_pulse_1 = Pulse(
-                amplitude=1,
-                phase=0.5,
-                duration=400,
-                frequency=1e7,
-                pulse_shape=Drag(num_sigmas=2, drag_coefficient=0.2)
+                amplitude=1, phase=0.5, duration=400, frequency=1e7, pulse_shape=Drag(num_sigmas=2, drag_coefficient=0.2)
             )
-            drag_pulse_event_1 = PulseEvent(
-                pulse=drag_pulse_1,
-                start_time=204
-            )
+            drag_pulse_event_1 = PulseEvent(pulse=drag_pulse_1, start_time=204)
             drive_schedule.add_event(drag_pulse_event_1)
     """
 

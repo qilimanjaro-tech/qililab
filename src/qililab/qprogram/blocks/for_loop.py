@@ -21,7 +21,7 @@ from qililab.yaml import yaml
 
 @yaml.register_class
 @dataclass(frozen=True)
-class ForLoop(Block):  # pylint: disable=missing-class-docstring
+class ForLoop(Block):
     variable: Variable
     start: int | float
     stop: int | float

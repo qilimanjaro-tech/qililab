@@ -100,7 +100,7 @@ class SequencerQCM(Sequencer, AWG):
         """
         return Weights()
 
-    def _generate_acquisitions(self, num_bins: int) -> Acquisitions:  # pylint: disable=unused-argument
+    def _generate_acquisitions(self, num_bins: int) -> Acquisitions:
         """Generate Acquisitions object.
 
         Args:
@@ -146,7 +146,7 @@ class SequencerQCM(Sequencer, AWG):
     ):
         """Append an acquire instruction to the loop."""
 
-    def _generate_program(  # pylint: disable=too-many-locals
+    def _generate_program(
         self,
         pulse_bus_schedule: PulseBusSchedule,
         waveforms: Waveforms,
@@ -183,7 +183,6 @@ class SequencerQCM(Sequencer, AWG):
             bin_loop.append_component(long_wait(wait_time=int(timeline[0].start_time)))
 
         for i, pulse_event in enumerate(timeline):
-            print("Pulse label: ", pulse_event.pulse.label())
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
             wait_time = timeline[i + 1].start_time - pulse_event.start_time if (i < (len(timeline) - 1)) else 4
             bin_loop.append_component(ResetPh())
@@ -206,6 +205,6 @@ class SequencerQCM(Sequencer, AWG):
             if wait_time > self._MIN_WAIT_TIME:
                 bin_loop.append_component(long_wait(wait_time=wait_time))
 
-        logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
+        logger.info("Q1ASM program: \n %s", repr(program))
 
         return program

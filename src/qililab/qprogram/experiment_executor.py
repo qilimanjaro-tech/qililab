@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # mypy: disable-error-code="union-attr, arg-type"
 import inspect
 import os
@@ -200,11 +214,13 @@ class ExperimentExecutor:
                     for variable in sublist
                 ],
                 dims=[[variable.label for variable in sublist] for sublist in self._qprogram_variables_stack],
-                shape=tuple(
-                    len(sublist[0].values)
-                    for sublist in (self._experiment_variables_stack + self._qprogram_variables_stack)
-                )
-                + (2,),
+                shape=(
+                    *tuple(
+                        len(sublist[0].values)
+                        for sublist in self._experiment_variables_stack + self._qprogram_variables_stack
+                    ),
+                    2,
+                ),
                 shots=self._shots,
             )
 
@@ -292,7 +308,9 @@ class ExperimentExecutor:
                 if isinstance(element, SetParameter):
                     # Append a lambda that will call the `platform.set_parameter` method
                     elements_operations.append(
-                        lambda alias=element.alias, parameter=element.parameter, value=(
+                        lambda alias=element.alias,
+                        parameter=element.parameter,
+                        value=(
                             current_value_of_variable[element.value.uuid]
                             if isinstance(element.value, Variable)
                             else element.value
@@ -309,7 +327,9 @@ class ExperimentExecutor:
                         }
                         qprogram = element.qprogram(**call_parameters)
                         elements_operations.append(
-                            lambda operation=element, qprogram=qprogram, qprogram_index=self._qprogram_execution_indices[element.uuid]: store_results(  # type: ignore[misc]
+                            lambda operation=element,
+                            qprogram=qprogram,
+                            qprogram_index=self._qprogram_execution_indices[element.uuid]: store_results(  # type: ignore[misc]
                                 self.platform.execute_qprogram(
                                     qprogram=qprogram,
                                     bus_mapping=operation.bus_mapping,
@@ -322,7 +342,8 @@ class ExperimentExecutor:
                     else:
                         # Append a lambda that will call the `platform.execute_qprogram` method
                         elements_operations.append(
-                            lambda operation=element, qprogram_index=self._qprogram_execution_indices[element.uuid]: store_results(  # type: ignore[misc]
+                            lambda operation=element,
+                            qprogram_index=self._qprogram_execution_indices[element.uuid]: store_results(  # type: ignore[misc]
                                 self.platform.execute_qprogram(
                                     qprogram=operation.qprogram,
                                     bus_mapping=operation.bus_mapping,
@@ -343,7 +364,7 @@ class ExperimentExecutor:
             """Store the result in the correct location within the ExperimentResultsWriter."""
             # Determine the index in the ExperimentResultsWriter based on current loop indices
             for measurement_index, measurement_result in enumerate(qprogram_results.timeline):
-                indices = (qprogram_index, measurement_index) + tuple(index for _, index in loop_indices.items())
+                indices = (qprogram_index, measurement_index, *tuple(index for _, index in loop_indices.items()))
                 # Store the results in the ExperimentResultsWriter
                 self._results_writer[indices] = measurement_result.array.T  # type: ignore
 
@@ -429,9 +450,7 @@ class ExperimentExecutor:
         # Create the directories if they don't exist
         os.makedirs(folder, exist_ok=True)
 
-        path = os.path.join(folder, file)
-
-        return path
+        return os.path.join(folder, file)
 
     def execute(self) -> str:
         """

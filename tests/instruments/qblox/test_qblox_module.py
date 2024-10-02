@@ -139,7 +139,7 @@ def fixture_pulse_bus_schedule2() -> PulseBusSchedule:
     return PulseBusSchedule(timeline=[pulse_event], port="feedline_input")
 
 
-class TestQbloxModule:  # pylint: disable=too-few-public-methods
+class TestQbloxModule:
     """Unit tests checking the QbloxModule attributes and methods"""
 
     def test_upload_method(self, qrm, qblox_compiler, pulse_bus_schedule):
@@ -223,7 +223,7 @@ class TestQbloxModule:  # pylint: disable=too-few-public-methods
         settings["num_sequencers"] = nsequencers
         error_string = re.escape(
             "The number of sequencers must be greater than 0 and less or equal than "
-            + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: {nsequencers}"  # pylint: disable=protected-access
+            + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: {nsequencers}"
         )
         with pytest.raises(ValueError, match=error_string):
             QbloxModule(settings)

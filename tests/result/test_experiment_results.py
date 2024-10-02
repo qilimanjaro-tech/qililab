@@ -4,7 +4,7 @@ from pathlib import Path
 from types import MethodType
 from unittest.mock import MagicMock, create_autospec, patch
 
-import matplotlib
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
@@ -12,7 +12,7 @@ import pytest
 from qililab.result.experiment_results import DimensionInfo, ExperimentResults
 from qililab.result.experiment_results_writer import ExperimentMetadata, ExperimentResultsWriter
 
-matplotlib.use("Agg")  # Use non-interactive backend for testing
+mpl.use("Agg")  # Use non-interactive backend for testing
 
 
 # Dummy path for testing
@@ -89,7 +89,7 @@ class TestExperimentResults:
     def test_get_item(self, experiment_results):
         """Test __get_item__"""
         with ExperimentResults(experiment_results) as exp_results:
-            value = exp_results[("QProgram_0", "Measurement_0", 0, 0, 0)]
+            value = exp_results["QProgram_0", "Measurement_0", 0, 0, 0]
             assert value == 0.0
 
     def test_len(self, experiment_results):
@@ -262,7 +262,7 @@ class TestExperimentResults:
 
         # Retrieve the QuadMesh object from pcolormesh
         quadmesh = ax1.collections[0]
-        assert isinstance(quadmesh, matplotlib.collections.QuadMesh)
+        assert isinstance(quadmesh, mpl.collections.QuadMesh)
 
         # Verify the data plotted
         s21 = data[:, :, 0] + 1j * data[:, :, 1]

@@ -1,5 +1,4 @@
-""" Test empty abstract class, CurrentSource"""
-from qililab.drivers.interfaces import CurrentSource
+"""Test empty abstract class, CurrentSource"""
 
 
 def test_for_imports():

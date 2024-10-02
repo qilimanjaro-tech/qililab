@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """QuantumMachinesResult class."""
+
 from warnings import warn
 
 import numpy as np
@@ -75,7 +76,7 @@ class QuantumMachinesMeasurementResult(MeasurementResult):
             warn("Classification threshold is not specified, returning a `np.zeros` array.", stacklevel=2)
 
         return (
-            np.where(self.I >= self._classification_threshold, 1.0, 0.0)
+            np.where(self._classification_threshold <= self.I, 1.0, 0.0)
             if self._classification_threshold is not None
             else np.zeros(self.I.shape)
         )

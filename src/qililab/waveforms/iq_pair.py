@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """IQPair dataclass."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -28,7 +29,7 @@ from qililab.yaml import yaml
 
 @dataclass
 @yaml.register_class
-class IQPair(DictSerializable):  # pylint: disable=missing-class-docstring
+class IQPair(DictSerializable):
     """IQPair dataclass, containing the 'in-phase' (I) and 'quadrature' (Q) parts of a signal."""
 
     I: Waveform

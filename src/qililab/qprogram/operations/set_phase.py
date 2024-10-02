@@ -20,6 +20,6 @@ from qililab.yaml import yaml
 
 @yaml.register_class
 @dataclass(frozen=True)
-class SetPhase(Operation):  # pylint: disable=missing-class-docstring
+class SetPhase(Operation):
     bus: str
     phase: float

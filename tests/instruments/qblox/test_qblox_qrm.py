@@ -1,4 +1,5 @@
 """Test for the QbloxQRM class."""
+
 import copy
 import re
 from unittest.mock import MagicMock, Mock, patch
@@ -206,7 +207,7 @@ class TestQbloxQRM:
         settings_6_sequencers["num_sequencers"] = num_sequencers
         error_string = re.escape(
             "The number of sequencers must be greater than 0 and less or equal than "
-            + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: {num_sequencers}"  # pylint: disable=protected-access
+            + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: {num_sequencers}"
         )
 
         with pytest.raises(ValueError, match=error_string):
@@ -218,7 +219,7 @@ class TestQbloxQRM:
         settings_6_sequencers["num_sequencers"] = num_sequencers
         error_string = re.escape(
             "The number of sequencers must be greater than 0 and less or equal than "
-            + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: {num_sequencers}"  # pylint: disable=protected-access
+            + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: {num_sequencers}"
         )
 
         with pytest.raises(ValueError, match=error_string):
@@ -262,7 +263,7 @@ class TestQbloxQRM:
     def test_double_scope_forbidden(self, qrm_two_scopes: QbloxQRM):
         """Tests that a QRM cannot have more than one sequencer storing the scope simultaneously."""
         with pytest.raises(ValueError, match="The scope can only be stored in one sequencer at a time."):
-            qrm_two_scopes._obtain_scope_sequencer()  # pylint: disable=protected-access
+            qrm_two_scopes._obtain_scope_sequencer()
 
     @pytest.mark.parametrize(
         "parameter, value, channel_id",
@@ -295,7 +296,7 @@ class TestQbloxQRM:
             (Parameter.TIME_OF_FLIGHT, 80, 0),
         ],
     )
-    def test_setup_method(  # pylint: disable=too-many-branches # noqa: C901
+    def test_setup_method(
         self,
         parameter: Parameter,
         value: float | bool | int | str,
@@ -369,7 +370,7 @@ class TestQbloxQRM:
     def test_setup_out_offset_raises_error(self, qrm: QbloxQRM):
         """Test that calling ``_set_out_offset`` with a wrong output value raises an error."""
         with pytest.raises(IndexError, match="Output 5 is out of range"):
-            qrm._set_out_offset(output=5, value=1)  # pylint: disable=protected-access
+            qrm._set_out_offset(output=5, value=1)
 
     def test_turn_off_method(self, qrm: QbloxQRM):
         """Test turn_off method"""
@@ -452,13 +453,13 @@ class TestQbloxQRM:
         qrm = QbloxQRM(settings=settings_even_sequencers)
         for seq_id in range(6):
             if seq_id % 2 == 0:
-                assert qrm._get_sequencer_by_id(id=seq_id).identifier == seq_id  # pylint: disable=protected-access
+                assert qrm._get_sequencer_by_id(id=seq_id).identifier == seq_id
             else:
                 with pytest.raises(IndexError, match=f"There is no sequencer with id={seq_id}."):
-                    qrm._get_sequencer_by_id(id=seq_id)  # pylint: disable=protected-access
+                    qrm._get_sequencer_by_id(id=seq_id)
 
 
-class TestAWGQbloxADCSequencer:  # pylint: disable=too-few-public-methods
+class TestAWGQbloxADCSequencer:
     """Unit tests for AWGQbloxADCSequencer class."""
 
     def test_verify_weights(self):
@@ -468,4 +469,4 @@ class TestAWGQbloxADCSequencer:  # pylint: disable=too-few-public-methods
         mock_sequencer.weights_q = [1.0, 1.0]
 
         with pytest.raises(IndexError, match="The length of weights_i and weights_q must be equal."):
-            AWGQbloxADCSequencer._verify_weights(mock_sequencer)  # pylint: disable=protected-access
+            AWGQbloxADCSequencer._verify_weights(mock_sequencer)

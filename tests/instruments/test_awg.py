@@ -1,4 +1,5 @@
 """File testing the AWG class."""
+
 import re
 
 import pytest
@@ -12,13 +13,24 @@ from qililab.pulse import PulseBusSchedule
 class DummyAWG(AWG):
     """Dummy AWG class."""
 
-    # pylint: disable=unused-argument
     def compile(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
     ) -> list:
         return []
 
-    def run(self):  # pylint: disable=arguments-differ
+    def initial_setup(self):
+        pass
+
+    def reset(self):
+        pass
+
+    def turn_on(self):
+        pass
+
+    def turn_off(self):
+        pass
+
+    def run(self):
         pass
 
     def upload(self, port: str):
@@ -69,7 +81,7 @@ def fixture_awg_settings():
 @pytest.fixture(name="awg")
 def fixture_awg(awg_settings: dict):
     """Fixture that returns an instance of a dummy AWG."""
-    return DummyAWG(settings=awg_settings)  # pylint: disable=abstract-class-instantiated
+    return DummyAWG(settings=awg_settings)
 
 
 class TestInitialization:
@@ -129,7 +141,7 @@ class TestMethods:
         awg_settings["num_sequencers"] = 0
         error_string = re.escape("The number of sequencers must be greater than 0. Received: 0")
         with pytest.raises(ValueError, match=error_string):
-            DummyAWG(settings=awg_settings)  # pylint: disable=abstract-class-instantiated
+            DummyAWG(settings=awg_settings)
 
     def test_match_sequencers_error(self, awg_settings: dict):
         """test that an error is raised if more than _NUM_MAX_SEQUENCERS are in the qblox module"""
@@ -140,4 +152,4 @@ class TestMethods:
             + f" the number of AWG Sequencers settings specified: {len(awg_settings['awg_sequencers'])}"
         )
         with pytest.raises(ValueError, match=error_string):
-            DummyAWG(settings=awg_settings)  # pylint: disable=abstract-class-instantiated
+            DummyAWG(settings=awg_settings)

@@ -12,5 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" KeySight instruments """
+"""KeySight instruments"""
+
 from .e5080b_vna import E5080B
+
+__all__ = ["E5080B"]

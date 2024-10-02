@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=anomalous-backslash-in-string
+
 """Rectangular pulse shape."""
+
 from copy import deepcopy
 from dataclasses import dataclass
 
@@ -27,7 +28,7 @@ from qililab.utils import Factory
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class Cosine(PulseShape):
-    """Cosine pulse shape like :math:`A/2 (1-\lambda_1\cos(\phi)-\lambda_2\cos(2\phi))`, giving a modified sinusoidal-gaussian.
+    r"""Cosine pulse shape like :math:`A/2 (1-\lambda_1\cos(\phi)-\lambda_2\cos(2\phi))`, giving a modified sinusoidal-gaussian.
 
     - :math:`\lambda_1` cosine :math:`A/2 (1-\cos(x))`: Starts and ends at height 0, with a maximum height A in the middle. Which is a sinusoidal like gaussian:
 
@@ -50,7 +51,8 @@ class Cosine(PulseShape):
         .. code-block:: python
 
             from qililab.pulse.pulse_shape import Cosine
-            rectangular_envelope = Cosine(lambda_2=X).envelope(amplitude=1., duration=50)
+
+            rectangular_envelope = Cosine(lambda_2=X).envelope(amplitude=1.0, duration=50)
 
         which for ``X`` being ``0.2`` and ``0.5``, look respectively like:
 
@@ -106,6 +108,6 @@ class Cosine(PulseShape):
             dict: Dictionary representing the Cosine pulse shape. It contains the name of the pulse shape plus the lambda_2 factor.
         """
         return {
-            "name": self.name.value,
+            "name": self.name.value,  # type: ignore[operator]
             "lambda_2": self.lambda_2,
         }

@@ -8,8 +8,8 @@ from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
 from qililab.platform import Platform
 from qililab.settings import Settings
 from qililab.typings import ConnectionName
-from tests.data import SauronQDevil  # pylint: disable=import-error, no-name-in-module
-from tests.test_utils import build_platform  # pylint: disable=import-error, no-name-in-module
+from tests.data import SauronQDevil
+from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="platform")

@@ -1,4 +1,5 @@
 """Tests for the SystemControl class."""
+
 import re
 from unittest.mock import MagicMock, patch
 
@@ -200,7 +201,7 @@ class TestMethods:
             assert value == 123
 
 
-class TestProperties:  # pylint: disable=too-few-public-methods
+class TestProperties:
     """Unit tests checking the SystemControl attributes and methods"""
 
     def test_instruments_property(self, system_control: SystemControl):

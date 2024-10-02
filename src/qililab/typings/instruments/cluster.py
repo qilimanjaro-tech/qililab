@@ -13,10 +13,11 @@
 # limitations under the License.
 
 """Class Pulsar"""
+
 import qblox_instruments
 
 from qililab.typings.instruments.device import Device
 
 
-class Cluster(qblox_instruments.Cluster, Device):  # pylint: disable=abstract-method
+class Cluster(qblox_instruments.Cluster, Device):
     """Typing class of the Cluster class defined by Qblox."""

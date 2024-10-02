@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Bus class."""
+
 from dataclasses import InitVar, dataclass
 
 from qpysequence import Sequence as QpySequence
@@ -63,7 +64,7 @@ class Bus:
         distortions: list[PulseDistortion]
         delay: int
 
-        def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
+        def __post_init__(self, platform_instruments: Instruments):  # type: ignore
             if isinstance(self.system_control, dict):
                 system_control_class = Factory.get(name=self.system_control.pop(RUNCARD.NAME))
                 self.system_control = system_control_class(
@@ -72,7 +73,9 @@ class Bus:
             super().__post_init__()
 
             self.distortions = [
-                PulseDistortion.from_dict(distortion) for distortion in self.distortions if isinstance(distortion, dict)  # type: ignore[arg-type]
+                PulseDistortion.from_dict(distortion)  # type: ignore[arg-type]
+                for distortion in self.distortions
+                if isinstance(distortion, dict)
             ]
 
     settings: BusSettings

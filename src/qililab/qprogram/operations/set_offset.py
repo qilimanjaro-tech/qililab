@@ -20,7 +20,7 @@ from qililab.yaml import yaml
 
 @yaml.register_class
 @dataclass(frozen=True)
-class SetOffset(Operation):  # pylint: disable=missing-class-docstring
+class SetOffset(Operation):
     bus: str
     offset_path0: float
     offset_path1: float | None

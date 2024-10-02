@@ -8,7 +8,6 @@ from IPython.testing.globalipapp import start_ipython
 
 import qililab as ql
 
-# pylint: disable=redefined-outer-name
 slurm_job_data_test = "slurm_job_data_test"
 
 

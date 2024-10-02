@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Waveform class."""
+
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -23,7 +24,7 @@ class Waveforms:
     """Waveform class that containg the I and Q modulated waveforms."""
 
     i: np.ndarray = field(default_factory=lambda: np.array([]))
-    q: np.ndarray = field(default_factory=lambda: np.array([]))  # pylint: disable=invalid-name
+    q: np.ndarray = field(default_factory=lambda: np.array([]))
 
     def add(self, imod: np.ndarray, qmod: np.ndarray):
         """Add i and q arrays to the waveforms.

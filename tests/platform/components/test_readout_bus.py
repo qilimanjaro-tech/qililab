@@ -1,4 +1,5 @@
 """Unittest for testing readout_bus class methods"""
+
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -44,10 +45,10 @@ def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, nu
     return PulseBusSchedule(timeline=timeline, port="test")
 
 
-class MockQcmQrmRF(DummyInstrument):  # pylint: disable=abstract-method
+class MockQcmQrmRF(DummyInstrument):
     """Returns a mock instance of QcmQrmRF"""
 
-    def __init__(self, name, qcm_qrm, parent=None, slot_idx=0):  # pylint: disable=unused-argument
+    def __init__(self, name, qcm_qrm, parent=None, slot_idx=0):
         super().__init__(name=name, gates=["dac1"])
 
         # local oscillator parameters

@@ -19,7 +19,7 @@ from qililab.qprogram.variable import Variable
 
 
 @dataclass(frozen=True)
-class Operation(Element):  # pylint: disable=missing-class-docstring
+class Operation(Element):
     def get_variables(self) -> set[Variable]:
         """Get a set of the variables used in operation, if any.
 

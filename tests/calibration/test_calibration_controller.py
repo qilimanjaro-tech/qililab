@@ -11,7 +11,7 @@ from qililab.data_management import build_platform
 from qililab.platform.platform import Platform
 
 # flake8: noqa
-# pylint: disable=protected-access
+
 
 #################################################################################
 #################################### SET UPS ####################################
@@ -362,7 +362,7 @@ class TestCalibrationController:
     ### TEST UPDATE PARAMETERS ###
     ##############################
 
-    @patch("qililab.calibration.calibration_controller.Platform.set_parameter")
+    @patch("qililab.platform.Platform.set_parameter")
     @patch("qililab.calibration.calibration_controller.save_platform")
     def test_update_parameters(self, mock_save_platform, mock_set_params, controller):
         """Test that the update parameters method, calls ``platform.set_parameter()`` and ``save_platform()``."""
