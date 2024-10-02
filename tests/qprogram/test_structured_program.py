@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from qililab import Domain
+from qililab.exceptions import VariableAllocated
 from qililab.qprogram.blocks import Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.structured_program import StructuredProgram
 from qililab.qprogram.variable import FloatVariable, IntVariable
@@ -101,6 +102,24 @@ class TestStructuredProgram:
         assert len(instance._body.elements) == 1
         assert instance._body.elements[0] is loop
         assert instance._active_block is instance._body
+
+    def test_loops_raise_error_if_variable_is_allocated(self, instance: StructuredProgram):
+        """Test loop method"""
+        variable = instance.variable(label="int_scalar", domain=Domain.Scalar, type=int)
+        with instance.for_loop(variable=variable, start=0, stop=10, step=1):
+            with pytest.raises(VariableAllocated):
+                with instance.for_loop(variable=variable, start=100, stop=110, step=1):
+                    pass
+            with pytest.raises(VariableAllocated):
+                with instance.loop(variable=variable, values=np.arange(10)):
+                    pass
+        with instance.loop(variable=variable, values=np.arange(10)):
+            with pytest.raises(VariableAllocated):
+                with instance.for_loop(variable=variable, start=100, stop=110, step=1):
+                    pass
+            with pytest.raises(VariableAllocated):
+                with instance.loop(variable=variable, values=np.arange(10)):
+                    pass
 
     def test_variable_method(self, instance: StructuredProgram):
         """Test variable method"""

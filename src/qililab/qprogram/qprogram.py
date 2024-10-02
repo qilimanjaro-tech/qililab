@@ -108,7 +108,7 @@ class QProgram(StructuredProgram):
                     if "UUID" not in str(attr_value):
                         string_elements.append(f"\t{attr_name}: {attr_value}\n")
                     else:
-                        string_elements.append(f"\t{attr_name}: None\n")
+                        string_elements.append(f"\t{attr_name}: None\n")  # pragma: no cover
 
                 if isinstance(element, Block):
                     # handle blocks
