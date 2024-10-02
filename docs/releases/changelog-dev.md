@@ -8,6 +8,9 @@
 
 ### Improvements
 
+- This update streamlines the project's linting and formatting by removing legacy tools such as pylint, flake8, isort, bandit, and black. These have been replaced with Ruff, a more efficient tool that handles both linting and formatting. All configuration settings have been consolidated into the pyproject.toml file, simplifying the project's configuration and maintenance. Additionally, the development dependencies in `dev-requirements.txt` have been updated to their latest versions, ensuring better compatibility and performance. Several rules from Ruff have also been implemented to improve code consistency and quality across the codebase.
+  [#813](https://github.com/qilimanjaro-tech/qililab/pull/813)
+
 - `platform.execute_experiment()` and the underlying `ExperimentExecutor` can now handle experiments with multiple qprograms and multiple measurements. Parallel loops are also supported in both experiment and qprogram. The structure of the HDF5 results file as well as the functionality of `ExperimentResults` class have been changed accordingly.
   [#796](https://github.com/qilimanjaro-tech/qililab/pull/796)
 
