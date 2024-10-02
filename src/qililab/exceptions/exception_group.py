@@ -15,7 +15,7 @@
 import sys
 
 # For Python 3.11+, we use ExceptionGroup; otherwise, we define a custom exception class
-if sys.version_info >= (3, 11):
+if sys.version_info >= (3, 11):  # pragma: no cover
     # Available natively in Python 3.11+
     from builtins import ExceptionGroup
 else:
