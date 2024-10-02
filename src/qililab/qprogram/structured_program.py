@@ -21,6 +21,7 @@ from qililab.qprogram.variable import Domain, FloatVariable, IntVariable, Variab
 from qililab.yaml import yaml
 
 
+@yaml.register_class
 class VariableInfo:
     def __init__(self) -> None:
         self.is_allocated: bool = False
