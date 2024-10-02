@@ -18,7 +18,7 @@ from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import ExecuteQProgram, GetParameter, SetParameter
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.structured_program import StructuredProgram
-from qililab.qprogram.variable import Domain, Variable
+from qililab.qprogram.variable import Domain
 from qililab.typings.enums import Parameter
 from qililab.yaml import yaml
 
@@ -91,7 +91,7 @@ class Experiment(StructuredProgram):
 
     def execute_qprogram(
         self,
-        qprogram: QProgram | Callable[[Variable, ...], QProgram],  # type: ignore
+        qprogram: QProgram | Callable[..., QProgram],  # type: ignore
         bus_mapping: dict[str, str] | None = None,
         calibration: Calibration | None = None,
         debug: bool = False,

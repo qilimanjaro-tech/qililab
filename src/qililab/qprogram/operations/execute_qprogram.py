@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 class ExecuteQProgram(Operation):
     def __init__(
         self,
-        qprogram: QProgram | Callable[[Variable, ...], QProgram],  # type: ignore[misc]
+        qprogram: QProgram | Callable[..., QProgram],  # type: ignore[misc]
         bus_mapping: dict[str, str] | None = None,
         calibration: Calibration | None = None,
         debug: bool = False,

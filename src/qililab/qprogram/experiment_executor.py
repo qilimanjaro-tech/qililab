@@ -358,16 +358,35 @@ class ExperimentExecutor:
                     qprogram_index = self._qprogram_execution_indices[element]
                     if isinstance(element.qprogram, LambdaType):
                         signature = inspect.signature(element.qprogram)
-                        call_parameters = {
-                            param.name: current_value_of_variable[param.default.uuid]
-                            for param in signature.parameters.values()
-                            if isinstance(param.default, Variable)
-                        }
-                        qprogram = element.qprogram(**call_parameters)
+                        call_parameters: dict[str, int | float] = {}
+                        deferred_parameters: dict[str, UUID] = {}
+
+                        # Iterate through parameters and separate the ones that have values and the ones that don't
+                        for param in signature.parameters.values():
+                            if isinstance(param.default, Variable):
+                                variable_value = current_value_of_variable[param.default.uuid]
+                                if variable_value is None:
+                                    # The variable doesn't have a value yet; defer binding
+                                    deferred_parameters[param.name] = param.default.uuid
+                                else:
+                                    # The variable has a current value; bind it immediately
+                                    call_parameters[param.name] = variable_value
+
+                        # Bind the values for known variables, and retrieve deferred ones when the lambda is executed
                         elements_operations.append(
-                            lambda operation=element, qprogram=qprogram, qprogram_index=qprogram_index: store_results(
+                            lambda operation=element,
+                            call_parameters=call_parameters,
+                            qprogram_index=qprogram_index: store_results(
                                 self.platform.execute_qprogram(
-                                    qprogram=qprogram,
+                                    qprogram=element.qprogram(
+                                        **{
+                                            **call_parameters,  # Bind the values that are known
+                                            **{
+                                                param_name: current_value_of_variable[uuid]
+                                                for param_name, uuid in deferred_parameters.items()
+                                            },  # Defer retrieving missing values
+                                        }
+                                    ),  # type: ignore
                                     bus_mapping=operation.bus_mapping,
                                     calibration=operation.calibration,
                                     debug=operation.debug,

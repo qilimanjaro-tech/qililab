@@ -57,6 +57,17 @@ def fixture_qprogram():
     return qp
 
 
+def get_qprogram_nshots_by_loop(nshots: int, qprogram: QProgram):
+    with qprogram.average(nshots):
+        pass
+    return qprogram
+
+
+def get_qprogram_gain_by_get_parameter(gain: float, qprogram: QProgram):
+    qprogram.set_gain(bus="readout_bus", gain=gain)
+    return qprogram
+
+
 @pytest.fixture(name="experiment")
 def fixture_experiment(qprogram: QProgram):
     """Fixture to create a mock Experiment."""
@@ -65,23 +76,29 @@ def fixture_experiment(qprogram: QProgram):
     bias = experiment.variable(label="Bias (mV)", domain=Domain.Voltage)
     frequency = experiment.variable(label="Frequency (Hz)", domain=Domain.Frequency)
     nshots = experiment.variable(label="nshots", domain=Domain.Scalar, type=int)
+    # Test SetParameter
     experiment.set_parameter(alias="drive_q0", parameter=Parameter.VOLTAGE, value=0.5)
     experiment.set_parameter(alias="drive_q1", parameter=Parameter.VOLTAGE, value=0.5)
     experiment.set_parameter(alias="drive_q2", parameter=Parameter.VOLTAGE, value=0.5)
-
+    # Test GetParameter returns a variable that can be reused
     gain = experiment.get_parameter(alias="flux_q0", parameter=Parameter.GAIN)
     experiment.set_parameter(alias="flux_q1", parameter=Parameter.GAIN, value=gain)
+    # Test inner loops
     with experiment.for_loop(bias, 0.0, 1.0, 0.5):
         experiment.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=bias)
         with experiment.loop(frequency, values=np.array([2e9, 3e9])):
             experiment.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=frequency)
             experiment.execute_qprogram(qprogram)
+    # Test parallel loops
     with experiment.parallel(loops=[ForLoop(bias, 0.0, 1.0, 0.5), Loop(frequency, values=np.array([2e9, 3e9, 4e9]))]):
         experiment.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=bias)
         experiment.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=frequency)
         experiment.execute_qprogram(qprogram)
+    # Test qprogram lambda with variable from loop
     with experiment.for_loop(nshots, 0, 3):
-        experiment.execute_qprogram(lambda nshots=nshots: qprogram)  # type: ignore
+        experiment.execute_qprogram(lambda nshots=nshots: get_qprogram_nshots_by_loop(nshots=nshots, qprogram=qprogram))  # type: ignore
+    # Test qprogram lambda with variable from GetParameter
+    experiment.execute_qprogram(lambda gain=gain: get_qprogram_gain_by_get_parameter(gain=gain, qprogram=qprogram))
 
     return experiment
 
@@ -135,10 +152,31 @@ class TestExperimentExecutor:
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
             # End of parallel loop
             # Start of nshots loop
-            call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
-            call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
-            call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
+            call.execute_qprogram(
+                qprogram=get_qprogram_nshots_by_loop(nshots=0, qprogram=qprogram),
+                bus_mapping=None,
+                calibration=None,
+                debug=False,
+            ),
+            call.execute_qprogram(
+                qprogram=get_qprogram_nshots_by_loop(nshots=1, qprogram=qprogram),
+                bus_mapping=None,
+                calibration=None,
+                debug=False,
+            ),
+            call.execute_qprogram(
+                qprogram=get_qprogram_nshots_by_loop(nshots=2, qprogram=qprogram),
+                bus_mapping=None,
+                calibration=None,
+                debug=False,
+            ),
             # End of nshots loop
+            call.execute_qprogram(
+                qprogram=get_qprogram_gain_by_get_parameter(gain=1.23, qprogram=qprogram),
+                bus_mapping=None,
+                calibration=None,
+                debug=False,
+            ),
         ]
 
         # If you want to ensure the exact sequence across all calls
