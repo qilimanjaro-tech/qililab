@@ -66,10 +66,12 @@ class TestStructuredProgram:
             assert isinstance(loop, Parallel)
             assert len(loop.loops) == 2
             assert instance._active_block is loop
+            assert all(instance._variables[loop.variable].is_allocated for loop in loop.loops)
         # __exit__
         assert len(instance._body.elements) == 1
         assert instance._body.elements[0] is loop
         assert instance._active_block is instance._body
+        assert all(not instance._variables[loop.variable].is_allocated for loop in loop.loops)
 
     def test_for_loop_method(self, instance: StructuredProgram):
         """Test loop method"""
@@ -83,10 +85,12 @@ class TestStructuredProgram:
             assert loop.stop == stop
             assert loop.step == step
             assert instance._active_block is loop
+            assert instance._variables[loop.variable].is_allocated
         # __exit__
         assert len(instance._body.elements) == 1
         assert instance._body.elements[0] is loop
         assert instance._active_block is instance._body
+        assert not instance._variables[loop.variable].is_allocated
 
     def test_loop_method(self, instance: StructuredProgram):
         """Test loop method"""
@@ -98,14 +102,17 @@ class TestStructuredProgram:
             assert loop.variable == variable
             assert np.array_equal(loop.values, values)
             assert instance._active_block is loop
+            assert instance._variables[loop.variable].is_allocated
         # __exit__
         assert len(instance._body.elements) == 1
         assert instance._body.elements[0] is loop
         assert instance._active_block is instance._body
+        assert not instance._variables[loop.variable].is_allocated
 
     def test_loops_raise_error_if_variable_is_allocated(self, instance: StructuredProgram):
         """Test loop method"""
         variable = instance.variable(label="int_scalar", domain=Domain.Scalar, type=int)
+        # test when ForLoop allocates variable
         with instance.for_loop(variable=variable, start=0, stop=10, step=1):
             with pytest.raises(VariableAllocated):
                 with instance.for_loop(variable=variable, start=100, stop=110, step=1):
@@ -113,12 +120,30 @@ class TestStructuredProgram:
             with pytest.raises(VariableAllocated):
                 with instance.loop(variable=variable, values=np.arange(10)):
                     pass
+            with pytest.raises(VariableAllocated):
+                with instance.parallel(loops=[Loop(variable=variable, values=np.arange(10))]):
+                    pass
+        # test when Loop allocates variable
         with instance.loop(variable=variable, values=np.arange(10)):
             with pytest.raises(VariableAllocated):
                 with instance.for_loop(variable=variable, start=100, stop=110, step=1):
                     pass
             with pytest.raises(VariableAllocated):
                 with instance.loop(variable=variable, values=np.arange(10)):
+                    pass
+            with pytest.raises(VariableAllocated):
+                with instance.parallel(loops=[Loop(variable=variable, values=np.arange(10))]):
+                    pass
+        # test when Parallel allocates variable
+        with instance.parallel(loops=[Loop(variable=variable, values=np.arange(10))]):
+            with pytest.raises(VariableAllocated):
+                with instance.for_loop(variable=variable, start=100, stop=110, step=1):
+                    pass
+            with pytest.raises(VariableAllocated):
+                with instance.loop(variable=variable, values=np.arange(10)):
+                    pass
+            with pytest.raises(VariableAllocated):
+                with instance.parallel(loops=[Loop(variable=variable, values=np.arange(10))]):
                     pass
 
     def test_variable_method(self, instance: StructuredProgram):
