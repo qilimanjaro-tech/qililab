@@ -68,6 +68,12 @@ def get_qprogram_gain_by_get_parameter(gain: float, qprogram: QProgram):
     return qprogram
 
 
+def get_qprogram_frequency_and_bias_by_loop(frequency: float, bias: float, qprogram: QProgram):
+    qprogram.set_frequency(bus="readout", frequency=frequency)
+    qprogram.set_gain(bus="readout", gain=bias)
+    return qprogram
+
+
 @pytest.fixture(name="experiment")
 def fixture_experiment(qprogram: QProgram):
     """Fixture to create a mock Experiment."""
@@ -77,28 +83,41 @@ def fixture_experiment(qprogram: QProgram):
     frequency = experiment.variable(label="Frequency (Hz)", domain=Domain.Frequency)
     nshots = experiment.variable(label="nshots", domain=Domain.Scalar, type=int)
     # Test SetParameter
-    experiment.set_parameter(alias="drive_q0", parameter=Parameter.VOLTAGE, value=0.5)
+    experiment.set_parameter(alias="drive_q0", parameter=Parameter.VOLTAGE, value=0.0)
     experiment.set_parameter(alias="drive_q1", parameter=Parameter.VOLTAGE, value=0.5)
-    experiment.set_parameter(alias="drive_q2", parameter=Parameter.VOLTAGE, value=0.5)
+    experiment.set_parameter(alias="drive_q2", parameter=Parameter.VOLTAGE, value=1.0)
+
     # Test GetParameter returns a variable that can be reused
     gain = experiment.get_parameter(alias="flux_q0", parameter=Parameter.GAIN)
+    # Reused in SetParameter
     experiment.set_parameter(alias="flux_q1", parameter=Parameter.GAIN, value=gain)
+    # Reused in ExecuteQProgram
+    experiment.execute_qprogram(lambda gain=gain: get_qprogram_gain_by_get_parameter(gain=gain, qprogram=qprogram))
+
     # Test inner loops
     with experiment.for_loop(bias, 0.0, 1.0, 0.5):
         experiment.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=bias)
         with experiment.loop(frequency, values=np.array([2e9, 3e9])):
             experiment.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=frequency)
             experiment.execute_qprogram(qprogram)
+
     # Test parallel loops
     with experiment.parallel(loops=[ForLoop(bias, 0.0, 1.0, 0.5), Loop(frequency, values=np.array([2e9, 3e9, 4e9]))]):
         experiment.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=bias)
         experiment.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=frequency)
         experiment.execute_qprogram(qprogram)
+
     # Test qprogram lambda with variable from loop
     with experiment.for_loop(nshots, 0, 3):
         experiment.execute_qprogram(lambda nshots=nshots: get_qprogram_nshots_by_loop(nshots=nshots, qprogram=qprogram))  # type: ignore
-    # Test qprogram lambda with variable from GetParameter
-    experiment.execute_qprogram(lambda gain=gain: get_qprogram_gain_by_get_parameter(gain=gain, qprogram=qprogram))
+
+    # Test qprogram lambda with two variables from loop
+    with experiment.parallel(loops=[ForLoop(bias, 0.0, 1.0, 0.5), Loop(frequency, values=np.array([2e9, 3e9, 4e9]))]):
+        experiment.execute_qprogram(
+            lambda frequency=frequency, bias=bias: get_qprogram_frequency_and_bias_by_loop(
+                frequency=frequency, bias=bias, qprogram=qprogram
+            )
+        )
 
     return experiment
 
@@ -117,12 +136,18 @@ class TestExperimentExecutor:
 
         # Check that platform methods were called in the correct order
         expected_calls = [
-            call.set_parameter(alias="drive_q0", parameter=Parameter.VOLTAGE, value=0.5, channel_id=None),
+            call.set_parameter(alias="drive_q0", parameter=Parameter.VOLTAGE, value=0.0, channel_id=None),
             call.set_parameter(alias="drive_q1", parameter=Parameter.VOLTAGE, value=0.5, channel_id=None),
-            call.set_parameter(alias="drive_q2", parameter=Parameter.VOLTAGE, value=0.5, channel_id=None),
-            # Check that get_parameter returns a variable with correct value
+            call.set_parameter(alias="drive_q2", parameter=Parameter.VOLTAGE, value=1.0, channel_id=None),
+            # Check that get_parameter returns a variable that can be reused
             call.get_parameter(alias="flux_q0", parameter=Parameter.GAIN, channel_id=None),
             call.set_parameter(alias="flux_q1", parameter=Parameter.GAIN, value=1.23, channel_id=None),
+            call.execute_qprogram(
+                qprogram=get_qprogram_gain_by_get_parameter(gain=1.23, qprogram=qprogram),
+                bus_mapping=None,
+                calibration=None,
+                debug=False,
+            ),
             # Start of nested loops
             call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.0, channel_id=None),
             call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=None),
@@ -151,7 +176,7 @@ class TestExperimentExecutor:
             call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=4e9, channel_id=None),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
             # End of parallel loop
-            # Start of nshots loop
+            # Start of nshots loop with lambda execution
             call.execute_qprogram(
                 qprogram=get_qprogram_nshots_by_loop(nshots=0, qprogram=qprogram),
                 bus_mapping=None,
@@ -171,12 +196,26 @@ class TestExperimentExecutor:
                 debug=False,
             ),
             # End of nshots loop
+            # Start of parallel loop with lambda execution
             call.execute_qprogram(
-                qprogram=get_qprogram_gain_by_get_parameter(gain=1.23, qprogram=qprogram),
+                qprogram=get_qprogram_frequency_and_bias_by_loop(frequency=2e9, bias=0.0, qprogram=qprogram),
                 bus_mapping=None,
                 calibration=None,
                 debug=False,
             ),
+            call.execute_qprogram(
+                qprogram=get_qprogram_frequency_and_bias_by_loop(frequency=3e9, bias=0.5, qprogram=qprogram),
+                bus_mapping=None,
+                calibration=None,
+                debug=False,
+            ),
+            call.execute_qprogram(
+                qprogram=get_qprogram_frequency_and_bias_by_loop(frequency=4e9, bias=1.0, qprogram=qprogram),
+                bus_mapping=None,
+                calibration=None,
+                debug=False,
+            ),
+            # End of parallel loop
         ]
 
         # If you want to ensure the exact sequence across all calls
