@@ -364,10 +364,12 @@ class ExperimentExecutor:
                         # Iterate through parameters and separate the ones that have values and the ones that don't
                         for param in signature.parameters.values():
                             if isinstance(param.default, Variable):
-                                variable_value = current_value_of_variable[param.default.uuid]
+                                variable_value = current_value_of_variable.get(param.default.uuid, None)
                                 if variable_value is None:
                                     # The variable doesn't have a value yet; defer binding
                                     deferred_parameters[param.name] = param.default.uuid
+                                    # Make sure key exists
+                                    current_value_of_variable[param.default.uuid] = None  # type: ignore[assignment]
                                 else:
                                     # The variable has a current value; bind it immediately
                                     call_parameters[param.name] = variable_value
@@ -378,7 +380,7 @@ class ExperimentExecutor:
                             call_parameters=call_parameters,
                             qprogram_index=qprogram_index: store_results(
                                 self.platform.execute_qprogram(
-                                    qprogram=element.qprogram(
+                                    qprogram=operation.qprogram(
                                         **{
                                             **call_parameters,  # Bind the values that are known
                                             **{
