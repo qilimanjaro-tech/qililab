@@ -100,7 +100,6 @@ def fixture_experiment(qprogram: QProgram):
         with experiment.loop(frequency, values=np.array([2e9, 3e9])):
             experiment.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=frequency)
             experiment.execute_qprogram(qprogram)
-
     # Test parallel loops
     with experiment.parallel(loops=[ForLoop(bias, 0.0, 1.0, 0.5), Loop(frequency, values=np.array([2e9, 3e9, 4e9]))]):
         experiment.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=bias)

@@ -80,5 +80,8 @@
 
 ### Bug fixes
 
-- Fix typo in ExceptionGroup import statement for python 3.11+
+- Fixed typo in ExceptionGroup import statement for python 3.11+
   [#808](https://github.com/qilimanjaro-tech/qililab/pull/808)
+
+- Fixed serialization/deserialization of lambda functions, mainly used in `experiment.execute_qprogram()` method. The fix depends on the `dill` library which is added as requirement.
+  [#815](https://github.com/qilimanjaro-tech/qililab/pull/815)
