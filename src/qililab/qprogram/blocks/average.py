@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
 
 from qililab.qprogram.blocks.block import Block
 from qililab.yaml import yaml
 
 
 @yaml.register_class
-@dataclass(frozen=True)
 class Average(Block):
-    shots: int
+    def __init__(self, shots: int) -> None:
+        super().__init__()
+        self.shots: int = shots

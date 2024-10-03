@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
 
 from qililab.qprogram.operations.operation import Operation
 from qililab.yaml import yaml
 
 
 @yaml.register_class
-@dataclass(frozen=True)
 class ResetPhase(Operation):
-    bus: str
+    def __init__(self, bus: str) -> None:
+        super().__init__()
+        self.bus: str = bus

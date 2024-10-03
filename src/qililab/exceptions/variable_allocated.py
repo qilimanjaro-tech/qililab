@@ -11,16 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from qililab.qprogram.variable import Variable
+
+"""VariableAllocated Exception class"""
 
 
-from qililab.qprogram.operations.operation import Operation
-from qililab.yaml import yaml
+class VariableAllocated(Exception):
+    """Exception raised when trying to allocate a variable in a loop that is already been allocated by another loop.
 
+    Args:
+        message (str): Optional message to be displayed
+    """
 
-@yaml.register_class
-class SetOffset(Operation):
-    def __init__(self, bus: str, offset_path0: float, offset_path1: float | None = None):
-        super().__init__()
-        self.bus: str = bus
-        self.offset_path0: float = offset_path0
-        self.offset_path1: float | None = offset_path1
+    def __init__(self, variable: Variable):
+        super().__init__(f"Cannot allocate variable {variable}. Variable is already allocated.")

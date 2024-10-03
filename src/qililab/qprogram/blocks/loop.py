@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
 
 import numpy as np
 
@@ -22,7 +21,8 @@ from qililab.yaml import yaml
 
 
 @yaml.register_class
-@dataclass(frozen=True)
 class Loop(Block):
-    variable: Variable
-    values: np.ndarray
+    def __init__(self, variable: Variable, values: np.ndarray) -> None:
+        super().__init__()
+        self.variable: Variable = variable
+        self.values: np.ndarray = values

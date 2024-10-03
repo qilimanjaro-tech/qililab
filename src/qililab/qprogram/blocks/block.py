@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from qililab.qprogram.element import Element
@@ -25,9 +24,10 @@ if TYPE_CHECKING:
 
 
 @yaml.register_class
-@dataclass(frozen=True)
 class Block(Element):
-    elements: list[Block | Operation] = field(default_factory=list, init=False)
+    def __init__(self) -> None:
+        super().__init__()
+        self.elements: list[Block | Operation] = []
 
     def append(self, element: Block | Operation):
         self.elements.append(element)

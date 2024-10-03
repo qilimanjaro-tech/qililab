@@ -12,13 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
 
 from qililab.qprogram.element import Element
 from qililab.qprogram.variable import Variable
 
 
-@dataclass(frozen=True)
 class Operation(Element):
     def get_variables(self) -> set[Variable]:
         """Get a set of the variables used in operation, if any.

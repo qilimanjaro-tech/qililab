@@ -12,15 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from qililab.qprogram.operations.operation import Operation
+from qililab.qprogram.variable import Variable
+from qililab.typings.enums import Parameter
 from qililab.yaml import yaml
 
 
 @yaml.register_class
-class SetOffset(Operation):
-    def __init__(self, bus: str, offset_path0: float, offset_path1: float | None = None):
+class GetParameter(Operation):
+    def __init__(self, variable: Variable, alias: str, parameter: Parameter, channel_id: int | None = None) -> None:
         super().__init__()
-        self.bus: str = bus
-        self.offset_path0: float = offset_path0
-        self.offset_path1: float | None = offset_path1
+        self.variable: Variable = variable
+        self.alias: str = alias
+        self.parameter: Parameter = parameter
+        self.channel_id: int | None = channel_id

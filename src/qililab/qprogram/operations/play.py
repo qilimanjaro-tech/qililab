@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
 
 from qililab.qprogram.operations.operation import Operation
 from qililab.qprogram.variable import Variable
@@ -21,11 +20,12 @@ from qililab.yaml import yaml
 
 
 @yaml.register_class
-@dataclass(frozen=True)
 class Play(Operation):
-    bus: str
-    waveform: Waveform | IQPair
-    wait_time: int | None = None  # TODO: remove this in clean fix
+    def __init__(self, bus: str, waveform: Waveform | IQPair, wait_time: int | None = None) -> None:
+        super().__init__()
+        self.bus: str = bus
+        self.waveform: Waveform | IQPair = waveform
+        self.wait_time: int | None = wait_time  # TODO: remove this in clean fix
 
     def get_waveforms(self) -> tuple[Waveform, Waveform | None]:
         """Get the waveforms.
@@ -60,8 +60,9 @@ class Play(Operation):
 
 
 @yaml.register_class
-@dataclass(frozen=True)
 class PlayWithCalibratedWaveform(Operation):
-    bus: str
-    waveform: str
-    wait_time: int | None = None
+    def __init__(self, bus: str, waveform: str, wait_time: int | None = None) -> None:
+        super().__init__()
+        self.bus: str = bus
+        self.waveform: str = waveform
+        self.wait_time: int | None = wait_time
