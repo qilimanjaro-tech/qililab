@@ -18,7 +18,7 @@ import numpy as np
 
 from qililab.qprogram import CrosstalkMatrix, FluxVector
 from qililab.settings.runcard import Runcard
-from qililab.waveforms import Arbitrary as ArbitraryWave
+from qililab.waveforms import Arbitrary
 
 
 class AnnealingProgram:
@@ -89,7 +89,7 @@ class AnnealingProgram:
 
     def get_waveforms(
         self, crosstalk_matrix: CrosstalkMatrix | None = None, minimum_clock_time: int = 1
-    ) -> dict[str, ArbitraryWave]:
+    ) -> dict[str, Arbitrary]:
         """Returns a dictionary containing (bus, waveform) for each flux control from the transpiled fluxes. `AnnealingProgram.transpile` should be run first. The waveform is an arbitrary waveform obtained from the transpiled fluxes.
 
         Args:
@@ -97,7 +97,7 @@ class AnnealingProgram:
             in the Calibration file obtained from experiments.
             minimum_clock_time [int]: minimum unit of clock time for the awg (in ns). Waveforms should be multiples of this. Defaults to 1, equivalent to 1ns resolution.
         Returns:
-            dict[str,ArbitraryWave]: Dictionary containing the waveform to be sent to each bus, with xtalk corrected
+            dict[str, Arbitrary]: Dictionary containing the waveform to be sent to each bus, with xtalk corrected
         """
 
         # Initialize maps for bus to flux and flux to bus translation
@@ -132,4 +132,4 @@ class AnnealingProgram:
             for bus, value in corrected_flux.vector.items():
                 annealing_waveforms[bus].append(value)
 
-        return {key: ArbitraryWave(np.array(value)) for key, value in annealing_waveforms.items()}
+        return {key: Arbitrary(np.array(value)) for key, value in annealing_waveforms.items()}

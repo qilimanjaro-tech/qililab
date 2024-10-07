@@ -15,6 +15,7 @@
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from qililab.qprogram.blocks import Block
 from qililab.waveforms import IQPair, Waveform
 from qililab.yaml import yaml
 
@@ -30,6 +31,7 @@ class Calibration:
         """Initialize a Calibration instance."""
         self.waveforms: dict[str, dict[str, Waveform | IQPair]] = {}
         self.weights: dict[str, dict[str, IQPair]] = {}
+        self.blocks: dict[str, Block] = {}
         self.crosstalk_matrix: CrosstalkMatrix | None = None
 
     def add_waveform(self, bus: str, name: str, waveform: Waveform | IQPair):
@@ -55,6 +57,15 @@ class Calibration:
         if bus not in self.weights:
             self.weights[bus] = {}
         self.weights[bus][name] = weights
+
+    def add_block(self, name: str, block: Block):
+        """Add a block.
+
+        Args:
+            name (str): The name of the block to add.
+            block (Block): The block to add.
+        """
+        self.blocks[name] = block
 
     def has_waveform(self, bus: str, name: str) -> bool:
         """Check if there is an associated waveform for the bus.
@@ -83,6 +94,17 @@ class Calibration:
         if bus not in self.weights or name not in self.weights[bus]:
             return False
         return True
+
+    def has_block(self, name: str) -> bool:
+        """Check if there is a block with the given name.
+
+        Args:
+            name (str): The name of the block to check.
+
+        Returns:
+            bool: True if there is a block with the given name, False otherwise.
+        """
+        return name in self.blocks
 
     def get_waveform(self, bus: str, name: str):
         """Retrieve waveform for the bus.
@@ -117,6 +139,22 @@ class Calibration:
         if bus not in self.weights or name not in self.weights[bus]:
             raise KeyError(f"The weights {name} do not exist for the bus {bus}.")
         return self.weights[bus][name]
+
+    def get_block(self, name: str):
+        """Retrieve the block with the given name.
+
+        Args:
+            name (str): The name of the block to retrieve.
+
+        Raises:
+            KeyError: If the block does not exist.
+
+        Returns:
+            Block: The block with the given name.
+        """
+        if name not in self.blocks:
+            raise KeyError(f"The block {name} do not exist.")
+        return self.blocks[name]
 
     def save_to(self, file: str):
         """Dump the current calibration data to a YAML file.

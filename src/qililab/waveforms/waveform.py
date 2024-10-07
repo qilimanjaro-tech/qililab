@@ -14,12 +14,12 @@
 
 """Waveform protocol class."""
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
 import numpy as np
 
 
-class Waveform:
+class Waveform(ABC):
     """Waveforms describes the pulses envelope's shapes. ``Waveform`` is their abstract base class.
 
     Every child of this interface needs to contain an `envelope` method.
