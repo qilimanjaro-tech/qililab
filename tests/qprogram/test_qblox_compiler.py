@@ -347,13 +347,13 @@ def fixture_multiple_play_operations_with_no_Q_waveform() -> QProgram:
 class TestQBloxCompiler:
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(
+        output = compiler.compile(
             qprogram=play_named_operation, bus_mapping={"drive": "drive_q0"}, calibration=calibration
         )
 
-        assert len(sequences) == 1
-        assert "drive_q0" in sequences
-        assert isinstance(sequences["drive_q0"], QPy.Sequence)
+        assert len(output.sequences) == 1
+        assert "drive_q0" in output.sequences
+        assert isinstance(output.sequences["drive_q0"], QPy.Sequence)
 
     def test_play_named_operation_raises_error_if_operations_not_in_calibration(self, play_named_operation: QProgram):
         calibration = Calibration()
