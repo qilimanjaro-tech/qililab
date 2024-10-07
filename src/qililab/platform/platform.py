@@ -711,7 +711,7 @@ class Platform:
                         qp_annealing.measure(bus=readout_bus, waveform=measurement_name, weights=weights)
                     else:
                         r_duration = calibration.get_waveform(bus=readout_bus, name=measurement_name).get_duration()
-                        weights_shape = Square(amplitude=1, duration=r_duration)
+                        weights_shape = Square(amplitude=1.0, duration=r_duration)
                         qp_annealing.measure(
                             bus=readout_bus, waveform=measurement_name, weights=IQPair(I=weights_shape, Q=weights_shape)
                         )
