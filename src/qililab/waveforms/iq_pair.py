@@ -20,7 +20,6 @@ from dataclasses import dataclass
 
 from qililab.qprogram.decorators import requires_domain
 from qililab.qprogram.variable import Domain
-from qililab.utils import DictSerializable
 from qililab.waveforms.drag_correction import DragCorrection
 from qililab.waveforms.gaussian import Gaussian
 from qililab.waveforms.waveform import Waveform
@@ -29,7 +28,7 @@ from qililab.yaml import yaml
 
 @dataclass
 @yaml.register_class
-class IQPair(DictSerializable):
+class IQPair:
     """IQPair dataclass, containing the 'in-phase' (I) and 'quadrature' (Q) parts of a signal."""
 
     I: Waveform

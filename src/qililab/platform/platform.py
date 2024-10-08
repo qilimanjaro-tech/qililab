@@ -859,9 +859,9 @@ class Platform:
                         sequences[bus_alias]._waveforms.modify(waveform.name, distortion.apply(waveform.data))
         if debug:
             with open("debug_qblox_execution.txt", "w", encoding="utf-8") as sourceFile:
-                for bus_alias in sequences:
+                for bus_alias, sequence in sequences.items():
                     print(f"Bus {bus_alias}:", file=sourceFile)
-                    print(str(sequences[bus_alias]._program), file=sourceFile)
+                    print(str(sequence._program), file=sourceFile)
                     print(file=sourceFile)
 
         # Upload sequences
