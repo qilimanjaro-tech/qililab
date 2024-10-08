@@ -72,6 +72,42 @@
 
   [#779](https://github.com/qilimanjaro-tech/qililab/pull/779)
 
+- The execution of `QProgram` has been split into two distinct steps: **compilation** and **execution**.
+
+  1. **Compilation**: Users can now compile a `QProgram` by calling:
+
+  ```python
+  platform.compile_qprogram(
+    qprogram: QProgram,
+    bus_mapping: dict[str, str] | None = None,
+    calibration: Calibration | None = None
+  )
+  ```
+
+  This method can be executed without being connected to any instruments. It returns either a `QbloxCompilationOutput` or a `QuantumMachinesCompilationOutput`, depending on the platform setup.
+
+  2. **Execution**: Once the compilation is complete, users can execute the resulting output by calling:
+
+  ```python
+  platform.execute_compilation_output(
+    output: QbloxCompilationOutput | QuantumMachinesCompilationOutput,
+    debug: bool = False
+  )
+  ```
+
+  If desired, both steps can still be combined into a single call using the existing method:
+
+  ```python
+  platform.execute_qprogram(
+    qprogram: QProgram,
+    bus_mapping: dict[str, str] | None = None,
+    calibration: Calibration | None = None,
+    debug: bool = False
+  )
+  ```
+
+  [#817](https://github.com/qilimanjaro-tech/qililab/pull/817)
+
 ### Breaking changes
 
 ### Deprecations / Removals
