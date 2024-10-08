@@ -13,11 +13,11 @@
 # limitations under the License.
 
 """MeasurementResult class."""
+
 from qililab.result.qprogram.measurement_result import MeasurementResult
 from qililab.yaml import yaml
 
 
-# pylint: disable=too-few-public-methods
 @yaml.register_class
 class QProgramResults:
     """Results from a single execution of QProgram."""

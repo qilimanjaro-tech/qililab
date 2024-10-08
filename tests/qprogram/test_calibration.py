@@ -4,7 +4,7 @@ import pytest
 
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
-from qililab.waveforms import Arbitrary, FlatTop, Gaussian, IQPair, Square
+from qililab.waveforms import IQPair, Square
 from qililab.yaml import yaml
 
 

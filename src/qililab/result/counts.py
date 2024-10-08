@@ -41,7 +41,7 @@ class Counts:
         """
         return self._counter
 
-    def as_dict(self):
+    def as_dict(self) -> dict[str, int]:
         """Dictionary representation of the Counts object
 
         Returns:

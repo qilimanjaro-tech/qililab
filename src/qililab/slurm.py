@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import ast
 import os
 from types import ModuleType
@@ -9,9 +23,6 @@ from submitit import AutoExecutor
 from qililab.config import logger
 
 num_files_to_keep = 500  # needs to be a multiple of 4 and 5
-
-
-# pylint: disable=too-many-locals
 
 
 def is_variable_used(code, variable):
@@ -89,7 +100,7 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
     # are imported inside the SLURM job)
     notebook_code = "\n".join(local_ns["In"]).split("\n")
     import_lines = [line for line in notebook_code if line.startswith(("import ", "from ")) and "slurm" not in line]
-    executable_code = "\n".join(import_lines + [cell])
+    executable_code = "\n".join([*import_lines, cell])
 
     # Create the executor that will be used to queue the SLURM job
     executor = AutoExecutor(folder=folder_path, cluster=execution_env)
@@ -114,7 +125,7 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
     # Define the function that will be queued as a SLURM job
     def function(code, variables):
         # Execute the code and return the output variable defined by the user
-        exec(code, variables)  # pylint: disable=exec-used # nosec
+        exec(code, variables)  # noqa: S102
         return variables[output]
 
     # Check if output variables are defined or used in the magic cell

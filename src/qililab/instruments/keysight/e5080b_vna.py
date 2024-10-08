@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """KeySight Vector Network Analyzer E5080B class."""
+
 import time
 from dataclasses import dataclass
 
@@ -28,7 +29,6 @@ from qililab.typings.instruments.vector_network_analyzer import VectorNetworkAna
 
 @InstrumentFactory.register
 class E5080B(VectorNetworkAnalyzer):
-
     """KeySight Vector Network Analyzer E5080B"""
 
     name = InstrumentName.KEYSIGHT_E5080B
@@ -203,7 +203,7 @@ class E5080B(VectorNetworkAnalyzer):
         """
         try:  # the VNA sometimes throws an error here, we just ignore it
             return self._get_sweep_mode() == "HOLD"
-        except Exception:  # pylint: disable=broad-except
+        except Exception:  # noqa: BLE001
             return False
 
     def release(self, channel=1):

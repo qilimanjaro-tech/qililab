@@ -2,11 +2,43 @@
 
 ### New features since last release
 
+- A new `GetParameter` operation has been added to the Experiment class, accessible via the `.get_parameter()` method. This allows users to dynamically retrieve parameters during experiment execution, which is particularly useful when some variables do not have a value at the time of experiment definition but are provided later through external operations. The operation returns a `Variable` that can be used seamlessly within `SetParameter` and `ExecuteQProgram`.
+
+  Example:
+
+  ```
+  experiment = Experiment()
+
+  # Get a parameter's value
+  amplitude = experiment.get_parameter(bus="drive_q0", parameter=Parameter.AMPLITUDE)
+
+  # The returned value is of type `Variable`. It's value will be resolved during execution.
+  # It can be used as usual in operations.
+
+  # Use the variable in a SetOperation.
+  experiment.set_parameter(bus="drive_q1", parameter=Parameter.AMPLITUDE, value=amplitude)
+
+  # Use the variable in an ExecuteQProgram with the lambda syntax.
+  def get_qprogram(amplitude: float, duration: int):
+    square_wf = Square(amplitude=amplitude, duration=duration)
+
+    qp = QProgram()
+    qp.play(bus="readout", waveform=square_wf)
+    return qp
+
+  experiment.execute_qprogram(lambda: amplitude=amplitude: get_qprogram(amplitude, 2000))
+  ```
+
+[#814](https://github.com/qilimanjaro-tech/qililab/pull/814)
+
 - Added offset set and get for quantum machines (both OPX+ and OPX1000). For hardware loops there is `qp.set_offset(bus: str, offset_path0: float, offset_path1: float | None)` where `offset_path0` is a mandatory field (for flux, drive and readout lines) and `offset_path1` is only used when changing the offset of buses that have to IQ lines (drive and readout). For software loops there is `platform.set_parameter(alias=bus_name, parameter=ql.Parameter.OFFSET_PARAMETER, value=offset_value)`. The possible arguments for `ql.Parameter` are: `DC_OFFSET` (flux lines), `OFFSET_I` (I lines for IQ buses), `OFFSET_Q` (Q lines for IQ buses), `OFFSET_OUT1` (output 1 lines for readout lines), `OFFSET_OUT2` (output 2 lines for readout lines).
 
 [#791](https://github.com/qilimanjaro-tech/qililab/pull/791)
 
 ### Improvements
+
+- Legacy linting and formatting tools such as pylint, flake8, isort, bandit, and black have been removed. These have been replaced with Ruff, a more efficient tool that handles both linting and formatting. All configuration settings have been consolidated into the `pyproject.toml` file, simplifying the project's configuration and maintenance. Integration config files like `pre-commit-config.yaml` and `.github/workflows/code_quality.yml` have been updated accordingly. Several rules from Ruff have also been implemented to improve code consistency and quality across the codebase. Additionally, the development dependencies in `dev-requirements.txt` have been updated to their latest versions, ensuring better compatibility and performance.
+  [#813](https://github.com/qilimanjaro-tech/qililab/pull/813)
 
 - `platform.execute_experiment()` and the underlying `ExperimentExecutor` can now handle experiments with multiple qprograms and multiple measurements. Parallel loops are also supported in both experiment and qprogram. The structure of the HDF5 results file as well as the functionality of `ExperimentResults` class have been changed accordingly.
   [#796](https://github.com/qilimanjaro-tech/qililab/pull/796)
@@ -48,5 +80,8 @@
 
 ### Bug fixes
 
-- Fix typo in ExceptionGroup import statement for python 3.11+
+- Fixed typo in ExceptionGroup import statement for python 3.11+
   [#808](https://github.com/qilimanjaro-tech/qililab/pull/808)
+
+- Fixed serialization/deserialization of lambda functions, mainly used in `experiment.execute_qprogram()` method. The fix depends on the `dill` library which is added as requirement.
+  [#815](https://github.com/qilimanjaro-tech/qililab/pull/815)

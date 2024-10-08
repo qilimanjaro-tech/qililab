@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Runcard class."""
+
 import ast
 import re
 from dataclasses import asdict, dataclass
@@ -25,8 +26,6 @@ from qililab.typings.enums import OperationTimingsCalculationMethod, Parameter, 
 from qililab.utils import nested_dataclass
 
 from .settings import Settings
-
-# pylint: disable=too-few-public-methods
 
 
 @nested_dataclass

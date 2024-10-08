@@ -13,12 +13,13 @@
 # limitations under the License.
 
 """Waveform protocol class."""
+
 from abc import abstractmethod
 
 import numpy as np
 
 
-class Waveform:  # pylint: disable=too-few-public-methods, disable=missing-class-docstring
+class Waveform:
     """Waveforms describes the pulses envelope's shapes. ``Waveform`` is their abstract base class.
 
     Every child of this interface needs to contain an `envelope` method.

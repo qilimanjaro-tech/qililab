@@ -1,4 +1,5 @@
 """This file tests the the ``InstrumentController`` class"""
+
 from unittest.mock import patch
 
 import pytest
@@ -45,4 +46,4 @@ class TestReadoutSystemControl:
         """
         name = system_control.name.value
         with pytest.raises(ValueError, match=f"The system control {name} doesn't have an AWG instrument."):
-            system_control.acquisition_delay_time  # pylint: disable=pointless-statement
+            system_control.acquisition_delay_time

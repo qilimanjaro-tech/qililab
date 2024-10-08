@@ -1,3 +1,17 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # mypy: disable-error-code="union-attr, arg-type"
 import inspect
 import os
@@ -14,7 +28,7 @@ from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeElapsedCo
 
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.experiment import Experiment
-from qililab.qprogram.operations import ExecuteQProgram, Measure, Operation, SetParameter
+from qililab.qprogram.operations import ExecuteQProgram, GetParameter, Measure, Operation, SetParameter
 from qililab.qprogram.variable import Variable
 from qililab.result.experiment_results_writer import (
     ExperimentMetadata,
@@ -39,7 +53,6 @@ class VariableInfo:
     values: np.ndarray
 
 
-# pylint: disable=too-few-public-methods
 class ExperimentExecutor:
     """Manages the execution of a quantum experiment.
 
@@ -97,11 +110,11 @@ class ExperimentExecutor:
         # Registry of all variables used in the experiment with their labels and values
         self._all_variables: dict = defaultdict(lambda: {"label": None, "values": {}})
 
-        # Mapping from each block's UUID to the list of variables associated with that block
-        self._variables_per_block: dict[UUID, list[VariableInfo]] = {}
+        # Mapping from each Block to the list of variables associated with that block
+        self._variables_per_block: dict[Block, list[VariableInfo]] = {}
 
-        # Mapping from each ExecuteQProgram operation's UUID to its execution index (order of execution)
-        self._qprogram_execution_indices: dict[UUID, int] = {}
+        # Mapping from each ExecuteQProgram operation to its execution index (order of execution)
+        self._qprogram_execution_indices: dict[ExecuteQProgram, int] = {}
 
         # Stack to keep track of variables in the experiment context (outside QPrograms)
         self._experiment_variables_stack: list[list[VariableInfo]] = []
@@ -147,7 +160,7 @@ class ExperimentExecutor:
                         traverse_qprogram(qprogram.body)
                     else:
                         traverse_qprogram(element.qprogram.body)
-                    self._qprogram_execution_indices[element.uuid] = self._qprogram_index
+                    self._qprogram_execution_indices[element] = self._qprogram_index
                     self._measurement_index = 0
                     self._qprogram_index += 1
 
@@ -200,11 +213,13 @@ class ExperimentExecutor:
                     for variable in sublist
                 ],
                 dims=[[variable.label for variable in sublist] for sublist in self._qprogram_variables_stack],
-                shape=tuple(
-                    len(sublist[0].values)
-                    for sublist in (self._experiment_variables_stack + self._qprogram_variables_stack)
-                )
-                + (2,),
+                shape=(
+                    *tuple(
+                        len(sublist[0].values)
+                        for sublist in self._experiment_variables_stack + self._qprogram_variables_stack
+                    ),
+                    2,
+                ),
                 shots=self._shots,
             )
 
@@ -224,7 +239,7 @@ class ExperimentExecutor:
         operations: list[Callable] = []
 
         # A mapping from block UUID to the index of the current value of its variable
-        loop_indices: dict[UUID, int] = {}
+        loop_indices: dict[Block, int] = {}
 
         # A mapping from variable UUID to current value of the variable
         current_value_of_variable: dict[UUID, int | float] = {}
@@ -234,8 +249,8 @@ class ExperimentExecutor:
             loop_operations: list[Callable] = []
 
             # Determine loop parameters based on the type of block
-            label = ",".join([variable.label for variable in self._variables_per_block[block.uuid]])
-            shape = self._variables_per_block[block.uuid][0].values.shape[-1]
+            label = ",".join([variable.label for variable in self._variables_per_block[block]])
+            shape = self._variables_per_block[block][0].values.shape[-1]
 
             # Create the progress bar for the loop
             def create_progress_bar():
@@ -244,7 +259,7 @@ class ExperimentExecutor:
                 task_ids[block.uuid] = loop_task_id  # Store the task ID associated with this loop block
 
                 # Track the index for this loop
-                loop_indices[block.uuid] = 0
+                loop_indices[block] = 0
 
                 return loop_task_id
 
@@ -260,10 +275,10 @@ class ExperimentExecutor:
 
             def advance_loop_index() -> None:
                 # Update the loop index
-                loop_indices[block.uuid] += 1
+                loop_indices[block] += 1
 
-            uuids = [variable.uuid for variable in self._variables_per_block[block.uuid]]
-            values = [variable.values for variable in self._variables_per_block[block.uuid]]
+            uuids = [variable.uuid for variable in self._variables_per_block[block]]
+            values = [variable.values for variable in self._variables_per_block[block]]
 
             for current_values in zip(*values):
                 for uuid, value in zip(uuids, current_values):
@@ -278,7 +293,7 @@ class ExperimentExecutor:
 
             def remove_progress_bar():
                 progress.remove_task(task_ids[block.uuid])
-                del loop_indices[block.uuid]
+                del loop_indices[block]
 
             loop_operations.append(remove_progress_bar)
 
@@ -289,29 +304,91 @@ class ExperimentExecutor:
             elements_operations: list[Callable] = []
 
             for element in elements:
+                if isinstance(element, GetParameter):
+                    # Set current value of the variable to None
+                    current_value_of_variable[element.variable.uuid] = None  # type: ignore[assignment]
+                    # Append a lambda that will call the `platform.get_parameter` method and assign the returned value to the variable
+                    elements_operations.append(
+                        lambda operation=element: current_value_of_variable.update(
+                            {
+                                operation.variable.uuid: self.platform.get_parameter(
+                                    alias=operation.alias,
+                                    parameter=operation.parameter,
+                                    channel_id=operation.channel_id,
+                                )
+                            }
+                        )
+                    )
                 if isinstance(element, SetParameter):
                     # Append a lambda that will call the `platform.set_parameter` method
-                    elements_operations.append(
-                        lambda alias=element.alias, parameter=element.parameter, value=(
-                            current_value_of_variable[element.value.uuid]
-                            if isinstance(element.value, Variable)
-                            else element.value
-                        ): self.platform.set_parameter(alias=alias, parameter=parameter, value=value)
-                    )
+                    if isinstance(element.value, Variable):
+                        if current_value_of_variable[element.value.uuid] is None:
+                            # Variable has no value and it will get it from a `GetOperation` in the future. Thus, don't bind `value` in lambda.
+                            elements_operations.append(
+                                lambda operation=element: self.platform.set_parameter(
+                                    alias=operation.alias,
+                                    parameter=operation.parameter,
+                                    value=current_value_of_variable[operation.value.uuid],
+                                    channel_id=operation.channel_id,
+                                )
+                            )
+                        else:
+                            # Variable has a value that was set from a loop. Thus, bind `value` in lambda with the current value of the variable.
+                            elements_operations.append(
+                                lambda operation=element,
+                                value=current_value_of_variable[element.value.uuid]: self.platform.set_parameter(
+                                    alias=operation.alias,
+                                    parameter=operation.parameter,
+                                    value=value,
+                                    channel_id=operation.channel_id,
+                                )
+                            )
+                    else:
+                        # Value is not a variable. Treat it as a normal Python type.
+                        elements_operations.append(
+                            lambda operation=element: self.platform.set_parameter(
+                                alias=operation.alias,
+                                parameter=operation.parameter,
+                                value=operation.value,
+                                channel_id=operation.channel_id,
+                            )
+                        )
 
                 if isinstance(element, ExecuteQProgram):
+                    qprogram_index = self._qprogram_execution_indices[element]
                     if isinstance(element.qprogram, LambdaType):
                         signature = inspect.signature(element.qprogram)
-                        call_parameters = {
-                            param.name: current_value_of_variable[param.default.uuid]
-                            for param in signature.parameters.values()
-                            if isinstance(param.default, Variable)
-                        }
-                        qprogram = element.qprogram(**call_parameters)
+                        call_parameters: dict[str, int | float] = {}
+                        deferred_parameters: dict[str, UUID] = {}
+
+                        # Iterate through parameters and separate the ones that have values and the ones that don't
+                        for param in signature.parameters.values():
+                            if isinstance(param.default, Variable):
+                                variable_value = current_value_of_variable.get(param.default.uuid, None)
+                                if variable_value is None:
+                                    # The variable doesn't have a value yet; defer binding
+                                    deferred_parameters[param.name] = param.default.uuid
+                                    # Make sure key exists
+                                    current_value_of_variable[param.default.uuid] = None  # type: ignore[assignment]
+                                else:
+                                    # The variable has a current value; bind it immediately
+                                    call_parameters[param.name] = variable_value
+
+                        # Bind the values for known variables, and retrieve deferred ones when the lambda is executed
                         elements_operations.append(
-                            lambda operation=element, qprogram=qprogram, qprogram_index=self._qprogram_execution_indices[element.uuid]: store_results(  # type: ignore[misc]
+                            lambda operation=element,
+                            call_parameters=call_parameters,
+                            qprogram_index=qprogram_index: store_results(
                                 self.platform.execute_qprogram(
-                                    qprogram=qprogram,
+                                    qprogram=operation.qprogram(
+                                        **{
+                                            **call_parameters,  # Bind the values that are known
+                                            **{
+                                                param_name: current_value_of_variable[uuid]
+                                                for param_name, uuid in deferred_parameters.items()
+                                            },  # Defer retrieving missing values
+                                        }
+                                    ),  # type: ignore
                                     bus_mapping=operation.bus_mapping,
                                     calibration=operation.calibration,
                                     debug=operation.debug,
@@ -322,7 +399,7 @@ class ExperimentExecutor:
                     else:
                         # Append a lambda that will call the `platform.execute_qprogram` method
                         elements_operations.append(
-                            lambda operation=element, qprogram_index=self._qprogram_execution_indices[element.uuid]: store_results(  # type: ignore[misc]
+                            lambda operation=element, qprogram_index=qprogram_index: store_results(
                                 self.platform.execute_qprogram(
                                     qprogram=operation.qprogram,
                                     bus_mapping=operation.bus_mapping,
@@ -341,10 +418,9 @@ class ExperimentExecutor:
 
         def store_results(qprogram_results: QProgramResults, qprogram_index: int):
             """Store the result in the correct location within the ExperimentResultsWriter."""
-            # Determine the index in the ExperimentResultsWriter based on current loop indices
+            # Determine the index based on current loop indices and store the results in the ExperimentResultsWriter
             for measurement_index, measurement_result in enumerate(qprogram_results.timeline):
-                indices = (qprogram_index, measurement_index) + tuple(index for _, index in loop_indices.items())
-                # Store the results in the ExperimentResultsWriter
+                indices = (qprogram_index, measurement_index, *tuple(index for _, index in loop_indices.items()))
                 self._results_writer[indices] = measurement_result.array.T  # type: ignore
 
         if isinstance(block, (Loop, ForLoop, Parallel)):
@@ -405,7 +481,7 @@ class ExperimentExecutor:
                 variable = VariableInfo(uuid=loop.variable.uuid, label=loop.variable.label, values=values)
                 variables[loop.variable.uuid] = variable
 
-        self._variables_per_block[block.uuid] = list(variables.values())
+        self._variables_per_block[block] = list(variables.values())
 
         # Update all_variables registry
         for variable in variables.values():
@@ -429,9 +505,7 @@ class ExperimentExecutor:
         # Create the directories if they don't exist
         os.makedirs(folder, exist_ok=True)
 
-        path = os.path.join(folder, file)
-
-        return path
+        return os.path.join(folder, file)
 
     def execute(self) -> str:
         """

@@ -1,5 +1,5 @@
 """Tests for the SequencerQCM class."""
-# pylint: disable=protected-access
+
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -151,7 +151,7 @@ class TestSequencer:
         # swapped waveforms should have Q component all zeros
         assert np.all(waveforms[waveforms_keys[1]]["data"]) == 0
         # swapped waveforms should have Q component equal to gaussian pulse envelope
-        assert np.alltrue(envelope == waveforms[waveforms_keys[0]]["data"])
+        assert np.all(envelope == waveforms[waveforms_keys[0]]["data"])
 
     def test_generate_waveforms_multiple_pulses(self, sequencer, pulse_bus_schedule_repeated_pulses: PulseBusSchedule):
         """Unit tests for _generate_waveforms method with repeated pulses"""

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Square waveform."""
+
 import numpy as np
 
 from qililab.qprogram.decorators import requires_domain
@@ -23,7 +24,7 @@ from .waveform import Waveform
 
 
 @yaml.register_class
-class Square(Waveform):  # pylint: disable=too-few-public-methods
+class Square(Waveform):
     """Square (rectangular) waveform. Given by a constant height line.
 
     Args:

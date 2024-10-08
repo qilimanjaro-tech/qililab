@@ -160,7 +160,7 @@ def save_platform(path: str, platform: Platform) -> str:
         Qililab will use the name of the platform to create the YAML file. If ``platform.name == "galadriel"``, a file
         will be created in ``examples/runcards/galadriel.yml``.
     """
-    if not (path.endswith(".yml") or path.endswith(".yaml")):
+    if not (path.endswith((".yml", ".yaml"))):
         new_path = Path(path) / f"{platform.name}.yml"
     else:
         new_path = Path(path)
@@ -185,12 +185,12 @@ def build_platform(runcard: str | dict, new_drivers: bool = False) -> Platform:
     .. code-block:: python3
 
         {
-            "name": name,                                           # str
-            "gates_settings": gates_settings,                       # dict
-            "chip": chip,                                           # dict
-            "buses": buses,                                         # list[dict]
-            "instruments": instruments,                             # list[dict]
-            "instrument_controllers": instrument_controllers        # list[dict]
+            "name": name,  # str
+            "gates_settings": gates_settings,  # dict
+            "chip": chip,  # dict
+            "buses": buses,  # list[dict]
+            "instruments": instruments,  # list[dict]
+            "instrument_controllers": instrument_controllers,  # list[dict]
         }
 
     which contains the information the :class:`.Platform` class uses to connect, setup and control the actual chip, buses and instruments of the laboratory.

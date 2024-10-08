@@ -13,8 +13,9 @@
 # limitations under the License.
 
 """Class Quantum Machines Manager"""
+
 from qililab.typings.instruments.device import Device
 
 
-class QMMDriver(Device):  # pylint: disable=too-few-public-methods
+class QMMDriver(Device):
     """Typing class of the Quantum Machine Manager class defined by Quantum Machines."""

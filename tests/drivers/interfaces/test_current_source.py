@@ -1,5 +1,4 @@
-""" Test empty abstract class, VoltageSource"""
-from qililab.drivers.interfaces import VoltageSource
+"""Test empty abstract class, VoltageSource"""
 
 
 def test_for_imports():

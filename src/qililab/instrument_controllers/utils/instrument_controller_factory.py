@@ -13,8 +13,9 @@
 # limitations under the License.
 
 """InstrumentFactory class."""
+
 from enum import Enum
-from typing import TypeVar
+from typing import ClassVar, TypeVar
 
 from qililab.instrument_controllers.instrument_controller import InstrumentController
 
@@ -24,7 +25,7 @@ Element = TypeVar("Element", bound=InstrumentController)
 class InstrumentControllerFactory:
     """Hash table that loads a specific class given an object's name."""
 
-    handlers: dict[str, type[InstrumentController]] = {}
+    handlers: ClassVar[dict[str, type[InstrumentController]]] = {}
 
     @classmethod
     def register(cls, handler_cls: type[Element]) -> type[InstrumentController]:

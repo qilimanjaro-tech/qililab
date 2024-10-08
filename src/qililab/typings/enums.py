@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Enum classes"""
+
 from enum import Enum
 
 from qililab.yaml import yaml
@@ -93,7 +94,7 @@ class GateName(str, Enum):
         * Park
     """
 
-    I = "I"  # noqa: E741
+    I = "I"
     X = "X"
     RX = "RX"
     Y = "Y"
@@ -285,7 +286,7 @@ class Parameter(str, Enum):
     RAMPING_ENABLED = "ramping_enabled"
     RAMPING_RATE = "ramp_rate"
     SPAN = "span"
-    LOW_PASS_FILTER = "low_pass_filter"  # nosec
+    LOW_PASS_FILTER = "low_pass_filter"  # noqa: S105
     SCATTERING_PARAMETER = "scattering_parameter"
     FREQUENCY_SPAN = "frequency_span"
     FREQUENCY_CENTER = "frequency_center"
@@ -467,7 +468,7 @@ class Line(str, Enum):
     FEEDLINE_OUTPUT = "feedline_output"
 
 
-class Qubits(str, Enum):  # pylint: disable=missing-class-docstring
+class Qubits(str, Enum):
     ANY = "any"
     ONE = "one"
     TWO = "two"
@@ -487,7 +488,7 @@ class OperationName(str, Enum):
         * BARRIER
     """
 
-    RXY = "Rxy"  # noqa: E741
+    RXY = "Rxy"
     R180 = "R180"
     X = "X"
     CPHASE = "CPhase"
@@ -502,12 +503,12 @@ class OperationName(str, Enum):
     SQUARE = "Square"
 
 
-class OperationTimingsCalculationMethod(str, Enum):  # pylint: disable=missing-class-docstring
+class OperationTimingsCalculationMethod(str, Enum):
     AS_SOON_AS_POSSIBLE = "as_soon_as_possible"
     AS_LATE_AS_POSSIBLE = "as_late_as_possible"
 
 
-class ResetMethod(str, Enum):  # pylint: disable=missing-class-docstring
+class ResetMethod(str, Enum):
     PASSIVE = "passive"
     ACTIVE = "active"
 

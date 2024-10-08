@@ -1,8 +1,5 @@
 import os
-from collections import deque
-from itertools import product
 
-import numpy as np
 import pytest
 
 from qililab.qprogram.experiment import Experiment
@@ -12,12 +9,11 @@ from qililab.qprogram.variable import Domain
 from qililab.typings.enums import Parameter
 from qililab.utils.serialization import deserialize, deserialize_from, serialize, serialize_to
 from qililab.waveforms import IQPair, Square
-from tests.qprogram.test_structured_program import (  # pylint: disable=no-name-in-module, import-error
+from tests.qprogram.test_structured_program import (
     TestStructuredProgram,
 )
 
 
-# pylint: disable=maybe-no-member, protected-access
 class TestExperiment(TestStructuredProgram):
     """Unit tests checking the QProgram attributes and methods"""
 

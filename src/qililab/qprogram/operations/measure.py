@@ -12,22 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
-
 from qililab.qprogram.operations.operation import Operation
 from qililab.waveforms import IQPair, Waveform
 from qililab.yaml import yaml
 
 
 @yaml.register_class
-@dataclass(frozen=True)
-class Measure(Operation):  # pylint: disable=missing-class-docstring
-    bus: str
-    waveform: IQPair
-    weights: IQPair
-    save_adc: bool = False
-    rotation: float | None = None
-    demodulation: bool = True
+class Measure(Operation):
+    def __init__(
+        self,
+        bus: str,
+        waveform: IQPair,
+        weights: IQPair,
+        save_adc: bool = False,
+        rotation: float | None = None,
+        demodulation: bool = True,
+    ) -> None:
+        super().__init__()
+        self.bus: str = bus
+        self.waveform: IQPair = waveform
+        self.weights: IQPair = weights
+        self.save_adc: bool = save_adc
+        self.rotation: float | None = rotation
+        self.demodulation: bool = demodulation
 
     def get_waveforms(self) -> tuple[Waveform, Waveform]:
         """Get the waveforms.
@@ -41,31 +48,60 @@ class Measure(Operation):  # pylint: disable=missing-class-docstring
 
 
 @yaml.register_class
-@dataclass(frozen=True)
-class MeasureWithCalibratedWaveform(Operation):  # pylint: disable=missing-class-docstring
-    bus: str
-    waveform: str
-    weights: IQPair
-    save_adc: bool = False
-    rotation: float | None = None
-    demodulation: bool = True
+class MeasureWithCalibratedWaveform(Operation):
+    def __init__(
+        self,
+        bus: str,
+        waveform: str,
+        weights: IQPair,
+        save_adc: bool = False,
+        rotation: float | None = None,
+        demodulation: bool = True,
+    ) -> None:
+        super().__init__()
+        self.bus: str = bus
+        self.waveform: str = waveform
+        self.weights: IQPair = weights
+        self.save_adc: bool = save_adc
+        self.rotation: float | None = rotation
+        self.demodulation: bool = demodulation
 
 
-@dataclass(frozen=True)
-class MeasureWithCalibratedWeights(Operation):  # pylint: disable=missing-class-docstring
-    bus: str
-    waveform: IQPair
-    weights: str
-    save_adc: bool = False
-    rotation: float | None = None
-    demodulation: bool = True
+@yaml.register_class
+class MeasureWithCalibratedWeights(Operation):
+    def __init__(
+        self,
+        bus: str,
+        waveform: IQPair,
+        weights: str,
+        save_adc: bool = False,
+        rotation: float | None = None,
+        demodulation: bool = True,
+    ) -> None:
+        super().__init__()
+        self.bus: str = bus
+        self.waveform: IQPair = waveform
+        self.weights: str = weights
+        self.save_adc: bool = save_adc
+        self.rotation: float | None = rotation
+        self.demodulation: bool = demodulation
 
 
-@dataclass(frozen=True)
-class MeasureWithCalibratedWaveformWeights(Operation):  # pylint: disable=missing-class-docstring
-    bus: str
-    waveform: str
-    weights: str
-    save_adc: bool = False
-    rotation: float | None = None
-    demodulation: bool = True
+@yaml.register_class
+class MeasureWithCalibratedWaveformWeights(Operation):
+    def __init__(
+        self,
+        bus: str,
+        waveform: str,
+        weights: str,
+        save_adc: bool = False,
+        rotation: float | None = None,
+        demodulation: bool = True,
+    ) -> None:
+        super().__init__()
+        self.bus: str = bus
+        self.waveform: str = waveform
+        self.weights: str = weights
+        self.save_adc: bool = save_adc
+        self.rotation: float | None = rotation
+        self.demodulation: bool = demodulation
