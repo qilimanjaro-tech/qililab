@@ -13,12 +13,13 @@
 # limitations under the License.
 
 """Class Pulsar"""
+
 import qblox_instruments
 
 from qililab.typings.instruments.device import Device
 
 
-class Pulsar(qblox_instruments.Pulsar, Device):  # pylint: disable=abstract-method
+class Pulsar(qblox_instruments.Pulsar, Device):
     """Typing class of the Pulsar class defined by Qblox."""
 
     def module_type(self) -> qblox_instruments.InstrumentType:

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Automatic-calibration Node module, which works with notebooks as nodes."""
+
 import json
 import logging
 import os
@@ -28,7 +29,7 @@ from qililab.config import logger
 logger_output_start = "RAND_INT:47102512880765720413 - OUTPUTS: "
 
 
-class CalibrationNode:  # pylint: disable=too-many-instance-attributes
+class CalibrationNode:
     """Automatic calibration Node class representing a node in the calibration graph.
 
     The calibration graph represents a calibration procedure, where each node represents a step of this calibration procedure. **Each of these steps consists of:**
@@ -128,7 +129,6 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                 second = CalibrationNode(
                     nb_path="notebooks/second.ipynb",
                     qubit_index=qubit,
-
                     sweep_interval=np.arange(start=0, stop=19, step=1),
                 )
                 nodes[second.node_id] = second
@@ -140,7 +140,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             controller = CalibrationController(node_sequence=nodes, calibration_graph=G, runcard=path_runcard)
 
             ### WORKFLOW TO DO:
-            controller.maintain(nodes["second_q1"]) # maintain second node for qubit 1
+            controller.maintain(nodes["second_q1"])  # maintain second node for qubit 1
 
         .. note::
 
@@ -159,14 +159,14 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
                 import numpy as np
 
-                qubit=0
+                qubit = 0
 
                 # Sweep interval:
                 sweep_interval = np.arange(start=0, stop=19, step=1)
 
                 # Extra parameters for this concrete notebook:
-                param1=0
-                param2=0
+                param1 = 0
+                param2 = 0
                 ...
 
         |
@@ -202,8 +202,8 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
             .. code-block:: python
 
-                def fit(xdata, results):
-                    ...
+                def fit(xdata, results): ...
+
 
                 fitted_values, x_data, y_data, figure = fit(xdata=sweep_interval, results=results)
                 plt.show()
@@ -218,8 +218,14 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
 
                 export_nb_outputs(
                     {
-                        "platform_parameters": [(param_name0, fitted_values[0], bus_alias0, qubit), (param_name1, fitted_values[1], bus_alias1, qubit)],
-                        "fidelities": [(qubit, "fidelity1", 0.9), (qubit, "fidelity2", 0.95)]  # Fidelities in the output dictionary are optional.
+                        "platform_parameters": [
+                            (param_name0, fitted_values[0], bus_alias0, qubit),
+                            (param_name1, fitted_values[1], bus_alias1, qubit),
+                        ],
+                        "fidelities": [
+                            (qubit, "fidelity1", 0.9),
+                            (qubit, "fidelity2", 0.95),
+                        ],  # Fidelities in the output dictionary are optional.
                     }
                 )
 
@@ -357,7 +363,7 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             raise KeyboardInterrupt(f"Interrupted automatic calibration notebook execution of {self.nb_path}") from exc
 
         # When notebook execution fails, generate error folder and move there the notebook:
-        except Exception as exc:  # pylint: disable = broad-exception-caught
+        except Exception as exc:
             if output_path in [entry.path for entry in os.scandir(os.getcwd())]:
                 timestamp = datetime.timestamp(datetime.now())
                 error_path = self._create_notebook_datetime_path(
@@ -369,18 +375,18 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
                     str(exc),
                     error_path,
                 )
-                # pylint: disable = broad-exception-raised
+
                 raise Exception(
-                    f"Aborting execution. Exception {str(exc)} during automatic calibration notebook execution, trace of the error can be found in {error_path}"
+                    f"Aborting execution. Exception {exc!s} during automatic calibration notebook execution, trace of the error can be found in {error_path}"
                 ) from exc
 
             logger.error(
                 "Aborting execution. Exception %s during automatic calibration, expected error execution file to be created but it did not",
                 str(exc),
             )
-            # pylint: disable = broad-exception-raised
+
             raise Exception(
-                f"Aborting execution. Exception {str(exc)} during automatic calibration, expected error execution file to be created but it did not"
+                f"Aborting execution. Exception {exc!s} during automatic calibration, expected error execution file to be created but it did not"
             ) from exc
 
     @staticmethod
@@ -472,17 +478,16 @@ class CalibrationNode:  # pylint: disable=too-many-instance-attributes
             tuple[str, str]: A tuple containing the notebook name and its folder.
         """
         # Create qubit_string to add:
-        # fmt: off
         qubit_str = (
-            f"_q{str(self.qubit_index)}"
+            f"_q{self.qubit_index!s}"
             if isinstance(self.qubit_index, int)
             else "_" + "".join(f"q{q}" for q in self.qubit_index)
             if isinstance(self.qubit_index, list)
             else ""
-        )  # fmt: on
+        )
 
         # Create distinguish_string to differentiate multiple calls of the same node:
-        distinguish_str = f"_{str(self.node_distinguisher)}" if self.node_distinguisher is not None else ""
+        distinguish_str = f"_{self.node_distinguisher!s}" if self.node_distinguisher is not None else ""
 
         # Remove .ipynb from end if it has one, and separate the folder and name with the last "/":
         path_list = original_path.split(".ipynb")[0].split("/")
@@ -575,7 +580,7 @@ def export_nb_outputs(outputs: dict) -> None:
         outputs (dict): Outputs from the notebook to export into the automatic calibration workflow.
     """
     outputs = _json_serialize(outputs)
-    print(f"{logger_output_start}{json.dumps(outputs)}")
+    print(f"{logger_output_start}{json.dumps(outputs)}")  # noqa: T201
 
 
 def _json_serialize(obj: Any):
@@ -599,7 +604,7 @@ def _json_serialize(obj: Any):
     if isinstance(obj, np.floating):
         return float(obj)
 
-    if isinstance(obj, (complex, np.complex_, np.complex64, np.complex128)):
+    if isinstance(obj, (complex, np.complex128, np.complex64, np.complex128)):
         return {"real": float(obj.real), "imag": float(obj.imag)}
 
     if isinstance(obj, np.bool_):

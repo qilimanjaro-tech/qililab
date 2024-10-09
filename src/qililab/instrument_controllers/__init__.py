@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Instrument Controllers module."""
+"""Instrument Controllers module."""
 
 from .instrument_controller import InstrumentController
 from .instrument_controllers import InstrumentControllers
@@ -26,3 +26,21 @@ from .single_instrument_controller import SingleInstrumentController
 from .utils import InstrumentControllerFactory
 from .vector_network_analyzer import E5071BController, E5080BController
 from .yokogawa import GS200Controller
+
+__all__ = [
+    "E5071BController",
+    "E5080BController",
+    "GS200Controller",
+    "InstrumentController",
+    "InstrumentControllerFactory",
+    "InstrumentControllers",
+    "Keithley2600Controller",
+    "MiniCircuitsController",
+    "QDevilQDac2Controller",
+    "QbloxClusterController",
+    "QbloxPulsarController",
+    "QbloxSPIRackController",
+    "QuantumMachinesClusterController",
+    "SGS100AController",
+    "SingleInstrumentController",
+]

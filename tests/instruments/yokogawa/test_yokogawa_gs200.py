@@ -1,4 +1,5 @@
 """Tests for the SGS100A class."""
+
 import copy
 from unittest.mock import MagicMock, patch
 
@@ -9,8 +10,8 @@ from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.yokogawa.gs200 import GS200
 from qililab.platform import Platform
 from qililab.typings.enums import Parameter, SourceMode
-from tests.data import SauronYokogawa  # pylint: disable=no-name-in-module, import-error
-from tests.test_utils import build_platform  # pylint: disable=no-name-in-module, import-error
+from tests.data import SauronYokogawa
+from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="platform")

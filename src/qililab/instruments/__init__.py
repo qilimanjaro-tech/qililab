@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """__init__.py"""
+
 from .awg import AWG
 from .awg_analog_digital_converter import AWGAnalogDigitalConverter
 from .instrument import Instrument, ParameterNotFound
@@ -22,3 +23,16 @@ from .quantum_machines import QuantumMachinesCluster
 from .rohde_schwarz import SGS100A
 from .signal_generator import SignalGenerator
 from .utils import InstrumentFactory
+
+__all__ = [
+    "AWG",
+    "SGS100A",
+    "AWGAnalogDigitalConverter",
+    "Attenuator",
+    "Instrument",
+    "InstrumentFactory",
+    "Instruments",
+    "ParameterNotFound",
+    "QuantumMachinesCluster",
+    "SignalGenerator",
+]

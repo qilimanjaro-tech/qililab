@@ -1,4 +1,6 @@
+# mypy: disable-error-code="attr-defined"
 """Test for the VectorNetworkAnalyzer E5080B class."""
+
 import copy
 from unittest.mock import MagicMock, patch
 
@@ -351,7 +353,7 @@ class TestE5080B:
         assert not output
         with pytest.raises(Exception) as exc:
             e5080b.ready()
-            assert exc == Exception
+            assert exc is Exception
 
     def test_release_method(self, e5080b: E5080B):
         """Test release method"""

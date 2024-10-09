@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Quantum Machines Manager class."""
+
 import os
 from dataclasses import dataclass
 from typing import Any, cast
@@ -407,9 +408,9 @@ class QuantumMachinesCluster(Instrument):
     _config: DictQuaConfig
     _octave_config: QmOctaveConfig | None = None
     _is_connected_to_qm: bool = False
-    _pending_set_intermediate_frequency: dict[str, float] = {}
     _config_created: bool = False
-    _compiled_program_cache: dict[str, str] = {}
+    _pending_set_intermediate_frequency: dict[str, float] = {}  # noqa: RUF012
+    _compiled_program_cache: dict[str, str] = {}  # noqa: RUF012
 
     @property
     def config(self) -> DictQuaConfig:
@@ -525,8 +526,13 @@ class QuantumMachinesCluster(Instrument):
             out_oct_port = element["rf_inputs"]["port"]
 
             octave = next((octave for octave in self.settings.octaves if octave["name"] == octave_name), None)
-            octave_port = next(
-                (octave_port for octave_port in octave["rf_outputs"] if octave_port["port"] == out_oct_port), None  # type: ignore[index]
+            octave_port = (
+                next(
+                    (octave_port for octave_port in octave["rf_outputs"] if octave_port["port"] == out_oct_port),
+                    None,
+                )
+                if octave
+                else None
             )
 
             connection = "i_connection" if key == "I" else "q_connection"
@@ -551,9 +557,7 @@ class QuantumMachinesCluster(Instrument):
 
         return (con_name, con_port, con_fem)
 
-    def set_parameter_of_bus(  # pylint: disable=too-many-locals, too-many-statements  # noqa: C901
-        self, bus: str, parameter: Parameter, value: float | str | bool
-    ) -> None:
+    def set_parameter_of_bus(self, bus: str, parameter: Parameter, value: float | str | bool) -> None:
         """Sets the parameter of the instrument into the cache (runtime dataclasses).
 
         And if connection to instruments is established, then to the instruments as well.
@@ -737,7 +741,7 @@ class QuantumMachinesCluster(Instrument):
 
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}.")
 
-    def get_parameter_of_bus(self, bus: str, parameter: Parameter) -> float | str | bool | tuple:  # noqa: C901
+    def get_parameter_of_bus(self, bus: str, parameter: Parameter) -> float | str | bool | tuple:
         """Gets the value of a parameter.
 
         Args:

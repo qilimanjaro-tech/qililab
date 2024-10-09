@@ -13,5 +13,8 @@
 # limitations under the License.
 
 """__init__.py"""
+
 from .instrument_factory import InstrumentFactory
 from .instrument_reference import InstrumentReference
+
+__all__ = ["InstrumentFactory", "InstrumentReference"]

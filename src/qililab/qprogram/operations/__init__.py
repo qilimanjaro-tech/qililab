@@ -14,6 +14,7 @@
 
 from .acquire import Acquire, AcquireWithCalibratedWeights
 from .execute_qprogram import ExecuteQProgram
+from .get_parameter import GetParameter
 from .measure import (
     Measure,
     MeasureWithCalibratedWaveform,
@@ -31,3 +32,26 @@ from .set_parameter import SetParameter
 from .set_phase import SetPhase
 from .sync import Sync
 from .wait import Wait
+
+__all__ = [
+    "Acquire",
+    "AcquireWithCalibratedWeights",
+    "ExecuteQProgram",
+    "GetParameter",
+    "Measure",
+    "MeasureWithCalibratedWaveform",
+    "MeasureWithCalibratedWaveformWeights",
+    "MeasureWithCalibratedWeights",
+    "Operation",
+    "Play",
+    "PlayWithCalibratedWaveform",
+    "ResetPhase",
+    "SetFrequency",
+    "SetGain",
+    "SetMarkers",
+    "SetOffset",
+    "SetParameter",
+    "SetPhase",
+    "Sync",
+    "Wait",
+]

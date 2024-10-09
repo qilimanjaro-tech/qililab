@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Two-Step pulse shape."""
+
 from copy import deepcopy
 from dataclasses import dataclass
 
@@ -34,6 +35,7 @@ class TwoStep(PulseShape):
         .. code-block:: python
 
             from qililab.pulse.pulse_shape import TwoStep
+
             two_step_envelope = TwoStep().envelope(amplitude=X, duration=50)
     """
 
@@ -54,8 +56,7 @@ class TwoStep(PulseShape):
         """
         step_duration = self.step_duration
         step_amp = self.step_amplitude
-        waveform = np.concatenate((amplitude * np.ones(step_duration), step_amp * np.ones(duration - step_duration)))
-        return waveform
+        return np.concatenate((amplitude * np.ones(step_duration), step_amp * np.ones(duration - step_duration)))
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "TwoStep":
@@ -77,4 +78,4 @@ class TwoStep(PulseShape):
         Returns:
             dict: Dictionary representation of the pulse shape including its name.
         """
-        return {"name": self.name.value, "step_amplitude": self.step_amplitude, "step_duration": self.step_duration}
+        return {"name": self.name.value, "step_amplitude": self.step_amplitude, "step_duration": self.step_duration}  # type: ignore[operator]

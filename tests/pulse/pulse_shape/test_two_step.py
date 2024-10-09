@@ -1,4 +1,5 @@
 """Tests for the PulseShape class."""
+
 import itertools
 
 import numpy as np
@@ -70,12 +71,7 @@ class TestPulseShape:
         env = return_envelope(pulse_shape, env_params)
 
         # positive amplitude cases
-        if env_params["amplitude"] > 0:
-            assert env[0] == env[pulse_shape.step_duration - 1]
-            assert env[pulse_shape.step_duration] == env[-1]
-
-        # negative amplitude cases
-        elif env_params["amplitude"] < 0:
+        if env_params["amplitude"] > 0 or env_params["amplitude"] < 0:
             assert env[0] == env[pulse_shape.step_duration - 1]
             assert env[pulse_shape.step_duration] == env[-1]
 
@@ -112,7 +108,7 @@ class TestPulseShape:
             dictionary
             == dictionary2
             == {
-                "name": pulse_shape.name.value,
+                "name": pulse_shape.name.value,  # type: ignore[operator]
                 "step_amplitude": pulse_shape.step_amplitude,
                 "step_duration": pulse_shape.step_duration,
             }

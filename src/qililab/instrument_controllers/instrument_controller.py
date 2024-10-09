@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Instrument Controller class"""
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import partial
@@ -160,7 +161,7 @@ class InstrumentController(BusElement, ABC):
         self,
         parameter: Parameter,
         value: float | str | bool,
-        channel_id: int | None = None,  # pylint: disable=unused-argument
+        channel_id: int | None = None,
     ):
         """Updates the reset settings for the controller."""
         if parameter is not Parameter.RESET:
@@ -172,7 +173,7 @@ class InstrumentController(BusElement, ABC):
     def get_parameter(
         self,
         parameter: Parameter,
-        channel_id: int | None = None,  # pylint: disable=unused-argument
+        channel_id: int | None = None,
     ):
         """Updates the reset settings for the controller."""
         if parameter is not Parameter.RESET:

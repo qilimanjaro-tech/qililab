@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Vector Network Analyzer Controllers."""
+"""Vector Network Analyzer Controllers."""
+
 from .agilent_E5071B_vna_controller import E5071BController
 from .keysight_E5080B_vna_controller import E5080BController
+
+__all__ = ["E5071BController", "E5080BController"]

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Arbitrary waveform."""
+
 import numpy as np
 
 from qililab.yaml import yaml
@@ -21,7 +22,7 @@ from .waveform import Waveform
 
 
 @yaml.register_class
-class Arbitrary(Waveform):  # pylint: disable=too-few-public-methods, disable=missing-class-docstring
+class Arbitrary(Waveform):
     """Arbitrary waveform. Creates a waveform with the passed envelope.
 
     Args:
@@ -33,6 +34,7 @@ class Arbitrary(Waveform):  # pylint: disable=too-few-public-methods, disable=mi
         .. code-block:: python
 
             import numpy as np
+
             samples = np.ones(50)
 
         You would just need to do:
@@ -40,6 +42,7 @@ class Arbitrary(Waveform):  # pylint: disable=too-few-public-methods, disable=mi
         .. code-block:: python
 
             import qililab as ql
+
             arbitrary_envelope = ql.Arbitrary(samples=samples)
     """
 

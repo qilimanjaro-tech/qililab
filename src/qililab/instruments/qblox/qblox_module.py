@@ -13,8 +13,9 @@
 # limitations under the License.
 
 """Qblox module class"""
+
 from dataclasses import dataclass
-from typing import Sequence, cast
+from typing import ClassVar, Sequence, cast
 
 from qpysequence import Sequence as QpySequence
 
@@ -54,13 +55,10 @@ class QbloxModule(AWG):
 
         def __post_init__(self):
             """build AWGQbloxSequencer"""
-            if (
-                self.num_sequencers <= 0
-                or self.num_sequencers > QbloxModule._NUM_MAX_SEQUENCERS  # pylint: disable=protected-access
-            ):
+            if self.num_sequencers <= 0 or self.num_sequencers > QbloxModule._NUM_MAX_SEQUENCERS:
                 raise ValueError(
                     "The number of sequencers must be greater than 0 and less or equal than "
-                    + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: {self.num_sequencers}"  # pylint: disable=protected-access
+                    + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: {self.num_sequencers}"
                 )
             if len(self.awg_sequencers) != self.num_sequencers:
                 raise ValueError(
@@ -69,9 +67,7 @@ class QbloxModule(AWG):
                 )
 
             self.awg_sequencers = [
-                (
-                    AWGQbloxSequencer(**sequencer) if isinstance(sequencer, dict) else sequencer
-                )  # pylint: disable=not-a-mapping
+                (AWGQbloxSequencer(**sequencer) if isinstance(sequencer, dict) else sequencer)
                 for sequencer in self.awg_sequencers
             ]
             super().__post_init__()
@@ -79,7 +75,7 @@ class QbloxModule(AWG):
     settings: QbloxModuleSettings
     device: Pulsar | QcmQrm
     # Cache containing the last compiled pulse schedule for each sequencer
-    cache: dict[int, PulseBusSchedule] = {}
+    cache: ClassVar[dict[int, PulseBusSchedule]] = {}
 
     def __init__(self, settings: dict):
         # The sequences dictionary contains all the compiled sequences for each sequencer. Sequences are saved and handled at the compiler
@@ -417,7 +413,7 @@ class QbloxModule(AWG):
         # FIXME: does not support readout on multiple qubits on the same bus
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
         for sequencer in sequencers:
-            logger.info("Sequence program: \n %s", repr(qpysequence._program))  # pylint: disable=protected-access
+            logger.info("Sequence program: \n %s", repr(qpysequence._program))
             self.device.sequencers[sequencer.identifier].sequence(qpysequence.todict())
             self.sequences[sequencer.identifier] = qpysequence
 
@@ -436,7 +432,8 @@ class QbloxModule(AWG):
                 # if the sequence was in the cache then it is to be run so we sync the sequencer to the others
                 sequence = self.sequences[seq_idx]
                 logger.info(
-                    "Uploaded sequence program: \n %s", repr(sequence._program)  # pylint: disable=protected-access
+                    "Uploaded sequence program: \n %s",
+                    repr(sequence._program),
                 )
                 self.device.sequencers[seq_idx].sequence(sequence.todict())
                 self.device.sequencers[sequencer.identifier].sync_en(True)
@@ -498,7 +495,7 @@ class QbloxModule(AWG):
         """Returns the offsets of each output of the qblox module."""
         return self.settings.out_offsets
 
-    def _get_sequencer_by_id(self, id: int):  # pylint: disable=redefined-builtin
+    def _get_sequencer_by_id(self, id: int):
         """Returns a sequencer with the given `id`."
 
         Args:

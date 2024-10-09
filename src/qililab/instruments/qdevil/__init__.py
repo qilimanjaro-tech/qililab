@@ -13,4 +13,7 @@
 # limitations under the License.
 
 """QDevil Instruments"""
+
 from .qdevil_qdac2 import QDevilQDac2
+
+__all__ = ["QDevilQDac2"]

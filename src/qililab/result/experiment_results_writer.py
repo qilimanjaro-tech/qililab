@@ -171,7 +171,7 @@ class ExperimentResultsWriter(ExperimentResults):
         if "qprograms" in self._metadata:
             for qprogram_name, qprogram_data in self._metadata["qprograms"].items():
                 for measurement_name, _ in qprogram_data["measurements"].items():
-                    self.data[(qprogram_name, measurement_name)] = self._file[
+                    self.data[qprogram_name, measurement_name] = self._file[
                         f"qprograms/{qprogram_name}/measurements/{measurement_name}/results"
                     ]
 
@@ -199,7 +199,7 @@ class ExperimentResultsWriter(ExperimentResults):
             qprogram_name = f"QProgram_{qprogram_name}"
         if isinstance(measurement_name, int):
             measurement_name = f"Measurement_{measurement_name}"
-        self.data[(qprogram_name, measurement_name)][tuple(indices)] = value
+        self.data[qprogram_name, measurement_name][tuple(indices)] = value
 
     @ExperimentResults.platform.setter
     def platform(self, platform: str):

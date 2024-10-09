@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Square waveform."""
+
 import numpy as np
 
 from qililab.qprogram.decorators import requires_domain
@@ -23,7 +24,7 @@ from .waveform import Waveform
 
 
 @yaml.register_class
-class Square(Waveform):  # pylint: disable=too-few-public-methods
+class Square(Waveform):
     """Square (rectangular) waveform. Given by a constant height line.
 
     Args:
@@ -36,7 +37,8 @@ class Square(Waveform):  # pylint: disable=too-few-public-methods
         .. code-block:: python
 
             import qililab as ql
-            square_envelope = ql.Square( amplitude=X, duration=50).envelope()
+
+            square_envelope = ql.Square(amplitude=X, duration=50).envelope()
 
         which for ``X`` being ``1.`` and ``0.75``, look respectively like:
 

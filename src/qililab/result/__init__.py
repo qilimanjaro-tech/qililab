@@ -22,6 +22,7 @@ Classes
 .. autosummary::
     :toctree: api
 
+    ~ExperimentResults
     ~Results
     ~result.Result
 
@@ -33,7 +34,10 @@ Functions
 
     ~stream_results
 """
+
 from .experiment_results import ExperimentResults
 from .result import Result
 from .results import Results
 from .stream_results import stream_results
+
+__all__ = ["ExperimentResults", "Result", "Results", "stream_results"]

@@ -22,6 +22,7 @@ The qubit connectivity (chip topology) can be accessed by calling chip.get_topol
 .. code-block:: python
 
     import networkx as nx
+
     platform = ql.build_platform(runcard="runcard.yml")
     g = platform.chip.get_topology()
     nx.draw(g, with_labels=True)
@@ -56,6 +57,9 @@ Nodes
     ~Coupler
     ~Coil
 """
+
 from .chip import Chip
 from .node import Node
 from .nodes import Coil, Coupler, Port, Qubit, Resonator
+
+__all__ = ["Chip", "Coil", "Coupler", "Node", "Port", "Qubit", "Resonator"]

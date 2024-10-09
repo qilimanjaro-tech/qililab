@@ -1,5 +1,4 @@
 """Tests for the Platform class."""
-# pylint: disable=too-many-lines
 
 import copy
 import io
@@ -7,13 +6,12 @@ import re
 from pathlib import Path
 from queue import Queue
 from types import MethodType
-from unittest.mock import MagicMock, Mock, create_autospec, patch
+from unittest.mock import MagicMock, create_autospec, patch
 
 import numpy as np
 import pytest
 from qibo import gates
 from qibo.models import Circuit
-from qm.exceptions import StreamProcessingDataLossError
 from qpysequence import Sequence, Waveforms
 from ruamel.yaml import YAML
 
@@ -145,7 +143,7 @@ def get_calibration():
 
 
 @pytest.fixture(name="anneal_qprogram")
-def get_anneal_qprogram(runcard, flux_to_bus_topology):  # pylint: disable=too-many-locals
+def get_anneal_qprogram(runcard, flux_to_bus_topology):
     platform = Platform(runcard=runcard)
     platform.flux_to_bus_topology = flux_to_bus_topology
     anneal_waveforms = {
@@ -689,9 +687,7 @@ class TestMethods:
             _ = platform.execute_qprogram(qprogram=qprogram)
             assert test_waveforms_q0.to_dict() == upload.call_args_list[0].kwargs["qpysequence"]._waveforms.to_dict()
 
-    def test_execute_qprogram_with_quantum_machines(
-        self, platform_quantum_machines: Platform
-    ):  # pylint: disable=too-many-locals
+    def test_execute_qprogram_with_quantum_machines(self, platform_quantum_machines: Platform):
         """Test that the execute_qprogram method executes the qprogram for Quantum Machines correctly"""
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
@@ -742,64 +738,6 @@ class TestMethods:
         # assure only one debug was called
         assert patched_open.call_count == 1
         assert generate_qua.call_count == 1
-
-    def test_execute_qprogram_with_quantum_machines_raises_error(
-        self, platform_quantum_machines: Platform
-    ):  # pylint: disable=too-many-locals
-        """Test that the execute_qprogram method raises the exception if the qprogram failes"""
-
-        error_string = "The QM `config` dictionary does not exist. Please run `initial_setup()` first."
-        escaped_error_str = re.escape(error_string)
-        platform_quantum_machines.compile = MagicMock()  # type: ignore # don't care about compilation
-        platform_quantum_machines.compile.return_value = Exception(escaped_error_str)
-
-        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
-        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
-        weights_wf = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
-        qprogram = QProgram()
-        qprogram.play(bus="drive_q0_rf", waveform=drive_wf)
-        qprogram.sync()
-        qprogram.play(bus="readout_q0_rf", waveform=readout_wf)
-        qprogram.measure(bus="readout_q0_rf", waveform=readout_wf, weights=weights_wf)
-
-        with patch.object(QuantumMachinesCluster, "turn_off") as turn_off:
-            with pytest.raises(ValueError, match=escaped_error_str):
-                _ = platform_quantum_machines.execute_qprogram(qprogram=qprogram, debug=True)
-
-        turn_off.assert_called_once_with()
-
-    def test_execute_qprogram_with_quantum_machines_raises_dataloss(
-        self,
-        platform_quantum_machines: Platform,
-    ):  # pylint: disable=too-many-locals
-        """Test that the execute_qprogram method raises the dataloss exception if the qprogram returns StreamProcessingDataLossError"""
-
-        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
-        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
-        weights_wf = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
-        qprogram = QProgram()
-        qprogram.play(bus="drive_q0_rf", waveform=drive_wf)
-        qprogram.sync()
-        qprogram.play(bus="readout_q0_rf", waveform=readout_wf)
-        qprogram.measure(bus="readout_q0_rf", waveform=readout_wf, weights=weights_wf)
-
-        cluster = Mock()
-
-        compiler_mock = Mock()
-        compiler_mock.compile.return_value = (Mock(), Mock(), [])
-
-        cluster.run_compiled_program.side_effect = [
-            StreamProcessingDataLossError("Data loss occurred"),
-            StreamProcessingDataLossError("Data loss occurred"),
-            StreamProcessingDataLossError("Data loss occurred"),
-        ]
-
-        with pytest.raises(StreamProcessingDataLossError):
-            _ = platform_quantum_machines._execute_qprogram_with_quantum_machines(
-                qprogram=qprogram, cluster=cluster, dataloss_tries=3
-            )
-
-        assert cluster.run_compiled_program.call_count == 3
 
     def test_execute(self, platform: Platform, qblox_results: list[dict]):
         """Test that the execute method calls the buses to run and return the results."""

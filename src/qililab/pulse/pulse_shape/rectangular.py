@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Rectangular pulse shape."""
+
 from copy import deepcopy
 from dataclasses import dataclass
 
@@ -34,6 +35,7 @@ class Rectangular(PulseShape):
         .. code-block:: python
 
             from qililab.pulse.pulse_shape import Rectangular
+
             rectangular_envelope = Rectangular().envelope(amplitude=X, duration=50)
 
         which for ``X`` being ``1.`` and ``0.75``, look respectively like:
@@ -79,5 +81,5 @@ class Rectangular(PulseShape):
             dict: Dictionary representation of the pulse shape including its name.
         """
         return {
-            "name": self.name.value,
+            "name": self.name.value,  # type: ignore[operator]
         }
