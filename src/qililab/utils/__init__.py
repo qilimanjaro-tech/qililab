@@ -16,7 +16,6 @@
 
 from .asdict_factory import dict_factory
 from .coordinate_decomposition import coordinate_decompose
-from .dict_serializable import DictSerializable, DictSerializableEnum, from_dict
 from .dictionaries import merge_dictionaries
 from .factory import Factory
 from .hashing import hash_qpy_sequence, hash_qua_program
@@ -28,8 +27,6 @@ from .singleton import Singleton, SingletonABC
 from .waveforms import Waveforms
 
 __all__ = [
-    "DictSerializable",
-    "DictSerializableEnum",
     "Factory",
     "Loop",
     "Singleton",
@@ -38,7 +35,6 @@ __all__ = [
     "coordinate_decompose",
     "demodulate",
     "dict_factory",
-    "from_dict",
     "hash_qpy_sequence",
     "hash_qua_program",
     "merge_dictionaries",
