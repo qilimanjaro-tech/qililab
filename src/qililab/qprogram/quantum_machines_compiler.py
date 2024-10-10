@@ -116,7 +116,8 @@ class QuantumMachinesCompiler:
 
     FREQUENCY_COEFF = 1
     PHASE_COEFF = 2 * np.pi
-    VOLTAGE_COEFF = 2
+    VOLTAGE_COEFF = 2.0
+    VOLTAGE_AMPLIFICATION_COEFF = 5.0
     WAIT_COEFF = 4
     MINIMUM_TIME = 4
 
@@ -152,6 +153,7 @@ class QuantumMachinesCompiler:
         bus_mapping: dict[str, str] | None = None,
         thresholds: dict[str, float] | None = None,
         threshold_rotations: dict[str, float] | None = None,
+        is_amplified: dict[str, bool] | None = None,
         calibration: Calibration | None = None,
     ) -> QuantumMachinesCompilationOutput:
         """Compile QProgram to QUA's Program.
@@ -591,10 +593,12 @@ class QuantumMachinesCompiler:
         # Return weights names
         return A, B, C, D
 
-    def __add_waveform_to_configuration(self, waveform: Waveform):
+    def __add_waveform_to_configuration(self, waveform: Waveform, is_amplified: bool = False):
         waveform_name = QuantumMachinesCompiler.__hash_waveform(waveform)
         if waveform_name not in self._configuration["waveforms"]:
-            self._configuration["waveforms"][waveform_name] = QuantumMachinesCompiler.__waveform_to_config(waveform)
+            self._configuration["waveforms"][waveform_name] = QuantumMachinesCompiler.__waveform_to_config(
+                waveform, is_amplified=is_amplified
+            )
         return waveform_name
 
     @staticmethod
@@ -609,12 +613,19 @@ class QuantumMachinesCompiler:
         return hash_result.hexdigest()[:8]
 
     @staticmethod
-    def __waveform_to_config(waveform: Waveform):
+    def __waveform_to_config(waveform: Waveform, is_amplified: bool = False):
         if isinstance(waveform, Square):
             amplitude = waveform.amplitude / QuantumMachinesCompiler.VOLTAGE_COEFF
+            if is_amplified:
+                amplitude *= QuantumMachinesCompiler.VOLTAGE_AMPLIFICATION_COEFF
+                if amplitude == 2.5:
+                    amplitude = 2.499
             return {"type": "constant", "sample": amplitude}
 
         envelope = waveform.envelope() / QuantumMachinesCompiler.VOLTAGE_COEFF
+        if is_amplified:
+            envelope *= QuantumMachinesCompiler.VOLTAGE_AMPLIFICATION_COEFF
+            envelope = np.where(envelope == 2.5, 2.499, envelope)
         return {"type": "arbitrary", "samples": envelope.tolist()}
 
     @staticmethod

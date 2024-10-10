@@ -820,6 +820,9 @@ class Platform:
                 for bus in buses
                 if isinstance(bus.system_control, ReadoutSystemControl)
             }
+            is_amplified: dict[str, bool] = {
+                bus.alias: bool(bus.get_parameter(parameter=Parameter.IS_AMPLIFIED) or False) for bus in buses
+            }
 
             compiler = QuantumMachinesCompiler()
             return compiler.compile(
@@ -827,6 +830,7 @@ class Platform:
                 bus_mapping=bus_mapping,
                 thresholds=thresholds,
                 threshold_rotations=threshold_rotations,
+                is_amplified=is_amplified,
                 calibration=calibration,
             )
         raise NotImplementedError("Compiling QProgram for a mixture of instruments is not supported.")
