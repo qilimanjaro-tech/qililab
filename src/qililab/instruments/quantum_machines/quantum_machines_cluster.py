@@ -497,8 +497,11 @@ class QuantumMachinesCluster(Instrument):
         """
 
         if "RF_inputs" in self.config["elements"][bus]:
-            octave = self.config["elements"][bus]["RF_inputs"]["port"][0]
-            controller_name = self.config["octaves"][octave]["connectivity"]
+            octave = self._config["elements"][bus]["RF_inputs"]["port"]
+            if "connectivity" in self._config["octaves"][octave[0]]:
+                controller_name = self._config["octaves"][octave[0]]["connectivity"]
+            else:
+                controller_name = self._config["octaves"][octave[0]]["RF_outputs"][octave[1]]["I_connection"][0]
         elif "mixInputs" in self.config["elements"][bus]:
             controller_name = self.config["elements"][bus]["mixInputs"]["I"][0]
         elif "singleInput" in self.config["elements"][bus]:
