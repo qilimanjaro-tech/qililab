@@ -18,6 +18,7 @@
 import ast
 import io
 import re
+import tempfile
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
@@ -325,6 +326,12 @@ class Platform:
 
         self._qpy_sequence_cache: dict[str, str] = {}
         """Dictionary for caching qpysequences."""
+
+        self.experiment_results_base_path: str = tempfile.gettempdir()
+        """Base path for saving experiment results."""
+
+        self.experiment_results_path_format: str = "{date}/{time}/{label}.h5"
+        """Format of the experiment results path."""
 
     def connect(self):
         """Connects to all the instruments and blocks the connection for other users.
@@ -723,7 +730,7 @@ class Platform:
             return self.execute_qprogram(qprogram=qp_annealing, calibration=calibration, debug=debug)
         raise ValueError("The calibrated measurement is not present in the calibration file.")
 
-    def execute_experiment(self, experiment: Experiment, base_data_path: str) -> str:
+    def execute_experiment(self, experiment: Experiment) -> str:
         """Executes a quantum experiment on the platform.
 
         This method manages the execution of a given `Experiment` on the platform by utilizing an `ExperimentExecutor`. It orchestrates the entire process, including traversing the experiment's structure, handling loops and operations, and streaming results in real-time to ensure data integrity. The results are saved in a timestamped directory within the specified `base_data_path`.
@@ -741,7 +748,7 @@ class Platform:
                 from qililab import Experiment
 
                 # Initialize your experiment
-                experiment = Experiment()
+                experiment = Experiment(label="my_experiment")
                 # Add variables, loops, and operations to the experiment
                 # ...
 
@@ -757,7 +764,7 @@ class Platform:
             - The results will be saved in a timestamped directory within the `base_data_path`.
             - This method handles the setup and execution internally, providing a simplified interface for experiment execution.
         """
-        executor = ExperimentExecutor(platform=self, experiment=experiment, base_data_path=base_data_path)
+        executor = ExperimentExecutor(platform=self, experiment=experiment)
         return executor.execute()
 
     def compile_qprogram(
