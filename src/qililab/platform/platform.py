@@ -752,16 +752,16 @@ class Platform:
                 # Add variables, loops, and operations to the experiment
                 # ...
 
-                # Define the base data path for storing results
-                base_data_path = "/data/experiments"
+                # Define the base path for storing experiment results
+                platform.experiment_results_base_path = "/data/experiments"
 
                 # Execute the experiment on the platform
-                results_path = platform.execute_experiment(experiment=experiment, base_data_path=base_data_path)
+                results_path = platform.execute_experiment(experiment=experiment)
                 print(f"Results saved to {results_path}")
 
         Note:
             - Ensure that the experiment is properly configured before execution.
-            - The results will be saved in a timestamped directory within the `base_data_path`.
+            - The results will be saved in a directory within the `experiment_results_base_path` according to the `platform.experiment_results_path_format`. The default format is `{date}/{time}/{label}.h5`.
             - This method handles the setup and execution internally, providing a simplified interface for experiment execution.
         """
         executor = ExperimentExecutor(platform=self, experiment=experiment)
