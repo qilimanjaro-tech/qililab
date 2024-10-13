@@ -523,19 +523,19 @@ class ExperimentExecutor:
 
         return path
 
-    def _measure_execution_time(self, execution_complete: threading.Event):
+    def _measure_execution_time(self, execution_completed: threading.Event):
         """Measures the execution time while waiting for the experiment to finish."""
         # Start measuring execution time
         start_time = perf_counter()
 
         # Wait for the experiment to finish
-        execution_complete.wait()
+        execution_completed.wait()
 
         # Stop measuring execution time
         end_time = perf_counter()
 
-        # Store the execution time in the results writer
-        self._results_writer.execution_time = end_time - start_time
+        # Return the execution time
+        return end_time - start_time
 
     def execute(self) -> str:
         """
@@ -559,11 +559,12 @@ class ExperimentExecutor:
         # Create the ExperimentResultsWriter for storing results
         self._results_writer = ExperimentResultsWriter(path=results_path, metadata=self._metadata)
 
-        # Use a thread pool for measuring execution time
+        # Event to signal that the execution has completed
+        execution_completed = threading.Event()
+
         with ThreadPoolExecutor() as executor:
-            # Start the timing task in a separate thread
-            execution_complete = threading.Event()
-            executor.submit(self._measure_execution_time, execution_complete)
+            # Start the _measure_execution_time in a separate thread
+            execution_time_future = executor.submit(self._measure_execution_time, execution_completed)
 
             with self._results_writer:
                 with Progress(
@@ -575,7 +576,14 @@ class ExperimentExecutor:
                     operations = self._prepare_operations(self.experiment.body, progress)
                     self._execute_operations(operations, progress)
 
-                # Signal that the execution has completed
-                execution_complete.set()
+            # Signal that the execution has completed
+            execution_completed.set()
+
+            # Retrieve the execution time from the Future
+            execution_time = execution_time_future.result()
+
+            # Now write the execution time to the results writer
+            with self._results_writer:
+                self._results_writer.execution_time = execution_time
 
         return results_path
