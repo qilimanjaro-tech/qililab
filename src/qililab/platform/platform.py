@@ -18,6 +18,7 @@
 import ast
 import io
 import re
+import tempfile
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
@@ -325,6 +326,12 @@ class Platform:
 
         self._qpy_sequence_cache: dict[str, str] = {}
         """Dictionary for caching qpysequences."""
+
+        self.experiment_results_base_path: str = tempfile.gettempdir()
+        """Base path for saving experiment results."""
+
+        self.experiment_results_path_format: str = "{date}/{time}/{label}.h5"
+        """Format of the experiment results path."""
 
     def connect(self):
         """Connects to all the instruments and blocks the connection for other users.
@@ -723,14 +730,13 @@ class Platform:
             return self.execute_qprogram(qprogram=qp_annealing, calibration=calibration, debug=debug)
         raise ValueError("The calibrated measurement is not present in the calibration file.")
 
-    def execute_experiment(self, experiment: Experiment, base_data_path: str) -> str:
+    def execute_experiment(self, experiment: Experiment) -> str:
         """Executes a quantum experiment on the platform.
 
         This method manages the execution of a given `Experiment` on the platform by utilizing an `ExperimentExecutor`. It orchestrates the entire process, including traversing the experiment's structure, handling loops and operations, and streaming results in real-time to ensure data integrity. The results are saved in a timestamped directory within the specified `base_data_path`.
 
         Args:
             experiment (Experiment): The experiment object defining the sequence of operations and loops.
-            base_data_path (str): The base directory path where the experiment results will be stored.
 
         Returns:
             str: The path to the file where the results are stored.
@@ -741,23 +747,23 @@ class Platform:
                 from qililab import Experiment
 
                 # Initialize your experiment
-                experiment = Experiment()
+                experiment = Experiment(label="my_experiment")
                 # Add variables, loops, and operations to the experiment
                 # ...
 
-                # Define the base data path for storing results
-                base_data_path = "/data/experiments"
+                # Define the base path for storing experiment results
+                platform.experiment_results_base_path = "/data/experiments"
 
                 # Execute the experiment on the platform
-                results_path = platform.execute_experiment(experiment=experiment, base_data_path=base_data_path)
+                results_path = platform.execute_experiment(experiment=experiment)
                 print(f"Results saved to {results_path}")
 
         Note:
             - Ensure that the experiment is properly configured before execution.
-            - The results will be saved in a timestamped directory within the `base_data_path`.
+            - The results will be saved in a directory within the `experiment_results_base_path` according to the `platform.experiment_results_path_format`. The default format is `{date}/{time}/{label}.h5`.
             - This method handles the setup and execution internally, providing a simplified interface for experiment execution.
         """
-        executor = ExperimentExecutor(platform=self, experiment=experiment, base_data_path=base_data_path)
+        executor = ExperimentExecutor(platform=self, experiment=experiment)
         return executor.execute()
 
     def compile_qprogram(

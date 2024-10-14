@@ -1,4 +1,5 @@
 # pylint: disable=protected-access
+import os
 from datetime import datetime
 from pathlib import Path
 from types import MethodType
@@ -182,7 +183,21 @@ class TestExperimentResults:
         np.testing.assert_array_almost_equal(y_plotted, s21_db)
 
         # Close the plot
-        plt.close("all")
+        plt.close(fig)
+
+        # Verify that the plot was saved to a file.
+        plot_path = os.path.join(os.path.dirname(experiment_results.path), ExperimentResults.S21_PLOT_NAME)
+        assert os.path.exists(plot_path)
+
+        # Remove the file
+        os.remove(plot_path)
+
+        # Verify that if `save_plot == False` then the plot is not saved.
+        experiment_results.plot_S21(save_plot=False)
+        assert not os.path.exists(plot_path)
+
+        # Close the plot
+        plt.close(plt.gcf())
 
     def test_plot_S21_one_dimension_secondary_axis(self):
         """Test plot_S21 with 1D data and secondary x-axis."""
@@ -225,7 +240,21 @@ class TestExperimentResults:
         np.testing.assert_array_almost_equal(ax2.get_xticks(), expected_ticks)
 
         # Close the plot
-        plt.close("all")
+        plt.close(fig)
+
+        # Verify that the plot was saved to a file.
+        plot_path = os.path.join(os.path.dirname(experiment_results.path), ExperimentResults.S21_PLOT_NAME)
+        assert os.path.exists(plot_path)
+
+        # Remove the file
+        os.remove(plot_path)
+
+        # Verify that if `save_plot == False` then the plot is not saved.
+        experiment_results.plot_S21(save_plot=False)
+        assert not os.path.exists(plot_path)
+
+        # Close the plot
+        plt.close(plt.gcf())
 
     def test_plot_S21_two_dimensions(self):
         """Test plot_S21 with 2D data and verify the plot correctness."""
@@ -282,7 +311,21 @@ class TestExperimentResults:
         assert not colorbar.get_ylabel(), "Colorbar axes should not have a y-label."
 
         # Close the plot
-        plt.close("all")
+        plt.close(fig)
+
+        # Verify that the plot was saved to a file.
+        plot_path = os.path.join(os.path.dirname(experiment_results.path), ExperimentResults.S21_PLOT_NAME)
+        assert os.path.exists(plot_path)
+
+        # Remove the file
+        os.remove(plot_path)
+
+        # Verify that if `save_plot == False` then the plot is not saved.
+        experiment_results.plot_S21(save_plot=False)
+        assert not os.path.exists(plot_path)
+
+        # Close the plot
+        plt.close(plt.gcf())
 
     def test_plot_S21_two_dimensions_secondary_axes(self):
         """Test plot_S21 with 2D data and secondary axes."""
@@ -346,7 +389,21 @@ class TestExperimentResults:
         assert not colorbar.get_ylabel(), "Colorbar axes should not have a y-label."
 
         # Close the plot
-        plt.close("all")
+        plt.close(fig)
+
+        # Verify that the plot was saved to a file.
+        plot_path = os.path.join(os.path.dirname(experiment_results.path), ExperimentResults.S21_PLOT_NAME)
+        assert os.path.exists(plot_path)
+
+        # Remove the file
+        os.remove(plot_path)
+
+        # Verify that if `save_plot == False` then the plot is not saved.
+        experiment_results.plot_S21(save_plot=False)
+        assert not os.path.exists(plot_path)
+
+        # Close the plot
+        plt.close(plt.gcf())
 
     def test_plot_S21_three_dimensions(self):
         """Test plot_S21 with 3D data, should raise NotImplementedError."""
@@ -422,7 +479,21 @@ class TestExperimentResults:
         np.testing.assert_array_almost_equal(y_plotted, s21_db)
 
         # Close the plot
-        plt.close("all")
+        plt.close(fig)
+
+        # Verify that the plot was saved to a file.
+        plot_path = os.path.join(os.path.dirname(experiment_results.path), ExperimentResults.S21_PLOT_NAME)
+        assert os.path.exists(plot_path)
+
+        # Remove the file
+        os.remove(plot_path)
+
+        # Verify that if `save_plot == False` then the plot is not saved.
+        experiment_results.plot_S21(save_plot=False)
+        assert not os.path.exists(plot_path)
+
+        # Close the plot
+        plt.close(plt.gcf())
 
 
 class TestExperimentResultsWriter:
