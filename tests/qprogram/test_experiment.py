@@ -19,7 +19,7 @@ class TestExperiment(TestStructuredProgram):
 
     @pytest.fixture
     def instance(self):
-        return Experiment()
+        return Experiment(label="experiment")
 
     def test_set_parameter(self, instance: Experiment):
         """Test set_awg_gain method"""

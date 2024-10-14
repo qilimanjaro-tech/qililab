@@ -6,13 +6,12 @@ import re
 from pathlib import Path
 from queue import Queue
 from types import MethodType
-from unittest.mock import MagicMock, Mock, create_autospec, patch
+from unittest.mock import MagicMock, create_autospec, patch
 
 import numpy as np
 import pytest
 from qibo import gates
 from qibo.models import Circuit
-from qm.exceptions import StreamProcessingDataLossError
 from qpysequence import Sequence, Waveforms
 from ruamel.yaml import YAML
 
@@ -672,7 +671,6 @@ class TestMethods:
         # Create an autospec of the Experiment class
         mock_experiment = create_autospec(Experiment)
 
-        base_data_path = "mock/results/path/"
         expected_results_path = "mock/results/path/data.h5"
 
         # Mock the ExperimentExecutor to ensure it's used correctly
@@ -681,12 +679,10 @@ class TestMethods:
             mock_executor_instance.execute.return_value = expected_results_path
 
             # Call the method under test
-            results_path = platform.execute_experiment(experiment=mock_experiment, base_data_path=base_data_path)
+            results_path = platform.execute_experiment(experiment=mock_experiment)
 
             # Check that ExperimentExecutor was instantiated with the correct arguments
-            MockExecutor.assert_called_once_with(
-                platform=platform, experiment=mock_experiment, base_data_path=base_data_path
-            )
+            MockExecutor.assert_called_once_with(platform=platform, experiment=mock_experiment)
 
             # Ensure the execute method was called on the ExperimentExecutor instance
             mock_executor_instance.execute.assert_called_once()
@@ -811,62 +807,6 @@ class TestMethods:
         # assure only one debug was called
         assert patched_open.call_count == 1
         assert generate_qua.call_count == 1
-
-    def test_execute_qprogram_with_quantum_machines_raises_error(self, platform_quantum_machines: Platform):
-        """Test that the execute_qprogram method raises the exception if the qprogram failes"""
-
-        error_string = "The QM `config` dictionary does not exist. Please run `initial_setup()` first."
-        escaped_error_str = re.escape(error_string)
-        platform_quantum_machines.compile = MagicMock()  # type: ignore # don't care about compilation
-        platform_quantum_machines.compile.return_value = Exception(escaped_error_str)
-
-        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
-        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
-        weights_wf = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
-        qprogram = QProgram()
-        qprogram.play(bus="drive_q0_rf", waveform=drive_wf)
-        qprogram.sync()
-        qprogram.play(bus="readout_q0_rf", waveform=readout_wf)
-        qprogram.measure(bus="readout_q0_rf", waveform=readout_wf, weights=weights_wf)
-
-        with patch.object(QuantumMachinesCluster, "turn_off") as turn_off:
-            with pytest.raises(ValueError, match=escaped_error_str):
-                _ = platform_quantum_machines.execute_qprogram(qprogram=qprogram, debug=True)
-
-        turn_off.assert_called_once_with()
-
-    def test_execute_qprogram_with_quantum_machines_raises_dataloss(
-        self,
-        platform_quantum_machines: Platform,
-    ):
-        """Test that the execute_qprogram method raises the dataloss exception if the qprogram returns StreamProcessingDataLossError"""
-
-        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
-        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
-        weights_wf = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
-        qprogram = QProgram()
-        qprogram.play(bus="drive_q0_rf", waveform=drive_wf)
-        qprogram.sync()
-        qprogram.play(bus="readout_q0_rf", waveform=readout_wf)
-        qprogram.measure(bus="readout_q0_rf", waveform=readout_wf, weights=weights_wf)
-
-        cluster = Mock()
-
-        compiler_mock = Mock()
-        compiler_mock.compile.return_value = (Mock(), Mock(), [])
-
-        cluster.run_compiled_program.side_effect = [
-            StreamProcessingDataLossError("Data loss occurred"),
-            StreamProcessingDataLossError("Data loss occurred"),
-            StreamProcessingDataLossError("Data loss occurred"),
-        ]
-
-        with pytest.raises(StreamProcessingDataLossError):
-            _ = platform_quantum_machines._execute_qprogram_with_quantum_machines(
-                qprogram=qprogram, cluster=cluster, dataloss_tries=3
-            )
-
-        assert cluster.run_compiled_program.call_count == 3
 
     def test_execute(self, platform: Platform, qblox_results: list[dict]):
         """Test that the execute method calls the buses to run and return the results."""

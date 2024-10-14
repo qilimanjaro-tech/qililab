@@ -621,6 +621,15 @@ class TestQuantumMachinesCompiler:
         assert "I_0" in measurements[0].result_handles
         assert "Q_0" in measurements[0].result_handles
 
+    def test_measure_operation_with_threshold(self, measure_operation: QProgram):
+        """Test measurement result contains the provided thresholds."""
+        compiler = QuantumMachinesCompiler()
+        thresholds = {"readout": 1.0}
+        _, _, measurements = compiler.compile(measure_operation, thresholds=thresholds)
+
+        assert len(measurements) == 1
+        assert measurements[0].threshold == 1.0
+
     def test_measure_operation_with_threshold_rotations(self, measure_operation: QProgram):
         """Test compilation of measurement applying the rotations provided in the `threshold_rotations` map"""
         compiler = QuantumMachinesCompiler()
