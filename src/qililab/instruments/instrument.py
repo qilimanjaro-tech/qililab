@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Instrument class"""
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import partial
@@ -20,6 +21,7 @@ from typing import Callable, get_type_hints
 
 from qililab.config import logger
 from qililab.platform.components.bus_element import BusElement
+from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.result import Result
 from qililab.settings import Settings
 from qililab.typings.enums import InstrumentName, Parameter
@@ -151,6 +153,17 @@ class Instrument(BusElement, ABC):
                 raise AttributeError("Instrument Device has not been initialized")
             return self._method(ref, *args, **kwargs) if hasattr(ref, "device") else self._method(*args, **kwargs)
 
+    def is_device_active(self) -> bool:
+        """Check wether or not the device is currently active, for instrument childs.
+
+        Contrary to ``CheckDeviceInitialized``, we also check if the device is not None, since a ``disconnect()`` after
+        initialization would set it to None.
+
+        Returns:
+            bool: Wether or not the device has been initialized.
+        """
+        return hasattr(self, "device") and self.device is not None
+
     def __init__(self, settings: dict):
         settings_class: type[self.InstrumentSettings] = get_type_hints(self).get("settings")  # type: ignore
         self.settings = settings_class(**settings)
@@ -160,7 +173,6 @@ class Instrument(BusElement, ABC):
     def initial_setup(self):
         """Set initial instrument settings."""
 
-    @CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Set instrument settings parameter to the corresponding value
 
@@ -171,7 +183,7 @@ class Instrument(BusElement, ABC):
         """
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
-    def get(self, parameter: Parameter, channel_id: int | None = None):  # pylint: disable=unused-argument
+    def get(self, parameter: Parameter, channel_id: int | None = None):
         """Get instrument parameter.
 
         Args:
@@ -191,6 +203,18 @@ class Instrument(BusElement, ABC):
         """Acquire results of the measurement.
 
         In some cases this method might do nothing."""
+
+    def acquire_qprogram_results(self, acquisitions: dict[str, AcquisitionData], port: str) -> list[Result]:  # type: ignore[empty-body]
+        """Acquire results of the measurement.
+
+        In some cases this method might do nothing.
+
+        Args:
+            acquisitions (list[str]): A list of acquisitions names.
+
+        Returns:
+            list[Result]: The acquired results in chronological order.
+        """
 
     @CheckDeviceInitialized
     @abstractmethod
@@ -235,10 +259,6 @@ class Instrument(BusElement, ABC):
         Returns:
             bool: True if the parameter is set correctly, False otherwise
         """
-        if not hasattr(self, "device"):
-            raise ValueError(
-                f"Instrument {self.name.value} is not connected and cannot set the new value: {value} to the parameter {parameter}."
-            )
         if channel_id is None:
             logger.debug("Setting parameter: %s to value: %f", parameter.value, value)
         if channel_id is not None:

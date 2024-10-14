@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Instrument Controller class"""
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import partial
@@ -160,9 +161,9 @@ class InstrumentController(BusElement, ABC):
         self,
         parameter: Parameter,
         value: float | str | bool,
-        channel_id: int | None = None,  # pylint: disable=unused-argument
+        channel_id: int | None = None,
     ):
-        """updates the reset settings for the controller"""
+        """Updates the reset settings for the controller."""
         if parameter is not Parameter.RESET:
             raise ValueError("Reset is the only property that can be set for an Instrument Controller.")
         if not isinstance(value, bool):
@@ -172,9 +173,9 @@ class InstrumentController(BusElement, ABC):
     def get_parameter(
         self,
         parameter: Parameter,
-        channel_id: int | None = None,  # pylint: disable=unused-argument
+        channel_id: int | None = None,
     ):
-        """updates the reset settings for the controller"""
+        """Updates the reset settings for the controller."""
         if parameter is not Parameter.RESET:
             raise ValueError("Reset is the only property that can be set for an Instrument Controller.")
         return self.settings.reset
@@ -259,4 +260,5 @@ class InstrumentController(BusElement, ABC):
             RUNCARD.ALIAS: self.alias,
             INSTRUMENTCONTROLLER.CONNECTION: self.connection.to_dict(),
             INSTRUMENTCONTROLLER.MODULES: [module.to_dict() for module in self.settings.modules],
+            INSTRUMENTCONTROLLER.RESET: self.settings.reset,
         }

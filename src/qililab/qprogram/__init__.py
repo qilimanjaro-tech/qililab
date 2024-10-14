@@ -27,12 +27,40 @@ QProgram Class
 Compilers
 ~~~~~~~~~
 
-.. currentmodule:: qililab.qprogram
-
 .. autosummary::
     :toctree: api
 
     ~QbloxCompiler
+    ~QuantumMachinesCompiler
+
+Other QProgram related Classes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~Calibration
+    ~Domain
+
 """
-from .qblox_compiler import QbloxCompiler
+
+from .calibration import Calibration
+from .crosstalk_matrix import CrosstalkMatrix, FluxVector
+from .experiment import Experiment
+from .qblox_compiler import QbloxCompilationOutput, QbloxCompiler
 from .qprogram import QProgram
+from .quantum_machines_compiler import QuantumMachinesCompilationOutput, QuantumMachinesCompiler
+from .variable import Domain
+
+__all__ = [
+    "Calibration",
+    "CrosstalkMatrix",
+    "Domain",
+    "Experiment",
+    "FluxVector",
+    "QProgram",
+    "QbloxCompilationOutput",
+    "QbloxCompiler",
+    "QuantumMachinesCompilationOutput",
+    "QuantumMachinesCompiler",
+]

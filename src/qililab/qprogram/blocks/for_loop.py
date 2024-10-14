@@ -12,15 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
 
 from qililab.qprogram.blocks.block import Block
 from qililab.qprogram.variable import Variable
+from qililab.yaml import yaml
 
 
-@dataclass(frozen=True)
-class ForLoop(Block):  # pylint: disable=missing-class-docstring
-    variable: Variable
-    start: int | float
-    stop: int | float
-    step: int | float
+@yaml.register_class
+class ForLoop(Block):
+    def __init__(self, variable: Variable, start: int | float, stop: int | float, step: int | float) -> None:
+        super().__init__()
+        self.variable: Variable = variable
+        self.start: int | float = start
+        self.stop: int | float = stop
+        self.step: int | float = step

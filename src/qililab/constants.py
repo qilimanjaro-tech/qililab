@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """Constants"""
-# pylint: disable=too-few-public-methods
 
 # Environment variables
 DATA = "DATA"  # variable containing the path where data is saved
@@ -23,11 +22,12 @@ RESULTS_FILENAME = "results.yml"
 EXPERIMENT_FILENAME = "experiment.yml"
 
 DEFAULT_PLATFORM_NAME = "galadriel"
-GALADRIEL_DEVICE_ID = 9
 
 DEFAULT_TIMEOUT = 10 * 1000  # 10 seconds
 
 GATE_ALIAS_REGEX = r"(?P<gate>[a-zA-Z]+)\((?P<qubits>\d+(?:,\s*\d+)*)\)"
+
+FLUX_CONTROL_REGEX = r"^(?P<flux>phi[xzy])_(?:q(?P<qubit>\d+)|c(?P<coupler>\d+_\d+))$"  # regex to identify flux control to bus mapping. Example flux control "phix_c0_1" corresponding to phix control of the coupler between qubits 0 and 1
 
 # TODO: Distribute constants over different classes
 
@@ -36,7 +36,6 @@ class RUNCARD:
     """YAML constants."""
 
     NAME = "name"
-    DEVICE_ID = "device_id"
     ALIAS = "alias"
     INSTRUMENT = "instrument"
     INSTRUMENTS = "instruments"
@@ -58,6 +57,7 @@ class RUNCARD:
     CURRENT_SOURCE = "current_source"
     DISTORTIONS = "distortions"
     DELAY = "delay"
+    FLUX_CONTROL_TOPOLOGY = "flux_control_topology"
 
 
 class PLATFORM:
@@ -68,7 +68,6 @@ class PLATFORM:
     TIMINGS_CALCULATION_METHOD = "timings_calculation_method"
     RESET_METHOD = "reset_method"
     PASSIVE_RESET_DURATION = "passive_reset_duration"
-    DEVICE_ID = "device_id"
     MINIMUM_CLOCK_TIME = "minimum_clock_time"
 
 
@@ -108,12 +107,8 @@ class EXPERIMENT:
     NUM_SCHEDULES = "num_schedules"
     LOOPS = "loops"
     OPTIONS = "options"
-    DEVICE_ID = "device_id"
-    REMOTE_DEVICE_MANUAL_OVERRIDE = "remote_device_manual_override"
-    CONNECTION = "connection"
     CIRCUITS = "circuits"
     PULSE_SCHEDULES = "pulse_schedules"
-    REMOTE_SAVE = "remote_save"
     DESCRIPTION = "description"
 
 
@@ -199,6 +194,7 @@ class INSTRUMENTCONTROLLER:
 
     CONNECTION = "connection"
     MODULES = "modules"
+    RESET = "reset"
 
 
 class CONNECTION:
@@ -214,10 +210,19 @@ class QBLOXRESULT:
     QBLOX_RAW_RESULTS = "qblox_raw_results"
 
 
+class QBLOXMEASUREMENTRESULT:
+    """Qblox Results attribute names."""
+
+    RAW_MEASUREMENT_DATA = "raw_measurement_data"
+
+
 class QMRESULT:
     """Quantum Machines Results attribute names."""
 
-    QM_RAW_RESULTS = "qm_raw_results"
+    I = "i"
+    Q = "q"
+    ADC1 = "adc1"
+    ADC2 = "adc2"
 
 
 class RESULTSDATAFRAME:
@@ -233,7 +238,7 @@ class RESULTSDATAFRAME:
     ACQUISITION_INDEX = "acquisition_index"
     P0 = "p0"
     P1 = "p1"
-    I = "i"  # noqa: E741
+    I = "i"
     Q = "q"
     AMPLITUDE = "amplitude"
     PHASE = "phase"

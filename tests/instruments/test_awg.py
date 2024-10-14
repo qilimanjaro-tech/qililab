@@ -1,5 +1,9 @@
 """File testing the AWG class."""
+
+import re
+
 import pytest
+from qpysequence import Sequence as QpySequence
 
 from qililab.instruments import AWG
 from qililab.instruments.awg_settings import AWGSequencer
@@ -9,23 +13,37 @@ from qililab.pulse import PulseBusSchedule
 class DummyAWG(AWG):
     """Dummy AWG class."""
 
-    # pylint: disable=unused-argument
     def compile(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
     ) -> list:
         return []
 
-    def run(self):  # pylint: disable=arguments-differ
+    def initial_setup(self):
+        pass
+
+    def reset(self):
+        pass
+
+    def turn_on(self):
+        pass
+
+    def turn_off(self):
+        pass
+
+    def run(self):
         pass
 
     def upload(self, port: str):
         pass
 
+    def upload_qpysequence(self, qpysequence: QpySequence, port: str):
+        pass
 
-@pytest.fixture(name="awg")
-def fixture_awg():
-    """Fixture that returns an instance of a dummy AWG."""
-    settings = {
+
+@pytest.fixture(name="awg_settings")
+def fixture_awg_settings():
+    """Fixture that returns AWG settings."""
+    return {
         "alias": "QRM",
         "firmware": "0.7.0",
         "num_sequencers": 2,
@@ -33,8 +51,7 @@ def fixture_awg():
             {
                 "identifier": 0,
                 "chip_port_id": "feedline_input",
-                "output_i": 0,
-                "output_q": 1,
+                "outputs": [0, 1],
                 "intermediate_frequency": 20000000,
                 "gain_i": 0.1,
                 "gain_q": 0.1,
@@ -47,8 +64,7 @@ def fixture_awg():
             {
                 "identifier": 1,
                 "chip_port_id": "feedline_output",
-                "output_i": 2,
-                "output_q": 3,
+                "outputs": [2, 3],
                 "intermediate_frequency": 20000000,
                 "gain_i": 0.1,
                 "gain_q": 0.1,
@@ -60,7 +76,12 @@ def fixture_awg():
             },
         ],
     }
-    return DummyAWG(settings=settings)  # pylint: disable=abstract-class-instantiated
+
+
+@pytest.fixture(name="awg")
+def fixture_awg(awg_settings: dict):
+    """Fixture that returns an instance of a dummy AWG."""
+    return DummyAWG(settings=awg_settings)
 
 
 class TestInitialization:
@@ -76,8 +97,7 @@ class TestInitialization:
             assert isinstance(sequencer, AWGSequencer)
             assert sequencer.identifier == idx
             assert sequencer.chip_port_id in {"feedline_input", "feedline_output"}
-            assert sequencer.output_i == 0 + 2 * idx
-            assert sequencer.output_q == 1 + 2 * idx
+            assert sequencer.outputs == [0 + 2 * idx, 1 + 2 * idx]
             assert sequencer.intermediate_frequency == 20000000
             assert sequencer.gain_i == 0.1
             assert sequencer.gain_q == 0.1
@@ -114,3 +134,22 @@ class TestMethods:
         awg.settings.awg_sequencers[1].identifier = 0
         with pytest.raises(ValueError, match="Each sequencer should have a unique id"):
             awg.get_sequencer(sequencer_id=0)
+
+    def test_num_sequencers_error(self, awg_settings: dict):
+        """test that an error is raised if more than _NUM_MAX_SEQUENCERS are in the qblox module"""
+
+        awg_settings["num_sequencers"] = 0
+        error_string = re.escape("The number of sequencers must be greater than 0. Received: 0")
+        with pytest.raises(ValueError, match=error_string):
+            DummyAWG(settings=awg_settings)
+
+    def test_match_sequencers_error(self, awg_settings: dict):
+        """test that an error is raised if more than _NUM_MAX_SEQUENCERS are in the qblox module"""
+        num_sequencers = 1
+        awg_settings["num_sequencers"] = 1
+        error_string = re.escape(
+            f"The number of sequencers: {num_sequencers} does not match"
+            + f" the number of AWG Sequencers settings specified: {len(awg_settings['awg_sequencers'])}"
+        )
+        with pytest.raises(ValueError, match=error_string):
+            DummyAWG(settings=awg_settings)

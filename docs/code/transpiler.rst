@@ -1,4 +1,4 @@
 ql.transpiler
 ===============
 
-.. automodule:: qililab.transpiler
+.. automodule:: qililab.circuit_transpiler

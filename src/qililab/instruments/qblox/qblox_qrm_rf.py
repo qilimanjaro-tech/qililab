@@ -13,10 +13,14 @@
 # limitations under the License.
 
 """This file contains the QbloxQCMRF class."""
-from dataclasses import dataclass, field
 
-from qililab.instruments import Instrument  # pylint: disable=cyclic-import
-from qililab.instruments.utils.instrument_factory import InstrumentFactory  # pylint: disable=cyclic-import
+from dataclasses import dataclass, field
+from typing import ClassVar
+
+from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm
+
+from qililab.instruments import Instrument
+from qililab.instruments.utils.instrument_factory import InstrumentFactory
 from qililab.typings import InstrumentName, Parameter
 
 from .qblox_qrm import QbloxQRM
@@ -27,6 +31,7 @@ class QbloxQRMRF(QbloxQRM):
     """Qblox QRM-RF driver."""
 
     name = InstrumentName.QRMRF
+    device: QcmQrm
 
     @dataclass
     class QbloxQRMRFSettings(QbloxQRM.QbloxQRMSettings):
@@ -42,7 +47,7 @@ class QbloxQRMRF(QbloxQRM):
 
     # TODO: We should separate instrument settings and instrument parameters, such that the user can quickly get
     # al the settable parameters of an instrument.
-    parameters = {
+    parameters: ClassVar[set[Parameter]] = {
         Parameter.OUT0_IN0_LO_FREQ,
         Parameter.OUT0_IN0_LO_EN,
         Parameter.OUT0_ATT,
@@ -60,10 +65,18 @@ class QbloxQRMRF(QbloxQRM):
         for parameter in self.parameters:
             self.setup(parameter, getattr(self.settings, parameter.value))
 
-    @Instrument.CheckDeviceInitialized
-    def setup(
-        self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None, port_id: str | None = None
-    ):
+    def _map_connections(self):
+        """Disable all connections and map sequencer paths with output/input channels."""
+        # Disable all connections
+        self.device.disconnect_outputs()
+        self.device.disconnect_inputs()
+
+        for sequencer_dataclass in self.awg_sequencers:
+            sequencer = self.device.sequencers[sequencer_dataclass.identifier]
+            sequencer.connect_out0("IQ")
+            sequencer.connect_acq("in0")
+
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Set a parameter of the Qblox QCM-RF module.
         Args:
             parameter (Parameter): Parameter name.
@@ -75,11 +88,13 @@ class QbloxQRMRF(QbloxQRM):
 
         if parameter in self.parameters:
             setattr(self.settings, parameter.value, value)
-            self.device.set(parameter.value, value)
-            return
-        super().setup(parameter, value, channel_id, port_id=port_id)
 
-    def get(self, parameter: Parameter, channel_id: int | None = None, port_id: str | None = None):
+            if self.is_device_active():
+                self.device.set(parameter.value, value)
+            return
+        super().setup(parameter, value, channel_id)
+
+    def get(self, parameter: Parameter, channel_id: int | None = None):
         """Set a parameter of the Qblox QCM-RF module.
         Args:
             parameter (Parameter): Parameter name.
@@ -91,7 +106,7 @@ class QbloxQRMRF(QbloxQRM):
 
         if parameter in self.parameters:
             return getattr(self.settings, parameter.value)
-        return super().get(parameter, channel_id, port_id=port_id)
+        return super().get(parameter, channel_id)
 
     def to_dict(self):
         """Return a dict representation of an `QRM-RF` instrument."""

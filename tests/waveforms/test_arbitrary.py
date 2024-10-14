@@ -1,29 +1,14 @@
-import re
-
 import numpy as np
 import pytest
 
 from qililab.waveforms import Arbitrary
 
-samples = np.array(
-    [
-        0.64534116,
-        0.61077185,
-        0.84978029,
-        0.71466369,
-        0.65842367,
-        0.77841013,
-        0.85828779,
-        0.20028723,
-        0.45814018,
-        0.45901151,
-    ]
-)
+samples = np.linspace(0, 100, 11)
 
 
 @pytest.fixture(name="arbitrary")
 def fixture_square():
-    return Arbitrary(envelope=samples)
+    return Arbitrary(samples=samples)
 
 
 class TestArbitrary:
@@ -34,3 +19,10 @@ class TestArbitrary:
     def test_envelope(self, arbitrary):
         # test envelope method
         assert np.allclose(arbitrary.envelope(), samples)
+
+    def test_envelope_with_higher_resolution(self, arbitrary):
+        # test envelope method
+        assert np.allclose(arbitrary.envelope(resolution=2), np.array([0.0, 20.0, 40.0, 60.0, 80.0, 100.0]))
+
+    def test_get_duration_method(self, arbitrary):
+        assert arbitrary.get_duration() == 11

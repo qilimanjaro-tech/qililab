@@ -13,10 +13,12 @@
 # limitations under the License.
 
 """Runcard class."""
+
 import ast
 import re
 from dataclasses import asdict, dataclass
 from typing import Literal
+from warnings import warn
 
 from qililab.constants import GATE_ALIAS_REGEX
 from qililab.settings.gate_event_settings import GateEventSettings
@@ -24,8 +26,6 @@ from qililab.typings.enums import OperationTimingsCalculationMethod, Parameter, 
 from qililab.utils import nested_dataclass
 
 from .settings import Settings
-
-# pylint: disable=too-few-public-methods
 
 
 @nested_dataclass
@@ -83,6 +83,17 @@ class Runcard:
         """
 
         nodes: list[dict]
+
+    @dataclass
+    class FluxControlTopology:
+        """Dataclass fluxes (e.g. phix_q0 for phix control of qubit 0) and their corresponding bus (e.g. flux_line_q0_x)"""
+
+        flux: str
+        bus: str
+
+        def to_dict(self):
+            """Method to convert to dictionary"""
+            return asdict(self)
 
     @nested_dataclass
     class GatesSettings(Settings):
@@ -200,7 +211,14 @@ class Runcard:
             channel_id: int | None = None,
             alias: str | None = None,
         ):
-            """Cast the new value to its corresponding type and set the new attribute."""
+            """Cast the new value to its corresponding type and set the new attribute.
+
+            Args:
+                parameter (Parameter): Name of the parameter to get.
+                value (float | str | bool): New value to set in the parameter.
+                channel_id (int | None, optional): Channel id. Defaults to None.
+                alias (str): String which specifies where the parameter can be found.
+            """
             if alias is None or alias == "platform":
                 super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
                 return
@@ -241,12 +259,24 @@ class Runcard:
 
     # Runcard class actual initialization
     name: str
-    device_id: int
     chip: Chip
     buses: list[Bus]  # This actually is a list[dict] until the post_init is called
     instruments: list[dict]
     instrument_controllers: list[dict]
     gates_settings: GatesSettings
+    flux_control_topology: list[FluxControlTopology] | None = None
+    device_id: int | None = None
 
     def __post_init__(self):
         self.buses = [self.Bus(**bus) for bus in self.buses] if self.buses is not None else None
+        self.flux_control_topology = (
+            [self.FluxControlTopology(**flux_control) for flux_control in self.flux_control_topology]
+            if self.flux_control_topology is not None
+            else None
+        )
+        if self.device_id is not None:
+            warn(
+                "`device_id` argument is deprecated and will be removed soon. Please remove it from your runcard file.",
+                DeprecationWarning,
+                stacklevel=2,
+            )

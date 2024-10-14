@@ -13,135 +13,105 @@
 # limitations under the License.
 
 """This file contains all the variables used inside a QProgram."""
-import math
+
+from enum import Enum
 from uuid import UUID, uuid4
 
+from qililab.yaml import yaml
 
+
+@yaml.register_class
+class Domain(Enum):
+    """Domain class."""
+
+    Scalar = 0
+    Time = 1
+    Frequency = 2
+    Phase = 3
+    Voltage = 4
+
+    @classmethod
+    def to_yaml(cls, representer, node):
+        """Method to be called automatically during YAML serialization."""
+        return representer.represent_scalar("!Domain", f"{node.name}-{node.value}")
+
+    @classmethod
+    def from_yaml(cls, _, node):
+        """Method to be called automatically during YAML deserialization."""
+        _, value = node.value.split("-")
+        value = int(value)
+        return cls(value)
+
+
+@yaml.register_class
 class Variable:
     """Variable class used to define variables inside a QProgram."""
 
-    _uuid: UUID
-    value: int | float
-
-    def __init__(self):
-        self._uuid = uuid4()
-
-    def __str__(self):
-        return str(self.value)
+    def __init__(self, label: str, domain: Domain = Domain.Scalar) -> None:
+        self._uuid: UUID = uuid4()
+        self._label: str = label
+        self._domain: Domain = domain
 
     def __repr__(self):
-        return repr(self.value)
+        return f"Variable(uuid={self.uuid!r}, label={self.label}, domain={self.domain})"
 
     def __hash__(self):
         return hash(self._uuid)
 
-    def __format__(self, formatstr):
-        return self.value.__format__(formatstr)
-
-    def __pos__(self):
-        return +self.value
-
-    def __neg__(self):
-        return -self.value
-
-    def __abs__(self):
-        return abs(self.value)
-
-    def __round__(self, ndigits=None):
-        return round(self.value, ndigits)
-
-    def __floor__(self):
-        return math.floor(self.value)
-
-    def __ceil__(self):
-        return math.ceil(self.value)
-
-    def __trunc__(self):
-        return math.trunc(self.value)
-
-    def __int__(self):
-        return int(self.value)
-
-    def __float__(self):
-        return float(self.value)
-
-    def __complex__(self):
-        return complex(self.value)
-
-    def __add__(self, other):
-        return self.value + other
-
-    def __sub__(self, other):
-        return self.value - other
-
-    def __mul__(self, other):
-        return self.value * other
-
-    def __truediv__(self, other):
-        return self.value / other
-
-    def __floordiv__(self, other):
-        return self.value // other
-
-    def __mod__(self, other):
-        return self.value % other
-
-    def __pow__(self, other):
-        return self.value**other
-
-    def __radd__(self, other):
-        return other + self.value
-
-    def __rsub__(self, other):
-        return other - self.value
-
-    def __rmul__(self, other):
-        return other * self.value
-
-    def __rtruediv__(self, other):
-        return other / self.value
-
-    def __rfloordiv__(self, other):
-        return other // self.value
-
-    def __rmod__(self, other):
-        return other % self.value
-
-    def __rpow__(self, other):
-        return other**self.value
-
     def __eq__(self, other):
-        return self.value == other
+        return other is not None and isinstance(other, Variable) and self._uuid == other._uuid
 
-    def __ne__(self, other):
-        return self.value != other
+    @property
+    def uuid(self):
+        """Get the uuid of the variable
 
-    def __lt__(self, other):
-        return self.value < other
+        Returns:
+            UUID: The uuid of the variable
+        """
+        return self._uuid
 
-    def __gt__(self, other):
-        return self.value > other
+    @property
+    def label(self):
+        """Get the label of the variable
 
-    def __le__(self, other):
-        return self.value <= other
+        Returns:
+            str: The label of the variable
+        """
+        return self._label
 
-    def __ge__(self, other):
-        return self.value >= other
+    @property
+    def domain(self):
+        """Get the domain of the variable
+
+        Returns:
+            Domain: The domain of the variable
+        """
+        return self._domain
 
 
+@yaml.register_class
 class IntVariable(Variable, int):  # type: ignore
     """Integer variable. This class is used to define a variable of type int, such that Python recognizes this class
     as an integer."""
 
-    def __init__(self, value: int = 0):
-        self.value: int = value
-        super().__init__()
+    def __new__(cls, _: str = "", __: Domain = Domain.Scalar):
+        # Create a new float instance
+        instance = int.__new__(cls, 0)
+        return instance
+
+    def __init__(self, label: str = "", domain: Domain = Domain.Scalar):
+        Variable.__init__(self, label, domain)
 
 
+@yaml.register_class
 class FloatVariable(Variable, float):  # type: ignore
     """Float variable. This class is used to define a variable of type float, such that Python recognizes this class
     as a float."""
 
-    def __init__(self, value: float = 0.0):
-        self.value: float = value
-        super().__init__()
+    def __new__(cls, _: str = "", __: Domain = Domain.Scalar):
+        # Create a new int instance
+        instance = float.__new__(cls, 0.0)
+        return instance
+
+    def __init__(self, label: str = "", domain: Domain = Domain.Scalar):
+        Variable.__init__(self, label, domain)

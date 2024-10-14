@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
 
 from qililab.qprogram.operations.operation import Operation
+from qililab.yaml import yaml
 
 
-@dataclass(frozen=True)
-class Wait(Operation):  # pylint: disable=missing-class-docstring
-    bus: str
-    time: int
+@yaml.register_class
+class Wait(Operation):
+    def __init__(self, bus: str, duration: int) -> None:
+        super().__init__()
+        self.bus: str = bus
+        self.duration: int = duration

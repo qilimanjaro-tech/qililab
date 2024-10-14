@@ -12,12 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass, field
 from uuid import UUID, uuid4
 
+from qililab.yaml import yaml
 
-@dataclass(frozen=True)
+
+@yaml.register_class
 class Element:
     """Class representing an element of QProgram."""
 
-    _uuid: UUID = field(default_factory=uuid4, init=False)
+    def __init__(self):
+        self._uuid = uuid4()
+
+    @property
+    def uuid(self) -> UUID:
+        """Get the UUID."""
+        return self._uuid

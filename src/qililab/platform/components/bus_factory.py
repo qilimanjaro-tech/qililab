@@ -13,6 +13,9 @@
 # limitations under the License.
 
 """BusFactory class module."""
+
+from typing import ClassVar
+
 from .bus_driver import BusDriver
 
 
@@ -24,7 +27,7 @@ class BusFactory:
     If you want to call this Factory inside the `BusDriver` class, import it inside the method were its needed to not cause circular imports.
     """
 
-    handlers: dict[str, type[BusDriver]] = {}
+    handlers: ClassVar[dict[str, type[BusDriver]]] = {}
 
     @classmethod
     def register(cls, handler_cls: type[BusDriver]) -> type[BusDriver]:

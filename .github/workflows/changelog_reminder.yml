@@ -20,4 +20,4 @@ jobs:
             * A one-to-two sentence description of the change. You may include a small working example for new features.
             * A link back to this PR.
         env:
-          GITHUB_TOKEN: "${{ secrets.CHANGELOG_REMINDER_TOKEN }}"
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"

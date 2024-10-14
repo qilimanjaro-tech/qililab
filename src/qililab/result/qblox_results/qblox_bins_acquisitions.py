@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Qblox Bins Acquisitions Result """
+"""Qblox Bins Acquisitions Result"""
+
 from dataclasses import dataclass
 
 import numpy as np
@@ -24,7 +25,7 @@ from qililab.result.qblox_results.qblox_bins_acquisition import QbloxBinAcquisit
 
 
 @dataclass
-class QbloxBinsAcquisitions(Acquisitions):  # pylint: disable=abstract-method
+class QbloxBinsAcquisitions(Acquisitions):
     """Qblox Bins Acquisitions Results
     Args:
         bins (list[BinsData]): List containing a BinsData for each sequencer.

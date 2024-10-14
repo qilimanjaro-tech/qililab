@@ -13,14 +13,19 @@
 # limitations under the License.
 
 """Gaussian waveform."""
+
 import numpy as np
+
+from qililab.qprogram.decorators import requires_domain
+from qililab.qprogram.variable import Domain
+from qililab.yaml import yaml
 
 from .waveform import Waveform
 
 
-# pylint: disable=anomalous-backslash-in-string
-class Gaussian(Waveform):  # pylint: disable=too-few-public-methods
-    """Gaussian waveform with peak at duration/2 and spanning for num_sigmas over the pulse duration.
+@yaml.register_class
+class Gaussian(Waveform):
+    r"""Gaussian waveform with peak at duration/2 and spanning for num_sigmas over the pulse duration.
 
     Standard centered Gaussian pulse shape, symmetrically spanning for ``num_sigmas`` over the pulse duration.
 
@@ -41,6 +46,7 @@ class Gaussian(Waveform):  # pylint: disable=too-few-public-methods
         .. code-block:: python
 
             import qililab as ql
+
             gaussian_envelope = ql.Gaussian(num_sigmas=X, duration=50, amplitude=1).envelope()
 
         which for ``X`` being ``1``, ``4``, ``6`` or ``8``, look respectively like:
@@ -64,12 +70,16 @@ class Gaussian(Waveform):  # pylint: disable=too-few-public-methods
         num_sigmas (float): Sigma number of the gaussian pulse shape. Defines the width of the gaussian pulse.
     """
 
+    @requires_domain("amplitude", Domain.Voltage)
+    @requires_domain("duration", Domain.Time)
+    @requires_domain("num_sigmas", Domain.Scalar)
     def __init__(self, amplitude: float, duration: int, num_sigmas: float):
+        super().__init__()
         self.amplitude = amplitude
         self.duration = duration
         self.num_sigmas = num_sigmas
 
-    def envelope(self, resolution: float = 1.0) -> np.ndarray:
+    def envelope(self, resolution: int = 1) -> np.ndarray:
         """Gaussian envelope centered with respect to the pulse.
 
         The gaussian is symmetrically cut in the given ``num_sigmas``, meaning that it starts and ends at that sigma width.
@@ -77,7 +87,7 @@ class Gaussian(Waveform):  # pylint: disable=too-few-public-methods
         And then to avoid introducing noise at time 0, the full gaussian is shifted down so that it starts at 0.
 
         Args:
-            resolution (float, optional): Resolution of the pulse. Defaults to 1.
+            resolution (int, optional): Resolution of the pulse. Defaults to 1.
 
         Returns:
             np.ndarray: Height of the envelope for each time step.
@@ -93,3 +103,11 @@ class Gaussian(Waveform):  # pylint: disable=too-few-public-methods
         corr_norm = np.amax(np.real(gaussian))
 
         return gaussian * norm / corr_norm if corr_norm != 0 else gaussian
+
+    def get_duration(self) -> int:
+        """Get the duration of the waveform.
+
+        Returns:
+            int: The duration of the waveform in ns.
+        """
+        return self.duration

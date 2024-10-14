@@ -13,13 +13,19 @@
 # limitations under the License.
 
 """DragCorrection waveform."""
+
 import numpy as np
+
+from qililab.qprogram.decorators import requires_domain
+from qililab.qprogram.variable import Domain
+from qililab.yaml import yaml
 
 from .gaussian import Gaussian
 from .waveform import Waveform
 
 
-class DragCorrection(Waveform):  # pylint: disable=too-few-public-methods
+@yaml.register_class
+class DragCorrection(Waveform):
     """Calculates the first order drag correction of the imaginary (Ey) channel of a drive pulse. See https://arxiv.org/abs/0901.0534 (10).
 
     So far only implemented for Gaussian pulses.
@@ -29,15 +35,17 @@ class DragCorrection(Waveform):  # pylint: disable=too-few-public-methods
         waveform (Waveform): waveform on which the drag transformation is calculated
     """
 
+    @requires_domain("drag_coefficient", Domain.Scalar)
     def __init__(self, drag_coefficient: float, waveform: Waveform):
+        super().__init__()
         self.drag_coefficient = drag_coefficient
         self.waveform = waveform
 
-    def envelope(self, resolution: float = 1.0) -> np.ndarray:
+    def envelope(self, resolution: int = 1) -> np.ndarray:
         """Returns the envelope corresponding to the drag correction.
 
         Args:
-            resolution (float, optional): Pulse resolution. Defaults to 1.
+            resolution (int, optional): Pulse resolution. Defaults to 1.
 
         Returns:
             np.ndarray: Height of the envelope for each time step.
@@ -49,3 +57,11 @@ class DragCorrection(Waveform):  # pylint: disable=too-few-public-methods
 
             return (-1 * self.drag_coefficient * (x - mu) / sigma**2) * self.waveform.envelope()
         raise NotImplementedError(f"Cannot apply drag correction on a {self.waveform.__class__.__name__} waveform.")
+
+    def get_duration(self) -> int:
+        """Get the duration of the waveform.
+
+        Returns:
+            int: The duration of the waveform in ns.
+        """
+        return self.waveform.get_duration()

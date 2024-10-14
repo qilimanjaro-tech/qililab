@@ -13,4 +13,7 @@
 # limitations under the License.
 
 """__init__.py"""
-from .qmm import QuantumMachinesManager
+
+from .quantum_machines_cluster import QuantumMachinesCluster
+
+__all__ = ["QuantumMachinesCluster"]

@@ -13,12 +13,16 @@
 # limitations under the License.
 
 """Bus class."""
+
 from dataclasses import InitVar, dataclass
+
+from qpysequence import Sequence as QpySequence
 
 from qililab.chip import Chip, Coil, Coupler, Qubit, Resonator
 from qililab.constants import BUS, NODE, RUNCARD
 from qililab.instruments import Instruments, ParameterNotFound
-from qililab.pulse import PulseBusSchedule, PulseDistortion
+from qililab.pulse import PulseDistortion
+from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.result import Result
 from qililab.settings import Settings
 from qililab.system_control import ReadoutSystemControl, SystemControl
@@ -60,7 +64,7 @@ class Bus:
         distortions: list[PulseDistortion]
         delay: int
 
-        def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
+        def __post_init__(self, platform_instruments: Instruments):  # type: ignore
             if isinstance(self.system_control, dict):
                 system_control_class = Factory.get(name=self.system_control.pop(RUNCARD.NAME))
                 self.system_control = system_control_class(
@@ -69,7 +73,9 @@ class Bus:
             super().__post_init__()
 
             self.distortions = [
-                PulseDistortion.from_dict(distortion) for distortion in self.distortions if isinstance(distortion, dict)
+                PulseDistortion.from_dict(distortion)  # type: ignore[arg-type]
+                for distortion in self.distortions
+                if isinstance(distortion, dict)
             ]
 
     settings: BusSettings
@@ -174,7 +180,7 @@ class Bus:
         else:
             try:
                 self.system_control.set_parameter(
-                    parameter=parameter, value=value, channel_id=channel_id, port_id=self.port
+                    parameter=parameter, value=value, channel_id=channel_id, port_id=self.port, bus_alias=self.alias
                 )
             except ParameterNotFound as error:
                 raise ParameterNotFound(
@@ -192,24 +198,17 @@ class Bus:
         if parameter == Parameter.DELAY:
             return self.settings.delay
         try:
-            return self.system_control.get_parameter(parameter=parameter, channel_id=channel_id, port_id=self.port)
+            return self.system_control.get_parameter(
+                parameter=parameter, channel_id=channel_id, port_id=self.port, bus_alias=self.alias
+            )
         except ParameterNotFound as error:
             raise ParameterNotFound(
                 f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
             ) from error
 
-    def compile(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
-    ) -> list:
-        """Compiles the ``PulseBusSchedule`` into an assembly program.
-
-        Args:
-            pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
-            nshots (int): number of shots / hardware average
-            repetition_duration (int): maximum window for the duration of one hardware repetition
-            num_bins (int): number of bins
-        """
-        return self.system_control.compile(pulse_bus_schedule, nshots, repetition_duration, num_bins)
+    def upload_qpysequence(self, qpysequence: QpySequence):
+        """Uploads the qpysequence into the instrument."""
+        self.system_control.upload_qpysequence(qpysequence=qpysequence, port=self.port)
 
     def upload(self):
         """Uploads any previously compiled program into the instrument."""
@@ -227,6 +226,19 @@ class Bus:
         """
         if isinstance(self.system_control, ReadoutSystemControl):
             return self.system_control.acquire_result()
+
+        raise AttributeError(
+            f"The bus {self.alias} cannot acquire results because it doesn't have a readout system control."
+        )
+
+    def acquire_qprogram_results(self, acquisitions: dict[str, AcquisitionData]) -> list[Result]:
+        """Read the result from the instruments
+
+        Returns:
+            list[Result]: Acquired results in chronological order
+        """
+        if isinstance(self.system_control, ReadoutSystemControl):
+            return self.system_control.acquire_qprogram_results(acquisitions=acquisitions, port=self.port)
 
         raise AttributeError(
             f"The bus {self.alias} cannot acquire results because it doesn't have a readout system control."

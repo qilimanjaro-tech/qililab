@@ -1,9 +1,12 @@
 """Module containing utilities for the tests."""
+
 import copy
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 from qcodes.instrument_drivers.tektronix.Keithley_2600_channels import KeithleyChannel
+from qpysequence import Sequence as QPySequence
+from qpysequence.program import Program as QPyProgram
 
 import qililab as ql
 from qililab.platform import Platform
@@ -16,7 +19,7 @@ def mock_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock, mock_keithley: 
     mock_pulsar_instance = mock_pulsar.return_value
     mock_pulsar_instance.get_acquisitions.side_effect = lambda sequencer: copy.deepcopy(
         {
-            "default": {
+            "acq_q0_0": {
                 "index": 0,
                 "acquisition": {
                     "scope": {
@@ -47,6 +50,8 @@ def mock_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock, mock_keithley: 
             "sequencers",
             "scope_acq_sequencer_select",
             "get_acquisitions",
+            "disconnect_outputs",
+            "disconnect_inputs",
         ]
     )
     mock_pulsar_instance.sequencer0.mock_add_spec(
@@ -80,7 +85,7 @@ def name_generator(base: str):
     """
     next_id = 0
     while True:
-        yield f"{base}_{str(next_id)}"
+        yield f"{base}_{next_id!s}"
         next_id += 1
 
 
@@ -126,9 +131,22 @@ dummy_qcm_name_generator = name_generator("dummy_qcm")
 def build_platform(runcard: dict) -> Platform:
     """Return PlatformBuilderDB instance with loaded platform."""
     runcard = copy.deepcopy(runcard)
-    with patch("qililab.data_management.yaml.safe_load", return_value=runcard) as mock_load:
+    with patch("ruamel.yaml.YAML.load", return_value=runcard) as mock_load:
         with patch("qililab.data_management.open") as mock_open:
             pl = ql.build_platform(runcard="_")
             mock_load.assert_called()
             mock_open.assert_called()
     return pl
+
+
+def is_q1asm_equal(a: str | QPySequence | QPyProgram, b: str | QPySequence | QPyProgram) -> bool:
+    if isinstance(a, QPySequence):
+        a = repr(a._program)
+    if isinstance(a, QPyProgram):
+        a = repr(a)
+
+    if isinstance(b, QPySequence):
+        b = repr(b._program)
+    if isinstance(b, QPyProgram):
+        b = repr(b)
+    return "".join(a.strip().split()) == "".join(b.strip().split())

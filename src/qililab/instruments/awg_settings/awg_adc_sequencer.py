@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" AWG ADC Sequencer """
-
+"""AWG ADC Sequencer"""
 
 from dataclasses import dataclass
 
@@ -23,7 +22,7 @@ from qililab.utils.castings import cast_enum_fields
 
 
 @dataclass
-class AWGADCSequencer(AWGSequencer):  # pylint: disable=too-many-instance-attributes
+class AWGADCSequencer(AWGSequencer):
     """AWG ADC Sequencer
 
     Args:
@@ -48,8 +47,8 @@ class AWGADCSequencer(AWGSequencer):  # pylint: disable=too-many-instance-attrib
     scope_store_enabled: bool
     threshold: float
     threshold_rotation: float
+    time_of_flight: int  # nanoseconds
 
     def __post_init__(self):
         """Cast all enum attributes to its corresponding Enum class."""
-        super().__post_init__()
         cast_enum_fields(obj=self)

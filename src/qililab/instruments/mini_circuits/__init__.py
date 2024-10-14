@@ -13,4 +13,7 @@
 # limitations under the License.
 
 """__init__.py"""
+
 from .attenuator import Attenuator
+
+__all__ = ["Attenuator"]

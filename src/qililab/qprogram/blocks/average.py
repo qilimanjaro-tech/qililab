@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
 
 from qililab.qprogram.blocks.block import Block
+from qililab.yaml import yaml
 
 
-@dataclass(frozen=True)
-class Average(Block):  # pylint: disable=missing-class-docstring
-    shots: int
+@yaml.register_class
+class Average(Block):
+    def __init__(self, shots: int) -> None:
+        super().__init__()
+        self.shots: int = shots

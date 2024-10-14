@@ -1,4 +1,5 @@
 """This file tests the the ``InstrumentController`` class"""
+
 import io
 
 import pytest
@@ -80,3 +81,12 @@ class TestConnection:
         """Test print instruments."""
         instr_cont = platform.instrument_controllers
         assert str(instr_cont) == str(YAML().dump(instr_cont.to_dict(), io.BytesIO()))
+
+    def test_reset_to_dict(self, platform: Platform):
+        """Test that the reset attribute gets reflected when calling the controller to_dict method."""
+        instr_cont = platform.instrument_controllers
+        controllers_dict = instr_cont.to_dict()
+        pulsar_dict = next(c_dict for c_dict in controllers_dict if c_dict["alias"] == "pulsar_controller_qcm_0")
+
+        assert INSTRUMENTCONTROLLER.RESET in pulsar_dict
+        assert not pulsar_dict.get("INSTRUMENTCONTROLLER.RESET")

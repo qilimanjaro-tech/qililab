@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Bus Class Interface."""
+
 from abc import ABC
 from copy import deepcopy
 from typing import Any
@@ -87,9 +88,9 @@ class BusDriver(ABC):
             candidates: list[BaseInstrument | None] = [
                 instrument for instrument in self.instruments.values() if instrument and param_name in instrument.params
             ]
-            if len(candidates) == 1 and isinstance(candidates[0], BaseInstrument):
-                candidates[0].set(param_name, value)
-            elif len(candidates) == 2 and candidates[0] == candidates[1] and isinstance(candidates[0], BaseInstrument):
+            if (len(candidates) == 1 and isinstance(candidates[0], BaseInstrument)) or (
+                len(candidates) == 2 and candidates[0] == candidates[1] and isinstance(candidates[0], BaseInstrument)
+            ):
                 candidates[0].set(param_name, value)
             elif len(candidates) > 1:
                 raise AttributeError(f"Bus {self.alias} contains multiple instruments with the parameter {param_name}.")
@@ -172,7 +173,7 @@ class BusDriver(ABC):
         Returns:
             BusDriver: The initialized BusDriver class.
         """
-        from .bus_factory import BusFactory  # pylint: disable=import-outside-toplevel, cyclic-import
+        from .bus_factory import BusFactory
 
         local_dictionary = deepcopy(dictionary)
         local_dictionary.pop("type", None)
@@ -268,7 +269,7 @@ class BusDriver(ABC):
         instruments_dictionary: dict[str, BaseInstrument] = {}
         used_keys: list[str] = []
 
-        for key, instrument_dict in dictionary.items():  # pylint: disable=too-many-nested-blocks
+        for key, instrument_dict in dictionary.items():
             if key in cls.__instrument_interfaces_caps_translate():
                 for instrument in instruments:
                     # If the alias and the interface of the dictionary coincide with one of the given instruments:

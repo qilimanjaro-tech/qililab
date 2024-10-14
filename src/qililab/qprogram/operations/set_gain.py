@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
 
 from qililab.qprogram.operations.operation import Operation
+from qililab.yaml import yaml
 
 
-@dataclass(frozen=True)
-class SetGain(Operation):  # pylint: disable=missing-class-docstring
-    bus: str
-    gain_path0: float
-    gain_path1: float
+@yaml.register_class
+class SetGain(Operation):
+    def __init__(self, bus: str, gain: float) -> None:
+        super().__init__()
+        self.bus: str = bus
+        self.gain: float = gain

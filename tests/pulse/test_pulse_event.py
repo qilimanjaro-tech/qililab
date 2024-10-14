@@ -1,4 +1,5 @@
 """Tests for the Pulse class."""
+
 import itertools
 
 import numpy as np
@@ -56,8 +57,7 @@ def fixture_pulses(request: pytest.FixtureRequest) -> Pulse:
 @pytest.fixture(
     name="pulse_distortions",
     params=[
-        []
-        + [
+        [
             ExponentialCorrection(tau_exponential=tau_exponential, amp=amp),
             BiasTeeCorrection(tau_bias_tee=tau_bias_tee, norm_factor=NORM_FACTOR),
             LFilterCorrection(a=[0.7, 1.3], b=[0.5, 0.6]),

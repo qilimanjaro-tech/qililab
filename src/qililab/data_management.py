@@ -15,12 +15,9 @@
 import os
 from datetime import datetime
 from pathlib import Path
-from warnings import warn
 
 import h5py
 import numpy as np
-import yaml
-from qiboconnection.api import API
 from ruamel.yaml import YAML
 
 from .platform import Platform
@@ -137,11 +134,16 @@ def load_results(path: str) -> tuple[np.ndarray, dict[str, np.ndarray]]:
 
 
 def save_platform(path: str, platform: Platform) -> str:
-    """Serialize and save the platform in the given path.
+    """Serialize and save the given platform to the specified path.
 
-    If the path string doesn't end with `.yml` or `.yaml`  this function will assume the `path` corresponds to an
-    existing folder. Thus the platform will be saved inside the folder in `path` in a file called `platform_name.yml`,
-    where `platform_name` corresponds to the `name` attribute of the given `Platform`.
+    This function saves the cache values of the :class:`.Platform` object during execution as a YAML file.
+    It does not read the actual instruments. If you have previously used ``platform.set_parameter()`` without being
+    connected to the instruments, it will save this "set" value as the cache values of the :class:`.Platform` object were modified.
+
+    If the `path` string doesn't end with `.yml` or `.yaml`, this function assumes that `path` corresponds to an
+    existing folder. The platform will then be saved inside the folder specified by `path` in a file called
+    `platform_name.yml`, where `platform_name` corresponds to the `name` attribute of the given `Platform`.
+
 
     Args:
         path (str): Path to the folder/file where the YAML file will be saved.
@@ -158,7 +160,7 @@ def save_platform(path: str, platform: Platform) -> str:
         Qililab will use the name of the platform to create the YAML file. If ``platform.name == "galadriel"``, a file
         will be created in ``examples/runcards/galadriel.yml``.
     """
-    if not (path.endswith(".yml") or path.endswith(".yaml")):
+    if not (path.endswith((".yml", ".yaml"))):
         new_path = Path(path) / f"{platform.name}.yml"
     else:
         new_path = Path(path)
@@ -169,9 +171,7 @@ def save_platform(path: str, platform: Platform) -> str:
     return str(new_path)
 
 
-def build_platform(
-    runcard: str | dict | None = None, path: str | None = None, connection: API | None = None, new_drivers: bool = False
-) -> Platform:
+def build_platform(runcard: str | dict, new_drivers: bool = False) -> Platform:
     """Builds a :class:`.Platform` object, given a :ref:`runcard <runcards>`.
 
     Such runcard can be passed in one of the following two ways:
@@ -185,13 +185,12 @@ def build_platform(
     .. code-block:: python3
 
         {
-            "name": name,                                           # str
-            "device_id": device_id,                                 # int
-            "gates_settings": gates_settings,                       # dict
-            "chip": chip,                                           # dict
-            "buses": buses,                                         # list[dict]
-            "instruments": instruments,                             # list[dict]
-            "instrument_controllers": instrument_controllers        # list[dict]
+            "name": name,  # str
+            "gates_settings": gates_settings,  # dict
+            "chip": chip,  # dict
+            "buses": buses,  # list[dict]
+            "instruments": instruments,  # list[dict]
+            "instrument_controllers": instrument_controllers,  # list[dict]
         }
 
     which contains the information the :class:`.Platform` class uses to connect, setup and control the actual chip, buses and instruments of the laboratory.
@@ -201,10 +200,7 @@ def build_platform(
         You can find more information about the complete structure of such dictionary, in the :ref:`Runcards <runcards>` section of the documentation.
 
     Args:
-        path (str): Path to the platform's runcard YAML file. This argument is deprecated and will be removed soon.
         runcard (str | dict): Path to the platform's runcard YAML file, or direct dictionary of the platform's runcard info.
-        connection (API | None, optional): Qiboconnection's API class used to block access to the Platform when connected to it.
-            Defaults to None.
         new_drivers (bool, optional): Whether to use the new drivers or not. Defaults to False.
 
     Returns:
@@ -223,24 +219,18 @@ def build_platform(
         >>> platform.name
         galadriel
     """
-    if path is None and runcard is None:
-        raise ValueError("`runcard` argument (str | dict) has not been passed to the `build_platform()` function.")
-    if path is not None:
-        if runcard is not None:
-            raise ValueError("Use only the `runcard` argument, `path` argument is deprecated.")
-        warn(
-            "`path` argument is deprecated and will be removed soon. Use the `runcard` argument instead.",
-            DeprecationWarning,
-            stacklevel=2,
+    if not isinstance(runcard, (str, dict)):
+        raise ValueError(
+            f"Incorrect type for `runcard` argument in `build_platform()`. Expected (str | dict), got: {type(runcard)}"
         )
-        runcard = path
 
     if new_drivers:
         raise NotImplementedError("New drivers are not supported yet.")
 
     if isinstance(runcard, str):
         with open(file=runcard, mode="r", encoding="utf8") as file:
-            runcard = yaml.safe_load(stream=file)
+            yaml = YAML(typ="safe")
+            runcard = yaml.load(stream=file)
 
     runcard_class = Runcard(**runcard)
-    return Platform(runcard=runcard_class, connection=connection)
+    return Platform(runcard=runcard_class)

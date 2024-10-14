@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
 
 from qililab.qprogram.operations.operation import Operation
+from qililab.yaml import yaml
 
 
-@dataclass(frozen=True)
-class SetPhase(Operation):  # pylint: disable=missing-class-docstring
-    bus: str
-    phase: float
+@yaml.register_class
+class SetPhase(Operation):
+    def __init__(self, bus: str, phase: float) -> None:
+        super().__init__()
+        self.bus: str = bus
+        self.phase: float = phase

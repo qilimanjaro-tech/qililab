@@ -1,4 +1,5 @@
 """Unittest for BusDriver class"""
+
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -242,9 +243,9 @@ class TestBusDriver:
     def test_eq(self, buses: list[BusDriver]):
         """Unittest for __eq__ method."""
         for bus in buses:
-            assert "random str" != bus
+            assert bus != "random str"
 
-    def test_to_dict(self, buses: list[BusDriver]):  # pylint: disable=too-many-branches
+    def test_to_dict(self, buses: list[BusDriver]):
         # sourcery skip: merge-duplicate-blocks, remove-redundant-if, switch
         """Test that the to_dict method of the BusDriver base class works correctly."""
         for bus in buses:
@@ -334,7 +335,7 @@ class TestBusDriver:
                 assert bus == new_bus == newest_bus
 
                 # Test the calls are the same each time
-                for index in range(
-                    69
-                ):  # Three are more depending on the bus, but from this number up, mockings start to appear that give problems with id's...
+                for index in range(2, 66):
+                    # The first 2 and last 3 calls cannot be compared given that the call is done with a MagicMock
+                    # and the assert fails because the mock is not the same
                     assert calls[index] == new_calls[index]

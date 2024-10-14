@@ -12,13 +12,46 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .acquire import Acquire
+from .acquire import Acquire, AcquireWithCalibratedWeights
+from .execute_qprogram import ExecuteQProgram
+from .get_parameter import GetParameter
+from .measure import (
+    Measure,
+    MeasureWithCalibratedWaveform,
+    MeasureWithCalibratedWaveformWeights,
+    MeasureWithCalibratedWeights,
+)
 from .operation import Operation
-from .play import Play
+from .play import Play, PlayWithCalibratedWaveform
 from .reset_phase import ResetPhase
 from .set_frequency import SetFrequency
 from .set_gain import SetGain
+from .set_markers import SetMarkers
 from .set_offset import SetOffset
+from .set_parameter import SetParameter
 from .set_phase import SetPhase
 from .sync import Sync
 from .wait import Wait
+
+__all__ = [
+    "Acquire",
+    "AcquireWithCalibratedWeights",
+    "ExecuteQProgram",
+    "GetParameter",
+    "Measure",
+    "MeasureWithCalibratedWaveform",
+    "MeasureWithCalibratedWaveformWeights",
+    "MeasureWithCalibratedWeights",
+    "Operation",
+    "Play",
+    "PlayWithCalibratedWaveform",
+    "ResetPhase",
+    "SetFrequency",
+    "SetGain",
+    "SetMarkers",
+    "SetOffset",
+    "SetParameter",
+    "SetPhase",
+    "Sync",
+    "Wait",
+]

@@ -1,6 +1,5 @@
 """Tests for the SequencerQCM class."""
-# pylint: disable=protected-access
-from textwrap import dedent
+
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -13,6 +12,7 @@ from qpysequence.weights import Weights
 from qililab.drivers.instruments.qblox.sequencer_qcm import SequencerQCM
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
+from tests.test_utils import is_q1asm_equal
 
 PULSE_SIGMAS = 4
 PULSE_AMPLITUDE = 1
@@ -39,7 +39,7 @@ def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, nu
     pulse_event = PulseEvent(pulse=pulse, start_time=start_time)
     timeline = [pulse_event for _ in range(number_pulses)]
 
-    return PulseBusSchedule(timeline=timeline, port=0)
+    return PulseBusSchedule(timeline=timeline, port="0")
 
 
 def get_envelope():
@@ -57,12 +57,53 @@ def get_envelope():
     return pulse.envelope()
 
 
-expected_program_str_0 = repr(
-    "setup:\n    move             1, R0\n    wait_sync        4\n\naverage:\n    move             0, R1\n    bin:\n        reset_ph\n        set_awg_gain     32767, 32767\n        set_ph           0\n        play             0, 1, 4\n        long_wait_1:\n            wait             996\n\n        add              R1, 1, R1\n        nop\n        jlt              R1, 1, @bin\n    loop             R0, @average\nstop:\n    stop\n\n"
-)
-expected_program_str_1 = repr(
-    "setup:\n    move             1, R0\n    wait_sync        4\n\naverage:\n    move             0, R1\n    bin:\n        long_wait_2:\n            wait             4\n\n        reset_ph\n        set_awg_gain     32767, 32767\n        set_ph           0\n        play             0, 1, 4\n        long_wait_3:\n            wait             992\n\n        add              R1, 1, R1\n        nop\n        jlt              R1, 1, @bin\n    loop             R0, @average\nstop:\n    stop\n\n"
-)
+expected_program_str_0 = """
+setup:
+                move             1, R0
+                wait_sync        4
+
+average:
+                move             0, R1
+bin:
+                reset_ph
+                set_awg_gain     32767, 32767
+                set_ph           0
+                play             0, 1, 4
+long_wait_1:
+                wait             996
+
+                add              R1, 1, R1
+                nop
+                jlt              R1, 1, @bin
+                loop             R0, @average
+stop:
+                stop
+"""
+expected_program_str_1 = """
+setup:
+                move             1, R0
+                wait_sync        4
+
+average:
+                move             0, R1
+bin:
+long_wait_1:
+
+
+                reset_ph
+                set_awg_gain     32767, 32767
+                set_ph           0
+                play             0, 1, 4
+long_wait_2:
+                wait             996
+
+                add              R1, 1, R1
+                nop
+                jlt              R1, 1, @bin
+                loop             R0, @average
+stop:
+                stop
+"""
 
 
 @pytest.fixture(name="pulse_bus_schedule")
@@ -95,53 +136,11 @@ def fixture_sequencer() -> SequencerQCM:
 class TestSequencer:
     """Unit tests checking the Sequencer attributes and methods"""
 
-    def test_init(self):
-        """Unit tests for init method"""
-
-        sequencer_name = "test_sequencer_init"
-        seq_idx = 0
-        sequencer = SequencerQCM(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
-
-        assert sequencer.get("swap_paths") is False
-
-    @patch("qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM._map_outputs")
-    @pytest.mark.parametrize("path0", [0, 1])
-    def test_set_with_qililab_path(self, mock_map_outputs: MagicMock, path0: int):
-        """Unit tests for set method with qililab path"""
-        sequencer_name = "test_sequencer_set_qililab_path"
-        seq_idx = 0
-        sequencer = SequencerQCM(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
-
-        sequencer.set("path0", path0)
-        mock_map_outputs.assert_called_once_with("path0", path0)
-
-    def test_set_with_qblox_parameter(self, sequencer):
-        """Unit tests for set method with qblox parameter"""
-        sequencer.set("channel_map_path0_out0_en", True)
-        assert sequencer.get("channel_map_path0_out0_en") is True
-
-    @pytest.mark.parametrize("path0", [0, 1, 10])
-    def test_map_outputs(self, sequencer, path0: int):
-        """Unit tests for _map_outputs method"""
-        if path0 == 10:
-            error_str = f"Impossible path configuration detected. path0 cannot be mapped to output {path0}."
-            with pytest.raises(ValueError, match=error_str):
-                sequencer._map_outputs("path0", path0)
-                assert sequencer.get("swap_paths") is False
-
-        else:
-            sequencer._map_outputs("path0", path0)
-            if path0 == 0:
-                assert sequencer.get("swap_paths") is False
-            elif path0 == 1:
-                assert sequencer.get("swap_paths") is True
-
-    @pytest.mark.parametrize("path0", [0, 1])
-    def test_generate_waveforms(self, sequencer, pulse_bus_schedule: PulseBusSchedule, path0: int):
+    def test_generate_waveforms(self, sequencer, pulse_bus_schedule: PulseBusSchedule):
         """Unit tests for _generate_waveforms method"""
         label = pulse_bus_schedule.timeline[0].pulse.label()
         envelope = get_envelope()
-        sequencer.set("path0", path0)
+
         waveforms = sequencer._generate_waveforms(pulse_bus_schedule).to_dict()
         waveforms_keys = list(waveforms.keys())
 
@@ -149,33 +148,21 @@ class TestSequencer:
         assert waveforms_keys[0] == f"{label}_I"
         assert waveforms_keys[1] == f"{label}_Q"
 
-        if path0 % 2 != 0:
-            # swapped waveforms should have I component all zeros
-            assert np.all(waveforms[waveforms_keys[0]]["data"]) == 0
-            # swapped waveforms should have Q component equal to gaussian pulse envelope
-            assert np.alltrue(envelope == waveforms[waveforms_keys[1]]["data"])
-        else:
-            # swapped waveforms should have Q component all zeros
-            assert np.all(waveforms[waveforms_keys[1]]["data"]) == 0
-            # swapped waveforms should have Q component equal to gaussian pulse envelope
-            assert np.alltrue(envelope == waveforms[waveforms_keys[0]]["data"])
+        # swapped waveforms should have Q component all zeros
+        assert np.all(waveforms[waveforms_keys[1]]["data"]) == 0
+        # swapped waveforms should have Q component equal to gaussian pulse envelope
+        assert np.all(envelope == waveforms[waveforms_keys[0]]["data"])
 
-    @pytest.mark.parametrize("path0", [0, 1])
-    def test_generate_waveforms_multiple_pulses(
-        self, sequencer, pulse_bus_schedule_repeated_pulses: PulseBusSchedule, path0: int
-    ):
+    def test_generate_waveforms_multiple_pulses(self, sequencer, pulse_bus_schedule_repeated_pulses: PulseBusSchedule):
         """Unit tests for _generate_waveforms method with repeated pulses"""
-        sequencer.set("path0", path0)
         waveforms = sequencer._generate_waveforms(pulse_bus_schedule_repeated_pulses).to_dict()
 
         assert len(waveforms) == 2
 
-    @pytest.mark.parametrize("path0", [0, 1])
     def test_generate_waveforms_negative_amplitude(
-        self, sequencer, pulse_bus_schedule_negative_amplitude: PulseBusSchedule, path0: int
+        self, sequencer, pulse_bus_schedule_negative_amplitude: PulseBusSchedule
     ):
         """Unit tests for _generate_waveforms method with negative amplitude"""
-        sequencer.set("path0", path0)
         waveforms = sequencer._generate_waveforms(pulse_bus_schedule_negative_amplitude).to_dict()
 
         assert isinstance(waveforms, dict)
@@ -217,9 +204,8 @@ class TestSequencer:
         program = sequencer._generate_program(
             pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, nshots=1, repetition_duration=1000, num_bins=1
         )
-
         assert isinstance(program, Program)
-        assert repr(dedent(repr(program))) == expected_program_str
+        is_q1asm_equal(program, expected_program_str)
 
     def test_execute(self, pulse_bus_schedule: PulseBusSchedule):
         """Unit tests for execute method"""

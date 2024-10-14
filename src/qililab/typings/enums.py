@@ -13,7 +13,10 @@
 # limitations under the License.
 
 """Enum classes"""
+
 from enum import Enum
+
+from qililab.yaml import yaml
 
 
 class Instrument(str, Enum):
@@ -91,7 +94,7 @@ class GateName(str, Enum):
         * Park
     """
 
-    I = "I"  # noqa: E741
+    I = "I"
     X = "X"
     RX = "RX"
     Y = "Y"
@@ -141,6 +144,8 @@ class PulseShapeName(str, Enum):
     RECTANGULAR = "rectangular"
     SNZ = "snz"
     COSINE = "cosine"
+    FLATTOP = "flat_top"
+    TWOSTEP = "two_step"
 
 
 class NodeName(str, Enum):
@@ -174,6 +179,7 @@ class InstrumentName(str, Enum):
         * qblox_S4g
         * keysight_e5080b
         * agilent_e5071B
+        * yokogawa_gs200
         * OPX -> Exactly as Quantum Machines InstrumentType
     """
 
@@ -187,8 +193,10 @@ class InstrumentName(str, Enum):
     QBLOX_S4G = "S4g"
     KEYSIGHT_E5080B = "keysight_e5080b"
     AGILENT_E5071B = "agilent_e5071B"
+    YOKOGAWA_GS200 = "yokogawa_gs200"
     QCMRF = "QCM-RF"
-    QUANTUM_MACHINES_MANAGER = "quantum_machines_manager"
+    QUANTUM_MACHINES_CLUSTER = "quantum_machines_cluster"
+    QDEVIL_QDAC2 = "qdevil_qdac2"
 
 
 class InstrumentControllerName(str, Enum):
@@ -203,6 +211,7 @@ class InstrumentControllerName(str, Enum):
         * keithley_2600
         * keysight_e5080b
         * agilent_e5071B
+        * yokogawa
         * qmm
     """
 
@@ -214,7 +223,9 @@ class InstrumentControllerName(str, Enum):
     QBLOX_SPIRACK = "qblox_spi_rack"
     KEYSIGHT_E5080B = "keysight_e5080b_controller"
     AGILENT_E5071B = "agilent_e5071B_controller"
-    QUANTUM_MACHINES_MANAGER = "quantum_machines_manager"
+    YOKOGAWA_GS200 = "yokogawa_gs200_controller"
+    QUANTUM_MACHINES_CLUSTER = "quantum_machines_cluster_controller"
+    QDEVIL_QDAC2 = "qdevil_qdac2"
 
 
 class SystemControlName(str, Enum):
@@ -230,6 +241,7 @@ class SystemControlName(str, Enum):
     READOUT_SYSTEM_CONTROL = "readout_system_control"
 
 
+@yaml.register_class
 class Parameter(str, Enum):
     """Parameter names."""
 
@@ -268,11 +280,13 @@ class Parameter(str, Enum):
     SCOPE_ACQUIRE_TRIGGER_MODE = "scope_acquire_trigger_mode"
     SCOPE_HARDWARE_AVERAGING = "scope_hardware_averaging"
     IF = "intermediate_frequency"
+    SOURCE_MODE = "source_mode"
     VOLTAGE = "voltage"
     CURRENT = "current"
     RAMPING_ENABLED = "ramping_enabled"
     RAMPING_RATE = "ramp_rate"
     SPAN = "span"
+    LOW_PASS_FILTER = "low_pass_filter"  # noqa: S105
     SCATTERING_PARAMETER = "scattering_parameter"
     FREQUENCY_SPAN = "frequency_span"
     FREQUENCY_CENTER = "frequency_center"
@@ -289,10 +303,13 @@ class Parameter(str, Enum):
     MAX_CURRENT = "max_current"
     MAX_VOLTAGE = "max_voltage"
     SCOPE_STORE_ENABLED = "scope_store_enabled"
+    TIME_OF_FLIGHT = "time_of_flight"
+    SMEARING = "smearing"
     GAIN_I = "gain_i"
     GAIN_Q = "gain_q"
     OFFSET_I = "offset_i"
     OFFSET_Q = "offset_q"
+    DC_OFFSET = "dc_offset"
     OFFSET_OUT0 = "offset_out0"
     OFFSET_OUT1 = "offset_out1"
     OFFSET_OUT2 = "offset_out2"
@@ -304,6 +321,7 @@ class Parameter(str, Enum):
     ELECTRICAL_DELAY = "electrical_delay"
     TIMEOUT = "timeout"
     NUM_FLIPS = "num_flips"
+    OUTPUT_STATUS = "output_status"
     WEIGHTS_I = "weights_i"
     WEIGHTS_Q = "weights_q"
     WEIGHED_ACQ_ENABLED = "weighed_acq_enabled"
@@ -327,6 +345,17 @@ class Parameter(str, Enum):
     T_PHI = "t_phi"
     GATE_OPTIONS = "options"
 
+    @classmethod
+    def to_yaml(cls, representer, node):
+        """Method to be called automatically during YAML serialization."""
+        return representer.represent_scalar("!Parameter", f"{node.name}-{node.value}")
+
+    @classmethod
+    def from_yaml(cls, _, node):
+        """Method to be called automatically during YAML deserialization."""
+        _, value = node.value.split("-")
+        return cls(value)
+
 
 class ResultName(str, Enum):
     """Result names.
@@ -337,8 +366,10 @@ class ResultName(str, Enum):
     """
 
     QBLOX = "qblox"
+    QBLOX_QPROGRAM_MEASUREMENT = "qblox_qprogram_measurement"
     VECTOR_NETWORK_ANALYZER = "vector_network_analyzer"
     QUANTUM_MACHINES = "quantum_machines"
+    QUANTUM_MACHINES_MEASUREMENT = "quantum_machines_measurement"
 
 
 class ConnectionName(str, Enum):
@@ -366,6 +397,8 @@ class InstrumentTypeName(str, Enum):
         * Keithley2600
         * QbloxD5a
         * QbloxS4g
+        * YokogawaGS200
+        * QDevilQDac2
     """
 
     QBLOX_QCM = "QbloxQCM"
@@ -375,21 +408,8 @@ class InstrumentTypeName(str, Enum):
     KEITHLEY2600 = "Keithley2600"
     QBLOX_D5A = "QbloxD5a"
     QBLOX_S4G = "QbloxS4g"
-
-
-class LivePlotTypes(str, Enum):
-    """Live Plot Types.
-
-    Args:
-        enum (str): Available plot element types:
-        * LINES
-        * SCATTER
-        * HEATMAP
-    """
-
-    LINES = "LINES"
-    SCATTER = "SCATTER"
-    HEATMAP = "HEATMAP"
+    YOKOGAWA_GS200 = "YokogawaGS200"
+    QDEVIL_QDAC2 = "QDevilQDac2"
 
 
 class VNATriggerModes(str, Enum):
@@ -448,7 +468,7 @@ class Line(str, Enum):
     FEEDLINE_OUTPUT = "feedline_output"
 
 
-class Qubits(str, Enum):  # pylint: disable=missing-class-docstring
+class Qubits(str, Enum):
     ANY = "any"
     ONE = "one"
     TWO = "two"
@@ -468,7 +488,7 @@ class OperationName(str, Enum):
         * BARRIER
     """
 
-    RXY = "Rxy"  # noqa: E741
+    RXY = "Rxy"
     R180 = "R180"
     X = "X"
     CPHASE = "CPhase"
@@ -483,11 +503,18 @@ class OperationName(str, Enum):
     SQUARE = "Square"
 
 
-class OperationTimingsCalculationMethod(str, Enum):  # pylint: disable=missing-class-docstring
+class OperationTimingsCalculationMethod(str, Enum):
     AS_SOON_AS_POSSIBLE = "as_soon_as_possible"
     AS_LATE_AS_POSSIBLE = "as_late_as_possible"
 
 
-class ResetMethod(str, Enum):  # pylint: disable=missing-class-docstring
+class ResetMethod(str, Enum):
     PASSIVE = "passive"
     ACTIVE = "active"
+
+
+class SourceMode(str, Enum):
+    """Source Modes"""
+
+    CURRENT = "current"
+    VOLTAGE = "voltage"

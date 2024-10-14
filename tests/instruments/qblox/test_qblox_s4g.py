@@ -1,4 +1,5 @@
 """This file tests the the ``qblox_d5a`` class"""
+
 from unittest.mock import MagicMock
 
 import pytest
@@ -20,7 +21,7 @@ def fixture_pulsar_controller_qcm():
             "firmware": "0.7.0",
             "dacs": [],
         }
-    )  # pylint: disable=abstract-class-instantiated
+    )
 
 
 class TestQbloxS4g:

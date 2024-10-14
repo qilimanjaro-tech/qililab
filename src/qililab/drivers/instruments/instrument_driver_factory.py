@@ -13,7 +13,10 @@
 # limitations under the License.
 
 """InstrumentDriverFactory class module."""
-from ..interfaces.base_instrument import BaseInstrument
+
+from typing import ClassVar
+
+from qililab.drivers.interfaces.base_instrument import BaseInstrument
 
 
 class InstrumentDriverFactory:
@@ -24,7 +27,7 @@ class InstrumentDriverFactory:
     If you want to call this Factory inside the `BaseInstrument` class, import it inside the method were its needed to not cause circular imports.
     """
 
-    handlers: dict[str, type[BaseInstrument]] = {}
+    handlers: ClassVar[dict[str, type[BaseInstrument]]] = {}
 
     @classmethod
     def register(cls, handler_cls: type[BaseInstrument]) -> type[BaseInstrument]:

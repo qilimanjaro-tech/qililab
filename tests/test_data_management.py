@@ -1,4 +1,5 @@
 """Unit tests for all the methods for data management."""
+
 import copy
 import os
 from pathlib import Path
@@ -6,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
-import yaml
+from ruamel.yaml import YAML
 
 import qililab as ql
 from qililab.data_management import load_results, save_platform, save_results
@@ -15,33 +16,20 @@ from tests.data import Galadriel
 from tests.test_utils import build_platform
 
 
-@patch("qililab.data_management.yaml.safe_load", return_value=copy.deepcopy(Galadriel.runcard))
+@patch("ruamel.yaml.YAML.load", return_value=copy.deepcopy(Galadriel.runcard))
 @patch("qililab.data_management.open")
 class TestPlatformData:
     """Unit tests for the `build_platform` function.."""
 
-    def test_build_platform_passing_a_path_to_old_path_argument(self, mock_open: MagicMock, mock_load: MagicMock):
-        """Test build method."""
-        with pytest.warns() as record:
-            platform = ql.build_platform(path="_")
-        assert isinstance(platform, Platform)
-        assert len(record) == 1
-        assert (
-            str(record[0].message)
-            == "`path` argument is deprecated and will be removed soon. Use the `runcard` argument instead."
-        )
-        mock_load.assert_called_once()
-        mock_open.assert_called_once()
-
     def test_build_platform_passing_a_path_to_runcard_argument(self, mock_open: MagicMock, mock_load: MagicMock):
-        """Test build method."""
+        """Test build method, with a string path."""
         platform = ql.build_platform(runcard="_")
         assert isinstance(platform, Platform)
         mock_load.assert_called_once()
         mock_open.assert_called_once()
 
     def test_build_platform_passing_a_dict_to_runcard_argument(self, mock_open: MagicMock, mock_load: MagicMock):
-        """Test build method."""
+        """Test build method, with a direct dict."""
         platform = ql.build_platform(runcard=copy.deepcopy(Galadriel.runcard))
         assert isinstance(platform, Platform)
         mock_load.assert_not_called()
@@ -69,21 +57,16 @@ class TestPlatformData:
 class TestBuildPlatformCornerCases:
     """Unit tests for the corner cases of the `build_platform` function.."""
 
-    def test_build_method_with_no_arguments(self):
-        """Test build method with the new drivers."""
-        with pytest.raises(ValueError) as no_arg_error:
-            _ = ql.build_platform()
-
-            (msg,) = no_arg_error.value.args
-            assert msg == "`runcard` argument (str | dict) has not been passed to the `build_platform()` function."
-
-    def test_build_method_with_old_path_and_new_runcard_arguments(self):
-        """Test build method with the new drivers."""
-        with pytest.raises(
-            ValueError,
-            match="Use only the `runcard` argument, `path` argument is deprecated.",
-        ):
-            _ = ql.build_platform(runcard="_", path="_")
+    def test_build_platform_passing_invalid_runcard_argument(self):
+        """Test build method, with invalid argument."""
+        for runcard in [None, 1, 1.0, True, False, [], ()]:
+            with pytest.raises(ValueError) as wrong_runcard_error:
+                ql.build_platform(runcard=runcard)
+            (msg,) = wrong_runcard_error.value.args
+            assert (
+                msg
+                == f"Incorrect type for `runcard` argument in `build_platform()`. Expected (str | dict), got: {type(runcard)}"
+            )
 
     def test_build_method_with_new_drivers(self):
         """Test build method with the new drivers."""
@@ -108,7 +91,8 @@ class TestBuildPlatformCornerCases:
         new_saved_platform = ql.build_platform(new_path)
 
         with open(file="./test.yml", mode="r", encoding="utf8") as generated_f:
-            generated_f_dict = yaml.safe_load(stream=generated_f)
+            yaml = YAML(typ="safe")
+            generated_f_dict = yaml.load(stream=generated_f)
 
         assert (
             original_platform.to_dict()
@@ -128,11 +112,12 @@ class TestBuildPlatformCornerCases:
         new_saved_platform = ql.build_platform(new_path)
 
         with open(file="examples/runcards/galadriel.yml", mode="r", encoding="utf8") as yaml_f:
-            yaml_f_dict = yaml.safe_load(stream=yaml_f)
+            yaml = YAML(typ="safe")
+            yaml_f_dict = yaml.load(stream=yaml_f)
         with open(file="./test.yml", mode="r", encoding="utf8") as generated_f:
-            generated_f_dict = yaml.safe_load(stream=generated_f)
+            generated_f_dict = yaml.load(stream=generated_f)
 
-        for i in ["name", "device_id", "chip", "instruments", "instrument_controllers"]:
+        for i in ["name", "chip", "instruments", "instrument_controllers"]:
             assert yaml_f_dict[i] == generated_f_dict[i]
 
         assert (

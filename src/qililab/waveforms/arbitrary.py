@@ -13,16 +13,20 @@
 # limitations under the License.
 
 """Arbitrary waveform."""
+
 import numpy as np
+
+from qililab.yaml import yaml
 
 from .waveform import Waveform
 
 
-class Arbitrary(Waveform):  # pylint: disable=too-few-public-methods, disable=missing-class-docstring
+@yaml.register_class
+class Arbitrary(Waveform):
     """Arbitrary waveform. Creates a waveform with the passed envelope.
 
     Args:
-        envelope(np.ndarray): Passed envelope to base the waveform on.
+        samples(np.ndarray): Passed envelope to base the waveform on.
 
     Examples:
         If you want to create a waveform with an envelope given by:
@@ -30,23 +34,46 @@ class Arbitrary(Waveform):  # pylint: disable=too-few-public-methods, disable=mi
         .. code-block:: python
 
             import numpy as np
-            original_envelope = np.ones(50)
+            samples = np.ones(50)
 
         You would just need to do:
 
         .. code-block:: python
 
             import qililab as ql
-            arbitrary_envelope = ql.Arbitrary(envelope=original_envelope)
+            arbitrary_envelope = ql.Arbitrary(samples=samples)
     """
 
-    def __init__(self, envelope: np.ndarray):
-        self.samples = envelope
+    def __init__(self, samples: np.ndarray):
+        super().__init__()
+        self.samples = samples
 
-    def envelope(self) -> np.ndarray:
-        """Returns the originally passed envelope.
+    def envelope(self, resolution: int = 1) -> np.ndarray:
+        """Returns the envelope corresponding to the arbitrary waveform.
+
+        Args:
+            resolution (int, optional): Pulse resolution. Defaults to 1.
 
         Returns:
             np.ndarray: Height of the envelope for each time step.
         """
-        return self.samples
+        if resolution == 1:
+            return self.samples
+
+        # Calculate the averaging window
+        averaging_window = int(len(self.samples) / resolution)
+
+        # Calculate the moving average
+        cumsum = np.cumsum(self.samples)
+        cumsum[averaging_window:] = cumsum[averaging_window:] - cumsum[:-averaging_window]
+        moving_avg = cumsum[averaging_window:] / averaging_window
+
+        # Apply scaling and shifting
+        scale_factor = (self.samples.max() - self.samples.min()) / (moving_avg.max() - moving_avg.min())
+        shift = self.samples.max() - moving_avg.max() * scale_factor
+        scaled_avg = moving_avg * scale_factor + shift
+
+        # Apply clamping
+        clamped_avg = np.clip(scaled_avg, self.samples.min(), self.samples.max())
+
+        return clamped_avg

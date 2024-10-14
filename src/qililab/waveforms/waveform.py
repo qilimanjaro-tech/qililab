@@ -13,14 +13,13 @@
 # limitations under the License.
 
 """Waveform protocol class."""
+
 from abc import abstractmethod
-from typing import Protocol, runtime_checkable
 
 import numpy as np
 
 
-@runtime_checkable
-class Waveform(Protocol):  # pylint: disable=too-few-public-methods, disable=missing-class-docstring
+class Waveform:
     """Waveforms describes the pulses envelope's shapes. ``Waveform`` is their abstract base class.
 
     Every child of this interface needs to contain an `envelope` method.
@@ -31,9 +30,17 @@ class Waveform(Protocol):  # pylint: disable=too-few-public-methods, disable=mis
     """
 
     @abstractmethod
-    def envelope(self) -> np.ndarray:
+    def envelope(self, resolution: int = 1) -> np.ndarray:
         """Returns the pulse height for each time step.
 
         Returns:
             np.ndarray: Height of the envelope for each time step.
         """
+
+    def get_duration(self) -> int:
+        """Get the duration of the waveform.
+
+        Returns:
+            int: The duration of the waveform in ns.
+        """
+        return len(self.envelope())

@@ -12,15 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
 
 import numpy as np
 
 from qililab.qprogram.blocks.block import Block
 from qililab.qprogram.variable import Variable
+from qililab.yaml import yaml
 
 
-@dataclass(frozen=True)
-class Loop(Block):  # pylint: disable=missing-class-docstring
-    variable: Variable
-    values: np.ndarray
+@yaml.register_class
+class Loop(Block):
+    def __init__(self, variable: Variable, values: np.ndarray) -> None:
+        super().__init__()
+        self.variable: Variable = variable
+        self.values: np.ndarray = values

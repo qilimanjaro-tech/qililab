@@ -1,4 +1,5 @@
 """Unittest for DriveBus class"""
+
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -43,10 +44,10 @@ def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, nu
     return PulseBusSchedule(timeline=timeline, port="test")
 
 
-class MockQcmQrmRF(DummyInstrument):  # pylint: disable=abstract-method
+class MockQcmQrmRF(DummyInstrument):
     """Mocks the QcmQrmRF class."""
 
-    def __init__(self, name, qcm_qrm, parent=None, slot_idx=0):  # pylint: disable=unused-argument
+    def __init__(self, name, qcm_qrm, parent=None, slot_idx=0):
         """Init function"""
         super().__init__(name=name, gates=["dac1"])
 
@@ -150,7 +151,7 @@ class TestDriveBus:
     def test_set(self, drive_bus: DriveBus):
         """Test set method"""
         # Testing with parameters that exists
-        sequencer_param = "channel_map_path0_out0_en"
+        sequencer_param = "marker_ovr_en"
         lo_frequency_param = parameters.lo.frequency
         attenuation_param = parameters.attenuator.attenuation
         drive_bus.set(param_name=sequencer_param, value=True)
@@ -178,7 +179,7 @@ class TestDriveBus:
     def test_get(self, drive_bus: DriveBus):
         """Test get method"""
         # Testing with parameters that exists
-        sequencer_param = "channel_map_path0_out0_en"
+        sequencer_param = "marker_ovr_en"
         lo_frequency_param = parameters.lo.frequency
         attenuation_param = parameters.attenuator.attenuation
         drive_bus.set(param_name=sequencer_param, value=True)
@@ -368,10 +369,8 @@ class TestDriveBusSerialization:
                 "AWG": {
                     "alias": AWG_ALIAS,
                     "parameters": {
-                        "channel_map_path0_out0_en": True,
-                        "channel_map_path1_out1_en": True,
-                        "channel_map_path0_out2_en": True,
-                        "channel_map_path1_out3_en": True,
+                        "connect_out0": True,
+                        "connect_acq": True,
                         "sync_en": True,
                         "nco_freq": True,
                         "nco_phase_offs": True,
@@ -432,7 +431,6 @@ class TestDriveBusSerialization:
                         "thresholded_acq_trigger_en": True,
                         "thresholded_acq_trigger_address": True,
                         "thresholded_acq_trigger_invert": True,
-                        "swap_paths": True,
                         "path0_out": True,
                         "path1_out": True,
                         "intermediate_frequency": True,

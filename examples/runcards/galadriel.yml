@@ -1,7 +1,5 @@
 name: galadriel_soprano_master
 
-device_id: 9
-
 gates_settings:
   delay_between_pulses: 0
   delay_before_readout: 4
@@ -170,6 +168,20 @@ gates_settings:
             name: snz
             t_phi: 1
             b: 0.5
+
+flux_control_topology: # example for the flux to bus mapping (analog)
+  - flux: "phix_q0"
+    bus: "flux_line_q0_bus"
+  - flux: "phiz_q0"
+    bus: "flux_line_q0_bus"
+  - flux: "phix_q1"
+    bus: "flux_line_q1_bus"
+  - flux: "phiz_q1"
+    bus: "flux_line_q1_bus"
+  - flux: "phix_c1_0"
+    bus: "flux_line_q0_bus"
+  - flux: "phix_c1_0"
+    bus: "flux_line_q0_bus"
 
 chip:
   nodes:
@@ -404,8 +416,7 @@ instruments:
       - identifier: 0
         chip_port_id: feedline_input
         qubit: 0
-        output_i: 0
-        output_q: 1
+        outputs: [0, 1]
         gain_i: .5
         gain_q: .5
         offset_i: 0
@@ -429,11 +440,11 @@ instruments:
         acquisition_timeout: 1
         hardware_demodulation: true
         scope_store_enabled: false
+        time_of_flight: 40
       - identifier: 1
         chip_port_id: feedline_input
         qubit: 1
-        output_i: 0
-        output_q: 1
+        outputs: [0, 1]
         gain_i: .5
         gain_q: .5
         offset_i: 0
@@ -457,11 +468,11 @@ instruments:
         acquisition_timeout: 1
         hardware_demodulation: true
         scope_store_enabled: false
+        time_of_flight: 40
       - identifier: 2
         chip_port_id: feedline_input
         qubit: 2
-        output_i: 0
-        output_q: 1
+        outputs: [0, 1]
         gain_i: .5
         gain_q: .5
         offset_i: 0
@@ -485,11 +496,11 @@ instruments:
         acquisition_timeout: 1
         hardware_demodulation: true
         scope_store_enabled: false
+        time_of_flight: 40
       - identifier: 3
         chip_port_id: feedline_input
         qubit: 3
-        output_i: 0
-        output_q: 1
+        outputs: [0, 1]
         gain_i: .5
         gain_q: .5
         offset_i: 0
@@ -513,11 +524,11 @@ instruments:
         acquisition_timeout: 1
         hardware_demodulation: true
         scope_store_enabled: false
+        time_of_flight: 40
       - identifier: 4
         chip_port_id: feedline_input
         qubit: 4
-        output_i: 0
-        output_q: 1
+        outputs: [0, 1]
         gain_i: .5
         gain_q: .5
         offset_i: 0
@@ -541,6 +552,7 @@ instruments:
         acquisition_timeout: 1
         hardware_demodulation: true
         scope_store_enabled: false
+        time_of_flight: 40
   - name: QCM-RF
     alias: QCM-RF1
     firmware: 0.7.0
@@ -558,8 +570,7 @@ instruments:
     awg_sequencers:
       - identifier: 0
         chip_port_id: drive_line_q0
-        output_i: 0
-        output_q: 1
+        outputs: [0]
         gain_i: 0.1
         gain_q: 0.1
         offset_i: 0. # -0.012
@@ -571,8 +582,7 @@ instruments:
         hardware_modulation: true
       - identifier: 1
         chip_port_id: drive_line_q1
-        output_i: 2
-        output_q: 3
+        outputs: [1]
         gain_i: 1
         gain_q: 1
         offset_i: 0
@@ -599,8 +609,7 @@ instruments:
     awg_sequencers:
       - identifier: 0
         chip_port_id: drive_line_q2
-        output_i: 0
-        output_q: 1
+        outputs: [0]
         gain_i: 0.1
         gain_q: 0.1
         offset_i: 0.
@@ -627,8 +636,7 @@ instruments:
     awg_sequencers:
       - identifier: 0
         chip_port_id: drive_line_q3
-        output_i: 0
-        output_q: 1
+        outputs: [0]
         gain_i: 0.1
         gain_q: 0.1
         offset_i: 0.
@@ -640,8 +648,7 @@ instruments:
         hardware_modulation: true
       - identifier: 1
         chip_port_id: drive_line_q4
-        output_i: 2
-        output_q: 3
+        outputs: [1]
         gain_i: 1
         gain_q: 1
         offset_i: 0
@@ -659,8 +666,7 @@ instruments:
     awg_sequencers:
       - identifier: 0
         chip_port_id: flux_line_q0
-        output_i: 0
-        output_q: 1
+        outputs: [0, 1]
         gain_i: 0.1
         gain_q: 0.1
         offset_i: 0.
@@ -672,8 +678,7 @@ instruments:
         hardware_modulation: true
       - identifier: 1
         chip_port_id: flux_line_q1
-        output_i: 1
-        output_q: 0
+        outputs: [1, 0]
         gain_i: 1
         gain_q: 1
         offset_i: 0
@@ -685,8 +690,7 @@ instruments:
         hardware_modulation: true
       - identifier: 2
         chip_port_id: flux_line_q3
-        output_i: 2
-        output_q: 3
+        outputs: [2, 3]
         gain_i: 1
         gain_q: 1
         offset_i: 0
@@ -698,8 +702,7 @@ instruments:
         hardware_modulation: true
       - identifier: 3
         chip_port_id: flux_line_q4
-        output_i: 3
-        output_q: 2
+        outputs: [3, 2]
         gain_i: 1
         gain_q: 1
         offset_i: 0
@@ -717,8 +720,7 @@ instruments:
     awg_sequencers:
       - identifier: 0
         chip_port_id: flux_line_q2
-        output_i: 0
-        output_q: 1
+        outputs: [0, 1]
         gain_i: 1.
         gain_q: 1.
         offset_i: 0.
@@ -759,6 +761,7 @@ instrument_controllers:
         slot_id: 14
       - alias: QCM2
         slot_id: 14
+    reset: False
   - name: rohde_schwarz
     alias: rohde_schwarz_controller_0
     reference_clock: internal
@@ -768,6 +771,7 @@ instrument_controllers:
     modules:
       - alias: rs_1
         slot_id: 0
+    reset: True
   - name: mini_circuits
     alias: attenuator_controller_0
     connection:
@@ -776,3 +780,4 @@ instrument_controllers:
     modules:
       - alias: attenuator
         slot_id: 0
+    reset: True

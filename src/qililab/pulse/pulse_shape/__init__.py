@@ -13,9 +13,14 @@
 # limitations under the License.
 
 """__init__.py"""
+
 from .cosine import Cosine
 from .drag import Drag
+from .flat_top import FlatTop
 from .gaussian import Gaussian
 from .pulse_shape import PulseShape
 from .rectangular import Rectangular
 from .snz import SNZ
+from .two_step import TwoStep
+
+__all__ = ["SNZ", "Cosine", "Drag", "FlatTop", "Gaussian", "PulseShape", "Rectangular", "TwoStep"]

@@ -12,13 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
-
 from qililab.qprogram.operations.operation import Operation
 from qililab.waveforms import IQPair
+from qililab.yaml import yaml
 
 
-@dataclass(frozen=True)
-class Acquire(Operation):  # pylint: disable=missing-class-docstring
-    bus: str
-    weights: IQPair | None
+@yaml.register_class
+class Acquire(Operation):
+    def __init__(self, bus: str, weights: IQPair, save_adc: bool = False) -> None:
+        super().__init__()
+        self.bus: str = bus
+        self.weights: IQPair = weights
+        self.save_adc: bool = save_adc
+
+
+@yaml.register_class
+class AcquireWithCalibratedWeights(Operation):
+    def __init__(self, bus: str, weights: str, save_adc: bool = False) -> None:
+        super().__init__()
+        self.bus: str = bus
+        self.weights: str = weights
+        self.save_adc: bool = save_adc

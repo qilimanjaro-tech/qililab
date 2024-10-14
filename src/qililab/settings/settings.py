@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Settings class."""
+
 from dataclasses import dataclass
 from types import NoneType
 from typing import Any
@@ -30,7 +31,16 @@ class Settings:
         cast_enum_fields(obj=self)
 
     def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
-        """Cast the new value to its corresponding type and set the new attribute."""
+        """Cast the new value to its corresponding type and set the new attribute.
+
+        Args:
+            parameter (Parameter): Name of the parameter.
+            value (float | bool | str): Value of the parameter.
+            channel_id (int | None, optional): Channel id. Defaults to None.
+
+        Raises:
+            ValueError: If the parameter is a list and channel_id is None.
+        """
         param: str = parameter.value
         attribute = getattr(self, param)
 
@@ -41,13 +51,14 @@ class Settings:
 
     def _set_parameter_to_attribute(self, value: float | str | bool, parameter_name: str, attribute: Any):
         """Set the parameter value to its corresponding attribute
+
         Args:
             value (float | str | bool): _description_
             parameter_name (str): _description_
             attribute (Any): _description_
         """
         attr_type = type(attribute)
-        if attr_type == int:  # FIXME: Depending on how we define de value, python thinks it is an int
+        if attr_type is int:  # FIXME: Depending on how we define de value, python thinks it is an int
             attr_type = float
         if attr_type != NoneType:
             value = attr_type(value)
@@ -60,6 +71,7 @@ class Settings:
         channel_id: int | None,
     ):
         """Set the parameter value to its corresponding attribute list element
+
         Args:
             value (float | str | bool): _description_
             attribute (list[float  |  str  |  bool]): _description_

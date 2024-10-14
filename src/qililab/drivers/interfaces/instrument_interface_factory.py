@@ -13,6 +13,9 @@
 # limitations under the License.
 
 """InstrumentInterfaceFactory class module."""
+
+from typing import ClassVar
+
 from .base_instrument import BaseInstrument
 
 
@@ -24,7 +27,7 @@ class InstrumentInterfaceFactory:
     If you want to call this Factory inside the BaseInstrument class, import it inside the method were its needed to not cause circular imports.
     """
 
-    handlers: dict[str, type[BaseInstrument]] = {}
+    handlers: ClassVar[dict[str, type[BaseInstrument]]] = {}
 
     @classmethod
     def register(cls, handler_cls: type[BaseInstrument]) -> type[BaseInstrument]:

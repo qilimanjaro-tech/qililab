@@ -13,15 +13,17 @@
 # limitations under the License.
 
 """QubitControl class."""
+
 from abc import abstractmethod
 from dataclasses import asdict, dataclass
 from typing import Sequence
+
+from qpysequence import Sequence as QpySequence
 
 from qililab.constants import RUNCARD
 from qililab.instruments.awg_settings.awg_sequencer import AWGSequencer
 from qililab.instruments.awg_settings.typings import AWGTypes
 from qililab.instruments.instrument import Instrument
-from qililab.pulse import PulseBusSchedule
 from qililab.utils.asdict_factory import dict_factory
 
 
@@ -51,7 +53,7 @@ class AWG(Instrument):
                     + f" the number of AWG Sequencers settings specified: {len(self.awg_sequencers)}"
                 )
             self.awg_sequencers = [
-                AWGSequencer(**sequencer) if isinstance(sequencer, dict) else sequencer  # pylint: disable=not-a-mapping
+                AWGSequencer(**sequencer) if isinstance(sequencer, dict) else sequencer
                 for sequencer in self.awg_sequencers
             ]
 
@@ -65,24 +67,12 @@ class AWG(Instrument):
     settings: AWGSettings
 
     @abstractmethod
-    def compile(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
-    ) -> list:
-        """Compiles the ``PulseBusSchedule`` into an assembly program.
-
-        Args:
-            pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
-            nshots (int): number of shots / hardware average
-            repetition_duration (int): repetition duration
-            num_bins (int): number of bins
-
-        Returns:
-            list: list of compiled assembly programs
-        """
-
-    @abstractmethod
     def run(self, port: str):
         """Run the uploaded program"""
+
+    @abstractmethod
+    def upload_qpysequence(self, qpysequence: QpySequence, port: str):
+        """Upload qpysequence."""
 
     @abstractmethod
     def upload(self, port: str):

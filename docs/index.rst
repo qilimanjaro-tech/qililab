@@ -81,12 +81,19 @@ Qililab Documentation
    :hidden:
 
    code/ql
+   code/calibration
    code/chip
    code/drivers
-   code/experiment
    code/platform
    code/pulse
    code/qprogram
    code/result
    code/transpiler
    code/waveforms
+
+.. toctree::
+   :caption: Release Notes
+   :maxdepth: 1
+   :hidden:
+
+   changelog
