@@ -737,7 +737,6 @@ class Platform:
 
         Args:
             experiment (Experiment): The experiment object defining the sequence of operations and loops.
-            base_data_path (str): The base directory path where the experiment results will be stored.
 
         Returns:
             str: The path to the file where the results are stored.
