@@ -16,11 +16,10 @@ from qpysequence import Sequence, Waveforms
 from ruamel.yaml import YAML
 
 from qililab import Arbitrary, save_platform
-from qililab.chip import Chip, Qubit
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.exceptions import ExceptionGroup
 from qililab.instrument_controllers import InstrumentControllers
-from qililab.instruments import AWG, AWGAnalogDigitalConverter, SignalGenerator
+from qililab.instruments import SignalGenerator
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
@@ -31,8 +30,7 @@ from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.settings import Runcard
-from qililab.settings.gate_event_settings import GateEventSettings
-from qililab.system_control import ReadoutSystemControl
+from qililab.settings.circuit_compilation.gate_event_settings import GateEventSettings
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import IQPair, Square
 from tests.data import Galadriel, SauronQuantumMachines
@@ -187,7 +185,6 @@ class TestPlatformInitialization:
         assert isinstance(platform.gates_settings, Runcard.GatesSettings)
         assert isinstance(platform.instruments, Instruments)
         assert isinstance(platform.instrument_controllers, InstrumentControllers)
-        assert isinstance(platform.chip, Chip)
         assert isinstance(platform.buses, Buses)
         assert platform._connected_to_instruments is False
 
@@ -248,20 +245,6 @@ class TestPlatform:
             platform.disconnect()
         mock_logger.info.assert_called_once_with("Already disconnected from the instruments")
 
-    @pytest.mark.parametrize("alias", ["feedline_input_output_bus", "drive_line_q0_bus"])
-    def test_get_ch_id_from_qubit_and_bus(self, alias: str, platform: Platform):
-        """Test that get_ch_id_from_qubits gets the channel id it should get from the runcard"""
-        channel_id = platform.get_ch_id_from_qubit_and_bus(alias=alias, qubit_index=0)
-        assert channel_id == 0
-
-    def test_get_ch_id_from_qubit_and_bus_error_no_bus(self, platform: Platform):
-        """Test that the method raises an error if the alias is not in the buses returned."""
-        alias = "dummy"
-        qubit_id = 0
-        error_string = f"Could not find bus with alias {alias} for qubit {qubit_id}"
-        with pytest.raises(ValueError, match=re.escape(error_string)):
-            platform.get_ch_id_from_qubit_and_bus(alias=alias, qubit_index=qubit_id)
-
     def test_get_element_method_unknown_returns_none(self, platform: Platform):
         """Test get_element method with unknown element."""
         element = platform.get_element(alias="ABC")
@@ -289,20 +272,10 @@ class TestPlatform:
         element = platform.get_element(alias="rs_0")
         assert isinstance(element, SignalGenerator)
 
-    def test_qubit_0_instance(self, platform: Platform):
-        """Test qubit 0 instance."""
-        element = platform.get_element(alias="q0")
-        assert isinstance(element, Qubit)
-
-    def test_bus_0_awg_instance(self, platform: Platform):
-        """Test bus 0 qubit control instance."""
-        element = platform.get_element(alias=InstrumentName.QBLOX_QCM.value)
-        assert isinstance(element, AWG)
-
     def test_bus_1_awg_instance(self, platform: Platform):
         """Test bus 1 qubit readout instance."""
         element = platform.get_element(alias=f"{InstrumentName.QBLOX_QRM.value}_0")
-        assert isinstance(element, AWGAnalogDigitalConverter)
+        assert isinstance(element, QbloxModule)
 
     @patch("qililab.data_management.open")
     @patch("qililab.data_management.YAML.dump")
@@ -312,24 +285,24 @@ class TestPlatform:
         mock_open.assert_called_once_with(file=Path("runcard.yml"), mode="w", encoding="utf-8")
         mock_dump.assert_called_once()
 
-    def test_get_bus_by_qubit_index(self, platform: Platform):
-        """Test get_bus_by_qubit_index method."""
-        _, control_bus, readout_bus = platform._get_bus_by_qubit_index(0)
-        assert isinstance(control_bus, Bus)
-        assert isinstance(readout_bus, Bus)
-        assert not isinstance(control_bus.system_control, ReadoutSystemControl)
-        assert isinstance(readout_bus.system_control, ReadoutSystemControl)
+    # def test_get_bus_by_qubit_index(self, platform: Platform):
+    #     """Test get_bus_by_qubit_index method."""
+    #     _, control_bus, readout_bus = platform._get_bus_by_qubit_index(0)
+    #     assert isinstance(control_bus, Bus)
+    #     assert isinstance(readout_bus, Bus)
+    #     assert not isinstance(control_bus.system_control, ReadoutSystemControl)
+    #     assert isinstance(readout_bus.system_control, ReadoutSystemControl)
 
-    def test_get_bus_by_qubit_index_raises_error(self, platform: Platform):
-        """Test that the get_bus_by_qubit_index method raises an error when there is no bus connected to the port
-        of the given qubit."""
-        platform.buses[0].settings.port = 100
-        with pytest.raises(
-            ValueError,
-            match="There can only be one bus connected to a port. There are 0 buses connected to port drive_q0",
-        ):
-            platform._get_bus_by_qubit_index(0)
-        platform.buses[0].settings.port = 0  # Setting it back to normal to not disrupt future tests
+    # def test_get_bus_by_qubit_index_raises_error(self, platform: Platform):
+    #     """Test that the get_bus_by_qubit_index method raises an error when there is no bus connected to the port
+    #     of the given qubit."""
+    #     platform.buses[0].settings.port = 100
+    #     with pytest.raises(
+    #         ValueError,
+    #         match="There can only be one bus connected to a port. There are 0 buses connected to port drive_q0",
+    #     ):
+    #         platform._get_bus_by_qubit_index(0)
+    #     platform.buses[0].settings.port = 0  # Setting it back to normal to not disrupt future tests
 
     @pytest.mark.parametrize("alias", ["drive_line_bus", "feedline_input_output_bus", "foobar"])
     def test_get_bus_by_alias(self, platform: Platform, alias):

@@ -10,7 +10,6 @@ from qibo.backends import NumpyBackend
 from qibo.gates import CZ, M, X
 from qibo.models import Circuit
 
-from qililab.chip import Chip
 from qililab.circuit_transpiler import CircuitTranspiler
 from qililab.circuit_transpiler.native_gates import Drag, Wait
 from qililab.platform import Bus, Buses, Platform
@@ -18,7 +17,7 @@ from qililab.pulse import Pulse, PulseEvent, PulseSchedule
 from qililab.pulse.pulse_shape import SNZ, Gaussian, Rectangular
 from qililab.pulse.pulse_shape import Drag as Drag_pulse
 from qililab.settings import Runcard
-from qililab.settings.gate_event_settings import GateEventSettings
+from qililab.settings.circuit_compilation.gate_event_settings import GateEventSettings
 from tests.data import Galadriel
 from tests.test_utils import build_platform
 
@@ -1020,7 +1019,7 @@ class TestCircuitTranspiler:
         """Test that transpiling negative amplitudes results in an added PI phase."""
         c = Circuit(1)
         c.add(Drag(0, -np.pi / 2, 0))
-        transpiler = CircuitTranspiler(platform=platform)
+        transpiler = CircuitTranspiler(gates_settings=platform.gates_settings)
         pulse_schedule = transpiler.circuit_to_pulses(circuits=[c])[0]
         assert np.allclose(pulse_schedule.elements[0].timeline[0].pulse.amplitude, (np.pi / 2) * 0.8 / np.pi)
         assert np.allclose(pulse_schedule.elements[0].timeline[0].pulse.phase, 0 + np.pi)
@@ -1035,6 +1034,6 @@ class TestCircuitTranspiler:
         )
         circuit = Circuit(1)
         circuit.add(Drag(0, 1, 1))
-        transpiler = CircuitTranspiler(platform=platform)
+        transpiler = CircuitTranspiler(gates_settings=platform.gates_settings)
         with pytest.raises(ValueError, match=error_string):
             transpiler.circuit_to_pulses(circuits=[circuit])

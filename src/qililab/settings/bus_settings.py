@@ -12,27 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Node class"""
 from dataclasses import dataclass
 
-from qililab.settings import Settings
-from qililab.typings import FactoryElement
+from qililab.typings import ChannelID
 
 
-@dataclass(kw_only=True)
-class Node(Settings, FactoryElement):
-    """This class is used to represent a node of the chip's graph.
-
-    Each node is an element of the chip.
-
+@dataclass
+class BusSettings:
+    """Dataclass with all the settings the buses of the platform need.
     Args:
-        alias (str): Alias of the node
-        nodes (list[str]): List of nodes within the node
+        alias (str): Alias of the bus.
+        system_control (dict): Dictionary containing the settings of the system control of the bus.
+        distortions (list[dict]): List of dictionaries containing the settings of the distortions applied to each
+            bus.
+        delay (int, optional): Delay applied to all pulses sent in this bus. Defaults to 0.
     """
 
-    alias: str  #: Alias of the node
-    nodes: list[str]  #: List of nodes within the node
-
-    def __str__(self):
-        """String representation of a node."""
-        return f"{self.alias}"
+    alias: str
+    instruments: list[str]
+    channels: list[ChannelID | None]

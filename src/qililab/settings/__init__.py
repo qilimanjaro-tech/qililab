@@ -14,7 +14,9 @@
 
 """__init__.py"""
 
+from .bus_settings import BusSettings
+from .circuit_compilation import GatesSettings
 from .runcard import Runcard
 from .settings import Settings
 
-__all__ = ["Runcard", "Settings"]
+__all__ = ["BusSettings", "GatesSettings", "Runcard", "Settings"]

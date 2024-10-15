@@ -12,26 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Qubit class"""
-from dataclasses import dataclass
-
-from qililab.chip.node import Node
-from qililab.typings import NodeName
-from qililab.utils import Factory
-
-
-@Factory.register
-@dataclass
-class Qubit(Node):
-    """This class is used to represent each of the qubits in a chip.
-
-    Each qubit has a frequency associated to it and an index within the chip.
-
-    Args:
-        frequency (float): frequency of the qubit
-        qubit_index (int): qubit index
-    """
-
-    name = NodeName.QUBIT
-    frequency: float  #: frequency of the qubit
-    qubit_index: int  #: index of the qubit
+from .bus_settings import BusSettings as BusSettings
+from .gate_event_settings import GateEventSettings as GateEventSettings
+from .gates_settings import GatesSettings as GatesSettings

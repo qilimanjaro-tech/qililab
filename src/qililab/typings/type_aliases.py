@@ -12,17 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Coil class"""
-from dataclasses import dataclass
+"""Type aliases"""
 
-from qililab.chip.node import Node
-from qililab.typings import NodeName
-from qililab.utils import Factory
-
-
-@Factory.register
-@dataclass
-class Coil(Node):
-    """This class is used to represent a coil within the chip."""
-
-    name = NodeName.COIL
+ChannelID = int | str
+ParameterValue = int | float | bool | str

@@ -27,7 +27,7 @@ from qm.program import Program
 
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
-from qililab.typings import InstrumentName, Parameter, QMMDriver
+from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue, QMMDriver
 from qililab.utils import hash_qua_program, merge_dictionaries
 
 
@@ -418,7 +418,14 @@ class QuantumMachinesCluster(Instrument):
         """Get the QUA config dictionary."""
         return self._config
 
-    @Instrument.CheckDeviceInitialized
+    def is_awg(self) -> bool:
+        """Returns True if instrument is an AWG."""
+        return True
+
+    def is_adc(self) -> bool:
+        """Returns True if instrument is an AWG/ADC."""
+        return True
+
     def initial_setup(self):
         """Sets initial instrument settings.
 
@@ -436,7 +443,6 @@ class QuantumMachinesCluster(Instrument):
         self._config = self.settings.to_qua_config()
         self._config_created = True
 
-    @Instrument.CheckDeviceInitialized
     def turn_on(self):
         """Turns on the instrument."""
         if not self._is_connected_to_qm:
@@ -447,11 +453,9 @@ class QuantumMachinesCluster(Instrument):
             if self.settings.run_octave_calibration:
                 self.run_octave_calibration()
 
-    @Instrument.CheckDeviceInitialized
     def reset(self):
         """Resets instrument settings."""
 
-    @Instrument.CheckDeviceInitialized
     def turn_off(self):
         """Turns off an instrument."""
         if self._is_connected_to_qm:
@@ -558,7 +562,7 @@ class QuantumMachinesCluster(Instrument):
 
         return (con_name, con_port, con_fem)
 
-    def set_parameter_of_bus(self, bus: str, parameter: Parameter, value: float | str | bool) -> None:
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None) -> None:
         """Sets the parameter of the instrument into the cache (runtime dataclasses).
 
         And if connection to instruments is established, then to the instruments as well.
@@ -572,6 +576,7 @@ class QuantumMachinesCluster(Instrument):
             ValueError: Raised when passed bus is not found, or rf_inputs is not connected to an octave.
             ParameterNotFound: Raised if parameter does not exist.
         """
+        bus = str(channel_id)
         element = next((element for element in self.settings.elements if element["bus"] == bus), None)
         if element is None:
             raise ValueError(f"Bus {bus} was not found in {self.name} settings.")
@@ -740,9 +745,9 @@ class QuantumMachinesCluster(Instrument):
                 self._qm.set_input_dc_offset_by_element(element=bus, output=output, offset=output_offset)
             return
 
-        raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}.")
+        raise ParameterNotFound(self, parameter)
 
-    def get_parameter_of_bus(self, bus: str, parameter: Parameter) -> float | str | bool | tuple:
+    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None) -> ParameterValue:
         """Gets the value of a parameter.
 
         Args:
@@ -756,6 +761,7 @@ class QuantumMachinesCluster(Instrument):
             ParameterNotFound: Raised if parameter does not exist.
         """
         # Just in case, read from the `settings`, even though in theory the config should always be synch:
+        bus = str(channel_id)
         settings_config_dict = self.settings.to_qua_config()
         config_keys = settings_config_dict["elements"][bus]
         element = next((element for element in self.settings.elements if element["bus"] == bus), None)
@@ -774,11 +780,12 @@ class QuantumMachinesCluster(Instrument):
         if parameter == Parameter.GAIN:
             if "mixInputs" in config_keys and "outputs" in config_keys:
                 port_i = settings_config_dict["elements"][bus]["outputs"]["out1"]
-                port_q = settings_config_dict["elements"][bus]["outputs"]["out2"]
-                return (
-                    settings_config_dict["controllers"][port_i[0]]["analog_inputs"][port_i[1]]["gain_db"],  # type: ignore[typeddict-item]
-                    settings_config_dict["controllers"][port_q[0]]["analog_inputs"][port_q[1]]["gain_db"],  # type: ignore[typeddict-item]
-                )
+                # port_q = settings_config_dict["elements"][bus]["outputs"]["out2"]
+                return settings_config_dict["controllers"][port_i[0]]["analog_inputs"][port_i[1]]["gain_db"]  # type: ignore[typeddict-item]
+                # return (
+                #     settings_config_dict["controllers"][port_i[0]]["analog_inputs"][port_i[1]]["gain_db"],  # type: ignore[typeddict-item]
+                #     settings_config_dict["controllers"][port_q[0]]["analog_inputs"][port_q[1]]["gain_db"],  # type: ignore[typeddict-item]
+                # )
             if "RF_inputs" in config_keys:
                 port = settings_config_dict["elements"][bus]["RF_inputs"]["port"]
                 return settings_config_dict["octaves"][port[0]]["RF_outputs"][port[1]]["gain"]
@@ -819,7 +826,7 @@ class QuantumMachinesCluster(Instrument):
                 return settings_config_dict["controllers"][con_name]["analog_inputs"][out_value]["offset"]  # type: ignore[typeddict-item]
             return settings_config_dict["controllers"][con_name]["fems"][con_fem]["analog_inputs"][out_value]["offset"]  # type: ignore[typeddict-item]
 
-        raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
+        raise ParameterNotFound(self, parameter)
 
     def compile(self, program: Program) -> str:
         """Compiles and stores a given QUA program on the Quantum Machines instance,
@@ -858,7 +865,7 @@ class QuantumMachinesCluster(Instrument):
         pending_job = self._qm.queue.add_compiled(compiled_program_id)
 
         # TODO: job.wait_for_execution() is deprecated and will be removed in the future. Please use job.wait_until("Running") instead.
-        job = pending_job.wait_for_execution()  # type: ignore[return-value]
+        job = pending_job.wait_for_execution()  # type: ignore[return-value, union-attr]
         if self._pending_set_intermediate_frequency:
             for bus, intermediate_frequency in self._pending_set_intermediate_frequency.items():
                 job.set_intermediate_frequency(element=bus, freq=intermediate_frequency)  # type: ignore[union-attr]

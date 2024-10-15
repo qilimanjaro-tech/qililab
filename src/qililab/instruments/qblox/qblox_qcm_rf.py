@@ -19,9 +19,8 @@ from typing import TYPE_CHECKING, ClassVar
 
 from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm
 
-from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils.instrument_factory import InstrumentFactory
-from qililab.typings import InstrumentName, Parameter
+from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 
 from .qblox_qcm import QbloxQCM
 
@@ -71,7 +70,6 @@ class QbloxQCMRF(QbloxQCM):
         Parameter.OUT1_OFFSET_PATH1,
     }
 
-    @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """Initial setup"""
         super().initial_setup()
@@ -87,7 +85,7 @@ class QbloxQCMRF(QbloxQCM):
             sequencer = self.device.sequencers[sequencer_dataclass.identifier]
             getattr(sequencer, f"connect_out{sequencer_dataclass.outputs[0]}")("IQ")
 
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
         """Set a parameter of the Qblox QCM-RF module.
 
         Args:
@@ -97,9 +95,9 @@ class QbloxQCMRF(QbloxQCM):
         """
         if parameter == Parameter.LO_FREQUENCY:
             if channel_id is not None:
-                sequencer: AWGQbloxSequencer = self._get_sequencer_by_id(channel_id)
+                sequencer: AWGQbloxSequencer = self._get_sequencer_by_id(int(channel_id))
             else:
-                raise ParameterNotFound(
+                raise Exception(
                     "`channel_id` cannot be None when setting the `LO_FREQUENCY` parameter."
                     "Please specify the sequencer index or use the specific Qblox parameter."
                 )
@@ -111,9 +109,9 @@ class QbloxQCMRF(QbloxQCM):
             if self.is_device_active():
                 self.device.set(parameter.value, value)
             return
-        super().setup(parameter, value, channel_id)
+        super().set_parameter(parameter, value, channel_id)
 
-    def get(self, parameter: Parameter, channel_id: int | None = None):
+    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
         """Set a parameter of the Qblox QCM-RF module.
 
         Args:
@@ -123,9 +121,9 @@ class QbloxQCMRF(QbloxQCM):
         """
         if parameter == Parameter.LO_FREQUENCY:
             if channel_id is not None:
-                sequencer: AWGQbloxSequencer = self._get_sequencer_by_id(channel_id)
+                sequencer: AWGQbloxSequencer = self._get_sequencer_by_id(int(channel_id))
             else:
-                raise ParameterNotFound(
+                raise Exception(
                     "`channel_id` cannot be None when setting the `LO_FREQUENCY` parameter."
                     "Please specify the sequencer index or use the specific Qblox parameter."
                 )
@@ -133,7 +131,7 @@ class QbloxQCMRF(QbloxQCM):
 
         if parameter in self.parameters:
             return getattr(self.settings, parameter.value)
-        return super().get(parameter, channel_id)
+        return super().get_parameter(parameter, channel_id)
 
     def to_dict(self):
         """Return a dict representation of an `QCM-RF` instrument."""

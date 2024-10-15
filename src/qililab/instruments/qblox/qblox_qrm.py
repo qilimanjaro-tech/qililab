@@ -18,19 +18,18 @@ from dataclasses import dataclass
 from typing import Sequence, cast
 
 from qililab.config import logger
-from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
-from qililab.instruments.awg_settings import AWGQbloxADCSequencer
-from qililab.instruments.instrument import Instrument, ParameterNotFound
+from qililab.instruments.decorators import check_device_initialized
+from qililab.instruments.qblox.qblox_adc_sequencer import QbloxADCSequencer
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
 from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
-from qililab.typings.enums import AcquireTriggerMode, InstrumentName, Parameter
+from qililab.typings import AcquireTriggerMode, ChannelID, InstrumentName, IntegrationMode, Parameter, ParameterValue
 
 
 @InstrumentFactory.register
-class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
+class QbloxQRM(QbloxModule):
     """Qblox QRM class.
 
     Args:
@@ -41,12 +40,11 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
     _scoping_sequencer: int | None = None
 
     @dataclass
-    class QbloxQRMSettings(
-        QbloxModule.QbloxModuleSettings, AWGAnalogDigitalConverter.AWGAnalogDigitalConverterSettings
-    ):
+    class QbloxQRMSettings(QbloxModule.QbloxModuleSettings):
         """Contains the settings of a specific QRM."""
 
-        awg_sequencers: Sequence[AWGQbloxADCSequencer]
+        awg_sequencers: Sequence[QbloxADCSequencer]
+        acquisition_delay_time: int  # ns
 
         def __post_init__(self):
             """build AWGQbloxADCSequencer"""
@@ -62,14 +60,21 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 )
 
             self.awg_sequencers = [
-                AWGQbloxADCSequencer(**sequencer) if isinstance(sequencer, dict) else sequencer
+                QbloxADCSequencer(**sequencer) if isinstance(sequencer, dict) else sequencer
                 for sequencer in self.awg_sequencers
             ]
             super().__post_init__()
 
     settings: QbloxQRMSettings
 
-    @Instrument.CheckDeviceInitialized
+    def is_awg(self) -> bool:
+        """Returns True if instrument is an AWG."""
+        return True
+
+    def is_adc(self) -> bool:
+        """Returns True if instrument is an AWG/ADC."""
+        return True
+
     def initial_setup(self):
         """Initial setup"""
         super().initial_setup()
@@ -79,20 +84,20 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             # Remove all acquisition data
             self.device.delete_acquisition_data(sequencer=sequencer_id, all=True)
             self._set_integration_length(
-                value=cast(AWGQbloxADCSequencer, sequencer).integration_length, sequencer_id=sequencer_id
+                value=cast(QbloxADCSequencer, sequencer).integration_length, sequencer_id=sequencer_id
             )
             self._set_acquisition_mode(
-                value=cast(AWGQbloxADCSequencer, sequencer).scope_acquire_trigger_mode, sequencer_id=sequencer_id
+                value=cast(QbloxADCSequencer, sequencer).scope_acquire_trigger_mode, sequencer_id=sequencer_id
             )
             self._set_scope_hardware_averaging(
-                value=cast(AWGQbloxADCSequencer, sequencer).scope_hardware_averaging, sequencer_id=sequencer_id
+                value=cast(QbloxADCSequencer, sequencer).scope_hardware_averaging, sequencer_id=sequencer_id
             )
             self._set_hardware_demodulation(
-                value=cast(AWGQbloxADCSequencer, sequencer).hardware_demodulation, sequencer_id=sequencer_id
+                value=cast(QbloxADCSequencer, sequencer).hardware_demodulation, sequencer_id=sequencer_id
             )
-            self._set_threshold(value=cast(AWGQbloxADCSequencer, sequencer).threshold, sequencer_id=sequencer_id)
+            self._set_threshold(value=cast(QbloxADCSequencer, sequencer).threshold, sequencer_id=sequencer_id)
             self._set_threshold_rotation(
-                value=cast(AWGQbloxADCSequencer, sequencer).threshold_rotation, sequencer_id=sequencer_id
+                value=cast(QbloxADCSequencer, sequencer).threshold_rotation, sequencer_id=sequencer_id
             )
 
     def _map_connections(self):
@@ -122,16 +127,50 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 else:
                     raise ValueError("The scope can only be stored in one sequencer at a time.")
 
+    @check_device_initialized
     def acquire_result(self) -> QbloxResult:
-        """Read the result from the AWG instrument
+        """Wait for sequencer to finish sequence, wait for acquisition to finish and get the acquisition results.
+        If any of the timeouts is reached, a TimeoutError is raised.
 
         Returns:
-            QbloxResult: Acquired Qblox result
-        """
-        return self.get_acquisitions()
+            QbloxResult: Class containing the acquisition results.
 
-    def acquire_qprogram_results(  # type: ignore[override]
-        self, acquisitions: dict[str, AcquisitionData], port: str
+        """
+        results = []
+        integration_lengths = []
+        for sequencer in self.awg_sequencers:
+            if sequencer.identifier in self.sequences:
+                sequencer_id = sequencer.identifier
+                flags = self.device.get_sequencer_state(
+                    sequencer=sequencer_id, timeout=cast(QbloxADCSequencer, sequencer).sequence_timeout
+                )
+                logger.info("Sequencer[%d] flags: \n%s", sequencer_id, flags)
+                self.device.get_acquisition_state(
+                    sequencer=sequencer_id, timeout=cast(QbloxADCSequencer, sequencer).acquisition_timeout
+                )
+
+                if sequencer.scope_store_enabled:
+                    self.device.store_scope_acquisition(sequencer=sequencer_id, name="default")
+
+                for key, data in self.device.get_acquisitions(sequencer=sequencer.identifier).items():
+                    acquisitions = data["acquisition"]
+                    # parse acquisition index
+                    _, qubit, measure = key.split("_")
+                    qubit = int(qubit[1:])
+                    measurement = int(measure)
+                    acquisitions["qubit"] = qubit
+                    acquisitions["measurement"] = measurement
+                    results.append(acquisitions)
+                    integration_lengths.append(sequencer.used_integration_length)
+                self.device.sequencers[sequencer.identifier].sync_en(False)
+                integration_lengths.append(sequencer.used_integration_length)
+                self.device.delete_acquisition_data(sequencer=sequencer_id, all=True)
+
+        return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
+
+    @check_device_initialized
+    def acquire_qprogram_results(
+        self, acquisitions: dict[str, AcquisitionData], channel_id: ChannelID
     ) -> list[QbloxMeasurementResult]:
         """Read the result from the AWG instrument
 
@@ -141,33 +180,28 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         Returns:
             list[QbloxQProgramMeasurementResult]: Acquired Qblox results in chronological order.
         """
-        return self._get_qprogram_acquisitions(acquisitions=acquisitions, port=port)
-
-    @Instrument.CheckDeviceInitialized
-    def _get_qprogram_acquisitions(
-        self, acquisitions: dict[str, AcquisitionData], port: str
-    ) -> list[QbloxMeasurementResult]:
         results = []
         for acquisition, acquistion_data in acquisitions.items():
-            sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
-            for sequencer in sequencers:
-                if sequencer.identifier in self.sequences:
-                    self.device.get_acquisition_state(
-                        sequencer=sequencer.identifier,
-                        timeout=cast(AWGQbloxADCSequencer, sequencer).acquisition_timeout,
-                    )
-                    if acquistion_data.save_adc:
-                        self.device.store_scope_acquisition(sequencer=sequencer.identifier, name=acquisition)
-                    raw_measurement_data = self.device.get_acquisitions(sequencer=sequencer.identifier)[acquisition][
-                        "acquisition"
-                    ]
-                    measurement_result = QbloxMeasurementResult(
-                        bus=acquisitions[acquisition].bus, raw_measurement_data=raw_measurement_data
-                    )
-                    results.append(measurement_result)
+            sequencer = next(
+                (sequencer for sequencer in self.awg_sequencers if sequencer.identifier == channel_id), None
+            )
+            if sequencer is not None and sequencer.identifier in self.sequences:
+                self.device.get_acquisition_state(
+                    sequencer=sequencer.identifier,
+                    timeout=cast(QbloxADCSequencer, sequencer).acquisition_timeout,
+                )
+                if acquistion_data.save_adc:
+                    self.device.store_scope_acquisition(sequencer=sequencer.identifier, name=acquisition)
+                raw_measurement_data = self.device.get_acquisitions(sequencer=sequencer.identifier)[acquisition][
+                    "acquisition"
+                ]
+                measurement_result = QbloxMeasurementResult(
+                    bus=acquisitions[acquisition].bus, raw_measurement_data=raw_measurement_data
+                )
+                results.append(measurement_result)
 
-                    # always deleting acquisitions without checkind save_adc flag
-                    self.device.delete_acquisition_data(sequencer=sequencer.identifier, name=acquisition)
+                # always deleting acquisitions without checking save_adc flag
+                self.device.delete_acquisition_data(sequencer=sequencer.identifier, name=acquisition)
         return results
 
     def _set_device_hardware_demodulation(self, value: bool, sequencer_id: int):
@@ -245,62 +279,240 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
     def _set_nco(self, sequencer_id: int):
         """Enable modulation/demodulation of pulses and setup NCO frequency."""
         super()._set_nco(sequencer_id=sequencer_id)
-        if cast(AWGQbloxADCSequencer, self.get_sequencer(sequencer_id)).hardware_demodulation:
+        if cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).hardware_demodulation:
             self._set_hardware_demodulation(
                 value=self.get_sequencer(sequencer_id).hardware_modulation, sequencer_id=sequencer_id
             )
-
-    @Instrument.CheckDeviceInitialized
-    def get_acquisitions(self) -> QbloxResult:
-        """Wait for sequencer to finish sequence, wait for acquisition to finish and get the acquisition results.
-        If any of the timeouts is reached, a TimeoutError is raised.
-
-        Returns:
-            QbloxResult: Class containing the acquisition results.
-
-        """
-        results = []
-        integration_lengths = []
-        for sequencer in self.awg_sequencers:
-            if sequencer.identifier in self.sequences:
-                sequencer_id = sequencer.identifier
-                flags = self.device.get_sequencer_state(
-                    sequencer=sequencer_id, timeout=cast(AWGQbloxADCSequencer, sequencer).sequence_timeout
-                )
-                logger.info("Sequencer[%d] flags: \n%s", sequencer_id, flags)
-                self.device.get_acquisition_state(
-                    sequencer=sequencer_id, timeout=cast(AWGQbloxADCSequencer, sequencer).acquisition_timeout
-                )
-
-                if sequencer.scope_store_enabled:
-                    self.device.store_scope_acquisition(sequencer=sequencer_id, name="default")
-
-                for key, data in self.device.get_acquisitions(sequencer=sequencer.identifier).items():
-                    acquisitions = data["acquisition"]
-                    # parse acquisition index
-                    _, qubit, measure = key.split("_")
-                    qubit = int(qubit[1:])
-                    measurement = int(measure)
-                    acquisitions["qubit"] = qubit
-                    acquisitions["measurement"] = measurement
-                    results.append(acquisitions)
-                    integration_lengths.append(sequencer.used_integration_length)
-                self.device.sequencers[sequencer.identifier].sync_en(False)
-                integration_lengths.append(sequencer.used_integration_length)
-                self.device.delete_acquisition_data(sequencer=sequencer_id, all=True)
-
-        return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
 
     def integration_length(self, sequencer_id: int):
         """QbloxPulsarQRM 'integration_length' property.
         Returns:
             int: settings.integration_length.
         """
-        return cast(AWGQbloxADCSequencer, self.get_sequencer(sequencer_id)).integration_length
+        return cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).integration_length
 
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def setup(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
         """set a specific parameter to the instrument"""
-        try:
-            AWGAnalogDigitalConverter.setup(self, parameter=parameter, value=value, channel_id=channel_id)
-        except ParameterNotFound:
-            QbloxModule.setup(self, parameter=parameter, value=value, channel_id=channel_id)
+        if channel_id is None:
+            if self.num_sequencers == 1:
+                channel_id = 0
+            else:
+                raise ValueError("channel not specified to update instrument")
+
+        channel_id = int(channel_id)
+        if parameter == Parameter.ACQUISITION_DELAY_TIME:
+            self._set_acquisition_delay_time(value=value)
+            return
+        if parameter == Parameter.SCOPE_HARDWARE_AVERAGING:
+            self._set_scope_hardware_averaging(value=value, sequencer_id=channel_id)
+            return
+        if parameter == Parameter.HARDWARE_DEMODULATION:
+            self._set_hardware_demodulation(value=value, sequencer_id=channel_id)
+            return
+        if parameter == Parameter.SCOPE_ACQUIRE_TRIGGER_MODE:
+            self._set_acquisition_mode(value=value, sequencer_id=channel_id)
+            return
+        if parameter == Parameter.INTEGRATION_LENGTH:
+            self._set_integration_length(value=value, sequencer_id=channel_id)
+            return
+        if parameter == Parameter.SAMPLING_RATE:
+            self._set_sampling_rate(value=value, sequencer_id=channel_id)
+            return
+        if parameter == Parameter.INTEGRATION_MODE:
+            self._set_integration_mode(value=value, sequencer_id=channel_id)
+            return
+        if parameter == Parameter.SEQUENCE_TIMEOUT:
+            self._set_sequence_timeout(value=value, sequencer_id=channel_id)
+            return
+        if parameter == Parameter.ACQUISITION_TIMEOUT:
+            self._set_acquisition_timeout(value=value, sequencer_id=channel_id)
+            return
+        if parameter == Parameter.SCOPE_STORE_ENABLED:
+            self._set_scope_store_enabled(value=value, sequencer_id=channel_id)
+            return
+        if parameter == Parameter.THRESHOLD:
+            self._set_threshold(value=value, sequencer_id=channel_id)
+            return
+        if parameter == Parameter.THRESHOLD_ROTATION:
+            self._set_threshold_rotation(value=value, sequencer_id=channel_id)
+            return
+        if parameter == Parameter.TIME_OF_FLIGHT:
+            self._set_time_of_flight(value=value, sequencer_id=channel_id)
+            return
+        super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+
+    def _set_scope_hardware_averaging(self, value: float | str | bool, sequencer_id: int):
+        """set scope_hardware_averaging for the specific channel
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not bool
+        """
+        cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).scope_hardware_averaging = bool(value)
+
+        if self.is_device_active():
+            self._set_device_scope_hardware_averaging(value=bool(value), sequencer_id=sequencer_id)
+
+    def _set_threshold(self, value: float | str | bool, sequencer_id: int):
+        """Set threshold value for the specific channel.
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+        """
+        cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).threshold = float(value)
+
+        if self.is_device_active():
+            self._set_device_threshold(value=float(value), sequencer_id=sequencer_id)
+
+    def _set_threshold_rotation(self, value: float | str | bool, sequencer_id: int):
+        """Set threshold rotation value for the specific channel.
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+        """
+        cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).threshold_rotation = float(value)
+        if self.is_device_active():
+            self._set_device_threshold_rotation(value=float(value), sequencer_id=sequencer_id)
+
+    def _set_hardware_demodulation(self, value: float | str | bool, sequencer_id: int):
+        """set hardware demodulation
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not bool
+        """
+        cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).hardware_demodulation = bool(value)
+        if self.is_device_active():
+            self._set_device_hardware_demodulation(value=bool(value), sequencer_id=sequencer_id)
+
+    def _set_acquisition_mode(self, value: float | str | bool | AcquireTriggerMode, sequencer_id: int):
+        """set acquisition_mode for the specific channel
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not string
+        """
+        if not isinstance(value, AcquireTriggerMode) and not isinstance(value, str):
+            raise ValueError(f"value must be a string or AcquireTriggerMode. Current type: {type(value)}")
+        cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).scope_acquire_trigger_mode = AcquireTriggerMode(value)
+        if self.is_device_active():
+            self._set_device_acquisition_mode(mode=AcquireTriggerMode(value), sequencer_id=sequencer_id)
+
+    def _set_integration_length(self, value: int | float | str | bool, sequencer_id: int):
+        """set integration_length for the specific channel
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float
+        """
+        cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).integration_length = int(value)
+        if self.is_device_active():
+            self._set_device_integration_length(value=int(value), sequencer_id=sequencer_id)
+
+    def _set_sampling_rate(self, value: int | float | str | bool, sequencer_id: int):
+        """set sampling_rate for the specific channel
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float
+        """
+        cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).sampling_rate = float(value)
+
+    def _set_integration_mode(self, value: float | str | bool | IntegrationMode, sequencer_id: int):
+        """set integration_mode for the specific channel
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not string
+        """
+        if isinstance(value, (IntegrationMode, str)):
+            cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).integration_mode = IntegrationMode(value)
+        else:
+            raise ValueError(f"value must be a string or IntegrationMode. Current type: {type(value)}")
+
+    def _set_sequence_timeout(self, value: int | float | str | bool, sequencer_id: int):
+        """set sequence_timeout for the specific channel
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float or int
+        """
+        cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).sequence_timeout = int(value)
+
+    def _set_acquisition_timeout(self, value: int | float | str | bool, sequencer_id: int):
+        """set acquisition_timeout for the specific channel
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float or int
+        """
+        cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).acquisition_timeout = int(value)
+
+    def _set_acquisition_delay_time(self, value: int | float | str | bool):
+        """set acquisition_delaty_time for the specific channel
+
+        Args:
+            value (float | str | bool): value to update
+
+        Raises:
+            ValueError: when value type is not float or int
+        """
+        self.settings.acquisition_delay_time = int(value)
+
+    def _set_scope_store_enabled(self, value: float | str | bool, sequencer_id: int):
+        """set scope_store_enable
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not bool
+        """
+        cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).scope_store_enabled = bool(value)
+
+    def _set_time_of_flight(self, value: int | float | str | bool, sequencer_id: int):
+        """set time_of_flight
+
+        Args:
+            value (int | float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not bool
+        """
+        cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).time_of_flight = int(value)
+
+    @property
+    def acquisition_delay_time(self):
+        """AWG 'delay_before_readout' property.
+        Returns:
+            int: settings.delay_before_readout.
+        """
+        return self.settings.acquisition_delay_time

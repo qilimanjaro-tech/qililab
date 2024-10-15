@@ -18,8 +18,8 @@ from qililab.constants import (
     PULSEEVENT,
     PULSESCHEDULES,
     RUNCARD,
+    AWGTypes,
 )
-from qililab.instruments.awg_settings.typings import AWGTypes
 from qililab.typings.enums import (
     AcquireTriggerMode,
     ConnectionName,
@@ -30,7 +30,6 @@ from qililab.typings.enums import (
     PulseShapeName,
     ReferenceClock,
     ResetMethod,
-    SystemControlName,
 )
 
 
@@ -267,9 +266,8 @@ class Galadriel:
         "name": InstrumentName.QBLOX_QCM,
         "alias": InstrumentName.QBLOX_QCM.value,
         RUNCARD.FIRMWARE: "0.7.0",
-        Parameter.NUM_SEQUENCERS.value: 2,
-        AWGTypes.OUT_OFFSETS.value: [0, 0.5, 0.7, 0.8],
-        AWGTypes.AWG_SEQUENCERS.value: [
+        AWGTypes.OUT_OFFSETS: [0, 0.5, 0.7, 0.8],
+        AWGTypes.AWG_SEQUENCERS: [
             {
                 "identifier": 0,
                 "chip_port_id": "drive_q0",
@@ -401,10 +399,9 @@ class Galadriel:
         "name": InstrumentName.QBLOX_QRM,
         "alias": f"{InstrumentName.QBLOX_QRM.value}_0",
         RUNCARD.FIRMWARE: "0.7.0",
-        Parameter.NUM_SEQUENCERS.value: 2,
         Parameter.ACQUISITION_DELAY_TIME.value: 100,
-        AWGTypes.OUT_OFFSETS.value: [0.123, 1.23],
-        AWGTypes.AWG_SEQUENCERS.value: [
+        AWGTypes.OUT_OFFSETS: [0.123, 1.23],
+        AWGTypes.AWG_SEQUENCERS: [
             {
                 "identifier": 0,
                 "chip_port_id": "feedline_input",
@@ -489,10 +486,9 @@ class Galadriel:
         "name": InstrumentName.QBLOX_QRM,
         "alias": f"{InstrumentName.QBLOX_QRM.value}_1",
         RUNCARD.FIRMWARE: "0.7.0",
-        Parameter.NUM_SEQUENCERS.value: 1,
         Parameter.ACQUISITION_DELAY_TIME.value: 100,
-        AWGTypes.OUT_OFFSETS.value: [0.123, 1.23],
-        AWGTypes.AWG_SEQUENCERS.value: [
+        AWGTypes.OUT_OFFSETS: [0.123, 1.23],
+        AWGTypes.AWG_SEQUENCERS: [
             {
                 "identifier": 0,
                 "chip_port_id": "feedline_output_2",
@@ -707,10 +703,8 @@ class Galadriel:
     buses: list[dict[str, Any]] = [
         {
             RUNCARD.ALIAS: "drive_line_q0_bus",
-            "system_control": {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
-            },
+            RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
+            RUNCARD.CHANNELS: [0, None],
             "port": "drive_q0",
             RUNCARD.DISTORTIONS: [
                 {"name": "lfilter", "a": [1.0, 0.0, 1.0], "auto_norm": True, "b": [0.5, 0.5], "norm_factor": 1.0}
@@ -719,50 +713,40 @@ class Galadriel:
         },
         {
             RUNCARD.ALIAS: "drive_line_q1_bus",
-            "system_control": {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: [InstrumentName.QCMRF.value],
-            },
+            RUNCARD.INSTRUMENTS: [InstrumentName.QCMRF.value],
+            RUNCARD.CHANNELS: [0],
             "port": "drive_q1",
             RUNCARD.DISTORTIONS: [],
             RUNCARD.DELAY: 0,
         },
         {
             "alias": "feedline_input_output_bus",
-            "system_control": {
-                "name": SystemControlName.READOUT_SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_0", "rs_1"],
-            },
+            RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_0", "rs_1"],
+            RUNCARD.CHANNELS: [0, None],
             "port": "feedline_input",
             RUNCARD.DISTORTIONS: [],
             RUNCARD.DELAY: 0,
         },
         {
             "alias": "feedline_input_output_bus_2",
-            "system_control": {
-                "name": SystemControlName.READOUT_SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_1"],
-            },
+            RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_1"],
+            RUNCARD.CHANNELS: [1],
             "port": "feedline_output_2",
             RUNCARD.DISTORTIONS: [],
             RUNCARD.DELAY: 0,
         },
         {
             "alias": "feedline_input_output_bus_1",
-            "system_control": {
-                "name": SystemControlName.READOUT_SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: [f"{InstrumentName.QRMRF.value}"],
-            },
+            RUNCARD.INSTRUMENTS: [f"{InstrumentName.QRMRF.value}"],
+            RUNCARD.CHANNELS: [1],
             "port": "feedline_output_1",
             RUNCARD.DISTORTIONS: [],
             RUNCARD.DELAY: 0,
         },
         {
             RUNCARD.ALIAS: "flux_line_q0_bus",
-            "system_control": {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
-            },
+            RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
+            RUNCARD.CHANNELS: [2, None],
             "port": "flux_q0",
             RUNCARD.DISTORTIONS: [],
             RUNCARD.DELAY: 0,
@@ -1052,117 +1036,6 @@ experiment: dict[str, Any] = {
 }
 
 
-class SauronVNA:
-    """Test data of the sauron platform."""
-
-    name = "sauron_vna"
-
-    gates_settings: dict[str, Any] = {
-        PLATFORM.DELAY_BETWEEN_PULSES: 0,
-        PLATFORM.MINIMUM_CLOCK_TIME: 4,
-        PLATFORM.DELAY_BEFORE_READOUT: 40,
-        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
-        PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
-        PLATFORM.PASSIVE_RESET_DURATION: 100,
-        "gates": {},
-        "operations": [],
-    }
-
-    keysight_e5080b_controller: dict[str, Any] = {
-        "name": InstrumentControllerName.KEYSIGHT_E5080B,
-        "alias": InstrumentControllerName.KEYSIGHT_E5080B.value,
-        Parameter.TIMEOUT.value: 10000,
-        INSTRUMENTCONTROLLER.CONNECTION: {
-            "name": ConnectionName.TCP_IP.value,
-            CONNECTION.ADDRESS: "192.168.1.254",
-        },
-        INSTRUMENTCONTROLLER.MODULES: [
-            {
-                "alias": InstrumentName.KEYSIGHT_E5080B.value,
-                "slot_id": 0,
-            }
-        ],
-    }
-
-    keysight_e5080b: dict[str, Any] = {
-        "name": InstrumentName.KEYSIGHT_E5080B,
-        "alias": InstrumentName.KEYSIGHT_E5080B.value,
-        RUNCARD.FIRMWARE: "A.15.10.06",
-        Parameter.POWER.value: -60.0,
-    }
-
-    agilent_e5071b_controller: dict[str, Any] = {
-        "name": InstrumentControllerName.AGILENT_E5071B,
-        "alias": InstrumentControllerName.AGILENT_E5071B.value,
-        Parameter.TIMEOUT.value: 10000,
-        INSTRUMENTCONTROLLER.CONNECTION: {
-            "name": ConnectionName.TCP_IP.value,
-            CONNECTION.ADDRESS: "192.168.1.254",
-        },
-        INSTRUMENTCONTROLLER.MODULES: [
-            {
-                "alias": InstrumentName.AGILENT_E5071B.value,
-                "slot_id": 0,
-            }
-        ],
-    }
-
-    agilent_e5071b: dict[str, Any] = {
-        "name": InstrumentName.AGILENT_E5071B,
-        "alias": InstrumentName.AGILENT_E5071B.value,
-        RUNCARD.FIRMWARE: "A.15.10.06",
-        Parameter.POWER.value: -60.0,
-    }
-
-    instruments: list[dict] = [keysight_e5080b, agilent_e5071b]
-    instrument_controllers: list[dict] = [keysight_e5080b_controller, agilent_e5071b_controller]
-
-    chip: dict[str, Any] = {
-        "nodes": [
-            {"name": "port", "alias": "drive_q0", "line": "drive", "nodes": ["q0"]},
-            {"name": "port", "alias": "feedline_input", "line": "feedline_input", "nodes": ["resonator_q0"]},
-            {"name": "resonator", "alias": "resonator_q0", "frequency": 8.0726e09, "nodes": ["feedline_input", "q0"]},
-            {
-                "name": "qubit",
-                "alias": "q0",
-                "qubit_index": 0,
-                "frequency": 6.5328e09,
-                "nodes": ["drive_q0", "resonator_q0"],
-            },
-        ],
-    }
-
-    buses: list[dict[str, Any]] = [
-        {
-            "alias": "keysight_e5080b_readout_bus",
-            "system_control": {
-                "name": SystemControlName.READOUT_SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: [InstrumentName.KEYSIGHT_E5080B.value],
-            },
-            "port": "drive_q0",
-            RUNCARD.DISTORTIONS: [],
-        },
-        {
-            "alias": "agilent_e5071b_readout_bus",
-            "system_control": {
-                "name": SystemControlName.READOUT_SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: [InstrumentName.AGILENT_E5071B.value],
-            },
-            "port": "feedline_input",
-            RUNCARD.DISTORTIONS: [],
-        },
-    ]
-
-    runcard: dict[str, Any] = {
-        RUNCARD.NAME: name,
-        RUNCARD.GATES_SETTINGS: gates_settings,
-        RUNCARD.INSTRUMENTS: instruments,
-        RUNCARD.CHIP: chip,
-        RUNCARD.BUSES: buses,
-        RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
-    }
-
-
 class MockedSettingsFactory:
     """Class that loads a specific class given an object's name."""
 
@@ -1304,19 +1177,15 @@ class SauronYokogawa:
     buses: list[dict[str, Any]] = [
         {
             RUNCARD.ALIAS: "yokogawa_gs200_current_bus",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["yokogawa_current"],
-            },
+            RUNCARD.INSTRUMENTS: ["yokogawa_current"],
+            RUNCARD.CHANNELS: [0],
             "port": "flux_q0",
             RUNCARD.DISTORTIONS: [],
         },
         {
             RUNCARD.ALIAS: "yokogawa_gs200_voltage_bus",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["yokogawa_voltage"],
-            },
+            RUNCARD.INSTRUMENTS: ["yokogawa_voltage"],
+            RUNCARD.CHANNELS: [0],
             "port": "flux_q0",
             RUNCARD.DISTORTIONS: [],
         },
@@ -1437,10 +1306,8 @@ class SauronQDevil:
     buses: list[dict[str, Any]] = [
         {
             RUNCARD.ALIAS: "qdac_bus",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["qdac"],
-            },
+            RUNCARD.INSTRUMENTS: ["qdac"],
+            RUNCARD.CHANNELS: [1],
             "port": "port_q0",
             RUNCARD.DISTORTIONS: [],
         }
@@ -1879,82 +1746,64 @@ class SauronQuantumMachines:
     buses: list[dict[str, Any]] = [
         {
             RUNCARD.ALIAS: "drive_q0",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["qmm"],
-            },
+            RUNCARD.INSTRUMENTS: ["qmm"],
+            RUNCARD.CHANNELS: ["drive_q0"],
             "port": "port_q0",
             RUNCARD.DISTORTIONS: [],
         },
         {
             RUNCARD.ALIAS: "readout_q0",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["qmm"],
-            },
+            RUNCARD.INSTRUMENTS: ["qmm"],
+            RUNCARD.CHANNELS: ["readout_q0"],
             "port": "port_q0",
             RUNCARD.DISTORTIONS: [],
         },
         {
             RUNCARD.ALIAS: "flux_q0",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["qmm"],
-            },
+            RUNCARD.INSTRUMENTS: ["qmm"],
+            RUNCARD.CHANNELS: ["flux_q0"],
             "port": "port_q0",
             RUNCARD.DISTORTIONS: [],
         },
         {
             RUNCARD.ALIAS: "drive_q0_rf",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["qmm_with_octave"],
-            },
+            RUNCARD.INSTRUMENTS: ["qmm_with_octave"],
+            RUNCARD.CHANNELS: ["drive_q0_rf"],
             "port": "port_q0",
             RUNCARD.DISTORTIONS: [],
         },
         {
             RUNCARD.ALIAS: "readout_q0_rf",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["qmm_with_octave"],
-            },
+            RUNCARD.INSTRUMENTS: ["qmm_with_octave"],
+            RUNCARD.CHANNELS: ["readout_q0_rf"],
             "port": "port_q0",
             RUNCARD.DISTORTIONS: [],
         },
         {
             RUNCARD.ALIAS: "drive_q0_rf_custom",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["qmm_with_octave_custom_connectivity"],
-            },
+            RUNCARD.INSTRUMENTS: ["qmm_with_octave_custom_connectivity"],
+            RUNCARD.CHANNELS: ["drive_q0_rf"],
             "port": "port_q0",
             RUNCARD.DISTORTIONS: [],
         },
         {
             RUNCARD.ALIAS: "readout_q0_rf_custom",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["qmm_with_octave_custom_connectivity"],
-            },
+            RUNCARD.INSTRUMENTS: ["qmm_with_octave_custom_connectivity"],
+            RUNCARD.CHANNELS: ["readout_q0_rf"],
             "port": "port_q0",
             RUNCARD.DISTORTIONS: [],
         },
         {
             RUNCARD.ALIAS: "drive_q0_opx1000",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["qmm_with_opx1000"],
-            },
+            RUNCARD.INSTRUMENTS: ["qmm_with_opx1000"],
+            RUNCARD.CHANNELS: ["drive_q0_rf"],
             "port": "port_q0",
             RUNCARD.DISTORTIONS: [],
         },
         {
             RUNCARD.ALIAS: "readout_q0_opx1000",
-            RUNCARD.SYSTEM_CONTROL: {
-                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: ["qmm_with_opx1000"],
-            },
+            RUNCARD.INSTRUMENTS: ["qmm_with_opx1000"],
+            RUNCARD.CHANNELS: ["readout_q0_rf"],
             "port": "port_q0",
             RUNCARD.DISTORTIONS: [],
         },

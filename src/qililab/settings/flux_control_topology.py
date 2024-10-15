@@ -12,8 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""KeySight instruments"""
+from dataclasses import asdict, dataclass
 
-from .e5080b_vna import E5080B
 
-__all__ = ["E5080B"]
+@dataclass
+class FluxControlTopology:
+    """Dataclass fluxes (e.g. phix_q0 for phix control of qubit 0) and their corresponding bus (e.g. flux_line_q0_x)"""
+
+    flux: str
+    bus: str
+
+    def to_dict(self):
+        """Method to convert to dictionary"""
+        return asdict(self)

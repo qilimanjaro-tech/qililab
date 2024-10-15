@@ -12,23 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" AWG Qblox ADC Sequencer """
 from dataclasses import dataclass
 
-from qililab.instruments.awg_settings.awg_adc_sequencer import AWGADCSequencer
-from qililab.instruments.awg_settings.awg_qblox_sequencer import AWGQbloxSequencer
+from qililab.instruments.qblox.qblox_sequencer import QbloxSequencer
+from qililab.typings import AcquireTriggerMode, IntegrationMode
+from qililab.utils.castings import cast_enum_fields
 
 
 @dataclass
-class AWGQbloxADCSequencer(AWGQbloxSequencer, AWGADCSequencer):
-    """AWG Qblox ADC Sequencer"""
-
+class QbloxADCSequencer(QbloxSequencer):
     qubit: int
     weights_i: list[float]
     weights_q: list[float]
     weighed_acq_enabled: bool
+    scope_acquire_trigger_mode: AcquireTriggerMode
+    scope_hardware_averaging: bool
+    sampling_rate: float  # default sampling rate for Qblox is 1.e+09
+    hardware_demodulation: bool  # demodulation flag
+    integration_length: int
+    integration_mode: IntegrationMode
+    sequence_timeout: int  # minutes
+    acquisition_timeout: int  # minutes
+    scope_store_enabled: bool
+    threshold: float
+    threshold_rotation: float
+    time_of_flight: int  # nanoseconds
 
     def __post_init__(self):
+        cast_enum_fields(obj=self)
         self._verify_weights()
 
     def _verify_weights(self):

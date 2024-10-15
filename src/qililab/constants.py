@@ -58,6 +58,7 @@ class RUNCARD:
     DISTORTIONS = "distortions"
     DELAY = "delay"
     FLUX_CONTROL_TOPOLOGY = "flux_control_topology"
+    CHANNELS = "channels"
 
 
 class PLATFORM:
@@ -272,3 +273,40 @@ class QBLOXCONSTANTS:
     """Qblox Constants"""
 
     SCOPE_LENGTH = 16380
+
+
+class AWGTypes:
+    """Typings from AWG Types"""
+
+    AWG_SEQUENCERS = "awg_sequencers"
+    OUT_OFFSETS = "out_offsets"
+
+
+class AWGSequencerTypes:
+    """Types from AWG Sequencer Types"""
+
+    IDENTIFIER = "identifier"
+    INTERMEDIATE_FREQUENCY = "intermediate_frequency"
+    OFFSET_I = "offset_i"
+    OFFSET_Q = "offset_q"
+
+
+class AWGIQChannelTypes:
+    """Types from AWG IQ Channel Types"""
+
+    IDENTIFIER = "identifier"
+    I_CHANNEL = "i_channel"
+    Q_CHANNEL = "q_channel"
+
+
+class AWGChannelMappingTypes:
+    """Types from AWG Channel Mapping Types"""
+
+    AWG_SEQUENCER_IDENTIFIER = "awg_sequencer_identifier"
+    AWG_SEQUENCER_PATH_IDENTIFIER = "awg_sequencer_path_identifier"
+
+
+class AWGOutputChannelTypes:
+    """Types from AWG Ouput Channel Types"""
+
+    IDENTIFIER = "identifier"

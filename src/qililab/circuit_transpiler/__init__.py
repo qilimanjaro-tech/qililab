@@ -26,10 +26,12 @@ Transpilation
 Gate Decomposition
 ~~~~~~~~~~~~~~~~~~
 
-.. currentmodule:: qililab.transpiler
+.. currentmodule:: qililab.circuit_transpiler
 
 .. autosummary::
     :toctree: api
+
+    ~~CircuitTranspiler
 """
 
 from .circuit_transpiler import CircuitTranspiler

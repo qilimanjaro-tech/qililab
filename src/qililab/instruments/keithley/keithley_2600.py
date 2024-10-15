@@ -13,14 +13,14 @@
 # limitations under the License.
 
 """Keithley2600 instrument."""
+
 from dataclasses import dataclass
 
 import numpy as np
 
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
-from qililab.typings import InstrumentName, Keithley2600Driver
-from qililab.typings.enums import Parameter
+from qililab.typings import ChannelID, InstrumentName, Keithley2600Driver, Parameter, ParameterValue
 
 
 @InstrumentFactory.register
@@ -44,8 +44,7 @@ class Keithley2600(Instrument):
     settings: Keithley2600Settings
     device: Keithley2600Driver
 
-    @Instrument.CheckParameterValueFloatOrInt
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):  # type: ignore
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
         """Setup instrument."""
         if parameter == Parameter.MAX_CURRENT:
             self.max_current = float(value)
@@ -57,23 +56,19 @@ class Keithley2600(Instrument):
             if self.is_device_active():
                 self.device.smua.limitv(self.max_voltage)
             return
-        raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
+        raise ParameterNotFound(self, parameter)
 
-    @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """performs an initial setup"""
         self.device.smua.limiti(self.max_current)
         self.device.smua.limitv(self.max_voltage)
 
-    @Instrument.CheckDeviceInitialized
     def turn_on(self):
         """Turn on an instrument."""
 
-    @Instrument.CheckDeviceInitialized
     def turn_off(self):
         """Turn off an instrument."""
 
-    @Instrument.CheckDeviceInitialized
     def reset(self):
         """Reset instrument."""
         self.device.reset()
