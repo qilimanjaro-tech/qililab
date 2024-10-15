@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # mypy: disable-error-code="attr-defined"
+import os
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
@@ -40,6 +41,8 @@ class ExperimentResults:
     PLATFORM_PATH = "platform"
     EXECUTED_AT_PATH = "executed_at"
     EXECUTION_TIME_PATH = "execution_time"
+
+    S21_PLOT_NAME = "S21.png"
 
     def __init__(self, path: str):
         """Initializes the ExperimentResults instance.
@@ -175,7 +178,7 @@ class ExperimentResults:
         return float(self._file[ExperimentResults.EXECUTION_TIME_PATH][()].decode("utf-8"))
 
     # pylint: disable=too-many-statements
-    def plot_S21(self, qprogram: int | str = 0, measurement: int | str = 0):
+    def plot_S21(self, qprogram: int | str = 0, measurement: int | str = 0, save_plot: bool = True):
         """Plots the S21 parameter from the experiment results.
 
         Args:
@@ -194,7 +197,7 @@ class ExperimentResults:
             """Plot 1d"""
             x_labels, x_values = dims[0].labels, dims[0].values
 
-            _, ax1 = plt.subplots()
+            fig, ax1 = plt.subplots()
             ax1.set_title(self.path)
             ax1.set_xlabel(x_labels[0])
             ax1.set_ylabel(r"$|S_{21}|$")
@@ -214,6 +217,11 @@ class ExperimentResults:
 
                 # Force scientific notation
                 ax2.ticklabel_format(axis="x", style="sci", scilimits=(-3, 3))
+
+            if save_plot:
+                folder = os.path.dirname(self.path)
+                path = os.path.join(folder, ExperimentResults.S21_PLOT_NAME)
+                fig.savefig(path)
 
             plt.show()
 
@@ -263,6 +271,11 @@ class ExperimentResults:
 
                 # Force scientific notation
                 ax3.ticklabel_format(axis="y", style="sci", scilimits=(-3, 3))
+
+            if save_plot:
+                folder = os.path.dirname(self.path)
+                path = os.path.join(folder, "S21.png")
+                fig.savefig(path)
 
             plt.tight_layout()
             plt.show()
