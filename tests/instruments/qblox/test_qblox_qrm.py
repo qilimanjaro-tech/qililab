@@ -457,16 +457,3 @@ class TestQbloxQRM:
             else:
                 with pytest.raises(IndexError, match=f"There is no sequencer with id={seq_id}."):
                     qrm._get_sequencer_by_id(id=seq_id)
-
-
-class TestAWGQbloxADCSequencer:
-    """Unit tests for AWGQbloxADCSequencer class."""
-
-    def test_verify_weights(self):
-        """Test the _verify_weights method."""
-        mock_sequencer = Mock(spec=AWGQbloxADCSequencer)
-        mock_sequencer.weights_i = [1.0]
-        mock_sequencer.weights_q = [1.0, 1.0]
-
-        with pytest.raises(IndexError, match="The length of weights_i and weights_q must be equal."):
-            AWGQbloxADCSequencer._verify_weights(mock_sequencer)

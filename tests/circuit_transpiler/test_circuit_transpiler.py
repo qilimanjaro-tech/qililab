@@ -602,9 +602,8 @@ def fixture_platform(chip: Chip) -> Platform:
     gates_settings = Runcard.GatesSettings(**gates_settings)  # type: ignore
     platform = build_platform(runcard=Galadriel.runcard)
     platform.gates_settings = gates_settings  # type: ignore
-    platform.chip = chip
     buses = Buses(
-        elements=[Bus(settings=bus, platform_instruments=platform.instruments, chip=chip) for bus in bus_settings]
+        elements=[Bus(settings=bus, platform_instruments=platform.instruments) for bus in bus_settings]
     )
     platform.buses = buses
     platform.gates_settings.gates = {  # type: ignore

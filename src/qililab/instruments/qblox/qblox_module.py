@@ -54,9 +54,10 @@ class QbloxModule(Instrument):
 
         def __post_init__(self):
             """build QbloxSequencer"""
-            if self.num_sequencers > QbloxModule._NUM_MAX_SEQUENCERS:
+            num_sequencers = len(self.awg_sequencers)
+            if num_sequencers > QbloxModule._NUM_MAX_SEQUENCERS:
                 raise ValueError(
-                    f"The number of sequencers must be less or equal than {QbloxModule._NUM_MAX_SEQUENCERS}. Received: {self.num_sequencers}"
+                    f"The number of sequencers must be less or equal than {QbloxModule._NUM_MAX_SEQUENCERS}. Received: {num_sequencers}"
                 )
 
             self.awg_sequencers = [

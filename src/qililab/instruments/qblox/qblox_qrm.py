@@ -48,15 +48,11 @@ class QbloxQRM(QbloxModule):
 
         def __post_init__(self):
             """build AWGQbloxADCSequencer"""
-            if self.num_sequencers <= 0 or self.num_sequencers > QbloxModule._NUM_MAX_SEQUENCERS:
+            num_sequencers = len(self.awg_sequencers)
+            if num_sequencers <= 0 or num_sequencers > QbloxModule._NUM_MAX_SEQUENCERS:
                 raise ValueError(
                     "The number of sequencers must be greater than 0 and less or equal than "
-                    + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: {self.num_sequencers}"
-                )
-            if len(self.awg_sequencers) != self.num_sequencers:
-                raise ValueError(
-                    f"The number of sequencers: {self.num_sequencers} does not match"
-                    + f" the number of AWG Sequencers settings specified: {len(self.awg_sequencers)}"
+                    + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: {num_sequencers}"
                 )
 
             self.awg_sequencers = [

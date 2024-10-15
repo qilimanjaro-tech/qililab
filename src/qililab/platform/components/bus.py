@@ -19,7 +19,6 @@ from dataclasses import InitVar, dataclass
 
 from qpysequence import Sequence as QpySequence
 
-from qililab.chip import Coil, Coupler, Qubit, Resonator
 from qililab.constants import RUNCARD
 from qililab.instruments import Instrument, Instruments, ParameterNotFound
 from qililab.instruments.qblox import QbloxQCM, QbloxQRM
@@ -38,12 +37,8 @@ class Bus:
     which is connected to one or multiple qubits.
 
     Args:
-        targets (list[Qubit | Resonator | Coupler | Coil]): Port target (or targets in case of multiple resonators).
         settings (BusSettings): Bus settings.
     """
-
-    targets: list[Qubit | Resonator | Coupler | Coil]
-    """Port target (or targets in case of multiple resonators)."""
 
     @dataclass
     class BusSettings(Settings):

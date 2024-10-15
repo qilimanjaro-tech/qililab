@@ -19,7 +19,7 @@ from dataclasses import asdict, dataclass
 from qililab.constants import GATE_ALIAS_REGEX
 from qililab.settings.circuit_compilation.bus_settings import BusSettings
 from qililab.settings.circuit_compilation.gate_event_settings import GateEventSettings
-from qililab.typing import ChannelID, Parameter, ParameterValue
+from qililab.typings import ChannelID, Parameter, ParameterValue
 from qililab.utils.asdict_factory import dict_factory
 
 

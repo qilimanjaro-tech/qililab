@@ -24,12 +24,9 @@ from .quantum_machines import QuantumMachinesClusterController
 from .rohde_schwarz import SGS100AController
 from .single_instrument_controller import SingleInstrumentController
 from .utils import InstrumentControllerFactory
-from .vector_network_analyzer import E5071BController, E5080BController
 from .yokogawa import GS200Controller
 
 __all__ = [
-    "E5071BController",
-    "E5080BController",
     "GS200Controller",
     "InstrumentController",
     "InstrumentControllerFactory",

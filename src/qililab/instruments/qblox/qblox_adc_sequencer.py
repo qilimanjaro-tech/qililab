@@ -21,10 +21,6 @@ from qililab.utils.castings import cast_enum_fields
 
 @dataclass
 class QbloxADCSequencer(QbloxSequencer):
-    qubit: int
-    weights_i: list[float]
-    weights_q: list[float]
-    weighed_acq_enabled: bool
     scope_acquire_trigger_mode: AcquireTriggerMode
     scope_hardware_averaging: bool
     sampling_rate: float  # default sampling rate for Qblox is 1.e+09
@@ -40,22 +36,3 @@ class QbloxADCSequencer(QbloxSequencer):
 
     def __post_init__(self):
         cast_enum_fields(obj=self)
-        self._verify_weights()
-
-    def _verify_weights(self):
-        """Verifies that the length of weights_i and weights_q are equal.
-
-        Raises:
-            IndexError: The length of weights_i and weights_q must be equal.
-        """
-        if len(self.weights_i) != len(self.weights_q):
-            raise IndexError("The length of weights_i and weights_q must be equal.")
-
-    @property
-    def used_integration_length(self) -> int:
-        """Final integration length used by the AWG in the integration.
-
-        Returns:
-            int: Length of the weights if weighed acquisition is enabled, configured `integration_length` if disabled.
-        """
-        return len(self.weights_i) if self.weighed_acq_enabled else self.integration_length
