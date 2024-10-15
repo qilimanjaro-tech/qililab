@@ -15,7 +15,9 @@
 # mypy: disable-error-code="union-attr, arg-type"
 import inspect
 import os
+import threading
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime
 from time import perf_counter
@@ -83,7 +85,7 @@ class ExperimentExecutor:
             platform = build_platform(runcard="path/to/runcard.yml")
 
             # Define your experiment
-            experiment = Experiment()
+            experiment = Experiment(label="my_experiment")
             # Add blocks, loops, operations to the experiment
             # ...
 
@@ -102,10 +104,9 @@ class ExperimentExecutor:
         - The results will be saved in a timestamped directory within the `base_data_path`.
     """
 
-    def __init__(self, platform: "Platform", experiment: Experiment, base_data_path: str):
+    def __init__(self, platform: "Platform", experiment: Experiment):
         self.platform = platform
         self.experiment = experiment
-        self.base_data_path = base_data_path
 
         # Registry of all variables used in the experiment with their labels and values
         self._all_variables: dict = defaultdict(lambda: {"label": None, "values": {}})
@@ -132,12 +133,12 @@ class ExperimentExecutor:
         self._shots = 1
 
         # Metadata dictionary containing information about the experiment structure and variables.
-        self._metadata: ExperimentMetadata = ExperimentMetadata(qprograms={})
+        self._metadata: ExperimentMetadata
 
         # ExperimentResultsWriter object responsible for saving experiment results to file in real-time.
         self._results_writer: ExperimentResultsWriter
 
-    def _prepare_metadata(self):
+    def _prepare_metadata(self, executed_at: datetime):
         """Prepares the loop values and result shape before execution."""
 
         def traverse_experiment(block: Block):
@@ -226,6 +227,13 @@ class ExperimentExecutor:
             # Increase index of measurements
             self._measurement_index += 1
 
+        self._metadata = ExperimentMetadata(
+            platform=serialize(self.platform.to_dict()),
+            experiment=serialize(self.experiment),
+            executed_at=executed_at,
+            execution_time=0.0,
+            qprograms={},
+        )
         traverse_experiment(self.experiment.body)
         self._all_variables = dict(self._all_variables)
 
@@ -491,21 +499,43 @@ class ExperimentExecutor:
 
         return list(variables.values())
 
-    def _create_results_path(self, source: str, file: str):
-        # Get the current date and time
-        now = datetime.now()
+    def _create_results_path(self, executed_at: datetime):
+        # Get base path and path format from platform
+        base_path = self.platform.experiment_results_base_path
+        path_format = self.platform.experiment_results_path_format
 
         # Format date and time for directory names
-        date = now.strftime("%Y%m%d")
-        timestamp = now.strftime("%H%M%S")
+        date = executed_at.strftime("%Y%m%d")
+        timestamp = executed_at.strftime("%H%M%S")
+        label = self.experiment.label
 
-        # Construct the directory path
-        folder = os.path.join(source, date, timestamp)
+        # Format the path based on the path's format
+        path = path_format.format(date=date, time=timestamp, label=label)
+
+        # Construct the full path
+        path = os.path.join(base_path, path)
+
+        # Ensure it is an absolute path
+        path = os.path.abspath(path)
 
         # Create the directories if they don't exist
-        os.makedirs(folder, exist_ok=True)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
 
-        return os.path.join(folder, file)
+        return path
+
+    def _measure_execution_time(self, execution_completed: threading.Event):
+        """Measures the execution time while waiting for the experiment to finish."""
+        # Start measuring execution time
+        start_time = perf_counter()
+
+        # Wait for the experiment to finish
+        execution_completed.wait()
+
+        # Stop measuring execution time
+        end_time = perf_counter()
+
+        # Return the execution time
+        return end_time - start_time
 
     def execute(self) -> str:
         """
@@ -518,31 +548,42 @@ class ExperimentExecutor:
         Returns:
             str: The path to the file where the results are stored.
         """
+        executed_at = datetime.now()
+
         # Create file path to store results
-        path = self._create_results_path(self.base_data_path, "data.h5")
+        results_path = self._create_results_path(executed_at=executed_at)
 
         # Prepare the results metadata
-        self._prepare_metadata()
-
-        # Update metadata
-        self._metadata["platform"] = serialize(self.platform.to_dict())
-        self._metadata["experiment"] = serialize(self.experiment)
-        self._metadata["executed_at"] = datetime.now()
+        self._prepare_metadata(executed_at=executed_at)
 
         # Create the ExperimentResultsWriter for storing results
-        self._results_writer = ExperimentResultsWriter(path=path, metadata=self._metadata)
-        with self._results_writer:
-            start_time = perf_counter()
+        self._results_writer = ExperimentResultsWriter(path=results_path, metadata=self._metadata)
 
-            with Progress(
-                TextColumn("[progress.description]{task.description}"),
-                BarColumn(bar_width=None),
-                "[progress.percentage]{task.percentage:>3.1f}%",
-                TimeElapsedColumn(),
-            ) as progress:
-                operations = self._prepare_operations(self.experiment.body, progress)
-                self._execute_operations(operations, progress)
+        # Event to signal that the execution has completed
+        execution_completed = threading.Event()
 
-            self._results_writer.execution_time = perf_counter() - start_time
+        with ThreadPoolExecutor() as executor:
+            # Start the _measure_execution_time in a separate thread
+            execution_time_future = executor.submit(self._measure_execution_time, execution_completed)
 
-        return path
+            with self._results_writer:
+                with Progress(
+                    TextColumn("[progress.description]{task.description}"),
+                    BarColumn(bar_width=None),
+                    "[progress.percentage]{task.percentage:>3.1f}%",
+                    TimeElapsedColumn(),
+                ) as progress:
+                    operations = self._prepare_operations(self.experiment.body, progress)
+                    self._execute_operations(operations, progress)
+
+            # Signal that the execution has completed
+            execution_completed.set()
+
+            # Retrieve the execution time from the Future
+            execution_time = execution_time_future.result()
+
+            # Now write the execution time to the results writer
+            with self._results_writer:
+                self._results_writer.execution_time = execution_time
+
+        return results_path
