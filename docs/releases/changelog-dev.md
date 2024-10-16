@@ -34,6 +34,57 @@
 - Added offset set and get for quantum machines (both OPX+ and OPX1000). For hardware loops there is `qp.set_offset(bus: str, offset_path0: float, offset_path1: float | None)` where `offset_path0` is a mandatory field (for flux, drive and readout lines) and `offset_path1` is only used when changing the offset of buses that have to IQ lines (drive and readout). For software loops there is `platform.set_parameter(alias=bus_name, parameter=ql.Parameter.OFFSET_PARAMETER, value=offset_value)`. The possible arguments for `ql.Parameter` are: `DC_OFFSET` (flux lines), `OFFSET_I` (I lines for IQ buses), `OFFSET_Q` (Q lines for IQ buses), `OFFSET_OUT1` (output 1 lines for readout lines), `OFFSET_OUT2` (output 2 lines for readout lines).
   [#791](https://github.com/qilimanjaro-tech/qililab/pull/791)
 
+- Added the `Ramp` class, which represents a waveform that linearly ramps between two amplitudes over a specified duration.
+
+  ```python
+  from qililab import Ramp
+
+  # Create a ramp waveform from amplitude 0.0 to 1.0 over a duration of 100 units
+  ramp_wf = Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=100)
+  ```
+
+  [#816](https://github.com/qilimanjaro-tech/qililab/pull/816)
+
+- Added the `Chained` class, which represents a waveform composed of multiple waveforms chained together in time.
+
+  ```python
+  from qililab import Ramp, Square, Chained
+
+  # Create a chained waveform consisting of a ramp up, a square wave, and a ramp down
+  chained_wf = Chained(
+      waveforms=[
+          Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=100),
+          Square(amplitude=1.0, duration=200),
+          Ramp(from_amplitude=1.0, to_amplitude=0.0, duration=100),
+      ]
+  )
+  ```
+
+  [#816](https://github.com/qilimanjaro-tech/qililab/pull/816)
+
+- Added `add_block()` and `get_block()` methods to the `Calibration` class. These methods allow users to store a block of operations in a calibration file and later retrieve it. The block can be inserted into a `QProgram` or `Experiment` by calling `insert_block()`.
+
+  ```python
+  from qililab import QProgram, Calibration
+
+  # Create a QProgram and add operations
+  qp = QProgram()
+  # Add operations to qp...
+
+  # Store the QProgram's body as a block in the calibration file
+  calibration = Calibration()
+  calibration.add_block(name="qp_as_block", block=qp.body)
+
+  # Retrieve the block by its name
+  calibrated_block = calibration.get_block(name="qp_as_block")
+
+  # Insert the retrieved block into another QProgram
+  another_qp = QProgram()
+  another_qp.insert_block(block=calibrated_block)
+  ```
+
+  [#816](https://github.com/qilimanjaro-tech/qililab/pull/816)
+
 ### Improvements
 
 - Legacy linting and formatting tools such as pylint, flake8, isort, bandit, and black have been removed. These have been replaced with Ruff, a more efficient tool that handles both linting and formatting. All configuration settings have been consolidated into the `pyproject.toml` file, simplifying the project's configuration and maintenance. Integration config files like `pre-commit-config.yaml` and `.github/workflows/code_quality.yml` have been updated accordingly. Several rules from Ruff have also been implemented to improve code consistency and quality across the codebase. Additionally, the development dependencies in `dev-requirements.txt` have been updated to their latest versions, ensuring better compatibility and performance. [#813](https://github.com/qilimanjaro-tech/qililab/pull/813)
@@ -110,6 +161,9 @@
 - Added a `save_plot=True` parameter to the `plotS21()` method of `ExperimentResults`. When enabled (default: True), the plot is automatically saved in the same directory as the experiment results. [#819](https://github.com/qilimanjaro-tech/qililab/pull/819)
 
 ### Breaking changes
+
+- Renamed the platform's `execute_anneal_program()` method to `execute_annealing_program()` and updated its parameters. The method now expects `preparation_block` and `measurement_block`, which are strings used to retrieve blocks from the `Calibration`. These blocks are inserted before and after the annealing schedule, respectively.
+  [#816](https://github.com/qilimanjaro-tech/qililab/pull/816)
 
 ### Deprecations / Removals
 

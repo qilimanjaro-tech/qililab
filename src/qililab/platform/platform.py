@@ -66,7 +66,6 @@ from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName, Line, Parameter
 from qililab.utils import hash_qpy_sequence
-from qililab.waveforms import IQPair, Square
 
 from .components import Bus, Buses
 
@@ -659,16 +658,16 @@ class Platform:
             if cleanup_errors:
                 raise ExceptionGroup("Exceptions occurred during cleanup", cleanup_errors)
 
-    def execute_anneal_program(
+    def execute_annealing_program(
         self,
         annealing_program_dict: list[dict[str, dict[str, float]]],
-        calibration: Calibration,
-        readout_bus: str,
-        measurement_name: str,
         transpiler: Callable,
-        num_averages: int,
+        calibration: Calibration,
+        num_averages: int = 1000,
         num_shots: int = 1,
-        weights: str | None = None,
+        preparation_block: str = "preparation",
+        measurement_block: str = "measurement",
+        bus_mapping: dict[str, str] | None = None,
         debug: bool = False,
     ) -> QProgramResults:
         """Given an annealing program execute it as a qprogram.
@@ -698,37 +697,35 @@ class Platform:
         """
         if self.flux_to_bus_topology is None:
             raise ValueError("Flux to bus topology not given in the runcard")
-        if calibration.has_waveform(bus=readout_bus, name=measurement_name):
-            annealing_program = AnnealingProgram(
-                flux_to_bus_topology=self.flux_to_bus_topology, annealing_program=annealing_program_dict
-            )
-            annealing_program.transpile(transpiler)
-            crosstalk_matrix = (
-                calibration.crosstalk_matrix.inverse() if calibration.crosstalk_matrix is not None else None
-            )
-            annealing_waveforms = annealing_program.get_waveforms(
-                crosstalk_matrix=crosstalk_matrix, minimum_clock_time=self.gates_settings.minimum_clock_time
-            )
 
-            qp_annealing = QProgram()
-            shots_variable = qp_annealing.variable("num_shots", Domain.Scalar, int)
+        if not calibration.has_block(name=measurement_block):
+            raise ValueError("The calibrated measurement is not present in the calibration file.")
 
-            with qp_annealing.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
-                with qp_annealing.average(num_averages):
-                    for bus, waveform in annealing_waveforms.items():
-                        qp_annealing.play(bus=bus, waveform=waveform)
+        annealing_program = AnnealingProgram(
+            flux_to_bus_topology=self.flux_to_bus_topology, annealing_program=annealing_program_dict
+        )
+        annealing_program.transpile(transpiler)
+        crosstalk_matrix = calibration.crosstalk_matrix.inverse() if calibration.crosstalk_matrix is not None else None
+        annealing_waveforms = annealing_program.get_waveforms(
+            crosstalk_matrix=crosstalk_matrix, minimum_clock_time=self.gates_settings.minimum_clock_time
+        )
+
+        qp_annealing = QProgram()
+        shots_variable = qp_annealing.variable("num_shots", Domain.Scalar, int)
+
+        with qp_annealing.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
+            with qp_annealing.average(num_averages):
+                if calibration.has_block(name=preparation_block):
+                    qp_annealing.insert_block(calibration.get_block(name=preparation_block))
                     qp_annealing.sync()
-                    if weights and calibration.has_weights(bus=readout_bus, name=weights):
-                        qp_annealing.measure(bus=readout_bus, waveform=measurement_name, weights=weights)
-                    else:
-                        r_duration = calibration.get_waveform(bus=readout_bus, name=measurement_name).get_duration()
-                        weights_shape = Square(amplitude=1, duration=r_duration)
-                        qp_annealing.measure(
-                            bus=readout_bus, waveform=measurement_name, weights=IQPair(I=weights_shape, Q=weights_shape)
-                        )
+                for bus, waveform in annealing_waveforms.items():
+                    qp_annealing.play(bus=bus, waveform=waveform)
+                qp_annealing.sync()
+                qp_annealing.insert_block(calibration.get_block(name=measurement_block))
 
-            return self.execute_qprogram(qprogram=qp_annealing, calibration=calibration, debug=debug)
-        raise ValueError("The calibrated measurement is not present in the calibration file.")
+        return self.execute_qprogram(
+            qprogram=qp_annealing, calibration=calibration, bus_mapping=bus_mapping, debug=debug
+        )
 
     def execute_experiment(self, experiment: Experiment) -> str:
         """Executes a quantum experiment on the platform.
