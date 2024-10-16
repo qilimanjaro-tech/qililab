@@ -99,7 +99,7 @@ class StructuredProgram:
         """
         return list(self._variables)
 
-    def append_block(self, block: Block):
+    def insert_block(self, block: Block):
         self._active_block.append(block)
 
     def block(self):

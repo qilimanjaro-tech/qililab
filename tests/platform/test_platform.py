@@ -633,7 +633,7 @@ class TestMethods:
         transpiler = MagicMock()
         transpiler.return_value = (1, 2)
 
-        results = platform.execute_anneal_program(
+        results = platform.execute_annealing_program(
             annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
             transpiler=transpiler,
             calibration=calibration,
@@ -651,7 +651,7 @@ class TestMethods:
         transpiler.return_value = (1, 2)
         error_string = "The calibrated measurement is not present in the calibration file."
         with pytest.raises(ValueError, match=error_string):
-            platform.execute_anneal_program(
+            platform.execute_annealing_program(
                 annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
                 transpiler=transpiler,
                 calibration=calibration,
@@ -1064,7 +1064,7 @@ class TestMethods:
         platform.flux_to_bus_topology = None
         error_string = "Flux to bus topology not given in the runcard"
         with pytest.raises(ValueError, match=error_string):
-            platform.execute_anneal_program(
+            platform.execute_annealing_program(
                 annealing_program_dict=[{}],
                 calibration=MagicMock(),
                 transpiler=MagicMock(),

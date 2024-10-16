@@ -658,7 +658,7 @@ class Platform:
             if cleanup_errors:
                 raise ExceptionGroup("Exceptions occurred during cleanup", cleanup_errors)
 
-    def execute_anneal_program(
+    def execute_annealing_program(
         self,
         annealing_program_dict: list[dict[str, dict[str, float]]],
         transpiler: Callable,
@@ -716,12 +716,12 @@ class Platform:
         with qp_annealing.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
             with qp_annealing.average(num_averages):
                 if calibration.has_block(name=preparation_block):
-                    qp_annealing.append_block(calibration.get_block(name=preparation_block))
+                    qp_annealing.insert_block(calibration.get_block(name=preparation_block))
                     qp_annealing.sync()
                 for bus, waveform in annealing_waveforms.items():
                     qp_annealing.play(bus=bus, waveform=waveform)
                 qp_annealing.sync()
-                qp_annealing.append_block(calibration.get_block(name=measurement_block))
+                qp_annealing.insert_block(calibration.get_block(name=measurement_block))
 
         return self.execute_qprogram(
             qprogram=qp_annealing, calibration=calibration, bus_mapping=bus_mapping, debug=debug
