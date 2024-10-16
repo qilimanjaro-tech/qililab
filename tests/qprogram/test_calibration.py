@@ -120,7 +120,7 @@ class TestCalibration:
         calibration = Calibration()
         calibration.add_block(name="flux_block", block=qp.body)
 
-        assert calibration.has_block("flux_block") is True
+        assert calibration.has_block("flux_block")
 
     def test_get_waveform_method(self):
         """Test get_operation method"""
