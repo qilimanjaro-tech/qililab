@@ -44,8 +44,8 @@ if TYPE_CHECKING:
     from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
     from qililab.pulse.pulse_schedule import PulseSchedule
     from qililab.pulse.pulse_shape.pulse_shape import PulseShape
-    from qililab.settings.circuit_compilation.bus_settings import BusSettings
-    from qililab.settings.circuit_compilation.gates_settings import GatesSettings
+    from qililab.settings.digital.bus_settings import BusSettings
+    from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
 
 
 class QbloxCompiler:
@@ -59,7 +59,7 @@ class QbloxCompiler:
         ValueError: at init if no readout module (QRM) is found in platform.
     """
 
-    def __init__(self, gates_settings: GatesSettings, bus_to_module_and_sequencer_mapping: dict):
+    def __init__(self, gates_settings: DigitalCompilationSettings, bus_to_module_and_sequencer_mapping: dict):
         self.bus_to_module_and_sequencer_mapping = bus_to_module_and_sequencer_mapping
         self.buses = gates_settings.buses
         # init variables as empty

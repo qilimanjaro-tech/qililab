@@ -44,7 +44,6 @@ class RUNCARD:
     GATES_SETTINGS = "gates_settings"
     PLATFORM = "platform"
     BUSES = "buses"
-    CHIP = "chip"
     AWG = "awg"
     SIGNAL_GENERATOR = "signal_generator"
     ATTENUATOR = "attenuator"

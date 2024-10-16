@@ -12,12 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""__init__.py"""
-
-from .analog.flux_control_topology import FluxControlTopology
-from .bus_settings import BusSettings
-from .digital import DigitalCompilationSettings
-from .runcard import Runcard
-from .settings import Settings
-
-__all__ = ["BusSettings", "DigitalCompilationSettings", "FluxControlTopology", "Runcard", "Settings"]
+from .analog_compilation_settings import AnalogCompilationSettings as AnalogCompilationSettings
+from .flux_control_topology import FluxControlTopology as FluxControlTopology

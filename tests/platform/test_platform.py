@@ -30,7 +30,7 @@ from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.settings import Runcard
-from qililab.settings.circuit_compilation.gate_event_settings import GateEventSettings
+from qililab.settings.digital.gate_event_settings import GateEventSettings
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import IQPair, Square
 from tests.data import Galadriel, SauronQuantumMachines
@@ -120,7 +120,7 @@ def get_flux_to_bus_topology():
         {"flux": "phix_c0_1", "bus": "flux_line_phix_c0_1"},
         {"flux": "phiz_c0_1", "bus": "flux_line_phiz_c0_1"},
     ]
-    return [Runcard.FluxControlTopology(**flux_control) for flux_control in flux_control_topology_dict]
+    return [FluxControlTopology(**flux_control) for flux_control in flux_control_topology_dict]
 
 
 @pytest.fixture(name="calibration")
@@ -332,7 +332,6 @@ class TestPlatform:
         assert str(new_platform) == str(platform)
         assert str(new_platform.name) == str(platform.name)
         assert str(new_platform.buses) == str(platform.buses)
-        assert str(new_platform.chip) == str(platform.chip)
         assert str(new_platform.instruments) == str(platform.instruments)
         assert str(new_platform.instrument_controllers) == str(platform.instrument_controllers)
 
@@ -345,7 +344,6 @@ class TestPlatform:
         assert str(newest_platform) == str(new_platform)
         assert str(newest_platform.name) == str(new_platform.name)
         assert str(newest_platform.buses) == str(new_platform.buses)
-        assert str(newest_platform.chip) == str(new_platform.chip)
         assert str(newest_platform.instruments) == str(new_platform.instruments)
         assert str(newest_platform.instrument_controllers) == str(new_platform.instrument_controllers)
 

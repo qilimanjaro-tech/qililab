@@ -25,8 +25,8 @@ from qililab.constants import RUNCARD
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
-from qililab.settings.circuit_compilation.gate_event_settings import GateEventSettings
-from qililab.settings.circuit_compilation.gates_settings import GatesSettings
+from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
+from qililab.settings.digital.gate_event_settings import GateEventSettings
 from qililab.typings.enums import Line
 from qililab.utils import Factory
 
@@ -41,7 +41,7 @@ class CircuitTranspiler:
     - `transpile_circuit`: runs both of the methods above sequentially
     """
 
-    def __init__(self, gates_settings: GatesSettings):  # type: ignore # ignore typing to avoid importing platform and causing circular imports
+    def __init__(self, gates_settings: DigitalCompilationSettings):  # type: ignore # ignore typing to avoid importing platform and causing circular imports
         self.gates_settings = gates_settings
 
     def transpile_circuit(self, circuits: list[Circuit]) -> list[PulseSchedule]:

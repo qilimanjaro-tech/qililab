@@ -298,7 +298,7 @@ class Platform:
         self.name = runcard.name
         """Name of the platform (``str``) """
 
-        self.gates_settings = runcard.gates_settings
+        self.gates_settings = runcard.digital
         """Gate settings and definitions (``dataclass``). These setting contain how to decompose gates into pulses."""
 
         self.instruments = Instruments(elements=self._load_instruments(instruments_dict=runcard.instruments))

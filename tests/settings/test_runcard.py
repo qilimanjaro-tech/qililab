@@ -10,7 +10,7 @@ import pytest
 
 from qililab.constants import GATE_ALIAS_REGEX
 from qililab.settings import Runcard
-from qililab.settings.circuit_compilation.gate_event_settings import GateEventSettings
+from qililab.settings.digital.gate_event_settings import GateEventSettings
 from qililab.typings import Parameter
 from tests.data import Galadriel, GaladrielDeviceID
 
@@ -22,7 +22,7 @@ def fixture_runcard():
 
 @pytest.fixture(name="gates_settings")
 def fixture_gate_settings(runcard: Runcard):
-    return runcard.gates_settings
+    return runcard.digital
 
 
 class TestRuncard:
@@ -36,7 +36,7 @@ class TestRuncard:
         assert runcard.name == Galadriel.runcard["name"]
 
         # assert isinstance(runcard.gates_settings, runcard.GatesSettings)
-        assert runcard.gates_settings.to_dict() == Galadriel.runcard["gates_settings"]
+        assert runcard.digital.to_dict() == Galadriel.runcard["gates_settings"]
 
         # assert isinstance(runcard.buses, list)
         # assert isinstance(runcard.buses[0], runcard.Bus)
@@ -64,7 +64,6 @@ class TestRuncard:
         assert str(new_runcard) == str(runcard)
         assert str(new_runcard.name) == str(runcard.name)
         assert str(new_runcard.buses) == str(runcard.buses)
-        assert str(new_runcard.chip) == str(runcard.chip)
         assert str(new_runcard.instruments) == str(runcard.instruments)
         assert str(new_runcard.instrument_controllers) == str(runcard.instrument_controllers)
 

@@ -16,9 +16,9 @@
 
 from dataclasses import dataclass, field
 
+from qililab.settings.analog.analog_compilation_settings import AnalogCompilationSettings
 from qililab.settings.bus_settings import BusSettings
-from qililab.settings.circuit_compilation.gates_settings import GatesSettings
-from qililab.settings.flux_control_topology import FluxControlTopology
+from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
 
 
 @dataclass
@@ -50,12 +50,10 @@ class Runcard:
     instruments: list[dict] = field(default_factory=list)
     instrument_controllers: list[dict] = field(default_factory=list)
     buses: list[BusSettings] = field(default_factory=list)
-    flux_control_topology: list[FluxControlTopology] = field(default_factory=list)
-    gates_settings: GatesSettings | None = None
+    digital: DigitalCompilationSettings | None = None
+    analog: AnalogCompilationSettings | None = None
 
     def __post_init__(self):
         self.buses = [BusSettings(**bus) for bus in self.buses]
-        self.flux_control_topology = [
-            self.FluxControlTopology(**flux_control) for flux_control in self.flux_control_topology
-        ]
-        self.gates_settings = GatesSettings(**self.gates_settings) if self.gates_settings is not None else None
+        self.digital = DigitalCompilationSettings(**self.digital) if self.digital is not None else None
+        self.analog = AnalogCompilationSettings(**self.analog) if self.analog is not None else None

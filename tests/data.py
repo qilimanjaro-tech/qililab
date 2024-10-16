@@ -642,63 +642,63 @@ class Galadriel:
         keithley_2600_controller_0,
     ]
 
-    chip: dict[str, Any] = {
-        "nodes": [
-            {"name": "port", "alias": "flux_q0", "line": "flux", "nodes": ["q0"]},
-            {"name": "port", "alias": "flux_q1", "line": "flux", "nodes": ["q1"]},
-            {"name": "port", "alias": "flux_q2", "line": "flux", "nodes": ["q2"]},
-            {"name": "port", "alias": "drive_q0", "line": "drive", "nodes": ["q0"]},
-            {"name": "port", "alias": "drive_q1", "line": "drive", "nodes": ["q1"]},
-            {
-                "name": "port",
-                "alias": "feedline_input",
-                "line": "feedline_input",
-                "nodes": ["resonator_q0", "resonator_q1"],
-            },
-            {"name": "port", "alias": "feedline_output", "line": "feedline_output", "nodes": ["resonator_q0"]},
-            {"name": "port", "alias": "feedline_output_1", "line": "feedline_output", "nodes": ["resonator_q1"]},
-            {"name": "port", "alias": "feedline_output_2", "line": "feedline_input", "nodes": ["resonator_q2"]},
-            {
-                "name": "resonator",
-                "alias": "resonator_q0",
-                "frequency": 7.34730e09,
-                "nodes": ["feedline_input", "feedline_output", "q0"],
-            },
-            {
-                "name": "resonator",
-                "alias": "resonator_q1",
-                "frequency": 7.34730e09,
-                "nodes": ["feedline_input", "feedline_output_1", "q1"],
-            },
-            {
-                "name": "resonator",
-                "alias": "resonator_q2",
-                "frequency": 7.34730e09,
-                "nodes": ["feedline_input", "feedline_output_2", "q2"],
-            },
-            {
-                "name": "qubit",
-                "alias": "q0",
-                "qubit_index": 0,
-                "frequency": 3.451e09,
-                "nodes": ["flux_q0", "drive_q0", "resonator_q0"],
-            },
-            {
-                "name": "qubit",
-                "alias": "q1",
-                "qubit_index": 1,
-                "frequency": 3.351e09,
-                "nodes": ["drive_q1", "resonator_q1"],
-            },
-            {
-                "name": "qubit",
-                "alias": "q2",
-                "qubit_index": 2,
-                "frequency": 4.451e09,
-                "nodes": ["drive_q2", "resonator_q2"],
-            },
-        ],
-    }
+    # chip: dict[str, Any] = {
+    #     "nodes": [
+    #         {"name": "port", "alias": "flux_q0", "line": "flux", "nodes": ["q0"]},
+    #         {"name": "port", "alias": "flux_q1", "line": "flux", "nodes": ["q1"]},
+    #         {"name": "port", "alias": "flux_q2", "line": "flux", "nodes": ["q2"]},
+    #         {"name": "port", "alias": "drive_q0", "line": "drive", "nodes": ["q0"]},
+    #         {"name": "port", "alias": "drive_q1", "line": "drive", "nodes": ["q1"]},
+    #         {
+    #             "name": "port",
+    #             "alias": "feedline_input",
+    #             "line": "feedline_input",
+    #             "nodes": ["resonator_q0", "resonator_q1"],
+    #         },
+    #         {"name": "port", "alias": "feedline_output", "line": "feedline_output", "nodes": ["resonator_q0"]},
+    #         {"name": "port", "alias": "feedline_output_1", "line": "feedline_output", "nodes": ["resonator_q1"]},
+    #         {"name": "port", "alias": "feedline_output_2", "line": "feedline_input", "nodes": ["resonator_q2"]},
+    #         {
+    #             "name": "resonator",
+    #             "alias": "resonator_q0",
+    #             "frequency": 7.34730e09,
+    #             "nodes": ["feedline_input", "feedline_output", "q0"],
+    #         },
+    #         {
+    #             "name": "resonator",
+    #             "alias": "resonator_q1",
+    #             "frequency": 7.34730e09,
+    #             "nodes": ["feedline_input", "feedline_output_1", "q1"],
+    #         },
+    #         {
+    #             "name": "resonator",
+    #             "alias": "resonator_q2",
+    #             "frequency": 7.34730e09,
+    #             "nodes": ["feedline_input", "feedline_output_2", "q2"],
+    #         },
+    #         {
+    #             "name": "qubit",
+    #             "alias": "q0",
+    #             "qubit_index": 0,
+    #             "frequency": 3.451e09,
+    #             "nodes": ["flux_q0", "drive_q0", "resonator_q0"],
+    #         },
+    #         {
+    #             "name": "qubit",
+    #             "alias": "q1",
+    #             "qubit_index": 1,
+    #             "frequency": 3.351e09,
+    #             "nodes": ["drive_q1", "resonator_q1"],
+    #         },
+    #         {
+    #             "name": "qubit",
+    #             "alias": "q2",
+    #             "qubit_index": 2,
+    #             "frequency": 4.451e09,
+    #             "nodes": ["drive_q2", "resonator_q2"],
+    #         },
+    #     ],
+    # }
 
     buses: list[dict[str, Any]] = [
         {
@@ -757,7 +757,6 @@ class Galadriel:
         RUNCARD.NAME: name,
         RUNCARD.GATES_SETTINGS: gates_settings,
         RUNCARD.FLUX_CONTROL_TOPOLOGY: flux_control_topology,
-        RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,
         RUNCARD.INSTRUMENTS: instruments,
         RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
@@ -810,17 +809,12 @@ class GaladrielDeviceID:
     instruments: list[dict] = []
     instrument_controllers: list[dict] = []
 
-    chip: dict[str, Any] = {
-        "nodes": [],
-    }
-
     buses: list[dict[str, Any]] = []
 
     runcard: dict[str, Any] = {
         RUNCARD.NAME: name,
         "device_id": device_id,
         RUNCARD.GATES_SETTINGS: gates_settings,
-        RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,
         RUNCARD.INSTRUMENTS: instruments,
         RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
@@ -1161,18 +1155,18 @@ class SauronYokogawa:
         yokogawa_gs200_controller_wrong_module,
     ]
 
-    chip: dict[str, Any] = {
-        "nodes": [
-            {"name": "port", "alias": "flux_q0", "line": "flux", "nodes": ["q0"]},
-            {
-                "name": "qubit",
-                "alias": "q0",
-                "qubit_index": 0,
-                "frequency": 3.451e09,
-                "nodes": ["flux_q0"],
-            },
-        ],
-    }
+    # chip: dict[str, Any] = {
+    #     "nodes": [
+    #         {"name": "port", "alias": "flux_q0", "line": "flux", "nodes": ["q0"]},
+    #         {
+    #             "name": "qubit",
+    #             "alias": "q0",
+    #             "qubit_index": 0,
+    #             "frequency": 3.451e09,
+    #             "nodes": ["flux_q0"],
+    #         },
+    #     ],
+    # }
 
     buses: list[dict[str, Any]] = [
         {
@@ -1194,7 +1188,6 @@ class SauronYokogawa:
     runcard = {
         RUNCARD.NAME: name,
         RUNCARD.GATES_SETTINGS: gates_settings,
-        RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,
         RUNCARD.INSTRUMENTS: instruments,
         RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
@@ -1290,18 +1283,18 @@ class SauronQDevil:
         qdevil_qdac2_controller_wrong_module,
     ]
 
-    chip: dict[str, Any] = {
-        "nodes": [
-            {"name": "port", "alias": "port_q0", "line": "flux", "nodes": ["q0"]},
-            {
-                "name": "qubit",
-                "alias": "q0",
-                "qubit_index": 0,
-                "frequency": 3.451e09,
-                "nodes": ["port_q0"],
-            },
-        ],
-    }
+    # chip: dict[str, Any] = {
+    #     "nodes": [
+    #         {"name": "port", "alias": "port_q0", "line": "flux", "nodes": ["q0"]},
+    #         {
+    #             "name": "qubit",
+    #             "alias": "q0",
+    #             "qubit_index": 0,
+    #             "frequency": 3.451e09,
+    #             "nodes": ["port_q0"],
+    #         },
+    #     ],
+    # }
 
     buses: list[dict[str, Any]] = [
         {
@@ -1316,7 +1309,6 @@ class SauronQDevil:
     runcard = {
         RUNCARD.NAME: name,
         RUNCARD.GATES_SETTINGS: gates_settings,
-        RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,
         RUNCARD.INSTRUMENTS: instruments,
         RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
@@ -1730,18 +1722,18 @@ class SauronQuantumMachines:
         qmm_controller_wrong_module,
     ]
 
-    chip: dict[str, Any] = {
-        "nodes": [
-            {"name": "port", "alias": "port_q0", "line": "flux", "nodes": ["q0"]},
-            {
-                "name": "qubit",
-                "alias": "q0",
-                "qubit_index": 0,
-                "frequency": 3.451e09,
-                "nodes": ["port_q0"],
-            },
-        ],
-    }
+    # chip: dict[str, Any] = {
+    #     "nodes": [
+    #         {"name": "port", "alias": "port_q0", "line": "flux", "nodes": ["q0"]},
+    #         {
+    #             "name": "qubit",
+    #             "alias": "q0",
+    #             "qubit_index": 0,
+    #             "frequency": 3.451e09,
+    #             "nodes": ["port_q0"],
+    #         },
+    #     ],
+    # }
 
     buses: list[dict[str, Any]] = [
         {
@@ -1812,7 +1804,6 @@ class SauronQuantumMachines:
     runcard = {
         RUNCARD.NAME: name,
         RUNCARD.GATES_SETTINGS: gates_settings,
-        RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,
         RUNCARD.INSTRUMENTS: instruments,
         RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,

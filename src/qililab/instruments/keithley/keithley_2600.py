@@ -58,6 +58,14 @@ class Keithley2600(Instrument):
             return
         raise ParameterNotFound(self, parameter)
 
+    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
+        """Setup instrument."""
+        if parameter == Parameter.MAX_CURRENT:
+            return self.max_current
+        if parameter == Parameter.MAX_VOLTAGE:
+            return self.max_voltage
+        raise ParameterNotFound(self, parameter)
+
     def initial_setup(self):
         """performs an initial setup"""
         self.device.smua.limiti(self.max_current)

@@ -1,7 +1,7 @@
 import pytest
 
 from qililab import Parameter
-from qililab.settings.circuit_compilation.gate_event_settings import GateEventSettings
+from qililab.settings.digital.gate_event_settings import GateEventSettings
 
 
 @pytest.fixture(name="schedule")

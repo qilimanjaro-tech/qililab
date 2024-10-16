@@ -13,5 +13,5 @@
 # limitations under the License.
 
 from .bus_settings import BusSettings as BusSettings
+from .digital_compilation_settings import DigitalCompilationSettings as DigitalCompilationSettings
 from .gate_event_settings import GateEventSettings as GateEventSettings
-from .gates_settings import GatesSettings as GatesSettings

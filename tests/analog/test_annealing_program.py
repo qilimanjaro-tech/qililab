@@ -7,6 +7,7 @@ import pytest
 
 from qililab import AnnealingProgram
 from qililab.settings import Runcard
+from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from tests.data import Galadriel
 
 
@@ -42,7 +43,7 @@ def get_flux_to_bus_topology():
         {"flux": "phix_c0_1", "bus": "flux_line_phix_c0_1"},
         {"flux": "phiz_c0_1", "bus": "flux_line_phiz_c0_1"},
     ]
-    return [Runcard.FluxControlTopology(**flux_control) for flux_control in flux_control_topology_dict]
+    return [FluxControlTopology(**flux_control) for flux_control in flux_control_topology_dict]
 
 
 @pytest.fixture(name="transpiled_program_dictionary")
