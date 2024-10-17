@@ -85,6 +85,21 @@
 
   [#816](https://github.com/qilimanjaro-tech/qililab/pull/816)
 
+- Added `checkpoints` logic for calibration, to skip parts of the graph that are already good to go.
+  This diagnose of the `checkpoints` starts from the first ones, until finds the first in each branch, that doesn't pass.
+
+  Example:
+
+  If \[i\] are notebooks and \[V\] or \[X\] are checkpoints that pass or not respectively, in a graph like:
+
+  - `[0] - [1] - [V] - [3] - [4] - [X] - [5]`, calibration would start from notebook 3
+
+  - `[0] - [1] - [V] - [3] - [4] - [V] - [5]`, calibration would start from notebook 5
+
+  - `[0] - [1] - [X] - [3] - [4] - [.] - [5]`, calibration would start from notebook 0 (Notice that the second `checkpoints` is not checked, since the first one already fails)
+
+  [#777](https://github.com/qilimanjaro-tech/qililab/pull/777)
+
 ### Improvements
 
 - Legacy linting and formatting tools such as pylint, flake8, isort, bandit, and black have been removed. These have been replaced with Ruff, a more efficient tool that handles both linting and formatting. All configuration settings have been consolidated into the `pyproject.toml` file, simplifying the project's configuration and maintenance. Integration config files like `pre-commit-config.yaml` and `.github/workflows/code_quality.yml` have been updated accordingly. Several rules from Ruff have also been implemented to improve code consistency and quality across the codebase. Additionally, the development dependencies in `dev-requirements.txt` have been updated to their latest versions, ensuring better compatibility and performance. [#813](https://github.com/qilimanjaro-tech/qililab/pull/813)
