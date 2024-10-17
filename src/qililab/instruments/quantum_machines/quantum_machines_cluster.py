@@ -19,11 +19,18 @@ from dataclasses import dataclass
 from typing import Any, cast
 
 import numpy as np
-from qm import DictQuaConfig, QmJob, QuantumMachine, QuantumMachinesManager, SimulationConfig
+from qm import (
+    DictQuaConfig,
+    OPX1000ControllerConfigType,
+    Program,
+    QmJob,
+    QuantumMachine,
+    QuantumMachinesManager,
+    SimulationConfig,
+)
 from qm.api.v2.job_api import JobApi
 from qm.jobs.running_qm_job import RunningQmJob
 from qm.octave import QmOctaveConfig
-from qm.program import Program
 
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
@@ -440,7 +447,7 @@ class QuantumMachinesCluster(Instrument):
     def turn_on(self):
         """Turns on the instrument."""
         if not self._is_connected_to_qm:
-            self._qm = self._qmm.open_qm(config=self._config, close_other_machines=False)
+            self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)
             self._compiled_program_cache = {}
             self._is_connected_to_qm = True
 
@@ -475,7 +482,7 @@ class QuantumMachinesCluster(Instrument):
             self._config = cast(DictQuaConfig, merged_configuration)
             # If we are already connected, reopen the connection with the new configuration
             if self._is_connected_to_qm:
-                self._qm = self._qmm.open_qm(config=self._config, close_other_machines=False)  # type: ignore[assignment]
+                self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)  # type: ignore[assignment]
                 self._compiled_program_cache = {}
 
     def run_octave_calibration(self):
@@ -484,7 +491,7 @@ class QuantumMachinesCluster(Instrument):
         for element in elements:
             self._qm.calibrate_element(element)
 
-    def get_controller_type_from_bus(self, bus: str) -> str | None:
+    def get_controller_type_from_bus(self, bus: str) -> str:
         """Gets the OPX controller name of the bus used
 
         Args:
@@ -497,20 +504,23 @@ class QuantumMachinesCluster(Instrument):
             str | None: Alias of the controller, either opx1 or opx1000.
         """
 
-        if "RF_inputs" in self._config["elements"][bus]:
-            octave = self._config["elements"][bus]["RF_inputs"]["port"][0]
-            controller_name = self._config["octaves"][octave]["connectivity"]
-        elif "mixInputs" in self._config["elements"][bus]:
-            controller_name = self._config["elements"][bus]["mixInputs"]["I"][0]
-        elif "singleInput" in self._config["elements"][bus]:
-            controller_name = self._config["elements"][bus]["singleInput"]["port"][0]
+        if "RF_inputs" in self.config["elements"][bus]:
+            octave = self._config["elements"][bus]["RF_inputs"]["port"]
+            if "connectivity" in self._config["octaves"][octave[0]]:
+                controller_name = self._config["octaves"][octave[0]]["connectivity"]
+            else:
+                controller_name = self._config["octaves"][octave[0]]["RF_outputs"][octave[1]]["I_connection"][0]
+        elif "mixInputs" in self.config["elements"][bus]:
+            controller_name = self.config["elements"][bus]["mixInputs"]["I"][0]
+        elif "singleInput" in self.config["elements"][bus]:
+            controller_name = self.config["elements"][bus]["singleInput"]["port"][0]
 
         for controller in self.settings.controllers:
             if controller["name"] == controller_name:
                 return controller["type"] if "type" in controller else "opx1"
         raise AttributeError(f"Controller with bus {bus} does not exist")
 
-    def get_controller_from_element(self, element: dict, key: str | None) -> tuple[str, int, int | None]:
+    def get_controller_from_element(self, element: dict, key: str | None = None) -> tuple[str, int, int | None]:
         """Get controller name, port and FEM (if applicable) from element
 
         Args:
@@ -818,6 +828,17 @@ class QuantumMachinesCluster(Instrument):
             if con_fem is None:
                 return settings_config_dict["controllers"][con_name]["analog_inputs"][out_value]["offset"]  # type: ignore[typeddict-item]
             return settings_config_dict["controllers"][con_name]["fems"][con_fem]["analog_inputs"][out_value]["offset"]  # type: ignore[typeddict-item]
+
+        if parameter == Parameter.IS_AMPLIFIED:
+            opx_type = self.get_controller_type_from_bus(bus=bus)
+            if opx_type != "opx1000":
+                return False
+            key = "I" if ("rf_inputs" in element or "mix_inputs" in element) else None
+            controller, port, fem = self.get_controller_from_element(element=element, key=key)
+            opx1000_controller_config = cast(
+                OPX1000ControllerConfigType, settings_config_dict["controllers"][controller]
+            )
+            return opx1000_controller_config["fems"][fem]["analog_outputs"][con_port]["output_mode"] == "amplified"
 
         raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 

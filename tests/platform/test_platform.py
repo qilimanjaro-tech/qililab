@@ -775,6 +775,7 @@ class TestMethods:
             patch.object(QuantumMachinesCluster, "compile") as compile_program,
             patch.object(QuantumMachinesCluster, "run_compiled_program") as run_compiled_program,
             patch.object(QuantumMachinesCluster, "get_acquisitions") as get_acquisitions,
+            patch.object(QuantumMachinesCluster, "get_controller_type_from_bus"),
         ):
             cluster = platform_quantum_machines.get_element("qmm")
             config.return_value = cluster.settings.to_qua_config()
