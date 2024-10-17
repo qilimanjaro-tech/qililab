@@ -36,8 +36,8 @@ class BusSettings:
 
     line: Line
     qubits: list[int]
-    distortions: list[PulseDistortion]
-    delay: int
+    delay: int = 0
+    distortions: list[PulseDistortion] = field(default_factory=list)
     weights_i: list[float] = field(default_factory=list)
     weights_q: list[float] = field(default_factory=list)
     weighed_acq_enabled: bool = False

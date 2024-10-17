@@ -40,7 +40,6 @@ class Instrument(BusElement, ABC):
 
         Args:
             alias (str): Alias of the instrument.
-            firmware (str): Firmware version installed on the instrument.
         """
 
         alias: str

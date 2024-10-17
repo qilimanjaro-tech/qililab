@@ -46,7 +46,6 @@ class Runcard:
     """
 
     name: str
-    device_id: int
     instruments: list[dict] = field(default_factory=list)
     instrument_controllers: list[dict] = field(default_factory=list)
     buses: list[BusSettings] = field(default_factory=list)
