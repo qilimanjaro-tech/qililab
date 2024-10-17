@@ -18,6 +18,7 @@
 import ast
 import io
 import re
+import tempfile
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
@@ -65,7 +66,6 @@ from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName, Line, Parameter
 from qililab.utils import hash_qpy_sequence
-from qililab.waveforms import IQPair, Square
 
 from .components import Bus, Buses
 
@@ -325,6 +325,12 @@ class Platform:
 
         self._qpy_sequence_cache: dict[str, str] = {}
         """Dictionary for caching qpysequences."""
+
+        self.experiment_results_base_path: str = tempfile.gettempdir()
+        """Base path for saving experiment results."""
+
+        self.experiment_results_path_format: str = "{date}/{time}/{label}.h5"
+        """Format of the experiment results path."""
 
     def connect(self):
         """Connects to all the instruments and blocks the connection for other users.
@@ -652,16 +658,16 @@ class Platform:
             if cleanup_errors:
                 raise ExceptionGroup("Exceptions occurred during cleanup", cleanup_errors)
 
-    def execute_anneal_program(
+    def execute_annealing_program(
         self,
         annealing_program_dict: list[dict[str, dict[str, float]]],
-        calibration: Calibration,
-        readout_bus: str,
-        measurement_name: str,
         transpiler: Callable,
-        num_averages: int,
+        calibration: Calibration,
+        num_averages: int = 1000,
         num_shots: int = 1,
-        weights: str | None = None,
+        preparation_block: str = "preparation",
+        measurement_block: str = "measurement",
+        bus_mapping: dict[str, str] | None = None,
         debug: bool = False,
     ) -> QProgramResults:
         """Given an annealing program execute it as a qprogram.
@@ -691,46 +697,43 @@ class Platform:
         """
         if self.flux_to_bus_topology is None:
             raise ValueError("Flux to bus topology not given in the runcard")
-        if calibration.has_waveform(bus=readout_bus, name=measurement_name):
-            annealing_program = AnnealingProgram(
-                flux_to_bus_topology=self.flux_to_bus_topology, annealing_program=annealing_program_dict
-            )
-            annealing_program.transpile(transpiler)
-            crosstalk_matrix = (
-                calibration.crosstalk_matrix.inverse() if calibration.crosstalk_matrix is not None else None
-            )
-            annealing_waveforms = annealing_program.get_waveforms(
-                crosstalk_matrix=crosstalk_matrix, minimum_clock_time=self.gates_settings.minimum_clock_time
-            )
 
-            qp_annealing = QProgram()
-            shots_variable = qp_annealing.variable("num_shots", Domain.Scalar, int)
+        if not calibration.has_block(name=measurement_block):
+            raise ValueError("The calibrated measurement is not present in the calibration file.")
 
-            with qp_annealing.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
-                with qp_annealing.average(num_averages):
-                    for bus, waveform in annealing_waveforms.items():
-                        qp_annealing.play(bus=bus, waveform=waveform)
+        annealing_program = AnnealingProgram(
+            flux_to_bus_topology=self.flux_to_bus_topology, annealing_program=annealing_program_dict
+        )
+        annealing_program.transpile(transpiler)
+        crosstalk_matrix = calibration.crosstalk_matrix.inverse() if calibration.crosstalk_matrix is not None else None
+        annealing_waveforms = annealing_program.get_waveforms(
+            crosstalk_matrix=crosstalk_matrix, minimum_clock_time=self.gates_settings.minimum_clock_time
+        )
+
+        qp_annealing = QProgram()
+        shots_variable = qp_annealing.variable("num_shots", Domain.Scalar, int)
+
+        with qp_annealing.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
+            with qp_annealing.average(num_averages):
+                if calibration.has_block(name=preparation_block):
+                    qp_annealing.insert_block(calibration.get_block(name=preparation_block))
                     qp_annealing.sync()
-                    if weights and calibration.has_weights(bus=readout_bus, name=weights):
-                        qp_annealing.measure(bus=readout_bus, waveform=measurement_name, weights=weights)
-                    else:
-                        r_duration = calibration.get_waveform(bus=readout_bus, name=measurement_name).get_duration()
-                        weights_shape = Square(amplitude=1, duration=r_duration)
-                        qp_annealing.measure(
-                            bus=readout_bus, waveform=measurement_name, weights=IQPair(I=weights_shape, Q=weights_shape)
-                        )
+                for bus, waveform in annealing_waveforms.items():
+                    qp_annealing.play(bus=bus, waveform=waveform)
+                qp_annealing.sync()
+                qp_annealing.insert_block(calibration.get_block(name=measurement_block))
 
-            return self.execute_qprogram(qprogram=qp_annealing, calibration=calibration, debug=debug)
-        raise ValueError("The calibrated measurement is not present in the calibration file.")
+        return self.execute_qprogram(
+            qprogram=qp_annealing, calibration=calibration, bus_mapping=bus_mapping, debug=debug
+        )
 
-    def execute_experiment(self, experiment: Experiment, base_data_path: str) -> str:
+    def execute_experiment(self, experiment: Experiment) -> str:
         """Executes a quantum experiment on the platform.
 
         This method manages the execution of a given `Experiment` on the platform by utilizing an `ExperimentExecutor`. It orchestrates the entire process, including traversing the experiment's structure, handling loops and operations, and streaming results in real-time to ensure data integrity. The results are saved in a timestamped directory within the specified `base_data_path`.
 
         Args:
             experiment (Experiment): The experiment object defining the sequence of operations and loops.
-            base_data_path (str): The base directory path where the experiment results will be stored.
 
         Returns:
             str: The path to the file where the results are stored.
@@ -741,23 +744,23 @@ class Platform:
                 from qililab import Experiment
 
                 # Initialize your experiment
-                experiment = Experiment()
+                experiment = Experiment(label="my_experiment")
                 # Add variables, loops, and operations to the experiment
                 # ...
 
-                # Define the base data path for storing results
-                base_data_path = "/data/experiments"
+                # Define the base path for storing experiment results
+                platform.experiment_results_base_path = "/data/experiments"
 
                 # Execute the experiment on the platform
-                results_path = platform.execute_experiment(experiment=experiment, base_data_path=base_data_path)
+                results_path = platform.execute_experiment(experiment=experiment)
                 print(f"Results saved to {results_path}")
 
         Note:
             - Ensure that the experiment is properly configured before execution.
-            - The results will be saved in a timestamped directory within the `base_data_path`.
+            - The results will be saved in a directory within the `experiment_results_base_path` according to the `platform.experiment_results_path_format`. The default format is `{date}/{time}/{label}.h5`.
             - This method handles the setup and execution internally, providing a simplified interface for experiment execution.
         """
-        executor = ExperimentExecutor(platform=self, experiment=experiment, base_data_path=base_data_path)
+        executor = ExperimentExecutor(platform=self, experiment=experiment)
         return executor.execute()
 
     def compile_qprogram(

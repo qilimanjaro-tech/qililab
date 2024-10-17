@@ -1,3 +1,5 @@
+import os
+import tempfile
 from unittest.mock import Mock, call, create_autospec
 
 import numpy as np
@@ -29,6 +31,8 @@ def mock_platform():
     platform.get_parameter = Mock(return_value=1.23)
     platform.execute_qprogram = Mock(return_value=qprogram_results)
     platform.to_dict = Mock(return_value={"name": "platform"})
+    platform.experiment_results_base_path = tempfile.gettempdir()
+    platform.experiment_results_path_format = "{date}/{time}/{label}.h5"
 
     return platform
 
@@ -77,8 +81,7 @@ def get_qprogram_frequency_and_bias_by_loop(frequency: float, bias: float, qprog
 @pytest.fixture(name="experiment")
 def fixture_experiment(qprogram: QProgram):
     """Fixture to create a mock Experiment."""
-    experiment = Experiment()
-    experiment = Experiment()
+    experiment = Experiment(label="experiment")
     bias = experiment.variable(label="Bias (mV)", domain=Domain.Voltage)
     frequency = experiment.variable(label="Frequency (Hz)", domain=Domain.Frequency)
     nshots = experiment.variable(label="nshots", domain=Domain.Scalar, type=int)
@@ -126,12 +129,12 @@ class TestExperimentExecutor:
 
     def test_execute(self, platform, experiment, qprogram):
         """Test the execute method to ensure the experiment is executed correctly and results are stored."""
-        executor = ExperimentExecutor(platform=platform, experiment=experiment, base_data_path="/tmp/")
-        path = executor.execute()
+        executor = ExperimentExecutor(platform=platform, experiment=experiment)
+        resuls_path = executor.execute()
 
         # Check if the correct file path is returned
-        assert path.startswith("/tmp/")
-        assert path.endswith("data.h5")
+        assert resuls_path.startswith(os.path.abspath(tempfile.gettempdir()))
+        assert resuls_path.endswith(".h5")
 
         # Check that platform methods were called in the correct order
         expected_calls = [

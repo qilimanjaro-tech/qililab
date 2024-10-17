@@ -34,7 +34,7 @@ from qililab.settings import Runcard
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName, Parameter
-from qililab.waveforms import IQPair, Square
+from qililab.waveforms import Chained, IQPair, Ramp, Square
 from tests.data import Galadriel, SauronQuantumMachines
 from tests.test_utils import build_platform
 
@@ -135,9 +135,38 @@ def get_calibration():
     weights_shape = Square(amplitude=1, duration=readout_duration)
     weights = IQPair(I=weights_shape, Q=weights_shape)
 
+    measurement_qp = QProgram()
+    measurement_qp.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
+
     calibration = Calibration()
-    calibration.add_waveform(bus="readout_bus", name="readout", waveform=readout_waveform)
-    calibration.add_weights(bus="readout_bus", name="optimal_weights", weights=weights)
+    calibration.add_block(name="measurement", block=measurement_qp.body)
+
+    return calibration
+
+
+@pytest.fixture(name="calibration_with_preparation_block")
+def get_calibration_with_preparation_block():
+    readout_duration = 2000
+    readout_amplitude = 1.0
+    r_wf_I = Square(amplitude=readout_amplitude, duration=readout_duration)
+    r_wf_Q = Square(amplitude=0.0, duration=readout_duration)
+    readout_waveform = IQPair(I=r_wf_I, Q=r_wf_Q)
+    weights_shape = Square(amplitude=1, duration=readout_duration)
+    weights = IQPair(I=weights_shape, Q=weights_shape)
+
+    preparation_wf = Chained(
+        waveforms=[Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=100), Square(amplitude=1.0, duration=200)]
+    )
+    preparation_qp = QProgram()
+    preparation_qp.play(bus="flux_line_phix_q0", waveform=preparation_wf)
+    preparation_qp.play(bus="flux_line_phiz_q0", waveform=preparation_wf)
+
+    measurement_qp = QProgram()
+    measurement_qp.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
+
+    calibration = Calibration()
+    calibration.add_block(name="preparation", block=preparation_qp.body)
+    calibration.add_block(name="measurement", block=measurement_qp.body)
 
     return calibration
 
@@ -163,6 +192,7 @@ def get_anneal_qprogram(runcard, flux_to_bus_topology):
     readout_waveform = IQPair(I=r_wf_I, Q=r_wf_Q)
     weights_shape = Square(amplitude=1, duration=readout_duration)
     weights = IQPair(I=weights_shape, Q=weights_shape)
+
     qp_anneal = QProgram()
     shots_variable = qp_anneal.variable("num_shots", Domain.Scalar, int)
     with qp_anneal.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
@@ -170,7 +200,49 @@ def get_anneal_qprogram(runcard, flux_to_bus_topology):
             for bus, waveform in anneal_waveforms.items():
                 qp_anneal.play(bus=bus, waveform=waveform)
             qp_anneal.sync()
-            qp_anneal.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
+            with qp_anneal.block():
+                qp_anneal.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
+    return qp_anneal
+
+
+@pytest.fixture(name="anneal_qprogram_with_preparation")
+def get_anneal_qprogram_with_preparation(runcard, flux_to_bus_topology):
+    platform = Platform(runcard=runcard)
+    platform.flux_to_bus_topology = flux_to_bus_topology
+    anneal_waveforms = {
+        next(element.bus for element in platform.flux_to_bus_topology if element.flux == "phix_q0"): Arbitrary(
+            np.array([0.0, 0.0, 0.0, 1.0])
+        ),
+        next(element.bus for element in platform.flux_to_bus_topology if element.flux == "phiz_q0"): Arbitrary(
+            np.array([0.0, 0.0, 0.0, 2.0])
+        ),
+    }
+    num_averages = 2
+    num_shots = 1
+    readout_duration = 2000
+    readout_amplitude = 1.0
+    r_wf_I = Square(amplitude=readout_amplitude, duration=readout_duration)
+    r_wf_Q = Square(amplitude=0.0, duration=readout_duration)
+    readout_waveform = IQPair(I=r_wf_I, Q=r_wf_Q)
+    weights_shape = Square(amplitude=1, duration=readout_duration)
+    weights = IQPair(I=weights_shape, Q=weights_shape)
+    preparation_wf = Chained(
+        waveforms=[Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=100), Square(amplitude=1.0, duration=200)]
+    )
+
+    qp_anneal = QProgram()
+    shots_variable = qp_anneal.variable("num_shots", Domain.Scalar, int)
+    with qp_anneal.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
+        with qp_anneal.average(num_averages):
+            with qp_anneal.block():
+                qp_anneal.play(bus="flux_line_phix_q0", waveform=preparation_wf)
+                qp_anneal.play(bus="flux_line_phiz_q0", waveform=preparation_wf)
+            qp_anneal.sync()
+            for bus, waveform in anneal_waveforms.items():
+                qp_anneal.play(bus=bus, waveform=waveform)
+            qp_anneal.sync()
+            with qp_anneal.block():
+                qp_anneal.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
     return qp_anneal
 
 
@@ -536,7 +608,24 @@ class TestMethods:
             assert all(isinstance(sequence, Sequence) for sequence in sequences_list)
             assert sequences_list[0]._program.duration == 200_000 * 1000 + 4 + 4 + 4
 
-    def test_execute_anneal_program(self, platform: Platform, anneal_qprogram, flux_to_bus_topology, calibration):
+    @pytest.mark.parametrize(
+        "qprogram_fixture, calibration_fixture",
+        [
+            ("anneal_qprogram", "calibration"),
+            ("anneal_qprogram_with_preparation", "calibration_with_preparation_block"),
+        ],
+    )
+    def test_execute_anneal_program(
+        self,
+        platform: Platform,
+        qprogram_fixture: str,
+        flux_to_bus_topology: list[Runcard.FluxControlTopology],
+        calibration_fixture: str,
+        request,
+    ):
+        anneal_qprogram = request.getfixturevalue(qprogram_fixture)
+        calibration = request.getfixturevalue(calibration_fixture)
+
         mock_execute_qprogram = MagicMock()
         mock_execute_qprogram.return_value = QProgramResults()
         platform.execute_qprogram = mock_execute_qprogram  # type: ignore[method-assign]
@@ -544,28 +633,12 @@ class TestMethods:
         transpiler = MagicMock()
         transpiler.return_value = (1, 2)
 
-        results = platform.execute_anneal_program(
+        results = platform.execute_annealing_program(
             annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
             transpiler=transpiler,
+            calibration=calibration,
             num_averages=2,
             num_shots=1,
-            readout_bus="readout_bus",
-            measurement_name="readout",
-            weights="optimal_weights",
-            calibration=calibration,
-        )
-        qprogram = mock_execute_qprogram.call_args[1]["qprogram"].with_calibration(calibration)
-        assert str(anneal_qprogram) == str(qprogram)
-        assert isinstance(results, QProgramResults)
-
-        results = platform.execute_anneal_program(
-            annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
-            transpiler=transpiler,
-            num_averages=2,
-            num_shots=1,
-            readout_bus="readout_bus",
-            measurement_name="readout",
-            calibration=calibration,
         )
         qprogram = mock_execute_qprogram.call_args[1]["qprogram"].with_calibration(calibration)
         assert str(anneal_qprogram) == str(qprogram)
@@ -578,14 +651,13 @@ class TestMethods:
         transpiler.return_value = (1, 2)
         error_string = "The calibrated measurement is not present in the calibration file."
         with pytest.raises(ValueError, match=error_string):
-            platform.execute_anneal_program(
+            platform.execute_annealing_program(
                 annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
                 transpiler=transpiler,
+                calibration=calibration,
                 num_averages=2,
                 num_shots=1,
-                readout_bus="readout_bus",
-                measurement_name="whatever",
-                calibration=calibration,
+                measurement_block="whatever",
             )
 
     def test_execute_experiment(self):
@@ -599,7 +671,6 @@ class TestMethods:
         # Create an autospec of the Experiment class
         mock_experiment = create_autospec(Experiment)
 
-        base_data_path = "mock/results/path/"
         expected_results_path = "mock/results/path/data.h5"
 
         # Mock the ExperimentExecutor to ensure it's used correctly
@@ -608,12 +679,10 @@ class TestMethods:
             mock_executor_instance.execute.return_value = expected_results_path
 
             # Call the method under test
-            results_path = platform.execute_experiment(experiment=mock_experiment, base_data_path=base_data_path)
+            results_path = platform.execute_experiment(experiment=mock_experiment)
 
             # Check that ExperimentExecutor was instantiated with the correct arguments
-            MockExecutor.assert_called_once_with(
-                platform=platform, experiment=mock_experiment, base_data_path=base_data_path
-            )
+            MockExecutor.assert_called_once_with(platform=platform, experiment=mock_experiment)
 
             # Ensure the execute method was called on the ExperimentExecutor instance
             mock_executor_instance.execute.assert_called_once()
@@ -996,11 +1065,9 @@ class TestMethods:
         platform.flux_to_bus_topology = None
         error_string = "Flux to bus topology not given in the runcard"
         with pytest.raises(ValueError, match=error_string):
-            platform.execute_anneal_program(
+            platform.execute_annealing_program(
                 annealing_program_dict=[{}],
                 calibration=MagicMock(),
-                readout_bus="readout",
-                measurement_name="measurement",
                 transpiler=MagicMock(),
                 num_averages=2,
                 num_shots=1,
