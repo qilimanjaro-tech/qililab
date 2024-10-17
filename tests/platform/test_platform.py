@@ -31,6 +31,7 @@ from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.settings import Runcard
 from qililab.settings.digital.gate_event_settings import GateEventSettings
+from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import Chained, IQPair, Ramp, Square
 from tests.data import Galadriel, SauronQuantumMachines
@@ -590,7 +591,7 @@ class TestMethods:
         self,
         platform: Platform,
         qprogram_fixture: str,
-        flux_to_bus_topology: list[Runcard.FluxControlTopology],
+        flux_to_bus_topology: list[FluxControlTopology],
         calibration_fixture: str,
         request,
     ):

@@ -124,17 +124,6 @@ class BUS:
     RESULTS = "results"
 
 
-class LOOP:
-    """Loop class and attribute names."""
-
-    LOOP = "loop"
-    PARAMETER = "parameter"
-    ALIAS = "alias"
-    CHANNEL_ID = "channel_id"
-    PREVIOUS = "previous"
-    VALUES = "values"
-
-
 class NODE:
     """Chip node class and attribute names"""
 

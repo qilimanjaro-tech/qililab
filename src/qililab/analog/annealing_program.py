@@ -17,7 +17,7 @@ from typing import Callable
 import numpy as np
 
 from qililab.qprogram import CrosstalkMatrix, FluxVector
-from qililab.settings.runcard import FluxControlTopology
+from qililab.settings.analog import FluxControlTopology
 from qililab.waveforms import Arbitrary
 
 

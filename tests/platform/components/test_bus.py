@@ -1,126 +1,109 @@
-"""Tests for the Bus class."""
-
-import re
-from types import NoneType
-from unittest.mock import MagicMock, patch
-
 import pytest
-from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
+from unittest.mock import MagicMock, patch
+from qililab.instruments import Instrument, Instruments
+from qililab.instruments.qblox import QbloxQCM, QbloxQRM
+from qililab.qprogram.qblox_compiler import AcquisitionData
+from qililab.result import Result
+from qililab.result.qprogram import MeasurementResult
+from qililab.platform import Bus
 
-import qililab as ql
-from qililab.instruments.instrument import ParameterNotFound
-from qililab.platform import Bus, Buses
-from qililab.system_control import ReadoutSystemControl, SystemControl
-from qililab.typings import Parameter
-from tests.data import Galadriel
-from tests.test_utils import build_platform
+@pytest.fixture
+def mock_instruments():
+    instrument1 = MagicMock(spec=Instrument)
+    instrument2 = MagicMock(spec=Instrument)
+    instrument1.is_awg.return_value = False
+    instrument1.is_adc.return_value = True
+    instrument2.is_awg.return_value = True
+    instrument2.is_adc.return_value = False
+    return [instrument1, instrument2]
 
+@pytest.fixture
+def mock_platform_instruments():
+    platform_instruments = MagicMock(spec=Instruments)
+    platform_instruments.get_instrument.side_effect = lambda alias: MagicMock(spec=Instrument)
+    return platform_instruments
 
-def load_buses() -> Buses:
-    """Load Buses.
+@pytest.fixture
+def bus_settings(mock_instruments, mock_platform_instruments):
+    return {
+        "alias": "bus1",
+        "instruments": ["instrument1", "instrument2"],
+        "channels": [None, None]
+    }
 
-    Returns:
-        Buses: Instance of the Buses class.
-    """
-    platform = build_platform(Galadriel.runcard)
-    return platform.buses
+@pytest.fixture
+def bus(bus_settings, mock_platform_instruments):
+    return Bus(settings=bus_settings, platform_instruments=mock_platform_instruments)
 
+def test_bus_alias(bus):
+    assert bus.alias == "bus1"
 
-@pytest.fixture(name="qpysequence")
-def fixture_qpysequence() -> Sequence:
-    """Return Sequence instance."""
-    return Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
+def test_bus_instruments(bus, mock_instruments):
+    assert len(bus.instruments) == 2
 
+def test_bus_channels(bus):
+    assert len(bus.channels) == 2
+    assert bus.channels == [None, None]
 
-@pytest.mark.parametrize("bus", [load_buses().elements[0], load_buses().elements[1]])
-class TestBus:
-    """Unit tests checking the Bus attributes and methods."""
+def test_bus_str(bus):
+    expected_str = "Bus bus1:  ----|<MagicMock>|----|<MagicMock>|----"
+    assert str(bus) == expected_str
 
-    def test_system_control_instance(self, bus: Bus):
-        """Test system_control instance."""
-        assert isinstance(bus.system_control, SystemControl)
+def test_bus_equality(bus):
+    other_bus = MagicMock(spec=Bus)
+    other_bus.__str__.return_value = str(bus)
+    assert bus == other_bus
 
-    def test_iter_and_getitem_methods(self, bus: Bus):
-        """Test __iter__ magic method."""
-        for element in bus:
-            assert not isinstance(element, (NoneType, str))
+def test_bus_inequality(bus):
+    other_bus = MagicMock(spec=Bus)
+    other_bus.__str__.return_value = "different_bus"
+    assert bus != other_bus
 
-    def test_print_bus(self, bus: Bus):
-        """Test print bus."""
-        assert str(bus) == f"Bus {bus.alias}:  ----{bus.system_control}---" + "".join(
-            f"--|{target}|----" for target in bus.targets
-        )
+def test_bus_to_dict(bus):
+    expected_dict = {
+        "alias": "bus1",
+        "instruments": ["<MagicMock>", "<MagicMock>"],
+        "channels": [None, None]
+    }
+    assert bus.to_dict() == expected_dict
 
-    def test_set_parameter(self, bus: Bus):
-        """Test set_parameter method."""
-        bus.settings.system_control = MagicMock()
-        bus.set_parameter(parameter=Parameter.GAIN, value=0.5)
-        bus.system_control.set_parameter.assert_called_once_with(
-            parameter=Parameter.GAIN, value=0.5, channel_id=None, port_id=bus.port, bus_alias=bus.alias
-        )
+def test_bus_has_awg(bus):
+    assert bus.has_awg() is True
 
-    def test_set_parameter_raises_error(self, bus: Bus):
-        """Test set_parameter method raises error."""
-        bus.settings.system_control = MagicMock()
-        bus.settings.system_control.set_parameter.side_effect = ParameterNotFound(message="dummy error")
-        with pytest.raises(
-            ParameterNotFound, match=f"No parameter with name duration was found in the bus with alias {bus.alias}"
-        ):
-            bus.set_parameter(parameter=Parameter.DURATION, value=0.5, channel_id=1)
+def test_bus_has_adc(bus):
+    assert bus.has_adc() is True
 
-    def test_upload_qpysequence(self, bus: Bus, qpysequence: Sequence):
-        """Test upload_qpysequence method."""
-        bus.settings.system_control = MagicMock()
-        bus.upload_qpysequence(qpysequence=qpysequence)
-        bus.system_control.upload_qpysequence.assert_called_once_with(qpysequence=qpysequence, port=bus.port)
+def test_bus_set_parameter(bus, mock_instruments):
+    parameter = MagicMock()
+    value = 5
+    bus.set_parameter(parameter, value)
+    mock_instruments[0].set_parameter.assert_called_once()
 
+def test_bus_get_parameter(bus, mock_instruments):
+    parameter = MagicMock()
+    bus.get_parameter(parameter)
+    mock_instruments[0].get_parameter.assert_called_once()
 
-class TestAcquireResults:
-    """Unit tests for acquiring results"""
+def test_bus_upload_qpysequence(bus, mock_instruments):
+    qpysequence = MagicMock()
+    bus.upload_qpysequence(qpysequence)
+    mock_instruments[0].upload_qpysequence.assert_called_once()
 
-    def test_acquire_qprogram_results(self):
-        """Test acquire_qprogram_results method."""
-        buses = load_buses()
-        readout_bus = next(bus for bus in buses if isinstance(bus.system_control, ReadoutSystemControl))
+def test_bus_upload(bus, mock_instruments):
+    bus.upload()
+    mock_instruments[0].upload.assert_called_once()
 
-        with patch.object(ReadoutSystemControl, "acquire_qprogram_results") as acquire_qprogram_results:
-            readout_bus.acquire_qprogram_results(acquisitions=["acquisition_0", "acquisition_1"])
+def test_bus_run(bus, mock_instruments):
+    bus.run()
+    mock_instruments[0].run.assert_called_once()
 
-        acquire_qprogram_results.assert_called_once_with(
-            acquisitions=["acquisition_0", "acquisition_1"], port=readout_bus.port
-        )
+def test_bus_acquire_result(bus, mock_instruments):
+    result = MagicMock(spec=Result)
+    mock_instruments[0].acquire_result.return_value = result
+    assert bus.acquire_result() == result
 
-
-class TestErrors:
-    """Unit tests for the errors raised by the Bus class."""
-
-    def test_control_bus_raises_error_when_acquiring_results(self):
-        """Test that an error is raised when calling acquire_result with a drive bus."""
-        buses = load_buses()
-        control_bus = next(bus for bus in buses if not isinstance(bus.system_control, ReadoutSystemControl))
-        with pytest.raises(
-            AttributeError,
-            match=f"The bus {control_bus.alias} cannot acquire results because it doesn't have a readout system control",
-        ):
-            control_bus.acquire_result()
-
-    def test_control_bus_raises_error_when_parameter_not_found(self):
-        """Test that an error is raised when trying to set a parameter not found in bus parameters."""
-        buses = load_buses()
-        control_bus = next(bus for bus in buses if not isinstance(bus.system_control, ReadoutSystemControl))
-        parameter = ql.Parameter.GATE_OPTIONS
-        error_string = re.escape(
-            f"No parameter with name {parameter.value} was found in the bus with alias {control_bus.alias}"
-        )
-        with pytest.raises(ParameterNotFound, match=error_string):
-            control_bus.get_parameter(parameter=parameter)
-
-    def test_control_bus_raises_error_when_acquiring_qprogram_results(self):
-        """Test that an error is raised when calling acquire_result with a drive bus."""
-        buses = load_buses()
-        control_bus = next(bus for bus in buses if not isinstance(bus.system_control, ReadoutSystemControl))
-        with pytest.raises(
-            AttributeError,
-            match=f"The bus {control_bus.alias} cannot acquire results because it doesn't have a readout system control",
-        ):
-            control_bus.acquire_qprogram_results(acquisitions=["acquisition_0", "acquisition_1"])
+def test_bus_acquire_qprogram_results(bus, mock_instruments):
+    acquisitions = {"acq1": MagicMock(spec=AcquisitionData)}
+    results = [MagicMock(spec=MeasurementResult)]
+    mock_instruments[0].acquire_qprogram_results.return_value = results
+    assert bus.acquire_qprogram_results(acquisitions) == results
