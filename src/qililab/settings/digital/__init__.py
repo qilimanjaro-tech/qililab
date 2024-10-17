@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""KeySight instruments"""
-
-from .e5080b_vna import E5080B
-
-__all__ = ["E5080B"]
+from .bus_settings import BusSettings as BusSettings
+from .digital_compilation_settings import DigitalCompilationSettings as DigitalCompilationSettings
+from .gate_event_settings import GateEventSettings as GateEventSettings

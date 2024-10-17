@@ -10,7 +10,6 @@ from qibo.backends import NumpyBackend
 from qibo.gates import CZ, M, X
 from qibo.models import Circuit
 
-from qililab.chip import Chip
 from qililab.circuit_transpiler import CircuitTranspiler
 from qililab.circuit_transpiler.native_gates import Drag, Wait
 from qililab.platform import Bus, Buses, Platform
@@ -18,7 +17,7 @@ from qililab.pulse import Pulse, PulseEvent, PulseSchedule
 from qililab.pulse.pulse_shape import SNZ, Gaussian, Rectangular
 from qililab.pulse.pulse_shape import Drag as Drag_pulse
 from qililab.settings import Runcard
-from qililab.settings.gate_event_settings import GateEventSettings
+from qililab.settings.digital.gate_event_settings import GateEventSettings
 from tests.data import Galadriel
 from tests.test_utils import build_platform
 
@@ -386,86 +385,86 @@ platform_gates = {
 }
 
 
-@pytest.fixture(name="chip")
-def fixture_chip():
-    r"""Fixture that returns an instance of a ``Chip`` class.
+# @pytest.fixture(name="chip")
+# def fixture_chip():
+#     r"""Fixture that returns an instance of a ``Chip`` class.
 
 
-    Chip schema (qubit_id, GHz, id)
+#     Chip schema (qubit_id, GHz, id)
 
-   3,4,5  4,4,7
-     \   /
-     2,5,4
-     /   \
-   0,6,3 1,3,6
-    """
-    settings = {
-        "nodes": [
-            {
-                "name": "port",
-                "alias": "feedline_input",
-                "line": "feedline_input",
-                "nodes": ["resonator_q0", "resonator_q1", "resonator_q2", "resonator_q3", "resonator_q4"],
-            },
-            {
-                "name": "qubit",
-                "alias": "q0",
-                "qubit_index": 0,
-                "frequency": 6e9,
-                "nodes": ["q2", "drive_q0", "flux_q0", "resonator_q0"],
-            },
-            {
-                "name": "qubit",
-                "alias": "q2",
-                "qubit_index": 2,
-                "frequency": 5e9,
-                "nodes": ["q0", "q1", "q3", "q4", "drive_q2", "flux_q2", "resonator_q2"],
-            },
-            {
-                "name": "qubit",
-                "alias": "q1",
-                "qubit_index": 1,
-                "frequency": 4e9,
-                "nodes": ["q2", "drive_q1", "flux_q1", "resonator_q1"],
-            },
-            {
-                "name": "qubit",
-                "alias": "q3",
-                "qubit_index": 3,
-                "frequency": 3e9,
-                "nodes": ["q2", "drive_q3", "flux_q3", "resonator_q3"],
-            },
-            {
-                "name": "qubit",
-                "alias": "q4",
-                "qubit_index": 4,
-                "frequency": 4e9,
-                "nodes": ["q2", "drive_q4", "flux_q4", "resonator_q4"],
-            },
-            {"name": "port", "line": "drive", "alias": "drive_q0", "nodes": ["q0"]},
-            {"name": "port", "line": "drive", "alias": "drive_q1", "nodes": ["q1"]},
-            {"name": "port", "line": "drive", "alias": "drive_q2", "nodes": ["q2"]},
-            {"name": "port", "line": "drive", "alias": "drive_q3", "nodes": ["q3"]},
-            {"name": "port", "line": "drive", "alias": "drive_q4", "nodes": ["q4"]},
-            {"name": "port", "line": "flux", "alias": "flux_q0", "nodes": ["q0"]},
-            {"name": "port", "line": "flux", "alias": "flux_q1", "nodes": ["q1"]},
-            {"name": "port", "line": "flux", "alias": "flux_q2", "nodes": ["q2"]},
-            {"name": "port", "line": "flux", "alias": "flux_q3", "nodes": ["q3"]},
-            {"name": "port", "line": "flux", "alias": "flux_q4", "nodes": ["q4"]},
-            {"name": "resonator", "alias": "resonator_q0", "frequency": 8072600000, "nodes": ["feedline_input", "q0"]},
-            {"name": "resonator", "alias": "resonator_q1", "frequency": 8072600000, "nodes": ["feedline_input", "q1"]},
-            {"name": "resonator", "alias": "resonator_q2", "frequency": 8072600000, "nodes": ["feedline_input", "q2"]},
-            {"name": "resonator", "alias": "resonator_q3", "frequency": 8072600000, "nodes": ["feedline_input", "q3"]},
-            {"name": "resonator", "alias": "resonator_q4", "frequency": 8072600000, "nodes": ["feedline_input", "q4"]},
-            {"name": "port", "alias": "flux_c2", "line": "flux", "nodes": ["coupler"]},
-            {"name": "coupler", "alias": "coupler", "frequency": 6e9, "nodes": ["flux_c2"]},
-        ],
-    }
-    return Chip(**settings)
+#    3,4,5  4,4,7
+#      \   /
+#      2,5,4
+#      /   \
+#    0,6,3 1,3,6
+#     """
+#     settings = {
+#         "nodes": [
+#             {
+#                 "name": "port",
+#                 "alias": "feedline_input",
+#                 "line": "feedline_input",
+#                 "nodes": ["resonator_q0", "resonator_q1", "resonator_q2", "resonator_q3", "resonator_q4"],
+#             },
+#             {
+#                 "name": "qubit",
+#                 "alias": "q0",
+#                 "qubit_index": 0,
+#                 "frequency": 6e9,
+#                 "nodes": ["q2", "drive_q0", "flux_q0", "resonator_q0"],
+#             },
+#             {
+#                 "name": "qubit",
+#                 "alias": "q2",
+#                 "qubit_index": 2,
+#                 "frequency": 5e9,
+#                 "nodes": ["q0", "q1", "q3", "q4", "drive_q2", "flux_q2", "resonator_q2"],
+#             },
+#             {
+#                 "name": "qubit",
+#                 "alias": "q1",
+#                 "qubit_index": 1,
+#                 "frequency": 4e9,
+#                 "nodes": ["q2", "drive_q1", "flux_q1", "resonator_q1"],
+#             },
+#             {
+#                 "name": "qubit",
+#                 "alias": "q3",
+#                 "qubit_index": 3,
+#                 "frequency": 3e9,
+#                 "nodes": ["q2", "drive_q3", "flux_q3", "resonator_q3"],
+#             },
+#             {
+#                 "name": "qubit",
+#                 "alias": "q4",
+#                 "qubit_index": 4,
+#                 "frequency": 4e9,
+#                 "nodes": ["q2", "drive_q4", "flux_q4", "resonator_q4"],
+#             },
+#             {"name": "port", "line": "drive", "alias": "drive_q0", "nodes": ["q0"]},
+#             {"name": "port", "line": "drive", "alias": "drive_q1", "nodes": ["q1"]},
+#             {"name": "port", "line": "drive", "alias": "drive_q2", "nodes": ["q2"]},
+#             {"name": "port", "line": "drive", "alias": "drive_q3", "nodes": ["q3"]},
+#             {"name": "port", "line": "drive", "alias": "drive_q4", "nodes": ["q4"]},
+#             {"name": "port", "line": "flux", "alias": "flux_q0", "nodes": ["q0"]},
+#             {"name": "port", "line": "flux", "alias": "flux_q1", "nodes": ["q1"]},
+#             {"name": "port", "line": "flux", "alias": "flux_q2", "nodes": ["q2"]},
+#             {"name": "port", "line": "flux", "alias": "flux_q3", "nodes": ["q3"]},
+#             {"name": "port", "line": "flux", "alias": "flux_q4", "nodes": ["q4"]},
+#             {"name": "resonator", "alias": "resonator_q0", "frequency": 8072600000, "nodes": ["feedline_input", "q0"]},
+#             {"name": "resonator", "alias": "resonator_q1", "frequency": 8072600000, "nodes": ["feedline_input", "q1"]},
+#             {"name": "resonator", "alias": "resonator_q2", "frequency": 8072600000, "nodes": ["feedline_input", "q2"]},
+#             {"name": "resonator", "alias": "resonator_q3", "frequency": 8072600000, "nodes": ["feedline_input", "q3"]},
+#             {"name": "resonator", "alias": "resonator_q4", "frequency": 8072600000, "nodes": ["feedline_input", "q4"]},
+#             {"name": "port", "alias": "flux_c2", "line": "flux", "nodes": ["coupler"]},
+#             {"name": "coupler", "alias": "coupler", "frequency": 6e9, "nodes": ["flux_c2"]},
+#         ],
+#     }
+#     return Chip(**settings)
 
 
 @pytest.fixture(name="platform")
-def fixture_platform(chip: Chip) -> Platform:
+def fixture_platform() -> Platform:
     """Fixture that returns an instance of a ``Runcard.GatesSettings`` class."""
     gates_settings = {
         "minimum_clock_time": 5,
@@ -603,9 +602,8 @@ def fixture_platform(chip: Chip) -> Platform:
     gates_settings = Runcard.GatesSettings(**gates_settings)  # type: ignore
     platform = build_platform(runcard=Galadriel.runcard)
     platform.gates_settings = gates_settings  # type: ignore
-    platform.chip = chip
     buses = Buses(
-        elements=[Bus(settings=bus, platform_instruments=platform.instruments, chip=chip) for bus in bus_settings]
+        elements=[Bus(settings=bus, platform_instruments=platform.instruments) for bus in bus_settings]
     )
     platform.buses = buses
     platform.gates_settings.gates = {  # type: ignore
@@ -784,7 +782,7 @@ class TestCircuitTranspiler:
         }
 
         platform.buses.add(
-            Bus(settings=flux_bus_no_awg_settings, platform_instruments=platform.instruments, chip=platform.chip)
+            Bus(settings=flux_bus_no_awg_settings, platform_instruments=platform.instruments)
         )
         pulse_schedules = transpiler.circuit_to_pulses(circuits=[circuit])
         pulse_schedule = pulse_schedules[0]
@@ -1020,7 +1018,7 @@ class TestCircuitTranspiler:
         """Test that transpiling negative amplitudes results in an added PI phase."""
         c = Circuit(1)
         c.add(Drag(0, -np.pi / 2, 0))
-        transpiler = CircuitTranspiler(platform=platform)
+        transpiler = CircuitTranspiler(gates_settings=platform.gates_settings)
         pulse_schedule = transpiler.circuit_to_pulses(circuits=[c])[0]
         assert np.allclose(pulse_schedule.elements[0].timeline[0].pulse.amplitude, (np.pi / 2) * 0.8 / np.pi)
         assert np.allclose(pulse_schedule.elements[0].timeline[0].pulse.phase, 0 + np.pi)
@@ -1035,6 +1033,6 @@ class TestCircuitTranspiler:
         )
         circuit = Circuit(1)
         circuit.add(Drag(0, 1, 1))
-        transpiler = CircuitTranspiler(platform=platform)
+        transpiler = CircuitTranspiler(gates_settings=platform.gates_settings)
         with pytest.raises(ValueError, match=error_string):
             transpiler.circuit_to_pulses(circuits=[circuit])

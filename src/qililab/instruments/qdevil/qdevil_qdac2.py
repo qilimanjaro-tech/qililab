@@ -16,12 +16,11 @@
 
 from dataclasses import dataclass
 
-from qililab.instruments.instrument import Instrument, ParameterNotFound
+from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.voltage_source import VoltageSource
-from qililab.typings import InstrumentName
+from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 from qililab.typings import QDevilQDac2 as QDevilQDac2Driver
-from qililab.typings.enums import Parameter
 
 
 @InstrumentFactory.register
@@ -54,7 +53,7 @@ class QDevilQDac2(VoltageSource):
         """
         return self.settings.low_pass_filter
 
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
         """Set parameter to the corresponding value for an instrument's channel.
 
         Args:
@@ -101,9 +100,9 @@ class QDevilQDac2(VoltageSource):
             if self.is_device_active():
                 channel.output_filter(low_pass_filter)
             return
-        raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
+        raise ParameterNotFound(self, parameter)
 
-    def get(self, parameter: Parameter, channel_id: int | None = None):
+    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
         """Get parameter's value for an instrument's channel.
 
         Args:
@@ -115,9 +114,8 @@ class QDevilQDac2(VoltageSource):
         index = self.dacs.index(channel_id)
         if hasattr(self.settings, parameter.value):
             return getattr(self.settings, parameter.value)[index]
-        raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
+        raise ParameterNotFound(self, parameter)
 
-    @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """Perform an initial setup."""
         for channel_id in self.dacs:
@@ -134,7 +132,6 @@ class QDevilQDac2(VoltageSource):
                 channel.dc_slew_rate_V_per_s(2e7)
             channel.dc_constant_V(0.0)
 
-    @Instrument.CheckDeviceInitialized
     def turn_on(self):
         """Start outputing voltage."""
         for channel_id in self.dacs:
@@ -142,23 +139,23 @@ class QDevilQDac2(VoltageSource):
             channel = self.device.channel(channel_id)
             channel.dc_constant_V(self.voltage[index])
 
-    @Instrument.CheckDeviceInitialized
     def turn_off(self):
         """Stop outputing voltage."""
         for channel_id in self.dacs:
             channel = self.device.channel(channel_id)
             channel.dc_constant_V(0.0)
 
-    @Instrument.CheckDeviceInitialized
     def reset(self):
         """Reset instrument. This will affect all channels."""
         self.device.reset()
 
-    def _validate_channel(self, channel_id: int | None):
+    def _validate_channel(self, channel_id: ChannelID | None):
         """Check if channel identifier is valid and in the allowed range."""
         if channel_id is None:
             raise ValueError(
                 "QDevil QDAC-II is a multi-channel instrument. `channel_id` must be specified to get or set parameters."
             )
+
+        channel_id = int(channel_id)
         if channel_id < 1 or channel_id > 24:
             raise ValueError(f"The specified `channel_id`: {channel_id} is out of range. Allowed range is [1, 24].")

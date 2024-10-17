@@ -13,10 +13,10 @@
 # limitations under the License.
 
 """Buses class."""
+
 from dataclasses import dataclass
 
 from qililab.platform.components.bus import Bus
-from qililab.system_control import ReadoutSystemControl
 
 
 @dataclass
@@ -41,19 +41,17 @@ class Buses:
             bus (Bus): Bus object to append."""
         self.elements.append(bus)
 
-    def get(self, port: str):
-        """Get bus connected to the specified port.
-
+    def get(self, alias: str):
+        """Get bus with the given alias.
         Args:
-            port (int): Port of the Chip where the bus is connected to.
+            bus_alias (str): Alias of the bus we want to get.
         """
-        bus = [bus for bus in self.elements if bus.port == port]
-        if len(bus) == 1:
-            return bus[0]
+        bus = next((bus for bus in self.elements if bus.alias == alias), None)
 
-        raise ValueError(
-            f"There can only be one bus connected to a port. There are {len(bus)} buses connected to port {port}."
-        )
+        if bus is None:
+            raise ValueError(f"Bus {alias} not found.")
+
+        return bus
 
     def __iter__(self):
         """Redirect __iter__ magic method to iterate over buses."""
@@ -82,4 +80,4 @@ class Buses:
     @property
     def readout_buses(self) -> list[Bus]:
         """Returns a list of buses containing system controls used for readout."""
-        return [bus for bus in self.elements if isinstance(bus.system_control, ReadoutSystemControl)]
+        return [bus for bus in self.elements if bus.has_adc()]

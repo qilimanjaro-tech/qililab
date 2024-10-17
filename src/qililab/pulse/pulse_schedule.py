@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """PulseSequence class."""
+
 from dataclasses import dataclass, field
 
 from qililab.constants import PULSESCHEDULES
@@ -40,36 +41,14 @@ class PulseSchedule:
         .. code-block:: python3
 
             drag_pulse = Pulse(
-                amplitude=1,
-                phase=0.5,
-                duration=200,
-                frequency=1e9,
-                pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
+                amplitude=1, phase=0.5, duration=200, frequency=1e9, pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
             )
-            readout_pulse = Pulse(
-                amplitude=1,
-                phase=0.5,
-                duration=1500,
-                frequency=1e9,
-                pulse_shape=Rectangular())
-            drag_pulse_event = PulseEvent(
-                pulse=drag_pulse,
-                start_time=0
-            )
-            readout_pulse_event = PulseEvent(
-                pulse=readout_pulse,
-                start_time=200,
-                qubit=0
-            )
+            readout_pulse = Pulse(amplitude=1, phase=0.5, duration=1500, frequency=1e9, pulse_shape=Rectangular())
+            drag_pulse_event = PulseEvent(pulse=drag_pulse, start_time=0)
+            readout_pulse_event = PulseEvent(pulse=readout_pulse, start_time=200, qubit=0)
 
-            drive_schedule = PulseBusSchedule(
-                timeline=[drag_pulse_event],
-                port="drive_q0"
-            )
-            readout_schedule = PulseBusSchedule(
-                timeline=[pulse_event],
-                port="feedline_input"
-            )
+            drive_schedule = PulseBusSchedule(timeline=[drag_pulse_event], bus_alias="drive_q0")
+            readout_schedule = PulseBusSchedule(timeline=[pulse_event], bus_alias="feedline_input")
             list_pulse_bus_schedules = [drive_schedule, readout_schedule]
 
             pulse_schedule = PulseSchedule(list_pulse_bus_schedules)
@@ -86,27 +65,12 @@ class PulseSchedule:
 
             pulse_schedule = PulseSchedule()
             drag_pulse = Pulse(
-                amplitude=1,
-                phase=0.5,
-                duration=200,
-                frequency=1e9,
-                pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
+                amplitude=1, phase=0.5, duration=200, frequency=1e9, pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
             )
-            readout_pulse = Pulse(amplitude=1,
-                                  phase=0.5,
-                                  duration=1500,
-                                  frequency=1e9,
-                                  pulse_shape=Rectangular()
-            )
+            readout_pulse = Pulse(amplitude=1, phase=0.5, duration=1500, frequency=1e9, pulse_shape=Rectangular())
+            pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), bus_alias="drive_q0", delay=0)
             pulse_schedule.add_event(
-                PulseEvent(pulse=drag_pulse, start_time=0),
-                port="drive_q0",
-                port_delay=0
-            )
-            pulse_schedule.add_event(
-                PulseEvent(pulse=readout_pulse,start_time=200, qubit=0),
-                port="feedline_input",
-                port_delay=0
+                PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), bus_alias="feedline_input", delay=0
             )
 
         It is possible to serialize a PulseSchedule object as a dictionary. To do so you can use the `to_dict()` method:
@@ -115,27 +79,12 @@ class PulseSchedule:
 
             pulse_schedule = PulseSchedule()
             drag_pulse = Pulse(
-                amplitude=1,
-                phase=0.5,
-                duration=200,
-                frequency=1e9,
-                pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
+                amplitude=1, phase=0.5, duration=200, frequency=1e9, pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
             )
-            readout_pulse = Pulse(amplitude=1,
-                                  phase=0.5,
-                                  duration=1500,
-                                  frequency=1e9,
-                                  pulse_shape=Rectangular()
-            )
+            readout_pulse = Pulse(amplitude=1, phase=0.5, duration=1500, frequency=1e9, pulse_shape=Rectangular())
+            pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), bus_alias="drive_q0", delay=0)
             pulse_schedule.add_event(
-                PulseEvent(pulse=drag_pulse, start_time=0),
-                port="drive_q0",
-                port_delay=0
-            )
-            pulse_schedule.add_event(
-                PulseEvent(pulse=readout_pulse,start_time=200, qubit=0),
-                port="feedline_input",
-                port_delay=0
+                PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), bus_alias="feedline_input", delay=0
             )
 
             pulse_schedule_dict = pulse_schedule.to_dict()
@@ -147,27 +96,12 @@ class PulseSchedule:
 
             pulse_schedule = PulseSchedule()
             drag_pulse = Pulse(
-                amplitude=1,
-                phase=0.5,
-                duration=200,
-                frequency=1e9,
-                pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
+                amplitude=1, phase=0.5, duration=200, frequency=1e9, pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
             )
-            readout_pulse = Pulse(amplitude=1,
-                                  phase=0.5,
-                                  duration=1500,
-                                  frequency=1e9,
-                                  pulse_shape=Rectangular()
-            )
+            readout_pulse = Pulse(amplitude=1, phase=0.5, duration=1500, frequency=1e9, pulse_shape=Rectangular())
+            pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), bus_alias="drive_q0", delay=0)
             pulse_schedule.add_event(
-                PulseEvent(pulse=drag_pulse, start_time=0),
-                port="drive_q0",
-                port_delay=0
-            )
-            pulse_schedule.add_event(
-                PulseEvent(pulse=readout_pulse,start_time=200, qubit=0),
-                port="feedline_input",
-                port_delay=0
+                PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), bus_alias="feedline_input", delay=0
             )
 
             pulse_schedule_dict = pulse_schedule.to_dict()
@@ -177,37 +111,37 @@ class PulseSchedule:
 
     elements: list[PulseBusSchedule] = field(default_factory=list)  #: List of pulse bus schedules.
 
-    def add_event(self, pulse_event: PulseEvent, port: str, port_delay: int):
+    def add_event(self, pulse_event: PulseEvent, bus_alias: str, delay: int):
         """Adds pulse event to the list of pulse bus schedules.
 
-        This functions receives a :class:`PulseEvent` object, a port (targetting a bus) and a port delay parameter, and checks whether
-        there is already a PulseBusSchedule for the given port, adding the pulse event to the :class:`PulseBusSchedule`. If there is not
-        a :class:`PulseBusSchedule` for that port, it creates a new one passing the pulse event and port as parameters, and adds this
-        new instance to the list of :class:`PulseBusSchedule`.
+        This functions receives a :class:`PulseEvent` object, a bus alias and a delay parameter, and checks whether
+        there is already a PulseBusSchedule for the given bus, adding the pulse event to the :class:`PulseBusSchedule`.
+        If there is not a :class:`PulseBusSchedule` for that bus, it creates a new one passing the pulse event and
+        bus alias as parameters, and adds this new instance to the list of :class:`PulseBusSchedule`.
 
         Args:
             pulse_event (PulseEvent): :class:`PulseEvent` object.
-            port (str): Alias of the port of the chip targeted by the pulse event.
-            port_delay (int): Delay (in ns) of the pulse event. This delay is added at the beginning of the :class:`PulseEvent`.
+            bus_alias (str): Alias of the bus targeted by the pulse event.
+            delay (int): Delay (in ns) of the pulse event. This delay is added at the beginning of the :class:`PulseEvent`.
         """
-        pulse_event.start_time += port_delay
+        pulse_event.start_time += delay
         for pulse_sequence in self.elements:
-            if port == pulse_sequence.port:
+            if bus_alias == pulse_sequence.bus_alias:
                 pulse_sequence.add_event(pulse_event=pulse_event)
                 return
-        self.elements.append(PulseBusSchedule(timeline=[pulse_event], port=port))
+        self.elements.append(PulseBusSchedule(timeline=[pulse_event], bus_alias=bus_alias))
 
-    def create_schedule(self, port: str):
-        """Creates an empty `PulseBusSchedule` that targets the given port.
+    def create_schedule(self, bus_alias: str):
+        """Creates an empty `PulseBusSchedule` that targets the given bus.
 
         If the schedule already exists, nothing is done.
 
         Args:
-            port (int): Target port of the schedule to create.
+            bus_alias (str): Target bus alias of the schedule to create.
         """
-        ports = {schedule.port for schedule in self.elements}
-        if port not in ports:
-            self.elements.append(PulseBusSchedule(port=port))
+        aliases = {schedule.bus_alias for schedule in self.elements}
+        if bus_alias not in aliases:
+            self.elements.append(PulseBusSchedule(bus_alias=bus_alias))
 
     def to_dict(self):
         """Returns dictionary representation of the class.

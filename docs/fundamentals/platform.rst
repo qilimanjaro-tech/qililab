@@ -7,8 +7,6 @@ The platform represents the laboratory setup used to control the quantum devices
 
 The :class:`.Platform` object is the responsible for managing the initializations, connections, setups, and executions of the laboratory, which mainly consists of:
 
-- :class:`.Chip`
-
 - Buses
 
 - Instruments

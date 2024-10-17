@@ -232,5 +232,5 @@ def build_platform(runcard: str | dict, new_drivers: bool = False) -> Platform:
             yaml = YAML(typ="safe")
             runcard = yaml.load(stream=file)
 
-    runcard_class = Runcard(**runcard)
+    runcard_class = Runcard(**runcard)  # type: ignore
     return Platform(runcard=runcard_class)

@@ -12,26 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Qubit class"""
-from dataclasses import dataclass
-
-from qililab.chip.node import Node
-from qililab.typings import NodeName
-from qililab.utils import Factory
+from dataclasses import asdict, dataclass
 
 
-@Factory.register
 @dataclass
-class Qubit(Node):
-    """This class is used to represent each of the qubits in a chip.
+class FluxControlTopology:
+    """Dataclass fluxes (e.g. phix_q0 for phix control of qubit 0) and their corresponding bus (e.g. flux_line_q0_x)"""
 
-    Each qubit has a frequency associated to it and an index within the chip.
+    flux: str
+    bus: str
 
-    Args:
-        frequency (float): frequency of the qubit
-        qubit_index (int): qubit index
-    """
-
-    name = NodeName.QUBIT
-    frequency: float  #: frequency of the qubit
-    qubit_index: int  #: index of the qubit
+    def to_dict(self):
+        """Method to convert to dictionary"""
+        return asdict(self)
