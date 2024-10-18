@@ -19,7 +19,8 @@ from typing import TYPE_CHECKING, ClassVar
 
 from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm
 
-from qililab.instruments.utils.instrument_factory import InstrumentFactory
+from qililab.instruments.decorators import check_device_initialized, log_set_parameter
+from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 
 from .qblox_qcm import QbloxQCM
@@ -70,6 +71,7 @@ class QbloxQCMRF(QbloxQCM):
         Parameter.OUT1_OFFSET_PATH1,
     }
 
+    @check_device_initialized
     def initial_setup(self):
         """Initial setup"""
         super().initial_setup()
@@ -85,6 +87,7 @@ class QbloxQCMRF(QbloxQCM):
             sequencer = self.device.sequencers[sequencer_dataclass.identifier]
             getattr(sequencer, f"connect_out{sequencer_dataclass.outputs[0]}")("IQ")
 
+    @log_set_parameter
     def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
         """Set a parameter of the Qblox QCM-RF module.
 

@@ -14,6 +14,7 @@
 
 """__init__.py"""
 
+from .decorators import check_device_initialized, log_set_parameter
 from .instrument import Instrument, ParameterNotFound
 from .instruments import Instruments
 from .mini_circuits import Attenuator
@@ -31,4 +32,6 @@ __all__ = [
     "ParameterNotFound",
     "QuantumMachinesCluster",
     "SignalGenerator",
+    "check_device_initialized",
+    "log_set_parameter",
 ]

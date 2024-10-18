@@ -71,6 +71,7 @@ class QbloxQRM(QbloxModule):
         """Returns True if instrument is an AWG/ADC."""
         return True
 
+    @check_device_initialized
     def initial_setup(self):
         """Initial setup"""
         super().initial_setup()
@@ -287,7 +288,7 @@ class QbloxQRM(QbloxModule):
         """
         return cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).integration_length
 
-    def setup(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
         """set a specific parameter to the instrument"""
         if channel_id is None:
             if self.num_sequencers == 1:

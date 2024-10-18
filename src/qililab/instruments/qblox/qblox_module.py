@@ -20,6 +20,7 @@ from typing import ClassVar, Sequence, cast
 from qpysequence import Sequence as QpySequence
 
 from qililab.config import logger
+from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.qblox.qblox_sequencer import QbloxSequencer
 from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
@@ -105,6 +106,7 @@ class QbloxModule(Instrument):
                 return sequencer
         raise IndexError(f"There is no sequencer with id={sequencer_id}.")
 
+    @check_device_initialized
     def initial_setup(self):
         """Initial setup"""
         self._map_connections()
@@ -163,6 +165,7 @@ class QbloxModule(Instrument):
             self.device.arm_sequencer(sequencer=sequencer.identifier)
             self.device.start_sequencer(sequencer=sequencer.identifier)
 
+    @log_set_parameter
     def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None) -> None:
         """Set Qblox instrument calibration settings."""
         if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
@@ -387,11 +390,13 @@ class QbloxModule(Instrument):
         self._set_gain_i(value=value, sequencer_id=sequencer_id)
         self._set_gain_q(value=value, sequencer_id=sequencer_id)
 
+    @check_device_initialized
     def turn_off(self):
         """Stop the QBlox sequencer from sending pulses."""
         for seq_idx in range(self.num_sequencers):
             self.device.stop_sequencer(sequencer=seq_idx)
 
+    @check_device_initialized
     def turn_on(self):
         """Turn on an instrument."""
 
@@ -400,6 +405,7 @@ class QbloxModule(Instrument):
         self.cache = {}
         self.sequences = {}
 
+    @check_device_initialized
     def reset(self):
         """Reset instrument."""
         self.clear_cache()

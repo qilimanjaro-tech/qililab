@@ -98,6 +98,11 @@ class Instrument(BusElement, ABC):
     def reset(self):
         """Reset instrument settings."""
 
+    @check_device_initialized
+    @abstractmethod
+    def initial_setup(self):
+        """Set initial instrument settings."""
+
     @abstractmethod
     def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None) -> ParameterValue:
         """Gets the parameter of a specific instrument.

@@ -16,8 +16,7 @@
 
 from dataclasses import dataclass
 
-from qililab.instruments.instrument import ParameterNotFound
-from qililab.instruments.utils import InstrumentFactory
+from qililab.instruments import InstrumentFactory, ParameterNotFound, check_device_initialized, log_set_parameter
 from qililab.instruments.voltage_source import VoltageSource
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 from qililab.typings import QDevilQDac2 as QDevilQDac2Driver
@@ -53,6 +52,7 @@ class QDevilQDac2(VoltageSource):
         """
         return self.settings.low_pass_filter
 
+    @log_set_parameter
     def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
         """Set parameter to the corresponding value for an instrument's channel.
 
@@ -116,6 +116,7 @@ class QDevilQDac2(VoltageSource):
             return getattr(self.settings, parameter.value)[index]
         raise ParameterNotFound(self, parameter)
 
+    @check_device_initialized
     def initial_setup(self):
         """Perform an initial setup."""
         for channel_id in self.dacs:
@@ -132,6 +133,7 @@ class QDevilQDac2(VoltageSource):
                 channel.dc_slew_rate_V_per_s(2e7)
             channel.dc_constant_V(0.0)
 
+    @check_device_initialized
     def turn_on(self):
         """Start outputing voltage."""
         for channel_id in self.dacs:
@@ -139,12 +141,14 @@ class QDevilQDac2(VoltageSource):
             channel = self.device.channel(channel_id)
             channel.dc_constant_V(self.voltage[index])
 
+    @check_device_initialized
     def turn_off(self):
         """Stop outputing voltage."""
         for channel_id in self.dacs:
             channel = self.device.channel(channel_id)
             channel.dc_constant_V(0.0)
 
+    @check_device_initialized
     def reset(self):
         """Reset instrument. This will affect all channels."""
         self.device.reset()

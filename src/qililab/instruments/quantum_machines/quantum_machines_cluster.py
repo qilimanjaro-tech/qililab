@@ -25,6 +25,7 @@ from qm.jobs.running_qm_job import RunningQmJob
 from qm.octave import QmOctaveConfig
 from qm.program import Program
 
+from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue, QMMDriver
@@ -426,6 +427,7 @@ class QuantumMachinesCluster(Instrument):
         """Returns True if instrument is an AWG/ADC."""
         return True
 
+    @check_device_initialized
     def initial_setup(self):
         """Sets initial instrument settings.
 
@@ -443,6 +445,7 @@ class QuantumMachinesCluster(Instrument):
         self._config = self.settings.to_qua_config()
         self._config_created = True
 
+    @check_device_initialized
     def turn_on(self):
         """Turns on the instrument."""
         if not self._is_connected_to_qm:
@@ -453,9 +456,11 @@ class QuantumMachinesCluster(Instrument):
             if self.settings.run_octave_calibration:
                 self.run_octave_calibration()
 
+    @check_device_initialized
     def reset(self):
         """Resets instrument settings."""
 
+    @check_device_initialized
     def turn_off(self):
         """Turns off an instrument."""
         if self._is_connected_to_qm:
@@ -562,6 +567,7 @@ class QuantumMachinesCluster(Instrument):
 
         return (con_name, con_port, con_fem)
 
+    @log_set_parameter
     def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None) -> None:
         """Sets the parameter of the instrument into the cache (runtime dataclasses).
 

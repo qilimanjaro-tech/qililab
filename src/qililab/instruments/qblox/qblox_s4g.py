@@ -22,6 +22,7 @@ from typing import Any
 
 from qililab.config import logger
 from qililab.instruments.current_source import CurrentSource
+from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
@@ -73,6 +74,7 @@ class QbloxS4g(CurrentSource):
         while channel.is_ramping():
             sleep(0.1)
 
+    @log_set_parameter
     def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
         """Set Qblox instrument calibration settings."""
 
@@ -156,14 +158,17 @@ class QbloxS4g(CurrentSource):
         if self.is_device_active():
             channel.ramp_rate(self.ramp_rate[channel_id])
 
+    @check_device_initialized
     def initial_setup(self):
         """performs an initial setup."""
         for dac_index in self.dacs:
             self._channel_setup(dac_index=dac_index)
 
+    @check_device_initialized
     def turn_on(self):
         """Dummy method."""
 
+    @check_device_initialized
     def turn_off(self):
         """Stop outputing current."""
         self.device.set_dacs_zero()
@@ -171,6 +176,7 @@ class QbloxS4g(CurrentSource):
             channel = self.dac(dac_index=dac_index)
             logger.debug("Dac%d current resetted to  %f", dac_index, channel.current())
 
+    @check_device_initialized
     def reset(self):
         """Reset instrument."""
         self.device.set_dacs_zero()

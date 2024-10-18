@@ -10,7 +10,6 @@ from tests.instruments.test_instrument import TestInstrumentBase
 def attenuator_settings():
     return {
         "alias": "attenuator_1",
-        "firmware": "v2.0",
         "attenuation": 10.0
     }
 

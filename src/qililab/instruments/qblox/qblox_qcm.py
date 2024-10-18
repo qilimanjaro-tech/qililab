@@ -17,7 +17,7 @@
 from dataclasses import dataclass
 
 from qililab.instruments.qblox.qblox_module import QbloxModule
-from qililab.instruments.utils.instrument_factory import InstrumentFactory
+from qililab.instruments.utils import InstrumentFactory
 from qililab.typings.enums import InstrumentName
 
 

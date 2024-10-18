@@ -18,6 +18,7 @@ Class to interface with the local oscillator RohdeSchwarz SGS100A
 
 from dataclasses import dataclass
 
+from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue, RohdeSchwarzSGS100A
@@ -81,6 +82,7 @@ class SGS100A(Instrument):
         """Return a dict representation of the SignalGenerator class."""
         return dict(super().to_dict().items())
 
+    @log_set_parameter
     def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
         """Set R&S dbm power and frequency. Value ranges are:
         - power: (-120, 25).
@@ -106,6 +108,7 @@ class SGS100A(Instrument):
             return
         raise ParameterNotFound(self, parameter)
 
+    @check_device_initialized
     def initial_setup(self):
         """performs an initial setup"""
         self.device.power(self.power)
@@ -115,15 +118,18 @@ class SGS100A(Instrument):
         else:
             self.device.off()
 
+    @check_device_initialized
     def turn_on(self):
         """Start generating microwaves."""
         self.settings.rf_on = True
         self.device.on()
 
+    @check_device_initialized
     def turn_off(self):
         """Stop generating microwaves."""
         self.settings.rf_on = False
         self.device.off()
 
+    @check_device_initialized
     def reset(self):
         """Reset instrument."""

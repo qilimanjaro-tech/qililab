@@ -16,9 +16,8 @@
 
 from dataclasses import dataclass
 
+from qililab.instruments import InstrumentFactory, ParameterNotFound, check_device_initialized, log_set_parameter
 from qililab.instruments.current_source import CurrentSource
-from qililab.instruments.instrument import ParameterNotFound
-from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.voltage_source import VoltageSource
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 from qililab.typings import YokogawaGS200 as YokogawaGS200Driver
@@ -162,6 +161,7 @@ class GS200(CurrentSource, VoltageSource):
             else:
                 self.device.voltage(value)
 
+    @log_set_parameter
     def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
         """Set instrument settings parameter to the corresponding value
 
@@ -217,6 +217,7 @@ class GS200(CurrentSource, VoltageSource):
 
         raise ParameterNotFound(self, parameter)
 
+    @check_device_initialized
     def initial_setup(self):
         """Performs an initial setup."""
         self.device.off()
@@ -229,10 +230,12 @@ class GS200(CurrentSource, VoltageSource):
         else:
             self.voltage = self.settings.voltage[0]
 
+    @check_device_initialized
     def turn_on(self):
         """Start outputting current."""
         self.device.on()
 
+    @check_device_initialized
     def turn_off(self):
         """Stop outputing current."""
         self.device.off()
