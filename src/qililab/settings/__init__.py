@@ -14,7 +14,10 @@
 
 """__init__.py"""
 
+from .analog.flux_control_topology import FluxControlTopology
+from .bus_settings import BusSettings
+from .digital import DigitalCompilationSettings
 from .runcard import Runcard
 from .settings import Settings
 
-__all__ = ["Runcard", "Settings"]
+__all__ = ["BusSettings", "DigitalCompilationSettings", "FluxControlTopology", "Runcard", "Settings"]

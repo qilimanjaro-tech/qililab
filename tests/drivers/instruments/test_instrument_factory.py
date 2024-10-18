@@ -1,12 +1,12 @@
 """ Unit testing module for the Factory of instrument drivers"""
 import pytest
 
-from qililab.drivers.instruments import GS200, Cluster, ERASynthPlus, Keithley2600, Pulsar, RhodeSchwarzSGS100A, SpiRack
+from qililab.drivers.instruments import GS200, Cluster, ERASynthPlus, Keithley2600,  RhodeSchwarzSGS100A, SpiRack
 from qililab.drivers.instruments.instrument_driver_factory import InstrumentDriverFactory
 from qililab.drivers.interfaces import BaseInstrument
 
 
-@pytest.mark.parametrize("driver", [ERASynthPlus, Keithley2600, RhodeSchwarzSGS100A, GS200, Cluster, Pulsar, SpiRack])
+@pytest.mark.parametrize("driver", [ERASynthPlus, Keithley2600, RhodeSchwarzSGS100A, GS200, Cluster, SpiRack])
 class TestInstrumentDriverFactoryWithParametrize:
     """Unit test for the Factory of instrument drivers passing parameters"""
 

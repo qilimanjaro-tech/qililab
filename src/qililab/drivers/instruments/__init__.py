@@ -17,7 +17,7 @@
 from .era_synth import ERASynthPlus
 from .instrument_driver_factory import InstrumentDriverFactory
 from .keithley import Keithley2600
-from .qblox import Cluster, Pulsar, SpiRack
+from .qblox import Cluster, SpiRack
 from .rohde_schwarz import RhodeSchwarzSGS100A
 from .yokogawa import GS200
 
@@ -27,7 +27,6 @@ __all__ = [
     "ERASynthPlus",
     "InstrumentDriverFactory",
     "Keithley2600",
-    "Pulsar",
     "RhodeSchwarzSGS100A",
     "SpiRack",
 ]

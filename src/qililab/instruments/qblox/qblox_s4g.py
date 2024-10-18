@@ -15,17 +15,18 @@
 """
 Class to interface with the voltage source Qblox S4g
 """
+
 from dataclasses import dataclass
 from time import sleep
 from typing import Any
 
 from qililab.config import logger
 from qililab.instruments.current_source import CurrentSource
-from qililab.instruments.instrument import Instrument, ParameterNotFound
+from qililab.instruments.decorators import check_device_initialized, log_set_parameter
+from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
-from qililab.typings import InstrumentName
+from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 from qililab.typings import QbloxS4g as QbloxS4gDriver
-from qililab.typings.enums import Parameter
 
 
 @InstrumentFactory.register
@@ -73,7 +74,8 @@ class QbloxS4g(CurrentSource):
         while channel.is_ramping():
             sleep(0.1)
 
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    @log_set_parameter
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
         """Set Qblox instrument calibration settings."""
 
         if channel_id is None:
@@ -81,6 +83,8 @@ class QbloxS4g(CurrentSource):
                 channel_id = self.dacs[0]
             else:
                 raise ValueError(f"channel not specified to update instrument {self.name.value}")
+
+        channel_id = int(channel_id)
         if channel_id > 3:
             raise ValueError(
                 f"the specified dac index:{channel_id} is out of range."
@@ -101,9 +105,9 @@ class QbloxS4g(CurrentSource):
         if parameter == Parameter.RAMPING_RATE:
             self._set_ramping_rate(value=value, channel_id=channel_id, channel=channel)
             return
-        raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
+        raise ParameterNotFound(self, parameter)
 
-    def get(self, parameter: Parameter, channel_id: int | None = None):
+    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
         """Get instrument parameter.
 
         Args:
@@ -115,6 +119,8 @@ class QbloxS4g(CurrentSource):
                 channel_id = self.dacs[0]
             else:
                 raise ValueError(f"channel not specified to update instrument {self.name.value}")
+
+        channel_id = int(channel_id)
         if channel_id > 3:
             raise ValueError(
                 f"the specified dac index:{channel_id} is out of range."
@@ -122,9 +128,8 @@ class QbloxS4g(CurrentSource):
             )
         if hasattr(self.settings, parameter.value):
             return getattr(self.settings, parameter.value)[channel_id]
-        raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
+        raise ParameterNotFound(self, parameter)
 
-    @Instrument.CheckParameterValueFloatOrInt
     def _set_current(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the current"""
         self.settings.current[channel_id] = float(value)
@@ -132,7 +137,6 @@ class QbloxS4g(CurrentSource):
         if self.is_device_active():
             channel.current(self.current[channel_id])
 
-    @Instrument.CheckParameterValueString
     def _set_span(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the span"""
         self.settings.span[channel_id] = str(value)
@@ -140,7 +144,6 @@ class QbloxS4g(CurrentSource):
         if self.is_device_active():
             channel.span(self.span[channel_id])
 
-    @Instrument.CheckParameterValueBool
     def _set_ramping_enabled(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the ramping_enabled"""
         self.settings.ramping_enabled[channel_id] = bool(value)
@@ -148,7 +151,6 @@ class QbloxS4g(CurrentSource):
         if self.is_device_active():
             channel.ramping_enabled(self.ramping_enabled[channel_id])
 
-    @Instrument.CheckParameterValueFloatOrInt
     def _set_ramping_rate(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the ramp_rate"""
         self.settings.ramp_rate[channel_id] = float(value)
@@ -156,17 +158,17 @@ class QbloxS4g(CurrentSource):
         if self.is_device_active():
             channel.ramp_rate(self.ramp_rate[channel_id])
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def initial_setup(self):
         """performs an initial setup."""
         for dac_index in self.dacs:
             self._channel_setup(dac_index=dac_index)
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def turn_on(self):
         """Dummy method."""
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def turn_off(self):
         """Stop outputing current."""
         self.device.set_dacs_zero()
@@ -174,7 +176,7 @@ class QbloxS4g(CurrentSource):
             channel = self.dac(dac_index=dac_index)
             logger.debug("Dac%d current resetted to  %f", dac_index, channel.current())
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def reset(self):
         """Reset instrument."""
         self.device.set_dacs_zero()

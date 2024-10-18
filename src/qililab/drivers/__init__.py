@@ -28,7 +28,6 @@ QBlox
     :toctree: api
 
     ~Cluster
-    ~Pulsar
     ~SpiRack
 
 Rohde & Schwarz
@@ -71,6 +70,6 @@ Interfaces
     ~Attenuator
 """
 
-from .instruments import GS200, Cluster, ERASynthPlus, Keithley2600, Pulsar, RhodeSchwarzSGS100A, SpiRack
+from .instruments import GS200, Cluster, ERASynthPlus, Keithley2600, RhodeSchwarzSGS100A, SpiRack
 
-__all__ = ["GS200", "Cluster", "ERASynthPlus", "Keithley2600", "Pulsar", "RhodeSchwarzSGS100A", "SpiRack"]
+__all__ = ["GS200", "Cluster", "ERASynthPlus", "Keithley2600", "RhodeSchwarzSGS100A", "SpiRack"]
