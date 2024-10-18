@@ -17,14 +17,21 @@
 import contextlib
 from dataclasses import asdict
 
+# Qibo transpiler
+import networkx as nx
 import numpy as np
 from qibo import gates
 from qibo.gates import Gate, M
 from qibo.models import Circuit
+from qibo.transpiler.optimizer import Preprocessing
+from qibo.transpiler.pipeline import Passes
+from qibo.transpiler.placer import ReverseTraversal, StarConnectivityPlacer
+from qibo.transpiler.router import Sabre, StarConnectivityRouter
 
 from qililab.chip import Coupler, Qubit
 from qililab.constants import RUNCARD
 from qililab.instruments import AWG
+from qililab.platform.platform import Platform
 from qililab.pulse import Pulse, PulseEvent, PulseSchedule
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.typings.enums import Line
@@ -41,19 +48,49 @@ class CircuitTranspiler:
     - `transpile_circuit`: runs both of the methods above sequentially
     """
 
-    def __init__(self, platform):  # type: ignore # ignore typing to avoid importing platform and causing circular imports
-        self.platform = platform
+    def __init__(self, platform: Platform):  # type: ignore # ignore typing to avoid importing platform and causing circular imports
+        self.platform: Platform = platform
 
     def transpile_circuit(self, circuits: list[Circuit]) -> list[PulseSchedule]:
         """Transpiles a list of qibo.models.Circuit to a list of pulse schedules.
+
         First translates the circuit to a native gate circuit and applies virtual Z gates and phase corrections for CZ gates.
         Then it converts the native gate circuit to a pulse schedule using calibrated settings from the runcard.
 
         Args:
             circuits (list[Circuit]): list of qibo circuits
         """
-        native_circuits = (self.circuit_to_native(circuit) for circuit in circuits)
+        routed_circuits = (self.route_circuit(circuit, self.platform.chip.get_topology()) for circuit in circuits)
+        native_circuits = (self.circuit_to_native(circuit) for circuit in routed_circuits)
         return self.circuit_to_pulses(list(native_circuits))
+
+    def route_circuit(self, circuit: Circuit, coupling_map: list[tuple[int, int]]) -> Circuit:
+        """Routes a logical circuit, to the chip's physical qubits.
+
+        Args:
+            circuit (Circuit): circuit to route.
+            coupling_map (list[tuple[int, int]]): coupling map of the chip.
+
+        Returns:
+            Circuit: routed circuit.
+            dict: final layout of the circuit.
+        """
+        # Define chip's connectivity
+        connectivity = nx.Graph(coupling_map)
+
+        # Preprocessing adds qubits in the original circuit to match the number of qubits in the chip
+        custom_passes = [Preprocessing(connectivity)]
+
+        # Placement and Routing steps, where the layout and swaps are applied.
+        if nx.is_isomorphic(connectivity, nx.star_graph(5)):
+            custom_passes.extend([StarConnectivityPlacer(connectivity), StarConnectivityRouter(connectivity)])
+        else:
+            custom_passes.extend([ReverseTraversal(connectivity), Sabre(connectivity)])
+
+        # Call the transpiler pipeline on the circuit
+        transpiled_circ, final_layout = Passes(custom_passes, connectivity)(circuit)
+
+        return transpiled_circ, final_layout
 
     def circuit_to_native(self, circuit: Circuit, optimize: bool = True) -> Circuit:
         """Converts circuit with qibo gates to circuit with native gates
@@ -78,18 +115,22 @@ class CircuitTranspiler:
 
     def optimize_transpilation(self, nqubits: int, ngates: list[gates.Gate]) -> list[gates.Gate]:
         """Optimizes transpiled circuit by applying virtual Z gates.
+
         This is done by moving all RZ to the left of all operators as a single RZ. The corresponding cumulative rotation
         from each RZ is carried on as phase in all drag pulses left of the RZ operator.
+
         Virtual Z gates are also applied to correct phase errors from CZ gates.
+
         The final RZ operator left to be applied as the last operator in the circuit can afterwards be removed since the last
         operation is going to be a measurement, which is performed on the Z basis and is therefore invariant under rotations
         around the Z axis.
+
         This last step can also be seen from the fact that an RZ operator applied on a single qubit, with no operations carried
         on afterwards induces a phase rotation. Since phase is an imaginary unitary component, its absolute value will be 1
         independent on any (unitary) operations carried on it.
 
         Mind that moving an operator to the left is equivalent to applying this operator last so
-        it is actually moved to the _right_ of Circuit.queue (last element of list).
+        it is actually moved to the _right_ of ``Circuit.queue`` (last element of list).
 
         For more information on virtual Z gates, see https://arxiv.org/abs/1612.00858
 
