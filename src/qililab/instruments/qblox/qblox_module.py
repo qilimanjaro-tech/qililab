@@ -25,14 +25,14 @@ from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.qblox.qblox_sequencer import QbloxSequencer
 from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
 from qililab.typings import ChannelID, Parameter, ParameterValue
-from qililab.typings.instruments import Pulsar, QcmQrm
+from qililab.typings.instruments import QcmQrm
 
 
 class QbloxModule(Instrument):
     """Qblox Module class.
 
     Args:
-        device (Pulsar): Instance of the Qblox Pulsar class used to connect to the instrument.
+        device (QcmQrm): Instance of the Qblox QcmQrm class used to connect to the instrument.
         settings (QbloxPulsarSettings): Settings of the instrument.
     """
 
@@ -43,7 +43,7 @@ class QbloxModule(Instrument):
 
     @dataclass
     class QbloxModuleSettings(Instrument.InstrumentSettings):
-        """Contains the settings of a specific pulsar.
+        """Contains the settings of a specific module.
 
         Args:
             awg_sequencers (Sequence[QbloxSequencer]): list of settings for each sequencer
@@ -68,7 +68,7 @@ class QbloxModule(Instrument):
             super().__post_init__()
 
     settings: QbloxModuleSettings
-    device: Pulsar | QcmQrm
+    device: QcmQrm
     # Cache containing the last compiled pulse schedule for each sequencer
     cache: ClassVar[dict[int, PulseBusSchedule]] = {}
 

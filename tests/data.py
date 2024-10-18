@@ -244,23 +244,6 @@ class Galadriel:
         {"flux": "phiz_c0_1", "bus": "flux_line_q0_bus"},
     ]
 
-    pulsar_controller_qcm_0: dict[str, Any] = {
-        "name": InstrumentControllerName.QBLOX_PULSAR,
-        "alias": "pulsar_controller_qcm_0",
-        INSTRUMENTCONTROLLER.CONNECTION: {
-            "name": ConnectionName.TCP_IP.value,
-            CONNECTION.ADDRESS: "192.168.0.3",
-        },
-        INSTRUMENTCONTROLLER.MODULES: [
-            {
-                "alias": InstrumentName.QBLOX_QCM.value,
-                "slot_id": 0,
-            }
-        ],
-        INSTRUMENTCONTROLLER.RESET: False,
-        Parameter.REFERENCE_CLOCK.value: ReferenceClock.INTERNAL.value,
-    }
-
     qblox_qcm_0: dict[str, Any] = {
         "name": InstrumentName.QBLOX_QCM,
         "alias": InstrumentName.QBLOX_QCM.value,
@@ -377,23 +360,6 @@ class Galadriel:
         ],
     }
 
-    pulsar_controller_qrm_0: dict[str, Any] = {
-        "name": InstrumentControllerName.QBLOX_PULSAR,
-        "alias": "pulsar_controller_qrm_0",
-        Parameter.REFERENCE_CLOCK.value: ReferenceClock.EXTERNAL.value,
-        INSTRUMENTCONTROLLER.CONNECTION: {
-            "name": ConnectionName.TCP_IP.value,
-            CONNECTION.ADDRESS: "192.168.0.4",
-        },
-        INSTRUMENTCONTROLLER.MODULES: [
-            {
-                "alias": f"{InstrumentName.QBLOX_QRM.value}_0",
-                "slot_id": 0,
-            }
-        ],
-        INSTRUMENTCONTROLLER.RESET: True,
-    }
-
     qblox_qrm_0: dict[str, Any] = {
         "name": InstrumentName.QBLOX_QRM,
         "alias": f"{InstrumentName.QBLOX_QRM.value}_0",
@@ -462,23 +428,6 @@ class Galadriel:
                 Parameter.THRESHOLD_ROTATION.value: 45.0,
             },
         ],
-    }
-
-    pulsar_controller_qrm_1: dict[str, Any] = {
-        "name": InstrumentControllerName.QBLOX_PULSAR,
-        "alias": "pulsar_controller_qrm_1",
-        Parameter.REFERENCE_CLOCK.value: ReferenceClock.EXTERNAL.value,
-        INSTRUMENTCONTROLLER.CONNECTION: {
-            "name": ConnectionName.TCP_IP.value,
-            CONNECTION.ADDRESS: "192.168.0.5",
-        },
-        INSTRUMENTCONTROLLER.MODULES: [
-            {
-                "alias": f"{InstrumentName.QBLOX_QRM.value}_1",
-                "slot_id": 0,
-            }
-        ],
-        INSTRUMENTCONTROLLER.RESET: True,
     }
 
     qblox_qrm_1: dict[str, Any] = {
@@ -632,9 +581,6 @@ class Galadriel:
         keithley_2600,
     ]
     instrument_controllers: list[dict] = [
-        pulsar_controller_qcm_0,
-        pulsar_controller_qrm_0,
-        pulsar_controller_qrm_1,
         rohde_schwarz_controller_0,
         rohde_schwarz_controller_1,
         attenuator_controller_0,

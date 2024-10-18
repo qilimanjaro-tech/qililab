@@ -198,7 +198,6 @@ class InstrumentControllerName(str, Enum):
         * qmm
     """
 
-    QBLOX_PULSAR = "qblox_pulsar"
     QBLOX_CLUSTER = "qblox_cluster"
     ROHDE_SCHWARZ = "rohde_schwarz"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator

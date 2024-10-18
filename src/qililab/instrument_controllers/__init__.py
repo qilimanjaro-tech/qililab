@@ -18,7 +18,7 @@ from .instrument_controller import InstrumentController
 from .instrument_controllers import InstrumentControllers
 from .keithley import Keithley2600Controller
 from .mini_circuits import MiniCircuitsController
-from .qblox import QbloxClusterController, QbloxPulsarController, QbloxSPIRackController
+from .qblox import QbloxClusterController, QbloxSPIRackController
 from .qdevil import QDevilQDac2Controller
 from .quantum_machines import QuantumMachinesClusterController
 from .rohde_schwarz import SGS100AController
@@ -35,7 +35,6 @@ __all__ = [
     "MiniCircuitsController",
     "QDevilQDac2Controller",
     "QbloxClusterController",
-    "QbloxPulsarController",
     "QbloxSPIRackController",
     "QuantumMachinesClusterController",
     "SGS100AController",

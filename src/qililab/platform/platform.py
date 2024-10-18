@@ -297,7 +297,7 @@ class Platform:
         self.name = runcard.name
         """Name of the platform (``str``) """
 
-        self.gates_settings = runcard.digital
+        self.digital_compilation_settings = runcard.digital
         """Gate settings and definitions (``dataclass``). These setting contain how to decompose gates into pulses."""
 
         self.instruments = Instruments(elements=self._load_instruments(instruments_dict=runcard.instruments))
@@ -313,7 +313,7 @@ class Platform:
         )
         """All the buses of the platform and their necessary settings (``dataclass``). Each individual bus is contained in a list within the dataclass."""
 
-        self.flux_to_bus_topology = runcard.flux_control_topology
+        self.analog_compilation_settings = runcard.analog
         """Flux to bus mapping for analog control"""
 
         self._connected_to_instruments: bool = False
@@ -398,14 +398,17 @@ class Platform:
         """
         # TODO: fix docstring, bus is not returned in most cases
         if alias == "platform":
-            return self.gates_settings
+            return self.digital_compilation_settings
         regex_match = re.search(GATE_ALIAS_REGEX, alias.split("_")[0])
         if regex_match is not None:
             name = regex_match["gate"]
             qubits_str = regex_match["qubits"]
             qubits = ast.literal_eval(qubits_str)
-            if self.gates_settings is not None and f"{name}({qubits_str})" in self.gates_settings.gate_names:
-                return self.gates_settings.get_gate(name=name, qubits=qubits)
+            if (
+                self.digital_compilation_settings is not None
+                and f"{name}({qubits_str})" in self.digital_compilation_settings.gate_names
+            ):
+                return self.digital_compilation_settings.get_gate(name=name, qubits=qubits)
             regex_match = re.search(FLUX_CONTROL_REGEX, alias)
             if regex_match is not None:
                 element_type = regex_match.lastgroup
@@ -415,8 +418,9 @@ class Platform:
                 bus_alias = next(
                     (
                         element.bus
-                        for element in self.flux_to_bus_topology  # type: ignore[union-attr]
-                        if element.flux == f"{flux}_{element_shorthands[element_type]}{regex_match[element_type]}"  # type: ignore[index]
+                        for element in self.analog_compilation_settings.flux_control_topology  # type: ignore[union-attr]
+                        if self.analog_compilation_settings
+                        and element.flux == f"{flux}_{element_shorthands[element_type]}{regex_match[element_type]}"  # type: ignore[index]
                     ),
                     None,
                 )
@@ -452,9 +456,11 @@ class Platform:
         """
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
         if alias == "platform" or parameter == Parameter.DELAY or regex_match is not None:
-            if self.gates_settings is None:
+            if self.digital_compilation_settings is None:
                 raise ValueError("Trying to get parameter of gates settings, but no gates settings exist in platform.")
-            return self.gates_settings.get_parameter(alias=alias, parameter=parameter, channel_id=channel_id)
+            return self.digital_compilation_settings.get_parameter(
+                alias=alias, parameter=parameter, channel_id=channel_id
+            )
         element = self.get_element(alias=alias)
         return element.get_parameter(parameter=parameter, channel_id=channel_id)
 
@@ -482,9 +488,11 @@ class Platform:
         """
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
         if alias == "platform" or parameter == Parameter.DELAY or regex_match is not None:
-            if self.gates_settings is None:
+            if self.digital_compilation_settings is None:
                 raise ValueError("Trying to get parameter of gates settings, but no gates settings exist in platform.")
-            self.gates_settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
+            self.digital_compilation_settings.set_parameter(
+                alias=alias, parameter=parameter, value=value, channel_id=channel_id
+            )
             return
         element = self.get_element(alias=alias)
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
@@ -532,13 +540,19 @@ class Platform:
         """
         name_dict = {RUNCARD.NAME: self.name}
         gates_settings_dict = {
-            RUNCARD.GATES_SETTINGS: self.gates_settings.to_dict() if self.gates_settings is not None else None
+            RUNCARD.GATES_SETTINGS: self.digital_compilation_settings.to_dict()
+            if self.digital_compilation_settings is not None
+            else None
         }
         buses_dict = {RUNCARD.BUSES: self.buses.to_dict()}
         instrument_dict = {RUNCARD.INSTRUMENTS: self.instruments.to_dict()}
         instrument_controllers_dict = {RUNCARD.INSTRUMENT_CONTROLLERS: self.instrument_controllers.to_dict()}
         flux_control_topology_dict = {
-            RUNCARD.FLUX_CONTROL_TOPOLOGY: [flux_control.to_dict() for flux_control in self.flux_to_bus_topology]
+            RUNCARD.FLUX_CONTROL_TOPOLOGY: [
+                flux_control.to_dict()
+                for flux_control in self.analog_compilation_settings.flux_control_topology
+                if self.analog_compilation_settings
+            ]
         }
 
         return (
@@ -628,19 +642,20 @@ class Platform:
             debug (bool, optional): Whether to create debug information. For ``Qblox`` clusters all the program information is printed on screen.
                 For ``Quantum Machines`` clusters a ``.py`` file is created containing the ``QUA`` and config compilation. Defaults to False.
         """
-        if self.flux_to_bus_topology is None:
+        if self.analog_compilation_settings is None:
             raise ValueError("Flux to bus topology not given in the runcard")
 
         if not calibration.has_block(name=measurement_block):
             raise ValueError("The calibrated measurement is not present in the calibration file.")
 
         annealing_program = AnnealingProgram(
-            flux_to_bus_topology=self.flux_to_bus_topology, annealing_program=annealing_program_dict
+            flux_to_bus_topology=self.analog_compilation_settings.flux_control_topology,
+            annealing_program=annealing_program_dict,
         )
         annealing_program.transpile(transpiler)
         crosstalk_matrix = calibration.crosstalk_matrix.inverse() if calibration.crosstalk_matrix is not None else None
         annealing_waveforms = annealing_program.get_waveforms(
-            crosstalk_matrix=crosstalk_matrix, minimum_clock_time=self.gates_settings.minimum_clock_time
+            crosstalk_matrix=crosstalk_matrix, minimum_clock_time=self.digital_compilation_settings.minimum_clock_time
         )
 
         qp_annealing = QProgram()
@@ -1029,10 +1044,10 @@ class Platform:
             ValueError: raises value error if the circuit execution time is longer than ``repetition_duration`` for some qubit.
         """
         # We have a circular import because Platform uses CircuitToPulses and vice versa
-        if self.gates_settings is None:
+        if self.digital_compilation_settings is None:
             raise ValueError("Cannot compile Qibo Circuit or Pulse Schedule without gates settings.")
         if isinstance(program, Circuit):
-            transpiler = CircuitTranspiler(digital_compilation_settings=self.gates_settings)
+            transpiler = CircuitTranspiler(digital_compilation_settings=self.digital_compilation_settings)
             pulse_schedule = transpiler.transpile_circuit(circuits=[program])[0]
         elif isinstance(program, PulseSchedule):
             pulse_schedule = program
@@ -1049,7 +1064,7 @@ class Platform:
             if isinstance(instrument, QbloxModule)
         }
         compiler = PulseQbloxCompiler(
-            gates_settings=self.gates_settings,
+            gates_settings=self.digital_compilation_settings,
             bus_to_module_and_sequencer_mapping=bus_to_module_and_sequencer_mapping,
         )
         return compiler.compile(

@@ -173,12 +173,12 @@ def get_calibration_with_preparation_block():
 @pytest.fixture(name="anneal_qprogram")
 def get_anneal_qprogram(runcard, flux_to_bus_topology):
     platform = Platform(runcard=runcard)
-    platform.flux_to_bus_topology = flux_to_bus_topology
+    platform.analog_compilation_settings = flux_to_bus_topology
     anneal_waveforms = {
-        next(element.bus for element in platform.flux_to_bus_topology if element.flux == "phix_q0"): Arbitrary(
+        next(element.bus for element in platform.analog_compilation_settings if element.flux == "phix_q0"): Arbitrary(
             np.array([0.0, 0.0, 0.0, 1.0])
         ),
-        next(element.bus for element in platform.flux_to_bus_topology if element.flux == "phiz_q0"): Arbitrary(
+        next(element.bus for element in platform.analog_compilation_settings if element.flux == "phiz_q0"): Arbitrary(
             np.array([0.0, 0.0, 0.0, 2.0])
         ),
     }
@@ -207,12 +207,12 @@ def get_anneal_qprogram(runcard, flux_to_bus_topology):
 @pytest.fixture(name="anneal_qprogram_with_preparation")
 def get_anneal_qprogram_with_preparation(runcard, flux_to_bus_topology):
     platform = Platform(runcard=runcard)
-    platform.flux_to_bus_topology = flux_to_bus_topology
+    platform.analog_compilation_settings = flux_to_bus_topology
     anneal_waveforms = {
-        next(element.bus for element in platform.flux_to_bus_topology if element.flux == "phix_q0"): Arbitrary(
+        next(element.bus for element in platform.analog_compilation_settings if element.flux == "phix_q0"): Arbitrary(
             np.array([0.0, 0.0, 0.0, 1.0])
         ),
-        next(element.bus for element in platform.flux_to_bus_topology if element.flux == "phiz_q0"): Arbitrary(
+        next(element.bus for element in platform.analog_compilation_settings if element.flux == "phiz_q0"): Arbitrary(
             np.array([0.0, 0.0, 0.0, 2.0])
         ),
     }
@@ -254,8 +254,8 @@ class TestPlatformInitialization:
 
         assert platform.name == runcard.name
         assert isinstance(platform.name, str)
-        assert platform.gates_settings == runcard.gates_settings
-        assert isinstance(platform.gates_settings, Runcard.GatesSettings)
+        assert platform.digital_compilation_settings == runcard.gates_settings
+        assert isinstance(platform.digital_compilation_settings, Runcard.GatesSettings)
         assert isinstance(platform.instruments, Instruments)
         assert isinstance(platform.instrument_controllers, InstrumentControllers)
         assert isinstance(platform.buses, Buses)
@@ -325,7 +325,7 @@ class TestPlatform:
 
     def test_get_element_with_gate(self, platform: Platform):
         """Test the get_element method with a gate alias."""
-        p_gates = platform.gates_settings.gates.keys()
+        p_gates = platform.digital_compilation_settings.gates.keys()
         all(isinstance(event, GateEventSettings) for gate in p_gates for event in platform.get_element(alias=gate))
 
     def test_str_magic_method(self, platform: Platform):
@@ -334,7 +334,7 @@ class TestPlatform:
 
     def test_gates_settings_instance(self, platform: Platform):
         """Test settings instance."""
-        assert isinstance(platform.gates_settings, Runcard.GatesSettings)
+        assert isinstance(platform.digital_compilation_settings, Runcard.GatesSettings)
 
     def test_buses_instance(self, platform: Platform):
         """Test buses instance."""
@@ -601,7 +601,7 @@ class TestMethods:
         mock_execute_qprogram = MagicMock()
         mock_execute_qprogram.return_value = QProgramResults()
         platform.execute_qprogram = mock_execute_qprogram  # type: ignore[method-assign]
-        platform.flux_to_bus_topology = flux_to_bus_topology
+        platform.analog_compilation_settings = flux_to_bus_topology
         transpiler = MagicMock()
         transpiler.return_value = (1, 2)
 
@@ -968,14 +968,14 @@ class TestMethods:
     @pytest.mark.parametrize("gate", ["I(0)", "X(0)", "Y(0)"])
     def test_get_parameter_of_gates(self, parameter, gate, platform: Platform):
         """Test the ``get_parameter`` method with gates."""
-        gate_settings = platform.gates_settings.gates[gate][0]
+        gate_settings = platform.digital_compilation_settings.gates[gate][0]
         assert platform.get_parameter(parameter=parameter, alias=gate) == getattr(gate_settings.pulse, parameter.value)
 
     @pytest.mark.parametrize("parameter", [Parameter.DRAG_COEFFICIENT, Parameter.NUM_SIGMAS])
     @pytest.mark.parametrize("gate", ["X(0)", "Y(0)"])
     def test_get_parameter_of_pulse_shapes(self, parameter, gate, platform: Platform):
         """Test the ``get_parameter`` method with gates."""
-        gate_settings = platform.gates_settings.gates[gate][0]
+        gate_settings = platform.digital_compilation_settings.gates[gate][0]
         assert platform.get_parameter(parameter=parameter, alias=gate) == gate_settings.pulse.shape[parameter.value]
 
     def test_get_parameter_of_gates_raises_error(self, platform: Platform):
@@ -986,7 +986,7 @@ class TestMethods:
     @pytest.mark.parametrize("parameter", [Parameter.DELAY_BETWEEN_PULSES, Parameter.DELAY_BEFORE_READOUT])
     def test_get_parameter_of_platform(self, parameter, platform: Platform):
         """Test the ``get_parameter`` method with platform parameters."""
-        value = getattr(platform.gates_settings, parameter.value)
+        value = getattr(platform.digital_compilation_settings, parameter.value)
         assert value == platform.get_parameter(parameter=parameter, alias="platform")
 
     def test_get_parameter_with_delay(self, platform: Platform):
@@ -1033,7 +1033,7 @@ class TestMethods:
 
     def test_no_bus_to_flux_raises_error(self, platform: Platform):
         """Test that if flux to bus topology is not specified an error is raised"""
-        platform.flux_to_bus_topology = None
+        platform.analog_compilation_settings = None
         error_string = "Flux to bus topology not given in the runcard"
         with pytest.raises(ValueError, match=error_string):
             platform.execute_annealing_program(
@@ -1049,6 +1049,6 @@ class TestMethods:
         fluxes = ["phiz_q0", "phix_c0_1"]
         assert sum(
             platform.get_element(flux).alias
-            == next(flux_bus.bus for flux_bus in platform.flux_to_bus_topology if flux_bus.flux == flux)
+            == next(flux_bus.bus for flux_bus in platform.analog_compilation_settings if flux_bus.flux == flux)
             for flux in fluxes
         ) == len(fluxes)
