@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 
 from qililab.pulse.pulse_distortion import PulseDistortion
 from qililab.typings.enums import Line
+from qililab.utils.castings import cast_enum_fields
 
 
 @dataclass
@@ -43,6 +44,7 @@ class BusSettings:
     weighed_acq_enabled: bool = False
 
     def __post_init__(self):
+        cast_enum_fields(obj=self)
         self.distortions = [
             PulseDistortion.from_dict(distortion)
             for distortion in self.distortions

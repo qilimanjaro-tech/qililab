@@ -1032,7 +1032,7 @@ class Platform:
         if self.gates_settings is None:
             raise ValueError("Cannot compile Qibo Circuit or Pulse Schedule without gates settings.")
         if isinstance(program, Circuit):
-            transpiler = CircuitTranspiler(gates_settings=self.gates_settings)
+            transpiler = CircuitTranspiler(digital_compilation_settings=self.gates_settings)
             pulse_schedule = transpiler.transpile_circuit(circuits=[program])[0]
         elif isinstance(program, PulseSchedule):
             pulse_schedule = program

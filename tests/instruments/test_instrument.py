@@ -4,7 +4,7 @@ from qililab.instruments import Instrument, ParameterNotFound
 from qililab.typings import Parameter, ParameterValue, ChannelID
 
 # A concrete subclass of Instrument for testing purposes
-class TestInstrument(Instrument):
+class DummyInstrument(Instrument):
 
     def turn_on(self):
         return "Instrument turned on"
@@ -30,7 +30,7 @@ def instrument_settings():
 
 @pytest.fixture
 def instrument(instrument_settings):
-    return TestInstrument(settings=instrument_settings)
+    return DummyInstrument(settings=instrument_settings)
 
 class TestInstrumentBase:
     """Test class for the Instrument abstract class, ensuring common functionality is tested."""
