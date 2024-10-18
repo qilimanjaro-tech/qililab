@@ -10,14 +10,8 @@ from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 
 from qililab.instrument_controllers.qblox.qblox_cluster_controller import QbloxClusterController
 from qililab.instruments.instrument import ParameterNotFound
-from qililab.instruments.qblox import QbloxModule, QbloxQCM, QbloxQRM
+from qililab.instruments.qblox import QbloxModule
 from qililab.platform import Platform
-from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseSchedule
-from qililab.pulse.pulse_event import PulseEvent
-from qililab.pulse.qblox_compiler import QbloxCompiler
-from qililab.typings.enums import Parameter
-from qililab.typings.instruments.qcm_qrm import QcmQrm
-from tests.data import Galadriel
 from qililab.data_management import build_platform
 from typing import cast
 
@@ -32,16 +26,62 @@ def fixture_platform():
 def fixture_qrm(platform: Platform):
     qcm = cast(QbloxModule, platform.get_element(alias="qcm"))
 
-    # Create a mock device using create_autospec to follow the interface of the expected device
-    qcm.device = create_autospec(QcmQrm, instance=True)
+    sequencer_mock_spec = [
+        "sync_en",
+        "gain_awg_path0",
+        "gain_awg_path1",
+        "sequence",
+        "mod_en_awg",
+        "nco_freq",
+        "scope_acq_sequencer_select",
+        "channel_map_path0_out0_en",
+        "channel_map_path1_out1_en",
+        "demod_en_acq",
+        "integration_length_acq",
+        "mixer_corr_phase_offset_degree",
+        "mixer_corr_gain_ratio",
+        "connect_out0",
+        "connect_out1",
+        "connect_out2",
+        "connect_out3",
+        "marker_ovr_en",
+        "offset_awg_path0",
+        "offset_awg_path1"
+    ]
 
-    # Dynamically add `disconnect_outputs` and `sequencers` to the mock device
-    qcm.device.disconnect_outputs = MagicMock()
+    module_mock_spec = [
+        "reference_source",
+        "sequencer0",
+        "sequencer1",
+        "out0_offset",
+        "out1_offset",
+        "out2_offset",
+        "out3_offset",
+        "scope_acq_avg_mode_en_path0",
+        "scope_acq_avg_mode_en_path1",
+        "scope_acq_trigger_mode_path0",
+        "scope_acq_trigger_mode_path1",
+        "sequencers",
+        "scope_acq_sequencer_select",
+        "get_acquisitions",
+        "disconnect_outputs",
+        "disconnect_inputs",
+        "arm_sequencer",
+        "start_sequencer",
+        "reset"
+    ]
+
+    # Create a mock device using create_autospec to follow the interface of the expected device
+    qcm.device = MagicMock()
+    qcm.device.mock_add_spec(module_mock_spec)
+
     qcm.device.sequencers = {
-        0: MagicMock(),  # Mock sequencer for identifier 0
-        1: MagicMock(),  # Mock sequencer for identifier 1
+        0: MagicMock(),
+        1: MagicMock(),
     }
-    qcm.device.out0_offset = MagicMock()
+
+    for sequencer in qcm.device.sequencers:
+        qcm.device.sequencers[sequencer].mock_add_spec(sequencer_mock_spec)
 
     return qcm
 
@@ -113,6 +153,7 @@ class TestQbloxModule:
 
     def test_run(self, qcm: QbloxModule):
         """Test running the QCM module."""
+        qcm.sequences[0] = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
         qcm.run(channel_id=0)
 
         sequencer = qcm.get_sequencer(0)
@@ -121,11 +162,10 @@ class TestQbloxModule:
 
     def test_upload_qpysequence(self, qcm: QbloxModule):
         """Test uploading a QpySequence to the QCM module."""
-        mock_sequence = create_autospec(Sequence, instance=True)
-        qcm.upload_qpysequence(qpysequence=mock_sequence, channel_id=0)
+        sequence = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
+        qcm.upload_qpysequence(qpysequence=sequence, channel_id=0)
 
-        sequencer = qcm.get_sequencer(0)
-        qcm.device.sequencers[sequencer.identifier].sequence.assert_called_once_with(mock_sequence)
+        qcm.device.sequencers[0].sequence.assert_called_once_with(sequence.todict())
 
     def test_clear_cache(self, qcm: QbloxModule):
         """Test clearing the cache of the QCM module."""
