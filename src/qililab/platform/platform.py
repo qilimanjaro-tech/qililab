@@ -1064,7 +1064,7 @@ class Platform:
             if isinstance(instrument, QbloxModule)
         }
         compiler = PulseQbloxCompiler(
-            gates_settings=self.digital_compilation_settings,
+            digital_compilation_settings=self.digital_compilation_settings,
             bus_to_module_and_sequencer_mapping=bus_to_module_and_sequencer_mapping,
         )
         return compiler.compile(

@@ -19,13 +19,13 @@ def settings():
     """Fixture for the controller settings, using autospec."""
     settings = {
         "alias": "keithley_controller",
-        # "connection": {
-        #     "name": "tcp_ip",
-        #     "address": "192.168.0.1"
-        # },
+        "connection": {
+            "name": "tcp_ip",
+            "address": "192.168.0.1"
+        },
         "modules": [{
             "alias": "keithley",
-            "slot": 0
+            "slot_id": 0
         }]
     }
     return settings
@@ -51,8 +51,8 @@ class TestKeithley2600Controller:
 
         assert keithley_controller.device is not None
         keithley_controller.device.__init__.assert_called_with(
-            name=f"{keithley_controller.name.value}_{settings.alias}",
-            address=f"TCPIP0::{settings.address}::INSTR",
+            name=f"{keithley_controller.name.value}_{keithley_controller.settings.alias}",
+            address=f"TCPIP0::{keithley_controller.settings.address}::INSTR",
             visalib="@py"
         )
 

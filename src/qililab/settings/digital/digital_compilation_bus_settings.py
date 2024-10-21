@@ -22,7 +22,7 @@ from qililab.utils.castings import cast_enum_fields
 
 
 @dataclass
-class BusSettings:
+class DigitalCompilationBusSettings:
     """Settings for a single gate event. A gate event is an element of a gate schedule, which is the
     sequence of gate events that define what a gate does (the pulse events it consists of).
 

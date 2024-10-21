@@ -8,18 +8,13 @@ from qililab.instruments.utils import InstrumentFactory
 import numpy as np
 
 @pytest.fixture
-def settings():
-    # Create a mock settings object with max_current and max_voltage attributes
+def keithley2600():
+    # Instantiate the Keithley2600 with mocked device and settings
     settings = {
         "alias": "keithley",
         "max_current": 1.0,
         "max_voltage": 10.0
     }
-    return settings
-
-@pytest.fixture
-def keithley2600(settings):
-    # Instantiate the Keithley2600 with mocked device and settings
     Keithley2600 = InstrumentFactory.get(InstrumentName.KEITHLEY2600)
     instrument = Keithley2600(settings=settings)
     instrument.device = mock.Mock()

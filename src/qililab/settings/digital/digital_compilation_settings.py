@@ -17,7 +17,7 @@ import re
 from dataclasses import asdict, dataclass
 
 from qililab.constants import GATE_ALIAS_REGEX
-from qililab.settings.digital.bus_settings import BusSettings
+from qililab.settings.digital.digital_compilation_bus_settings import DigitalCompilationBusSettings
 from qililab.settings.digital.gate_event_settings import GateEventSettings
 from qililab.typings import ChannelID, Parameter, ParameterValue
 from qililab.utils.asdict_factory import dict_factory
@@ -30,12 +30,12 @@ class DigitalCompilationSettings:
     minimum_clock_time: int
     delay_before_readout: int
     gates: dict[str, list[GateEventSettings]]
-    buses: dict[str, BusSettings]
+    buses: dict[str, DigitalCompilationBusSettings]
 
     def __post_init__(self):
         """Build the Gates Settings based on the master settings."""
         self.gates = {gate: [GateEventSettings(**event) for event in schedule] for gate, schedule in self.gates.items()}
-        self.buses = {bus: BusSettings(**settings) for bus, settings in self.buses.items()}
+        self.buses = {bus: DigitalCompilationBusSettings(**settings) for bus, settings in self.buses.items()}
 
     def to_dict(self):
         """Serializes gate settings to dictionary and removes fields with None values"""

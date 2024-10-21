@@ -44,8 +44,7 @@ if TYPE_CHECKING:
     from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
     from qililab.pulse.pulse_schedule import PulseSchedule
     from qililab.pulse.pulse_shape.pulse_shape import PulseShape
-    from qililab.settings.digital.bus_settings import BusSettings
-    from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
+    from qililab.settings.digital.digital_compilation_bus_settings import DigitalCompilationBusSettings
 
 
 class QbloxCompiler:
@@ -59,9 +58,9 @@ class QbloxCompiler:
         ValueError: at init if no readout module (QRM) is found in platform.
     """
 
-    def __init__(self, gates_settings: DigitalCompilationSettings, bus_to_module_and_sequencer_mapping: dict):
+    def __init__(self, buses: dict[str, DigitalCompilationBusSettings], bus_to_module_and_sequencer_mapping: dict):
         self.bus_to_module_and_sequencer_mapping = bus_to_module_and_sequencer_mapping
-        self.buses = gates_settings.buses
+        self.buses = buses
         # init variables as empty
         self.nshots = 0
         self.num_bins = 0
@@ -285,7 +284,7 @@ class QbloxCompiler:
         logger.info("Q1ASM program: \n %s", repr(program))
         return program
 
-    def _generate_weights(self, bus: BusSettings) -> Weights:  # type: ignore
+    def _generate_weights(self, bus: DigitalCompilationBusSettings) -> Weights:  # type: ignore
         """Generate acquisition weights.
 
         Returns:
@@ -303,7 +302,7 @@ class QbloxCompiler:
         loop: Loop,
         bin_index: Register | int,
         acq_index: int,
-        bus: BusSettings,
+        bus: DigitalCompilationBusSettings,
         weight_regs: tuple[Register, Register],
         wait: int,
     ):

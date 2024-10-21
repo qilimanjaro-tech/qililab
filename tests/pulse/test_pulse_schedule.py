@@ -4,8 +4,6 @@ import pytest
 from qililab.circuit_transpiler import CircuitTranspiler
 from qililab.platform import Platform
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent, PulseSchedule
-from tests.data import Galadriel, circuit, experiment_params
-from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="pulse_event")
@@ -20,24 +18,32 @@ def fixture_pulse_event() -> PulseEvent:
     return PulseEvent(pulse=pulse, start_time=0)
 
 
-@pytest.fixture(name="platform")
-def fixture_platform() -> Platform:
-    """Return Platform object."""
-    return build_platform(runcard=Galadriel.runcard)
-
-
-@pytest.fixture(name="pulse_schedule", params=experiment_params)
-def fixture_pulse_schedule(platform: Platform) -> PulseSchedule:
+@pytest.fixture(name="pulse_schedule")
+def fixture_pulse_schedule() -> PulseSchedule:
     """Return PulseSchedule instance."""
-    return CircuitTranspiler(platform=platform).circuit_to_pulses(circuits=[circuit])[0]
+    schedule = PulseSchedule(elements=[
+        PulseBusSchedule(bus_alias="drive_q0", timeline=[
+            PulseEvent(Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=Gaussian(num_sigmas=4)), start_time=0)
+        ])
+    ])
+    return schedule
 
 
 class TestPulseSequences:
     """Unit tests checking the PulseSequences attributes and methods"""
 
+    def test_init(self, pulse_schedule: PulseSchedule):
+        assert isinstance(pulse_schedule, PulseSchedule)
+        assert isinstance(pulse_schedule.elements, list)
+        assert len(pulse_schedule.elements) == 1
+        assert len(pulse_schedule.elements[0].timeline) == 1
+
     def test_add_event_method(self, pulse_schedule: PulseSchedule, pulse_event: PulseEvent):
         """Tead add_event method."""
-        pulse_schedule.add_event(pulse_event=pulse_event, port="drive_line_q0", port_delay=0)
+        pulse_event = PulseEvent(pulse=Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=Gaussian(num_sigmas=4)), start_time=100)
+        pulse_schedule.add_event(pulse_event=pulse_event, bus_alias="drive_q0", delay=0)
+        assert len(pulse_schedule.elements) == 1
+        assert len(pulse_schedule.elements[0].timeline) == 2
 
     def test_to_dict_method(self, pulse_schedule: PulseSchedule):
         """Test to_dict method"""
