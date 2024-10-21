@@ -13,7 +13,10 @@
 # limitations under the License.
 
 """Execute function used to execute a qibo Circuit using the given runcard."""
+
 from qibo.models import Circuit
+from qibo.transpiler.placer import Placer
+from qibo.transpiler.router import Router
 from tqdm.auto import tqdm
 
 from qililab.result import Result
@@ -21,7 +24,15 @@ from qililab.result import Result
 from .data_management import build_platform
 
 
-def execute(program: Circuit | list[Circuit], runcard: str | dict, nshots: int = 1) -> Result | list[Result]:
+def execute(
+    program: Circuit | list[Circuit],
+    runcard: str | dict,
+    nshots: int = 1,
+    placer: Placer | None = None,
+    router: Router | None = None,
+    placer_kwargs: dict | None = None,
+    router_kwargs: dict | None = None,
+) -> Result | list[Result]:
     """Executes a Qibo circuit (or a list of circuits) with qililab and returns the results.
 
     Args:
@@ -29,6 +40,10 @@ def execute(program: Circuit | list[Circuit], runcard: str | dict, nshots: int =
         runcard (str | dict): If a string, path to the YAML file containing the serialization of the Platform to be
             used. If a dictionary, the serialized platform to be used.
         nshots (int, optional): Number of shots to execute. Defaults to 1.
+        placer (Placer, optional): Placer algorithm to use. Defaults to ReverseTraversal.
+        router (Router, optional): Router algorithm to use. Defaults to Sabre.
+        placer_kwargs (dict, optional): kwargs for the placer (others than connectivity). Only will be used if placer is passed. Defaults to None.
+        router_kwargs (dict, optional): kwargs for the router (others than connectivity). Only will be used if router is passed. Defaults to None.
 
     Returns:
         Result | list[Result]: :class:`Result` class (or list of :class:`Result` classes) containing the results of the
@@ -49,12 +64,12 @@ def execute(program: Circuit | list[Circuit], runcard: str | dict, nshots: int =
         c = Circuit(nqubits)
         for qubit in range(nqubits):
             c.add(gates.H(qubit))
-        c.add(gates.CNOT(2,0))
-        c.add(gates.RY(4,np.pi / 4))
+        c.add(gates.CNOT(2, 0))
+        c.add(gates.RY(4, np.pi / 4))
         c.add(gates.X(3))
         c.add(gates.M(*range(3)))
-        c.add(gates.SWAP(4,2))
-        c.add(gates.RX(1, 3*np.pi/2))
+        c.add(gates.SWAP(4, 2))
+        c.add(gates.RX(1, 3 * np.pi / 2))
 
         probabilities = ql.execute(c, runcard="./runcards/galadriel.yml")
     """
@@ -71,7 +86,18 @@ def execute(program: Circuit | list[Circuit], runcard: str | dict, nshots: int =
         results = []
         for circuit in tqdm(program, total=len(program)):
             # Execute circuit
-            results.append(platform.execute(circuit, num_avg=1, repetition_duration=200_000, num_bins=nshots))
+            results.append(
+                platform.execute(
+                    circuit,
+                    num_avg=1,
+                    repetition_duration=200_000,
+                    num_bins=nshots,
+                    placer=placer,
+                    router=router,
+                    placer_kwargs=placer_kwargs,
+                    router_kwargs=router_kwargs,
+                )
+            )
         platform.disconnect()
         return results[0] if len(results) == 1 else results
     except Exception as e:

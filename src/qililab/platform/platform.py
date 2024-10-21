@@ -28,6 +28,8 @@ from typing import Callable, cast
 import numpy as np
 from qibo.gates import M
 from qibo.models import Circuit
+from qibo.transpiler.placer import Placer
+from qibo.transpiler.router import Router
 from qm import generate_qua_script
 from qpysequence import Sequence as QpySequence
 from ruamel.yaml import YAML
@@ -971,6 +973,10 @@ class Platform:
         repetition_duration: int,
         num_bins: int = 1,
         queue: Queue | None = None,
+        placer: Placer | None = None,
+        router: Router | None = None,
+        placer_kwargs: dict | None = None,
+        router_kwargs: dict | None = None,
     ) -> Result | QbloxResult:
         """Compiles and executes a circuit or a pulse schedule, using the platform instruments.
 
@@ -985,6 +991,10 @@ class Platform:
             repetition_duration (int): Minimum duration of a single execution.
             num_bins (int, optional): Number of bins used. Defaults to 1.
             queue (Queue, optional): External queue used for asynchronous data handling. Defaults to None.
+            placer (Placer, optional): Placer algorithm to use. Defaults to ReverseTraversal.
+            router (Router, optional): Router algorithm to use. Defaults to Sabre.
+            placer_kwargs (dict, optional): kwargs for the placer (others than connectivity). Only will be used if placer is passed. Defaults to None.
+            router_kwargs (dict, optional): kwargs for the router (others than connectivity). Only will be used if router is passed. Defaults to None.
 
         Returns:
             Result: Result obtained from the execution. This corresponds to a numpy array that depending on the
@@ -996,7 +1006,9 @@ class Platform:
                 - Scope acquisition disabled: An array with dimension `(#sequencers, 2, #bins)`.
         """
         # Compile pulse schedule
-        programs = self.compile(program, num_avg, repetition_duration, num_bins)
+        programs, final_layout = self.compile(
+            program, num_avg, repetition_duration, num_bins, placer, router, placer_kwargs, router_kwargs
+        )
 
         # Upload pulse schedule
         for bus_alias in programs:
@@ -1036,12 +1048,12 @@ class Platform:
             raise ValueError("There are no readout buses in the platform.")
 
         if isinstance(program, Circuit):
-            results = [self._order_result(results[0], program)]
+            results = [self._order_result(results[0], program, final_layout)]
 
-        # FIXME: resurn result instead of results[0]
+        # FIXME: return result instead of results[0]
         return results[0]
 
-    def _order_result(self, result: Result, circuit: Circuit) -> Result:
+    def _order_result(self, result: Result, circuit: Circuit, final_layouts: dict) -> Result:
         """Order the results of the execution as they are ordered in the input circuit.
 
         Finds the absolute order of each measurement for each qubit and its corresponding key in the
@@ -1052,6 +1064,7 @@ class Platform:
         Args:
             result (Result): Result obtained from the execution
             circuit (Circuit): qibo circuit being executed
+            final_layouts (dict): final layout of the qubits in the circuit.
 
         Returns:
             Result: Result obtained from the execution, with each measurement in the same order as in circuit.queue
@@ -1064,6 +1077,7 @@ class Platform:
         order = {}
         # iterate over qubits measured in same order as they appear in the circuit
         for i, qubit in enumerate(qubit for gate in circuit.queue for qubit in gate.qubits if isinstance(gate, M)):
+            qubit = final_layouts[qubit]  # TODO: Check if this works, or how you should do it :)
             if qubit not in qubits_m:
                 qubits_m[qubit] = 0
             order[qubit, qubits_m[qubit]] = i
@@ -1083,8 +1097,16 @@ class Platform:
         return QbloxResult(integration_lengths=result.integration_lengths, qblox_raw_results=results)
 
     def compile(
-        self, program: PulseSchedule | Circuit, num_avg: int, repetition_duration: int, num_bins: int
-    ) -> dict[str, list[QpySequence]]:
+        self,
+        program: PulseSchedule | Circuit,
+        num_avg: int,
+        repetition_duration: int,
+        num_bins: int,
+        placer: Placer | None = None,
+        router: Router | None = None,
+        placer_kwargs: dict | None = None,
+        router_kwargs: dict | None = None,
+    ) -> tuple[dict[str, list[QpySequence]], dict]:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
 
         If the ``program`` argument is a :class:`Circuit`, it will first be translated into a :class:`PulseSchedule` using the transpilation
@@ -1097,10 +1119,14 @@ class Platform:
             num_avg (int): Number of hardware averages used.
             repetition_duration (int): Minimum duration of a single execution.
             num_bins (int): Number of bins used.
+            placer (Placer, optional): Placer algorithm to use. Defaults to ReverseTraversal.
+            router (Router, optional): Router algorithm to use. Defaults to Sabre.
+            placer_kwargs (dict, optional): kwargs for the placer (others than connectivity). Only will be used if placer is passed. Defaults to None.
+            router_kwargs (dict, optional): kwargs for the router (others than connectivity). Only will be used if router is passed. Defaults to None.
 
         Returns:
             dict: Dictionary of compiled assembly programs. The key is the bus alias (``str``), and the value is the assembly compilation (``list``).
-
+            dict: Final layout of the qubits in the circuit.
         Raises:
             ValueError: raises value error if the circuit execution time is longer than ``repetition_duration`` for some qubit.
         """
@@ -1108,7 +1134,16 @@ class Platform:
 
         if isinstance(program, Circuit):
             transpiler = CircuitTranspiler(platform=self)
-            pulse_schedule = transpiler.transpile_circuit(circuits=[program])[0]
+
+            transpiled_circuits, final_layouts = transpiler.transpile_circuit(
+                circuits=[program],
+                placer=placer,
+                router=router,
+                placer_kwargs=placer_kwargs,
+                router_kwargs=router_kwargs,
+            )
+            pulse_schedule, final_layout = transpiled_circuits[0], final_layouts[0]
+
         elif isinstance(program, PulseSchedule):
             pulse_schedule = program
         else:
@@ -1117,4 +1152,4 @@ class Platform:
             )
         return self.compiler.compile(
             pulse_schedule=pulse_schedule, num_avg=num_avg, repetition_duration=repetition_duration, num_bins=num_bins
-        )
+        ), final_layout
