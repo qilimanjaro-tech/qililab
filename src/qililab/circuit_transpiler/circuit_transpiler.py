@@ -84,7 +84,7 @@ class CircuitTranspiler:
         custom_passes = [Preprocessing(connectivity)]
 
         # Placement and Routing steps, where the layout and swaps are applied.
-        if nx.is_isomorphic(connectivity, nx.star_graph(5)):
+        if nx.is_isomorphic(connectivity, nx.star_graph(4)):
             custom_passes.extend([StarConnectivityPlacer(connectivity), StarConnectivityRouter(connectivity)])
         else:
             custom_passes.extend([ReverseTraversal(connectivity, Sabre(connectivity)), Sabre(connectivity)])
