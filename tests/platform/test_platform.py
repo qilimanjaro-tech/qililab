@@ -575,6 +575,7 @@ class TestMethods:
 
     def test_compile_circuit(self, platform: Platform):
         """Test the compilation of a qibo Circuit."""
+
         circuit = Circuit(3)
         circuit.add(gates.X(0))
         circuit.add(gates.X(1))
@@ -599,7 +600,7 @@ class TestMethods:
         self._compile_and_assert(platform, pulse_schedule, 2)
 
     def _compile_and_assert(self, platform: Platform, program: Circuit | PulseSchedule, len_sequences: int):
-        sequences = platform.compile(program=program, num_avg=1000, repetition_duration=200_000, num_bins=1)
+        sequences, _ = platform.compile(program=program, num_avg=1000, repetition_duration=200_000, num_bins=1)
         assert isinstance(sequences, dict)
         assert len(sequences) == len_sequences
         for alias, sequences_list in sequences.items():
@@ -873,7 +874,7 @@ class TestMethods:
         # the order from qblox qrm will be M(0),M(0),M(1),M(1)
 
         platform.compile = MagicMock()  # type: ignore # don't care about compilation
-        platform.compile.return_value = {"feedline_input_output_bus": None}
+        platform.compile.return_value = {"feedline_input_output_bus": None}, {"q0": 0}
         with patch.object(Bus, "upload"):
             with patch.object(Bus, "run"):
                 with patch.object(Bus, "acquire_result") as acquire_result:
@@ -906,7 +907,7 @@ class TestMethods:
         # ]
         # in platform will be empty
         platform.compile = MagicMock()  # type: ignore # don't care about compilation
-        platform.compile.return_value = {"drive_line_q0_bus": None}
+        platform.compile.return_value = {"drive_line_q0_bus": None}, {"q0": 0}
         with patch.object(Bus, "upload"):
             with patch.object(Bus, "run"):
                 with patch.object(Bus, "acquire_result") as acquire_result:
@@ -978,7 +979,10 @@ class TestMethods:
         pulse_schedule = PulseSchedule()
         # mock compile method
         platform.compile = MagicMock()  # type: ignore[method-assign]
-        platform.compile.return_value = {"feedline_input_output_bus": None, "feedline_input_output_bus_2": None}
+        platform.compile.return_value = (
+            {"feedline_input_output_bus": None, "feedline_input_output_bus_2": None},
+            {"q0": 0},
+        )
         # mock execution
         with patch.object(Bus, "upload"):
             with patch.object(Bus, "run"):
