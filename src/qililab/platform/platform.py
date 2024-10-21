@@ -1146,6 +1146,7 @@ class Platform:
 
         elif isinstance(program, PulseSchedule):
             pulse_schedule = program
+            final_layout = {f"q{qubit}": qubit for qubit in self.chip.qubits}
         else:
             raise ValueError(
                 f"Program to execute can only be either a single circuit or a pulse schedule. Got program of type {type(program)} instead"
