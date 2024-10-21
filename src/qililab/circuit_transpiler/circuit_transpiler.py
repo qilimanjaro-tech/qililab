@@ -18,8 +18,6 @@ import contextlib
 from dataclasses import asdict
 
 import networkx as nx
-
-# Qibo transpiler
 import numpy as np
 from qibo import gates
 from qibo.gates import Gate, M
