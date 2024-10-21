@@ -1053,7 +1053,7 @@ class Platform:
         # FIXME: return result instead of results[0]
         return results[0]
 
-    def _order_result(self, result: Result, circuit: Circuit, final_layouts: dict) -> Result:
+    def _order_result(self, result: Result, circuit: Circuit, final_layout: dict) -> Result:
         """Order the results of the execution as they are ordered in the input circuit.
 
         Finds the absolute order of each measurement for each qubit and its corresponding key in the
@@ -1077,7 +1077,6 @@ class Platform:
         order = {}
         # iterate over qubits measured in same order as they appear in the circuit
         for i, qubit in enumerate(qubit for gate in circuit.queue for qubit in gate.qubits if isinstance(gate, M)):
-            qubit = final_layouts[qubit]  # TODO: Check if this works, or how you should do it :)
             if qubit not in qubits_m:
                 qubits_m[qubit] = 0
             order[qubit, qubits_m[qubit]] = i
@@ -1092,7 +1091,8 @@ class Platform:
         for qblox_result in result.qblox_raw_results:
             measurement = qblox_result["measurement"]
             qubit = qblox_result["qubit"]
-            results[order[qubit, measurement]] = qblox_result
+            original_qubit = final_layout[qubit]  # TODO: Check if this works, or how you should do it :)
+            results[order[original_qubit, measurement]] = qblox_result
 
         return QbloxResult(integration_lengths=result.integration_lengths, qblox_raw_results=results)
 
