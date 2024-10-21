@@ -1150,6 +1150,8 @@ class Platform:
             raise ValueError(
                 f"Program to execute can only be either a single circuit or a pulse schedule. Got program of type {type(program)} instead"
             )
-        return self.compiler.compile(
+
+        compiled_programs: dict[str, list[QpySequence]] = self.compiler.compile(
             pulse_schedule=pulse_schedule, num_avg=num_avg, repetition_duration=repetition_duration, num_bins=num_bins
-        ), final_layout
+        )
+        return compiled_programs, final_layout

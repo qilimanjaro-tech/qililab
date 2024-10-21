@@ -83,21 +83,20 @@ def execute(
     try:
         platform.initial_setup()
         platform.turn_on_instruments()
-        results = []
-        for circuit in tqdm(program, total=len(program)):
+        results = [
             # Execute circuit
-            results.append(
-                platform.execute(
-                    circuit,
-                    num_avg=1,
-                    repetition_duration=200_000,
-                    num_bins=nshots,
-                    placer=placer,
-                    router=router,
-                    placer_kwargs=placer_kwargs,
-                    router_kwargs=router_kwargs,
-                )
+            platform.execute(
+                circuit,
+                num_avg=1,
+                repetition_duration=200_000,
+                num_bins=nshots,
+                placer=placer,
+                router=router,
+                placer_kwargs=placer_kwargs,
+                router_kwargs=router_kwargs,
             )
+            for circuit in tqdm(program, total=len(program))
+        ]
         platform.disconnect()
         return results[0] if len(results) == 1 else results
     except Exception as e:
