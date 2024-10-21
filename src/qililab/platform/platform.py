@@ -1091,7 +1091,7 @@ class Platform:
         for qblox_result in result.qblox_raw_results:
             measurement = qblox_result["measurement"]
             qubit = qblox_result["qubit"]
-            original_qubit = final_layout[qubit]  # TODO: Check if this works, or how you should do it :)
+            original_qubit = final_layout[f"q{qubit}"]  # TODO: Check if this works, or how you should do it :)
             results[order[original_qubit, measurement]] = qblox_result
 
         return QbloxResult(integration_lengths=result.integration_lengths, qblox_raw_results=results)

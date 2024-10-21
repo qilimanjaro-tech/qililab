@@ -874,7 +874,7 @@ class TestMethods:
         # the order from qblox qrm will be M(0),M(0),M(1),M(1)
 
         platform.compile = MagicMock()  # type: ignore # don't care about compilation
-        platform.compile.return_value = {"feedline_input_output_bus": None}, {"q0": 0}
+        platform.compile.return_value = {"feedline_input_output_bus": None}, {"q0": 0, "q1": 1}
         with patch.object(Bus, "upload"):
             with patch.object(Bus, "run"):
                 with patch.object(Bus, "acquire_result") as acquire_result:
