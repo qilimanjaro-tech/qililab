@@ -29,9 +29,9 @@ from qibo.transpiler.placer import ReverseTraversal, StarConnectivityPlacer
 from qibo.transpiler.router import Sabre, StarConnectivityRouter
 
 from qililab.chip import Coupler, Qubit
+from qililab.config import logger
 from qililab.constants import RUNCARD
 from qililab.instruments import AWG
-from qililab.platform.platform import Platform
 from qililab.pulse import Pulse, PulseEvent, PulseSchedule
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.typings.enums import Line
@@ -48,8 +48,8 @@ class CircuitTranspiler:
     - `transpile_circuit`: runs both of the methods above sequentially
     """
 
-    def __init__(self, platform: Platform):  # type: ignore # ignore typing to avoid importing platform and causing circular imports
-        self.platform: Platform = platform
+    def __init__(self, platform):  # type: ignore # ignore typing to avoid importing platform and causing circular imports
+        self.platform = platform
 
     def transpile_circuit(self, circuits: list[Circuit]) -> list[PulseSchedule]:
         """Transpiles a list of qibo.models.Circuit to a list of pulse schedules.
@@ -61,7 +61,9 @@ class CircuitTranspiler:
             circuits (list[Circuit]): list of qibo circuits
         """
         routed_circuits = (self.route_circuit(circuit, self.platform.chip.get_topology()) for circuit in circuits)
-        native_circuits = (self.circuit_to_native(circuit) for circuit in routed_circuits)
+        native_circuits = (self.circuit_to_native(circuit) for circuit, _ in routed_circuits)
+        for _, final_layout in routed_circuits:
+            logger.info(f"Circuit final layout: {final_layout}")  # TODO: Also store layout in the PulseSchedule...
         return self.circuit_to_pulses(list(native_circuits))
 
     def route_circuit(self, circuit: Circuit, coupling_map: list[tuple[int, int]]) -> Circuit:
@@ -85,7 +87,7 @@ class CircuitTranspiler:
         if nx.is_isomorphic(connectivity, nx.star_graph(5)):
             custom_passes.extend([StarConnectivityPlacer(connectivity), StarConnectivityRouter(connectivity)])
         else:
-            custom_passes.extend([ReverseTraversal(connectivity), Sabre(connectivity)])
+            custom_passes.extend([ReverseTraversal(connectivity, Sabre(connectivity)), Sabre(connectivity)])
 
         # Call the transpiler pipeline on the circuit
         transpiled_circ, final_layout = Passes(custom_passes, connectivity)(circuit)
