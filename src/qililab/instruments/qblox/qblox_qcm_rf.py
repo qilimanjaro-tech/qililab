@@ -15,7 +15,7 @@
 """This file contains the QbloxQCMRF class."""
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, ClassVar
+from typing import ClassVar
 
 from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm
 
@@ -24,9 +24,6 @@ from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 
 from .qblox_qcm import QbloxQCM
-
-if TYPE_CHECKING:
-    from qililab.instruments.awg_settings import AWGQbloxSequencer
 
 
 @InstrumentFactory.register
@@ -98,7 +95,7 @@ class QbloxQCMRF(QbloxQCM):
         """
         if parameter == Parameter.LO_FREQUENCY:
             if channel_id is not None:
-                sequencer: AWGQbloxSequencer = self._get_sequencer_by_id(int(channel_id))
+                sequencer = self._get_sequencer_by_id(int(channel_id))
             else:
                 raise Exception(
                     "`channel_id` cannot be None when setting the `LO_FREQUENCY` parameter."
@@ -124,7 +121,7 @@ class QbloxQCMRF(QbloxQCM):
         """
         if parameter == Parameter.LO_FREQUENCY:
             if channel_id is not None:
-                sequencer: AWGQbloxSequencer = self._get_sequencer_by_id(int(channel_id))
+                sequencer = self._get_sequencer_by_id(int(channel_id))
             else:
                 raise Exception(
                     "`channel_id` cannot be None when setting the `LO_FREQUENCY` parameter."

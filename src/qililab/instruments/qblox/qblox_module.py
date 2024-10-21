@@ -205,9 +205,6 @@ class QbloxModule(Instrument):
         if parameter == Parameter.HARDWARE_MODULATION:
             self._set_hardware_modulation(value=value, sequencer_id=channel_id)
             return
-        if parameter == Parameter.NUM_BINS:
-            self._set_num_bins(value=value, sequencer_id=channel_id)
-            return
         if parameter == Parameter.GAIN_IMBALANCE:
             self._set_gain_imbalance(value=value, sequencer_id=channel_id)
             return

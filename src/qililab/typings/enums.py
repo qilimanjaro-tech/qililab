@@ -239,7 +239,6 @@ class Parameter(str, Enum):
     ATTENUATION = "attenuation"
     REPETITION_DURATION = "repetition_duration"
     SOFTWARE_AVERAGE = "software_average"
-    NUM_BINS = "num_bins"
     SEQUENCE_TIMEOUT = "sequence_timeout"
     EXTERNAL = "external"
     RESET = "reset"

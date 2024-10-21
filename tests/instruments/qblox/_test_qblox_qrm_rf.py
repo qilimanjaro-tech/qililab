@@ -1,4 +1,5 @@
 """Tests for the QbloxQRMRF class."""
+
 from dataclasses import asdict
 from unittest.mock import MagicMock
 

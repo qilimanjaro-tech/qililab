@@ -29,7 +29,6 @@ class QbloxSequencer:
     gain_q: float
     offset_i: float
     offset_q: float
-    num_bins: int
 
     def to_dict(self):
         """Return a dict representation of an AWG Sequencer."""

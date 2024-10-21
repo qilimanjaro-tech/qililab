@@ -108,6 +108,15 @@ class SGS100A(Instrument):
             return
         raise ParameterNotFound(self, parameter)
 
+    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None) -> ParameterValue:
+        if parameter == Parameter.POWER:
+            return self.settings.power
+        if parameter == Parameter.LO_FREQUENCY:
+            return self.settings.frequency
+        if parameter == Parameter.RF_ON:
+            return self.settings.rf_on
+        raise ParameterNotFound(self, parameter)
+
     @check_device_initialized
     def initial_setup(self):
         """performs an initial setup"""

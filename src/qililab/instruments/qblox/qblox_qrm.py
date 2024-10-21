@@ -158,9 +158,9 @@ class QbloxQRM(QbloxModule):
                     acquisitions["qubit"] = qubit
                     acquisitions["measurement"] = measurement
                     results.append(acquisitions)
-                    integration_lengths.append(sequencer.used_integration_length)
+                    integration_lengths.append(sequencer.integration_length)
                 self.device.sequencers[sequencer.identifier].sync_en(False)
-                integration_lengths.append(sequencer.used_integration_length)
+                integration_lengths.append(sequencer.integration_length)
                 self.device.delete_acquisition_data(sequencer=sequencer_id, all=True)
 
         return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
@@ -261,7 +261,7 @@ class QbloxQRM(QbloxModule):
             value (float): integrated value of the threshold
             sequencer_id (int): sequencer to update the value
         """
-        integrated_value = value * self._get_sequencer_by_id(id=sequencer_id).used_integration_length
+        integrated_value = value * self._get_sequencer_by_id(id=sequencer_id).integration_length
         self.device.sequencers[sequencer_id].thresholded_acq_threshold(integrated_value)
 
     def _set_device_threshold_rotation(self, value: float, sequencer_id: int):
