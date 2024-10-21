@@ -1060,12 +1060,12 @@ class Platform:
             raise NotImplementedError("Result ordering is only implemented for qblox results")
 
         # register the overall order of all qubit measurements.
-        qubits_m = {}
-        order = {}
+        qubits_m: dict = {}
+        order: dict = {}
         # iterate over qubits measured in same order as they appear in the circuit
         for i, qubit in enumerate(qubit for gate in circuit.queue for qubit in gate.qubits if isinstance(gate, M)):
             if qubit not in qubits_m:
-                qubits_m[qubit] = 0
+                qubits_m |= {qubit: 0}
             order[qubit, qubits_m[qubit]] = i
             qubits_m[qubit] += 1
         if len(order) != len(result.qblox_raw_results):
