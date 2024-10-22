@@ -53,6 +53,7 @@ class CircuitTranspiler:
     def transpile_circuit(
         self,
         circuits: list[Circuit],
+        optimize: bool = True,
         placer: Placer | None = None,
         router: Router | None = None,
         placer_kwargs: dict | None = None,
@@ -74,6 +75,7 @@ class CircuitTranspiler:
             list[PulseSchedule]: list of pulse schedules.
             list[dict]: list of the final layouts of the qubits, in each circuit.
         """
+        # Routing stage;
         routed_circuits = []
         final_layouts = []
         for circuit in circuits:
@@ -84,8 +86,21 @@ class CircuitTranspiler:
             routed_circuits.append(routed_circuit)
             final_layouts.append(final_layout)
 
+        # Optimze qibo gates, cancellation stage:
+        if optimize:
+            routed_circuits = [self.gates_cancellation(circuit) for circuit in routed_circuits]
+
+        # Unroll to Natives stage:
         native_circuits = (self.circuit_to_native(circuit) for circuit in routed_circuits)
-        return self.circuit_to_pulses(list(native_circuits)), final_layouts
+
+        # Optimize native gates, optimize transpilation stage:
+        if optimize:
+            native_circuits = (self.optimize_transpilation(circuit) for circuit in native_circuits)
+
+        # Pulse schedule stage:
+        pulse_schedules = self.circuit_to_pulses(list(native_circuits))
+
+        return pulse_schedules, final_layouts
 
     def route_circuit(
         self,
@@ -160,28 +175,33 @@ class CircuitTranspiler:
 
         return transpiled_circ, final_layout
 
-    def circuit_to_native(self, circuit: Circuit, optimize: bool = True) -> Circuit:
+    # TODO: Finish this function
+    def gates_cancellation(self, circuit: Circuit) -> Circuit:
+        """Optimizes circuit by cancelling adjacent gates.
+
+        Args:
+            circuit (Circuit): circuit to optimize.
+
+        Returns:
+            Circuit: optimized circuit.
+        """
+        return Circuit(circuit.nqubits, circuit=circuit.queue)
+
+    def circuit_to_native(self, circuit: Circuit) -> Circuit:
         """Converts circuit with qibo gates to circuit with native gates
 
         Args:
-            circuit (Circuit): circuit with qibo gates
-            optimize (bool): optimize the transpiled circuit using otpimize_transpilation
+            circuit (Circuit): circuit with qibo gate.
 
         Returns:
             new_circuit (Circuit): circuit with transpiled gates
         """
-        # init new circuit
         new_circuit = Circuit(circuit.nqubits)
-        # add transpiled gates to new circuit, optimize if needed
-        if optimize:
-            gates_to_optimize = translate_gates(circuit.queue)
-            new_circuit.add(self.optimize_transpilation(circuit.nqubits, ngates=gates_to_optimize))
-        else:
-            new_circuit.add(translate_gates(circuit.queue))
+        new_circuit.add(translate_gates(circuit.queue))
 
         return new_circuit
 
-    def optimize_transpilation(self, nqubits: int, ngates: list[gates.Gate]) -> list[gates.Gate]:
+    def optimize_transpilation(self, circuit: Circuit) -> list[gates.Gate]:
         """Optimizes transpiled circuit by applying virtual Z gates.
 
         This is done by moving all RZ to the left of all operators as a single RZ. The corresponding cumulative rotation
@@ -203,12 +223,14 @@ class CircuitTranspiler:
         For more information on virtual Z gates, see https://arxiv.org/abs/1612.00858
 
         Args:
-            nqubits (int) : number of qubits in the circuit
-            ngates (list[gates.Gate]) : list of gates in the circuit
+            circuit (Circuit): circuit with native gates, to optimize.
 
         Returns:
             list[gates.Gate] : list of re-ordered gates
         """
+        nqubits: int = circuit.nqubits
+        ngates: list[gates.Gate] = circuit.queue
+
         supported_gates = ["rz", "drag", "cz", "wait", "measure"]
         new_gates = []
         shift = dict.fromkeys(range(nqubits), 0)
