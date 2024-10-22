@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
+from qililab.pulse.pulse_distortion import PulseDistortion
 from qililab.typings import ChannelID
 
 
@@ -31,3 +32,5 @@ class BusSettings:
     alias: str
     instruments: list[str]
     channels: list[ChannelID | None]
+    delay: int = 0
+    distortions: list[PulseDistortion] = field(default_factory=list)

@@ -554,7 +554,7 @@ class TestMethods:
         circuit.add(gates.Y(1))
         circuit.add(gates.M(0, 1, 2))
 
-        self._compile_and_assert(platform, circuit, 5)
+        self._compile_and_assert(platform, circuit, 6)
 
     def test_compile_pulse_schedule(self, platform: Platform):
         """Test the compilation of a qibo Circuit."""
@@ -563,9 +563,9 @@ class TestMethods:
             amplitude=1, phase=0.5, duration=200, frequency=1e9, pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
         )
         readout_pulse = Pulse(amplitude=1, phase=0.5, duration=1500, frequency=1e9, pulse_shape=Rectangular())
-        pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), port="drive_q0", port_delay=0)
+        pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), bus_alias="drive_line_q0_bus", delay=0)
         pulse_schedule.add_event(
-            PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), port="feedline_input", port_delay=0
+            PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), bus_alias="feedline_input_output_bus", delay=0
         )
 
         self._compile_and_assert(platform, pulse_schedule, 2)
@@ -681,8 +681,8 @@ class TestMethods:
             patch.object(Bus, "upload_qpysequence") as upload,
             patch.object(Bus, "run") as run,
             patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
-            patch.object(QbloxModule, "sync_by_port") as sync_port,
-            patch.object(QbloxModule, "desync_by_port") as desync_port,
+            patch.object(QbloxModule, "sync_sequencer") as sync_sequencer,
+            patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
         ):
             acquire_qprogram_results.return_value = [123]
             first_execution_results = platform.execute_qprogram(qprogram=qprogram)
@@ -698,8 +698,8 @@ class TestMethods:
         # assert run executed all three times (6 because there are 2 buses)
         assert run.call_count == 12
         assert acquire_qprogram_results.call_count == 6  # only readout buses
-        assert sync_port.call_count == 12  # called as many times as run
-        assert desync_port.call_count == 12
+        assert sync_sequencer.call_count == 12  # called as many times as run
+        assert desync_sequencer.call_count == 12
         assert first_execution_results.results["feedline_input_output_bus"] == [123]
         assert first_execution_results.results["feedline_input_output_bus_1"] == [123]
         assert second_execution_results.results["feedline_input_output_bus"] == [456]
@@ -722,8 +722,8 @@ class TestMethods:
             patch.object(Bus, "upload_qpysequence") as upload,
             patch.object(Bus, "run"),
             patch.object(Bus, "acquire_qprogram_results"),
-            patch.object(QbloxModule, "sync_by_port"),
-            patch.object(QbloxModule, "desync_by_port"),
+            patch.object(QbloxModule, "sync_sequencer"),
+            patch.object(QbloxModule, "desync_sequencer"),
         ):
             _ = platform.execute_qprogram(qprogram=qprogram)
             assert test_waveforms_q0.to_dict() == upload.call_args_list[0].kwargs["qpysequence"]._waveforms.to_dict()
@@ -788,9 +788,9 @@ class TestMethods:
             amplitude=1, phase=0.5, duration=200, frequency=1e9, pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
         )
         readout_pulse = Pulse(amplitude=1, phase=0.5, duration=1500, frequency=1e9, pulse_shape=Rectangular())
-        pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), port="drive_q0", port_delay=0)
+        pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), bus_alias="drive_line_q0_bus", delay=0)
         pulse_schedule.add_event(
-            PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), port="feedline_input", port_delay=0
+            PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), bus_alias="feedline_input_output_bus", delay=0
         )
         qblox_result = QbloxResult(qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1])
         with patch.object(Bus, "upload") as upload:
@@ -818,8 +818,8 @@ class TestMethods:
                 start_time=200,
                 qubit=0,
             ),
-            port="feedline_input",
-            port_delay=0,
+            bus_alias="feedline_input_output_bus",
+            delay=0,
         )
         qblox_result = QbloxResult(qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1])
         with patch.object(Bus, "upload"):

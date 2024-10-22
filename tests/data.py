@@ -55,7 +55,7 @@ class Galadriel:
             ],
             "M(1)": [
                 {
-                    "bus": "feedline_input_output_bus",
+                    "bus": "feedline_input_output_bus_1",
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -67,7 +67,7 @@ class Galadriel:
             ],
             "M(2)": [
                 {
-                    "bus": "feedline_input_output_bus_1",
+                    "bus": "feedline_input_output_bus_2",
                     "wait_time": 0,
                     "pulse": {
                         "amplitude": 1.0,
@@ -573,7 +573,8 @@ class Galadriel:
         {
             RUNCARD.ALIAS: "drive_line_q0_bus",
             RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
-            RUNCARD.CHANNELS: [0, None]
+            RUNCARD.CHANNELS: [0, None],
+            "distortions": [{"name": "lfilter", "a": [1.0, 0.0, 1.0], "auto_norm": True, "b": [0.5, 0.5], "norm_factor": 1.0}]
         },
         {
             RUNCARD.ALIAS: "drive_line_q1_bus",
@@ -586,13 +587,13 @@ class Galadriel:
             RUNCARD.CHANNELS: [0, None]
         },
         {
-            "alias": "feedline_input_output_bus_2",
-            RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_1"],
-            RUNCARD.CHANNELS: [1]
-        },
-        {
             "alias": "feedline_input_output_bus_1",
             RUNCARD.INSTRUMENTS: [f"{InstrumentName.QRMRF.value}"],
+            RUNCARD.CHANNELS: [0]
+        },
+        {
+            "alias": "feedline_input_output_bus_2",
+            RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_1"],
             RUNCARD.CHANNELS: [0]
         },
         {

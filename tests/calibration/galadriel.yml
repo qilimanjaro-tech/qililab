@@ -564,7 +564,7 @@ digital:
       qubits: [0]
       distortions: []
       delay: 0
-     drive_q0:
+    drive_q0:
       line: drive
       qubits: [0]
       distortions: []

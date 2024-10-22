@@ -15,13 +15,14 @@
 """Bus class."""
 
 import contextlib
-from dataclasses import InitVar, dataclass
+from dataclasses import InitVar, dataclass, field
 
 from qpysequence import Sequence as QpySequence
 
 from qililab.constants import RUNCARD
 from qililab.instruments import Instrument, Instruments, ParameterNotFound
 from qililab.instruments.qblox import QbloxQCM, QbloxQRM
+from qililab.pulse.pulse_distortion.pulse_distortion import PulseDistortion
 from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.result import Result
 from qililab.result.qprogram import MeasurementResult
@@ -56,6 +57,8 @@ class Bus:
         instruments: list[Instrument]
         channels: list[ChannelID | None]
         platform_instruments: InitVar[Instruments]
+        delay: int = 0
+        distortions: list[PulseDistortion] = field(default_factory=list)
 
         def __post_init__(self, platform_instruments: Instruments):  # type: ignore
             instruments = []
@@ -69,6 +72,11 @@ class Bus:
                     )
                 instruments.append(inst_class)
             self.instruments = instruments
+            self.distortions = [
+                PulseDistortion.from_dict(distortion)  # type: ignore[arg-type]
+                for distortion in self.distortions
+                if isinstance(distortion, dict)
+            ]
             super().__post_init__()
 
     settings: BusSettings
@@ -106,6 +114,15 @@ class Bus:
             int: settings.delay.
         """
         return self.settings.delay
+
+    @property
+    def distortions(self):
+        """Bus 'distortions' property.
+
+        Returns:
+            list[PulseDistortion]: settings.distortions.
+        """
+        return self.settings.distortions
 
     def __str__(self):
         """String representation of a bus. Prints a drawing of the bus elements."""
@@ -161,6 +178,8 @@ class Bus:
             value (int | float | str | bool): value to update
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
+        if parameter == Parameter.DELAY:
+            return self.settings.delay
         for instrument, instrument_channel in zip(self.instruments, self.channels):
             with contextlib.suppress(ParameterNotFound):
                 if channel_id is not None and channel_id == instrument_channel:

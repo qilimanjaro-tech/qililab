@@ -33,8 +33,8 @@ def test_buses_get_existing(buses, mock_buses):
     assert bus == mock_buses[0]
 
 def test_buses_get_non_existing(buses):
-    with pytest.raises(ValueError):
-        buses.get("non_existent_bus")
+    bus = buses.get("non_existent_bus")
+    assert bus is None
 
 def test_buses_len(buses):
     assert len(buses) == 2
