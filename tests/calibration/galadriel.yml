@@ -14,7 +14,6 @@ instruments:
         offset_q: 0
         threshold: 0.5
         threshold_rotation: 0.0
-        num_bins: 1
         intermediate_frequency: 10.e+06
         gain_imbalance: 1.
         phase_imbalance: 0
@@ -37,7 +36,6 @@ instruments:
         offset_q: 0
         threshold: 0.5
         threshold_rotation: 0.0
-        num_bins: 1
         intermediate_frequency: 20.e+06
         gain_imbalance: 1.
         phase_imbalance: 0
@@ -60,7 +58,6 @@ instruments:
         offset_q: 0
         threshold: 0.5
         threshold_rotation: 0.0
-        num_bins: 1
         intermediate_frequency: 30.e+06
         gain_imbalance: 1.
         phase_imbalance: 0
@@ -83,7 +80,6 @@ instruments:
         offset_q: 0
         threshold: 0.5
         threshold_rotation: 0.0
-        num_bins: 1
         intermediate_frequency: 40.e+06
         gain_imbalance: 1.
         phase_imbalance: 0
@@ -106,7 +102,6 @@ instruments:
         offset_q: 0
         threshold: 0.5
         threshold_rotation: 0.0
-        num_bins: 1
         intermediate_frequency: 50.e+06
         gain_imbalance: 1.
         phase_imbalance: 0
@@ -140,7 +135,6 @@ instruments:
         gain_q: 0.1
         offset_i: 0. # -0.012
         offset_q: 0.
-        num_bins: 1
         intermediate_frequency: 10.e+06
         gain_imbalance: 0.940
         phase_imbalance: 14.482
@@ -151,7 +145,6 @@ instruments:
         gain_q: 1
         offset_i: 0
         offset_q: 0
-        num_bins: 1
         intermediate_frequency: 20.e+06
         gain_imbalance: 0.5
         phase_imbalance: 0
@@ -175,7 +168,6 @@ instruments:
         gain_q: 0.1
         offset_i: 0.
         offset_q: 0.
-        num_bins: 1
         intermediate_frequency: 10.e+06
         gain_imbalance: .5
         phase_imbalance: 0.
@@ -199,7 +191,6 @@ instruments:
         gain_q: 0.1
         offset_i: 0.
         offset_q: 0.
-        num_bins: 1
         intermediate_frequency: 10.e+06
         gain_imbalance: .5
         phase_imbalance: 0.
@@ -210,7 +201,6 @@ instruments:
         gain_q: 1
         offset_i: 0
         offset_q: 0
-        num_bins: 1
         intermediate_frequency: 20.e+06
         gain_imbalance: 0.5
         phase_imbalance: 0
@@ -225,7 +215,6 @@ instruments:
         gain_q: 0.1
         offset_i: 0.
         offset_q: 0.
-        num_bins: 1
         intermediate_frequency: 10.e+06
         gain_imbalance: .5
         phase_imbalance: 0.
@@ -236,7 +225,6 @@ instruments:
         gain_q: 1
         offset_i: 0
         offset_q: 0
-        num_bins: 1
         intermediate_frequency: 0.
         gain_imbalance: 0.5
         phase_imbalance: 0
@@ -247,7 +235,6 @@ instruments:
         gain_q: 1
         offset_i: 0
         offset_q: 0
-        num_bins: 1
         intermediate_frequency: 0.
         gain_imbalance: 0.5
         phase_imbalance: 0
@@ -258,7 +245,6 @@ instruments:
         gain_q: 1
         offset_i: 0
         offset_q: 0
-        num_bins: 1
         intermediate_frequency: 0.
         gain_imbalance: 0.5
         phase_imbalance: 0
@@ -273,7 +259,6 @@ instruments:
         gain_q: 1.
         offset_i: 0.
         offset_q: 0.
-        num_bins: 1
         intermediate_frequency: 10.e+06
         gain_imbalance: .5
         phase_imbalance: 0.
@@ -544,71 +529,85 @@ digital:
       qubits: [0]
       distortions: []
       delay: 0
+
     readout_q1:
       line: readout
       qubits: [0]
       distortions: []
       delay: 0
+
     readout_q2:
       line: readout
       qubits: [0]
       distortions: []
       delay: 0
+
     readout_q3:
       line: readout
       qubits: [0]
       distortions: []
       delay: 0
+
     readout_q4:
       line: readout
       qubits: [0]
       distortions: []
       delay: 0
+
     drive_q0:
       line: drive
       qubits: [0]
       distortions: []
       delay: 0
+
     drive_q1:
       line: drive
       qubits: [1]
       distortions: []
       delay: 0
+
     drive_q2:
       line: drive
       qubits: [2]
       distortions: []
       delay: 0
+
     drive_q3:
       line: drive
       qubits: [3]
       distortions: []
       delay: 0
+
     drive_q4:
       line: drive
       qubits: [4]
       distortions: []
       delay: 0
+
     flux_q0:
       line: flux
       qubits: [0]
       distortions: []
       delay: 0
+
     flux_q1:
       line: flux
       qubits: [1]
       distortions: []
       delay: 0
+
     flux_q2:
       line: flux
       qubits: [2]
       distortions: []
       delay: 0
+
     flux_q3:
       line: flux
       qubits: [3]
       distortions: []
       delay: 0
+
     flux_q4:
       line: flux
       qubits: [4]
