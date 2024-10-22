@@ -448,6 +448,8 @@ class TestQuantumMachinesCluster:
 
         qmm = request.getfixturevalue(qmm_name)
         assert isinstance(qmm.settings, Settings)
+        assert qmm.is_awg()
+        assert qmm.is_adc()
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")

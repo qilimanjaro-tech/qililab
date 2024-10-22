@@ -10,6 +10,7 @@ import pytest
 
 from qililab.constants import GATE_ALIAS_REGEX
 from qililab.settings import Runcard, DigitalCompilationSettings, AnalogCompilationSettings
+from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from qililab.settings.digital.gate_event_settings import GateEventSettings
 from qililab.typings import Parameter
 from tests.data import Galadriel
@@ -23,6 +24,10 @@ def fixture_runcard():
 @pytest.fixture(name="digital")
 def fixture_digital_compilation_settings(runcard: Runcard):
     return runcard.digital
+
+@pytest.fixture(name="analog")
+def fixture_analog_compilation_settings(runcard: Runcard):
+    return runcard.analog
 
 
 class TestRuncard:
@@ -40,10 +45,10 @@ class TestRuncard:
         assert isinstance(runcard.analog, AnalogCompilationSettings)
 
 
-class TestGatesSettings:
-    """Unit tests for the Runcard.GatesSettings class."""
+class TestDigitalCompilationSettings:
+    """Unit tests for the DigitalCompilationSettings class."""
 
-    def test_attributes(self, digital):
+    def test_attributes(self, digital: DigitalCompilationSettings):
         """Test that the Runcard.GatesSettings dataclass contains the right attributes."""
         assert isinstance(digital.delay_before_readout, int)
         assert isinstance(digital.gates, dict)
@@ -53,7 +58,7 @@ class TestGatesSettings:
             for event in settings
         )
 
-    def test_get_parameter_fails(self, digital):
+    def test_get_parameter_fails(self, digital: DigitalCompilationSettings):
         with pytest.raises(ValueError, match="Could not find gate alias in gate settings."):
             digital.get_parameter(alias="alias", parameter=Parameter.DURATION)
 
@@ -89,18 +94,18 @@ class TestGatesSettings:
         with pytest.raises(KeyError, match=error_string):
             digital.get_gate(name, qubits=qubits)
 
-    def test_gate_names(self, digital):
+    def test_gate_names(self, digital: DigitalCompilationSettings):
         """Test the ``gate_names`` method of the Runcard.GatesSettings class."""
         expected_names = list(digital.gates.keys())
         assert digital.gate_names == expected_names
 
-    def test_set_platform_parameters(self, digital):
+    def test_set_platform_parameters(self, digital: DigitalCompilationSettings):
         """Test that with ``set_parameter`` we can change all settings of the platform."""
         digital.set_parameter(alias=None, parameter=Parameter.DELAY_BEFORE_READOUT, value=1234)
         assert digital.delay_before_readout == 1234
 
     @pytest.mark.parametrize("alias", ["X(0)", "M(0)"])
-    def test_set_gate_parameters(self, alias: str, digital):
+    def test_set_gate_parameters(self, alias: str, digital: DigitalCompilationSettings):
         """Test that with ``set_parameter`` we can change all settings of the platform's gates."""
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
         assert regex_match is not None
@@ -123,3 +128,10 @@ class TestGatesSettings:
         """Test that with ``set_parameter`` will raise error when alias has incorrect format"""
         with pytest.raises(ValueError, match=re.escape(f"Alias {alias} has incorrect format")):
             digital.set_parameter(alias=alias, parameter=Parameter.DURATION, value=1234)
+
+class TestAnalogCompilationSettings:
+    """Unit tests for the DigitalCompilationSettings class."""
+
+    def test_attributes(self, analog: AnalogCompilationSettings):
+        assert isinstance(analog.flux_control_topology, list)
+        assert all(isinstance(topology, FluxControlTopology) for topology in analog.flux_control_topology)

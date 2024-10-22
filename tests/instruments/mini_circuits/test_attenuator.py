@@ -43,6 +43,16 @@ class TestAttenuator:
         with pytest.raises(ParameterNotFound):
             attenuator.set_parameter(Parameter.BUS_FREQUENCY, 42.0)
 
+    def test_get_parameter_attenuation(self, attenuator):
+        # Test setting attenuation parameter
+        attenuator.get_parameter(Parameter.ATTENUATION)
+        assert attenuator.attenuation == 10.0
+
+    def test_get_parameter_invalid(self, attenuator):
+        # Test setting an invalid parameter
+        with pytest.raises(ParameterNotFound):
+            attenuator.get_parameter(Parameter.BUS_FREQUENCY)
+
     def test_initial_setup(self, attenuator):
         # Test initial setup of the attenuator
         attenuator.initial_setup()
