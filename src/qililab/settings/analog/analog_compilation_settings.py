@@ -26,7 +26,7 @@ class AnalogCompilationSettings:
     def __post_init__(self):
         """Build the Gates Settings based on the master settings."""
         self.flux_control_topology = [
-            self.FluxControlTopology(**flux_control) if isinstance(flux_control, dict) else flux_control
+            FluxControlTopology(**flux_control) if isinstance(flux_control, dict) else flux_control
             for flux_control in self.flux_control_topology
         ]
 

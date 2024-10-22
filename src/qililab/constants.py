@@ -58,6 +58,8 @@ class RUNCARD:
     DELAY = "delay"
     FLUX_CONTROL_TOPOLOGY = "flux_control_topology"
     CHANNELS = "channels"
+    DIGITAL = "digital"
+    ANALOG = "analog"
 
 
 class PLATFORM:

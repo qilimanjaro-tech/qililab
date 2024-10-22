@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 
 from qililab.pulse.pulse_distortion import PulseDistortion
 from qililab.typings.enums import Line
@@ -64,3 +64,6 @@ class DigitalCompilationBusSettings:
         """
         if len(self.weights_i) != len(self.weights_q):
             raise IndexError("The length of weights_i and weights_q must be equal.")
+
+    def to_dict(self):
+        return asdict(self) | {"distortions": [distortion.to_dict() for distortion in self.distortions]}

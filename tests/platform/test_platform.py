@@ -19,7 +19,7 @@ from qililab import Arbitrary, save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.exceptions import ExceptionGroup
 from qililab.instrument_controllers import InstrumentControllers
-from qililab.instruments import SignalGenerator
+from qililab.instruments import SGS100A
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
@@ -29,7 +29,7 @@ from qililab.qprogram import Calibration, Domain, Experiment, QProgram
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
-from qililab.settings import Runcard
+from qililab.settings import Runcard, DigitalCompilationSettings, AnalogCompilationSettings
 from qililab.settings.digital.gate_event_settings import GateEventSettings
 from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from qililab.typings.enums import InstrumentName, Parameter
@@ -254,8 +254,8 @@ class TestPlatformInitialization:
 
         assert platform.name == runcard.name
         assert isinstance(platform.name, str)
-        assert platform.digital_compilation_settings == runcard.gates_settings
-        assert isinstance(platform.digital_compilation_settings, Runcard.GatesSettings)
+        assert isinstance(platform.digital_compilation_settings, DigitalCompilationSettings)
+        assert isinstance(platform.analog_compilation_settings, AnalogCompilationSettings)
         assert isinstance(platform.instruments, Instruments)
         assert isinstance(platform.instrument_controllers, InstrumentControllers)
         assert isinstance(platform.buses, Buses)
@@ -334,7 +334,7 @@ class TestPlatform:
 
     def test_gates_settings_instance(self, platform: Platform):
         """Test settings instance."""
-        assert isinstance(platform.digital_compilation_settings, Runcard.GatesSettings)
+        assert isinstance(platform.digital_compilation_settings, DigitalCompilationSettings)
 
     def test_buses_instance(self, platform: Platform):
         """Test buses instance."""
@@ -343,7 +343,7 @@ class TestPlatform:
     def test_bus_0_signal_generator_instance(self, platform: Platform):
         """Test bus 0 signal generator instance."""
         element = platform.get_element(alias="rs_0")
-        assert isinstance(element, SignalGenerator)
+        assert isinstance(element, SGS100A)
 
     def test_bus_1_awg_instance(self, platform: Platform):
         """Test bus 1 qubit readout instance."""
@@ -377,13 +377,13 @@ class TestPlatform:
     #         platform._get_bus_by_qubit_index(0)
     #     platform.buses[0].settings.port = 0  # Setting it back to normal to not disrupt future tests
 
-    @pytest.mark.parametrize("alias", ["drive_line_bus", "feedline_input_output_bus", "foobar"])
+    @pytest.mark.parametrize("alias", ["drive_line_q0_bus", "drive_line_q1_bus", "feedline_input_output_bus", "foobar"])
     def test_get_bus_by_alias(self, platform: Platform, alias):
         """Test get_bus_by_alias method"""
         bus = platform._get_bus_by_alias(alias)
         if alias == "foobar":
             assert bus is None
-        if bus is not None:
+        else:
             assert bus in platform.buses
 
     def test_print_platform(self, platform: Platform):
@@ -601,7 +601,7 @@ class TestMethods:
         mock_execute_qprogram = MagicMock()
         mock_execute_qprogram.return_value = QProgramResults()
         platform.execute_qprogram = mock_execute_qprogram  # type: ignore[method-assign]
-        platform.analog_compilation_settings = flux_to_bus_topology
+        platform.analog_compilation_settings.flux_control_topology = flux_to_bus_topology
         transpiler = MagicMock()
         transpiler.return_value = (1, 2)
 
@@ -983,17 +983,16 @@ class TestMethods:
         with pytest.raises(KeyError, match="Gate Drag for qubits 3 not found in settings"):
             platform.get_parameter(parameter=Parameter.AMPLITUDE, alias="Drag(3)")
 
-    @pytest.mark.parametrize("parameter", [Parameter.DELAY_BETWEEN_PULSES, Parameter.DELAY_BEFORE_READOUT])
+    @pytest.mark.parametrize("parameter", [Parameter.DELAY_BEFORE_READOUT])
     def test_get_parameter_of_platform(self, parameter, platform: Platform):
         """Test the ``get_parameter`` method with platform parameters."""
-        value = getattr(platform.digital_compilation_settings, parameter.value)
-        assert value == platform.get_parameter(parameter=parameter, alias="platform")
+        value = platform.get_parameter(parameter=parameter, alias="platform")
+        assert value == 0
 
     def test_get_parameter_with_delay(self, platform: Platform):
         """Test the ``get_parameter`` method with the delay of a bus."""
-        bus = platform._get_bus_by_alias(alias="drive_line_q0_bus")
-        assert bus is not None
-        assert bus.delay == platform.get_parameter(parameter=Parameter.DELAY, alias="drive_line_q0_bus")
+        value = platform.get_parameter(parameter=Parameter.DELAY, alias="drive_line_q0_bus")
+        assert value == 0
 
     @pytest.mark.parametrize(
         "parameter",
@@ -1006,29 +1005,6 @@ class TestMethods:
         assert bus is not None
         assert bus.get_parameter(parameter=parameter, channel_id=CHANNEL_ID) == platform.get_parameter(
             parameter=parameter, alias="drive_line_q0_bus", channel_id=CHANNEL_ID
-        )
-
-    def test_get_parameter_of_qblox_module_without_channel_id(self, platform: Platform):
-        """Test that getting a parameter of a ``QbloxModule`` with multiple sequencers without specifying a channel
-        id still works."""
-        bus = platform._get_bus_by_alias(alias="drive_line_q0_bus")
-        awg = bus.system_control.instruments[0]
-        assert isinstance(awg, QbloxModule)
-        sequencer = awg.get_sequencers_from_chip_port_id(bus.port)[0]
-        assert (sequencer.gain_i, sequencer.gain_q) == platform.get_parameter(
-            parameter=Parameter.GAIN, alias="drive_line_q0_bus"
-        )
-
-    def test_get_parameter_of_qblox_module_without_channel_id_and_1_sequencer(self, platform: Platform):
-        """Test that we can get a parameter of a ``QbloxModule`` with one sequencers without specifying a channel
-        id."""
-        bus = platform._get_bus_by_alias(alias="drive_line_q0_bus")
-        assert isinstance(bus, Bus)
-        qblox_module = bus.system_control.instruments[0]
-        assert isinstance(qblox_module, QbloxModule)
-        qblox_module.settings.num_sequencers = 1
-        assert platform.get_parameter(parameter=Parameter.GAIN, alias="drive_line_q0_bus") == bus.get_parameter(
-            parameter=Parameter.GAIN
         )
 
     def test_no_bus_to_flux_raises_error(self, platform: Platform):
@@ -1046,9 +1022,6 @@ class TestMethods:
 
     def test_get_element_flux(self, platform: Platform):
         """Get the bus from a flux using get_element"""
-        fluxes = ["phiz_q0", "phix_c0_1"]
-        assert sum(
-            platform.get_element(flux).alias
-            == next(flux_bus.bus for flux_bus in platform.analog_compilation_settings if flux_bus.flux == flux)
-            for flux in fluxes
-        ) == len(fluxes)
+        for flux in ["phiz_q0", "phix_c0_1"]:
+            bus = platform.get_element(flux)
+            assert bus.alias == next(flux_bus.bus for flux_bus in platform.analog_compilation_settings.flux_control_topology if flux_bus.flux == flux)

@@ -297,9 +297,6 @@ class Platform:
         self.name = runcard.name
         """Name of the platform (``str``) """
 
-        self.digital_compilation_settings = runcard.digital
-        """Gate settings and definitions (``dataclass``). These setting contain how to decompose gates into pulses."""
-
         self.instruments = Instruments(elements=self._load_instruments(instruments_dict=runcard.instruments))
         """All the instruments of the platform and their necessary settings (``dataclass``). Each individual instrument is contained in a list within the dataclass."""
 
@@ -312,6 +309,9 @@ class Platform:
             elements=[Bus(settings=asdict(bus), platform_instruments=self.instruments) for bus in runcard.buses]
         )
         """All the buses of the platform and their necessary settings (``dataclass``). Each individual bus is contained in a list within the dataclass."""
+
+        self.digital_compilation_settings = runcard.digital
+        """Gate settings and definitions (``dataclass``). These setting contain how to decompose gates into pulses."""
 
         self.analog_compilation_settings = runcard.analog
         """Flux to bus mapping for analog control"""
@@ -409,23 +409,23 @@ class Platform:
                 and f"{name}({qubits_str})" in self.digital_compilation_settings.gate_names
             ):
                 return self.digital_compilation_settings.get_gate(name=name, qubits=qubits)
-            regex_match = re.search(FLUX_CONTROL_REGEX, alias)
-            if regex_match is not None:
-                element_type = regex_match.lastgroup
-                element_shorthands = {"qubit": "q", "coupler": "c"}
-                flux = regex_match["flux"]
-                # TODO: support commuting the name of the coupler eg. c1_0 = c0_1
-                bus_alias = next(
-                    (
-                        element.bus
-                        for element in self.analog_compilation_settings.flux_control_topology  # type: ignore[union-attr]
-                        if self.analog_compilation_settings
-                        and element.flux == f"{flux}_{element_shorthands[element_type]}{regex_match[element_type]}"  # type: ignore[index]
-                    ),
-                    None,
-                )
-                if bus_alias is not None:
-                    return self.buses.get(alias=bus_alias)
+        regex_match = re.search(FLUX_CONTROL_REGEX, alias)
+        if regex_match is not None:
+            element_type = regex_match.lastgroup
+            element_shorthands = {"qubit": "q", "coupler": "c"}
+            flux = regex_match["flux"]
+            # TODO: support commuting the name of the coupler eg. c1_0 = c0_1
+            bus_alias = next(
+                (
+                    element.bus
+                    for element in self.analog_compilation_settings.flux_control_topology  # type: ignore[union-attr]
+                    if self.analog_compilation_settings
+                    and element.flux == f"{flux}_{element_shorthands[element_type]}{regex_match[element_type]}"  # type: ignore[index]
+                ),
+                None,
+            )
+            if bus_alias is not None:
+                return self.buses.get(alias=bus_alias)
 
         element = self.instruments.get_instrument(alias=alias)
         if element is None:
@@ -539,30 +539,21 @@ class Platform:
             dict: Dictionary of the serialized platform
         """
         name_dict = {RUNCARD.NAME: self.name}
-        gates_settings_dict = {
-            RUNCARD.GATES_SETTINGS: self.digital_compilation_settings.to_dict()
+        instrument_dict = {RUNCARD.INSTRUMENTS: self.instruments.to_dict()}
+        instrument_controllers_dict = {RUNCARD.INSTRUMENT_CONTROLLERS: self.instrument_controllers.to_dict()}
+        buses_dict = {RUNCARD.BUSES: self.buses.to_dict()}
+        digital_dict = {
+            RUNCARD.DIGITAL: self.digital_compilation_settings.to_dict()
             if self.digital_compilation_settings is not None
             else None
         }
-        buses_dict = {RUNCARD.BUSES: self.buses.to_dict()}
-        instrument_dict = {RUNCARD.INSTRUMENTS: self.instruments.to_dict()}
-        instrument_controllers_dict = {RUNCARD.INSTRUMENT_CONTROLLERS: self.instrument_controllers.to_dict()}
-        flux_control_topology_dict = {
-            RUNCARD.FLUX_CONTROL_TOPOLOGY: [
-                flux_control.to_dict()
-                for flux_control in self.analog_compilation_settings.flux_control_topology
-                if self.analog_compilation_settings
-            ]
+        analog_dict = {
+            RUNCARD.ANALOG: self.analog_compilation_settings.to_dict()
+            if self.analog_compilation_settings is not None
+            else None
         }
 
-        return (
-            name_dict
-            | gates_settings_dict
-            | buses_dict
-            | instrument_dict
-            | instrument_controllers_dict
-            | flux_control_topology_dict
-        )
+        return name_dict | instrument_dict | instrument_controllers_dict | buses_dict | digital_dict | analog_dict
 
     def __str__(self) -> str:
         """String representation of the platform.
@@ -654,9 +645,7 @@ class Platform:
         )
         annealing_program.transpile(transpiler)
         crosstalk_matrix = calibration.crosstalk_matrix.inverse() if calibration.crosstalk_matrix is not None else None
-        annealing_waveforms = annealing_program.get_waveforms(
-            crosstalk_matrix=crosstalk_matrix, minimum_clock_time=self.digital_compilation_settings.minimum_clock_time
-        )
+        annealing_waveforms = annealing_program.get_waveforms(crosstalk_matrix=crosstalk_matrix, minimum_clock_time=4)
 
         qp_annealing = QProgram()
         shots_variable = qp_annealing.variable("num_shots", Domain.Scalar, int)
@@ -1064,7 +1053,7 @@ class Platform:
             if isinstance(instrument, QbloxModule)
         }
         compiler = PulseQbloxCompiler(
-            digital_compilation_settings=self.digital_compilation_settings,
+            buses=self.digital_compilation_settings.buses,
             bus_to_module_and_sequencer_mapping=bus_to_module_and_sequencer_mapping,
         )
         return compiler.compile(

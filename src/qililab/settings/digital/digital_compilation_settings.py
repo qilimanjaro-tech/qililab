@@ -47,7 +47,9 @@ class DigitalCompilationSettings:
                 data = [remove_none_values(item) for item in data if item is not None]
             return data
 
-        return remove_none_values(data=asdict(self, dict_factory=dict_factory))
+        return asdict(self, dict_factory=dict_factory) | {
+            "buses": {bus: bus_settings.to_dict() for bus, bus_settings in self.buses.items()}
+        }
 
     def get_gate(self, name: str, qubits: int | tuple[int, int] | tuple[int]):
         """Get gates settings from runcard for a given gate name and qubits.
@@ -100,9 +102,9 @@ class DigitalCompilationSettings:
             channel_id (int | None, optional): Channel id. Defaults to None.
             alias (str): String which specifies where the parameter can be found.
         """
-        # if alias is None or alias == "platform":
-        #     super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
-        #     return
+        if parameter == Parameter.DELAY_BEFORE_READOUT:
+            self.delay_before_readout = int(value)
+            return
         if parameter == Parameter.DELAY:
             if alias not in self.buses:
                 raise ValueError(f"Could not find bus {alias} in gate settings.")
@@ -128,6 +130,8 @@ class DigitalCompilationSettings:
         """
         # if alias is None or alias == "platform":
         #     return super().get_parameter(parameter=parameter, channel_id=channel_id)
+        if parameter == Parameter.DELAY_BEFORE_READOUT:
+            return self.delay_before_readout
         if parameter == Parameter.DELAY:
             if alias not in self.buses:
                 raise ValueError(f"Could not find bus {alias} in gate settings.")

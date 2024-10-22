@@ -46,12 +46,7 @@ class Buses:
         Args:
             bus_alias (str): Alias of the bus we want to get.
         """
-        bus = next((bus for bus in self.elements if bus.alias == alias), None)
-
-        if bus is None:
-            raise ValueError(f"Bus {alias} not found.")
-
-        return bus
+        return next((bus for bus in self.elements if bus.alias == alias), None)
 
     def __iter__(self):
         """Redirect __iter__ magic method to iterate over buses."""
