@@ -15,7 +15,7 @@
 """Qblox module class"""
 
 from dataclasses import dataclass
-from typing import ClassVar, Sequence, cast
+from typing import ClassVar, Sequence
 
 from qpysequence import Sequence as QpySequence
 
@@ -240,20 +240,6 @@ class QbloxModule(Instrument):
             return getattr(sequencer, parameter.value)
 
         raise ParameterNotFound(self, parameter)
-
-    def _set_num_bins(self, value: float | str | bool, sequencer_id: int):
-        """set num_bins for the specific channel
-
-        Args:
-            value (float | str | bool): value to update
-            sequencer_id (int): sequencer to update the value
-
-        Raises:
-            ValueError: when value type is not bool
-        """
-        if int(value) > self._MAX_BINS:
-            raise ValueError(f"Value {value} greater than maximum bins: {self._MAX_BINS}")
-        cast(QbloxSequencer, self._get_sequencer_by_id(id=sequencer_id)).num_bins = int(value)
 
     def _set_hardware_modulation(self, value: float | str | bool, sequencer_id: int):
         """set hardware modulation
