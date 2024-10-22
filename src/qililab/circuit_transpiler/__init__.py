@@ -30,8 +30,6 @@ Gate Decomposition
 
 .. autosummary::
     :toctree: api
-
-    ~~CircuitTranspiler
 """
 
 from .circuit_transpiler import CircuitTranspiler
