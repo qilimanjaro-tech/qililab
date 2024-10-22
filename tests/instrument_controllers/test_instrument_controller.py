@@ -86,3 +86,14 @@ class TestConnection:
         """Test that the reset attribute gets reflected when calling the controller to_dict method."""
         instr_cont = platform.instrument_controllers
         controllers_dict = instr_cont.to_dict()
+
+    def test_set_get_reset(self, platform: Platform):
+        assert platform.get_parameter(alias="rohde_schwarz_controller_0", parameter=Parameter.RESET) == True
+        platform.set_parameter(alias="rohde_schwarz_controller_0", parameter=Parameter.RESET, value=False)
+        assert platform.get_parameter(alias="rohde_schwarz_controller_0", parameter=Parameter.RESET) == False
+
+        with pytest.raises(ValueError):
+            _ = platform.get_parameter(alias="rohde_schwarz_controller_0", parameter=Parameter.BUS_FREQUENCY)
+
+        with pytest.raises(ValueError):
+            _ = platform.set_parameter(alias="rohde_schwarz_controller_0", parameter=Parameter.BUS_FREQUENCY, value=1e9)

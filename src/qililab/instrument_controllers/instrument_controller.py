@@ -163,11 +163,10 @@ class InstrumentController(BusElement, ABC):
         channel_id: ChannelID | None = None,
     ):
         """Updates the reset settings for the controller."""
-        if parameter is not Parameter.RESET:
-            raise ValueError("Reset is the only property that can be set for an Instrument Controller.")
-        if not isinstance(value, bool):
-            raise ValueError("Reset value Must be a boolean.")
-        self.settings.reset = value
+        if parameter == Parameter.RESET:
+            self.settings.reset = bool(value)
+            return
+        raise ValueError("Reset is the only property that can be set for an Instrument Controller.")
 
     def get_parameter(
         self,
@@ -175,9 +174,9 @@ class InstrumentController(BusElement, ABC):
         channel_id: ChannelID | None = None,
     ):
         """Updates the reset settings for the controller."""
-        if parameter is not Parameter.RESET:
-            raise ValueError("Reset is the only property that can be set for an Instrument Controller.")
-        return self.settings.reset
+        if parameter == Parameter.RESET:
+            return self.settings.reset
+        raise ValueError("Reset is the only property that can be set for an Instrument Controller.")
 
     @CheckConnected
     def turn_on(self):

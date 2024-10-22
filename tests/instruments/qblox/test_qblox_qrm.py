@@ -158,6 +158,7 @@ class TestQbloxQRM:
             (Parameter.ACQUISITION_TIMEOUT, 2),
             (Parameter.ACQUISITION_DELAY_TIME, 200),
             (Parameter.TIME_OF_FLIGHT, 80),
+            (Parameter.SCOPE_STORE_ENABLED, True)
         ]
     )
     def test_set_parameter(self, qrm: QbloxQRM, parameter, value):
@@ -255,6 +256,7 @@ class TestQbloxQRM:
             (Parameter.SEQUENCE_TIMEOUT, 5.0),
             (Parameter.ACQUISITION_TIMEOUT, 1.0),
             (Parameter.TIME_OF_FLIGHT, 120),
+            (Parameter.SCOPE_STORE_ENABLED, False)
         ]
     )
     def test_get_parameter(self, qrm: QbloxQRM, parameter, expected_value):

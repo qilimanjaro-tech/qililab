@@ -397,8 +397,6 @@ class Platform:
             tuple[object, list | None]: Element class together with the index of the bus where the element is located.
         """
         # TODO: fix docstring, bus is not returned in most cases
-        if alias == "platform":
-            return self.digital_compilation_settings
         regex_match = re.search(GATE_ALIAS_REGEX, alias.split("_")[0])
         if regex_match is not None:
             name = regex_match["gate"]

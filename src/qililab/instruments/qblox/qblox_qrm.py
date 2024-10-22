@@ -400,8 +400,6 @@ class QbloxQRM(QbloxModule):
         Raises:
             ValueError: when value type is not string
         """
-        if not isinstance(value, AcquireTriggerMode) and not isinstance(value, str):
-            raise ValueError(f"value must be a string or AcquireTriggerMode. Current type: {type(value)}")
         cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).scope_acquire_trigger_mode = AcquireTriggerMode(value)
         if self.is_device_active():
             self._set_device_acquisition_mode(mode=AcquireTriggerMode(value), sequencer_id=sequencer_id)
@@ -442,10 +440,7 @@ class QbloxQRM(QbloxModule):
         Raises:
             ValueError: when value type is not string
         """
-        if isinstance(value, (IntegrationMode, str)):
-            cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).integration_mode = IntegrationMode(value)
-        else:
-            raise ValueError(f"value must be a string or IntegrationMode. Current type: {type(value)}")
+        cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).integration_mode = IntegrationMode(value)
 
     def _set_sequence_timeout(self, value: int | float | str | bool, sequencer_id: int):
         """set sequence_timeout for the specific channel
