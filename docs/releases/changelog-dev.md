@@ -181,8 +181,6 @@
 
 [#820](https://github.com/qilimanjaro-tech/qililab/pull/820)
 
-This version is more concise and clearer while preserving all the details. Let me know if you'd like further adjustments!
-
 ### Deprecations / Removals
 
 ### Documentation
