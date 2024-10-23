@@ -363,6 +363,7 @@ buses:
 digital:
   minimum_clock_time: 4
   delay_before_readout: 4
+  topology: [[0, 2], [1, 2], [2, 3], [2, 4]]
   gates:
     M(0):
       - bus: readout_q0

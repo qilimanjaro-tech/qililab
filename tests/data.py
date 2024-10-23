@@ -12,10 +12,6 @@ from qililab.constants import (
     EXPERIMENT,
     INSTRUMENTCONTROLLER,
     PLATFORM,
-    PULSE,
-    PULSEBUSSCHEDULE,
-    PULSEEVENT,
-    PULSESCHEDULES,
     RUNCARD,
     AWGTypes,
 )
@@ -25,10 +21,7 @@ from qililab.typings.enums import (
     InstrumentControllerName,
     InstrumentName,
     IntegrationMode,
-    Parameter,
-    PulseShapeName,
-    ReferenceClock,
-    ResetMethod,
+    Parameter
 )
 
 
@@ -40,6 +33,7 @@ class Galadriel:
     digital_compilation_settings: dict[str, Any] = {
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
         PLATFORM.DELAY_BEFORE_READOUT: 0,
+        "topology": [[0, 2], [1, 2], [2, 3], [2, 4]],
         "gates": {
             "M(0)": [
                 {

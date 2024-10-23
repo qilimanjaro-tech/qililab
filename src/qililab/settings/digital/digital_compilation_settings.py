@@ -29,11 +29,13 @@ class DigitalCompilationSettings:
 
     minimum_clock_time: int
     delay_before_readout: int
+    topology: list[tuple[int, int]]
     gates: dict[str, list[GateEventSettings]]
     buses: dict[str, DigitalCompilationBusSettings]
 
     def __post_init__(self):
         """Build the Gates Settings based on the master settings."""
+        self.topology = [tuple(element) if isinstance(element, list) else element for element in self.topology]
         self.gates = {gate: [GateEventSettings(**event) for event in schedule] for gate, schedule in self.gates.items()}
         self.buses = {bus: DigitalCompilationBusSettings(**settings) for bus, settings in self.buses.items()}
 
