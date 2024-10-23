@@ -179,7 +179,7 @@ class CircuitTranspiler:
         Raises:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
         """
-        # Get the chip's connectivity # TODO: Add .topology attribute to DigitalCompilationSettings
+        # Get the chip's connectivity
         topology = nx.Graph(coupling_map if coupling_map is not None else self.digital_compilation_settings.topology)
 
         circuit_router = CircuitRouter(topology, placer, router)

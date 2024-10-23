@@ -14,6 +14,8 @@
 
 """CircuitRouter class"""
 
+import contextlib
+
 import networkx as nx
 from qibo.models import Circuit
 from qibo.transpiler.optimizer import Preprocessing
@@ -168,8 +170,9 @@ class CircuitRouter:
             return router
 
         # If the router is a Router subclass, we instantiate it:
-        if issubclass(router, Router):
-            return router(connectivity, **kwargs)
+        with contextlib.suppress(Exception):
+            if issubclass(router, Router):
+                return router(connectivity, **kwargs)
 
         raise ValueError("Router must be a `Router` instance, subclass or tuple(subclass, kwargs).")
 
@@ -209,8 +212,9 @@ class CircuitRouter:
             return placer
 
         # If the placer is a Placer subclass, we instantiate it:
-        if issubclass(placer, Placer):
-            return placer(connectivity, **kwargs)
+        with contextlib.suppress(Exception):
+            if issubclass(placer, Placer):
+                return placer(connectivity, **kwargs)
 
         raise ValueError("Placer must be a `Placer` instance, subclass or tuple(subclass, kwargs).")
 
