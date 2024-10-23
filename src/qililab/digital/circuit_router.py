@@ -113,16 +113,36 @@ class CircuitRouter:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
         """
         # Transpilation pipeline passes:
-        custom_passes = Passes([self.preprocessing, self.placer, self.router], self.connectivity)
+        routing_pipeline = Passes([self.preprocessing, self.placer, self.router], self.connectivity)
         # 1) Preprocessing adds qubits in the original circuit to match the number of qubits in the chip.
         # 2) Routing stage, where the final_layout and swaps will be created.
         # 3) Layout stage, where the initial_layout will be created.
 
-        # We repeat the transpilation pipeline a few times, to keep the best stochastic result:
+        # Call the routing pipeline on the circuit, multiple times, and keep the best stochastic result:
+        best_transp_circ, best_final_layout, least_swaps = self.iterate_routing(routing_pipeline, circuit, iterations)
+        logger.info(f"The best found routing, has {least_swaps} swaps.")
+
+        return best_transp_circ, best_final_layout
+
+    @staticmethod
+    def iterate_routing(routing_pipeline, circuit: Circuit, iterations: int = 10) -> tuple[Circuit, dict, int]:
+        """Iterates the routing pipeline, to keep the best stochastic result.
+
+        Args:
+            routing_pipeline (Passes): Transpilation pipeline passes.
+            circuit (Circuit): Circuit to route.
+            iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
+
+        Returns:
+            tuple[Circuit, dict, int]: Best transpiled circuit, best final layout and least swaps.
+        """
+        # We repeat the routing pipeline a few times, to keep the best stochastic result:
         least_swaps: int | None = None
         for _ in range(iterations):
             # Call the routing pipeline on the circuit:
-            transpiled_circ, final_layout = custom_passes(circuit)
+            transpiled_circ, final_layout = routing_pipeline(circuit)
+
+            # Get the number of swaps in the circuits:
             n_swaps = len(transpiled_circ.gates_of_type(gates.SWAP))
 
             # Checking which is the best transpilation:
@@ -134,9 +154,7 @@ class CircuitRouter:
             if n_swaps == 0:
                 break
 
-        logger.info(f"The best found routing, has {least_swaps} swaps.")
-
-        return best_transpiled_circ, best_final_layout
+        return best_transpiled_circ, best_final_layout, least_swaps
 
     @staticmethod
     def _if_star_algorithms_for_nonstar_connectivity(connectivity: nx.Graph, placer: Placer, router: Router) -> bool:
