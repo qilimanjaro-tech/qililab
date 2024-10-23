@@ -2,8 +2,8 @@ import numpy as np
 import pytest
 from qibo import gates
 
-from qililab.circuit_transpiler.gate_decompositions import GateDecompositions, native_gates, translate_gates
-from qililab.circuit_transpiler.native_gates import Drag, Wait
+from qililab.digital.gate_decompositions import GateDecompositions, native_gates, translate_gates
+from qililab.digital.native_gates import Drag, Wait
 
 
 @pytest.fixture(name="test_gates")

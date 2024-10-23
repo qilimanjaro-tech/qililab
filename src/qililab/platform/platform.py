@@ -33,9 +33,9 @@ from qm import generate_qua_script
 from ruamel.yaml import YAML
 
 from qililab.analog import AnnealingProgram
-from qililab.circuit_transpiler import CircuitTranspiler
 from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
+from qililab.digital import CircuitTranspiler
 from qililab.exceptions import ExceptionGroup
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
 from qililab.instrument_controllers.utils import InstrumentControllerFactory
@@ -975,7 +975,7 @@ class Platform:
         # FIXME: return result instead of results[0]
         return results[0]
 
-    def _order_result(self, result: Result, circuit: Circuit, final_layout: dict) -> Result:
+    def _order_result(self, result: Result, circuit: Circuit, final_layout: dict | None) -> Result:
         """Order the results of the execution as they are ordered in the input circuit.
 
         Finds the absolute order of each measurement for each qubit and its corresponding key in the
@@ -1013,7 +1013,8 @@ class Platform:
         for qblox_result in result.qblox_raw_results:
             measurement = qblox_result["measurement"]
             qubit = qblox_result["qubit"]
-            original_qubit = final_layout[f"q{qubit}"]  # TODO: Check if this works, or how you should do it :)
+            # TODO: Check if this works, or how you should do it :)
+            original_qubit = final_layout[f"q{qubit}"] if final_layout is not None else qubit
             results[order[original_qubit, measurement]] = qblox_result
 
         return QbloxResult(integration_lengths=result.integration_lengths, qblox_raw_results=results)
@@ -1026,7 +1027,7 @@ class Platform:
         num_bins: int,
         placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
         router: Router | type[Router] | tuple[type[Router], dict] | None = None,
-    ) -> tuple[dict[str, list[QpySequence]], dict]:
+    ) -> tuple[dict[str, list[QpySequence]], dict | None]:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
 
         If the ``program`` argument is a :class:`Circuit`, it will first be translated into a :class:`PulseSchedule` using the transpilation
@@ -1062,7 +1063,7 @@ class Platform:
 
         elif isinstance(program, PulseSchedule):
             pulse_schedule = program
-            final_layout = {f"q{qubit}": qubit for qubit in self.chip.qubits}
+            final_layout = None
 
         else:
             raise ValueError(

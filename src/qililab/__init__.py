@@ -28,7 +28,7 @@ from .utils.serialization import serialize, serialize_to, deserialize, deseriali
 from .waveforms import IQPair, Square, Gaussian, FlatTop, Arbitrary, DragCorrection, Waveform, Ramp, Chained
 
 # moving circuit_transpiler module imports here because it has instruments module dependencies so circular imports can be avoided
-from .circuit_transpiler import Drag, Wait
+from .digital import Drag, Wait
 from .analog import AnnealingProgram  # same as circuit transpiler, top modules should be imported at top
 
 

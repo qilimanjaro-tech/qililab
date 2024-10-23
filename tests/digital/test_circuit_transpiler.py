@@ -10,8 +10,8 @@ from qibo.backends import NumpyBackend
 from qibo.gates import CZ, M, X
 from qibo.models import Circuit
 
-from qililab.circuit_transpiler import CircuitTranspiler
-from qililab.circuit_transpiler.native_gates import Drag, Wait
+from qililab.digital import CircuitTranspiler
+from qililab.digital.native_gates import Drag, Wait
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Pulse, PulseEvent, PulseSchedule
 from qililab.pulse.pulse_shape import SNZ, Gaussian, Rectangular
@@ -456,7 +456,7 @@ def fixture_digital_compilation_settings() -> DigitalCompilationSettings:
             }
         }
     }
-    digital_settings = DigitalCompilationSettings(**digital_settings_dict)
+    digital_settings = DigitalCompilationSettings(**digital_settings_dict)  # type: ignore[arg-type]
     return digital_settings
 
 

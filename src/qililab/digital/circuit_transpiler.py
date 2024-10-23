@@ -24,9 +24,9 @@ from qibo.models import Circuit
 from qibo.transpiler.placer import Placer, StarConnectivityPlacer
 from qibo.transpiler.router import Router, StarConnectivityRouter
 
-from qililab.circuit_transpiler.circuit_router import CircuitRouter
 from qililab.config import logger
 from qililab.constants import RUNCARD
+from qililab.digital.circuit_router import CircuitRouter
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
