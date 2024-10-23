@@ -58,6 +58,7 @@ class CircuitTranspiler:
         circuits: list[Circuit],
         placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
         router: Router | type[Router] | tuple[type[Router], dict] | None = None,
+        routing_iterations: int = 10,
         optimize: bool = True,
     ) -> tuple[list[PulseSchedule], list[dict]]:
         """Transpiles a list of ``qibo.models.Circuit`` to a list of pulse schedules.
@@ -108,14 +109,18 @@ class CircuitTranspiler:
                 use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
             router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
                 use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
+            routing_iterations (int, optional): Number of times to repeat the routing pipeline, to get the best stochastic result. Defaults to 10.
             optimize (bool, optional): whether to optimize the transpilation. Defaults to True.
 
         Returns:
             list[PulseSchedule]: list of pulse schedules.
             list[dict]: list of the final layouts of the qubits, in each circuit.
         """
+
         # Routing stage;
-        routed_circuits, final_layouts = zip(*(self.route_circuit(circuit, placer, router) for circuit in circuits))
+        routed_circuits, final_layouts = zip(
+            *(self.route_circuit(circuit, placer, router, iterations=routing_iterations) for circuit in circuits)
+        )
         logger.info(f"Circuits final layouts: {final_layouts}")
 
         # Optimze qibo gates, cancellation stage:
@@ -140,6 +145,7 @@ class CircuitTranspiler:
         placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
         router: Router | type[Router] | tuple[type[Router], dict] | None = None,
         coupling_map: list[tuple[int, int]] | None = None,
+        iterations: int = 10,
     ) -> tuple[Circuit, dict]:
         """Routes the virtual/logical qubits of a circuit, to the chip's physical qubits.
 
@@ -187,6 +193,8 @@ class CircuitTranspiler:
                 use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
             router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
                 use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
+            iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
+
 
         Returns:
             Circuit: routed circuit.
@@ -195,12 +203,12 @@ class CircuitTranspiler:
         Raises:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
         """
-        # Get the chip's connectivity # TODO: Add .topology attribute to DigitalCompilationSettings
+        # Get the chip's connectivity
         topology = nx.Graph(coupling_map if coupling_map is not None else self.digital_compilation_settings.topology)
 
         circuit_router = CircuitRouter(topology, placer, router)
 
-        return circuit_router.route(circuit)
+        return circuit_router.route(circuit, iterations)
 
     @staticmethod
     def _if_star_algorithms_for_nonstar_connectivity(connectivity: nx.Graph, placer: Placer, router: Router) -> bool:

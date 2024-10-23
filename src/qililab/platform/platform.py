@@ -903,6 +903,7 @@ class Platform:
         queue: Queue | None = None,
         placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
         router: Router | type[Router] | tuple[type[Router], dict] | None = None,
+        routing_iterations: int = 10,
     ) -> Result | QbloxResult:
         """Compiles and executes a circuit or a pulse schedule, using the platform instruments.
 
@@ -921,6 +922,7 @@ class Platform:
                 use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
             router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
                 use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
+            routing_iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
 
         Returns:
             Result: Result obtained from the execution. This corresponds to a numpy array that depending on the
@@ -932,7 +934,9 @@ class Platform:
                 - Scope acquisition disabled: An array with dimension `(#sequencers, 2, #bins)`.
         """
         # Compile pulse schedule
-        programs, final_layout = self.compile(program, num_avg, repetition_duration, num_bins, placer, router)
+        programs, final_layout = self.compile(
+            program, num_avg, repetition_duration, num_bins, placer, router, routing_iterations
+        )
 
         # Upload pulse schedule
         for bus_alias in programs:
@@ -1027,6 +1031,7 @@ class Platform:
         num_bins: int,
         placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
         router: Router | type[Router] | tuple[type[Router], dict] | None = None,
+        routing_iterations: int = 10,
     ) -> tuple[dict[str, list[QpySequence]], dict | None]:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
 
@@ -1044,6 +1049,7 @@ class Platform:
                 use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
             router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
                 use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
+            routing_iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
 
         Returns:
             dict: Dictionary of compiled assembly programs. The key is the bus alias (``str``), and the value is the assembly compilation (``list``).
@@ -1058,7 +1064,9 @@ class Platform:
         if isinstance(program, Circuit):
             transpiler = CircuitTranspiler(digital_compilation_settings=self.digital_compilation_settings)
 
-            transpiled_circuits, final_layouts = transpiler.transpile_circuits([program], placer, router)
+            transpiled_circuits, final_layouts = transpiler.transpile_circuits(
+                [program], placer, router, routing_iterations
+            )
             pulse_schedule, final_layout = transpiled_circuits[0], final_layouts[0]
 
         elif isinstance(program, PulseSchedule):

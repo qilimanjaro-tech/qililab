@@ -30,6 +30,7 @@ def execute(
     nshots: int = 1,
     placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
     router: Router | type[Router] | tuple[type[Router], dict] | None = None,
+    routing_iterations: int = 10,
 ) -> Result | list[Result]:
     """Executes a Qibo circuit (or a list of circuits) with qililab and returns the results.
 
@@ -45,6 +46,7 @@ def execute(
             use`, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
         router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
             use,` with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
+        routing_iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
 
     Returns:
         Result | list[Result]: :class:`Result` class (or list of :class:`Result` classes) containing the results of the
@@ -87,7 +89,13 @@ def execute(
         results = [
             # Execute circuit
             platform.execute(
-                circuit, num_avg=1, repetition_duration=200_000, num_bins=nshots, placer=placer, router=router
+                circuit,
+                num_avg=1,
+                repetition_duration=200_000,
+                num_bins=nshots,
+                placer=placer,
+                router=router,
+                routing_iterations=routing_iterations,
             )
             for circuit in tqdm(program, total=len(program))
         ]

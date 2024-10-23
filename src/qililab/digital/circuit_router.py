@@ -14,8 +14,10 @@
 
 """CircuitRouter class"""
 
+import contextlib
+
 import networkx as nx
-from qibo.models import Circuit
+from qibo import Circuit, gates
 from qibo.transpiler.optimizer import Preprocessing
 from qibo.transpiler.pipeline import Passes
 from qibo.transpiler.placer import Placer, ReverseTraversal, StarConnectivityPlacer
@@ -59,7 +61,7 @@ class CircuitRouter:
         if self._if_star_algorithms_for_nonstar_connectivity(self.connectivity, self.placer, self.router):
             raise (ValueError("StarConnectivity Placer and Router can only be used with star topologies"))
 
-    def route(self, circuit: Circuit) -> tuple[Circuit, dict]:
+    def route(self, circuit: Circuit, iterations: int = 10) -> tuple[Circuit, dict]:
         """Routes the virtual/logical qubits of a circuit, to the chip's physical qubits.
 
         **Examples:**
@@ -101,6 +103,7 @@ class CircuitRouter:
 
         Args:
             circuit (Circuit): circuit to route.
+            iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
 
         Returns:
             Circuit: routed circuit.
@@ -110,15 +113,48 @@ class CircuitRouter:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
         """
         # Transpilation pipeline passes:
-        custom_passes = [self.preprocessing, self.placer, self.router]
+        routing_pipeline = Passes([self.preprocessing, self.placer, self.router], self.connectivity)
         # 1) Preprocessing adds qubits in the original circuit to match the number of qubits in the chip.
         # 2) Routing stage, where the final_layout and swaps will be created.
         # 3) Layout stage, where the initial_layout will be created.
 
-        # Call the transpiler pipeline on the circuit:
-        transpiled_circ, final_layout = Passes(custom_passes, self.connectivity)(circuit)
+        # Call the routing pipeline on the circuit, multiple times, and keep the best stochastic result:
+        best_transp_circ, best_final_layout, least_swaps = self.iterate_routing(routing_pipeline, circuit, iterations)
+        logger.info(f"The best found routing, has {least_swaps} swaps.")
 
-        return transpiled_circ, final_layout
+        return best_transp_circ, best_final_layout
+
+    @staticmethod
+    def iterate_routing(routing_pipeline, circuit: Circuit, iterations: int = 10) -> tuple[Circuit, dict, int]:
+        """Iterates the routing pipeline, to keep the best stochastic result.
+
+        Args:
+            routing_pipeline (Passes): Transpilation pipeline passes.
+            circuit (Circuit): Circuit to route.
+            iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
+
+        Returns:
+            tuple[Circuit, dict, int]: Best transpiled circuit, best final layout and least swaps.
+        """
+        # We repeat the routing pipeline a few times, to keep the best stochastic result:
+        least_swaps: int | None = None
+        for _ in range(iterations):
+            # Call the routing pipeline on the circuit:
+            transpiled_circ, final_layout = routing_pipeline(circuit)
+
+            # Get the number of swaps in the circuits:
+            n_swaps = len(transpiled_circ.gates_of_type(gates.SWAP))
+
+            # Checking which is the best transpilation:
+            if least_swaps is None or n_swaps < least_swaps:
+                least_swaps = n_swaps
+                best_transpiled_circ, best_final_layout = transpiled_circ, final_layout
+
+            # If a mapping needs no swaps, we are finished:
+            if n_swaps == 0:
+                break
+
+        return best_transpiled_circ, best_final_layout, least_swaps
 
     @staticmethod
     def _if_star_algorithms_for_nonstar_connectivity(connectivity: nx.Graph, placer: Placer, router: Router) -> bool:
@@ -168,10 +204,13 @@ class CircuitRouter:
             return router
 
         # If the router is a Router subclass, we instantiate it:
-        if issubclass(router, Router):
-            return router(connectivity, **kwargs)
+        with contextlib.suppress(TypeError, ValueError):
+            if issubclass(router, Router):
+                return router(connectivity, **kwargs)
 
-        raise ValueError("Router must be a `Router` instance, subclass or tuple(subclass, kwargs).")
+        raise TypeError(
+            f"`router` arg ({type(router)}), must be a `Router` instance, subclass or tuple(subclass, kwargs), in `execute()`, `compile()`, `transpile_circuit()` or `route_circuit()`."
+        )
 
     def _build_placer(
         self, placer: Placer | type[Placer] | tuple[type[Placer], dict], router: Router, connectivity: nx.graph
@@ -209,10 +248,13 @@ class CircuitRouter:
             return placer
 
         # If the placer is a Placer subclass, we instantiate it:
-        if issubclass(placer, Placer):
-            return placer(connectivity, **kwargs)
+        with contextlib.suppress(TypeError, ValueError):
+            if issubclass(placer, Placer):
+                return placer(connectivity, **kwargs)
 
-        raise ValueError("Placer must be a `Placer` instance, subclass or tuple(subclass, kwargs).")
+        raise TypeError(
+            f"`placer` arg ({type(placer)}), must be a `Placer` instance, subclass or tuple(subclass, kwargs), in `execute()`, `compile()`, `transpile_circuit()` or `route_circuit()`."
+        )
 
     @staticmethod
     def _check_ReverseTraversal_routing_connectivity(
@@ -254,9 +296,12 @@ class CircuitRouter:
             return placer, kwargs
 
         # If the routing algorithm is a Router subclass, we instantiate it, with the platform connectivity:
-        if issubclass(kwargs["routing_algorithm"], Router):
-            kwargs["routing_algorithm"] = kwargs["routing_algorithm"](connectivity)
-            return placer, kwargs
+        with contextlib.suppress(TypeError, ValueError):
+            if issubclass(kwargs["routing_algorithm"], Router):
+                kwargs["routing_algorithm"] = kwargs["routing_algorithm"](connectivity)
+                return placer, kwargs
 
         # If the routing algorithm is not a Router subclass or instance, we raise an error:
-        raise ValueError("routing_algorithm must be a Router subclass or instance (no need for instantiation)")
+        raise TypeError(
+            f"`routing_algorithm` `Placer` kwarg ({kwargs['routing_algorithm']}) must be a `Router` subclass or instance, in `execute()`, `compile()`, `transpile_circuit()` or `route_circuit()`."
+        )
