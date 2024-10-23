@@ -35,7 +35,7 @@ def get_pulse_bus_schedule(start_time):
     )
     pulse_event = PulseEvent(pulse=pulse, start_time=start_time)
 
-    return PulseBusSchedule(timeline=[pulse_event], port=0)
+    return PulseBusSchedule(bus_alias="readout_bus", timeline=[pulse_event])
 
 
 expected_program_str_0 = """

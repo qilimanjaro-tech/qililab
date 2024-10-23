@@ -13,10 +13,11 @@
 # limitations under the License.
 
 """Qblox QCM class"""
+
 from dataclasses import dataclass
 
 from qililab.instruments.qblox.qblox_module import QbloxModule
-from qililab.instruments.utils.instrument_factory import InstrumentFactory
+from qililab.instruments.utils import InstrumentFactory
 from qililab.typings.enums import InstrumentName
 
 
@@ -35,3 +36,11 @@ class QbloxQCM(QbloxModule):
         """Contains the settings of a specific pulsar."""
 
     settings: QbloxQCMSettings
+
+    def is_awg(self) -> bool:
+        """Returns True if instrument is an AWG."""
+        return True
+
+    def is_adc(self) -> bool:
+        """Returns True if instrument is an ADC."""
+        return False

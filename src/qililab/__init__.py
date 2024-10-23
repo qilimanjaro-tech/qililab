@@ -22,9 +22,8 @@ from .config import __version__, logger
 from .data_management import build_platform, load_results, save_platform, save_results
 from .execute_circuit import execute
 from .qprogram import Calibration, CrosstalkMatrix, Domain, QbloxCompiler, QProgram, QuantumMachinesCompiler, Experiment
-from .result import ExperimentResults, Results, stream_results
+from .result import ExperimentResults, stream_results
 from .typings import Parameter
-from .utils import Loop
 from .utils.serialization import serialize, serialize_to, deserialize, deserialize_from
 from .waveforms import IQPair, Square, Gaussian, FlatTop, Arbitrary, DragCorrection, Waveform, Ramp, Chained
 
@@ -47,13 +46,11 @@ __all__ = [
     "FlatTop",
     "Gaussian",
     "IQPair",
-    "Loop",
     "Parameter",
     "QProgram",
     "QbloxCompiler",
     "QuantumMachinesCompiler",
     "Ramp",
-    "Results",
     "Square",
     "Wait",
     "Waveform",

@@ -9,8 +9,6 @@ They contain all the laboratory information, settings and parameters, concretely
 
 - Gates transpilation
 
-- :class:`.Chip`
-
 - Instruments
 
 - Buses

@@ -5,67 +5,45 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from qililab.instrument_controllers.yokogawa.gs200_controller import GS200Controller
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.yokogawa.gs200 import GS200
-from qililab.platform import Platform
 from qililab.typings.enums import Parameter, SourceMode
-from tests.data import SauronYokogawa
-from tests.test_utils import build_platform
-
-
-@pytest.fixture(name="platform")
-def fixture_platform() -> Platform:
-    """Return Platform object."""
-    return build_platform(runcard=SauronYokogawa.runcard)
-
-
-@pytest.fixture(name="yokogawa_gs200_current_controller")
-def fixture_yokogawa_gs200_current_controller(platform: Platform):
-    """Return an instance of GS200 controller class"""
-    settings = copy.deepcopy(SauronYokogawa.yokogawa_gs200_current_controller)
-    settings.pop("name")
-    return GS200Controller(settings=settings, loaded_instruments=platform.instruments)
-
-
-@pytest.fixture(name="yokogawa_gs200_voltage_controller")
-def fixture_yokogawa_gs200_voltage_controller(platform: Platform):
-    """Return an instance of GS200 controller class"""
-    settings = copy.deepcopy(SauronYokogawa.yokogawa_gs200_voltage_controller)
-    settings.pop("name")
-    return GS200Controller(settings=settings, loaded_instruments=platform.instruments)
 
 
 @pytest.fixture(name="yokogawa_gs200")
-@patch("qililab.instrument_controllers.yokogawa.gs200_controller.YokogawaGS200", autospec=True)
-def fixture_yokogawa_gs200(mock_rs: MagicMock, yokogawa_gs200_current_controller: GS200Controller):
+def fixture_yokogawa_gs200():
     """Return connected instance of GS200 class"""
-    # add dynamically created attributes
-    mock_instance = mock_rs.return_value
-    mock_instance.mock_add_spec(["current", "voltage", "source_mode", "current_range", "voltage_range"])
-    yokogawa_gs200_current_controller.connect()
-    return yokogawa_gs200_current_controller.modules[0]
-
-
-@pytest.fixture(name="yokogawa_gs200_no_connected")
-@patch("qililab.instrument_controllers.yokogawa.gs200_controller.YokogawaGS200", autospec=True)
-def fixture_yokogawa_gs200_no_connected(mock_rs: MagicMock, yokogawa_gs200_current_controller: GS200Controller):
-    """Return connected instance of GS200 class"""
-    # add dynamically created attributes
-    mock_instance = mock_rs.return_value
-    mock_instance.mock_add_spec(["current", "voltage", "source_mode", "current_range", "voltage_range"])
-    return yokogawa_gs200_current_controller.modules[0]
+    yokogawa_gs200_current = GS200({
+        "alias": "yokogawa_current",
+        Parameter.SOURCE_MODE.value: "current",
+        Parameter.CURRENT.value: [0.5],
+        Parameter.VOLTAGE.value: [0.0],
+        Parameter.SPAN.value: ["200mA"],
+        Parameter.RAMPING_ENABLED.value: [True],
+        Parameter.RAMPING_RATE.value: [0.01],
+        "dacs": [0],
+    })
+    yokogawa_gs200_current.device = MagicMock()
+    yokogawa_gs200_current.device.mock_add_spec(["current", "voltage", "source_mode", "current_range", "voltage_range", "ramp_current", "ramp_voltage", "on", "off"])
+    return yokogawa_gs200_current
 
 
 @pytest.fixture(name="yokogawa_gs200_voltage")
-@patch("qililab.instrument_controllers.yokogawa.gs200_controller.YokogawaGS200", autospec=True)
-def fixture_yokogawa_gs200_voltage(mock_rs: MagicMock, yokogawa_gs200_voltage_controller: GS200Controller):
+def fixture_yokogawa_gs200_voltage():
     """Return connected instance of GS200 class"""
-    # add dynamically created attributes
-    mock_instance = mock_rs.return_value
-    mock_instance.mock_add_spec(["current", "voltage", "source_mode", "current_range", "voltage_range"])
-    yokogawa_gs200_voltage_controller.connect()
-    return yokogawa_gs200_voltage_controller.modules[0]
+    yokogawa_gs200_voltage = GS200({
+        "alias": "yokogawa_current",
+        Parameter.SOURCE_MODE.value: "voltage",
+        Parameter.CURRENT.value: [0.0],
+        Parameter.VOLTAGE.value: [0.5],
+        Parameter.SPAN.value: ["1V"],
+        Parameter.RAMPING_ENABLED.value: [True],
+        Parameter.RAMPING_RATE.value: [0.01],
+        "dacs": [0],
+    })
+    yokogawa_gs200_voltage.device = MagicMock()
+    yokogawa_gs200_voltage.device.mock_add_spec(["current", "voltage", "source_mode", "current_range", "voltage_range", "ramp_current", "ramp_voltage", "on", "off"])
+    return yokogawa_gs200_voltage
 
 
 class TestYokogawaGS200:
@@ -86,29 +64,27 @@ class TestYokogawaGS200:
             (Parameter.SPAN, "100mA"),
         ],
     )
-    def test_setup_method(self, parameter: Parameter, value, yokogawa_gs200_no_connected: GS200, yokogawa_gs200: GS200):
-        """Test the setup method with float value"""
-        assert isinstance(parameter, Parameter)
-        for yokogawa_gs200 in [yokogawa_gs200, yokogawa_gs200_no_connected]:
-            yokogawa_gs200.setup(parameter, value)
-            if parameter == Parameter.SOURCE_MODE:
-                assert yokogawa_gs200.source_mode == SourceMode(value)
-            if parameter == Parameter.CURRENT:
-                assert yokogawa_gs200.current == value
-            if parameter == Parameter.VOLTAGE:
-                assert yokogawa_gs200.voltage == value
-            if parameter == Parameter.RAMPING_ENABLED:
-                assert yokogawa_gs200.ramping_enabled == value
-            if parameter == Parameter.RAMPING_RATE:
-                assert yokogawa_gs200.ramping_rate == value
-            if parameter == Parameter.SPAN:
-                assert yokogawa_gs200.span == value
+    def test_set_parameter_method(self, parameter: Parameter, value, yokogawa_gs200: GS200):
+        """Test the set_parameter method with float value"""
+        yokogawa_gs200.set_parameter(parameter, value)
+        if parameter == Parameter.SOURCE_MODE:
+            assert yokogawa_gs200.source_mode == SourceMode(value)
+        if parameter == Parameter.CURRENT:
+            assert yokogawa_gs200.current == value
+        if parameter == Parameter.VOLTAGE:
+            assert yokogawa_gs200.voltage == value
+        if parameter == Parameter.RAMPING_ENABLED:
+            assert yokogawa_gs200.ramping_enabled == value
+        if parameter == Parameter.RAMPING_RATE:
+            assert yokogawa_gs200.ramping_rate == value
+        if parameter == Parameter.SPAN:
+            assert yokogawa_gs200.span == value
 
     @pytest.mark.parametrize("parameter, value", [(Parameter.MAX_CURRENT, 0.001), (Parameter.GAIN, 0.0005)])
-    def test_setup_method_raises_exception(self, parameter: Parameter, value, yokogawa_gs200: GS200):
+    def test_set_parameter_method_raises_exception(self, parameter: Parameter, value, yokogawa_gs200: GS200):
         """Test the setup method with float value raises an exception with wrong parameters"""
         with pytest.raises(ParameterNotFound):
-            yokogawa_gs200.setup(parameter, value)
+            yokogawa_gs200.set_parameter(parameter, value)
 
     def test_to_dict_method(self, yokogawa_gs200: GS200):
         """Test the dict method"""
