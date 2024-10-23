@@ -123,12 +123,18 @@ class CircuitRouter:
         for _ in range(iterations):
             # Call the routing pipeline on the circuit:
             transpiled_circ, final_layout = custom_passes(circuit)
+            n_swaps = len(transpiled_circ.gates_of_type(gates.SWAP))
 
             # Checking which is the best transpilation:
-            n_swaps = len(transpiled_circ.gates_of_type(gates.SWAP))
             if least_swaps is None or n_swaps < least_swaps:
                 least_swaps = n_swaps
                 best_transpiled_circ, best_final_layout = transpiled_circ, final_layout
+
+            # If a mapping needs no swaps, we are finished:
+            if n_swaps == 0:
+                break
+
+        logger.info(f"The best found routing, has {least_swaps} swaps.")
 
         return best_transpiled_circ, best_final_layout
 
