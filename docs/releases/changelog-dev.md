@@ -165,6 +165,24 @@
 - Renamed the platform's `execute_anneal_program()` method to `execute_annealing_program()` and updated its parameters. The method now expects `preparation_block` and `measurement_block`, which are strings used to retrieve blocks from the `Calibration`. These blocks are inserted before and after the annealing schedule, respectively.
   [#816](https://github.com/qilimanjaro-tech/qililab/pull/816)
 
+- **Major reorganization of the library structure and runcard functionality**. Key updates include:
+
+  - Removed obsolete instruments, such as VNAs.
+  - Simplified the `Qblox` sequencer class hierarchy into two main classes: `QbloxSequencer` and `QbloxADCSequencer`.
+  - Removed `SystemController` and `ReadoutSystemController`; buses now interface directly with instruments.
+  - Introduced a new `channels` attribute to the `Bus` class, allowing specification of channels for each associated instrument.
+  - Removed the `Chip` class and its related runcard settings.
+  - Eliminated outdated settings, including those related to instrument firmware.
+  - Refactored runcard settings into a modular structure with four distinct groups:
+    - `instruments` and `instrument_controllers` for lab instrument setup.
+    - `buses` for grouping instrument channels.
+    - `digital` for digital compilation settings (e.g., Qibo circuits).
+    - `analog` for analog compilation settings (e.g., annealing programs).
+
+[#820](https://github.com/qilimanjaro-tech/qililab/pull/820)
+
+This version is more concise and clearer while preserving all the details. Let me know if you'd like further adjustments!
+
 ### Deprecations / Removals
 
 ### Documentation
