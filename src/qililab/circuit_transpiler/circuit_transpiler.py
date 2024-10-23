@@ -22,12 +22,11 @@ import numpy as np
 from qibo import gates
 from qibo.gates import Gate, M
 from qibo.models import Circuit
-from qibo.transpiler.optimizer import Preprocessing
-from qibo.transpiler.pipeline import Passes
-from qibo.transpiler.placer import Placer, ReverseTraversal, StarConnectivityPlacer
-from qibo.transpiler.router import Router, Sabre, StarConnectivityRouter
+from qibo.transpiler.placer import Placer, StarConnectivityPlacer
+from qibo.transpiler.router import Router, StarConnectivityRouter
 
 from qililab.chip import Coupler, Qubit
+from qililab.circuit_transpiler.circuit_router import CircuitRouter
 from qililab.config import logger
 from qililab.constants import RUNCARD
 from qililab.instruments import AWG
@@ -42,123 +41,157 @@ from .native_gates import Drag, Wait
 
 class CircuitTranspiler:
     """Handles circuit transpilation. It has 3 accessible methods:
-    - `circuit_to_native`: transpiles a qibo circuit to native gates (Drag, CZ, Wait, M) and optionally RZ if optimize=False (optimize=True by default)
-    - `circuit_to_pulses`: transpiles a native gate circuit to a `PulseSchedule`
-    - `transpile_circuit`: runs both of the methods above sequentially
+
+    - ``circuit_to_native``: transpiles a qibo circuit to native gates (Drag, CZ, Wait, M) and optionally RZ if optimize=False (optimize=True by default)
+    - ``circuit_to_pulses``: transpiles a native gate circuit to a `PulseSchedule`
+    - ``transpile_circuit``: runs both of the methods above sequentially
+
+    Args:
+        platform (Platform): platform object containing the runcard and the chip's physical qubits.
     """
 
     def __init__(self, platform):  # type: ignore # ignore typing to avoid importing platform and causing circular imports
         self.platform = platform
 
-    def transpile_circuit(
+    def transpile_circuits(
         self,
         circuits: list[Circuit],
-        placer: Placer | None = None,
-        router: Router | None = None,
-        placer_kwargs: dict | None = None,
-        router_kwargs: dict | None = None,
+        placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
+        router: Router | type[Router] | tuple[type[Router], dict] | None = None,
     ) -> tuple[list[PulseSchedule], list[dict]]:
-        """Transpiles a list of qibo.models.Circuit to a list of pulse schedules.
+        """Transpiles a list of ``qibo.models.Circuit`` to a list of pulse schedules.
 
-        First translates the circuit to a native gate circuit and applies virtual Z gates and phase corrections for CZ gates.
-        Then it converts the native gate circuit to a pulse schedule using calibrated settings from the runcard.
+        First makes a routing and placement of the circuit to the chip's physical qubits. And returns/logs the final layout of the qubits.
+
+        Then translates the circuit to a native gate circuit and applies virtual Z gates and phase corrections for CZ gates.
+
+        And finally, it converts the native gate circuit to a pulse schedule using calibrated settings from the runcard.
+
+        **Examples:**
+
+        If we instantiate some ``Circuit``, ``Platform`` and ``CircuitTranspiler`` objects like:
+
+        .. code-block:: python
+
+            from qibo import gates
+            from qibo.models import Circuit
+            from qibo.transpiler.placer import ReverseTraversal, Trivial
+            from qibo.transpiler.router import Sabre
+            from qililab import build_platform
+            from qililab.circuit_transpiler import CircuitTranspiler
+
+            # Create circuit:
+            c = Circuit(5)
+            c.add(gates.CNOT(1, 0))
+
+            # Create platform:
+            platform = build_platform(runcard="<path_to_runcard>")
+
+            # Create transpiler:
+            transpiler = CircuitTranspiler(platform)
+
+        Now we can transpile like:
+
+        .. code-block:: python
+
+            # Default Transpile:
+            pulse_schedule, final_layouts = transpiler.transpile_circuit([c])  # Defaults to ReverseTraversal, Sabre
+
+            # Non-Default Trivial placer, and Default Router, but with its kwargs specified:
+            pulse_sched, final_layouts = transpiler.transpile_circuit([c], placer=Trivial, router=(Sabre, {"lookahead": 2}))
+
 
         Args:
             circuits (list[Circuit]): list of qibo circuits.
-            placer (Placer, optional): Placer algorithm to use. Defaults to ReverseTraversal.
-            router (Router, optional): Router algorithm to use. Defaults to Sabre.
-            placer_kwargs (dict, optional): kwargs for the placer (others than connectivity). Only will be used if placer is passed. Defaults to None.
-            router_kwargs (dict, optional): kwargs for the router (others than connectivity). Only will be used if router is passed. Defaults to None.
+            placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
+                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
+            router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
+                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
 
         Returns:
             list[PulseSchedule]: list of pulse schedules.
             list[dict]: list of the final layouts of the qubits, in each circuit.
         """
-        routed_circuits = []
-        final_layouts = []
-        for circuit in circuits:
-            routed_circuit, final_layout = self.route_circuit(
-                circuit, self.platform.chip.get_topology(), placer, router, placer_kwargs, router_kwargs
-            )
-            logger.info(f"Circuit final layout: {final_layout}")
-            routed_circuits.append(routed_circuit)
-            final_layouts.append(final_layout)
+        routed_circuits, final_layouts = zip(*(self.route_circuit(circuit, placer, router) for circuit in circuits))
+        logger.info(f"Circuits final layouts: {final_layouts}")
 
         native_circuits = (self.circuit_to_native(circuit) for circuit in routed_circuits)
-        return self.circuit_to_pulses(list(native_circuits)), final_layouts
+        return self.circuit_to_pulses(list(native_circuits)), list(final_layouts)
 
     def route_circuit(
         self,
         circuit: Circuit,
-        coupling_map: list[tuple[int, int]],
-        placer: Placer | None = None,
-        router: Router | None = None,
-        placer_kwargs: dict | None = None,
-        router_kwargs: dict | None = None,
+        placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
+        router: Router | type[Router] | tuple[type[Router], dict] | None = None,
+        coupling_map: list[tuple[int, int]] | None = None,
     ) -> tuple[Circuit, dict]:
-        """Routes a logical circuit, to the chip's physical qubits.
+        """Routes the virtual/logical qubits of a circuit, to the chip's physical qubits.
+
+        **Examples:**
+
+        If we instantiate some ``Circuit``, ``Platform`` and ``CircuitTranspiler`` objects like:
+
+        .. code-block:: python
+
+            from qibo import gates
+            from qibo.models import Circuit
+            from qibo.transpiler.placer import ReverseTraversal, Trivial
+            from qibo.transpiler.router import Sabre
+            from qililab import build_platform
+            from qililab.circuit_transpiler import CircuitTranspiler
+
+            # Create circuit:
+            c = Circuit(5)
+            c.add(gates.CNOT(1, 0))
+
+            # Create platform:
+            platform = build_platform(runcard="<path_to_runcard>")
+            coupling_map = platform.chip.get_topology()
+
+            # Create transpiler:
+            transpiler = CircuitTranspiler(platform)
+
+        Now we can transpile like:
+
+        .. code-block:: python
+
+            # Default Transpilation:
+            routed_circuit, final_layouts = transpiler.route_circuit([c])  # Defaults to ReverseTraversal, Sabre and platform connectivity
+
+            # Non-Default Trivial placer, and coupling_map specified:
+            routed_circuit, final_layouts = transpiler.route_circuit([c], placer=Trivial, router=Sabre, coupling_map)
+
+            # Specifying one of the a kwargs:
+            routed_circuit, final_layouts = transpiler.route_circuit([c], placer=Trivial, router=(Sabre, {"lookahead": 2}))
 
         Args:
             circuit (Circuit): circuit to route.
-            coupling_map (list[tuple[int, int]]): coupling map of the chip.
-            placer (Placer, optional): Placer algorithm to use. Defaults to ReverseTraversal.
-            router (Router, optional): Router algorithm to use. Defaults to Sabre.
-            placer_kwargs (dict, optional): kwargs for the placer (others than connectivity). Only will be used if placer is passed. Defaults to None.
-            router_kwargs (dict, optional): kwargs for the router (others than connectivity). Only will be used if router is passed. Defaults to None.
+            coupling_map (list[tuple[int, int]], optional): coupling map of the chip. Defaults to the platform topology.
+            placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
+                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
+            router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
+                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
 
         Returns:
             Circuit: routed circuit.
             dict: final layout of the circuit.
+
+        Raises:
+            ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
         """
-        # Define chip's connectivity
-        connectivity = nx.Graph(coupling_map)
+        # Get the chip's connectivity
+        connectivity = nx.Graph(coupling_map if coupling_map is not None else self.platform.chip.get_topology())
 
-        # Cannot use Star algorithms for non star-connectivities:
-        star_5q = nx.star_graph(4)
-        if not nx.is_isomorphic(connectivity, star_5q) and (
-            placer == StarConnectivityPlacer or router == StarConnectivityRouter
-        ):
-            raise (
-                ValueError("StarConnectivityPlacer and StarConnectivityRouter can only be used with star topologies")
-            )
+        circuit_router = CircuitRouter(connectivity, placer, router)
 
-        # Map empty placer and router kwargs:
-        if placer_kwargs is None:
-            placer_kwargs = {}
-        if router_kwargs is None:
-            router_kwargs = {}
+        return circuit_router.route(circuit)
 
-        # Preprocessing adds qubits in the original circuit to match the number of qubits in the chip
-        preprocessing = Preprocessing(connectivity)
-
-        # Routing stage, where the final_layout and swaps will be created:
-        router = Sabre(connectivity) if router is None else router(connectivity, **router_kwargs)
-
-        # Layout stage, where the initial_layout will be created:
-        # For ReverseTraversal placer, we need to pass the routing algorithm:
-        if placer == ReverseTraversal:
-            if "routing_algorithm" not in placer_kwargs:
-                placer_kwargs |= {"routing_algorithm": router}
-            elif isinstance(placer_kwargs["routing_algorithm"], Router):
-                logger.warning(
-                    "Substituting the passed connectivity for the ReverseTraversal routing algorithm, by the platform connectivity",
-                )
-                placer_kwargs["routing_algorithm"].connectivity = connectivity
-            elif issubclass(placer_kwargs["routing_algorithm"], Router):
-                placer_kwargs["routing_algorithm"] = placer_kwargs["routing_algorithm"](connectivity)
-            else:
-                raise ValueError(
-                    "routing_algorithm must be a Router subclass (no need for instantiation) or a Router instance"
-                )
-        placer = ReverseTraversal(connectivity, router) if placer is None else placer(connectivity, **placer_kwargs)
-
-        # Transpilation pipeline passes:
-        custom_passes = [preprocessing, placer, router]
-
-        # Call the transpiler pipeline on the circuit:
-        transpiled_circ, final_layout = Passes(custom_passes, connectivity)(circuit)
-
-        return transpiled_circ, final_layout
+    @staticmethod
+    def _if_star_algorithms_for_nonstar_connectivity(connectivity: nx.Graph, placer: Placer, router: Router) -> bool:
+        """True if the StarConnectivity Placer or Router are being used without a star connectivity."""
+        return not nx.is_isomorphic(connectivity, nx.star_graph(4)) and (
+            isinstance(placer, StarConnectivityPlacer) or isinstance(router, StarConnectivityRouter)
+        )
 
     def circuit_to_native(self, circuit: Circuit, optimize: bool = True) -> Circuit:
         """Converts circuit with qibo gates to circuit with native gates

@@ -28,22 +28,23 @@ def execute(
     program: Circuit | list[Circuit],
     runcard: str | dict,
     nshots: int = 1,
-    placer: Placer | None = None,
-    router: Router | None = None,
-    placer_kwargs: dict | None = None,
-    router_kwargs: dict | None = None,
+    placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
+    router: Router | type[Router] | tuple[type[Router], dict] | None = None,
 ) -> Result | list[Result]:
     """Executes a Qibo circuit (or a list of circuits) with qililab and returns the results.
+
+    The ``program`` argument is first translated into pulses using the transpilation settings of the runcard and the
+    passed placer and router. Then the pulse will be compiled into the runcard machines assembly programs, and executed.
 
     Args:
         circuit (Circuit | list[Circuit]): Qibo Circuit.
         runcard (str | dict): If a string, path to the YAML file containing the serialization of the Platform to be
             used. If a dictionary, the serialized platform to be used.
         nshots (int, optional): Number of shots to execute. Defaults to 1.
-        placer (Placer, optional): Placer algorithm to use. Defaults to ReverseTraversal.
-        router (Router, optional): Router algorithm to use. Defaults to Sabre.
-        placer_kwargs (dict, optional): kwargs for the placer (others than connectivity). Only will be used if placer is passed. Defaults to None.
-        router_kwargs (dict, optional): kwargs for the router (others than connectivity). Only will be used if router is passed. Defaults to None.
+        placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
+            use`, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
+        router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
+            use,` with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
 
     Returns:
         Result | list[Result]: :class:`Result` class (or list of :class:`Result` classes) containing the results of the
@@ -86,14 +87,7 @@ def execute(
         results = [
             # Execute circuit
             platform.execute(
-                circuit,
-                num_avg=1,
-                repetition_duration=200_000,
-                num_bins=nshots,
-                placer=placer,
-                router=router,
-                placer_kwargs=placer_kwargs,
-                router_kwargs=router_kwargs,
+                circuit, num_avg=1, repetition_duration=200_000, num_bins=nshots, placer=placer, router=router
             )
             for circuit in tqdm(program, total=len(program))
         ]
