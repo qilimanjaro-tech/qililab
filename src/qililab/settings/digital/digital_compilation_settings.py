@@ -29,6 +29,7 @@ class DigitalCompilationSettings:
 
     minimum_clock_time: int
     delay_before_readout: int
+    topology: list[tuple[int, int]]
     gates: dict[str, list[GateEventSettings]]
     buses: dict[str, DigitalCompilationBusSettings]
 

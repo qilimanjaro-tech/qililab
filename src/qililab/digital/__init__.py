@@ -12,21 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""__init__.py"""
+"""
+This module contains all the decomposition and transpilation methods used within qililab.
 
-from .era_synth import ERASynthPlus
-from .instrument_driver_factory import InstrumentDriverFactory
-from .keithley import Keithley2600
-from .qblox import Cluster, SpiRack
-from .rohde_schwarz import RhodeSchwarzSGS100A
-from .yokogawa import GS200
+Transpilation
+~~~~~~~~~~~~~
 
-__all__ = [
-    "GS200",
-    "Cluster",
-    "ERASynthPlus",
-    "InstrumentDriverFactory",
-    "Keithley2600",
-    "RhodeSchwarzSGS100A",
-    "SpiRack",
-]
+.. currentmodule:: qililab.digital
+
+.. autosummary::
+    :toctree: api
+
+    ~CircuitTranspiler
+
+"""
+
+from .circuit_transpiler import CircuitTranspiler
+from .gate_decompositions import GateDecompositions
+from .native_gates import Drag, Wait
+
+__all__ = ["CircuitTranspiler", "Drag", "GateDecompositions", "Wait"]
