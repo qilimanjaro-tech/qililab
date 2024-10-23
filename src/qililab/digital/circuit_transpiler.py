@@ -16,12 +16,17 @@
 
 from dataclasses import asdict
 
+import networkx as nx
 import numpy as np
 from qibo import gates
 from qibo.gates import Gate, M
 from qibo.models import Circuit
+from qibo.transpiler.placer import Placer, StarConnectivityPlacer
+from qibo.transpiler.router import Router, StarConnectivityRouter
 
+from qililab.config import logger
 from qililab.constants import RUNCARD
+from qililab.digital.circuit_router import CircuitRouter
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
@@ -36,24 +41,164 @@ from .native_gates import Drag, Wait
 
 class CircuitTranspiler:
     """Handles circuit transpilation. It has 3 accessible methods:
-    - `circuit_to_native`: transpiles a qibo circuit to native gates (Drag, CZ, Wait, M) and optionally RZ if optimize=False (optimize=True by default)
-    - `circuit_to_pulses`: transpiles a native gate circuit to a `PulseSchedule`
-    - `transpile_circuit`: runs both of the methods above sequentially
+
+    - ``circuit_to_native``: transpiles a qibo circuit to native gates (Drag, CZ, Wait, M) and optionally RZ if optimize=False (optimize=True by default)
+    - ``circuit_to_pulses``: transpiles a native gate circuit to a `PulseSchedule`
+    - ``transpile_circuit``: runs both of the methods above sequentially
+
+    Args:
+        platform (Platform): platform object containing the runcard and the chip's physical qubits.
     """
 
     def __init__(self, digital_compilation_settings: DigitalCompilationSettings):  # type: ignore # ignore typing to avoid importing platform and causing circular imports
         self.digital_compilation_settings = digital_compilation_settings
 
-    def transpile_circuit(self, circuits: list[Circuit]) -> list[PulseSchedule]:
-        """Transpiles a list of qibo.models.Circuit to a list of pulse schedules.
-        First translates the circuit to a native gate circuit and applies virtual Z gates and phase corrections for CZ gates.
-        Then it converts the native gate circuit to a pulse schedule using calibrated settings from the runcard.
+    def transpile_circuits(
+        self,
+        circuits: list[Circuit],
+        placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
+        router: Router | type[Router] | tuple[type[Router], dict] | None = None,
+        routing_iterations: int = 10,
+    ) -> tuple[list[PulseSchedule], list[dict]]:
+        """Transpiles a list of ``qibo.models.Circuit`` to a list of pulse schedules.
+
+        First makes a routing and placement of the circuit to the chip's physical qubits. And returns/logs the final layout of the qubits.
+
+        Then translates the circuit to a native gate circuit and applies virtual Z gates and phase corrections for CZ gates.
+
+        And finally, it converts the native gate circuit to a pulse schedule using calibrated settings from the runcard.
+
+        **Examples:**
+
+        If we instantiate some ``Circuit``, ``Platform`` and ``CircuitTranspiler`` objects like:
+
+        .. code-block:: python
+
+            from qibo import gates
+            from qibo.models import Circuit
+            from qibo.transpiler.placer import ReverseTraversal, Trivial
+            from qibo.transpiler.router import Sabre
+            from qililab import build_platform
+            from qililab.circuit_transpiler import CircuitTranspiler
+
+            # Create circuit:
+            c = Circuit(5)
+            c.add(gates.CNOT(1, 0))
+
+            # Create platform:
+            platform = build_platform(runcard="<path_to_runcard>")
+
+            # Create transpiler:
+            transpiler = CircuitTranspiler(platform)
+
+        Now we can transpile like:
+
+        .. code-block:: python
+
+            # Default Transpile:
+            pulse_schedule, final_layouts = transpiler.transpile_circuit([c])  # Defaults to ReverseTraversal, Sabre
+
+            # Non-Default Trivial placer, and Default Router, but with its kwargs specified:
+            pulse_sched, final_layouts = transpiler.transpile_circuit([c], placer=Trivial, router=(Sabre, {"lookahead": 2}))
+
 
         Args:
-            circuits (list[Circuit]): list of qibo circuits
+            circuits (list[Circuit]): list of qibo circuits.
+            placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
+                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
+            router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
+                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
+            routing_iterations (int, optional): Number of times to repeat the routing pipeline, to get the best stochastic result. Defaults to 10.
+
+        Returns:
+            list[PulseSchedule]: list of pulse schedules.
+            list[dict]: list of the final layouts of the qubits, in each circuit.
         """
-        native_circuits = (self.circuit_to_native(circuit) for circuit in circuits)
-        return self.circuit_to_pulses(list(native_circuits))
+        routed_circuits, final_layouts = zip(
+            *(self.route_circuit(circuit, placer, router, iterations=routing_iterations) for circuit in circuits)
+        )
+        logger.info(f"Circuits final layouts: {final_layouts}")
+
+        native_circuits = (self.circuit_to_native(circuit) for circuit in routed_circuits)
+        return self.circuit_to_pulses(list(native_circuits)), list(final_layouts)
+
+    def route_circuit(
+        self,
+        circuit: Circuit,
+        placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
+        router: Router | type[Router] | tuple[type[Router], dict] | None = None,
+        coupling_map: list[tuple[int, int]] | None = None,
+        iterations: int = 10,
+    ) -> tuple[Circuit, dict]:
+        """Routes the virtual/logical qubits of a circuit, to the chip's physical qubits.
+
+        **Examples:**
+
+        If we instantiate some ``Circuit``, ``Platform`` and ``CircuitTranspiler`` objects like:
+
+        .. code-block:: python
+
+            from qibo import gates
+            from qibo.models import Circuit
+            from qibo.transpiler.placer import ReverseTraversal, Trivial
+            from qibo.transpiler.router import Sabre
+            from qililab import build_platform
+            from qililab.circuit_transpiler import CircuitTranspiler
+
+            # Create circuit:
+            c = Circuit(5)
+            c.add(gates.CNOT(1, 0))
+
+            # Create platform:
+            platform = build_platform(runcard="<path_to_runcard>")
+            coupling_map = platform.chip.get_topology()
+
+            # Create transpiler:
+            transpiler = CircuitTranspiler(platform)
+
+        Now we can transpile like:
+
+        .. code-block:: python
+
+            # Default Transpilation:
+            routed_circuit, final_layouts = transpiler.route_circuit([c])  # Defaults to ReverseTraversal, Sabre and platform connectivity
+
+            # Non-Default Trivial placer, and coupling_map specified:
+            routed_circuit, final_layouts = transpiler.route_circuit([c], placer=Trivial, router=Sabre, coupling_map)
+
+            # Specifying one of the a kwargs:
+            routed_circuit, final_layouts = transpiler.route_circuit([c], placer=Trivial, router=(Sabre, {"lookahead": 2}))
+
+        Args:
+            circuit (Circuit): circuit to route.
+            coupling_map (list[tuple[int, int]], optional): coupling map of the chip. Defaults to the platform topology.
+            placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
+                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
+            router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
+                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
+            iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
+
+
+        Returns:
+            Circuit: routed circuit.
+            dict: final layout of the circuit.
+
+        Raises:
+            ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
+        """
+        # Get the chip's connectivity
+        topology = nx.Graph(coupling_map if coupling_map is not None else self.digital_compilation_settings.topology)
+
+        circuit_router = CircuitRouter(topology, placer, router)
+
+        return circuit_router.route(circuit, iterations)
+
+    @staticmethod
+    def _if_star_algorithms_for_nonstar_connectivity(connectivity: nx.Graph, placer: Placer, router: Router) -> bool:
+        """True if the StarConnectivity Placer or Router are being used without a star connectivity."""
+        return not nx.is_isomorphic(connectivity, nx.star_graph(4)) and (
+            isinstance(placer, StarConnectivityPlacer) or isinstance(router, StarConnectivityRouter)
+        )
 
     def circuit_to_native(self, circuit: Circuit, optimize: bool = True) -> Circuit:
         """Converts circuit with qibo gates to circuit with native gates
@@ -78,18 +223,22 @@ class CircuitTranspiler:
 
     def optimize_transpilation(self, nqubits: int, ngates: list[gates.Gate]) -> list[gates.Gate]:
         """Optimizes transpiled circuit by applying virtual Z gates.
+
         This is done by moving all RZ to the left of all operators as a single RZ. The corresponding cumulative rotation
         from each RZ is carried on as phase in all drag pulses left of the RZ operator.
+
         Virtual Z gates are also applied to correct phase errors from CZ gates.
+
         The final RZ operator left to be applied as the last operator in the circuit can afterwards be removed since the last
         operation is going to be a measurement, which is performed on the Z basis and is therefore invariant under rotations
         around the Z axis.
+
         This last step can also be seen from the fact that an RZ operator applied on a single qubit, with no operations carried
         on afterwards induces a phase rotation. Since phase is an imaginary unitary component, its absolute value will be 1
         independent on any (unitary) operations carried on it.
 
         Mind that moving an operator to the left is equivalent to applying this operator last so
-        it is actually moved to the _right_ of Circuit.queue (last element of list).
+        it is actually moved to the _right_ of ``Circuit.queue`` (last element of list).
 
         For more information on virtual Z gates, see https://arxiv.org/abs/1612.00858
 

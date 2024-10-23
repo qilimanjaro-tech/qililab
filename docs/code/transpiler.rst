@@ -1,4 +1,4 @@
-ql.transpiler
-===============
+ql.circuit_transpiler
+=========================
 
 .. automodule:: qililab.digital
