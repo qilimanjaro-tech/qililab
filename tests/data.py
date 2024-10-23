@@ -569,7 +569,6 @@ class Galadriel:
         keithley_2600_controller_0,
     ]
 
-
     buses: list[dict[str, Any]] = [
         {
             RUNCARD.ALIAS: "drive_line_q0_bus",
