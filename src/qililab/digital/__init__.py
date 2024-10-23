@@ -26,7 +26,7 @@ Transpilation
 Gate Decomposition
 ~~~~~~~~~~~~~~~~~~
 
-.. currentmodule:: qililab.circuit_transpiler
+.. currentmodule:: qililab.digital
 
 .. autosummary::
     :toctree: api

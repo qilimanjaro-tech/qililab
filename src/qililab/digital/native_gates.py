@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """File containing the supported native gates."""
+
 from qibo.gates.abstract import ParametrizedGate
 from qibo.gates.gates import _Un_
 
