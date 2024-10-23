@@ -175,7 +175,7 @@ class CircuitRouter:
                 return router(connectivity, **kwargs)
 
         raise TypeError(
-            "`router` arg in `route_circuit()`, must be a `Router` instance, subclass or tuple(subclass, kwargs)."
+            f"`router` arg ({type(router)}), must be a `Router` instance, subclass or tuple(subclass, kwargs), in `execute()`, `compile()`, `transpile_circuit()` or `route_circuit()`."
         )
 
     def _build_placer(
@@ -219,7 +219,7 @@ class CircuitRouter:
                 return placer(connectivity, **kwargs)
 
         raise TypeError(
-            "`placer` arg in `route_circuit()`, must be a `Placer` instance, subclass or tuple(subclass, kwargs)."
+            f"`placer` arg ({type(placer)}), must be a `Placer` instance, subclass or tuple(subclass, kwargs), in `execute()`, `compile()`, `transpile_circuit()` or `route_circuit()`."
         )
 
     @staticmethod
@@ -268,4 +268,6 @@ class CircuitRouter:
                 return placer, kwargs
 
         # If the routing algorithm is not a Router subclass or instance, we raise an error:
-        raise TypeError("`routing_algorithm` kwarg must be a `Router` subclass or instance (no need for instantiation)")
+        raise TypeError(
+            f"`routing_algorithm` `Placer` kwarg ({kwargs['routing_algorithm']}) must be a `Router` subclass or instance, in `execute()`, `compile()`, `transpile_circuit()` or `route_circuit()`."
+        )
