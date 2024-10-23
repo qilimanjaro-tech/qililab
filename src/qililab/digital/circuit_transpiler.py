@@ -59,6 +59,7 @@ class CircuitTranspiler:
         placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
         router: Router | type[Router] | tuple[type[Router], dict] | None = None,
         routing_iterations: int = 10,
+        optimize: bool = True,
     ) -> tuple[list[PulseSchedule], list[dict]]:
         """Transpiles a list of ``qibo.models.Circuit`` to a list of pulse schedules.
 
@@ -109,18 +110,34 @@ class CircuitTranspiler:
             router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
                 use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
             routing_iterations (int, optional): Number of times to repeat the routing pipeline, to get the best stochastic result. Defaults to 10.
+            optimize (bool, optional): whether to optimize the transpilation. Defaults to True.
 
         Returns:
             list[PulseSchedule]: list of pulse schedules.
             list[dict]: list of the final layouts of the qubits, in each circuit.
         """
+
+        # Routing stage;
         routed_circuits, final_layouts = zip(
             *(self.route_circuit(circuit, placer, router, iterations=routing_iterations) for circuit in circuits)
         )
         logger.info(f"Circuits final layouts: {final_layouts}")
 
+        # Optimze qibo gates, cancellation stage:
+        if optimize:
+            routed_circuits = tuple(self.gates_cancellation(circuit) for circuit in routed_circuits)
+
+        # Unroll to Natives stage:
         native_circuits = (self.circuit_to_native(circuit) for circuit in routed_circuits)
-        return self.circuit_to_pulses(list(native_circuits)), list(final_layouts)
+
+        # Optimize native gates, optimize transpilation stage:
+        if optimize:
+            native_circuits = (self.optimize_transpilation(circuit) for circuit in native_circuits)
+
+        # Pulse schedule stage:
+        pulse_schedules = self.circuit_to_pulses(list(native_circuits))
+
+        return pulse_schedules, list(final_layouts)
 
     def route_circuit(
         self,
@@ -200,28 +217,33 @@ class CircuitTranspiler:
             isinstance(placer, StarConnectivityPlacer) or isinstance(router, StarConnectivityRouter)
         )
 
-    def circuit_to_native(self, circuit: Circuit, optimize: bool = True) -> Circuit:
+    # TODO: Finish this function
+    def gates_cancellation(self, circuit: Circuit) -> Circuit:
+        """Optimizes circuit by cancelling adjacent gates.
+
+        Args:
+            circuit (Circuit): circuit to optimize.
+
+        Returns:
+            Circuit: optimized circuit.
+        """
+        return Circuit(circuit.nqubits, circuit=circuit.queue)
+
+    def circuit_to_native(self, circuit: Circuit) -> Circuit:
         """Converts circuit with qibo gates to circuit with native gates
 
         Args:
-            circuit (Circuit): circuit with qibo gates
-            optimize (bool): optimize the transpiled circuit using otpimize_transpilation
+            circuit (Circuit): circuit with qibo gate.
 
         Returns:
             new_circuit (Circuit): circuit with transpiled gates
         """
-        # init new circuit
         new_circuit = Circuit(circuit.nqubits)
-        # add transpiled gates to new circuit, optimize if needed
-        if optimize:
-            gates_to_optimize = translate_gates(circuit.queue)
-            new_circuit.add(self.optimize_transpilation(circuit.nqubits, ngates=gates_to_optimize))
-        else:
-            new_circuit.add(translate_gates(circuit.queue))
+        new_circuit.add(translate_gates(circuit.queue))
 
         return new_circuit
 
-    def optimize_transpilation(self, nqubits: int, ngates: list[gates.Gate]) -> list[gates.Gate]:
+    def optimize_transpilation(self, circuit: Circuit) -> list[gates.Gate]:
         """Optimizes transpiled circuit by applying virtual Z gates.
 
         This is done by moving all RZ to the left of all operators as a single RZ. The corresponding cumulative rotation
@@ -243,12 +265,14 @@ class CircuitTranspiler:
         For more information on virtual Z gates, see https://arxiv.org/abs/1612.00858
 
         Args:
-            nqubits (int) : number of qubits in the circuit
-            ngates (list[gates.Gate]) : list of gates in the circuit
+            circuit (Circuit): circuit with native gates, to optimize.
 
         Returns:
             list[gates.Gate] : list of re-ordered gates
         """
+        nqubits: int = circuit.nqubits
+        ngates: list[gates.Gate] = circuit.queue
+
         supported_gates = ["rz", "drag", "cz", "wait", "measure"]
         new_gates = []
         shift = dict.fromkeys(range(nqubits), 0)
