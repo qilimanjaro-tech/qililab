@@ -170,11 +170,11 @@ class CircuitRouter:
             return router
 
         # If the router is a Router subclass, we instantiate it:
-        with contextlib.suppress(Exception):
+        with contextlib.suppress(TypeError, ValueError):
             if issubclass(router, Router):
                 return router(connectivity, **kwargs)
 
-        raise ValueError("Router must be a `Router` instance, subclass or tuple(subclass, kwargs).")
+        raise TypeError("Router must be a `Router` instance, subclass or tuple(subclass, kwargs).")
 
     def _build_placer(
         self, placer: Placer | type[Placer] | tuple[type[Placer], dict], router: Router, connectivity: nx.graph
@@ -212,11 +212,11 @@ class CircuitRouter:
             return placer
 
         # If the placer is a Placer subclass, we instantiate it:
-        with contextlib.suppress(Exception):
+        with contextlib.suppress(TypeError, ValueError):
             if issubclass(placer, Placer):
                 return placer(connectivity, **kwargs)
 
-        raise ValueError("Placer must be a `Placer` instance, subclass or tuple(subclass, kwargs).")
+        raise TypeError("Placer must be a `Placer` instance, subclass or tuple(subclass, kwargs).")
 
     @staticmethod
     def _check_ReverseTraversal_routing_connectivity(
