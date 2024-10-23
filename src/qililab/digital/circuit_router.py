@@ -174,7 +174,9 @@ class CircuitRouter:
             if issubclass(router, Router):
                 return router(connectivity, **kwargs)
 
-        raise TypeError("Router must be a `Router` instance, subclass or tuple(subclass, kwargs).")
+        raise TypeError(
+            "`router` arg in `route_circuit()`, must be a `Router` instance, subclass or tuple(subclass, kwargs)."
+        )
 
     def _build_placer(
         self, placer: Placer | type[Placer] | tuple[type[Placer], dict], router: Router, connectivity: nx.graph
@@ -216,7 +218,9 @@ class CircuitRouter:
             if issubclass(placer, Placer):
                 return placer(connectivity, **kwargs)
 
-        raise TypeError("Placer must be a `Placer` instance, subclass or tuple(subclass, kwargs).")
+        raise TypeError(
+            "`placer` arg in `route_circuit()`, must be a `Placer` instance, subclass or tuple(subclass, kwargs)."
+        )
 
     @staticmethod
     def _check_ReverseTraversal_routing_connectivity(
@@ -258,9 +262,10 @@ class CircuitRouter:
             return placer, kwargs
 
         # If the routing algorithm is a Router subclass, we instantiate it, with the platform connectivity:
-        if issubclass(kwargs["routing_algorithm"], Router):
-            kwargs["routing_algorithm"] = kwargs["routing_algorithm"](connectivity)
-            return placer, kwargs
+        with contextlib.suppress(TypeError, ValueError):
+            if issubclass(kwargs["routing_algorithm"], Router):
+                kwargs["routing_algorithm"] = kwargs["routing_algorithm"](connectivity)
+                return placer, kwargs
 
         # If the routing algorithm is not a Router subclass or instance, we raise an error:
-        raise ValueError("routing_algorithm must be a Router subclass or instance (no need for instantiation)")
+        raise TypeError("`routing_algorithm` kwarg must be a `Router` subclass or instance (no need for instantiation)")
