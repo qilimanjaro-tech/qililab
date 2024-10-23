@@ -23,7 +23,6 @@ Classes
     :toctree: api
 
     ~ExperimentResults
-    ~Results
     ~result.Result
 
 Functions
@@ -37,7 +36,6 @@ Functions
 
 from .experiment_results import ExperimentResults
 from .result import Result
-from .results import Results
 from .stream_results import stream_results
 
-__all__ = ["ExperimentResults", "Result", "Results", "stream_results"]
+__all__ = ["ExperimentResults", "Result", "stream_results"]

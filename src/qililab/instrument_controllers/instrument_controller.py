@@ -28,8 +28,7 @@ from qililab.instruments.utils.instrument_reference import InstrumentReference
 from qililab.instruments.utils.loader import Loader
 from qililab.platform.components.bus_element import BusElement
 from qililab.settings import Settings
-from qililab.typings.enums import InstrumentControllerName, Parameter
-from qililab.typings.instruments.device import Device
+from qililab.typings import ChannelID, Device, InstrumentControllerName, Parameter, ParameterValue
 from qililab.utils import Factory
 
 
@@ -160,25 +159,24 @@ class InstrumentController(BusElement, ABC):
     def set_parameter(
         self,
         parameter: Parameter,
-        value: float | str | bool,
-        channel_id: int | None = None,
+        value: ParameterValue,
+        channel_id: ChannelID | None = None,
     ):
         """Updates the reset settings for the controller."""
-        if parameter is not Parameter.RESET:
-            raise ValueError("Reset is the only property that can be set for an Instrument Controller.")
-        if not isinstance(value, bool):
-            raise ValueError("Reset value Must be a boolean.")
-        self.settings.reset = value
+        if parameter == Parameter.RESET:
+            self.settings.reset = bool(value)
+            return
+        raise ValueError("Reset is the only property that can be set for an Instrument Controller.")
 
     def get_parameter(
         self,
         parameter: Parameter,
-        channel_id: int | None = None,
+        channel_id: ChannelID | None = None,
     ):
         """Updates the reset settings for the controller."""
-        if parameter is not Parameter.RESET:
-            raise ValueError("Reset is the only property that can be set for an Instrument Controller.")
-        return self.settings.reset
+        if parameter == Parameter.RESET:
+            return self.settings.reset
+        raise ValueError("Reset is the only property that can be set for an Instrument Controller.")
 
     @CheckConnected
     def turn_on(self):

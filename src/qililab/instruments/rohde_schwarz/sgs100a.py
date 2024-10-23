@@ -15,17 +15,17 @@
 """
 Class to interface with the local oscillator RohdeSchwarz SGS100A
 """
+
 from dataclasses import dataclass
 
+from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.instruments.instrument import Instrument, ParameterNotFound
-from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.utils import InstrumentFactory
-from qililab.typings import InstrumentName, RohdeSchwarzSGS100A
-from qililab.typings.enums import Parameter
+from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue, RohdeSchwarzSGS100A
 
 
 @InstrumentFactory.register
-class SGS100A(SignalGenerator):
+class SGS100A(Instrument):
     """Rohde & Schwarz SGS100A class
 
     Args:
@@ -37,13 +37,53 @@ class SGS100A(SignalGenerator):
     name = InstrumentName.ROHDE_SCHWARZ
 
     @dataclass
-    class SGS100ASettings(SignalGenerator.SignalGeneratorSettings):
-        """Contains the settings of a specific signal generator."""
+    class SGS100ASettings(Instrument.InstrumentSettings):
+        """Contains the settings of a specific signal generator.
+
+        Args:
+            power (float): Power of the instrument. Value range is (-120, 25).
+            frequency (float): Frequency of the instrument. Value range is (1e6, 20e9).
+        """
+
+        power: float
+        frequency: float
+        rf_on: bool
 
     settings: SGS100ASettings
     device: RohdeSchwarzSGS100A
 
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    @property
+    def power(self):
+        """SignalGenerator 'power' property.
+
+        Returns:
+            float: settings.power.
+        """
+        return self.settings.power
+
+    @property
+    def frequency(self):
+        """SignalGenerator 'frequency' property.
+
+        Returns:
+            float: settings.frequency.
+        """
+        return self.settings.frequency
+
+    @property
+    def rf_on(self):
+        """SignalGenerator 'rf_on' property.
+        Returns:
+            bool: settings.rf_on.
+        """
+        return self.settings.rf_on
+
+    def to_dict(self):
+        """Return a dict representation of the SignalGenerator class."""
+        return dict(super().to_dict().items())
+
+    @log_set_parameter
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
         """Set R&S dbm power and frequency. Value ranges are:
         - power: (-120, 25).
         - frequency (1e6, 20e9).
@@ -66,9 +106,18 @@ class SGS100A(SignalGenerator):
                 else:
                     self.turn_off()
             return
-        raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
+        raise ParameterNotFound(self, parameter)
 
-    @Instrument.CheckDeviceInitialized
+    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None) -> ParameterValue:
+        if parameter == Parameter.POWER:
+            return self.settings.power
+        if parameter == Parameter.LO_FREQUENCY:
+            return self.settings.frequency
+        if parameter == Parameter.RF_ON:
+            return self.settings.rf_on
+        raise ParameterNotFound(self, parameter)
+
+    @check_device_initialized
     def initial_setup(self):
         """performs an initial setup"""
         self.device.power(self.power)
@@ -78,18 +127,18 @@ class SGS100A(SignalGenerator):
         else:
             self.device.off()
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def turn_on(self):
         """Start generating microwaves."""
         self.settings.rf_on = True
         self.device.on()
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def turn_off(self):
         """Stop generating microwaves."""
         self.settings.rf_on = False
         self.device.off()
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def reset(self):
         """Reset instrument."""

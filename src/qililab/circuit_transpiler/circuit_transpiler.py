@@ -14,7 +14,6 @@
 
 """Circuit Transpiler class"""
 
-import contextlib
 from dataclasses import asdict
 
 import networkx as nx
@@ -25,13 +24,14 @@ from qibo.models import Circuit
 from qibo.transpiler.placer import Placer, StarConnectivityPlacer
 from qibo.transpiler.router import Router, StarConnectivityRouter
 
-from qililab.chip import Coupler, Qubit
 from qililab.circuit_transpiler.circuit_router import CircuitRouter
 from qililab.config import logger
 from qililab.constants import RUNCARD
-from qililab.instruments import AWG
-from qililab.pulse import Pulse, PulseEvent, PulseSchedule
-from qililab.settings.gate_event_settings import GateEventSettings
+from qililab.pulse.pulse import Pulse
+from qililab.pulse.pulse_event import PulseEvent
+from qililab.pulse.pulse_schedule import PulseSchedule
+from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
+from qililab.settings.digital.gate_event_settings import GateEventSettings
 from qililab.typings.enums import Line
 from qililab.utils import Factory
 
@@ -50,8 +50,8 @@ class CircuitTranspiler:
         platform (Platform): platform object containing the runcard and the chip's physical qubits.
     """
 
-    def __init__(self, platform):  # type: ignore # ignore typing to avoid importing platform and causing circular imports
-        self.platform = platform
+    def __init__(self, digital_compilation_settings: DigitalCompilationSettings):  # type: ignore # ignore typing to avoid importing platform and causing circular imports
+        self.digital_compilation_settings = digital_compilation_settings
 
     def transpile_circuits(
         self,
@@ -252,7 +252,9 @@ class CircuitTranspiler:
                 shift[gate.qubits[0]] += gate.parameters[0]
             # add CZ phase correction
             elif isinstance(gate, gates.CZ):
-                gate_settings = self.platform.gates_settings.get_gate(name=gate.__class__.__name__, qubits=gate.qubits)
+                gate_settings = self.digital_compilation_settings.get_gate(
+                    name=gate.__class__.__name__, qubits=gate.qubits
+                )
                 control_qubit, target_qubit = gate.qubits
                 corrections = next(
                     (
@@ -337,31 +339,22 @@ class CircuitTranspiler:
                 self._sync_qubit_times(gate_qubits, time=time)
                 # apply gate schedule
                 for gate_event in gate_schedule:
-                    # find bus
-                    bus = self.platform._get_bus_by_alias(gate_event.bus)
                     # add control gate schedule
-                    pulse_event = self._gate_element_to_pulse_event(
-                        time=start_time, gate=gate, gate_event=gate_event, bus=bus
-                    )
+                    pulse_event = self._gate_element_to_pulse_event(time=start_time, gate=gate, gate_event=gate_event)
                     # pop first qubit from gate if it is measurement
                     # this is so that the target qubit for multiM gates is every qubit in the M gate
                     if isinstance(gate, M):
                         gate = M(*gate.qubits[1:])
                     # add event
-                    pulse_schedule.add_event(pulse_event=pulse_event, port=bus.port, port_delay=bus.settings.delay)  # type: ignore
+                    delay = self.digital_compilation_settings.buses[gate_event.bus].delay
+                    pulse_schedule.add_event(pulse_event=pulse_event, bus_alias=gate_event.bus, delay=delay)  # type: ignore
 
-            for qubit in self.platform.chip.qubits:
-                with contextlib.suppress(ValueError):
-                    # If we find a flux port, create empty schedule for that port.
-                    # This is needed because for Qblox instrument working in flux buses as DC sources, if we don't
-                    # add an empty schedule its offsets won't be activated and the results will be misleading.
-                    flux_port = self.platform.chip.get_port_from_qubit_idx(idx=qubit, line=Line.FLUX)
-                    if flux_port is not None:
-                        flux_bus = next((bus for bus in self.platform.buses if bus.port == flux_port), None)
-                        if flux_bus and any(
-                            isinstance(instrument, AWG) for instrument in flux_bus.system_control.instruments
-                        ):
-                            pulse_schedule.create_schedule(port=flux_port)
+            for bus_alias in self.digital_compilation_settings.buses:
+                # If we find a flux port, create empty schedule for that port.
+                # This is needed because for Qblox instrument working in flux buses as DC sources, if we don't
+                # add an empty schedule its offsets won't be activated and the results will be misleading.
+                if self.digital_compilation_settings.buses[bus_alias].line == Line.FLUX:
+                    pulse_schedule.create_schedule(bus_alias=bus_alias)
 
             pulse_schedule_list.append(pulse_schedule)
 
@@ -378,7 +371,7 @@ class CircuitTranspiler:
             list[GateEventSettings]: schedule list with each of the pulses settings
         """
 
-        gate_schedule = self.platform.gates_settings.get_gate(name=gate.__class__.__name__, qubits=gate.qubits)
+        gate_schedule = self.digital_compilation_settings.get_gate(name=gate.__class__.__name__, qubits=gate.qubits)
 
         if not isinstance(gate, Drag):
             return gate_schedule
@@ -427,7 +420,7 @@ class CircuitTranspiler:
             time = max(time, schedule_element.pulse.duration + schedule_element.wait_time)
         return time
 
-    def _get_gate_qubits(self, gate: Gate, schedule: list[GateEventSettings] | None = None) -> list[int]:
+    def _get_gate_qubits(self, gate: Gate, schedule: list[GateEventSettings] | None = None) -> tuple[int, ...]:
         """Gets qubits involved in gate. This includes gate.qubits but also qubits which are targets of
         buses in the gate schedule
 
@@ -440,10 +433,10 @@ class CircuitTranspiler:
 
         schedule_qubits = (
             [
-                target.qubit_index
+                qubit
                 for schedule_element in schedule
-                for target in self.platform._get_bus_by_alias(schedule_element.bus).targets
-                if isinstance(target, Qubit)
+                for qubit in self.digital_compilation_settings.buses[schedule_element.bus].qubits
+                if schedule_element.bus in self.digital_compilation_settings.buses
             ]
             if schedule is not None
             else []
@@ -451,15 +444,9 @@ class CircuitTranspiler:
 
         gate_qubits = list(gate.qubits)
 
-        return list(set(schedule_qubits + gate_qubits))  # converto to set and back to list to remove repeated items
+        return tuple(set(schedule_qubits + gate_qubits))  # convert to set and back to list to remove repeated items
 
-    def _gate_element_to_pulse_event(
-        self,
-        time: int,
-        gate: Gate,
-        gate_event: GateEventSettings,
-        bus,  # type: ignore
-    ) -> PulseEvent:
+    def _gate_element_to_pulse_event(self, time: int, gate: Gate, gate_event: GateEventSettings) -> PulseEvent:
         """Translates a gate element into a pulse.
 
         Args:
@@ -479,14 +466,14 @@ class CircuitTranspiler:
         pulse_shape = Factory.get(pulse_shape_copy.pop(RUNCARD.NAME))(**pulse_shape_copy)
 
         # handle measurement gates and target qubits for control gates which might have multi-qubit schedules
-        if isinstance(gate, M):
-            qubit = gate.qubits[0]
-        # for couplers we don't need to set the target qubit
-        elif isinstance(bus.targets[0], Coupler):
-            qubit = None
-        # handle control gates, target should be the qubit target of the bus
-        else:
-            qubit = next(target.qubit_index for target in bus.targets if isinstance(target, Qubit))
+        bus = self.digital_compilation_settings.buses[gate_event.bus]
+        qubit = (
+            gate.qubits[0]
+            if isinstance(gate, M)
+            else next((qubit for qubit in bus.qubits), None)
+            if bus is not None
+            else None
+        )
 
         return PulseEvent(
             pulse=Pulse(
@@ -496,7 +483,7 @@ class CircuitTranspiler:
                 frequency=0,
                 pulse_shape=pulse_shape,
             ),
-            start_time=time + gate_event.wait_time + self.platform.gates_settings.delay_before_readout,
+            start_time=time + gate_event.wait_time + self.digital_compilation_settings.delay_before_readout,
             pulse_distortions=bus.distortions,
             qubit=qubit,
         )
@@ -512,9 +499,9 @@ class CircuitTranspiler:
         if qubit not in time:
             time[qubit] = 0
         old_time = time[qubit]
-        residue = (gate_time) % self.platform.gates_settings.minimum_clock_time
+        residue = (gate_time) % self.digital_compilation_settings.minimum_clock_time
         if residue != 0:
-            gate_time += self.platform.gates_settings.minimum_clock_time - residue
+            gate_time += self.digital_compilation_settings.minimum_clock_time - residue
         time[qubit] += gate_time
         return old_time
 

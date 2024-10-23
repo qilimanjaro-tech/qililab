@@ -35,11 +35,11 @@ class PulseBusSchedule:
     """Container of Pulse objects addressed to the same bus.
 
     Args:
-        port (str): Port (bus) alias.
+        bus_alias (str): Bus alias.
         timeline (list[PulseEvent]): List of :class:`PulseEvent` objects the PulseBusSchedule is composed of.
 
     Examples:
-        You can create a PulseBusSchedule targeting a bus or port in our chip by doing:
+        You can create a PulseBusSchedule targeting a bus by doing:
 
         .. code-block:: python3
 
@@ -48,7 +48,7 @@ class PulseBusSchedule:
             )
             drag_pulse_event = PulseEvent(pulse=drag_pulse, start_time=0)
 
-            drive_schedule = PulseBusSchedule(timeline=[drag_pulse_event], port="drive_q0")
+            drive_schedule = PulseBusSchedule(timeline=[drag_pulse_event], bus_alias="drive_q0")
 
         You can add further pulse events to an already created PulseBusSchedule. To do so:
 
@@ -59,7 +59,7 @@ class PulseBusSchedule:
             )
             drag_pulse_event = PulseEvent(pulse=drag_pulse_0, start_time=0)
 
-            drive_schedule = PulseBusSchedule(timeline=[drag_pulse_event], port="drive_q0")
+            drive_schedule = PulseBusSchedule(timeline=[drag_pulse_event], bus_alias="drive_q0")
             drag_pulse_1 = Pulse(
                 amplitude=1, phase=0.5, duration=400, frequency=1e7, pulse_shape=Drag(num_sigmas=2, drag_coefficient=0.2)
             )
@@ -67,8 +67,7 @@ class PulseBusSchedule:
             drive_schedule.add_event(drag_pulse_event_1)
     """
 
-    # FIXME: we may have one port being used by more than one bus. Use virtual ports instead.
-    port: str  #: Port(bus) alias.
+    bus_alias: str  # Bus alias.
     timeline: list[PulseEvent] = field(
         default_factory=list
     )  #: List of PulseEvent objects the PulseBusSchedule is composed of.
@@ -191,7 +190,8 @@ class PulseBusSchedule:
         qubits = {pulse_event.qubit for pulse_event in self.timeline}
         for qubit in qubits:
             schedule = PulseBusSchedule(
-                port=self.port, timeline=[pulse_event for pulse_event in self.timeline if pulse_event.qubit == qubit]
+                bus_alias=self.bus_alias,
+                timeline=[pulse_event for pulse_event in self.timeline if pulse_event.qubit == qubit],
             )
             schedules.append(schedule)
         return schedules
@@ -204,7 +204,7 @@ class PulseBusSchedule:
         """
         return {
             PULSEBUSSCHEDULE.TIMELINE: [pulse_event.to_dict() for pulse_event in self.timeline],
-            PULSEBUSSCHEDULE.PORT: self.port,
+            "bus_alias": self.bus_alias,
         }
 
     @classmethod
@@ -218,5 +218,5 @@ class PulseBusSchedule:
             PulseBusSchedule: Loaded class.
         """
         timeline = [PulseEvent.from_dict(event) for event in dictionary[PULSEBUSSCHEDULE.TIMELINE]]
-        port = dictionary[PULSEBUSSCHEDULE.PORT]
-        return PulseBusSchedule(timeline=timeline, port=port)
+        bus_alias = dictionary["bus_alias"]
+        return PulseBusSchedule(timeline=timeline, bus_alias=bus_alias)
