@@ -973,15 +973,13 @@ class Platform:
         repetition_duration: int,
         num_bins: int = 1,
         queue: Queue | None = None,
-        placer: Placer | None = None,
-        router: Router | None = None,
-        placer_kwargs: dict | None = None,
-        router_kwargs: dict | None = None,
+        placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
+        router: Router | type[Router] | tuple[type[Router], dict] | None = None,
     ) -> Result | QbloxResult:
         """Compiles and executes a circuit or a pulse schedule, using the platform instruments.
 
         If the ``program`` argument is a :class:`Circuit`, it will first be translated into a :class:`PulseSchedule` using the transpilation
-        settings of the platform. Then the pulse schedules will be compiled into the assembly programs and executed.
+        settings of the platform and the passed placer and router. Then the pulse schedules will be compiled into the assembly programs and executed.
 
         To compile to assembly programs, the ``platform.compile()`` method is called; check its documentation for more information.
 
@@ -991,10 +989,10 @@ class Platform:
             repetition_duration (int): Minimum duration of a single execution.
             num_bins (int, optional): Number of bins used. Defaults to 1.
             queue (Queue, optional): External queue used for asynchronous data handling. Defaults to None.
-            placer (Placer, optional): Placer algorithm to use. Defaults to ReverseTraversal.
-            router (Router, optional): Router algorithm to use. Defaults to Sabre.
-            placer_kwargs (dict, optional): kwargs for the placer (others than connectivity). Only will be used if placer is passed. Defaults to None.
-            router_kwargs (dict, optional): kwargs for the router (others than connectivity). Only will be used if router is passed. Defaults to None.
+            placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
+                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
+            router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
+                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
 
         Returns:
             Result: Result obtained from the execution. This corresponds to a numpy array that depending on the
@@ -1006,9 +1004,7 @@ class Platform:
                 - Scope acquisition disabled: An array with dimension `(#sequencers, 2, #bins)`.
         """
         # Compile pulse schedule
-        programs, final_layout = self.compile(
-            program, num_avg, repetition_duration, num_bins, placer, router, placer_kwargs, router_kwargs
-        )
+        programs, final_layout = self.compile(program, num_avg, repetition_duration, num_bins, placer, router)
 
         # Upload pulse schedule
         for bus_alias in programs:
@@ -1102,15 +1098,13 @@ class Platform:
         num_avg: int,
         repetition_duration: int,
         num_bins: int,
-        placer: Placer | None = None,
-        router: Router | None = None,
-        placer_kwargs: dict | None = None,
-        router_kwargs: dict | None = None,
+        placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
+        router: Router | type[Router] | tuple[type[Router], dict] | None = None,
     ) -> tuple[dict[str, list[QpySequence]], dict]:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
 
         If the ``program`` argument is a :class:`Circuit`, it will first be translated into a :class:`PulseSchedule` using the transpilation
-        settings of the platform. Then the pulse schedules will be compiled into the assembly programs.
+        settings of the platform and passed placer and router. Then the pulse schedules will be compiled into the assembly programs.
 
         This methods gets called during the ``platform.execute()`` method, check its documentation for more information.
 
@@ -1119,10 +1113,10 @@ class Platform:
             num_avg (int): Number of hardware averages used.
             repetition_duration (int): Minimum duration of a single execution.
             num_bins (int): Number of bins used.
-            placer (Placer, optional): Placer algorithm to use. Defaults to ReverseTraversal.
-            router (Router, optional): Router algorithm to use. Defaults to Sabre.
-            placer_kwargs (dict, optional): kwargs for the placer (others than connectivity). Only will be used if placer is passed. Defaults to None.
-            router_kwargs (dict, optional): kwargs for the router (others than connectivity). Only will be used if router is passed. Defaults to None.
+            placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
+                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
+            router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
+                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
 
         Returns:
             dict: Dictionary of compiled assembly programs. The key is the bus alias (``str``), and the value is the assembly compilation (``list``).
@@ -1135,13 +1129,7 @@ class Platform:
         if isinstance(program, Circuit):
             transpiler = CircuitTranspiler(platform=self)
 
-            transpiled_circuits, final_layouts = transpiler.transpile_circuit(
-                circuits=[program],
-                placer=placer,
-                router=router,
-                placer_kwargs=placer_kwargs,
-                router_kwargs=router_kwargs,
-            )
+            transpiled_circuits, final_layouts = transpiler.transpile_circuits([program], placer, router)
             pulse_schedule, final_layout = transpiled_circuits[0], final_layouts[0]
 
         elif isinstance(program, PulseSchedule):
