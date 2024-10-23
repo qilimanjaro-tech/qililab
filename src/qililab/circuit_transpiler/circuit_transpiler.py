@@ -56,9 +56,9 @@ class CircuitTranspiler:
     def transpile_circuits(
         self,
         circuits: list[Circuit],
-        optimize: bool = True,
         placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
         router: Router | type[Router] | tuple[type[Router], dict] | None = None,
+        optimize: bool = True,
     ) -> tuple[list[PulseSchedule], list[dict]]:
         """Transpiles a list of ``qibo.models.Circuit`` to a list of pulse schedules.
 
@@ -108,6 +108,7 @@ class CircuitTranspiler:
                 use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
             router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
                 use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
+            optimize (bool, optional): whether to optimize the transpilation. Defaults to True.
 
         Returns:
             list[PulseSchedule]: list of pulse schedules.
@@ -119,7 +120,7 @@ class CircuitTranspiler:
 
         # Optimze qibo gates, cancellation stage:
         if optimize:
-            routed_circuits = [self.gates_cancellation(circuit) for circuit in routed_circuits]
+            routed_circuits = tuple(self.gates_cancellation(circuit) for circuit in routed_circuits)
 
         # Unroll to Natives stage:
         native_circuits = (self.circuit_to_native(circuit) for circuit in routed_circuits)
@@ -132,7 +133,6 @@ class CircuitTranspiler:
         pulse_schedules = self.circuit_to_pulses(list(native_circuits))
 
         return pulse_schedules, list(final_layouts)
-
 
     def route_circuit(
         self,
