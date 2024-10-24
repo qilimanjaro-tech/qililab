@@ -81,6 +81,12 @@ class TestYokogawaGS200:
         value = yokogawa_gs200_voltage.get_parameter(parameter)
         assert value == expected_value
 
+    @pytest.mark.parametrize("parameter", [Parameter.MAX_CURRENT, Parameter.GAIN])
+    def test_get_parameter_method_raises_exception(self, parameter: Parameter, yokogawa_gs200: GS200):
+        """Test the setup method with float value raises an exception with wrong parameters"""
+        with pytest.raises(ParameterNotFound):
+            yokogawa_gs200.get_parameter(parameter)
+
     @pytest.mark.parametrize(
         "parameter, value",
         [

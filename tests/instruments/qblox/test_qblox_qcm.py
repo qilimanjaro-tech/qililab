@@ -94,6 +94,8 @@ def fixture_qrm(platform: Platform):
 class TestQbloxQCM:
     def test_init(self, qcm: QbloxQCM):
         assert qcm.alias == "qcm"
+        assert qcm.is_awg()
+        assert not qcm.is_adc()
         assert len(qcm.awg_sequencers) == 2  # As per the YAML config
         assert qcm.out_offsets == [0.0, 0.1, 0.2, 0.3]
         sequencer = qcm.get_sequencer(0)
@@ -308,3 +310,9 @@ class TestQbloxQCM:
 
         for sequencer in qcm.awg_sequencers:
             qcm.device.sequencers[sequencer.identifier].sync_en.assert_called_once_with(False)
+
+class TestQbloxSequencer:
+    def test_to_dict(self, qcm: QbloxQCM):
+        sequencer = qcm.get_sequencer(0)
+        as_dict = sequencer.to_dict()
+        assert isinstance(as_dict, dict)

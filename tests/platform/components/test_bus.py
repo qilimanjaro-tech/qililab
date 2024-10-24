@@ -49,6 +49,10 @@ class TestBus:
     def test_bus_str(self, bus):
         assert isinstance(str(bus), str)
 
+    def test_bus_properties(self, bus):
+        assert bus.delay == 0
+        assert bus.distortions == []
+
     def test_bus_equality(self, bus):
         other_bus = MagicMock(spec=Bus)
         other_bus.__str__.return_value = str(bus)

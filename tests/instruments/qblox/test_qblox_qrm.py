@@ -341,6 +341,39 @@ class TestQbloxQRM:
         qrm.upload_qpysequence(qpysequence=sequence_q0, channel_id=0)
         qrm.upload_qpysequence(qpysequence=sequence_q1, channel_id=1)
 
+        qrm.device.get_acquisitions.return_value = {
+            "acquisition_q0_0": {
+                "acquisition": {
+                    "scope": {
+                        "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                        "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                    },
+                    "bins": {
+                        "integration": {"path0": [1], "path1": [1]},
+                        "threshold": [0],
+                        "avg_cnt": [1],
+                    },
+                    "qubit": 0,
+                    "measurement": 0,
+                }
+            },
+            "acquisition_q0_1": {
+                "acquisition": {
+                    "scope": {
+                        "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                        "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                    },
+                    "bins": {
+                        "integration": {"path0": [1], "path1": [1]},
+                        "threshold": [0],
+                        "avg_cnt": [1],
+                    },
+                    "qubit": 0,
+                    "measurement": 0,
+                }
+            },
+        }
+
         qrm.acquire_result()
 
         assert qrm.device.get_sequencer_state.call_count == 2

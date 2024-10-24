@@ -125,6 +125,7 @@ class TestQbloxQCMRF:
             (Parameter.PHASE_IMBALANCE, 0.02),
 
             # QCM-RF specific
+            (Parameter.LO_FREQUENCY, 5e9),
             (Parameter.OUT0_LO_FREQ, 5e9),
             (Parameter.OUT0_LO_EN, True),
             (Parameter.OUT0_ATT, 0.5),
@@ -162,6 +163,8 @@ class TestQbloxQCMRF:
             assert sequencer.gain_imbalance == value
         elif parameter == Parameter.PHASE_IMBALANCE:
             assert sequencer.phase_imbalance == value
+        elif parameter == Parameter.LO_FREQUENCY:
+            assert qcm_rf.settings.out0_lo_freq == value
         elif parameter == Parameter.OUT0_LO_FREQ:
             assert qcm_rf.settings.out0_lo_freq == value
         elif parameter == Parameter.OUT0_LO_EN:
@@ -182,7 +185,6 @@ class TestQbloxQCMRF:
             assert qcm_rf.settings.out1_offset_path0 == value
         elif parameter == Parameter.OUT1_OFFSET_PATH1:
             assert qcm_rf.settings.out1_offset_path1 == value
-
 
     def test_set_parameter_raises_error(self, qcm_rf: QbloxQCMRF):
         """Test setting parameters for QCM sequencers."""
