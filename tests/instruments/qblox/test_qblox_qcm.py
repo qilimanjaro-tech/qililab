@@ -110,7 +110,7 @@ class TestQbloxQCM:
 
     def test_init_raises_error(self):
         with pytest.raises(ValueError):
-            _ = build_platform(runcard="tests/instruments/qblox/qblox_too_many_sequencers_runcard.yaml")
+            _ = build_platform(runcard="tests/instruments/qblox/qblox_qcm_too_many_sequencers_runcard.yaml")
 
     @pytest.mark.parametrize(
         "parameter, value",

@@ -115,6 +115,10 @@ class TestQbloxQRM:
         assert sequencer.offset_i == 0.0
         assert sequencer.offset_q == 0.0
 
+    def test_init_raises_error(self):
+        with pytest.raises(ValueError):
+            _ = build_platform(runcard="tests/instruments/qblox/qblox_qrm_too_many_sequencers_runcard.yaml")
+
     @pytest.mark.parametrize(
         "parameter, value",
         [
@@ -160,7 +164,9 @@ class TestQbloxQRM:
             (Parameter.SEQUENCE_TIMEOUT, 2),
             (Parameter.ACQUISITION_TIMEOUT, 2),
             (Parameter.TIME_OF_FLIGHT, 80),
-            (Parameter.SCOPE_STORE_ENABLED, True)
+            (Parameter.SCOPE_STORE_ENABLED, True),
+            (Parameter.THRESHOLD, 0.5),
+            (Parameter.THRESHOLD_ROTATION, 0.5)
         ]
     )
     def test_set_parameter(self, qrm: QbloxQRM, parameter, value):
@@ -206,17 +212,16 @@ class TestQbloxQRM:
             output = int(parameter.value[-1])
             assert qrm.out_offsets[output] == value
 
-    @pytest.mark.parametrize(
-        "parameter, value",
-        [
-            # Invalid parameter (should raise ParameterNotFound)
-            (Parameter.BUS_FREQUENCY, 42),  # Invalid parameter
-        ]
-    )
-    def test_set_parameter_raises_error(self, qrm: QbloxQRM, parameter, value):
+    def test_set_parameter_raises_error(self, qrm: QbloxQRM):
         """Test setting parameters for QCM sequencers using parameterized values."""
         with pytest.raises(ParameterNotFound):
-            qrm.set_parameter(parameter, value, channel_id=0)
+            qrm.set_parameter(Parameter.BUS_FREQUENCY, value=42, channel_id=0)
+
+        with pytest.raises(IndexError):
+            qrm.set_parameter(Parameter.PHASE_IMBALANCE, value=0.5, channel_id=4)
+
+        with pytest.raises(Exception):
+            qrm.set_parameter(Parameter.PHASE_IMBALANCE, value=0.5, channel_id=None)
 
     @pytest.mark.parametrize(
         "parameter, expected_value",
@@ -256,7 +261,9 @@ class TestQbloxQRM:
             (Parameter.SEQUENCE_TIMEOUT, 5.0),
             (Parameter.ACQUISITION_TIMEOUT, 1.0),
             (Parameter.TIME_OF_FLIGHT, 120),
-            (Parameter.SCOPE_STORE_ENABLED, False)
+            (Parameter.SCOPE_STORE_ENABLED, False),
+            (Parameter.THRESHOLD, 1.0),
+            (Parameter.THRESHOLD_ROTATION, 0.0)
         ]
     )
     def test_get_parameter(self, qrm: QbloxQRM, parameter, expected_value):
@@ -268,6 +275,12 @@ class TestQbloxQRM:
         """Test setting parameters for QCM sequencers using parameterized values."""
         with pytest.raises(ParameterNotFound):
             qrm.get_parameter(Parameter.BUS_FREQUENCY, channel_id=0)
+
+        with pytest.raises(IndexError):
+            qrm.get_parameter(Parameter.PHASE_IMBALANCE, channel_id=4)
+
+        with pytest.raises(Exception):
+            qrm.get_parameter(Parameter.PHASE_IMBALANCE, channel_id=None)
 
     @pytest.mark.parametrize(
         "channel_id, expected_error",
