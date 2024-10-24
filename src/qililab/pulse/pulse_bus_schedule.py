@@ -179,23 +179,6 @@ class PulseBusSchedule:
 
         return waveforms
 
-    def qubit_schedules(self) -> list[PulseBusSchedule]:
-        """Separates all the :class:`PulseEvent` objects that act on different qubits, and returns a list
-        of PulseBusSchedule objects, each one acting on a single qubit.
-
-        Returns:
-            list[PulseBusSchedule]: List of PulseBusSchedule objects, each one acting on a single qubit.
-        """
-        schedules = []
-        qubits = {pulse_event.qubit for pulse_event in self.timeline}
-        for qubit in qubits:
-            schedule = PulseBusSchedule(
-                bus_alias=self.bus_alias,
-                timeline=[pulse_event for pulse_event in self.timeline if pulse_event.qubit == qubit],
-            )
-            schedules.append(schedule)
-        return schedules
-
     def to_dict(self):
         """Returns dictionary representation of the class.
 

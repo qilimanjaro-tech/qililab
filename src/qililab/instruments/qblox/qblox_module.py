@@ -152,7 +152,6 @@ class QbloxModule(Instrument):
         sequencer = self.get_sequencer(sequencer_id=sequencer_id)
         self.device.sequencers[sequencer.identifier].marker_ovr_value(value)
 
-    @property
     def module_type(self):
         """returns the qblox module type. Options: QCM or QRM"""
         return self.device.module_type()

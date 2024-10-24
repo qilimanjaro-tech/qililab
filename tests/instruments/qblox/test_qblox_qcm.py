@@ -49,6 +49,7 @@ def fixture_qrm(platform: Platform):
         "connect_out2",
         "connect_out3",
         "marker_ovr_en",
+        "marker_ovr_value",
         "offset_awg_path0",
         "offset_awg_path1"
     ]
@@ -73,7 +74,8 @@ def fixture_qrm(platform: Platform):
         "disconnect_inputs",
         "arm_sequencer",
         "start_sequencer",
-        "reset"
+        "reset",
+        "module_type"
     ]
 
     # Create a mock device using create_autospec to follow the interface of the expected device
@@ -113,6 +115,10 @@ class TestQbloxQCM:
     def test_init_raises_error(self):
         with pytest.raises(ValueError):
             _ = build_platform(runcard="tests/instruments/qblox/qblox_qcm_too_many_sequencers_runcard.yaml")
+
+    def test_module_type(self, qcm: QbloxQCM):
+        _ = qcm.module_type()
+        qcm.device.module_type.assert_called_once()
 
     @pytest.mark.parametrize(
         "parameter, value",
@@ -240,6 +246,17 @@ class TestQbloxQCM:
 
         with pytest.raises(Exception):
             qcm.get_parameter(Parameter.PHASE_IMBALANCE, channel_id=None)
+
+    def test_set_markers_override_enabled(self, qcm: QbloxQCM):
+        qcm.set_markers_override_enabled(value=True, sequencer_id=0)
+        qcm.device.sequencers[0].marker_ovr_en.assert_called_once_with(True)
+
+        qcm.set_markers_override_enabled(value=False, sequencer_id=0)
+        qcm.device.sequencers[0].marker_ovr_en.assert_called_once_with(False)
+
+    def test_set_markers_override_value(self, qcm: QbloxQCM):
+        qcm.set_markers_override_value(value=123, sequencer_id=0)
+        qcm.device.sequencers[0].marker_ovr_value.assert_called_once_with(123)
 
     def test_initial_setup(self, qcm: QbloxQCM):
         """Test the initial setup of the QCM module."""

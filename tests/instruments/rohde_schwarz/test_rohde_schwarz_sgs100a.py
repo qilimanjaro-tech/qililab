@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from qililab.instrument_controllers.rohde_schwarz.sgs100a_controller import SGS100AController
-from qililab.instruments import SGS100A
+from qililab.instruments import SGS100A, ParameterNotFound
 from qililab.platform import Platform
 from qililab.typings.enums import Parameter
 from tests.data import Galadriel
@@ -44,15 +44,39 @@ class TestSGS100A:
         if parameter == Parameter.RF_ON:
             assert sdg100a.settings.rf_on == value
 
+    def test_set_parameter_method_raises_error(self, sdg100a: SGS100A):
+        """Test setup method"""
+        with pytest.raises(ParameterNotFound):
+            sdg100a.set_parameter(parameter=Parameter.BUS_FREQUENCY, value=123)
+
+    @pytest.mark.parametrize(
+        "parameter, expected_value",
+        [(Parameter.POWER, 100), (Parameter.LO_FREQUENCY, 1e6), (Parameter.RF_ON, True)],
+    )
+    def test_get_parameter_method(
+        self, sdg100a: SGS100A, parameter: Parameter, expected_value: float,
+    ):
+        """Test get_parameter method"""
+        value = sdg100a.get_parameter(parameter=parameter)
+        assert value == expected_value
+
+    def test_get_parameter_method_raises_error(self, sdg100a: SGS100A):
+        """Test get_parameter method"""
+        with pytest.raises(ParameterNotFound):
+            sdg100a.get_parameter(parameter=Parameter.BUS_FREQUENCY)
+
     def test_initial_setup_method(self, sdg100a: SGS100A):
         """Test initial setup method"""
         sdg100a.initial_setup()
         sdg100a.device.power.assert_called_with(sdg100a.power)
         sdg100a.device.frequency.assert_called_with(sdg100a.frequency)
-        if sdg100a.rf_on:
-            sdg100a.device.on.assert_called_once()
-        else:
-            sdg100a.device.off.assert_called_once()
+        sdg100a.device.on.assert_called_once()
+
+        sdg100a.settings.rf_on = False
+        sdg100a.initial_setup()
+        sdg100a.device.power.assert_called_with(sdg100a.power)
+        sdg100a.device.frequency.assert_called_with(sdg100a.frequency)
+        sdg100a.device.off.assert_called_once()
 
     def test_turn_on_method(self, sdg100a: SGS100A):
         """Test turn_on method"""

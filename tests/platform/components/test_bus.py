@@ -142,6 +142,14 @@ class TestBus:
         bus.instruments[1].acquire_qprogram_results.return_value = results
         assert bus.acquire_qprogram_results(acquisitions) == results
 
+    def test_bus_acquire_qprogram_results_raises_error(self, bus):
+        acquisitions = {"acq1": MagicMock(spec=AcquisitionData)}
+        bus.instruments.clear()
+        bus.channels.clear()
+
+        with pytest.raises(AttributeError, match=f"The bus {bus.alias} cannot acquire results because it doesn't have a readout system control."):
+            _ = bus.acquire_qprogram_results(acquisitions)
+
     def test_bus_with_non_existant_instrument_raises_error(self, mock_instruments):
         with pytest.raises(NameError):
             settings = {
