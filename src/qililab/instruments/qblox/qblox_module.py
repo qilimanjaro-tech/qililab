@@ -55,10 +55,9 @@ class QbloxModule(Instrument):
 
         def __post_init__(self):
             """build QbloxSequencer"""
-            num_sequencers = len(self.awg_sequencers)
-            if num_sequencers > QbloxModule._NUM_MAX_SEQUENCERS:
+            if len(self.awg_sequencers) > QbloxModule._NUM_MAX_SEQUENCERS:
                 raise ValueError(
-                    f"The number of sequencers must be less or equal than {QbloxModule._NUM_MAX_SEQUENCERS}. Received: {num_sequencers}"
+                    f"The number of sequencers must be less or equal than {QbloxModule._NUM_MAX_SEQUENCERS}. Received: {len(self.awg_sequencers)}"
                 )
 
             self.awg_sequencers = [
@@ -174,16 +173,9 @@ class QbloxModule(Instrument):
             return
 
         if channel_id is None:
-            if self.num_sequencers == 1:
-                channel_id = 0
-            else:
-                raise Exception(f"Cannot update parameter {parameter.value} without specifying a channel_id.")
+            raise Exception(f"Cannot update parameter {parameter.value} without specifying a channel_id.")
 
         channel_id = int(channel_id)
-        if channel_id > self.num_sequencers - 1:
-            raise Exception(
-                f"the specified channel id:{channel_id} is out of range. Number of sequencers is {self.num_sequencers}"
-            )
         if parameter == Parameter.GAIN:
             self._set_gain(value=value, sequencer_id=channel_id)
             return
@@ -225,13 +217,10 @@ class QbloxModule(Instrument):
             return self.out_offsets[output]
 
         if channel_id is None:
-            if self.num_sequencers == 1:
-                channel_id = 0
-            else:
-                raise Exception(f"Cannot update parameter {parameter.value} without specifying a channel_id.")
+            raise Exception(f"Cannot update parameter {parameter.value} without specifying a channel_id.")
 
         channel_id = int(channel_id)
-        sequencer = self._get_sequencer_by_id(id=channel_id)
+        sequencer = self.get_sequencer(sequencer_id=channel_id)
 
         if parameter == Parameter.GAIN:
             return sequencer.gain_i, sequencer.gain_q
@@ -251,7 +240,7 @@ class QbloxModule(Instrument):
         Raises:
             ValueError: when value type is not bool
         """
-        self._get_sequencer_by_id(id=sequencer_id).hardware_modulation = bool(value)
+        self.get_sequencer(sequencer_id=sequencer_id).hardware_modulation = bool(value)
 
         if self.is_device_active():
             self.device.sequencers[sequencer_id].mod_en_awg(bool(value))
@@ -266,7 +255,7 @@ class QbloxModule(Instrument):
         Raises:
             ValueError: when value type is not float
         """
-        self._get_sequencer_by_id(id=sequencer_id).intermediate_frequency = float(value)
+        self.get_sequencer(sequencer_id=sequencer_id).intermediate_frequency = float(value)
 
         if self.is_device_active():
             self.device.sequencers[sequencer_id].nco_freq(float(value))
@@ -282,7 +271,7 @@ class QbloxModule(Instrument):
             ValueError: when value type is not float
         """
         # update value in qililab
-        self._get_sequencer_by_id(id=sequencer_id).offset_i = float(value)
+        self.get_sequencer(sequencer_id=sequencer_id).offset_i = float(value)
         # update value in the instrument
         if self.is_device_active():
             sequencer = self.device.sequencers[sequencer_id]
@@ -299,7 +288,7 @@ class QbloxModule(Instrument):
             ValueError: when value type is not float
         """
         # update value in qililab
-        self._get_sequencer_by_id(id=sequencer_id).offset_q = float(value)
+        self.get_sequencer(sequencer_id=sequencer_id).offset_q = float(value)
         # update value in the instrument
         if self.is_device_active():
             sequencer = self.device.sequencers[sequencer_id]
@@ -337,7 +326,7 @@ class QbloxModule(Instrument):
             ValueError: when value type is not float
         """
         # update value in qililab
-        self._get_sequencer_by_id(id=sequencer_id).gain_i = float(value)
+        self.get_sequencer(sequencer_id=sequencer_id).gain_i = float(value)
         # update value in the instrument
         if self.is_device_active():
             sequencer = self.device.sequencers[sequencer_id]
@@ -354,7 +343,7 @@ class QbloxModule(Instrument):
             ValueError: when value type is not float
         """
         # update value in qililab
-        self._get_sequencer_by_id(id=sequencer_id).gain_q = float(value)
+        self.get_sequencer(sequencer_id=sequencer_id).gain_q = float(value)
         # update value in the instrument
         if self.is_device_active():
             sequencer = self.device.sequencers[sequencer_id]
@@ -423,12 +412,12 @@ class QbloxModule(Instrument):
 
     def _set_nco(self, sequencer_id: int):
         """Enable modulation of pulses and setup NCO frequency."""
-        if self._get_sequencer_by_id(id=sequencer_id).hardware_modulation:
+        if self.get_sequencer(sequencer_id=sequencer_id).hardware_modulation:
             self._set_hardware_modulation(
-                value=self._get_sequencer_by_id(id=sequencer_id).hardware_modulation, sequencer_id=sequencer_id
+                value=self.get_sequencer(sequencer_id=sequencer_id).hardware_modulation, sequencer_id=sequencer_id
             )
             self._set_frequency(
-                value=self._get_sequencer_by_id(id=sequencer_id).intermediate_frequency, sequencer_id=sequencer_id
+                value=self.get_sequencer(sequencer_id=sequencer_id).intermediate_frequency, sequencer_id=sequencer_id
             )
 
     def _set_gain_imbalance(self, value: float | str | bool, sequencer_id: int):
@@ -442,7 +431,7 @@ class QbloxModule(Instrument):
             ValueError: when value type is not float
         """
 
-        self._get_sequencer_by_id(id=sequencer_id).gain_imbalance = float(value)
+        self.get_sequencer(sequencer_id=sequencer_id).gain_imbalance = float(value)
 
         if self.is_device_active():
             self.device.sequencers[sequencer_id].mixer_corr_gain_ratio(float(value))
@@ -457,7 +446,7 @@ class QbloxModule(Instrument):
         Raises:
             ValueError: when value type is not float
         """
-        self._get_sequencer_by_id(id=sequencer_id).phase_imbalance = float(value)
+        self.get_sequencer(sequencer_id=sequencer_id).phase_imbalance = float(value)
         if self.is_device_active():
             self.device.sequencers[sequencer_id].mixer_corr_phase_offset_degree(float(value))
 
@@ -475,20 +464,3 @@ class QbloxModule(Instrument):
     def out_offsets(self):
         """Returns the offsets of each output of the qblox module."""
         return self.settings.out_offsets
-
-    def _get_sequencer_by_id(self, id: int):
-        """Returns a sequencer with the given `id`."
-
-        Args:
-            id (int): Id of the sequencer.
-
-        Raises:
-            IndexError: There is no sequencer with the given `id`.
-
-        Returns:
-            QbloxSequencer: Sequencer with the given `id`.
-        """
-        for sequencer in self.awg_sequencers:
-            if sequencer.identifier == id:
-                return sequencer
-        raise IndexError(f"There is no sequencer with id={id}.")

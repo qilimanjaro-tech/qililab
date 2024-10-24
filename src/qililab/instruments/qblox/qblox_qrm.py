@@ -258,7 +258,7 @@ class QbloxQRM(QbloxModule):
             value (float): integrated value of the threshold
             sequencer_id (int): sequencer to update the value
         """
-        integrated_value = value * self._get_sequencer_by_id(id=sequencer_id).integration_length
+        integrated_value = value * self.device.sequencers[sequencer_id].integration_length_acq()
         self.device.sequencers[sequencer_id].thresholded_acq_threshold(integrated_value)
 
     def _set_device_threshold_rotation(self, value: float, sequencer_id: int):

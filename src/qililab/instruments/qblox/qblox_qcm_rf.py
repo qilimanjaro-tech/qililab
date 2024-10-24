@@ -95,7 +95,7 @@ class QbloxQCMRF(QbloxQCM):
         """
         if parameter == Parameter.LO_FREQUENCY:
             if channel_id is not None:
-                sequencer = self._get_sequencer_by_id(int(channel_id))
+                sequencer = self.get_sequencer(sequencer_id=int(channel_id))
             else:
                 raise Exception(
                     "`channel_id` cannot be None when setting the `LO_FREQUENCY` parameter."
@@ -121,7 +121,7 @@ class QbloxQCMRF(QbloxQCM):
         """
         if parameter == Parameter.LO_FREQUENCY:
             if channel_id is not None:
-                sequencer = self._get_sequencer_by_id(int(channel_id))
+                sequencer = self.get_sequencer(sequencer_id=int(channel_id))
             else:
                 raise Exception(
                     "`channel_id` cannot be None when setting the `LO_FREQUENCY` parameter."
