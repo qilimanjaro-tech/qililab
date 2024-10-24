@@ -135,7 +135,7 @@ class Bus:
 
     def __iter__(self):
         """Redirect __iter__ magic method."""
-        return iter(self.instruments)
+        return iter(zip(self.instruments, self.channels))
 
     def to_dict(self):
         """Return a dict representation of the Bus class."""
@@ -231,7 +231,7 @@ class Bus:
 
         if len(results) > 1:
             raise ValueError(
-                f"Acquisition from multiple instruments is not supported. Obtained a total of {len(results)} results. "
+                f"Acquisition from multiple instruments is not supported. Obtained a total of {len(results)} results."
             )
 
         if len(results) == 0:

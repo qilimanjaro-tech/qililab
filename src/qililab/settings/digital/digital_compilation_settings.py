@@ -42,13 +42,6 @@ class DigitalCompilationSettings:
     def to_dict(self):
         """Serializes gate settings to dictionary and removes fields with None values"""
 
-        def remove_none_values(data):
-            if isinstance(data, dict):
-                data = {key: remove_none_values(item) for key, item in data.items() if item is not None}
-            elif isinstance(data, list):
-                data = [remove_none_values(item) for item in data if item is not None]
-            return data
-
         return asdict(self, dict_factory=dict_factory) | {
             "buses": {bus: bus_settings.to_dict() for bus, bus_settings in self.buses.items()}
         }
