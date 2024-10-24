@@ -52,11 +52,11 @@ class TestYokogawaGS200:
     @pytest.mark.parametrize(
         "parameter, expected_value",
         [
-            (Parameter.CURRENT, 0.0),
-            (Parameter.VOLTAGE, 0.5),
+            (Parameter.CURRENT, 0.5),
+            (Parameter.VOLTAGE, 0.0),
             (Parameter.RAMPING_ENABLED, True),
             (Parameter.RAMPING_RATE, 0.01),
-            (Parameter.SOURCE_MODE, SourceMode.VOLTAGE),
+            (Parameter.SOURCE_MODE, SourceMode.CURRENT),
             (Parameter.SPAN, "200mA"),
         ],
     )
@@ -68,8 +68,8 @@ class TestYokogawaGS200:
     @pytest.mark.parametrize(
         "parameter, expected_value",
         [
-            (Parameter.CURRENT, 0.5),
-            (Parameter.VOLTAGE, 0.0),
+            (Parameter.CURRENT, 0.0),
+            (Parameter.VOLTAGE, 0.5),
             (Parameter.RAMPING_ENABLED, True),
             (Parameter.RAMPING_RATE, 0.01),
             (Parameter.SOURCE_MODE, SourceMode.VOLTAGE),
