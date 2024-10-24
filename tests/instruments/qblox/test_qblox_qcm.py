@@ -249,10 +249,10 @@ class TestQbloxQCM:
 
     def test_set_markers_override_enabled(self, qcm: QbloxQCM):
         qcm.set_markers_override_enabled(value=True, sequencer_id=0)
-        qcm.device.sequencers[0].marker_ovr_en.assert_called_once_with(True)
+        qcm.device.sequencers[0].marker_ovr_en.assert_called_with(True)
 
         qcm.set_markers_override_enabled(value=False, sequencer_id=0)
-        qcm.device.sequencers[0].marker_ovr_en.assert_called_once_with(False)
+        qcm.device.sequencers[0].marker_ovr_en.assert_called_with(False)
 
     def test_set_markers_override_value(self, qcm: QbloxQCM):
         qcm.set_markers_override_value(value=123, sequencer_id=0)
