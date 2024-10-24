@@ -97,6 +97,8 @@ def fixture_qrm(platform: Platform):
 
 class TestQbloxQRM:
     def test_init(self, qrm: QbloxQRM):
+        assert qrm.is_awg()
+        assert qrm.is_adc()
         assert qrm.alias == "qrm"
         assert len(qrm.awg_sequencers) == 2  # As per the YAML config
         assert qrm.out_offsets == [0.0, 0.1, 0.2, 0.3]
@@ -187,21 +189,21 @@ class TestQbloxQRM:
         elif parameter == Parameter.PHASE_IMBALANCE:
             assert sequencer.phase_imbalance == value
         elif parameter == Parameter.SCOPE_ACQUIRE_TRIGGER_MODE:
-            assert sequencer.scope_acquire_trigger_mode == AcquireTriggerMode(value)
+            assert sequencer.scope_acquire_trigger_mode == AcquireTriggerMode(value)  # type: ignore[attr-defined]
         elif parameter == Parameter.INTEGRATION_LENGTH:
-            assert sequencer.integration_length == value
+            assert sequencer.integration_length == value  # type: ignore[attr-defined]
         elif parameter == Parameter.SAMPLING_RATE:
-            assert sequencer.sampling_rate == value
+            assert sequencer.sampling_rate == value  # type: ignore[attr-defined]
         elif parameter == Parameter.INTEGRATION_MODE:
-            assert sequencer.integration_mode == IntegrationMode(value)
+            assert sequencer.integration_mode == IntegrationMode(value)  # type: ignore[attr-defined]
         elif parameter == Parameter.SEQUENCE_TIMEOUT:
-            assert sequencer.sequence_timeout == value
+            assert sequencer.sequence_timeout == value  # type: ignore[attr-defined]
         elif parameter == Parameter.ACQUISITION_TIMEOUT:
-            assert sequencer.acquisition_timeout == value
+            assert sequencer.acquisition_timeout == value  # type: ignore[attr-defined]
         elif parameter == Parameter.TIME_OF_FLIGHT:
-            assert sequencer.time_of_flight == value
+            assert sequencer.time_of_flight == value  # type: ignore[attr-defined]
         elif parameter == Parameter.ACQUISITION_DELAY_TIME:
-            assert qrm.acquisition_delay_time == value
+            assert qrm.acquisition_delay_time == value  # type: ignore[attr-defined]
         elif parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
             output = int(parameter.value[-1])
             assert qrm.out_offsets[output] == value
@@ -314,7 +316,7 @@ class TestQbloxQRM:
 
     def test_clear_cache(self, qrm: QbloxQRM):
         """Test clearing the cache of the QCM module."""
-        qrm.cache = {0: MagicMock()}
+        qrm.cache = {0: MagicMock()}  # type: ignore[misc]
         qrm.clear_cache()
 
         assert qrm.cache == {}

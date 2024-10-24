@@ -47,6 +47,7 @@ from qililab.instruments.utils import InstrumentFactory
 from qililab.platform.components.bus import Bus
 from qililab.platform.components.buses import Buses
 from qililab.pulse.pulse_schedule import PulseSchedule
+from qililab.pulse.qblox_compiler import ModuleSequencer
 from qililab.pulse.qblox_compiler import QbloxCompiler as PulseQbloxCompiler
 from qililab.qprogram import (
     Calibration,
@@ -1042,8 +1043,8 @@ class Platform:
             raise ValueError(
                 f"Program to execute can only be either a single circuit or a pulse schedule. Got program of type {type(program)} instead"
             )
-        bus_to_module_and_sequencer_mapping = {
-            element.bus_alias: {"module": instrument, "sequencer": instrument.get_sequencer(channel)}
+        module_and_sequencer_per_bus: dict[str, ModuleSequencer] = {
+            element.bus_alias: ModuleSequencer(module=instrument, sequencer=instrument.get_sequencer(channel))
             for element in pulse_schedule.elements
             for instrument, channel in zip(
                 self.buses.get(alias=element.bus_alias).instruments, self.buses.get(alias=element.bus_alias).channels
@@ -1052,7 +1053,7 @@ class Platform:
         }
         compiler = PulseQbloxCompiler(
             buses=self.digital_compilation_settings.buses,
-            bus_to_module_and_sequencer_mapping=bus_to_module_and_sequencer_mapping,
+            module_and_sequencer_per_bus=module_and_sequencer_per_bus,
         )
         return compiler.compile(
             pulse_schedule=pulse_schedule, num_avg=num_avg, repetition_duration=repetition_duration, num_bins=num_bins
