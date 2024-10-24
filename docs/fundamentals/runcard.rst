@@ -204,7 +204,6 @@ Runcard YAML file example:
             alias: QRM1
             firmware: 0.7.0
             num_sequencers: 2
-            acquisition_delay_time: 100
             out_offsets: [0, 0]
             awg_sequencers:
                 -   identifier: 0

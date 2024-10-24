@@ -3,7 +3,6 @@ name: galadriel_soprano_master
 instruments:
   - name: QRM
     alias: QRM1
-    acquisition_delay_time: 100
     out_offsets: [0, 0]
     awg_sequencers:
       - identifier: 0

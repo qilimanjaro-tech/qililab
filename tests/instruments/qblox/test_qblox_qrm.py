@@ -17,6 +17,7 @@ from qililab.typings import AcquireTriggerMode, IntegrationMode, Parameter
 from typing import cast
 from qblox_instruments.qcodes_drivers.sequencer import Sequencer
 from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm
+from qililab.qprogram.qblox_compiler import AcquisitionData
 
 
 @pytest.fixture(name="platform")
@@ -26,7 +27,7 @@ def fixture_platform():
 
 
 @pytest.fixture(name="qrm")
-def fixture_qrm(platform: Platform):
+def fixture_qrm(platform: Platform) -> QbloxQRM:
     qrm = cast(QbloxQRM, platform.get_element(alias="qrm"))
 
     sequencer_mock_spec = [
@@ -158,7 +159,6 @@ class TestQbloxQRM:
             (Parameter.INTEGRATION_MODE, "ssb"),
             (Parameter.SEQUENCE_TIMEOUT, 2),
             (Parameter.ACQUISITION_TIMEOUT, 2),
-            (Parameter.ACQUISITION_DELAY_TIME, 200),
             (Parameter.TIME_OF_FLIGHT, 80),
             (Parameter.SCOPE_STORE_ENABLED, True)
         ]
@@ -202,8 +202,6 @@ class TestQbloxQRM:
             assert sequencer.acquisition_timeout == value  # type: ignore[attr-defined]
         elif parameter == Parameter.TIME_OF_FLIGHT:
             assert sequencer.time_of_flight == value  # type: ignore[attr-defined]
-        elif parameter == Parameter.ACQUISITION_DELAY_TIME:
-            assert qrm.acquisition_delay_time == value  # type: ignore[attr-defined]
         elif parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
             output = int(parameter.value[-1])
             assert qrm.out_offsets[output] == value
@@ -313,6 +311,53 @@ class TestQbloxQRM:
         qrm.upload_qpysequence(qpysequence=sequence, channel_id=0)
 
         qrm.device.sequencers[0].sequence.assert_called_once_with(sequence.todict())
+
+    def test_acquire_results(self, qrm: QbloxQRM):
+        """Test uploading a QpySequence to the QCM module."""
+        acquisitions_q0 = Acquisitions()
+        acquisitions_q0.add(name="acquisition_q0_0")
+        acquisitions_q0.add(name="acquisition_q0_1")
+
+        acquisitions_q1 = Acquisitions()
+        acquisitions_q1.add(name="acquisition_q1_0")
+        acquisitions_q1.add(name="acquisition_q1_1")
+
+        sequence_q0 = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=acquisitions_q0, weights=Weights())
+        sequence_q1 = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=acquisitions_q1, weights=Weights())
+
+        qrm.upload_qpysequence(qpysequence=sequence_q0, channel_id=0)
+        qrm.upload_qpysequence(qpysequence=sequence_q1, channel_id=1)
+
+        qrm.acquire_result()
+
+        assert qrm.device.get_sequencer_state.call_count == 2
+        assert qrm.device.get_acquisition_state.call_count == 2
+        assert qrm.device.store_scope_acquisition.call_count == 1
+        assert qrm.device.get_acquisitions.call_count == 2
+        assert qrm.device.sequencers[0].sync_en.call_count == 1
+        assert qrm.device.sequencers[1].sync_en.call_count == 1
+        assert qrm.device.delete_acquisition_data.call_count == 2
+
+    def test_acquire_qprogram_results(self, qrm: QbloxQRM):
+        """Test uploading a QpySequence to the QCM module."""
+        acquisitions = Acquisitions()
+        acquisitions.add(name="acquisition_0")
+        acquisitions.add(name="acquisition_1")
+
+        sequence = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=acquisitions, weights=Weights())
+        qrm.upload_qpysequence(qpysequence=sequence, channel_id=0)
+
+        qp_acqusitions = {
+            "acquisition_0": AcquisitionData(bus="readout_q0", save_adc=False),
+            "acquisition_1": AcquisitionData(bus="readout_q0", save_adc=True)
+        }
+
+        qrm.acquire_qprogram_results(acquisitions=qp_acqusitions, channel_id=0)
+
+        assert qrm.device.get_acquisition_state.call_count == 2
+        assert qrm.device.store_scope_acquisition.call_count == 1
+        assert qrm.device.get_acquisitions.call_count == 2
+        assert qrm.device.delete_acquisition_data.call_count == 2
 
     def test_clear_cache(self, qrm: QbloxQRM):
         """Test clearing the cache of the QCM module."""

@@ -44,15 +44,12 @@ class QbloxQRM(QbloxModule):
         """Contains the settings of a specific QRM."""
 
         awg_sequencers: Sequence[QbloxADCSequencer]
-        acquisition_delay_time: int  # ns
 
         def __post_init__(self):
             """build AWGQbloxADCSequencer"""
-            num_sequencers = len(self.awg_sequencers)
-            if num_sequencers <= 0 or num_sequencers > QbloxModule._NUM_MAX_SEQUENCERS:
+            if len(self.awg_sequencers) > QbloxModule._NUM_MAX_SEQUENCERS:
                 raise ValueError(
-                    "The number of sequencers must be greater than 0 and less or equal than "
-                    + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: {num_sequencers}"
+                    f"The number of sequencers must be greater than 0 and less or equal than {QbloxModule._NUM_MAX_SEQUENCERS}. Received: {len(self.awg_sequencers)}"
                 )
 
             self.awg_sequencers = [
@@ -281,25 +278,12 @@ class QbloxQRM(QbloxModule):
                 value=self.get_sequencer(sequencer_id).hardware_modulation, sequencer_id=sequencer_id
             )
 
-    def integration_length(self, sequencer_id: int):
-        """QbloxPulsarQRM 'integration_length' property.
-        Returns:
-            int: settings.integration_length.
-        """
-        return cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).integration_length
-
     def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
         """set a specific parameter to the instrument"""
         if channel_id is None:
-            if self.num_sequencers == 1:
-                channel_id = 0
-            else:
-                raise ValueError("channel not specified to update instrument")
+            raise ValueError("channel not specified to update instrument")
 
         channel_id = int(channel_id)
-        if parameter == Parameter.ACQUISITION_DELAY_TIME:
-            self._set_acquisition_delay_time(value=value)
-            return
         if parameter == Parameter.SCOPE_HARDWARE_AVERAGING:
             self._set_scope_hardware_averaging(value=value, sequencer_id=channel_id)
             return
@@ -466,17 +450,6 @@ class QbloxQRM(QbloxModule):
         """
         cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).acquisition_timeout = int(value)
 
-    def _set_acquisition_delay_time(self, value: int | float | str | bool):
-        """set acquisition_delaty_time for the specific channel
-
-        Args:
-            value (float | str | bool): value to update
-
-        Raises:
-            ValueError: when value type is not float or int
-        """
-        self.settings.acquisition_delay_time = int(value)
-
     def _set_scope_store_enabled(self, value: float | str | bool, sequencer_id: int):
         """set scope_store_enable
 
@@ -500,11 +473,3 @@ class QbloxQRM(QbloxModule):
             ValueError: when value type is not bool
         """
         cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).time_of_flight = int(value)
-
-    @property
-    def acquisition_delay_time(self):
-        """AWG 'delay_before_readout' property.
-        Returns:
-            int: settings.delay_before_readout.
-        """
-        return self.settings.acquisition_delay_time

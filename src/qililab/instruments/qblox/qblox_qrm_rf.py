@@ -63,7 +63,7 @@ class QbloxQRMRF(QbloxQRM):
         """Initial setup"""
         super().initial_setup()
         for parameter in self.parameters:
-            self.setup(parameter, getattr(self.settings, parameter.value))
+            self.set_parameter(parameter, getattr(self.settings, parameter.value))
 
     def _map_connections(self):
         """Disable all connections and map sequencer paths with output/input channels."""
@@ -95,8 +95,8 @@ class QbloxQRMRF(QbloxQRM):
             return
         super().set_parameter(parameter, value, channel_id)
 
-    def get(self, parameter: Parameter, channel_id: ChannelID | None = None):
-        """Set a parameter of the Qblox QCM-RF module.
+    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
+        """Get a parameter of the Qblox QRM-RF module.
         Args:
             parameter (Parameter): Parameter name.
             value (float | str | bool): Value to set.

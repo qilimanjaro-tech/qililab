@@ -27,7 +27,6 @@ instruments:
         offset_q: 0.1
   - name: QRM
     alias: qrm
-    acquisition_delay_time: 120
     out_offsets: [0.0, 0.1, 0.2, 0.3]
     awg_sequencers:
       - identifier: 0
@@ -115,7 +114,6 @@ instruments:
     in0_att: 2
     out0_offset_path0: 0.2
     out0_offset_path1: 0.07
-    acquisition_delay_time: 120
     awg_sequencers:
       - identifier: 0
         outputs: [3, 2]

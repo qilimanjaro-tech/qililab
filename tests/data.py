@@ -330,7 +330,6 @@ class Galadriel:
         "in0_att": 28,
         "out0_offset_path0": 0.123,
         "out0_offset_path1": 1.234,
-        "acquisition_delay_time": 100,
         "awg_sequencers": [
             {
                 "identifier": 0,
@@ -362,7 +361,6 @@ class Galadriel:
     qblox_qrm_0: dict[str, Any] = {
         "name": InstrumentName.QBLOX_QRM.value,
         "alias": f"{InstrumentName.QBLOX_QRM.value}_0",
-        Parameter.ACQUISITION_DELAY_TIME.value: 100,
         AWGTypes.OUT_OFFSETS: [0.123, 1.23],
         AWGTypes.AWG_SEQUENCERS: [
             {
@@ -419,7 +417,6 @@ class Galadriel:
     qblox_qrm_1: dict[str, Any] = {
         "name": InstrumentName.QBLOX_QRM.value,
         "alias": f"{InstrumentName.QBLOX_QRM.value}_1",
-        Parameter.ACQUISITION_DELAY_TIME.value: 100,
         AWGTypes.OUT_OFFSETS: [0.123, 1.23],
         AWGTypes.AWG_SEQUENCERS: [
             {

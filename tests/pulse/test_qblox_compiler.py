@@ -74,7 +74,6 @@ def fixture_qcm_0():
 def fixture_qrm_0():
     settings = {
         "alias": "qrm_0",
-        Parameter.ACQUISITION_DELAY_TIME.value: 100,
         "out_offsets": [0.123, 1.23],
         "awg_sequencers": [
             {
@@ -157,7 +156,6 @@ def fixture_qrm_0():
 def fixture_qrm_1():
     settings = {
         "alias": "qrm_1",
-        Parameter.ACQUISITION_DELAY_TIME.value: 100,
         "out_offsets": [0.123, 1.23],
         "awg_sequencers": [
             {
