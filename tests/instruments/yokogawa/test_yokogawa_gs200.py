@@ -50,6 +50,38 @@ class TestYokogawaGS200:
     """Unit tests checking the GS200 attributes and methods"""
 
     @pytest.mark.parametrize(
+        "parameter, expected_value",
+        [
+            (Parameter.CURRENT, 0.0),
+            (Parameter.VOLTAGE, 0.5),
+            (Parameter.RAMPING_ENABLED, True),
+            (Parameter.RAMPING_RATE, 0.01),
+            (Parameter.SOURCE_MODE, SourceMode.VOLTAGE),
+            (Parameter.SPAN, "200mA"),
+        ],
+    )
+    def test_get_parameter_method(self, parameter: Parameter, expected_value, yokogawa_gs200: GS200):
+        """Test the set_parameter method with float value"""
+        value = yokogawa_gs200.get_parameter(parameter)
+        assert value == expected_value
+
+    @pytest.mark.parametrize(
+        "parameter, expected_value",
+        [
+            (Parameter.CURRENT, 0.5),
+            (Parameter.VOLTAGE, 0.0),
+            (Parameter.RAMPING_ENABLED, True),
+            (Parameter.RAMPING_RATE, 0.01),
+            (Parameter.SOURCE_MODE, SourceMode.VOLTAGE),
+            (Parameter.SPAN, "1V"),
+        ],
+    )
+    def test_get_parameter_method_voltage(self, parameter: Parameter, expected_value, yokogawa_gs200_voltage: GS200):
+        """Test the set_parameter method with float value"""
+        value = yokogawa_gs200_voltage.get_parameter(parameter)
+        assert value == expected_value
+
+    @pytest.mark.parametrize(
         "parameter, value",
         [
             (Parameter.CURRENT, -0.001),
