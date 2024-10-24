@@ -25,7 +25,7 @@ def bus(mock_instruments):
     settings = {
         "alias": "bus1",
         "instruments": ["qcm", "qrm"],
-        "channels": [None, None]
+        "channels": [0, 0]
     }
     return Bus(settings=settings, platform_instruments=Instruments(elements=mock_instruments))
 
@@ -44,7 +44,7 @@ class TestBus:
 
     def test_bus_channels(self, bus):
         assert len(bus.channels) == 2
-        assert bus.channels == [None, None]
+        assert bus.channels == [0, 0]
 
     def test_bus_str(self, bus):
         assert isinstance(str(bus), str)
@@ -67,7 +67,7 @@ class TestBus:
         expected_dict = {
             "alias": "bus1",
             "instruments": ["qcm", "qrm"],
-            "channels": [None, None]
+            "channels": [0, 0]
         }
         assert bus.to_dict() == expected_dict
 
