@@ -13,15 +13,15 @@
 # limitations under the License.
 
 """Yokogawa GS200 Instrument"""
+
 from dataclasses import dataclass
 
+from qililab.instruments import InstrumentFactory, ParameterNotFound, check_device_initialized, log_set_parameter
 from qililab.instruments.current_source import CurrentSource
-from qililab.instruments.instrument import Instrument, ParameterNotFound
-from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.voltage_source import VoltageSource
-from qililab.typings import InstrumentName
+from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 from qililab.typings import YokogawaGS200 as YokogawaGS200Driver
-from qililab.typings.enums import Parameter, SourceMode
+from qililab.typings.enums import SourceMode
 
 
 @InstrumentFactory.register
@@ -161,7 +161,8 @@ class GS200(CurrentSource, VoltageSource):
             else:
                 self.device.voltage(value)
 
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    @log_set_parameter
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
         """Set instrument settings parameter to the corresponding value
 
         Args:
@@ -193,9 +194,30 @@ class GS200(CurrentSource, VoltageSource):
             self.span = str(value)
             return
 
-        raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
+        raise ParameterNotFound(self, parameter)
 
-    @Instrument.CheckDeviceInitialized
+    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
+        if parameter == Parameter.CURRENT:
+            return float(self.current)
+
+        if parameter == Parameter.VOLTAGE:
+            return float(self.voltage)
+
+        if parameter == Parameter.RAMPING_ENABLED:
+            return bool(self.ramping_enabled)
+
+        if parameter == Parameter.RAMPING_RATE:
+            return float(self.ramping_rate)
+
+        if parameter == Parameter.SOURCE_MODE:
+            return SourceMode(self.source_mode)
+
+        if parameter == Parameter.SPAN:
+            return str(self.span)
+
+        raise ParameterNotFound(self, parameter)
+
+    @check_device_initialized
     def initial_setup(self):
         """Performs an initial setup."""
         self.device.off()
@@ -208,15 +230,19 @@ class GS200(CurrentSource, VoltageSource):
         else:
             self.voltage = self.settings.voltage[0]
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def turn_on(self):
         """Start outputting current."""
         self.device.on()
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def turn_off(self):
         """Stop outputing current."""
         self.device.off()
+
+    @check_device_initialized
+    def reset(self):
+        """Stop outputing current."""
 
     def __source_mode_to_qcodes_str(self, source_mode: SourceMode) -> str:
         mapping = {SourceMode.CURRENT: "CURR", SourceMode.VOLTAGE: "VOLT"}

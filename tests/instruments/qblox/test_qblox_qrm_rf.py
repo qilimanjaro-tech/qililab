@@ -1,199 +1,294 @@
-"""Tests for the QbloxQRMRF class."""
-from dataclasses import asdict
-from unittest.mock import MagicMock
+"""Tests for the Qblox Module class."""
 
+import copy
+import re
+from unittest.mock import MagicMock, patch, create_autospec
+
+import numpy as np
 import pytest
-from qblox_instruments.qcodes_drivers.cluster import Cluster
-from qblox_instruments.types import ClusterType
+from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 
+from qililab.instrument_controllers.qblox.qblox_cluster_controller import QbloxClusterController
+from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.qblox import QbloxQRMRF
+from qililab.platform import Platform
+from qililab.data_management import build_platform
 from qililab.typings import Parameter
+from typing import cast
+from qblox_instruments.qcodes_drivers.sequencer import Sequencer
+from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm
 
 
-@pytest.fixture(name="settings")
-def fixture_settings():
-    return {
-        "alias": "test",
-        "firmware": "0.7.0",
-        "num_sequencers": 1,
-        "out0_in0_lo_freq": 3e9,
-        "out0_in0_lo_en": True,
-        "out0_att": 34,
-        "in0_att": 28,
-        "out0_offset_path0": 0.123,
-        "out0_offset_path1": 1.234,
-        "acquisition_delay_time": 100,
-        "awg_sequencers": [
-            {
-                "identifier": 0,
-                "chip_port_id": "feedline_input",
-                "qubit": 0,
-                "outputs": [0, 1],
-                "weights_i": [1, 1, 1, 1],
-                "weights_q": [1, 1, 1, 1],
-                "weighed_acq_enabled": False,
-                "threshold": 0.5,
-                "threshold_rotation": 45.0,
-                "num_bins": 1,
-                "intermediate_frequency": 20000000,
-                "gain_i": 0.001,
-                "gain_q": 0.02,
-                "gain_imbalance": 1,
-                "phase_imbalance": 0,
-                "offset_i": 0,
-                "offset_q": 0,
-                "hardware_modulation": True,
-                "scope_acquire_trigger_mode": "sequencer",
-                "scope_hardware_averaging": True,
-                "sampling_rate": 1000000000,
-                "integration_length": 8000,
-                "integration_mode": "ssb",
-                "sequence_timeout": 1,
-                "acquisition_timeout": 1,
-                "hardware_demodulation": True,
-                "scope_store_enabled": True,
-                "time_of_flight": 40,
-            }
-        ],
+@pytest.fixture(name="platform")
+def fixture_platform():
+    """platform fixture"""
+    return build_platform(runcard="tests/instruments/qblox/qblox_runcard.yaml")
+
+
+@pytest.fixture(name="qrm_rf")
+def fixture_qrm(platform: Platform):
+    qrm_rf = cast(QbloxQRMRF, platform.get_element(alias="qrm-rf"))
+
+    sequencer_mock_spec = [
+        *Sequencer._get_required_parent_attr_names(),
+        "sync_en",
+        "gain_awg_path0",
+        "gain_awg_path1",
+        "sequence",
+        "mod_en_awg",
+        "nco_freq",
+        "scope_acq_sequencer_select",
+        "channel_map_path0_out0_en",
+        "channel_map_path1_out1_en",
+        "demod_en_acq",
+        "integration_length_acq",
+        "mixer_corr_phase_offset_degree",
+        "mixer_corr_gain_ratio",
+        "connect_out0",
+        "connect_out1",
+        "connect_out2",
+        "connect_out3",
+        "marker_ovr_en",
+        "offset_awg_path0",
+        "offset_awg_path1",
+        "connect_acq",
+        "thresholded_acq_threshold",
+        "thresholded_acq_rotation"
+    ]
+
+    module_mock_spec = [
+        *QcmQrm._get_required_parent_attr_names(),
+        "reference_source",
+        "sequencer0",
+        "sequencer1",
+        "out0_offset",
+        "out1_offset",
+        "out2_offset",
+        "out3_offset",
+        "scope_acq_avg_mode_en_path0",
+        "scope_acq_avg_mode_en_path1",
+        "scope_acq_trigger_mode_path0",
+        "scope_acq_trigger_mode_path1",
+        "sequencers",
+        "scope_acq_sequencer_select",
+        "get_acquisitions",
+        "disconnect_outputs",
+        "disconnect_inputs",
+        "arm_sequencer",
+        "start_sequencer",
+        "reset",
+        "set"
+    ]
+
+    # Create a mock device using create_autospec to follow the interface of the expected device
+    qrm_rf.device = MagicMock()
+    qrm_rf.device.mock_add_spec(module_mock_spec)
+
+    qrm_rf.device.sequencers = {
+        0: MagicMock(),
+        1: MagicMock()
     }
 
+    for sequencer in qrm_rf.device.sequencers:
+        qrm_rf.device.sequencers[sequencer].mock_add_spec(sequencer_mock_spec)
 
-class TestInitialization:
-    """Unit tests for the initialization of the QbloxQRMRF class."""
-
-    def test_init(self, settings):
-        """Test the __init__ method."""
-        qcm_rf = QbloxQRMRF(settings=settings)
-        for name, value in settings.items():
-            if name == "awg_sequencers":
-                for i, sequencer in enumerate(value):
-                    for seq_name, seq_value in sequencer.items():
-                        assert getattr(qcm_rf.awg_sequencers[i], seq_name) == seq_value
-            else:
-                assert getattr(qcm_rf.settings, name) == value
+    return qrm_rf
 
 
-class TestMethods:
-    """Unit tests for the methods of the QbloxQRMRF class."""
+class TestQbloxQRMRF:
+    def test_init(self, qrm_rf: QbloxQRMRF):
+        assert qrm_rf.alias == "qrm-rf"
+        assert len(qrm_rf.awg_sequencers) == 2
 
-    def test_initial_setup(self, settings):
-        """Test the `initial_setup` method of the QbloxQRMRF class."""
-        qcm_rf = QbloxQRMRF(settings=settings)
-        qcm_rf.device = MagicMock()
-        qcm_rf.initial_setup()
-        assert qcm_rf.device.set.call_count == 6
-        call_args = {call[0] for call in qcm_rf.device.set.call_args_list}
-        assert call_args == {
-            ("out0_in0_lo_freq", 3e9),
-            ("out0_in0_lo_en", True),
-            ("out0_att", 34),
-            ("in0_att", 28),
-            ("out0_offset_path0", 0.123),
-            ("out0_offset_path1", 1.234),
-        }
+    @pytest.mark.parametrize(
+        "parameter, value",
+        [
+            # Test GAIN setting
+            (Parameter.GAIN, 2.0),
+            (Parameter.GAIN, 3.5),
 
-    def test_setup(self, settings):
-        """Test the `setup` method of the QbloxQRMRF class."""
-        qcm_rf = QbloxQRMRF(settings=settings)
-        qcm_rf.device = MagicMock()
-        qcm_rf.setup(parameter=Parameter.OUT0_IN0_LO_FREQ, value=3.8e9)
-        qcm_rf.device.set.assert_called_once_with("out0_in0_lo_freq", 3.8e9)
-        qcm_rf.setup(parameter=Parameter.GAIN, value=1)
-        qcm_rf.device.sequencers[0].gain_awg_path0.assert_called_once_with(1)
-        qcm_rf.device.sequencers[0].gain_awg_path1.assert_called_once_with(1)
+            # Test GAIN_I and GAIN_Q settings
+            (Parameter.GAIN_I, 1.5),
+            (Parameter.GAIN_Q, 1.5),
 
-    def test_setup_no_instrument_connection(self, settings):
-        """Test the `setup` method of the QbloxQRMRF class."""
-        qcm_rf = QbloxQRMRF(settings=settings)
+            # Test OFFSET_I and OFFSET_Q settings
+            (Parameter.OFFSET_I, 0.1),
+            (Parameter.OFFSET_Q, 0.2),
 
-        qcm_rf.setup(parameter=Parameter.OUT0_IN0_LO_FREQ, value=2.8e9)
-        assert qcm_rf.get_parameter(parameter=Parameter.OUT0_IN0_LO_FREQ) == 2.8e9
-        assert not hasattr(qcm_rf, "device")
+            # Test IF setting (intermediate frequency)
+            (Parameter.IF, 100e6),
 
-        qcm_rf.setup(parameter=Parameter.GAIN, value=1)
-        assert qcm_rf.get_parameter(parameter=Parameter.GAIN, channel_id=0)[0] == 1
-        assert not hasattr(qcm_rf, "device")
+            # Test HARDWARE_MODULATION setting
+            (Parameter.HARDWARE_MODULATION, True),
+
+            # Test GAIN_IMBALANCE setting
+            (Parameter.GAIN_IMBALANCE, 0.05),
+
+            # Test PHASE_IMBALANCE setting
+            (Parameter.PHASE_IMBALANCE, 0.02),
+
+            # QRM-RF specific
+            (Parameter.LO_FREQUENCY, 5e9),
+            (Parameter.OUT0_IN0_LO_FREQ, 5e9),
+            (Parameter.OUT0_IN0_LO_EN, True),
+            (Parameter.OUT0_ATT, 0.5),
+            (Parameter.IN0_ATT, 0.5),
+            (Parameter.OUT0_OFFSET_PATH0, 0.5),
+            (Parameter.OUT0_OFFSET_PATH1, 6e9)
+        ]
+    )
+    def test_set_parameter(self, qrm_rf: QbloxQRMRF, parameter, value):
+        """Test setting parameters for QCM sequencers using parameterized values."""
+        qrm_rf.set_parameter(parameter, value, channel_id=0)
+        sequencer = qrm_rf.get_sequencer(0)
+
+        # Check values based on the parameter
+        if parameter == Parameter.GAIN:
+            assert sequencer.gain_i == value
+            assert sequencer.gain_q == value
+        elif parameter == Parameter.GAIN_I:
+            assert sequencer.gain_i == value
+        elif parameter == Parameter.GAIN_Q:
+            assert sequencer.gain_q == value
+        elif parameter == Parameter.OFFSET_I:
+            assert sequencer.offset_i == value
+        elif parameter == Parameter.OFFSET_Q:
+            assert sequencer.offset_q == value
+        elif parameter == Parameter.IF:
+            assert sequencer.intermediate_frequency == value
+        elif parameter == Parameter.HARDWARE_MODULATION:
+            assert sequencer.hardware_modulation == value
+        elif parameter == Parameter.GAIN_IMBALANCE:
+            assert sequencer.gain_imbalance == value
+        elif parameter == Parameter.PHASE_IMBALANCE:
+            assert sequencer.phase_imbalance == value
+        elif parameter == Parameter.OUT0_IN0_LO_FREQ:
+            assert qrm_rf.settings.out0_in0_lo_freq == value
+        elif parameter == Parameter.OUT0_IN0_LO_EN:
+            assert qrm_rf.settings.out0_in0_lo_en == value
+        elif parameter == Parameter.OUT0_ATT:
+            assert qrm_rf.settings.out0_att == value
+        elif parameter == Parameter.IN0_ATT:
+            assert qrm_rf.settings.in0_att == value
+        elif parameter == Parameter.OUT0_OFFSET_PATH0:
+            assert qrm_rf.settings.out0_offset_path0 == value
+        elif parameter == Parameter.OUT0_OFFSET_PATH0:
+            assert qrm_rf.settings.out0_offset_path1 == value
 
 
-class TestIntegration:
-    """Integration tests of the QbloxQRMRF class."""
+    @pytest.mark.parametrize(
+        "parameter, value",
+        [
+            # Invalid parameter (should raise ParameterNotFound)
+            (Parameter.BUS_FREQUENCY, 42),  # Invalid parameter
+        ]
+    )
+    def test_set_parameter_raises_error(self, qrm_rf: QbloxQRMRF, parameter, value):
+        """Test setting parameters for QCM sequencers using parameterized values."""
+        with pytest.raises(ParameterNotFound):
+            qrm_rf.set_parameter(parameter, value, channel_id=0)
 
-    def test_initial_setup(self, settings):
-        """Test the `initial_setup` method of the QbloxQRMRF class."""
-        qrm_rf = QbloxQRMRF(settings=settings)
-        cluster = Cluster(name="test", dummy_cfg={"1": ClusterType.CLUSTER_QRM_RF})
-        qrm_rf.device = cluster.modules[0]
+    @pytest.mark.parametrize(
+        "parameter, expected_value",
+        [
+            # Test GAIN_I and GAIN_Q settings
+            (Parameter.GAIN_I, 1.0),
+            (Parameter.GAIN_Q, 1.0),
+
+            # Test OFFSET_I and OFFSET_Q settings
+            (Parameter.OFFSET_I, 0.0),
+            (Parameter.OFFSET_Q, 0.0),
+
+            # Test IF setting (intermediate frequency)
+            (Parameter.IF, 100e6),
+
+            # Test HARDWARE_MODULATION setting
+            (Parameter.HARDWARE_MODULATION, True),
+
+            # Test GAIN_IMBALANCE setting
+            (Parameter.GAIN_IMBALANCE, 0.05),
+
+            # Test PHASE_IMBALANCE setting
+            (Parameter.PHASE_IMBALANCE, 0.02),
+
+            # QRM-RF specific
+            (Parameter.LO_FREQUENCY, 3e9),
+            (Parameter.OUT0_IN0_LO_FREQ, 3e9),
+            (Parameter.OUT0_IN0_LO_EN, True),
+            (Parameter.OUT0_ATT, 10),
+            (Parameter.IN0_ATT, 2),
+            (Parameter.OUT0_OFFSET_PATH0, 0.2),
+            (Parameter.OUT0_OFFSET_PATH1, 0.07)
+        ]
+    )
+    def test_get_parameter(self, qrm_rf: QbloxQRMRF, parameter, expected_value):
+        """Test setting parameters for QCM sequencers using parameterized values."""
+        value = qrm_rf.get_parameter(parameter, channel_id=0)
+        assert value == expected_value
+
+    def test_get_parameter_raises_error(self, qrm_rf: QbloxQRMRF):
+        """Test setting parameters for QCM sequencers using parameterized values."""
+        with pytest.raises(ParameterNotFound):
+            qrm_rf.get_parameter(Parameter.BUS_FREQUENCY, channel_id=0)
+
+    @pytest.mark.parametrize(
+        "channel_id, expected_error",
+        [
+            (0, None),  # Valid channel ID
+            (5, Exception),  # Invalid channel ID
+        ]
+    )
+    def test_invalid_channel(self, qrm_rf: QbloxQRMRF, channel_id, expected_error):
+        """Test handling invalid channel IDs when setting parameters."""
+        if expected_error:
+            with pytest.raises(expected_error):
+                qrm_rf.set_parameter(Parameter.GAIN, 2.0, channel_id=channel_id)
+        else:
+            qrm_rf.set_parameter(Parameter.GAIN, 2.0, channel_id=channel_id)
+            sequencer = qrm_rf.get_sequencer(channel_id)
+            assert sequencer.gain_i == 2.0
+            assert sequencer.gain_q == 2.0
+
+    def test_initial_setup(self, qrm_rf: QbloxQRMRF):
+        """Test the initial setup of the QCM module."""
         qrm_rf.initial_setup()
-        assert qrm_rf.device.get("out0_att") == settings["out0_att"]
-        assert qrm_rf.device.get("in0_att") == settings["in0_att"]
-        cluster.close()
 
-    def test_initial_setup_no_connected(self, settings):
-        """Test initial setup method without connection"""
-        qcm_rf = QbloxQRMRF(settings=settings)
-        with pytest.raises(AttributeError, match="Instrument Device has not been initialized"):
-            qcm_rf.initial_setup()
+        # Verify the correct setup calls were made on the device
+        qrm_rf.device.disconnect_outputs.assert_called_once()
+        qrm_rf.device.disconnect_inputs.assert_called_once()
+        for sequencer in qrm_rf.awg_sequencers:
+            qrm_rf.device.sequencers[sequencer.identifier].connect_out0.assert_called_with("IQ")
+            qrm_rf.device.sequencers[sequencer.identifier].connect_acq.assert_called_with("in0")
+            qrm_rf.device.sequencers[sequencer.identifier].sync_en.assert_called_with(False)
 
-    @pytest.mark.xfail
-    def test_initial_setup_with_failing_setters(self, settings):
-        """Test the `initial_setup` method of the QbloxQRMRF class with the attributes
-        that don't get updated in the version 0.8.1 of the `qblox_instruments`."""
-        # This test is marked as `xfail` because the setters for the attributes that are
-        # asserted below don't work properly in the version 0.8.1 of the `qblox_instruments` package.
-        # Once this problem is fixed, this test should fail and the `xfail` mark should be removed.
-        qrm_rf = QbloxQRMRF(settings=settings)
-        cluster = Cluster(name="test", dummy_cfg={"1": ClusterType.CLUSTER_QRM_RF})
-        qrm_rf.device = cluster.modules[0]
-        qrm_rf.initial_setup()
-        cluster.close()
-        assert qrm_rf.device.out0_in0_lo_freq() == settings["out0_in0_lo_freq"]
-        assert qrm_rf.device.out0_in0_lo_en() == settings["out0_in0_lo_en"]
-        assert qrm_rf.device.out0_offset_path0() == settings["out0_offset_path0"]
-        assert qrm_rf.device.out0_offset_path1() == settings["out0_offset_path1"]
+    def test_run(self, qrm_rf: QbloxQRMRF):
+        """Test running the QCM module."""
+        qrm_rf.sequences[0] = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
+        qrm_rf.run(channel_id=0)
 
-    def test_setup(self, settings):
-        """Test the `setup` method of the QbloxQRMRF class."""
-        qrm_rf = QbloxQRMRF(settings=settings)
-        cluster = Cluster(name="test", dummy_cfg={"1": ClusterType.CLUSTER_QRM_RF})
-        qrm_rf.device = cluster.modules[0]
-        qrm_rf.setup(parameter=Parameter.OUT0_ATT, value=58)
-        assert qrm_rf.device.get("out0_att") == 58
-        qrm_rf.setup(parameter=Parameter.GAIN, value=0.123)
-        assert qrm_rf.device.sequencers[0].get("gain_awg_path0") == pytest.approx(0.123)
-        assert qrm_rf.device.sequencers[0].get("gain_awg_path1") == pytest.approx(0.123)
-        cluster.close()
+        sequencer = qrm_rf.get_sequencer(0)
+        qrm_rf.device.arm_sequencer.assert_called_with(sequencer=sequencer.identifier)
+        qrm_rf.device.start_sequencer.assert_called_with(sequencer=sequencer.identifier)
 
-    def test_setup_no_set_instrument(self, settings):
-        """Test the `setup` method of the QbloxQRMRF class."""
-        qrm_rf = QbloxQRMRF(settings=settings)
+    def test_upload_qpysequence(self, qrm_rf: QbloxQRMRF):
+        """Test uploading a QpySequence to the QCM module."""
+        sequence = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
+        qrm_rf.upload_qpysequence(qpysequence=sequence, channel_id=0)
 
-        qrm_rf.setup(parameter=Parameter.OUT0_ATT, value=58)
-        assert qrm_rf.get_parameter(parameter=Parameter.OUT0_ATT) == 58
-        assert not hasattr(qrm_rf, "device")
+        qrm_rf.device.sequencers[0].sequence.assert_called_once_with(sequence.todict())
 
-        qrm_rf.setup(parameter=Parameter.GAIN, value=0.123)
-        assert qrm_rf.get_parameter(parameter=Parameter.GAIN, channel_id=0)[0] == 0.123
-        assert not hasattr(qrm_rf, "device")
+    def test_clear_cache(self, qrm_rf: QbloxQRMRF):
+        """Test clearing the cache of the QCM module."""
+        qrm_rf.cache = {0: MagicMock()}  # type: ignore[misc]
+        qrm_rf.clear_cache()
 
-    def test_setup_with_lo_frequency(self, settings):
-        """Test the `setup` method when using the `Parameter.LO_FREQUENCY` generic parameter."""
-        sequencer_idx = 0
-        qcm_rf = QbloxQRMRF(settings=settings)
-        qcm_rf.device = MagicMock()
-        qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=sequencer_idx)
-        qcm_rf.device.set.assert_called_once_with(Parameter.OUT0_IN0_LO_FREQ, 2e9)
+        assert qrm_rf.cache == {}
+        assert qrm_rf.sequences == {}
 
-    def test_setup_with_lo_frequency_no_set_instrument(self, settings):
-        """Test the `setup` method when using the `Parameter.LO_FREQUENCY` generic parameter."""
-        sequencer_idx = 0
-        qrm_rf = QbloxQRMRF(settings=settings)
-        qrm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=sequencer_idx)
-        assert qrm_rf.get_parameter(parameter=Parameter.LO_FREQUENCY, channel_id=0) == 2e9
-        assert not hasattr(qrm_rf, "device")
+    def test_reset(self, qrm_rf: QbloxQRMRF):
+        """Test resetting the QCM module."""
+        qrm_rf.reset()
 
-    def test_to_dict_method(self, settings):
-        """Test that the `to_dict` method does not return a dictionary containing the key 'out_offsets' for a correct serialization"""
-        qrm_rf = QbloxQRMRF(settings=settings)
-        qrm_rf.settings.out_offsets = 0.0
-        assert "out_offsets" in asdict(qrm_rf.settings)
-        assert "out_offsets" not in qrm_rf.to_dict()
+        qrm_rf.device.reset.assert_called_once()
+        assert qrm_rf.cache == {}
+        assert qrm_rf.sequences == {}

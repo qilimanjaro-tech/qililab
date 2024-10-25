@@ -148,23 +148,6 @@ class PulseShapeName(str, Enum):
     TWOSTEP = "two_step"
 
 
-class NodeName(str, Enum):
-    """Node names.
-
-    Args:
-        enum (str): Available node names:
-        * qubit
-        * resonator
-        * coupler
-    """
-
-    QUBIT = "qubit"
-    RESONATOR = "resonator"
-    COUPLER = "coupler"
-    COIL = "coil"
-    PORT = "port"
-
-
 class InstrumentName(str, Enum):
     """Instrument names.
 
@@ -215,7 +198,6 @@ class InstrumentControllerName(str, Enum):
         * qmm
     """
 
-    QBLOX_PULSAR = "qblox_pulsar"
     QBLOX_CLUSTER = "qblox_cluster"
     ROHDE_SCHWARZ = "rohde_schwarz"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
@@ -226,19 +208,6 @@ class InstrumentControllerName(str, Enum):
     YOKOGAWA_GS200 = "yokogawa_gs200_controller"
     QUANTUM_MACHINES_CLUSTER = "quantum_machines_cluster_controller"
     QDEVIL_QDAC2 = "qdevil_qdac2"
-
-
-class SystemControlName(str, Enum):
-    """System Control names.
-
-    Args:
-        enum (str): Available system control element names:
-        * system_control
-        * readout_system_control
-    """
-
-    SYSTEM_CONTROL = "system_control"
-    READOUT_SYSTEM_CONTROL = "readout_system_control"
 
 
 @yaml.register_class
@@ -266,11 +235,9 @@ class Parameter(str, Enum):
     SAMPLING_RATE = "sampling_rate"
     INTEGRATION = "integration"
     INTEGRATION_LENGTH = "integration_length"
-    ACQUISITION_DELAY_TIME = "acquisition_delay_time"
     ATTENUATION = "attenuation"
     REPETITION_DURATION = "repetition_duration"
     SOFTWARE_AVERAGE = "software_average"
-    NUM_BINS = "num_bins"
     SEQUENCE_TIMEOUT = "sequence_timeout"
     EXTERNAL = "external"
     RESET = "reset"
@@ -297,7 +264,6 @@ class Parameter(str, Enum):
     NUMBER_AVERAGES = "number_averages"
     TRIGGER_MODE = "trigger_mode"
     NUMBER_POINTS = "number_points"
-    NUM_SEQUENCERS = "num_sequencers"
     INTEGRATION_MODE = "integration_mode"
     ACQUISITION_TIMEOUT = "acquisition_timeout"
     MAX_CURRENT = "max_current"
@@ -412,102 +378,6 @@ class InstrumentTypeName(str, Enum):
     QDEVIL_QDAC2 = "QDevilQDac2"
 
 
-class VNATriggerModes(str, Enum):
-    """Vector Network Analyzers Trigger Modes
-
-    Args:
-        enum (str): Available types of trigger modes:
-        * INT
-        * BUS
-    """
-
-    INT = "INT"
-    BUS = "BUS"
-
-
-class VNAScatteringParameters(str, Enum):
-    """Vector Network Analyzers Scattering Parameters
-
-    Args:
-        enum (str): Available types of scattering parameters:
-        * S11
-        * S12
-        * S22
-        * S21
-    """
-
-    S11 = "S11"
-    S12 = "S12"
-    S22 = "S22"
-    S21 = "S21"
-
-
-class VNASweepModes(str, Enum):
-    """Vector Network Analyzers Sweep Modes
-
-    Args:
-        enum (str): Available types of sweeping modes:
-        * hold
-        * cont
-        * single
-        * group
-    """
-
-    HOLD = "hold"
-    CONT = "cont"
-    SING = "single"
-    GRO = "group"
-
-
-class Line(str, Enum):
-    """Chip line"""
-
-    FLUX = "flux"
-    DRIVE = "drive"
-    FEEDLINE_INPUT = "feedline_input"
-    FEEDLINE_OUTPUT = "feedline_output"
-
-
-class Qubits(str, Enum):
-    ANY = "any"
-    ONE = "one"
-    TWO = "two"
-
-
-class OperationName(str, Enum):
-    """Operation names.
-
-    Args:
-        enum (str): Available types of operation names:
-        * RXY
-        * R180
-        * X
-        * WAIT
-        * RESET
-        * MEASURE
-        * BARRIER
-    """
-
-    RXY = "Rxy"
-    R180 = "R180"
-    X = "X"
-    CPHASE = "CPhase"
-    WAIT = "Wait"
-    RESET = "Reset"
-    MEASURE = "Measure"
-    BARRIER = "Barrier"
-    PARKING = "Parking"
-    PULSE = "Pulse"
-    GAUSSIAN = "Gaussian"
-    DRAG = "DRAG"
-    SQUARE = "Square"
-
-
-class OperationTimingsCalculationMethod(str, Enum):
-    AS_SOON_AS_POSSIBLE = "as_soon_as_possible"
-    AS_LATE_AS_POSSIBLE = "as_late_as_possible"
-
-
 class ResetMethod(str, Enum):
     PASSIVE = "passive"
     ACTIVE = "active"
@@ -518,3 +388,11 @@ class SourceMode(str, Enum):
 
     CURRENT = "current"
     VOLTAGE = "voltage"
+
+
+class Line(str, Enum):
+    """Chip line"""
+
+    FLUX = "flux"
+    DRIVE = "drive"
+    READOUT = "readout"

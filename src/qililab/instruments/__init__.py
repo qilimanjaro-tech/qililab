@@ -14,8 +14,7 @@
 
 """__init__.py"""
 
-from .awg import AWG
-from .awg_analog_digital_converter import AWGAnalogDigitalConverter
+from .decorators import check_device_initialized, log_set_parameter
 from .instrument import Instrument, ParameterNotFound
 from .instruments import Instruments
 from .mini_circuits import Attenuator
@@ -25,9 +24,7 @@ from .signal_generator import SignalGenerator
 from .utils import InstrumentFactory
 
 __all__ = [
-    "AWG",
     "SGS100A",
-    "AWGAnalogDigitalConverter",
     "Attenuator",
     "Instrument",
     "InstrumentFactory",
@@ -35,4 +32,6 @@ __all__ = [
     "ParameterNotFound",
     "QuantumMachinesCluster",
     "SignalGenerator",
+    "check_device_initialized",
+    "log_set_parameter",
 ]

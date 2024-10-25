@@ -20,7 +20,6 @@ coverage:
         target: 100% # make sure coverage of new lines is 100%
         flags:
           - "unittests"
-
   notify:
     slack:
       default:
@@ -33,3 +32,8 @@ coverage:
           - "unittests"
         paths:
           - "src"
+
+ignore:
+  - "src/qililab/instruments/keithley/keithley_2600.py"
+  - "src/qililab/instruments/qblox/qblox_d5a.py"
+  - "src/qililab/instruments/qblox/qblox_s4g.py"

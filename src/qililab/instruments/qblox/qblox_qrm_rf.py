@@ -19,9 +19,9 @@ from typing import ClassVar
 
 from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm
 
-from qililab.instruments import Instrument
-from qililab.instruments.utils.instrument_factory import InstrumentFactory
-from qililab.typings import InstrumentName, Parameter
+from qililab.instruments.decorators import check_device_initialized, log_set_parameter
+from qililab.instruments.utils import InstrumentFactory
+from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 
 from .qblox_qrm import QbloxQRM
 
@@ -58,12 +58,12 @@ class QbloxQRMRF(QbloxQRM):
 
     settings: QbloxQRMRFSettings
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def initial_setup(self):
         """Initial setup"""
         super().initial_setup()
         for parameter in self.parameters:
-            self.setup(parameter, getattr(self.settings, parameter.value))
+            self.set_parameter(parameter, getattr(self.settings, parameter.value))
 
     def _map_connections(self):
         """Disable all connections and map sequencer paths with output/input channels."""
@@ -76,7 +76,8 @@ class QbloxQRMRF(QbloxQRM):
             sequencer.connect_out0("IQ")
             sequencer.connect_acq("in0")
 
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    @log_set_parameter
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
         """Set a parameter of the Qblox QCM-RF module.
         Args:
             parameter (Parameter): Parameter name.
@@ -92,10 +93,10 @@ class QbloxQRMRF(QbloxQRM):
             if self.is_device_active():
                 self.device.set(parameter.value, value)
             return
-        super().setup(parameter, value, channel_id)
+        super().set_parameter(parameter, value, channel_id)
 
-    def get(self, parameter: Parameter, channel_id: int | None = None):
-        """Set a parameter of the Qblox QCM-RF module.
+    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
+        """Get a parameter of the Qblox QRM-RF module.
         Args:
             parameter (Parameter): Parameter name.
             value (float | str | bool): Value to set.
@@ -106,7 +107,7 @@ class QbloxQRMRF(QbloxQRM):
 
         if parameter in self.parameters:
             return getattr(self.settings, parameter.value)
-        return super().get(parameter, channel_id)
+        return super().get_parameter(parameter, channel_id)
 
     def to_dict(self):
         """Return a dict representation of an `QRM-RF` instrument."""
