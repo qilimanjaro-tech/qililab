@@ -358,25 +358,6 @@ class TestPlatform:
         mock_open.assert_called_once_with(file=Path("runcard.yml"), mode="w", encoding="utf-8")
         mock_dump.assert_called_once()
 
-    # def test_get_bus_by_qubit_index(self, platform: Platform):
-    #     """Test get_bus_by_qubit_index method."""
-    #     _, control_bus, readout_bus = platform._get_bus_by_qubit_index(0)
-    #     assert isinstance(control_bus, Bus)
-    #     assert isinstance(readout_bus, Bus)
-    #     assert not isinstance(control_bus.system_control, ReadoutSystemControl)
-    #     assert isinstance(readout_bus.system_control, ReadoutSystemControl)
-
-    # def test_get_bus_by_qubit_index_raises_error(self, platform: Platform):
-    #     """Test that the get_bus_by_qubit_index method raises an error when there is no bus connected to the port
-    #     of the given qubit."""
-    #     platform.buses[0].settings.port = 100
-    #     with pytest.raises(
-    #         ValueError,
-    #         match="There can only be one bus connected to a port. There are 0 buses connected to port drive_q0",
-    #     ):
-    #         platform._get_bus_by_qubit_index(0)
-    #     platform.buses[0].settings.port = 0  # Setting it back to normal to not disrupt future tests
-
     @pytest.mark.parametrize("alias", ["drive_line_q0_bus", "drive_line_q1_bus", "feedline_input_output_bus", "foobar"])
     def test_get_bus_by_alias(self, platform: Platform, alias):
         """Test get_bus_by_alias method"""
@@ -555,6 +536,20 @@ class TestMethods:
         circuit.add(gates.M(0, 1, 2))
 
         self._compile_and_assert(platform, circuit, 6)
+
+    def test_compile_circuit_raises_error_if_digital_settings_missing(self, platform: Platform):
+        """Test the compilation of a qibo Circuit."""
+        circuit = Circuit(3)
+        circuit.add(gates.X(0))
+        circuit.add(gates.X(1))
+        circuit.add(gates.Y(0))
+        circuit.add(gates.Y(1))
+        circuit.add(gates.M(0, 1, 2))
+
+        platform.digital_compilation_settings = None
+
+        with pytest.raises(ValueError):
+            _ = platform.compile(program=circuit, num_avg=1000, repetition_duration=200_000, num_bins=1)
 
     def test_compile_pulse_schedule(self, platform: Platform):
         """Test the compilation of a qibo Circuit."""
@@ -966,10 +961,27 @@ class TestMethods:
 
     @pytest.mark.parametrize("parameter", [Parameter.AMPLITUDE, Parameter.DURATION, Parameter.PHASE])
     @pytest.mark.parametrize("gate", ["I(0)", "X(0)", "Y(0)"])
+    @pytest.mark.parametrize("value", [1.0, 100, 0.0])
+    def test_set_parameter_of_gates(self, parameter, gate, value, platform: Platform):
+        """Test the ``get_parameter`` method with gates."""
+        platform.set_parameter(parameter=parameter, alias=gate, value=value)
+        gate_settings = platform.digital_compilation_settings.gates[gate][0]
+        assert getattr(gate_settings.pulse, parameter.value) == value
+
+        platform.digital_compilation_settings = None
+        with pytest.raises(ValueError):
+            platform.set_parameter(parameter=parameter, alias=gate, value=value)
+
+    @pytest.mark.parametrize("parameter", [Parameter.AMPLITUDE, Parameter.DURATION, Parameter.PHASE])
+    @pytest.mark.parametrize("gate", ["I(0)", "X(0)", "Y(0)"])
     def test_get_parameter_of_gates(self, parameter, gate, platform: Platform):
         """Test the ``get_parameter`` method with gates."""
         gate_settings = platform.digital_compilation_settings.gates[gate][0]
         assert platform.get_parameter(parameter=parameter, alias=gate) == getattr(gate_settings.pulse, parameter.value)
+
+        platform.digital_compilation_settings = None
+        with pytest.raises(ValueError):
+            platform.get_parameter(parameter=parameter, alias=gate)
 
     @pytest.mark.parametrize("parameter", [Parameter.DRAG_COEFFICIENT, Parameter.NUM_SIGMAS])
     @pytest.mark.parametrize("gate", ["X(0)", "Y(0)"])
