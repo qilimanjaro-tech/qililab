@@ -28,7 +28,6 @@ from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
 
 from .gate_decompositions import translate_gates
-from .native_gates import Drag
 
 
 class CircuitTranspiler:
@@ -214,7 +213,7 @@ class CircuitTranspiler:
         Returns:
             Circuit: optimized circuit.
         """
-        return CircuitOptimizer.run(circuit)
+        return CircuitOptimizer.run_gate_cancellations(circuit)
 
     def circuit_to_native(self, circuit: Circuit) -> Circuit:
         """Converts circuit with qibo gates to circuit with native gates
@@ -257,48 +256,8 @@ class CircuitTranspiler:
         Returns:
             list[gates.Gate] : list of re-ordered gates
         """
-        nqubits: int = circuit.nqubits
-        ngates: list[gates.Gate] = circuit.queue
-
-        supported_gates = ["rz", "drag", "cz", "wait", "measure"]
-        new_gates = []
-        shift = dict.fromkeys(range(nqubits), 0)
-        for gate in ngates:
-            if gate.name not in supported_gates:
-                raise NotImplementedError(f"{gate.name} not part of native supported gates {supported_gates}")
-            if isinstance(gate, gates.RZ):
-                shift[gate.qubits[0]] += gate.parameters[0]
-            # add CZ phase correction
-            elif isinstance(gate, gates.CZ):
-                gate_settings = self.digital_compilation_settings.get_gate(
-                    name=gate.__class__.__name__, qubits=gate.qubits
-                )
-                control_qubit, target_qubit = gate.qubits
-                corrections = next(
-                    (
-                        event.pulse.options
-                        for event in gate_settings
-                        if (
-                            event.pulse.options is not None
-                            and f"q{control_qubit}_phase_correction" in event.pulse.options
-                        )
-                    ),
-                    None,
-                )
-                if corrections is not None:
-                    shift[control_qubit] += corrections[f"q{control_qubit}_phase_correction"]
-                    shift[target_qubit] += corrections[f"q{target_qubit}_phase_correction"]
-                new_gates.append(gate)
-            else:
-                # if gate is drag pulse, shift parameters by accumulated Zs
-                if isinstance(gate, Drag):
-                    # create new drag pulse rather than modify parameters of the old one
-                    gate = Drag(gate.qubits[0], gate.parameters[0], gate.parameters[1] - shift[gate.qubits[0]])
-
-                # append gate to optimized list
-                new_gates.append(gate)
-
-        return new_gates
+        optimizer = CircuitOptimizer(self.digital_compilation_settings)
+        return optimizer.optimize_transpilation(circuit)
 
     def circuit_to_pulses(self, circuits: list[Circuit]) -> list[PulseSchedule]:
         """Translates a list of circuits into a list of pulse sequences (each circuit to an independent pulse sequence).
