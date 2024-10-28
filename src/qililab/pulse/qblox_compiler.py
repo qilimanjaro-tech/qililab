@@ -13,7 +13,7 @@
 # limitations under the License.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 import numpy as np
 from qpysequence import Acquisitions, Program, Waveforms, Weights
@@ -41,10 +41,16 @@ from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.typings import InstrumentName
 
 if TYPE_CHECKING:
+    from qililab.instruments.qblox import QbloxModule, QbloxSequencer
     from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
     from qililab.pulse.pulse_schedule import PulseSchedule
     from qililab.pulse.pulse_shape.pulse_shape import PulseShape
     from qililab.settings.digital.digital_compilation_bus_settings import DigitalCompilationBusSettings
+
+
+class ModuleSequencer(TypedDict):
+    module: QbloxModule
+    sequencer: QbloxSequencer
 
 
 class QbloxCompiler:
@@ -58,10 +64,13 @@ class QbloxCompiler:
         ValueError: at init if no readout module (QRM) is found in platform.
     """
 
-    def __init__(self, buses: dict[str, DigitalCompilationBusSettings], bus_to_module_and_sequencer_mapping: dict):
-        self.bus_to_module_and_sequencer_mapping = bus_to_module_and_sequencer_mapping
+    def __init__(
+        self,
+        buses: dict[str, DigitalCompilationBusSettings],
+        module_and_sequencer_per_bus: dict[str, ModuleSequencer],
+    ):
         self.buses = buses
-        # init variables as empty
+        self.module_and_sequencer_per_bus = module_and_sequencer_per_bus
         self.nshots = 0
         self.num_bins = 0
         self.repetition_duration = 0
@@ -93,8 +102,8 @@ class QbloxCompiler:
             self.nshots = num_avg
             self.repetition_duration = repetition_duration
             self.num_bins = num_bins
-            for bus_alias in self.bus_to_module_and_sequencer_mapping:
-                self.bus_to_module_and_sequencer_mapping[bus_alias]["module"].clear_cache()
+            for bus_alias in self.module_and_sequencer_per_bus:
+                self.module_and_sequencer_per_bus[bus_alias]["module"].clear_cache()
 
         bus_to_schedule = {schedule.bus_alias: schedule for schedule in pulse_schedule}
 
@@ -103,8 +112,8 @@ class QbloxCompiler:
         # generally a sequencer_schedule is the schedule sent to a specific bus, except for readout,
         # where multiple schedules for different sequencers are sent to the same bus
         for bus_alias in bus_to_schedule:
-            qblox_module = self.bus_to_module_and_sequencer_mapping[bus_alias]["module"]
-            sequencer = self.bus_to_module_and_sequencer_mapping[bus_alias]["sequencer"]
+            qblox_module = self.module_and_sequencer_per_bus[bus_alias]["module"]
+            sequencer = self.module_and_sequencer_per_bus[bus_alias]["sequencer"]
             sequencer_schedule = bus_to_schedule[bus_alias]
             # check if circuit lasts longer than repetition duration
             end_time = None if len(sequencer_schedule.timeline) == 0 else sequencer_schedule.timeline[-1].end_time
@@ -204,8 +213,8 @@ class QbloxCompiler:
             Program: Q1ASM program.
         """
         bus = self.buses[pulse_bus_schedule.bus_alias]
-        qblox_module = self.bus_to_module_and_sequencer_mapping[pulse_bus_schedule.bus_alias]["module"]
-        sequencer = self.bus_to_module_and_sequencer_mapping[pulse_bus_schedule.bus_alias]["sequencer"]
+        qblox_module = self.module_and_sequencer_per_bus[pulse_bus_schedule.bus_alias]["module"]
+        sequencer = self.module_and_sequencer_per_bus[pulse_bus_schedule.bus_alias]["sequencer"]
         MIN_WAIT = 4
 
         # Define program's blocks

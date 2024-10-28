@@ -82,7 +82,6 @@ Qililab Documentation
 
    code/ql
    code/calibration
-   code/drivers
    code/platform
    code/pulse
    code/qprogram

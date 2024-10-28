@@ -80,7 +80,7 @@ class Instrument(BusElement, ABC):
         return False
 
     def is_adc(self) -> bool:
-        """Returns True if instrument is an AWG/ADC."""
+        """Returns True if instrument is an ADC."""
         return False
 
     @check_device_initialized

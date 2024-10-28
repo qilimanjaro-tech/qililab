@@ -168,11 +168,12 @@
 - **Major reorganization of the library structure and runcard functionality**. Key updates include:
 
   - Removed obsolete instruments, such as VNAs.
+  - Removed the `drivers` module.
   - Simplified the `Qblox` sequencer class hierarchy into two main classes: `QbloxSequencer` and `QbloxADCSequencer`.
   - Removed `SystemController` and `ReadoutSystemController`; buses now interface directly with instruments.
   - Introduced a new `channels` attribute to the `Bus` class, allowing specification of channels for each associated instrument.
   - Removed the `Chip` class and its related runcard settings.
-  - Eliminated outdated settings, including those related to instrument firmware.
+  - Eliminated outdated settings, such as instrument firmware.
   - Refactored runcard settings into a modular structure with four distinct groups:
     - `instruments` and `instrument_controllers` for lab instrument setup.
     - `buses` for grouping instrument channels.

@@ -119,13 +119,13 @@ class CircuitRouter:
         # 3) Layout stage, where the initial_layout will be created.
 
         # Call the routing pipeline on the circuit, multiple times, and keep the best stochastic result:
-        best_transp_circ, best_final_layout, least_swaps = self.iterate_routing(routing_pipeline, circuit, iterations)
+        best_transp_circ, best_final_layout, least_swaps = self._iterate_routing(routing_pipeline, circuit, iterations)
         logger.info(f"The best found routing, has {least_swaps} swaps.")
 
         return best_transp_circ, best_final_layout
 
     @staticmethod
-    def iterate_routing(routing_pipeline, circuit: Circuit, iterations: int = 10) -> tuple[Circuit, dict, int]:
+    def _iterate_routing(routing_pipeline, circuit: Circuit, iterations: int = 10) -> tuple[Circuit, dict, int]:
         """Iterates the routing pipeline, to keep the best stochastic result.
 
         Args:

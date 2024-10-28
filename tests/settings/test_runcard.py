@@ -62,6 +62,9 @@ class TestDigitalCompilationSettings:
         with pytest.raises(ValueError, match="Could not find gate alias in gate settings."):
             digital.get_parameter(alias="alias", parameter=Parameter.DURATION)
 
+        with pytest.raises(ValueError):
+            digital.get_parameter(alias="non-existent-bus", parameter=Parameter.DELAY)
+
     def test_get_gate(self, digital):
         """Test the ``get_gate`` method of the Runcard.GatesSettings class."""
         gates_qubits = [
@@ -103,6 +106,13 @@ class TestDigitalCompilationSettings:
         """Test that with ``set_parameter`` we can change all settings of the platform."""
         digital.set_parameter(alias=None, parameter=Parameter.DELAY_BEFORE_READOUT, value=1234)
         assert digital.delay_before_readout == 1234
+
+        digital.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.DELAY, value=123)
+        assert digital.buses["drive_line_q0_bus"].delay == 123
+
+    def test_set_parameter_fails(self, digital: DigitalCompilationSettings):
+        with pytest.raises(ValueError):
+            digital.set_parameter(alias="non-existent-bus", parameter=Parameter.DELAY, value=123)
 
     @pytest.mark.parametrize("alias", ["X(0)", "M(0)"])
     def test_set_gate_parameters(self, alias: str, digital: DigitalCompilationSettings):

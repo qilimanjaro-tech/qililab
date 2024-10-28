@@ -73,16 +73,16 @@ class QbloxQCMRF(QbloxQCM):
         """Initial setup"""
         super().initial_setup()
         for parameter in self.parameters:
-            self.setup(parameter, getattr(self.settings, parameter.value))
+            self.set_parameter(parameter, getattr(self.settings, parameter.value))
 
     def _map_connections(self):
         """Disable all connections and map sequencer paths with output/input channels."""
         # Disable all connections
         self.device.disconnect_outputs()
 
-        for sequencer_dataclass in self.awg_sequencers:
-            sequencer = self.device.sequencers[sequencer_dataclass.identifier]
-            getattr(sequencer, f"connect_out{sequencer_dataclass.outputs[0]}")("IQ")
+        for sequencer in self.awg_sequencers:
+            device_sequencer = self.device.sequencers[sequencer.identifier]
+            getattr(device_sequencer, f"connect_out{sequencer.outputs[0]}")("IQ")
 
     @log_set_parameter
     def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
@@ -95,7 +95,7 @@ class QbloxQCMRF(QbloxQCM):
         """
         if parameter == Parameter.LO_FREQUENCY:
             if channel_id is not None:
-                sequencer = self._get_sequencer_by_id(int(channel_id))
+                sequencer = self.get_sequencer(sequencer_id=int(channel_id))
             else:
                 raise Exception(
                     "`channel_id` cannot be None when setting the `LO_FREQUENCY` parameter."
@@ -121,7 +121,7 @@ class QbloxQCMRF(QbloxQCM):
         """
         if parameter == Parameter.LO_FREQUENCY:
             if channel_id is not None:
-                sequencer = self._get_sequencer_by_id(int(channel_id))
+                sequencer = self.get_sequencer(sequencer_id=int(channel_id))
             else:
                 raise Exception(
                     "`channel_id` cannot be None when setting the `LO_FREQUENCY` parameter."

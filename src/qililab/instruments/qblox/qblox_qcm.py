@@ -40,7 +40,3 @@ class QbloxQCM(QbloxModule):
     def is_awg(self) -> bool:
         """Returns True if instrument is an AWG."""
         return True
-
-    def is_adc(self) -> bool:
-        """Returns True if instrument is an ADC."""
-        return False

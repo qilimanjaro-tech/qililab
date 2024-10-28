@@ -89,10 +89,6 @@ class TestBuildPlatformCornerCases:
         new_path = save_platform(path="./test.yml", platform=saved_platform)
         new_saved_platform = ql.build_platform(new_path)
 
-        with open(file="./test.yml", mode="r", encoding="utf8") as generated_f:
-            yaml = YAML(typ="safe")
-            generated_f_dict = yaml.load(stream=generated_f)
-
         original_platform_dict = original_platform.to_dict()
         saved_platform_dict = saved_platform.to_dict()
         new_saved_platform_dict = new_saved_platform.to_dict()
@@ -100,9 +96,7 @@ class TestBuildPlatformCornerCases:
         assert (
             original_platform_dict
             == saved_platform_dict
-            # == new_saved_platform_dict
-            # == generated_f_dict
-            # == original_dict
+            == new_saved_platform_dict
         )
         os.remove(path)  # Cleaning generated file
 

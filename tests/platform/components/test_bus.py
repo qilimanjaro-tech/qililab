@@ -4,6 +4,7 @@ from qililab.instruments import Instrument, Instruments
 from qililab.instruments.qblox import QbloxQCM, QbloxQRM
 from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.result import Result
+from qililab.typings import Parameter
 from qililab.result.qprogram import MeasurementResult
 from qililab.platform import Bus
 
@@ -24,11 +25,16 @@ def bus(mock_instruments):
     settings = {
         "alias": "bus1",
         "instruments": ["qcm", "qrm"],
-        "channels": [None, None]
+        "channels": [0, 0]
     }
     return Bus(settings=settings, platform_instruments=Instruments(elements=mock_instruments))
 
 class TestBus:
+
+    def test_bus_iter(self, bus):
+        for i, (instrument, channel) in enumerate(bus):
+            assert instrument == bus.instruments[i]
+            assert channel == bus.channels[i]
 
     def test_bus_alias(self, bus):
         assert bus.alias == "bus1"
@@ -38,10 +44,14 @@ class TestBus:
 
     def test_bus_channels(self, bus):
         assert len(bus.channels) == 2
-        assert bus.channels == [None, None]
+        assert bus.channels == [0, 0]
 
     def test_bus_str(self, bus):
         assert isinstance(str(bus), str)
+
+    def test_bus_properties(self, bus):
+        assert bus.delay == 0
+        assert bus.distortions == []
 
     def test_bus_equality(self, bus):
         other_bus = MagicMock(spec=Bus)
@@ -57,7 +67,7 @@ class TestBus:
         expected_dict = {
             "alias": "bus1",
             "instruments": ["qcm", "qrm"],
-            "channels": [None, None]
+            "channels": [0, 0]
         }
         assert bus.to_dict() == expected_dict
 
@@ -73,15 +83,33 @@ class TestBus:
         bus.set_parameter(parameter, value)
         bus.instruments[0].set_parameter.assert_called_once()
 
+    def test_bus_set_parameter_raises_error(self, bus):
+        bus.settings.instruments = []
+        bus.settings.channels = []
+        with pytest.raises(Exception):
+            bus.set_parameter(MagicMock(), 5)
+
     def test_bus_get_parameter(self, bus):
         parameter = MagicMock()
         bus.get_parameter(parameter)
         bus.instruments[0].get_parameter.assert_called_once()
 
+    def test_bus_get_parameter_raises_error(self, bus):
+        bus.settings.instruments = []
+        bus.settings.channels = []
+        with pytest.raises(Exception):
+            bus.get_parameter(MagicMock())
+
     def test_bus_upload_qpysequence(self, bus):
         qpysequence = MagicMock()
         bus.upload_qpysequence(qpysequence)
         bus.instruments[0].upload_qpysequence.assert_called_once()
+
+    def test_bus_upload_qpysequence_raises_error(self, bus):
+        bus.settings.instruments = []
+        bus.settings.channels = []
+        with pytest.raises(AttributeError):
+            bus.upload_qpysequence(MagicMock())
 
     def test_bus_upload(self, bus):
         bus.upload()
@@ -96,11 +124,31 @@ class TestBus:
         bus.instruments[1].acquire_result.return_value = result
         assert bus.acquire_result() == result
 
+    def test_bus_acquire_result_raises_error(self, bus):
+        bus.instruments[1].acquire_result.return_value = None
+        with pytest.raises(AttributeError, match=f"The bus {bus.alias} cannot acquire results."):
+            bus.acquire_result()
+
+        bus.settings.instruments.append(bus.settings.instruments[1])
+        result = MagicMock(spec=Result)
+        bus.instruments[1].acquire_result.return_value = result
+        bus.instruments[2].acquire_result.return_value = result
+        with pytest.raises(ValueError, match="Acquisition from multiple instruments is not supported. Obtained a total of 2 results."):
+            bus.acquire_result()
+
     def test_bus_acquire_qprogram_results(self, bus):
         acquisitions = {"acq1": MagicMock(spec=AcquisitionData)}
         results = [MagicMock(spec=MeasurementResult)]
         bus.instruments[1].acquire_qprogram_results.return_value = results
         assert bus.acquire_qprogram_results(acquisitions) == results
+
+    def test_bus_acquire_qprogram_results_raises_error(self, bus):
+        acquisitions = {"acq1": MagicMock(spec=AcquisitionData)}
+        bus.instruments.clear()
+        bus.channels.clear()
+
+        with pytest.raises(AttributeError, match=f"The bus {bus.alias} cannot acquire results because it doesn't have a readout system control."):
+            _ = bus.acquire_qprogram_results(acquisitions)
 
     def test_bus_with_non_existant_instrument_raises_error(self, mock_instruments):
         with pytest.raises(NameError):
