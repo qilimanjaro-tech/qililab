@@ -14,30 +14,21 @@
 
 """Circuit Transpiler class"""
 
-from copy import deepcopy
-from dataclasses import asdict
-
 import networkx as nx
-import numpy as np
 from qibo import gates
-from qibo.gates import Gate, M
 from qibo.models import Circuit
-from qibo.transpiler.placer import Placer, StarConnectivityPlacer
-from qibo.transpiler.router import Router, StarConnectivityRouter
+from qibo.transpiler.placer import Placer
+from qibo.transpiler.router import Router
 
 from qililab.config import logger
-from qililab.constants import RUNCARD
+from qililab.digital.circuit_optimizer import CircuitOptimizer
 from qililab.digital.circuit_router import CircuitRouter
-from qililab.pulse.pulse import Pulse
-from qililab.pulse.pulse_event import PulseEvent
+from qililab.digital.circuit_to_pulses import CircuitToPulses
 from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
-from qililab.settings.digital.gate_event_settings import GateEventSettings
-from qililab.typings.enums import Line
-from qililab.utils import Factory
 
 from .gate_decompositions import translate_gates
-from .native_gates import Drag, Wait
+from .native_gates import Drag
 
 
 class CircuitTranspiler:
@@ -93,15 +84,18 @@ class CircuitTranspiler:
             # Create transpiler:
             transpiler = CircuitTranspiler(platform)
 
-        Now we can transpile like:
+        Now we can transpile like, in the following examples:
 
         .. code-block:: python
 
-            # Default Transpile:
-            pulse_schedule, final_layouts = transpiler.transpile_circuit([c])  # Defaults to ReverseTraversal, Sabre
+            # Default Transpilation (with ReverseTraversal, Sabre, platform's connectivity and optimize = True):
+            routed_circuit, final_layouts = transpiler.transpile_circuits([c])
 
-            # Non-Default Trivial placer, and Default Router, but with its kwargs specified:
-            pulse_sched, final_layouts = transpiler.transpile_circuit([c], placer=Trivial, router=(Sabre, {"lookahead": 2}))
+            # Or another case, not doing optimization for some reason, and with Non-Default placer and router:
+            routed_circuit, final_layout = transpiler.transpile_circuits([c], placer=Trivial, router=Sabre, optimize=False)
+
+            # Or also specifying the `router` with kwargs:
+            routed_circuit, final_layouts = transpiler.transpile_circuits([c], router=(Sabre, {"lookahead": 2}))
 
 
         Args:
@@ -124,9 +118,9 @@ class CircuitTranspiler:
         )
         logger.info(f"Circuits final layouts: {final_layouts}")
 
-        # Optimze qibo gates, cancellation stage:
+        # Optimze qibo gates, cancellating redundant gates, stage:
         if optimize:
-            routed_circuits = tuple(self.gates_cancellation(circuit) for circuit in routed_circuits)
+            routed_circuits = tuple(self.optimize_circuit(circuit) for circuit in routed_circuits)
 
         # Unroll to Natives stage:
         native_circuits = (self.circuit_to_native(circuit) for circuit in routed_circuits)
@@ -211,15 +205,8 @@ class CircuitTranspiler:
 
         return circuit_router.route(circuit, iterations)
 
-    @staticmethod
-    def _if_star_algorithms_for_nonstar_connectivity(connectivity: nx.Graph, placer: Placer, router: Router) -> bool:
-        """True if the StarConnectivity Placer or Router are being used without a star connectivity."""
-        return not nx.is_isomorphic(connectivity, nx.star_graph(4)) and (
-            isinstance(placer, StarConnectivityPlacer) or isinstance(router, StarConnectivityRouter)
-        )
-
-    def gates_cancellation(self, circuit: Circuit) -> Circuit:
-        """Optimizes circuit by cancelling adjacent gates.
+    def optimize_circuit(self, circuit: Circuit) -> Circuit:
+        """Optimizes circuit by cancelling adjacent hermitian gates.
 
         Args:
             circuit (Circuit): circuit to optimize.
@@ -227,118 +214,7 @@ class CircuitTranspiler:
         Returns:
             Circuit: optimized circuit.
         """
-        # Initial and final circuit gates lists, from which to, one by one, after checks, pass non-cancelled gates:
-        circ_list: list[tuple] = self._get_circuit_gates(circuit)
-
-        # We want to do the sweep circuit cancelling gates least once always:
-        previous_circ_list = deepcopy(circ_list)
-        output_circ_list = self._sweep_circuit_cancelling_pairs_of_hermitian_gates(circ_list)
-
-        # And then keep iterating, sweeping over the circuit (cancelling gates) each time, until there is full sweep without any cancellations:
-        while output_circ_list != previous_circ_list:
-            previous_circ_list = deepcopy(output_circ_list)
-            output_circ_list = self._sweep_circuit_cancelling_pairs_of_hermitian_gates(output_circ_list)
-
-        # Create optimized circuit, from the obtained non-cancelled list:
-        return self._create_circuit(output_circ_list, circuit.nqubits)
-
-    @staticmethod
-    def _get_circuit_gates(circuit: Circuit) -> list[tuple]:
-        """Get the gates of the circuit.
-
-        Args:
-            circuit (qibo.models.Circuit): Circuit to get the gates from.
-
-        Returns:
-            list[tuple]: List of gates in the circuit. Where each gate is a tuple (keys: 'name', value: 'qubits').
-        """
-        return [(type(gate).__name__, gate.qubits) for gate in circuit.queue]
-
-    @staticmethod
-    def _create_gate(gate_class: str, qubits: tuple[int]) -> gates.Gate:
-        """Converts a tuple representation of qibo gate (name, qubits) into a Gate object.
-
-        Args:
-            gate_class (str): The class name of the gate. Can be "CNOT", "X", "H", or any Qibo supported class.
-            qubits (tuple [int,] | tuple[int, int]): The qubits the gate acts on.
-
-        Returns:
-            gates.Gate: The qibo Gate object.
-        """
-        return getattr(gates, gate_class)(*qubits)
-
-    @classmethod
-    def _create_circuit(cls, gates_list: list[tuple], nqubits: int) -> Circuit:
-        """Converts a list of gates (name, qubits) into a qibo Circuit object.
-
-        Args:
-            gates_list (list[tuple]): List of gates in the circuit. Where each gate is a tuple (keys: 'name', value: 'qubits').
-            nqubits (int): Number of qubits in the circuit.
-
-        Returns:
-            Circuit: The qibo Circuit object.
-        """
-        # Create optimized circuit, from the obtained non-cancelled list:
-        output_circuit = Circuit(nqubits)
-        for gate, gate_qubits in gates_list:
-            qibo_gate = cls._create_gate(gate, gate_qubits)
-            output_circuit.add(qibo_gate)
-
-        return output_circuit
-
-    @staticmethod
-    def _sweep_circuit_cancelling_pairs_of_hermitian_gates(circ_list: Circuit) -> Circuit:
-        """Cancels adjacent gates in a circuit.
-
-        Args:
-            circ_list (list[tuple]): List of gates in the circuit. Where each gate is a tuple (keys: 'name', value: 'qubits').
-
-        Returns:
-            list[tuple]: List of gates in the circuit, after cancelling adjacent gates.
-        """
-        # List of gates, that are available for cancellation:
-        hermitian_gates: list = ["H", "X", "Y", "Z", "CNOT", "CZ", "SWAP"]
-
-        output_circ_list: list[tuple] = []
-
-        while circ_list:  # If original circuit list, is empty or has one gate remaining, we are done:
-            if len(circ_list) == 1:
-                output_circ_list.append(circ_list[0])
-                break
-
-            # Gate of the original circuit, to find a match for:
-            gate, gate_qubits = circ_list.pop(0)
-
-            # If gate is not hermitian (can't be cancelled), add it to the output circuit and continue:
-            if gate not in hermitian_gates:
-                output_circ_list.append((gate, gate_qubits))
-                continue
-
-            subend = False
-            for i in range(len(circ_list)):
-                # Next gates, to compare the original with:
-                comp_gate, comp_qubits = circ_list[i]
-
-                # Simplify duplication, if same gate and qubits found, without any other in between:
-                if gate == comp_gate and gate_qubits == comp_qubits:
-                    circ_list.pop(i)
-                    break
-
-                # Add gate, if there is no other gate that acts on the same qubits:
-                if i == len(circ_list) - 1:
-                    output_circ_list.append((gate, gate_qubits))
-                    break
-
-                # Add gate and leave comparison_gate loop, if we find a gate in common qubit, that prevents contraction:
-                for gate_qubit in gate_qubits:
-                    if gate_qubit in comp_qubits:
-                        output_circ_list.append((gate, gate_qubits))
-                        subend = True
-                        break
-                if subend:
-                    break
-
-        return output_circ_list
+        return CircuitOptimizer.run(circuit)
 
     def circuit_to_native(self, circuit: Circuit) -> Circuit:
         """Converts circuit with qibo gates to circuit with native gates
@@ -425,9 +301,11 @@ class CircuitTranspiler:
         return new_gates
 
     def circuit_to_pulses(self, circuits: list[Circuit]) -> list[PulseSchedule]:
-        """Translates a list of circuits into a list of pulse sequences (each circuit to an independent pulse sequence)
+        """Translates a list of circuits into a list of pulse sequences (each circuit to an independent pulse sequence).
+
         For each circuit gate we look up for its corresponding gates settings in the runcard (the name of the class of the circuit
         gate and the name of the gate in the runcard should match) and load its schedule of GateEvents.
+
         Each gate event corresponds to a concrete pulse applied at a certain time w.r.t the gate's start time and through a specific bus
         (see gates settings docstrings for more details).
 
@@ -436,6 +314,7 @@ class CircuitTranspiler:
         M(0)M(1)M(2) since the later will not be necessarily applied at the same time for all the qubits involved.
 
         Times for each qubit are kept track of with the dictionary `time`.
+
         The times at which each pulse is applied are padded if they are not multiples of the minimum clock time. This means that if min clock
         time is 4 and a pulse applied to qubit k lasts 17ns, the next pulse at qubit k will be at t=20ns
 
@@ -446,214 +325,5 @@ class CircuitTranspiler:
             list[PulseSequences]: List of :class:`PulseSequences` classes.
         """
 
-        pulse_schedule_list: list[PulseSchedule] = []
-        for circuit in circuits:
-            pulse_schedule = PulseSchedule()
-            time: dict[int, int] = {}  # init/restart time
-            for gate in circuit.queue:
-                # handle wait gates
-                if isinstance(gate, Wait):
-                    self._update_time(time=time, qubit=gate.qubits[0], gate_time=gate.parameters[0])
-                    continue
-
-                # Measurement gates need to be handled on their own because qibo allows to define
-                # an M gate as eg. gates.M(*range(5))
-                if isinstance(gate, M):
-                    gate_schedule = []
-                    gate_qubits = gate.qubits
-                    for qubit in gate_qubits:
-                        gate_schedule += self._gate_schedule_from_settings(M(qubit))
-
-                # handle control gates
-                else:
-                    # extract gate schedule
-                    gate_schedule = self._gate_schedule_from_settings(gate)
-                    gate_qubits = self._get_gate_qubits(gate, gate_schedule)
-
-                # process gate_schedule to pulses for both M and control gates
-                # get total duration for the gate
-                gate_time = self._get_total_schedule_duration(gate_schedule)
-                # update time, start time is that of the qubit most ahead in time
-                start_time = 0
-                for qubit in gate_qubits:
-                    start_time = max(self._update_time(time=time, qubit=qubit, gate_time=gate_time), start_time)
-                # sync gate end time
-                self._sync_qubit_times(gate_qubits, time=time)
-                # apply gate schedule
-                for gate_event in gate_schedule:
-                    # add control gate schedule
-                    pulse_event = self._gate_element_to_pulse_event(time=start_time, gate=gate, gate_event=gate_event)
-                    # pop first qubit from gate if it is measurement
-                    # this is so that the target qubit for multiM gates is every qubit in the M gate
-                    if isinstance(gate, M):
-                        gate = M(*gate.qubits[1:])
-                    # add event
-                    delay = self.digital_compilation_settings.buses[gate_event.bus].delay
-                    pulse_schedule.add_event(pulse_event=pulse_event, bus_alias=gate_event.bus, delay=delay)  # type: ignore
-
-            for bus_alias in self.digital_compilation_settings.buses:
-                # If we find a flux port, create empty schedule for that port.
-                # This is needed because for Qblox instrument working in flux buses as DC sources, if we don't
-                # add an empty schedule its offsets won't be activated and the results will be misleading.
-                if self.digital_compilation_settings.buses[bus_alias].line == Line.FLUX:
-                    pulse_schedule.create_schedule(bus_alias=bus_alias)
-
-            pulse_schedule_list.append(pulse_schedule)
-
-        return pulse_schedule_list
-
-    def _gate_schedule_from_settings(self, gate: Gate) -> list[GateEventSettings]:
-        """Gets the gate schedule. The gate schedule is the list of pulses to apply
-        to a given bus for a given gate
-
-        Args:
-            gate (Gate): Qibo gate
-
-        Returns:
-            list[GateEventSettings]: schedule list with each of the pulses settings
-        """
-
-        gate_schedule = self.digital_compilation_settings.get_gate(name=gate.__class__.__name__, qubits=gate.qubits)
-
-        if not isinstance(gate, Drag):
-            return gate_schedule
-
-        # drag gates are currently the only parametric gates we are handling and they are handled here
-        if len(gate_schedule) > 1:
-            raise ValueError(
-                f"Schedule for the drag gate is expected to have only 1 pulse but instead found {len(gate_schedule)} pulses"
-            )
-        drag_schedule = GateEventSettings(
-            **asdict(gate_schedule[0])
-        )  # make new object so that gate_schedule is not overwritten
-        theta = self._normalize_angle(angle=gate.parameters[0])
-        amplitude = drag_schedule.pulse.amplitude * theta / np.pi
-        phase = self._normalize_angle(angle=gate.parameters[1])
-        if amplitude < 0:
-            amplitude = -amplitude
-            phase = self._normalize_angle(angle=gate.parameters[1] + np.pi)
-        drag_schedule.pulse.amplitude = amplitude
-        drag_schedule.pulse.phase = phase
-        return [drag_schedule]
-
-    def _normalize_angle(self, angle: float):
-        """Normalizes angle in range [-pi, pi].
-
-        Args:
-            angle (float): Normalized angle.
-        """
-        angle %= 2 * np.pi
-        if angle > np.pi:
-            angle -= 2 * np.pi
-        return angle
-
-    def _get_total_schedule_duration(self, schedule: list[GateEventSettings]) -> int:
-        """Returns total time for a gate schedule. This is done by taking the max of (init + duration)
-        for all the elements in the schedule
-
-        Args:
-            schedule (list[CircuitPulseSettings]): Schedule of pulses to apply
-
-        Returns:
-            int: Total gate time
-        """
-        time = 0
-        for schedule_element in schedule:
-            time = max(time, schedule_element.pulse.duration + schedule_element.wait_time)
-        return time
-
-    def _get_gate_qubits(self, gate: Gate, schedule: list[GateEventSettings] | None = None) -> tuple[int, ...]:
-        """Gets qubits involved in gate. This includes gate.qubits but also qubits which are targets of
-        buses in the gate schedule
-
-        Args:
-            schedule (list[CircuitPulseSettings]): Gate schedule
-
-        Returns:
-            list[int]: list of qubits
-        """
-
-        schedule_qubits = (
-            [
-                qubit
-                for schedule_element in schedule
-                for qubit in self.digital_compilation_settings.buses[schedule_element.bus].qubits
-                if schedule_element.bus in self.digital_compilation_settings.buses
-            ]
-            if schedule is not None
-            else []
-        )
-
-        gate_qubits = list(gate.qubits)
-
-        return tuple(set(schedule_qubits + gate_qubits))  # convert to set and back to list to remove repeated items
-
-    def _gate_element_to_pulse_event(self, time: int, gate: Gate, gate_event: GateEventSettings) -> PulseEvent:
-        """Translates a gate element into a pulse.
-
-        Args:
-            time (dict[int, int]): dictionary containing qubit indices as keys and current time (ns) as values
-            gate (gate): circuit gate. This is used only to know the qubit target of measurement gates
-            gate_event (GateEventSettings): gate event, a single element of a gate schedule containing information
-            about the pulse to be applied
-            bus (bus): bus through which the pulse is sent
-
-        Returns:
-            PulseEvent: pulse event corresponding to the input gate event
-        """
-
-        # copy to avoid modifying runcard settings
-        pulse = gate_event.pulse
-        pulse_shape_copy = pulse.shape.copy()
-        pulse_shape = Factory.get(pulse_shape_copy.pop(RUNCARD.NAME))(**pulse_shape_copy)
-
-        # handle measurement gates and target qubits for control gates which might have multi-qubit schedules
-        bus = self.digital_compilation_settings.buses[gate_event.bus]
-        qubit = (
-            gate.qubits[0]
-            if isinstance(gate, M)
-            else next((qubit for qubit in bus.qubits), None)
-            if bus is not None
-            else None
-        )
-
-        return PulseEvent(
-            pulse=Pulse(
-                amplitude=pulse.amplitude,
-                phase=pulse.phase,
-                duration=pulse.duration,
-                frequency=0,
-                pulse_shape=pulse_shape,
-            ),
-            start_time=time + gate_event.wait_time + self.digital_compilation_settings.delay_before_readout,
-            pulse_distortions=bus.distortions,
-            qubit=qubit,
-        )
-
-    def _update_time(self, time: dict[int, int], qubit: int, gate_time: int):
-        """Creates new timeline if not already created and update time.
-
-        Args:
-            time (Dict[int, int]): Dictionary with the time of each qubit.
-            qubit_idx (int): qubit index
-            gate_time (int): total duration of the gate
-        """
-        if qubit not in time:
-            time[qubit] = 0
-        old_time = time[qubit]
-        residue = (gate_time) % self.digital_compilation_settings.minimum_clock_time
-        if residue != 0:
-            gate_time += self.digital_compilation_settings.minimum_clock_time - residue
-        time[qubit] += gate_time
-        return old_time
-
-    def _sync_qubit_times(self, qubits: list[int], time: dict[int, int]):
-        """Syncs the time of the given qubit list
-
-        Args:
-            qubits (list[int]): qubits to sync
-            time (dict[int,int]): time dictionary
-        """
-        max_time = max((time[qubit] for qubit in qubits if qubit in time), default=0)
-        for qubit in qubits:
-            time[qubit] = max_time
+        circuit_to_pulses = CircuitToPulses(self.digital_compilation_settings)
+        return [circuit_to_pulses.run(circuit) for circuit in circuits]
