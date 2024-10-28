@@ -21,8 +21,8 @@ import numpy as np
 from qibo import gates
 from qibo.gates import Gate, M
 from qibo.models import Circuit
-from qibo.transpiler.placer import Placer, StarConnectivityPlacer
-from qibo.transpiler.router import Router, StarConnectivityRouter
+from qibo.transpiler.placer import Placer
+from qibo.transpiler.router import Router
 
 from qililab.config import logger
 from qililab.constants import RUNCARD
@@ -192,13 +192,6 @@ class CircuitTranspiler:
         circuit_router = CircuitRouter(topology, placer, router)
 
         return circuit_router.route(circuit, iterations)
-
-    @staticmethod
-    def _if_star_algorithms_for_nonstar_connectivity(connectivity: nx.Graph, placer: Placer, router: Router) -> bool:
-        """True if the StarConnectivity Placer or Router are being used without a star connectivity."""
-        return not nx.is_isomorphic(connectivity, nx.star_graph(4)) and (
-            isinstance(placer, StarConnectivityPlacer) or isinstance(router, StarConnectivityRouter)
-        )
 
     def circuit_to_native(self, circuit: Circuit, optimize: bool = True) -> Circuit:
         """Converts circuit with qibo gates to circuit with native gates
