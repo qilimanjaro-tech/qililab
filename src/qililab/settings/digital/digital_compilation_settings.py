@@ -35,18 +35,12 @@ class DigitalCompilationSettings:
 
     def __post_init__(self):
         """Build the Gates Settings based on the master settings."""
+        self.topology = [tuple(element) if isinstance(element, list) else element for element in self.topology]
         self.gates = {gate: [GateEventSettings(**event) for event in schedule] for gate, schedule in self.gates.items()}
         self.buses = {bus: DigitalCompilationBusSettings(**settings) for bus, settings in self.buses.items()}
 
     def to_dict(self):
         """Serializes gate settings to dictionary and removes fields with None values"""
-
-        def remove_none_values(data):
-            if isinstance(data, dict):
-                data = {key: remove_none_values(item) for key, item in data.items() if item is not None}
-            elif isinstance(data, list):
-                data = [remove_none_values(item) for item in data if item is not None]
-            return data
 
         return asdict(self, dict_factory=dict_factory) | {
             "buses": {bus: bus_settings.to_dict() for bus, bus_settings in self.buses.items()}

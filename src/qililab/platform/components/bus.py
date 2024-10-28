@@ -135,7 +135,7 @@ class Bus:
 
     def __iter__(self):
         """Redirect __iter__ magic method."""
-        return iter(self.instruments)
+        return iter(zip(self.instruments, self.channels))
 
     def to_dict(self):
         """Return a dict representation of the Bus class."""
@@ -187,16 +187,13 @@ class Bus:
                 return instrument.get_parameter(parameter, instrument_channel)
         raise Exception(f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}")
 
-    def upload_qpysequence(self, qpysequence: QpySequence, channel_id: ChannelID | None = None):
+    def upload_qpysequence(self, qpysequence: QpySequence):
         """Uploads the qpysequence into the instrument."""
         from qililab.instruments.qblox.qblox_module import QbloxModule  # pylint: disable=import-outside-toplevel
 
         for instrument, instrument_channel in zip(self.instruments, self.channels):
             if isinstance(instrument, QbloxModule):
-                if channel_id is not None and channel_id == instrument_channel:
-                    instrument.upload_qpysequence(qpysequence=qpysequence, channel_id=channel_id)
-                    return
-                instrument.upload_qpysequence(qpysequence=qpysequence, channel_id=instrument_channel)  # type: ignore
+                instrument.upload_qpysequence(qpysequence=qpysequence, channel_id=int(instrument_channel))  # type: ignore[arg-type]
                 return
 
         raise AttributeError(f"Bus {self.alias} doesn't have any QbloxModule to upload a qpysequence.")
@@ -231,7 +228,7 @@ class Bus:
 
         if len(results) > 1:
             raise ValueError(
-                f"Acquisition from multiple instruments is not supported. Obtained a total of {len(results)} results. "
+                f"Acquisition from multiple instruments is not supported. Obtained a total of {len(results)} results."
             )
 
         if len(results) == 0:

@@ -424,7 +424,7 @@ class QuantumMachinesCluster(Instrument):
         return True
 
     def is_adc(self) -> bool:
-        """Returns True if instrument is an AWG/ADC."""
+        """Returns True if instrument is an ADC."""
         return True
 
     @check_device_initialized

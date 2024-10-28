@@ -10,20 +10,11 @@ from qpysequence import Sequence
 from qpysequence.utils.constants import AWG_MAX_GAIN
 
 from qililab.instruments.qblox import QbloxQCM, QbloxQRM
-from qililab.platform import Platform
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseSchedule, QbloxCompiler, Rectangular
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.typings import Parameter, AcquireTriggerMode, IntegrationMode
 from qililab.typings.enums import Line
 from qililab.settings.digital.digital_compilation_bus_settings import DigitalCompilationBusSettings
-from tests.data import Galadriel
-from tests.test_utils import build_platform
-
-
-# @pytest.fixture(name="platform")
-# def fixture_platform():
-#     """platform fixture"""
-#     return build_platform(runcard=Galadriel.runcard)
 
 
 class DummyQCM(QbloxQCM):
@@ -83,7 +74,6 @@ def fixture_qcm_0():
 def fixture_qrm_0():
     settings = {
         "alias": "qrm_0",
-        Parameter.ACQUISITION_DELAY_TIME.value: 100,
         "out_offsets": [0.123, 1.23],
         "awg_sequencers": [
             {
@@ -107,7 +97,6 @@ def fixture_qrm_0():
                 Parameter.HARDWARE_DEMODULATION.value: True,
                 Parameter.SCOPE_STORE_ENABLED.value: True,
                 Parameter.TIME_OF_FLIGHT.value: 40,
-
                 Parameter.THRESHOLD.value: 0.5,
                 Parameter.THRESHOLD_ROTATION.value: 45.0,
             },
@@ -132,12 +121,67 @@ def fixture_qrm_0():
                 Parameter.HARDWARE_DEMODULATION.value: True,
                 Parameter.SCOPE_STORE_ENABLED.value: False,
                 Parameter.TIME_OF_FLIGHT.value: 40,
-                # Parameter.WEIGHTS_I.value: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
-                # Parameter.WEIGHTS_Q.value: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
-                # Parameter.WEIGHED_ACQ_ENABLED.value: False,
                 Parameter.THRESHOLD.value: 0.5,
                 Parameter.THRESHOLD_ROTATION.value: 45.0,
             },
+            {
+                "identifier": 2,
+                "outputs": [0, 1],
+                Parameter.IF.value: 200_000_000,
+                Parameter.GAIN_I.value: 1,
+                Parameter.GAIN_Q.value: 1,
+                Parameter.GAIN_IMBALANCE.value: 0,
+                Parameter.PHASE_IMBALANCE.value: 0,
+                Parameter.OFFSET_I.value: 0,
+                Parameter.OFFSET_Q.value: 0,
+                Parameter.HARDWARE_MODULATION.value: False,
+                Parameter.SCOPE_ACQUIRE_TRIGGER_MODE.value: AcquireTriggerMode.SEQUENCER.value,
+                Parameter.SCOPE_HARDWARE_AVERAGING.value: True,
+                Parameter.SAMPLING_RATE.value: 1.0e09,
+                Parameter.INTEGRATION_LENGTH.value: 2_000,
+                Parameter.INTEGRATION_MODE.value: IntegrationMode.SSB.value,
+                Parameter.SEQUENCE_TIMEOUT.value: 1,
+                Parameter.ACQUISITION_TIMEOUT.value: 1,
+                Parameter.HARDWARE_DEMODULATION.value: True,
+                Parameter.SCOPE_STORE_ENABLED.value: False,
+                Parameter.TIME_OF_FLIGHT.value: 40,
+                Parameter.THRESHOLD.value: 0.5,
+                Parameter.THRESHOLD_ROTATION.value: 45.0,
+            },
+        ],
+    }
+    return DummyQRM(settings=settings)
+
+@pytest.fixture(name="qrm_1")
+def fixture_qrm_1():
+    settings = {
+        "alias": "qrm_1",
+        "out_offsets": [0.123, 1.23],
+        "awg_sequencers": [
+            {
+                "identifier": 0,
+                "outputs": [0, 1],
+                Parameter.IF.value: 100_000_000,
+                Parameter.GAIN_I.value: 1,
+                Parameter.GAIN_Q.value: 1,
+                Parameter.GAIN_IMBALANCE.value: 0,
+                Parameter.PHASE_IMBALANCE.value: 0,
+                Parameter.OFFSET_I.value: 0,
+                Parameter.OFFSET_Q.value: 0,
+                Parameter.HARDWARE_MODULATION.value: False,
+                Parameter.SCOPE_ACQUIRE_TRIGGER_MODE.value: AcquireTriggerMode.SEQUENCER.value,
+                Parameter.SCOPE_HARDWARE_AVERAGING.value: True,
+                Parameter.SAMPLING_RATE.value: 1.0e09,
+                Parameter.INTEGRATION_LENGTH.value: 2_123,
+                Parameter.INTEGRATION_MODE.value: IntegrationMode.SSB.value,
+                Parameter.SEQUENCE_TIMEOUT.value: 1,
+                Parameter.ACQUISITION_TIMEOUT.value: 1,
+                Parameter.HARDWARE_DEMODULATION.value: True,
+                Parameter.SCOPE_STORE_ENABLED.value: True,
+                Parameter.TIME_OF_FLIGHT.value: 40,
+                Parameter.THRESHOLD.value: 0.5,
+                Parameter.THRESHOLD_ROTATION.value: 45.0,
+            }
         ],
     }
     return DummyQRM(settings=settings)
@@ -163,14 +207,19 @@ def fixture_buses() -> dict[str, DigitalCompilationBusSettings]:
         "readout_q1": DigitalCompilationBusSettings(
             line=Line.READOUT,
             qubits=[1],
-            weights_i=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
-            weights_q=[1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
-            weighed_acq_enabled=False,
+        ),
+        "readout_q2": DigitalCompilationBusSettings(
+            line=Line.READOUT,
+            qubits=[2],
+        ),
+        "readout_q3": DigitalCompilationBusSettings(
+            line=Line.READOUT,
+            qubits=[3],
         ),
     }
 
 @pytest.fixture(name="bus_to_module_and_sequencer_mapping")
-def fixture_bus_to_module_and_sequencer_mapping(qcm_0: DummyQCM, qrm_0: DummyQRM):
+def fixture_bus_to_module_and_sequencer_mapping(qcm_0: DummyQCM, qrm_0: DummyQRM, qrm_1: DummyQRM):
     return {
         "drive_q0": {
             "module": qcm_0,
@@ -187,6 +236,14 @@ def fixture_bus_to_module_and_sequencer_mapping(qcm_0: DummyQCM, qrm_0: DummyQRM
         "readout_q1": {
             "module": qrm_0,
             "sequencer": qrm_0.get_sequencer(1)
+        },
+        "readout_q2": {
+            "module": qrm_0,
+            "sequencer": qrm_0.get_sequencer(2)
+        },
+        "readout_q3": {
+            "module": qrm_1,
+            "sequencer": qrm_1.get_sequencer(0)
         }
     }
 
@@ -195,66 +252,6 @@ def fixture_bus_to_module_and_sequencer_mapping(qcm_0: DummyQCM, qrm_0: DummyQRM
 def fixture_qblox_compiler(buses, bus_to_module_and_sequencer_mapping):
     """Return an instance of Qblox Compiler class"""
     return QbloxCompiler(buses, bus_to_module_and_sequencer_mapping)
-
-
-# @pytest.fixture(name="qblox_compiler_2qrm")
-# def fixture_qblox_compiler_2qrm(platform: Platform):
-#     """Return an instance of Qblox Compiler class"""
-#     qcm_settings = copy.deepcopy(Galadriel.qblox_qcm_0)
-#     qcm_settings.pop("name")
-#     dummy_qcm = DummyQCM(settings=qcm_settings)
-#     qrm_0_settings = copy.deepcopy(Galadriel.qblox_qrm_0)
-#     qrm_0_settings.pop("name")
-#     qrm_1_settings = copy.deepcopy(Galadriel.qblox_qrm_1)
-#     qrm_1_settings.pop("name")
-#     platform.instruments.elements = [dummy_qcm, DummyQRM(settings=qrm_0_settings), DummyQRM(settings=qrm_1_settings)]
-#     return QbloxCompiler(platform)
-
-
-# @pytest.fixture(name="settings_6_sequencers")
-# def fixture_settings_6_sequencers():
-#     """settings for 6 sequencers"""
-#     sequencers = [
-#         {
-#             "identifier": seq_idx,
-#             "chip_port_id": "feedline_input",
-#             "qubit": 5 - seq_idx,
-#             "outputs": [0],
-#             "weights_i": [1, 1, 1, 1],
-#             "weights_q": [1, 1, 1, 1],
-#             "weighed_acq_enabled": False,
-#             "threshold": 0.5,
-#             "threshold_rotation": 30.0 * seq_idx,
-#             "num_bins": 1,
-#             "intermediate_frequency": 20000000,
-#             "gain_i": 0.001,
-#             "gain_q": 0.02,
-#             "gain_imbalance": 1,
-#             "phase_imbalance": 0,
-#             "offset_i": 0,
-#             "offset_q": 0,
-#             "hardware_modulation": True,
-#             "scope_acquire_trigger_mode": "sequencer",
-#             "scope_hardware_averaging": True,
-#             "sampling_rate": 1000000000,
-#             "integration_length": 8000,
-#             "integration_mode": "ssb",
-#             "sequence_timeout": 1,
-#             "acquisition_timeout": 1,
-#             "hardware_demodulation": True,
-#             "scope_store_enabled": True,
-#             "time_of_flight": 40,
-#         }
-#         for seq_idx in range(6)
-#     ]
-#     return {
-#         "alias": "test",
-#         "firmware": "0.4.0",
-#         "num_sequencers": 6,
-#         "out_offsets": [0.123, 1.23],
-#         "acquisition_delay_time": 100,
-#         "awg_sequencers": sequencers,
-#     }
 
 
 @pytest.fixture(name="pulse_bus_schedule")
@@ -285,35 +282,27 @@ def fixture_pulse_bus_schedule_long_wait() -> PulseBusSchedule:
     return PulseBusSchedule(timeline=[pulse_event, pulse_event2], bus_alias="readout_q0")
 
 
-# @pytest.fixture(name="pulse_bus_schedule_odd_qubits")
-# def fixture_pulse_bus_schedule_odd_qubits() -> PulseBusSchedule:
-#     """Returns a PulseBusSchedule with readout pulses for qubits 1, 3 and 5."""
-#     pulse = Pulse(amplitude=1.0, phase=0, duration=1000, frequency=7.0e9, pulse_shape=Rectangular())
-#     timeline = [PulseEvent(pulse=pulse, start_time=0, qubit=qubit) for qubit in [3, 1, 5]]
-#     return PulseBusSchedule(timeline=timeline, port="feedline_input")
-
-
-# @pytest.fixture(name="pulse_schedule_2qrm")
-# def fixture_pulse_schedule() -> PulseSchedule:
-#     """Return PulseBusSchedule instance."""
-#     pulse_event_0 = PulseEvent(
-#         pulse=Pulse(
-#             amplitude=0.8, phase=np.pi / 2 + 12.2, duration=50, frequency=1e9, pulse_shape=Gaussian(num_sigmas=4)
-#         ),
-#         start_time=0,
-#         qubit=1,
-#     )
-#     pulse_event_1 = PulseEvent(
-#         pulse=Pulse(amplitude=0.8, phase=0.1, duration=50, frequency=1e9, pulse_shape=Rectangular()),
-#         start_time=12,
-#         qubit=2,
-#     )
-#     return PulseSchedule(
-#         [
-#             PulseBusSchedule(timeline=[pulse_event_0], port="feedline_input"),
-#             PulseBusSchedule(timeline=[pulse_event_1], port="feedline_output_2"),
-#         ]
-#     )
+@pytest.fixture(name="pulse_schedule_2qrm")
+def fixture_pulse_schedule() -> PulseSchedule:
+    """Return PulseBusSchedule instance."""
+    pulse_event_0 = PulseEvent(
+        pulse=Pulse(
+            amplitude=0.8, phase=np.pi / 2 + 12.2, duration=50, frequency=1e9, pulse_shape=Gaussian(num_sigmas=4)
+        ),
+        start_time=0,
+        qubit=2,
+    )
+    pulse_event_1 = PulseEvent(
+        pulse=Pulse(amplitude=0.8, phase=0.1, duration=50, frequency=1e9, pulse_shape=Rectangular()),
+        start_time=12,
+        qubit=3,
+    )
+    return PulseSchedule(
+        [
+            PulseBusSchedule(timeline=[pulse_event_0], bus_alias="readout_q2"),
+            PulseBusSchedule(timeline=[pulse_event_1], bus_alias="readout_q3"),
+        ]
+    )
 
 
 @pytest.fixture(name="long_pulse_bus_schedule")
@@ -322,30 +311,6 @@ def fixture_long_pulse_bus_schedule() -> PulseBusSchedule:
     pulse = Pulse(amplitude=0.8, phase=np.pi / 2 + 12.2, duration=10**6, frequency=1e9, pulse_shape=Rectangular())
     pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=0)
     return PulseBusSchedule(timeline=[pulse_event], bus_alias="readout_q0")
-
-
-# @pytest.fixture(name="multiplexed_pulse_bus_schedule")
-# def fixture_multiplexed_pulse_bus_schedule() -> PulseBusSchedule:
-#     """Load PulseBusSchedule with 10 different frequencies.
-
-#     Returns:
-#         PulseBusSchedule: PulseBusSchedule with 10 different frequencies.
-#     """
-#     timeline = [
-#         PulseEvent(
-#             pulse=Pulse(
-#                 amplitude=1,
-#                 phase=0,
-#                 duration=1000,
-#                 frequency=7.0e9 + n * 0.1e9,
-#                 pulse_shape=Rectangular(),
-#             ),
-#             start_time=0,
-#             qubit=n,
-#         )
-#         for n in range(2)
-#     ]
-#     return PulseBusSchedule(timeline=timeline, port="feedline_input")
 
 
 # @pytest.fixture(name="pulse_schedule_odd_qubits")
@@ -414,200 +379,121 @@ class TestQbloxCompiler:
         assert isinstance(sequences, list)
         assert len(sequences) == 1
         assert isinstance(sequences[0], Sequence)
-        assert len(qblox_compiler.bus_to_module_and_sequencer_mapping["readout_q1"]["module"].cache.keys()) == 2
+        assert len(qblox_compiler.module_and_sequencer_per_bus["readout_q1"]["module"].cache.keys()) == 2
 
-    # def test_compile_multiplexing(self, qblox_compiler, multiplexed_pulse_bus_schedule: PulseBusSchedule):
-    #     """Test compile method with a multiplexed pulse bus schedule."""
-    #     multiplexed_pulse_schedule = PulseSchedule([multiplexed_pulse_bus_schedule])
-    #     sequences = qblox_compiler.compile(
-    #         multiplexed_pulse_schedule, num_avg=1000, repetition_duration=2000, num_bins=1
-    #     )["feedline_input_output_bus"]
-    #     assert isinstance(sequences, list)
-    #     assert len(sequences) == 2
-    #     assert all(isinstance(sequence, Sequence) for sequence in sequences)
+    def test_qrm_compile_2qrm(
+        self,
+        qblox_compiler: QbloxCompiler,
+        pulse_schedule_2qrm: PulseSchedule,
+    ):
+        """Test compile method for 2 qrms. First check a pulse schedule with 2 qrms, then one with
+        only 1 qrm. Check that compiling the second sequence erases unused sequences in the unused qrm cache."""
+        program = qblox_compiler.compile(pulse_schedule_2qrm, num_avg=1000, repetition_duration=2000, num_bins=1)
 
-    #     # test cache
-    #     single_freq_schedules = multiplexed_pulse_bus_schedule.qubit_schedules()
-    #     qrm = qblox_compiler.qblox_modules[1]
-    #     assert len(qrm.cache) == len(single_freq_schedules)
-    #     assert all(
-    #         cache_schedule == expected_schedule
-    #         for cache_schedule, expected_schedule in zip(qrm.cache.values(), single_freq_schedules)
-    #     )
+        assert len(program.items()) == 2
+        assert "readout_q2" in program
+        assert "readout_q3" in program
+        assert len(qblox_compiler.module_and_sequencer_per_bus["readout_q2"]["module"].cache.keys()) == 1
+        assert len(qblox_compiler.module_and_sequencer_per_bus["readout_q3"]["module"].cache.keys()) == 1
 
-    # def test_qrm_compile_2qrm(
-    #     self,
-    #     qblox_compiler_2qrm: QbloxCompiler,
-    #     pulse_bus_schedule: PulseBusSchedule,
-    #     pulse_schedule_2qrm: PulseSchedule,
-    # ):
-    #     """Test compile method for 2 qrms. First check a pulse schedule with 2 qrms, then one with
-    #     only 1 qrm. Check that compiling the second sequence erases unused sequences in the unused qrm cache."""
-    #     program = qblox_compiler_2qrm.compile(pulse_schedule_2qrm, num_avg=1000, repetition_duration=2000, num_bins=1)
+        assert list(qblox_compiler.module_and_sequencer_per_bus["readout_q2"]["module"].sequences.keys()) == [2]
+        assert list(qblox_compiler.module_and_sequencer_per_bus["readout_q3"]["module"].sequences.keys()) == [0]
 
-    #     assert len(program.items()) == 2
-    #     assert "feedline_input_output_bus" in program
-    #     assert "feedline_input_output_bus_2" in program
-    #     assert len(qblox_compiler_2qrm.qblox_modules[1].cache.keys()) == 1
-    #     assert len(qblox_compiler_2qrm.qblox_modules[2].cache.keys()) == 1
+        assert len(program["readout_q2"]) == 1
+        assert len(program["readout_q3"]) == 1
 
-    #     assert list(qblox_compiler_2qrm.qblox_modules[1].sequences.keys()) == [1]
-    #     assert list(qblox_compiler_2qrm.qblox_modules[2].sequences.keys()) == [0]
+        sequences_0 = program["readout_q2"][0]
+        sequences_1 = program["readout_q3"][0]
 
-    #     assert len(program["feedline_input_output_bus"]) == 1
-    #     assert len(program["feedline_input_output_bus_2"]) == 1
+        assert isinstance(sequences_0, Sequence)
+        assert isinstance(sequences_1, Sequence)
 
-    #     sequences_0 = program["feedline_input_output_bus"][0]
-    #     sequences_1 = program["feedline_input_output_bus_2"][0]
+        assert "Gaussian" in sequences_0._waveforms._waveforms[0].name
+        assert "Rectangular" in sequences_1._waveforms._waveforms[0].name
 
-    #     assert isinstance(sequences_0, Sequence)
-    #     assert isinstance(sequences_1, Sequence)
+        q1asm_0 = """
+            setup:
+                            move             0, R0
+                            move             1, R1
+                            move             1000, R2
+                            wait_sync        4
 
-    #     assert "Gaussian" in sequences_0._waveforms._waveforms[0].name
-    #     assert "Rectangular" in sequences_1._waveforms._waveforms[0].name
+            start:
+                            reset_ph
+                            set_mrk          0
+                            upd_param        4
 
-    #     q1asm_0 = """
-    #         setup:
-    #                         move             0, R0
-    #                         move             1, R1
-    #                         move             1000, R2
-    #                         wait_sync        4
+            average:
+                            move             0, R3
+            bin:
+                            set_awg_gain     26213, 26213
+                            set_ph           191690305
+                            play             0, 1, 4
+                            wait             220
+                            acquire          0, R3, 4
+            long_wait_1:
+                            wait             1772
 
-    #         start:
-    #                         reset_ph
-    #                         set_mrk          0
-    #                         upd_param        4
+                            add              R3, 1, R3
+                            nop
+                            jlt              R3, 1, @bin
+                            loop             R2, @average
+            stop:
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
 
-    #         average:
-    #                         move             0, R3
-    #         bin:
-    #                         set_awg_gain     26213, 26213
-    #                         set_ph           191690305
-    #                         play             0, 1, 4
-    #                         wait             220
-    #                         acquire          0, R3, 4
-    #         long_wait_1:
-    #                         wait             1772
+        q1asm_1 = """
+            setup:
+                            move             0, R0
+                            move             1, R1
+                            move             1000, R2
+                            wait_sync        4
 
-    #                         add              R3, 1, R3
-    #                         nop
-    #                         jlt              R3, 1, @bin
-    #                         loop             R2, @average
-    #         stop:
-    #                         set_mrk          0
-    #                         upd_param        4
-    #                         stop
-    #     """
+            start:
+                            reset_ph
+                            set_mrk          0
+                            upd_param        4
 
-    #     q1asm_1 = """
-    #         setup:
-    #                         move             0, R0
-    #                         move             1, R1
-    #                         move             1000, R2
-    #                         wait_sync        4
+            average:
+                            move             0, R3
+            bin:
+            long_wait_2:
+                            wait             12
 
-    #         start:
-    #                         reset_ph
-    #                         set_mrk          0
-    #                         upd_param        4
+                            set_awg_gain     26213, 26213
+                            set_ph           15915494
+                            play             0, 1, 4
+                            wait             220
+                            acquire          0, R3, 4
+            long_wait_3:
+                            wait             1760
 
-    #         average:
-    #                         move             0, R3
-    #         bin:
-    #         long_wait_2:
-    #                         wait             12
+                            add              R3, 1, R3
+                            nop
+                            jlt              R3, 1, @bin
+                            loop             R2, @average
+            stop:
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        seq_0_q1asm = repr(sequences_0._program)
+        seq_1_q1asm = repr(sequences_1._program)
 
-    #                         set_awg_gain     26213, 26213
-    #                         set_ph           15915494
-    #                         play             0, 1, 4
-    #                         wait             220
-    #                         acquire_weighed  0, R3, R0, R1, 4
-    #         long_wait_3:
-    #                         wait             1760
+        assert are_q1asm_equal(q1asm_0, seq_0_q1asm)
+        assert are_q1asm_equal(q1asm_1, seq_1_q1asm)
 
-    #                         add              R3, 1, R3
-    #                         nop
-    #                         jlt              R3, 1, @bin
-    #                         loop             R2, @average
-    #         stop:
-    #                         set_mrk          0
-    #                         upd_param        4
-    #                         stop
-    #     """
-    #     seq_0_q1asm = sequences_0._program
-    #     seq_1_q1asm = sequences_1._program
+        # qblox modules 1 is the first qrm and 2 is the second
+        assert qblox_compiler.module_and_sequencer_per_bus["readout_q2"]["module"].cache == {2: pulse_schedule_2qrm.elements[0]}
+        assert qblox_compiler.module_and_sequencer_per_bus["readout_q3"]["module"].cache == {0: pulse_schedule_2qrm.elements[1]}
+        assert qblox_compiler.module_and_sequencer_per_bus["readout_q2"]["module"].sequences == {2: sequences_0}
+        assert qblox_compiler.module_and_sequencer_per_bus["readout_q3"]["module"].sequences == {0: sequences_1}
 
-    #     assert are_q1asm_equal(q1asm_0, repr(seq_0_q1asm))
-    #     assert are_q1asm_equal(q1asm_1, repr(seq_1_q1asm))
-
-    #     # qblox modules 1 is the first qrm and 2 is the second
-    #     assert qblox_compiler_2qrm.qblox_modules[1].cache == {1: pulse_schedule_2qrm.elements[0]}
-    #     assert qblox_compiler_2qrm.qblox_modules[2].cache == {0: pulse_schedule_2qrm.elements[1]}
-    #     assert qblox_compiler_2qrm.qblox_modules[1].sequences == {1: sequences_0}
-    #     assert qblox_compiler_2qrm.qblox_modules[2].sequences == {0: sequences_1}
-
-    #     # check that the qcm is empty since we didnt send anything to it
-    #     assert not qblox_compiler_2qrm.qblox_modules[0].cache
-    #     assert not qblox_compiler_2qrm.qblox_modules[0].sequences
-
-    #     # compile next sequence
-    #     # test for different qubit, checkout that clearing the cache is working
-    #     pulse_schedule2 = PulseSchedule([pulse_bus_schedule])
-    #     program = qblox_compiler_2qrm.compile(pulse_schedule2, num_avg=1000, repetition_duration=2000, num_bins=1)
-
-    #     assert len(program.items()) == 1
-    #     assert "feedline_input_output_bus" in program
-    #     assert len(qblox_compiler_2qrm.qblox_modules[1].cache.keys()) == 1
-    #     assert list(qblox_compiler_2qrm.qblox_modules[1].sequences.keys()) == [0]
-    #     assert len(program["feedline_input_output_bus"]) == 1
-
-    #     sequences_0 = program["feedline_input_output_bus"][0]
-    #     assert isinstance(sequences_0, Sequence)
-
-    #     assert "Gaussian" in sequences_0._waveforms._waveforms[0].name
-    #     # qblox modules 1 is the first qrm and 2 is the second
-    #     assert qblox_compiler_2qrm.qblox_modules[1].cache == {0: pulse_bus_schedule}
-    #     assert qblox_compiler_2qrm.qblox_modules[1].sequences == {0: sequences_0}
-
-    #     assert not qblox_compiler_2qrm.qblox_modules[0].cache
-    #     assert not qblox_compiler_2qrm.qblox_modules[0].sequences
-    #     assert not qblox_compiler_2qrm.qblox_modules[2].cache
-    #     assert not qblox_compiler_2qrm.qblox_modules[2].sequences
-
-    #     q1asm_0 = """
-    #         setup:
-    #                         move             0, R0
-    #                         move             1, R1
-    #                         move             1000, R2
-    #                         wait_sync        4
-
-    #         start:
-    #                         reset_ph
-    #                         set_mrk          0
-    #                         upd_param        4
-
-    #         average:
-    #                         move             0, R3
-    #         bin:
-    #                         set_awg_gain     26213, 26213
-    #                         set_ph           191690305
-    #                         play             0, 1, 4
-    #                         wait             220
-    #                         acquire_weighed  0, R3, R0, R1, 4
-    #         long_wait_4:
-    #                         wait             1772
-
-    #                         add              R3, 1, R3
-    #                         nop
-    #                         jlt              R3, 1, @bin
-    #                         loop             R2, @average
-    #         stop:
-    #                         set_mrk          0
-    #                         upd_param        4
-    #                         stop
-    #     """
-    #     sequences_0_program = sequences_0._program
-    #     assert are_q1asm_equal(q1asm_0, repr(sequences_0_program))
+        # check that the qcm is empty since we didnt send anything to it
+        assert not qblox_compiler.module_and_sequencer_per_bus["drive_q0"]["module"].cache
+        assert not qblox_compiler.module_and_sequencer_per_bus["drive_q0"]["module"].sequences
 
     def test_long_wait_between_pulses(
         self, pulse_bus_schedule_long_wait: PulseBusSchedule, qblox_compiler: QbloxCompiler
@@ -687,7 +573,7 @@ class TestQbloxCompiler:
         sequences = qblox_compiler.compile(pulse_event, num_avg=1000, repetition_duration=100, num_bins=1)[
             "readout_q0"
         ]
-        qblox_compiler.bus_to_module_and_sequencer_mapping["readout_q0"]["module"].sequences = {
+        qblox_compiler.module_and_sequencer_per_bus["readout_q0"]["module"].sequences = {
             0: sequences[0]
         }  # do this manually since we're not calling the upload method
         sequences2 = qblox_compiler.compile(pulse_event, num_avg=1000, repetition_duration=100, num_bins=1)[
@@ -696,7 +582,7 @@ class TestQbloxCompiler:
         assert len(sequences) == 1
         assert len(sequences2) == 1
         assert sequences[0] is sequences2[0]
-        qblox_compiler.bus_to_module_and_sequencer_mapping["readout_q0"]["module"].device.delete_acquisition_data.assert_called_once_with(sequencer=0, all=True)
+        qblox_compiler.module_and_sequencer_per_bus["readout_q0"]["module"].device.delete_acquisition_data.assert_called_once_with(sequencer=0, all=True)
 
     def test_error_program_gt_repetition_duration(
         self, long_pulse_bus_schedule: PulseBusSchedule, qblox_compiler: QbloxCompiler
@@ -707,9 +593,3 @@ class TestQbloxCompiler:
         error_string = f"Circuit execution time cannnot be longer than repetition duration but found circuit time {long_pulse_bus_schedule.duration} > {repetition_duration} for qubit 0"
         with pytest.raises(ValueError, match=re.escape(error_string)):
             qblox_compiler.compile(pulse_schedule=pulse_schedule, num_avg=1000, repetition_duration=2000, num_bins=1)
-
-    # def test_no_qrm_raises_error(self, buses):
-    #     """test that error is raised if no qrm is found in platform"""
-    #     error_string = "No QRM modules found in platform instruments"
-    #     with pytest.raises(ValueError, match=re.escape(error_string)):
-    #         QbloxCompiler(buses, {})

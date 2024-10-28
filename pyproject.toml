@@ -142,7 +142,11 @@ tag_format = "$version"
         "*/virtualenv/*",
         "*/virtualenvs/*",
         "*/tests/*",
-        "examples/*"
+        "examples/*",
+        # TODO: Remove these once we modernize instruments
+        "src/qililab/instruments/keithley/keithley_2600.py",
+        "src/qililab/instruments/qblox/qblox_d5a.py",
+        "src/qililab/instruments/qblox/qblox_s4g.py"
     ]
 
 [tool.nbqa.md]

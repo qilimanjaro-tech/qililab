@@ -235,7 +235,6 @@ class Parameter(str, Enum):
     SAMPLING_RATE = "sampling_rate"
     INTEGRATION = "integration"
     INTEGRATION_LENGTH = "integration_length"
-    ACQUISITION_DELAY_TIME = "acquisition_delay_time"
     ATTENUATION = "attenuation"
     REPETITION_DURATION = "repetition_duration"
     SOFTWARE_AVERAGE = "software_average"

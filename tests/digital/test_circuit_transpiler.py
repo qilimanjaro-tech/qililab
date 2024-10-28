@@ -213,6 +213,7 @@ def fixture_digital_compilation_settings() -> DigitalCompilationSettings:
     digital_settings_dict = {
         "minimum_clock_time": 5,
         "delay_before_readout": 0,
+        "topology": [(0, 2), (1, 2), (2, 3), (2, 4)],
         "gates": {
             "M(0)": [
                 {
