@@ -120,12 +120,15 @@ class CircuitRouter:
 
         # Call the routing pipeline on the circuit, multiple times, and keep the best stochastic result:
         best_transp_circ, best_final_layout, least_swaps = self._iterate_routing(routing_pipeline, circuit, iterations)
-        logger.info(f"The best found routing, has {least_swaps} swaps.")
+        if least_swaps is not None:
+            logger.info(f"The best found routing, has {least_swaps} swaps.")
+        else:
+            logger.info("No routing was done. Most probably due to routing iterations being 0.")
 
         return best_transp_circ, best_final_layout
 
     @staticmethod
-    def _iterate_routing(routing_pipeline, circuit: Circuit, iterations: int = 10) -> tuple[Circuit, dict, int]:
+    def _iterate_routing(routing_pipeline, circuit: Circuit, iterations: int = 10) -> tuple[Circuit, dict, int | None]:
         """Iterates the routing pipeline, to keep the best stochastic result.
 
         Args:
