@@ -1,14 +1,11 @@
-
-import re
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import call, patch
 import pytest
 import networkx as nx
 from qibo import Circuit, gates
 from qibo.transpiler.optimizer import Preprocessing
 
-from qibo.transpiler.placer import ReverseTraversal, StarConnectivityPlacer
+from qibo.transpiler.placer import ReverseTraversal, StarConnectivityPlacer, Trivial
 from qibo.transpiler.router import Sabre, StarConnectivityRouter
-import test
 
 from qililab.digital.circuit_router import CircuitRouter
 
@@ -31,7 +28,6 @@ test_circuit.add(gates.H(0))
 test_circuit_w_swap = Circuit(5)
 test_circuit_w_swap.add(gates.SWAP(0,1))
 
-
 test_layout = {"q1":0}
 
 #########################
@@ -40,28 +36,30 @@ test_layout = {"q1":0}
 class TestCircuitRouterIntegration:
     """Tests for the circuit router class, integration tests."""
 
+    linear_topology = nx.Graph(linear_connectivity)
+    star_topology = nx.Graph(star_connectivity)
+
+    linear_circuit_router = CircuitRouter(linear_topology)
+    star_circuit_router = CircuitRouter(star_topology)
+
     def test_default_initialization(self):
         """Test the initialization of the CircuitRouter class"""
-        connectivity = nx.Graph(linear_connectivity)
-        circuit_router = CircuitRouter(connectivity)
-
-        assert circuit_router.connectivity == connectivity
-        assert isinstance(circuit_router.preprocessing, Preprocessing)
-        assert isinstance(circuit_router.router, Sabre)
-        assert isinstance(circuit_router.placer, ReverseTraversal)
+        assert self.linear_circuit_router.connectivity == self.linear_topology
+        assert isinstance(self.linear_circuit_router.preprocessing, Preprocessing)
+        assert isinstance(self.linear_circuit_router.router, Sabre)
+        assert isinstance(self.linear_circuit_router.placer, ReverseTraversal)
 
     def test_bad_initialization(self):
         """Test the initialization of the CircuitRouter class"""
-        connectivity = nx.Graph(linear_connectivity)
         with pytest.raises(ValueError, match="StarConnectivity Placer and Router can only be used with star topologies"):
-            circuit_router = CircuitRouter(connectivity, router=StarConnectivityRouter)
+            circuit_router = CircuitRouter(self.linear_topology, router=StarConnectivityRouter)
 
     def test_star_initialization(self):
         """Test the initialization of the CircuitRouter class"""
-        connectivity = nx.Graph(star_connectivity)
-        circuit_router = CircuitRouter(connectivity, router=StarConnectivityRouter, placer=(StarConnectivityPlacer,{"middle_qubit":0} ))
 
-        assert circuit_router.connectivity == connectivity
+        circuit_router = CircuitRouter(self.star_topology, router=StarConnectivityRouter, placer=(StarConnectivityPlacer,{"middle_qubit":0} ))
+
+        assert circuit_router.connectivity == self.star_topology
         assert isinstance(circuit_router.preprocessing, Preprocessing)
         assert isinstance(circuit_router.router, StarConnectivityRouter)
         assert isinstance(circuit_router.placer, StarConnectivityPlacer)
@@ -69,10 +67,7 @@ class TestCircuitRouterIntegration:
 
     def test_route_doesnt_affect_already_routed_circuit(self):
         """Test the routing of a circuit"""
-        linear_topology = nx.Graph(linear_connectivity)
-        linear_circuit_router = CircuitRouter(linear_topology)
-
-        routed_circuit, final_layout = linear_circuit_router.route(linear_circuit)
+        routed_circuit, final_layout = self.linear_circuit_router.route(linear_circuit)
 
         assert final_layout == {"q0":0, "q1":1, "q2":2, "q3":3, "q4":4}
         assert routed_circuit.nqubits == linear_circuit.nqubits
@@ -81,10 +76,8 @@ class TestCircuitRouterIntegration:
 
     def test_route_affects_non_routed_circuit(self):
         """Test the routing of a circuit"""
-        star_topology = nx.Graph(star_connectivity)
-        star_circuit_router = CircuitRouter(star_topology)
 
-        routed_circuit, final_layout = star_circuit_router.route(linear_circuit)
+        routed_circuit, final_layout = self.star_circuit_router.route(linear_circuit)
         routed_circuit.draw()
 
         # Assert that the circuit was routed:
@@ -105,8 +98,10 @@ class TestCircuitRouterIntegration:
 class TestCircuitRouterUnit:
     """Tests for the circuit router class, unit tests."""
 
-    topology = nx.Graph(star_connectivity)
-    circuit_router = CircuitRouter(topology)
+    linear_topology = nx.Graph(linear_connectivity)
+    star_topology = nx.Graph(star_connectivity)
+
+    circuit_router = CircuitRouter(linear_topology)
 
     @patch("qililab.config.logger.info")
     @patch("qililab.digital.circuit_router.CircuitRouter._iterate_routing", return_value=(test_circuit, test_layout, 0))
@@ -146,3 +141,17 @@ class TestCircuitRouterUnit:
 
          # Assert you return the correct outputs:
         assert (routed_circuit, final_layout, least_swaps) == (test_circuit_w_swap, test_layout, 1)
+
+    def test_if_star_algorithms_for_nonstar_connectivity(self):
+        """Test the routing of a circuit"""
+        circ_router = self.circuit_router
+
+        # Assert cases where it needs to return True
+        assert True == circ_router._if_star_algorithms_for_nonstar_connectivity(self.linear_topology, StarConnectivityPlacer(), circ_router.router)
+        assert True == circ_router._if_star_algorithms_for_nonstar_connectivity(self.linear_topology, Trivial(), StarConnectivityRouter())
+        assert True == circ_router._if_star_algorithms_for_nonstar_connectivity(self.linear_topology, StarConnectivityPlacer(), StarConnectivityRouter())
+
+        # Assert cases where it needs to return False
+        assert False == circ_router._if_star_algorithms_for_nonstar_connectivity(self.linear_topology, Trivial(), circ_router.router)
+        assert False == circ_router._if_star_algorithms_for_nonstar_connectivity(self.star_topology, Trivial(), StarConnectivityRouter())
+        assert False == circ_router._if_star_algorithms_for_nonstar_connectivity(self.star_topology, circ_router.placer, circ_router.router)
