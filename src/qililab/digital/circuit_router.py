@@ -61,6 +61,13 @@ class CircuitRouter:
         if self._if_star_algorithms_for_nonstar_connectivity(self.connectivity, self.placer, self.router):
             raise (ValueError("StarConnectivity Placer and Router can only be used with star topologies"))
 
+        # Transpilation pipeline passes:
+        self.pipeline = Passes([self.preprocessing, self.placer, self.router], self.connectivity)
+        """Routing pipeline passes: Preprocessing, Placer and Router passes. Defaults to Passes([Preprocessing, ReverseTraversal, Sabre])."""
+        # 1) Preprocessing adds qubits in the original circuit to match the number of qubits in the chip.
+        # 2) Routing stage, where the final_layout and swaps will be created.
+        # 3) Layout stage, where the initial_layout will be created.
+
     def route(self, circuit: Circuit, iterations: int = 10) -> tuple[Circuit, dict]:
         """Routes the virtual/logical qubits of a circuit, to the chip's physical qubits.
 
@@ -112,14 +119,8 @@ class CircuitRouter:
         Raises:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
         """
-        # Transpilation pipeline passes:
-        routing_pipeline = Passes([self.preprocessing, self.placer, self.router], self.connectivity)
-        # 1) Preprocessing adds qubits in the original circuit to match the number of qubits in the chip.
-        # 2) Routing stage, where the final_layout and swaps will be created.
-        # 3) Layout stage, where the initial_layout will be created.
-
         # Call the routing pipeline on the circuit, multiple times, and keep the best stochastic result:
-        best_transp_circ, best_final_layout, least_swaps = self._iterate_routing(routing_pipeline, circuit, iterations)
+        best_transp_circ, best_final_layout, least_swaps = self._iterate_routing(self.pipeline, circuit, iterations)
         if least_swaps is not None:
             logger.info(f"The best found routing, has {least_swaps} swaps.")
         else:
