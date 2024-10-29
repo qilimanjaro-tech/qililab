@@ -30,6 +30,7 @@ test_circuit_w_swap = Circuit(5)
 test_circuit_w_swap.add(gates.SWAP(0,1))
 
 test_layout = {"q1":0}
+test_bad_layout = {"q1":0, "q1":1}
 
 #########################
 ### INTEGRATION TESTS ###
@@ -53,7 +54,7 @@ class TestCircuitRouterIntegration:
     def test_bad_initialization(self):
         """Test the initialization of the CircuitRouter class"""
         with pytest.raises(ValueError, match="StarConnectivity Placer and Router can only be used with star topologies"):
-            circuit_router = CircuitRouter(self.linear_topology, router=StarConnectivityRouter)
+            _ = CircuitRouter(self.linear_topology, router=StarConnectivityRouter)
 
     def test_star_initialization(self):
         """Test the initialization of the CircuitRouter class"""
@@ -119,6 +120,19 @@ class TestCircuitRouterUnit:
         # Assert you return the same outputs as the mocked _iterate_routing
         assert (routed_circuit, final_layout) == (test_circuit, test_layout)
 
+    @patch("qililab.config.logger.info")
+    @patch("qililab.digital.circuit_router.CircuitRouter._iterate_routing", return_value=(test_circuit, test_bad_layout, 0))
+    def test_route_returns_bad_layout(self, mock_iterate, mock_logger_info):
+        """ Test the routing of a circuit."""
+        with pytest.raises(ValueError, match=f"The final layout: {test_bad_layout} is not valid. i.e. a qubit is mapped to more than one physical qubit or the other way around. Try again, if the problem persists, try another placer/routing algorithm."):
+            _, _ = self.circuit_router.route(linear_circuit)
+
+        # Assert that the routing pipeline was called with the correct arguments
+        mock_iterate.assert_called_once_with(self.circuit_router.pipeline, linear_circuit, 10)
+
+        # Assert that the logger is called
+        mock_logger_info.assert_not_called()
+
     @patch("qililab.digital.circuit_router.Passes.__call__", return_value=(test_circuit, test_layout))
     def test_iterate_routing_without_swaps(self, mock_qibo_routing):
         """ Test the iterate routing of a circuit, without swaps."""
@@ -166,6 +180,14 @@ class TestCircuitRouterUnit:
 
         # Test the star topology with the 0 as central
         assert self.circuit_router._highest_degree_node(self.star_topology) == 0
+
+    def test_if_layout_is_not_valid(self):
+        """Test the _if_layout_is_not_valid method."""
+        # Test valid layout
+        assert not self.circuit_router._if_layout_is_not_valid(test_layout)
+
+        # Test invalid layout
+        assert self.circuit_router._if_layout_is_not_valid(test_bad_layout)
 
     @patch("qililab.digital.circuit_router.CircuitRouter._check_ReverseTraversal_routing_connectivity")
     def test_build_placer(self, mock_check_reverse):

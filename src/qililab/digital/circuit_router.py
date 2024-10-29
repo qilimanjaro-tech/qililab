@@ -15,6 +15,7 @@
 """CircuitRouter class"""
 
 import contextlib
+import re
 
 import networkx as nx
 from qibo import Circuit, gates
@@ -68,7 +69,7 @@ class CircuitRouter:
         # 2) Routing stage, where the final_layout and swaps will be created.
         # 3) Layout stage, where the initial_layout will be created.
 
-    def route(self, circuit: Circuit, iterations: int = 10) -> tuple[Circuit, dict]:
+    def route(self, circuit: Circuit, iterations: int = 10) -> tuple[Circuit, dict[str, int]]:
         """Routes the virtual/logical qubits of a circuit, to the chip's physical qubits.
 
         **Examples:**
@@ -113,14 +114,20 @@ class CircuitRouter:
             iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
 
         Returns:
-            Circuit: routed circuit.
-            dict: final layout of the circuit.
+            tuple [Circuit, dict[str, int]: routed circuit and final layout of the circuit.
 
         Raises:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
+            ValueError: If the final layout is not valid, i.e. a qubit is mapped to more than one physical qubit or the other way around.
         """
         # Call the routing pipeline on the circuit, multiple times, and keep the best stochastic result:
         best_transp_circ, best_final_layout, least_swaps = self._iterate_routing(self.pipeline, circuit, iterations)
+
+        if self._if_layout_is_not_valid(best_final_layout):
+            raise ValueError(
+                f"The final layout: {best_final_layout} is not valid. i.e. a qubit is mapped to more than one physical qubit or the other way around. Try again, if the problem persists, try another placer/routing algorithm."
+            )
+
         if least_swaps is not None:
             logger.info(f"The best found routing, has {least_swaps} swaps.")
         else:
@@ -129,7 +136,9 @@ class CircuitRouter:
         return best_transp_circ, best_final_layout
 
     @staticmethod
-    def _iterate_routing(routing_pipeline, circuit: Circuit, iterations: int = 10) -> tuple[Circuit, dict, int | None]:
+    def _iterate_routing(
+        routing_pipeline: Passes, circuit: Circuit, iterations: int = 10
+    ) -> tuple[Circuit, dict[str, int], int | None]:
         """Iterates the routing pipeline, to keep the best stochastic result.
 
         Args:
@@ -138,7 +147,7 @@ class CircuitRouter:
             iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
 
         Returns:
-            tuple[Circuit, dict, int]: Best transpiled circuit, best final layout and least swaps.
+            tuple[Circuit, dict[str, int], int]: Best transpiled circuit, best final layout and least swaps.
         """
         # We repeat the routing pipeline a few times, to keep the best stochastic result:
         least_swaps: int | None = None
@@ -188,6 +197,25 @@ class CircuitRouter:
             int: Node with the highest degree in the connectivity graph.
         """
         return max(dict(connectivity.degree()).items(), key=lambda x: x[1])[0]
+
+    @staticmethod
+    def _if_layout_is_not_valid(layout: dict[str, int]) -> bool:
+        """True if the layout is not valid.
+
+        For example, if a qubit is mapped to more than one physical qubit or the other way around. Or if the keys or values are not int.
+
+        Args:
+            layout (dict[str, int]): Initial or final layout of the circuit.
+
+        Returns:
+            bool: True if the layout is not valid.
+        """
+        return (
+            len(layout.values()) != len(set(layout.values()))
+            or len(layout.keys()) != len(set(layout.keys()))
+            or not all(isinstance(value, int) for value in layout.values())
+            or not all(isinstance(key, str) and re.match(r"^q\d+$", key) for key in layout)
+        )
 
     @classmethod
     def _build_router(cls, router: Router | type[Router] | tuple[type[Router], dict], connectivity: nx.Graph) -> Router:
@@ -302,7 +330,7 @@ class CircuitRouter:
             ValueError: If the routing_algorithm is not a Router subclass or instance.
 
         Returns:
-            tuple[Placer | type[Placer], dict]: Tuple containing the final placer and its kwargs
+            tuple[Placer | type[Placer], dict]: tuple containing the final placer and its kwargs
         """
         # If the placer is a ReverseTraversal instance, we update the connectivity to the platform one:
         if isinstance(placer, ReverseTraversal):

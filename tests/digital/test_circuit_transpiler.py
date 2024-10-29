@@ -1,6 +1,6 @@
 import re
 from dataclasses import asdict
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
@@ -12,15 +12,8 @@ from qibo.models import Circuit
 
 from qililab.digital import CircuitTranspiler
 from qililab.digital.native_gates import Drag, Wait
-from qililab.platform import Bus, Buses, Platform
-from qililab.pulse import Pulse, PulseEvent, PulseSchedule
-from qililab.pulse.pulse_shape import SNZ, Gaussian, Rectangular
-from qililab.pulse.pulse_shape import Drag as Drag_pulse
-from qililab.settings import Runcard
+from qililab.pulse import PulseSchedule
 from qililab.settings.digital import DigitalCompilationSettings
-from qililab.settings.digital.gate_event_settings import GateEventSettings
-from tests.data import Galadriel
-from tests.test_utils import build_platform
 
 qibo.set_backend("numpy")  # set backend to numpy (this is the faster option for < 15 qubits)
 
@@ -640,3 +633,24 @@ class TestCircuitTranspiler:
         transpiler = CircuitTranspiler(digital_compilation_settings=digital_settings)
         with pytest.raises(ValueError, match=error_string):
             transpiler.circuit_to_pulses(circuits=[circuit])
+
+    @patch("qililab.digital.circuit_transpiler.CircuitTranspiler.route_circuit")
+    @patch("qililab.digital.circuit_transpiler.CircuitTranspiler.circuit_to_native")
+    @patch("qililab.digital.circuit_transpiler.CircuitTranspiler.circuit_to_pulses")
+    def test_transpile_circuits(self, mock_to_pulses, mock_to_native, mock_route, digital_settings):
+        """Test transpile_circuits method"""
+        transpiler = CircuitTranspiler(digital_compilation_settings=digital_settings)
+        placer = MagicMock()
+        router = MagicMock()
+        routing_iterations = 7
+
+        # Mock the return values
+        mock_route.return_value = [Circuit(5)]*2, {"q0": 0, "q1": 2, "q2": 1, "q3": 3, "q4": 4}
+        mock_to_native.return_value = Circuit(5)
+        mock_to_pulses.return_value = [PulseSchedule()]
+
+        circuit = random_circuit(5, 10, np.random.default_rng())
+
+        transpiler.transpile_circuits([circuit]*2)
+
+        mock_to_pulses.assert_called_once_with(list(), list())

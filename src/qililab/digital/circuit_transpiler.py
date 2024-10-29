@@ -111,8 +111,7 @@ class CircuitTranspiler:
             routing_iterations (int, optional): Number of times to repeat the routing pipeline, to get the best stochastic result. Defaults to 10.
 
         Returns:
-            list[PulseSchedule]: list of pulse schedules.
-            list[dict]: list of the final layouts of the qubits, in each circuit.
+            tuple[list[PulseSchedule],list[dict[str, int]]]: list of pulse schedules and list of the final layouts of the qubits, in each circuit {"qI": J}.
         """
         routed_circuits, final_layouts = zip(
             *(self.route_circuit(circuit, placer, router, iterations=routing_iterations) for circuit in circuits)
@@ -129,7 +128,7 @@ class CircuitTranspiler:
         router: Router | type[Router] | tuple[type[Router], dict] | None = None,
         coupling_map: list[tuple[int, int]] | None = None,
         iterations: int = 10,
-    ) -> tuple[Circuit, dict]:
+    ) -> tuple[Circuit, dict[str, int]]:
         """Routes the virtual/logical qubits of a circuit, to the chip's physical qubits.
 
         **Examples:**
@@ -180,8 +179,7 @@ class CircuitTranspiler:
 
 
         Returns:
-            Circuit: routed circuit.
-            dict: final layout of the circuit.
+            tuple[Circuit, dict[str, int]]: routed circuit, and final layout of the circuit {"qI": J}.
 
         Raises:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
@@ -510,7 +508,7 @@ class CircuitTranspiler:
 
         Args:
             qubits (list[int]): qubits to sync
-            time (dict[int,int]): time dictionary
+            time (dict[int, int]): time dictionary
         """
         max_time = max((time[qubit] for qubit in qubits if qubit in time), default=0)
         for qubit in qubits:
