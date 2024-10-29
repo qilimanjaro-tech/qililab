@@ -1018,7 +1018,6 @@ class Platform:
         for qblox_result in result.qblox_raw_results:
             measurement = qblox_result["measurement"]
             qubit = qblox_result["qubit"]
-            # TODO: Check if this works, or how you should do it :)
             original_qubit = final_layout[f"q{qubit}"] if final_layout is not None else qubit
             results[order[original_qubit, measurement]] = qblox_result
 
