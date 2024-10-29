@@ -61,6 +61,13 @@ class CircuitRouter:
         if self._if_star_algorithms_for_nonstar_connectivity(self.connectivity, self.placer, self.router):
             raise (ValueError("StarConnectivity Placer and Router can only be used with star topologies"))
 
+        # Transpilation pipeline passes:
+        self.pipeline = Passes([self.preprocessing, self.placer, self.router], self.connectivity)
+        """Routing pipeline passes: Preprocessing, Placer and Router passes. Defaults to Passes([Preprocessing, ReverseTraversal, Sabre])."""
+        # 1) Preprocessing adds qubits in the original circuit to match the number of qubits in the chip.
+        # 2) Routing stage, where the final_layout and swaps will be created.
+        # 3) Layout stage, where the initial_layout will be created.
+
     def route(self, circuit: Circuit, iterations: int = 10) -> tuple[Circuit, dict]:
         """Routes the virtual/logical qubits of a circuit, to the chip's physical qubits.
 
@@ -112,14 +119,8 @@ class CircuitRouter:
         Raises:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
         """
-        # Transpilation pipeline passes:
-        routing_pipeline = Passes([self.preprocessing, self.placer, self.router], self.connectivity)
-        # 1) Preprocessing adds qubits in the original circuit to match the number of qubits in the chip.
-        # 2) Routing stage, where the final_layout and swaps will be created.
-        # 3) Layout stage, where the initial_layout will be created.
-
         # Call the routing pipeline on the circuit, multiple times, and keep the best stochastic result:
-        best_transp_circ, best_final_layout, least_swaps = self._iterate_routing(routing_pipeline, circuit, iterations)
+        best_transp_circ, best_final_layout, least_swaps = self._iterate_routing(self.pipeline, circuit, iterations)
         if least_swaps is not None:
             logger.info(f"The best found routing, has {least_swaps} swaps.")
         else:
@@ -177,7 +178,19 @@ class CircuitRouter:
         )
 
     @staticmethod
-    def _build_router(router: Router | type[Router] | tuple[type[Router], dict], connectivity: nx.Graph) -> Router:
+    def _highest_degree_node(connectivity: nx.Graph) -> int:
+        """Returns the node with the highest degree in the connectivity graph.
+
+        Args:
+            connectivity (nx.Graph): Chip connectivity.
+
+        Returns:
+            int: Node with the highest degree in the connectivity graph.
+        """
+        return max(dict(connectivity.degree()).items(), key=lambda x: x[1])[0]
+
+    @classmethod
+    def _build_router(cls, router: Router | type[Router] | tuple[type[Router], dict], connectivity: nx.Graph) -> Router:
         """Build a `Router` instance, given the pass router in whatever format and the connectivity graph.
 
         Args:
@@ -202,13 +215,20 @@ class CircuitRouter:
         if isinstance(router, Router):
             if kwargs:
                 logger.warning("Ignoring router kwargs, as the router is already an instance.")
-            router.connectivity = connectivity
+            if isinstance(router, StarConnectivityRouter):
+                # For star-connectivity placers, we only care about which is the middle qubit (highest degree):
+                router.middle_qubit = cls._highest_degree_node(connectivity)
+            else:
+                router.connectivity = connectivity
             logger.warning("Substituting the router connectivity by the platform one.")
             return router
 
         # If the router is a Router subclass, we instantiate it:
         with contextlib.suppress(TypeError, ValueError):
             if issubclass(router, Router):
+                if issubclass(router, StarConnectivityRouter):
+                    # For star-connectivity placers, we only care about which is the middle qubit (highest degree):
+                    kwargs["middle_qubit"] = cls._highest_degree_node(connectivity)
                 return router(connectivity, **kwargs)
 
         raise TypeError(
@@ -246,13 +266,20 @@ class CircuitRouter:
         if isinstance(placer, Placer):
             if kwargs:
                 logger.warning("Ignoring placer kwargs, as the placer is already an instance.")
-            placer.connectivity = connectivity
+            if isinstance(placer, StarConnectivityPlacer):
+                # For star-connectivity placers, we only care about which is the middle qubit (highest degree):
+                placer.middle_qubit = self._highest_degree_node(connectivity)
+            else:
+                placer.connectivity = connectivity
             logger.warning("Substituting the placer connectivity by the platform one.")
             return placer
 
         # If the placer is a Placer subclass, we instantiate it:
         with contextlib.suppress(TypeError, ValueError):
             if issubclass(placer, Placer):
+                if issubclass(placer, StarConnectivityPlacer):
+                    # For star-connectivity placers, we only care about which is the middle qubit (highest degree):
+                    kwargs["middle_qubit"] = self._highest_degree_node(connectivity)
                 return placer(connectivity, **kwargs)
 
         raise TypeError(
