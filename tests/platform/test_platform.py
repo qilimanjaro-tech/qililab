@@ -840,24 +840,23 @@ class TestMethods:
         c.add([gates.M(1), gates.M(0), gates.M(0, 1)])  # without ordering, these are retrieved for each sequencer, so
         # the order from qblox qrm will be M(0),M(0),M(1),M(1)
 
-        platform.compile = MagicMock()  # type: ignore # don't care about compilation
-        platform.compile.return_value = {"feedline_input_output_bus": None}, {"q0": 0, "q1": 1}
-        with patch.object(Bus, "upload"):
-            with patch.object(Bus, "run"):
-                with patch.object(Bus, "acquire_result") as acquire_result:
-                    with patch.object(QbloxModule, "desync_sequencers"):
-                        acquire_result.return_value = QbloxResult(
-                            qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1]
-                        )
-                        result = platform.execute(program=c, num_avg=1000, repetition_duration=2000, num_bins=1)
+        for idx, final_layout in enumerate([{"q0": 0, "q1": 1}, {"q0": 1, "q1": 0}]):
+            platform.compile = MagicMock()  # type: ignore # don't care about compilation
+            platform.compile.return_value = {"feedline_input_output_bus": None}, final_layout
+            with patch.object(Bus, "upload"):
+                with patch.object(Bus, "run"):
+                    with patch.object(Bus, "acquire_result") as acquire_result:
+                        with patch.object(QbloxModule, "desync_sequencers"):
+                            acquire_result.return_value = QbloxResult(
+                                qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1]
+                            )
+                            result = platform.execute(program=c, num_avg=1000, repetition_duration=2000, num_bins=1)
 
-        # check that the order of #measurement # qubit is the same as in the circuit
-        assert [(result["measurement"], result["qubit"]) for result in result.qblox_raw_results] == [  # type: ignore
-            (0, 1),
-            (0, 0),
-            (1, 0),
-            (1, 1),
-        ]
+            # check that the order of #measurement # qubit is the same as in the circuit
+            order_measurement_qubit = [(result["measurement"], result["qubit"]) for result in result.qblox_raw_results]  # type: ignore
+
+            # Change the qubit mappings, given the final_layout:
+            assert order_measurement_qubit == [(0, 1), (0, 0), (1, 0), (1, 1)] if idx == 0 else [(0, 0), (0, 1), (1, 1), (1, 0)]
 
     def test_execute_no_readout_raises_error(self, platform: Platform, qblox_results: list[dict]):
         """Test that executing with some circuit returns acquisitions with multiple measurements in same order
