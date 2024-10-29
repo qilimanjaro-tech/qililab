@@ -118,14 +118,14 @@ class CircuitRouter:
 
         Raises:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
-            ValueError: If the final layout is not valid, i.e. a qubit is mapped to more than one physical qubit or the other way around.
+            ValueError: If the final layout is not valid, i.e. a qubit is mapped to more than one physical qubit.
         """
         # Call the routing pipeline on the circuit, multiple times, and keep the best stochastic result:
         best_transp_circ, best_final_layout, least_swaps = self._iterate_routing(self.pipeline, circuit, iterations)
 
         if self._if_layout_is_not_valid(best_final_layout):
             raise ValueError(
-                f"The final layout: {best_final_layout} is not valid. i.e. a qubit is mapped to more than one physical qubit or the other way around. Try again, if the problem persists, try another placer/routing algorithm."
+                f"The final layout: {best_final_layout} is not valid. i.e. a qubit is mapped to more than one physical qubit. Try again, if the problem persists, try another placer/routing algorithm."
             )
 
         if least_swaps is not None:
@@ -202,7 +202,7 @@ class CircuitRouter:
     def _if_layout_is_not_valid(layout: dict[str, int]) -> bool:
         """True if the layout is not valid.
 
-        For example, if a qubit is mapped to more than one physical qubit or the other way around. Or if the keys or values are not int.
+        For example, if a qubit is mapped to more than one physical qubit. Or if the keys or values are not int.
 
         Args:
             layout (dict[str, int]): Initial or final layout of the circuit.
@@ -212,7 +212,6 @@ class CircuitRouter:
         """
         return (
             len(layout.values()) != len(set(layout.values()))
-            or len(layout.keys()) != len(set(layout.keys()))
             or not all(isinstance(value, int) for value in layout.values())
             or not all(isinstance(key, str) and re.match(r"^q\d+$", key) for key in layout)
         )

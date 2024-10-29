@@ -30,7 +30,7 @@ test_circuit_w_swap = Circuit(5)
 test_circuit_w_swap.add(gates.SWAP(0,1))
 
 test_layout = {"q1":0}
-test_bad_layout = {"q1":0, "q1":1}
+test_bad_layout = {"q0":0, "q1":0}
 
 #########################
 ### INTEGRATION TESTS ###
@@ -124,7 +124,7 @@ class TestCircuitRouterUnit:
     @patch("qililab.digital.circuit_router.CircuitRouter._iterate_routing", return_value=(test_circuit, test_bad_layout, 0))
     def test_route_returns_bad_layout(self, mock_iterate, mock_logger_info):
         """ Test the routing of a circuit."""
-        with pytest.raises(ValueError, match=f"The final layout: {test_bad_layout} is not valid. i.e. a qubit is mapped to more than one physical qubit or the other way around. Try again, if the problem persists, try another placer/routing algorithm."):
+        with pytest.raises(ValueError, match=re.escape(f"The final layout: {test_bad_layout} is not valid. i.e. a qubit is mapped to more than one physical qubit. Try again, if the problem persists, try another placer/routing algorithm.")):
             _, _ = self.circuit_router.route(linear_circuit)
 
         # Assert that the routing pipeline was called with the correct arguments
