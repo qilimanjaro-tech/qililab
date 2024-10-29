@@ -1,6 +1,6 @@
 import re
 from dataclasses import asdict
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
@@ -9,18 +9,13 @@ from qibo import gates
 from qibo.backends import NumpyBackend
 from qibo.gates import CZ, M, X
 from qibo.models import Circuit
+import networkx as nx
 
 from qililab.digital import CircuitTranspiler
+from qililab.digital.circuit_router import CircuitRouter
 from qililab.digital.native_gates import Drag, Wait
-from qililab.platform import Bus, Buses, Platform
-from qililab.pulse import Pulse, PulseEvent, PulseSchedule
-from qililab.pulse.pulse_shape import SNZ, Gaussian, Rectangular
-from qililab.pulse.pulse_shape import Drag as Drag_pulse
-from qililab.settings import Runcard
+from qililab.pulse import PulseSchedule
 from qililab.settings.digital import DigitalCompilationSettings
-from qililab.settings.digital.gate_event_settings import GateEventSettings
-from tests.data import Galadriel
-from tests.test_utils import build_platform
 
 qibo.set_backend("numpy")  # set backend to numpy (this is the faster option for < 15 qubits)
 
@@ -640,3 +635,80 @@ class TestCircuitTranspiler:
         transpiler = CircuitTranspiler(digital_compilation_settings=digital_settings)
         with pytest.raises(ValueError, match=error_string):
             transpiler.circuit_to_pulses(circuits=[circuit])
+
+    @patch("qililab.digital.circuit_transpiler.CircuitTranspiler.route_circuit")
+    @patch("qililab.digital.circuit_transpiler.CircuitTranspiler.circuit_to_native")
+    @patch("qililab.digital.circuit_transpiler.CircuitTranspiler.circuit_to_pulses")
+    def test_transpile_circuits(self, mock_to_pulses, mock_to_native, mock_route, digital_settings):
+        """Test transpile_circuits method"""
+        transpiler = CircuitTranspiler(digital_compilation_settings=digital_settings)
+        placer = MagicMock()
+        router = MagicMock()
+        routing_iterations = 7
+        list_size = 2
+
+        # Mock circuit for return values
+        mock_circuit = Circuit(5)
+        mock_circuit.add(X(0))
+
+        # Mock layout for return values
+        mock_layout = {"q0": 0, "q1": 2, "q2": 1, "q3": 3, "q4": 4}
+
+        # Mock schedule for return values
+        mock_schedule = PulseSchedule()
+
+        # Mock the return values
+        mock_route.return_value = mock_circuit, mock_layout
+        mock_to_native.return_value = mock_circuit
+        mock_to_pulses.return_value = [mock_schedule]
+
+        circuit = random_circuit(5, 10, np.random.default_rng())
+
+        list_schedules, list_layouts = transpiler.transpile_circuits([circuit]*list_size, placer, router, routing_iterations)
+
+        # Asserts:
+        mock_route.assert_called_with(circuit, placer, router, iterations=routing_iterations)
+        assert mock_route.call_count == list_size
+        mock_to_native.assert_called_with(mock_circuit)
+        assert mock_to_native.call_count == list_size
+        mock_to_pulses.assert_called_once_with([mock_circuit]*list_size)
+        assert list_schedules, list_layouts == ([mock_schedule]*list_size, [mock_layout]*list_size)
+
+    @patch("qililab.digital.circuit_router.CircuitRouter.route")
+    def test_route_circuit(self, mock_route, digital_settings):
+        """Test route_circuit method"""
+        transpiler = CircuitTranspiler(digital_compilation_settings=digital_settings)
+        routing_iterations = 7
+
+        # Mock the return values
+        mock_circuit = Circuit(5)
+        mock_circuit.add(X(0))
+        mock_layout = {"q0": 0, "q1": 2, "q2": 1, "q3": 3, "q4": 4}
+        mock_route.return_value = (mock_circuit, mock_layout)
+
+        # Execute the function
+        circuit, layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
+
+        # Asserts:
+        mock_route.assert_called_once_with(circuit, routing_iterations)
+        assert circuit, layout == (mock_circuit, mock_layout)
+
+    @patch("qililab.digital.circuit_transpiler.nx.Graph")
+    @patch("qililab.digital.circuit_transpiler.CircuitRouter")
+    def test_that_route_circuit_instantiates_Router(self, mock_router, mock_graph, digital_settings):
+        """Test route_circuit method"""
+        transpiler = CircuitTranspiler(digital_compilation_settings=digital_settings)
+        routing_iterations = 7
+
+        # Mock the return values
+        mock_circuit = Circuit(5)
+        mock_circuit.add(X(0))
+
+        graph_mocking = nx.Graph(transpiler.digital_compilation_settings.topology)
+        mock_graph.return_value = graph_mocking
+
+        # Execute the function
+        transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
+
+        # Asserts:
+        mock_router.assert_called_once_with(graph_mocking, None, None)

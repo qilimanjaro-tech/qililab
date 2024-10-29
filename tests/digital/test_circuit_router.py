@@ -1,4 +1,5 @@
 import re
+from unittest import mock
 from unittest.mock import call, patch
 import pytest
 import networkx as nx
@@ -30,6 +31,7 @@ test_circuit_w_swap = Circuit(5)
 test_circuit_w_swap.add(gates.SWAP(0,1))
 
 test_layout = {"q1":0}
+test_bad_layout = {"q0":0, "q1":0}
 
 #########################
 ### INTEGRATION TESTS ###
@@ -53,7 +55,7 @@ class TestCircuitRouterIntegration:
     def test_bad_initialization(self):
         """Test the initialization of the CircuitRouter class"""
         with pytest.raises(ValueError, match="StarConnectivity Placer and Router can only be used with star topologies"):
-            circuit_router = CircuitRouter(self.linear_topology, router=StarConnectivityRouter)
+            _ = CircuitRouter(self.linear_topology, router=StarConnectivityRouter)
 
     def test_star_initialization(self):
         """Test the initialization of the CircuitRouter class"""
@@ -119,6 +121,34 @@ class TestCircuitRouterUnit:
         # Assert you return the same outputs as the mocked _iterate_routing
         assert (routed_circuit, final_layout) == (test_circuit, test_layout)
 
+    @patch("qililab.config.logger.info")
+    @patch("qililab.digital.circuit_router.CircuitRouter._iterate_routing", return_value=(test_circuit, test_layout, None))
+    def test_route_with_swaps_being_None(self, mock_iterate, mock_logger_info):
+        """ Test the routing of a circuit."""
+        routed_circuit, final_layout = self.circuit_router.route(linear_circuit)
+
+        # Assert that the routing pipeline was called with the correct arguments
+        mock_iterate.assert_called_once_with(self.circuit_router.pipeline, linear_circuit, 10)
+
+        # Assert that the logger is called
+        mock_logger_info.assert_called_once_with("No routing was done. Most probably due to routing iterations being 0.")
+
+        # Assert you return the same outputs as the mocked _iterate_routing
+        assert (routed_circuit, final_layout) == (test_circuit, test_layout)
+
+    @patch("qililab.config.logger.info")
+    @patch("qililab.digital.circuit_router.CircuitRouter._iterate_routing", return_value=(test_circuit, test_bad_layout, 0))
+    def test_route_returns_bad_layout(self, mock_iterate, mock_logger_info):
+        """ Test the routing of a circuit."""
+        with pytest.raises(ValueError, match=re.escape(f"The final layout: {test_bad_layout} is not valid. i.e. a qubit is mapped to more than one physical qubit. Try again, if the problem persists, try another placer/routing algorithm.")):
+            _, _ = self.circuit_router.route(linear_circuit)
+
+        # Assert that the routing pipeline was called with the correct arguments
+        mock_iterate.assert_called_once_with(self.circuit_router.pipeline, linear_circuit, 10)
+
+        # Assert that the logger is called
+        mock_logger_info.assert_not_called()
+
     @patch("qililab.digital.circuit_router.Passes.__call__", return_value=(test_circuit, test_layout))
     def test_iterate_routing_without_swaps(self, mock_qibo_routing):
         """ Test the iterate routing of a circuit, without swaps."""
@@ -167,8 +197,17 @@ class TestCircuitRouterUnit:
         # Test the star topology with the 0 as central
         assert self.circuit_router._highest_degree_node(self.star_topology) == 0
 
+    def test_if_layout_is_not_valid(self):
+        """Test the _if_layout_is_not_valid method."""
+        # Test valid layout
+        assert not self.circuit_router._if_layout_is_not_valid(test_layout)
+
+        # Test invalid layout
+        assert self.circuit_router._if_layout_is_not_valid(test_bad_layout)
+
     @patch("qililab.digital.circuit_router.CircuitRouter._check_ReverseTraversal_routing_connectivity")
-    def test_build_placer(self, mock_check_reverse):
+    @patch("qililab.digital.circuit_router.logger.warning")
+    def test_build_placer(self, mock_logger_warning, mock_check_reverse):
         """Test the _build_placer method."""
 
         # Test default placer (ReverseTraversal)
@@ -201,23 +240,37 @@ class TestCircuitRouterUnit:
 
         # Test Placer instance, instead than subclass:
         trivial_placer_instance = Trivial(self.linear_topology)
+        mock_logger_warning.reset_mock()
         placer = self.circuit_router._build_placer(trivial_placer_instance, self.circuit_router.router, self.linear_topology)
         assert isinstance(placer, Trivial)
         assert placer.connectivity == self.linear_topology
         assert hasattr(placer, "routing_algorithm") == False
+        mock_logger_warning.assert_has_calls([call("Substituting the placer connectivity by the platform one.")])
 
         star_placer_instance = StarConnectivityPlacer(self.star_topology, middle_qubit=2)
+        mock_logger_warning.reset_mock()
         placer = self.circuit_router._build_placer(star_placer_instance, self.circuit_router.router, self.star_topology)
         assert isinstance(placer, StarConnectivityPlacer)
         assert placer.middle_qubit == 0
         assert hasattr(placer, "routing_algorithm") == hasattr(placer, "connectivity") == False
+        mock_logger_warning.assert_has_calls([call("Substituting the placer connectivity by the platform one.")])
 
         reverse_traversal_instance = ReverseTraversal(self.linear_topology, self.circuit_router.router)
         placer = self.circuit_router._build_placer(reverse_traversal_instance, self.circuit_router.router, self.linear_topology)
         assert isinstance(placer, ReverseTraversal)
         assert (placer.connectivity, placer.routing_algorithm) == (self.linear_topology, self.circuit_router.router)
 
-    def test_build_router(self):
+        # Test Router instance, with kwargs:
+        placer_instance = Trivial()
+        placer_kwargs = {"lookahead": 3}
+        mock_logger_warning.reset_mock()
+        router = self.circuit_router._build_placer((placer_instance,placer_kwargs),self.circuit_router.router, self.linear_topology)
+        assert hasattr(router, "lookahead") == False
+        mock_logger_warning.assert_has_calls([call("Ignoring placer kwargs, as the placer is already an instance."),
+            call("Substituting the placer connectivity by the platform one.")])
+
+    @patch("qililab.digital.circuit_router.logger.warning")
+    def test_build_router(self, mock_logger_warning):
         """Test the _build_router method."""
 
         # Test default router (Sabre)
@@ -243,15 +296,29 @@ class TestCircuitRouterUnit:
 
         # Test Router instance, instead of subclass
         sabre_instance = Sabre(self.linear_topology)
+        mock_logger_warning.reset_mock()
         router = self.circuit_router._build_router(sabre_instance, self.linear_topology)
         assert isinstance(router, Sabre)
         assert router.connectivity == self.linear_topology
+        mock_logger_warning.assert_has_calls([call("Substituting the router connectivity by the platform one.")])
+
 
         star_router_instance = StarConnectivityRouter(self.star_topology)
+        mock_logger_warning.reset_mock()
         router = self.circuit_router._build_router(star_router_instance, self.star_topology)
         assert isinstance(router, StarConnectivityRouter)
         assert router.middle_qubit == 0
         assert  hasattr(router, "connectivity") == False
+        mock_logger_warning.assert_has_calls([call("Substituting the router connectivity by the platform one.")])
+
+        # Test Router instance, with kwargs:
+        sabre_instance = Sabre(self.linear_topology, lookahead=2)
+        router_kwargs = {"lookahead": 3}
+        mock_logger_warning.reset_mock()
+        router = self.circuit_router._build_router((sabre_instance,router_kwargs), self.linear_topology)
+        assert router.lookahead == 2
+        mock_logger_warning.assert_has_calls([call("Ignoring router kwargs, as the router is already an instance."),
+            call("Substituting the router connectivity by the platform one.")])
 
     def test_check_reverse_traversal_routing_connectivity(self):
         """Test the _check_ReverseTraversal_routing_connectivity method."""

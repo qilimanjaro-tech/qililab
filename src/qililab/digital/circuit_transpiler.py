@@ -107,8 +107,7 @@ class CircuitTranspiler:
             optimize (bool, optional): whether to optimize the transpilation. Defaults to True.
 
         Returns:
-            list[PulseSchedule]: list of pulse schedules.
-            list[dict]: list of the final layouts of the qubits, in each circuit.
+            tuple[list[PulseSchedule],list[dict[str, int]]]: list of pulse schedules and list of the final layouts of the qubits, in each circuit {"qI": J}.
         """
 
         # Routing stage;
@@ -140,7 +139,7 @@ class CircuitTranspiler:
         router: Router | type[Router] | tuple[type[Router], dict] | None = None,
         coupling_map: list[tuple[int, int]] | None = None,
         iterations: int = 10,
-    ) -> tuple[Circuit, dict]:
+    ) -> tuple[Circuit, dict[str, int]]:
         """Routes the virtual/logical qubits of a circuit, to the chip's physical qubits.
 
         **Examples:**
@@ -191,8 +190,7 @@ class CircuitTranspiler:
 
 
         Returns:
-            Circuit: routed circuit.
-            dict: final layout of the circuit.
+            tuple[Circuit, dict[str, int]]: routed circuit, and final layout of the circuit {"qI": J}.
 
         Raises:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
@@ -283,6 +281,5 @@ class CircuitTranspiler:
         Returns:
             list[PulseSequences]: List of :class:`PulseSequences` classes.
         """
-
         circuit_to_pulses = CircuitToPulses(self.digital_compilation_settings)
         return [circuit_to_pulses.run(circuit) for circuit in circuits]
