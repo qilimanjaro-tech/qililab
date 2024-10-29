@@ -178,7 +178,19 @@ class CircuitRouter:
         )
 
     @staticmethod
-    def _build_router(router: Router | type[Router] | tuple[type[Router], dict], connectivity: nx.Graph) -> Router:
+    def _highest_degree_node(connectivity: nx.Graph) -> int:
+        """Returns the node with the highest degree in the connectivity graph.
+
+        Args:
+            connectivity (nx.Graph): Chip connectivity.
+
+        Returns:
+            int: Node with the highest degree in the connectivity graph.
+        """
+        return max(dict(connectivity.degree()).items(), key=lambda x: x[1])[0]
+
+    @classmethod
+    def _build_router(cls, router: Router | type[Router] | tuple[type[Router], dict], connectivity: nx.Graph) -> Router:
         """Build a `Router` instance, given the pass router in whatever format and the connectivity graph.
 
         Args:
@@ -203,13 +215,20 @@ class CircuitRouter:
         if isinstance(router, Router):
             if kwargs:
                 logger.warning("Ignoring router kwargs, as the router is already an instance.")
-            router.connectivity = connectivity
+            if isinstance(router, StarConnectivityRouter):
+                # For star-connectivity placers, we only care about which is the middle qubit (highest degree):
+                router.middle_qubit = cls._highest_degree_node(connectivity)
+            else:
+                router.connectivity = connectivity
             logger.warning("Substituting the router connectivity by the platform one.")
             return router
 
         # If the router is a Router subclass, we instantiate it:
         with contextlib.suppress(TypeError, ValueError):
             if issubclass(router, Router):
+                if issubclass(router, StarConnectivityRouter):
+                    # For star-connectivity placers, we only care about which is the middle qubit (highest degree):
+                    kwargs["middle_qubit"] = cls._highest_degree_node(connectivity)
                 return router(connectivity, **kwargs)
 
         raise TypeError(
@@ -247,13 +266,20 @@ class CircuitRouter:
         if isinstance(placer, Placer):
             if kwargs:
                 logger.warning("Ignoring placer kwargs, as the placer is already an instance.")
-            placer.connectivity = connectivity
+            if isinstance(placer, StarConnectivityPlacer):
+                # For star-connectivity placers, we only care about which is the middle qubit (highest degree):
+                placer.middle_qubit = self._highest_degree_node(connectivity)
+            else:
+                placer.connectivity = connectivity
             logger.warning("Substituting the placer connectivity by the platform one.")
             return placer
 
         # If the placer is a Placer subclass, we instantiate it:
         with contextlib.suppress(TypeError, ValueError):
             if issubclass(placer, Placer):
+                if issubclass(placer, StarConnectivityPlacer):
+                    # For star-connectivity placers, we only care about which is the middle qubit (highest degree):
+                    kwargs["middle_qubit"] = self._highest_degree_node(connectivity)
                 return placer(connectivity, **kwargs)
 
         raise TypeError(
