@@ -268,7 +268,7 @@ class CircuitToPulses:
 
         Args:
             qubits (list[int]): qubits to sync
-            time (dict[int,int]): time dictionary
+            time (dict[int, int]): time dictionary
         """
         max_time = max((time[qubit] for qubit in qubits if qubit in time), default=0)
         for qubit in qubits:
