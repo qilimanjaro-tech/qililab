@@ -2,10 +2,8 @@
 
 import copy
 from unittest.mock import patch
-
 import numpy as np
 import pytest
-
 from qililab.result import stream_results
 from qililab.result.stream_results import StreamArray
 
@@ -50,7 +48,9 @@ class MockFile:
 
     def __exit__(self, *_):
         """mocks exit"""
-
+        
+    def flush(self):
+        """mocks flush"""
 
 class TestStreamArray:
     """Test `StreamArray` functionalities."""

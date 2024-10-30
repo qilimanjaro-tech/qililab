@@ -117,10 +117,12 @@ class StreamArray:
         """
         if self._file is not None and self._dataset is not None:
             self._dataset[key] = value
+            self._dataset.flush()
         self.results[key] = value
 
     def __enter__(self):
         self._file = h5py.File(name=self.path, mode="w")
+        self._file.swmr_mode = True
         # Save loops
         g = self._file.create_group(name="loops")
         for loop_name, array in self.loops.items():
@@ -133,6 +135,7 @@ class StreamArray:
     def __exit__(self, *args):
         """Exits the context manager."""
         if self._file is not None:
+            self._file.flush()
             self._file.__exit__()
             self._file = None
 
