@@ -1,7 +1,9 @@
-import h5py
-import numpy as np
-import matplotlib.pyplot as plt
 import time
+
+import h5py
+import matplotlib.pyplot as plt
+import numpy as np
+
 
 class LivePlot:
     """
