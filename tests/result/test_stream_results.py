@@ -50,7 +50,9 @@ class MockFile:
 
     def __exit__(self, *_):
         """mocks exit"""
-
+        
+    def flush():
+        """mocks flush"""
 
 class TestStreamArray:
     """Test `StreamArray` functionalities."""
