@@ -121,6 +121,7 @@ class StreamArray:
 
     def __enter__(self):
         self._file = h5py.File(name=self.path, mode="w")
+        self._file.swmr_mode = True
         # Save loops
         g = self._file.create_group(name="loops")
         for loop_name, array in self.loops.items():
