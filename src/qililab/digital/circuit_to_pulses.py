@@ -17,7 +17,7 @@
 from dataclasses import asdict
 
 import numpy as np
-from qibo.gates import Gate, M
+from qibo import gates
 from qibo.models import Circuit
 
 from qililab.constants import RUNCARD
@@ -63,7 +63,7 @@ class CircuitToPulses:
             list[PulseSequences]: List of :class:`PulseSequences` classes.
         """
 
-        pulse_schedule = PulseSchedule()
+        pulse_schedule: PulseSchedule = PulseSchedule()
         time: dict[int, int] = {}  # init/restart time
         for gate in circuit.queue:
             # handle wait gates
@@ -73,11 +73,11 @@ class CircuitToPulses:
 
             # Measurement gates need to be handled on their own because qibo allows to define
             # an M gate as eg. gates.M(*range(5))
-            if isinstance(gate, M):
+            if isinstance(gate, gates.M):
                 gate_schedule = []
                 gate_qubits = gate.qubits
                 for qubit in gate_qubits:
-                    gate_schedule += self._gate_schedule_from_settings(M(qubit))
+                    gate_schedule += self._gate_schedule_from_settings(gates.M(qubit))
 
             # handle control gates
             else:
@@ -100,8 +100,8 @@ class CircuitToPulses:
                 pulse_event = self._gate_element_to_pulse_event(time=start_time, gate=gate, gate_event=gate_event)
                 # pop first qubit from gate if it is measurement
                 # this is so that the target qubit for multiM gates is every qubit in the M gate
-                if isinstance(gate, M):
-                    gate = M(*gate.qubits[1:])
+                if isinstance(gate, gates.M):
+                    gate = gates.M(*gate.qubits[1:])
                 # add event
                 delay = self.digital_compilation_settings.buses[gate_event.bus].delay
                 pulse_schedule.add_event(pulse_event=pulse_event, bus_alias=gate_event.bus, delay=delay)  # type: ignore
@@ -115,7 +115,7 @@ class CircuitToPulses:
 
         return pulse_schedule
 
-    def _gate_schedule_from_settings(self, gate: Gate) -> list[GateEventSettings]:
+    def _gate_schedule_from_settings(self, gate: gates.Gate) -> list[GateEventSettings]:
         """Gets the gate schedule. The gate schedule is the list of pulses to apply
         to a given bus for a given gate
 
@@ -177,7 +177,7 @@ class CircuitToPulses:
             time = max(time, schedule_element.pulse.duration + schedule_element.wait_time)
         return time
 
-    def _get_gate_qubits(self, gate: Gate, schedule: list[GateEventSettings] | None = None) -> tuple[int, ...]:
+    def _get_gate_qubits(self, gate: gates.Gate, schedule: list[GateEventSettings] | None = None) -> tuple[int, ...]:
         """Gets qubits involved in gate. This includes gate.qubits but also qubits which are targets of
         buses in the gate schedule
 
@@ -203,7 +203,7 @@ class CircuitToPulses:
 
         return tuple(set(schedule_qubits + gate_qubits))  # convert to set and back to list to remove repeated items
 
-    def _gate_element_to_pulse_event(self, time: int, gate: Gate, gate_event: GateEventSettings) -> PulseEvent:
+    def _gate_element_to_pulse_event(self, time: int, gate: gates.Gate, gate_event: GateEventSettings) -> PulseEvent:
         """Translates a gate element into a pulse.
 
         Args:
@@ -226,7 +226,7 @@ class CircuitToPulses:
         bus = self.digital_compilation_settings.buses[gate_event.bus]
         qubit = (
             gate.qubits[0]
-            if isinstance(gate, M)
+            if isinstance(gate, gates.M)
             else next((qubit for qubit in bus.qubits), None)
             if bus is not None
             else None
