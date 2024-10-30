@@ -10,7 +10,7 @@ repos:
     rev: "v1.11.2"
     hooks:
       - id: mypy
-        args: [--no-strict-optional, --ignore-missing-imports]
+        args: ["--no-strict-optional", "--ignore-missing-imports", "--config-file=pyproject.toml"]
         additional_dependencies: []
 
   - repo: https://github.com/executablebooks/mdformat

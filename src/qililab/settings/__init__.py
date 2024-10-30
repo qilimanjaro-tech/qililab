@@ -14,7 +14,10 @@
 
 """__init__.py"""
 
+from .analog import AnalogCompilationSettings
+from .bus_settings import BusSettings
+from .digital import DigitalCompilationSettings
 from .runcard import Runcard
 from .settings import Settings
 
-__all__ = ["Runcard", "Settings"]
+__all__ = ["AnalogCompilationSettings", "BusSettings", "DigitalCompilationSettings", "Runcard", "Settings"]
