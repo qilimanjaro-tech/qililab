@@ -106,7 +106,7 @@ class StreamArray:
         self.path = path
         self.loops = loops
         self._file: h5py.File | None = None
-        self._dataset = None
+        self._dataset: h5py.Dataset | None = None
 
     def __setitem__(self, key: tuple, value: float):
         """Sets and item by key and value in the dataset.
@@ -121,7 +121,7 @@ class StreamArray:
         self.results[key] = value
 
     def __enter__(self):
-        self._file = h5py.File(name=self.path, mode="w")
+        self._file = h5py.File(name=self.path, mode="w", libver="latest")
         self._file.swmr_mode = True
         # Save loops
         g = self._file.create_group(name="loops")

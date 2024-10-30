@@ -36,6 +36,7 @@ Functions
 """
 
 from .experiment_results import ExperimentResults
+from .live_plotting import LivePlot
 from .result import Result
 from .results import Results
 from .stream_results import stream_results
