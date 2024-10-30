@@ -49,7 +49,7 @@ class MockFile:
     def __exit__(self, *_):
         """mocks exit"""
         
-    def flush():
+    def flush(self):
         """mocks flush"""
 
 class TestStreamArray:
