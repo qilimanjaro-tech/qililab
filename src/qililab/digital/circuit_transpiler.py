@@ -96,7 +96,6 @@ class CircuitTranspiler:
             # Or also specifying the `router` with kwargs:
             routed_circuit, final_layouts = transpiler.transpile_circuits([c], router=(Sabre, {"lookahead": 2}))
 
-
         Args:
             circuits (list[Circuit]): list of qibo circuits.
             placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
