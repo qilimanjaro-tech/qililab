@@ -12,7 +12,11 @@ from qibo.models import Circuit
 import networkx as nx
 
 from qililab.digital import CircuitTranspiler
-from qililab.digital.circuit_router import CircuitRouter
+from qililab.digital.native_gates import Drag, Wait
+from qililab.pulse import PulseSchedule
+from qililab.settings.digital import DigitalCompilationSettings
+
+from qililab.digital import CircuitTranspiler
 from qililab.digital.native_gates import Drag, Wait
 from qililab.pulse import PulseSchedule
 from qililab.settings.digital import DigitalCompilationSettings
