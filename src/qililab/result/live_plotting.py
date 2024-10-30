@@ -57,5 +57,5 @@ class LivePlot:
                     plt.pause(0.01)  # Small pause to refresh the plot
                     last_size = current_size
                 time.sleep(self.refresh_interval)
-        
+
         plt.ioff()  # Turn interactive mode off
