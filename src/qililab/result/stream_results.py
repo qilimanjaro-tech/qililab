@@ -117,6 +117,7 @@ class StreamArray:
         """
         if self._file is not None and self._dataset is not None:
             self._dataset[key] = value
+            self._dataset.flush()
         self.results[key] = value
 
     def __enter__(self):
@@ -134,6 +135,7 @@ class StreamArray:
     def __exit__(self, *args):
         """Exits the context manager."""
         if self._file is not None:
+            self._file.flush()
             self._file.__exit__()
             self._file = None
 
