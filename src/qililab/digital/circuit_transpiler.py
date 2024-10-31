@@ -129,6 +129,8 @@ class CircuitTranspiler:
     ) -> tuple[Circuit, dict[str, int]]:
         """Routes the virtual/logical qubits of a circuit, to the chip's physical qubits.
 
+
+
         **Examples:**
 
         If we instantiate some ``Circuit``, ``Platform`` and ``CircuitTranspiler`` objects like:
@@ -148,7 +150,7 @@ class CircuitTranspiler:
 
             # Create platform:
             platform = build_platform(runcard="<path_to_runcard>")
-            coupling_map = platform.chip.get_topology()
+            coupling_map = platform.digital_compilation_settings.topology
 
             # Create transpiler:
             transpiler = CircuitTranspiler(platform)
@@ -168,7 +170,8 @@ class CircuitTranspiler:
 
         Args:
             circuit (Circuit): circuit to route.
-            coupling_map (list[tuple[int, int]], optional): coupling map of the chip. Defaults to the platform topology.
+            coupling_map (list[tuple[int, int]], optional): coupling map of the chip to route. This topology will be the one that rules,
+                which will overwrite any other in an instance of router or placer. Defaults to the platform topology.
             placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
                 use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
             router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
