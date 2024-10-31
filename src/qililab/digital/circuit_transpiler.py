@@ -15,7 +15,6 @@
 """Circuit Transpiler class"""
 
 import networkx as nx
-from qibo import gates
 from qibo.models import Circuit
 from qibo.transpiler.placer import Placer
 from qibo.transpiler.router import Router
@@ -226,7 +225,7 @@ class CircuitTranspiler:
 
         return new_circuit
 
-    def optimize_transpilation(self, circuit: Circuit) -> list[gates.Gate]:
+    def optimize_transpilation(self, circuit: Circuit) -> Circuit:
         """Optimizes transpiled circuit by applying virtual Z gates.
 
         This is done by moving all RZ to the left of all operators as a single RZ. The corresponding cumulative rotation

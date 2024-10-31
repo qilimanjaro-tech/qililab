@@ -564,7 +564,8 @@ class TestCircuitTranspiler:
         circuit.add(test_gates)
 
         # check that lists are the same
-        optimized_gates = transpiler.optimize_transpilation(circuit)
+        circuit = transpiler.optimize_transpilation(circuit)
+        optimized_gates = list(circuit.queue)
         for gate_r, gate_opt in zip(result_gates, optimized_gates):
             assert gate_r.name == gate_opt.name
             assert gate_r.parameters == gate_opt.parameters
