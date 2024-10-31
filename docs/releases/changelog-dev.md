@@ -92,7 +92,6 @@ The most common way to route, will be automatically through `qililab.execute_cir
 
 Example:
 
-````
 ```python
 from qibo import gates
 from qibo.models import Circuit
@@ -134,7 +133,6 @@ routed_circ, final_layouts = transpiler.route_circuit([c], placer=Trivial, route
 router = Sabre(connectivity=None, lookahead=1) # No connectivity needed, since it will be overwritten by the specified in the Transpiler:
 routed_circ, final_layouts = transpiler.route_circuit([c], placer=Trivial, router=router, coupling_map=<connectivity_to_use>)
 ```
-````
 
 [#821](https://github.com/qilimanjaro-tech/qililab/pull/821)
 
