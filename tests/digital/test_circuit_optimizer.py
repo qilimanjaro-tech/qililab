@@ -71,10 +71,10 @@ class TestCircuitOptimizerUnit:
         assert [type(gate).__name__ for gate in optimized_gates] == ["CZ", "Drag"]
 
 
-    @patch("qililab.digital.circuit_optimizer.CircuitOptimizer._create_circuit", return_value=[gates.CZ(0, 1), Drag(0, theta=np.pi, phase=np.pi / 2)])
-    @patch("qililab.digital.circuit_optimizer.CircuitOptimizer._sweep_circuit_cancelling_pairs_of_hermitian_gates", return_value=[gates.CZ(0, 1), Drag(0, theta=np.pi, phase=np.pi / 2)])
+    @patch("qililab.digital.circuit_optimizer.CircuitOptimizer._create_circuit", return_value=Circuit(5))
+    @patch("qililab.digital.circuit_optimizer.CircuitOptimizer._sweep_circuit_cancelling_pairs_of_hermitian_gates", return_value=[("CZ", [0, 1], {}), ("Drag", [0], {"theta": np.pi, "phase": np.pi / 2})])
     @patch("qililab.digital.circuit_optimizer.CircuitOptimizer._get_circuit_gates", return_value=[("CZ", [0, 1], {}), ("Drag", [0], {"theta": np.pi, "phase": np.pi / 2})])
-    def test_run_gate_cancellations_with_mocks(self, mock_get_circuit_gates, mock_sweep_circuit, mock_create_circuit):
+    def test_cancel_pairs_of_hermitian_gates(self, mock_get_circuit_gates, mock_sweep_circuit, mock_create_circuit):
         """Test run gate cancellations with mocks."""
         circuit = Circuit(2)
         circuit.add(gates.RZ(0, theta=np.pi / 2))
@@ -82,15 +82,11 @@ class TestCircuitOptimizerUnit:
         circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
 
         optimizer = CircuitOptimizer(None)
-        optimized_circuit = optimizer.cancel_pairs_of_hermitian_gates(circuit)
+        _ = optimizer.cancel_pairs_of_hermitian_gates(circuit)
 
         mock_get_circuit_gates.assert_called_once_with(circuit)
         mock_sweep_circuit.assert_called_once_with([("CZ", [0, 1], {}), ("Drag", [0], {"theta": np.pi, "phase": np.pi / 2})])
         mock_create_circuit.assert_called_once_with([("CZ", [0, 1], {}), ("Drag", [0], {"theta": np.pi, "phase": np.pi / 2})], circuit.nqubits)
-
-        assert len(optimized_circuit) == 2
-        assert [gate.name for gate in optimized_circuit] == ["cz", "drag"]
-        assert [type(gate).__name__ for gate in optimized_circuit] == ["CZ", "Drag"]
 
 
     def test_get_circuit_gates(self):
