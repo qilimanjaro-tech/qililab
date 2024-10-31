@@ -91,7 +91,7 @@ class CircuitRouter:
 
             # Create platform:
             platform = build_platform(runcard="<path_to_runcard>")
-            coupling_map = platform.chip.get_topology()
+            coupling_map = platform.digital_compilation_settings.topology
 
             # Create transpiler:
             transpiler = CircuitTranspiler(platform)
@@ -247,7 +247,7 @@ class CircuitRouter:
                 router.middle_qubit = cls._highest_degree_node(connectivity)
             else:
                 router.connectivity = connectivity
-            logger.warning("Substituting the router connectivity by the platform one.")
+            logger.warning("Substituting the router connectivity by the transpiler/platform one.")
             return router
 
         # If the router is a Router subclass, we instantiate it:
@@ -298,7 +298,7 @@ class CircuitRouter:
                 placer.middle_qubit = self._highest_degree_node(connectivity)
             else:
                 placer.connectivity = connectivity
-            logger.warning("Substituting the placer connectivity by the platform one.")
+            logger.warning("Substituting the placer connectivity by the transpiler/platform one.")
             return placer
 
         # If the placer is a Placer subclass, we instantiate it:
@@ -334,7 +334,7 @@ class CircuitRouter:
         # If the placer is a ReverseTraversal instance, we update the connectivity to the platform one:
         if isinstance(placer, ReverseTraversal):
             placer.routing_algorithm.connectivity = connectivity
-            logger.warning("Substituting the ReverseTraversal router connectivity, by the platform one.")
+            logger.warning("Substituting the ReverseTraversal router connectivity, by the transpiler/platform one.")
             return placer, kwargs
 
         # Else is placer is not an instance, we need to check the routing algorithm:

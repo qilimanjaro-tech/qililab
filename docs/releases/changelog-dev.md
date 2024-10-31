@@ -85,6 +85,59 @@
 
   [#816](https://github.com/qilimanjaro-tech/qililab/pull/816)
 
+- Added routing algorithms to `qililab` in function of the platform connectivity. This is done passing `Qibo` own `Routers` and `Placers` classes,
+  and can be called from different points of the stack.
+
+The most common way to route, will be automatically through `qililab.execute_circuit.execute()`, or also from `qililab.platform.execute/compile()`. Another way, would be doing the transpilation/routing directly from an instance of the Transpiler, with: `qililab.digital.circuit_transpiler.transpile/route_circuit()` (with this last one, you can route with a different topology from the platform one, if desired, defaults to platform)
+
+Example:
+
+````
+```python
+from qibo import gates
+from qibo.models import Circuit
+from qibo.transpiler.placer import ReverseTraversal, Trivial
+from qibo.transpiler.router import Sabre
+from qililab import build_platform
+from qililab.circuit_transpiler import CircuitTranspiler
+
+# Create circuit:
+c = Circuit(5)
+c.add(gates.CNOT(1, 0))
+
+### From execute_circuit:
+# With defaults (ReverseTraversal placer and Sabre routing):
+probabilities = ql.execute(c, runcard="./runcards/galadriel.yml", placer= Trivial, router = Sabre, routing_iterations: int = 10,)
+# Changing the placer to Trivial, and changing the number of iterations:
+probabilities = ql.execute(c, runcard="./runcards/galadriel.yml",
+
+### From the platform:
+# Create platform:
+platform = build_platform(runcard="<path_to_runcard>")
+# With defaults (ReverseTraversal placer, Sabre routing)
+probabilities = platform.execute(c, num_avg: 1000, repetition_duration: 1000)
+# With non-defaults, and specifying the router with kwargs:
+probabilities = platform.execute(c, num_avg: 1000, repetition_duration: 1000,  placer= Trivial, router = (Sabre, {"lookahead": 2}), routing_iterations: int = 20))
+# With a router instance:
+router = Sabre(connectivity=None, lookahead=1) # No connectivity needed, since it will be overwritten by the platform's one
+probabilities = platform.execute(c, num_avg: 1000, repetition_duration: 1000, placer=Trivial, router=router)
+
+### Using the transpiler directly:
+### (If using the routing from this points of the stack, you can route with a different topology from the platform one)
+# Create transpiler:
+transpiler = CircuitTranspiler(platform)
+# Default Transpilation (ReverseTraversal, Sabre and Platform connectivity):
+routed_circ, final_layouts = transpiler.route_circuit([c])
+# With Non-Default Trivial placer, specifying the kwargs, for the router, and different coupling_map:
+routed_circ, final_layouts = transpiler.route_circuit([c], placer=Trivial, router=(Sabre, {"lookahead": 2}, coupling_map=<some_different_topology>))
+# Or finally, Routing with a concrete Routing instance:
+router = Sabre(connectivity=None, lookahead=1) # No connectivity needed, since it will be overwritten by the specified in the Transpiler:
+routed_circ, final_layouts = transpiler.route_circuit([c], placer=Trivial, router=router, coupling_map=<connectivity_to_use>)
+```
+````
+
+[#821](https://github.com/qilimanjaro-tech/qililab/pull/821)
+
 ### Improvements
 
 - Legacy linting and formatting tools such as pylint, flake8, isort, bandit, and black have been removed. These have been replaced with Ruff, a more efficient tool that handles both linting and formatting. All configuration settings have been consolidated into the `pyproject.toml` file, simplifying the project's configuration and maintenance. Integration config files like `pre-commit-config.yaml` and `.github/workflows/code_quality.yml` have been updated accordingly. Several rules from Ruff have also been implemented to improve code consistency and quality across the codebase. Additionally, the development dependencies in `dev-requirements.txt` have been updated to their latest versions, ensuring better compatibility and performance. [#813](https://github.com/qilimanjaro-tech/qililab/pull/813)
