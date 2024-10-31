@@ -167,7 +167,7 @@ class CircuitOptimizer:
         return (
             getattr(digital, gate_class)(*gate_args, **gate_kwargs)
             if gate_class in {"Drag", "Wait"}
-            else getattr(gates, gate_class)(**gate_kwargs)
+            else getattr(gates, gate_class)(*gate_args, **gate_kwargs)
         )
 
     @classmethod
