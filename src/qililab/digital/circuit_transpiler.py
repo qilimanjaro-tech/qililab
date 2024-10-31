@@ -251,10 +251,13 @@ class CircuitTranspiler:
             circuit (Circuit): circuit with native gates, to optimize.
 
         Returns:
-            list[gates.Gate] : list of re-ordered gates
+            Circuit: Circuit with optimized transpiled gates.
         """
         optimizer = CircuitOptimizer(self.digital_compilation_settings)
-        return optimizer.optimize_transpilation(circuit)
+
+        output_circuit = Circuit(circuit.nqubits)
+        output_circuit.add(optimizer.optimize_transpilation(circuit))
+        return output_circuit
 
     def circuit_to_pulses(self, circuits: list[Circuit]) -> list[PulseSchedule]:
         """Translates a list of circuits into a list of pulse sequences (each circuit to an independent pulse sequence).

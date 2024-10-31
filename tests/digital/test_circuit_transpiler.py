@@ -644,10 +644,14 @@ class TestCircuitTranspiler:
         with pytest.raises(ValueError, match=error_string):
             transpiler.circuit_to_pulses(circuits=[circuit])
 
+
+    @pytest.mark.parametrize("optimize", [True, False])
+    @patch("qililab.digital.circuit_transpiler.CircuitTranspiler.optimize_circuit")
+    @patch("qililab.digital.circuit_transpiler.CircuitTranspiler.optimize_transpilation")
     @patch("qililab.digital.circuit_transpiler.CircuitTranspiler.route_circuit")
     @patch("qililab.digital.circuit_transpiler.CircuitTranspiler.circuit_to_native")
     @patch("qililab.digital.circuit_transpiler.CircuitTranspiler.circuit_to_pulses")
-    def test_transpile_circuits(self, mock_to_pulses, mock_to_native, mock_route, digital_settings):
+    def test_transpile_circuits(self, mock_to_pulses, mock_to_native, mock_route, mock_opt_trans, mock_opt_circuit, optimize, digital_settings):
         """Test transpile_circuits method"""
         transpiler = CircuitTranspiler(digital_compilation_settings=digital_settings)
         placer = MagicMock()
@@ -667,20 +671,32 @@ class TestCircuitTranspiler:
 
         # Mock the return values
         mock_route.return_value = mock_circuit, mock_layout
+        mock_opt_circuit.return_value = mock_circuit
         mock_to_native.return_value = mock_circuit
+        mock_opt_trans.return_value = mock_circuit
         mock_to_pulses.return_value = [mock_schedule]
 
         circuit = random_circuit(5, 10, np.random.default_rng())
 
-        list_schedules, list_layouts = transpiler.transpile_circuits([circuit]*list_size, placer, router, routing_iterations, optimize=False)
+        list_schedules, list_layouts = transpiler.transpile_circuits([circuit]*list_size, placer, router, routing_iterations, optimize=optimize)
 
         # Asserts:
+        # The next two functions get called for individual circuits:
         mock_route.assert_called_with(circuit, placer, router, iterations=routing_iterations)
-        assert mock_route.call_count == list_size
         mock_to_native.assert_called_with(mock_circuit)
-        assert mock_to_native.call_count == list_size
+        assert mock_route.call_count == mock_to_native.call_count == list_size
+        # The last one instead gets called for the whole list:
         mock_to_pulses.assert_called_once_with([mock_circuit]*list_size)
         assert list_schedules, list_layouts == ([mock_schedule]*list_size, [mock_layout]*list_size)
+
+        # Asserts in optimizeL, which is called for individual circuits:
+        if optimize:
+            mock_opt_circuit.assert_called_with(mock_circuit)
+            mock_opt_trans.assert_called_with(mock_circuit)
+            assert mock_opt_circuit.call_count == mock_opt_trans.call_count == list_size
+        else:
+            mock_opt_circuit.assert_not_called()
+            mock_opt_trans.assert_not_called()
 
     @patch("qililab.digital.circuit_router.CircuitRouter.route")
     def test_route_circuit(self, mock_route, digital_settings):
