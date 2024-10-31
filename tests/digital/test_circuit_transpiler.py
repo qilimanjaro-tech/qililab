@@ -501,7 +501,7 @@ class TestCircuitTranspiler:
                 exhaustive=True,
             )
 
-            c2 = transpiler.circuit_to_native(c1, optimize=False)
+            c2 = transpiler.circuit_to_native(c1)
 
             # check that both c1, c2 are qibo.Circuit
             assert isinstance(c1, Circuit)
@@ -559,8 +559,12 @@ class TestCircuitTranspiler:
             Drag(1, 2, -2),
         ]
 
+        # create circuit to test function with
+        circuit = Circuit(3)
+        circuit.add(test_gates)
+
         # check that lists are the same
-        optimized_gates = transpiler.optimize_transpilation(3, test_gates)
+        optimized_gates = transpiler.optimize_transpilation(circuit)
         for gate_r, gate_opt in zip(result_gates, optimized_gates):
             assert gate_r.name == gate_opt.name
             assert gate_r.parameters == gate_opt.parameters
@@ -653,7 +657,7 @@ class TestCircuitTranspiler:
 
         # Mock circuit for return values
         mock_circuit = Circuit(5)
-        mock_circuit.add(X(0))
+        mock_circuit.add(Drag(0, 2*np.pi, np.pi))
 
         # Mock layout for return values
         mock_layout = {"q0": 0, "q1": 2, "q2": 1, "q3": 3, "q4": 4}
@@ -668,7 +672,7 @@ class TestCircuitTranspiler:
 
         circuit = random_circuit(5, 10, np.random.default_rng())
 
-        list_schedules, list_layouts = transpiler.transpile_circuits([circuit]*list_size, placer, router, routing_iterations)
+        list_schedules, list_layouts = transpiler.transpile_circuits([circuit]*list_size, placer, router, routing_iterations, optimize=False)
 
         # Asserts:
         mock_route.assert_called_with(circuit, placer, router, iterations=routing_iterations)

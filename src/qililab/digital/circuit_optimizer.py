@@ -18,6 +18,7 @@ from copy import deepcopy
 
 from qibo import Circuit, gates
 
+from qililab import digital
 from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
 
 from .native_gates import Drag
@@ -144,29 +145,37 @@ class CircuitOptimizer:
             circuit (qibo.models.Circuit): Circuit to get the gates from.
 
         Returns:
-            list[tuple]: List of gates in the circuit. Where each gate is a tuple (keys: 'name', value: 'qubits').
+            list[tuple]: List of gates in the circuit. Where each gate is a tuple of ('name', 'init_args', 'initi_kwargs').
         """
-        return [(type(gate).__name__, gate.qubits) for gate in circuit.queue]
+        return [(type(gate).__name__, gate.init_args, gate.init_kwargs) for gate in circuit.queue]
 
     @staticmethod
-    def _create_gate(gate_class: str, qubits: tuple[int]) -> gates.Gate:
+    def _create_gate(gate_class: str, gate_args: list | int, gate_kwargs: dict) -> gates.Gate:
         """Converts a tuple representation of qibo gate (name, qubits) into a Gate object.
 
         Args:
-            gate_class (str): The class name of the gate. Can be "CNOT", "X", "H", or any Qibo supported class.
-            qubits (tuple [int,] | tuple[int, int]): The qubits the gate acts on.
+            gate_class (str): The class name of the gate. Can be any Qibo or Qililab supported class.
+            gate_args (list | int): The qubits the gate acts on.
+            gate_kwargs (dict): The kwargs of the gate.
 
         Returns:
             gates.Gate: The qibo Gate object.
         """
-        return getattr(gates, gate_class)(*qubits)
+        # Solve Identity gate, argument int issue:
+        gate_args = [gate_args] if isinstance(gate_args, int) else gate_args
+
+        return (
+            getattr(digital, gate_class)(*gate_args, **gate_kwargs)
+            if gate_class in {"Drag", "Wait"}
+            else getattr(gates, gate_class)(**gate_kwargs)
+        )
 
     @classmethod
     def _create_circuit(cls, gates_list: list[tuple], nqubits: int) -> Circuit:
         """Converts a list of gates (name, qubits) into a qibo Circuit object.
 
         Args:
-            gates_list (list[tuple]): List of gates in the circuit. Where each gate is a tuple (keys: 'name', value: 'qubits').
+            gates_list (list[tuple]): List of gates in the circuit. Where each gate is a tuple of ('name', 'init_args', 'initi_kwargs')
             nqubits (int): Number of qubits in the circuit.
 
         Returns:
@@ -174,21 +183,21 @@ class CircuitOptimizer:
         """
         # Create optimized circuit, from the obtained non-cancelled list:
         output_circuit = Circuit(nqubits)
-        for gate, gate_qubits in gates_list:
-            qibo_gate = cls._create_gate(gate, gate_qubits)
+        for gate, gate_args, gate_kwargs in gates_list:
+            qibo_gate = cls._create_gate(gate, gate_args, gate_kwargs)
             output_circuit.add(qibo_gate)
 
         return output_circuit
 
-    @staticmethod
-    def _sweep_circuit_cancelling_pairs_of_hermitian_gates(circ_list: Circuit) -> Circuit:
+    @classmethod
+    def _sweep_circuit_cancelling_pairs_of_hermitian_gates(cls, circ_list: list[tuple]) -> list[tuple]:
         """Cancels adjacent gates in a circuit.
 
         Args:
-            circ_list (list[tuple]): List of gates in the circuit. Where each gate is a tuple (keys: 'name', value: 'qubits').
+            circ_list (list[tuple]): List of gates in the circuit. Where each gate is a tuple of ('name', 'init_args', 'initi_kwargs')
 
         Returns:
-            list[tuple]: List of gates in the circuit, after cancelling adjacent gates.
+            list[tuple]: List of gates in the circuit, after cancelling adjacent gates. Where each gate is a tuple of ('name', 'init_args', 'initi_kwargs')
         """
         # List of gates, that are available for cancellation:
         hermitian_gates: list = ["H", "X", "Y", "Z", "CNOT", "CZ", "SWAP"]
@@ -201,35 +210,52 @@ class CircuitOptimizer:
                 break
 
             # Gate of the original circuit, to find a match for:
-            gate, gate_qubits = circ_list.pop(0)
+            gate, gate_args, gate_kwargs = circ_list.pop(0)
+            gate_qubits = cls._extract_qubits(gate_args)  # Assuming qubits are the first two args
 
             # If gate is not hermitian (can't be cancelled), add it to the output circuit and continue:
             if gate not in hermitian_gates:
-                output_circ_list.append((gate, gate_qubits))
+                output_circ_list.append((gate, gate_args, gate_kwargs))
                 continue
 
             subend = False
             for i in range(len(circ_list)):
                 # Next gates, to compare the original with:
-                comp_gate, comp_qubits = circ_list[i]
+                comp_gate, comp_args, comp_kwargs = circ_list[i]
+                comp_qubits = cls._extract_qubits(comp_args)  # Assuming qubits are the first two args
 
                 # Simplify duplication, if same gate and qubits found, without any other in between:
-                if gate == comp_gate and gate_qubits == comp_qubits:
+                if gate == comp_gate and gate_args == comp_args and gate_kwargs == comp_kwargs:
                     circ_list.pop(i)
                     break
 
                 # Add gate, if there is no other gate that acts on the same qubits:
                 if i == len(circ_list) - 1:
-                    output_circ_list.append((gate, gate_qubits))
+                    output_circ_list.append((gate, gate_args, gate_kwargs))
                     break
 
                 # Add gate and leave comparison_gate loop, if we find a gate in common qubit, that prevents contraction:
                 for gate_qubit in gate_qubits:
                     if gate_qubit in comp_qubits:
-                        output_circ_list.append((gate, gate_qubits))
+                        output_circ_list.append((gate, gate_args, gate_kwargs))
                         subend = True
                         break
                 if subend:
                     break
 
         return output_circ_list
+
+    @staticmethod
+    def _extract_qubits(gate_args: list | int) -> list:
+        """Extract qubits from gate_args.
+
+        Args:
+            gate_args (list | int): The arguments of the gate.
+
+        Returns:
+            list: The qubits of the gate in an iterable.
+        """
+        # Assuming qubits are the first one or two args:
+        if isinstance(gate_args, int):
+            return [gate_args]
+        return gate_args if len(gate_args) <= 2 else gate_args[:2]
