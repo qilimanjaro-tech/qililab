@@ -166,11 +166,10 @@ class Bus:
             with contextlib.suppress(ParameterNotFound):
                 if instrument.__class__ is QuantumMachinesCluster:
                     instrument.set_parameter(parameter, value, self.alias)
-                else:
-                    if channel_id is not None and channel_id == instrument_channel:
-                        instrument.set_parameter(parameter, value, channel_id)
-                        return
-                    instrument.set_parameter(parameter, value, instrument_channel)
+                if channel_id is not None and channel_id == instrument_channel:
+                    instrument.set_parameter(parameter, value, channel_id)
+                    return
+                instrument.set_parameter(parameter, value, instrument_channel)
                 return
         raise Exception(f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}")
 
@@ -188,10 +187,9 @@ class Bus:
             with contextlib.suppress(ParameterNotFound):
                 if instrument.__class__ is QuantumMachinesCluster:
                     return instrument.get_parameter(parameter, self.alias)
-                else:
-                    if channel_id is not None and channel_id == instrument_channel:
-                        return instrument.get_parameter(parameter, channel_id)
-                    return instrument.get_parameter(parameter, instrument_channel)
+                if channel_id is not None and channel_id == instrument_channel:
+                    return instrument.get_parameter(parameter, channel_id)
+                return instrument.get_parameter(parameter, instrument_channel)
         raise Exception(f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}")
 
     def upload_qpysequence(self, qpysequence: QpySequence):
