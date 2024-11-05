@@ -569,13 +569,13 @@ class TestQuantumMachinesCluster:
         qmm.initial_setup()
         qmm.turn_on()
 
-        qmm._config["elements"]["identifier"] = {"singleInput": {"port": ("con10", 1)}}
+        qmm._config["elements"]["bus"] = {"singleInput": {"port": ("con10", 1)}}
 
         with pytest.raises(
             AttributeError,
             match=re.escape("Controller with bus bus does not exist"),
         ):
-            qmm.get_controller_type_from_bus("identifier")
+            qmm.get_controller_type_from_bus("bus")
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
