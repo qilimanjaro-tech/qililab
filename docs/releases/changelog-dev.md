@@ -97,7 +97,7 @@ instruments:
     ...
 ```
 
-  [#816](https://github.com/qilimanjaro-tech/qililab/pull/816)
+  [#826](https://github.com/qilimanjaro-tech/qililab/pull/826)
 
 ### Improvements
 
