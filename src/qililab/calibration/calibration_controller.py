@@ -319,13 +319,13 @@ class CalibrationController:
             return True
 
         # If no checkpoint is found, we can continue diagnosing the next nodes.
-        #   You can skip it from the `drift_timeout`. Notice, that `drift_timeout` has more priority than checkpoints then.
-        #   If you want to start the calibration from the start again, just decrease the `drift_timeout` or remove the executed files!
-        #   Also notice, that if a checkpoint is skipped we don't set it to [V], but to [ ] instead, as if it was never checked or wasn't a checkpoint.
-        if not node.checkpoint or (
-            node.previous_timestamp is not None
-            and not self._is_timeout_expired(node.previous_timestamp, self.drift_timeout)
-        ):
+        if not node.checkpoint:
+            return False
+
+        # If the node has recently been calibrated successfully, we can skip it from the `drift_timeout`.
+        # If you want to start diagnosing from the start again, just decrease the `drift_timeout` or remove the executed files!
+        # Also notice, that if a checkpoint is skipped we don't set it to [V], but to [ ] instead, as if it was never checked or wasn't a checkpoint.
+        if node.previous_timestamp and not self._is_timeout_expired(node.previous_timestamp, self.drift_timeout):
             return False
 
         # For not repeating [X] and [V]'s checkpoints, when more than one branch have it as a dependency.
