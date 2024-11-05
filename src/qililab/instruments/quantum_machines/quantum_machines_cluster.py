@@ -294,7 +294,7 @@ class QuantumMachinesCluster(Instrument):
             mixers = {}
 
             for element in self.elements:
-                bus_name = element["bus"]
+                bus_name = element["identifier"]
                 element_dict: dict = {"operations": {}}
 
                 # Flux bus
@@ -584,7 +584,7 @@ class QuantumMachinesCluster(Instrument):
             ParameterNotFound: Raised if parameter does not exist.
         """
         bus = str(channel_id)
-        element = next((element for element in self.settings.elements if element["bus"] == bus), None)
+        element = next((element for element in self.settings.elements if element["identifier"] == bus), None)
         if element is None:
             raise ValueError(f"Bus {bus} was not found in {self.name} settings.")
 
@@ -771,7 +771,7 @@ class QuantumMachinesCluster(Instrument):
         bus = str(channel_id)
         settings_config_dict = self.settings.to_qua_config()
         config_keys = settings_config_dict["elements"][bus]
-        element = next((element for element in self.settings.elements if element["bus"] == bus), None)
+        element = next((element for element in self.settings.elements if element["identifier"] == bus), None)
 
         if parameter == Parameter.LO_FREQUENCY:
             if "mixInputs" in config_keys:
@@ -806,7 +806,7 @@ class QuantumMachinesCluster(Instrument):
                 return settings_config_dict["elements"][bus]["smearing"]
 
         if parameter in [Parameter.THRESHOLD_ROTATION, Parameter.THRESHOLD]:
-            element = next((element for element in self.settings.elements if element["bus"] == bus), None)
+            element = next((element for element in self.settings.elements if element["identifier"] == bus), None)
             if parameter == Parameter.THRESHOLD_ROTATION:
                 return element.get("threshold_rotation", None)  # type: ignore
             if parameter == Parameter.THRESHOLD:
