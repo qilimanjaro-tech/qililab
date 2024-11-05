@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Qblox Scope Acquisitions Result """
+"""Qblox Scope Acquisitions Result"""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ from .constants import SCOPE_ACQ_MAX_DURATION
 
 
 @dataclass
-class QbloxScopeAcquisitions(Acquisitions):  # pylint: disable=abstract-method
+class QbloxScopeAcquisitions(Acquisitions):
     """Qblox Scope Acquisitions Result
     Args:
         scope: ScopeData

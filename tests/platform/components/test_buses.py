@@ -1,47 +1,64 @@
-"""Tests for the Buses class."""
 import pytest
+from unittest.mock import MagicMock
+from qililab.platform.components.buses import Buses
+from qililab.platform.components.bus import Bus
 
-from qililab.platform import Bus, Buses
-from qililab.system_control import ReadoutSystemControl
-from tests.data import Galadriel
-from tests.test_utils import build_platform
+@pytest.fixture
+def mock_buses():
+    bus1 = MagicMock(spec=Bus)
+    bus2 = MagicMock(spec=Bus)
+    bus1.alias = "bus1"
+    bus2.alias = "bus2"
+    bus1.has_adc.return_value = False
+    bus2.has_adc.return_value = True
+    return [bus1, bus2]
 
+@pytest.fixture
+def buses(mock_buses):
+    return Buses(elements=mock_buses)
 
-def load_buses() -> Buses:
-    """Load Buses.
+def test_buses_initialization(buses, mock_buses):
+    assert len(buses) == len(mock_buses)
+    assert buses.elements == mock_buses
 
-    Returns:
-        Buses: Instance of the Buses class.
-    """
-    platform = build_platform(Galadriel.runcard)
-    return platform.buses
+def test_buses_add(buses):
+    new_bus = MagicMock(spec=Bus)
+    new_bus.alias = "bus3"
+    buses.add(new_bus)
+    assert len(buses) == 3
+    assert buses.get("bus3") == new_bus
 
+def test_buses_get_existing(buses, mock_buses):
+    bus = buses.get("bus1")
+    assert bus == mock_buses[0]
 
-@pytest.mark.parametrize("buses", [load_buses()])
-class TestBuses:
-    """Unit tests checking the Buses attributes and methods."""
+def test_buses_get_non_existing(buses):
+    bus = buses.get("non_existent_bus")
+    assert bus is None
 
-    @pytest.mark.parametrize("bus", [load_buses().elements[0]])
-    def test_add_method(self, buses: Buses, bus: Bus):
-        """Test add method."""
-        buses.add(bus=bus)
-        assert buses[-1] == bus
+def test_buses_len(buses):
+    assert len(buses) == 2
 
-    def test_iter_and_getitem_methods(self, buses: Buses):
-        """Test __iter__, and __getitem__ methods."""
-        for bus_idx, bus in enumerate(buses):
-            assert buses[bus_idx] == bus  # pylint: disable=unnecessary-list-index-lookup
+def test_buses_iter(buses, mock_buses):
+    buses_iter = iter(buses)
+    assert list(buses_iter) == mock_buses
 
-    def test_len_method(self, buses: Buses):
-        """Test __len__ method."""
-        assert len(buses) == len(buses.elements)
+def test_buses_getitem(buses, mock_buses):
+    assert buses[0] == mock_buses[0]
+    assert buses[1] == mock_buses[1]
 
-    def test_readout_buses(self, buses: Buses):
-        """Test that the ``readout_buses`` method returns a list of readout buses."""
-        readout_buses = buses.readout_buses
-        assert isinstance(readout_buses, list)
-        assert isinstance(readout_buses[0].system_control, ReadoutSystemControl)
+def test_buses_to_dict(buses, mock_buses):
+    mock_buses[0].to_dict.return_value = {"alias": "bus1"}
+    mock_buses[1].to_dict.return_value = {"alias": "bus2"}
+    expected_dict = [{"alias": "bus1"}, {"alias": "bus2"}]
+    assert buses.to_dict() == expected_dict
 
-    def test_str_method(self, buses: Buses):
-        """Test print buses."""
-        assert str(buses) == "\n".join(str(bus) for bus in buses.elements)
+def test_buses_str(buses):
+    mock_buses = buses.elements
+    expected_str = f"{str(mock_buses[0])}\n{str(mock_buses[1])}"
+    assert str(buses) == expected_str
+
+def test_buses_readout_buses(buses, mock_buses):
+    readout_buses = buses.readout_buses
+    assert len(readout_buses) == 1
+    assert readout_buses[0] == mock_buses[1]

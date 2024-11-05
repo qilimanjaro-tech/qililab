@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from copy import deepcopy
-from dataclasses import fields, replace
 from typing import overload
 
 from qililab.qprogram.blocks.block import Block
@@ -43,7 +42,7 @@ from qililab.yaml import yaml
 
 
 @yaml.register_class
-class QProgram(StructuredProgram):  # pylint: disable=too-many-public-methods
+class QProgram(StructuredProgram):
     """QProgram is a hardware-agnostic pulse-level programming interface for describing quantum programs.
 
     This class provides an interface for building quantum programs,
@@ -99,18 +98,18 @@ class QProgram(StructuredProgram):  # pylint: disable=too-many-public-methods
             string_elements = []
             for element in block.elements:
                 string_elements.append(f"{type(element).__name__}:\n")
-                for field in fields(element):
-                    if field.name in [
-                        "_uuid",
-                        "variable",
-                        "elements",
-                        "waveform",
-                        "weights",
-                    ]:  # ignore uuid, variables. elements, waveforms and weights are handled separately
+                for attr_name in vars(element):
+                    # ignore uuid, variables. elements, waveforms and weights are handled separately
+                    if attr_name in ("_uuid", "variable", "elements", "waveform", "weights"):
                         continue
-                    string_elements.append(
-                        f"\t{field.name}: {getattr(element, field.name) if 'UUID' not in str(getattr(element, field.name)) else None}\n"
-                    )
+
+                    attr_value = getattr(element, attr_name)
+                    # Handle UUID checking and append to string_elements
+                    if "UUID" not in str(attr_value):
+                        string_elements.append(f"\t{attr_name}: {attr_value}\n")
+                    else:
+                        string_elements.append(f"\t{attr_name}: None\n")  # pragma: no cover
+
                 if isinstance(element, Block):
                     # handle blocks
                     for string_element in traverse(element):
@@ -187,11 +186,15 @@ class QProgram(StructuredProgram):  # pylint: disable=too-many-public-methods
                 elif hasattr(element, "bus"):
                     bus = getattr(element, "bus")
                     if isinstance(bus, str) and bus in bus_mapping:
-                        block.elements[index] = replace(block.elements[index], bus=bus_mapping[bus])  # type: ignore[call-arg]
+                        setattr(block.elements[index], "bus", bus_mapping[bus])
                 elif hasattr(element, "buses"):
                     buses = getattr(element, "buses")
                     if isinstance(buses, list):
-                        block.elements[index] = replace(block.elements[index], buses=[bus_mapping[bus] if bus in bus_mapping else bus for bus in buses])  # type: ignore[call-arg]
+                        setattr(
+                            block.elements[index],
+                            "buses",
+                            [bus_mapping[bus] if bus in bus_mapping else bus for bus in buses],
+                        )
 
         # Copy qprogram so the original remain unaffected
         copied_qprogram = deepcopy(self)
@@ -474,7 +477,6 @@ class QProgram(StructuredProgram):  # pylint: disable=too-many-public-methods
         self._active_block.append(operation)
         self._buses.add(bus)
 
-    # pylint: disable=protected-access, too-few-public-methods
     @yaml.register_class
     class _QbloxInterface:
         def __init__(self, qprogram: "QProgram"):
@@ -562,7 +564,6 @@ class QProgram(StructuredProgram):  # pylint: disable=too-many-public-methods
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
-    # pylint: disable=protected-access, too-few-public-methods
     @yaml.register_class
     class _QuantumMachinesInterface:
         def __init__(self, qprogram: "QProgram"):

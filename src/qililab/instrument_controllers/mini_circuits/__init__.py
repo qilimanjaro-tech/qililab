@@ -12,5 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Mini Circuits Instrument Controllers"""
+"""Mini Circuits Instrument Controllers"""
+
 from .mini_circuits_controller import MiniCircuitsController
+
+__all__ = ["MiniCircuitsController"]

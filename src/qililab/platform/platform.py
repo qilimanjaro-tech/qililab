@@ -12,34 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-many-lines
+
 """Platform class."""
+
+from __future__ import annotations
+
 import ast
-import datetime
 import io
 import re
-import time
-import traceback
-import warnings
+import tempfile
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
-from queue import Queue
-from typing import Callable
+from typing import TYPE_CHECKING, Callable, cast
 
 import numpy as np
 from qibo.gates import M
 from qibo.models import Circuit
 from qm import generate_qua_script
-from qm.exceptions import StreamProcessingDataLossError
-from qpysequence import Sequence as QpySequence
 from ruamel.yaml import YAML
 
 from qililab.analog import AnnealingProgram
-from qililab.chip import Chip
-from qililab.circuit_transpiler import CircuitTranspiler
 from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
+from qililab.digital import CircuitTranspiler
 from qililab.exceptions import ExceptionGroup
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
 from qililab.instrument_controllers.utils import InstrumentControllerFactory
@@ -48,24 +44,40 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.instruments.utils import InstrumentFactory
-from qililab.pulse import PulseSchedule
-from qililab.pulse import QbloxCompiler as PulseQbloxCompiler
-from qililab.qprogram import Calibration, Domain, Experiment, QbloxCompiler, QProgram, QuantumMachinesCompiler
+from qililab.platform.components.bus import Bus
+from qililab.platform.components.buses import Buses
+from qililab.pulse.pulse_schedule import PulseSchedule
+from qililab.pulse.qblox_compiler import ModuleSequencer
+from qililab.pulse.qblox_compiler import QbloxCompiler as PulseQbloxCompiler
+from qililab.qprogram import (
+    Calibration,
+    Domain,
+    Experiment,
+    QbloxCompilationOutput,
+    QbloxCompiler,
+    QProgram,
+    QuantumMachinesCompilationOutput,
+    QuantumMachinesCompiler,
+)
 from qililab.qprogram.experiment_executor import ExperimentExecutor
-from qililab.result import Result
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
-from qililab.settings import Runcard
-from qililab.system_control import ReadoutSystemControl
-from qililab.typings.enums import InstrumentName, Line, Parameter
+from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 from qililab.utils import hash_qpy_sequence
-from qililab.waveforms import IQPair, Square
 
-from .components import Bus, Buses
+if TYPE_CHECKING:
+    from queue import Queue
+
+    from qpysequence import Sequence as QpySequence
+
+    from qililab.instrument_controllers.instrument_controller import InstrumentController
+    from qililab.instruments.instrument import Instrument
+    from qililab.result import Result
+    from qililab.settings import Runcard
 
 
-class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-attributes
+class Platform:
     """Platform object representing the laboratory setup used to control quantum devices.
 
     The platform is responsible for managing the initializations, connections, setups, and executions of the laboratory, which mainly consists of:
@@ -85,14 +97,14 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
     After initializing a :class:`Platform`, the typical first three steps (which are usually only required at the start) are:
 
-    >>> platform.connect() # Connects to all the instruments.
+    >>> platform.connect()  # Connects to all the instruments.
     >>> platform.initial_setup()  # Sets the parameters defined in the runcard.
     >>> platform.turn_on_instruments()  # Turns on the signal outputs.
 
     And then, for each experiment you want to run, you would typically repeat:
 
-    >>> platform.set_parameter(...) # Sets any parameter of the Platform.
-    >>> result = platform.execute(...) # Executes the platform.
+    >>> platform.set_parameter(...)  # Sets any parameter of the Platform.
+    >>> result = platform.execute(...)  # Executes the platform.
 
     Args:
         runcard (Runcard): Dataclass containing the serialized platform (chip, instruments, buses...), created during :meth:`ql.build_platform()` with the given runcard dictionary.
@@ -129,7 +141,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             from qibo import gates
 
             # Defining the Rabi circuit:
-            circuit = Circuit(q+1)
+            circuit = Circuit(q + 1)
             circuit.add(gates.X(q))
             circuit.add(gates.M(q))
 
@@ -256,9 +268,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
             # Defining the Ramsey circuit:
             circuit = Circuit(q + 1)
-            circuit.add(gates.RX(q, theta=np.pi/2))
+            circuit.add(gates.RX(q, theta=np.pi / 2))
             circuit.add(ql.Wait(q, t=0))
-            circuit.add(gates.RX(q, theta=np.pi/2))
+            circuit.add(gates.RX(q, theta=np.pi / 2))
             circuit.add(gates.M(q))
 
             # Looping over the wait time t to execute the Ramsey:
@@ -266,7 +278,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             wait_times = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
             for wait in wait_times:
-                circuit.set_parameters([np.pi/2, wait, np.pi/2])
+                circuit.set_parameters([np.pi / 2, wait, np.pi / 2])
                 result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
                 results.append(result.array)
 
@@ -286,9 +298,6 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         self.name = runcard.name
         """Name of the platform (``str``) """
 
-        self.gates_settings = runcard.gates_settings
-        """Gate settings and definitions (``dataclass``). These setting contain how to decompose gates into pulses."""
-
         self.instruments = Instruments(elements=self._load_instruments(instruments_dict=runcard.instruments))
         """All the instruments of the platform and their necessary settings (``dataclass``). Each individual instrument is contained in a list within the dataclass."""
 
@@ -297,29 +306,28 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         )
         """All the instrument controllers of the platform and their necessary settings (``dataclass``). Each individual instrument controller is contained in a list within the dataclass."""
 
-        self.chip = Chip(**asdict(runcard.chip))
-        """Chip and nodes settings of the platform (:class:`.Chip` dataclass). Each individual node is contained in a list within the :class:`.Chip` class."""
-
         self.buses = Buses(
-            elements=[
-                Bus(settings=asdict(bus), platform_instruments=self.instruments, chip=self.chip)
-                for bus in runcard.buses
-            ]
+            elements=[Bus(settings=asdict(bus), platform_instruments=self.instruments) for bus in runcard.buses]
         )
         """All the buses of the platform and their necessary settings (``dataclass``). Each individual bus is contained in a list within the dataclass."""
 
-        self.flux_to_bus_topology = runcard.flux_control_topology
+        self.digital_compilation_settings = runcard.digital
+        """Gate settings and definitions (``dataclass``). These setting contain how to decompose gates into pulses."""
+
+        self.analog_compilation_settings = runcard.analog
         """Flux to bus mapping for analog control"""
 
         self._connected_to_instruments: bool = False
         """Boolean indicating the connection status to the instruments. Defaults to False (not connected)."""
 
-        if any(isinstance(instrument, QbloxModule) for instrument in self.instruments.elements):
-            self.compiler = PulseQbloxCompiler(platform=self)  # TODO: integrate with qprogram compiler
-            """Compiler to translate given programs to instructions for a given awg vendor."""
-
         self._qpy_sequence_cache: dict[str, str] = {}
         """Dictionary for caching qpysequences."""
+
+        self.experiment_results_base_path: str = tempfile.gettempdir()
+        """Base path for saving experiment results."""
+
+        self.experiment_results_path_format: str = "{date}/{time}/{label}.h5"
+        """Format of the experiment results path."""
 
     def connect(self):
         """Connects to all the instruments and blocks the connection for other users.
@@ -390,99 +398,42 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             tuple[object, list | None]: Element class together with the index of the bus where the element is located.
         """
         # TODO: fix docstring, bus is not returned in most cases
-        if alias is not None:
-            if alias == "platform":
-                return self.gates_settings
-            regex_match = re.search(GATE_ALIAS_REGEX, alias.split("_")[0])
-            if regex_match is not None:
-                name = regex_match["gate"]
-                qubits_str = regex_match["qubits"]
-                qubits = ast.literal_eval(qubits_str)
-                if f"{name}({qubits_str})" in self.gates_settings.gate_names:
-                    return self.gates_settings.get_gate(name=name, qubits=qubits)
-            regex_match = re.search(FLUX_CONTROL_REGEX, alias)
-            if regex_match is not None:
-                element_type = regex_match.lastgroup
-                element_shorthands = {"qubit": "q", "coupler": "c"}
-                flux = regex_match["flux"]
-                # TODO: support commuting the name of the coupler eg. c1_0 = c0_1
-                return self._get_bus_by_alias(
-                    next(
-                        (
-                            element.bus
-                            for element in self.flux_to_bus_topology  # type: ignore[union-attr]
-                            if element.flux == f"{flux}_{element_shorthands[element_type]}{regex_match[element_type]}"  # type: ignore[index]
-                        ),
-                        None,
-                    )
-                )
+        regex_match = re.search(GATE_ALIAS_REGEX, alias.split("_")[0])
+        if regex_match is not None:
+            name = regex_match["gate"]
+            qubits_str = regex_match["qubits"]
+            qubits = ast.literal_eval(qubits_str)
+            if (
+                self.digital_compilation_settings is not None
+                and f"{name}({qubits_str})" in self.digital_compilation_settings.gate_names
+            ):
+                return self.digital_compilation_settings.get_gate(name=name, qubits=qubits)
+        regex_match = re.search(FLUX_CONTROL_REGEX, alias)
+        if regex_match is not None:
+            element_type = regex_match.lastgroup
+            element_shorthands = {"qubit": "q", "coupler": "c"}
+            flux = regex_match["flux"]
+            # TODO: support commuting the name of the coupler eg. c1_0 = c0_1
+            bus_alias = next(
+                (
+                    element.bus
+                    for element in self.analog_compilation_settings.flux_control_topology  # type: ignore[union-attr]
+                    if self.analog_compilation_settings
+                    and element.flux == f"{flux}_{element_shorthands[element_type]}{regex_match[element_type]}"  # type: ignore[index]
+                ),
+                None,
+            )
+            if bus_alias is not None:
+                return self.buses.get(alias=bus_alias)
 
         element = self.instruments.get_instrument(alias=alias)
         if element is None:
             element = self.instrument_controllers.get_instrument_controller(alias=alias)
         if element is None:
-            element = self._get_bus_by_alias(alias=alias)
-        if element is None:
-            element = self.chip.get_node_from_alias(alias=alias)
+            element = self.buses.get(alias=alias)
         return element
 
-    def get_ch_id_from_qubit_and_bus(self, alias: str, qubit_index: int) -> int | None:
-        """Finds a sequencer id for a given qubit given a bus alias. This utility is added so that one can get a qrm's
-        channel id easily in case the setup contains more than one qrm and / or there is not a one to one correspondance
-        between sequencer id in the instrument and the qubit id. This one to one correspondance used to be the norm for
-        5 qubit chips with non-RF QRM modules with 5 sequencers, each mapped to a qubit with the same numerical id as the
-        sequencer.
-        For QCMs it is also useful since the sequencer id is not always the same as the qubit id.
-
-        Args:
-            alias (str): bus alias
-            qubit_index (int): qubit index
-        Returns:
-            int: sequencer id
-        """
-        bus = next((bus for bus in self._get_bus_by_qubit_index(qubit_index=qubit_index) if bus.alias == alias), None)
-        if bus is None:
-            raise ValueError(f"Could not find bus with alias {alias} for qubit {qubit_index}")
-        if instrument := next(
-            (
-                instrument
-                for instrument in bus.system_control.instruments
-                if instrument.name in [InstrumentName.QBLOX_QRM, InstrumentName.QRMRF]
-            ),
-            None,
-        ):
-            return next(
-                sequencer.identifier for sequencer in instrument.awg_sequencers if sequencer.qubit == qubit_index
-            )
-        # if the alias is not in the QRMs, it should be in the QCM
-        instrument = next(
-            instrument
-            for instrument in bus.system_control.instruments
-            if instrument.name in [InstrumentName.QBLOX_QCM, InstrumentName.QCMRF]
-        )
-        return next(
-            (sequencer.identifier for sequencer in instrument.awg_sequencers if sequencer.chip_port_id == bus.port),
-            None,
-        )
-
-    def _get_bus_by_qubit_index(self, qubit_index: int) -> tuple[Bus, Bus, Bus]:
-        """Finds buses associated with the given qubit index.
-
-        Args:
-            qubit_index (int): Qubit index to get the buses from.
-
-        Returns:
-            tuple[:class:`Bus`, :class:`Bus`, :class:`Bus`]: Tuple of Bus objects containing the flux, control and readout buses of the given qubit.
-        """
-        flux_port = self.chip.get_port_from_qubit_idx(idx=qubit_index, line=Line.FLUX)
-        control_port = self.chip.get_port_from_qubit_idx(idx=qubit_index, line=Line.DRIVE)
-        readout_port = self.chip.get_port_from_qubit_idx(idx=qubit_index, line=Line.FEEDLINE_INPUT)
-        flux_bus = self.buses.get(port=flux_port)
-        control_bus = self.buses.get(port=control_port)
-        readout_bus = self.buses.get(port=readout_port)
-        return flux_bus, control_bus, readout_bus
-
-    def _get_bus_by_alias(self, alias: str | None = None):
+    def _get_bus_by_alias(self, alias: str) -> Bus | None:
         """Gets buses given their alias.
 
         Args:
@@ -492,9 +443,9 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             :class:`Bus`: Bus corresponding to the given alias. If none is found `None` is returned.
 
         """
-        return next((bus for bus in self.buses if bus.alias == alias), None)
+        return self.buses.get(alias=alias)
 
-    def get_parameter(self, parameter: Parameter, alias: str, channel_id: int | None = None):
+    def get_parameter(self, alias: str, parameter: Parameter, channel_id: ChannelID | None = None):
         """Get platform parameter.
 
         Args:
@@ -503,17 +454,21 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             channel_id (int, optional): ID of the channel we want to use to set the parameter. Defaults to None.
         """
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
-        if alias == "platform" or regex_match is not None:
-            return self.gates_settings.get_parameter(alias=alias, parameter=parameter, channel_id=channel_id)
+        if alias == "platform" or parameter == Parameter.DELAY or regex_match is not None:
+            if self.digital_compilation_settings is None:
+                raise ValueError("Trying to get parameter of gates settings, but no gates settings exist in platform.")
+            return self.digital_compilation_settings.get_parameter(
+                alias=alias, parameter=parameter, channel_id=channel_id
+            )
         element = self.get_element(alias=alias)
         return element.get_parameter(parameter=parameter, channel_id=channel_id)
 
     def set_parameter(
         self,
-        parameter: Parameter,
-        value: float | str | bool,
         alias: str,
-        channel_id: int | None = None,
+        parameter: Parameter,
+        value: ParameterValue,
+        channel_id: ChannelID | None = None,
     ):
         """Set a parameter for a platform element.
 
@@ -531,8 +486,12 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             channel_id (int, optional): ID of the channel you want to use to set the parameter. Defaults to None.
         """
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
-        if alias == "platform" or regex_match is not None:
-            self.gates_settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
+        if alias == "platform" or parameter == Parameter.DELAY or regex_match is not None:
+            if self.digital_compilation_settings is None:
+                raise ValueError("Trying to get parameter of gates settings, but no gates settings exist in platform.")
+            self.digital_compilation_settings.set_parameter(
+                alias=alias, parameter=parameter, value=value, channel_id=channel_id
+            )
             return
         element = self.get_element(alias=alias)
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
@@ -579,32 +538,21 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             dict: Dictionary of the serialized platform
         """
         name_dict = {RUNCARD.NAME: self.name}
-        gates_settings_dict = {RUNCARD.GATES_SETTINGS: self.gates_settings.to_dict()}
-        chip_dict = {RUNCARD.CHIP: self.chip.to_dict() if self.chip is not None else None}
-        buses_dict = {RUNCARD.BUSES: self.buses.to_dict() if self.buses is not None else None}
-        instrument_dict = {RUNCARD.INSTRUMENTS: self.instruments.to_dict() if self.instruments is not None else None}
-        instrument_controllers_dict = {
-            RUNCARD.INSTRUMENT_CONTROLLERS: (
-                self.instrument_controllers.to_dict() if self.instrument_controllers is not None else None
-            ),
+        instrument_dict = {RUNCARD.INSTRUMENTS: self.instruments.to_dict()}
+        instrument_controllers_dict = {RUNCARD.INSTRUMENT_CONTROLLERS: self.instrument_controllers.to_dict()}
+        buses_dict = {RUNCARD.BUSES: self.buses.to_dict()}
+        digital_dict = {
+            RUNCARD.DIGITAL: self.digital_compilation_settings.to_dict()
+            if self.digital_compilation_settings is not None
+            else None
         }
-        flux_control_topology_dict = {
-            RUNCARD.FLUX_CONTROL_TOPOLOGY: (
-                [flux_control.to_dict() for flux_control in self.flux_to_bus_topology]
-                if self.flux_to_bus_topology is not None
-                else None
-            )
+        analog_dict = {
+            RUNCARD.ANALOG: self.analog_compilation_settings.to_dict()
+            if self.analog_compilation_settings is not None
+            else None
         }
 
-        return (
-            name_dict
-            | gates_settings_dict
-            | chip_dict
-            | buses_dict
-            | instrument_dict
-            | instrument_controllers_dict
-            | flux_control_topology_dict
-        )
+        return name_dict | instrument_dict | instrument_controllers_dict | buses_dict | digital_dict | analog_dict
 
     def __str__(self) -> str:
         """String representation of the platform.
@@ -612,7 +560,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         Returns:
             str: Name of the platform.
         """
-        return str(YAML().dump(self.to_dict(), io.BytesIO()))
+        return str(YAML(typ="safe").dump(self.to_dict(), io.BytesIO()))
 
     @contextmanager
     def session(self):
@@ -632,31 +580,31 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             yield  # Experiment logic goes here
 
         except Exception as e:
-            print(f"An error occurred: {e}")
+            logger.error(f"An error occurred: {e}")
             raise  # Re-raise the exception for further handling
         finally:
             # Call the cleanup methods in reverse order
             for cleanup_method in reversed(cleanup_methods):
                 try:
                     cleanup_method()
-                except Exception as e:  # pylint: disable=broad-exception-caught
-                    print(f"Error during cleanup: {e}")
+                except Exception as e:  # noqa: BLE001
+                    logger.error(f"Error during cleanup: {e}")
                     cleanup_errors.append(e)
 
             # Raise any exception that might have happened during cleanup
             if cleanup_errors:
                 raise ExceptionGroup("Exceptions occurred during cleanup", cleanup_errors)
 
-    def execute_anneal_program(  # pylint: disable=too-many-locals
+    def execute_annealing_program(
         self,
         annealing_program_dict: list[dict[str, dict[str, float]]],
-        calibration: Calibration,
-        readout_bus: str,
-        measurement_name: str,
         transpiler: Callable,
-        num_averages: int,
+        calibration: Calibration,
+        num_averages: int = 1000,
         num_shots: int = 1,
-        weights: str | None = None,
+        preparation_block: str = "preparation",
+        measurement_block: str = "measurement",
+        bus_mapping: dict[str, str] | None = None,
         debug: bool = False,
     ) -> QProgramResults:
         """Given an annealing program execute it as a qprogram.
@@ -684,62 +632,233 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             debug (bool, optional): Whether to create debug information. For ``Qblox`` clusters all the program information is printed on screen.
                 For ``Quantum Machines`` clusters a ``.py`` file is created containing the ``QUA`` and config compilation. Defaults to False.
         """
-        if self.flux_to_bus_topology is None:
+        if self.analog_compilation_settings is None:
             raise ValueError("Flux to bus topology not given in the runcard")
-        if calibration.has_waveform(bus=readout_bus, name=measurement_name):
-            annealing_program = AnnealingProgram(
-                flux_to_bus_topology=self.flux_to_bus_topology, annealing_program=annealing_program_dict
-            )
-            annealing_program.transpile(transpiler)
-            crosstalk_matrix = (
-                calibration.crosstalk_matrix.inverse() if calibration.crosstalk_matrix is not None else None
-            )
-            annealing_waveforms = annealing_program.get_waveforms(
-                crosstalk_matrix=crosstalk_matrix, minimum_clock_time=self.gates_settings.minimum_clock_time
-            )
 
-            qp_annealing = QProgram()
-            shots_variable = qp_annealing.variable("num_shots", Domain.Scalar, int)
+        if not calibration.has_block(name=measurement_block):
+            raise ValueError("The calibrated measurement is not present in the calibration file.")
 
-            with qp_annealing.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
-                with qp_annealing.average(num_averages):
-                    for bus, waveform in annealing_waveforms.items():
-                        qp_annealing.play(bus=bus, waveform=waveform)
+        annealing_program = AnnealingProgram(
+            flux_to_bus_topology=self.analog_compilation_settings.flux_control_topology,
+            annealing_program=annealing_program_dict,
+        )
+        annealing_program.transpile(transpiler)
+        crosstalk_matrix = calibration.crosstalk_matrix.inverse() if calibration.crosstalk_matrix is not None else None
+        annealing_waveforms = annealing_program.get_waveforms(crosstalk_matrix=crosstalk_matrix, minimum_clock_time=4)
+
+        qp_annealing = QProgram()
+        shots_variable = qp_annealing.variable("num_shots", Domain.Scalar, int)
+
+        with qp_annealing.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
+            with qp_annealing.average(num_averages):
+                if calibration.has_block(name=preparation_block):
+                    qp_annealing.insert_block(calibration.get_block(name=preparation_block))
                     qp_annealing.sync()
-                    if weights and calibration.has_weights(bus=readout_bus, name=weights):
-                        qp_annealing.measure(bus=readout_bus, waveform=measurement_name, weights=weights)
-                    else:
-                        r_duration = calibration.get_waveform(bus=readout_bus, name=measurement_name).get_duration()
-                        weights_shape = Square(amplitude=1, duration=r_duration)
-                        qp_annealing.measure(
-                            bus=readout_bus, waveform=measurement_name, weights=IQPair(I=weights_shape, Q=weights_shape)
-                        )
+                for bus, waveform in annealing_waveforms.items():
+                    qp_annealing.play(bus=bus, waveform=waveform)
+                qp_annealing.sync()
+                qp_annealing.insert_block(calibration.get_block(name=measurement_block))
 
-            return self.execute_qprogram(qprogram=qp_annealing, calibration=calibration, debug=debug)
-        raise ValueError("The calibrated measurement is not present in the calibration file.")
+        return self.execute_qprogram(
+            qprogram=qp_annealing, calibration=calibration, bus_mapping=bus_mapping, debug=debug
+        )
 
-    def execute_experiment(self, experiment: Experiment, results_path: str) -> str:
-        """Executes the given quantum experiment and saves the results.
+    def execute_experiment(self, experiment: Experiment) -> str:
+        """Executes a quantum experiment on the platform.
 
-        This method initializes an `ExperimentExecutor` with the provided `experiment` and `results_path`,
-        and then executes the experiment. The results are streamed to the specified path in real-time.
+        This method manages the execution of a given `Experiment` on the platform by utilizing an `ExperimentExecutor`. It orchestrates the entire process, including traversing the experiment's structure, handling loops and operations, and streaming results in real-time to ensure data integrity. The results are saved in a timestamped directory within the specified `base_data_path`.
 
         Args:
-            experiment (Experiment): The quantum experiment to be executed.
-            results_path (str): The path where the experiment's results will be saved.
+            experiment (Experiment): The experiment object defining the sequence of operations and loops.
 
         Returns:
-            str: The path of the file that the experiment's results are stored.
+            str: The path to the file where the results are stored.
+
+        Example:
+            .. code-block:: python
+
+                from qililab import Experiment
+
+                # Initialize your experiment
+                experiment = Experiment(label="my_experiment")
+                # Add variables, loops, and operations to the experiment
+                # ...
+
+                # Define the base path for storing experiment results
+                platform.experiment_results_base_path = "/data/experiments"
+
+                # Execute the experiment on the platform
+                results_path = platform.execute_experiment(experiment=experiment)
+                print(f"Results saved to {results_path}")
+
+        Note:
+            - Ensure that the experiment is properly configured before execution.
+            - The results will be saved in a directory within the `experiment_results_base_path` according to the `platform.experiment_results_path_format`. The default format is `{date}/{time}/{label}.h5`.
+            - This method handles the setup and execution internally, providing a simplified interface for experiment execution.
         """
-        executor = ExperimentExecutor(platform=self, experiment=experiment, results_path=results_path)
+        executor = ExperimentExecutor(platform=self, experiment=experiment)
         return executor.execute()
 
-    def execute_qprogram(  # pylint: disable=too-many-locals
+    def compile_qprogram(
+        self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None, calibration: Calibration | None = None
+    ) -> QbloxCompilationOutput | QuantumMachinesCompilationOutput:
+        bus_aliases = {bus_mapping[bus] if bus_mapping and bus in bus_mapping else bus for bus in qprogram.buses}
+        buses = [self.buses.get(alias=bus_alias) for bus_alias in bus_aliases]
+        instruments = {
+            instrument
+            for bus in buses
+            for instrument in bus.instruments
+            if isinstance(instrument, (QbloxModule, QuantumMachinesCluster))
+        }
+        if all(isinstance(instrument, QbloxModule) for instrument in instruments):
+            # Retrieve the time of flight parameter from settings
+            times_of_flight = {
+                bus.alias: int(bus.get_parameter(Parameter.TIME_OF_FLIGHT)) for bus in buses if bus.has_adc()
+            }
+            delays = {bus.alias: int(bus.get_parameter(Parameter.DELAY)) for bus in buses}
+            # Determine what should be the initial value of the markers for each bus.
+            # This depends on the model of the associated Qblox module and the `output` setting of the associated sequencer.
+            markers = {}
+            for bus in buses:
+                for instrument, channel in zip(bus.instruments, bus.channels):
+                    if isinstance(instrument, QbloxModule):
+                        sequencer = instrument.get_sequencer(sequencer_id=channel)
+                        if instrument.name == InstrumentName.QCMRF:
+                            markers[bus.alias] = "".join(
+                                ["1" if i in [0, 1] and i in sequencer.outputs else "0" for i in range(4)]
+                            )[::-1]
+                        elif instrument.name == InstrumentName.QRMRF:
+                            markers[bus.alias] = "".join(
+                                ["1" if i in [1] and i - 1 in sequencer.outputs else "0" for i in range(4)]
+                            )[::-1]
+                        else:
+                            markers[bus.alias] = "0000"
+            qblox_compiler = QbloxCompiler()
+            return qblox_compiler.compile(
+                qprogram=qprogram,
+                bus_mapping=bus_mapping,
+                calibration=calibration,
+                times_of_flight=times_of_flight,
+                delays=delays,
+                markers=markers,
+            )
+        if all(isinstance(instrument, QuantumMachinesCluster) for instrument in instruments):
+            if len(instruments) != 1:
+                raise NotImplementedError(
+                    "Executing QProgram in more than one Quantum Machines Cluster is not supported."
+                )
+            thresholds: dict[str, float] = {
+                bus.alias: float(bus.get_parameter(parameter=Parameter.THRESHOLD) or 0.0)
+                for bus in buses
+                if bus.has_adc()
+            }
+            threshold_rotations: dict[str, float] = {
+                bus.alias: float(bus.get_parameter(parameter=Parameter.THRESHOLD_ROTATION) or 0.0)
+                for bus in buses
+                if bus.has_adc()
+            }
+
+            compiler = QuantumMachinesCompiler()
+            return compiler.compile(
+                qprogram=qprogram,
+                bus_mapping=bus_mapping,
+                thresholds=thresholds,
+                threshold_rotations=threshold_rotations,
+                calibration=calibration,
+            )
+        raise NotImplementedError("Compiling QProgram for a mixture of instruments is not supported.")
+
+    def execute_compilation_output(
+        self, output: QbloxCompilationOutput | QuantumMachinesCompilationOutput, debug: bool = False
+    ):
+        if isinstance(output, QbloxCompilationOutput):
+            return self._execute_qblox_compilation_output(output=output, debug=debug)
+
+        buses = [self.buses.get(alias=bus_alias) for bus_alias in output.qprogram.buses]
+        instruments = {instrument for bus in buses for instrument in bus.instruments if bus.has_adc()}
+        if len(instruments) != 1:
+            raise NotImplementedError("Executing QProgram in more than one Quantum Machines Cluster is not supported.")
+        cluster: QuantumMachinesCluster = cast(QuantumMachinesCluster, next(iter(instruments)))
+        return self._execute_quantum_machines_compilation_output(output=output, cluster=cluster, debug=debug)
+
+    def _execute_qblox_compilation_output(self, output: QbloxCompilationOutput, debug: bool = False):
+        sequences, acquisitions = output.sequences, output.acquisitions
+        buses = {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
+        for bus_alias, bus in buses.items():
+            if bus.distortions:
+                for distortion in bus.distortions:
+                    for waveform in sequences[bus_alias]._waveforms._waveforms:
+                        sequences[bus_alias]._waveforms.modify(waveform.name, distortion.apply(waveform.data))
+        if debug:
+            with open("debug_qblox_execution.txt", "w", encoding="utf-8") as sourceFile:
+                for bus_alias, sequence in sequences.items():
+                    print(f"Bus {bus_alias}:", file=sourceFile)
+                    print(str(sequence._program), file=sourceFile)
+                    print(file=sourceFile)
+
+        # Upload sequences
+        for bus_alias in sequences:
+            sequence_hash = hash_qpy_sequence(sequence=sequences[bus_alias])
+            if bus_alias not in self._qpy_sequence_cache or self._qpy_sequence_cache[bus_alias] != sequence_hash:
+                buses[bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
+                self._qpy_sequence_cache[bus_alias] = sequence_hash
+            # sync all relevant sequences
+            for instrument, channel in zip(buses[bus_alias].instruments, buses[bus.alias].channels):
+                if isinstance(instrument, QbloxModule):
+                    instrument.sync_sequencer(sequencer_id=int(channel))
+
+        # Execute sequences
+        for bus_alias in sequences:
+            buses[bus_alias].run()
+
+        # Acquire results
+        results = QProgramResults()
+        for bus_alias, bus in buses.items():
+            if bus.has_adc():
+                bus_results = bus.acquire_qprogram_results(acquisitions=acquisitions[bus_alias])
+                for bus_result in bus_results:
+                    results.append_result(bus=bus_alias, result=bus_result)
+
+        # Reset instrument settings
+        for bus_alias in sequences:
+            for instrument, channel in zip(buses[bus_alias].instruments, buses[bus.alias].channels):
+                if isinstance(instrument, QbloxModule):
+                    instrument.desync_sequencer(sequencer_id=int(channel))
+
+        return results
+
+    def _execute_quantum_machines_compilation_output(
+        self, output: QuantumMachinesCompilationOutput, cluster: QuantumMachinesCluster, debug: bool = False
+    ):
+        qua, configuration, measurements = output.qua, output.configuration, output.measurements
+        cluster.append_configuration(configuration=configuration)
+
+        if debug:
+            with open("debug_qm_execution.py", "w", encoding="utf-8") as sourceFile:
+                print(generate_qua_script(qua, cluster.config), file=sourceFile)
+
+        compiled_program_id = cluster.compile(program=qua)
+        job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
+
+        acquisitions = cluster.get_acquisitions(job=job)
+
+        results = QProgramResults()
+        # Doing manual classification of results as QM does not return thresholded values like Qblox
+        for measurement in measurements:
+            measurement_result = QuantumMachinesMeasurementResult(
+                measurement.bus,
+                *[acquisitions[handle] for handle in measurement.result_handles],
+            )
+            measurement_result.set_classification_threshold(measurement.threshold)
+            results.append_result(bus=measurement.bus, result=measurement_result)
+
+        return results
+
+    def execute_qprogram(
         self,
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,
         calibration: Calibration | None = None,
-        dataloss_tries: int = 3,
         debug: bool = False,
     ) -> QProgramResults:
         """Execute a :class:`.QProgram` using the platform instruments.
@@ -771,200 +890,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             QProgramResults: The results of the execution. ``QProgramResults.results()`` returns a dictionary (``dict[str, list[Result]]``) of measurement results.
             The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
         """
-        bus_aliases = {bus_mapping[bus] if bus_mapping and bus in bus_mapping else bus for bus in qprogram.buses}
-        buses = [self._get_bus_by_alias(alias=bus_alias) for bus_alias in bus_aliases]
-        instruments = {
-            instrument
-            for bus in buses
-            for instrument in bus.system_control.instruments
-            if isinstance(instrument, (QbloxModule, QuantumMachinesCluster))
-        }
-        if all(isinstance(instrument, QbloxModule) for instrument in instruments):
-            # Retrieve the time of flight parameter from settings
-            times_of_flight = {
-                bus.alias: int(bus.get_parameter(Parameter.TIME_OF_FLIGHT))
-                for bus in buses
-                if isinstance(bus.system_control, ReadoutSystemControl)
-            }
-            delays = {bus.alias: int(bus.get_parameter(Parameter.DELAY)) for bus in buses}
-            # Determine what should be the initial value of the markers for each bus.
-            # This depends on the model of the associated Qblox module and the `output` setting of the associated sequencer.
-            markers = {}
-            for bus in buses:
-                for instrument in bus.system_control.instruments:
-                    if isinstance(instrument, QbloxModule):
-                        sequencers = instrument.get_sequencers_from_chip_port_id(bus.port)
-                        if instrument.name == InstrumentName.QCMRF:
-                            markers[bus.alias] = "".join(
-                                ["1" if i in [0, 1] and i in sequencers[0].outputs else "0" for i in range(4)]
-                            )[::-1]
-                        elif instrument.name == InstrumentName.QRMRF:
-                            markers[bus.alias] = "".join(
-                                ["1" if i in [1] and i - 1 in sequencers[0].outputs else "0" for i in range(4)]
-                            )[::-1]
-                        else:
-                            markers[bus.alias] = "0000"
-            return self._execute_qprogram_with_qblox(
-                qprogram=qprogram,
-                times_of_flight=times_of_flight,
-                delays=delays,
-                markers=markers,
-                bus_mapping=bus_mapping,
-                calibration=calibration,
-                debug=debug,
-            )
-        if all(isinstance(instrument, QuantumMachinesCluster) for instrument in instruments):
-            if len(instruments) != 1:
-                raise NotImplementedError(
-                    "Executing QProgram in more than one Quantum Machines Cluster is not supported."
-                )
-            cluster: QuantumMachinesCluster = instruments.pop()  # type: ignore[assignment]
-            threshold_rotations = {
-                bus.alias: float(bus.get_parameter(parameter=Parameter.THRESHOLD_ROTATION))
-                for bus in buses
-                if isinstance(bus.system_control, ReadoutSystemControl)
-            }  # type: ignore
-            thresholds = {
-                bus.alias: float(bus.get_parameter(parameter=Parameter.THRESHOLD))
-                for bus in buses
-                if isinstance(bus.system_control, ReadoutSystemControl)
-            }  # type: ignore
-            return self._execute_qprogram_with_quantum_machines(
-                cluster=cluster,
-                qprogram=qprogram,
-                bus_mapping=bus_mapping,
-                threshold_rotations=threshold_rotations,  # type: ignore
-                thresholds=thresholds,  # type: ignore
-                calibration=calibration,
-                dataloss_tries=dataloss_tries,
-                debug=debug,
-            )
-        raise NotImplementedError("Executing QProgram in a mixture of instruments is not supported.")
-
-    def _execute_qprogram_with_qblox(  # pylint: disable=too-many-locals
-        self,
-        qprogram: QProgram,
-        times_of_flight: dict[str, int],
-        delays: dict[str, int],
-        markers: dict[str, str],
-        bus_mapping: dict[str, str] | None = None,
-        calibration: Calibration | None = None,
-        debug: bool = False,
-    ) -> QProgramResults:
-        # Compile QProgram
-        qblox_compiler = QbloxCompiler()
-        sequences, acquisitions = qblox_compiler.compile(
-            qprogram=qprogram,
-            bus_mapping=bus_mapping,
-            calibration=calibration,
-            times_of_flight=times_of_flight,
-            delays=delays,
-            markers=markers,
-        )
-        buses = {bus_alias: self._get_bus_by_alias(alias=bus_alias) for bus_alias in sequences}
-        for bus_alias, bus in buses.items():
-            if bus.distortions:
-                for distortion in bus.distortions:
-                    for waveform in sequences[bus_alias]._waveforms._waveforms:  # pylint: disable=protected-access
-                        sequences[bus_alias]._waveforms.modify(  # pylint: disable=protected-access
-                            waveform.name, distortion.apply(waveform.data)
-                        )
-        if debug:
-            with open("debug_qblox_execution.txt", "w", encoding="utf-8") as sourceFile:
-                for bus_alias in sequences:
-                    print(f"Bus {bus_alias}:", file=sourceFile)
-                    print(str(sequences[bus_alias]._program), file=sourceFile)  # pylint: disable=protected-access
-                    print(file=sourceFile)
-
-        # Upload sequences
-        for bus_alias in sequences:
-            sequence_hash = hash_qpy_sequence(sequence=sequences[bus_alias])
-            if bus_alias not in self._qpy_sequence_cache or self._qpy_sequence_cache[bus_alias] != sequence_hash:
-                buses[bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
-                self._qpy_sequence_cache[bus_alias] = sequence_hash
-            # sync all relevant sequences
-            for instrument in buses[bus_alias].system_control.instruments:
-                if isinstance(instrument, QbloxModule):
-                    instrument.sync_by_port(buses[bus_alias].port)
-
-        # Execute sequences
-        for bus_alias in sequences:
-            buses[bus_alias].run()
-
-        # Acquire results
-        results = QProgramResults()
-        for bus_alias in buses:
-            if isinstance(buses[bus_alias].system_control, ReadoutSystemControl):
-                bus_results = buses[bus_alias].acquire_qprogram_results(acquisitions=acquisitions[bus_alias])
-                for bus_result in bus_results:
-                    results.append_result(bus=bus_alias, result=bus_result)
-
-        # Reset instrument settings
-        for bus_alias in sequences:
-            for instrument in buses[bus_alias].system_control.instruments:
-                if isinstance(instrument, QbloxModule):
-                    instrument.desync_by_port(buses[bus_alias].port)
-
-        return results
-
-    def _execute_qprogram_with_quantum_machines(  # pylint: disable=too-many-locals,dangerous-default-value
-        self,
-        cluster: QuantumMachinesCluster,
-        qprogram: QProgram,
-        bus_mapping: dict[str, str] | None = None,
-        threshold_rotations: dict[str, float | None] = {},
-        thresholds: dict[str, float | None] = {},
-        calibration: Calibration | None = None,
-        dataloss_tries: int = 3,
-        debug: bool = False,
-    ) -> QProgramResults:
-        compiler = QuantumMachinesCompiler()
-        qua_program, configuration, measurements = compiler.compile(
-            qprogram=qprogram, bus_mapping=bus_mapping, threshold_rotations=threshold_rotations, calibration=calibration
-        )
-
-        start_time = datetime.datetime.now()
-        for iteration in np.arange(dataloss_tries):  # TODO: This is a temporal fix as QM fixes the dataloss error
-            try:
-                cluster.append_configuration(configuration=configuration)
-
-                if debug:
-                    with open("debug_qm_execution.py", "w", encoding="utf-8") as sourceFile:
-                        print(generate_qua_script(qua_program, cluster.config), file=sourceFile)
-
-                compiled_program_id = cluster.compile(program=qua_program)
-                job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
-
-                acquisitions = cluster.get_acquisitions(job=job)
-
-                results = QProgramResults()
-                # Doing manual classification of results as QM does not return thresholded values like Qblox
-                for measurement in measurements:
-                    measurement_result = QuantumMachinesMeasurementResult(
-                        *[acquisitions[handle] for handle in measurement.result_handles],
-                    )
-                    measurement_result.set_classification_threshold(thresholds.get(measurement.bus, None))
-                    results.append_result(bus=measurement.bus, result=measurement_result)
-
-                return results
-
-            except StreamProcessingDataLossError as dataloss:
-                time_interval = datetime.datetime.now() - start_time
-                warnings.warn(
-                    f"Warning: {dataloss} raised, retrying experiment ({iteration+1}/{dataloss_tries} available tries) after {time_interval.seconds} s"
-                )
-                warnings.warn(traceback.format_exc())
-                if iteration + 1 != dataloss_tries:
-                    time.sleep(1 * dataloss_tries)
-                    start_time = datetime.datetime.now()
-                    continue
-                cluster.turn_off()
-                raise dataloss
-            except Exception as e:
-                cluster.turn_off()
-                raise e
-
-        return results
+        output = self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
+        return self.execute_compilation_output(output=output, debug=debug)
 
     def execute(
         self,
@@ -1002,18 +929,16 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
 
         # Upload pulse schedule
         for bus_alias in programs:
-            bus = self._get_bus_by_alias(alias=bus_alias)
+            bus = self.buses.get(alias=bus_alias)
             bus.upload()
 
         # Execute pulse schedule
         for bus_alias in programs:
-            bus = self._get_bus_by_alias(alias=bus_alias)
+            bus = self.buses.get(alias=bus_alias)
             bus.run()
 
         # Acquire results
-        readout_buses = [
-            bus for bus in self.buses if isinstance(bus.system_control, ReadoutSystemControl) and bus.alias in programs
-        ]
+        readout_buses = [bus for bus in self.buses if bus.alias in programs and bus.has_adc()]
         results: list[Result] = []
         for bus in readout_buses:
             result = bus.acquire_result()
@@ -1030,8 +955,8 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         if len(results) > 1:
             results = [
                 QbloxResult(
-                    integration_lengths=[length for result in results for length in result.integration_lengths],  # type: ignore [attr-defined]
-                    qblox_raw_results=[raw_result for result in results for raw_result in result.qblox_raw_results],  # type: ignore [attr-defined]
+                    integration_lengths=[length for result in results for length in result.integration_lengths],  # type: ignore[attr-defined]
+                    qblox_raw_results=[raw_result for result in results for raw_result in result.qblox_raw_results],  # type: ignore[attr-defined]
                 )
             ]
         if not results:
@@ -1068,7 +993,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         for i, qubit in enumerate(qubit for gate in circuit.queue for qubit in gate.qubits if isinstance(gate, M)):
             if qubit not in qubits_m:
                 qubits_m[qubit] = 0
-            order[(qubit, qubits_m[qubit])] = i
+            order[qubit, qubits_m[qubit]] = i
             qubits_m[qubit] += 1
         if len(order) != len(result.qblox_raw_results):
             raise ValueError(
@@ -1080,7 +1005,7 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
         for qblox_result in result.qblox_raw_results:
             measurement = qblox_result["measurement"]
             qubit = qblox_result["qubit"]
-            results[order[(qubit, measurement)]] = qblox_result
+            results[order[qubit, measurement]] = qblox_result
 
         return QbloxResult(integration_lengths=result.integration_lengths, qblox_raw_results=results)
 
@@ -1107,9 +1032,10 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             ValueError: raises value error if the circuit execution time is longer than ``repetition_duration`` for some qubit.
         """
         # We have a circular import because Platform uses CircuitToPulses and vice versa
-
+        if self.digital_compilation_settings is None:
+            raise ValueError("Cannot compile Qibo Circuit or Pulse Schedule without gates settings.")
         if isinstance(program, Circuit):
-            transpiler = CircuitTranspiler(platform=self)
+            transpiler = CircuitTranspiler(digital_compilation_settings=self.digital_compilation_settings)
             pulse_schedule = transpiler.transpile_circuit(circuits=[program])[0]
         elif isinstance(program, PulseSchedule):
             pulse_schedule = program
@@ -1117,6 +1043,18 @@ class Platform:  # pylint: disable = too-many-public-methods, too-many-instance-
             raise ValueError(
                 f"Program to execute can only be either a single circuit or a pulse schedule. Got program of type {type(program)} instead"
             )
-        return self.compiler.compile(
+        module_and_sequencer_per_bus: dict[str, ModuleSequencer] = {
+            element.bus_alias: ModuleSequencer(module=instrument, sequencer=instrument.get_sequencer(channel))
+            for element in pulse_schedule.elements
+            for instrument, channel in zip(
+                self.buses.get(alias=element.bus_alias).instruments, self.buses.get(alias=element.bus_alias).channels
+            )
+            if isinstance(instrument, QbloxModule)
+        }
+        compiler = PulseQbloxCompiler(
+            buses=self.digital_compilation_settings.buses,
+            module_and_sequencer_per_bus=module_and_sequencer_per_bus,
+        )
+        return compiler.compile(
             pulse_schedule=pulse_schedule, num_avg=num_avg, repetition_duration=repetition_duration, num_bins=num_bins
         )

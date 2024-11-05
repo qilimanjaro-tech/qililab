@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Rectangular pulse shape."""
+
 from copy import deepcopy
 from dataclasses import dataclass
 
@@ -85,4 +86,4 @@ class FlatTop(PulseShape):
         Returns:
             dict: Dictionary representation of the pulse shape including its name.
         """
-        return {"name": self.name.value, "gaussian": self.gaussian}
+        return {"name": self.name.value, "gaussian": self.gaussian}  # type: ignore[operator]

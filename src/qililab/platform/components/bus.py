@@ -13,20 +13,21 @@
 # limitations under the License.
 
 """Bus class."""
-from dataclasses import InitVar, dataclass
+
+import contextlib
+from dataclasses import InitVar, dataclass, field
 
 from qpysequence import Sequence as QpySequence
 
-from qililab.chip import Chip, Coil, Coupler, Qubit, Resonator
-from qililab.constants import BUS, NODE, RUNCARD
-from qililab.instruments import Instruments, ParameterNotFound
-from qililab.pulse import PulseDistortion
+from qililab.constants import RUNCARD
+from qililab.instruments import Instrument, Instruments, ParameterNotFound
+from qililab.instruments.qblox import QbloxQCM, QbloxQRM
+from qililab.pulse.pulse_distortion.pulse_distortion import PulseDistortion
 from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.result import Result
+from qililab.result.qprogram import MeasurementResult
 from qililab.settings import Settings
-from qililab.system_control import ReadoutSystemControl, SystemControl
-from qililab.typings import Parameter
-from qililab.utils import Factory
+from qililab.typings import ChannelID, Parameter, ParameterValue
 
 
 class Bus:
@@ -37,12 +38,8 @@ class Bus:
     which is connected to one or multiple qubits.
 
     Args:
-        targets (list[Qubit | Resonator | Coupler | Coil]): Port target (or targets in case of multiple resonators).
         settings (BusSettings): Bus settings.
     """
-
-    targets: list[Qubit | Resonator | Coupler | Coil]
-    """Port target (or targets in case of multiple resonators)."""
 
     @dataclass
     class BusSettings(Settings):
@@ -57,32 +54,38 @@ class Bus:
         """
 
         alias: str
-        system_control: SystemControl
-        port: str
+        instruments: list[Instrument]
+        channels: list[ChannelID | None]
         platform_instruments: InitVar[Instruments]
-        distortions: list[PulseDistortion]
-        delay: int
+        delay: int = 0
+        distortions: list[PulseDistortion] = field(default_factory=list)
 
-        def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
-            if isinstance(self.system_control, dict):
-                system_control_class = Factory.get(name=self.system_control.pop(RUNCARD.NAME))
-                self.system_control = system_control_class(
-                    settings=self.system_control, platform_instruments=platform_instruments
-                )
-            super().__post_init__()
-
+        def __post_init__(self, platform_instruments: Instruments):  # type: ignore
+            instruments = []
+            for inst_alias in self.instruments:
+                inst_class = platform_instruments.get_instrument(alias=inst_alias)  # type: ignore
+                if inst_class is None:
+                    raise NameError(
+                        f"The instrument with alias {inst_alias} could not be found within the instruments of the "
+                        "platform. The available instrument aliases are: "
+                        f"{[inst.alias for inst in platform_instruments.elements]}."
+                    )
+                instruments.append(inst_class)
+            self.instruments = instruments
             self.distortions = [
-                PulseDistortion.from_dict(distortion) for distortion in self.distortions if isinstance(distortion, dict)  # type: ignore[arg-type]
+                PulseDistortion.from_dict(distortion)  # type: ignore[arg-type]
+                for distortion in self.distortions
+                if isinstance(distortion, dict)
             ]
+            super().__post_init__()
 
     settings: BusSettings
     """Bus settings. Containing the alias of the bus, the system control used to control and readout its qubits, the alias
     of the port where it's connected, the list of the distortions to apply, and its delay.
     """
 
-    def __init__(self, settings: dict, platform_instruments: Instruments, chip: Chip):
-        self.settings = self.BusSettings(**settings, platform_instruments=platform_instruments)  # type: ignore
-        self.targets = chip.get_port_nodes(alias=self.port)
+    def __init__(self, settings: dict, platform_instruments: Instruments):
+        self.settings = self.BusSettings(**settings, platform_instruments=platform_instruments)
 
     @property
     def alias(self):
@@ -94,31 +97,14 @@ class Bus:
         return self.settings.alias
 
     @property
-    def system_control(self):
-        """Bus 'system_control' property.
-
-        Returns:
-            Resonator: settings.system_control.
-        """
-        return self.settings.system_control
+    def instruments(self) -> list[Instrument]:
+        """Instruments controlled by this system control."""
+        return self.settings.instruments
 
     @property
-    def port(self):
-        """Bus 'resonator' property.
-
-        Returns:
-            Resonator: settings.resonator.
-        """
-        return self.settings.port
-
-    @property
-    def distortions(self):
-        """Bus 'distortions' property.
-
-        Returns:
-            list[PulseDistortion]: settings.distortions.
-        """
-        return self.settings.distortions
+    def channels(self) -> list[ChannelID | None]:
+        """Instruments controlled by this system control."""
+        return self.settings.channels
 
     @property
     def delay(self):
@@ -129,42 +115,45 @@ class Bus:
         """
         return self.settings.delay
 
+    @property
+    def distortions(self):
+        """Bus 'distortions' property.
+
+        Returns:
+            list[PulseDistortion]: settings.distortions.
+        """
+        return self.settings.distortions
+
     def __str__(self):
         """String representation of a bus. Prints a drawing of the bus elements."""
-        return f"Bus {self.alias}:  ----{self.system_control}---" + "".join(
-            f"--|{target}|----" for target in self.targets
-        )
+        instruments = "--".join(f"|{instrument}|" for instrument in self.instruments)
+        return f"Bus {self.alias}:  ----{instruments}----"
 
     def __eq__(self, other: object) -> bool:
         """compare two Bus objects"""
         return str(self) == str(other) if isinstance(other, Bus) else False
 
-    @property
-    def target_freqs(self):
-        """Bus 'target_freqs' property.
-
-        Returns:
-            list[float]: Frequencies of the nodes that have frequencies
-        """
-        return list(
-            filter(None, [target.frequency if hasattr(target, NODE.FREQUENCY) else None for target in self.targets])
-        )
-
     def __iter__(self):
         """Redirect __iter__ magic method."""
-        return iter(self.system_control)
+        return iter(zip(self.instruments, self.channels))
 
     def to_dict(self):
         """Return a dict representation of the Bus class."""
         return {
             RUNCARD.ALIAS: self.alias,
-            RUNCARD.SYSTEM_CONTROL: self.system_control.to_dict(),
-            BUS.PORT: self.port,
-            RUNCARD.DISTORTIONS: [distortion.to_dict() for distortion in self.distortions],
-            RUNCARD.DELAY: self.delay,
+            RUNCARD.INSTRUMENTS: [instrument.alias for instrument in self.instruments],
+            "channels": self.settings.channels,
         }
 
-    def set_parameter(self, parameter: Parameter, value: int | float | str | bool, channel_id: int | None = None):
+    def has_awg(self) -> bool:
+        """Return true if bus has AWG capabilities."""
+        return any(instrument.is_awg() for instrument in self.instruments)
+
+    def has_adc(self) -> bool:
+        """Return true if bus has ADC capabilities."""
+        return any(instrument.is_adc() for instrument in self.instruments)
+
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
         """Set a parameter to the bus.
 
         Args:
@@ -172,19 +161,16 @@ class Bus:
             value (int | float | str | bool): value to update
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
-        if parameter == Parameter.DELAY:
-            self.settings.delay = int(value)
-        else:
-            try:
-                self.system_control.set_parameter(
-                    parameter=parameter, value=value, channel_id=channel_id, port_id=self.port, bus_alias=self.alias
-                )
-            except ParameterNotFound as error:
-                raise ParameterNotFound(
-                    f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
-                ) from error
+        for instrument, instrument_channel in zip(self.instruments, self.channels):
+            with contextlib.suppress(ParameterNotFound):
+                if channel_id is not None and channel_id == instrument_channel:
+                    instrument.set_parameter(parameter, value, channel_id)
+                    return
+                instrument.set_parameter(parameter, value, instrument_channel)
+                return
+        raise Exception(f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}")
 
-    def get_parameter(self, parameter: Parameter, channel_id: int | None = None):
+    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
         """Gets a parameter of the bus.
 
         Args:
@@ -194,26 +180,37 @@ class Bus:
         """
         if parameter == Parameter.DELAY:
             return self.settings.delay
-        try:
-            return self.system_control.get_parameter(
-                parameter=parameter, channel_id=channel_id, port_id=self.port, bus_alias=self.alias
-            )
-        except ParameterNotFound as error:
-            raise ParameterNotFound(
-                f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
-            ) from error
+        for instrument, instrument_channel in zip(self.instruments, self.channels):
+            with contextlib.suppress(ParameterNotFound):
+                if channel_id is not None and channel_id == instrument_channel:
+                    return instrument.get_parameter(parameter, channel_id)
+                return instrument.get_parameter(parameter, instrument_channel)
+        raise Exception(f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}")
 
     def upload_qpysequence(self, qpysequence: QpySequence):
         """Uploads the qpysequence into the instrument."""
-        self.system_control.upload_qpysequence(qpysequence=qpysequence, port=self.port)
+        from qililab.instruments.qblox.qblox_module import QbloxModule  # pylint: disable=import-outside-toplevel
+
+        for instrument, instrument_channel in zip(self.instruments, self.channels):
+            if isinstance(instrument, QbloxModule):
+                instrument.upload_qpysequence(qpysequence=qpysequence, channel_id=int(instrument_channel))  # type: ignore[arg-type]
+                return
+
+        raise AttributeError(f"Bus {self.alias} doesn't have any QbloxModule to upload a qpysequence.")
 
     def upload(self):
         """Uploads any previously compiled program into the instrument."""
-        self.system_control.upload(port=self.port)
+        for instrument, instrument_channel in zip(self.instruments, self.channels):
+            if isinstance(instrument, (QbloxQCM, QbloxQRM)):
+                instrument.upload(channel_id=instrument_channel)
+                return
 
     def run(self) -> None:
         """Runs any previously uploaded program into the instrument."""
-        self.system_control.run(port=self.port)
+        for instrument, instrument_channel in zip(self.instruments, self.channels):
+            if isinstance(instrument, (QbloxQCM, QbloxQRM)):
+                instrument.run(channel_id=instrument_channel)  # type: ignore
+                return
 
     def acquire_result(self) -> Result:
         """Read the result from the vector network analyzer instrument
@@ -221,22 +218,40 @@ class Bus:
         Returns:
             Result: Acquired result
         """
-        if isinstance(self.system_control, ReadoutSystemControl):
-            return self.system_control.acquire_result()
+        # TODO: Support acquisition from multiple instruments
+        results: list[Result] = []
+        for instrument in self.instruments:
+            if isinstance(instrument, QbloxQRM):
+                result = instrument.acquire_result()
+                if result is not None:
+                    results.append(result)
 
-        raise AttributeError(
-            f"The bus {self.alias} cannot acquire results because it doesn't have a readout system control."
-        )
+        if len(results) > 1:
+            raise ValueError(
+                f"Acquisition from multiple instruments is not supported. Obtained a total of {len(results)} results."
+            )
 
-    def acquire_qprogram_results(self, acquisitions: dict[str, AcquisitionData]) -> list[Result]:
+        if len(results) == 0:
+            raise AttributeError(f"The bus {self.alias} cannot acquire results.")
+
+        return results[0]
+
+    def acquire_qprogram_results(self, acquisitions: dict[str, AcquisitionData]) -> list[MeasurementResult]:
         """Read the result from the instruments
 
         Returns:
             list[Result]: Acquired results in chronological order
         """
-        if isinstance(self.system_control, ReadoutSystemControl):
-            return self.system_control.acquire_qprogram_results(acquisitions=acquisitions, port=self.port)
+        # TODO: Support acquisition from multiple instruments
+        total_results: list[list[MeasurementResult]] = []
+        for instrument in self.instruments:
+            if isinstance(instrument, QbloxQRM):
+                instrument_results = instrument.acquire_qprogram_results(acquisitions=acquisitions)
+                total_results.append(instrument_results)
 
-        raise AttributeError(
-            f"The bus {self.alias} cannot acquire results because it doesn't have a readout system control."
-        )
+        if len(total_results) == 0:
+            raise AttributeError(
+                f"The bus {self.alias} cannot acquire results because it doesn't have a readout system control."
+            )
+
+        return total_results[0]

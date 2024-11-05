@@ -19,7 +19,6 @@ def fixture_qdac() -> QDevilQDac2:
             "ramp_rate": [0.01, 0.01],
             "dacs": [10, 11],
             "low_pass_filter": ["dc", "dc"],
-            "firmware": "0.7.0",
         }
     )
     qdac.device = MagicMock()
@@ -86,7 +85,7 @@ class TestQDevilQDac2:
             (Parameter.LOW_PASS_FILTER, "low"),
         ],
     )
-    def test_setup_method(self, qdac: QDevilQDac2, parameter: Parameter, value):
+    def test_set_parameter_method(self, qdac: QDevilQDac2, parameter: Parameter, value):
         """Test setup method"""
         for index, channel_id in enumerate(qdac.dacs):
             qdac.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
@@ -112,18 +111,18 @@ class TestQDevilQDac2:
             assert qdac.get_parameter(parameter=parameter, channel_id=channel_id) == value
 
     @pytest.mark.parametrize("parameter, value", [(Parameter.MAX_CURRENT, 0.001), (Parameter.GAIN, 0.0005)])
-    def test_setup_method_raises_exception(self, qdac: QDevilQDac2, parameter: Parameter, value):
+    def test_set_parameter_method_raises_exception(self, qdac: QDevilQDac2, parameter: Parameter, value):
         """Test the setup method raises an exception with wrong parameters"""
         for channel_id in qdac.dacs:
             with pytest.raises(ParameterNotFound):
-                qdac.setup(parameter, value, channel_id)
+                qdac.set_parameter(parameter, value, channel_id)
 
     @pytest.mark.parametrize("parameter, value", [(Parameter.MAX_CURRENT, 0.001), (Parameter.GAIN, 0.0005)])
-    def test_get_method_raises_exception(self, qdac: QDevilQDac2, parameter: Parameter, value):
+    def test_get_parameter_method_raises_exception(self, qdac: QDevilQDac2, parameter: Parameter, value):
         """Test the get method raises an exception with wrong parameters"""
         for channel_id in qdac.dacs:
             with pytest.raises(ParameterNotFound):
-                qdac.get(parameter, channel_id)
+                qdac.get_parameter(parameter, channel_id)
 
     @pytest.mark.parametrize("channel_id", [0, 25, -1, None])
     def test_validate_channel_method_raises_exception(self, qdac: QDevilQDac2, channel_id):

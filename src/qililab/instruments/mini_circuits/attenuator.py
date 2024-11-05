@@ -13,12 +13,13 @@
 # limitations under the License.
 
 """Attenuator class."""
+
 from dataclasses import dataclass
 
+from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
-from qililab.typings import InstrumentName
-from qililab.typings.enums import Parameter
+from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 from qililab.typings.instruments.mini_circuits import MiniCircuitsDriver
 
 
@@ -43,30 +44,36 @@ class Attenuator(Instrument):
     settings: StepAttenuatorSettings
     device: MiniCircuitsDriver
 
-    @Instrument.CheckParameterValueFloatOrInt
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):  # type: ignore
+    @log_set_parameter
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
         """Set instrument settings."""
         if parameter == Parameter.ATTENUATION:
             self.settings.attenuation = float(value)
             if self.is_device_active():
                 self.device.setup(attenuation=self.attenuation)
             return
-        raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
+        raise ParameterNotFound(self, parameter)
 
-    @Instrument.CheckDeviceInitialized
+    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
+        """Set instrument settings."""
+        if parameter == Parameter.ATTENUATION:
+            return self.attenuation
+        raise ParameterNotFound(self, parameter)
+
+    @check_device_initialized
     def initial_setup(self):
         """performs an initial setup."""
         self.device.setup(attenuation=self.attenuation)
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def turn_off(self):
         """Turn off an instrument."""
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def turn_on(self):
         """Turn on an instrument."""
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def reset(self):
         """Reset instrument."""
 

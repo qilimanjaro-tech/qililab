@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Bin Data """
+"""Bin Data"""
+
 from dataclasses import dataclass
 
 import numpy as np
@@ -21,7 +22,7 @@ from qililab.utils.nested_data_class import nested_dataclass
 
 
 @nested_dataclass
-class BinsData:  # pylint: disable=too-few-public-methods
+class BinsData:
     """Holds the integrated and thresholded values of all bins in a sequencer."""
 
     @dataclass

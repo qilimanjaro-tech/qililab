@@ -13,16 +13,26 @@
 # limitations under the License.
 
 """Qblox Cluster Controller class"""
-from dataclasses import dataclass
 
-from qililab.instrument_controllers.qblox.qblox_controller import QbloxController
+from dataclasses import dataclass
+from typing import Sequence
+
+from qililab.instrument_controllers.instrument_controller import InstrumentController, InstrumentControllerSettings
 from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
-from qililab.typings.enums import ConnectionName, InstrumentControllerName
+from qililab.instruments.qblox.qblox_qcm import QbloxQCM
+from qililab.instruments.qblox.qblox_qrm import QbloxQRM
+from qililab.typings.enums import (
+    ConnectionName,
+    InstrumentControllerName,
+    InstrumentTypeName,
+    Parameter,
+    ReferenceClock,
+)
 from qililab.typings.instruments.cluster import Cluster
 
 
 @InstrumentControllerFactory.register
-class QbloxClusterController(QbloxController):
+class QbloxClusterController(InstrumentController):
     """Qblox Cluster Controller class.
 
     Args:
@@ -34,10 +44,13 @@ class QbloxClusterController(QbloxController):
     name = InstrumentControllerName.QBLOX_CLUSTER
     number_available_modules = 20
     device: Cluster
+    modules: Sequence[QbloxQCM | QbloxQRM]
 
     @dataclass
-    class QbloxClusterControllerSettings(QbloxController.QbloxControllerSettings):
+    class QbloxClusterControllerSettings(InstrumentControllerSettings):
         """Contains the settings of a specific Qblox Cluster Controller."""
+
+        reference_clock: ReferenceClock
 
         def __post_init__(self):
             super().__post_init__()
@@ -45,25 +58,49 @@ class QbloxClusterController(QbloxController):
 
     settings: QbloxClusterControllerSettings
 
-    def _initialize_device(self):
-        """Initialize device controller."""
-        self.device = Cluster(name=f"{self.name.value}_{self.alias}", identifier=self.address)
+    @InstrumentController.CheckConnected
+    def initial_setup(self):
+        """Initial setup of the Qblox Cluster Controller."""
+        self._set_reference_source()
+        super().initial_setup()
 
-    def _set_device_to_all_modules(self):
-        """Sets the initialized device to all attached modules,
-        taking it from the Qblox Cluster device modules
-        """
-        for module, slot_id in zip(self.modules, self.connected_modules_slot_ids):
-            module.device = self.device.modules[slot_id - 1]  # slot_id represents the number displayed in the cluster
-
-    @QbloxController.CheckConnected
+    @InstrumentController.CheckConnected
     def reset(self):
-        """Reset instrument."""
+        """Reset the device and clear cache of all modules."""
         self.device.reset()
         for module in self.modules:
             module.clear_cache()
 
-    @QbloxController.CheckConnected
+    @InstrumentController.CheckConnected
     def _set_reference_source(self):
-        """Set reference source. Options are 'internal' or 'external'"""
+        """Set the reference source ('internal' or 'external')."""
         self.device.reference_source(self.reference_clock.value)
+
+    @property
+    def reference_clock(self):
+        """Get the reference clock setting."""
+        return self.settings.reference_clock
+
+    def _check_supported_modules(self):
+        """Check if all loaded instrument modules are supported."""
+        for module in self.modules:
+            if not isinstance(module, (QbloxQCM, QbloxQRM)):
+                raise ValueError(
+                    f"Instrument {type(module)} not supported. "
+                    f"The only supported instruments are {InstrumentTypeName.QBLOX_QCM} and {InstrumentTypeName.QBLOX_QRM}."
+                )
+
+    def _initialize_device(self):
+        """Initialize the cluster device."""
+        self.device = Cluster(name=f"{self.name.value}_{self.alias}", identifier=self.address)
+
+    def _set_device_to_all_modules(self):
+        """Set the initialized device to all attached modules."""
+        for module, slot_id in zip(self.modules, self.connected_modules_slot_ids):
+            module.device = self.device.modules[slot_id - 1]  # slot_id represents the number displayed in the cluster
+
+    def to_dict(self):
+        """Return a dictionary representation of the Qblox controller class."""
+        return super().to_dict() | {
+            Parameter.REFERENCE_CLOCK.value: self.reference_clock.value,
+        }

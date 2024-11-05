@@ -12,18 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
 
 from qililab.qprogram.operations.operation import Operation
 from qililab.yaml import yaml
 
 
 @yaml.register_class
-@dataclass(frozen=True)
-class SetMarkers(Operation):  # pylint: disable=missing-class-docstring
-    bus: str
-    mask: str
-
-    def __post_init__(self):
-        if len(self.mask) != 4 or not set(self.mask).issubset({"0", "1"}):
+class SetMarkers(Operation):
+    def __init__(self, bus: str, mask: str) -> None:
+        if len(mask) != 4 or not set(mask).issubset({"0", "1"}):
             raise AttributeError("Marker should be a 4-bit binary string.")
+
+        super().__init__()
+        self.bus: str = bus
+        self.mask: str = mask

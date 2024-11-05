@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """QuantumMachinesResult class."""
+
 from warnings import warn
 
 import numpy as np
@@ -37,21 +38,22 @@ class QuantumMachinesMeasurementResult(MeasurementResult):
 
     def __init__(
         self,
+        bus: str,
         I: np.ndarray,
         Q: np.ndarray,
         adc1: np.ndarray | None = None,
         adc2: np.ndarray | None = None,
     ):
+        super().__init__(bus=bus)
         self.I = I
         self.Q = Q
         self.adc1 = adc1
         self.adc2 = adc2
         self._classification_threshold = None
-        super().__init__()
 
-    def set_classification_threshold(self, classification_th):
+    def set_classification_threshold(self, classification_threshold):
         """Sets the `_classification_threshold` of the class."""
-        self._classification_threshold = classification_th
+        self._classification_threshold = classification_threshold
 
     @property
     def array(self) -> np.ndarray:
@@ -74,7 +76,7 @@ class QuantumMachinesMeasurementResult(MeasurementResult):
             warn("Classification threshold is not specified, returning a `np.zeros` array.", stacklevel=2)
 
         return (
-            np.where(self.I >= self._classification_threshold, 1.0, 0.0)
+            np.where(self._classification_threshold <= self.I, 1.0, 0.0)
             if self._classification_threshold is not None
             else np.zeros(self.I.shape)
         )

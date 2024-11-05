@@ -12,5 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" QDevil Controllers """
+"""QDevil Controllers"""
+
 from .qdevil_qdac2_controller import QDevilQDac2Controller
+
+__all__ = ["QDevilQDac2Controller"]
