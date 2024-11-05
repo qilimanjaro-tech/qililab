@@ -372,7 +372,7 @@ class CalibrationController:
         # If check_value and fidelities are present, all fidelities must be greater or equal to the check values.
         return all(
             fidelity_v >= node.check_value[fidelity_k]
-            for fidelity_k, fidelity_v in node.output_parameters["fidelities"]
+            for fidelity_k, fidelity_v in node.output_parameters["fidelities"].items()
         )
 
     def get_qubit_fidelities_and_parameters_df_tables(self) -> dict[str, pd.DataFrame]:
