@@ -192,7 +192,7 @@ class CalibrationController:
         """
 
     def run_automatic_calibration(self) -> dict[str, dict]:
-        """Runs the full automatic calibration procedure and retrieves the final set parameters and achieved fidelities dictionaries.
+        r"""Runs the full automatic calibration procedure and retrieves the final set parameters and achieved fidelities dictionaries.
 
         This is the primary interface for our calibration procedure and the highest level algorithm, which finds all the end nodes of the graph
         (`leaves`, those without further `dependents`) and runs ``diagnose_checkpoint()`` and then ``calibrate_all()`` on the ones needed.
@@ -280,7 +280,7 @@ class CalibrationController:
         # After passing this block `node.been_calibrated_succesfully` will always be True, so it will not be recalibrated again.
 
     def diagnose_checkpoint(self, node: CalibrationNode) -> bool:
-        """Searches for the first bad ``checkpoint``, and if found, we start the calibration process with the recursive
+        r"""Searches for the first bad ``checkpoint``, and if found, we start the calibration process with the recursive
         ``calibrate_all()`` calls, just after the last passed ``checkpoint``.
 
         This diagnose of the `checkpoints` starts from the first ones, until finds the first in each branch, that doesn't pass.
@@ -318,17 +318,17 @@ class CalibrationController:
         if diagnose_finished:
             return True
 
-        ### If no checkpoint is found, we can continue diagnosing the next nodes.
-        # You can skip it from the `drift_timeout`. Notice, that `drift_timeout` has more priority than checkpoints then.
-        # If you want to start the calibration from the start again, just decrease the `drift_timeout` or remove the executed files!
-        # Also notice, that if a checkpoint is skipped we don't set it to [V], but to [ ] instead, as if it was never checked or wasn't a checkpoint.
+        # If no checkpoint is found, we can continue diagnosing the next nodes.
+        #   You can skip it from the `drift_timeout`. Notice, that `drift_timeout` has more priority than checkpoints then.
+        #   If you want to start the calibration from the start again, just decrease the `drift_timeout` or remove the executed files!
+        #   Also notice, that if a checkpoint is skipped we don't set it to [V], but to [ ] instead, as if it was never checked or wasn't a checkpoint.
         if not node.checkpoint or (
             node.previous_timestamp is not None
             and not self._is_timeout_expired(node.previous_timestamp, self.drift_timeout)
         ):
             return False
 
-        ### For not repeating [X] and [V]'s checkpoints, when more than one branch have it as a dependency.
+        # For not repeating [X] and [V]'s checkpoints, when more than one branch have it as a dependency.
         if node.checkpoint_passed is not None:
             logger.info(
                 "WORKFLOW: %s checkpoint already checked, skipping it.\n",
@@ -336,7 +336,7 @@ class CalibrationController:
             )
             return not node.checkpoint_passed
 
-        ### Main diagnose logic if the node is a checkpoint, and hasn't been checked, start checking.
+        # Main diagnose logic if the node is a checkpoint, and hasn't been checked, start checking.
         self.calibrate(node)
         if node.output_parameters is not None and self._checkpoint_passed_comparison(node):
             node.checkpoint_passed = True
