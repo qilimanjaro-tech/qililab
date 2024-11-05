@@ -575,7 +575,7 @@ class TestQuantumMachinesCluster:
             AttributeError,
             match=re.escape("Controller with bus bus does not exist"),
         ):
-            qmm.get_controller_type_from_bus("bus")
+            qmm.get_controller_type_from_bus("identifier")
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
