@@ -8,14 +8,14 @@ import numpy as np
 import pytest
 from qm import Program
 from qm.qua import play, program
+from tests.data import SauronQuantumMachines
+from tests.test_utils import build_platform
 
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Platform
 from qililab.settings import Settings
 from qililab.typings import Parameter
-from tests.data import SauronQuantumMachines
-from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="qua_program")
@@ -386,7 +386,7 @@ class MockStreamingFetcher:
         self.values = [("I", MockSingleHandle()), ("Q", MockSingleHandle())]
         self.index = 0
 
-    def wait_for_all_values(self):
+    def wait_for_all_values(self, timeout: int | None = None):
         """Mocks waiting for all values method from streamer"""
         return MagicMock
 
