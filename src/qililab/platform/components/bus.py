@@ -22,7 +22,6 @@ from qpysequence import Sequence as QpySequence
 from qililab.constants import RUNCARD
 from qililab.instruments import Instrument, Instruments, ParameterNotFound
 from qililab.instruments.qblox import QbloxQCM, QbloxQRM
-from qililab.instruments.quantum_machines.quantum_machines_cluster import QuantumMachinesCluster
 from qililab.pulse.pulse_distortion.pulse_distortion import PulseDistortion
 from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.result import Result
@@ -164,8 +163,6 @@ class Bus:
         """
         for instrument, instrument_channel in zip(self.instruments, self.channels):
             with contextlib.suppress(ParameterNotFound):
-                if instrument.__class__ is QuantumMachinesCluster:
-                    instrument.set_parameter(parameter, value, self.alias)
                 if channel_id is not None and channel_id == instrument_channel:
                     instrument.set_parameter(parameter, value, channel_id)
                     return
@@ -185,8 +182,6 @@ class Bus:
             return self.settings.delay
         for instrument, instrument_channel in zip(self.instruments, self.channels):
             with contextlib.suppress(ParameterNotFound):
-                if instrument.__class__ is QuantumMachinesCluster:
-                    return instrument.get_parameter(parameter, self.alias)
                 if channel_id is not None and channel_id == instrument_channel:
                     return instrument.get_parameter(parameter, channel_id)
                 return instrument.get_parameter(parameter, instrument_channel)
