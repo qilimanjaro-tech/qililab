@@ -68,6 +68,7 @@ class QuantumMachinesCluster(Instrument):
         octaves: list[dict[str, Any]]
         controllers: list[dict[str, Any]]
         elements: list[dict[str, Any]]
+        timeout: int | None = None
 
         def to_qua_config(self) -> DictQuaConfig:
             """Creates the Quantum Machines QUA config dictionary.
@@ -907,7 +908,7 @@ class QuantumMachinesCluster(Instrument):
             QuantumMachinesResult: Quantum Machines result instance.
         """
         result_handles_fetchers = job.result_handles
-        result_handles_fetchers.wait_for_all_values()
+        result_handles_fetchers.wait_for_all_values(timeout=self.settings.timeout)
         results = {
             name: handle.fetch_all(flat_struct=True) for name, handle in job.result_handles if handle is not None
         }
