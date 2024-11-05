@@ -56,7 +56,7 @@ def fixture_qmm():
         "octaves": [],
         "elements": [
             {
-                "bus": "drive_q0",
+                "identifier": "drive_q0",
                 "mix_inputs": {
                     "I": {"controller": "con1", "port": 1},
                     "Q": {"controller": "con1", "port": 2},
@@ -66,7 +66,7 @@ def fixture_qmm():
                 "intermediate_frequency": 6e9,
             },
             {
-                "bus": "readout_q0",
+                "identifier": "readout_q0",
                 "mix_inputs": {
                     "I": {"controller": "con1", "port": 3},
                     "Q": {"controller": "con1", "port": 4},
@@ -80,7 +80,7 @@ def fixture_qmm():
                 "threshold": 0.09,
                 "intermediate_frequency": 6e9,
             },
-            {"bus": "flux_q0", "single_input": {"controller": "con1", "port": 5}},
+            {"identifier": "flux_q0", "single_input": {"controller": "con1", "port": 5}},
         ],
         "run_octave_calibration": False,
     }
@@ -134,14 +134,14 @@ def fixture_qmm_with_octave():
         ],
         "elements": [
             {
-                "bus": "drive_q0_rf",
+                "identifier": "drive_q0_rf",
                 "rf_inputs": {"octave": "octave1", "port": 1},
                 "digital_inputs": {"controller": "con1", "port": 1, "delay": 87, "buffer": 15},
                 "digital_outputs": {"controller": "con1", "port": 1},
                 "intermediate_frequency": 6e9,
             },
             {
-                "bus": "readout_q0_rf",
+                "identifier": "readout_q0_rf",
                 "rf_inputs": {"octave": "octave1", "port": 2},
                 "digital_inputs": {"controller": "con1", "port": 2, "delay": 87, "buffer": 15},
                 "rf_outputs": {"octave": "octave1", "port": 1},
@@ -227,14 +227,14 @@ def fixture_qmm_with_octave_custom_connectivity():
         ],
         "elements": [
             {
-                "bus": "drive_q0_rf",
+                "identifier": "drive_q0_rf",
                 "rf_inputs": {"octave": "octave1", "port": 1},
                 "digital_inputs": {"controller": "con1", "port": 1, "delay": 87, "buffer": 15},
                 "digital_outputs": {"controller": "con1", "port": 1},
                 "intermediate_frequency": 6e9,
             },
             {
-                "bus": "readout_q0_rf",
+                "identifier": "readout_q0_rf",
                 "rf_inputs": {"octave": "octave1", "port": 2},
                 "digital_inputs": {"controller": "con1", "port": 2, "delay": 87, "buffer": 15},
                 "rf_outputs": {"octave": "octave1", "port": 1},
@@ -324,14 +324,14 @@ def fixture_qmm_with_opx1000():
         ],
         "elements": [
             {
-                "bus": "drive_q0_rf",
+                "identifier": "drive_q0_rf",
                 "rf_inputs": {"octave": "octave1", "port": 1},
                 "digital_inputs": {"controller": "con1", "port": 1, "delay": 87, "buffer": 15},
                 "digital_outputs": {"controller": "con1", "fem": 1, "port": 1},
                 "intermediate_frequency": 6e9,
             },
             {
-                "bus": "readout_q0_rf",
+                "identifier": "readout_q0_rf",
                 "rf_inputs": {"octave": "octave1", "port": 2},
                 "digital_inputs": {"controller": "con1", "port": 2, "delay": 87, "buffer": 15},
                 "rf_outputs": {"octave": "octave1", "port": 1},
@@ -339,7 +339,7 @@ def fixture_qmm_with_opx1000():
                 "time_of_flight": 40,
                 "smearing": 10,
             },
-            {"bus": "flux_q0", "single_input": {"controller": "con1", "fem": 1, "port": 5}},
+            {"identifier": "flux_q0", "single_input": {"controller": "con1", "fem": 1, "port": 5}},
         ],
         "run_octave_calibration": True,
     }
@@ -569,7 +569,7 @@ class TestQuantumMachinesCluster:
         qmm.initial_setup()
         qmm.turn_on()
 
-        qmm._config["elements"]["bus"] = {"singleInput": {"port": ("con10", 1)}}
+        qmm._config["elements"]["identifier"] = {"singleInput": {"port": ("con10", 1)}}
 
         with pytest.raises(
             AttributeError,
@@ -586,7 +586,7 @@ class TestQuantumMachinesCluster:
         qmm.initial_setup()
         qmm.turn_on()
 
-        element = next((element for element in qmm.settings.elements if element["bus"] == "readout_q0"), None)
+        element = next((element for element in qmm.settings.elements if element["identifier"] == "readout_q0"), None)
 
         with pytest.raises(
             ValueError,
@@ -754,7 +754,7 @@ class TestQuantumMachinesCluster:
 
         qmm.set_parameter(parameter=parameter, value=value, channel_id=bus)
 
-        element = next((element for element in qmm.settings.elements if element["bus"] == bus))
+        element = next((element for element in qmm.settings.elements if element["identifier"] == bus))
         if parameter == Parameter.IF:
             assert value == element["intermediate_frequency"]
         if parameter == Parameter.THRESHOLD_ROTATION:
@@ -973,10 +973,10 @@ class TestQuantumMachinesCluster:
                 assert value == settings_config_dict["elements"][bus]["smearing"]
 
         if parameter == Parameter.THRESHOLD_ROTATION:
-            element = next((element for element in qmm.settings.elements if element["bus"] == bus))
+            element = next((element for element in qmm.settings.elements if element["identifier"] == bus))
             assert value == element.get("threshold_rotation", None)
         if parameter == Parameter.THRESHOLD:
-            element = next((element for element in qmm.settings.elements if element["bus"] == bus))
+            element = next((element for element in qmm.settings.elements if element["identifier"] == bus))
             assert value == element.get("threshold", None)
 
         if parameter == Parameter.DC_OFFSET:
