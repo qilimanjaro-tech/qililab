@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
 
 from qililab.qprogram.operations.operation import Operation
 from qililab.yaml import yaml
 
 
 @yaml.register_class
-@dataclass(frozen=True)
-class SetOffset(Operation):  # pylint: disable=missing-class-docstring
-    bus: str
-    offset_path0: float
-    offset_path1: float
+class SetOffset(Operation):
+    def __init__(self, bus: str, offset_path0: float, offset_path1: float | None = None):
+        super().__init__()
+        self.bus: str = bus
+        self.offset_path0: float = offset_path0
+        self.offset_path1: float | None = offset_path1

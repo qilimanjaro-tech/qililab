@@ -14,17 +14,20 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 from qililab.qprogram.element import Element
-from qililab.qprogram.operations.operation import Operation
 from qililab.yaml import yaml
+
+if TYPE_CHECKING:
+    from qililab.qprogram.operations.operation import Operation
 
 
 @yaml.register_class
-@dataclass(frozen=True)
-class Block(Element):  # pylint: disable=missing-class-docstring
-    elements: list[Block | Operation] = field(default_factory=list, init=False)
+class Block(Element):
+    def __init__(self) -> None:
+        super().__init__()
+        self.elements: list[Block | Operation] = []
 
-    def append(self, element: Block | Operation):  # pylint: disable=missing-function-docstring
+    def append(self, element: Block | Operation):
         self.elements.append(element)

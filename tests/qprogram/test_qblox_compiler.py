@@ -1,4 +1,3 @@
-# pylint: disable=protected-access
 from unittest.mock import patch
 
 import numpy as np
@@ -7,7 +6,7 @@ import qpysequence as QPy
 
 from qililab import Calibration, Domain, Gaussian, IQPair, QbloxCompiler, QProgram, Square
 from qililab.qprogram.blocks import ForLoop
-from tests.test_utils import is_q1asm_equal  # pylint: disable=import-error, no-name-in-module
+from tests.test_utils import is_q1asm_equal
 
 
 def setup_q1asm(marker: str):
@@ -57,6 +56,15 @@ def fixture_no_loops_all_operations() -> QProgram:
     qp.qblox.set_markers(bus="readout", mask="0111")
     qp.qblox.play(bus="readout", waveform=readout_pair, wait_time=4)
     qp.qblox.acquire(bus="readout", weights=weights_pair)
+    return qp
+
+
+@pytest.fixture(name="offset_no_path1")
+def fixture_offset_no_path1() -> QProgram:
+    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    qp = QProgram()
+    qp.set_offset(bus="drive", offset_path0=0.5)
+    qp.play(bus="drive", waveform=drag_pair)
     return qp
 
 
@@ -339,13 +347,13 @@ def fixture_multiple_play_operations_with_no_Q_waveform() -> QProgram:
 class TestQBloxCompiler:
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(
+        output = compiler.compile(
             qprogram=play_named_operation, bus_mapping={"drive": "drive_q0"}, calibration=calibration
         )
 
-        assert len(sequences) == 1
-        assert "drive_q0" in sequences
-        assert isinstance(sequences["drive_q0"], QPy.Sequence)
+        assert len(output.sequences) == 1
+        assert "drive_q0" in output.sequences
+        assert isinstance(output.sequences["drive_q0"], QPy.Sequence)
 
     def test_play_named_operation_raises_error_if_operations_not_in_calibration(self, play_named_operation: QProgram):
         calibration = Calibration()
@@ -412,6 +420,11 @@ class TestQBloxCompiler:
                             stop
         """
         assert is_q1asm_equal(sequences["readout"], readout_str)
+
+    def test_set_offset_without_path_1_throws_exception(self, offset_no_path1: QProgram):
+        with pytest.raises(ValueError, match="No offset has been given for path 1 inside set_offset."):
+            compiler = QbloxCompiler()
+            _ = compiler.compile(qprogram=offset_no_path1)
 
     def test_dynamic_wait(self, dynamic_wait: QProgram):
         compiler = QbloxCompiler()

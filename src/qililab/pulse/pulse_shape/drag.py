@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Drag pulse shape."""
+
 from copy import deepcopy
 from dataclasses import dataclass
 
@@ -23,7 +24,6 @@ from qililab.typings import PulseShapeName
 from qililab.utils import Factory
 
 
-# pylint: disable=anomalous-backslash-in-string
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class Drag(PulseShape):
@@ -34,13 +34,13 @@ class Drag(PulseShape):
     .. math::
 
         f(x) & = (1 + 1j * alpha * d/dx) * Gaussian(x) = \\\\
-             & = (1 + 1j * alpha * (x - \mu) / \sigma^2) * Gaussian(x)
+             & = (1 + 1j * alpha * (x - \\mu) / \\sigma^2) * Gaussian(x)
 
     where the 'Gaussian' is symmetrically cut in the given `num_sigmas`, and then is shifted down so that the extremes are at 0, following:
 
     .. math::
 
-        Gaussian(x) = A * exp(-0.5 * (x - \mu)^2 / \sigma^2)
+        Gaussian(x) = A * exp(-0.5 * (x - \\mu)^2 / \\sigma^2)
 
     more information about the gaussian can be found in the :class:`Gaussian` documentation.
 
@@ -121,7 +121,7 @@ class Drag(PulseShape):
             the drag coefficient.
         """
         return {
-            "name": self.name.value,
+            "name": self.name.value,  # type: ignore[operator]
             "num_sigmas": self.num_sigmas,
             "drag_coefficient": self.drag_coefficient,
         }

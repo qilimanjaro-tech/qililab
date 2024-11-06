@@ -17,7 +17,7 @@ def fixture_quantum_machines_measurement_result():
     Returns:
         quantum_machines_measurement_result: QuantumMachinesResult
     """
-    return QuantumMachinesMeasurementResult(I=np.zeros(10), Q=np.zeros(10))
+    return QuantumMachinesMeasurementResult(bus="readout", I=np.zeros(10), Q=np.zeros(10))
 
 
 class TestsQMResult:

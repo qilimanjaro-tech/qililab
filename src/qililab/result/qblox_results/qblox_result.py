@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """QbloxResult class."""
+
 from copy import deepcopy
 
 import numpy as np
@@ -32,7 +33,7 @@ from .qblox_scope_acquisitions import QbloxScopeAcquisitions
 
 @Factory.register
 class QbloxResult(Result):
-    """QbloxResult class. Contains the binning acquisition results obtained from the `Pulsar.get_acquisitions` method.
+    """QbloxResult class. Contains the binning acquisition results obtained from the `module.get_acquisitions` method.
 
     The input to the constructor should be a dictionary with the following structure:
 

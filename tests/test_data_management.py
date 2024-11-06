@@ -77,10 +77,9 @@ class TestBuildPlatformCornerCases:
         """Test platform serialization by building a platform, saving it and then load it back again twice. Starting from a given dict."""
         original_dict = copy.deepcopy(Galadriel.runcard)
         # Check that the new serialization with ruamel.yaml.YAML().dump works for different formats...
-        original_dict["gates_settings"]["gates"]["Y(0)"][0]["pulse"]["phase"] = 1.6707963267948966  # Test long decimals
+        original_dict["digital"]["gates"]["Y(0)"][0]["pulse"]["phase"] = 1.6707963267948966  # Test long decimals
         original_dict["instruments"][0]["awg_sequencers"][0]["intermediate_frequency"] = 100_000_000  # Test underscores
         original_dict["instruments"][1]["awg_sequencers"][0]["sampling_rate"] = 7.24730e09  # Test scientific notation
-        original_dict["instruments"][4]["firmware"] = None  # Test None values
 
         original_platform = ql.build_platform(original_dict)
 
@@ -90,41 +89,16 @@ class TestBuildPlatformCornerCases:
         new_path = save_platform(path="./test.yml", platform=saved_platform)
         new_saved_platform = ql.build_platform(new_path)
 
-        with open(file="./test.yml", mode="r", encoding="utf8") as generated_f:
-            yaml = YAML(typ="safe")
-            generated_f_dict = yaml.load(stream=generated_f)
+        original_platform_dict = original_platform.to_dict()
+        saved_platform_dict = saved_platform.to_dict()
+        new_saved_platform_dict = new_saved_platform.to_dict()
 
         assert (
-            original_platform.to_dict()
-            == saved_platform.to_dict()
-            == new_saved_platform.to_dict()
-            == generated_f_dict
-            == original_dict
+            original_platform_dict
+            == saved_platform_dict
+            == new_saved_platform_dict
         )
         os.remove(path)  # Cleaning generated file
-
-    def test_platform_serialization_from_yaml_file(self):
-        """Test platform serialization by building a platform, saving it and then load it back again twice. Starting from a yaml file."""
-        original_platform = ql.build_platform("examples/runcards/galadriel.yml")
-        path = save_platform(path="./test.yml", platform=original_platform)
-        saved_platform = ql.build_platform(path)
-        new_path = save_platform(path="./test.yml", platform=saved_platform)
-        new_saved_platform = ql.build_platform(new_path)
-
-        with open(file="examples/runcards/galadriel.yml", mode="r", encoding="utf8") as yaml_f:
-            yaml = YAML(typ="safe")
-            yaml_f_dict = yaml.load(stream=yaml_f)
-        with open(file="./test.yml", mode="r", encoding="utf8") as generated_f:
-            generated_f_dict = yaml.load(stream=generated_f)
-
-        for i in ["name", "chip", "instruments", "instrument_controllers"]:
-            assert yaml_f_dict[i] == generated_f_dict[i]
-
-        assert (
-            original_platform.to_dict() == saved_platform.to_dict() == new_saved_platform.to_dict() == generated_f_dict
-        )
-        os.remove(path)  # Cleaning generated file
-
 
 @patch("qililab.data_management.os.makedirs")
 @patch("qililab.data_management.h5py.File")

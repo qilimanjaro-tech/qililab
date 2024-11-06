@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Gaussian waveform."""
+
 import numpy as np
 
 from qililab.qprogram.decorators import requires_domain
@@ -23,9 +24,8 @@ from .waveform import Waveform
 
 
 @yaml.register_class
-# pylint: disable=anomalous-backslash-in-string
-class Gaussian(Waveform):  # pylint: disable=too-few-public-methods
-    """Gaussian waveform with peak at duration/2 and spanning for num_sigmas over the pulse duration.
+class Gaussian(Waveform):
+    r"""Gaussian waveform with peak at duration/2 and spanning for num_sigmas over the pulse duration.
 
     Standard centered Gaussian pulse shape, symmetrically spanning for ``num_sigmas`` over the pulse duration.
 
@@ -46,6 +46,7 @@ class Gaussian(Waveform):  # pylint: disable=too-few-public-methods
         .. code-block:: python
 
             import qililab as ql
+
             gaussian_envelope = ql.Gaussian(num_sigmas=X, duration=50, amplitude=1).envelope()
 
         which for ``X`` being ``1``, ``4``, ``6`` or ``8``, look respectively like:

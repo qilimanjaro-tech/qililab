@@ -13,10 +13,11 @@
 # limitations under the License.
 
 """BusElement class"""
+
 from dataclasses import asdict
 
 from qililab.constants import RUNCARD
-from qililab.settings import Settings
+from qililab.settings.settings import Settings
 from qililab.typings.factory_element import FactoryElement
 from qililab.utils import dict_factory
 
@@ -32,4 +33,4 @@ class BusElement(FactoryElement):
 
     def short_dict(self):
         """Return a dict representation of the BusElement class discarding all static elements."""
-        return {key: value for key, value in self.to_dict().items() if key not in [RUNCARD.NAME, RUNCARD.FIRMWARE]}
+        return {key: value for key, value in self.to_dict().items() if key not in [RUNCARD.NAME]}

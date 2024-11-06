@@ -18,7 +18,9 @@ def fixture_qblox_qprogram_results():
         QProgramResults: `QProgramResults` from Qblox instrument fixture.
     """
     results = QProgramResults()
-    results.append_result(bus="readout", result=QbloxMeasurementResult(raw_measurement_data={"abc": 123}))
+    results.append_result(
+        bus="readout", result=QbloxMeasurementResult(bus="readout", raw_measurement_data={"abc": 123})
+    )
     return results
 
 
@@ -31,7 +33,8 @@ def fixture_quantum_machines_qprogram_results():
     """
     results = QProgramResults()
     results.append_result(
-        bus="readout", result=QuantumMachinesMeasurementResult(I=np.linspace(0, 10, 11), Q=np.linspace(90, 100, 11))
+        bus="readout",
+        result=QuantumMachinesMeasurementResult(bus="readout", I=np.linspace(0, 10, 11), Q=np.linspace(90, 100, 11)),
     )
     return results
 
@@ -49,13 +52,18 @@ class TestsQProgramResult:
         assert len(quantum_machines_qprogram_results.results["readout"]) == 1
 
         quantum_machines_qprogram_results.append_result(
-            "readout", result=QuantumMachinesMeasurementResult(I=np.linspace(0, 10, 11), Q=np.linspace(90, 100, 11))
+            "readout",
+            result=QuantumMachinesMeasurementResult(
+                bus="readout", I=np.linspace(0, 10, 11), Q=np.linspace(90, 100, 11)
+            ),
         )
         assert len(quantum_machines_qprogram_results.results["readout"]) == 2
 
         quantum_machines_qprogram_results.append_result(
             "another_readout",
-            result=QuantumMachinesMeasurementResult(I=np.linspace(0, 10, 11), Q=np.linspace(90, 100, 11)),
+            result=QuantumMachinesMeasurementResult(
+                bus="readout", I=np.linspace(0, 10, 11), Q=np.linspace(90, 100, 11)
+            ),
         )
         assert "another_readout" in quantum_machines_qprogram_results.results
         assert len(quantum_machines_qprogram_results.results["another_readout"]) == 1
@@ -70,12 +78,12 @@ class TestsQProgramResult:
         assert len(qblox_qprogram_results.results["readout"]) == 1
 
         qblox_qprogram_results.append_result(
-            "readout", result=QbloxMeasurementResult(raw_measurement_data={"def": 456})
+            "readout", result=QbloxMeasurementResult(bus="readout", raw_measurement_data={"def": 456})
         )
         assert len(qblox_qprogram_results.results["readout"]) == 2
 
         qblox_qprogram_results.append_result(
-            "another_readout", result=QbloxMeasurementResult(raw_measurement_data={"def": 456})
+            "another_readout", result=QbloxMeasurementResult(bus="another_readout", raw_measurement_data={"def": 456})
         )
         assert "another_readout" in qblox_qprogram_results.results
         assert len(qblox_qprogram_results.results["another_readout"]) == 1

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Quantum Machines Manager class."""
+
 import os
 from dataclasses import dataclass
 from typing import Any, cast
@@ -24,9 +25,10 @@ from qm.jobs.running_qm_job import RunningQmJob
 from qm.octave import QmOctaveConfig
 from qm.program import Program
 
+from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
-from qililab.typings import InstrumentName, Parameter, QMMDriver
+from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue, QMMDriver
 from qililab.utils import hash_qua_program, merge_dictionaries
 
 
@@ -412,16 +414,24 @@ class QuantumMachinesCluster(Instrument):
     _config: DictQuaConfig
     _octave_config: QmOctaveConfig | None = None
     _is_connected_to_qm: bool = False
-    _pending_set_intermediate_frequency: dict[str, float] = {}
     _config_created: bool = False
-    _compiled_program_cache: dict[str, str] = {}
+    _pending_set_intermediate_frequency: dict[str, float] = {}  # noqa: RUF012
+    _compiled_program_cache: dict[str, str] = {}  # noqa: RUF012
 
     @property
     def config(self) -> DictQuaConfig:
         """Get the QUA config dictionary."""
         return self._config
 
-    @Instrument.CheckDeviceInitialized
+    def is_awg(self) -> bool:
+        """Returns True if instrument is an AWG."""
+        return True
+
+    def is_adc(self) -> bool:
+        """Returns True if instrument is an ADC."""
+        return True
+
+    @check_device_initialized
     def initial_setup(self):
         """Sets initial instrument settings.
 
@@ -439,7 +449,7 @@ class QuantumMachinesCluster(Instrument):
         self._config = self.settings.to_qua_config()
         self._config_created = True
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def turn_on(self):
         """Turns on the instrument."""
         if not self._is_connected_to_qm:
@@ -450,11 +460,11 @@ class QuantumMachinesCluster(Instrument):
             if self.settings.run_octave_calibration:
                 self.run_octave_calibration()
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def reset(self):
         """Resets instrument settings."""
 
-    @Instrument.CheckDeviceInitialized
+    @check_device_initialized
     def turn_off(self):
         """Turns off an instrument."""
         if self._is_connected_to_qm:
@@ -499,6 +509,7 @@ class QuantumMachinesCluster(Instrument):
         Returns:
             str | None: Alias of the controller, either opx1 or opx1000.
         """
+
         if "RF_inputs" in self._config["elements"][bus]:
             octave = self._config["elements"][bus]["RF_inputs"]["port"][0]
             controller_name = self._config["octaves"][octave]["connectivity"]
@@ -512,9 +523,56 @@ class QuantumMachinesCluster(Instrument):
                 return controller["type"] if "type" in controller else "opx1"
         raise AttributeError(f"Controller with bus {bus} does not exist")
 
-    def set_parameter_of_bus(  # pylint: disable=too-many-locals, too-many-statements  # noqa: C901
-        self, bus: str, parameter: Parameter, value: float | str | bool
-    ) -> None:
+    def get_controller_from_element(self, element: dict, key: str | None) -> tuple[str, int, int | None]:
+        """Get controller name, port and FEM (if applicable) from element
+
+        Args:
+            element (dict): element of a bus
+            key (str | None): Key for mix inputs, it can be I or Q.
+
+        Returns:
+            list: controller coordinates
+        """
+        if ("rf_inputs" in element or "mix_inputs" in element) and key not in ["I", "Q"]:
+            raise ValueError(f"key value must be I or Q, {key} given")
+        if "rf_inputs" in element:
+            octave_name = element["rf_inputs"]["octave"]
+            out_oct_port = element["rf_inputs"]["port"]
+
+            octave = next((octave for octave in self.settings.octaves if octave["name"] == octave_name), None)
+            octave_port = (
+                next(
+                    (octave_port for octave_port in octave["rf_outputs"] if octave_port["port"] == out_oct_port),
+                    None,
+                )
+                if octave
+                else None
+            )
+
+            connection = "i_connection" if key == "I" else "q_connection"
+            if connection in octave_port:  # type: ignore[operator]
+                con_name = octave_port[connection]["controller"]  # type: ignore[index]
+                con_port = octave_port[connection]["port"]  # type: ignore[index]
+                con_fem = octave_port[connection]["fem"] if "fem" in octave_port[connection] else None  # type: ignore[index]
+            else:
+                con_name = octave["connectivity"]["controller"]  # type: ignore[index]
+                con_port = octave_port["port"] * 2 - 1 if key == "I" else octave_port["port"] * 2  # type: ignore[index]
+                con_fem = None
+
+        elif "mix_inputs" in element:
+            con_name = element["mix_inputs"][key]["controller"]
+            con_port = element["mix_inputs"][key]["port"]
+            con_fem = element["mix_inputs"][key]["fem"] if "fem" in element["mix_inputs"][key] else None
+
+        elif "single_input" in element:
+            con_name = element["single_input"]["controller"]
+            con_port = element["single_input"]["port"]
+            con_fem = element["single_input"]["fem"] if "fem" in element["single_input"] else None
+
+        return (con_name, con_port, con_fem)
+
+    @log_set_parameter
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None) -> None:
         """Sets the parameter of the instrument into the cache (runtime dataclasses).
 
         And if connection to instruments is established, then to the instruments as well.
@@ -528,6 +586,7 @@ class QuantumMachinesCluster(Instrument):
             ValueError: Raised when passed bus is not found, or rf_inputs is not connected to an octave.
             ParameterNotFound: Raised if parameter does not exist.
         """
+        bus = str(channel_id)
         element = next((element for element in self.settings.elements if element["bus"] == bus), None)
         if element is None:
             raise ValueError(f"Bus {bus} was not found in {self.name} settings.")
@@ -589,17 +648,116 @@ class QuantumMachinesCluster(Instrument):
                 if controller_type == "opx1000":
                     self._pending_set_intermediate_frequency[bus] = intermediate_frequency
             return
+
         if parameter == Parameter.THRESHOLD_ROTATION:
             threshold_rotation = float(value)
             element["threshold_rotation"] = threshold_rotation
             return
+
         if parameter == Parameter.THRESHOLD:
             threshold = float(value)
             element["threshold"] = threshold
             return
-        raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}.")
 
-    def get_parameter_of_bus(self, bus: str, parameter: Parameter) -> float | str | bool | tuple:
+        if parameter == Parameter.DC_OFFSET:
+            con_name, con_port, con_fem = self.get_controller_from_element(element=element, key=None)
+            dc_offset = float(value)
+            settings_controllers = next(
+                controller for controller in self.settings.controllers if controller["name"] == con_name
+            )
+            if con_fem is None:
+                settings_offset = next(
+                    analog_output
+                    for analog_output in settings_controllers["analog_outputs"]
+                    if analog_output["port"] == con_port
+                )
+            else:
+                settings_fem = next(fem for fem in settings_controllers["fems"] if fem["fem"] == con_fem)
+                settings_offset = next(
+                    analog_output
+                    for analog_output in settings_fem["analog_outputs"]
+                    if analog_output["port"] == con_port
+                )
+            settings_offset["offset"] = dc_offset
+            if self._config_created:
+                if con_fem is None:
+                    self._config["controllers"][con_name]["analog_outputs"][con_port]["offset"] = dc_offset  # type: ignore[typeddict-item]
+                else:
+                    self._config["controllers"][con_name]["fems"][con_fem]["analog_outputs"][con_port][  # type: ignore[typeddict-item]
+                        "offset"  # type: ignore[typeddict-unknown-key]
+                    ] = dc_offset
+            if self._is_connected_to_qm:
+                self._qm.set_output_dc_offset_by_element(element=bus, input="single", offset=dc_offset)
+            return
+
+        if parameter in [Parameter.OFFSET_I, Parameter.OFFSET_Q]:
+            key = "I" if parameter == Parameter.OFFSET_I else "Q"
+            con_name, con_port, con_fem = self.get_controller_from_element(element=element, key=key)
+            input_offset = float(value)
+            settings_controllers = next(
+                controller for controller in self.settings.controllers if controller["name"] == con_name
+            )
+            if con_fem is None:
+                settings_offset = next(
+                    analog_output
+                    for analog_output in settings_controllers["analog_outputs"]
+                    if analog_output["port"] == con_port
+                )
+            else:
+                settings_fem = next(fem for fem in settings_controllers["fems"] if fem["fem"] == con_fem)
+                settings_offset = next(
+                    analog_output
+                    for analog_output in settings_fem["analog_outputs"]
+                    if analog_output["port"] == con_port
+                )
+            settings_offset["offset"] = input_offset
+            if self._config_created:
+                if con_fem is None:
+                    self._config["controllers"][con_name]["analog_outputs"][con_port]["offset"] = input_offset  # type: ignore[typeddict-item]
+                else:
+                    self._config["controllers"][con_name]["fems"][con_fem]["analog_outputs"][con_port][  # type: ignore[typeddict-item]
+                        "offset"  # type: ignore[typeddict-unknown-key]
+                    ] = input_offset
+            if self._is_connected_to_qm:
+                self._qm.set_output_dc_offset_by_element(element=bus, input=key, offset=input_offset)
+            return
+
+        if parameter in [Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2]:
+            output = "out1" if parameter == Parameter.OFFSET_OUT1 else "out2"
+            out_value = 1 if output == "out1" else 2
+            con_name, _, con_fem = self.get_controller_from_element(element=element, key="I")
+            output_offset = float(value)
+            settings_controllers = next(
+                controller for controller in self.settings.controllers if controller["name"] == con_name
+            )
+            if con_fem is None:
+                settings_offset = next(
+                    analog_output
+                    for analog_output in settings_controllers["analog_inputs"]
+                    if analog_output["port"] == out_value
+                )
+            else:
+                settings_fem = next(fem for fem in settings_controllers["fems"] if fem["fem"] == con_fem)
+                settings_offset = next(
+                    analog_output
+                    for analog_output in settings_fem["analog_inputs"]
+                    if analog_output["port"] == out_value
+                )
+            settings_offset["offset"] = output_offset
+            if self._config_created:
+                if con_fem is None:
+                    self._config["controllers"][con_name]["analog_inputs"][out_value]["offset"] = output_offset  # type: ignore[typeddict-item]
+                else:
+                    self._config["controllers"][con_name]["fems"][con_fem]["analog_inputs"][out_value][  # type: ignore[typeddict-item]
+                        "offset"  # type: ignore[typeddict-unknown-key]
+                    ] = output_offset
+            if self._is_connected_to_qm:
+                self._qm.set_input_dc_offset_by_element(element=bus, output=output, offset=output_offset)
+            return
+
+        raise ParameterNotFound(self, parameter)
+
+    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None) -> ParameterValue:
         """Gets the value of a parameter.
 
         Args:
@@ -613,8 +771,10 @@ class QuantumMachinesCluster(Instrument):
             ParameterNotFound: Raised if parameter does not exist.
         """
         # Just in case, read from the `settings`, even though in theory the config should always be synch:
+        bus = str(channel_id)
         settings_config_dict = self.settings.to_qua_config()
         config_keys = settings_config_dict["elements"][bus]
+        element = next((element for element in self.settings.elements if element["bus"] == bus), None)
 
         if parameter == Parameter.LO_FREQUENCY:
             if "mixInputs" in config_keys:
@@ -630,11 +790,12 @@ class QuantumMachinesCluster(Instrument):
         if parameter == Parameter.GAIN:
             if "mixInputs" in config_keys and "outputs" in config_keys:
                 port_i = settings_config_dict["elements"][bus]["outputs"]["out1"]
-                port_q = settings_config_dict["elements"][bus]["outputs"]["out2"]
-                return (
-                    settings_config_dict["controllers"][port_i[0]]["analog_inputs"][port_i[1]]["gain_db"],  # type: ignore[typeddict-item]
-                    settings_config_dict["controllers"][port_q[0]]["analog_inputs"][port_q[1]]["gain_db"],  # type: ignore[typeddict-item]
-                )
+                # port_q = settings_config_dict["elements"][bus]["outputs"]["out2"]
+                return settings_config_dict["controllers"][port_i[0]]["analog_inputs"][port_i[1]]["gain_db"]  # type: ignore[typeddict-item]
+                # return (
+                #     settings_config_dict["controllers"][port_i[0]]["analog_inputs"][port_i[1]]["gain_db"],  # type: ignore[typeddict-item]
+                #     settings_config_dict["controllers"][port_q[0]]["analog_inputs"][port_q[1]]["gain_db"],  # type: ignore[typeddict-item]
+                # )
             if "RF_inputs" in config_keys:
                 port = settings_config_dict["elements"][bus]["RF_inputs"]["port"]
                 return settings_config_dict["octaves"][port[0]]["RF_outputs"][port[1]]["gain"]
@@ -653,7 +814,29 @@ class QuantumMachinesCluster(Instrument):
                 return element.get("threshold_rotation", None)  # type: ignore
             if parameter == Parameter.THRESHOLD:
                 return element.get("threshold", None)  # type: ignore
-        raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
+
+        if parameter == Parameter.DC_OFFSET:
+            con_name, con_port, con_fem = self.get_controller_from_element(element=element, key=None)  # type: ignore[arg-type]
+            if con_fem is None:
+                return settings_config_dict["controllers"][con_name]["analog_outputs"][con_port]["offset"]  # type: ignore[typeddict-item]
+            return settings_config_dict["controllers"][con_name]["fems"][con_fem]["analog_outputs"][con_port]["offset"]  # type: ignore[typeddict-item]
+
+        if parameter in [Parameter.OFFSET_I, Parameter.OFFSET_Q]:
+            key = "I" if parameter in Parameter.OFFSET_I else "Q"
+            con_name, con_port, con_fem = self.get_controller_from_element(element=element, key=key)  # type: ignore[arg-type]
+            if con_fem is None:
+                return settings_config_dict["controllers"][con_name]["analog_outputs"][con_port]["offset"]  # type: ignore[typeddict-item]
+            return settings_config_dict["controllers"][con_name]["fems"][con_fem]["analog_outputs"][con_port]["offset"]  # type: ignore[typeddict-item]
+
+        if parameter in [Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2]:
+            output = "out1" if parameter in Parameter.OFFSET_OUT1 else "out2"
+            out_value = 1 if output == "out1" else 2
+            con_name, _, con_fem = self.get_controller_from_element(element=element, key="I")  # type: ignore[arg-type]
+            if con_fem is None:
+                return settings_config_dict["controllers"][con_name]["analog_inputs"][out_value]["offset"]  # type: ignore[typeddict-item]
+            return settings_config_dict["controllers"][con_name]["fems"][con_fem]["analog_inputs"][out_value]["offset"]  # type: ignore[typeddict-item]
+
+        raise ParameterNotFound(self, parameter)
 
     def compile(self, program: Program) -> str:
         """Compiles and stores a given QUA program on the Quantum Machines instance,
@@ -692,7 +875,7 @@ class QuantumMachinesCluster(Instrument):
         pending_job = self._qm.queue.add_compiled(compiled_program_id)
 
         # TODO: job.wait_for_execution() is deprecated and will be removed in the future. Please use job.wait_until("Running") instead.
-        job = pending_job.wait_for_execution()  # type: ignore[return-value]
+        job = pending_job.wait_for_execution()  # type: ignore[return-value, union-attr]
         if self._pending_set_intermediate_frequency:
             for bus, intermediate_frequency in self._pending_set_intermediate_frequency.items():
                 job.set_intermediate_frequency(element=bus, freq=intermediate_frequency)  # type: ignore[union-attr]

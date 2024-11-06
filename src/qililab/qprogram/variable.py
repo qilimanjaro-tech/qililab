@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """This file contains all the variables used inside a QProgram."""
+
 from enum import Enum
 from uuid import UUID, uuid4
 
@@ -43,28 +44,31 @@ class Domain(Enum):
 
 
 @yaml.register_class
-class ValueSource(Enum):
-    """ValueSource class"""
-
-    Free = 0
-    Dependent = 1
-
-    @classmethod
-    def to_yaml(cls, representer, node):
-        """Method to be called automatically during YAML serialization."""
-        return representer.represent_scalar("!ValueSource", f"{node.name}-{node.value}")
-
-    @classmethod
-    def from_yaml(cls, _, node):
-        """Method to be called automatically during YAML deserialization."""
-        _, value = node.value.split("-")
-        value = int(value)
-        return cls(value)
-
-
-@yaml.register_class
 class Variable:
     """Variable class used to define variables inside a QProgram."""
+
+    def __init__(self, label: str, domain: Domain = Domain.Scalar) -> None:
+        self._uuid: UUID = uuid4()
+        self._label: str = label
+        self._domain: Domain = domain
+
+    def __repr__(self):
+        return f"Variable(uuid={self.uuid!r}, label={self.label}, domain={self.domain})"
+
+    def __hash__(self):
+        return hash(self._uuid)
+
+    def __eq__(self, other):
+        return other is not None and isinstance(other, Variable) and self._uuid == other._uuid
+
+    @property
+    def uuid(self):
+        """Get the uuid of the variable
+
+        Returns:
+            UUID: The uuid of the variable
+        """
+        return self._uuid
 
     @property
     def label(self):
@@ -76,15 +80,6 @@ class Variable:
         return self._label
 
     @property
-    def value(self):
-        """Get the value of the variable
-
-        Returns:
-            int | float | None: The value of the variable
-        """
-        return self._value
-
-    @property
     def domain(self):
         """Get the domain of the variable
 
@@ -92,22 +87,6 @@ class Variable:
             Domain: The domain of the variable
         """
         return self._domain
-
-    def __init__(self, label: str, domain: Domain = Domain.Scalar) -> None:
-        self._uuid: UUID = uuid4()
-        self._source: ValueSource = ValueSource.Free
-        self._value: int | float | None = None
-        self._label: str = label
-        self._domain: Domain = domain
-
-    def __repr__(self):
-        return f"Variable(uuid={repr(self._uuid)}, label={self.label}, value={self.value})"
-
-    def __hash__(self):
-        return hash(self._uuid)
-
-    def __eq__(self, other):
-        return other is not None and isinstance(other, Variable) and self._uuid == other._uuid
 
 
 @yaml.register_class

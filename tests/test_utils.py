@@ -1,4 +1,5 @@
 """Module containing utilities for the tests."""
+
 import copy
 from unittest.mock import MagicMock, patch
 
@@ -84,7 +85,7 @@ def name_generator(base: str):
     """
     next_id = 0
     while True:
-        yield f"{base}_{str(next_id)}"
+        yield f"{base}_{next_id!s}"
         next_id += 1
 
 

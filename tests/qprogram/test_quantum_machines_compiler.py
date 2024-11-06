@@ -62,6 +62,22 @@ def fixture_set_frequency_operation() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="set_offset_operation")
+def fixture_set_offset_operation() -> QProgram:
+    qp = QProgram()
+    qp.set_offset(bus="drive", offset_path0=0.1, offset_path1=0.2)
+
+    return qp
+
+
+@pytest.fixture(name="set_dc_offset_operation")
+def fixture_set_dc_offset_operation() -> QProgram:
+    qp = QProgram()
+    qp.set_offset(bus="drive", offset_path0=0.1)
+
+    return qp
+
+
 @pytest.fixture(name="set_phase_operation")
 def fixture_set_phase_operation() -> QProgram:
     qp = QProgram()
@@ -364,7 +380,7 @@ class TestQuantumMachinesCompiler:
 
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
         compiler = QuantumMachinesCompiler()
-        qua_program, configuration, _ = compiler.compile(
+        qua_program, _, _ = compiler.compile(
             play_named_operation, bus_mapping={"drive": "drive_q0"}, calibration=calibration
         )
 
@@ -394,6 +410,26 @@ class TestQuantumMachinesCompiler:
         assert update_frequency.qe.name == "drive"
         assert update_frequency.keep_phase is False
         assert float(update_frequency.value.literal.value) == 100e6
+
+    def test_set_offset_operation(self, set_offset_operation: QProgram):
+        compiler = QuantumMachinesCompiler()
+        qua_program, _, _ = compiler.compile(set_offset_operation)
+
+        statements = qua_program._program.script.body.statements
+        assert len(statements) == 2
+
+        set_dc_offset = statements[0].set_dc_offset
+        assert set_dc_offset.qe.name == "drive"
+
+    def test_set_dc_offset_operation(self, set_dc_offset_operation: QProgram):
+        compiler = QuantumMachinesCompiler()
+        qua_program, _, _ = compiler.compile(set_dc_offset_operation)
+
+        statements = qua_program._program.script.body.statements
+        assert len(statements) == 1
+
+        set_dc_offset = statements[0].set_dc_offset
+        assert set_dc_offset.qe.name == "drive"
 
     def test_set_phase_operation(self, set_phase_operation: QProgram):
         compiler = QuantumMachinesCompiler()
@@ -529,7 +565,7 @@ class TestQuantumMachinesCompiler:
 
     def test_measure_operation_with_same_pulse_updates_it_correctly(self, measure_operation_with_same_pulse: QProgram):
         compiler = QuantumMachinesCompiler()
-        qua_program, configuration, measurements = compiler.compile(measure_operation_with_same_pulse)
+        qua_program, configuration, _ = compiler.compile(measure_operation_with_same_pulse)
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 6
@@ -584,6 +620,15 @@ class TestQuantumMachinesCompiler:
         assert len(measurements[0].result_handles) == 2
         assert "I_0" in measurements[0].result_handles
         assert "Q_0" in measurements[0].result_handles
+
+    def test_measure_operation_with_threshold(self, measure_operation: QProgram):
+        """Test measurement result contains the provided thresholds."""
+        compiler = QuantumMachinesCompiler()
+        thresholds = {"readout": 1.0}
+        _, _, measurements = compiler.compile(measure_operation, thresholds=thresholds)
+
+        assert len(measurements) == 1
+        assert measurements[0].threshold == 1.0
 
     def test_measure_operation_with_threshold_rotations(self, measure_operation: QProgram):
         """Test compilation of measurement applying the rotations provided in the `threshold_rotations` map"""
