@@ -1,0 +1,179 @@
+name: qblox_runcard
+
+instruments:
+  - name: QCM
+    alias: qcm
+    out_offsets: [0.0, 0.1, 0.2, 0.3]
+    awg_sequencers:
+      - identifier: 0
+        outputs: [3, 2]
+        intermediate_frequency: 100000000.0
+        gain_imbalance: 0.05
+        phase_imbalance: 0.02
+        hardware_modulation: true
+        gain_i: 1.0
+        gain_q: 1.0
+        offset_i: 0.0
+        offset_q: 0.0
+      - identifier: 1
+        outputs: [1, 0]
+        intermediate_frequency: 50000000.0
+        gain_imbalance: 0.0
+        phase_imbalance: 0.0
+        hardware_modulation: false
+        gain_i: 0.5
+        gain_q: 0.5
+        offset_i: 0.1
+        offset_q: 0.1
+  - name: QRM
+    alias: qrm
+    out_offsets: [0.0, 0.1, 0.2, 0.3]
+    awg_sequencers:
+      - identifier: 0
+        outputs: [3, 2]
+        intermediate_frequency: 100000000.0
+        gain_imbalance: 0.05
+        phase_imbalance: 0.02
+        hardware_modulation: true
+        gain_i: 1.0
+        gain_q: 1.0
+        offset_i: 0.0
+        offset_q: 0.0
+        scope_acquire_trigger_mode: sequencer
+        scope_hardware_averaging: true
+        sampling_rate: 1.0e9
+        hardware_demodulation: true
+        integration_length: 1000
+        integration_mode: ssb
+        sequence_timeout: 5.0
+        acquisition_timeout: 1.0
+        scope_store_enabled: false
+        threshold: 1.0
+        threshold_rotation: 0.0
+        time_of_flight: 120
+      - identifier: 1
+        outputs: [1, 0]
+        intermediate_frequency: 50000000.0
+        gain_imbalance: 0.0
+        phase_imbalance: 0.0
+        hardware_modulation: false
+        gain_i: 0.5
+        gain_q: 0.5
+        offset_i: 0.1
+        offset_q: 0.1
+        scope_acquire_trigger_mode: sequencer
+        scope_hardware_averaging: true
+        sampling_rate: 1.0e9
+        hardware_demodulation: true
+        integration_length: 1000
+        integration_mode: ssb
+        sequence_timeout: 5.0
+        acquisition_timeout: 1.0
+        scope_store_enabled: false
+        threshold: 1.0
+        threshold_rotation: 0.0
+        time_of_flight: 120
+  - name: QCM-RF
+    alias: qcm-rf
+    out0_lo_freq: 3.0e9
+    out0_lo_en: True
+    out0_att: 10
+    out0_offset_path0: 0.2
+    out0_offset_path1: 0.07
+    out1_lo_freq: 4.0e9
+    out1_lo_en: True
+    out1_att: 6
+    out1_offset_path0: 0.1
+    out1_offset_path1: 0.6
+    awg_sequencers:
+      - identifier: 0
+        outputs: [3, 2]
+        intermediate_frequency: 100000000.0
+        gain_imbalance: 0.05
+        phase_imbalance: 0.02
+        hardware_modulation: true
+        gain_i: 1.0
+        gain_q: 1.0
+        offset_i: 0.0
+        offset_q: 0.0
+      - identifier: 1
+        outputs: [1, 0]
+        intermediate_frequency: 50000000.0
+        gain_imbalance: 0.0
+        phase_imbalance: 0.0
+        hardware_modulation: false
+        gain_i: 0.5
+        gain_q: 0.5
+        offset_i: 0.1
+        offset_q: 0.1
+  - name: QRM-RF
+    alias: qrm-rf
+    out0_in0_lo_freq: 3.0e9
+    out0_in0_lo_en: True
+    out0_att: 10
+    in0_att: 2
+    out0_offset_path0: 0.2
+    out0_offset_path1: 0.07
+    awg_sequencers:
+      - identifier: 0
+        outputs: [3, 2]
+        intermediate_frequency: 100000000.0
+        gain_imbalance: 0.05
+        phase_imbalance: 0.02
+        hardware_modulation: true
+        gain_i: 1.0
+        gain_q: 1.0
+        offset_i: 0.0
+        offset_q: 0.0
+        scope_acquire_trigger_mode: sequencer
+        scope_hardware_averaging: true
+        sampling_rate: 1.0e9
+        hardware_demodulation: true
+        integration_length: 1000
+        integration_mode: ssb
+        sequence_timeout: 5.0
+        acquisition_timeout: 1.0
+        scope_store_enabled: false
+        threshold: 1.0
+        threshold_rotation: 0.0
+        time_of_flight: 120
+      - identifier: 1
+        outputs: [1, 0]
+        intermediate_frequency: 50000000.0
+        gain_imbalance: 0.0
+        phase_imbalance: 0.0
+        hardware_modulation: false
+        gain_i: 0.5
+        gain_q: 0.5
+        offset_i: 0.1
+        offset_q: 0.1
+        scope_acquire_trigger_mode: sequencer
+        scope_hardware_averaging: true
+        sampling_rate: 1.0e9
+        hardware_demodulation: true
+        integration_length: 1000
+        integration_mode: ssb
+        sequence_timeout: 5.0
+        acquisition_timeout: 1.0
+        scope_store_enabled: false
+        threshold: 1.0
+        threshold_rotation: 0.0
+        time_of_flight: 120
+
+instrument_controllers:
+  - name: qblox_cluster
+    alias: cluster_controller_0
+    reference_clock: internal
+    connection:
+      name: tcp_ip
+      address: 192.168.1.20
+    modules:
+      - alias: qcm
+        slot_id: 0
+      - alias: qrm
+        slot_id: 1
+      - alias: qcm-rf
+        slot_id: 2
+      - alias: qrm-rf
+        slot_id: 3
+    reset: False

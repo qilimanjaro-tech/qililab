@@ -1,61 +1,36 @@
-"""Tests for the QbloxQCM class."""
+"""Tests for the Qblox Module class."""
 
 import copy
-from unittest.mock import MagicMock, patch
+import re
+from unittest.mock import MagicMock, patch, create_autospec
 
+import numpy as np
 import pytest
+from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 
-from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
+from qililab.instrument_controllers.qblox.qblox_cluster_controller import QbloxClusterController
+from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.qblox import QbloxQCM
-from qililab.typings import InstrumentName
-from qililab.typings.enums import Parameter
-from tests.data import Galadriel
-from tests.test_utils import build_platform
+from qililab.platform import Platform
+from qililab.data_management import build_platform
+from qililab.typings import Parameter
+from typing import cast
+from qblox_instruments.qcodes_drivers.sequencer import Sequencer
+from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm
 
 
-@pytest.fixture(name="pulsar_controller_qcm")
-def fixture_pulsar_controller_qcm():
-    """Return an instance of QbloxPulsarController class"""
-    platform = build_platform(runcard=Galadriel.runcard)
-    settings = copy.deepcopy(Galadriel.pulsar_controller_qcm_0)
-    settings.pop("name")
-    return QbloxPulsarController(settings=settings, loaded_instruments=platform.instruments)
-
-
-@pytest.fixture(name="qcm_no_device")
-def fixture_qcm_no_device():
-    """Return an instance of QbloxQCM class"""
-    settings = copy.deepcopy(Galadriel.qblox_qcm_0)
-    settings.pop("name")
-    return QbloxQCM(settings=settings)
+@pytest.fixture(name="platform")
+def fixture_platform():
+    """platform fixture"""
+    return build_platform(runcard="tests/instruments/qblox/qblox_runcard.yaml")
 
 
 @pytest.fixture(name="qcm")
-@patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
-def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarController):
-    """Return connected instance of QbloxQCM class"""
-    # add dynamically created attributes
-    mock_instance = mock_pulsar.return_value
-    mock_instance.mock_add_spec(
-        [
-            "reference_source",
-            "sequencer0",
-            "sequencer1",
-            "out0_offset",
-            "out1_offset",
-            "out2_offset",
-            "out3_offset",
-            "scope_acq_avg_mode_en_path0",
-            "scope_acq_avg_mode_en_path1",
-            "scope_acq_trigger_mode_path0",
-            "scope_acq_trigger_mode_path1",
-            "scope_acq_sequencer_select",
-            "disconnect_outputs",
-            "disconnect_inputs",
-        ]
-    )
-    mock_instance.sequencers = [mock_instance.sequencer0, mock_instance.sequencer1]
-    spec = [
+def fixture_qrm(platform: Platform):
+    qcm = cast(QbloxQCM, platform.get_element(alias="qcm"))
+
+    sequencer_mock_spec = [
+        *Sequencer._get_required_parent_attr_names(),
         "sync_en",
         "gain_awg_path0",
         "gain_awg_path1",
@@ -67,180 +42,294 @@ def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarContro
         "channel_map_path1_out1_en",
         "demod_en_acq",
         "integration_length_acq",
-        "set",
         "mixer_corr_phase_offset_degree",
         "mixer_corr_gain_ratio",
-        "offset_awg_path0",
-        "offset_awg_path1",
-        "marker_ovr_en",
-        "marker_ovr_value",
         "connect_out0",
         "connect_out1",
+        "connect_out2",
+        "connect_out3",
+        "marker_ovr_en",
+        "marker_ovr_value",
+        "offset_awg_path0",
+        "offset_awg_path1"
     ]
-    mock_instance.sequencer0.mock_add_spec(spec)
-    mock_instance.sequencer1.mock_add_spec(spec)
-    pulsar_controller_qcm.connect()
-    return pulsar_controller_qcm.modules[0]
+
+    module_mock_spec = [
+        *QcmQrm._get_required_parent_attr_names(),
+        "reference_source",
+        "sequencer0",
+        "sequencer1",
+        "out0_offset",
+        "out1_offset",
+        "out2_offset",
+        "out3_offset",
+        "scope_acq_avg_mode_en_path0",
+        "scope_acq_avg_mode_en_path1",
+        "scope_acq_trigger_mode_path0",
+        "scope_acq_trigger_mode_path1",
+        "sequencers",
+        "scope_acq_sequencer_select",
+        "get_acquisitions",
+        "disconnect_outputs",
+        "disconnect_inputs",
+        "arm_sequencer",
+        "start_sequencer",
+        "reset",
+        "module_type"
+    ]
+
+    # Create a mock device using create_autospec to follow the interface of the expected device
+    qcm.device = MagicMock()
+    qcm.device.mock_add_spec(module_mock_spec)
+
+    qcm.device.sequencers = {
+        0: MagicMock(),
+        1: MagicMock(),
+    }
+
+    for sequencer in qcm.device.sequencers:
+        qcm.device.sequencers[sequencer].mock_add_spec(sequencer_mock_spec)
+
+    return qcm
 
 
 class TestQbloxQCM:
-    """Unit tests checking the QbloxQCM attributes and methods"""
+    def test_init(self, qcm: QbloxQCM):
+        assert qcm.alias == "qcm"
+        assert qcm.is_awg()
+        assert not qcm.is_adc()
+        assert len(qcm.awg_sequencers) == 2  # As per the YAML config
+        assert qcm.out_offsets == [0.0, 0.1, 0.2, 0.3]
+        sequencer = qcm.get_sequencer(0)
+        assert sequencer.identifier == 0
+        assert sequencer.outputs == [3, 2]
+        assert sequencer.intermediate_frequency == 100e6
+        assert sequencer.gain_imbalance == 0.05
+        assert sequencer.phase_imbalance == 0.02
+        assert sequencer.hardware_modulation is True
+        assert sequencer.gain_i == 1.0
+        assert sequencer.gain_q == 1.0
+        assert sequencer.offset_i == 0.0
+        assert sequencer.offset_q == 0.0
 
-    def test_inital_setup_method(self, qcm: QbloxQCM):
-        """Test initial_setup method"""
+    def test_init_raises_error(self):
+        with pytest.raises(ValueError):
+            _ = build_platform(runcard="tests/instruments/qblox/qblox_qcm_too_many_sequencers_runcard.yaml")
+
+    def test_module_type(self, qcm: QbloxQCM):
+        _ = qcm.module_type()
+        qcm.device.module_type.assert_called_once()
+
+    @pytest.mark.parametrize(
+        "parameter, value",
+        [
+            # Test GAIN setting
+            (Parameter.GAIN, 2.0),
+            (Parameter.GAIN, 3.5),
+
+            # Test GAIN_I and GAIN_Q settings
+            (Parameter.GAIN_I, 1.5),
+            (Parameter.GAIN_Q, 1.5),
+
+            # Test OFFSET_I and OFFSET_Q settings
+            (Parameter.OFFSET_I, 0.1),
+            (Parameter.OFFSET_Q, 0.2),
+
+            # Test IF setting (intermediate frequency)
+            (Parameter.IF, 100e6),
+
+            # Test HARDWARE_MODULATION setting
+            (Parameter.HARDWARE_MODULATION, True),
+
+            # Test GAIN_IMBALANCE setting
+            (Parameter.GAIN_IMBALANCE, 0.05),
+
+            # Test PHASE_IMBALANCE setting
+            (Parameter.PHASE_IMBALANCE, 0.02),
+
+            # Test OFFSET_OUT settings
+            (Parameter.OFFSET_OUT0, 0.1),
+            (Parameter.OFFSET_OUT1, 0.15),
+            (Parameter.OFFSET_OUT2, 0.2),
+            (Parameter.OFFSET_OUT3, 0.25),
+        ]
+    )
+    def test_set_parameter(self, qcm: QbloxQCM, parameter, value):
+        """Test setting parameters for QCM sequencers using parameterized values."""
+        qcm.set_parameter(parameter, value, channel_id=0)
+        sequencer = qcm.get_sequencer(0)
+
+        # Check values based on the parameter
+        if parameter == Parameter.GAIN:
+            assert sequencer.gain_i == value
+            assert sequencer.gain_q == value
+        elif parameter == Parameter.GAIN_I:
+            assert sequencer.gain_i == value
+        elif parameter == Parameter.GAIN_Q:
+            assert sequencer.gain_q == value
+        elif parameter == Parameter.OFFSET_I:
+            assert sequencer.offset_i == value
+        elif parameter == Parameter.OFFSET_Q:
+            assert sequencer.offset_q == value
+        elif parameter == Parameter.IF:
+            assert sequencer.intermediate_frequency == value
+        elif parameter == Parameter.HARDWARE_MODULATION:
+            assert sequencer.hardware_modulation == value
+        elif parameter == Parameter.GAIN_IMBALANCE:
+            assert sequencer.gain_imbalance == value
+        elif parameter == Parameter.PHASE_IMBALANCE:
+            assert sequencer.phase_imbalance == value
+        elif parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
+            output = int(parameter.value[-1])
+            assert qcm.out_offsets[output] == value
+
+    def test_set_parameter_gain(self, qcm: QbloxQCM):
+        """Test handling invalid channel IDs when setting parameters."""
+        qcm.set_parameter(Parameter.GAIN, 2.0, channel_id=0)
+        sequencer = qcm.get_sequencer(0)
+        assert sequencer.gain_i == 2.0
+        assert sequencer.gain_q == 2.0
+
+    def test_set_parameter_raises_error(self, qcm: QbloxQCM):
+        """Test setting parameters for QCM sequencers using parameterized values."""
+        with pytest.raises(ParameterNotFound):
+            qcm.set_parameter(Parameter.BUS_FREQUENCY, value=42, channel_id=0)
+
+        with pytest.raises(IndexError):
+            qcm.set_parameter(Parameter.PHASE_IMBALANCE, value=0.5, channel_id=4)
+
+        with pytest.raises(Exception):
+            qcm.set_parameter(Parameter.PHASE_IMBALANCE, value=0.5, channel_id=None)
+
+    @pytest.mark.parametrize(
+        "parameter, expected_value",
+        [
+            # Test GAIN_I and GAIN_Q settings
+            (Parameter.GAIN_I, 1.0),
+            (Parameter.GAIN_Q, 1.0),
+
+            # Test OFFSET_I and OFFSET_Q settings
+            (Parameter.OFFSET_I, 0.0),
+            (Parameter.OFFSET_Q, 0.0),
+
+            # Test IF setting (intermediate frequency)
+            (Parameter.IF, 100e6),
+
+            # Test HARDWARE_MODULATION setting
+            (Parameter.HARDWARE_MODULATION, True),
+
+            # Test GAIN_IMBALANCE setting
+            (Parameter.GAIN_IMBALANCE, 0.05),
+
+            # Test PHASE_IMBALANCE setting
+            (Parameter.PHASE_IMBALANCE, 0.02),
+
+            # Test OFFSET_OUT settings
+            (Parameter.OFFSET_OUT0, 0.0),
+            (Parameter.OFFSET_OUT1, 0.1),
+            (Parameter.OFFSET_OUT2, 0.2),
+            (Parameter.OFFSET_OUT3, 0.3),
+        ]
+    )
+    def test_get_parameter(self, qcm: QbloxQCM, parameter, expected_value):
+        """Test setting parameters for QCM sequencers using parameterized values."""
+        value = qcm.get_parameter(parameter, channel_id=0)
+        assert value == expected_value
+
+    def test_get_parameter_raises_error(self, qcm: QbloxQCM):
+        """Test setting parameters for QCM sequencers using parameterized values."""
+        with pytest.raises(ParameterNotFound):
+            qcm.get_parameter(Parameter.BUS_FREQUENCY, channel_id=0)
+
+        with pytest.raises(IndexError):
+            qcm.get_parameter(Parameter.PHASE_IMBALANCE, channel_id=4)
+
+        with pytest.raises(Exception):
+            qcm.get_parameter(Parameter.PHASE_IMBALANCE, channel_id=None)
+
+    def test_set_markers_override_enabled(self, qcm: QbloxQCM):
+        qcm.set_markers_override_enabled(value=True, sequencer_id=0)
+        qcm.device.sequencers[0].marker_ovr_en.assert_called_with(True)
+
+        qcm.set_markers_override_enabled(value=False, sequencer_id=0)
+        qcm.device.sequencers[0].marker_ovr_en.assert_called_with(False)
+
+    def test_set_markers_override_value(self, qcm: QbloxQCM):
+        qcm.set_markers_override_value(value=123, sequencer_id=0)
+        qcm.device.sequencers[0].marker_ovr_value.assert_called_once_with(123)
+
+    def test_initial_setup(self, qcm: QbloxQCM):
+        """Test the initial setup of the QCM module."""
         qcm.initial_setup()
-        qcm.device.out0_offset.assert_called()
-        qcm.device.out1_offset.assert_called()
-        qcm.device.out2_offset.assert_called()
-        qcm.device.out3_offset.assert_called()
-        qcm.device.sequencers[0].sync_en.assert_called_with(False)
-        qcm.device.sequencers[0].mod_en_awg.assert_called()
-        qcm.device.sequencers[0].offset_awg_path0.assert_called()
-        qcm.device.sequencers[0].offset_awg_path1.assert_called()
-        qcm.device.sequencers[0].mixer_corr_gain_ratio.assert_called()
-        qcm.device.sequencers[0].mixer_corr_phase_offset_degree.assert_called()
 
-    def test_start_sequencer_method(self, qcm: QbloxQCM):
-        """Test start_sequencer method"""
-        qcm.start_sequencer(port="drive_q0")
-        qcm.device.arm_sequencer.assert_not_called()
-        qcm.device.start_sequencer.assert_not_called()
+        # Verify the correct setup calls were made on the device
+        qcm.device.disconnect_outputs.assert_called_once()
+        for sequencer in qcm.awg_sequencers:
+            qcm.device.sequencers[sequencer.identifier].sync_en.assert_called_with(False)
 
-    @pytest.mark.parametrize(
-        "parameter, value, channel_id",
-        [
-            (Parameter.GAIN, 0.02, 0),
-            (Parameter.GAIN_I, 0.03, 0),
-            (Parameter.GAIN_Q, 0.01, 0),
-            (Parameter.OFFSET_OUT0, 1.234, None),
-            (Parameter.OFFSET_OUT1, 0, None),
-            (Parameter.OFFSET_OUT2, 0.123, None),
-            (Parameter.OFFSET_OUT3, 10, None),
-            (Parameter.OFFSET_I, 0.8, 0),
-            (Parameter.OFFSET_Q, 0.11, 0),
-            (Parameter.IF, 100_000, 0),
-            (Parameter.HARDWARE_MODULATION, True, 0),
-            (Parameter.HARDWARE_MODULATION, False, 0),
-            (Parameter.NUM_BINS, 1, 0),
-            (Parameter.GAIN_IMBALANCE, 0.1, 0),
-            (Parameter.PHASE_IMBALANCE, 0.09, 0),
-        ],
-    )
-    def test_setup_method(
-        self, parameter: Parameter, value: float | bool | int, channel_id: int, qcm: QbloxQCM, qcm_no_device: QbloxQCM
-    ):
-        """Test setup method"""
-        for qcms in [qcm, qcm_no_device]:
-            qcms.setup(parameter=parameter, value=value, channel_id=channel_id)
-            if parameter == Parameter.GAIN:
-                assert qcms.awg_sequencers[channel_id].gain_i == value
-                assert qcms.awg_sequencers[channel_id].gain_q == value
-            if parameter == Parameter.GAIN_I:
-                assert qcms.awg_sequencers[channel_id].gain_i == value
-            if parameter == Parameter.GAIN_Q:
-                assert qcms.awg_sequencers[channel_id].gain_q == value
-            if parameter == Parameter.OFFSET_I:
-                assert qcms.awg_sequencers[channel_id].offset_i == value
-            if parameter == Parameter.OFFSET_Q:
-                assert qcms.awg_sequencers[channel_id].offset_q == value
-            if parameter == Parameter.IF:
-                assert qcms.awg_sequencers[channel_id].intermediate_frequency == value
-            if parameter == Parameter.HARDWARE_MODULATION:
-                assert qcms.awg_sequencers[channel_id].hardware_modulation == value
-            if parameter == Parameter.NUM_BINS:
-                assert qcms.awg_sequencers[channel_id].num_bins == value
-            if parameter == Parameter.GAIN_IMBALANCE:
-                assert qcms.awg_sequencers[channel_id].gain_imbalance == value
-            if parameter == Parameter.PHASE_IMBALANCE:
-                assert qcms.awg_sequencers[channel_id].phase_imbalance == value
-            if parameter in {
-                Parameter.OFFSET_OUT0,
-                Parameter.OFFSET_OUT1,
-                Parameter.OFFSET_OUT2,
-                Parameter.OFFSET_OUT3,
-            }:
-                output = int(parameter.value[-1])
-                assert qcms.out_offsets[output] == value
+    def test_run(self, qcm: QbloxQCM):
+        """Test running the QCM module."""
+        qcm.sequences[0] = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
+        qcm.run(channel_id=0)
 
-    @pytest.mark.parametrize(
-        "parameter, value, port_id",
-        [
-            (Parameter.GAIN, 0.02, "drive_q0"),
-            (Parameter.GAIN_I, 0.03, "drive_q0"),
-            (Parameter.GAIN_Q, 0.01, "drive_q0"),
-            (Parameter.OFFSET_OUT0, 1.234, None),
-            (Parameter.OFFSET_OUT1, 0, None),
-            (Parameter.OFFSET_OUT2, 0.123, None),
-            (Parameter.OFFSET_OUT3, 10, None),
-            (Parameter.OFFSET_I, 0.8, "drive_q0"),
-            (Parameter.OFFSET_Q, 0.11, "drive_q0"),
-            (Parameter.IF, 100_000, "drive_q0"),
-            (Parameter.HARDWARE_MODULATION, True, "drive_q0"),
-            (Parameter.HARDWARE_MODULATION, False, "drive_q0"),
-            (Parameter.NUM_BINS, 1, "drive_q0"),
-            (Parameter.GAIN_IMBALANCE, 0.1, "drive_q0"),
-            (Parameter.PHASE_IMBALANCE, 0.09, "drive_q0"),
-        ],
-    )
-    def test_setup_method_with_port_id(
-        self,
-        parameter: Parameter,
-        value: float | bool | int,
-        port_id: str | None,
-        qcm: QbloxQCM,
-        qcm_no_device: QbloxQCM,
-    ):
-        """Test setup method"""
-        for qcms in [qcm, qcm_no_device]:
-            if port_id is not None:
-                channel_id = qcms.get_sequencers_from_chip_port_id(port_id)[0].identifier
-            else:
-                channel_id = None
-            qcms.setup(parameter=parameter, value=value, channel_id=channel_id)
-            if parameter == Parameter.GAIN:
-                assert qcms.awg_sequencers[channel_id].gain_i == value
-                assert qcms.awg_sequencers[channel_id].gain_q == value
-            if parameter == Parameter.GAIN_I:
-                assert qcms.awg_sequencers[channel_id].gain_i == value
-            if parameter == Parameter.GAIN_Q:
-                assert qcms.awg_sequencers[channel_id].gain_q == value
-            if parameter == Parameter.OFFSET_I:
-                assert qcms.awg_sequencers[channel_id].offset_i == value
-            if parameter == Parameter.OFFSET_Q:
-                assert qcms.awg_sequencers[channel_id].offset_q == value
-            if parameter == Parameter.IF:
-                assert qcms.awg_sequencers[channel_id].intermediate_frequency == value
-            if parameter == Parameter.HARDWARE_MODULATION:
-                assert qcms.awg_sequencers[channel_id].hardware_modulation == value
-            if parameter == Parameter.NUM_BINS:
-                assert qcms.awg_sequencers[channel_id].num_bins == value
-            if parameter == Parameter.GAIN_IMBALANCE:
-                assert qcms.awg_sequencers[channel_id].gain_imbalance == value
-            if parameter == Parameter.PHASE_IMBALANCE:
-                assert qcms.awg_sequencers[channel_id].phase_imbalance == value
-            if parameter in {
-                Parameter.OFFSET_OUT0,
-                Parameter.OFFSET_OUT1,
-                Parameter.OFFSET_OUT2,
-                Parameter.OFFSET_OUT3,
-            }:
-                output = int(parameter.value[-1])
-                assert qcms.out_offsets[output] == value
+        sequencer = qcm.get_sequencer(0)
+        qcm.device.arm_sequencer.assert_called_with(sequencer=sequencer.identifier)
+        qcm.device.start_sequencer.assert_called_with(sequencer=sequencer.identifier)
 
-    def test_setup_out_offset_raises_error(self, qcm: QbloxQCM):
-        """Test that calling ``_set_out_offset`` with a wrong output value raises an error."""
-        with pytest.raises(IndexError, match="Output 5 is out of range"):
-            qcm._set_out_offset(output=5, value=1)
+    def test_upload(self, qcm: QbloxQCM):
+        """Test uploading a QpySequence to the QCM module."""
+        qcm.sequences[0] = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
+        qcm.upload(channel_id=0)
 
-    def test_turn_off_method(self, qcm: QbloxQCM):
-        """Test turn_off method"""
+        qcm.device.sequencers[0].sequence.assert_called_once_with(qcm.sequences[0].todict())
+        qcm.device.sequencers[0].sync_en.assert_called_once_with(True)
+
+    def test_upload_qpysequence(self, qcm: QbloxQCM):
+        """Test uploading a QpySequence to the QCM module."""
+        sequence = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
+        qcm.upload_qpysequence(qpysequence=sequence, channel_id=0)
+
+        qcm.device.sequencers[0].sequence.assert_called_once_with(sequence.todict())
+
+    def test_clear_cache(self, qcm: QbloxQCM):
+        """Test clearing the cache of the QCM module."""
+        qcm.cache = {0: MagicMock()}  # type: ignore[misc]
+        qcm.clear_cache()
+
+        assert qcm.cache == {}
+        assert qcm.sequences == {}
+
+    def test_reset(self, qcm: QbloxQCM):
+        """Test resetting the QCM module."""
+        qcm.reset()
+
+        qcm.device.reset.assert_called_once()
+        assert qcm.cache == {}
+        assert qcm.sequences == {}
+
+    def test_turn_off(self, qcm: QbloxQCM):
         qcm.turn_off()
-        assert qcm.device.stop_sequencer.call_count == qcm.num_sequencers
 
-    def test_name_property(self, qcm_no_device: QbloxQCM):
-        """Test name property."""
-        assert qcm_no_device.name == InstrumentName.QBLOX_QCM
+        assert qcm.device.stop_sequencer.call_count == 2
 
-    def test_firmware_property(self, qcm_no_device: QbloxQCM):
-        """Test firmware property."""
-        assert qcm_no_device.firmware == qcm_no_device.settings.firmware
+    def test_sync_sequencer(self, qcm: QbloxQCM):
+        qcm.sync_sequencer(sequencer_id=0)
+
+        qcm.device.sequencers[0].sync_en.assert_called_once_with(True)
+
+    def test_desync_sequencer(self, qcm: QbloxQCM):
+        qcm.desync_sequencer(sequencer_id=0)
+
+        qcm.device.sequencers[0].sync_en.assert_called_once_with(False)
+
+    def test_desync_sequencers(self, qcm: QbloxQCM):
+        qcm.desync_sequencers()
+
+        for sequencer in qcm.awg_sequencers:
+            qcm.device.sequencers[sequencer.identifier].sync_en.assert_called_once_with(False)
+
+class TestQbloxSequencer:
+    def test_to_dict(self, qcm: QbloxQCM):
+        sequencer = qcm.get_sequencer(0)
+        as_dict = sequencer.to_dict()
+        assert isinstance(as_dict, dict)

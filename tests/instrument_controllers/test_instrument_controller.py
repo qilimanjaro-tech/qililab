@@ -86,7 +86,14 @@ class TestConnection:
         """Test that the reset attribute gets reflected when calling the controller to_dict method."""
         instr_cont = platform.instrument_controllers
         controllers_dict = instr_cont.to_dict()
-        pulsar_dict = next(c_dict for c_dict in controllers_dict if c_dict["alias"] == "pulsar_controller_qcm_0")
 
-        assert INSTRUMENTCONTROLLER.RESET in pulsar_dict
-        assert not pulsar_dict.get("INSTRUMENTCONTROLLER.RESET")
+    def test_set_get_reset(self, platform: Platform):
+        assert platform.get_parameter(alias="rohde_schwarz_controller_0", parameter=Parameter.RESET) == True
+        platform.set_parameter(alias="rohde_schwarz_controller_0", parameter=Parameter.RESET, value=False)
+        assert platform.get_parameter(alias="rohde_schwarz_controller_0", parameter=Parameter.RESET) == False
+
+        with pytest.raises(ValueError):
+            _ = platform.get_parameter(alias="rohde_schwarz_controller_0", parameter=Parameter.BUS_FREQUENCY)
+
+        with pytest.raises(ValueError):
+            _ = platform.set_parameter(alias="rohde_schwarz_controller_0", parameter=Parameter.BUS_FREQUENCY, value=1e9)
