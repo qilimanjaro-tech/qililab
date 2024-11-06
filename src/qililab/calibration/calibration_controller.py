@@ -264,6 +264,7 @@ class CalibrationController:
         # O - [V] - [O] - [V] - [0] - [X] - [ ] - [ ] - [ ] - ... we leave the next ones empty (.), after finding the first bad
         # checkpoint, so that we can just find the first [V], going from right to left in ``calibrate_all()`` calls and start there.
         if node.checkpoint_passed:
+            logger.info("WORKFLOW: Last checkpoint passed: %s, skipping calibration in previous nodes.\n", node.node_id)
             return
 
         for n in self._dependencies(node):
