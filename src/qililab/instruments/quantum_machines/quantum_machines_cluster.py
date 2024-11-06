@@ -299,6 +299,9 @@ class QuantumMachinesCluster(Instrument):
 
                 # Flux bus
                 if "single_input" in element:
+                    intermediate_frequency = (
+                        int(element["intermediate_frequency"]) if "intermediate_frequency" in element else 0
+                    )
                     element_dict["singleInput"] = {
                         "port": (
                             (
@@ -310,6 +313,7 @@ class QuantumMachinesCluster(Instrument):
                             else (element["single_input"]["controller"], element["single_input"]["port"])
                         ),
                     }
+                    element_dict["intermediate_frequency"] = intermediate_frequency
                 # IQ bus
                 elif "mix_inputs" in element:
                     mixer_name = f"mixer_{bus_name}"
