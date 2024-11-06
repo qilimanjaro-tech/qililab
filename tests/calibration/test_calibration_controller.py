@@ -342,7 +342,7 @@ class TestRunAutomaticCalibrationFromCalibrationController:
             assert controller.calibrate_all.call_count == 1
             assert controller.diagnose_checkpoint.call_count == 1
 
-
+# TODO: Finish this:
 #######################################################
 ### TEST RUN AUTOMATIC CALIBRATION WITH CHECKPOINTS ###
 #######################################################
@@ -474,6 +474,7 @@ class TestDiagnoseCheckpointsFromCalibrationController:
         controller._update_parameters.reset_mock()
         for node in controller.node_sequence.values():
             node.checkpoint_passed = None
+            node.been_calibrated_succesfully = False
 
         # Act:
         controller.diagnose_checkpoint(fourth)
@@ -528,6 +529,7 @@ class TestDiagnoseWithoutCheckpointsFromCalibrationController:
         controller._update_parameters.reset_mock()
         for node in controller.node_sequence.values():
             node.checkpoint_passed = None
+            node.been_calibrated_succesfully = False
 
         # Act:
         controller.diagnose_checkpoint(fourth)
