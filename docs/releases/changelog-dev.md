@@ -89,6 +89,20 @@
 
   [#816](https://github.com/qilimanjaro-tech/qililab/pull/816)
 
+- Added a timeout inside quantum machines to control the `wait_for_all_values` function. The timeout is controlled through the runcard as shown in the example:
+
+```
+instruments:
+  - name: quantum_machines_cluster
+    alias: QMM
+    ...
+    timeout: 10000 # optional timeout in seconds
+    octaves:
+    ...
+```
+
+  [#826](https://github.com/qilimanjaro-tech/qililab/pull/826)
+
 ### Improvements
 
 - Legacy linting and formatting tools such as pylint, flake8, isort, bandit, and black have been removed. These have been replaced with Ruff, a more efficient tool that handles both linting and formatting. All configuration settings have been consolidated into the `pyproject.toml` file, simplifying the project's configuration and maintenance. Integration config files like `pre-commit-config.yaml` and `.github/workflows/code_quality.yml` have been updated accordingly. Several rules from Ruff have also been implemented to improve code consistency and quality across the codebase. Additionally, the development dependencies in `dev-requirements.txt` have been updated to their latest versions, ensuring better compatibility and performance. [#813](https://github.com/qilimanjaro-tech/qililab/pull/813)

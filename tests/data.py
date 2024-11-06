@@ -837,7 +837,7 @@ class SauronQuantumMachines:
         "octaves": [],
         "elements": [
             {
-                "bus": "drive_q0",
+                "identifier": "drive_q0",
                 "mix_inputs": {
                     "I": {"controller": "con1", "port": 1},
                     "Q": {"controller": "con1", "port": 2},
@@ -847,7 +847,7 @@ class SauronQuantumMachines:
                 "intermediate_frequency": 6e9,
             },
             {
-                "bus": "readout_q0",
+                "identifier": "readout_q0",
                 "mix_inputs": {
                     "I": {"controller": "con1", "port": 3},
                     "Q": {"controller": "con1", "port": 4},
@@ -861,7 +861,7 @@ class SauronQuantumMachines:
                 "threshold": 0.09,
                 "intermediate_frequency": 6e9,
             },
-            {"bus": "flux_q0", "single_input": {"controller": "con1", "port": 5}},
+            {"identifier": "flux_q0", "single_input": {"controller": "con1", "port": 5}},
         ],
         "run_octave_calibration": False,
     }
@@ -908,14 +908,14 @@ class SauronQuantumMachines:
         ],
         "elements": [
             {
-                "bus": "drive_q0_rf",
+                "identifier": "drive_q0_rf",
                 "rf_inputs": {"octave": "octave1", "port": 1},
                 "digital_inputs": {"controller": "con1", "port": 1, "delay": 87, "buffer": 15},
                 "digital_outputs": {"controller": "con1", "port": 1},
                 "intermediate_frequency": 6e9,
             },
             {
-                "bus": "readout_q0_rf",
+                "identifier": "readout_q0_rf",
                 "rf_inputs": {"octave": "octave1", "port": 2},
                 "digital_inputs": {"controller": "con1", "port": 2, "delay": 87, "buffer": 15},
                 "rf_outputs": {"octave": "octave1", "port": 1},
@@ -994,14 +994,14 @@ class SauronQuantumMachines:
         ],
         "elements": [
             {
-                "bus": "drive_q0_rf",
+                "identifier": "drive_q0_rf",
                 "rf_inputs": {"octave": "octave1", "port": 1},
                 "digital_inputs": {"controller": "con1", "port": 1, "delay": 87, "buffer": 15},
                 "digital_outputs": {"controller": "con1", "port": 1},
                 "intermediate_frequency": 6e9,
             },
             {
-                "bus": "readout_q0_rf",
+                "identifier": "readout_q0_rf",
                 "rf_inputs": {"octave": "octave1", "port": 2},
                 "digital_inputs": {"controller": "con1", "port": 2, "delay": 87, "buffer": 15},
                 "rf_outputs": {"octave": "octave1", "port": 1},
@@ -1084,14 +1084,14 @@ class SauronQuantumMachines:
         ],
         "elements": [
             {
-                "bus": "drive_q0_rf",
+                "identifier": "drive_q0_rf",
                 "rf_inputs": {"octave": "octave1", "port": 1},
                 "digital_inputs": {"controller": "con1", "port": 1, "delay": 87, "buffer": 15},
                 "digital_outputs": {"controller": "con1", "fem": 1, "port": 1},
                 "intermediate_frequency": 6e9,
             },
             {
-                "bus": "readout_q0_rf",
+                "identifier": "readout_q0_rf",
                 "rf_inputs": {"octave": "octave1", "port": 2},
                 "digital_inputs": {"controller": "con1", "port": 2, "delay": 87, "buffer": 15},
                 "rf_outputs": {"octave": "octave1", "port": 1},
@@ -1099,7 +1099,7 @@ class SauronQuantumMachines:
                 "time_of_flight": 40,
                 "smearing": 10,
             },
-            {"bus": "flux_q0", "single_input": {"controller": "con1", "fem": 1, "port": 5}},
+            {"identifier": "flux_q0", "single_input": {"controller": "con1", "fem": 1, "port": 5}},
         ],
         "run_octave_calibration": True,
     }
