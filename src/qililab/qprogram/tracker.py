@@ -94,7 +94,7 @@ class Tracker:
                 self.guessed_path[operation].append(predicted_point)
 
                 # Do the experiment
-                experiment = self.measure_dict[operation](self.windows)
+                experiment = self.measure_dict[operation](window)
                 with platform.session():
                     results_path = platform.execute_experiment(experiment, data_path)
                 with ExperimentResults(results_path) as results:

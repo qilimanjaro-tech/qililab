@@ -64,4 +64,5 @@ __all__ = [
     "QbloxCompiler",
     "QuantumMachinesCompilationOutput",
     "QuantumMachinesCompiler",
+    "Tracker",
 ]
