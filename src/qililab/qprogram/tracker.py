@@ -12,91 +12,103 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from typing import Callable
-import numpy as np
 
-from qililab.qprogram.calibration import Calibration
-from qililab.qprogram.qprogram import QProgram
-from qililab.qprogram.structured_program import StructuredProgram
+from qililab.platform.platform import Platform
 from qililab.qprogram.experiment import Experiment
-from qililab.typings.enums import Parameter
+from qililab.result.experiment_results import ExperimentResults
 from qililab.yaml import yaml
-
-import qcodes as qc
-from IPython.display import display, clear_output
-import matplotlib.pyplot as plt
-
-from queue import Empty, Queue
-from threading import Thread
 
 
 @yaml.register_class
 class Tracker:
-    """ This class contains the logic and tools needed to follow a feature while being completely generic
-    """
+    """This class contains the logic and tools needed to follow a feature while being completely generic"""
+
     def __init__(
         self,
-        experiment: Callable,
-        find_relevant_point: Callable,
-        update_window: Callable,
-        predict_next_point: Callable | None = None,
-        ):
+    ) -> None:
         """_summary_
 
         Args:
             find_relevant_point (function): takes the data from measure as input and finds the relevant point
             predict_next_point (function): takes all the previously found points of interest and predicts the next
             update_window (function): with the predicted point as input, updates the window for the measurement
-        """        
-        self.experiment = Experiment()
+        """
 
-        # self.qprogram = 
-        # qprogram(index, window, kwargs)
-        # partial
-        self.find_relevant_point = find_relevant_point
-        self.predict_next_point = predict_next_point
-        self.update_window = update_window
+        self.alias_list: list[str] = []
+        self.measure_dict: dict[str, Experiment] = {}
+        self.find_relevant_point_dict: dict[str, Callable] = {}
+        self.update_window_dict: dict[str, Callable] = {}
 
+        self.real_path: dict[str, list] = {}
+        self.guessed_path: dict[str, list] = {}
+        self.windows: dict[str, list] = {}
+        self.total_data: dict[str, list] = {}
+        self.experiment_dims: dict[str, list] = {}
 
-    def get_parameter(self, alias: str, parameter: Parameter, channel_id: int | None = None):
-        variable = self.experiment.get_parameter(alias, parameter, channel_id)
-        return variable
+    def build_measure_block(
+        self,
+        alias: str,
+        measure: Callable,
+        find_relevant_point: Callable,
+        update_window: Callable,
+    ):
+        self.alias_list.append(alias)
+        self.measure_dict[alias] = measure
+        self.find_relevant_point_dict[alias] = find_relevant_point
+        self.update_window_dict[alias] = update_window
 
-    def set_parameter(self, alias: str, parameter: Parameter, value: int | float | int, channel_id: int | None = None):
-        self.experiment.set_parameter(alias, parameter, value, channel_id)
-        
-    def execute_qprogram(self, bus_mapping: dict[str, str] | None = None, calibration: Calibration | None = None, debug: bool = False):
-        self.experiment.execute_qprogram(self.qprogram, bus_mapping, calibration, debug)
+        self.real_path[alias] = []
+        self.guessed_path[alias] = []
+        self.windows[alias] = []
+        self.total_data[alias] = []
+        self.experiment_dims[alias] = []
 
-    def run_tracker(self, alias:str, parameter: Parameter, values: list, initial_guess: float, bus_mapping: dict[str, str] | None = None, calibration: Calibration | None = None, plot:bool=False, plot_timeout:float=100) -> None: 
-        """Runs the 
+    def run_tracker(
+        self,
+        platform: Platform,
+        set_parameter: Callable,
+        values: list,
+        initial_guess: float,
+        data_path: str,
+        # plot: bool = False, #TODO: add live plotting
+    ) -> None:
+        """Runs the
 
         Args:
             parameter (Parameter): parameter to be changed
             values (list): values for the parameter
             guess (float): first starting point for the window
-        """  
+        """
 
-
-
-        self.real_path = []
-        self.guessed_path = []
-        self.windows = []
-        self.total_data = []
         guess = initial_guess
-        for ii, value in enumerate(values):
-            # Set the parameter 
-            self.set_parameter(alias, parameter, value)
-            
-            # Update the window
-            self.windows.append(self.update_window(guess))
-            
-            # Do the experiment
-            measured_data = self.experiment.execute_qprogram(self.qprogram, bus_mapping, calibration)
-            self.total_data.append(measured_data)
-            
-            # Measure the point of interest
-            self.real_path.append(self.find_relevant_point(self.windows[-1], measured_data))
-            
-            # Predict the next point
-            guess = self.predict_next_point(values[:ii+1], self.real_path)
-            self.guessed_path.append(guess)
+
+        for value in values:
+            for operation in self.alias_list:
+
+                # Set the parameter
+                set_parameter(value)
+
+                # Update the window
+                window, predicted_point = self.update_window_dict[operation](guess)
+                self.windows[operation].append(window)
+                self.guessed_path[operation].append(predicted_point)
+
+                # Do the experiment
+                experiment = self.measure_dict[operation](self.windows)
+                with platform.session():
+                    results_path = platform.execute_experiment(experiment, data_path)
+                with ExperimentResults(results_path) as results:
+                    data, dims = results.get()
+                self.total_data[operation].append(data)
+                self.experiment_dims[operation].append(dims)
+
+                # Measure the point of interest
+                guess = self.find_relevant_point_dict[operation](data)
+                self.windows[operation].append(window)
+        return
+
+
+# ASK VYRON ABOUT SESSION AND HOW TO EXECUTE EXPERIMENT WITHOUT IT
+# ASK VYRON HOW TO SAVE THE REST OF THE DATA INSIDE EXPERIMENTS, MODIFY EXPERIMENTS IF NECESSARY
+# ADD MODIFIABLE VARIABLES INSIDE EXPERIMENTS TO SAVE THEM LATER IN THE SAME PLACE, VARIABLES THAT CHANGE INSIDE THE LOOP
+# Flag timeout QM
