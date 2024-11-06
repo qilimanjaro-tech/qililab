@@ -2,6 +2,10 @@
 
 ### New features since last release
 
+- Added intermediate frequency to single input lines on qm. The default is 0 (this prevents some bugs from qua-qm). Now it is possible to use the set_parameter IF and qm.set_frequency for buses with single_input.
+
+[#807](https://github.com/qilimanjaro-tech/qililab/pull/807)
+
 - A new `GetParameter` operation has been added to the Experiment class, accessible via the `.get_parameter()` method. This allows users to dynamically retrieve parameters during experiment execution, which is particularly useful when some variables do not have a value at the time of experiment definition but are provided later through external operations. The operation returns a `Variable` that can be used seamlessly within `SetParameter` and `ExecuteQProgram`.
 
   Example:
