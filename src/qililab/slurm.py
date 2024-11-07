@@ -45,6 +45,7 @@ def is_variable_used(code, variable):
     " the results of the job, you need to call `variable.result()`.",
 )
 @argument("-p", "--partition", help="Name of the partition where you want to execute the SLURM job.")
+@argument("-g", "--gres", default=None, help="GRES (chip) where you want to execute the SLURM job.")
 @argument("-n", "--name", default="submitit", help="Name of the slurm job.")
 @argument("-t", "--time", default=120, help="Time limit (in minutes) of the job.")
 @argument(
@@ -85,6 +86,7 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
     args = parse_argstring(submit_job, line)
     output = args.output
     partition = args.partition
+    gres = args.gres
     job_name = args.name
     time_limit = int(args.time)
     folder_path = args.logs
@@ -92,6 +94,8 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
     begin_time = args.begin
     low_priority = args.low_priority
 
+    if gres is None:
+        raise ValueError("GRES needs to be provided! See the available ones typing 'sinfo -o '%G'' in the terminal")
     nice_factor = 0
     if low_priority in ["True", "true"]:
         nice_factor = 1000000  # this ensures Lab jobs have 0 priority, same as QaaS jobs
@@ -108,7 +112,7 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
         slurm_partition=partition,
         name=job_name,
         timeout_min=time_limit,
-        slurm_additional_parameters={"begin": begin_time, "nice": nice_factor},
+        slurm_additional_parameters={"begin": begin_time, "nice": nice_factor, "gres": f"{gres}:1"},
     )
 
     # Compile the code defined above
