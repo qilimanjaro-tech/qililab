@@ -55,7 +55,7 @@ class TestSubmitJob:
         """Check ValueError is raised in case GRES is not provided."""
         ip.run_cell(raw_cell="a=1\nb=1")
         with pytest.raises(
-            ValueError, match="GRES needs to be provided!"
+            ValueError, match="GRES needs to be provided! See the available ones typing 'sinfo -o '%G'' in the terminal"
         ):
             ip.run_cell_magic(
                 magic_name="submit_job",

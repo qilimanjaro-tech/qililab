@@ -14,7 +14,6 @@
 
 import ast
 import os
-import subprocess  # noqa: S404
 from types import ModuleType
 
 from IPython.core.magic import needs_local_scope, register_cell_magic
@@ -96,15 +95,7 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
     low_priority = args.low_priority
 
     if gres is None:
-        try:
-            sinfo_process = subprocess.run(["/usr/bin/sinfo", "-o", "%G"], capture_output=True, text=True, check=True)  # noqa: S603
-            sinfo_output = sinfo_process.stdout.strip()
-        except subprocess.CalledProcessError as e:
-            sinfo_output = f"Error running sinfo: {e}"
-
-        error_message = f"GRES needs to be provided! See the available ones:\n{sinfo_output}"
-        raise ValueError(error_message)
-
+        raise ValueError("GRES needs to be provided! See the available ones typing 'sinfo -o '%G''in the terminal")
     nice_factor = 0
     if low_priority in ["True", "true"]:
         nice_factor = 1000000  # this ensures Lab jobs have 0 priority, same as QaaS jobs
