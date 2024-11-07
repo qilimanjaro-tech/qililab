@@ -15,7 +15,7 @@
 import ast
 import os
 from types import ModuleType
-
+import subprocess
 from IPython.core.magic import needs_local_scope, register_cell_magic
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 from submitit import AutoExecutor
@@ -95,7 +95,9 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
     low_priority = args.low_priority
 
     if gres is None:
-        raise ValueError("GRES needs to be provided!")
+        sinfo_output = subprocess.run(['sinfo', '-o', '%G'], capture_output=True, text=True).stdout.strip()
+        error_message = f"GRES needs to be provided! See the available ones:\n{sinfo_output}"
+        raise ValueError(error_message)
 
     nice_factor = 0
     if low_priority in ["True", "true"]:
