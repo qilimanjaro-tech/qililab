@@ -95,7 +95,7 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
     low_priority = args.low_priority
 
     if gres is None:
-        raise ValueError("GRES needs to be provided! See the available ones typing 'sinfo -o '%G''in the terminal")
+        raise ValueError("GRES needs to be provided! See the available ones typing 'sinfo -o '%G'' in the terminal")
     nice_factor = 0
     if low_priority in ["True", "true"]:
         nice_factor = 1000000  # this ensures Lab jobs have 0 priority, same as QaaS jobs
