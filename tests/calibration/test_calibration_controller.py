@@ -1,3 +1,4 @@
+# mypy: disable-error-code = "attr-defined, func-returns-value, call-arg"
 from datetime import datetime
 from unittest.mock import MagicMock, call, patch
 
@@ -12,17 +13,11 @@ from qililab.platform.platform import Platform
 
 # flake8: noqa
 
-
 #################################################################################
 #################################### SET UPS ####################################
 #################################################################################
 
 path_runcard = "tests/calibration/galadriel.yml"
-
-
-def dummy_comparison_model(obtained: dict, comparison: dict) -> float:
-    """Basic comparison model for testing."""
-    return abs(sum(obtained["y"]) - sum(comparison["y"]))
 
 
 ######################
@@ -52,6 +47,31 @@ fourth = CalibrationNode(
 # NODE MAPPING TO THE GRAPH (key = name in graph, value = node object):
 nodes = {"zeroth_q0q1": zeroth, "first_q0": first, "second_q0": second, "third_q0": third, "fourth": fourth}
 
+##################################
+### CHECKPOINTS NODES CREATION ###
+##################################
+first_checkpoint = CalibrationNode(
+    nb_path="tests/calibration/notebook_test/first.ipynb",
+    node_distinguisher="cp",
+    qubit_index=0,
+    checkpoint=True,
+    check_value={"fidelity_first": 0.5},
+)
+first_checkpoint.previous_timestamp = datetime.now().timestamp()-7200.0
+# Making the first checkpoint pass!
+first_checkpoint.output_parameters = {"fidelities": {"fidelity_first": 0.6}}
+
+second_checkpoint = CalibrationNode(
+    nb_path="tests/calibration/notebook_test/second.ipynb",
+    node_distinguisher="cp",
+    qubit_index=0,
+    checkpoint=True,
+    check_value={"fidelity_second": 0.5},
+)
+second_checkpoint.previous_timestamp = datetime.now().timestamp()-7200.0
+
+# ADDING CHECKPOINTS TO THE NODES MAPPING:
+nodes_w_cp = nodes | {"first_cp_q0": first_checkpoint, "second_cp_q0": second_checkpoint}
 
 #######################
 ### GRAPHS CREATION ###
@@ -157,7 +177,31 @@ B.add_edge("first_q0", "second_q0")
 B.add_edge("zeroth_q0q1", "first_q0")
 B.add_edge("third_q0", "first_q0")
 
+# CHECKPOINTS GRAPH CREATION:
+CP_1 = nx.DiGraph()                            #   /--> 1   /--> 2 -->\
+CP_1.add_edge("zeroth_q0q1", "first_q0")       #  /        /           \
+CP_1.add_edge("zeroth_q0q1", "first_cp_q0")    # 0 --> CP_1             CP_2 --> 4
+CP_1.add_edge("first_cp_q0", "second_q0")      #           \           /
+CP_1.add_edge("first_cp_q0", "third_q0")       #            \--> 3 -->/
+CP_1.add_edge("second_q0", "second_cp_q0")
+CP_1.add_edge("third_q0", "second_cp_q0")
+CP_1.add_edge("second_cp_q0", "fourth")
+
+# CHECKPOINTS GRAPH CREATION:
+CP_2 = nx.DiGraph()                            #   /--> 1 -->\
+CP_2.add_edge("zeroth_q0q1", "first_q0")       #  /           \
+CP_2.add_edge("zeroth_q0q1", "second_q0")      # 0 ---> 2 ---> CP_1 --> CP_2 --> 4
+CP_2.add_edge("first_q0", "first_cp_q0")       #         \              /
+CP_2.add_edge("second_q0", "first_cp_q0")      #          \---> 3 ---> /
+CP_2.add_edge("second_q0", "third_q0")
+CP_2.add_edge("first_cp_q0", "second_cp_q0")
+CP_2.add_edge("third_q0", "second_cp_q0")
+CP_2.add_edge("second_cp_q0", "fourth")
+
+
+# List of graphs:
 good_graphs = [G0, G1, G2, G3, G4, G5, G6, G7, G8, G9]
+checkpoints_graphs = [CP_1, CP_2]
 
 # Leaves to Roots recursive calls of each graph. Examples: Calibrate and update_param.
 G0_calls = [call(third), call(zeroth), call(second), call(fourth)]
@@ -171,6 +215,11 @@ G7_calls = [call(zeroth), call(first), call(second), call(third), call(fourth)]
 G8_calls = [call(zeroth), call(second), call(third), call(first), call(fourth)]
 G9_calls = [call(zeroth), call(second), call(first), call(third), call(fourth)]
 
+# For diagnosing, if no passed checkpoint, we only need to go through one path, so we reverse the calls:
+CP_1_diagnose_no_V_calls = ['fourth', 'second_cp_q0', 'second_q0', 'first_cp_q0', 'zeroth_q0q1', 'third_q0', 'first_cp_q0', 'zeroth_q0q1']
+CP_2_diagnose_no_V_calls = ['fourth', 'second_cp_q0', 'first_cp_q0', 'first_q0', 'zeroth_q0q1', 'second_q0', 'zeroth_q0q1', 'third_q0', 'second_q0', 'zeroth_q0q1']
+
+checkpoints_diagnose_no_V_calls = [CP_1_diagnose_no_V_calls, CP_2_diagnose_no_V_calls]
 leaves_to_roots_good_graphs_calls = [G0_calls,G1_calls ,G2_calls,G3_calls,G4_calls,G5_calls,G6_calls,G7_calls,G8_calls,G9_calls]
 # fmt: on
 
@@ -184,6 +233,7 @@ class RunAutomaticCalibrationMockedController(CalibrationController):
     def __init__(self, node_sequence, calibration_graph, runcard):
         super().__init__(node_sequence=node_sequence, calibration_graph=calibration_graph, runcard=runcard)
         self.calibrate_all = MagicMock(return_value=None)
+        self.diagnose_checkpoint = MagicMock(return_value=None)
         self.get_qubits_tables = MagicMock(return_value=(10, 10))
         self.get_last_set_parameters = MagicMock(
             return_value={("test", "test"): (0.0, "test", datetime.fromtimestamp(1999))}
@@ -212,24 +262,24 @@ class TestInitializationCalibrationController:
     """Unit tests for the CalibrationController class initialization."""
 
     @pytest.mark.parametrize(
-        "controller",
+        "graph, controller",
         [
             (graph, CalibrationController(node_sequence=nodes, calibration_graph=graph, runcard=path_runcard))
             for graph in good_graphs
         ],
     )
-    def test_good_init_method(self, controller):
+    def test_good_init_method(self, graph, controller: CalibrationController):
         """Test a valid initialization of the class."""
         # Assert:
-        assert controller[1].calibration_graph == controller[0]
-        assert isinstance(controller[1].calibration_graph, nx.DiGraph)
-        assert controller[1].node_sequence == nodes
-        assert isinstance(controller[1].node_sequence, dict)
-        assert controller[1].runcard == path_runcard
-        assert isinstance(controller[1].runcard, str)
-        assert controller[1].platform.to_dict() == build_platform(path_runcard).to_dict()
-        assert isinstance(controller[1].platform, Platform)
-        assert controller[1].drift_timeout == 7200
+        assert controller.calibration_graph == graph
+        assert isinstance(controller.calibration_graph, nx.DiGraph)
+        assert controller.node_sequence == nodes
+        assert isinstance(controller.node_sequence, dict)
+        assert controller.runcard == path_runcard
+        assert isinstance(controller.runcard, str)
+        assert controller.platform.to_dict() == build_platform(path_runcard).to_dict()
+        assert isinstance(controller.platform, Platform)
+        assert controller.drift_timeout == 7200
 
     def test_bad_init_method(self):
         """Test an invalid initialization of the class.
@@ -256,7 +306,7 @@ class TestInitializationCalibrationController:
 class TestRunAutomaticCalibrationFromCalibrationController:
     """Test that ``run_autoamtic_calibration()`` of ``CalibrationController`` behaves well."""
 
-    def test_run_automatic_calibration(self, controller):
+    def test_run_automatic_calibration(self, controller: RunAutomaticCalibrationMockedController):
         """Test that `run_automatic_calibration()` gets the proper nodes to calibrate_all()."""
         # Act:
         output_dict = controller.run_automatic_calibration()
@@ -275,65 +325,267 @@ class TestRunAutomaticCalibrationFromCalibrationController:
 
         # sourcery skip: extract-duplicate-method
         if controller.calibration_graph in [G0, G3]:
-            controller.calibrate_all.assert_any_call(fourth)
-            controller.calibrate_all.assert_any_call(first)
+            controller.calibrate_all.assert_has_calls([call(fourth), call(first)])
+            controller.diagnose_checkpoint.assert_has_calls([call(fourth), call(first)])
             assert controller.calibrate_all.call_count == 2
+            assert controller.diagnose_checkpoint.call_count == 2
 
         elif controller.calibration_graph == G2:
-            controller.calibrate_all.assert_any_call(fourth)
-            controller.calibrate_all.assert_any_call(second)
-            controller.calibrate_all.assert_any_call(first)
+            controller.calibrate_all.assert_has_calls([call(fourth), call(second), call(first)])
+            controller.diagnose_checkpoint.assert_has_calls([call(fourth), call(second), call(first)])
             assert controller.calibrate_all.call_count == 3
+            assert controller.diagnose_checkpoint.call_count == 3
 
         elif controller.calibration_graph in [G1, G4, G5, G6, G7, G8, G9]:
-            controller.calibrate_all.assert_any_call(fourth)
+            controller.calibrate_all.assert_has_calls([call(fourth)])
+            controller.diagnose_checkpoint.assert_has_calls([call(fourth)])
             assert controller.calibrate_all.call_count == 1
+            assert controller.diagnose_checkpoint.call_count == 1
+
+# TODO: Finish this:
+#######################################################
+### TEST RUN AUTOMATIC CALIBRATION WITH CHECKPOINTS ###
+#######################################################
+# @pytest.mark.parametrize(
+#     "controller",
+#     [
+#         RunAutomaticCalibrationMockedController(node_sequence=nodes_w_cp, calibration_graph=graph, runcard=path_runcard)
+#         for graph in checkpoints_graphs
+#     ],
+# )
+# class TestRunAutomaticCalibrationWithCheckpointsFromCalibrationController:
+#     """Test that ``run_autoamtic_calibration()`` of ``CalibrationController`` behaves well."""
+#     def test_run_automatic_calibration_with_checkpoints(self, controller: RunAutomaticCalibrationMockedController):
+#         """Test that `run_automatic_calibration()` gets the proper nodes to calibrate_all()."""
+
+#         # Act:
+#         output_dict = controller.run_automatic_calibration()
+
+#         # Asserts:
+#         controller.get_last_set_parameters.assert_called_once_with()
+#         controller.get_last_fidelities.assert_called_once_with()
+#         controller.get_qubits_tables.assert_called_once_with()
+
+#         assert output_dict == {
+#             "1q_table": 10,
+#             "2q_table": 10,
+#             "set_parameters": {("test", "test"): (0.0, "test", datetime.fromtimestamp(1999))},
+#             "fidelities": {"test": (0.0, "test", datetime.fromtimestamp(1999))},
+#         }
+
+#         # controller.calibrate_all.assert_has_calls([call(fourth), call(first_checkpoint)])
+#         # controller.diagnose_checkpoint.assert_has_calls([call(fourth), call(first_checkpoint)])
+#         assert controller.calibrate_all.call_count == 2
+#         assert controller.diagnose_checkpoint.call_count == 2
+
+    # THIS GOES HERE:
+        # # Looping for checkpoints passing or not: 0.6 means V, 0.4 means X
+        # for (first_cp_fid, second_cp_fid), which_passed in zip([(0.6, 0.6), (0.6, 0.4), (0.4, None)], ["both_passed", "first_passed", "none_passed"]):
+
+        #     # Setting if the checkpoints passed or not:
+        #     first_checkpoint.output_parameters = {"fidelities": {"fidelity_first": first_cp_fid}}
+        #     second_checkpoint.output_parameters = {"fidelities": {"fidelity_second": second_cp_fid}}
+
 
 
 ##########################
 ### TEST CALIBRATE ALL ###
 ##########################
 @pytest.mark.parametrize(
-    "controller",
+    "controller, expected_calls",
     [
-        (
-            graph,
-            expected_call_order,
-            CalibrateAllMockedController(node_sequence=nodes, calibration_graph=graph, runcard=path_runcard),
-        )
+        (CalibrateAllMockedController(node_sequence=nodes, calibration_graph=graph, runcard=path_runcard), expected_call_order)
         for graph, expected_call_order in zip(good_graphs, leaves_to_roots_good_graphs_calls)
     ],
 )
 class TestCalibrateAllFromCalibrationController:
     """Test that ``calibrate_all()`` of ``CalibrationConroller`` behaves well."""
 
-    def test_low_level_mockings_working_properly(self, controller):
+    def test_low_level_mockings_working_properly(self, controller: CalibrateAllMockedController, expected_calls: list):
         """Test that the mockings are working properly."""
         # Assert:
-        assert all(node.previous_timestamp is None for node in controller[2].node_sequence.values())
-        assert controller[2].calibrate() is None
-        assert controller[2]._update_parameters() is None
+        assert all(node.previous_timestamp is None for node in controller.node_sequence.values())
+        assert controller.calibrate() is None
+        assert controller._update_parameters() is None
 
-    def test_calls_for_linear_calibration(self, controller):
+    def test_calibrate_all_calls_for_linear_calibration(self, controller: CalibrateAllMockedController, expected_calls: list):
         """Test that ``calibrate_all`` follows the correct logic for each graph, from leaves up to the roots"""
 
         # Reset mock calls:
-        controller[2].calibrate.reset_mock()
-        controller[2]._update_parameters.reset_mock()
-        for node in controller[2].node_sequence.values():
-            node.been_calibrated = False
+        controller.calibrate.reset_mock()
+        controller._update_parameters.reset_mock()
+        for node in controller.node_sequence.values():
+            node.been_calibrated_succesfully = False
 
         # Act:
-        controller[2].calibrate_all(fourth)
+        controller.calibrate_all(fourth)
 
         # Assert that 0, 3 & 4 notebooks have been calibrated:
         # (1 and 2 are calibrated in some graphs and not in others)
         for node in [zeroth, third, fourth]:
-            assert node.been_calibrated is True
+            assert node.been_calibrated_succesfully is True
 
         # Asserts recursive calls
-        controller[2].calibrate.assert_has_calls(controller[1])
-        controller[2]._update_parameters.assert_has_calls(controller[1])
+        controller.calibrate.assert_has_calls(expected_calls)
+        controller._update_parameters.assert_has_calls(expected_calls)
+
+    def test_calibrate_all_with_checkpoint_passed(self, controller: CalibrateAllMockedController, expected_calls: list):
+        """Test that ``calibrate_all`` follows the correct logic for a checkpoint passed."""
+
+        # Reset mock calls:
+        controller.calibrate.reset_mock()
+        controller._update_parameters.reset_mock()
+
+        # Set fourth as a checkpoint passed:
+        controller.node_sequence["fourth"].checkpoint_passed = True
+
+        # Act:
+        controller.calibrate_all(fourth)
+
+        # Assert no other method is called if fourth as checkpoint is passed:
+        controller.calibrate.assert_not_called()
+        controller._update_parameters.assert_not_called()
+
+
+#################################
+### TEST DIAGNOSE CHECKPOINTS ###
+#################################
+@pytest.mark.parametrize(
+    "controller, calls",
+    [
+        (CalibrateAllMockedController(node_sequence=nodes_w_cp, calibration_graph=graph, runcard=path_runcard), calls)
+        for graph, calls in zip(checkpoints_graphs, checkpoints_diagnose_no_V_calls)
+    ],
+)
+class TestDiagnoseCheckpointsFromCalibrationController:
+    """Test that ``diagnose_checkpoint()`` of ``CalibrationConroller`` behaves well."""
+
+    def test_low_level_mockings_working_properly(self, controller: CalibrateAllMockedController, calls: list):
+        """Test that the mockings are working properly."""
+        assert controller.calibrate() is None
+        assert controller._update_parameters() is None
+
+    @patch("qililab.calibration.calibration_controller.logger.info")
+    def test_calls_for_diagnosing_checkpoints(self, logger_mock, controller: CalibrateAllMockedController, calls: list):
+        """Test that ``diagnose_checkpoint()`` follows the correct logic for each graph, from leaves up to the roots"""
+
+        # Reset mock calls:
+        controller.calibrate.reset_mock()
+        controller._update_parameters.reset_mock()
+        for node in controller.node_sequence.values():
+            node.checkpoint_passed = None
+            node.been_calibrated_succesfully = False
+
+        # Act:
+        controller.diagnose_checkpoint(fourth)
+
+        # Assert first logger.info called, and assert its called to all dependencies
+        logger_calls = [call("WORKFLOW: Diagnosing  %s.\n", string) for string in calls]
+
+        # Adding the final calls, after first checkpoint passed and second failed:
+        if controller.calibration_graph == CP_1:
+            logger_calls.append(call('WORKFLOW: %s checkpoint already checked, skipping it.\n', 'first_cp_q0'))
+        logger_calls.append(call('WORKFLOW: %s checkpoint failed, calibration will start just after the previously passed checkpoint.\n', 'second_cp_q0'))
+        logger_mock.assert_has_calls(logger_calls)
+
+        # Assert that no node has been marked as passed:
+        for node in nodes.values():
+            assert node.checkpoint_passed is None
+            assert node.been_calibrated_succesfully is False
+
+        # For the checkpoint that passed we got:
+        assert nodes_w_cp["first_cp_q0"].checkpoint_passed is True
+        assert nodes_w_cp["first_cp_q0"].been_calibrated_succesfully is True
+
+        # For the checkpoint that failed we got:
+        assert nodes_w_cp["second_cp_q0"].checkpoint_passed is False
+
+        # Asserts calls for the checkpoints that passed and non, respectively:
+        controller.calibrate.assert_has_calls([call(node) for node in [nodes_w_cp["first_cp_q0"], nodes_w_cp["second_cp_q0"]]])
+        controller._update_parameters.assert_called_once_with(nodes_w_cp["first_cp_q0"])
+
+@pytest.mark.parametrize(
+    "controller",
+    [
+        CalibrateAllMockedController(node_sequence=nodes, calibration_graph=graph, runcard=path_runcard)
+        for graph in good_graphs
+    ],
+)
+class TestDiagnoseWithoutCheckpointsFromCalibrationController:
+    """Test that ``diagnose_checkpoint()`` of ``CalibrationConroller`` behaves well."""
+
+    def test_low_level_mockings_working_properly_without_checkpoints(self, controller: CalibrateAllMockedController):
+        """Test that the mockings are working properly."""
+        # Assert:
+        assert all(node.previous_timestamp is None for node in controller.node_sequence.values())
+        assert controller.calibrate() is None
+        assert controller._update_parameters() is None
+
+    @patch("qililab.calibration.calibration_controller.logger.info")
+    def test_calls_for_diagnosing_without_checkpoints(self, logger_mock, controller: CalibrateAllMockedController):
+        """Test that ``diagnose_checkpoint()`` follows the correct logic for each graph, from leaves up to the roots"""
+        # Reset mock calls:
+        controller.calibrate.reset_mock()
+        controller._update_parameters.reset_mock()
+        for node in controller.node_sequence.values():
+            node.checkpoint_passed = None
+            node.been_calibrated_succesfully = False
+
+        # Act:
+        controller.diagnose_checkpoint(fourth)
+
+        # Assert first logger.info called, and assert its called to all dependencies
+        for node_str in controller.node_sequence:
+            # Graphs 0, 3 and 2, don't have all the branches finishing in "fourth", so first and second are not diagnosed always:
+            if controller.calibration_graph in [G0, G3] and node_str == "first_q0":
+                continue
+            elif controller.calibration_graph == G2 and node_str in ["first_q0", "second_q0"]:
+                continue
+            logger_mock.assert_any_call("WORKFLOW: Diagnosing  %s.\n", node_str)
+
+        # Assert that no node has been marked as passed:
+        for node in nodes.values():
+            assert node.checkpoint_passed is None
+
+        # Asserts recursive calls
+        controller.calibrate.assert_not_called()
+        controller._update_parameters.assert_not_called()
+
+
+#########################################
+### TEST CHECKPOINT PASSED COMPARISON ###
+#########################################
+@pytest.mark.parametrize(
+    "controller",
+    [
+        CalibrateAllMockedController(node_sequence=nodes, calibration_graph=graph, runcard=path_runcard)
+        for graph in good_graphs
+    ],
+)
+class TestCheckpointPassedComparison:
+    """Test that the ``checkpoint_passed_comparison()`` method behaves well."""
+
+
+    def test_checkpoint_passed_comparison(self, controller: CalibrateAllMockedController):
+        """Test that the ``checkpoint_passed_comparison()`` method behaves well."""
+
+        # Assert that if no check_value is set, the method returns True:
+        nodes_w_cp["first_cp_q0"].check_value = None
+        assert controller._checkpoint_passed_comparison(nodes_w_cp["first_cp_q0"]) is True
+        nodes_w_cp["first_cp_q0"].check_value = {"fidelity_first": 0.9}
+
+        # Assert that if no output_parameters, the method returns False:
+        nodes_w_cp["first_cp_q0"].output_parameters = None
+        assert controller._checkpoint_passed_comparison(nodes_w_cp["first_cp_q0"]) is False
+
+        # Assert that if fidelity>check_value, the method returns True:
+        nodes_w_cp["first_cp_q0"].output_parameters = {"fidelities": {"fidelity_first": 0.95}}
+        assert controller._checkpoint_passed_comparison(nodes_w_cp["first_cp_q0"]) is True
+
+        # Assert that if fidelity<check_value, the method returns False:
+        nodes_w_cp["first_cp_q0"].output_parameters = {"fidelities": {"fidelity_first": 0.85}}
+        assert controller._checkpoint_passed_comparison(nodes_w_cp["first_cp_q0"]) is False
+
 
 
 @pytest.mark.parametrize(
@@ -351,7 +603,7 @@ class TestCalibrationController:
     ######################
     @patch("qililab.calibration.calibration_node.CalibrationNode.run_node")
     @patch("qililab.calibration.calibration_node.CalibrationNode._add_string_to_checked_nb_name")
-    def test_calibrate(self, mock_add_str, mock_run, controller):
+    def test_calibrate(self, mock_add_str, mock_run, controller: CalibrationController):
         """Test that the calibration method, calls node.run_node()."""
         for node in controller.node_sequence.values():
             controller.calibrate(node)
@@ -364,7 +616,7 @@ class TestCalibrationController:
 
     @patch("qililab.platform.Platform.set_parameter")
     @patch("qililab.calibration.calibration_controller.save_platform")
-    def test_update_parameters(self, mock_save_platform, mock_set_params, controller):
+    def test_update_parameters(self, mock_save_platform, mock_set_params, controller: CalibrationController):
         """Test that the update parameters method, calls ``platform.set_parameter()`` and ``save_platform()``."""
         for node in controller.node_sequence.values():
             node.output_parameters = {
@@ -386,7 +638,7 @@ class TestCalibrationController:
     ####################################
     ### TEST GET LAST SET PARAMETERS ###
     ####################################
-    def test_get_last_set_parameters(self, controller):
+    def test_get_last_set_parameters(self, controller: CalibrationController):
         """Test that the ``get_last_set_parameters()`` method, gets the correct parameters."""
         for i, node in controller.node_sequence.items():
             node.output_parameters = {
@@ -432,7 +684,7 @@ class TestCalibrationController:
     ################################
     ### TEST GET LAST FIDELITIES ###
     ################################
-    def test_get_last_fidelities(self, controller):
+    def test_get_last_fidelities(self, controller: CalibrationController):
         """Test that the ``get_last_fidelities()`` method, gets the correct parameters."""
         for i, node in controller.node_sequence.items():
             node.output_parameters = {
@@ -477,7 +729,7 @@ class TestCalibrationController:
     ################################
     ##### TEST GET QUBITS TABLE ####
     ################################
-    def test_get_qubits_table_and_test_create_empty_dataframe(self, controller):
+    def test_get_qubits_table_and_test_create_empty_dataframe(self, controller: CalibrationController):
         """Test that the ``get_qubits_table()`` and ``_create_empty_dataframes()`` methods, gets the correct structure and parameters."""
         for ind, (_, node) in enumerate(controller.node_sequence.items()):
             if node.node_id == "zeroth_q0q1":
@@ -586,7 +838,7 @@ class TestCalibrationController:
             if node.node_id == "fourth_q1":
                 node.node_id = "fourth"
 
-    def test_reorder_fidelities(self, controller):
+    def test_reorder_fidelities(self, controller: CalibrationController):
         """Test that the reorder method, puts the fidelities in the front."""
         idx = ["0", "1"]
 
@@ -626,7 +878,7 @@ class TestCalibrationController:
     #########################
     ### TEST DEPENDENCIES ###
     #########################
-    def test_dependencies(self, controller):
+    def test_dependencies(self, controller: CalibrationController):
         """Test that dependencies return the correct dependencies."""
         result = controller._dependencies(nodes["zeroth_q0q1"])
         assert result == []

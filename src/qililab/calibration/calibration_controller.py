@@ -66,7 +66,7 @@ class CalibrationController:
         node_sequence (dict[str, CalibrationNode]): Mapping for the nodes of the graph, from strings into the actual initialized nodes.
         runcard (str): The runcard path, containing the serialized platform where the experiments will be run.
         drift_timeout (float, optional): Duration in seconds, representing an estimate of how long it takes for the calibration parameters to drift.
-            During that time the parameters of this node should be considered calibrated. Thus a big value will tend to skip recently calibrated nodes,
+            During that time the parameters of this node should be considered calibrated. Thus a big value will tend to skip recently calibrated nodes or checkpoints,
             making the calibration process faster, but less accurate,and a small value will make the calibration process slower, but more accurate and robust.
             A node will be skipped if the ``drift timeout`` is bigger than the time since its last calibration. Defaults to 7200 (3h).
 
@@ -76,9 +76,10 @@ class CalibrationController:
 
         The calibration process is structured into three levels of methods:
 
-        1. **Highest Level Method**: The ``run_automatic_calibration()`` method finds all the end nodes of the graph (`leaves`, those without further `dependents`) and runs ``calibrate_all()`` on them.
+        1. **Highest Level Method**: The ``run_automatic_calibration()`` method finds all the end nodes of the graph (`leaves`, those without further `dependents`) and runs ``diagnose_checkpoint()`` and then ``calibrate_all()`` on the ones needed.
 
-        2. **Mid-Level Method**: ``calibrate_all()``.
+        2. **Mid-Level Methods**: ``diagnose_checkpoint()`` and ``calibrate_all()``.
+            - ``diagnose_checkpoint()`` searches for the first bad ``checkpoint``, and marks it. Such that the next call of ``calibrate_all()`` starts just after the last passed ``checkpoint``.
             - ``calibrate_all(node)`` starts from the `roots` that ``node`` depends on, and moves forwards (`dependency -> dependant`) until ``node``, checking the last time executions at each step.
 
         3. **Low-Level Method**: ``calibrate()`` is the method you would be calling during this process to interact with the ``nodes``.
@@ -121,6 +122,8 @@ class CalibrationController:
                     nb_path="notebooks/second.ipynb",
                     qubit_index=qubit,
                     sweep_interval=np.arange(start=0, stop=19, step=1),
+                    checkpoint=True,
+                    check_value={"fidelity": 0.85},
                 )
                 nodes[second[qubit].node_id] = second[qubit]
 
@@ -188,32 +191,26 @@ class CalibrationController:
         A node will be skipped if the ``drift timeout`` is bigger than the time since its last calibration. Defaults to 7200 (2h).
         """
 
-    def calibrate_all(self, node: CalibrationNode):
-        """Calibrates all the nodes sequentially.
-
-        Args:
-            node (CalibrationNode): The node where we want to start the `calibration_all()` on. Normally you would want
-                this node to be the furthest node in the calibration graph.
-        """
-        logger.info("WORKFLOW: Calibrating all %s.\n", node.node_id)
-        for n in self._dependencies(node):
-            self.calibrate_all(n)
-
-        # You can skip it from the `drift_timeout`, but also skip it due to `been_calibrated()`
-        # If you want to start the calibration from the start again, just decrease the `drift_timeout` or remove the executed files!
-        if not node.been_calibrated:
-            if node.previous_timestamp is None or self._is_timeout_expired(node.previous_timestamp, self.drift_timeout):
-                self.calibrate(node)
-                self._update_parameters(node)
-
-            node.been_calibrated = True
-        # After passing this block `node.been_calibrated` will always be True, so it will not be recalibrated again.
-
     def run_automatic_calibration(self) -> dict[str, dict]:
-        """Runs the full automatic calibration procedure and retrieves the final set parameters and achieved fidelities dictionaries.
+        r"""Runs the full automatic calibration procedure and retrieves the final set parameters and achieved fidelities dictionaries.
 
         This is the primary interface for our calibration procedure and the highest level algorithm, which finds all the end nodes of the graph
-        (`leaves`, those without further `dependents`) and runs ``calibrate_all()`` on them.
+        (`leaves`, those without further `dependents`) and runs ``diagnose_checkpoint()`` and then ``calibrate_all()`` on the ones needed.
+
+        If ``checkpoints`` are present, ``diagnose_checkpoint()`` will skip the parts of the graph that are already good to go.
+
+        ``diagnose_checkpoint()`` starts from the first nodes, until finds the first in each branch, that doesn't pass.
+
+        Example:
+
+        If \[i\] are notebooks and \[V\] or \[X\] are checkpoints that pass or not respectively, in a graph like:
+
+        - `[0] - [1] - [V] - [3] - [4] - [X] - [5]`, calibration would start from notebook 3
+
+        - `[0] - [1] - [V] - [3] - [4] - [V] - [5]`, calibration would start from notebook 5
+
+        - `[0] - [1] - [X] - [3] - [4] - [.] - [5]`, calibration would start from notebook 0 (Notice that the second `checkpoints` is not checked, since the first one already fails)
+
 
         Returns:
             dict[str, dict]: Dictionary for the last set parameters and the last achieved fidelities. It contains two dictionaries (dict[tuple, tuple]) in the keys:
@@ -229,6 +226,21 @@ class CalibrationController:
             self.node_sequence[node] for node, out_degree in self.calibration_graph.out_degree() if out_degree == 0
         ]
 
+        logger.info(
+            "\n################################\n"
+            "Starting to diagnose checkpoints\n"
+            "################################\n"
+        )
+
+        for node in highest_level_nodes:
+            self.diagnose_checkpoint(node)
+
+        logger.info(
+            "\n#######################################\n"
+            "Diagnose finished, starting calibration\n"
+            "#######################################\n"
+        )
+
         for node in highest_level_nodes:
             self.calibrate_all(node)
 
@@ -238,6 +250,131 @@ class CalibrationController:
             "#############################################\n"
         )
         return self.get_qubit_fidelities_and_parameters_df_tables()
+
+    def calibrate_all(self, node: CalibrationNode) -> None:
+        """Calibrates all the nodes sequentially.
+
+        Args:
+            node (CalibrationNode): The node where we want to start the `calibration_all()` on. Normally you would want
+                this node to be the furthest node in the calibration graph.
+        """
+        logger.info("WORKFLOW: Calibrating all %s.\n", node.node_id)
+
+        # If `diagnose_checkpoint` has found a checkpoint bad, start the calibration just after the last passed checkpoint before that bad one.
+        # O - [V] - [O] - [V] - [0] - [X] - [ ] - [ ] - [ ] - ... we leave the next ones empty (.), after finding the first bad
+        # checkpoint, so that we can just find the first [V], going from right to left in ``calibrate_all()`` calls and start there.
+        if node.checkpoint_passed:
+            logger.info("WORKFLOW: Last checkpoint passed: %s, skipping calibration in previous nodes.\n", node.node_id)
+            return
+
+        for n in self._dependencies(node):
+            self.calibrate_all(n)
+
+        # You can skip it from the `drift_timeout`, but also skip it due to `been_calibrated_succesfully()`
+        # If you want to start the calibration from the start again, just decrease the `drift_timeout` or remove the executed files!
+        if not node.been_calibrated_succesfully:
+            if node.previous_timestamp is None or self._is_timeout_expired(node.previous_timestamp, self.drift_timeout):
+                self.calibrate(node)
+                self._update_parameters(node)
+
+            node.been_calibrated_succesfully = True
+        # After passing this block `node.been_calibrated_succesfully` will always be True, so it will not be recalibrated again.
+
+    def diagnose_checkpoint(self, node: CalibrationNode) -> bool:
+        r"""Searches for the first bad ``checkpoint``, and if found, we start the calibration process with the recursive
+        ``calibrate_all()`` calls, just after the last passed ``checkpoint``.
+
+        This diagnose of the `checkpoints` starts from the first ones, until finds the first in each branch, that doesn't pass.
+
+        Take into account that `drift_timeout` also makes you skip `checkpoints`, so it rules over checkpoints that would pass.
+
+        Example:
+
+        If \[i\] are notebooks and \[V\] or \[X\] are checkpoints that pass or not respectively, in a graph like:
+
+        - `[0] - [1] - [V] - [3] - [4] - [X] - [5]`, calibration would start from notebook 3
+
+        - `[0] - [1] - [V] - [3] - [4] - [V] - [5]`, calibration would start from notebook 5
+
+        - `[0] - [1] - [X] - [3] - [4] - [.] - [5]`, calibration would start from notebook 0 (Notice that the second `checkpoints` is not checked, since the first one already fails)
+
+        Args:
+            node (CalibrationNode): The node to diagnose.
+
+        Returns:
+            bool: Wether the `diagnose_checkpoint` process has finished or not.
+        """
+        logger.info("WORKFLOW: Diagnosing  %s.\n", node.node_id)
+
+        # We use `any()` here, to not get the following case:
+        # [X] - - - [V]      ( --->  Should be --->      [X] - - - [ ] )
+        # [V] - /            ( --->            --->      [V] - /       )
+        # Since then `calibrate_all()` would start from the most right [V], skipping the branch of the [X]...
+        diagnose_finished = any(self.diagnose_checkpoint(n) for n in self._dependencies(node))
+        # Since any([]) = False, this will only check if there are dependencies, if not, diagnose starts (no finishes).
+
+        # When we have encountered a dependency checkpoint bad, we should not diagnose further:
+        # [O] - [V] - [O] - [V] - [0] - [X] - [ ] - [ ] - [ ] - ... we leave the next ones empty (.), after finding the first bad
+        # checkpoint, so that we can just find the first [V], going from right to left in ``calibrate_all()`` calls and start there.
+        if diagnose_finished:
+            return True
+
+        # If no checkpoint is found, we can continue diagnosing the next nodes.
+        if not node.checkpoint:
+            return False
+
+        # If the node has recently been calibrated successfully, we can skip it from the `drift_timeout`.
+        # If you want to start diagnosing from the start again, just decrease the `drift_timeout` or remove the executed files!
+        # Also notice, that if a checkpoint is skipped we don't set it to [V], but to [ ] instead, as if it was never checked or wasn't a checkpoint.
+        if node.previous_timestamp and not self._is_timeout_expired(node.previous_timestamp, self.drift_timeout):
+            return False
+
+        # For not repeating [X] and [V]'s checkpoints, when more than one branch have it as a dependency.
+        if node.checkpoint_passed is not None:
+            logger.info(
+                "WORKFLOW: %s checkpoint already checked, skipping it.\n",
+                node.node_id,
+            )
+            return not node.checkpoint_passed
+
+        # Main diagnose logic if the node is a checkpoint, and hasn't been checked, start checking.
+        self.calibrate(node)
+        if node.output_parameters is not None and self._checkpoint_passed_comparison(node):
+            node.checkpoint_passed = True
+            self._update_parameters(node)
+            node.been_calibrated_succesfully = True
+        else:
+            logger.info(
+                "WORKFLOW: %s checkpoint failed, calibration will start just after the previously passed checkpoint.\n",
+                node.node_id,
+            )
+            node.checkpoint_passed = False
+
+        # If the node was a checkpoint, depending on the results, we can stop or not diagnosing the next nodes.
+        return not node.checkpoint_passed
+
+    def _checkpoint_passed_comparison(self, node: CalibrationNode) -> bool:
+        """Computes whetter a checkpoint passed, based on whether the fidelities of the node are greater or equal to the check values.
+
+        Args:
+            node (CalibrationNode): The node to check the fidelities of.
+
+        Returns:
+            bool: Whether the fidelities of the node are greater or equal to the check values.
+        """
+        # If no check_value, any fidelity is good.
+        if node.check_value is None:
+            return True
+
+        # If check_value is present, but fidelities are not, the checkpoint doesn't pass.
+        if node.output_parameters is None:
+            return False
+
+        # If check_value and fidelities are present, all fidelities must be greater or equal to the check values.
+        return all(
+            fidelity_v >= node.check_value[fidelity_k]
+            for fidelity_k, fidelity_v in node.output_parameters["fidelities"].items()
+        )
 
     def get_qubit_fidelities_and_parameters_df_tables(self) -> dict[str, pd.DataFrame]:
         """Generates the 1q, 2q, fidelities and parameters dataframes, with the last calibrations.
