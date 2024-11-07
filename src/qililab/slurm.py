@@ -14,8 +14,9 @@
 
 import ast
 import os
+import subprocess  # noqa: S404
 from types import ModuleType
-import subprocess
+
 from IPython.core.magic import needs_local_scope, register_cell_magic
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 from submitit import AutoExecutor
@@ -95,7 +96,12 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
     low_priority = args.low_priority
 
     if gres is None:
-        sinfo_output = subprocess.run(['sinfo', '-o', '%G'], capture_output=True, text=True).stdout.strip()
+        try:
+            sinfo_process = subprocess.run(["/usr/bin/sinfo", "-o", "%G"], capture_output=True, text=True, check=True)  # noqa: S603
+            sinfo_output = sinfo_process.stdout.strip()
+        except subprocess.CalledProcessError as e:
+            sinfo_output = f"Error running sinfo: {e}"
+
         error_message = f"GRES needs to be provided! See the available ones:\n{sinfo_output}"
         raise ValueError(error_message)
 
