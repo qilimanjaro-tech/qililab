@@ -905,6 +905,7 @@ class Platform:
         placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
         router: Router | type[Router] | tuple[type[Router], dict] | None = None,
         routing_iterations: int = 10,
+        optimize: bool = True,
     ) -> Result | QbloxResult:
         """Compiles and executes a circuit or a pulse schedule, using the platform instruments.
 
@@ -924,6 +925,7 @@ class Platform:
             router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
                 use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
             routing_iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
+            optimize (bool, optional): whether to optimize the circuit and/or transpilation. Defaults to True.
 
         Returns:
             Result: Result obtained from the execution. This corresponds to a numpy array that depending on the
@@ -936,7 +938,7 @@ class Platform:
         """
         # Compile pulse schedule
         programs, final_layout = self.compile(
-            program, num_avg, repetition_duration, num_bins, placer, router, routing_iterations
+            program, num_avg, repetition_duration, num_bins, placer, router, routing_iterations, optimize
         )
 
         # Upload pulse schedule
@@ -1032,6 +1034,7 @@ class Platform:
         placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
         router: Router | type[Router] | tuple[type[Router], dict] | None = None,
         routing_iterations: int = 10,
+        optimize: bool = True,
     ) -> tuple[dict[str, list[QpySequence]], dict[str, int] | None]:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
 
@@ -1050,6 +1053,7 @@ class Platform:
             router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
                 use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
             routing_iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
+            optimize (bool, optional): whether to optimize the circuit and/or transpilation. Defaults to True.
 
         Returns:
             tuple[dict, dict[str, int]]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``), and the value is the assembly compilation (``list``)) and the final layout of the qubits in the circuit {"qX":Y}.
@@ -1065,7 +1069,7 @@ class Platform:
             transpiler = CircuitTranspiler(digital_compilation_settings=self.digital_compilation_settings)
 
             transpiled_circuits, final_layouts = transpiler.transpile_circuits(
-                [program], placer, router, routing_iterations
+                [program], placer, router, routing_iterations, optimize
             )
             pulse_schedule, final_layout = transpiled_circuits[0], final_layouts[0]
 

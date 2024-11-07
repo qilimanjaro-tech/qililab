@@ -31,6 +31,7 @@ def execute(
     placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
     router: Router | type[Router] | tuple[type[Router], dict] | None = None,
     routing_iterations: int = 10,
+    optimize: bool = True,
 ) -> Result | list[Result]:
     """Executes a Qibo circuit (or a list of circuits) with qililab and returns the results.
 
@@ -47,6 +48,7 @@ def execute(
         router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
             use,` with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
         routing_iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
+        optimize (bool, optional): whether to optimize the circuit and/or transpilation. Defaults to True.
 
     Returns:
         Result | list[Result]: :class:`Result` class (or list of :class:`Result` classes) containing the results of the
@@ -96,6 +98,7 @@ def execute(
                 placer=placer,
                 router=router,
                 routing_iterations=routing_iterations,
+                optimize=optimize,
             )
             for circuit in tqdm(program, total=len(program))
         ]

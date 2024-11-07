@@ -233,6 +233,10 @@
 
 - Added a `save_plot=True` parameter to the `plotS21()` method of `ExperimentResults`. When enabled (default: True), the plot is automatically saved in the same directory as the experiment results. [#819](https://github.com/qilimanjaro-tech/qililab/pull/819)
 
+- Improved the transpiler, by making it more modular, and adding a `gate_cancellation()` stage before the transpilation to natives, this stage can be skipped, together with the old `optimize_transpilation()`, if the flag `optimize=False` is passed.
+
+[#823](https://github.com/qilimanjaro-tech/qililab/pull/823)
+
 ### Breaking changes
 
 - Renamed the platform's `execute_anneal_program()` method to `execute_annealing_program()` and updated its parameters. The method now expects `preparation_block` and `measurement_block`, which are strings used to retrieve blocks from the `Calibration`. These blocks are inserted before and after the annealing schedule, respectively.
