@@ -2,6 +2,10 @@
 
 ### New features since last release
 
+- Support GRES in %%submit_job magic method
+
+[#828](https://github.com/qilimanjaro-tech/qililab/pull/828)
+
 - Added intermediate frequency to single input lines on qm. The default is 0 (this prevents some bugs from qua-qm). Now it is possible to use the set_parameter IF and qm.set_frequency for buses with single_input.
 
 [#807](https://github.com/qilimanjaro-tech/qililab/pull/807)
@@ -152,7 +156,7 @@ instruments:
     ...
 ```
 
-  [#826](https://github.com/qilimanjaro-tech/qililab/pull/826)
+[#826](https://github.com/qilimanjaro-tech/qililab/pull/826)
 
 ### Improvements
 
