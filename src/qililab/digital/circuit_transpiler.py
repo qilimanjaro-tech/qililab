@@ -204,7 +204,9 @@ class CircuitTranspiler:
         return circuit_router.route(circuit, iterations)
 
     def optimize_circuit(self, circuit: Circuit) -> Circuit:
-        """Optimizes circuit by cancelling adjacent hermitian gates.
+        """Main function to optimize circuits with. Currently works by cancelling adjacent hermitian gates.
+
+        The total optimization can/might be expanded in the future.
 
         Args:
             circuit (Circuit): circuit to optimize.

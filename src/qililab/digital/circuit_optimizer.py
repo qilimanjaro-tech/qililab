@@ -31,8 +31,10 @@ class CircuitOptimizer:
         self.digital_compilation_settings = digital_compilation_settings
 
     @classmethod
-    def run_gate_cancellations(cls, circuit):
-        """Main method to run the circuit optimization with.
+    def run_gate_cancellations(cls, circuit: Circuit) -> Circuit:
+        """Main method to run the gate cancellations. Currently only consists of cancelling pairs of hermitian gates.
+
+        Can/Might be extended in the future to include more complex gate cancellations.
 
         Args:
             circuit (Circuit): circuit to optimize.
