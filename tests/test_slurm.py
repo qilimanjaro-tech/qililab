@@ -4,9 +4,8 @@ import time
 from unittest.mock import MagicMock, patch
 
 import pytest
-from IPython.testing.globalipapp import start_ipython
-
 import qililab as ql
+from IPython.testing.globalipapp import start_ipython
 
 slurm_job_data_test = "slurm_job_data_test"
 
@@ -34,7 +33,7 @@ class TestSubmitJob:
         ip.run_cell(raw_cell="a=1\nb=1")
         ip.run_cell_magic(
             magic_name="submit_job",
-            line=f"-o results -p debug -l {slurm_job_data_test} -n unit_test -e local",
+            line=f"-o results -g aQPU1 -l {slurm_job_data_test} -n unit_test -e local",
             cell="results = a+b ",
         )
         time.sleep(4)
@@ -48,7 +47,19 @@ class TestSubmitJob:
         ):
             ip.run_cell_magic(
                 magic_name="submit_job",
-                line=f"-o results -p debug -l {slurm_job_data_test} -n unit_test -e local",
+                line=f"-o results -g aQPU1 -l {slurm_job_data_test} -n unit_test -e local",
+                cell="a+b",
+            )
+
+    def test_submit_job_no_gres_provided(self, ip):
+        """Check ValueError is raised in case GRES is not provided."""
+        ip.run_cell(raw_cell="a=1\nb=1")
+        with pytest.raises(
+            ValueError, match="GRES needs to be provided!"
+        ):
+            ip.run_cell_magic(
+                magic_name="submit_job",
+                line=f"-o results -l {slurm_job_data_test} -n unit_test -e local",
                 cell="a+b",
             )
 
@@ -59,7 +70,7 @@ class TestSubmitJob:
         )
         ip.run_cell_magic(
             magic_name="submit_job",
-            line=f"-o results -p debug -l {slurm_job_data_test} -n unit_test -e local",
+            line=f"-o results -g aQPU1 -l {slurm_job_data_test} -n unit_test -e local",
             cell="results=a+b",
         )
         time.sleep(4)  # give time to ensure processes are finished
@@ -72,7 +83,7 @@ class TestSubmitJob:
         for _ in range(int(ql.slurm.num_files_to_keep / 4)):
             ip.run_cell_magic(
                 magic_name="submit_job",
-                line=f"-o results -p debug -l {slurm_job_data_test} -n unit_test -e local",
+                line=f"-o results -g aQPU1 -l {slurm_job_data_test} -n unit_test -e local",
                 cell="results=a+b",
             )
             time.sleep(2)  # give time submitit to create the files
@@ -83,7 +94,7 @@ class TestSubmitJob:
         )
         ip.run_cell_magic(
             magic_name="submit_job",
-            line=f"-o results -p debug -l {slurm_job_data_test} -n unit_test -e local",
+            line=f"-o results -g aQPU1 -l {slurm_job_data_test} -n unit_test -e local",
             cell="results=a+b",
         )
         time.sleep(2)
@@ -102,7 +113,7 @@ class TestSubmitJob:
             with patch("qililab.slurm.os"):
                 ip.run_cell_magic(
                     magic_name="submit_job",
-                    line=f"-o results -p debug -l {slurm_job_data_test} -n unit_test -e local -t 5 --begin now+1hour -lp true",
+                    line=f"-o results -p debug -l {slurm_job_data_test} -n unit_test -e local -t 5 --begin now+1hour -lp true -g aQPU1",
                     cell="results=a+b",
                 )
         executor.assert_called_once_with(folder=slurm_job_data_test, cluster="local")
@@ -110,5 +121,5 @@ class TestSubmitJob:
             slurm_partition="debug",
             name="unit_test",
             timeout_min=5,
-            slurm_additional_parameters={"begin": "now+1hour", "nice": 1000000},
+            slurm_additional_parameters={"begin": "now+1hour", "nice": 1000000, "gres":"aQPU1:1"},
         )
