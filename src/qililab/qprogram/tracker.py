@@ -13,7 +13,6 @@
 # limitations under the License.
 from typing import Callable
 
-from qililab.platform.platform import Platform
 from qililab.qprogram.experiment import Experiment
 from qililab.result.experiment_results import ExperimentResults
 from qililab.yaml import yaml
@@ -65,7 +64,6 @@ class Tracker:
 
     def run_tracker(
         self,
-        platform: Platform,
         set_parameter: Callable,
         values: list,
         initial_guess: float,
@@ -94,11 +92,7 @@ class Tracker:
                 self.guessed_path[operation].append(predicted_point)
 
                 # Do the experiment
-                experiment = self.measure_dict[operation](window)
-                with platform.session():
-                    results_path = platform.execute_experiment(experiment, data_path)
-                with ExperimentResults(results_path) as results:
-                    data, dims = results.get()
+                data, dims = self.measure_dict[operation](window)
                 self.total_data[operation].append(data)
                 self.experiment_dims[operation].append(dims)
 
