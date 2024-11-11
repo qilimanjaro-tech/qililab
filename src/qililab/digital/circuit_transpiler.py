@@ -54,10 +54,15 @@ class CircuitTranspiler:
         """Transpiles a list of ``qibo.models.Circuit`` to a list of pulse schedules.
 
         First makes a routing and placement of the circuit to the chip's physical qubits. And returns/logs the final layout of the qubits.
+        If passed, this is done, with the `placer`, `router` and `routing_iterations` params (if not, default ones are applied).
 
-        Then translates the circuit to a native gate circuit and applies virtual Z gates and phase corrections for CZ gates.
+        Then translates the circuit to the native gate circuit, of the chip (CZ, RZ, Drag, Wait and M (Measurement).
 
         And finally, it converts the native gate circuit to a pulse schedule using calibrated settings from the runcard.
+
+        If ``optimize=True`` (default behaviour), then it also does some circuit optimization:
+        - cancelling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ and SWAPs).
+        - applying virtual Z gates and phase corrections (adding up several pulses into a single one, commuting them with virtual Zs).
 
         **Examples:**
 
@@ -138,9 +143,9 @@ class CircuitTranspiler:
         coupling_map: list[tuple[int, int]] | None = None,
         iterations: int = 10,
     ) -> tuple[Circuit, dict[str, int]]:
-        """Routes the virtual/logical qubits of a circuit, to the chip's physical qubits.
+        """Routes the virtual/logical qubits of a circuit, to the chip's physical qubits. And returns/logs the final layout of the qubits.
 
-
+        If passed, this is done, with the passed `placer`, `router` and `routing_iterations` params (if not, default ones are applied).
 
         **Examples:**
 
@@ -217,7 +222,7 @@ class CircuitTranspiler:
         return CircuitOptimizer.run_gate_cancellations(circuit)
 
     def circuit_to_native(self, circuit: Circuit) -> Circuit:
-        """Converts circuit with qibo gates to circuit with native gates
+        """Converts circuit with qibo gates to circuit with native gates (CZ, RZ, Drag, Wait and M (Measurement).
 
         Args:
             circuit (Circuit): circuit with qibo gate.

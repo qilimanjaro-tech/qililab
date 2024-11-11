@@ -70,7 +70,7 @@ class CircuitRouter:
         # 3) Layout stage, where the initial_layout will be created.
 
     def route(self, circuit: Circuit, iterations: int = 10) -> tuple[Circuit, dict[str, int]]:
-        """Routes the virtual/logical qubits of a circuit, to the chip's physical qubits.
+        """Routes the virtual/logical qubits of a circuit, to the chip's physical qubits. And returns/logs the final layout of the qubits.
 
         **Examples:**
 
@@ -139,7 +139,7 @@ class CircuitRouter:
     def _iterate_routing(
         routing_pipeline: Passes, circuit: Circuit, iterations: int = 10
     ) -> tuple[Circuit, dict[str, int], int | None]:
-        """Iterates the routing pipeline, to keep the best stochastic result.
+        """Iterates the routing pipeline, to keep the best stochastic result. And returns/logs the final layout of the qubits.
 
         Args:
             routing_pipeline (Passes): Transpilation pipeline passes.
