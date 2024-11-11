@@ -61,6 +61,7 @@ class CircuitTranspiler:
         And finally, it converts the native gate circuit to a pulse schedule using calibrated settings from the runcard.
 
         If ``optimize=True`` (default behaviour), then it also does some circuit optimization:
+
         - cancelling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ and SWAPs).
         - applying virtual Z gates and phase corrections (adding up several pulses into a single one, commuting them with virtual Zs).
 
