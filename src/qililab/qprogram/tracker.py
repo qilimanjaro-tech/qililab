@@ -68,7 +68,7 @@ class Tracker:
         values: list,
         initial_guess: float,
         data_path: str,
-        # plot: bool = False, #TODO: add live plotting
+        # live_plot: bool = False, #TODO: add live plotting
     ) -> None:
         """Runs the
 
@@ -82,14 +82,13 @@ class Tracker:
 
         for value in values:
             for operation in self.alias_list:
-
                 # Set the parameter
                 set_parameter(value)
 
                 # Update the window
-                window, predicted_point = self.update_window_dict[operation](guess)
+                window, predicted_guess = self.update_window_dict[operation](guess)
                 self.windows[operation].append(window)
-                self.guessed_path[operation].append(predicted_point)
+                self.guessed_path[operation].append(predicted_guess)
 
                 # Do the experiment
                 data, dims = self.measure_dict[operation](window)
@@ -97,12 +96,12 @@ class Tracker:
                 self.experiment_dims[operation].append(dims)
 
                 # Measure the point of interest
-                guess = self.find_relevant_point_dict[operation](data)
-                self.windows[operation].append(window)
+                guess = self.find_relevant_point_dict[operation](data, window)
+                self.real_path[operation].append(guess)
         return
 
 
 # ASK VYRON ABOUT SESSION AND HOW TO EXECUTE EXPERIMENT WITHOUT IT
 # ASK VYRON HOW TO SAVE THE REST OF THE DATA INSIDE EXPERIMENTS, MODIFY EXPERIMENTS IF NECESSARY
-# ADD MODIFIABLE VARIABLES INSIDE EXPERIMENTS TO SAVE THEM LATER IN THE SAME PLACE, VARIABLES THAT CHANGE INSIDE THE LOOP
+# ADD MODIFYIABLE VARIABLES INSIDE EXPERIMENTS TO SAVE THEM LATER IN THE SAME PLACE, VARIABLES THAT CHANGE INSIDE THE LOOP
 # Flag timeout QM
