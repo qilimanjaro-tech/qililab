@@ -921,6 +921,8 @@ class Platform:
         - Translates the gates into the system native's gates (CZ, RZ, Drag, Wait and M (Measurement).
         - Converts the native gates to a pulse schedule using calibrated settings from the runcard.
 
+        |
+
         If ``optimize=True`` (default behaviour), then the transpilation also does some circuit optimization:
 
         - cancelling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ and SWAPs).
@@ -1059,6 +1061,8 @@ class Platform:
         - Making the routing and placement of the circuit into the chip physical connectivity.
         - Translates the gates into the system native's gates (CZ, RZ, Drag, Wait and M (Measurement).
         - Converts the native gates to a pulse schedule using calibrated settings from the runcard.
+
+        |
 
         If ``optimize=True`` (default behaviour), then the transpilation also does some circuit optimization:
 
