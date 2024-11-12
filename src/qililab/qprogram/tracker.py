@@ -67,7 +67,7 @@ class Tracker:
         set_parameter: Callable,
         values: list,
         initial_guess: float,
-        data_path: str,
+        tracker_path: str,
         # live_plot: bool = False, #TODO: add live plotting
     ) -> None:
         """Runs the
@@ -81,17 +81,17 @@ class Tracker:
         guess = initial_guess
 
         for value in values:
+            # Set the parameter
+            set_parameter(value)
+            
             for operation in self.alias_list:
-                # Set the parameter
-                set_parameter(value)
-
                 # Update the window
                 window, predicted_guess = self.update_window_dict[operation](guess)
                 self.windows[operation].append(window)
                 self.guessed_path[operation].append(predicted_guess)
 
                 # Do the experiment
-                data, dims = self.measure_dict[operation](window)
+                data, dims = self.measure_dict[operation](window, predicted_guess, tracker_path)
                 self.total_data[operation].append(data)
                 self.experiment_dims[operation].append(dims)
 
@@ -101,7 +101,5 @@ class Tracker:
         return
 
 
-# ASK VYRON ABOUT SESSION AND HOW TO EXECUTE EXPERIMENT WITHOUT IT
 # ASK VYRON HOW TO SAVE THE REST OF THE DATA INSIDE EXPERIMENTS, MODIFY EXPERIMENTS IF NECESSARY
 # ADD MODIFYIABLE VARIABLES INSIDE EXPERIMENTS TO SAVE THEM LATER IN THE SAME PLACE, VARIABLES THAT CHANGE INSIDE THE LOOP
-# Flag timeout QM

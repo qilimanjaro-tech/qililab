@@ -19,23 +19,13 @@ import h5py
 import numpy as np
 
 from qililab.result.experiment_results import ExperimentResults
+from qililab.result.experiment_results_writer import (
+    ExperimentMetadata,
+    MeasurementMetadata,
+    VariableMetadata,
+)
 
-
-class VariableMetadata(TypedDict):
-    """Metadata for a variable used in the experiment.
-
-    Attributes:
-        label (str): The label of the variable.
-        values (np.ndarray): The array of values for the variable.
-        units (str, optional): Unit name of the variable. Defaults to None.
-    """
-
-    label: str
-    values: np.ndarray
-    units: str = None
-
-
-class MeasurementMetadata(TypedDict):
+class BlockMetadata(TypedDict):
     """Metadata for a measurement in the experiment.
 
     Attributes:
@@ -45,52 +35,35 @@ class MeasurementMetadata(TypedDict):
         shots (int): Number of shots taken for the measurement.
     """
 
-    variables: list[VariableMetadata]
-    dims: list[list[str]]
-    shape: tuple[int, ...]
-    shots: int
+    alias: list[str]
+    real_path: dict[str, list]
+    guessed_path: dict[str, list]
+    windows: dict[str, list]
+    total_data: dict[str, list]
+    experiment_dims: dict[str, list]
 
-
-class QProgramMetadata(TypedDict):
-    """Metadata for a quantum program.
-
-    Attributes:
-        variables (dict[str, np.ndarray]): Variables that the QProgram depends upon.
-        dims (list[list[str]]): Dimensions of the QProgram data.
-        measurements (dict[str, MeasurementMetadata]): Measurements associated with the QProgram.
-    """
-
-    variables: dict[str, np.ndarray]
-    dims: list[list[str]]
-    measurements: dict[str, MeasurementMetadata]
-
-
-class ExperimentMetadata(TypedDict, total=False):
+class TrackerMetadata(TypedDict):
     """Metadata for an experiment.
 
     Attributes:
-        platform (str): Platform information.
-        experiment (str): Experiment description.
         executed_at (datetime): Timestamp when the experiment started execution.
         execution_time (float): Time taken for the execution in seconds.
-        qprograms (dict[str, QProgramMetadata]): Quantum programs included in the experiment.
     """
 
-    platform: str
-    experiment: str
     executed_at: datetime
     execution_time: float
-    qprograms: dict[str, QProgramMetadata]
+    values: list[VariableMetadata]
+    experiments: dict[str, BlockMetadata]
 
 
-class ExperimentResultsWriter(ExperimentResults):
+class TrackerWriter(TrackerResults):
     """
     Allows for real-time saving of results from an experiment using the provided metadata information.
 
     Inherits from `ExperimentResults` to support both read and write operations.
     """
 
-    def __init__(self, path: str, metadata: ExperimentMetadata):
+    def __init__(self, path: str, metadata: TrackerMetadata):
         """Initializes the ExperimentResultsWriter instance.
 
         Args:
@@ -100,6 +73,32 @@ class ExperimentResultsWriter(ExperimentResults):
         super().__init__(path)
         self._metadata = metadata
 
+    def __enter__(self):
+        """Opens the HDF5 file and creates the structure for streaming.
+
+        Returns:
+            ExperimentResultsWriter: The ExperimentResultsWriter instance.
+        """
+        self._tracker = h5py.File(self.path, mode="w")
+        self._create_results_file()
+        self._create_results_access()
+
+        return self
+
+    def __setitem__(self, key: tuple, value: float):
+        """Sets an item in the results dataset.
+
+        Args:
+            key (tuple): A tuple of (qprogram_name or index, measurement_name or index, *indices).
+            value (float): The value to set at the specified indices.
+        """
+        qprogram_name, measurement_name, *indices = key
+        if isinstance(qprogram_name, int):
+            qprogram_name = f"QProgram_{qprogram_name}"
+        if isinstance(measurement_name, int):
+            measurement_name = f"Measurement_{measurement_name}"
+        self.data[qprogram_name, measurement_name][tuple(indices)] = value
+
     # pylint: disable=too-many-locals
     def _create_results_file(self):
         """Creates the HDF5 file structure and registers loops as dimension scales.
@@ -108,29 +107,23 @@ class ExperimentResultsWriter(ExperimentResults):
         """
         h5py.get_config().track_order = True
 
-        if "platform" in self._metadata:
-            self.platform = self._metadata["platform"]
-
-        if "experiment" in self._metadata:
-            self.experiment = self._metadata["experiment"]
-
         if "executed_at" in self._metadata:
             self.executed_at = self._metadata["executed_at"]
 
         if "execution_time" in self._metadata:
             self.execution_time = self._metadata["execution_time"]
 
-        if "qprograms" in self._metadata:
-            # Create the group for QPrograms
-            qprograms_group = self._file.create_group(ExperimentResultsWriter.QPROGRAMS_PATH)
+        if "experiments" in self._metadata:
+            # Create the group for experiments
+            experiments_group = self._file.create_group(TrackerWriter.EXPERIMENTS_PATH)
 
-            # Iterate through QPrograms and measurements in the structure
-            for qprogram_name, qprogram_data in self._metadata["qprograms"].items():
-                qgroup = qprograms_group.create_group(qprogram_name)
+            # Iterate through experiments in the structure
+            for experiment_name, experiment_data, experiment_dims in self._metadata["experiments"].items():
+                expgroup = experiments_group.create_group(experiment_name)
 
-                # Write variables that QProgram depends upon (software loops)
-                qloop_group = qgroup.create_group(ExperimentResults.VARIABLES_PATH)
-                for variable in qprogram_data["variables"]:
+                # Write variables that experiment depends upon (software loops)
+                exploop_group = expgroup.create_group(ExperimentResults.VARIABLES_PATH)
+                for variable in experiment_data["variables"]:
                     label, values = variable["label"], variable["values"]
                     loop = qloop_group.create_dataset(label, data=values)
                     loop.dims[0].label = label
@@ -168,64 +161,20 @@ class ExperimentResultsWriter(ExperimentResults):
                     # Attach the extra dimension (usually for I/Q) to the results dataset
                     results_ds.dims[len(qprogram_data["dims"]) + len(measurement_data["dims"])].label = "I/Q"
 
-    def _create_resuts_access(self):
+    def _create experiment_path(self):
+        if "experiments" in self._metadata:
+            self.path
+    
+    def _create_results_access(self):
         """Sets up internal data structures to allow for real-time data writing to the HDF5 file."""
-        if "qprograms" in self._metadata:
-            for qprogram_name, qprogram_data in self._metadata["qprograms"].items():
-                for measurement_name, _ in qprogram_data["measurements"].items():
+        if "experiments" in self._metadata:
+            if not os.path.exists(path):
+                os.makedirs(path)
+            for experiment_name, experiment_data, experiment_dims in self._metadata["experiments"].items():
+                for measurement_name, _ in experiment_data["measurements"].items():
                     self.data[qprogram_name, measurement_name] = self._file[
-                        f"qprograms/{qprogram_name}/measurements/{measurement_name}/results"
+                        f"qprograms/{experiment_name}/measurements/{measurement_name}/results"
                     ]
-
-    def __enter__(self):
-        """Opens the HDF5 file and creates the structure for streaming.
-
-        Returns:
-            ExperimentResultsWriter: The ExperimentResultsWriter instance.
-        """
-        self._file = h5py.File(self.path, mode="w")
-        self._create_results_file()
-        self._create_resuts_access()
-
-        return self
-
-    def __setitem__(self, key: tuple, value: float):
-        """Sets an item in the results dataset.
-
-        Args:
-            key (tuple): A tuple of (qprogram_name or index, measurement_name or index, *indices).
-            value (float): The value to set at the specified indices.
-        """
-        qprogram_name, measurement_name, *indices = key
-        if isinstance(qprogram_name, int):
-            qprogram_name = f"QProgram_{qprogram_name}"
-        if isinstance(measurement_name, int):
-            measurement_name = f"Measurement_{measurement_name}"
-        self.data[qprogram_name, measurement_name][tuple(indices)] = value
-
-    @ExperimentResults.platform.setter
-    def platform(self, platform: str):
-        """Sets the YAML representation of the platform.
-
-        Args:
-            platform (str): The YAML string representing the platform.
-        """
-        path = ExperimentResults.PLATFORM_PATH
-        if path in self._file:
-            del self._file[path]
-        self._file[path] = platform
-
-    @ExperimentResults.experiment.setter
-    def experiment(self, experiment: str):
-        """Sets the YAML representation of the executed experiment.
-
-        Args:
-            experiment (str): The YAML string representing the experiment.
-        """
-        path = ExperimentResults.EXPERIMENT_PATH
-        if path in self._file:
-            del self._file[path]
-        self._file[path] = experiment
 
     @ExperimentResults.executed_at.setter
     def executed_at(self, dt: datetime):
