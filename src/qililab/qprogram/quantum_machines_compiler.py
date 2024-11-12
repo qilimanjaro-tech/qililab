@@ -427,6 +427,11 @@ class QuantumMachinesCompiler:
             )
         )
 
+        warmup_pulse = element.warmup_pulse
+        if warmup_pulse != None:
+            play_warmup=Play(bus=element.bus, waveform=warmup_pulse)
+            self._handle_play(play_warmup)
+
         variable_I = qua.declare(qua.fixed)
         variable_Q = qua.declare(qua.fixed)
         stream_I = qua.declare_stream()

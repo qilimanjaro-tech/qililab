@@ -518,6 +518,11 @@ class QbloxCompiler:
             element (Measure): measure operation
         """
         time_of_flight = self._buses[element.bus].time_of_flight
+        warmup_pulse = element.warmup_pulse
+        if warmup_pulse != None:
+            duration = element.get_warmup_duration()
+            play_warmup=Play(bus=element.bus, waveform=warmup_pulse, wait_time=duration)
+            self._handle_play(play_warmup)
         play = Play(bus=element.bus, waveform=element.waveform, wait_time=time_of_flight)
         acquire = Acquire(bus=element.bus, weights=element.weights, save_adc=element.save_adc)
         self._handle_play(play)

@@ -24,6 +24,7 @@ class Measure(Operation):
         bus: str,
         waveform: IQPair,
         weights: IQPair,
+        warmup_pulse: IQPair | None = None,
         save_adc: bool = False,
         rotation: float | None = None,
         demodulation: bool = True,
@@ -32,6 +33,7 @@ class Measure(Operation):
         self.bus: str = bus
         self.waveform: IQPair = waveform
         self.weights: IQPair = weights
+        self.warmup_pulse: IQPair | None = warmup_pulse
         self.save_adc: bool = save_adc
         self.rotation: float | None = rotation
         self.demodulation: bool = demodulation
@@ -46,6 +48,15 @@ class Measure(Operation):
         wf_Q: Waveform = self.waveform.Q
         return wf_I, wf_Q
 
+    def get_warmup_duration(self) -> tuple[Waveform, Waveform]:
+        """Get the waveforms.
+
+        Returns:
+            tuple[Waveform, Waveform | None]: The warmup waveforms as tuple.
+        """
+        duration: int = self.warmup_pulse.I.get_duration()
+        return duration
+
 
 @yaml.register_class
 class MeasureWithCalibratedWaveform(Operation):
@@ -54,6 +65,7 @@ class MeasureWithCalibratedWaveform(Operation):
         bus: str,
         waveform: str,
         weights: IQPair,
+        warmup_pulse: IQPair | None = None,
         save_adc: bool = False,
         rotation: float | None = None,
         demodulation: bool = True,
@@ -62,6 +74,7 @@ class MeasureWithCalibratedWaveform(Operation):
         self.bus: str = bus
         self.waveform: str = waveform
         self.weights: IQPair = weights
+        self.warmup_pulse: IQPair | None = warmup_pulse
         self.save_adc: bool = save_adc
         self.rotation: float | None = rotation
         self.demodulation: bool = demodulation
@@ -74,6 +87,7 @@ class MeasureWithCalibratedWeights(Operation):
         bus: str,
         waveform: IQPair,
         weights: str,
+        warmup_pulse: IQPair | None = None,
         save_adc: bool = False,
         rotation: float | None = None,
         demodulation: bool = True,
@@ -82,6 +96,7 @@ class MeasureWithCalibratedWeights(Operation):
         self.bus: str = bus
         self.waveform: IQPair = waveform
         self.weights: str = weights
+        self.warmup_pulse: IQPair | None = warmup_pulse
         self.save_adc: bool = save_adc
         self.rotation: float | None = rotation
         self.demodulation: bool = demodulation
@@ -94,6 +109,7 @@ class MeasureWithCalibratedWaveformWeights(Operation):
         bus: str,
         waveform: str,
         weights: str,
+        warmup_pulse: IQPair | None = None,
         save_adc: bool = False,
         rotation: float | None = None,
         demodulation: bool = True,
@@ -102,6 +118,7 @@ class MeasureWithCalibratedWaveformWeights(Operation):
         self.bus: str = bus
         self.waveform: str = waveform
         self.weights: str = weights
+        self.warmup_pulse: IQPair | None = warmup_pulse
         self.save_adc: bool = save_adc
         self.rotation: float | None = rotation
         self.demodulation: bool = demodulation
