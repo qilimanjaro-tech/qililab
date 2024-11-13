@@ -158,6 +158,10 @@
 
 [#826](https://github.com/qilimanjaro-tech/qililab/pull/826)
 
+- Added an optional variable in qp.measure called `warmup_pulse`. This adds a pulse before each measurement to warmup the resonator. The input variable must be a ql.Waveform. Defaults to no pulse played. Example: `qp.measure(bus=alias, waveform=r_wf, weightweights=weights, warmup_pulse=warmup_wf)`
+
+[#831](https://github.com/qilimanjaro-tech/qililab/pull/831)
+
 ### Improvements
 
 - Legacy linting and formatting tools such as pylint, flake8, isort, bandit, and black have been removed. These have been replaced with Ruff, a more efficient tool that handles both linting and formatting. All configuration settings have been consolidated into the `pyproject.toml` file, simplifying the project's configuration and maintenance. Integration config files like `pre-commit-config.yaml` and `.github/workflows/code_quality.yml` have been updated accordingly. Several rules from Ruff have also been implemented to improve code consistency and quality across the codebase. Additionally, the development dependencies in `dev-requirements.txt` have been updated to their latest versions, ensuring better compatibility and performance. [#813](https://github.com/qilimanjaro-tech/qililab/pull/813)
