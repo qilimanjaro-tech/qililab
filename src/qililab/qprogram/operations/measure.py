@@ -54,9 +54,10 @@ class Measure(Operation):
         Returns:
             tuple[Waveform, Waveform | None]: The warmup waveforms as tuple.
         """
+        duration: int | None = None
         if self.warmup_pulse is not None:
-            duration: int = self.warmup_pulse.I.get_duration()
-            return duration
+            duration = self.warmup_pulse.I.get_duration()
+        return duration
 
 
 @yaml.register_class
