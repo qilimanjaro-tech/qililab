@@ -221,7 +221,7 @@ def fixture_measure_operation_in_parallel() -> QProgram:
 
 
 @pytest.fixture(name="measure_operation_with_warmup")
-def fixture_measure_operation() -> QProgram:
+def fixture_measure_operation_with_warmup() -> QProgram:
     drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
     warmup_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
     weights = IQPair(I=Square(1.0, duration=200), Q=Square(1.0, duration=200))
@@ -686,7 +686,7 @@ class TestQuantumMachinesCompiler:
 
     def test_measure_operation_with_warmup_pulse(self, measure_operation_with_warmup: QProgram):
         compiler = QuantumMachinesCompiler()
-        _, _, measurements = compiler.compile(measure_operation)
+        _, _, measurements = compiler.compile(measure_operation_with_warmup)
 
         assert len(measurements) == 1
         assert len(measurements[0].result_handles) == 2
