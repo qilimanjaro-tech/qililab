@@ -220,6 +220,17 @@ def fixture_measure_operation_in_parallel() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="measure_operation_with_warmup")
+def fixture_measure_operation() -> QProgram:
+    drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
+    warmup_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
+    weights = IQPair(I=Square(1.0, duration=200), Q=Square(1.0, duration=200))
+    qp = QProgram()
+    qp.measure(bus="readout", waveform=drag_wf, weights=weights, warmup_pulse=warmup_wf)
+
+    return qp
+
+
 @pytest.fixture(name="for_loop")
 def fixture_for_loop() -> QProgram:
     qp = QProgram()
@@ -667,6 +678,15 @@ class TestQuantumMachinesCompiler:
 
         np.testing.assert_allclose(D["cosine"], [(np.cos(rotation_angle), 200)], atol=1e-15)
         np.testing.assert_allclose(D["sine"], [(np.sin(rotation_angle), 200)], atol=1e-15)
+
+        assert len(measurements) == 1
+        assert len(measurements[0].result_handles) == 2
+        assert "I_0" in measurements[0].result_handles
+        assert "Q_0" in measurements[0].result_handles
+
+    def test_measure_operation_with_warmup_pulse(self, measure_operation_with_warmup: QProgram):
+        compiler = QuantumMachinesCompiler()
+        _, _, measurements = compiler.compile(measure_operation)
 
         assert len(measurements) == 1
         assert len(measurements[0].result_handles) == 2

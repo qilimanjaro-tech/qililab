@@ -281,6 +281,16 @@ def fixture_measure_program() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="measure_program_warmup")
+def fixture_measure_program_warmup() -> QProgram:
+    readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+    warmup_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+    weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+    qp = QProgram()
+    qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair, warmup_pulse=warmup_pair)
+    return qp
+
+
 @pytest.fixture(name="average_with_parallel_for_loops")
 def fixture_average_with_parallel_for_loops() -> QProgram:
     drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
@@ -837,6 +847,19 @@ class TestQBloxCompiler:
             assert handle_play.call_args[0][0].wait_time == 123
             assert handle_acquire.call_args[0][0].bus == measure.bus
             assert handle_acquire.call_args[0][0].weights == measure.weights
+
+    def test_measure_with_warmup_pulse(self, measure_program_warmup):
+        compiler = QbloxCompiler()
+
+        # Test measure with warmup pulse
+        with (
+            patch.object(QbloxCompiler, "_handle_play") as handle_play,
+            patch.object(QbloxCompiler, "_handle_acquire") as handle_acquire,
+        ):
+            compiler.compile(measure_program_warmup)
+
+            assert handle_play.call_count == 2
+            assert handle_acquire.call_count == 1
 
     def test_acquire_loop_with_for_loop_with_weights_of_same_waveform(
         self, acquire_loop_with_for_loop_with_weights_of_same_waveform: QProgram
