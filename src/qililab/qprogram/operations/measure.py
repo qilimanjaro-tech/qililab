@@ -48,7 +48,7 @@ class Measure(Operation):
         wf_Q: Waveform = self.waveform.Q
         return wf_I, wf_Q
 
-    def get_warmup_duration(self) -> int:
+    def get_warmup_duration(self) -> int | None:
         """Get the waveforms.
 
         Returns:
