@@ -248,6 +248,7 @@ class QProgram(StructuredProgram):
                         bus=element.bus,
                         waveform=waveform,
                         weights=element.weights,
+                        warmup_pulse=element.warmup_pulse,
                         demodulation=element.demodulation,
                         save_adc=element.save_adc,
                     )
@@ -260,6 +261,7 @@ class QProgram(StructuredProgram):
                         bus=element.bus,
                         waveform=element.waveform,
                         weights=weights,
+                        warmup_pulse=element.warmup_pulse,
                         demodulation=element.demodulation,
                         save_adc=element.save_adc,
                     )
@@ -275,6 +277,7 @@ class QProgram(StructuredProgram):
                         bus=element.bus,
                         waveform=waveform,
                         weights=weights,
+                        warmup_pulse=element.warmup_pulse,
                         demodulation=element.demodulation,
                         save_adc=element.save_adc,
                     )
@@ -333,7 +336,9 @@ class QProgram(StructuredProgram):
         self._buses.add(bus)
 
     @overload
-    def measure(self, bus: str, waveform: IQPair, weights: IQPair, save_adc: bool = False):
+    def measure(
+        self, bus: str, waveform: IQPair, weights: IQPair, warmup_pulse: IQPair | None = None, save_adc: bool = False
+    ):
         """Play a pulse and acquire results.
 
         Args:
@@ -344,7 +349,9 @@ class QProgram(StructuredProgram):
         """
 
     @overload
-    def measure(self, bus: str, waveform: str, weights: IQPair, save_adc: bool = False):
+    def measure(
+        self, bus: str, waveform: str, weights: IQPair, warmup_pulse: IQPair | None = None, save_adc: bool = False
+    ):
         """Play a named pulse and acquire results.
 
         Args:
@@ -355,7 +362,9 @@ class QProgram(StructuredProgram):
         """
 
     @overload
-    def measure(self, bus: str, waveform: IQPair, weights: str, save_adc: bool = False):
+    def measure(
+        self, bus: str, waveform: IQPair, weights: str, warmup_pulse: IQPair | None = None, save_adc: bool = False
+    ):
         """Play a named pulse and acquire results.
 
         Args:
@@ -366,7 +375,9 @@ class QProgram(StructuredProgram):
         """
 
     @overload
-    def measure(self, bus: str, waveform: str, weights: str, save_adc: bool = False):
+    def measure(
+        self, bus: str, waveform: str, weights: str, warmup_pulse: IQPair | None = None, save_adc: bool = False
+    ):
         """Play a named pulse and acquire results.
 
         Args:
@@ -376,13 +387,21 @@ class QProgram(StructuredProgram):
             save_adc (bool, optional): If ADC data should be saved. Defaults to False.
         """
 
-    def measure(self, bus: str, waveform: IQPair | str, weights: IQPair | str, save_adc: bool = False):
+    def measure(
+        self,
+        bus: str,
+        waveform: IQPair | str,
+        weights: IQPair | str,
+        warmup_pulse: IQPair | None = None,
+        save_adc: bool = False,
+    ):
         """Play a pulse and acquire results.
 
         Args:
             bus (str): Unique identifier of the bus.
             waveform (IQPair): Waveform played during measurement.
             weights (IQPair): Weights used during demodulation/integration.
+            warmup_pulse (IQPair, optional): Warmup pulse played before measurement. Defaults to None.
             save_adc (bool, optional): If ADC data should be saved. Defaults to False.
         """
         operation: (
@@ -392,14 +411,20 @@ class QProgram(StructuredProgram):
             | MeasureWithCalibratedWaveformWeights
         )
         if isinstance(waveform, IQPair) and isinstance(weights, IQPair):
-            operation = Measure(bus=bus, waveform=waveform, weights=weights, save_adc=save_adc)
+            operation = Measure(
+                bus=bus, waveform=waveform, weights=weights, warmup_pulse=warmup_pulse, save_adc=save_adc
+            )
         elif isinstance(waveform, str) and isinstance(weights, IQPair):
-            operation = MeasureWithCalibratedWaveform(bus=bus, waveform=waveform, weights=weights, save_adc=save_adc)
+            operation = MeasureWithCalibratedWaveform(
+                bus=bus, waveform=waveform, weights=weights, warmup_pulse=warmup_pulse, save_adc=save_adc
+            )
         elif isinstance(waveform, IQPair) and isinstance(weights, str):
-            operation = MeasureWithCalibratedWeights(bus=bus, waveform=waveform, weights=weights, save_adc=save_adc)
+            operation = MeasureWithCalibratedWeights(
+                bus=bus, waveform=waveform, weights=weights, warmup_pulse=warmup_pulse, save_adc=save_adc
+            )
         elif isinstance(waveform, str) and isinstance(weights, str):
             operation = MeasureWithCalibratedWaveformWeights(
-                bus=bus, waveform=waveform, weights=weights, save_adc=save_adc
+                bus=bus, waveform=waveform, weights=weights, warmup_pulse=warmup_pulse, save_adc=save_adc
             )
         self._active_block.append(operation)
         self._buses.add(bus)
@@ -575,6 +600,7 @@ class QProgram(StructuredProgram):
             bus: str,
             waveform: IQPair,
             weights: IQPair,
+            warmup_pulse: IQPair | None = None,
             save_adc: bool = False,
             rotation: float = 0.0,
             demodulation: bool = True,
@@ -585,6 +611,7 @@ class QProgram(StructuredProgram):
                 bus (str): Unique identifier of the bus.
                 waveform (IQPair): Waveform played during measurement.
                 weights (IQPair): Weights used during demodulation/integration.
+                warmup_pulse (IQPair, optional): Warmup pulse played before measurement. Defaults to None.
                 save_adc (bool, optional): If ADC data should be saved. Defaults to False.
                 rotation (float, optional): Angle in radians to rotate the IQ plane during demodulation/integration. Defaults to 0.0
                 demodulation (bool, optional): If demodulation is enabled. Defaults to True.
@@ -596,6 +623,7 @@ class QProgram(StructuredProgram):
             bus: str,
             waveform: str,
             weights: IQPair,
+            warmup_pulse: IQPair | None = None,
             save_adc: bool = False,
             rotation: float = 0.0,
             demodulation: bool = True,
@@ -606,6 +634,7 @@ class QProgram(StructuredProgram):
                 bus (str): Unique identifier of the bus.
                 waveform (str): Waveform played during measurement.
                 weights (IQPair): Weights used during demodulation/integration.
+                warmup_pulse (IQPair, optional): Warmup pulse played before measurement. Defaults to None.
                 save_adc (bool, optional): If ADC data should be saved. Defaults to False.
                 rotation (float, optional): Angle in radians to rotate the IQ plane during demodulation/integration. Defaults to 0.0
                 demodulation (bool, optional): If demodulation is enabled. Defaults to True.
@@ -617,6 +646,7 @@ class QProgram(StructuredProgram):
             bus: str,
             waveform: IQPair,
             weights: str,
+            warmup_pulse: IQPair | None = None,
             save_adc: bool = False,
             rotation: float = 0.0,
             demodulation: bool = True,
@@ -627,6 +657,7 @@ class QProgram(StructuredProgram):
                 bus (str): Unique identifier of the bus.
                 waveform (IQPair): Waveform played during measurement.
                 weights (str): Weights used during demodulation/integration.
+                warmup_pulse (IQPair, optional): Warmup pulse played before measurement. Defaults to None.
                 save_adc (bool, optional): If ADC data should be saved. Defaults to False.
                 rotation (float, optional): Angle in radians to rotate the IQ plane during demodulation/integration. Defaults to 0.0
                 demodulation (bool, optional): If demodulation is enabled. Defaults to True.
@@ -638,6 +669,7 @@ class QProgram(StructuredProgram):
             bus: str,
             waveform: str,
             weights: str,
+            warmup_pulse: IQPair | None = None,
             save_adc: bool = False,
             rotation: float = 0.0,
             demodulation: bool = True,
@@ -648,6 +680,7 @@ class QProgram(StructuredProgram):
                 bus (str): Unique identifier of the bus.
                 waveform (str): Waveform played during measurement.
                 weights (str): Weights used during demodulation/integration.
+                warmup_pulse (IQPair, optional): Warmup pulse played before measurement. Defaults to None.
                 save_adc (bool, optional): If ADC data should be saved. Defaults to False.
                 rotation (float, optional): Angle in radians to rotate the IQ plane during demodulation/integration. Defaults to 0.0
                 demodulation (bool, optional): If demodulation is enabled. Defaults to True.
@@ -658,6 +691,7 @@ class QProgram(StructuredProgram):
             bus: str,
             waveform: IQPair | str,
             weights: IQPair | str,
+            warmup_pulse: IQPair | None = None,
             save_adc: bool = False,
             rotation: float = 0.0,
             demodulation: bool = True,
@@ -668,6 +702,7 @@ class QProgram(StructuredProgram):
                 bus (str): Unique identifier of the bus.
                 waveform (IQPair): Waveform played during measurement.
                 weights (IQPair): Weights used during demodulation/integration.
+                warmup_pulse (IQPair, optional): Warmup pulse played before measurement. Defaults to None.
                 save_adc (bool, optional): If raw ADC data should be saved. Defaults to False.
                 rotation (float, optional): Angle in radians to rotate the IQ plane during demodulation/integration. Defaults to 0.0
                 demodulation (bool, optional): If demodulation is enabled. Defaults to True.
@@ -683,6 +718,7 @@ class QProgram(StructuredProgram):
                     bus=bus,
                     waveform=waveform,
                     weights=weights,
+                    warmup_pulse=warmup_pulse,
                     save_adc=save_adc,
                     rotation=rotation,
                     demodulation=demodulation,
@@ -692,6 +728,7 @@ class QProgram(StructuredProgram):
                     bus=bus,
                     waveform=waveform,
                     weights=weights,
+                    warmup_pulse=warmup_pulse,
                     save_adc=save_adc,
                     rotation=rotation,
                     demodulation=demodulation,
@@ -701,6 +738,7 @@ class QProgram(StructuredProgram):
                     bus=bus,
                     waveform=waveform,
                     weights=weights,
+                    warmup_pulse=warmup_pulse,
                     save_adc=save_adc,
                     rotation=rotation,
                     demodulation=demodulation,
@@ -710,6 +748,7 @@ class QProgram(StructuredProgram):
                     bus=bus,
                     waveform=waveform,
                     weights=weights,
+                    warmup_pulse=warmup_pulse,
                     save_adc=save_adc,
                     rotation=rotation,
                     demodulation=demodulation,
