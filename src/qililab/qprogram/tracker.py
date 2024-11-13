@@ -64,6 +64,7 @@ class Tracker:
 
     def run_tracker(
         self,
+        parameter_alias:str,
         set_parameter: Callable,
         values: list,
         initial_guess: float,
