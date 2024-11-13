@@ -48,14 +48,16 @@ class Measure(Operation):
         wf_Q: Waveform = self.waveform.Q
         return wf_I, wf_Q
 
-    def get_warmup_duration(self) -> tuple[Waveform, Waveform]:
+    def get_warmup_duration(self) -> int:
         """Get the waveforms.
 
         Returns:
             tuple[Waveform, Waveform | None]: The warmup waveforms as tuple.
         """
-        duration: int = self.warmup_pulse.I.get_duration()
-        return duration
+        if self.warmup_pulse is not None:
+            duration: int = self.warmup_pulse.I.get_duration()
+            return duration
+        return None
 
 
 @yaml.register_class
