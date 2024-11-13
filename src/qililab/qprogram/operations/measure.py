@@ -57,7 +57,6 @@ class Measure(Operation):
         if self.warmup_pulse is not None:
             duration: int = self.warmup_pulse.I.get_duration()
             return duration
-        return None
 
 
 @yaml.register_class
