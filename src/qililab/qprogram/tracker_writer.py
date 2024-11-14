@@ -88,20 +88,18 @@ class TrackerWriter(TrackerResults):
 
         return self
 
-    def __setitem__(self, key: tuple, value: float):
+    def __setitem__(self, alias: tuple, window: float, guess_path, data, real_path):
         """Sets an item in the results dataset.
 
         Args:
             key (tuple): A tuple of (qprogram_name or index, measurement_name or index, *indices).
             value (float): The value to set at the specified indices.
         """
-        qprogram_name, measurement_name, *indices = key
-        if isinstance(qprogram_name, int):
-            qprogram_name = f"QProgram_{qprogram_name}"
-        if isinstance(measurement_name, int):
-            measurement_name = f"Measurement_{measurement_name}"
-            # add all variables with the data shape
-        self.data[qprogram_name, measurement_name][tuple(indices)] = value
+
+        self.windows[alias] = window
+        self.guess[alias] = guess_path
+        self.data[alias] = data
+        self.real[alias] = real_path
 
     # pylint: disable=too-many-locals
     def _create_file(self):
@@ -127,10 +125,10 @@ class TrackerWriter(TrackerResults):
             for block_alias in self._metadata["experiments"]["alias"]:
                 blockgroup = self._tracker_file.create_group(block_alias)
 
-                windows_results = blockgroup.create_dataset("Windows")
-                guessed_results = blockgroup.create_dataset("Guessed path")
-                data_results = blockgroup.create_dataset("Data")
-                real_results = blockgroup.create_dataset("Real path")
+                windows_results = blockgroup.create_dataset("windows")
+                guessed_results = blockgroup.create_dataset("guessed path")
+                data_results = blockgroup.create_dataset("data")
+                real_results = blockgroup.create_dataset("real path")
 
                 windows_results.dims[0].attach_scale(valuegroup[value_name])
                 windows_results.dims[0].label = value_name
@@ -153,21 +151,15 @@ class TrackerWriter(TrackerResults):
                 if not os.path.exists(f"{self.path}/{alias}/{value["label"]}_{value["values"]}"):
                     os.makedirs(f"{self.path}/{alias}/{value["label"]}_{value["values"]}")
                 self.experiment_path[alias][value["values"]]=f"{self.path}/{alias}/{value["label"]}_{value["values"]}"
-                
-    # def results_file(self, alias):
-    #     self._results_file[alias] = h5py.File(f"{self.path}/{alias}/results_{alias}.h5", mode="w")
-        
-    #     self._results_file[alias].create_group("Results")
-    #     self._results_file
-    
+
     def _create_results_access(self):
         """Sets up internal data structures to allow for real-time data writing to the HDF5 file."""
         if "experiments" in self._metadata:
-            for experiment_name, experiment_data, experiment_dims in self._metadata["experiments"].items():
-                for measurement_name, _ in experiment_data["measurements"].items():
-                    self.windows[qprogram_name, measurement_name] = self._file[
-                        f"qprograms/{experiment_name}/measurements/{measurement_name}/results"
-                    ] # define the access of the multiple variables
+            for alias in self._metadata["experiments"]["alias"]:
+                self.windows[alias] = self._tracker_file[f"{alias}/windows"]
+                self.guess[alias] = self._tracker_file[f"{alias}/guessed path"]
+                self.data[alias] = self._tracker_file[f"{alias}/data"]
+                self.real[alias] = self._tracker_file[f"{alias}/real path"]
 
     @ExperimentResults.executed_at.setter
     def executed_at(self, dt: datetime):
@@ -176,10 +168,10 @@ class TrackerWriter(TrackerResults):
         Args:
             dt (datetime): The datetime when execution started.
         """
-        path = ExperimentResults.EXECUTED_AT_PATH
-        if path in self._file:
-            del self._file[path]
-        self._file[path] = dt.strftime("%Y-%m-%d %H:%M:%S")
+        path = "executed_at"
+        if path in self._tracker_file:
+            del self._tracker_file[path]
+        self._tracker_file[path] = dt.strftime("%Y-%m-%d %H:%M:%S")
 
     @ExperimentResults.execution_time.setter
     def execution_time(self, time: float):
@@ -188,7 +180,7 @@ class TrackerWriter(TrackerResults):
         Args:
             time (float): The execution time in seconds.
         """
-        path = ExperimentResults.EXECUTION_TIME_PATH
-        if path in self._file:
-            del self._file[path]
-        self._file[path] = str(time)
+        path = "execution_time"
+        if path in self._tracker_file:
+            del self._tracker_file[path]
+        self._tracker_file[path] = str(time)
